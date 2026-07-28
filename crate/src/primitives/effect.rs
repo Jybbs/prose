@@ -50,10 +50,17 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{first_value, parse};
+    use crate::testing::{first_value, notebook, parse};
+
+    #[test]
+    fn value_is_effectful_reads_a_notebook_escape_command() {
+        let source = notebook(&["SHELL = !ls\n"]);
+        assert!(value_is_effectful(first_value(&source)));
+    }
 
     #[rstest]
     #[case("call()", true)]
+    #[case("await fetch()", true)]
     #[case("[make(), 1]", true)]
     #[case("[n for n in seq]", true)]
     #[case("{n for n in seq}", true)]

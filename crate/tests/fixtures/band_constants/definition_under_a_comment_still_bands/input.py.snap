@@ -8,5 +8,6 @@ __all__ = ["fft", "fftn"]
 
 
 # the reference implementation both transforms share
+
 def fft(values):
     return values

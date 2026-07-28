@@ -66,6 +66,10 @@ mod tests {
 
     use super::*;
 
+    /// Formatted module source whose bare `import os` draws one
+    /// `bare-imports` finding and no format edit.
+    const BARE_IMPORT_LINT: &str = "import os\n\nos.getcwd()\n";
+
     fn formatted(config_toml: &str, source: &str) -> FormatResult {
         format(config_toml, source).unwrap_or_else(|_| panic!("format succeeds"))
     }
@@ -111,9 +115,8 @@ mod tests {
 
     #[test]
     fn lint_findings_do_not_error() {
-        let result =
-            try_format("", "import os\nos.getcwd()\n").expect("formats despite a lint finding");
-        assert_eq!(result.formatted, "import os\nos.getcwd()\n");
+        let result = try_format("", BARE_IMPORT_LINT).expect("formats despite a lint finding");
+        assert_eq!(result.formatted, BARE_IMPORT_LINT);
     }
 
     #[test]
@@ -128,7 +131,7 @@ mod tests {
 
     #[test]
     fn reports_lint_findings_against_the_output() {
-        let result = formatted("", "import os\nos.getcwd()\n");
+        let result = formatted("", BARE_IMPORT_LINT);
         assert!(result.diagnostics.contains("bare-imports"));
     }
 

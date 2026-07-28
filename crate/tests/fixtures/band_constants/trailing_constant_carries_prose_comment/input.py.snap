@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/band_constants/trailing_constant_carries_prose_comment/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/trailing_constant_carries_prose_comment/input.py
 ---
 import os
 
@@ -11,4 +11,5 @@ def build_default():
 
 
 # the lazily-built registry
-REGISTRY = build_default()
+
+REGISTRY = build_default

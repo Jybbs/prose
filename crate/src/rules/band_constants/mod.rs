@@ -10,7 +10,7 @@ use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{PythonVersion, Stmt, helpers::is_compound_statement};
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::TextRange;
 
 use crate::{
     config::Config,
@@ -133,15 +133,13 @@ impl<'a> Bander<'a> {
         })
     }
 
-    /// Renders `body`, builds the module band over it, and folds each
-    /// carried comment up with its statement, leaving the assembly to the
-    /// caller. The section partition walls each notebook cell, so a band
-    /// never crosses one.
+    /// Renders `body` and builds the module band over it, leaving the
+    /// assembly to the caller. The section partition walls each notebook
+    /// cell, so a band never crosses one.
     fn band_layout(&self, body: &'a [Stmt], outer: TextRange) -> BandLayout<'a> {
-        let (mut blocks, mut rendered) =
-            rendered_member_blocks(self.source, body, outer, |stmt, block| {
-                self.band_stmt(stmt, block)
-            });
+        let (blocks, rendered) = rendered_member_blocks(self.source, body, outer, |stmt, block| {
+            self.band_stmt(stmt, block)
+        });
         let mut order: Vec<usize> = (0..body.len()).collect();
         let band = (!any_sibling_shares_line(self.source, body))
             .then(|| {
@@ -149,9 +147,6 @@ impl<'a> Bander<'a> {
                 self.band_module_constants(body, &blocks, &sections, &mut order)
             })
             .flatten();
-        if let Some(b) = &band {
-            apply_band_carries(self.source, b, body, &mut blocks, &mut rendered);
-        }
         BandLayout {
             band,
             blocks,
@@ -221,41 +216,17 @@ impl BandLayout<'_> {
     }
 }
 
-/// Prepends each carried comment to its banded statement's rendered text
-/// and extends the block back over it. A block opening on the statement's
-/// own line takes one newline, whereas a block already opening on an
-/// attached comment keeps the separation the source holds.
-fn apply_band_carries(
-    source: &Source,
-    band: &Banding,
-    body: &[Stmt],
-    blocks: &mut [TextRange],
-    rendered: &mut [Cow<'_, str>],
-) {
-    for &(idx, comment) in &band.carries {
-        let block_start = blocks[idx].start();
-        let separator = if source.same_line(block_start, body[idx].start()) {
-            source.newline_str()
-        } else {
-            source.slice(TextRange::new(comment.end(), block_start))
-        };
-        let carried = format!("{}{separator}{}", source.slice(comment), rendered[idx]);
-        blocks[idx] = comment.cover(blocks[idx]);
-        rendered[idx] = Cow::Owned(carried);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{primitives::orderer::block_ranges, testing::parse};
+    use crate::{primitives::orderer::member_blocks, testing::parse};
 
     #[test]
     fn band_module_constants_hoists_an_import_below_a_definition() {
         let source =
             parse("def helper(value):\n    return value\n\n\nimport os\n\n\nCONFIG = helper\n");
         let body = &source.ast().body;
-        let blocks = block_ranges(&source, body, source.module_range());
+        let blocks = member_blocks(&source, body, source.module_range());
         let mut order: Vec<usize> = (0..body.len()).collect();
         let bander = Bander {
             defer_annotations: false,

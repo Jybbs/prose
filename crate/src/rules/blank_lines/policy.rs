@@ -80,11 +80,11 @@ fn is_main_guard(stmt: &Stmt) -> bool {
 
 /// Module-scope pair dispatch. A statement following an
 /// `if __name__ == "__main__":` block carries 1 blank line. A grouped
-/// import pair lands 1 blank line across distinct canonical groups
-/// (bare, external `from`, local-package) and none within a group, while
-/// an ungrouped pair reads as one flat block and never divides. A
-/// top-level `FunctionDef` or `ClassDef` carries 2 blank lines on each
-/// side, whatever statement kind neighbors it.
+/// import pair lands 1 blank line across distinct canonical groups and
+/// none within a group, while an ungrouped pair reads as one flat block
+/// and never divides. A top-level `FunctionDef` or `ClassDef` carries 2
+/// blank lines on each side, whatever statement kind neighbors it, and
+/// any other statement following an import carries 1.
 fn module_scope_blanks(
     prev: &Stmt,
     curr: &Stmt,
@@ -100,6 +100,7 @@ fn module_scope_blanks(
     match (prev, curr) {
         (_, Stmt::FunctionDef(_) | Stmt::ClassDef(_))
         | (Stmt::FunctionDef(_) | Stmt::ClassDef(_), _) => Some(2),
+        (Stmt::Import(_) | Stmt::ImportFrom(_), _) => Some(1),
         _ => None,
     }
 }
@@ -266,7 +267,13 @@ mod tests {
 
     #[rstest]
     fn canonical_blanks_module_def_or_class_after_module_stmt_returns_two(
-        #[values("x = 1\nclass C: pass\n", "x = 1\ndef f(): pass\n")] src: &str,
+        #[values(
+            "x = 1\nclass C: pass\n",
+            "x = 1\ndef f(): pass\n",
+            "import os\ndef f(): pass\n",
+            "from sys import path\nclass C: pass\n"
+        )]
+        src: &str,
     ) {
         let s = parse(src);
         let body = &s.ast().body;
@@ -350,6 +357,25 @@ mod tests {
         assert_eq!(
             canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
             Some(2),
+        );
+    }
+
+    #[rstest]
+    fn canonical_blanks_module_statement_after_import_returns_one(
+        #[values(
+            "import os\nPORT = 8080\n",
+            "from sys import path\nPORT: int = 8080\n",
+            "import os\nlaunch()\n",
+            "from sys import path\nif ready:\n    go()\n",
+            "from __future__ import annotations\nPORT = 8080\n"
+        )]
+        src: &str,
+    ) {
+        let s = parse(src);
+        let body = &s.ast().body;
+        assert_eq!(
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
+            Some(1),
         );
     }
 

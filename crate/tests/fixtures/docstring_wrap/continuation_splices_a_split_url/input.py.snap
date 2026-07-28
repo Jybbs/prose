@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/docstring_wrap/continuation_splices_a_split_url/input.py
+---
+def reference():
+    """
+    The compatibility notes live at
+    https://example.com/docs/guide/binary-compatibility-and-platform-tags.html
+    for callers.
+    """
+    return reference

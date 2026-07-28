@@ -4,6 +4,7 @@ expression: snapshot
 input_file: crate/tests/fixtures/band_constants/import_carries_its_prose_comment/input.py
 ---
 # the hex helpers both writers reach for
+
 import binascii
 import zlib
 

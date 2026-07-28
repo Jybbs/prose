@@ -1,8 +1,8 @@
 //! Partitions a module's imports into the canonical sections
-//! bare → external `from` → local-package, relocating each contiguous
-//! import run within a section into group order while leaving the names
-//! within a group to `alphabetize`. The first-party list under
-//! `[imports]` decides local-package membership.
+//! `__future__` → bare → external `from` → local-package, relocating
+//! each contiguous import run within a section into group order while
+//! leaving the names within a group to `alphabetize`. The first-party
+//! list under `[imports]` decides local-package membership.
 
 use std::{borrow::Cow, ops::Range};
 

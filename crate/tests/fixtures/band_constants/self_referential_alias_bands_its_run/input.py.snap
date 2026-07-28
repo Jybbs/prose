@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/self_referential_alias_bands_its_run/input.py
+---
+type Node = Node | None
+LIMIT = 5
+
+
+def build():
+    return 1

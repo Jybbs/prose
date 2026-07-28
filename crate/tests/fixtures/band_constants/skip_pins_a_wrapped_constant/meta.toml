@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Wrapped Constant's Skip Pins It Against the Band"
+
+description = '''
+A `# prose: skip[band-constants]` trailing a multi-line constant **pins the whole statement where the author left it**, because the directive's span reaches the assignment's opening line rather than keying on the closing bracket alone.
+'''

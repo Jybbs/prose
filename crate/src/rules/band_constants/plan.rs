@@ -8,7 +8,6 @@ use std::collections::HashMap;
 
 use itertools::Itertools;
 use ruff_python_ast::Stmt;
-use ruff_text_size::TextRange;
 
 use crate::primitives::{
     imports::{import_blank_lines, import_sort_key},
@@ -17,10 +16,9 @@ use crate::primitives::{
 };
 
 /// The applied banding: a band rank per banded statement, the rendered
-/// tier each banded constant sits in, the member count per rendered
-/// tier, and the prose comment each banded statement carries up with it.
+/// tier each banded constant sits in, and the member count per rendered
+/// tier.
 pub(super) struct Banding {
-    pub(super) carries: Vec<(usize, TextRange)>,
     ranks: HashMap<usize, BandRank>,
     tier_sizes: HashMap<(BandRank, usize), usize>,
     tiers: HashMap<usize, usize>,
@@ -54,12 +52,10 @@ impl Banding {
 }
 
 /// The module-scope hoist plan: a band rank per banded statement, the
-/// intra-band `(tier, subcategory, name)` key per banded constant, the
-/// eager-reference edges the order keeps backward, and the comment each
-/// banded statement carries. A statement absent from `ranks` is a pinned
-/// anchor.
+/// intra-band `(tier, subcategory, name)` key per banded constant, and
+/// the eager-reference edges the order keeps backward. A statement
+/// absent from `ranks` is a pinned anchor.
 pub(super) struct BandPlan<'src> {
-    pub(super) carries: Vec<(usize, TextRange)>,
     pub(super) edges: Vec<(usize, usize)>,
     pub(super) keys: HashMap<usize, (usize, Subcategory, &'src str)>,
     pub(super) ranks: HashMap<usize, BandRank>,
@@ -162,7 +158,6 @@ impl BandPlan<'_> {
             .iter()
             .counts_by(|(&idx, &tier)| (self.ranks[&idx], tier));
         let banding = Banding {
-            carries: self.carries,
             ranks: self.ranks,
             tier_sizes,
             tiers,

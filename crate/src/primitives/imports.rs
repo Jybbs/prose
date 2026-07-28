@@ -1,7 +1,7 @@
 //! Classifies import statements into the canonical group order
-//! bare → external `from` → local-package, finds the runs of adjacent
-//! imports the ordering rules act on, builds the composite sort key
-//! ordering a run within and across those groups, and counts the
+//! `__future__` → bare → external `from` → local-package, finds the runs
+//! of adjacent imports the ordering rules act on, builds the composite
+//! sort key ordering a run within and across those groups, and counts the
 //! canonical blank lines dividing two imports. First-party detection
 //! reads the package-name list from `[tool.prose.imports]`.
 
@@ -15,10 +15,12 @@ const FUTURE_ANNOTATIONS: &str = "annotations";
 const FUTURE_MODULE: &str = "__future__";
 
 /// Canonical import group. Derived `Ord` ranks the variants in
-/// declaration order, so a sort by group lands bare imports first,
-/// external `from` imports next, and local-package imports last.
+/// declaration order, so a sort by group lands `__future__` imports
+/// first, bare imports next, then external `from` imports, and
+/// local-package imports last.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(crate) enum ImportGroup {
+    Future,
     Bare,
     ExternalFrom,
     Local,
@@ -36,7 +38,7 @@ pub(crate) fn defers_annotations(body: &[Stmt]) -> bool {
 /// `from __future__ import …` statement, or `None` for any other
 /// import.
 pub(crate) fn future_annotations_alias(node: &StmtImportFrom) -> Option<usize> {
-    if node.level != 0 || node.module.as_deref() != Some(FUTURE_MODULE) {
+    if !is_future(node) {
         return None;
     }
     node.names
@@ -62,10 +64,9 @@ pub(crate) fn import_blank_lines(
 }
 
 /// Returns the canonical group of an `import` or `from`-import
-/// statement, or `None` for any other statement. A `from` import is
-/// local when it is relative (`level > 0`) or its module's root
-/// package is first-party. A bare import is local when any aliased
-/// root package is first-party.
+/// statement, `None` for any other. An absolute `from __future__` is
+/// its own group. A `from` import is local when relative or first-party
+/// by root package, a bare import when any aliased root is first-party.
 pub(crate) fn import_group(stmt: &Stmt, first_party: &[String]) -> Option<ImportGroup> {
     let (local, external) = match stmt {
         Stmt::Import(i) => (
@@ -74,6 +75,7 @@ pub(crate) fn import_group(stmt: &Stmt, first_party: &[String]) -> Option<Import
                 .any(|a| is_first_party(a.name.as_str(), first_party)),
             ImportGroup::Bare,
         ),
+        Stmt::ImportFrom(i) if is_future(i) => return Some(ImportGroup::Future),
         Stmt::ImportFrom(i) => (
             i.level > 0
                 || i.module
@@ -86,20 +88,24 @@ pub(crate) fn import_group(stmt: &Stmt, first_party: &[String]) -> Option<Import
     Some(if local { ImportGroup::Local } else { external })
 }
 
-/// Composite import sort key. With `grouped`, the canonical group order
-/// (bare → external `from` → local-package) leads a per-kind inner sort,
-/// where bare imports sort before `from` imports, bare by least alias name
-/// and `from` by `(level, module)`. Without it, the group drops so a run
-/// sorts as one flat block. `None` pins any non-import statement in place.
+/// Composite import sort key, the canonical group order ahead of a
+/// per-kind sort, bare before `from`, bare by least alias name and
+/// `from` by `(level, module)`. Ungrouped, every group below
+/// `__future__` collapses to one rank. `None` pins a non-import.
 pub(crate) fn import_sort_key<'a>(
     stmt: &'a Stmt,
     first_party: &[String],
     grouped: bool,
-) -> Option<(Option<ImportGroup>, u8, u32, &'a str)> {
-    let group = grouped.then_some(import_group(stmt, first_party)?);
+) -> Option<(ImportGroup, u8, u32, &'a str)> {
+    let group = import_group(stmt, first_party)?;
+    let rank = if grouped {
+        group
+    } else {
+        group.min(ImportGroup::Bare)
+    };
     Some(match stmt {
-        Stmt::Import(i) => (group, 0, 0, least_alias(&i.names)),
-        Stmt::ImportFrom(i) => (group, 1, i.level, i.module.as_deref().unwrap_or_default()),
+        Stmt::Import(i) => (rank, 0, 0, least_alias(&i.names)),
+        Stmt::ImportFrom(i) => (rank, 1, i.level, i.module.as_deref().unwrap_or_default()),
         _ => unreachable!("import_group returns Some only for import statements"),
     })
 }
@@ -111,18 +117,11 @@ pub(crate) fn import_sort_key<'a>(
 pub(crate) fn sectioned_import_runs(sections: &Sections, body: &[Stmt]) -> Vec<Range<usize>> {
     let mut runs = Vec::new();
     for section in sections.ranges() {
-        for run in import_runs(&body[section.clone()]) {
+        for run in runs_where(&body[section.clone()], is_import) {
             runs.push(section.start + run.start..section.start + run.end);
         }
     }
     runs
-}
-
-/// Slot ranges of each run of two or more adjacent imports in `stmts`,
-/// the per-section unit `sectioned_import_runs` offsets to absolute
-/// slot indices.
-fn import_runs(stmts: &[Stmt]) -> Vec<Range<usize>> {
-    runs_where(stmts, is_import)
 }
 
 /// True when the root package of `name` (the substring up to the
@@ -130,6 +129,11 @@ fn import_runs(stmts: &[Stmt]) -> Vec<Range<usize>> {
 fn is_first_party(name: &str, first_party: &[String]) -> bool {
     let root = name.split_once('.').map_or(name, |(root, _)| root);
     first_party.iter().any(|p| p == root)
+}
+
+/// True for an absolute `from __future__ import …` statement.
+fn is_future(node: &StmtImportFrom) -> bool {
+    node.level == 0 && node.module.as_deref() == Some(FUTURE_MODULE)
 }
 
 /// True for an `import` or `from`-import statement.
@@ -172,6 +176,8 @@ mod tests {
     #[case("import os\nfrom collections import deque\n", true, Some(1))]
     #[case("import os\nfrom collections import deque\n", false, Some(0))]
     #[case("import os\nimport sys\n", false, Some(0))]
+    #[case("from __future__ import annotations\nimport os\n", true, Some(1))]
+    #[case("from __future__ import annotations\nimport os\n", false, Some(0))]
     #[case("import os\nx = 1\n", true, None)]
     #[case("x = 1\nimport os\n", true, None)]
     fn import_blank_lines_scores_only_import_pairs(
@@ -200,6 +206,10 @@ mod tests {
     #[case("from . import shared\n", &[], Some(ImportGroup::Local))]
     #[case("from .sub import helpers\n", &[], Some(ImportGroup::Local))]
     #[case("from ..pkg import base\n", &[], Some(ImportGroup::Local))]
+    #[case("from __future__ import annotations\n", &[], Some(ImportGroup::Future))]
+    #[case("from __future__ import division\n", &["__future__"], Some(ImportGroup::Future))]
+    #[case("from .__future__ import annotations\n", &[], Some(ImportGroup::Local))]
+    #[case("import __future__\n", &[], Some(ImportGroup::Bare))]
     #[case("x = 1\n", &[], None)]
     fn import_group_classifies_by_kind_relativity_and_first_party(
         #[case] src: &str,
@@ -212,9 +222,22 @@ mod tests {
     }
 
     #[test]
-    fn import_group_ranks_bare_before_external_before_local() {
+    fn import_group_ranks_future_before_bare_before_external_before_local() {
+        assert!(ImportGroup::Future < ImportGroup::Bare);
         assert!(ImportGroup::Bare < ImportGroup::ExternalFrom);
         assert!(ImportGroup::ExternalFrom < ImportGroup::Local);
+    }
+
+    #[rstest]
+    fn import_sort_key_pins_the_future_import_ahead_of_every_group(
+        #[values(false, true)] grouped: bool,
+    ) {
+        let first_party = vec!["myapp".to_owned()];
+        let s = parse("import myapp\nimport os\nfrom __future__ import annotations\n");
+        let key = |stmt| import_sort_key(stmt, &first_party, grouped).expect("import");
+        let body = &s.ast().body;
+        assert!(key(&body[2]) < key(&body[0]));
+        assert!(key(&body[2]) < key(&body[1]));
     }
 
     #[test]
@@ -240,7 +263,7 @@ mod tests {
     }
 
     #[test]
-    fn import_sort_key_ungrouped_drops_the_group_dimension() {
+    fn import_sort_key_ungrouped_collapses_every_group_below_the_pin() {
         let first_party = vec!["myapp".to_owned()];
         let s = parse("import myapp\nfrom collections import Counter\n");
         let key = |stmt, grouped| import_sort_key(stmt, &first_party, grouped).expect("import");

@@ -67,7 +67,7 @@ function facetsOf(
 }
 
 export default defineLoader({
-  watch : paths.proseBinaryCandidates(root),
+  watch : [paths.proseBinaryPath(root)],
   load  : async (): Promise<SandboxSchema> => {
     const md       = await getRenderer()
     const schema   = JSON.parse(paths.runProse(root, ['schema']))

@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Prose Comment Above a Pinned Constant Stays Put"
-
-description = '''
-`LIMIT` names an unresolved value, so it pins in place and the own-line comment above it stays in the source gap instead of traveling into the band, leaving `APPLE` and `ZEBRA` to sort beneath it.
-'''
