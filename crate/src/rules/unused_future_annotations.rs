@@ -9,13 +9,14 @@ use ruff_python_ast::{
     AnyParameterRef, Expr, PythonVersion, Stmt, StmtAnnAssign, StmtFunctionDef, StmtImportFrom,
     helpers::any_over_expr,
 };
-use ruff_source_file::LineRanges;
 use ruff_text_size::TextRange;
 
 use crate::{
     config::Config,
     primitives::{
-        binding::BindingAnalysis, edit::singleton_groups, imports::future_annotations_alias,
+        binding::BindingAnalysis,
+        edit::{singleton_groups, whole_line_deletion},
+        imports::future_annotations_alias,
         walk::any_over_stmts,
     },
     rule::{Rule, RuleId},
@@ -83,7 +84,7 @@ fn edit_for(source: &Source, node: &StmtImportFrom, alias_idx: usize) -> Edit {
     if node.names.len() > 1 {
         Edit::range_deletion(surgical_alias_range(node, alias_idx))
     } else {
-        Edit::range_deletion(source.text().full_lines_range(node.range))
+        whole_line_deletion(source, node.range)
     }
 }
 

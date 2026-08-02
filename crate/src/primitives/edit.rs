@@ -13,6 +13,7 @@ use std::{borrow::Cow, cmp::Ordering};
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_notebook::CellOffsets;
+use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::{primitives::insert_sorted_by_key, source::Source};
@@ -176,6 +177,12 @@ pub(crate) fn splice_reparse<T, E>(
         source.slice(TextRange::new(inner.end(), outer.end())),
     );
     parse(&candidate)
+}
+
+/// The edit clearing every full line `range` sits on, its final line
+/// terminator included.
+pub(crate) fn whole_line_deletion(source: &Source, range: TextRange) -> Edit {
+    Edit::range_deletion(source.text().full_lines_range(range))
 }
 
 /// Returns `Cow::Borrowed` of `source.slice(span)` when every part is
@@ -586,5 +593,14 @@ mod tests {
         assert_eq!(r.start().to_u32(), 0);
         assert_eq!(r.end().to_u32(), 1);
         assert_eq!(text, "a");
+    }
+
+    #[test]
+    fn whole_line_deletion_clears_through_the_line_terminator() {
+        let source = parse("import os\nimport sys\nx = 1\n");
+        let edit = whole_line_deletion(&source, range(10, 16));
+
+        assert_eq!(edit.range(), range(10, 21));
+        assert_eq!(edit.content(), None);
     }
 }

@@ -79,6 +79,11 @@ Config {
                 16,
             ),
         },
+        import_layout: ImportLayoutConfig {
+            enabled: false,
+            merge_members: false,
+            split_plain: false,
+        },
         alphabetize: AlphabetizeConfig {
             enabled: false,
             group_methods: false,
@@ -97,9 +102,6 @@ Config {
             ),
         },
         blank_lines: ToggleOnly {
-            enabled: false,
-        },
-        import_layout: ToggleOnly {
             enabled: false,
         },
         align_imports: AlignmentConfig {

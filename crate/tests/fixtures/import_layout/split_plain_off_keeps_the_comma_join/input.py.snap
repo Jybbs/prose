@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/import_layout/split_plain_off_keeps_the_comma_join/input.py
+---
+import os, sys

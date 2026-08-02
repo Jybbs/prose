@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/notebook/same_module_imports_hold_across_cells/input.ipynb
+---
+from pkg import beta
+
+b = 1
+
+# --- cell 2 ---
+
+from pkg import alpha
+
+a = b + 1

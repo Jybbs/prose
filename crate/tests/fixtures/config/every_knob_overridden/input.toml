@@ -22,7 +22,7 @@ collection-layout         = { collapse = false, enabled = false, explode = false
 docstring-expand          = false
 docstring-frame           = false
 docstring-wrap            = false
-import-layout             = false
+import-layout             = { enabled = false, merge-members = false, split-plain = false }
 legacy-union-syntax       = false
 miscased-constants        = { allow-pattern = "^_", enabled = false }
 reassigned-constants      = { allow = ["LOG_LEVEL"], enabled = false }

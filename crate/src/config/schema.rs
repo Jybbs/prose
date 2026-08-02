@@ -224,6 +224,31 @@ pub enum DocstringStructuredPolicy {
     DocstringLineLength,
 }
 
+/// Configuration for the `import_layout` rule, each facet gating one
+/// statement move and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct ImportLayoutConfig {
+    pub enabled: bool,
+    /// Folds repeated `from <module> import …` statements into one
+    /// statement carrying each member once, ordered as `alphabetize`
+    /// would leave it. `false` leaves each statement on its own line.
+    pub merge_members: bool,
+    /// Breaks a comma-joined `import a, b` into one `import` statement
+    /// per module. `false` keeps the comma-joined form.
+    pub split_plain: bool,
+}
+
+impl Default for ImportLayoutConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            merge_members: true,
+            split_plain: true,
+        }
+    }
+}
+
 /// Settings parsed from `[tool.prose.imports]`.
 #[derive(Debug, Default, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -456,6 +481,7 @@ impl_rule_toggle!(
     BareImportsConfig,
     CallLayoutConfig,
     CollectionLayoutConfig,
+    ImportLayoutConfig,
     MiscasedConstantsConfig,
     ReassignedConstantsConfig,
     SignatureLayoutConfig,

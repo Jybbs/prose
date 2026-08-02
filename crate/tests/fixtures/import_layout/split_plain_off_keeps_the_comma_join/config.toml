@@ -1,0 +1,2 @@
+[rules]
+import-layout = { split-plain = false }

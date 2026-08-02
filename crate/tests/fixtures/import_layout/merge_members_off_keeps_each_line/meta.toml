@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "`merge-members = false` Leaves Each Statement Its Own Line"
+
+description = '''
+Clearing the facet holds two `from pkg import ...` statements **apart** while the comma-joined split and the width split keep running.
+'''

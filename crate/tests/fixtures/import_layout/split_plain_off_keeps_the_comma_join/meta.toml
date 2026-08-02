@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "`split-plain = false` Keeps the Comma-Joined Form"
+
+description = '''
+Clearing the facet leaves `import a, b` **exactly as written** while the width split and the member merge keep running.
+'''

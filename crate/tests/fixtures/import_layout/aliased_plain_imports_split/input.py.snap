@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/import_layout/aliased_plain_imports_split/input.py
+---
+import json as parser
+import re as regex

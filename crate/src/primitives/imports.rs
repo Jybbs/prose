@@ -110,6 +110,11 @@ pub(crate) fn import_sort_key<'a>(
     })
 }
 
+/// True for an `import` or `from`-import statement.
+pub(crate) fn is_import(stmt: &Stmt) -> bool {
+    stmt.is_import_stmt() || stmt.is_import_from_stmt()
+}
+
 /// Slot ranges of every import run across a sectioned body, each run
 /// offset to absolute slot indices so it never spans a section divider.
 /// The unit `group-imports` partitions and `alphabetize` sorts, one run
@@ -136,11 +141,6 @@ fn is_first_party(name: &str, first_party: &[String]) -> bool {
 /// True for an absolute `from __future__ import …` statement.
 fn is_future(node: &StmtImportFrom) -> bool {
     node.level == 0 && node.module.as_deref() == Some(FUTURE_MODULE)
-}
-
-/// True for an `import` or `from`-import statement.
-fn is_import(stmt: &Stmt) -> bool {
-    stmt.is_import_stmt() || stmt.is_import_from_stmt()
 }
 
 /// Returns the alphabetically least alias name in a bare import's
