@@ -61,7 +61,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "default": true,
           "type": "boolean"
         },
-        "group-constants": {
+        "group-subcategories": {
           "default": true,
           "description": "Clusters each band by subcategory, the type aliases first, then\nthe `SCREAMING_CASE` constants, then the remaining module state,\nbefore sorting by name within each. `false` sorts by tier and\nname alone.",
           "type": "boolean"
@@ -138,13 +138,8 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "CollectionLayoutConfig": {
-      "description": "Configuration for the `collection_layout` rule, each shape facet\ngating one move and defaulting `true`.",
+      "description": "Configuration for the `collection_layout` rule, each facet gating\none shape decision and defaulting `true`.",
       "properties": {
-        "collapse": {
-          "default": true,
-          "description": "Joins a fitting multi-line literal, subscript, comprehension, or\ndict key back to one line. `false` freezes those shapes where they\nsit.",
-          "type": "boolean"
-        },
         "enabled": {
           "default": true,
           "type": "boolean"
@@ -152,6 +147,11 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "explode": {
           "default": true,
           "description": "Expands an overflowing or over-count collection to one entry per\nline. `false` suppresses every expansion and leaves the count cap\ninert.",
+          "type": "boolean"
+        },
+        "keep-multiline-literals": {
+          "default": true,
+          "description": "Holds a literal the author laid out as a flush bracketed column\nof two or more entries. `false` joins one whose single-line form\nfits the budget, and every other break rejoins either way.",
           "type": "boolean"
         },
         "max-atomics": {
@@ -246,6 +246,46 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "description": "Constant names exempted from the lint, such as old-style bare\naliases.",
           "format": "regex",
           "type": "string"
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "ModernizeAnnotationsConfig": {
+      "description": "Configuration for the `modernize_annotations` rule, each facet\ngating one rewrite and defaulting `true`.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "rewrite-generics": {
+          "default": true,
+          "description": "Converts a `typing` generic to the builtin PEP 585 gave it, so\n`List[int]` reads as `list[int]`. Runs on `target-version` 3.9\nand higher, and `false` leaves every `typing` generic in place.",
+          "type": "boolean"
+        },
+        "rewrite-unions": {
+          "default": true,
+          "description": "Rewrites `Optional[X]` and `Union[X, Y]` to the PEP 604 `X | None`\nand `X | Y` forms. Runs on `target-version` 3.10 and higher, and\n`false` leaves every legacy union in place.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "PruneInertImportsConfig": {
+      "description": "Configuration for the `prune_inert_imports` rule, each facet gating\none prune and defaulting `true`.",
+      "properties": {
+        "drop-duplicates": {
+          "default": true,
+          "description": "Drops an import rebinding a name an earlier import already bound\nto the same source. `false` keeps every repeat.",
+          "type": "boolean"
+        },
+        "drop-unreferenced": {
+          "default": true,
+          "description": "Drops an import binding a name nothing references, where the\nbinding is not marked for re-export, read by a `del` or a quoted\nannotation, or bound in a package `__init__.py`, where it is\nreported instead. `false` leaves every unreferenced import in\nplace and reports none of them.",
+          "type": "boolean"
         },
         "enabled": {
           "default": true,
@@ -418,7 +458,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           ],
           "default": {
             "enabled": true,
-            "group-constants": true,
+            "group-subcategories": true,
             "max-tiers": 2
           }
         },
@@ -475,9 +515,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             }
           ],
           "default": {
-            "collapse": true,
             "enabled": true,
             "explode": true,
+            "keep-multiline-literals": true,
             "max-atomics": 8,
             "max-dict-entries": 3,
             "wrap-dict-entries": true
@@ -550,19 +590,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "split-plain": true
           }
         },
-        "legacy-union-syntax": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/ToggleOnly"
-            }
-          ],
-          "default": {
-            "enabled": true
-          }
-        },
         "line-overflow": {
           "anyOf": [
             {
@@ -587,6 +614,36 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           ],
           "default": {
             "allow-pattern": "",
+            "enabled": true
+          }
+        },
+        "modernize-annotations": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ModernizeAnnotationsConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "rewrite-generics": true,
+            "rewrite-unions": true
+          }
+        },
+        "prune-inert-imports": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PruneInertImportsConfig"
+            }
+          ],
+          "default": {
+            "drop-duplicates": true,
+            "drop-unreferenced": true,
             "enabled": true
           }
         },
@@ -711,19 +768,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           }
         },
         "unsorted-positionals": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/ToggleOnly"
-            }
-          ],
-          "default": {
-            "enabled": true
-          }
-        },
-        "unused-future-annotations": {
           "anyOf": [
             {
               "type": "boolean"
@@ -870,7 +914,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "band-constants": {
           "enabled": true,
-          "group-constants": true,
+          "group-subcategories": true,
           "max-tiers": 2
         },
         "bare-imports": {
@@ -887,9 +931,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "max-args": 3
         },
         "collection-layout": {
-          "collapse": true,
           "enabled": true,
           "explode": true,
+          "keep-multiline-literals": true,
           "max-atomics": 8,
           "max-dict-entries": 3,
           "wrap-dict-entries": true
@@ -911,14 +955,21 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "merge-members": true,
           "split-plain": true
         },
-        "legacy-union-syntax": {
-          "enabled": true
-        },
         "line-overflow": {
           "enabled": true
         },
         "miscased-constants": {
           "allow-pattern": "",
+          "enabled": true
+        },
+        "modernize-annotations": {
+          "enabled": true,
+          "rewrite-generics": true,
+          "rewrite-unions": true
+        },
+        "prune-inert-imports": {
+          "drop-duplicates": true,
+          "drop-unreferenced": true,
           "enabled": true
         },
         "reassigned-constants": {
@@ -952,9 +1003,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true
         },
         "unsorted-positionals": {
-          "enabled": true
-        },
-        "unused-future-annotations": {
           "enabled": true
         }
       }

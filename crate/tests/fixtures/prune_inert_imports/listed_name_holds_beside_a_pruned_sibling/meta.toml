@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Listed Name Holds While Its Sibling Prunes"
+
+description = '''
+`__all__` publishes `dumps` and says nothing of `loads`, and neither is read inside the module. **The listed name holds its slot on the line while the unlisted one prunes off it.**
+'''

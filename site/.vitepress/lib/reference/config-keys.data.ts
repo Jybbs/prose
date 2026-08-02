@@ -3,15 +3,13 @@ import { defineLoader } from 'vitepress'
 import { getRenderer } from '../markdown/renderer'
 import * as paths      from '../shared/paths'
 
-import { configRow, type ConfigRow, type SchemaProps } from '../shared/rule-schema'
+import { configRow, NESTED_TABLES, type ConfigRow, type SchemaProps } from '../shared/rule-schema'
 
 export interface ConfigKeys {
   cache   : readonly ConfigRow[]
   imports : readonly ConfigRow[]
   top     : readonly ConfigRow[]
 }
-
-const NESTED = new Set(['cache', 'imports', 'rules'])
 
 const root = paths.repoRoot(import.meta.url)
 
@@ -27,7 +25,7 @@ export default defineLoader({
 
     const rows = (props: SchemaProps): readonly ConfigRow[] =>
       Object.entries(props)
-        .filter(([key]) => !NESTED.has(key))
+        .filter(([key]) => !NESTED_TABLES.has(key))
         .toSorted(([a], [b]) => a.localeCompare(b))
         .map(([key, prop]) => configRow(md, key, prop, prop.default ?? null))
 

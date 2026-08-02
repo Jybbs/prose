@@ -1,15 +1,25 @@
 //! Classifies import statements into the canonical group order
 //! `__future__` → bare → external `from` → local-package, finds the runs
 //! of adjacent imports the ordering rules act on, builds the composite
-//! sort key ordering a run within and across those groups, and counts the
-//! canonical blank lines dividing two imports. First-party detection
+//! sort key ordering a run within and across those groups, counts the
+//! canonical blank lines dividing two imports, and shapes the deletions
+//! that drop the aliases a rule has left unread. First-party detection
 //! reads the package-name list from `[tool.prose.imports]`.
 
 use std::ops::Range;
 
+use ruff_diagnostics::Edit;
 use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
+use ruff_source_file::LineRanges;
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::primitives::{orderer::runs_where, sections::Sections};
+use crate::{
+    primitives::{
+        comments::leading_comment_block, edit::whole_line_deletion, orderer::runs_where,
+        sections::Sections,
+    },
+    source::Source,
+};
 
 const FUTURE_ANNOTATIONS: &str = "annotations";
 const FUTURE_MODULE: &str = "__future__";
@@ -110,9 +120,53 @@ pub(crate) fn import_sort_key<'a>(
     })
 }
 
+/// True for an absolute `from __future__ import …` statement.
+pub(crate) fn is_future(node: &StmtImportFrom) -> bool {
+    node.level == 0 && node.module.as_deref() == Some(FUTURE_MODULE)
+}
+
 /// True for an `import` or `from`-import statement.
 pub(crate) fn is_import(stmt: &Stmt) -> bool {
     stmt.is_import_stmt() || stmt.is_import_from_stmt()
+}
+
+/// The deletions dropping every alias of an import statement that
+/// `keep` rejects, empty when every alias survives, when the statement
+/// shares its lines with other code, or when a comment sits inside it.
+///
+/// A statement losing all of its aliases goes whole, taking its full
+/// lines. One losing a subset keeps the survivors byte-for-byte, each
+/// deletion covering one run of dropped aliases together with the
+/// separator binding it to the survivor beside it.
+pub(crate) fn prune_import_aliases(
+    source: &Source,
+    stmt: TextRange,
+    names: &[Alias],
+    keep: impl Fn(usize) -> bool,
+) -> Vec<Edit> {
+    let kept: Vec<usize> = (0..names.len()).filter(|&index| keep(index)).collect();
+    if kept.len() == names.len() || !stands_alone(source, stmt) || source.intersects_comment(stmt) {
+        return Vec::new();
+    }
+    let Some(&last_kept) = kept.last() else {
+        return if comment_leads(source, stmt) {
+            Vec::new()
+        } else {
+            vec![whole_line_deletion(source, stmt)]
+        };
+    };
+    let starts = std::iter::once(0).chain(kept.iter().map(|&index| index + 1));
+    let ends = kept.iter().copied().chain(std::iter::once(names.len()));
+    starts
+        .zip(ends)
+        .filter(|&(start, end)| start < end)
+        .map(|(start, end)| {
+            Edit::range_deletion(match names.get(end) {
+                Some(survivor) => TextRange::new(names[start].start(), survivor.start()),
+                None => TextRange::new(names[last_kept].end(), names[end - 1].end()),
+            })
+        })
+        .collect()
 }
 
 /// Slot ranges of every import run across a sectioned body, each run
@@ -131,16 +185,25 @@ pub(crate) fn sectioned_import_runs(sections: &Sections, body: &[Stmt]) -> Vec<R
         .collect()
 }
 
+/// True when an own-line comment sits on the line directly above
+/// `stmt`, describing the statement a whole-line deletion removes.
+fn comment_leads(source: &Source, stmt: TextRange) -> bool {
+    let text = source.text();
+    let line_start = text.line_start(stmt.start());
+    line_start > TextSize::default()
+        && leading_comment_block(
+            source,
+            text.line_start(line_start - TextSize::from(1)),
+            line_start,
+        )
+        .is_some()
+}
+
 /// True when the root package of `name` (the substring up to the
 /// first `.`) appears in `first_party`.
 fn is_first_party(name: &str, first_party: &[String]) -> bool {
     let root = name.split_once('.').map_or(name, |(root, _)| root);
     first_party.iter().any(|p| p == root)
-}
-
-/// True for an absolute `from __future__ import …` statement.
-fn is_future(node: &StmtImportFrom) -> bool {
-    node.level == 0 && node.module.as_deref() == Some(FUTURE_MODULE)
 }
 
 /// Returns the alphabetically least alias name in a bare import's
@@ -153,11 +216,23 @@ fn least_alias(names: &[Alias]) -> &str {
         .expect("import binds at least one name")
 }
 
+/// True when `stmt` holds its lines alone, carrying only whitespace
+/// ahead of it and only whitespace or a trailing comment behind it.
+fn stands_alone(source: &Source, stmt: TextRange) -> bool {
+    let lines = source.text().full_lines_range(stmt);
+    let before = source.slice(TextRange::new(lines.start(), stmt.start()));
+    let after = source
+        .slice(TextRange::new(stmt.end(), lines.end()))
+        .trim_start();
+    before.trim().is_empty() && (after.is_empty() || after.starts_with('#'))
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
 
     use super::*;
+    use crate::primitives::edit::apply_edits;
     use crate::primitives::orderer::member_blocks;
     use crate::testing::parse;
 
@@ -281,6 +356,61 @@ mod tests {
         let s = parse("import sys, os, abc\n");
         let import = s.ast().body[0].as_import_stmt().expect("import");
         assert_eq!(least_alias(&import.names), "abc");
+    }
+
+    #[rstest]
+    #[case::sole_alias("from typing import Optional\n", &[0], "")]
+    #[case::sole_alias_with_trailing_comment("from typing import Optional  # noqa\n", &[0], "")]
+    #[case::every_alias("from typing import Optional, cast\n", &[0, 1], "")]
+    #[case::leading("from typing import Optional, cast\n", &[0], "from typing import cast\n")]
+    #[case::trailing("from typing import cast, Optional\n", &[1], "from typing import cast\n")]
+    #[case::interior("from typing import a, b, c\n", &[1], "from typing import a, c\n")]
+    #[case::leading_run("from typing import a, b, c\n", &[0, 1], "from typing import c\n")]
+    #[case::trailing_run("from typing import a, b, c\n", &[1, 2], "from typing import a\n")]
+    #[case::scattered("from typing import a, b, c\n", &[0, 2], "from typing import b\n")]
+    #[case::nothing_dropped("from typing import a, b\n", &[], "from typing import a, b\n")]
+    #[case::bare_import("import typing, os\n", &[0], "import os\n")]
+    #[case::leads_its_line("import typing; x = 1\n", &[0], "import typing; x = 1\n")]
+    #[case::follows_other_code("x = 1; import typing\n", &[0], "x = 1; import typing\n")]
+    #[case::parenthesized(
+        "from typing import (\n    a,\n    b,\n)\n",
+        &[0],
+        "from typing import (\n    b,\n)\n"
+    )]
+    #[case::interior_comment(
+        "from typing import (\n    a,\n    # keep b around\n    b,\n)\n",
+        &[0],
+        "from typing import (\n    a,\n    # keep b around\n    b,\n)\n"
+    )]
+    #[case::leading_comment_holds_the_statement(
+        "# loaded for the side effect\nimport typing\n",
+        &[0],
+        "# loaded for the side effect\nimport typing\n"
+    )]
+    #[case::leading_comment_leaves_a_partial_prune_alone(
+        "# the typing pair\nfrom typing import a, b\n",
+        &[0],
+        "# the typing pair\nfrom typing import b\n"
+    )]
+    fn prune_import_aliases_drops_each_run_with_the_separator_binding_it(
+        #[case] src: &str,
+        #[case] dropped: &[usize],
+        #[case] expected: &str,
+    ) {
+        let source = parse(src);
+        let (stmt, names) = source
+            .ast()
+            .body
+            .iter()
+            .find_map(|stmt| match stmt {
+                Stmt::Import(node) => Some((stmt, &node.names)),
+                Stmt::ImportFrom(node) => Some((stmt, &node.names)),
+                _ => None,
+            })
+            .expect("the source carries an import");
+        let edits = prune_import_aliases(&source, stmt.range(), names, |i| !dropped.contains(&i));
+        let pruned = apply_edits(source.text(), edits).expect("the deletions do not overlap");
+        assert_eq!(pruned, expected);
     }
 
     #[test]

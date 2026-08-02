@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/prune_inert_imports/asname_directive_still_removed/input.py
+---
+prune-inert-imports@0..45

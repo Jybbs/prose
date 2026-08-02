@@ -2,7 +2,7 @@ cascade = [{"name": "alice_wonderland_the_explorer", "role": "administrator", "e
 tiered_dict = {"primary_database": {"host": "very-long-hostname.example.com", "port": 5432, "username": "admin", "password": "secret"}, "cache": {"ttl": 60}}
 shallow_dict_in_dict = {"connection": {"host": "localhost", "port": 5432}, "cache": {"ttl": 60, "size": 1024}}
 walks_through_singleton = [{"key_alpha": 1, "key_beta": 2, "key_gamma": 3, "key_delta": 4, "key_epsilon": 5, "key_zeta": 6}]
-outer_collapses_with_inner = [
+outer_holds_with_inner = [
     1,
     [
         2,
@@ -10,7 +10,7 @@ outer_collapses_with_inner = [
     ],
     4
 ]
-outer_pinned_inner_collapses = [
+outer_pinned_inner_holds = [
     "first long string that pushes past the inline-form budget for the outer list",
     [
         2,

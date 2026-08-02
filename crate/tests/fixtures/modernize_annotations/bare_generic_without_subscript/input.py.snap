@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/bare_generic_without_subscript/input.py
+---
+
+
+def total(values: list) -> int:
+    return len(values)

@@ -1,2 +1,2 @@
 [harness]
-rules = ["unused-future-annotations", "align-imports"]
+rules = ["prune-inert-imports", "align-imports"]

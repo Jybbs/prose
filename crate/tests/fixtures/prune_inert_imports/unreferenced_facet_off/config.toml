@@ -1,0 +1,2 @@
+[rules]
+prune-inert-imports = { drop-unreferenced = false }

@@ -13,7 +13,6 @@ use std::{borrow::Cow, cmp::Ordering};
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_notebook::CellOffsets;
-use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::{primitives::insert_sorted_by_key, source::Source};
@@ -180,9 +179,11 @@ pub(crate) fn splice_reparse<T, E>(
 }
 
 /// The edit clearing every full line `range` sits on, its final line
-/// terminator included.
+/// terminator included, held back from the newline closing a notebook
+/// cell so the deletion empties that cell rather than merging it into
+/// the next.
 pub(crate) fn whole_line_deletion(source: &Source, range: TextRange) -> Edit {
-    Edit::range_deletion(source.text().full_lines_range(range))
+    Edit::range_deletion(source.full_lines_within_cell(range))
 }
 
 /// Returns `Cow::Borrowed` of `source.slice(span)` when every part is

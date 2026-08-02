@@ -5,19 +5,6 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
 ---
 [
   {
-    "code": "bare-imports",
-    "end_location": {
-      "column": 10,
-      "row": 1
-    },
-    "fix": null,
-    "location": {
-      "column": 8,
-      "row": 1
-    },
-    "message": "Bare import `os` reaches 1 of its attributes. Rewrite as `from os import ...` naming only the symbols this module uses"
-  },
-  {
     "code": "miscased-constants",
     "end_location": {
       "column": 8,

@@ -5,10 +5,10 @@ input_file: crate/tests/fixtures/notebook/same_module_imports_hold_across_cells/
 ---
 from pkg import beta
 
-b = 1
+b = beta
 
 # --- cell 2 ---
 
 from pkg import alpha
 
-a = b + 1
+a = alpha + b

@@ -19,7 +19,6 @@ use ruff_python_ast::{
     statement_visitor::{StatementVisitor, walk_body},
 };
 use ruff_python_trivia::indentation_at_offset;
-use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
@@ -129,8 +128,7 @@ impl<'a> Layout<'a> {
         );
         let span = self
             .source
-            .text()
-            .full_lines_range(TextRange::new(body[*lead].start(), body[*last].end()));
+            .full_lines_within_cell(TextRange::new(body[*lead].start(), body[*last].end()));
         if apply_inline_edits(self.source, span, &edits) != self.source.slice(span) {
             self.groups.push(edits);
         }
@@ -250,9 +248,8 @@ fn gathers_cleanly(source: &Source, body: &[Stmt], slots: &[usize]) -> bool {
     let [first, .., last] = slots else {
         return false;
     };
-    let span = source
-        .text()
-        .full_lines_range(TextRange::new(body[*first].start(), body[*last].end()));
+    let span =
+        source.full_lines_within_cell(TextRange::new(body[*first].start(), body[*last].end()));
     source.same_cell(span.start(), span.end()) && !source.intersects_comment(span)
 }
 

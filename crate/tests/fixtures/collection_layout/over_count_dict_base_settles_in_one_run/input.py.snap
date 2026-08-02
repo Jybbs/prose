@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/collection_layout/over_count_dict_base_settles_in_one_run/input.py
+---
+selected = {
+    "alpha": 1,
+    "beta": 2,
+    "gamma": 3,
+    "delta": 4
+}[chosen_key]

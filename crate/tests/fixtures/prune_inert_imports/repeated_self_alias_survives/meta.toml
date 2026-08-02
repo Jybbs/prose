@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Repeated Self-Alias Survives the Duplicate Prune"
+
+description = '''
+`drop-duplicates` reads the same re-export guard as `drop-unreferenced`, so a second `from json import loads as loads` **stays rather than dropping as a repeat**.
+'''

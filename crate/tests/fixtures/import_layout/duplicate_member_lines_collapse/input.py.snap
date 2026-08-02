@@ -4,3 +4,5 @@ expression: snapshot
 input_file: crate/tests/fixtures/import_layout/duplicate_member_lines_collapse/input.py
 ---
 from pkg import alpha
+
+value = alpha
