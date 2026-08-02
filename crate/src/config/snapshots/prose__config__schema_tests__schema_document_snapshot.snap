@@ -438,6 +438,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "max-attributes": 4
           }
         },
+        "bare-super": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
         "blank-lines": {
           "anyOf": [
             {
@@ -878,6 +891,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true,
           "exempt-aliased": true,
           "max-attributes": 4
+        },
+        "bare-super": {
+          "enabled": true
         },
         "blank-lines": {
           "enabled": true

@@ -9,7 +9,30 @@
 
 mod common;
 
-use prose::config::Config;
+use std::path::Path;
+
+use prose::{config::Config, pipeline::Pipeline};
+
+#[test]
+fn every_registered_rule_has_a_config_override() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/config/every_knob_overridden/input.toml");
+    let document: toml::Table = fs_err::read_to_string(&path)
+        .expect("input.toml reads")
+        .parse()
+        .expect("input.toml parses");
+    let rules = document["rules"].as_table().expect("[rules] table");
+    let missing: Vec<String> = Pipeline::known_ids()
+        .iter()
+        .map(ToString::to_string)
+        .filter(|id| !rules.contains_key(id))
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "`every_knob_overridden` omits a per-rule override for: {}",
+        missing.join(", "),
+    );
+}
 
 #[test]
 fn fixtures() {

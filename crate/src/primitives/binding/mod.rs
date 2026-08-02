@@ -192,6 +192,11 @@ impl BindingAnalysis {
             .flat_map(move |s| self.scopes[s.0 as usize].bindings.values().copied())
     }
 
+    /// Returns `true` when any scope in the module binds `name`.
+    pub(crate) fn binds_anywhere(&self, name: &str) -> bool {
+        self.bindings.iter().any(|binding| binding.name == name)
+    }
+
     /// Returns the offset of the earliest recorded write of `binding`.
     pub(crate) fn first_write_offset(&self, binding: BindingId) -> TextSize {
         self.binding(binding).write_offsets[0]
@@ -273,6 +278,14 @@ impl BindingAnalysis {
     pub(crate) fn module_used_bare(&self, name: &str) -> bool {
         self.module_binding(name)
             .is_some_and(|binding| binding.bare_read)
+    }
+
+    /// Returns `true` when the local scope of `stmt` binds `name`.
+    /// `stmt` must be a `Stmt::FunctionDef`, and any other statement
+    /// yields `false`.
+    pub(crate) fn scope_binds(&self, stmt: &Stmt, name: &str) -> bool {
+        self.bindings_in_scope(stmt)
+            .any(|id| self.binding_name(id) == name)
     }
 
     /// Returns the unpack disposition of `binding` when its sole write

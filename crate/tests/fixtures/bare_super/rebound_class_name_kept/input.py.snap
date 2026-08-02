@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/bare_super/rebound_class_name_kept/input.py
+---
+class Base:
+    def total(self):
+        return 0
+
+
+class Child(Base):
+    def total(self, Child):
+        return super(Child, self).total()

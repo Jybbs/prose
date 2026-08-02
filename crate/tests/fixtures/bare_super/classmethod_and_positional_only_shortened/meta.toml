@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `cls` Receiver and a Positional-Only `self` Shorten Alike"
+
+description = '''
+A classmethod naming `cls` and a method whose `self` sits before a `/` marker each shorten, the rewrite reading whichever parameter holds the leading positional slot.
+'''

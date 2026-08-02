@@ -39,6 +39,9 @@ Config {
         shed_parentheses: ToggleOnly {
             enabled: true,
         },
+        bare_super: ToggleOnly {
+            enabled: true,
+        },
         docstring_frame: ToggleOnly {
             enabled: true,
         },

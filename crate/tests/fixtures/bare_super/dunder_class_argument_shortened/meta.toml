@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Explicit `__class__` First Argument Shortens"
+
+description = '''
+A `super(__class__, self)` call shortens the same way the class-name form does, because `__class__` already names the cell the bare form reads.
+'''

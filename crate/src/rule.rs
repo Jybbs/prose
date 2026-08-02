@@ -27,8 +27,8 @@ use crate::{
     rules::{
         align_colons::AlignColons, align_comparisons::AlignComparisons, align_equals::AlignEquals,
         align_imports::AlignImports, align_match_case::AlignMatchCase, alphabetize::Alphabetize,
-        band_constants::BandConstants, bare_imports::BareImports, blank_lines::BlankLines,
-        call_layout::CallLayout, collection_layout::CollectionLayout,
+        band_constants::BandConstants, bare_imports::BareImports, bare_super::BareSuper,
+        blank_lines::BlankLines, call_layout::CallLayout, collection_layout::CollectionLayout,
         docstring_expand::DocstringExpand, docstring_frame::DocstringFrame,
         docstring_wrap::DocstringWrap, group_imports::GroupImports, import_layout::ImportLayout,
         line_overflow::LineOverflow, miscased_constants::MiscasedConstants,
@@ -373,6 +373,7 @@ register_rules! {
     "modernize-annotations":     modernize_annotations:     ModernizeAnnotationsConfig => ModernizeAnnotations    => [] => "modernize a legacy `typing` annotation to its builtin or PEP 604 form",
     "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly                 => StripTrailingCommas     => [] => "strip trailing comma",
     "shed-parentheses":          shed_parentheses:          ToggleOnly                 => ShedParentheses         => [] => "shed a redundant grouping parenthesis pair",
+    "bare-super":                bare_super:                ToggleOnly                 => BareSuper               => [] => "rewrite a parameterized `super()` call to the bare form",
     "docstring-frame":           docstring_frame:           ToggleOnly                 => DocstringFrame          => [] => "canonicalize docstring quotes and frame the opener and closer on their own lines",
     "docstring-expand":          docstring_expand:          ToggleOnly                 => DocstringExpand         => ["docstring-frame"] => "expand single-line docstring to multi-line form",
     "group-imports":             group_imports:             ToggleOnly                 => GroupImports            => [] => "group imports into bare, external, and local sections",

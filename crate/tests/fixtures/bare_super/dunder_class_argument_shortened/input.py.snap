@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/bare_super/dunder_class_argument_shortened/input.py
+---
+class Node:
+    def clone(self):
+        return self
+
+
+class Leaf(Node):
+    def clone(self):
+        return super().clone()

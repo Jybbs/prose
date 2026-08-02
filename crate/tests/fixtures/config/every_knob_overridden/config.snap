@@ -37,7 +37,10 @@ Config {
             enabled: false,
         },
         shed_parentheses: ToggleOnly {
-            enabled: true,
+            enabled: false,
+        },
+        bare_super: ToggleOnly {
+            enabled: false,
         },
         docstring_frame: ToggleOnly {
             enabled: false,
@@ -46,7 +49,7 @@ Config {
             enabled: false,
         },
         group_imports: ToggleOnly {
-            enabled: true,
+            enabled: false,
         },
         collection_layout: CollectionLayoutConfig {
             enabled: false,
@@ -174,7 +177,7 @@ Config {
             enabled: false,
         },
         line_overflow: ToggleOnly {
-            enabled: true,
+            enabled: false,
         },
     },
     target_version: Some(

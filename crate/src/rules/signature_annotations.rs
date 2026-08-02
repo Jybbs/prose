@@ -19,7 +19,10 @@ use ruff_text_size::{Ranged, TextSize};
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::call_keywords::{keyword_args, module_call_params, resolve_call_params},
+    primitives::{
+        call_keywords::{keyword_args, module_call_params, resolve_call_params},
+        params::first_positional,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -147,11 +150,7 @@ impl Walker<'_> {
     fn process_def(&mut self, fd: &StmtFunctionDef) {
         let params: &Parameters = &fd.parameters;
         let params_start = params.range().start();
-        let receiver = params
-            .posonlyargs
-            .first()
-            .or(params.args.first())
-            .map(|p| p.range().start());
+        let receiver = first_positional(params).map(|p| p.range().start());
         for param in params.iter_non_variadic_params() {
             if param.annotation().is_some() {
                 continue;

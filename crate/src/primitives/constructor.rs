@@ -2,15 +2,12 @@
 //! field-ordered constructor generator turns the body's annotated field
 //! run into that constructor's positional-or-keyword parameters.
 
-use ruff_python_ast::{
-    Arguments, Stmt, StmtAnnAssign, StmtClassDef,
-    helpers::{any_over_expr, is_const_true},
-};
+use ruff_python_ast::{Stmt, StmtAnnAssign, StmtClassDef, helpers::any_over_expr};
 use ruff_text_size::{Ranged, TextSize};
 
 use crate::primitives::{
     binding::{ann_assign_with_named_field, is_classvar, tail_identifier, type_head_identifier},
-    decorator::{decorator_arguments, decorator_simple_name},
+    decorator::{declares_true, decorator_arguments, decorator_simple_name},
 };
 
 /// The sort key of a class-body statement read as one of the parameters
@@ -43,15 +40,6 @@ pub(crate) fn keyword_field_start(class: &StmtClassDef) -> TextSize {
         .map_or(class.end(), Ranged::end)
 }
 
-/// True when a generator's argument list carries an exact
-/// `kw_only=True`, the form that makes every generated parameter
-/// keyword-only. A non-literal value leaves the run pinned.
-fn declares_kw_only(arguments: Option<&Arguments>) -> bool {
-    arguments
-        .and_then(|args| args.find_keyword("kw_only"))
-        .is_some_and(|kw| is_const_true(&kw.value))
-}
-
 /// True when the class header names a constructor generator that binds
 /// the annotated field run by position, named by either a base class or
 /// a decorator. Each name resolves on its tail segment, so a dotted or
@@ -62,12 +50,12 @@ fn generates_positional_init(class: &StmtClassDef) -> bool {
         .bases()
         .iter()
         .any(|base| matches!(type_head_identifier(base), Some("NamedTuple" | "Struct")));
-    (based && !declares_kw_only(class.arguments.as_deref()))
+    (based && !declares_true(class.arguments.as_deref(), "kw_only"))
         || class.decorator_list.iter().any(|decorator| {
             matches!(
                 decorator_simple_name(decorator),
                 Some("attributes" | "attrs" | "dataclass" | "define" | "frozen" | "mutable" | "s")
-            ) && !declares_kw_only(decorator_arguments(decorator))
+            ) && !declares_true(decorator_arguments(decorator), "kw_only")
         })
 }
 

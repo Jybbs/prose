@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/bare_super/spread_arguments_collapse/input.py
+---
+class Handler:
+    def dispatch(self, event):
+        return event
+
+
+class Logger(Handler):
+    def dispatch(self, event):
+        return super().dispatch(event)
