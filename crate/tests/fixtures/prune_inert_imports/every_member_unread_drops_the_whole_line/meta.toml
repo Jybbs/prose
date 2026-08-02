@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Line Whose Every Member Is Unread Goes Whole"
+
+description = '''
+Neither `Any` nor `Final` is referenced, so every alias on the `typing` line is pruned and **the line goes rather than surviving empty**.
+'''

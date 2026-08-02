@@ -1,6 +1,6 @@
 ---
 caption : "Drops a redundant `-> None` return annotation, since an omitted one already reads as returning nothing."
-related : [signature-annotations, signature-layout, unused-future-annotations]
+related : [prune-inert-imports, signature-annotations, signature-layout]
 layout  : doc
 ---
 

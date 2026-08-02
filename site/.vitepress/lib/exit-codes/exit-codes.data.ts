@@ -25,7 +25,7 @@ interface ExitCodeSource {
 const rulesDirectory = rulesDir(import.meta.url)
 
 const SHIPPED_LINTS = discoverRuleSlugs(rulesDirectory)
-  .filter(rule => rule.category === 'lint')
+  .filter(rule => rule.lints)
   .map(rule => `\`${rule.slug}\``)
   .join(', ')
 

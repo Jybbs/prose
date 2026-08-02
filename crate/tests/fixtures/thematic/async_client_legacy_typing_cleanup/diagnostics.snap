@@ -29,6 +29,8 @@ modernize-annotations@59..125
 modernize-annotations@618..619
 modernize-annotations@739..756
 modernize-annotations@907..936
+prune-inert-imports@0..35
+prune-inert-imports@138..164
 shed-parentheses@1338..1339
 shed-parentheses@1358..1359
 signature-annotations@1494..1499
@@ -43,4 +45,3 @@ strip-none-return@680..688
 strip-trailing-commas@438..439
 unsorted-positionals@656..680
 unsorted-positionals@874..975
-unused-future-annotations@0..35

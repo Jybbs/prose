@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/repeat_and_unread_member_both_go/input.py
+---
+import os
+from typing import Final
+
+path: str = os.getcwd()
+label: Final = "x"

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Relative Star Import Holds Its Line"
+
+description = '''
+A relative `from . import *` binds the same unenumerable name set an absolute star does. **The line holds**, its qualified path leading with the relative segment.
+'''

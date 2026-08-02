@@ -11,10 +11,10 @@ use std::ops::Range;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
-    primitives::{orderer::runs_where, sections::Sections},
+    primitives::{comments::leading_comment_block, orderer::runs_where, sections::Sections},
     source::Source,
 };
 
@@ -118,13 +118,18 @@ pub(crate) fn import_sort_key<'a>(
 }
 
 /// The deletions dropping every alias of an import statement that
-/// `keep` rejects, empty when every alias survives or when the statement
-/// shares its lines with other code.
+/// `keep` rejects, empty when every alias survives, when the statement
+/// shares its lines with other code, or when a comment sits inside it.
 ///
 /// A statement losing all of its aliases goes whole, taking its full
 /// lines. One losing a subset keeps the survivors byte-for-byte, each
 /// deletion covering one run of dropped aliases together with the
 /// separator binding it to the survivor beside it.
+/// True for an absolute `from __future__ import …` statement.
+pub(crate) fn is_future(node: &StmtImportFrom) -> bool {
+    node.level == 0 && node.module.as_deref() == Some(FUTURE_MODULE)
+}
+
 pub(crate) fn prune_import_aliases(
     source: &Source,
     stmt: TextRange,
@@ -132,11 +137,15 @@ pub(crate) fn prune_import_aliases(
     keep: impl Fn(usize) -> bool,
 ) -> Vec<Edit> {
     let kept: Vec<usize> = (0..names.len()).filter(|&index| keep(index)).collect();
-    if kept.len() == names.len() || !stands_alone(source, stmt) {
+    if kept.len() == names.len() || !stands_alone(source, stmt) || source.intersects_comment(stmt) {
         return Vec::new();
     }
     let Some(&last_kept) = kept.last() else {
-        return vec![Edit::range_deletion(source.text().full_lines_range(stmt))];
+        return if comment_leads(source, stmt) {
+            Vec::new()
+        } else {
+            vec![Edit::range_deletion(source.full_lines_within_cell(stmt))]
+        };
     };
     let starts = std::iter::once(0).chain(kept.iter().map(|&index| index + 1));
     let ends = kept.iter().copied().chain(std::iter::once(names.len()));
@@ -168,16 +177,25 @@ pub(crate) fn sectioned_import_runs(sections: &Sections, body: &[Stmt]) -> Vec<R
         .collect()
 }
 
+/// True when an own-line comment sits on the line directly above
+/// `stmt`, describing the statement a whole-line deletion removes.
+fn comment_leads(source: &Source, stmt: TextRange) -> bool {
+    let text = source.text();
+    let line_start = text.line_start(stmt.start());
+    line_start > TextSize::default()
+        && leading_comment_block(
+            source,
+            text.line_start(line_start - TextSize::from(1)),
+            line_start,
+        )
+        .is_some()
+}
+
 /// True when the root package of `name` (the substring up to the
 /// first `.`) appears in `first_party`.
 fn is_first_party(name: &str, first_party: &[String]) -> bool {
     let root = name.split_once('.').map_or(name, |(root, _)| root);
     first_party.iter().any(|p| p == root)
-}
-
-/// True for an absolute `from __future__ import …` statement.
-fn is_future(node: &StmtImportFrom) -> bool {
-    node.level == 0 && node.module.as_deref() == Some(FUTURE_MODULE)
 }
 
 /// True for an `import` or `from`-import statement.
@@ -355,6 +373,21 @@ mod tests {
         "from typing import (\n    a,\n    b,\n)\n",
         &[0],
         "from typing import (\n    b,\n)\n"
+    )]
+    #[case::interior_comment(
+        "from typing import (\n    a,\n    # keep b around\n    b,\n)\n",
+        &[0],
+        "from typing import (\n    a,\n    # keep b around\n    b,\n)\n"
+    )]
+    #[case::leading_comment_holds_the_statement(
+        "# loaded for the side effect\nimport typing\n",
+        &[0],
+        "# loaded for the side effect\nimport typing\n"
+    )]
+    #[case::leading_comment_leaves_a_partial_prune_alone(
+        "# the typing pair\nfrom typing import a, b\n",
+        &[0],
+        "# the typing pair\nfrom typing import b\n"
     )]
     fn prune_import_aliases_drops_each_run_with_the_separator_binding_it(
         #[case] src: &str,

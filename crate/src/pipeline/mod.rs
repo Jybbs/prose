@@ -818,6 +818,7 @@ mod tests {
         config.rules.line_overflow.enabled = false;
         config.rules.miscased_constants.enabled = false;
         config.rules.modernize_annotations.enabled = false;
+        config.rules.prune_inert_imports.enabled = false;
         config.rules.reassigned_constants.enabled = false;
         config.rules.shed_parentheses.enabled = false;
         config.rules.signature_annotations.enabled = false;
@@ -828,7 +829,6 @@ mod tests {
         config.rules.strip_none_return.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;
         config.rules.unsorted_positionals.enabled = false;
-        config.rules.unused_future_annotations.enabled = false;
         let pipeline = Pipeline::with_defaults(&config);
         assert!(pipeline.is_empty());
     }

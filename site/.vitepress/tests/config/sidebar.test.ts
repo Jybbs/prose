@@ -16,6 +16,7 @@ const rules: readonly DiscoveredRule[] = [
     category : 'auto-fix',
     family   : 'alignment',
     href     : '/rules/alignment/align-equals',
+    lints    : false,
     related  : [],
     slug     : 'align-equals'
   },
@@ -24,6 +25,7 @@ const rules: readonly DiscoveredRule[] = [
     category : 'auto-fix',
     family   : 'ordering',
     href     : '/rules/ordering/alphabetize',
+    lints    : false,
     related  : [],
     slug     : 'alphabetize'
   }

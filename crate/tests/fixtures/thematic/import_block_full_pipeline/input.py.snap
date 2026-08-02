@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/thematic/import_block_full_pipeline/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/import_block_full_pipeline/input.py
 ---
 import functools as ft
 import numpy     as np
@@ -13,4 +13,4 @@ from typing      import Any
 
 
 def render(text):
-    return text
+    return (requests, np, os, Counter, Any, ft, text)

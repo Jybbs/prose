@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `from x import y as y` Alias Marks a Re-Export"
+
+description = '''
+The PEP 484 redundant-alias form declares `loads` part of the public surface. **The rule holds the import** even though nothing in the module reads it.
+'''
