@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_redundant_base/adjacent_objects_shed_as_one_run/input.py
+---
+class Single:
+    def clear(self):
+        self.data.clear()
+
+
+class Twice(Mapping):
+    def keys(self):
+        return self.data.keys()

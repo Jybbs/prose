@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/shed_redundant_base/starred_and_keyword_headers_kept/input.py
+---
+

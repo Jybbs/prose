@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Empty List Sheds Even Where `object` Is Rebound"
+
+description = '''
+A module that rebinds `object` holds every header naming it as a base, and a header carrying no base at all still sheds its parentheses, since an empty list has nothing to survive either way.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Header Carrying Anything Real Is Left Alone"
+
+description = '''
+A starred base list, a bare `metaclass=` keyword, a double-starred namespace, and a header with no parentheses at all each carry something the rule does not act on, so every one is left as written.
+'''

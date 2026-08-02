@@ -33,11 +33,11 @@ use crate::{
         docstring_wrap::DocstringWrap, group_imports::GroupImports, import_layout::ImportLayout,
         legacy_union_syntax::LegacyUnionSyntax, line_overflow::LineOverflow,
         miscased_constants::MiscasedConstants, reassigned_constants::ReassignedConstants,
-        shed_parentheses::ShedParentheses, signature_annotations::SignatureAnnotations,
-        signature_layout::SignatureLayout, single_use_variables::SingleUseVariables,
-        step_narration::StepNarration, strip_align_padding::StripAlignPadding,
-        strip_none_return::StripNoneReturn, strip_trailing_commas::StripTrailingCommas,
-        unsorted_positionals::UnsortedPositionals,
+        shed_parentheses::ShedParentheses, shed_redundant_base::ShedRedundantBase,
+        signature_annotations::SignatureAnnotations, signature_layout::SignatureLayout,
+        single_use_variables::SingleUseVariables, step_narration::StepNarration,
+        strip_align_padding::StripAlignPadding, strip_none_return::StripNoneReturn,
+        strip_trailing_commas::StripTrailingCommas, unsorted_positionals::UnsortedPositionals,
         unused_future_annotations::UnusedFutureAnnotations,
     },
     source::Source,
@@ -256,6 +256,16 @@ macro_rules! register_rules {
             )*
         }
 
+        impl RuleConfigs {
+            /// Every rule's `enabled` flag cleared.
+            #[cfg(test)]
+            pub(crate) fn all_disabled() -> Self {
+                let mut configs = Self::default();
+                $(configs.$field.enabled = false;)*
+                configs
+            }
+        }
+
         impl JsonSchema for RuleConfigs {
             fn schema_name() -> Cow<'static, str> {
                 Cow::Borrowed("RuleConfigs")
@@ -372,6 +382,7 @@ register_rules! {
     "strip-none-return":         strip_none_return:         ToggleOnly                => StripNoneReturn         => [] => "drop a redundant `-> None` return annotation",
     "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly                => StripTrailingCommas     => [] => "strip trailing comma",
     "shed-parentheses":          shed_parentheses:          ToggleOnly                => ShedParentheses         => [] => "shed a redundant grouping parenthesis pair",
+    "shed-redundant-base":       shed_redundant_base:       ToggleOnly                => ShedRedundantBase       => [] => "shed a redundant `object` base or empty class parentheses",
     "docstring-frame":           docstring_frame:           ToggleOnly                => DocstringFrame          => [] => "canonicalize docstring quotes and frame the opener and closer on their own lines",
     "docstring-expand":          docstring_expand:          ToggleOnly                => DocstringExpand         => ["docstring-frame"] => "expand single-line docstring to multi-line form",
     "group-imports":             group_imports:             ToggleOnly                => GroupImports            => [] => "group imports into bare, external, and local sections",

@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_redundant_base/empty_parentheses_dropped/input.py
+---
+class Marker:
+    kind = "marker"
+
+
+class Sentinel:
+    def __repr__(self):
+        return "<sentinel>"
+
+
+class Spaced:
+    kind = "spaced"

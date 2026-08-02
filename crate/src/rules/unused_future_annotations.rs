@@ -10,13 +10,12 @@ use ruff_python_ast::{
     helpers::any_over_expr,
 };
 use ruff_source_file::LineRanges;
-use ruff_text_size::TextRange;
 
 use crate::{
     config::Config,
     primitives::{
         binding::BindingAnalysis, edit::singleton_groups, imports::future_annotations_alias,
-        walk::any_over_stmts,
+        range::member_deletion_span, walk::any_over_stmts,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -80,11 +79,12 @@ fn annotation_is_unresolved(annotation: &Expr, analysis: &BindingAnalysis) -> bo
 }
 
 fn edit_for(source: &Source, node: &StmtImportFrom, alias_idx: usize) -> Edit {
-    if node.names.len() > 1 {
-        Edit::range_deletion(surgical_alias_range(node, alias_idx))
+    let span = if node.names.len() > 1 {
+        member_deletion_span(node.names.iter(), node.names[alias_idx].range)
     } else {
-        Edit::range_deletion(source.text().full_lines_range(node.range))
-    }
+        source.text().full_lines_range(node.range)
+    };
+    Edit::range_deletion(span)
 }
 
 fn has_any_annotation(body: &[Stmt]) -> bool {
@@ -113,14 +113,6 @@ fn statement_annotations(stmt: &Stmt) -> Vec<&Expr> {
             .chain(returns.as_deref())
             .collect(),
         _ => Vec::new(),
-    }
-}
-
-fn surgical_alias_range(node: &StmtImportFrom, alias_idx: usize) -> TextRange {
-    let target = &node.names[alias_idx];
-    match node.names.get(alias_idx + 1) {
-        Some(next) => TextRange::new(target.range.start(), next.range.start()),
-        None => TextRange::new(node.names[alias_idx - 1].range.end(), target.range.end()),
     }
 }
 

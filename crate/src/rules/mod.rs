@@ -24,6 +24,7 @@ pub(crate) mod line_overflow;
 pub(crate) mod miscased_constants;
 pub(crate) mod reassigned_constants;
 pub(crate) mod shed_parentheses;
+pub(crate) mod shed_redundant_base;
 pub(crate) mod signature_annotations;
 pub(crate) mod signature_layout;
 pub(crate) mod single_use_variables;

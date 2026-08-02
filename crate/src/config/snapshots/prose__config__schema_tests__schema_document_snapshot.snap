@@ -595,6 +595,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
+        "shed-redundant-base": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
         "signature-annotations": {
           "anyOf": [
             {
@@ -902,6 +915,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true
         },
         "shed-parentheses": {
+          "enabled": true
+        },
+        "shed-redundant-base": {
           "enabled": true
         },
         "signature-annotations": {

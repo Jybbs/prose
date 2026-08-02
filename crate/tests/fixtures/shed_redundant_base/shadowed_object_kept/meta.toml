@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Rebound `object` Names a Real Base"
+
+description = '''
+Where the module rebinds `object` ahead of the class, the base names that binding rather than the builtin, so the header is left as written.
+'''

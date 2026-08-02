@@ -341,6 +341,14 @@ impl Source {
             .next()
     }
 
+    /// Returns the end offset of the token preceding `offset`, scanning
+    /// backward over whitespace and comments.
+    pub(crate) fn prev_token_end(&self, offset: TextSize) -> TextSize {
+        self.prev_non_trivia_token(offset)
+            .expect("invariant: a token precedes the scanned offset")
+            .end()
+    }
+
     /// Reparses with replacement source text, preserving the original
     /// name, and carrying `cell_offsets` forward through [`Self::recut_cells`]
     /// so a notebook keeps its cell boundaries across a rule. Diagnostic
@@ -488,7 +496,7 @@ mod tests {
     use ruff_text_size::TextRange;
 
     use super::*;
-    use crate::testing::{assert_send_sync, notebook, parse, range};
+    use crate::testing::{assert_send_sync, first_class, first_def, notebook, parse, range};
 
     /// Replaces `before`'s interior boundaries with `drifts` in order and
     /// its closing offset with `after`'s length, the shape a rule's edits
@@ -766,6 +774,46 @@ mod tests {
     fn parse_error_returns_ruff_parse_error() {
         let result: Result<Source, ParseError> = Source::from_str("def foo(");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn prev_token_end_handles_multi_line_function_signature() {
+        let s = parse("def f(\n    x,\n    y,\n):\n    pass\n");
+        let func = first_def(&s);
+        let end = s.prev_token_end(func.body[0].start());
+        assert!(s.text()[..end.to_usize()].ends_with("):"));
+    }
+
+    #[test]
+    fn prev_token_end_points_after_colon_in_simple_class() {
+        let s = parse("class C:\n    pass\n");
+        let class = first_class(&s);
+        let end = s.prev_token_end(class.body[0].start());
+        assert_eq!(&s.text()[..end.to_usize()], "class C:");
+    }
+
+    #[test]
+    fn prev_token_end_points_after_colon_in_simple_function() {
+        let s = parse("def f():\n    pass\n");
+        let func = first_def(&s);
+        let end = s.prev_token_end(func.body[0].start());
+        assert_eq!(&s.text()[..end.to_usize()], "def f():");
+    }
+
+    #[test]
+    fn prev_token_end_skips_eol_comment_on_header_line() {
+        let s = parse("class C:  # eol\n    pass\n");
+        let class = first_class(&s);
+        let end = s.prev_token_end(class.body[0].start());
+        assert_eq!(&s.text()[..end.to_usize()], "class C:");
+    }
+
+    #[test]
+    fn prev_token_end_skips_own_line_comment_above_body() {
+        let s = parse("class C:\n    # comment\n    pass\n");
+        let class = first_class(&s);
+        let end = s.prev_token_end(class.body[0].start());
+        assert_eq!(&s.text()[..end.to_usize()], "class C:");
     }
 
     #[test]

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Metaclass Keyword Holds the Parentheses Open"
+
+description = '''
+A `metaclass=` keyword is a surviving member of the base list, so the `object` ahead of it goes with its comma while the parentheses stay to carry the keyword.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "The Walk Reaches Every Class Header"
+
+description = '''
+A decorated class, a class carrying PEP 695 type parameters, a class nested in another class body, and a class defined inside a function each shed their `object` base. The parameterized header is the one that reaches back to a `]` rather than to a class name when it takes the space ahead of its parentheses.
+'''

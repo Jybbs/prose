@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_redundant_base/explicit_object_inheritance_dropped/input.py
+---
+class Cache:
+    def clear(self):
+        self.entries.clear()
+
+
+class Registry:
+    def register(self, name):
+        self.entries.append(name)

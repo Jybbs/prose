@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_redundant_base/shadowed_object_kept/input.py
+---
+object = LegacyBase
+
+
+class Consumer(object):
+    def consume(self, value):
+        return value
