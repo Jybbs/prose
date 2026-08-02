@@ -18,9 +18,9 @@ use thiserror::Error;
 use crate::{
     config::{
         AlignmentConfig, AlphabetizeConfig, BandConstantsConfig, BareImportsConfig,
-        CallLayoutConfig, CollectionLayoutConfig, Config, MiscasedConstantsConfig,
-        ReassignedConstantsConfig, SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly,
-        rule_schema,
+        CallLayoutConfig, CollectionLayoutConfig, Config, LineOverflowConfig,
+        MiscasedConstantsConfig, ReassignedConstantsConfig, SignatureLayoutConfig,
+        SingleUseVariablesConfig, ToggleOnly, rule_schema,
     },
     diagnostics::Diagnostic,
     pipeline::Pipeline,
@@ -397,7 +397,7 @@ register_rules! {
     "single-use-variables":      single_use_variables:      SingleUseVariablesConfig  => SingleUseVariables      => [] => "Binding is assigned and used once. Consider inlining",
     "unsorted-positionals":      unsorted_positionals:      ToggleOnly                => UnsortedPositionals     => [] => "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword",
     "signature-annotations":     signature_annotations:     ToggleOnly                => SignatureAnnotations    => [] => "Flag a missing parameter or return type annotation",
-    "line-overflow":             line_overflow:             ToggleOnly                => LineOverflow            => ["strip-align-padding"] => "Flag a line over its length budget that no reshape can bring within",
+    "line-overflow":             line_overflow:             LineOverflowConfig        => LineOverflow            => ["strip-align-padding"] => "Flag a line over its length budget, offering the split form where a string literal can take the break",
 }
 
 #[cfg(test)]

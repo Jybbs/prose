@@ -32,7 +32,7 @@ Config {
             enabled: false,
         },
         shed_parentheses: ToggleOnly {
-            enabled: true,
+            enabled: false,
         },
         docstring_frame: ToggleOnly {
             enabled: false,
@@ -41,7 +41,7 @@ Config {
             enabled: false,
         },
         group_imports: ToggleOnly {
-            enabled: true,
+            enabled: false,
         },
         collection_layout: CollectionLayoutConfig {
             collapse: false,
@@ -88,11 +88,11 @@ Config {
             sort_dunder_lists: false,
         },
         band_constants: BandConstantsConfig {
-            enabled: true,
-            group_constants: true,
+            enabled: false,
+            group_constants: false,
             max_tiers: InlineBudget(
                 Some(
-                    2,
+                    5,
                 ),
             ),
         },
@@ -171,8 +171,9 @@ Config {
         signature_annotations: ToggleOnly {
             enabled: false,
         },
-        line_overflow: ToggleOnly {
-            enabled: true,
+        line_overflow: LineOverflowConfig {
+            enabled: false,
+            suggest_string_splits: false,
         },
     },
     target_version: Some(

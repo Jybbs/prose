@@ -69,12 +69,20 @@ fn every_case_directory_is_well_formed() {
     let mut violations = Vec::new();
     let mut canonical = BTreeMap::<String, usize>::new();
     let mut domains = BTreeSet::<String>::new();
+    let mut cases = BTreeMap::<String, String>::new();
 
     for domain_dir in subdirs(&fixtures) {
         let domain = dir_name(&domain_dir);
         domains.insert(domain.clone());
         for case_dir in subdirs(&domain_dir) {
-            let id = format!("{domain}/{}", dir_name(&case_dir));
+            let case = dir_name(&case_dir);
+            let id = format!("{domain}/{case}");
+            if let Some(first) = cases.insert(case.clone(), domain.clone()) {
+                violations.push(format!(
+                    "{id}: case name is already defined under \"{first}\", and a case \
+                     name must be unique across the whole fixture tree"
+                ));
+            }
             if INPUT_SNAPS
                 .iter()
                 .all(|(input, _)| !case_dir.join(input).is_file())

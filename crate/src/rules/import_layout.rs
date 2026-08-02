@@ -5,7 +5,7 @@
 //! stays untouched, and a lone name whose own line overflows keeps it
 //! rather than splitting further.
 
-use std::{collections::HashMap, ops::Range};
+use std::collections::HashMap;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -21,6 +21,7 @@ use crate::{
     primitives::{
         aligner,
         edit::{narrowed_replacement, singleton_groups},
+        layout::pack,
     },
     rule::{Rule, RuleId},
     rules::align_imports,
@@ -119,7 +120,7 @@ impl<'a> Layout<'a> {
             return;
         }
         let joiner = format!("{}{indent}", self.newline);
-        let rewrite = pack(&widths, prefix_width, self.import_line_length)
+        let rewrite = pack(&widths, prefix_width, 2, self.import_line_length)
             .into_iter()
             .map(|range| format!("{prefix}{}", names[range].join(", ")))
             .collect::<Vec<_>>()
@@ -146,29 +147,6 @@ fn import_prefix(node: &StmtImportFrom) -> String {
         dots = ".".repeat(node.level as usize),
         module = node.module.as_deref().unwrap_or(""),
     )
-}
-
-/// Greedily groups name indices into lines, each opening after the
-/// shared `prefix_width` and packing names (joined by `", "`) up to
-/// `budget`. The first name on every line is always placed, so a name
-/// whose own line overflows still lands rather than splitting away.
-fn pack(widths: &[usize], prefix_width: usize, budget: usize) -> Vec<Range<usize>> {
-    let mut lines = Vec::new();
-    let mut start = 0;
-    let mut line_width = 0;
-    for (i, &width) in widths.iter().enumerate() {
-        if i == start {
-            line_width = prefix_width + width;
-        } else if line_width + 2 + width <= budget {
-            line_width += 2 + width;
-        } else {
-            lines.push(start..i);
-            start = i;
-            line_width = prefix_width + width;
-        }
-    }
-    lines.push(start..widths.len());
-    lines
 }
 
 #[cfg(test)]
@@ -202,25 +180,6 @@ mod tests {
             import_line_length: 10,
         };
         assert!(rule.apply(&source).is_empty());
-    }
-
-    #[test]
-    fn pack_carries_a_lone_overflowing_name_onto_its_own_line() {
-        // prefix 10, budget 14, name widths 8/8: neither pairs onto a
-        // line, so each forced name lands alone despite overflowing.
-        assert_eq!(pack(&[8, 8], 10, 14), vec![0..1, 1..2]);
-    }
-
-    #[test]
-    fn pack_fills_each_line_before_opening_the_next() {
-        // prefix 5, budget 16: 4 then 4 (5+4=9, +2+4=15) fit, 4 more
-        // (15+2+4=21) overflows and opens a line that then takes the 4.
-        assert_eq!(pack(&[4, 4, 4], 5, 16), vec![0..2, 2..3]);
-    }
-
-    #[test]
-    fn pack_keeps_one_line_when_every_name_fits() {
-        assert_eq!(pack(&[1, 1, 1], 5, 80), vec![0..3]);
     }
 
     #[test]
