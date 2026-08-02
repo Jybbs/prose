@@ -9,8 +9,11 @@ use ruff_python_ast::{AnyNodeRef, Comprehension, Expr, ExprDict};
 use ruff_text_size::Ranged;
 use unicode_width::UnicodeWidthStr;
 
-use super::{classify::is_column_shaped, layouter::Layouter};
-use crate::primitives::{inline::single_line_form, layout::is_layoutable};
+use super::{
+    classify::{is_column_shaped, is_multi_entry},
+    layouter::Layouter,
+};
+use crate::primitives::inline::single_line_form;
 
 impl<'a> Layouter<'a> {
     /// Builds the inline form of `expr`, recursively inlining any nested
@@ -29,7 +32,7 @@ impl<'a> Layouter<'a> {
     /// enclosing rejoin fails its line-break check.
     fn write_child(&self, buf: &mut String, expr: &Expr, parent: AnyNodeRef) {
         if self.keep_multiline_literals
-            && is_layoutable(expr)
+            && is_multi_entry(expr)
             && is_column_shaped(self.source.slice(expr.range()))
         {
             buf.push_str(self.slice_with_parens(expr, parent));
@@ -143,9 +146,10 @@ impl<'a> Layouter<'a> {
     }
 
     /// Writes `d`'s inline serialization into `buf` as `{k: v, ...}`,
-    /// emitting `**v` for `None`-keyed unpacking items. `parent` is
-    /// the dict itself, threaded into each child's `write_child` for
-    /// paren recovery on non-collection leaves.
+    /// emitting `**v` for `None`-keyed unpacking items. A key always
+    /// joins whereas a value may hold its column. `parent` is the dict
+    /// itself, threaded into each child for paren recovery on
+    /// non-collection leaves.
     fn write_inline_dict(&self, buf: &mut String, d: &ExprDict, parent: AnyNodeRef) {
         buf.push('{');
         for (i, item) in d.iter().enumerate() {
@@ -154,7 +158,7 @@ impl<'a> Layouter<'a> {
             }
             match &item.key {
                 Some(key) => {
-                    self.write_child(buf, key, parent);
+                    self.write_inline(buf, key, parent);
                     buf.push_str(": ");
                 }
                 None => buf.push_str("**"),

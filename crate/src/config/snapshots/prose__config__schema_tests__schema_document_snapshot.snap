@@ -151,7 +151,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "keep-multiline-literals": {
           "default": true,
-          "description": "Holds a literal the author laid out as a flush bracketed column\nat that shape. `false` joins one whose single-line form fits the\nbudget, and a break falling elsewhere rejoins either way.",
+          "description": "Holds a literal the author laid out as a flush bracketed column\nof two or more entries. `false` joins one whose single-line form\nfits the budget, and every other break rejoins either way.",
           "type": "boolean"
         },
         "max-atomics": {

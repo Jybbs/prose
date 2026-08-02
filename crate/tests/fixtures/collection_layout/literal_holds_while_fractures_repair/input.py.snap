@@ -8,5 +8,6 @@ held_list = [
 ]
 repaired_subscript = registry["primary"]
 repaired_collection_key = {
-    ("x", "y"): "value"
+    ("x", "y"): "value",
+    "second": 2
 }

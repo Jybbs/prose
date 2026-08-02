@@ -11,4 +11,5 @@ repaired_collection_key = {
         "x",
         "y",
     ): "value",
+    "second": 2,
 }

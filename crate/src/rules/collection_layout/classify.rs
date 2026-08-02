@@ -71,6 +71,12 @@ pub(super) fn is_column_shaped(slice: &str) -> bool {
     })
 }
 
+/// True for a literal carrying more than one entry, `requires_expand`
+/// apart from the one-entry `Dict`.
+pub(super) fn is_multi_entry(expr: &Expr) -> bool {
+    requires_expand(expr) && expr.as_dict_expr().is_none_or(|dict| dict.len() > 1)
+}
+
 /// The ASCII-space run `gap` opens with when those spaces sit directly
 /// before its `:`, the padding `align_colons` holds a dict key at.
 /// Returns `""` for a canonical `": "` and for any other gap shape.
@@ -179,6 +185,20 @@ mod tests {
         #[case] expected: bool,
     ) {
         assert_eq!(is_column_shaped(slice), expected);
+    }
+
+    #[rstest]
+    #[case("[a, b]", true)]
+    #[case("{a: 1, b: 2}", true)]
+    #[case("(a, b)", true)]
+    #[case("{a: 1}", false)]
+    #[case("[a]", false)]
+    #[case("()", false)]
+    #[case("a, b", false)]
+    fn is_multi_entry_wants_two_bracketed_entries(#[case] src: &str, #[case] expected: bool) {
+        let source = parse(src);
+        let expr = first_expr(&source);
+        assert_eq!(is_multi_entry(expr), expected);
     }
 
     #[rstest]

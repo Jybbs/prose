@@ -3,9 +3,7 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/thematic/match_arms_split_and_collapse/input.py
 ---
-SETTINGS = {
-    "default_action": "noop"
-}
+SETTINGS = {"default_action": "noop"}
 
 
 def dispatch(event):

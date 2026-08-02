@@ -13,9 +13,7 @@ long_dict = {
     "zeta": 6,
     "eta": 7
 }
-single_entry_dict = {
-    "default_action": "noop"
-}
+single_entry_dict = {"default_action": "noop"}
 held_dict = {
     "alpha": 1,
     "beta": 2,

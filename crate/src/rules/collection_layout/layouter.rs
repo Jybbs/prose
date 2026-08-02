@@ -18,7 +18,7 @@ use unicode_width::UnicodeWidthStr;
 use super::{
     classify::{
         Segment, is_align_colons_gap, is_atomic, is_collapse_only, is_collapsible,
-        is_column_shaped, pre_colon_padding, requires_expand, segments,
+        is_column_shaped, is_multi_entry, pre_colon_padding, requires_expand, segments,
     },
     flow::flow_lines,
 };
@@ -239,7 +239,9 @@ impl<'a> Layouter<'a> {
         let expandable = requires_expand(expr);
         let over_count = self.has_over_count_dict(expr);
         if self.source.contains_line_break(range) {
-            let held = self.keep_multiline_literals && is_column_shaped(self.source.slice(range));
+            let held = self.keep_multiline_literals
+                && is_multi_entry(expr)
+                && is_column_shaped(self.source.slice(range));
             if !held
                 && !over_count
                 && let Some(inline) = self.joined_if_fits(expr, column)

@@ -3,10 +3,10 @@ only_dict  = {"solitary": 1}
 only_set   = {42}
 empty_list = []
 empty_dict = {}
-held_one_entry_dict = {
+joined_one_entry_dict = {
     "default_action": "noop"
 }
-held_one_item_list = [
+joined_one_item_list = [
     42
 ]
 joined_empty_dict = {

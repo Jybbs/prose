@@ -184,8 +184,8 @@ pub struct CollectionLayoutConfig {
     /// inert.
     pub explode: bool,
     /// Holds a literal the author laid out as a flush bracketed column
-    /// at that shape. `false` joins one whose single-line form fits the
-    /// budget, and a break falling elsewhere rejoins either way.
+    /// of two or more entries. `false` joins one whose single-line form
+    /// fits the budget, and every other break rejoins either way.
     pub keep_multiline_literals: bool,
     /// Keeps short collections on one line when each entry is an atomic
     /// literal and the run fits the cap. `false` removes the cap and

@@ -10,10 +10,10 @@
 //! string holds a construct at its source shape.
 //!
 //! `keep_multiline_literals` holds a literal the author laid out as a
-//! flush bracketed column, so it re-expands to the canonical shape
-//! rather than joining, and a held literal keeps its break inside any
-//! enclosing rejoin. A break falling anywhere else is a fracture and
-//! rejoins either way.
+//! flush bracketed column of two or more entries, so it re-expands to
+//! the canonical shape rather than joining, and a held literal keeps
+//! its break inside any enclosing rejoin. Every other break is a
+//! fracture and rejoins either way.
 //!
 //! Both fit checks stay invariant to the later alignment: a dict entry
 //! measures at its canonical `": "`, and a rejoin tests against the

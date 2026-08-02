@@ -62,7 +62,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'group-methods',               href: '/reference/configuration#per-rule-facets',       blurb: 'Group methods into dunders, properties, privates, and publics before sorting.' },
     { key: 'import-line-length',          href: '/reference/configuration#top-level-keys',        blurb: 'Import-wrap column budget, falls back to `code-line-length`.' },
     { key: 'imports.first-party',         href: '/reference/configuration#imports',               blurb: 'Package names lifted into the local-package import group.' },
-    { key: 'keep-multiline-literals',     href: '/reference/configuration#per-rule-facets',       blurb: 'Hold a literal laid out as a flush bracketed column at that shape.' },
+    { key: 'keep-multiline-literals',     href: '/reference/configuration#per-rule-facets',       blurb: 'Hold a literal laid out as a flush column of two or more entries.' },
     { key: 'max-args',                    href: '/reference/configuration#per-rule-facets',       blurb: 'Argument count above which a call explodes to one keyword per line.' },
     { key: 'max-atomics',                 href: '/reference/configuration#per-rule-facets',       blurb: 'Inline cap on a short collection of atomic literals.' },
     { key: 'max-attributes',              href: '/reference/configuration#per-rule-facets',       blurb: 'Attribute count at or below which an unaliased bare import is flagged.' },

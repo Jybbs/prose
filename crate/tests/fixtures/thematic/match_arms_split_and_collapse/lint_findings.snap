@@ -8,12 +8,12 @@ input_file: crate/tests/fixtures/thematic/match_arms_split_and_collapse/input.py
     "code": "signature-annotations",
     "end_location": {
       "column": 19,
-      "row": 6
+      "row": 4
     },
     "fix": null,
     "location": {
       "column": 14,
-      "row": 6
+      "row": 4
     },
     "message": "Parameter `event` has no type annotation"
   },
@@ -21,12 +21,12 @@ input_file: crate/tests/fixtures/thematic/match_arms_split_and_collapse/input.py
     "code": "signature-annotations",
     "end_location": {
       "column": 13,
-      "row": 6
+      "row": 4
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 6
+      "row": 4
     },
     "message": "`dispatch` returns a value but has no return type annotation"
   },
@@ -34,12 +34,12 @@ input_file: crate/tests/fixtures/thematic/match_arms_split_and_collapse/input.py
     "code": "signature-annotations",
     "end_location": {
       "column": 23,
-      "row": 27
+      "row": 25
     },
     "fix": null,
     "location": {
       "column": 19,
-      "row": 27
+      "row": 25
     },
     "message": "Parameter `name` has no type annotation"
   },
@@ -47,12 +47,12 @@ input_file: crate/tests/fixtures/thematic/match_arms_split_and_collapse/input.py
     "code": "signature-annotations",
     "end_location": {
       "column": 18,
-      "row": 27
+      "row": 25
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 27
+      "row": 25
     },
     "message": "`required_only` returns a value but has no return type annotation"
   }
