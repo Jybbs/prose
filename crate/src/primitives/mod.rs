@@ -18,6 +18,7 @@ pub(crate) mod inline;
 pub(crate) mod layout;
 pub(crate) mod orderer;
 pub(crate) mod params;
+pub(crate) mod quoting;
 pub(crate) mod range;
 pub(crate) mod reserve;
 pub(crate) mod scope;

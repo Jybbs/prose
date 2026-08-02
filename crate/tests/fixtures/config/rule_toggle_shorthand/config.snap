@@ -22,6 +22,12 @@ Config {
         first_party: [],
     },
     rules: RuleConfigs {
+        normalize_literals: NormalizeLiteralsConfig {
+            enabled: true,
+            unify_numerics: true,
+            unify_prefixes: true,
+            unify_quotes: true,
+        },
         unused_future_annotations: ToggleOnly {
             enabled: true,
         },

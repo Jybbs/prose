@@ -12,6 +12,7 @@ use ruff_python_ast::{
     ExprStringLiteral, Stmt, StringLiteral,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::{primitives::scope::scoped_body, source::Source};
 
@@ -72,6 +73,21 @@ pub(crate) fn body_docstring(body: &[Stmt]) -> Option<&StringLiteral> {
         .and_then(ExprStringLiteral::as_single_part_string)
 }
 
+/// Every docstring literal's range in `source`, ascending by start.
+pub(crate) fn docstring_ranges(source: &Source) -> Vec<TextRange> {
+    struct Collector(Vec<TextRange>);
+
+    impl DocstringHandler for Collector {
+        fn handle(&mut self, lit: &StringLiteral) {
+            self.0.push(lit.range());
+        }
+    }
+
+    let mut collector = Collector(Vec::new());
+    collector.walk(source);
+    collector.0
+}
+
 /// Walks every docstring in `source` and gathers the edits `f` produces
 /// against each into one fix group per docstring. The closure receives
 /// `source`, the docstring literal, and that docstring's edit buffer. A
@@ -110,8 +126,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use ruff_text_size::Ranged;
-
     use super::*;
     use crate::testing::parse;
 

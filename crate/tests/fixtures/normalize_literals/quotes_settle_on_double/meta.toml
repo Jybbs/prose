@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "Every String Settles on the Double Quote"
+
+description = '''
+A single-quoted string whose body holds neither quote character swaps to `"`, the empty string included. **The escape count ties at zero and the tie goes to the double quote**, so the module reads one delimiter throughout.
+'''

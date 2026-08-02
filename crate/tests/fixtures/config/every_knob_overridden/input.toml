@@ -15,6 +15,7 @@ align-equals              = false
 align-imports             = false
 align-match-case          = false
 alphabetize               = { enabled = false, group-methods = false, sort-definitions = false, sort-dict-keys = false, sort-docstring-entries = false, sort-dunder-lists = false }
+band-constants            = { enabled = false, group-constants = false, max-tiers = 4 }
 bare-imports              = { allow = ["scipy", "torch"], enabled = false, exempt-aliased = false, max-attributes = 2 }
 blank-lines               = false
 call-layout               = { enabled = false, max-args = 6 }
@@ -22,10 +23,14 @@ collection-layout         = { collapse = false, enabled = false, explode = false
 docstring-expand          = false
 docstring-frame           = false
 docstring-wrap            = false
+group-imports             = false
 import-layout             = false
 legacy-union-syntax       = false
+line-overflow             = false
 miscased-constants        = { allow-pattern = "^_", enabled = false }
+normalize-literals        = { enabled = false, unify-numerics = false, unify-prefixes = false, unify-quotes = false }
 reassigned-constants      = { allow = ["LOG_LEVEL"], enabled = false }
+shed-parentheses          = false
 signature-annotations     = false
 signature-layout          = { enabled = false, max-params = false }
 single-use-variables      = { allow-pattern = "^tmp_", enabled = false }

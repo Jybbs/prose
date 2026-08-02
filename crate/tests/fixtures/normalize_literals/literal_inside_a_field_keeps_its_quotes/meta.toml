@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Literal Inside a Field Keeps Its Quotes and Loses Its Prefix"
+
+description = '''
+The nested `u'inner'` drops its no-op prefix while keeping the single quotes the enclosing f-string constrains. **The prefix and numeric facets reach inside a replacement field and the quote facet does not**, since only the quote is version-sensitive.
+'''

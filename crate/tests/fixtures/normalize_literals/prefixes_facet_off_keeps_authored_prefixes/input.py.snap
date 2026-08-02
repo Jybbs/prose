@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/prefixes_facet_off_keeps_authored_prefixes/input.py
+---
+mask = 0xABC
+legacy = U"y"
+expression = R"a\d"
+name = "ada"

@@ -76,6 +76,9 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'sort-docstring-entries',      href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder `name: description` entries within a docstring section.' },
     { key: 'sort-dunder-lists',           href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder the string items inside `__all__` and `__slots__`.' },
     { key: 'target-version',              href: '/reference/configuration#top-level-keys',        blurb: 'Python version the parser reads against.' },
+    { key: 'unify-numerics',              href: '/reference/configuration#per-rule-facets',       blurb: 'Uppercase hex digits while the radix marker, exponent, and `j` suffix lowercase.' },
+    { key: 'unify-prefixes',              href: '/reference/configuration#per-rule-facets',       blurb: 'Lowercase a string prefix and drop the no-op `u`.' },
+    { key: 'unify-quotes',                href: '/reference/configuration#per-rule-facets',       blurb: 'Settle a non-docstring string on `"`, shedding an escape the quote does not need.' },
     { key: 'wrap-dict-entries',           href: '/reference/configuration#per-rule-facets',       blurb: 'Break an over-wide `key: value` at its `:` and hang the value beneath.' }
   ],
   'exit-code': [

@@ -19,8 +19,8 @@ use crate::{
     config::{
         AlignmentConfig, AlphabetizeConfig, BandConstantsConfig, BareImportsConfig,
         CallLayoutConfig, CollectionLayoutConfig, Config, MiscasedConstantsConfig,
-        ReassignedConstantsConfig, SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly,
-        rule_schema,
+        NormalizeLiteralsConfig, ReassignedConstantsConfig, SignatureLayoutConfig,
+        SingleUseVariablesConfig, ToggleOnly, rule_schema,
     },
     diagnostics::Diagnostic,
     pipeline::Pipeline,
@@ -32,12 +32,12 @@ use crate::{
         docstring_expand::DocstringExpand, docstring_frame::DocstringFrame,
         docstring_wrap::DocstringWrap, group_imports::GroupImports, import_layout::ImportLayout,
         legacy_union_syntax::LegacyUnionSyntax, line_overflow::LineOverflow,
-        miscased_constants::MiscasedConstants, reassigned_constants::ReassignedConstants,
-        shed_parentheses::ShedParentheses, signature_annotations::SignatureAnnotations,
-        signature_layout::SignatureLayout, single_use_variables::SingleUseVariables,
-        step_narration::StepNarration, strip_align_padding::StripAlignPadding,
-        strip_none_return::StripNoneReturn, strip_trailing_commas::StripTrailingCommas,
-        unsorted_positionals::UnsortedPositionals,
+        miscased_constants::MiscasedConstants, normalize_literals::NormalizeLiterals,
+        reassigned_constants::ReassignedConstants, shed_parentheses::ShedParentheses,
+        signature_annotations::SignatureAnnotations, signature_layout::SignatureLayout,
+        single_use_variables::SingleUseVariables, step_narration::StepNarration,
+        strip_align_padding::StripAlignPadding, strip_none_return::StripNoneReturn,
+        strip_trailing_commas::StripTrailingCommas, unsorted_positionals::UnsortedPositionals,
         unused_future_annotations::UnusedFutureAnnotations,
     },
     source::Source,
@@ -368,6 +368,7 @@ macro_rules! register_rules {
 }
 
 register_rules! {
+    "normalize-literals":        normalize_literals:        NormalizeLiteralsConfig   => NormalizeLiterals       => [] => "canonicalize literal quote, prefix, and numeric spelling",
     "unused-future-annotations": unused_future_annotations: ToggleOnly                => UnusedFutureAnnotations => [] => "remove unused `from __future__ import annotations`",
     "strip-none-return":         strip_none_return:         ToggleOnly                => StripNoneReturn         => [] => "drop a redundant `-> None` return annotation",
     "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly                => StripTrailingCommas     => [] => "strip trailing comma",
