@@ -73,6 +73,7 @@ impl Layout<'_> {
             indent,
             parts.len(),
             |out, i| out.push_str(parts[i]),
+            ",",
             false,
         );
         self.push_return_and_colon(&mut out, fd);

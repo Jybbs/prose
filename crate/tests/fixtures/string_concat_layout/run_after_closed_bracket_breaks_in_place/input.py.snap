@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/string_concat_layout/run_after_closed_bracket_breaks_in_place/input.py
+---
+emit(
+    helper(alpha), "the opening clause of this notice "
+    "and trailer"
+)

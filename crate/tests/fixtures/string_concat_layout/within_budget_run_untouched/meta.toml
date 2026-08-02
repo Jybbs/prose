@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Run Inside the Budget Keeps Its Line"
+
+description = '''
+A run whose joined line clears `code-line-length` **stays on one line**, because the break answers to the budget rather than to the presence of a concatenation.
+'''

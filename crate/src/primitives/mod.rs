@@ -23,6 +23,7 @@ pub(crate) mod reserve;
 pub(crate) mod scope;
 pub(crate) mod sections;
 pub(crate) mod tiering;
+pub(crate) mod tokens;
 pub(crate) mod walk;
 
 /// PEP 8 indent step in spaces, the depth one nested level adds.

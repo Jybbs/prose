@@ -30,6 +30,7 @@ signature-annotations     = false
 signature-layout          = { enabled = false, max-params = false }
 single-use-variables      = { allow-pattern = "^tmp_", enabled = false }
 step-narration            = false
+string-concat-layout      = false
 strip-align-padding       = false
 strip-none-return         = false
 strip-trailing-commas     = false

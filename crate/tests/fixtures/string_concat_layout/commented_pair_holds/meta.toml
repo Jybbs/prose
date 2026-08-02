@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comment inside the Parentheses Pins the Run"
+
+description = '''
+A comment anywhere inside the pair enclosing a run **holds the run at its source shape**, because the rewrite spans the pair and would carry the comment off its line.
+'''

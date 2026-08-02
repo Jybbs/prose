@@ -23,7 +23,9 @@ use super::{
 use crate::{
     primitives::{
         INDENT_STEP, edit::narrowed_replacement, inline::single_line_form, layout::is_layoutable,
+        reserve::landing_column,
     },
+    rules::string_concat_layout::concatenated_run,
     source::Source,
 };
 
@@ -170,8 +172,10 @@ impl<'a> Layouter<'a> {
     /// Builds the hung two-line form of a `key: value` dict entry,
     /// breaking at `:` and emitting the value at `item_indent +
     /// INDENT_STEP`. The key's pre-colon padding carries through, the
-    /// column belonging to `align_colons`. Returns `None` for `**value`
-    /// unpacking items.
+    /// column belonging to `align_colons`. Returns `None` for a
+    /// `**value` unpacking item and for an entry either side of whose
+    /// `:` carries an implicitly concatenated string, which
+    /// `string-concat-layout` breaks in place.
     fn hang_dict_value(
         &self,
         item: &DictItem,
@@ -179,6 +183,9 @@ impl<'a> Layouter<'a> {
         item_indent: usize,
     ) -> Option<String> {
         let key = item.key.as_ref()?;
+        if concatenated_run(key).is_some() || concatenated_run(&item.value).is_some() {
+            return None;
+        }
         let key_text = self.source.slice(key);
         let padding = pre_colon_padding(self.key_value_gap(key, &item.value));
         let hang_column = item_indent + INDENT_STEP;
@@ -485,11 +492,7 @@ impl<'a> Visitor<'a> for Layouter<'a> {
         // Test the collapse against the column `align_equals` shifts the
         // value to, not the unaligned column the literal currently opens
         // at, so a fit that survives the shift is what the rule collapses.
-        let column = self
-            .reservations
-            .get(&range.start())
-            .copied()
-            .unwrap_or_else(|| self.source.column_of(range.start()));
+        let column = landing_column(self.source, &self.reservations, range.start());
         let indent = self.source.line_indent_width(range.start());
         match self.replacement_for(expr, column, indent) {
             Some(text) => self

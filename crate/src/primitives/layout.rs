@@ -7,15 +7,17 @@ use ruff_python_trivia::textwrap::{dedent, indent};
 
 use crate::primitives::{INDENT_STEP, inline::indent_width};
 
-/// Builds the one-per-line expansion `(\n<prefix>item,\n…\n<indent>)`
+/// Builds the one-per-line expansion `(\n<prefix>item<separator>\n…\n<indent>)`
 /// for `count` items at `indent`. `render` writes item `i` into the
-/// buffer, and `trailing` adds a comma after the last item. Items sit
-/// one `INDENT_STEP` past `indent`, the closing `)` at `indent`.
+/// buffer, `separator` follows every item but the last, and `trailing`
+/// extends it to the last item too. Items sit one `INDENT_STEP` past
+/// `indent`, the closing `)` at `indent`.
 pub(crate) fn explode_parens(
     newline: &str,
     indent: usize,
     count: usize,
     mut render: impl FnMut(&mut String, usize),
+    separator: &str,
     trailing: bool,
 ) -> String {
     let prefix = " ".repeat(indent + INDENT_STEP);
@@ -25,7 +27,7 @@ pub(crate) fn explode_parens(
         out.push_str(&prefix);
         render(&mut out, i);
         if trailing || i + 1 < count {
-            out.push(',');
+            out.push_str(separator);
         }
     }
     out.push_str(newline);

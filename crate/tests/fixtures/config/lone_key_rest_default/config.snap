@@ -75,6 +75,9 @@ Config {
                 ),
             ),
         },
+        string_concat_layout: ToggleOnly {
+            enabled: true,
+        },
         align_match_case: AlignmentConfig {
             enabled: true,
             max_shift: Cap(

@@ -4,7 +4,8 @@
 //! overflowing single-line literal expands one entry per line, and a
 //! dict over `max_dict_entries` expands whatever its width, taking any
 //! enclosing collection with it. An over-wide dict entry breaks at `:`
-//! and hangs its value. A subscript and a comprehension only ever
+//! and hangs its value, leaving an implicitly concatenated string value
+//! to `string-concat-layout`. A subscript and a comprehension only ever
 //! collapse, and a comment, an f-string or t-string replacement field,
 //! or a folded multi-line string holds a construct at its source shape.
 //!

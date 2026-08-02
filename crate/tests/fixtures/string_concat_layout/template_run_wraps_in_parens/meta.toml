@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Template-String Run Breaks Like Any Other"
+
+description = '''
+Adjacent `t"..."` literals concatenate the way `str` and `bytes` literals do, so an over-budget template run **takes the same one-per-line break** and each replacement field keeps its own text.
+'''

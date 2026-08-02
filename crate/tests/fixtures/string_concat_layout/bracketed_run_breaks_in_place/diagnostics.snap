@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/string_concat_layout/bracketed_run_breaks_in_place/input.py
+---
+string-concat-layout@46..46

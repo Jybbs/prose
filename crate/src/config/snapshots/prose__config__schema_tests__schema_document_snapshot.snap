@@ -649,6 +649,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
+        "string-concat-layout": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
         "strip-align-padding": {
           "anyOf": [
             {
@@ -916,6 +929,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true
         },
         "step-narration": {
+          "enabled": true
+        },
+        "string-concat-layout": {
           "enabled": true
         },
         "strip-align-padding": {

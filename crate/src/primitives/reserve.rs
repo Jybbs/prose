@@ -1,6 +1,7 @@
 //! Predicts the column an alignment rule shifts each assignment and
 //! keyword value to, so a layout decision tests a construct against the
-//! position it lands at after alignment rather than its current one. No
+//! position it lands at after alignment rather than its current one, and
+//! reads that prediction back per offset through `landing_column`. No
 //! column is reserved for a value inside an f-string or t-string
 //! replacement field. A row whose value spans lines groups as if
 //! single-line, since a collapsing construct becomes single-line before
@@ -70,6 +71,19 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
 
     /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
+}
+
+/// The column `offset` lands at once the alignment run settles, its
+/// source column where `columns` reserves none.
+pub(crate) fn landing_column(
+    source: &Source,
+    columns: &HashMap<TextSize, usize>,
+    offset: TextSize,
+) -> usize {
+    columns
+        .get(&offset)
+        .copied()
+        .unwrap_or_else(|| source.column_of(offset))
 }
 
 /// Maps each aligned value's start offset to the display column it lands

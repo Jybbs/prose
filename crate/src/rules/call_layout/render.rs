@@ -36,6 +36,7 @@ impl<'a> Exploder<'a> {
             indent,
             count,
             |out, i| render(out, i, item_indent),
+            ",",
             self.source.trailing_comma(arguments.range()).is_some(),
         )
     }

@@ -3,7 +3,8 @@
 //! `import_line_length`, every other line to `code_line_length`. A line
 //! a layout rule could still split (an inline call carrying arguments,
 //! a multi-element collection, a multi-name `from` import, a signature
-//! carrying parameters, a single-statement match arm) is left for that
+//! carrying parameters, a single-statement match arm, an implicitly
+//! concatenated string run outside a docstring slot) is left for that
 //! rule, so only the narrowest legal form that no split can shorten
 //! surfaces here. No rule reaches a construct inside an f-string or
 //! t-string replacement field, so its line surfaces here as well.
@@ -21,8 +22,9 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::docstring::body_docstring,
+    primitives::docstring::{body_docstring, docstring_slots},
     rule::{Rule, RuleId},
+    rules::string_concat_layout::concatenated_run,
     source::Source,
 };
 
@@ -47,6 +49,7 @@ impl Rule for LineOverflow {
 
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {
         let mut spans = Spans {
+            docstrings: docstring_slots(&source.ast().body),
             imports: Vec::new(),
             reshapeable: Vec::new(),
             source,
@@ -83,12 +86,19 @@ impl Rule for LineOverflow {
 /// budget and the still-collapsible construct ranges a layout rule
 /// could shorten, so a line intersecting one is left for that rule.
 struct Spans<'a> {
+    docstrings: Vec<TextRange>,
     imports: Vec<TextRange>,
     reshapeable: Vec<TextRange>,
     source: &'a Source,
 }
 
 impl Spans<'_> {
+    /// True for an implicitly concatenated run `string-concat-layout`
+    /// still breaks, which leaves out a run filling a docstring slot.
+    fn breakable_run(&self, expr: &Expr) -> bool {
+        concatenated_run(expr).is_some() && !self.docstrings.contains(&expr.range())
+    }
+
     /// Records a leading docstring's whole range, the prose
     /// `docstring-wrap` reflows to the budget.
     fn note_docstring(&mut self, body: &[Stmt]) {
@@ -134,7 +144,7 @@ impl<'a> Visitor<'a> for Spans<'a> {
             Expr::List(l) => l.len() >= 2,
             Expr::Set(s) => s.len() >= 2,
             Expr::Tuple(t) => t.len() >= 2,
-            _ => false,
+            _ => self.breakable_run(expr),
         };
         if splittable {
             self.note_inline(expr.range());

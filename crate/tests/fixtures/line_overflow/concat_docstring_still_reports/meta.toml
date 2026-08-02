@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Concatenated Docstring Still Reports"
+
+description = '''
+A run filling a docstring slot is one `string-concat-layout` holds rather than breaks, so the over-cap line **surfaces as a finding** instead of being left for a rule that will not act on it.
+'''

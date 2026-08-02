@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/string_concat_layout/template_run_wraps_in_parens/input.py
+---
+label = (
+    t"the opening clause of this notice "
+    t"and the trailer"
+)

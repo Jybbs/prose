@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Explodes before Its String Run Breaks"
+
+description = '''
+`call-layout` settles the argument list one entry per line first, so `string-concat-layout` measures the run against the column it lands at and breaks only the argument that still overruns the budget.
+'''
