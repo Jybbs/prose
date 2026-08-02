@@ -44,9 +44,9 @@ Config {
             enabled: true,
         },
         collection_layout: CollectionLayoutConfig {
-            collapse: false,
             enabled: false,
             explode: false,
+            keep_multiline_literals: false,
             max_atomics: InlineBudget(
                 Some(
                     3,

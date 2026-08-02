@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Held Dict Keeps Its Aligned Colon Column"
+
+description = '''
+A multi-line dict carrying `align_colons`-shaped padding would fit the budget inline, yet `keep-multiline-literals` holds it where the author wrote it. **The padded gap round-trips through the re-expansion**, so the `:` column the reader laid down survives rather than being flattened to `": "` and re-padded on the next pass.
+'''

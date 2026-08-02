@@ -1,4 +1,6 @@
-import * as sources from '../../lib/tokens/sources'
+import { repoRoot, runProse } from '../../lib/shared/paths'
+import { rulePropsOf }        from '../../lib/shared/rule-schema'
+import * as sources           from '../../lib/tokens/sources'
 
 const token = (key: string, domain: sources.Domain): sources.Token =>
   ({ blurbNodes: [], domain, href: '', key, sort: key })
@@ -30,5 +32,19 @@ describe('groupByDomain', () => {
     const input = [token('b', 'cli-flag'), token('a', 'cli-flag')]
     sources.groupByDomain(input)
     expect(input.map(t => t.key)).toEqual(['b', 'a'])
+  })
+})
+
+describe('config-key sources', () => {
+  it('indexes every per-rule facet the schema declares', () => {
+    const schema = JSON.parse(runProse(repoRoot(import.meta.url), ['schema']))
+    const defs   = schema.$defs as Record<string, { properties: Record<string, never> }>
+    const rules  = schema.$defs.RuleConfigs.properties as
+      Record<string, { anyOf?: readonly { $ref?: string }[] }>
+
+    const declared = Object.values(rules).flatMap(def => Object.keys(rulePropsOf(defs, def)))
+    const indexed  = new Set(sources.SOURCES['config-key'].map(source => source.key))
+
+    expect(declared.filter(key => !indexed.has(key)).toSorted()).toEqual([])
   })
 })
