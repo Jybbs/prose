@@ -1,5 +1,5 @@
 ---
-consumedBy: [single-use-variables, unused-future-annotations]
+consumedBy: [modernize-annotations, single-use-variables, unused-future-annotations]
 consumes: [source]
 layer: analysis
 stability: internal
@@ -24,7 +24,7 @@ A downstream consumer can:
 
 A downstream consumer cannot:
 
-- Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `first_write_offset`, `is_defined_before`, `module_attribute_count`, `module_function_reads`, `module_reassigned`, `module_used_bare`, `unpack_target`, `usage_count`, or `walrus_in_condition` on the returned reference. Every reader is `pub(crate)`.
+- Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `first_write_offset`, `is_defined_before`, `module_attribute_count`, `module_function_reads`, `module_reassigned`, `module_usage_count`, `module_used_bare`, `unpack_target`, `usage_count`, or `walrus_in_condition` on the returned reference. Every reader is `pub(crate)`.
 - Implement a custom rule that consumes the binding table. The `Rule` trait is `pub(crate)`.
 
 The methods stabilize toward `1.0`, where every reader becomes `pub` and the `Rule` trait opens so downstream consumers can implement project-specific binding-aware rules.
@@ -43,6 +43,7 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `module_attribute_count(name: &str) -> usize` counts the distinct attributes read off a module-scope name *(`os.environ` and `os.getcwd` count as two)*, which [[bare-imports]] reads to weigh how widely a bare import reaches.
 - `module_function_reads(name: &str) -> Option<&[TextSize]>` returns the read offsets of a module-scope name bound exactly once as a function definition, which [[call-layout]] uses through `module_call_params` to resolve the signature a module-function call binds, so it names the call's positional arguments when exploding it.
 - `module_reassigned(name: &str) -> bool` reports whether a module-scope name carries more than one write or an augmented assignment, which [[reassigned-constants]], [[miscased-constants]], and [[alphabetize]] read to skip names that are not write-once.
+- `module_usage_count(name: &str) -> usize` counts every read recorded against a module-scope name, which [[modernize-annotations]] weighs against the reads its own rewrite consumed to decide whether an import binding still has a reader.
 - `module_used_bare(name: &str) -> bool` reports whether a module-scope name is ever read without an attribute access *(the namespace object itself is used)*, which [[bare-imports]] reads before suggesting a `from` import.
 - `unpack_target(binding: BindingId) -> Option<UnpackKind>` returns the unpack disposition of a binding whose sole write is a multi-name tuple or list target, which [[single-use-variables]] reads to choose between exempting the target and naming a subscript rewrite.
 - `usage_count(binding: BindingId) -> usize` counts every read site.

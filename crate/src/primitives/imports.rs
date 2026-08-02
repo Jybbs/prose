@@ -1,15 +1,22 @@
 //! Classifies import statements into the canonical group order
 //! `__future__` → bare → external `from` → local-package, finds the runs
 //! of adjacent imports the ordering rules act on, builds the composite
-//! sort key ordering a run within and across those groups, and counts the
-//! canonical blank lines dividing two imports. First-party detection
+//! sort key ordering a run within and across those groups, counts the
+//! canonical blank lines dividing two imports, and shapes the deletions
+//! that drop the aliases a rule has left unread. First-party detection
 //! reads the package-name list from `[tool.prose.imports]`.
 
 use std::ops::Range;
 
+use ruff_diagnostics::Edit;
 use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
+use ruff_source_file::LineRanges;
+use ruff_text_size::{Ranged, TextRange};
 
-use crate::primitives::{orderer::runs_where, sections::Sections};
+use crate::{
+    primitives::{orderer::runs_where, sections::Sections},
+    source::Source,
+};
 
 const FUTURE_ANNOTATIONS: &str = "annotations";
 const FUTURE_MODULE: &str = "__future__";
@@ -110,6 +117,41 @@ pub(crate) fn import_sort_key<'a>(
     })
 }
 
+/// The deletions dropping every alias of an import statement that
+/// `keep` rejects, empty when every alias survives or when the statement
+/// shares its lines with other code.
+///
+/// A statement losing all of its aliases goes whole, taking its full
+/// lines. One losing a subset keeps the survivors byte-for-byte, each
+/// deletion covering one run of dropped aliases together with the
+/// separator binding it to the survivor beside it.
+pub(crate) fn prune_import_aliases(
+    source: &Source,
+    stmt: TextRange,
+    names: &[Alias],
+    keep: impl Fn(usize) -> bool,
+) -> Vec<Edit> {
+    let kept: Vec<usize> = (0..names.len()).filter(|&index| keep(index)).collect();
+    if kept.len() == names.len() || !stands_alone(source, stmt) {
+        return Vec::new();
+    }
+    let Some(&last_kept) = kept.last() else {
+        return vec![Edit::range_deletion(source.text().full_lines_range(stmt))];
+    };
+    let starts = std::iter::once(0).chain(kept.iter().map(|&index| index + 1));
+    let ends = kept.iter().copied().chain(std::iter::once(names.len()));
+    starts
+        .zip(ends)
+        .filter(|&(start, end)| start < end)
+        .map(|(start, end)| {
+            Edit::range_deletion(match names.get(end) {
+                Some(survivor) => TextRange::new(names[start].start(), survivor.start()),
+                None => TextRange::new(names[last_kept].end(), names[end - 1].end()),
+            })
+        })
+        .collect()
+}
+
 /// Slot ranges of every import run across a sectioned body, each run
 /// offset to absolute slot indices so it never spans a section divider.
 /// The unit `group-imports` partitions and `alphabetize` sorts, one run
@@ -153,11 +195,23 @@ fn least_alias(names: &[Alias]) -> &str {
         .expect("import binds at least one name")
 }
 
+/// True when `stmt` holds its lines alone, carrying only whitespace
+/// ahead of it and only whitespace or a trailing comment behind it.
+fn stands_alone(source: &Source, stmt: TextRange) -> bool {
+    let lines = source.text().full_lines_range(stmt);
+    let before = source.slice(TextRange::new(lines.start(), stmt.start()));
+    let after = source
+        .slice(TextRange::new(stmt.end(), lines.end()))
+        .trim_start();
+    before.trim().is_empty() && (after.is_empty() || after.starts_with('#'))
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
 
     use super::*;
+    use crate::primitives::edit::apply_edits;
     use crate::primitives::orderer::member_blocks;
     use crate::testing::parse;
 
@@ -281,6 +335,46 @@ mod tests {
         let s = parse("import sys, os, abc\n");
         let import = s.ast().body[0].as_import_stmt().expect("import");
         assert_eq!(least_alias(&import.names), "abc");
+    }
+
+    #[rstest]
+    #[case::sole_alias("from typing import Optional\n", &[0], "")]
+    #[case::sole_alias_with_trailing_comment("from typing import Optional  # noqa\n", &[0], "")]
+    #[case::every_alias("from typing import Optional, cast\n", &[0, 1], "")]
+    #[case::leading("from typing import Optional, cast\n", &[0], "from typing import cast\n")]
+    #[case::trailing("from typing import cast, Optional\n", &[1], "from typing import cast\n")]
+    #[case::interior("from typing import a, b, c\n", &[1], "from typing import a, c\n")]
+    #[case::leading_run("from typing import a, b, c\n", &[0, 1], "from typing import c\n")]
+    #[case::trailing_run("from typing import a, b, c\n", &[1, 2], "from typing import a\n")]
+    #[case::scattered("from typing import a, b, c\n", &[0, 2], "from typing import b\n")]
+    #[case::nothing_dropped("from typing import a, b\n", &[], "from typing import a, b\n")]
+    #[case::bare_import("import typing, os\n", &[0], "import os\n")]
+    #[case::leads_its_line("import typing; x = 1\n", &[0], "import typing; x = 1\n")]
+    #[case::follows_other_code("x = 1; import typing\n", &[0], "x = 1; import typing\n")]
+    #[case::parenthesized(
+        "from typing import (\n    a,\n    b,\n)\n",
+        &[0],
+        "from typing import (\n    b,\n)\n"
+    )]
+    fn prune_import_aliases_drops_each_run_with_the_separator_binding_it(
+        #[case] src: &str,
+        #[case] dropped: &[usize],
+        #[case] expected: &str,
+    ) {
+        let source = parse(src);
+        let (stmt, names) = source
+            .ast()
+            .body
+            .iter()
+            .find_map(|stmt| match stmt {
+                Stmt::Import(node) => Some((stmt, &node.names)),
+                Stmt::ImportFrom(node) => Some((stmt, &node.names)),
+                _ => None,
+            })
+            .expect("the source carries an import");
+        let edits = prune_import_aliases(&source, stmt.range(), names, |i| !dropped.contains(&i));
+        let pruned = apply_edits(source.text(), edits).expect("the deletions do not overlap");
+        assert_eq!(pruned, expected);
     }
 
     #[test]

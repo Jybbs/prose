@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Parenthesized Union Expressions Are Recognized"
-
-description = '''
-Parentheses wrapping a subscript, as in `(Optional[int])`, are **folded into the diagnostic range**, so the surfaced span matches the author's mental model of the whole annotation.
-'''

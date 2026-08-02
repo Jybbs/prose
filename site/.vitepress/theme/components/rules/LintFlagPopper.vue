@@ -36,7 +36,6 @@ function show(event: Event): void {
     message,
     rule,
     shorthand : lintShorthand({
-      before    : flag.dataset.before,
       flagged   : flag.textContent ?? '',
       message,
       rule      : flag.dataset.rule ?? '',

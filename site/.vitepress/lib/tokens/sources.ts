@@ -71,6 +71,8 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'max-shift',                   href: '/reference/configuration#per-rule-facets',       blurb: 'Per-rule width-spread budget for an alignment run.' },
     { key: 'max-tiers',                   href: '/reference/configuration#per-rule-facets',       blurb: 'Cap the evaluation tiers that open their own sub-band.' },
     { key: 'overrides.paths',             href: '/reference/configuration#per-pattern-overrides', blurb: 'Glob list selecting the files an override entry applies its partial config to.' },
+    { key: 'rewrite-generics',            href: '/reference/configuration#per-rule-facets',       blurb: 'Convert a `typing` generic to the builtin PEP 585 gave it.' },
+    { key: 'rewrite-unions',              href: '/reference/configuration#per-rule-facets',       blurb: 'Rewrite `Optional` and `Union` to the PEP 604 pipe form.' },
     { key: 'sort-definitions',            href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder class and function definitions, holding each behind what it names.' },
     { key: 'sort-dict-keys',              href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder the keyed entries of a dict literal, off to hold the authored order.' },
     { key: 'sort-docstring-entries',      href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder `name: description` entries within a docstring section.' },
