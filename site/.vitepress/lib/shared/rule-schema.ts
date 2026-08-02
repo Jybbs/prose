@@ -1,10 +1,17 @@
 import { inlineNodes, type InlineNode, type InlineParser } from '../markdown/inline-nodes'
 
+export const NESTED_TABLES = new Set(['cache', 'imports', 'rules'])
+
 export interface ConfigRow {
   default      : string
   key          : string
   meaningNodes : InlineNode[]
   typeNodes    : InlineNode[]
+}
+
+export interface SchemaDocument {
+  $defs      : Record<string, { properties: SchemaProps }>
+  properties : SchemaProps
 }
 
 export interface SchemaProp {
@@ -20,6 +27,8 @@ export interface SchemaProp {
 
 export type SchemaProps = Record<string, SchemaProp>
 
+export type Section = 'cache' | 'imports' | 'rules' | 'top'
+
 export function configRow(
   md    : InlineParser,
   key   : string,
@@ -31,6 +40,21 @@ export function configRow(
     key          : key,
     meaningNodes : inlineNodes(md, prop.description ?? ''),
     typeNodes    : inlineNodes(md, typeOf(prop))
+  }
+}
+
+// Every key `[tool.prose]` accepts, grouped by the section it sits under, with
+// the rule facets deduplicated across the rules that share them.
+export function declaredKeys(schema: SchemaDocument): Record<Section, string[]> {
+  const rules  = schema.$defs.RuleConfigs.properties as
+    Record<string, { anyOf?: readonly { $ref?: string }[] }>
+  const facets = Object.values(rules).flatMap(def => Object.keys(rulePropsOf(schema.$defs, def)))
+
+  return {
+    cache   : Object.keys(schema.$defs.CacheConfig.properties),
+    imports : Object.keys(schema.$defs.ImportsConfig.properties),
+    rules   : [...new Set(facets)],
+    top     : Object.keys(schema.properties).filter(key => !NESTED_TABLES.has(key))
   }
 }
 

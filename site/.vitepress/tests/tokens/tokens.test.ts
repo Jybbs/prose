@@ -1,5 +1,5 @@
 import { repoRoot, runProse } from '../../lib/shared/paths'
-import { rulePropsOf }        from '../../lib/shared/rule-schema'
+import { declaredKeys }       from '../../lib/shared/rule-schema'
 import * as sources           from '../../lib/tokens/sources'
 
 const token = (key: string, domain: sources.Domain): sources.Token =>
@@ -36,15 +36,21 @@ describe('groupByDomain', () => {
 })
 
 describe('config-key sources', () => {
-  it('indexes every per-rule facet the schema declares', () => {
-    const schema = JSON.parse(runProse(repoRoot(import.meta.url), ['schema']))
-    const defs   = schema.$defs as Record<string, { properties: Record<string, never> }>
-    const rules  = schema.$defs.RuleConfigs.properties as
-      Record<string, { anyOf?: readonly { $ref?: string }[] }>
+  const keys     = declaredKeys(JSON.parse(runProse(repoRoot(import.meta.url), ['schema'])))
+  const declared = new Set([
+    ...keys.top,
+    ...keys.rules,
+    ...keys.cache.map(key => `cache.${key}`),
+    ...keys.imports.map(key => `imports.${key}`)
+  ])
+  const indexed = sources.SOURCES['config-key'].map(source => source.key)
 
-    const declared = Object.values(rules).flatMap(def => Object.keys(rulePropsOf(defs, def)))
-    const indexed  = new Set(sources.SOURCES['config-key'].map(source => source.key))
+  it('indexes every key the schema declares', () => {
+    expect([...declared].filter(key => !indexed.includes(key)).toSorted()).toEqual([])
+  })
 
-    expect(declared.filter(key => !indexed.has(key)).toSorted()).toEqual([])
+  it('indexes nothing the schema leaves out, beyond the overrides table', () => {
+    const unschemed = new Set(['overrides.paths'])
+    expect(indexed.filter(key => !declared.has(key) && !unschemed.has(key))).toEqual([])
   })
 })
