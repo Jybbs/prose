@@ -5,15 +5,28 @@ input_file: crate/tests/fixtures/thematic/event_dispatch_match_and_calls/input.p
 ---
 [
   {
+    "code": "bare-imports",
+    "end_location": {
+      "column": 15,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 1
+    },
+    "message": "Bare import `logging` reaches 1 of its attributes. Rewrite as `from logging import ...` naming only the symbols this module uses"
+  },
+  {
     "code": "single-use-variables",
     "end_location": {
       "column": 11,
-      "row": 26
+      "row": 27
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 26
+      "row": 27
     },
     "message": "`totals` is assigned and used once. Consider inlining `{\n        \"created\" : 0,\n        \"deleted\" : 0,\n        \"failed\"  : 0,\n        \"skipped\" : 0,\n        \"updated\" : 0\n    }`"
   },
@@ -86,12 +99,12 @@ input_file: crate/tests/fixtures/thematic/event_dispatch_match_and_calls/input.p
     "code": "signature-annotations",
     "end_location": {
       "column": 51,
-      "row": 22
+      "row": 23
     },
     "fix": null,
     "location": {
       "column": 44,
-      "row": 22
+      "row": 23
     },
     "message": "Parameter `verbose` has no type annotation"
   },
@@ -99,12 +112,12 @@ input_file: crate/tests/fixtures/thematic/event_dispatch_match_and_calls/input.p
     "code": "signature-annotations",
     "end_location": {
       "column": 14,
-      "row": 22
+      "row": 23
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 22
+      "row": 23
     },
     "message": "`summarize` returns a value but has no return type annotation"
   }

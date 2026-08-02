@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/leading_comment_holds_its_import/input.py
+---
+# Imported so the submodule loads and mp.connection resolves later
+import multiprocessing.connection

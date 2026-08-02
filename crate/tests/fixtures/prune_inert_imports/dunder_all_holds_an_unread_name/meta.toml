@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Name Listed in `__all__` Holds Its Import"
+
+description = '''
+`loads` goes unread inside the module while `__all__` publishes it. **The re-export guard holds the import** and draws no report.
+'''

@@ -42,11 +42,54 @@ struct Meta {
     docs: Docs,
 }
 
+/// Each `.snap` in `case_dir` paired with the `input_file` its header
+/// names, skipping any snapshot carrying no such line.
+fn declared_inputs(case_dir: &Path) -> Vec<(String, String)> {
+    fs_err::read_dir(case_dir)
+        .unwrap()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.extension().is_some_and(|ext| ext == "snap"))
+        .sorted()
+        .filter_map(|path| {
+            let declared = fs_err::read_to_string(&path)
+                .ok()?
+                .lines()
+                .find_map(|line| line.strip_prefix("input_file: ").map(ToOwned::to_owned))?;
+            Some((dir_name(&path), declared))
+        })
+        .collect()
+}
+
 fn dir_name(path: &Path) -> String {
     path.file_name()
         .and_then(|name| name.to_str())
         .expect("fixture directory name is UTF-8")
         .to_owned()
+}
+
+/// True when the rule at `module`, a single file or a directory of
+/// them, carries `needle` anywhere inside it.
+fn module_carries(module: &Path, needle: &str) -> bool {
+    if let Ok(source) = fs_err::read_to_string(module.with_extension("rs")) {
+        return source.contains(needle);
+    }
+    WalkBuilder::new(module)
+        .build()
+        .flatten()
+        .filter(|entry| entry.file_type().is_some_and(|kind| kind.is_file()))
+        .any(|entry| {
+            fs_err::read_to_string(entry.path()).is_ok_and(|source| source.contains(needle))
+        })
+}
+
+/// The docs-site page for `slug`, searched across every family
+/// directory.
+fn rule_page(rules: &Path, slug: &str) -> Option<PathBuf> {
+    subdirs(rules)
+        .into_iter()
+        .map(|family| family.join(format!("{slug}.md")))
+        .find(|page| page.is_file())
 }
 
 fn subdirs(dir: &Path) -> Vec<PathBuf> {
@@ -57,6 +100,47 @@ fn subdirs(dir: &Path) -> Vec<PathBuf> {
         .filter(|path| path.is_dir())
         .sorted()
         .collect()
+}
+
+#[test]
+fn every_binding_reader_is_listed_on_the_primitive_page() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let page = fs_err::read_to_string(root.join("../site/primitives/binding-analysis.md"))
+        .expect("the primitive page reads");
+    let listed = page
+        .lines()
+        .find_map(|line| line.strip_prefix("consumedBy: ["))
+        .expect("the page declares consumedBy");
+
+    for slug in Pipeline::known_ids() {
+        let module = root.join(format!("src/rules/{}", slug.as_str().replace('-', "_")));
+        assert!(
+            !module_carries(&module, "binding_analysis()") || listed.contains(slug.as_str()),
+            "rule `{slug}` reads the binding table and is absent from `consumedBy`",
+        );
+    }
+}
+
+#[test]
+fn every_lint_emitting_rule_is_named_on_the_exit_code_page() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let rules = root.join("../site/rules");
+    for slug in Pipeline::known_ids() {
+        let module = root.join(format!("src/rules/{}", slug.as_str().replace('-', "_")));
+        if !module_carries(&module, "fn lint(&self") {
+            continue;
+        }
+        let page = rule_page(&rules, slug.as_str()).expect("every rule has a page");
+        let declares = page.parent().and_then(Path::file_name) == Some("lint".as_ref())
+            || fs_err::read_to_string(&page)
+                .expect("the rule page reads")
+                .lines()
+                .any(|line| line.starts_with("lints") && line.contains("true"));
+        assert!(
+            declares,
+            "rule `{slug}` emits a lint, so its page needs the lint family or `lints : true`",
+        );
+    }
 }
 
 #[test]
@@ -86,6 +170,12 @@ fn every_case_directory_is_well_formed() {
             for (input, snap) in INPUT_SNAPS {
                 if case_dir.join(input).is_file() && !case_dir.join(snap).is_file() {
                     violations.push(format!("{id}: {input} without its {snap}"));
+                }
+            }
+            for (snap, declared) in declared_inputs(&case_dir) {
+                if Path::new(&declared).parent().map(Path::file_name) != Some(case_dir.file_name())
+                {
+                    violations.push(format!("{id}: {snap} names `{declared}`"));
                 }
             }
 

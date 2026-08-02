@@ -1,6 +1,6 @@
 ---
 caption : "Rewrites `Optional[T]`, `Union[X, Y]`, and the `typing` generics to the `T | None`, `X | Y`, and builtin forms the target runtime carries."
-related : [unused-future-annotations]
+related : [prune-inert-imports]
 layout  : doc
 ---
 
@@ -42,7 +42,7 @@ Both facets fire, the same as on 3.10.
 Both facets fire, the same as on 3.10.
 
 == Python 3.14
-Both facets fire, pairing naturally with the deferred-annotation runtime that [[unused-future-annotations]] reads on the same axis.
+Both facets fire, pairing naturally with the deferred-annotation runtime that [[prune-inert-imports]] reads on the same axis.
 :::
 
 Below 3.10 only `rewrite-generics` fires, since `X | Y` raises at runtime before the PEP 604 form lands, and below 3.9 neither one does.

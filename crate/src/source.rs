@@ -210,6 +210,19 @@ impl Source {
             .map(TextRange::start)
     }
 
+    /// The full lines `range` spans, held back from the synthetic
+    /// newline closing the notebook cell that holds it. An ordinary
+    /// module takes the span unclamped, and a deletion over the result
+    /// empties a cell rather than merging it into the next.
+    pub(crate) fn full_lines_within_cell(&self, range: TextRange) -> TextRange {
+        let lines = self.text().full_lines_range(range);
+        let Some(cell) = self.cell_offsets.containing_range(range.start()) else {
+            return lines;
+        };
+        let content_end = cell.end() - TextSize::from(1);
+        TextRange::new(lines.start(), lines.end().min(content_end))
+    }
+
     /// Returns the source text of each notebook cell, the whole buffer
     /// as one slice for an ordinary module.
     pub fn cell_texts(&self) -> Vec<&str> {
@@ -698,6 +711,31 @@ mod tests {
             .expect("`+=` is an aug-assign operator");
 
         assert_eq!(offset, TextSize::new(2));
+    }
+
+    #[test]
+    fn full_lines_within_cell_holds_the_separator_closing_a_cell() {
+        // The first cell carries no newline of its own, so the one that
+        // ends its line is the separator `ruff_notebook` synthesized.
+        let source = notebook(&["import os", "value = 1\n"]);
+        let first = source.ast().body[0].range();
+
+        assert_eq!(
+            &source.text()[source.full_lines_within_cell(first)],
+            "import os",
+            "the span stops before the newline separating the cells",
+        );
+    }
+
+    #[test]
+    fn full_lines_within_cell_takes_the_whole_lines_of_an_ordinary_module() {
+        let source = parse("import os\nvalue = 1\n");
+        let first = source.ast().body[0].range();
+
+        assert_eq!(
+            &source.text()[source.full_lines_within_cell(first)],
+            "import os\n"
+        );
     }
 
     #[test]

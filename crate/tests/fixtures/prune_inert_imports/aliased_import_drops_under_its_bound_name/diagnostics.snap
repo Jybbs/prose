@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/prune_inert_imports/aliased_import_drops_under_its_bound_name/input.py
+---
+prune-inert-imports@0..19

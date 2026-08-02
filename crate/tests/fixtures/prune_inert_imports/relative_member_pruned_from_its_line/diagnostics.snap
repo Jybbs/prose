@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/prune_inert_imports/relative_member_pruned_from_its_line/input.py
+---
+prune-inert-imports@26..34
