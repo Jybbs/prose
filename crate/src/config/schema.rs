@@ -346,6 +346,32 @@ impl Default for MiscasedConstantsConfig {
     }
 }
 
+/// Configuration for the `modernize_annotations` rule, each facet
+/// gating one rewrite and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct ModernizeAnnotationsConfig {
+    pub enabled: bool,
+    /// Converts a `typing` generic to the builtin PEP 585 gave it, so
+    /// `List[int]` reads as `list[int]`. Runs on `target-version` 3.9
+    /// and higher, and `false` leaves every `typing` generic in place.
+    pub rewrite_generics: bool,
+    /// Rewrites `Optional[X]` and `Union[X, Y]` to the PEP 604 `X | None`
+    /// and `X | Y` forms. Runs on `target-version` 3.10 and higher, and
+    /// `false` leaves every legacy union in place.
+    pub rewrite_unions: bool,
+}
+
+impl Default for ModernizeAnnotationsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            rewrite_generics: true,
+            rewrite_unions: true,
+        }
+    }
+}
+
 /// Configuration for the `reassigned_constants` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -457,6 +483,7 @@ impl_rule_toggle!(
     CallLayoutConfig,
     CollectionLayoutConfig,
     MiscasedConstantsConfig,
+    ModernizeAnnotationsConfig,
     ReassignedConstantsConfig,
     SignatureLayoutConfig,
     SingleUseVariablesConfig,

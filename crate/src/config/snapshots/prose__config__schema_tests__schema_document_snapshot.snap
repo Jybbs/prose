@@ -234,6 +234,26 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       },
       "type": "object"
     },
+    "ModernizeAnnotationsConfig": {
+      "description": "Configuration for the `modernize_annotations` rule, each facet\ngating one rewrite and defaulting `true`.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "rewrite-generics": {
+          "default": true,
+          "description": "Converts a `typing` generic to the builtin PEP 585 gave it, so\n`List[int]` reads as `list[int]`. Runs on `target-version` 3.9\nand higher, and `false` leaves every `typing` generic in place.",
+          "type": "boolean"
+        },
+        "rewrite-unions": {
+          "default": true,
+          "description": "Rewrites `Optional[X]` and `Union[X, Y]` to the PEP 604 `X | None`\nand `X | Y` forms. Runs on `target-version` 3.10 and higher, and\n`false` leaves every legacy union in place.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "PythonVersion": {
       "anyOf": [
         {
@@ -528,19 +548,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
-        "legacy-union-syntax": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/ToggleOnly"
-            }
-          ],
-          "default": {
-            "enabled": true
-          }
-        },
         "line-overflow": {
           "anyOf": [
             {
@@ -566,6 +573,21 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "default": {
             "allow-pattern": "",
             "enabled": true
+          }
+        },
+        "modernize-annotations": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ModernizeAnnotationsConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "rewrite-generics": true,
+            "rewrite-unions": true
           }
         },
         "reassigned-constants": {
@@ -887,15 +909,17 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "import-layout": {
           "enabled": true
         },
-        "legacy-union-syntax": {
-          "enabled": true
-        },
         "line-overflow": {
           "enabled": true
         },
         "miscased-constants": {
           "allow-pattern": "",
           "enabled": true
+        },
+        "modernize-annotations": {
+          "enabled": true,
+          "rewrite-generics": true,
+          "rewrite-unions": true
         },
         "reassigned-constants": {
           "allow": [],

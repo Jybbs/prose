@@ -1,0 +1,10 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Legacy Annotation Comes Back in Its Modern Form"
+
+description = '''
+An annotation carrying both legacy spellings settles in one pass, with `typing.List[int]`
+reaching its builtin and `typing.Optional[...]` reaching the PEP 604 pipe. The `typing` import
+goes with them, since nothing reads it once the rewrites land.
+'''

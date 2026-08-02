@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/sole_call_argument_keeps_its_parentheses/input.py
+---
+from typing import cast
+
+
+def narrow(value: object) -> object:
+    return cast(int | None)
+
+
+def widen(value: object) -> object:
+    return cast(int | None, value)

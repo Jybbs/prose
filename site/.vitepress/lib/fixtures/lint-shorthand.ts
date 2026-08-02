@@ -9,7 +9,6 @@ interface RemoveShorthand  { kind  : 'remove'; text : string                   }
 export type Shorthand = RemoveShorthand | ReplaceShorthand
 
 interface ShorthandInput {
-  before    ?: string
   flagged    : string
   message    : string
   rule       : string
@@ -25,12 +24,8 @@ function firstBacktick(message: string): string | undefined {
 }
 
 export function lintShorthand(input: ShorthandInput): Shorthand | null {
-  const { before, flagged, message, rule, suggested } = input
+  const { flagged, message, rule, suggested } = input
   switch (rule) {
-    case 'legacy-union-syntax':
-      return before && suggested
-        ? { after : truncate(suggested), before, kind : 'replace' }
-        : null
     case 'single-use-variables': {
       // `flagged` spans the binding name, leaving the inlined value to come
       // from single_use_variables.rs's "Consider inlining `<value>`" message.

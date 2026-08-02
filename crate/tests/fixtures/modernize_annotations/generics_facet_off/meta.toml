@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "`rewrite-generics = false` Leaves the `typing` Generic"
+
+description = '''
+The union facet runs while the generic facet is off, so `List` keeps both its spelling and its
+import.
+'''

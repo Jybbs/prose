@@ -23,9 +23,12 @@ collection-layout@496..605
 docstring-expand@765..809
 group-imports@35..206
 import-layout@148..149
-legacy-union-syntax@292..309
-legacy-union-syntax@739..756
-legacy-union-syntax@907..936
+modernize-annotations@218..219
+modernize-annotations@292..309
+modernize-annotations@59..125
+modernize-annotations@618..619
+modernize-annotations@739..756
+modernize-annotations@907..936
 shed-parentheses@1338..1339
 shed-parentheses@1358..1359
 signature-annotations@1494..1499

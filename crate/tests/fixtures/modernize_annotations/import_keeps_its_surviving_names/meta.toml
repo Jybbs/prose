@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "Only the Names the Rewrite Read Are Dropped"
+
+description = '''
+`cast` is read at runtime and survives, so the alias beside it goes on its own rather than the
+whole import line.
+'''

@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/grouping_parens_absorbed/input.py
+---
+
+
+def annotate(x: int | None) -> None: ...

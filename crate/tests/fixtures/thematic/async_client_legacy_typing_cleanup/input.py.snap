@@ -7,11 +7,10 @@ import asyncio
 import json
 import logging
 
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Text
-from typing import Tuple, Union
+from typing import Any, AsyncIterator, Awaitable, Callable, Iterable, List, Mapping, Sequence, Text, Tuple
 
-Interval      = Union[int, float]
-Payload       = Dict[Text, Any]
+Interval      = int | float
+Payload       = dict[Text, Any]
 POLL_INTERVAL = 2.5
 
 Handler        = Callable[[Payload], Awaitable[None]]
@@ -19,7 +18,7 @@ log            = logging.getLogger("atlas.client")
 BACKOFF_CAPS   = {"default": 30.0}
 RETRY_STATUSES = [429, 500, 502, 503]
 USER_AGENT     = "atlas-client/0.4"
-_handlers: Dict[Text, Callable] = {}
+_handlers: dict[Text, Callable] = {}
 
 DEFAULT_HEADERS = {
     "Accept"          : "application/json",
@@ -42,7 +41,7 @@ async def consume(queue: "asyncio.Queue[Tuple[Text, Payload]]", limit=None):
         queue.task_done()
 
 
-def decode(raw) -> Optional[Payload]:
+def decode(raw) -> Payload | None:
     """
     Decode one raw poll response into a payload.
     """
@@ -53,7 +52,7 @@ def decode(raw) -> Optional[Payload]:
 async def poll(
     client,
     endpoint : Text,
-    params   : Optional[Mapping[Text, Text]],
+    params   : Mapping[Text, Text] | None,
     timeout  : Interval,
     backoff  : Interval
 ) -> AsyncIterator[Payload]:
