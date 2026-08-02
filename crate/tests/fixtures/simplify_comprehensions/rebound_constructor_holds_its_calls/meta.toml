@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Rebound Constructor Name Holds Every Call to It"
+
+description = '''
+A module that binds `list` itself leaves that name pointing somewhere other than the builtin, so its calls stand while `set` collapses as usual.
+'''

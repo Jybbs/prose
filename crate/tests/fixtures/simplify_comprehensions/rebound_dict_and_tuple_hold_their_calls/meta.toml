@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Rebinding Holds Only the Names It Covers"
+
+description = '''
+A module that binds `dict` and `tuple` itself holds every call to those two while `list` and `set` collapse as usual, so the suppression follows each name rather than the whole rule.
+'''

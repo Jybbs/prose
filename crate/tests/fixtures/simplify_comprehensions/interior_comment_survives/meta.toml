@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comment Inside the Rewritten Call Survives"
+
+description = '''
+Only the delimiters on either side of the members are rewritten, so a comment sitting among them keeps the line it describes.
+'''

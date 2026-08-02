@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/keyword_arguments_become_dict_keys/input.py
+---
+options = {"alpha": 1, "beta": 2}

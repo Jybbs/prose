@@ -5,6 +5,6 @@ title       = "Hold an Effectful Constant Within a Cell"
 description = '''
 A cell interleaves a definition with two constants. The inert `SEED = 42`
 hoists into the leading band above the definition, whereas the effectful
-`CACHE = dict(size=10)` holds its place, since a call runs code when the
-cell executes and reordering it would change what the run computes.
+`CACHE = build_cache(size=10)` holds its place, since a call runs code when
+the cell executes and reordering it would change what the run computes.
 '''

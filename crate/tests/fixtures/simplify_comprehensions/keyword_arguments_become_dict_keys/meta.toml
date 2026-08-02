@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Keyword Arguments to `dict()` Become Quoted Keys"
+
+description = '''
+Each keyword names a key the literal can carry directly, so `dict(alpha=1)` reads as `{"alpha": 1}`.
+'''

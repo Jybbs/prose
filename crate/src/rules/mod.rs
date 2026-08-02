@@ -26,6 +26,7 @@ pub(crate) mod reassigned_constants;
 pub(crate) mod shed_parentheses;
 pub(crate) mod signature_annotations;
 pub(crate) mod signature_layout;
+pub(crate) mod simplify_comprehensions;
 pub(crate) mod single_use_variables;
 pub(crate) mod step_narration;
 pub(crate) mod strip_align_padding;

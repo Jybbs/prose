@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/nested_literal_folds_in_one_pass/input.py
+---
+values = [1, 2]
+nested = list(cells)

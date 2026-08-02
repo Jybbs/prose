@@ -34,6 +34,9 @@ Config {
         shed_parentheses: ToggleOnly {
             enabled: true,
         },
+        simplify_comprehensions: ToggleOnly {
+            enabled: true,
+        },
         docstring_frame: ToggleOnly {
             enabled: true,
         },

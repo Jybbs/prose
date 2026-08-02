@@ -822,6 +822,7 @@ mod tests {
         config.rules.shed_parentheses.enabled = false;
         config.rules.signature_annotations.enabled = false;
         config.rules.signature_layout.enabled = false;
+        config.rules.simplify_comprehensions.enabled = false;
         config.rules.single_use_variables.enabled = false;
         config.rules.step_narration.enabled = false;
         config.rules.strip_align_padding.enabled = false;

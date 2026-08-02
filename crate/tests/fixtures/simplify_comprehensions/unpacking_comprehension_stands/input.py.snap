@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/unpacking_comprehension_stands/input.py
+---
+merged = {**row for row in rows}
+spread = [*row for row in rows]
