@@ -1,12 +1,12 @@
 import loader                 from '../../lib/reference/config-keys.data'
 import { repoRoot, runProse } from '../../lib/shared/paths'
+import { NESTED_TABLES }      from '../../lib/shared/rule-schema'
 
 const keys = await loader.load([])
 
 const schema = JSON.parse(runProse(repoRoot(import.meta.url), ['schema']))
-const NESTED = new Set(['cache', 'imports', 'rules'])
 
-const topKeys = Object.keys(schema.properties).filter(key => !NESTED.has(key))
+const topKeys = Object.keys(schema.properties).filter(key => !NESTED_TABLES.has(key))
 
 describe('derived config keys', () => {
   it('covers every top-level schema key outside the nested tables', () => {

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "group-subcategories = false Sorts by Tier and Name Alone"
+
+description = '''
+With `group-subcategories = false`, the band sorts by tier and name alone, so the alias `Zeta` no longer clusters ahead of the constant `ALPHA`.
+'''

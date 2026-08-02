@@ -91,7 +91,7 @@ pub struct BandConstantsConfig {
     /// the `SCREAMING_CASE` constants, then the remaining module state,
     /// before sorting by name within each. `false` sorts by tier and
     /// name alone.
-    pub group_constants: bool,
+    pub group_subcategories: bool,
     /// Caps how many evaluation tiers open their own blank-separated
     /// sub-band, merging every deeper tier into the last. `1` holds the
     /// band tight and `false` opens one sub-band per tier.
@@ -102,7 +102,7 @@ impl Default for BandConstantsConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            group_constants: true,
+            group_subcategories: true,
             max_tiers: InlineBudget(NonZeroUsize::new(2)),
         }
     }

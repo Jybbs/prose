@@ -68,11 +68,11 @@ pub(super) fn module_band_plan<'src>(
     blocks: &[TextRange],
     code_width: usize,
     defer_annotations: bool,
-    group_constants: bool,
+    group_subcategories: bool,
     target_version: Option<PythonVersion>,
 ) -> Option<BandPlan<'src>> {
     let analysis = source.binding_analysis();
-    let aliases = group_constants.then(|| AliasContext::new(body, analysis));
+    let aliases = group_subcategories.then(|| AliasContext::new(body, analysis));
     let builtins_minor = target_version.unwrap_or_default().minor;
     let notebook = source.is_notebook();
     let suppression = source.suppression_map();

@@ -88,11 +88,11 @@ Config {
             sort_dunder_lists: false,
         },
         band_constants: BandConstantsConfig {
-            enabled: true,
-            group_constants: true,
+            enabled: false,
+            group_subcategories: false,
             max_tiers: InlineBudget(
                 Some(
-                    2,
+                    4,
                 ),
             ),
         },

@@ -15,6 +15,7 @@ align-equals              = false
 align-imports             = false
 align-match-case          = false
 alphabetize               = { enabled = false, group-methods = false, sort-definitions = false, sort-dict-keys = false, sort-docstring-entries = false, sort-dunder-lists = false }
+band-constants            = { enabled = false, group-subcategories = false, max-tiers = 4 }
 bare-imports              = { allow = ["scipy", "torch"], enabled = false, exempt-aliased = false, max-attributes = 2 }
 blank-lines               = false
 call-layout               = { enabled = false, max-args = 6 }

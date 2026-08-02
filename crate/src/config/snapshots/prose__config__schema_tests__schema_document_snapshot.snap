@@ -61,7 +61,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "default": true,
           "type": "boolean"
         },
-        "group-constants": {
+        "group-subcategories": {
           "default": true,
           "description": "Clusters each band by subcategory, the type aliases first, then\nthe `SCREAMING_CASE` constants, then the remaining module state,\nbefore sorting by name within each. `false` sorts by tier and\nname alone.",
           "type": "boolean"
@@ -398,7 +398,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           ],
           "default": {
             "enabled": true,
-            "group-constants": true,
+            "group-subcategories": true,
             "max-tiers": 2
           }
         },
@@ -848,7 +848,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "band-constants": {
           "enabled": true,
-          "group-constants": true,
+          "group-subcategories": true,
           "max-tiers": 2
         },
         "bare-imports": {
