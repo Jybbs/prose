@@ -25,7 +25,7 @@ vi.mock('../../lib/reference/facets.data', () => ({
       rules : [
         { rule: 'call-layout', facets: [{ default: '3', key: 'max-args', meaningNodes: [{ kind: 'text', text: 'Explode a call.' }], type: 'positive int | false' }] },
         { rule: 'collection-layout', facets: [
-          { default: 'true', key: 'collapse', meaningNodes: [{ kind: 'text', text: 'Join with ' }, { kind: 'code', text: 'false' }, { kind: 'text', text: '.' }], type: 'bool' },
+          { default: 'true', key: 'keep-multiline-literals', meaningNodes: [{ kind: 'text', text: 'Join with ' }, { kind: 'code', text: 'false' }, { kind: 'text', text: '.' }], type: 'bool' },
           { default: '8', key: 'max-atomics', meaningNodes: [{ kind: 'text', text: 'Keep short.' }], type: 'positive int | false' }
         ] }
       ]
@@ -56,7 +56,7 @@ describe('PerRuleFacets', () => {
     const w = mountFacets()
     expect(w.get('.per-rule-facets-scope').text()).toBe('every rule')
     expect(w.findAllComponents(InlineRuleLink).map(c => c.props('slug'))).toEqual(['call-layout', 'collection-layout'])
-    expect(w.findAll('.per-rule-facets-key').map(k => k.text())).toEqual(['enabled', 'max-args', 'collapse', 'max-atomics'])
+    expect(w.findAll('.per-rule-facets-key').map(k => k.text())).toEqual(['enabled', 'max-args', 'keep-multiline-literals', 'max-atomics'])
   })
 
   it('renders each facet type, default, and rendered meaning', () => {

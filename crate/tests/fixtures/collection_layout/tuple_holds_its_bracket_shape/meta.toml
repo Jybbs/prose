@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Held Tuples Keep Their Source Bracket Shape"
+
+description = '''
+A multi-line tuple holds its break while **preserving its source bracket shape**, so a paren tuple keeps its parens through the re-expansion and a one-element tuple keeps both its parens and its trailing `,`. A single-line tuple that fits is untouched whatever its bracket shape, whereas one carrying an over-count dict expands along with the inner it encloses.
+'''

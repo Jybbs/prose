@@ -1,6 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/thematic/collapse_strips_colon_padding/input.py
----
-config = {"alpha": 1, "beta": 2, "gamma": 3}

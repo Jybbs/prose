@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Single-Item Literal Holds Its Column While Bare Brackets Join"
+
+description = '''
+A single-item or empty literal already on one line stays there, and one written as a flush column holds that break even though it carries nothing to flow. A bare bracket pair split across two lines is no column at all, so it rejoins. **A single-entry dict that overflows still breaks at `:` and hangs its value**, since any non-empty dict is an expand target.
+'''

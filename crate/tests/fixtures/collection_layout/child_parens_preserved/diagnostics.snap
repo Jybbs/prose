@@ -1,7 +1,6 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/collection_layout/child_parens_preserved/input.py
+input_file: crate/tests/fixtures/collection_layout/child_parens_preserved/input.py
 ---
-collection-layout@129..162
 collection-layout@14..107
