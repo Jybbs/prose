@@ -8,11 +8,6 @@ import os
 from collections import deque
 from typing      import Callable
 
-
-def handle(fn: Callable[[int | None], list[str]]) -> None: ...
-
-
-def mix(value: list[int] | str | None) -> None: ...
-
-
-def pack(values: tuple[list[int], *Ts]) -> None: ...
+handler : Callable[[int | None], list[str]] = fn
+packed  : tuple[list[int], *Ts] = ()
+mixed   : list[int] | str | None = None

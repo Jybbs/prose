@@ -3,7 +3,7 @@ source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/modernize_annotations/container_members_rewrite_in_place/input.py
 ---
-modernize-annotations@124..141
-modernize-annotations@182..207
-modernize-annotations@241..248
+modernize-annotations@118..135
+modernize-annotations@160..167
+modernize-annotations@197..222
 modernize-annotations@73..96
