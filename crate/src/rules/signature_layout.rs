@@ -2,7 +2,6 @@
 //! parameter per line, gated by `code_line_length` and `max_params`.
 //! Comments inside `()` pin the existing shape.
 
-use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     ParameterWithDefault, Parameters, Stmt, StmtFunctionDef,
@@ -65,9 +64,9 @@ struct Layout<'a> {
 }
 
 impl Layout<'_> {
-    /// Builds the canonical expanded text spanning `(` through `:`.
-    fn build_expanded(&self, fd: &StmtFunctionDef, indent: usize) -> String {
-        let parts: Vec<&str> = self.signature_parts(&fd.parameters).collect();
+    /// Builds the canonical expanded text spanning `(` through `:` from
+    /// `parts`, one parameter per line.
+    fn build_expanded(&self, fd: &StmtFunctionDef, parts: &[&str], indent: usize) -> String {
         let mut out = explode_parens(
             self.newline,
             indent,
@@ -79,9 +78,10 @@ impl Layout<'_> {
         out
     }
 
-    /// Builds the canonical inline text spanning `(` through `:`.
-    fn build_inline(&self, fd: &StmtFunctionDef) -> String {
-        let mut out = format!("({})", self.signature_parts(&fd.parameters).join(", "));
+    /// Builds the canonical inline text spanning `(` through `:` from
+    /// `parts`.
+    fn build_inline(&self, fd: &StmtFunctionDef, parts: &[&str]) -> String {
+        let mut out = format!("({})", parts.join(", "));
         self.push_return_and_colon(&mut out, fd);
         out
     }
@@ -97,8 +97,15 @@ impl Layout<'_> {
         {
             return;
         }
+        let parts: Vec<&str> = self.signature_parts(params).collect();
+        // A parameter default that spans lines leaves both canonical forms
+        // carrying that break, the joined signature fractured and the
+        // expanded one holding continuation lines at their source indent.
+        if parts.iter().any(|part| part.contains('\n')) {
+            return;
+        }
         let replacement_range = self.replacement_range(fd);
-        let inline = self.build_inline(fd);
+        let inline = self.build_inline(fd, &parts);
         let count_trips = self.max_params.is_some_and(|cap| params.len() > cap);
         let length_trips = self.source.column_overflows(
             params.range().start(),
@@ -106,7 +113,7 @@ impl Layout<'_> {
             self.code_line_length,
         );
         let replacement = if count_trips || length_trips {
-            self.build_expanded(fd, self.source.line_indent_width(fd.start()))
+            self.build_expanded(fd, &parts, self.source.line_indent_width(fd.start()))
         } else if self.source.contains_line_break(replacement_range) {
             inline
         } else {
