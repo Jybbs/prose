@@ -3,7 +3,5 @@ previewable = false
 title       = "A Sole Call Argument Keeps the Call's Parentheses"
 
 description = '''
-A legacy annotation standing as a call's only argument rewrites inside the parentheses rather than
-absorbing them, the argument list bounding the span the rewrite replaces rather than the call around
-it.
+A legacy annotation standing as a call's only argument rewrites inside the parentheses rather than absorbing them, the argument list bounding the span the rewrite replaces rather than the call around it.
 '''

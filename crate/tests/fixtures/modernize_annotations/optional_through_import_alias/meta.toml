@@ -3,6 +3,5 @@ previewable = false
 title       = "An Aliased Import Resolves to the Name It Binds"
 
 description = '''
-`from typing import Optional as Opt` binds `Opt` to `typing.Optional`, so `Opt[int]` rewrites
-and the aliased import drops.
+`from typing import Optional as Opt` binds `Opt` to `typing.Optional`, so `Opt[int]` rewrites and the aliased import drops.
 '''

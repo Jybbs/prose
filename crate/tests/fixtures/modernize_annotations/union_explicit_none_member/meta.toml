@@ -3,6 +3,5 @@ previewable = false
 title       = "An Explicit `None` Member Joins the Pipe Run"
 
 description = '''
-A `Union` naming `None` outright needs no `| None` tail appended, since the member already
-renders as one arm of the run.
+A `Union` naming `None` outright needs no `| None` tail appended, since the member already renders as one arm of the run.
 '''

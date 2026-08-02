@@ -3,6 +3,5 @@ previewable = false
 title       = "Grouping Parentheses Are Absorbed Into the Rewrite"
 
 description = '''
-Parentheses wrapping the annotation fall inside the replaced span, leaving `int | None` bare
-rather than re-wrapped.
+Parentheses wrapping the annotation fall inside the replaced span, leaving `int | None` bare rather than re-wrapped.
 '''

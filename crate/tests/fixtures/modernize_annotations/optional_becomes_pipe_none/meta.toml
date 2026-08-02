@@ -3,6 +3,5 @@ previewable = true
 title       = "`Optional[X]` Becomes `X | None`"
 
 description = '''
-`Optional[int]` reads as `int | None` from Python 3.10 on, and the import that bound `Optional`
-drops with it.
+`Optional[int]` reads as `int | None` from Python 3.10 on, and the import that bound `Optional` drops with it.
 '''

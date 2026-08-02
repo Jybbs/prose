@@ -3,6 +3,5 @@ previewable = false
 title       = "A Skipped Line Keeps the Import Its Neighbor Would Drop"
 
 description = '''
-The suppressed annotation is left as written and its read still counts, so the import survives
-the rewrite of the line below it.
+The suppressed annotation is left as written and its read still counts, so the import survives the rewrite of the line below it.
 '''

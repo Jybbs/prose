@@ -3,6 +3,5 @@ previewable = true
 title       = "A Forward-Reference Member Holds the Union"
 
 description = '''
-The rewritten `"Node" | None` raises at evaluation time, in that a `str` carries no `|`, so the
-whole annotation stays legacy.
+The rewritten `"Node" | None` raises at evaluation time, in that a `str` carries no `|`, so the whole annotation stays legacy.
 '''

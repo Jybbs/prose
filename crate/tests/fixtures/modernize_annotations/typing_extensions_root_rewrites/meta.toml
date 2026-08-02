@@ -3,6 +3,5 @@ previewable = false
 title       = "The `typing_extensions` Root Reaches Both Rewrites"
 
 description = '''
-`typing_extensions` re-exports the same members `typing` carries, so an annotation reaching either
-generic or union through it rewrites identically and its import drops the same way.
+`typing_extensions` re-exports the same members `typing` carries, so an annotation reaching either generic or union through it rewrites identically and its import drops the same way.
 '''

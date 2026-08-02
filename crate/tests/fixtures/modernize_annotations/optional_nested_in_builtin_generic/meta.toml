@@ -3,6 +3,5 @@ previewable = false
 title       = "A Legacy Member Inside a Modern Generic Rewrites in Place"
 
 description = '''
-The enclosing `dict[...]` is already modern, so the edit narrows to the `Optional[int]` member
-it encloses.
+The enclosing `dict[...]` is already modern, so the edit narrows to the `Optional[int]` member it encloses.
 '''

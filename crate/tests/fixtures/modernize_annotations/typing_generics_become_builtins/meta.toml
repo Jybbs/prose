@@ -3,6 +3,5 @@ previewable = true
 title       = "Every `typing` Generic Reaches Its Builtin"
 
 description = '''
-PEP 585 gave each of these a builtin spelling on Python 3.9, so the whole `typing` import goes
-once the last one converts.
+PEP 585 gave each of these a builtin spelling on Python 3.9, so the whole `typing` import goes once the last one converts.
 '''

@@ -3,6 +3,5 @@ previewable = false
 title       = "An Unsubscripted Generic Converts Too"
 
 description = '''
-A bare `List` names the same object its subscripted form does, so it reaches `list` without a
-slice to carry.
+A bare `List` names the same object its subscripted form does, so it reaches `list` without a slice to carry.
 '''
