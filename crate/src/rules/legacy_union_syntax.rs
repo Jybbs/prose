@@ -52,7 +52,7 @@ impl Rule for LegacyUnionSyntax {
         let mut walker = Walker {
             diagnostics: Vec::new(),
             imports: &imports,
-            parents: Vec::new(),
+            parent: AnyNodeRef::from(source.ast()),
             rule: self.id(),
             source,
         };
@@ -66,7 +66,7 @@ impl Rule for LegacyUnionSyntax {
 struct Walker<'a> {
     diagnostics: Vec<Diagnostic>,
     imports: &'a HashMap<&'a str, QualifiedName<'a>>,
-    parents: Vec<AnyNodeRef<'a>>,
+    parent: AnyNodeRef<'a>,
     rule: RuleId,
     source: &'a Source,
 }
@@ -89,11 +89,7 @@ impl<'a> Walker<'a> {
         let replacement = format!("{joined}{suffix}");
         let legacy = self.source.slice(subscript);
         let message = format!("`{legacy}` is the legacy form. Use `{replacement}`");
-        let parent = *self
-            .parents
-            .last()
-            .expect("invariant: subscript visited inside a stmt or expr");
-        let range = self.source.paren_aware_range(subscript.into(), parent);
+        let range = self.source.paren_aware_range(subscript.into(), self.parent);
         let edit = Edit::range_replacement(replacement, range);
         self.diagnostics
             .push(Diagnostic::suggestion(self.rule, range, message, edit));
@@ -110,6 +106,13 @@ impl<'a> Walker<'a> {
         let base = self.imports.get(head)?;
         Some(base.clone().extend_members(tail.iter().copied()))
     }
+
+    /// Runs `walk` with `node` recorded as the enclosing parent.
+    fn under(&mut self, node: impl Into<AnyNodeRef<'a>>, walk: impl FnOnce(&mut Self)) {
+        let parent = std::mem::replace(&mut self.parent, node.into());
+        walk(self);
+        self.parent = parent;
+    }
 }
 
 impl<'a> Visitor<'a> for Walker<'a> {
@@ -117,15 +120,11 @@ impl<'a> Visitor<'a> for Walker<'a> {
         if let Expr::Subscript(subscript) = expr {
             self.maybe_emit(subscript);
         }
-        self.parents.push(expr.into());
-        walk_expr(self, expr);
-        self.parents.pop();
+        self.under(expr, |walker| walk_expr(walker, expr));
     }
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        self.parents.push(stmt.into());
-        walk_stmt(self, stmt);
-        self.parents.pop();
+        self.under(stmt, |walker| walk_stmt(walker, stmt));
     }
 }
 

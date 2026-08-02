@@ -137,6 +137,26 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       },
       "type": "object"
     },
+    "ChainLayoutConfig": {
+      "description": "Configuration for the `chain_layout` rule.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "max-links": {
+          "$ref": "#/$defs/InlineBudget",
+          "default": 2,
+          "description": "Breaks a method chain to one link per line once its link count\nexceeds the cap. `false` disables the count trigger and leaves\nonly the `code-line-length` budget."
+        },
+        "max-shift": {
+          "$ref": "#/$defs/MaxShift",
+          "default": 16,
+          "description": "The width a hung link's dot column may sit past the indent the\nbroken chain opens at. A wider receiver takes the full split\ninstead, standing alone with every link flush beneath it. `0`\nalways takes that split, and `false` lifts the cap so every\nchain hangs."
+        }
+      },
+      "type": "object"
+    },
     "CollectionLayoutConfig": {
       "description": "Configuration for the `collection_layout` rule, each shape facet\ngating one move and defaulting `true`.",
       "properties": {
@@ -443,6 +463,21 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "default": {
             "enabled": true,
             "max-args": 3
+          }
+        },
+        "chain-layout": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ChainLayoutConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-links": 2,
+            "max-shift": 16
           }
         },
         "collection-layout": {
@@ -863,6 +898,11 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "call-layout": {
           "enabled": true,
           "max-args": 3
+        },
+        "chain-layout": {
+          "enabled": true,
+          "max-links": 2,
+          "max-shift": 16
         },
         "collection-layout": {
           "collapse": true,

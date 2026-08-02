@@ -173,6 +173,33 @@ impl Default for CallLayoutConfig {
     }
 }
 
+/// Configuration for the `chain_layout` rule.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct ChainLayoutConfig {
+    pub enabled: bool,
+    /// Breaks a method chain to one link per line once its link count
+    /// exceeds the cap. `false` disables the count trigger and leaves
+    /// only the `code-line-length` budget.
+    pub max_links: InlineBudget,
+    /// The width a hung link's dot column may sit past the indent the
+    /// broken chain opens at. A wider receiver takes the full split
+    /// instead, standing alone with every link flush beneath it. `0`
+    /// always takes that split, and `false` lifts the cap so every
+    /// chain hangs.
+    pub max_shift: MaxShift,
+}
+
+impl Default for ChainLayoutConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_links: InlineBudget(NonZeroUsize::new(2)),
+            max_shift: MaxShift::default(),
+        }
+    }
+}
+
 /// Configuration for the `collection_layout` rule, each shape facet
 /// gating one move and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
@@ -455,6 +482,7 @@ impl_rule_toggle!(
     BandConstantsConfig,
     BareImportsConfig,
     CallLayoutConfig,
+    ChainLayoutConfig,
     CollectionLayoutConfig,
     MiscasedConstantsConfig,
     ReassignedConstantsConfig,

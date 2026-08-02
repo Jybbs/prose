@@ -43,6 +43,17 @@ Config {
         group_imports: ToggleOnly {
             enabled: true,
         },
+        chain_layout: ChainLayoutConfig {
+            enabled: false,
+            max_links: InlineBudget(
+                Some(
+                    4,
+                ),
+            ),
+            max_shift: Cap(
+                8,
+            ),
+        },
         collection_layout: CollectionLayoutConfig {
             collapse: false,
             enabled: false,

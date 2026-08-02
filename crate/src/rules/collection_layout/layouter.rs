@@ -23,6 +23,7 @@ use super::{
 use crate::{
     primitives::{
         INDENT_STEP, edit::narrowed_replacement, inline::single_line_form, layout::is_layoutable,
+        reserve::settled_column,
     },
     source::Source,
 };
@@ -482,15 +483,12 @@ impl<'a> Visitor<'a> for Layouter<'a> {
             return;
         }
         let range = expr.range();
+        let start = range.start();
         // Test the collapse against the column `align_equals` shifts the
         // value to, not the unaligned column the literal currently opens
         // at, so a fit that survives the shift is what the rule collapses.
-        let column = self
-            .reservations
-            .get(&range.start())
-            .copied()
-            .unwrap_or_else(|| self.source.column_of(range.start()));
-        let indent = self.source.line_indent_width(range.start());
+        let column = settled_column(&self.reservations, start, || self.source.column_of(start));
+        let indent = self.source.line_indent_width(start);
         match self.replacement_for(expr, column, indent) {
             Some(text) => self
                 .edits
