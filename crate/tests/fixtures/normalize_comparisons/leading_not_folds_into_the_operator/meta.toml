@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Leading Not Folds Into the Operator It Negates"
+
+description = '''
+`not a in b` becomes `a not in b` and `not a is b` becomes `a is not b`, folds the language grammar defines rather than approximates.
+'''

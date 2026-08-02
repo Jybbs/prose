@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_comparisons/chained_comparison_holds_as_written/input.py
+---
+def span(low, n, value):
+    if 0 < n < 10:
+        return low
+    return value == low == None

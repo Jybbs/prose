@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Test Against None Reads as an Identity Check"
+
+description = '''
+`== None` becomes `is None` and `!= None` becomes `is not None`, the identity form PEP 8 prescribes for a comparison against a singleton.
+'''

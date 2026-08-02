@@ -16,6 +16,9 @@ use crate::{
 pub(crate) struct StepNarration;
 
 impl StepNarration {
+    pub(crate) const MESSAGE: &'static str =
+        "Numbered-step comment found. Consider extracting each step as a named function";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

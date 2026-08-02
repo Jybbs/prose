@@ -31,6 +31,8 @@ type CallArgs<'a> = HashMap<TextSize, HashMap<&'a str, Vec<&'a Expr>>>;
 pub(crate) struct SignatureAnnotations;
 
 impl SignatureAnnotations {
+    pub(crate) const MESSAGE: &'static str = "Flag a missing parameter or return type annotation";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

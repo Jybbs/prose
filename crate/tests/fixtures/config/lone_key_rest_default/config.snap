@@ -34,6 +34,12 @@ Config {
         shed_parentheses: ToggleOnly {
             enabled: true,
         },
+        normalize_comparisons: NormalizeComparisonsConfig {
+            enabled: true,
+            rewrite_identity: true,
+            rewrite_negation: true,
+            rewrite_operand_order: true,
+        },
         docstring_frame: ToggleOnly {
             enabled: true,
         },

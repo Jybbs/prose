@@ -22,6 +22,7 @@ pub(crate) mod import_layout;
 pub(crate) mod legacy_union_syntax;
 pub(crate) mod line_overflow;
 pub(crate) mod miscased_constants;
+pub(crate) mod normalize_comparisons;
 pub(crate) mod reassigned_constants;
 pub(crate) mod shed_parentheses;
 pub(crate) mod signature_annotations;

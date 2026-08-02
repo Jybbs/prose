@@ -19,8 +19,8 @@ use crate::{
     config::{
         AlignmentConfig, AlphabetizeConfig, BandConstantsConfig, BareImportsConfig,
         CallLayoutConfig, CollectionLayoutConfig, Config, MiscasedConstantsConfig,
-        ReassignedConstantsConfig, SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly,
-        rule_schema,
+        NormalizeComparisonsConfig, ReassignedConstantsConfig, SignatureLayoutConfig,
+        SingleUseVariablesConfig, ToggleOnly, rule_schema,
     },
     diagnostics::Diagnostic,
     pipeline::Pipeline,
@@ -32,12 +32,12 @@ use crate::{
         docstring_expand::DocstringExpand, docstring_frame::DocstringFrame,
         docstring_wrap::DocstringWrap, group_imports::GroupImports, import_layout::ImportLayout,
         legacy_union_syntax::LegacyUnionSyntax, line_overflow::LineOverflow,
-        miscased_constants::MiscasedConstants, reassigned_constants::ReassignedConstants,
-        shed_parentheses::ShedParentheses, signature_annotations::SignatureAnnotations,
-        signature_layout::SignatureLayout, single_use_variables::SingleUseVariables,
-        step_narration::StepNarration, strip_align_padding::StripAlignPadding,
-        strip_none_return::StripNoneReturn, strip_trailing_commas::StripTrailingCommas,
-        unsorted_positionals::UnsortedPositionals,
+        miscased_constants::MiscasedConstants, normalize_comparisons::NormalizeComparisons,
+        reassigned_constants::ReassignedConstants, shed_parentheses::ShedParentheses,
+        signature_annotations::SignatureAnnotations, signature_layout::SignatureLayout,
+        single_use_variables::SingleUseVariables, step_narration::StepNarration,
+        strip_align_padding::StripAlignPadding, strip_none_return::StripNoneReturn,
+        strip_trailing_commas::StripTrailingCommas, unsorted_positionals::UnsortedPositionals,
         unused_future_annotations::UnusedFutureAnnotations,
     },
     source::Source,
@@ -81,7 +81,7 @@ pub(crate) trait Rule: Send + Sync {
     }
 
     /// One-line imperative carried as `Diagnostic.message`. Defaults
-    /// to the registry-supplied string for `self.id()`.
+    /// to the `MESSAGE` const on the rule registered under `self.id()`.
     fn message(&self) -> &'static str {
         message_for_id(self.id())
     }
@@ -214,10 +214,12 @@ const fn slug_index(slug: &str) -> Option<usize> {
 /// [`Pipeline::with_defaults`], and [`Pipeline::with_filters`] from a
 /// registry table. Each row leads with the rule's kebab-case slug,
 /// then its `[tool.prose.rules]` field name, config sub-table type,
-/// rule struct, the slugs whose output it reads, and its one-line
-/// imperative. The slug is the single source consumed by
-/// `RuleId::from_str`, the `[tool.prose.rules.<slug>]` section name,
-/// the `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
+/// rule struct, and the slugs whose output it reads. The slug is the
+/// single source consumed by `RuleId::from_str`, the
+/// `[tool.prose.rules.<slug>]` section name, the
+/// `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
+/// Each rule's one-line imperative lives on its own type as
+/// `MESSAGE`, which [`message_for_id`] reads back per slug.
 ///
 /// Row order is pipeline order.
 ///
@@ -227,10 +229,13 @@ const fn slug_index(slug: &str) -> Option<usize> {
 /// `id()` collapses to `Self::SLUG`.
 macro_rules! register_rules {
     ($($slug:literal: $field:ident: $config:ty => $ty:ident
-        => [$($after:literal),*] => $msg:literal),* $(,)?) => {
+        => [$($after:literal),*]),* $(,)?) => {
         pub(crate) const KNOWN_IDS: &[RuleId] = &[
             $(RuleId($slug)),*
         ];
+
+        /// Each rule's one-line imperative, indexed alongside [`KNOWN_IDS`].
+        const MESSAGES: &[&str] = &[$($ty::MESSAGE),*];
 
         /// Each rule's dependency slugs, indexed alongside [`KNOWN_IDS`].
         const PIPELINE_DEPENDENCIES: &[&[&str]] = &[$(&[$($after),*]),*];
@@ -307,12 +312,12 @@ macro_rules! register_rules {
             }
         };
 
-        /// Default backing for [`Rule::message`]. Matches each
-        /// registered slug to its registry-supplied imperative.
+        /// Default backing for [`Rule::message`], the `MESSAGE` const
+        /// on the rule registered under `id`.
         pub(crate) fn message_for_id(id: RuleId) -> &'static str {
-            match id.as_str() {
-                $($slug => $msg,)*
-                _ => unreachable!("rule id must be registered"),
+            match slug_index(id.as_str()) {
+                Some(index) => MESSAGES[index],
+                None => unreachable!("rule id must be registered"),
             }
         }
 
@@ -368,36 +373,37 @@ macro_rules! register_rules {
 }
 
 register_rules! {
-    "unused-future-annotations": unused_future_annotations: ToggleOnly                => UnusedFutureAnnotations => [] => "remove unused `from __future__ import annotations`",
-    "strip-none-return":         strip_none_return:         ToggleOnly                => StripNoneReturn         => [] => "drop a redundant `-> None` return annotation",
-    "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly                => StripTrailingCommas     => [] => "strip trailing comma",
-    "shed-parentheses":          shed_parentheses:          ToggleOnly                => ShedParentheses         => [] => "shed a redundant grouping parenthesis pair",
-    "docstring-frame":           docstring_frame:           ToggleOnly                => DocstringFrame          => [] => "canonicalize docstring quotes and frame the opener and closer on their own lines",
-    "docstring-expand":          docstring_expand:          ToggleOnly                => DocstringExpand         => ["docstring-frame"] => "expand single-line docstring to multi-line form",
-    "group-imports":             group_imports:             ToggleOnly                => GroupImports            => [] => "group imports into bare, external, and local sections",
-    "collection-layout":         collection_layout:         CollectionLayoutConfig    => CollectionLayout        => [] => "lay out collection literal against the line budget",
-    "call-layout":               call_layout:               CallLayoutConfig          => CallLayout              => ["collection-layout"] => "explode call arguments to one keyword per line",
-    "signature-layout":          signature_layout:          SignatureLayoutConfig     => SignatureLayout         => [] => "normalize function signature to one-line or one-per-line shape",
-    "align-match-case":          align_match_case:          AlignmentConfig           => AlignMatchCase          => [] => "align match-case colons",
-    "alphabetize":               alphabetize:               AlphabetizeConfig         => Alphabetize             => ["collection-layout", "call-layout", "signature-layout"] => "alphabetize this group",
-    "band-constants":            band_constants:            BandConstantsConfig       => BandConstants           => ["alphabetize"] => "band module constants into leading and trailing bands",
-    "blank-lines":               blank_lines:               ToggleOnly                => BlankLines              => ["group-imports", "alphabetize"] => "normalize blank-line spacing",
-    "import-layout":             import_layout:             ToggleOnly                => ImportLayout            => ["alphabetize"] => "split an over-long `from` import into repeated-prefix lines",
-    "align-imports":             align_imports:             AlignmentConfig           => AlignImports            => ["alphabetize", "blank-lines", "import-layout"] => "align consecutive `import`s",
-    "align-colons":              align_colons:              AlignmentConfig           => AlignColons             => [] => "align consecutive `:` separators",
-    "docstring-wrap":            docstring_wrap:            ToggleOnly                => DocstringWrap           => ["docstring-frame", "docstring-expand", "align-colons"] => "wrap docstring prose to the configured budget",
-    "align-equals":              align_equals:              AlignmentConfig           => AlignEquals             => ["collection-layout", "alphabetize", "align-colons"] => "align consecutive `=` operators",
-    "align-comparisons":         align_comparisons:         AlignmentConfig           => AlignComparisons        => [] => "align consecutive comparison operators",
-    "strip-align-padding":       strip_align_padding:       ToggleOnly                => StripAlignPadding       => ["align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"] => "drop padding that lines up with nothing",
-    "bare-imports":              bare_imports:              BareImportsConfig         => BareImports             => [] => "Flag a bare import a `from` import could replace",
-    "miscased-constants":        miscased_constants:        MiscasedConstantsConfig   => MiscasedConstants       => [] => "Module constant is not SCREAMING_CASE. Rename it to the SCREAMING_CASE form",
-    "reassigned-constants":      reassigned_constants:      ReassignedConstantsConfig => ReassignedConstants     => [] => "SCREAMING_CASE name is reassigned despite its constant casing. Rename it lowercase or keep it write-once",
-    "step-narration":            step_narration:            ToggleOnly                => StepNarration           => [] => "Numbered-step comment found. Consider extracting each step as a named function",
-    "legacy-union-syntax":       legacy_union_syntax:       ToggleOnly                => LegacyUnionSyntax       => [] => "Rewrite legacy `Optional`/`Union` to PEP 604 union syntax",
-    "single-use-variables":      single_use_variables:      SingleUseVariablesConfig  => SingleUseVariables      => [] => "Binding is assigned and used once. Consider inlining",
-    "unsorted-positionals":      unsorted_positionals:      ToggleOnly                => UnsortedPositionals     => [] => "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword",
-    "signature-annotations":     signature_annotations:     ToggleOnly                => SignatureAnnotations    => [] => "Flag a missing parameter or return type annotation",
-    "line-overflow":             line_overflow:             ToggleOnly                => LineOverflow            => ["strip-align-padding"] => "Flag a line over its length budget that no reshape can bring within",
+    "unused-future-annotations": unused_future_annotations: ToggleOnly                 => UnusedFutureAnnotations => [],
+    "strip-none-return":         strip_none_return:         ToggleOnly                 => StripNoneReturn         => [],
+    "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly                 => StripTrailingCommas     => [],
+    "shed-parentheses":          shed_parentheses:          ToggleOnly                 => ShedParentheses         => [],
+    "normalize-comparisons":     normalize_comparisons:     NormalizeComparisonsConfig => NormalizeComparisons    => ["shed-parentheses"],
+    "docstring-frame":           docstring_frame:           ToggleOnly                 => DocstringFrame          => [],
+    "docstring-expand":          docstring_expand:          ToggleOnly                 => DocstringExpand         => ["docstring-frame"],
+    "group-imports":             group_imports:             ToggleOnly                 => GroupImports            => [],
+    "collection-layout":         collection_layout:         CollectionLayoutConfig     => CollectionLayout        => [],
+    "call-layout":               call_layout:               CallLayoutConfig           => CallLayout              => ["collection-layout"],
+    "signature-layout":          signature_layout:          SignatureLayoutConfig      => SignatureLayout         => [],
+    "align-match-case":          align_match_case:          AlignmentConfig            => AlignMatchCase          => [],
+    "alphabetize":               alphabetize:               AlphabetizeConfig          => Alphabetize             => ["collection-layout", "call-layout", "signature-layout"],
+    "band-constants":            band_constants:            BandConstantsConfig        => BandConstants           => ["alphabetize"],
+    "blank-lines":               blank_lines:               ToggleOnly                 => BlankLines              => ["group-imports", "alphabetize"],
+    "import-layout":             import_layout:             ToggleOnly                 => ImportLayout            => ["alphabetize"],
+    "align-imports":             align_imports:             AlignmentConfig            => AlignImports            => ["alphabetize", "blank-lines", "import-layout"],
+    "align-colons":              align_colons:              AlignmentConfig            => AlignColons             => [],
+    "docstring-wrap":            docstring_wrap:            ToggleOnly                 => DocstringWrap           => ["docstring-frame", "docstring-expand", "align-colons"],
+    "align-equals":              align_equals:              AlignmentConfig            => AlignEquals             => ["collection-layout", "alphabetize", "align-colons"],
+    "align-comparisons":         align_comparisons:         AlignmentConfig            => AlignComparisons        => [],
+    "strip-align-padding":       strip_align_padding:       ToggleOnly                 => StripAlignPadding       => ["align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"],
+    "bare-imports":              bare_imports:              BareImportsConfig          => BareImports             => [],
+    "miscased-constants":        miscased_constants:        MiscasedConstantsConfig    => MiscasedConstants       => [],
+    "reassigned-constants":      reassigned_constants:      ReassignedConstantsConfig  => ReassignedConstants     => [],
+    "step-narration":            step_narration:            ToggleOnly                 => StepNarration           => [],
+    "legacy-union-syntax":       legacy_union_syntax:       ToggleOnly                 => LegacyUnionSyntax       => [],
+    "single-use-variables":      single_use_variables:      SingleUseVariablesConfig   => SingleUseVariables      => [],
+    "unsorted-positionals":      unsorted_positionals:      ToggleOnly                 => UnsortedPositionals     => [],
+    "signature-annotations":     signature_annotations:     ToggleOnly                 => SignatureAnnotations    => [],
+    "line-overflow":             line_overflow:             ToggleOnly                 => LineOverflow            => ["strip-align-padding"],
 }
 
 #[cfg(test)]

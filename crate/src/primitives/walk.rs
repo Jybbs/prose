@@ -1,10 +1,18 @@
 //! Statement- and expression-tree probes over a module body.
 
 use ruff_python_ast::{
-    Expr, InterpolatedStringElement, Stmt,
-    statement_visitor::{StatementVisitor, walk_stmt},
-    visitor::{Visitor, walk_expr},
+    AnyNodeRef, Arguments, Expr, InterpolatedStringElement, ModModule, Stmt,
+    statement_visitor::{self, StatementVisitor},
+    visitor::{Visitor, walk_arguments, walk_expr, walk_interpolated_string_element, walk_stmt},
 };
+
+/// Whether a walk reaches inside an f-string or t-string replacement
+/// field.
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub(crate) enum Interpolations {
+    Opaque,
+    Walked,
+}
 
 struct AnyProbe<F> {
     found: bool,
@@ -19,7 +27,7 @@ impl<'src, F: FnMut(&Stmt) -> bool> StatementVisitor<'src> for AnyProbe<F> {
         if (self.hit)(stmt) {
             self.found = true;
         } else {
-            walk_stmt(self, stmt);
+            statement_visitor::walk_stmt(self, stmt);
         }
     }
 }
@@ -32,23 +40,45 @@ struct Collector<F, T> {
 impl<'src, F: FnMut(&Stmt) -> Option<T>, T> StatementVisitor<'src> for Collector<F, T> {
     fn visit_stmt(&mut self, stmt: &'src Stmt) {
         self.found.extend((self.probe)(stmt));
-        walk_stmt(self, stmt);
+        statement_visitor::walk_stmt(self, stmt);
     }
 }
 
-struct ExprCollector<F, T> {
+struct ParentedCollector<'src, F, T> {
+    interpolations: Interpolations,
     found: Vec<T>,
+    parents: Vec<AnyNodeRef<'src>>,
     probe: F,
 }
 
-impl<'src, F: FnMut(&Expr) -> Option<T>, T> Visitor<'src> for ExprCollector<F, T> {
-    fn visit_expr(&mut self, expr: &'src Expr) {
-        self.found.extend((self.probe)(expr));
-        walk_expr(self, expr);
+impl<'src, F: FnMut(&'src Expr, AnyNodeRef<'src>) -> Option<T>, T> Visitor<'src>
+    for ParentedCollector<'src, F, T>
+{
+    fn visit_arguments(&mut self, arguments: &'src Arguments) {
+        self.parents.push(arguments.into());
+        walk_arguments(self, arguments);
+        self.parents.pop();
     }
 
-    /// Leaves a replacement field unwalked.
-    fn visit_interpolated_string_element(&mut self, _: &'src InterpolatedStringElement) {}
+    fn visit_expr(&mut self, expr: &'src Expr) {
+        let parent = *self.parents.last().expect("seeded with the module node");
+        self.found.extend((self.probe)(expr, parent));
+        self.parents.push(expr.into());
+        walk_expr(self, expr);
+        self.parents.pop();
+    }
+
+    fn visit_interpolated_string_element(&mut self, element: &'src InterpolatedStringElement) {
+        if self.interpolations == Interpolations::Walked {
+            walk_interpolated_string_element(self, element);
+        }
+    }
+
+    fn visit_stmt(&mut self, stmt: &'src Stmt) {
+        self.parents.push(stmt.into());
+        walk_stmt(self, stmt);
+        self.parents.pop();
+    }
 }
 
 /// True when any statement in `body` satisfies `hit`, descending through
@@ -60,19 +90,35 @@ pub(crate) fn any_over_stmts(body: &[Stmt], hit: impl FnMut(&Stmt) -> bool) -> b
     probe.found
 }
 
-/// Every `Some` that `probe` returns over each expression in `body`,
-/// descending through every compound body including nested `def` and
-/// `class` scopes. An expression inside an f-string or t-string
-/// replacement field is not visited.
-pub(crate) fn filter_map_over_exprs<T>(
-    body: &[Stmt],
-    probe: impl FnMut(&Expr) -> Option<T>,
+/// Every `Some` that `probe` returns over each expression under
+/// `module`, descending through every compound body including nested
+/// `def` and `class` scopes. An expression inside an f-string or
+/// t-string replacement field is not visited.
+pub(crate) fn filter_map_over_exprs<'src, T>(
+    module: &'src ModModule,
+    mut probe: impl FnMut(&'src Expr) -> Option<T>,
 ) -> Vec<T> {
-    let mut collector = ExprCollector {
+    filter_map_over_parented_exprs(module, Interpolations::Opaque, |expr, _| probe(expr))
+}
+
+/// Every `Some` that `probe` returns over each expression under
+/// `module`, paired with the node enclosing it. The module itself is
+/// the outermost parent, and a call's argument resolves against the
+/// `Arguments` node so a parenthesis-aware range recovers its pair.
+/// `interpolations` decides whether the walk reaches inside an f-string or
+/// t-string replacement field.
+pub(crate) fn filter_map_over_parented_exprs<'src, T>(
+    module: &'src ModModule,
+    interpolations: Interpolations,
+    probe: impl FnMut(&'src Expr, AnyNodeRef<'src>) -> Option<T>,
+) -> Vec<T> {
+    let mut collector = ParentedCollector {
+        interpolations,
         found: Vec::new(),
+        parents: vec![module.into()],
         probe,
     };
-    collector.visit_body(body);
+    collector.visit_body(&module.body);
     collector.found
 }
 
@@ -93,6 +139,7 @@ pub(crate) fn filter_map_over_stmts<T>(
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
+    use ruff_text_size::Ranged;
 
     use super::*;
     use crate::testing::parse;
@@ -106,13 +153,26 @@ mod tests {
 
     /// The entry count of every dict literal in `src`, in walk order.
     fn dict_sizes(src: &str) -> Vec<usize> {
-        filter_map_over_exprs(&parse(src).ast().body, |expr| {
-            Some(expr.as_dict_expr()?.len())
-        })
+        filter_map_over_exprs(parse(src).ast(), |expr| Some(expr.as_dict_expr()?.len()))
     }
 
     fn has_pass(src: &str) -> bool {
         any_over_stmts(&parse(src).ast().body, |stmt| matches!(stmt, Stmt::Pass(_)))
+    }
+
+    /// The source text of the parent reported for the `Name` bound to
+    /// `id` in `src`.
+    fn parent_of_name(src: &str, id: &str) -> String {
+        let source = parse(src);
+        let parents =
+            filter_map_over_parented_exprs(source.ast(), Interpolations::Opaque, |expr, parent| {
+                expr.as_name_expr()
+                    .filter(|name| name.id == *id)
+                    .map(|_| parent.range())
+            });
+        source
+            .slice(*parents.first().expect("the name is present"))
+            .to_owned()
     }
 
     #[test]
@@ -162,6 +222,40 @@ mod tests {
             label = f"{ {'b': 2, 'c': 3} }"
         "#});
         assert_eq!(sizes, vec![1], "the interpolated dict goes unvisited");
+    }
+
+    #[test]
+    fn filter_map_over_parented_exprs_pairs_a_call_argument_with_its_arguments_node() {
+        assert_eq!(parent_of_name("f(a)\n", "a"), "(a)");
+    }
+
+    #[test]
+    fn filter_map_over_parented_exprs_pairs_an_operand_with_its_expression() {
+        assert_eq!(parent_of_name("y = a + b\n", "a"), "a + b");
+    }
+
+    #[test]
+    fn filter_map_over_parented_exprs_skips_a_replacement_field_when_opaque() {
+        let source = parse("print(a, f\"{b}\")\n");
+        let names =
+            filter_map_over_parented_exprs(source.ast(), Interpolations::Opaque, |expr, _| {
+                Some(expr.as_name_expr()?.id.to_string())
+            });
+        assert_eq!(
+            names,
+            vec!["print", "a"],
+            "the interpolated name goes unvisited",
+        );
+    }
+
+    #[test]
+    fn filter_map_over_parented_exprs_walks_a_replacement_field_when_asked() {
+        let source = parse("print(a, f\"{b}\")\n");
+        let names =
+            filter_map_over_parented_exprs(source.ast(), Interpolations::Walked, |expr, _| {
+                Some(expr.as_name_expr()?.id.to_string())
+            });
+        assert_eq!(names, vec!["print", "a", "b"]);
     }
 
     #[test]

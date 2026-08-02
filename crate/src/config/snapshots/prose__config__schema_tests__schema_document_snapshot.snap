@@ -234,6 +234,31 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       },
       "type": "object"
     },
+    "NormalizeComparisonsConfig": {
+      "description": "Configuration for the `normalize_comparisons` rule, each facet\ngating one rewrite and defaulting `true`.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "rewrite-identity": {
+          "default": true,
+          "description": "Rewrites a `==` or `!=` test against `None` to `is` or `is not`,\nand flags a test against `True` or `False` without rewriting it.\n`false` leaves every singleton comparison as written.",
+          "type": "boolean"
+        },
+        "rewrite-negation": {
+          "default": true,
+          "description": "Folds a leading `not` into the `in` or `is` it negates, so\n`not a in b` reads `a not in b`. `false` keeps the outer `not`.",
+          "type": "boolean"
+        },
+        "rewrite-operand-order": {
+          "default": true,
+          "description": "Flips a comparison whose constant side leads, so `42 == n` reads\n`n == 42`. `false` keeps the authored operand order.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "PythonVersion": {
       "anyOf": [
         {
@@ -568,6 +593,22 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
+        "normalize-comparisons": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/NormalizeComparisonsConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "rewrite-identity": true,
+            "rewrite-negation": true,
+            "rewrite-operand-order": true
+          }
+        },
         "reassigned-constants": {
           "anyOf": [
             {
@@ -896,6 +937,12 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "miscased-constants": {
           "allow-pattern": "",
           "enabled": true
+        },
+        "normalize-comparisons": {
+          "enabled": true,
+          "rewrite-identity": true,
+          "rewrite-negation": true,
+          "rewrite-operand-order": true
         },
         "reassigned-constants": {
           "allow": [],

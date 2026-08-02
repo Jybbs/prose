@@ -30,6 +30,9 @@ pub(crate) struct SignatureLayout {
 }
 
 impl SignatureLayout {
+    pub(crate) const MESSAGE: &'static str =
+        "normalize function signature to one-line or one-per-line shape";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),

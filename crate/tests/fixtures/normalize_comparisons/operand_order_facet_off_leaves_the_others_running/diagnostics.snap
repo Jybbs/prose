@@ -1,0 +1,8 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/normalize_comparisons/operand_order_facet_off_leaves_the_others_running/input.py
+---
+normalize-comparisons@173..183
+normalize-comparisons@52..54
+normalize-comparisons@96..100

@@ -37,6 +37,9 @@ pub(crate) struct ImportLayout {
 }
 
 impl ImportLayout {
+    pub(crate) const MESSAGE: &'static str =
+        "split an over-long `from` import into repeated-prefix lines";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let align = &config.rules.align_imports;
         Self {

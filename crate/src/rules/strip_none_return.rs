@@ -21,6 +21,8 @@ use crate::{
 pub(crate) struct StripNoneReturn;
 
 impl StripNoneReturn {
+    pub(crate) const MESSAGE: &'static str = "drop a redundant `-> None` return annotation";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

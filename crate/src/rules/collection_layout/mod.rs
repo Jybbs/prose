@@ -43,6 +43,8 @@ pub(crate) struct CollectionLayout {
 }
 
 impl CollectionLayout {
+    pub(crate) const MESSAGE: &'static str = "lay out collection literal against the line budget";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.collection_layout;
         Self {
@@ -65,7 +67,7 @@ impl Rule for CollectionLayout {
         // so the per-node check is a containment scan rather than a re-walk.
         let count_cap = self.max_dict_entries.filter(|_| self.explode);
         let tripping_dicts = count_cap.map_or_else(Vec::new, |cap| {
-            filter_map_over_exprs(body, |expr| {
+            filter_map_over_exprs(source.ast(), |expr| {
                 expr.as_dict_expr()
                     .filter(|dict| dict.len() > cap)
                     .map(Ranged::range)

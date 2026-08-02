@@ -38,6 +38,8 @@ pub(crate) struct BlankLines {
 }
 
 impl BlankLines {
+    pub(crate) const MESSAGE: &'static str = "normalize blank-line spacing";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             first_party: config.first_party(),

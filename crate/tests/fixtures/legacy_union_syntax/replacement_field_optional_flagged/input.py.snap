@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/legacy_union_syntax/replacement_field_optional_flagged/input.py
+---
+from typing import Optional
+
+label = f"{Optional[int]}"
+plain: Optional[str] = None

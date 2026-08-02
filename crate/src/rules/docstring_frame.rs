@@ -25,6 +25,9 @@ use crate::{
 pub(crate) struct DocstringFrame;
 
 impl DocstringFrame {
+    pub(crate) const MESSAGE: &'static str =
+        "canonicalize docstring quotes and frame the opener and closer on their own lines";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

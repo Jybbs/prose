@@ -27,6 +27,8 @@ pub(crate) struct UnusedFutureAnnotations {
 }
 
 impl UnusedFutureAnnotations {
+    pub(crate) const MESSAGE: &'static str = "remove unused `from __future__ import annotations`";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             target_version: config.target_version,

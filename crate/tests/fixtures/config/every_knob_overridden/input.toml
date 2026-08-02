@@ -25,6 +25,7 @@ docstring-wrap            = false
 import-layout             = false
 legacy-union-syntax       = false
 miscased-constants        = { allow-pattern = "^_", enabled = false }
+normalize-comparisons     = { enabled = false, rewrite-identity = false, rewrite-negation = false, rewrite-operand-order = false }
 reassigned-constants      = { allow = ["LOG_LEVEL"], enabled = false }
 signature-annotations     = false
 signature-layout          = { enabled = false, max-params = false }

@@ -7,6 +7,7 @@ pub(crate) mod blanks;
 pub(crate) mod call_keywords;
 pub(crate) mod colon_targets;
 pub(crate) mod comments;
+pub(crate) mod comparison;
 pub(crate) mod constructor;
 pub(crate) mod decorator;
 pub(crate) mod docstring;
