@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_backslash_continuations/run_of_continuations_folds_once/input.py
+---
+x = 1 + 2
+
+y = alpha + beta + gamma

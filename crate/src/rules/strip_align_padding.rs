@@ -4,14 +4,17 @@
 //! bracket delimiter. Runs after the alignment rules in
 //! `Pipeline::with_defaults` so it sees their output.
 
-use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::token::TokenKind;
-use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
-    primitives::{aligner, colon_targets::ColonEmitter, edit::singleton_groups},
+    primitives::{
+        aligner,
+        brackets::{is_closer, is_opener},
+        colon_targets::ColonEmitter,
+        edit::singleton_groups,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -85,10 +88,9 @@ impl ColonEmitter for Emitter<'_> {
 /// break. Tokens inside an f-string or t-string replacement field stay
 /// untouched, tracked through `interp_depth`.
 fn delimiter_padding_edits(source: &Source) -> Vec<Edit> {
-    let tokens = source.tokens();
     let mut interp_depth: u32 = 0;
     let mut edits = Vec::new();
-    for (token, next) in tokens.iter().tuple_windows() {
+    for (token, next, gap) in source.token_gaps() {
         let kind = token.kind();
         if matches!(kind, TokenKind::FStringStart | TokenKind::TStringStart) {
             interp_depth += 1;
@@ -98,7 +100,6 @@ fn delimiter_padding_edits(source: &Source) -> Vec<Edit> {
         if interp_depth > 0 {
             continue;
         }
-        let gap = TextRange::new(token.end(), next.start());
         if gap.is_empty() || source.contains_line_break(gap) {
             continue;
         }
@@ -109,16 +110,6 @@ fn delimiter_padding_edits(source: &Source) -> Vec<Edit> {
         }
     }
     edits
-}
-
-/// Returns `true` when `kind` is a closing bracket `)` `]` `}`.
-fn is_closer(kind: TokenKind) -> bool {
-    matches!(kind, TokenKind::Rpar | TokenKind::Rsqb | TokenKind::Rbrace)
-}
-
-/// Returns `true` when `kind` is an opening bracket `(` `[` `{`.
-fn is_opener(kind: TokenKind) -> bool {
-    matches!(kind, TokenKind::Lpar | TokenKind::Lsqb | TokenKind::Lbrace)
 }
 
 #[cfg(test)]
@@ -182,26 +173,6 @@ mod tests {
         let edits = delimiter_padding_edits(&parse("f( )\n"));
         assert_eq!(edits.len(), 1);
         assert_eq!(edits[0].range(), range(2, 3));
-    }
-
-    #[rstest]
-    #[case(TokenKind::Rpar, true)]
-    #[case(TokenKind::Rsqb, true)]
-    #[case(TokenKind::Rbrace, true)]
-    #[case(TokenKind::Lpar, false)]
-    #[case(TokenKind::Name, false)]
-    fn is_closer_flags_closing_brackets(#[case] kind: TokenKind, #[case] expected: bool) {
-        assert_eq!(is_closer(kind), expected);
-    }
-
-    #[rstest]
-    #[case(TokenKind::Lpar, true)]
-    #[case(TokenKind::Lsqb, true)]
-    #[case(TokenKind::Lbrace, true)]
-    #[case(TokenKind::Rpar, false)]
-    #[case(TokenKind::Name, false)]
-    fn is_opener_flags_opening_brackets(#[case] kind: TokenKind, #[case] expected: bool) {
-        assert_eq!(is_opener(kind), expected);
     }
 
     #[test]

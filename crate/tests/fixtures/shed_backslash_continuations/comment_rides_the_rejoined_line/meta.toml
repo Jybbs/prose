@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Trailing Comment Rides the Rejoined Line"
+
+description = '''
+A comment closing the continuation line joins onto the merged line with the code it annotates, and its width counts toward the budget that decides between rejoining and parenthesizing.
+'''

@@ -23,6 +23,7 @@ pub(crate) mod legacy_union_syntax;
 pub(crate) mod line_overflow;
 pub(crate) mod miscased_constants;
 pub(crate) mod reassigned_constants;
+pub(crate) mod shed_backslash_continuations;
 pub(crate) mod shed_parentheses;
 pub(crate) mod signature_annotations;
 pub(crate) mod signature_layout;

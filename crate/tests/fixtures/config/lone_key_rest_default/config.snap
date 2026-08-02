@@ -22,6 +22,9 @@ Config {
         first_party: [],
     },
     rules: RuleConfigs {
+        shed_backslash_continuations: ToggleOnly {
+            enabled: true,
+        },
         unused_future_annotations: ToggleOnly {
             enabled: true,
         },

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Split Too Long to Rejoin Takes Parentheses"
+
+description = '''
+Where the rejoined line would overflow the budget, the outermost expression spanning the break is parenthesized instead, so the bracketed form carries the split the backslash used to.
+'''
