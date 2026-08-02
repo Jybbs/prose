@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Soft-Wrapped Literal Rejoins While a Column Holds"
+
+description = '''
+A literal whose opening bracket shares its line with an entry, or whose closing bracket trails one, reads as a soft wrap rather than an authored column, so it rejoins onto one line. A set, a `**` spread, and a one-element tuple each rejoin the same way, the tuple keeping the trailing `,` that makes it a tuple at all. The dict beside them opens and closes on bracket-only lines, which is the shape `keep-multiline-literals` holds.
+'''

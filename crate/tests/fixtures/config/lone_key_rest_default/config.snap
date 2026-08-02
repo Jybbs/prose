@@ -49,9 +49,9 @@ Config {
             enabled: true,
         },
         collection_layout: CollectionLayoutConfig {
-            collapse: true,
             enabled: true,
             explode: true,
+            keep_multiline_literals: true,
             max_atomics: InlineBudget(
                 Some(
                     8,
@@ -96,7 +96,7 @@ Config {
         },
         band_constants: BandConstantsConfig {
             enabled: true,
-            group_constants: true,
+            group_subcategories: true,
             max_tiers: InlineBudget(
                 Some(
                     2,

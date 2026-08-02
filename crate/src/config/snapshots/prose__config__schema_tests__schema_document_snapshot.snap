@@ -61,7 +61,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "default": true,
           "type": "boolean"
         },
-        "group-constants": {
+        "group-subcategories": {
           "default": true,
           "description": "Clusters each band by subcategory, the type aliases first, then\nthe `SCREAMING_CASE` constants, then the remaining module state,\nbefore sorting by name within each. `false` sorts by tier and\nname alone.",
           "type": "boolean"
@@ -138,13 +138,8 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "CollectionLayoutConfig": {
-      "description": "Configuration for the `collection_layout` rule, each shape facet\ngating one move and defaulting `true`.",
+      "description": "Configuration for the `collection_layout` rule, each facet gating\none shape decision and defaulting `true`.",
       "properties": {
-        "collapse": {
-          "default": true,
-          "description": "Joins a fitting multi-line literal, subscript, comprehension, or\ndict key back to one line. `false` freezes those shapes where they\nsit.",
-          "type": "boolean"
-        },
         "enabled": {
           "default": true,
           "type": "boolean"
@@ -152,6 +147,11 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "explode": {
           "default": true,
           "description": "Expands an overflowing or over-count collection to one entry per\nline. `false` suppresses every expansion and leaves the count cap\ninert.",
+          "type": "boolean"
+        },
+        "keep-multiline-literals": {
+          "default": true,
+          "description": "Holds a literal the author laid out as a flush bracketed column\nof two or more entries. `false` joins one whose single-line form\nfits the budget, and every other break rejoins either way.",
           "type": "boolean"
         },
         "max-atomics": {
@@ -418,7 +418,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           ],
           "default": {
             "enabled": true,
-            "group-constants": true,
+            "group-subcategories": true,
             "max-tiers": 2
           }
         },
@@ -475,9 +475,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             }
           ],
           "default": {
-            "collapse": true,
             "enabled": true,
             "explode": true,
+            "keep-multiline-literals": true,
             "max-atomics": 8,
             "max-dict-entries": 3,
             "wrap-dict-entries": true
@@ -870,7 +870,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "band-constants": {
           "enabled": true,
-          "group-constants": true,
+          "group-subcategories": true,
           "max-tiers": 2
         },
         "bare-imports": {
@@ -887,9 +887,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "max-args": 3
         },
         "collection-layout": {
-          "collapse": true,
           "enabled": true,
           "explode": true,
+          "keep-multiline-literals": true,
           "max-atomics": 8,
           "max-dict-entries": 3,
           "wrap-dict-entries": true

@@ -91,7 +91,7 @@ pub struct BandConstantsConfig {
     /// the `SCREAMING_CASE` constants, then the remaining module state,
     /// before sorting by name within each. `false` sorts by tier and
     /// name alone.
-    pub group_constants: bool,
+    pub group_subcategories: bool,
     /// Caps how many evaluation tiers open their own blank-separated
     /// sub-band, merging every deeper tier into the last. `1` holds the
     /// band tight and `false` opens one sub-band per tier.
@@ -102,7 +102,7 @@ impl Default for BandConstantsConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            group_constants: true,
+            group_subcategories: true,
             max_tiers: InlineBudget(NonZeroUsize::new(2)),
         }
     }
@@ -173,20 +173,20 @@ impl Default for CallLayoutConfig {
     }
 }
 
-/// Configuration for the `collection_layout` rule, each shape facet
-/// gating one move and defaulting `true`.
+/// Configuration for the `collection_layout` rule, each facet gating
+/// one shape decision and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CollectionLayoutConfig {
-    /// Joins a fitting multi-line literal, subscript, comprehension, or
-    /// dict key back to one line. `false` freezes those shapes where they
-    /// sit.
-    pub collapse: bool,
     pub enabled: bool,
     /// Expands an overflowing or over-count collection to one entry per
     /// line. `false` suppresses every expansion and leaves the count cap
     /// inert.
     pub explode: bool,
+    /// Holds a literal the author laid out as a flush bracketed column
+    /// of two or more entries. `false` joins one whose single-line form
+    /// fits the budget, and every other break rejoins either way.
+    pub keep_multiline_literals: bool,
     /// Keeps short collections on one line when each entry is an atomic
     /// literal and the run fits the cap. `false` removes the cap and
     /// packs by width alone.
@@ -202,9 +202,9 @@ pub struct CollectionLayoutConfig {
 impl Default for CollectionLayoutConfig {
     fn default() -> Self {
         Self {
-            collapse: true,
             enabled: true,
             explode: true,
+            keep_multiline_literals: true,
             max_atomics: InlineBudget(NonZeroUsize::new(8)),
             max_dict_entries: InlineBudget(NonZeroUsize::new(3)),
             wrap_dict_entries: true,
