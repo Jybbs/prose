@@ -132,6 +132,9 @@ Config {
         strip_align_padding: ToggleOnly {
             enabled: false,
         },
+        comment_spacing: ToggleOnly {
+            enabled: false,
+        },
         bare_imports: BareImportsConfig {
             allow: [
                 "scipy",

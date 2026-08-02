@@ -463,6 +463,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "wrap-dict-entries": true
           }
         },
+        "comment-spacing": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
         "docstring-expand": {
           "anyOf": [
             {
@@ -871,6 +884,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "max-atomics": 8,
           "max-dict-entries": 3,
           "wrap-dict-entries": true
+        },
+        "comment-spacing": {
+          "enabled": true
         },
         "docstring-expand": {
           "enabled": true

@@ -810,6 +810,7 @@ mod tests {
         config.rules.blank_lines.enabled = false;
         config.rules.call_layout.enabled = false;
         config.rules.collection_layout.enabled = false;
+        config.rules.comment_spacing.enabled = false;
         config.rules.docstring_expand.enabled = false;
         config.rules.docstring_frame.enabled = false;
         config.rules.docstring_wrap.enabled = false;

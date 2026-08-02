@@ -29,8 +29,9 @@ use crate::{
         align_imports::AlignImports, align_match_case::AlignMatchCase, alphabetize::Alphabetize,
         band_constants::BandConstants, bare_imports::BareImports, blank_lines::BlankLines,
         call_layout::CallLayout, collection_layout::CollectionLayout,
-        docstring_expand::DocstringExpand, docstring_frame::DocstringFrame,
-        docstring_wrap::DocstringWrap, group_imports::GroupImports, import_layout::ImportLayout,
+        comment_spacing::CommentSpacing, docstring_expand::DocstringExpand,
+        docstring_frame::DocstringFrame, docstring_wrap::DocstringWrap,
+        group_imports::GroupImports, import_layout::ImportLayout,
         legacy_union_syntax::LegacyUnionSyntax, line_overflow::LineOverflow,
         miscased_constants::MiscasedConstants, reassigned_constants::ReassignedConstants,
         shed_parentheses::ShedParentheses, signature_annotations::SignatureAnnotations,
@@ -389,6 +390,7 @@ register_rules! {
     "align-equals":              align_equals:              AlignmentConfig           => AlignEquals             => ["collection-layout", "alphabetize", "align-colons"] => "align consecutive `=` operators",
     "align-comparisons":         align_comparisons:         AlignmentConfig           => AlignComparisons        => [] => "align consecutive comparison operators",
     "strip-align-padding":       strip_align_padding:       ToggleOnly                => StripAlignPadding       => ["align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"] => "drop padding that lines up with nothing",
+    "comment-spacing":           comment_spacing:           ToggleOnly                => CommentSpacing          => [] => "normalize comment spacing",
     "bare-imports":              bare_imports:              BareImportsConfig         => BareImports             => [] => "Flag a bare import a `from` import could replace",
     "miscased-constants":        miscased_constants:        MiscasedConstantsConfig   => MiscasedConstants       => [] => "Module constant is not SCREAMING_CASE. Rename it to the SCREAMING_CASE form",
     "reassigned-constants":      reassigned_constants:      ReassignedConstantsConfig => ReassignedConstants     => [] => "SCREAMING_CASE name is reassigned despite its constant casing. Rename it lowercase or keep it write-once",
@@ -397,7 +399,7 @@ register_rules! {
     "single-use-variables":      single_use_variables:      SingleUseVariablesConfig  => SingleUseVariables      => [] => "Binding is assigned and used once. Consider inlining",
     "unsorted-positionals":      unsorted_positionals:      ToggleOnly                => UnsortedPositionals     => [] => "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword",
     "signature-annotations":     signature_annotations:     ToggleOnly                => SignatureAnnotations    => [] => "Flag a missing parameter or return type annotation",
-    "line-overflow":             line_overflow:             ToggleOnly                => LineOverflow            => ["strip-align-padding"] => "Flag a line over its length budget that no reshape can bring within",
+    "line-overflow":             line_overflow:             ToggleOnly                => LineOverflow            => ["strip-align-padding", "comment-spacing"] => "Flag a line over its length budget that no reshape can bring within",
 }
 
 #[cfg(test)]

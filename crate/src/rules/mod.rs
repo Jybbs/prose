@@ -14,6 +14,7 @@ pub(crate) mod bare_imports;
 pub(crate) mod blank_lines;
 pub(crate) mod call_layout;
 pub(crate) mod collection_layout;
+pub(crate) mod comment_spacing;
 pub(crate) mod docstring_expand;
 pub(crate) mod docstring_frame;
 pub(crate) mod docstring_wrap;

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Gap Already Past Two Columns Is Left Where It Sits"
+
+description = '''
+Two columns is the floor rather than the target, so a wider gap between the code and its trailing comment survives untouched. That leaves a shared comment column reachable by an alignment rule rather than flattened before one can read it.
+'''
