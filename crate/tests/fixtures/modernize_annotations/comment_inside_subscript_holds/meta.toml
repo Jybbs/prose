@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment Inside the Subscript Holds the Rewrite"
+
+description = '''
+Rewriting the subscript would drop the comment it carries, so the annotation stays legacy.
+'''

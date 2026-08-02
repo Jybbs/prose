@@ -158,10 +158,10 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['annotations', 'type annotation', 'type annotations'],
     definition : 'An annotation is a `name: Type` declaration on a function parameter, return '
                + 'value, or variable. Type checkers and version-gated rules like '
-               + '`legacy-union-syntax` and `unused-future-annotations` read it, and '
+               + '`modernize-annotations` and `unused-future-annotations` read it, and '
                + '`alphabetize` treats a non-deferred annotation as a reference that pins '
                + 'definition order.',
-    families   : ['lint', 'alignment', 'ordering'],
+    families   : ['formatting', 'alignment', 'ordering'],
     href       : 'https://docs.python.org/3/glossary.html#term-annotation'
   },
 
@@ -458,14 +458,24 @@ export const glossary: Record<string, GlossaryEntry> = {
     href       : '/primitives/docstring#the-pep-257-definition'
   },
 
+  'PEP 585': {
+    aliases    : ['pep 585', 'PEP-585', 'builtin generic', 'builtin generics'],
+    definition : 'PEP 585 is the builtin-generics PEP (Python 3.9+). It lets `list[int]` and '
+               + '`dict[str, int]` replace `List[int]` and `Dict[str, int]`, and '
+               + '`modernize-annotations` applies the conversion on projects whose '
+               + '`target-version` carries the builtin form.',
+    families   : ['formatting'],
+    rule       : 'modernize-annotations'
+  },
+
   'PEP 604': {
     aliases    : ['pep 604', 'PEP-604', 'pipe-union', 'pipe-union syntax'],
     definition : 'PEP 604 is the pipe-union syntax PEP (Python 3.10+). It lets `X | Y` and `T | '
                + 'None` replace `Union[X, Y]` and `Optional[T]` at the type level, and '
-               + '`legacy-union-syntax` surfaces the legacy `typing` forms on projects whose '
+               + '`modernize-annotations` applies the rewrite on projects whose '
                + '`target-version` allows the pipe form.',
-    families   : ['lint'],
-    rule       : 'legacy-union-syntax'
+    families   : ['formatting'],
+    rule       : 'modernize-annotations'
   },
 
   'PEP 749': {

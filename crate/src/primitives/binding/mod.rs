@@ -257,6 +257,15 @@ impl BindingAnalysis {
         })
     }
 
+    /// Returns the number of reads recorded against the module-scope
+    /// binding for `name`, `0` when `name` is unbound at module scope. A
+    /// read a nested scope shadows counts against that scope's binding
+    /// rather than this one.
+    pub(crate) fn module_usage_count(&self, name: &str) -> usize {
+        self.module_binding(name)
+            .map_or(0, |binding| binding.read_offsets.len())
+    }
+
     /// Returns `true` when the module-scope binding for `name` is read
     /// without an attribute access anywhere (the namespace object
     /// itself is used), and `false` when `name` is only attribute-read

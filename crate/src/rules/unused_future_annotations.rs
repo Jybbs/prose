@@ -9,13 +9,12 @@ use ruff_python_ast::{
     AnyParameterRef, Expr, PythonVersion, Stmt, StmtAnnAssign, StmtFunctionDef, StmtImportFrom,
     helpers::any_over_expr,
 };
-use ruff_source_file::LineRanges;
-use ruff_text_size::TextRange;
 
 use crate::{
     config::Config,
     primitives::{
-        binding::BindingAnalysis, edit::singleton_groups, imports::future_annotations_alias,
+        binding::BindingAnalysis,
+        imports::{future_annotations_alias, prune_import_aliases},
         walk::any_over_stmts,
     },
     rule::{Rule, RuleId},
@@ -48,11 +47,13 @@ impl Rule for UnusedFutureAnnotations {
         if directives.is_empty() || !rule_fires(source, self.target_version) {
             return Vec::new();
         }
-        singleton_groups(
-            directives
-                .into_iter()
-                .map(|(node, idx)| edit_for(source, node, idx)),
-        )
+        directives
+            .into_iter()
+            .map(|(node, alias_idx)| {
+                prune_import_aliases(source, node.range, &node.names, |index| index != alias_idx)
+            })
+            .filter(|edits| !edits.is_empty())
+            .collect()
     }
 
     fn id(&self) -> RuleId {
@@ -77,14 +78,6 @@ fn annotation_is_unresolved(annotation: &Expr, analysis: &BindingAnalysis) -> bo
             name.ctx.is_load() && !analysis.is_defined_before(name.id.as_str(), name.range.start())
         })
     })
-}
-
-fn edit_for(source: &Source, node: &StmtImportFrom, alias_idx: usize) -> Edit {
-    if node.names.len() > 1 {
-        Edit::range_deletion(surgical_alias_range(node, alias_idx))
-    } else {
-        Edit::range_deletion(source.text().full_lines_range(node.range))
-    }
 }
 
 fn has_any_annotation(body: &[Stmt]) -> bool {
@@ -113,14 +106,6 @@ fn statement_annotations(stmt: &Stmt) -> Vec<&Expr> {
             .chain(returns.as_deref())
             .collect(),
         _ => Vec::new(),
-    }
-}
-
-fn surgical_alias_range(node: &StmtImportFrom, alias_idx: usize) -> TextRange {
-    let target = &node.names[alias_idx];
-    match node.names.get(alias_idx + 1) {
-        Some(next) => TextRange::new(target.range.start(), next.range.start()),
-        None => TextRange::new(node.names[alias_idx - 1].range.end(), target.range.end()),
     }
 }
 

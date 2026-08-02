@@ -25,9 +25,9 @@ docstring-frame              = false
 docstring-wrap               = false
 group-imports                = false
 import-layout                = false
-legacy-union-syntax          = false
 line-overflow                = false
 miscased-constants           = { allow-pattern = "^_", enabled = false }
+modernize-annotations        = { enabled = false, rewrite-generics = false, rewrite-unions = false }
 reassigned-constants         = { allow = ["LOG_LEVEL"], enabled = false }
 shed-backslash-continuations = false
 shed-parentheses             = false

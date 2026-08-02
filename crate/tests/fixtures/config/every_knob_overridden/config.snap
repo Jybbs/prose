@@ -31,6 +31,11 @@ Config {
         strip_none_return: ToggleOnly {
             enabled: false,
         },
+        modernize_annotations: ModernizeAnnotationsConfig {
+            enabled: false,
+            rewrite_generics: false,
+            rewrite_unions: false,
+        },
         strip_trailing_commas: ToggleOnly {
             enabled: false,
         },
@@ -157,9 +162,6 @@ Config {
             enabled: false,
         },
         step_narration: ToggleOnly {
-            enabled: false,
-        },
-        legacy_union_syntax: ToggleOnly {
             enabled: false,
         },
         single_use_variables: SingleUseVariablesConfig {
