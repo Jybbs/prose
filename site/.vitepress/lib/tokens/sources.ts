@@ -72,6 +72,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'max-params',                  href: '/reference/configuration#per-rule-facets',       blurb: 'Parameter count above which a signature expands to one per line.' },
     { key: 'max-shift',                   href: '/reference/configuration#per-rule-facets',       blurb: 'Per-rule width-spread budget for an alignment run.' },
     { key: 'max-tiers',                   href: '/reference/configuration#per-rule-facets',       blurb: 'Cap the evaluation tiers that open their own sub-band.' },
+    { key: 'merge-members',               href: '/reference/configuration#per-rule-facets',       blurb: 'Gather every from-import of one module onto a single statement.' },
     { key: 'overrides.paths',             href: '/reference/configuration#per-pattern-overrides', blurb: 'Glob list selecting the files an override entry applies its partial config to.' },
     { key: 'rewrite-generics',            href: '/reference/configuration#per-rule-facets',       blurb: 'Convert a `typing` generic to the builtin PEP 585 gave it.' },
     { key: 'rewrite-unions',              href: '/reference/configuration#per-rule-facets',       blurb: 'Rewrite `Optional` and `Union` to the PEP 604 pipe form.' },
@@ -79,6 +80,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'sort-dict-keys',              href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder the keyed entries of a dict literal, off to hold the authored order.' },
     { key: 'sort-docstring-entries',      href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder `name: description` entries within a docstring section.' },
     { key: 'sort-dunder-lists',           href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder the string items inside `__all__` and `__slots__`.' },
+    { key: 'split-multi-module',          href: '/reference/configuration#per-rule-facets',       blurb: 'Break a comma-joined `import a, b` into one statement per module.' },
     { key: 'target-version',              href: '/reference/configuration#top-level-keys',        blurb: 'Python version the parser reads against.' },
     { key: 'wrap-dict-entries',           href: '/reference/configuration#per-rule-facets',       blurb: 'Break an over-wide `key: value` at its `:` and hang the value beneath.' }
   ],

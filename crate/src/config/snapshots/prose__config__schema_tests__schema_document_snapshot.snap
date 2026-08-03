@@ -180,6 +180,26 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       ],
       "type": "string"
     },
+    "ImportLayoutConfig": {
+      "description": "Configuration for the `import_layout` rule, each facet gating one\nstatement move and defaulting `true`.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "merge-members": {
+          "default": true,
+          "description": "Folds repeated `from <module> import …` statements into one\nstatement carrying each member once, ordered as `alphabetize`\nwould leave it. `false` leaves each statement on its own line.",
+          "type": "boolean"
+        },
+        "split-multi-module": {
+          "default": true,
+          "description": "Breaks a comma-joined `import a, b` into one `import` statement\nper module. `false` keeps the comma-joined form.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "ImportsConfig": {
       "description": "Settings parsed from `[tool.prose.imports]`.",
       "properties": {
@@ -561,11 +581,13 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
               "type": "boolean"
             },
             {
-              "$ref": "#/$defs/ToggleOnly"
+              "$ref": "#/$defs/ImportLayoutConfig"
             }
           ],
           "default": {
-            "enabled": true
+            "enabled": true,
+            "merge-members": true,
+            "split-multi-module": true
           }
         },
         "line-overflow": {
@@ -929,7 +951,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true
         },
         "import-layout": {
-          "enabled": true
+          "enabled": true,
+          "merge-members": true,
+          "split-multi-module": true
         },
         "line-overflow": {
           "enabled": true

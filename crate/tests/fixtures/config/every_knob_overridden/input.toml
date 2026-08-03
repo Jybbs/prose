@@ -23,7 +23,7 @@ collection-layout     = { enabled = false, explode = false, keep-multiline-liter
 docstring-expand      = false
 docstring-frame       = false
 docstring-wrap        = false
-import-layout         = false
+import-layout         = { enabled = false, merge-members = false, split-multi-module = false }
 miscased-constants    = { allow-pattern = "^_", enabled = false }
 modernize-annotations = { enabled = false, rewrite-generics = false, rewrite-unions = false }
 prune-inert-imports   = { drop-duplicates = false, drop-unreferenced = false, enabled = false }
