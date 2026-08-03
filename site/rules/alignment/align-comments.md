@@ -1,5 +1,5 @@
 ---
-caption : "Seats a run of consecutive trailing comments on one shared column."
+caption : "Aligns a run of consecutive trailing comments onto one shared column."
 related : [comment-spacing, align-equals, align-colons, line-overflow, strip-align-padding]
 layout  : doc
 ---
@@ -17,6 +17,10 @@ The rule walks the trailing comments in source order and grows a run while each 
 A run of one is not a run, so a lone trailing comment keeps whatever gap it was written with. A row that partitions out of a run instead takes the two-space floor, which is what settles a hand-set gap that lines up with nothing. Two caps drive that partition, the `max-shift` spread budget the family shares and the `code-line-length` budget, wherein a row whose aligned line would cross the budget stays where it sits rather than manufacturing an overflow for [[line-overflow]] to flag.
 
 <Fixture rule="align_comments" case="bracket_rows_share_a_column" />
+
+The column resolves to two past the widest row whether that pulls a comment right or left, so a run whose notes already line up at a wider gutter tightens onto that same offset. The alignment the author drew survives, with the slack past it removed the way [[strip-align-padding]] removes padding that lines up with nothing.
+
+<Fixture rule="align_comments" case="uniform_gutter_tightens_to_the_floor" />
 
 <Fixture rule="align_comments" case="long_line_holds_the_run_apart" />
 
