@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/overflow_dict_constants_modernize_unions/input.py
+---
+PRIMARY = {
+    "alpha"      : str | None,
+    "beta"       : int | str,
+    "delta_long" : bool | None,
+    "gamma"      : int | None
+}
+SECONDARY = "fallback"

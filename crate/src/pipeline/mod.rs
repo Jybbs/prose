@@ -210,6 +210,7 @@ mod tests {
     use std::assert_matches;
     use std::sync::{Arc, Mutex};
 
+    use itertools::Itertools;
     use ruff_diagnostics::Edit;
     use ruff_text_size::{TextRange, TextSize};
 
@@ -798,40 +799,14 @@ mod tests {
 
     #[test]
     fn with_defaults_respects_rule_toggles() {
-        let mut config = Config::default();
-        config.rules.align_colons.enabled = false;
-        config.rules.align_comparisons.enabled = false;
-        config.rules.align_equals.enabled = false;
-        config.rules.align_imports.enabled = false;
-        config.rules.align_match_case.enabled = false;
-        config.rules.alphabetize.enabled = false;
-        config.rules.band_constants.enabled = false;
-        config.rules.bare_imports.enabled = false;
-        config.rules.blank_lines.enabled = false;
-        config.rules.call_layout.enabled = false;
-        config.rules.collection_layout.enabled = false;
-        config.rules.comment_spacing.enabled = false;
-        config.rules.docstring_expand.enabled = false;
-        config.rules.docstring_frame.enabled = false;
-        config.rules.docstring_wrap.enabled = false;
-        config.rules.group_imports.enabled = false;
-        config.rules.import_layout.enabled = false;
-        config.rules.legacy_union_syntax.enabled = false;
-        config.rules.line_overflow.enabled = false;
-        config.rules.miscased_constants.enabled = false;
-        config.rules.reassigned_constants.enabled = false;
-        config.rules.shed_parentheses.enabled = false;
-        config.rules.signature_annotations.enabled = false;
-        config.rules.signature_layout.enabled = false;
-        config.rules.single_use_variables.enabled = false;
-        config.rules.step_narration.enabled = false;
-        config.rules.strip_align_padding.enabled = false;
-        config.rules.strip_none_return.enabled = false;
-        config.rules.strip_trailing_commas.enabled = false;
-        config.rules.unsorted_positionals.enabled = false;
-        config.rules.unused_future_annotations.enabled = false;
-        let pipeline = Pipeline::with_defaults(&config);
-        assert!(pipeline.is_empty());
+        let disabled = Pipeline::known_ids()
+            .iter()
+            .map(|id| format!("{id} = false"))
+            .join("\n");
+        let config: Config = toml::from_str(&format!("[rules]\n{disabled}\n"))
+            .expect("every registered slug parses as a rule toggle");
+
+        assert!(Pipeline::with_defaults(&config).is_empty());
     }
 
     #[test]

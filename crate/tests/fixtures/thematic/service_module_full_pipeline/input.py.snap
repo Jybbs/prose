@@ -26,7 +26,7 @@ class ServiceConfig:
         self.labels = self.labels or []
 
     def _key(self):
-        return self.id
+        return (self.id, sys, os, field)
 
     def describe(self):
         """

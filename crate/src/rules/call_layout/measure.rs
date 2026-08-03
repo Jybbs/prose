@@ -12,6 +12,7 @@ use super::Exploder;
 use crate::primitives::{
     edit::apply_inline_edits,
     inline::{end_column, opening_width},
+    reserve::settled_column,
 };
 
 impl<'a> Exploder<'a> {
@@ -75,11 +76,8 @@ impl<'a> Exploder<'a> {
         if callee.contains('\n') {
             return end_column(callee, 0).saturating_add_signed(self.line_shift) + gap;
         }
-        let head = self
-            .reservations
-            .get(&call.start())
-            .copied()
-            .unwrap_or_else(|| self.column_of(call.start()));
+        let start = call.start();
+        let head = settled_column(self.reservations, start, || self.column_of(start));
         end_column(callee, head) + gap
     }
 

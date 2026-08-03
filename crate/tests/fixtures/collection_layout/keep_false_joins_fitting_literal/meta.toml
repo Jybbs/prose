@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A False Keep Facet Joins a Fitting Literal Back"
+
+description = '''
+Clearing `keep-multiline-literals` restores the join, so a fitting multi-line literal comes back onto one line while an overflowing single-line literal still explodes to its packed rows. The `keep-multiline-literals` and `explode` facets move independently, in that clearing one leaves the other live.
+'''

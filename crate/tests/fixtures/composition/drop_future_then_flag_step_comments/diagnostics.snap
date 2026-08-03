@@ -1,8 +1,8 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/composition/drop_future_then_flag_step_comments/input.py
+input_file: crate/tests/fixtures/composition/drop_future_then_flag_step_comments/input.py
 ---
+prune-inert-imports@0..35
 step-narration@122..142
 step-narration@61..81
-unused-future-annotations@0..35

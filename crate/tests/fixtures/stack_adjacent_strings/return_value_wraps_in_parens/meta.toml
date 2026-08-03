@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Returned Run Gains the Parentheses It Needs"
+
+description = '''
+A run standing as a `return` value carries no bracket of its own, so the break **wraps it in parentheses** and drops the closing one to the statement's indent.
+'''

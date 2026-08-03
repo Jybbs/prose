@@ -7,4 +7,4 @@ import collections as col
 
 
 def add(a, b):
-    return a + b
+    return (req, np, col, a + b)

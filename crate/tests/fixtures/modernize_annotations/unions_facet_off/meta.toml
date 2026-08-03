@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`rewrite-unions = false` Leaves the Legacy Union"
+
+description = '''
+The generic facet runs while the union facet is off, so `Optional` keeps both its spelling and its import.
+'''

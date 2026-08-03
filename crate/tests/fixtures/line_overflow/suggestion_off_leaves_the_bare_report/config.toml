@@ -1,0 +1,4 @@
+code-line-length = 40
+
+[rules]
+line-overflow = { suggest-string-splits = false }

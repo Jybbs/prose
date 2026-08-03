@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Decorator Chain Takes the Same Parenthesis Pair"
+
+description = '''
+A decorator breaks like any other chain, which PEP 614 made legal in Python 3.9 by relaxing the decorator grammar to accept any expression, comfortably below the 3.10 floor the project targets.
+'''

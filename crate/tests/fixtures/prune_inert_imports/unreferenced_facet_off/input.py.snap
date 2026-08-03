@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/unreferenced_facet_off/input.py
+---
+from typing import Any, Final
+
+label: Final = "x"

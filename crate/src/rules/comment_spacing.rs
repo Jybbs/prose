@@ -7,7 +7,7 @@
 //! follows the run at all, leaving the trailing gap settled either way.
 
 use ruff_diagnostics::Edit;
-use ruff_python_trivia::{CommentLinePosition, PythonWhitespace};
+use ruff_python_trivia::{CommentRanges, PythonWhitespace};
 use ruff_text_size::{TextLen, TextRange};
 
 use crate::{
@@ -59,7 +59,7 @@ impl Rule for CommentSpacing {
 /// at the same column as a comment on the line directly above or below
 /// it. A bare `#` sustains a run, since it opens at that column too.
 fn columnar_runs(source: &Source) -> Vec<bool> {
-    let ranges: Vec<TextRange> = source.comment_ranges().into_iter().collect();
+    let ranges = source.comment_ranges();
     let mut flags = vec![false; ranges.len()];
     for (i, pair) in ranges.windows(2).enumerate() {
         let [above, below] = [pair[0].start(), pair[1].start()];
@@ -77,11 +77,11 @@ fn columnar_runs(source: &Source) -> Vec<bool> {
 /// at `range` to [`TRAILING_GAP`]. `None` for an own-line comment and
 /// for a gap already that wide.
 fn gap_edit(source: &Source, range: TextRange) -> Option<Edit> {
-    if CommentLinePosition::for_range(range, source.text()).is_own_line() {
+    if CommentRanges::is_own_line(range.start(), source.text()) {
         return None;
     }
     let gap = line_gap_before(source, range.start());
-    if gap.len().to_usize() >= TRAILING_GAP.len() {
+    if gap.len() >= TRAILING_GAP.text_len() {
         return None;
     }
     space_padding_edit(source, gap, TRAILING_GAP.len())

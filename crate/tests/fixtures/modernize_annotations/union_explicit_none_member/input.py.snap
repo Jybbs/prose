@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/union_explicit_none_member/input.py
+---
+
+x: int | str | None = None

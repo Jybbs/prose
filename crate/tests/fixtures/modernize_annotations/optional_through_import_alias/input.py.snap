@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/optional_through_import_alias/input.py
+---
+
+x: int | None = None

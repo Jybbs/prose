@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/dunder_all_holds_an_unread_name/input.py
+---
+from json import loads
+
+__all__ = ["loads"]

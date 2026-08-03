@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Legacy Spelling Inside a Container Rewrites Where It Sits"
+
+description = '''
+A bracketed parameter list, a PEP 646 unpack, and an already-modern union each carry a legacy member, and each member rewrites while the container around it keeps its own text. The imports from outside `typing` stay untouched.
+'''

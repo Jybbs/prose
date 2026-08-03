@@ -1,0 +1,4 @@
+target-version = "3.10"
+
+[harness]
+rules = ["collection-layout", "alphabetize", "align-colons", "blank-lines", "modernize-annotations"]

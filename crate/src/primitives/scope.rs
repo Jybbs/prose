@@ -2,7 +2,7 @@
 //! the sub-bodies a compound statement opens.
 
 use ruff_python_ast::{ExceptHandler, Stmt};
-use ruff_text_size::TextRange;
+use ruff_text_size::{Ranged, TextRange};
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub(crate) enum BodyScope {
@@ -56,6 +56,16 @@ pub(crate) fn scoped_body(stmt: &Stmt) -> Option<(&[Stmt], BodyScope)> {
         Stmt::FunctionDef(f) => Some((&f.body, BodyScope::Function)),
         _ => None,
     }
+}
+
+/// Returns the body and enclosing range of every direct sub-body a
+/// statement opens, the class- or function-definition suite and each arm
+/// of a compound statement alike.
+pub(crate) fn sub_bodies(stmt: &Stmt) -> Vec<(&[Stmt], TextRange)> {
+    if let Some((body, _)) = scoped_body(stmt) {
+        return vec![(body, stmt.range())];
+    }
+    compound_sub_bodies(stmt)
 }
 
 #[cfg(test)]

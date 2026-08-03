@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Overflow Dict Expands Around Modernized Union Values"
+
+description = '''
+A module constant whose overflowing dict carries legacy union values, with `target-version` pinned to `3.10`. **The values modernize first, then the dict expands, sorts, and aligns its `:` column against the widths the rewrite leaves**, and the `typing` import drops once nothing reads it.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Same-Module Imports in Two Cells Hold Their Own Statements"
+
+description = '''
+Folding one cell's `from pkg import ...` into another's would move code across a cell boundary, so [[import-layout]] **gathers only within a single cell** and leaves the two statements where their author put them.
+'''

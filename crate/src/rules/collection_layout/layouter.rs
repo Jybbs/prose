@@ -1,13 +1,15 @@
-//! The collection-layout serializer. Walks each literal and subscript
-//! outside an f-string or t-string replacement field, renders its
-//! inline and expanded forms, and emits the edit that fits the budget.
+//! The collection-layout walker. Visits each literal and subscript
+//! outside an f-string or t-string replacement field, decides between
+//! the rejoin and the expansion, and emits the edit that fits the
+//! budget. The one-line rendering the decision measures against lives
+//! in the sibling `inline` module.
 
 use std::{borrow::Cow, collections::HashMap};
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    AnyNodeRef, Comprehension, DictItem, Expr, ExprDict, InterpolatedStringElement,
+    AnyNodeRef, DictItem, Expr, InterpolatedStringElement,
     visitor::{Visitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -16,35 +18,26 @@ use unicode_width::UnicodeWidthStr;
 use super::{
     classify::{
         Segment, is_align_colons_gap, is_atomic, is_collapse_only, is_collapsible,
-        pre_colon_padding, requires_expand, segments,
+        is_column_shaped, is_multi_entry, pre_colon_padding, requires_expand, segments,
     },
     flow::flow_lines,
 };
 use crate::{
     primitives::{
-        INDENT_STEP, edit::narrowed_replacement, inline::single_line_form, layout::is_layoutable,
+        INDENT_STEP,
+        edit::narrowed_replacement,
+        layout::{is_layoutable, item_indent},
+        reserve::settled_column,
     },
+    rules::stack_adjacent_strings::concatenated_run,
     source::Source,
 };
 
-/// Per-item state for a dict, list, set, or tuple literal: serialized
-/// text, atomicity for layout dispatch, source range for blank-line
-/// lookups, and display width at the canonical `": "` separator, so an
-/// `align_colons`-padded gap does not inflate the measure.
-struct GatheredItems<'src> {
-    atomics: Vec<bool>,
-    close: char,
-    open: char,
-    ranges: Vec<TextRange>,
-    texts: Vec<Cow<'src, str>>,
-    widths: Vec<usize>,
-}
-
 pub(super) struct Layouter<'a> {
     pub(super) code_line_length: usize,
-    pub(super) collapse: bool,
     pub(super) edits: Vec<Edit>,
     pub(super) explode: bool,
+    pub(super) keep_multiline_literals: bool,
     pub(super) max_atomics: usize,
     pub(super) newline: &'static str,
     pub(super) reservations: HashMap<TextSize, usize>,
@@ -57,7 +50,7 @@ impl<'a> Layouter<'a> {
     /// Builds the expanded form of `expr` as a string, recursively
     /// laying out any qualifying child collections.
     fn expand(&self, expr: &Expr, indent: usize) -> String {
-        let item_indent = indent + INDENT_STEP;
+        let item_indent = item_indent(indent);
         let dict_items = expr.as_dict_expr().map(|d| &d.items);
         let parent = AnyNodeRef::from(expr);
         let GatheredItems {
@@ -169,9 +162,12 @@ impl<'a> Layouter<'a> {
 
     /// Builds the hung two-line form of a `key: value` dict entry,
     /// breaking at `:` and emitting the value at `item_indent +
-    /// INDENT_STEP`. The key's pre-colon padding carries through, the
-    /// column belonging to `align_colons`. Returns `None` for `**value`
-    /// unpacking items.
+    /// INDENT_STEP`. The key routes through `repaired_key` the same way
+    /// `serialize_dict_item` does, and its pre-colon padding carries
+    /// through, the column belonging to `align_colons`. Returns `None`
+    /// for a `**value` unpacking item and for an entry either side of
+    /// whose `:` carries an implicitly concatenated string, which
+    /// `stack-adjacent-strings` breaks in place.
     fn hang_dict_value(
         &self,
         item: &DictItem,
@@ -179,7 +175,10 @@ impl<'a> Layouter<'a> {
         item_indent: usize,
     ) -> Option<String> {
         let key = item.key.as_ref()?;
-        let key_text = self.source.slice(key);
+        if concatenated_run(key).is_some() || concatenated_run(&item.value).is_some() {
+            return None;
+        }
+        let key_text = self.repaired_key(key, parent, item_indent);
         let padding = pre_colon_padding(self.key_value_gap(key, &item.value));
         let hang_column = item_indent + INDENT_STEP;
         let value_text = self.serialize_expr(&item.value, parent, hang_column, hang_column);
@@ -200,50 +199,50 @@ impl<'a> Layouter<'a> {
             .any(|dict| range.contains_range(*dict))
     }
 
-    /// Builds the inline form of `expr`, recursively inlining any nested
-    /// collection or subscript. Leaves pass through as their source slice,
-    /// explicit parens recovered against `parent` so a precedence-bearing
-    /// `(-a) ** 2` survives the collapse.
-    fn inline_form(&self, expr: &Expr) -> String {
-        let mut buf = String::new();
-        self.write_inline(&mut buf, expr, AnyNodeRef::from(expr));
-        buf
-    }
-
-    /// `expr`'s inline form when it joins without a residual line break
-    /// and fits the budget from `column`, else `None`. A leaf the inline
-    /// serializer cannot itself join keeps its break and falls to the
-    /// expand path.
-    fn joined_if_fits(&self, expr: &Expr, column: usize) -> Option<String> {
-        let inline = self.inline_form(expr);
-        (!inline.contains('\n') && column + inline.width() <= self.code_line_length)
-            .then_some(inline)
-    }
-
     /// The source text between a keyed dict entry's `key` and its
     /// `value`, the span carrying the `:` and the padding around it.
     fn key_value_gap(&self, key: &Expr, value: &Expr) -> &'a str {
         self.source.slice(TextRange::new(key.end(), value.start()))
     }
 
+    /// The one-line form of a fractured `expr`, or `None` when it holds
+    /// no break or overflows the budget once joined. The repair runs
+    /// whatever `keep_multiline_literals` holds, covering a subscript, a
+    /// comprehension, and a dict key, whose breaks fall outside the entry
+    /// boundaries the expand path lays a literal out on.
+    fn repaired(&self, expr: &Expr, column: usize) -> Option<String> {
+        self.source
+            .contains_line_break(expr.range())
+            .then(|| self.joined_if_fits(expr, column))
+            .flatten()
+    }
+
+    /// Serializes a dict key, rejoining one written across lines so its
+    /// `:` sits beside it and falling through to `serialize_expr`
+    /// otherwise.
+    fn repaired_key(&self, key: &Expr, parent: AnyNodeRef, indent: usize) -> Cow<'a, str> {
+        self.repaired(key, indent).map_or_else(
+            || self.serialize_expr(key, parent, indent, indent),
+            Cow::Owned,
+        )
+    }
+
     /// Returns the canonical rewrite for `expr`, or `None` to descend
     /// into its children. `indent` is where the closing bracket lands on
-    /// expand. A multi-line literal, subscript, or comprehension that fits
-    /// joins inline, while a multi-item `Dict`, `List`, `Set`, or
-    /// parenthesized `Tuple` that overflows expands, as does a `Dict` over
-    /// `max_dict_entries`. A subscript and a comprehension only ever
-    /// collapse. The `collapse` and `explode` facets gate the join and the
-    /// expansion, a cleared facet returning `None`.
+    /// expand. A multi-line subscript or comprehension that fits rejoins,
+    /// while a multi-item `Dict`, `List`, `Set`, or parenthesized `Tuple`
+    /// that overflows expands, as does a `Dict` over `max_dict_entries`
+    /// and a literal already laid out as a flush column. A subscript and a
+    /// comprehension only ever rejoin. The `explode` facet gates every
+    /// expansion, and a set `keep_multiline_literals` suppresses the
+    /// literal rejoin, a cleared `explode` returning `None`.
     fn replacement_for(&self, expr: &Expr, column: usize, indent: usize) -> Option<String> {
         let range = expr.range();
         if self.source.intersects_comment(range) {
             return None;
         }
         if is_collapse_only(expr) {
-            if !self.collapse || !self.source.contains_line_break(range) {
-                return None;
-            }
-            return self.joined_if_fits(expr, column);
+            return self.repaired(expr, column);
         }
         if !is_layoutable(expr) {
             return None;
@@ -251,8 +250,14 @@ impl<'a> Layouter<'a> {
         let expandable = requires_expand(expr);
         let over_count = self.has_over_count_dict(expr);
         if self.source.contains_line_break(range) {
-            if !over_count && let Some(inline) = self.joined_if_fits(expr, column) {
-                return self.collapse.then_some(inline);
+            let held = self.keep_multiline_literals
+                && is_multi_entry(expr)
+                && is_column_shaped(self.source.slice(range));
+            if !held
+                && !over_count
+                && let Some(inline) = self.joined_if_fits(expr, column)
+            {
+                return Some(inline);
             }
             return (self.explode && expandable).then(|| self.expand(expr, indent));
         }
@@ -263,10 +268,11 @@ impl<'a> Layouter<'a> {
     }
 
     /// Serializes a dict item as `key: value` or `**value`, paired with
-    /// its display width at the canonical `": "` separator. Key and value
-    /// both route through `serialize_expr`, the value's fit column offset
-    /// past the key text and `": "`. A borrowed key and value over an
-    /// `align-colons`-padded gap return the source slice whole so the
+    /// its display width at the canonical `": "` separator. The key
+    /// routes through `repaired_key` so one written across lines rejoins
+    /// beside its `:`, and the value's fit column
+    /// sits past the key text and `": "`. A borrowed key and value over
+    /// an `align-colons`-padded gap return the source slice whole so the
     /// padding round-trips, the width counting the canonical `": "`.
     fn serialize_dict_item(
         &self,
@@ -279,7 +285,7 @@ impl<'a> Layouter<'a> {
             let width = 2 + value_text.width();
             return (Cow::Owned(format!("**{value_text}")), width);
         };
-        let key_text = self.serialize_expr(key, parent, indent, indent);
+        let key_text = self.repaired_key(key, parent, indent);
         let value_column = indent + key_text.width() + 2;
         let value_text = self.serialize_expr(&item.value, parent, value_column, indent);
         let width = key_text.width() + 2 + value_text.width();
@@ -314,165 +320,6 @@ impl<'a> Layouter<'a> {
             None => Cow::Borrowed(self.slice_with_parens(expr, parent)),
         }
     }
-
-    /// Returns the source slice covering `expr`, with explicit parens
-    /// recovered against `parent` so precedence-bearing parens like
-    /// `(-a) ** 2` survive a borrow.
-    fn slice_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> &'a str {
-        let range = self.source.paren_aware_range(expr.into(), parent);
-        self.source.slice(range)
-    }
-
-    /// Appends a comprehension's `for`/`if` clause chain to `buf`, each
-    /// clause a space from the preceding text and an async generator
-    /// carrying its `async` keyword. Targets, iterables, and conditions
-    /// route through `write_inline`.
-    fn write_comprehension_clauses(
-        &self,
-        buf: &mut String,
-        generators: &[Comprehension],
-        parent: AnyNodeRef,
-    ) {
-        for generator in generators {
-            buf.push_str(if generator.is_async {
-                " async for "
-            } else {
-                " for "
-            });
-            self.write_inline(buf, &generator.target, parent);
-            buf.push_str(" in ");
-            self.write_inline(buf, &generator.iter, parent);
-            for condition in &generator.ifs {
-                buf.push_str(" if ");
-                self.write_inline(buf, condition, parent);
-            }
-        }
-    }
-
-    /// Appends the inline serialization of `expr` to `buf`. Recursive
-    /// helper backing `inline_form`. `parent` is the immediate
-    /// enclosing AST node, used for `paren_aware_range` recovery on
-    /// non-collection leaves.
-    fn write_inline(&self, buf: &mut String, expr: &Expr, parent: AnyNodeRef) {
-        let here = AnyNodeRef::from(expr);
-        match expr {
-            Expr::Dict(d) => self.write_inline_dict(buf, d, here),
-            Expr::DictComp(c) => {
-                let brackets = Some(('{', '}'));
-                self.write_inline_comprehension(
-                    buf,
-                    brackets,
-                    c.key.as_deref(),
-                    &c.value,
-                    &c.generators,
-                    here,
-                );
-            }
-            Expr::Generator(c) => {
-                let brackets = c.parenthesized.then_some(('(', ')'));
-                self.write_inline_comprehension(buf, brackets, None, &c.elt, &c.generators, here);
-            }
-            Expr::List(l) => self.write_inline_seq(buf, Some(('[', ']')), &l.elts, here, false),
-            Expr::ListComp(c) => {
-                let brackets = Some(('[', ']'));
-                self.write_inline_comprehension(buf, brackets, None, &c.elt, &c.generators, here);
-            }
-            Expr::Set(s) => self.write_inline_seq(buf, Some(('{', '}')), &s.elts, here, false),
-            Expr::SetComp(c) => {
-                let brackets = Some(('{', '}'));
-                self.write_inline_comprehension(buf, brackets, None, &c.elt, &c.generators, here);
-            }
-            Expr::Subscript(s) => {
-                self.write_inline(buf, &s.value, here);
-                buf.push('[');
-                self.write_inline(buf, &s.slice, here);
-                buf.push(']');
-            }
-            Expr::Tuple(t) => {
-                let brackets = t.parenthesized.then_some(('(', ')'));
-                self.write_inline_seq(buf, brackets, &t.elts, here, t.len() == 1);
-            }
-            _ => {
-                let slice = self.slice_with_parens(expr, parent);
-                // An operator tree over atoms soft-wrapped across lines
-                // rejoins by collapsing its break, where any other leaf
-                // passes through with its source breaks intact for the
-                // fit guard to reject.
-                buf.push_str(&single_line_form(expr, slice).unwrap_or(Cow::Borrowed(slice)));
-            }
-        }
-    }
-
-    /// Appends a comprehension's bracketed inline form to `buf`: an
-    /// optional `key: ` head, the element, then the clause chain, wrapped
-    /// in `brackets`. A `None` bracket carries the bare generator whose
-    /// call parens stand in, a `Some` key the dict comprehension's head.
-    fn write_inline_comprehension(
-        &self,
-        buf: &mut String,
-        brackets: Option<(char, char)>,
-        key: Option<&Expr>,
-        element: &Expr,
-        generators: &[Comprehension],
-        parent: AnyNodeRef,
-    ) {
-        let (open, close) = brackets.unzip();
-        buf.extend(open);
-        if let Some(key) = key {
-            self.write_inline(buf, key, parent);
-            buf.push_str(": ");
-        }
-        self.write_inline(buf, element, parent);
-        self.write_comprehension_clauses(buf, generators, parent);
-        buf.extend(close);
-    }
-
-    /// Writes `d`'s inline serialization into `buf` as `{k: v, ...}`,
-    /// emitting `**v` for `None`-keyed unpacking items. `parent` is
-    /// the dict itself, threaded into each child's `write_inline` for
-    /// paren recovery on non-collection leaves.
-    fn write_inline_dict(&self, buf: &mut String, d: &ExprDict, parent: AnyNodeRef) {
-        buf.push('{');
-        for (i, item) in d.iter().enumerate() {
-            if i > 0 {
-                buf.push_str(", ");
-            }
-            match &item.key {
-                Some(key) => {
-                    self.write_inline(buf, key, parent);
-                    buf.push_str(": ");
-                }
-                None => buf.push_str("**"),
-            }
-            self.write_inline(buf, &item.value, parent);
-        }
-        buf.push('}');
-    }
-
-    /// Writes `elts` joined by `", "` into `buf`, optionally wrapped
-    /// in a bracket pair and optionally followed by a trailing comma.
-    /// The trailing comma carries the 1-tuple `(x,)` case.
-    fn write_inline_seq(
-        &self,
-        buf: &mut String,
-        brackets: Option<(char, char)>,
-        elts: &[Expr],
-        parent: AnyNodeRef,
-        trailing_comma: bool,
-    ) {
-        let (open, close) = brackets.unzip();
-        buf.extend(open);
-        for (i, e) in elts.iter().enumerate() {
-            if i > 0 {
-                buf.push_str(", ");
-            }
-            self.write_inline(buf, e, parent);
-        }
-        if trailing_comma {
-            buf.push(',');
-        }
-        buf.extend(close);
-    }
 }
 
 impl<'a> Visitor<'a> for Layouter<'a> {
@@ -482,15 +329,12 @@ impl<'a> Visitor<'a> for Layouter<'a> {
             return;
         }
         let range = expr.range();
+        let start = range.start();
         // Test the collapse against the column `align_equals` shifts the
         // value to, not the unaligned column the literal currently opens
         // at, so a fit that survives the shift is what the rule collapses.
-        let column = self
-            .reservations
-            .get(&range.start())
-            .copied()
-            .unwrap_or_else(|| self.source.column_of(range.start()));
-        let indent = self.source.line_indent_width(range.start());
+        let column = settled_column(&self.reservations, start, || self.source.column_of(start));
+        let indent = self.source.line_indent_width(start);
         match self.replacement_for(expr, column, indent) {
             Some(text) => self
                 .edits
@@ -501,4 +345,17 @@ impl<'a> Visitor<'a> for Layouter<'a> {
 
     /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
+}
+
+/// Per-item state for a dict, list, set, or tuple literal: serialized
+/// text, atomicity for layout dispatch, source range for blank-line
+/// lookups, and display width at the canonical `": "` separator, so an
+/// `align_colons`-padded gap does not inflate the measure.
+struct GatheredItems<'src> {
+    atomics: Vec<bool>,
+    close: char,
+    open: char,
+    ranges: Vec<TextRange>,
+    texts: Vec<Cow<'src, str>>,
+    widths: Vec<usize>,
 }

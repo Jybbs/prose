@@ -9,30 +9,36 @@ enabled      = false
 max-size-mib = 250
 
 [rules]
-align-colons              = false
-align-comparisons         = false
-align-equals              = false
-align-imports             = false
-align-match-case          = false
-alphabetize               = { enabled = false, group-methods = false, sort-definitions = false, sort-dict-keys = false, sort-docstring-entries = false, sort-dunder-lists = false }
-bare-imports              = { allow = ["scipy", "torch"], enabled = false, exempt-aliased = false, max-attributes = 2 }
-blank-lines               = false
-call-layout               = { enabled = false, max-args = 6 }
-collection-layout         = { collapse = false, enabled = false, explode = false, max-atomics = 3, max-dict-entries = 5, wrap-dict-entries = false }
-comment-spacing           = false
-docstring-expand          = false
-docstring-frame           = false
-docstring-wrap            = false
-import-layout             = false
-legacy-union-syntax       = false
-miscased-constants        = { allow-pattern = "^_", enabled = false }
-reassigned-constants      = { allow = ["LOG_LEVEL"], enabled = false }
-signature-annotations     = false
-signature-layout          = { enabled = false, max-params = false }
-single-use-variables      = { allow-pattern = "^tmp_", enabled = false }
-step-narration            = false
-strip-align-padding       = false
-strip-none-return         = false
-strip-trailing-commas     = false
-unsorted-positionals      = false
-unused-future-annotations = false
+align-colons           = false
+align-comparisons      = false
+align-equals           = false
+align-imports          = false
+align-match-case       = false
+alphabetize            = { enabled = false, group-methods = false, sort-definitions = false, sort-dict-keys = false, sort-docstring-entries = false, sort-dunder-lists = false }
+band-constants         = { enabled = false, group-subcategories = false, max-tiers = 4 }
+bare-imports           = { allow = ["scipy", "torch"], enabled = false, exempt-aliased = false, max-attributes = 2 }
+blank-lines            = false
+call-layout            = { enabled = false, max-args = 6 }
+chain-layout           = { enabled = false, max-links = 4, max-shift = 8 }
+collection-layout      = { enabled = false, explode = false, keep-multiline-literals = false, max-atomics = 3, max-dict-entries = 5, wrap-dict-entries = false }
+comment-spacing        = false
+docstring-expand       = false
+docstring-frame        = false
+docstring-wrap         = false
+group-imports          = false
+import-layout          = { enabled = false, merge-members = false, split-multi-module = false }
+line-overflow          = { enabled = false, suggest-string-splits = false }
+miscased-constants     = { allow-pattern = "^_", enabled = false }
+modernize-annotations  = { enabled = false, rewrite-generics = false, rewrite-unions = false }
+prune-inert-imports    = { drop-duplicates = false, drop-unreferenced = false, enabled = false }
+reassigned-constants   = { allow = ["LOG_LEVEL"], enabled = false }
+shed-parentheses       = false
+signature-annotations  = false
+signature-layout       = { enabled = false, max-params = false }
+single-use-variables   = { allow-pattern = "^tmp_", enabled = false }
+stack-adjacent-strings = false
+step-narration         = false
+strip-align-padding    = false
+strip-none-return      = false
+strip-trailing-commas  = false
+unsorted-positionals   = false

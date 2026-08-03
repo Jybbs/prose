@@ -11,7 +11,12 @@ use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
-    primitives::{aligner, colon_targets::ColonEmitter, edit::singleton_groups},
+    primitives::{
+        aligner,
+        colon_targets::ColonEmitter,
+        edit::singleton_groups,
+        tokens::{is_closer, is_opener},
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -111,16 +116,6 @@ fn delimiter_padding_edits(source: &Source) -> Vec<Edit> {
     edits
 }
 
-/// Returns `true` when `kind` is a closing bracket `)` `]` `}`.
-fn is_closer(kind: TokenKind) -> bool {
-    matches!(kind, TokenKind::Rpar | TokenKind::Rsqb | TokenKind::Rbrace)
-}
-
-/// Returns `true` when `kind` is an opening bracket `(` `[` `{`.
-fn is_opener(kind: TokenKind) -> bool {
-    matches!(kind, TokenKind::Lpar | TokenKind::Lsqb | TokenKind::Lbrace)
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -182,26 +177,6 @@ mod tests {
         let edits = delimiter_padding_edits(&parse("f( )\n"));
         assert_eq!(edits.len(), 1);
         assert_eq!(edits[0].range(), range(2, 3));
-    }
-
-    #[rstest]
-    #[case(TokenKind::Rpar, true)]
-    #[case(TokenKind::Rsqb, true)]
-    #[case(TokenKind::Rbrace, true)]
-    #[case(TokenKind::Lpar, false)]
-    #[case(TokenKind::Name, false)]
-    fn is_closer_flags_closing_brackets(#[case] kind: TokenKind, #[case] expected: bool) {
-        assert_eq!(is_closer(kind), expected);
-    }
-
-    #[rstest]
-    #[case(TokenKind::Lpar, true)]
-    #[case(TokenKind::Lsqb, true)]
-    #[case(TokenKind::Lbrace, true)]
-    #[case(TokenKind::Rpar, false)]
-    #[case(TokenKind::Name, false)]
-    fn is_opener_flags_opening_brackets(#[case] kind: TokenKind, #[case] expected: bool) {
-        assert_eq!(is_opener(kind), expected);
     }
 
     #[test]

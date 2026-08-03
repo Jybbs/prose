@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/no_target_version_holds/input.py
+---
+from typing import Optional
+
+x: Optional[int] = None
