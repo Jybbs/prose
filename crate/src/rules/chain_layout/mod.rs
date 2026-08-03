@@ -26,7 +26,7 @@ use crate::{
         aligner,
         edit::{insert_edit, narrowed_replacement, singleton_groups},
         reserve::{reserved_columns, settled_column},
-        walk::{Descent, ParentedProbe, walk_parented_exprs},
+        walk::{Descent, ParentedProbe, is_interpolated_string, walk_parented_exprs},
     },
     rule::{Rule, RuleId},
     rules::align_equals::AlignEquals,
@@ -46,6 +46,8 @@ pub(crate) struct ChainLayout {
 }
 
 impl ChainLayout {
+    pub(crate) const MESSAGE: &'static str = "break a long method chain to one link per line";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.chain_layout;
         Self {
@@ -129,7 +131,7 @@ impl<'a> Breaker<'a> {
 
 impl<'a> ParentedProbe<'a> for Breaker<'a> {
     fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>) -> Descent {
-        if matches!(expr, Expr::FString(_) | Expr::TString(_)) {
+        if is_interpolated_string(expr) {
             return Descent::Over;
         }
         let edit = Chain::of(self.source, expr)

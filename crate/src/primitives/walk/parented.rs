@@ -49,6 +49,13 @@ impl<'src, P: ParentedProbe<'src>> Visitor<'src> for ParentedWalk<'src, '_, P> {
     }
 }
 
+/// True for an f-string or t-string, the expression a probe reports
+/// `Descent::Over` on to leave every replacement field inside it the
+/// shape its author gave it.
+pub(crate) const fn is_interpolated_string(expr: &Expr) -> bool {
+    matches!(expr, Expr::FString(_) | Expr::TString(_))
+}
+
 /// Walks every expression in `module`, handing each to `probe` with the
 /// node enclosing it and descending unless the probe reports `Over`. A
 /// call argument names its `Arguments` list rather than the call, so a
@@ -91,6 +98,22 @@ mod tests {
                 Descent::Into
             }
         }
+    }
+
+    #[rstest]
+    #[case::f_string("f\"{a}\"\n", true)]
+    #[case::t_string("t\"{a}\"\n", true)]
+    #[case::plain_string("\"a\"\n", false)]
+    #[case::name("a\n", false)]
+    fn is_interpolated_string_names_the_two_replacement_field_carriers(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let expr = source.ast().body[0]
+            .as_expr_stmt()
+            .expect("the fixture is one expression statement");
+        assert_eq!(is_interpolated_string(&expr.value), expected);
     }
 
     #[rstest]

@@ -1,0 +1,2 @@
+[rules]
+normalize-comparisons = { rewrite-identity = false }

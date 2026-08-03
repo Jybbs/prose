@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment Inside the Test Holds the Operand Order"
+
+description = '''
+An operand swap would leave a trailing comment attached to whichever operand landed on its line, so a comment anywhere inside the comparison declines the flip.
+'''

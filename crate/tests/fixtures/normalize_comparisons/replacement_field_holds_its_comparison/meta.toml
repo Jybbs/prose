@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comparison Inside a Replacement Field Holds"
+
+description = '''
+An f-string replacement field is opaque to the rule, the same way it is to the layout rules, so a comparison written inside one keeps the shape its author gave it.
+'''

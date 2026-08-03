@@ -31,6 +31,7 @@ import-layout          = { enabled = false, merge-members = false, split-multi-m
 line-overflow          = { enabled = false, suggest-string-splits = false }
 miscased-constants     = { allow-pattern = "^_", enabled = false }
 modernize-annotations  = { enabled = false, rewrite-generics = false, rewrite-unions = false }
+normalize-comparisons  = { enabled = false, rewrite-identity = false, rewrite-negation = false, rewrite-operand-order = false }
 prune-inert-imports    = { drop-duplicates = false, drop-unreferenced = false, enabled = false }
 reassigned-constants   = { allow = ["LOG_LEVEL"], enabled = false }
 shed-parentheses       = false

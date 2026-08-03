@@ -445,6 +445,35 @@ impl Default for ModernizeAnnotationsConfig {
     }
 }
 
+/// Configuration for the `normalize_comparisons` rule, each facet
+/// gating one rewrite and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct NormalizeComparisonsConfig {
+    pub enabled: bool,
+    /// Rewrites a `==` or `!=` test against `None` to `is` or `is not`,
+    /// and flags a test against `True` or `False` without rewriting it.
+    /// `false` leaves every singleton comparison as written.
+    pub rewrite_identity: bool,
+    /// Folds a leading `not` into the `in` or `is` it negates, so
+    /// `not a in b` reads `a not in b`. `false` keeps the outer `not`.
+    pub rewrite_negation: bool,
+    /// Flips a comparison whose constant side leads, so `42 == n` reads
+    /// `n == 42`. `false` keeps the authored operand order.
+    pub rewrite_operand_order: bool,
+}
+
+impl Default for NormalizeComparisonsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            rewrite_identity: true,
+            rewrite_negation: true,
+            rewrite_operand_order: true,
+        }
+    }
+}
+
 /// Configuration for the `prune_inert_imports` rule, each facet gating
 /// one prune and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
@@ -587,6 +616,7 @@ impl_rule_toggle!(
     LineOverflowConfig,
     MiscasedConstantsConfig,
     ModernizeAnnotationsConfig,
+    NormalizeComparisonsConfig,
     PruneInertImportsConfig,
     ReassignedConstantsConfig,
     SignatureLayoutConfig,

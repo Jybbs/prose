@@ -28,6 +28,8 @@ const EXEMPT_LEADERS: [char; 4] = ['!', '\'', ':', '|'];
 pub(crate) struct CommentSpacing;
 
 impl CommentSpacing {
+    pub(crate) const MESSAGE: &'static str = "normalize comment spacing";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

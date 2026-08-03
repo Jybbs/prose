@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_comparisons/comprehension_condition_folds/input.py
+---
+def kept(rows, seen):
+    return [row for row in rows if row not in seen]

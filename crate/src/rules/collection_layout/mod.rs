@@ -53,6 +53,8 @@ pub(crate) struct CollectionLayout {
 }
 
 impl CollectionLayout {
+    pub(crate) const MESSAGE: &'static str = "lay out collection literal against the line budget";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.collection_layout;
         Self {

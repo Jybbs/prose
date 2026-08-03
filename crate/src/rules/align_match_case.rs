@@ -30,6 +30,8 @@ pub(crate) struct AlignMatchCase {
 }
 
 impl AlignMatchCase {
+    pub(crate) const MESSAGE: &'static str = "align match-case colons";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),

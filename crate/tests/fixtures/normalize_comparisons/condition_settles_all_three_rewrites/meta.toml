@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "One Condition Settles Every Rewrite in a Single Pass"
+
+description = '''
+A condition carrying a Yoda comparison, a `None` equality, and a leading `not` comes back stating each check directly, every operand resolving in the run that finds it.
+'''

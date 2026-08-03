@@ -1,0 +1,9 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/shed_parentheses/replacement_field_pair_dropped/input.py
+---
+shed-parentheses@11..12
+shed-parentheses@17..18
+shed-parentheses@29..30
+shed-parentheses@35..36

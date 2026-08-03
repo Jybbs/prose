@@ -46,6 +46,8 @@ pub(crate) struct SingleUseVariables {
 }
 
 impl SingleUseVariables {
+    pub(crate) const MESSAGE: &'static str = "Binding is assigned and used once. Consider inlining";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             allow_pattern: config.rules.single_use_variables.allow_pattern.clone(),

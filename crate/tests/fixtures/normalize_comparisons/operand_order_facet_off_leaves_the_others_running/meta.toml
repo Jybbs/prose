@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "The Operand-Order Facet Off Leaves the Other Rewrites Running"
+
+description = '''
+`rewrite-operand-order = false` leaves the constant-led comparison where its author put it, while the `None` test still becomes an identity check and the leading `not` still folds.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Negated None Equality Settles in One Pass"
+
+description = '''
+`not value == None` comes back as `value is not None`, the identity rewrite and the `not` fold resolving together rather than one per run.
+'''

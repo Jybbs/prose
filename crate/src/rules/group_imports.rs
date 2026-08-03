@@ -30,6 +30,9 @@ pub(crate) struct GroupImports {
 }
 
 impl GroupImports {
+    pub(crate) const MESSAGE: &'static str =
+        "group imports into bare, external, and local sections";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             first_party: config.first_party(),

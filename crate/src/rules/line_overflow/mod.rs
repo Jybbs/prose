@@ -39,6 +39,8 @@ pub(crate) struct LineOverflow {
 }
 
 impl LineOverflow {
+    pub(crate) const MESSAGE: &'static str = "Flag a line over its length budget, offering the split form where a string literal can take the break";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),

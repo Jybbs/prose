@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/replacement_field_optional_rewritten/input.py
+---
+
+label = f"{int | None}"
+plain: str | None = None

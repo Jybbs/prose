@@ -24,6 +24,8 @@ use crate::{
 pub(crate) struct StripAlignPadding;
 
 impl StripAlignPadding {
+    pub(crate) const MESSAGE: &'static str = "drop padding that lines up with nothing";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

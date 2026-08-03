@@ -41,6 +41,9 @@ pub(crate) struct StackAdjacentStrings {
 }
 
 impl StackAdjacentStrings {
+    pub(crate) const MESSAGE: &'static str =
+        "stack an implicitly concatenated string run one literal per line";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             align_equals: AlignEquals::reserve_settings(config),
