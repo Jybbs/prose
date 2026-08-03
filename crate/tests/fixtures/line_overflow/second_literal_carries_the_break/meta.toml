@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "The Literal Crossing the Cap Is the One Offered"
+
+description = '''
+Two literals sit on the line and the selection reads the cap column rather than source order, so the short key is passed over and the value carries the break.
+'''

@@ -1,6 +1,6 @@
 import { defineLoader } from 'vitepress'
 
-import { glossary }                       from './entries'
+import { glossary, type GlossaryEntry }   from './entries'
 import { entryHref }                      from './hrefs'
 import { getRenderer, renderPlainInlineHtml } from '../markdown/renderer'
 import { inlineNodes, type InlineNode }   from '../markdown/inline-nodes'
@@ -35,14 +35,15 @@ export default defineLoader({
     const entries : Record<string, RenderedGlossaryEntry> = {}
 
     for (const [slug, entry] of Object.entries(glossary)) {
+      const families = entryFamilies(slug, entry)
       entries[slug] = {
         aliases         : entry.aliases ?? [],
         definitionHtml  : renderPlainInlineHtml(md, entry.definition),
         definitionNodes : inlineNodes(md, entry.definition),
-        families        : entry.families,
+        families        : families,
         href            : entryHref(slug, entry, ruleIndex),
         initial         : firstLetter(slug),
-        primaryFamily   : entry.families[0],
+        primaryFamily   : families[0],
         slug            : slug
       }
     }
@@ -50,6 +51,17 @@ export default defineLoader({
     return { entries }
   }
 })
+
+function entryFamilies(slug: string, entry: GlossaryEntry): readonly GlossaryFamily[] {
+  const declared = entry.families ?? []
+  if (!entry.rule) {
+    if (declared.length === 0) throw new Error(`Glossary entry "${slug}" declares no family`)
+    return declared
+  }
+  const rule = ruleIndex.get(entry.rule)
+  if (!rule) throw new Error(`Glossary entry "${slug}" names unknown rule "${entry.rule}"`)
+  return [rule.family as GlossaryFamily, ...declared]
+}
 
 function firstLetter(slug: string): string {
   return slug.match(/[a-z]/i)?.[0].toUpperCase() ?? '#'

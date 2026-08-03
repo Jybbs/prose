@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/sole_directive_removed_with_blank_line/input.py
+---
+
+x = 1
+
+
+def main():
+    print(x)

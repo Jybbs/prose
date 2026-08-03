@@ -22,17 +22,24 @@ Config {
         first_party: [],
     },
     rules: RuleConfigs {
-        unused_future_annotations: ToggleOnly {
+        prune_inert_imports: PruneInertImportsConfig {
+            drop_duplicates: false,
+            drop_unreferenced: false,
             enabled: false,
         },
         strip_none_return: ToggleOnly {
             enabled: false,
         },
+        modernize_annotations: ModernizeAnnotationsConfig {
+            enabled: false,
+            rewrite_generics: false,
+            rewrite_unions: false,
+        },
         strip_trailing_commas: ToggleOnly {
             enabled: false,
         },
         shed_parentheses: ToggleOnly {
-            enabled: true,
+            enabled: false,
         },
         docstring_frame: ToggleOnly {
             enabled: false,
@@ -41,7 +48,7 @@ Config {
             enabled: false,
         },
         group_imports: ToggleOnly {
-            enabled: true,
+            enabled: false,
         },
         chain_layout: ChainLayoutConfig {
             enabled: false,
@@ -55,9 +62,9 @@ Config {
             ),
         },
         collection_layout: CollectionLayoutConfig {
-            collapse: false,
             enabled: false,
             explode: false,
+            keep_multiline_literals: false,
             max_atomics: InlineBudget(
                 Some(
                     3,
@@ -90,6 +97,11 @@ Config {
                 16,
             ),
         },
+        import_layout: ImportLayoutConfig {
+            enabled: false,
+            merge_members: false,
+            split_multi_module: false,
+        },
         alphabetize: AlphabetizeConfig {
             enabled: false,
             group_methods: false,
@@ -99,18 +111,15 @@ Config {
             sort_dunder_lists: false,
         },
         band_constants: BandConstantsConfig {
-            enabled: true,
-            group_constants: true,
+            enabled: false,
+            group_subcategories: false,
             max_tiers: InlineBudget(
                 Some(
-                    2,
+                    4,
                 ),
             ),
         },
         blank_lines: ToggleOnly {
-            enabled: false,
-        },
-        import_layout: ToggleOnly {
             enabled: false,
         },
         align_imports: AlignmentConfig {
@@ -167,9 +176,6 @@ Config {
         step_narration: ToggleOnly {
             enabled: false,
         },
-        legacy_union_syntax: ToggleOnly {
-            enabled: false,
-        },
         single_use_variables: SingleUseVariablesConfig {
             allow_pattern: Regex(
                 "^tmp_",
@@ -182,8 +188,9 @@ Config {
         signature_annotations: ToggleOnly {
             enabled: false,
         },
-        line_overflow: ToggleOnly {
-            enabled: true,
+        line_overflow: LineOverflowConfig {
+            enabled: false,
+            suggest_string_splits: false,
         },
     },
     target_version: Some(

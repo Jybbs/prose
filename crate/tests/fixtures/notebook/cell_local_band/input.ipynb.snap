@@ -7,7 +7,7 @@ import os
 
 
 def helper(value):
-    return value
+    return os.fspath(value)
 
 
 CONFIG = helper
@@ -18,7 +18,7 @@ import sys
 
 
 def runner(flag):
-    return flag
+    return sys.intern(flag)
 
 
 MODE = runner

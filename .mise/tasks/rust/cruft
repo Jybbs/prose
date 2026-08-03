@@ -1,0 +1,4 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description="Sweep the Rust snapshot tree for orphaned `insta` snapshots"
+
+cargo insta test --unreferenced=reject --workspace --exclude prose_wasm

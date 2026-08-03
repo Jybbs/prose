@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Unset `target-version` Holds Every Rewrite"
+
+description = '''
+With no target declared, an unset field clears neither version floor, so the annotation passes through untouched.
+'''

@@ -3,7 +3,5 @@ previewable = false
 title       = "A Class-Body Value Pins the Named Class After It"
 
 description = '''
-`Config` binds `Defaults` as a class-body value, which runs while the class is
-being built, so the sort holds `Defaults` ahead of `Config` rather than moving
-it out of scope.
+`Config` binds `Defaults` as a class-body value, which runs while the class is being built, so the sort holds `Defaults` ahead of `Config` rather than moving it out of scope.
 '''

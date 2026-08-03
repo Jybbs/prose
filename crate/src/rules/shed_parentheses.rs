@@ -10,12 +10,7 @@
 use std::{borrow::Cow, cmp::Reverse};
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    AnyNodeRef, Arguments, Expr, Stmt,
-    comparable::ComparableStmt,
-    token::parenthesized_range,
-    visitor::{Visitor, walk_arguments, walk_expr, walk_stmt},
-};
+use ruff_python_ast::{AnyNodeRef, Expr, comparable::ComparableStmt, token::parenthesized_range};
 use ruff_python_parser::parse_module;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
@@ -25,6 +20,7 @@ use crate::{
     primitives::{
         edit::{apply_inline_edits, insert_edit, singleton_groups, splice_reparse},
         inline::{end_column, single_line_form, soft_wrap_runs},
+        walk::{Descent, ParentedProbe, walk_parented_exprs},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -46,10 +42,9 @@ impl Rule for ShedParentheses {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut scout = Scout {
             candidates: Vec::new(),
-            parent: AnyNodeRef::from(source.ast()),
             source,
         };
-        scout.visit_body(&source.ast().body);
+        walk_parented_exprs(source.ast(), &mut scout);
         let mut candidates = scout.candidates;
         candidates.sort_unstable_by_key(|c| (c.pair.start(), Reverse(c.pair.end())));
         let mut shedder = Shedder {
@@ -79,7 +74,6 @@ struct Candidate<'src> {
 /// budget to [`Shedder`].
 struct Scout<'a> {
     candidates: Vec<Candidate<'a>>,
-    parent: AnyNodeRef<'a>,
     source: &'a Source,
 }
 
@@ -87,13 +81,13 @@ impl<'a> Scout<'a> {
     /// The candidate `expr` contributes, or `None` where no pair
     /// encloses it, the pair carries syntax, its interior has no
     /// single-line form, or stripping the pair shifts the parse.
-    fn candidate(&self, expr: &'a Expr) -> Option<Candidate<'a>> {
-        let pair = parenthesized_range(expr.into(), self.parent, self.source.tokens())?;
+    fn candidate(&self, expr: &'a Expr, parent: AnyNodeRef) -> Option<Candidate<'a>> {
+        let pair = parenthesized_range(expr.into(), parent, self.source.tokens())?;
         // A walrus binding keeps its pair whatever the context, since the
         // grammar needs it almost everywhere, and a multi-line return
         // annotation is signature-layout's to reshape, so neither sheds here.
         if expr.is_named_expr()
-            || (is_return_annotation(expr, self.parent) && self.source.contains_line_break(pair))
+            || (is_return_annotation(expr, parent) && self.source.contains_line_break(pair))
             || self.source.intersects_comment(pair)
         {
             return None;
@@ -124,27 +118,12 @@ impl<'a> Scout<'a> {
             .map(ComparableStmt::from)
             .eq(reparsed.syntax().body.iter().map(ComparableStmt::from))
     }
-
-    /// Runs `walk` with `node` recorded as the enclosing parent.
-    fn under(&mut self, node: impl Into<AnyNodeRef<'a>>, walk: impl FnOnce(&mut Self)) {
-        let parent = std::mem::replace(&mut self.parent, node.into());
-        walk(self);
-        self.parent = parent;
-    }
 }
 
-impl<'a> Visitor<'a> for Scout<'a> {
-    fn visit_arguments(&mut self, arguments: &'a Arguments) {
-        self.under(arguments, |scout| walk_arguments(scout, arguments));
-    }
-
-    fn visit_expr(&mut self, expr: &'a Expr) {
-        self.candidates.extend(self.candidate(expr));
-        self.under(expr, |scout| walk_expr(scout, expr));
-    }
-
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        self.under(stmt, |scout| walk_stmt(scout, stmt));
+impl<'a> ParentedProbe<'a> for Scout<'a> {
+    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>) -> Descent {
+        self.candidates.extend(self.candidate(expr, parent));
+        Descent::Into
     }
 }
 

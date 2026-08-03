@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Type Alias Rewrites Like an Annotation"
+
+description = '''
+The legacy spelling reads the same wherever it stands, so a bare alias binding modernizes alongside the annotations.
+'''

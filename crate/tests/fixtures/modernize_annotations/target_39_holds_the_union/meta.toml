@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "The Union Rewrite Waits for Python 3.10"
+
+description = '''
+`X | None` is runtime-valid from 3.10, so a 3.9 target converts the generic and leaves the union alone. The import keeps the one name still read.
+'''

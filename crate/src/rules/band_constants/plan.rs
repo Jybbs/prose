@@ -274,10 +274,10 @@ pub(super) fn banded_gap(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::primitives::orderer::member_blocks;
-    use crate::rules::band_constants::analysis::module_band_plan;
-    use crate::source::Source;
-    use crate::testing::parse;
+    use crate::{
+        primitives::orderer::member_blocks, rules::band_constants::analysis::module_band_plan,
+        source::Source, testing::parse,
+    };
 
     /// The banding `source` produces alongside the order it rewrote.
     fn banded(source: &Source) -> (Banding, Vec<usize>) {

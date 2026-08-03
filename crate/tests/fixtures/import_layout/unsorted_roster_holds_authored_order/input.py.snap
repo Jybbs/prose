@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/import_layout/unsorted_roster_holds_authored_order/input.py
+---
+from pkg import gamma, alpha
+from pkg import beta, delta
+from pkg import epsilon

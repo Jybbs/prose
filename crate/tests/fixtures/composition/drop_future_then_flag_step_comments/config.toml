@@ -1,2 +1,2 @@
 [harness]
-rules = ["step-narration", "unused-future-annotations"]
+rules = ["step-narration", "prune-inert-imports"]

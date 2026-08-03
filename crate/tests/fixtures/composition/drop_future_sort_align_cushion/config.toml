@@ -1,2 +1,2 @@
 [harness]
-rules = ["alphabetize", "unused-future-annotations", "blank-lines", "align-imports"]
+rules = ["alphabetize", "prune-inert-imports", "blank-lines", "align-imports"]

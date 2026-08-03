@@ -1,0 +1,4 @@
+target-version = "3.14"
+
+[rules]
+modernize-annotations = { rewrite-generics = false }

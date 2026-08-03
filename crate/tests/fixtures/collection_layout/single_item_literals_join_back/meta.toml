@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Single-Item and Empty Literals Join Back to One Line"
+
+description = '''
+The hold needs more than one entry before a stack says anything a single row does not, so a one-entry dict, a one-item list, and a bare bracket pair each rejoin however the author spread them. **A single-entry dict that overflows still breaks at `:` and hangs its value**, since any non-empty dict is an expand target.
+'''

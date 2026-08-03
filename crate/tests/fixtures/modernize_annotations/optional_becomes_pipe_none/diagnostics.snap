@@ -1,0 +1,7 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/modernize_annotations/optional_becomes_pipe_none/input.py
+---
+modernize-annotations@0..28
+modernize-annotations@32..45

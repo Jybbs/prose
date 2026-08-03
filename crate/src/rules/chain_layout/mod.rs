@@ -17,10 +17,7 @@
 use std::collections::HashMap;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    AnyNodeRef, Arguments, Expr, InterpolatedStringElement, Stmt,
-    visitor::{Visitor as AstVisitor, walk_arguments, walk_expr, walk_stmt},
-};
+use ruff_python_ast::{AnyNodeRef, Expr};
 use ruff_text_size::TextSize;
 
 use crate::{
@@ -29,6 +26,7 @@ use crate::{
         aligner,
         edit::{insert_edit, narrowed_replacement, singleton_groups},
         reserve::{reserved_columns, settled_column},
+        walk::{Descent, ParentedProbe, walk_parented_exprs},
     },
     rule::{Rule, RuleId},
     rules::align_equals::AlignEquals,
@@ -67,11 +65,10 @@ impl Rule for ChainLayout {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             max_shift: self.max_shift,
-            parent: AnyNodeRef::from(source.ast()),
             reservations: &reservations,
             source,
         };
-        breaker.visit_body(&source.ast().body);
+        walk_parented_exprs(source.ast(), &mut breaker);
         singleton_groups(breaker.edits)
     }
 
@@ -80,15 +77,13 @@ impl Rule for ChainLayout {
     }
 }
 
-/// Walks a module emitting the break edit each over-long or over-count
-/// chain needs. `parent` is the node enclosing the expression under
-/// visit, the node a grouping-pair recovery resolves against.
+/// Emits the break edit each over-long or over-count chain needs as the
+/// parent-tracking walk reaches it.
 struct Breaker<'a> {
     cap: Option<usize>,
     code_line_length: usize,
     edits: Vec<Edit>,
     max_shift: MaxShift,
-    parent: AnyNodeRef<'a>,
     reservations: &'a HashMap<TextSize, usize>,
     source: &'a Source,
 }
@@ -97,8 +92,9 @@ impl<'a> Breaker<'a> {
     /// The edit breaking `chain` across lines, or `None` where neither
     /// trigger fires, a comment or a line-spanning segment holds the
     /// shape, or the chain already reads as the break's own output.
-    fn break_chain(&self, expr: &'a Expr, chain: &Chain<'a>) -> Option<Edit> {
-        let range = self.source.paren_aware_range(expr.into(), self.parent);
+    /// `parent` resolves the grouping pair the source already carries.
+    fn break_chain(&self, expr: &Expr, chain: &Chain, parent: AnyNodeRef) -> Option<Edit> {
+        let range = self.source.paren_aware_range(expr.into(), parent);
         if self.source.intersects_comment(range)
             || chain.spans_lines(self.source)
             || !self.trips(chain, range.start())
@@ -113,7 +109,7 @@ impl<'a> Breaker<'a> {
     /// The columns each link's dot hangs past the head's indent, `None`
     /// where the receiver runs wider than `max_shift` allows and the
     /// chain takes the full split.
-    fn hang(&self, chain: &Chain<'a>) -> Option<usize> {
+    fn hang(&self, chain: &Chain) -> Option<usize> {
         let shift = chain.receiver_width(self.source);
         match self.max_shift {
             MaxShift::Cap(cap) => (shift <= cap.get()).then_some(shift),
@@ -124,49 +120,37 @@ impl<'a> Breaker<'a> {
 
     /// True when `chain` carries more links than the cap allows or reads
     /// past `code_line_length` joined onto the row `start` lands on.
-    fn trips(&self, chain: &Chain<'a>, start: TextSize) -> bool {
+    fn trips(&self, chain: &Chain, start: TextSize) -> bool {
         let column = settled_column(self.reservations, start, || self.source.column_of(start));
         self.cap.is_some_and(|cap| chain.links.len() > cap)
             || column + chain.width(self.source) > self.code_line_length
     }
+}
 
-    /// Runs `walk` with `node` recorded as the enclosing parent.
-    fn under(&mut self, node: impl Into<AnyNodeRef<'a>>, walk: impl FnOnce(&mut Self)) {
-        let parent = std::mem::replace(&mut self.parent, node.into());
-        walk(self);
-        self.parent = parent;
-    }
-
-    /// Walks the receiver and each link's arguments, leaving the spine
-    /// unvisited.
-    fn walk_beside_spine(&mut self, chain: &Chain<'a>) {
-        self.under(chain.receiver, |breaker| walk_expr(breaker, chain.receiver));
-        for link in &chain.links {
-            self.visit_arguments(&link.call.arguments);
+impl<'a> ParentedProbe<'a> for Breaker<'a> {
+    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>) -> Descent {
+        if matches!(expr, Expr::FString(_) | Expr::TString(_)) {
+            return Descent::Over;
+        }
+        let edit = Chain::of(self.source, expr)
+            .filter(|_| !inside_a_chain(parent))
+            .and_then(|chain| self.break_chain(expr, &chain, parent));
+        match edit {
+            Some(edit) => {
+                insert_edit(&mut self.edits, edit);
+                Descent::Over
+            }
+            None => Descent::Into,
         }
     }
 }
 
-impl<'a> AstVisitor<'a> for Breaker<'a> {
-    fn visit_arguments(&mut self, arguments: &'a Arguments) {
-        self.under(arguments, |breaker| walk_arguments(breaker, arguments));
-    }
-
-    fn visit_expr(&mut self, expr: &'a Expr) {
-        let Some(chain) = Chain::of(self.source, expr) else {
-            self.under(expr, |breaker| walk_expr(breaker, expr));
-            return;
-        };
-        match self.break_chain(expr, &chain) {
-            Some(edit) => insert_edit(&mut self.edits, edit),
-            None => self.walk_beside_spine(&chain),
-        }
-    }
-
-    /// Leaves a replacement field unwalked.
-    fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
-
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        self.under(stmt, |breaker| walk_stmt(breaker, stmt));
-    }
+/// True where `parent` already places the expression under visit on the
+/// spine of a longer chain, an attribute's value or a call's callee, so
+/// the outermost chain is the one the break reshapes.
+fn inside_a_chain(parent: AnyNodeRef) -> bool {
+    matches!(
+        parent,
+        AnyNodeRef::ExprAttribute(_) | AnyNodeRef::ExprCall(_)
+    )
 }

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Already-Concatenated Literal Draws No Suggestion"
+
+description = '''
+The suggestion reshapes one string literal, and a line already written as adjacent literals carries two, so it stays outside the rule's reach. A sweep of the Python standard library found no over-budget line of this shape, so the exclusion costs nothing in practice.
+'''

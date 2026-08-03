@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/prune_inert_imports/listed_name_survives_its_repeat/input.py
+---
+

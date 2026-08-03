@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Assigned Dict Holds Its Break and Takes the Aligned Equals"
+
+description = '''
+`HEADER_VALIDATORS`'s dict would fit inline at its unaligned `=`, yet `keep-multiline-literals` **holds the break its author wrote** and re-expands the entries in place. That leaves the assignment's opening line short enough for `align-equals` to shift the `=` rightward and clear the longer `_VALID_HEADER_VALUE_RE_BYTE`, which a joined dict would have pushed past the budget.
+'''

@@ -87,7 +87,7 @@ describe('lintDecorations', () => {
     expect(decorations.lintDecorations(findings)).toEqual([
       {
         end        : { character: 3, line: 0 },
-        properties : { class: 'lint-flag underline-draw', 'data-before': 'x', 'data-message': 'first', 'data-rule': 'a', 'data-suggested': 'y' },
+        properties : { class: 'lint-flag underline-draw', 'data-message': 'first', 'data-rule': 'a', 'data-suggested': 'y' },
         start      : { character: 0, line: 0 }
       },
       {

@@ -91,7 +91,7 @@ pub struct BandConstantsConfig {
     /// the `SCREAMING_CASE` constants, then the remaining module state,
     /// before sorting by name within each. `false` sorts by tier and
     /// name alone.
-    pub group_constants: bool,
+    pub group_subcategories: bool,
     /// Caps how many evaluation tiers open their own blank-separated
     /// sub-band, merging every deeper tier into the last. `1` holds the
     /// band tight and `false` opens one sub-band per tier.
@@ -102,7 +102,7 @@ impl Default for BandConstantsConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            group_constants: true,
+            group_subcategories: true,
             max_tiers: InlineBudget(NonZeroUsize::new(2)),
         }
     }
@@ -200,20 +200,20 @@ impl Default for ChainLayoutConfig {
     }
 }
 
-/// Configuration for the `collection_layout` rule, each shape facet
-/// gating one move and defaulting `true`.
+/// Configuration for the `collection_layout` rule, each facet gating
+/// one shape decision and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CollectionLayoutConfig {
-    /// Joins a fitting multi-line literal, subscript, comprehension, or
-    /// dict key back to one line. `false` freezes those shapes where they
-    /// sit.
-    pub collapse: bool,
     pub enabled: bool,
     /// Expands an overflowing or over-count collection to one entry per
     /// line. `false` suppresses every expansion and leaves the count cap
     /// inert.
     pub explode: bool,
+    /// Holds a literal the author laid out as a flush bracketed column
+    /// of two or more entries. `false` joins one whose single-line form
+    /// fits the budget, and every other break rejoins either way.
+    pub keep_multiline_literals: bool,
     /// Keeps short collections on one line when each entry is an atomic
     /// literal and the run fits the cap. `false` removes the cap and
     /// packs by width alone.
@@ -229,9 +229,9 @@ pub struct CollectionLayoutConfig {
 impl Default for CollectionLayoutConfig {
     fn default() -> Self {
         Self {
-            collapse: true,
             enabled: true,
             explode: true,
+            keep_multiline_literals: true,
             max_atomics: InlineBudget(NonZeroUsize::new(8)),
             max_dict_entries: InlineBudget(NonZeroUsize::new(3)),
             wrap_dict_entries: true,
@@ -249,6 +249,31 @@ pub enum DocstringStructuredPolicy {
     #[default]
     CodeLineLength,
     DocstringLineLength,
+}
+
+/// Configuration for the `import_layout` rule, each facet gating one
+/// statement move and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct ImportLayoutConfig {
+    pub enabled: bool,
+    /// Folds repeated `from <module> import …` statements into one
+    /// statement carrying each member once, ordered as `alphabetize`
+    /// would leave it. `false` leaves each statement on its own line.
+    pub merge_members: bool,
+    /// Breaks a comma-joined `import a, b` into one `import` statement
+    /// per module. `false` keeps the comma-joined form.
+    pub split_multi_module: bool,
+}
+
+impl Default for ImportLayoutConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            merge_members: true,
+            split_multi_module: true,
+        }
+    }
 }
 
 /// Settings parsed from `[tool.prose.imports]`.
@@ -293,6 +318,27 @@ impl JsonSchema for InlineBudget {
 impl Serialize for InlineBudget {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serialize_optional_cap(&self.0, serializer)
+    }
+}
+
+/// Configuration for the `line_overflow` rule.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct LineOverflowConfig {
+    pub enabled: bool,
+    /// Offers the parenthesized adjacent-literal form on an over-budget
+    /// line whose overflow sits inside one string literal holding
+    /// interior whitespace, as a display-only suggestion `prose format`
+    /// never writes. `false` leaves the bare overflow report.
+    pub suggest_string_splits: bool,
+}
+
+impl Default for LineOverflowConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            suggest_string_splits: true,
+        }
     }
 }
 
@@ -368,6 +414,59 @@ impl Default for MiscasedConstantsConfig {
     fn default() -> Self {
         Self {
             allow_pattern: Regex::new("").expect("empty pattern compiles"),
+            enabled: true,
+        }
+    }
+}
+
+/// Configuration for the `modernize_annotations` rule, each facet
+/// gating one rewrite and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct ModernizeAnnotationsConfig {
+    pub enabled: bool,
+    /// Converts a `typing` generic to the builtin PEP 585 gave it, so
+    /// `List[int]` reads as `list[int]`. Runs on `target-version` 3.9
+    /// and higher, and `false` leaves every `typing` generic in place.
+    pub rewrite_generics: bool,
+    /// Rewrites `Optional[X]` and `Union[X, Y]` to the PEP 604 `X | None`
+    /// and `X | Y` forms. Runs on `target-version` 3.10 and higher, and
+    /// `false` leaves every legacy union in place.
+    pub rewrite_unions: bool,
+}
+
+impl Default for ModernizeAnnotationsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            rewrite_generics: true,
+            rewrite_unions: true,
+        }
+    }
+}
+
+/// Configuration for the `prune_inert_imports` rule, each facet gating
+/// one prune and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct PruneInertImportsConfig {
+    /// Drops an import rebinding a name an earlier import already bound
+    /// to the same source. `false` keeps every repeat.
+    pub drop_duplicates: bool,
+    /// Drops an import binding a name nothing references, where the
+    /// binding is not marked for re-export, read by a `del` or a quoted
+    /// annotation, or bound in a package `__init__.py`, where it is
+    /// reported instead. `false` leaves every unreferenced import in
+    /// place and reports none of them.
+    pub drop_unreferenced: bool,
+    pub enabled: bool,
+}
+
+impl Default for PruneInertImportsConfig {
+    fn default() -> Self {
+        Self {
+            drop_duplicates: true,
+            drop_unreferenced: true,
             enabled: true,
         }
     }
@@ -484,7 +583,11 @@ impl_rule_toggle!(
     CallLayoutConfig,
     ChainLayoutConfig,
     CollectionLayoutConfig,
+    ImportLayoutConfig,
+    LineOverflowConfig,
     MiscasedConstantsConfig,
+    ModernizeAnnotationsConfig,
+    PruneInertImportsConfig,
     ReassignedConstantsConfig,
     SignatureLayoutConfig,
     SingleUseVariablesConfig,

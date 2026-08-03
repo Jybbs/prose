@@ -1,8 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/chain_layout/interior_comment_pins_shape/input.py
----
-result = query.filter(a).order(  # keep the shape
-    b
-).limit(c)

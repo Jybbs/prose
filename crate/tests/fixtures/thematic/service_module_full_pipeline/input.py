@@ -17,7 +17,7 @@ class ServiceConfig:
     def __post_init__(self):
         self.labels = self.labels or []
     def _key(self):
-        return self.id
+        return (self.id, sys, os, field)
 def build_request(method, fully_qualified_endpoint_url, headers, body, timeout, retries):
     result = os.getcwd()
     return {"method": method, "url": fully_qualified_endpoint_url, "headers": headers, "body": body}

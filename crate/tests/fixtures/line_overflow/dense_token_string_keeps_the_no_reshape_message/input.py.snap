@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/dense_token_string_keeps_the_no_reshape_message/input.py
+---
+ENDPOINT = "https://example.invalid/api/v2/resource"

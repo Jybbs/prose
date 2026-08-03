@@ -70,12 +70,13 @@ fn alphabetize_facet_false_in_sub_table_leaves_siblings_default() {
 
 #[test]
 fn collection_layout_facet_false_in_sub_table_leaves_siblings_default() {
-    let config =
-        Config::from_pyproject_str("[tool.prose.rules.collection-layout]\ncollapse = false\n")
-            .expect("parses");
+    let config = Config::from_pyproject_str(
+        "[tool.prose.rules.collection-layout]\nkeep-multiline-literals = false\n",
+    )
+    .expect("parses");
 
     let rules = &config.rules.collection_layout;
-    assert!(!rules.collapse);
+    assert!(!rules.keep_multiline_literals);
     assert!(rules.enabled);
     assert!(rules.explode);
     assert!(rules.wrap_dict_entries);

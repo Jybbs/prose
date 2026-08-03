@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`Union[X, Y]` Becomes `X | Y`"
+
+description = '''
+Each member of a `Union` joins with the PEP 604 `|`, in their order inside the subscript.
+'''

@@ -2,39 +2,40 @@
 //! stopping at its last non-whitespace character so the text between two
 //! segments is the gap a break rewrites.
 
-use ruff_python_ast::{Expr, ExprAttribute, ExprCall, token::TokenKind};
+use ruff_python_ast::{Expr, ExprAttribute, token::TokenKind};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::source::Source;
 
-/// A chain's receiver and its `.name(...)` links in source order.
-pub(super) struct Chain<'a> {
-    pub(super) links: Vec<Link<'a>>,
-    pub(super) receiver: &'a Expr,
+/// A chain's receiver and its `.name(...)` links in source order, each
+/// link running from its own dot to the one opening the link below it,
+/// or to the chain's end for the last.
+pub(super) struct Chain {
+    pub(super) links: Vec<TextRange>,
     pub(super) receiver_range: TextRange,
 }
 
-impl<'a> Chain<'a> {
+impl Chain {
     /// The chain `expr` divides into, or `None` when its spine carries
     /// fewer than two links. A `.name` access that is not itself called
     /// opens no link of its own, moving the opening of the link below it
     /// down onto its own dot, and a trailing one stays with the link
     /// above it.
-    pub(super) fn of(source: &Source, expr: &'a Expr) -> Option<Self> {
-        let mut spine: Vec<(TextSize, &'a ExprCall)> = Vec::new();
+    pub(super) fn of(source: &Source, expr: &Expr) -> Option<Self> {
+        let mut dots: Vec<TextSize> = Vec::new();
         let mut cursor = expr;
         loop {
             let attribute = match cursor {
                 Expr::Attribute(attribute) => {
-                    if let Some((dot, _)) = spine.last_mut() {
+                    if let Some(dot) = dots.last_mut() {
                         *dot = dot_offset(source, attribute);
                     }
                     attribute
                 }
                 Expr::Call(call) => match call.func.as_ref() {
                     Expr::Attribute(attribute) => {
-                        spine.push((dot_offset(source, attribute), call));
+                        dots.push(dot_offset(source, attribute));
                         attribute
                     }
                     _ => break,
@@ -43,29 +44,24 @@ impl<'a> Chain<'a> {
             };
             cursor = attribute.value.as_ref();
         }
-        if spine.len() < 2 {
+        if dots.len() < 2 {
             return None;
         }
-        spine.reverse();
-        let stops = spine[1..].iter().map(|&(dot, _)| dot).chain([expr.end()]);
-        let links = spine
-            .iter()
-            .zip(stops)
-            .map(|(&(dot, call), stop)| Link {
-                call,
-                range: trimmed(source, TextRange::new(dot, stop)),
-            })
-            .collect();
+        dots.reverse();
+        let stops = dots[1..].iter().copied().chain([expr.end()]);
         Some(Self {
-            links,
-            receiver: cursor,
-            receiver_range: trimmed(source, TextRange::new(expr.start(), spine[0].0)),
+            links: dots
+                .iter()
+                .zip(stops)
+                .map(|(&dot, stop)| trimmed(source, TextRange::new(dot, stop)))
+                .collect(),
+            receiver_range: trimmed(source, TextRange::new(expr.start(), dots[0])),
         })
     }
 
     /// Every segment in source order, the receiver then each link.
     fn segments(&self) -> impl Iterator<Item = TextRange> + '_ {
-        std::iter::once(self.receiver_range).chain(self.links.iter().map(|link| link.range))
+        std::iter::once(self.receiver_range).chain(self.links.iter().copied())
     }
 
     /// The receiver's display width, the columns a hung link's dot sits
@@ -87,14 +83,6 @@ impl<'a> Chain<'a> {
             .map(|segment| source.slice(segment).width())
             .sum()
     }
-}
-
-/// One link of a chain, the call it wraps paired with the range running
-/// from its own dot to the one opening the link below it, or to the
-/// chain's end for the last.
-pub(super) struct Link<'a> {
-    pub(super) call: &'a ExprCall,
-    pub(super) range: TextRange,
 }
 
 /// The offset of the `.` separating `attribute`'s value from its name.
@@ -121,7 +109,7 @@ mod tests {
     use crate::testing::{first_value, parse};
 
     /// The chain `source`'s first assigned value divides into.
-    fn chain_of(source: &Source) -> Option<Chain<'_>> {
+    fn chain_of(source: &Source) -> Option<Chain> {
         Chain::of(source, first_value(source))
     }
 
