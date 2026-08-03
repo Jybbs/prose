@@ -45,8 +45,9 @@ A consuming rule rarely hand-builds the walker from raw AST traversal, since the
 4. `line_anchored_member(source, anchor)` builds a `Member` whose `gap` starts at `anchor` and whose `width` measures the leading display column on the line.
 5. `line_anchored_member_at_kind(source, lhs_start, search, kind)` finds the first token of `kind` in `search` and anchors a `Member` at its end.
 6. `range_anchored_member_single_line(source, target, search, predicate, extra_width)` builds a `Member` whose `width` is the display-column width of `target`'s slice plus `extra_width`, for left-hand sides that are sub-ranges of one line.
-7. `space_padding_edit(source, range, n)` produces a `Some(Edit)` replacing `range` with `n` spaces, or `None` when the current contents already match.
-8. `is_alignment_candidate(source, members)` returns `true` when the group has at least two members, each on a distinct line and opening at a shared column baseline, so the padding lands on a column every row can reach.
+7. `line_gap_before(source, anchor)` returns the whitespace run ending at `anchor`, opening no earlier than that line's start. The member builders locate a row's `gap` through it, and `comment-spacing` reaches it directly to find the run ahead of a trailing comment.
+8. `space_padding_edit(source, range, n)` produces a `Some(Edit)` replacing `range` with `n` spaces, or `None` when the current contents already match.
+9. `is_alignment_candidate(source, members)` returns `true` when the group has at least two members, each on a distinct line and opening at a shared column baseline, so the padding lands on a column every row can reach.
 
 ## How the Math Resolves
 

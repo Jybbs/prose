@@ -27,7 +27,7 @@ pub(crate) use grouping::{
 pub(crate) use holds::{is_alignment_candidate, is_held, retain_unheld};
 pub(crate) use members::{
     line_anchored_member, line_anchored_member_at_kind, line_anchored_member_between,
-    parameter_split_groups, range_anchored_member_single_line,
+    line_gap_before, parameter_split_groups, range_anchored_member_single_line,
 };
 pub(crate) use walker::AlignWalker;
 

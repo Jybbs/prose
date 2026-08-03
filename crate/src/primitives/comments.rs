@@ -3,7 +3,8 @@
 //! multi-hash heading, and where the block binding to the member below
 //! it starts. A run anchors in place on a section marker, a suppression
 //! directive, or a tool pragma, and binds to the member otherwise,
-//! whatever blank line sits between the two.
+//! whatever blank line sits between the two. The trailing-comment gap
+//! the banding and spacing rules both seat lives here as well.
 
 use ruff_python_ast::ExprDict;
 use ruff_python_trivia::{CommentRanges, is_pragma_comment};
@@ -11,6 +12,9 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{source::Source, suppression::is_directive_comment};
+
+/// The gap PEP 8 seats between code and a trailing comment.
+pub(crate) const TRAILING_GAP: &str = "  ";
 
 /// True when `block` holds its position rather than binding to the
 /// member below it, carrying a section marker, a suppression directive,

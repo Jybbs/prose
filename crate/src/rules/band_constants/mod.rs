@@ -16,6 +16,7 @@ use ruff_text_size::{Ranged, TextRange};
 use crate::{
     config::Config,
     primitives::{
+        comments::TRAILING_GAP,
         edit::{singleton_groups, splice_bodies},
         imports::defers_annotations,
         orderer::{
@@ -36,9 +37,6 @@ use self::{
     analysis::module_band_plan,
     plan::{Banding, Carry, banded_gap},
 };
-
-/// The gap PEP 8 seats between code and a trailing comment.
-const TRAILING_GAP: &str = "  ";
 
 pub(crate) struct BandConstants {
     code_width: usize,

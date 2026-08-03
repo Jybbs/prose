@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/comment_spacing/comment_trailing_an_open_bracket/input.py
+---
+result = call(  # note on the opener
+    alpha,
+)

@@ -155,6 +155,9 @@ Config {
         strip_align_padding: ToggleOnly {
             enabled: true,
         },
+        comment_spacing: ToggleOnly {
+            enabled: true,
+        },
         bare_imports: BareImportsConfig {
             allow: [],
             enabled: true,
