@@ -23,11 +23,14 @@ collection-layout     = { enabled = false, explode = false, keep-multiline-liter
 docstring-expand      = false
 docstring-frame       = false
 docstring-wrap        = false
+group-imports         = false
 import-layout         = { enabled = false, merge-members = false, split-multi-module = false }
+line-overflow         = { enabled = false, suggest-string-splits = false }
 miscased-constants    = { allow-pattern = "^_", enabled = false }
 modernize-annotations = { enabled = false, rewrite-generics = false, rewrite-unions = false }
 prune-inert-imports   = { drop-duplicates = false, drop-unreferenced = false, enabled = false }
 reassigned-constants  = { allow = ["LOG_LEVEL"], enabled = false }
+shed-parentheses      = false
 signature-annotations = false
 signature-layout      = { enabled = false, max-params = false }
 single-use-variables  = { allow-pattern = "^tmp_", enabled = false }

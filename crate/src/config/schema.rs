@@ -294,6 +294,27 @@ impl Serialize for InlineBudget {
     }
 }
 
+/// Configuration for the `line_overflow` rule.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct LineOverflowConfig {
+    pub enabled: bool,
+    /// Offers the parenthesized adjacent-literal form on an over-budget
+    /// line whose overflow sits inside one string literal holding
+    /// interior whitespace, as a display-only suggestion `prose format`
+    /// never writes. `false` leaves the bare overflow report.
+    pub suggest_string_splits: bool,
+}
+
+impl Default for LineOverflowConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            suggest_string_splits: true,
+        }
+    }
+}
+
 /// How far a row may shift to align, read from `max-shift`.
 /// `Unlimited` lifts the cap so a contiguous run always aligns to its
 /// widest member. `NoShift` forbids any shift, collapsing every row to
@@ -535,6 +556,7 @@ impl_rule_toggle!(
     CallLayoutConfig,
     CollectionLayoutConfig,
     ImportLayoutConfig,
+    LineOverflowConfig,
     MiscasedConstantsConfig,
     ModernizeAnnotationsConfig,
     PruneInertImportsConfig,

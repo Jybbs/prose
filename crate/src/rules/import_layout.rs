@@ -9,7 +9,7 @@
 //! import stays untouched, and a lone name whose own line overflows
 //! keeps it rather than splitting further.
 
-use std::{collections::HashMap, ops::Range};
+use std::collections::HashMap;
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
@@ -28,6 +28,7 @@ use crate::{
         aligner,
         edit::{apply_inline_edits, narrowed_replacement, whole_line_deletion},
         imports::is_import,
+        layout::pack,
         orderer::runs_where,
     },
     rule::{Rule, RuleId},
@@ -38,6 +39,10 @@ use crate::{
 /// Display width of the `import ` keyword and its trailing space, the
 /// distance from an aligned `import` column to the first name.
 const IMPORT_KEYWORD_WIDTH: usize = "import ".len();
+
+/// What joins two members sharing one line, written between them and
+/// counted against the budget each line packs to.
+const MEMBER_SEPARATOR: &str = ", ";
 
 /// What distinguishes one `from`-import's module from another, the
 /// leading-dot count alongside the module name.
@@ -142,7 +147,8 @@ impl<'a> Layout<'a> {
         };
         let names = self.roster(node.names.iter());
         let names_width: usize = names.iter().map(|name| name.width()).sum();
-        if self.prefix_width(node) + names_width + 2 * (names.len() - 1) <= self.import_line_length
+        if self.prefix_width(node) + names_width + MEMBER_SEPARATOR.len() * (names.len() - 1)
+            <= self.import_line_length
         {
             return;
         }
@@ -160,10 +166,15 @@ impl<'a> Layout<'a> {
         let prefix_width = self.prefix_width(node);
         let widths: Vec<usize> = names.iter().map(|name| name.width()).collect();
         let joiner = format!("{}{indent}", self.newline);
-        let rewrite = pack(&widths, prefix_width, self.import_line_length)
-            .into_iter()
-            .map(|range| format!("{prefix}{}", names[range].join(", ")))
-            .join(&joiner);
+        let rewrite = pack(
+            &widths,
+            prefix_width,
+            MEMBER_SEPARATOR.len(),
+            self.import_line_length,
+        )
+        .into_iter()
+        .map(|range| format!("{prefix}{}", names[range].join(MEMBER_SEPARATOR)))
+        .join(&joiner);
         narrowed_replacement(self.source, node.range(), rewrite)
     }
 
@@ -316,29 +327,6 @@ fn own_line_indent<'src>(source: &'src Source, node: &impl Ranged) -> Option<&'s
     indentation_at_offset(node.start(), source.text())
 }
 
-/// Greedily groups name indices into lines, each opening after the
-/// shared `prefix_width` and packing names (joined by `", "`) up to
-/// `budget`. The first name on every line is always placed, so a name
-/// whose own line overflows still lands rather than splitting away.
-fn pack(widths: &[usize], prefix_width: usize, budget: usize) -> Vec<Range<usize>> {
-    let mut lines = Vec::new();
-    let mut start = 0;
-    let mut line_width = 0;
-    for (i, &width) in widths.iter().enumerate() {
-        if i == start {
-            line_width = prefix_width + width;
-        } else if line_width + 2 + width <= budget {
-            line_width += 2 + width;
-        } else {
-            lines.push(start..i);
-            start = i;
-            line_width = prefix_width + width;
-        }
-    }
-    lines.push(start..widths.len());
-    lines
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -374,25 +362,6 @@ mod tests {
         };
 
         assert!(rule.apply(&source).is_empty());
-    }
-
-    #[test]
-    fn pack_carries_a_lone_overflowing_name_onto_its_own_line() {
-        // prefix 10, budget 14, name widths 8/8: neither pairs onto a
-        // line, so each forced name lands alone despite overflowing.
-        assert_eq!(pack(&[8, 8], 10, 14), vec![0..1, 1..2]);
-    }
-
-    #[test]
-    fn pack_fills_each_line_before_opening_the_next() {
-        // prefix 5, budget 16: 4 then 4 (5+4=9, +2+4=15) fit, 4 more
-        // (15+2+4=21) overflows and opens a line that then takes the 4.
-        assert_eq!(pack(&[4, 4, 4], 5, 16), vec![0..2, 2..3]);
-    }
-
-    #[test]
-    fn pack_keeps_one_line_when_every_name_fits() {
-        assert_eq!(pack(&[1, 1, 1], 5, 80), vec![0..3]);
     }
 
     #[test]

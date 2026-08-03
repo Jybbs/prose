@@ -23,7 +23,11 @@ use super::{
     flow::flow_lines,
 };
 use crate::{
-    primitives::{INDENT_STEP, edit::narrowed_replacement, layout::is_layoutable},
+    primitives::{
+        INDENT_STEP,
+        edit::narrowed_replacement,
+        layout::{is_layoutable, item_indent},
+    },
     source::Source,
 };
 
@@ -44,7 +48,7 @@ impl<'a> Layouter<'a> {
     /// Builds the expanded form of `expr` as a string, recursively
     /// laying out any qualifying child collections.
     fn expand(&self, expr: &Expr, indent: usize) -> String {
-        let item_indent = indent + INDENT_STEP;
+        let item_indent = item_indent(indent);
         let dict_items = expr.as_dict_expr().map(|d| &d.items);
         let parent = AnyNodeRef::from(expr);
         let GatheredItems {

@@ -81,6 +81,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'sort-docstring-entries',      href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder `name: description` entries within a docstring section.' },
     { key: 'sort-dunder-lists',           href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder the string items inside `__all__` and `__slots__`.' },
     { key: 'split-multi-module',          href: '/reference/configuration#per-rule-facets',       blurb: 'Break a comma-joined `import a, b` into one statement per module.' },
+    { key: 'suggest-string-splits',       href: '/reference/configuration#per-rule-facets',       blurb: 'Offer the adjacent-literal form for an over-budget splittable string.' },
     { key: 'target-version',              href: '/reference/configuration#top-level-keys',        blurb: 'Python version the parser reads against.' },
     { key: 'wrap-dict-entries',           href: '/reference/configuration#per-rule-facets',       blurb: 'Break an over-wide `key: value` at its `:` and hang the value beneath.' }
   ],

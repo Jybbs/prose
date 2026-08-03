@@ -346,6 +346,18 @@ export const glossary: Record<string, GlossaryEntry> = {
     families   : ['engine']
   },
 
+  'implicit concatenation': {
+    aliases    : ['adjacent literals', 'implicitly concatenated'],
+    definition : 'Two string literals written adjacent to one another join at compile time '
+               + 'into a single value, so `("one " "two")` is the same string as `"one two"`. '
+               + '`line-overflow` offers that form as a display-only suggestion when an '
+               + 'over-budget line\'s overflow sits inside one literal carrying interior '
+               + 'whitespace, and never writes it, because the break points would become '
+               + 'source a later edit has to reflow.',
+    families   : ['layout', 'lint'],
+    href       : 'https://docs.python.org/3/reference/lexical_analysis.html#string-literal-concatenation'
+  },
+
   'import-line-length': {
     definition : '`import-line-length` is the top-level config key for the wrap budget '
                + '`import-layout` holds long from-imports to. It defaults to **120** and '

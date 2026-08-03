@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/wide_target_leaves_the_literal_unoffered/input.py
+---
+metrics.rolling.window.average.trailing = "a short tail"

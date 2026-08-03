@@ -16,7 +16,7 @@ use crate::{
     primitives::{
         edit::{narrowed_replacement, singleton_groups, splice_parses},
         inline::opening_width,
-        layout::explode_parens,
+        layout::{Separator, explode_parens},
         range::return_annotation_range,
     },
     rule::{Rule, RuleId},
@@ -72,7 +72,7 @@ impl Layout<'_> {
             indent,
             parts.len(),
             |out, i| out.push_str(parts[i]),
-            false,
+            Separator::Comma,
         );
         self.push_return_and_colon(&mut out, fd);
         out

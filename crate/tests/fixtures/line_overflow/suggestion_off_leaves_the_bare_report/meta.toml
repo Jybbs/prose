@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Turning the Facet Off Leaves the Bare Report"
+
+description = '''
+`suggest-string-splits = false` drops the suggested form where naming the line is all a project needs. The report still withholds *"with no legal reshape"*, because one exists here whether or not the finding spells it out.
+'''
