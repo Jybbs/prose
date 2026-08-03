@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/unread_import_drops_beside_a_surviving_one/input.py
+---
+from json import loads
+
+value = loads("{}")

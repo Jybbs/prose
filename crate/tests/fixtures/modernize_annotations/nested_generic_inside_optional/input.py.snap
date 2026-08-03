@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/nested_generic_inside_optional/input.py
+---
+
+x: list[int] | None = None

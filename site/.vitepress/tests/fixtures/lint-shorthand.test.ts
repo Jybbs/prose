@@ -5,10 +5,6 @@ import { lintShorthand } from '../../lib/fixtures/lint-shorthand'
 describe('lintShorthand', () => {
   it.each([
     [
-      { before: 'Optional[int]', flagged: 'Optional[int]', message: '', rule: 'legacy-union-syntax', suggested: 'int | None' },
-      { after: 'int | None', before: 'Optional[int]', kind: 'replace' }
-    ],
-    [
       { flagged: 'tmp', message: 'Consider inlining `compute()`', rule: 'single-use-variables' },
       { after: 'compute()', before: 'tmp', kind: 'replace' }
     ],
@@ -38,7 +34,6 @@ describe('lintShorthand', () => {
 
   it.each([
     ['a bare-imports without a flagged span',            { flagged: '', message: '', rule: 'bare-imports' }],
-    ['a legacy-union-syntax missing its suggestion',     { before: 'Optional[int]', flagged: '', message: '', rule: 'legacy-union-syntax' }],
     ['a miscased-constants without a suggested rename',  { flagged: 'max_retries', message: '', rule: 'miscased-constants' }],
     ['a reassigned-constants without a backticked name', { flagged: '', message: 'no name here', rule: 'reassigned-constants' }],
     ['a single-use-variables without an inlining hint',  { flagged: 'x', message: 'nope', rule: 'single-use-variables' }],
@@ -55,13 +50,12 @@ describe('lintShorthand', () => {
 
   it('truncates an over-long suggestion to the same cap', () => {
     const result = lintShorthand({
-      before    : 'Optional[int]',
-      flagged   : '',
+      flagged   : 'max_retries',
       message   : '',
-      rule      : 'legacy-union-syntax',
+      rule      : 'miscased-constants',
       suggested : 'x'.repeat(60)
     })
-    expect(result).toEqual({ after: `${'x'.repeat(47)}…`, before: 'Optional[int]', kind: 'replace' })
+    expect(result).toEqual({ after: `${'x'.repeat(47)}…`, before: 'max_retries', kind: 'replace' })
   })
 
   test.prop([fc.string()])('never emits removed text past the ellipsis cap', (flagged) => {

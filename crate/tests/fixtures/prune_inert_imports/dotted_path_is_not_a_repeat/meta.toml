@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Dotted Import Is Not a Repeat of Its Root"
+
+description = '''
+`import os` and `import os.path` both bind `os` while importing different modules. **Neither counts as a repeat of the other** and both lines stand.
+'''

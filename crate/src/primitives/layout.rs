@@ -1,6 +1,7 @@
 //! Shared layout helpers for laying a construct out across lines,
-//! covering one-per-line expansion, greedy line filling, and
-//! re-indenting an already-exploded block.
+//! covering one-per-line expansion, greedy line filling, reading the
+//! bracket shape a block already carries, and re-indenting an
+//! already-exploded block.
 
 use std::{borrow::Cow, ops::Range};
 
@@ -65,6 +66,15 @@ pub(crate) fn explode_parens(
     out
 }
 
+/// Splits `block` at its first line break when that opening line holds
+/// its bracket alone, yielding the bracket and the body beneath. A
+/// single-line block and one whose first line carries content beside
+/// the bracket both return `None`.
+pub(crate) fn flush_bracket_open(block: &str) -> Option<(&str, &str)> {
+    let (open, body) = block.split_once('\n')?;
+    (open.trim().len() == 1).then_some((open, body))
+}
+
 /// True for the four collection-literal `Expr` variants the layout
 /// rules lay out, `Dict`, `List`, `Set`, and `Tuple`.
 pub(crate) fn is_layoutable(expr: &Expr) -> bool {
@@ -74,8 +84,8 @@ pub(crate) fn is_layoutable(expr: &Expr) -> bool {
     )
 }
 
-/// The column [`explode_parens`] opens its items at, one `INDENT_STEP`
-/// past the `indent` its closing `)` lands on.
+/// The column an exploded construct opens its items at, one
+/// `INDENT_STEP` past the `indent` its closing bracket lands on.
 pub(crate) fn item_indent(indent: usize) -> usize {
     indent + INDENT_STEP
 }
@@ -118,14 +128,9 @@ pub(crate) fn pack(
 /// line with content both return borrowed. A caller excludes a block
 /// whose interior spans a string literal, whose lines `indent` would pad.
 pub(crate) fn reindent_block(block: &str, to: usize) -> Cow<'_, str> {
-    let Some((open, body)) = block.split_once('\n') else {
+    let Some((open, body)) = flush_bracket_open(block) else {
         return Cow::Borrowed(block);
     };
-    // A packed first line carries content beside the bracket, leaving no
-    // exploded body to shift, so the block holds its source shape.
-    if open.trim().len() != 1 {
-        return Cow::Borrowed(block);
-    }
     Cow::Owned(format!(
         "{open}\n{}",
         indent(&dedent(body), &" ".repeat(to))

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/import_layout/merged_members_repack_to_budget/input.py
+---
+from pkg.sub import alpha, beta, delta
+from pkg.sub import epsilon, gamma

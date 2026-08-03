@@ -22,11 +22,18 @@ Config {
         first_party: [],
     },
     rules: RuleConfigs {
-        unused_future_annotations: ToggleOnly {
+        prune_inert_imports: PruneInertImportsConfig {
+            drop_duplicates: true,
+            drop_unreferenced: true,
             enabled: true,
         },
         strip_none_return: ToggleOnly {
             enabled: true,
+        },
+        modernize_annotations: ModernizeAnnotationsConfig {
+            enabled: true,
+            rewrite_generics: true,
+            rewrite_unions: true,
         },
         strip_trailing_commas: ToggleOnly {
             enabled: true,
@@ -44,9 +51,9 @@ Config {
             enabled: true,
         },
         collection_layout: CollectionLayoutConfig {
-            collapse: true,
             enabled: true,
             explode: true,
+            keep_multiline_literals: true,
             max_atomics: InlineBudget(
                 Some(
                     8,
@@ -79,6 +86,11 @@ Config {
                 16,
             ),
         },
+        import_layout: ImportLayoutConfig {
+            enabled: true,
+            merge_members: true,
+            split_multi_module: true,
+        },
         alphabetize: AlphabetizeConfig {
             enabled: false,
             group_methods: true,
@@ -89,7 +101,7 @@ Config {
         },
         band_constants: BandConstantsConfig {
             enabled: true,
-            group_constants: true,
+            group_subcategories: true,
             max_tiers: InlineBudget(
                 Some(
                     2,
@@ -97,9 +109,6 @@ Config {
             ),
         },
         blank_lines: ToggleOnly {
-            enabled: true,
-        },
-        import_layout: ToggleOnly {
             enabled: true,
         },
         align_imports: AlignmentConfig {
@@ -149,9 +158,6 @@ Config {
             enabled: true,
         },
         step_narration: ToggleOnly {
-            enabled: true,
-        },
-        legacy_union_syntax: ToggleOnly {
             enabled: true,
         },
         single_use_variables: SingleUseVariablesConfig {

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/type_alias_value_rewritten/input.py
+---
+
+MaybeInt = int | None

@@ -178,6 +178,14 @@ pub(crate) fn splice_reparse<T, E>(
     parse(&candidate)
 }
 
+/// The edit clearing every full line `range` sits on, its final line
+/// terminator included, held back from the newline closing a notebook
+/// cell so the deletion empties that cell rather than merging it into
+/// the next.
+pub(crate) fn whole_line_deletion(source: &Source, range: TextRange) -> Edit {
+    Edit::range_deletion(source.full_lines_within_cell(range))
+}
+
 /// Returns `Cow::Borrowed` of `source.slice(span)` when every part is
 /// still a borrow of source, signalling no descendant rewrite fired.
 /// Otherwise concatenates the parts into a single owned string covering
@@ -586,5 +594,14 @@ mod tests {
         assert_eq!(r.start().to_u32(), 0);
         assert_eq!(r.end().to_u32(), 1);
         assert_eq!(text, "a");
+    }
+
+    #[test]
+    fn whole_line_deletion_clears_through_the_line_terminator() {
+        let source = parse("import os\nimport sys\nx = 1\n");
+        let edit = whole_line_deletion(&source, range(10, 16));
+
+        assert_eq!(edit.range(), range(10, 21));
+        assert_eq!(edit.content(), None);
     }
 }

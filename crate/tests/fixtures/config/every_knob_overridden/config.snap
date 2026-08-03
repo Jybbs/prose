@@ -22,11 +22,18 @@ Config {
         first_party: [],
     },
     rules: RuleConfigs {
-        unused_future_annotations: ToggleOnly {
+        prune_inert_imports: PruneInertImportsConfig {
+            drop_duplicates: false,
+            drop_unreferenced: false,
             enabled: false,
         },
         strip_none_return: ToggleOnly {
             enabled: false,
+        },
+        modernize_annotations: ModernizeAnnotationsConfig {
+            enabled: false,
+            rewrite_generics: false,
+            rewrite_unions: false,
         },
         strip_trailing_commas: ToggleOnly {
             enabled: false,
@@ -44,9 +51,9 @@ Config {
             enabled: false,
         },
         collection_layout: CollectionLayoutConfig {
-            collapse: false,
             enabled: false,
             explode: false,
+            keep_multiline_literals: false,
             max_atomics: InlineBudget(
                 Some(
                     3,
@@ -79,6 +86,11 @@ Config {
                 16,
             ),
         },
+        import_layout: ImportLayoutConfig {
+            enabled: false,
+            merge_members: false,
+            split_multi_module: false,
+        },
         alphabetize: AlphabetizeConfig {
             enabled: false,
             group_methods: false,
@@ -89,17 +101,14 @@ Config {
         },
         band_constants: BandConstantsConfig {
             enabled: false,
-            group_constants: false,
+            group_subcategories: false,
             max_tiers: InlineBudget(
                 Some(
-                    5,
+                    4,
                 ),
             ),
         },
         blank_lines: ToggleOnly {
-            enabled: false,
-        },
-        import_layout: ToggleOnly {
             enabled: false,
         },
         align_imports: AlignmentConfig {
@@ -154,9 +163,6 @@ Config {
             enabled: false,
         },
         step_narration: ToggleOnly {
-            enabled: false,
-        },
-        legacy_union_syntax: ToggleOnly {
             enabled: false,
         },
         single_use_variables: SingleUseVariablesConfig {

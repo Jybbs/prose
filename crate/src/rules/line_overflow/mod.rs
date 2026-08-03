@@ -2,13 +2,13 @@
 //! reshape remains. A line inside an import statement answers to
 //! `import_line_length`, every other line to `code_line_length`. A line
 //! a layout rule could still split (an inline call carrying arguments,
-//! a multi-element collection, a multi-name `from` import, a signature
-//! carrying parameters, a single-statement match arm) is left for that
-//! rule. No rule reaches a construct inside an f-string or t-string
-//! replacement field, so its line surfaces here as well. A line whose
-//! overflow sits inside one string literal holding interior whitespace
-//! carries the [`split`] form as a display-only suggestion, gated by
-//! `suggest_string_splits`. Lint-only, emits no edits.
+//! a multi-element collection, a comma-joined import of either form, a
+//! signature carrying parameters, a single-statement match arm) is left
+//! for that rule. No rule reaches a construct inside an f-string or
+//! t-string replacement field, so its line surfaces here as well. A
+//! line whose overflow sits inside one string literal holding interior
+//! whitespace carries the [`split`] form as a display-only suggestion,
+//! gated by `suggest_string_splits`. Lint-only, emits no edits.
 
 use ruff_python_ast::{
     Expr, ExprStringLiteral, InterpolatedStringElement, Stmt, StmtFunctionDef, StmtMatch,
@@ -123,6 +123,16 @@ impl<'a> Spans<'a> {
         }
     }
 
+    /// Records an import statement's `range` as answering to the import
+    /// budget, and as reshapeable when two or more `names` form the
+    /// comma join `import-layout` splits.
+    fn note_import(&mut self, range: TextRange, names: usize) {
+        self.imports.push(range);
+        if names >= 2 {
+            self.note_inline(range);
+        }
+    }
+
     /// Records `range` as reshapeable when it sits on one source line,
     /// the form a layout rule can still explode.
     fn note_inline(&mut self, range: TextRange) {
@@ -191,13 +201,8 @@ impl<'a> Visitor<'a> for Spans<'a> {
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         match stmt {
-            Stmt::Import(i) => self.imports.push(i.range()),
-            Stmt::ImportFrom(i) => {
-                self.imports.push(i.range());
-                if i.names.len() >= 2 {
-                    self.note_inline(i.range());
-                }
-            }
+            Stmt::Import(i) => self.note_import(i.range(), i.names.len()),
+            Stmt::ImportFrom(i) => self.note_import(i.range(), i.names.len()),
             Stmt::ClassDef(cd) => self.note_docstring(&cd.body),
             Stmt::FunctionDef(fd) => {
                 self.note_signature(fd);

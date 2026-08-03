@@ -2,7 +2,8 @@ import { format, panic_for_test } from './pkg/prose_wasm.js'
 
 describe('prose_wasm', () => {
   it('sorts imports through the instantiated module', () => {
-    expect(format('', 'import b\nimport a\n').formatted).toBe('import a\nimport b\n')
+    expect(format('', 'import b\nimport a\n\nprint(a, b)\n').formatted)
+      .toBe('import a\nimport b\n\nprint(a, b)\n')
   })
 
   it('surfaces the effective config it applied', () => {
