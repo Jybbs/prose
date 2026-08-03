@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Module-Qualified `typing.Optional` Rewrites the Same Way"
+
+description = '''
+`import typing` binds the module rather than the member, and the attribute access resolves through it to the same rewrite.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Nested Literal Measures From Its Own Indent"
+
+description = '''
+The suggested parts open one indent level past the line they replace and the closing `)` lands back on it, so each part is filled against the columns the nesting actually leaves rather than against the full budget.
+'''

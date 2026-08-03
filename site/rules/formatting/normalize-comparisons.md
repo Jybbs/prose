@@ -1,5 +1,6 @@
 ---
 caption : "Rewrites a comparison to state its check directly, settling identity against `None`, operand order, and a leading `not`."
+lints   : true
 related : [align-comparisons, shed-parentheses]
 layout  : doc
 ---

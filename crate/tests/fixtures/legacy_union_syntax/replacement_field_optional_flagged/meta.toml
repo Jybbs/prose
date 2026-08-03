@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Legacy Optional Inside a Replacement Field Is Flagged"
-
-description = '''
-The lint reaches inside an f-string replacement field, so a legacy `Optional` written there draws the same suggestion one written in an annotation does.
-'''

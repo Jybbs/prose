@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comment Trailing the Last Member Holds the Merge Back"
+
+description = '''
+The gather clears each folded member's whole line, so a comment trailing the last of them **keeps every statement of its module in place** rather than going down with the line it sits on.
+'''

@@ -54,6 +54,16 @@ pub(crate) fn is_screaming_case(id: &str) -> bool {
         && chars.all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
 }
 
+/// The elements of a list or tuple display. `None` for any other
+/// expression.
+pub(crate) fn sequence_elts(expr: &Expr) -> Option<&[Expr]> {
+    match expr {
+        Expr::List(l) => Some(&l.elts),
+        Expr::Tuple(t) => Some(&t.elts),
+        _ => None,
+    }
+}
+
 /// The single bare-`Name` target of an `Stmt::Assign` or
 /// `Stmt::AnnAssign`, paired with its value. The value is `None` for a
 /// bare annotation (`X: int`). `None` for any other statement or a

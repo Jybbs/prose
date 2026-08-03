@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/optional_nested_in_builtin_generic/input.py
+---
+
+table: dict[str, int | None] = {}

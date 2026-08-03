@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Run Already One per Line Is Left Alone"
+
+description = '''
+A run the author already wrote one literal per line **holds that shape even though the joined form would fit**, so the rule only ever breaks a run and never rejoins one.
+'''

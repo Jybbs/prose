@@ -78,13 +78,23 @@ struct Walker<'a> {
 impl Walker<'_> {
     /// Places `target_newlines` line breaks immediately above
     /// `line_start`, emitting an edit when the actual count differs.
-    /// Preserves any indent that sits on `line_start`'s line.
+    /// Preserves any indent that sits on `line_start`'s line, and holds
+    /// the run at the start of the notebook cell containing
+    /// `line_start`, whose opening newline separates it from the cell
+    /// above.
     fn normalize_above(&mut self, line_start: TextSize, target_newlines: u32) {
         let text = self.source.text();
         if lines_before(line_start, text) == target_newlines {
             return;
         }
-        let span = TextRange::new(whitespace_start_before(text, line_start), line_start);
+        let floor = self.source.cell_start(line_start).unwrap_or_default();
+        let span = TextRange::new(
+            whitespace_start_before(text, line_start).max(floor),
+            line_start,
+        );
+        if span.is_empty() && target_newlines == 0 {
+            return;
+        }
         self.edits.push(repeat_edit(
             span,
             self.source.newline_str(),
@@ -176,12 +186,23 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::{notebook, parse};
+    use crate::testing::{applied_text, notebook, parse};
 
     /// A function in cell 0 and a call in cell 1. Module spacing puts a
     /// blank line after the def, and a cell boundary sits in that gap.
     fn split_across_two_cells() -> Source {
         notebook(&["def f():\n    return 1", "x = f()"])
+    }
+
+    #[test]
+    fn normalize_above_holds_the_newline_opening_a_cell() {
+        let source = notebook(&["import os", "\n\nvalue = 1\n"]);
+        let edits = BlankLines::from_config(&Config::default()).apply(&source);
+
+        assert!(
+            applied_text(&source, edits.concat()).starts_with("import os\n"),
+            "the separator opening the second cell survives the leading-blank clear",
+        );
     }
 
     #[test]

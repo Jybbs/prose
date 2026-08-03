@@ -1,7 +1,7 @@
 dict_unpack = {"alpha": 1, **extra_config, "beta": 2, "gamma": 3, "delta": 4, "epsilon": 5, "zeta": 6}
 list_unpack = [1, 2, 3, *middle_range, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200]
 set_unpack = {*alpha_set, *beta_set, *gamma_set, *delta_set, *epsilon_set, *zeta_set, *eta_set}
-collapsing_dict_unpack = {
+held_dict_unpack = {
     "alpha": 1,
     **extra_config,
     "beta": 2

@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/two_dunder_all_writes_hold_both_lists/input.py
+---
+__all__ = ["dumps"]
+__all__ = ["loads"]
+
+from json import dumps, loads

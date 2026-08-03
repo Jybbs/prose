@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Blank Line Starts a Fresh Comment Column"
+
+description = '''
+The blank line ends the first run, so the pair above it and the pair below it each settle on their own column rather than reaching across the gap for one shared offset. Each column measures only the lines it actually spans.
+'''

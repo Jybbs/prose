@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/suppression/skip_suppresses_lints_across_the_statement/input.py
+input_file: crate/tests/fixtures/suppression/skip_leaves_lint_diagnostics_alone/input.py
 ---
 def f() -> tuple[int, int]:
     value = (

@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_comments/uniform_gutter_tightens_to_the_floor/input.py
+---
+DECODING_TABLE = {
+    0x0080 : 0x00C7,  # LATIN CAPITAL LETTER C WITH CEDILLA
+    0x0081 : 0x00FC,  # LATIN SMALL LETTER U WITH DIAERESIS
+    0x0082 : 0x00E9   # LATIN SMALL LETTER E WITH ACUTE
+}

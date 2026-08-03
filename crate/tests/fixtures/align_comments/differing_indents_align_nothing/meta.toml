@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Rows at Differing Indents Keep Their Own Gaps"
+
+description = '''
+The two annotated lines sit on adjacent rows yet open at different indents, so a shared column would land where neither row's code actually ends. The run realizes no column and both comments keep the two-space gap they carry.
+'''

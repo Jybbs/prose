@@ -7,6 +7,7 @@ const rule = (slug: string, related: readonly string[] = []): DiscoveredRule => 
   category : 'auto-fix',
   family   : 'alignment',
   href     : `/rules/alignment/${slug}`,
+  lints    : false,
   related,
   slug
 })

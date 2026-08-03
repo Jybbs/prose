@@ -44,6 +44,20 @@ pub(crate) fn soft_wrap_runs(text: &str) -> impl Iterator<Item = (usize, usize)>
     whitespace_runs(text).filter(move |&(begin, len)| text[begin..begin + len].contains('\n'))
 }
 
+/// Yields the `(start, len)` byte span of each maximal whitespace run
+/// in `text`.
+pub(crate) fn whitespace_runs(text: &str) -> impl Iterator<Item = (usize, usize)> + '_ {
+    let mut cursor = 0;
+    std::iter::from_fn(move || {
+        let begin = cursor + text[cursor..].find(char::is_whitespace)?;
+        let len = text[begin..]
+            .find(|c: char| !c.is_whitespace())
+            .unwrap_or(text.len() - begin);
+        cursor = begin + len;
+        Some((begin, len))
+    })
+}
+
 /// Collapses each whitespace run that spans a line break into a single
 /// space, leaving every other run as the source wrote it.
 fn collapse_soft_wraps(text: &str) -> String {
@@ -74,20 +88,6 @@ fn is_operator_atom_tree(expr: &Expr) -> bool {
         Expr::NumberLiteral(_) | Expr::BooleanLiteral(_) | Expr::NoneLiteral(_) => true,
         _ => is_dotted_name(expr),
     }
-}
-
-/// Yields the `(start, len)` byte span of each maximal whitespace run
-/// in `text`.
-fn whitespace_runs(text: &str) -> impl Iterator<Item = (usize, usize)> + '_ {
-    let mut cursor = 0;
-    std::iter::from_fn(move || {
-        let begin = cursor + text[cursor..].find(char::is_whitespace)?;
-        let len = text[begin..]
-            .find(|c: char| !c.is_whitespace())
-            .unwrap_or(text.len() - begin);
-        cursor = begin + len;
-        Some((begin, len))
-    })
 }
 
 #[cfg(test)]

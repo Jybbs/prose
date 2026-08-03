@@ -444,7 +444,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case("import os\n", None)]
+    #[case("import os\n\nvalue = os\n", None)]
     #[case("alpha = 1\nb = 22\n", Some("alpha = 1"))]
     fn formatting_matches_the_buffer_state(#[case] source: &str, #[case] expected: Option<&str>) {
         let (client, handle, _) = boot();

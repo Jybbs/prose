@@ -3,7 +3,7 @@ long_dict = {"alpha": 1, "beta": 2, "gamma": 3, "delta": 4, "epsilon": 5, "zeta"
 single_entry_dict = {
     "default_action": "noop"
 }
-collapsing_dict = {
+held_dict = {
     "alpha": 1,
     "beta": 2,
     "gamma": 3

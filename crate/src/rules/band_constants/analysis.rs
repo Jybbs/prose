@@ -13,7 +13,7 @@ use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 
 use super::{
-    BandConstants, TRAILING_GAP,
+    BandConstants,
     plan::{BandPlan, BandRank, Carry, Subcategory},
 };
 use crate::{
@@ -23,7 +23,7 @@ use crate::{
             bare_import_bound_name, from_import_bound_name, is_explicit_type_alias,
             is_screaming_case, single_name_assignment,
         },
-        comments::{anchors_in_place, has_keep_marker, leading_comment_block},
+        comments::{TRAILING_GAP, anchors_in_place, has_keep_marker, leading_comment_block},
         effect::value_is_effectful,
         tiering::{eval_refs, eval_time_refs, tier_levels},
     },
@@ -68,11 +68,11 @@ pub(super) fn module_band_plan<'src>(
     blocks: &[TextRange],
     code_width: usize,
     defer_annotations: bool,
-    group_constants: bool,
+    group_subcategories: bool,
     target_version: Option<PythonVersion>,
 ) -> Option<BandPlan<'src>> {
     let analysis = source.binding_analysis();
-    let aliases = group_constants.then(|| AliasContext::new(body, analysis));
+    let aliases = group_subcategories.then(|| AliasContext::new(body, analysis));
     let builtins_minor = target_version.unwrap_or_default().minor;
     let notebook = source.is_notebook();
     let suppression = source.suppression_map();

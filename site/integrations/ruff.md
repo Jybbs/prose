@@ -17,7 +17,7 @@ ruff format && prose format
 When both tools run on the same file, run Ruff first. *Prose*'s alignment math reads the line breaks already on the file, so a later Ruff re-wrap will undo per-line layout decisions and force a third pass.
 :::
 
-A second run of `ruff format` against *Prose*'s output is a no-op, because the alignment padding *Prose* introduces lives within the lines Ruff already settled, leaving Ruff with nothing to re-wrap. The pairing is idempotent end-to-end, meaning a developer can re-run `ruff format && prose format` after a manual edit without expecting either tool to thrash.
+A second run of `ruff format` against *Prose*'s output changes no line breaks, because the layout *Prose* settles lives within the lines Ruff already wrapped. What it does undo is the horizontal padding, collapsing an aligned `=` run and a shared comment column back to single spacing, which is why *Prose* runs last. The pairing stays idempotent end-to-end in that order, meaning a developer can re-run `ruff format && prose format` after a manual edit without expecting either tool to thrash.
 
 ## Ruff Configuration
 

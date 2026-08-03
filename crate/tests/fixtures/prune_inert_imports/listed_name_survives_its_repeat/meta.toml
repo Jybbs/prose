@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Name `__all__` Lists Survives Its Repeat"
+
+description = '''
+`drop-duplicates` reads the same re-export guard as `drop-unreferenced`, so a repeated import of a name `__all__` publishes **stays rather than dropping as a repeat**.
+'''

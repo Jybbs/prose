@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_comments/lone_trailing_comment_collapses_its_gap/input.py
+---
+flush()  # the only annotated line in the module

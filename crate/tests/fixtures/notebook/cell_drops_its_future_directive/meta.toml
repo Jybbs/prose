@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Cell Drops Its `__future__` Directive"
+
+description = '''
+The first cell opens on `from __future__ import annotations` above code carrying no annotation. **The directive drops inside its own cell**, the deletion stopping short of the newline that separates the cell from the next.
+'''

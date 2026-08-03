@@ -1,2 +1,2 @@
 [rules]
-collection-layout = { explode = false }
+collection-layout = { explode = false, keep-multiline-literals = false }

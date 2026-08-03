@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Run Filling a Docstring Slot Stays as Written"
+
+description = '''
+A run standing as a body's leading expression **keeps its line however wide it runs**, since parenthesizing it would leave a docstring that no longer reads as one.
+'''
