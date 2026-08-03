@@ -398,6 +398,33 @@ impl Default for PreferFstringConfig {
     }
 }
 
+/// Configuration for the `prune_inert_imports` rule, each facet gating
+/// one prune and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct PruneInertImportsConfig {
+    /// Drops an import rebinding a name an earlier import already bound
+    /// to the same source. `false` keeps every repeat.
+    pub drop_duplicates: bool,
+    /// Drops an import binding a name nothing references, where the
+    /// binding is not marked for re-export, read by a `del` or a quoted
+    /// annotation, or bound in a package `__init__.py`, where it is
+    /// reported instead. `false` leaves every unreferenced import in
+    /// place and reports none of them.
+    pub drop_unreferenced: bool,
+    pub enabled: bool,
+}
+
+impl Default for PruneInertImportsConfig {
+    fn default() -> Self {
+        Self {
+            drop_duplicates: true,
+            drop_unreferenced: true,
+            enabled: true,
+        }
+    }
+}
+
 /// Configuration for the `reassigned_constants` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -511,6 +538,7 @@ impl_rule_toggle!(
     MiscasedConstantsConfig,
     ModernizeAnnotationsConfig,
     PreferFstringConfig,
+    PruneInertImportsConfig,
     ReassignedConstantsConfig,
     SignatureLayoutConfig,
     SingleUseVariablesConfig,

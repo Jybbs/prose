@@ -22,7 +22,9 @@ Config {
         first_party: [],
     },
     rules: RuleConfigs {
-        unused_future_annotations: ToggleOnly {
+        prune_inert_imports: PruneInertImportsConfig {
+            drop_duplicates: true,
+            drop_unreferenced: true,
             enabled: true,
         },
         strip_none_return: ToggleOnly {

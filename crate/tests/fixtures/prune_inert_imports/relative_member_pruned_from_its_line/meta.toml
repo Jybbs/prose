@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Unread Member Prunes Off a Relative Import"
+
+description = '''
+A relative `from .helpers import first, second` keeps the module imported through `first`, so **`second` prunes off the line** the same way an absolute import's member does.
+'''

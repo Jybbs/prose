@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/self_alias_marks_a_reexport/input.py
+---
+from json import loads as loads
+
+value = 1

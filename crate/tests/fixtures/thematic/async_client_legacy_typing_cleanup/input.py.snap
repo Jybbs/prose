@@ -7,7 +7,7 @@ import asyncio
 import json
 import logging
 
-from typing import Any, AsyncIterator, Awaitable, Callable, Iterable, List, Mapping, Sequence, Text, Tuple
+from typing import Any, AsyncIterator, Awaitable, Callable, Mapping, Text, Tuple
 
 Interval      = int | float
 Payload       = dict[Text, Any]

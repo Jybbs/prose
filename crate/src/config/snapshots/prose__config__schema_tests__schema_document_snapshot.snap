@@ -274,6 +274,26 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       },
       "type": "object"
     },
+    "PruneInertImportsConfig": {
+      "description": "Configuration for the `prune_inert_imports` rule, each facet gating\none prune and defaulting `true`.",
+      "properties": {
+        "drop-duplicates": {
+          "default": true,
+          "description": "Drops an import rebinding a name an earlier import already bound\nto the same source. `false` keeps every repeat.",
+          "type": "boolean"
+        },
+        "drop-unreferenced": {
+          "default": true,
+          "description": "Drops an import binding a name nothing references, where the\nbinding is not marked for re-export, read by a `del` or a quoted\nannotation, or bound in a package `__init__.py`, where it is\nreported instead. `false` leaves every unreferenced import in\nplace and reports none of them.",
+          "type": "boolean"
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "PythonVersion": {
       "anyOf": [
         {
@@ -625,6 +645,21 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "rewrite-str-format": true
           }
         },
+        "prune-inert-imports": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PruneInertImportsConfig"
+            }
+          ],
+          "default": {
+            "drop-duplicates": true,
+            "drop-unreferenced": true,
+            "enabled": true
+          }
+        },
         "reassigned-constants": {
           "anyOf": [
             {
@@ -746,19 +781,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           }
         },
         "unsorted-positionals": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/ToggleOnly"
-            }
-          ],
-          "default": {
-            "enabled": true
-          }
-        },
-        "unused-future-annotations": {
           "anyOf": [
             {
               "type": "boolean"
@@ -961,6 +983,11 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "rewrite-percent": true,
           "rewrite-str-format": true
         },
+        "prune-inert-imports": {
+          "drop-duplicates": true,
+          "drop-unreferenced": true,
+          "enabled": true
+        },
         "reassigned-constants": {
           "allow": [],
           "enabled": true
@@ -992,9 +1019,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true
         },
         "unsorted-positionals": {
-          "enabled": true
-        },
-        "unused-future-annotations": {
           "enabled": true
         }
       }

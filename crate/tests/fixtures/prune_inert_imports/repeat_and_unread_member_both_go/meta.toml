@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Repeated Import and an Unread Member Both Go"
+
+description = '''
+A module repeats `import os` and names `Any` on a shared `typing` line that nothing reads. **The repeat drops because the first import already ran the module, and `Any` drops off its line**, leaving `Final` and the surviving `os` binding in place.
+'''

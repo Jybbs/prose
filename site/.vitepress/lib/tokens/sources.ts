@@ -55,6 +55,8 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'code-line-length',            href: '/reference/configuration#top-level-keys',        blurb: 'Maximum column budget for code lines.' },
     { key: 'docstring-line-length',       href: '/reference/configuration#docstring-budgets',     blurb: 'Maximum column budget for docstring prose.' },
     { key: 'docstring-structured-policy', href: '/reference/configuration#docstring-budgets',     blurb: 'Budget policy for docstring structured sections.' },
+    { key: 'drop-duplicates',             href: '/reference/configuration#per-rule-facets',       blurb: 'Drop an import rebinding a name an earlier import already bound to the same source.' },
+    { key: 'drop-unreferenced',           href: '/reference/configuration#per-rule-facets',       blurb: 'Drop an import binding nothing references, reporting it instead inside a package `__init__.py`.' },
     { key: 'enabled',                     href: '/reference/configuration#per-rule-facets',       blurb: 'Per-rule toggle, the bare bool in `[rules]`.' },
     { key: 'exempt-aliased',              href: '/reference/configuration#per-rule-facets',       blurb: 'Spare every aliased bare import from `bare-imports`.' },
     { key: 'explode',                     href: '/reference/configuration#per-rule-facets',       blurb: 'Expand an overflowing or over-count collection to one entry per line.' },

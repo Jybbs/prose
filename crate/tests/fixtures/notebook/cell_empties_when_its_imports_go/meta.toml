@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Cell Empties When Every Import It Holds Goes"
+
+description = '''
+The first cell holds nothing but two imports no cell references. **Both drop and the cell empties**, keeping the newline that separates it from the next cell rather than merging the two.
+'''

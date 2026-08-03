@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/dotted_path_is_not_a_repeat/input.py
+---
+import os
+import os.path
+
+value = os.path.join("a", "b")
