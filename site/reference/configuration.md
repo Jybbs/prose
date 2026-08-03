@@ -43,6 +43,8 @@ The `*-line-length` caps are hard constraints, and every shaping rule resolves w
 
 A construct with a legal multi-line reshape takes it once its line crosses the cap, whatever a count threshold says, so a call over `code-line-length` explodes to one argument per line even at or under `max-args`, and a signature, collection, or `from` import does the same against its budget. An alignment run whose padding would carry a member past its cap reshapes that member first *(an import splits per [[import-layout]], a call or collection value explodes per its layout rule)* and then aligns within the cap, a member partitioning out of the run unpadded the way an over-`max-shift` outlier does only when no reshape can bring its aligned width under.
 
+Several alignment rules reach the same row, wherein [[align-colons]], [[align-equals]], and [[align-comments]] each seat a column on a line carrying an annotation, a value, and a note. Each answers the cap against the line it will emit rather than the one the buffer holds, measuring a trailing comment at its two-column floor and the gap after an operator at the single space an aligned row carries, both of which a later rule settles. That keeps every rule's fit decision invariant to the ones that run after it, so the columns resolve in one pass rather than trading places across repeated runs.
+
 A cap no legal form can satisfy *(a deep indent, a long identifier, a cap set below what a statement needs)* leaves the narrowest legal form standing, and [[line-overflow]] names that remainder, so an unsatisfiable cap reads as a finding in `prose check` and a squiggle in the sandbox rather than as a knob that did nothing.
 
 ## Cache

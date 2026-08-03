@@ -8,8 +8,19 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::TextRange;
 use unicode_width::UnicodeWidthStr;
 
-use super::{Member, Settings, holds::is_alignment_candidate, members::baseline};
-use crate::{config::MaxShift, primitives::edit::repeat_edit, source::Source};
+use super::{
+    Member, Settings,
+    holds::is_alignment_candidate,
+    members::{baseline, line_gap_before},
+};
+use crate::{
+    config::MaxShift,
+    primitives::{
+        comments::{TRAILING_GAP, trailing_comment_start},
+        edit::repeat_edit,
+    },
+    source::Source,
+};
 
 /// Aligns `members` by splitting the source-ordered run into the
 /// contiguous groups `reading_order_groups` yields and emitting each at
@@ -61,14 +72,31 @@ pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) ->
 }
 
 /// The width of `member`'s line as the aligner emits it, less the
-/// pre-operator gap the padding replaces and with any rewritten
-/// post-operator gap collapsed to the one space an emitted row carries.
+/// pre-operator gap the padding replaces, with any rewritten
+/// post-operator gap collapsed to the one space an emitted row carries,
+/// and with a trailing comment measured at its [`TRAILING_GAP`] floor
+/// rather than wherever the source leaves it.
 fn emitted_base_width(source: &Source, member: Member) -> usize {
     let line = source.text().line_str(member.line_start).width();
-    let base = line - source.slice(member.gap).width();
+    let base = line - source.slice(member.gap).width() - comment_slack(source, member);
     member
         .rewritten_value_gap(source)
         .map_or(base, |gap| base + 1 - source.slice(gap).width())
+}
+
+/// The columns the gap ahead of a trailing comment carries past
+/// [`TRAILING_GAP`] on `member`'s line, zero where that line carries no
+/// trailing comment and where the gap is the one `member` rewrites
+/// itself.
+fn comment_slack(source: &Source, member: Member) -> usize {
+    let Some(comment) = trailing_comment_start(source, member.line_start) else {
+        return 0;
+    };
+    let gap = line_gap_before(source, comment);
+    if gap == member.gap {
+        return 0;
+    }
+    source.slice(gap).width().saturating_sub(TRAILING_GAP.len())
 }
 
 /// True when no member of `group` aligned to `max_w` has its line
@@ -404,6 +432,28 @@ mod tests {
             sorted_summaries(&edits),
             vec![fill(&members[0], 6), fill(&members[1], 1)],
         );
+    }
+
+    #[test]
+    fn line_cap_measures_a_trailing_comment_at_its_floor() {
+        // `align_comments` seats the comment two columns past the code
+        // downstream, so the sixteen-column gutter the source carries
+        // never counts against this run's budget.
+        let source = parse("a = 1                # note\nabcdefg = 2  # note\n");
+        let members = [
+            align_member(range(1, 2), 0, 1),
+            align_member(range(35, 36), 28, 7),
+        ];
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(8)).with_line_length(28),
+            &mut edits,
+        );
+
+        assert_eq!(sorted_summaries(&edits), vec![fill(&members[0], 7)]);
     }
 
     #[test]
