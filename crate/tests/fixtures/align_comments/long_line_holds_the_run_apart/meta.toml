@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Row Whose Aligned Line Would Overflow Stays Put"
+
+description = '''
+The first two rows settle on a shared column, and the third would need its already-long line pushed past `code-line-length` to reach that same column. It partitions out of the run and keeps the two-space floor instead, so alignment never manufactures an overflow.
+'''

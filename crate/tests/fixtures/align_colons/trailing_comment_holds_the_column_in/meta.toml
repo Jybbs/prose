@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Trailing Comment Holds the Column In"
+
+description = '''
+The row carrying the long comment sits past the line budget before any padding, so the column may not carry it further out. It keeps the buffer it already holds and the widest key partitions off rather than dragging every colon right, leaving the run's cost at what the comment alone already spends.
+'''

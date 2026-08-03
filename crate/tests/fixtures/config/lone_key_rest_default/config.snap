@@ -160,6 +160,12 @@ Config {
         comment_spacing: ToggleOnly {
             enabled: true,
         },
+        align_comments: AlignmentConfig {
+            enabled: true,
+            max_shift: Cap(
+                16,
+            ),
+        },
         bare_imports: BareImportsConfig {
             allow: [],
             enabled: true,

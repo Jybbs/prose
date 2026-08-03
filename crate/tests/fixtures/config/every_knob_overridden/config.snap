@@ -158,6 +158,12 @@ Config {
         comment_spacing: ToggleOnly {
             enabled: false,
         },
+        align_comments: AlignmentConfig {
+            enabled: false,
+            max_shift: Cap(
+                16,
+            ),
+        },
         bare_imports: BareImportsConfig {
             allow: [
                 "scipy",

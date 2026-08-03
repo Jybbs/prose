@@ -55,15 +55,20 @@ impl Rule for CommentSpacing {
     }
 }
 
-/// One flag per comment in source order, `true` where the comment opens
-/// at the same column as a comment on the line directly above or below
-/// it. A bare `#` sustains a run, since it opens at that column too.
+/// One flag per comment in source order, `true` where an own-line
+/// comment opens at the same column as an own-line comment on the line
+/// directly above or below it. A bare `#` sustains a run, since it opens
+/// at that column too. A trailing comment never joins a run, because
+/// `align_comments` moves its column downstream.
 fn columnar_runs(source: &Source) -> Vec<bool> {
     let ranges = source.comment_ranges();
+    let text = source.text();
     let mut flags = vec![false; ranges.len()];
     for (i, pair) in ranges.windows(2).enumerate() {
         let [above, below] = [pair[0].start(), pair[1].start()];
-        if source.consecutive_lines(above, below)
+        if CommentRanges::is_own_line(above, text)
+            && CommentRanges::is_own_line(below, text)
+            && source.consecutive_lines(above, below)
             && source.column_of(above) == source.column_of(below)
         {
             flags[i] = true;
@@ -141,13 +146,25 @@ mod tests {
 
     #[rstest]
     #[case("#   lone\n", [false])]
-    #[case("x = 1  # a\ny = 2  # b\n", [true, true])]
+    #[case("#   one\n#   two\n", [true, true])]
+    #[case("x = 1  # a\ny = 2  # b\n", [false, false])]
     #[case("hello = 1 # a\nhi = 2 #    b\n", [false, false])]
-    fn columnar_runs_flags_only_a_shared_column_on_adjacent_lines<const N: usize>(
+    fn columnar_runs_flags_only_a_shared_column_on_adjacent_own_lines<const N: usize>(
         #[case] src: &str,
         #[case] expected: [bool; N],
     ) {
         assert_eq!(columnar_runs(&parse(src)), expected);
+    }
+
+    #[test]
+    fn columnar_runs_skips_a_trailing_pair_sharing_a_column() {
+        // Both hashes open at column 35, which `align_comments` then
+        // moves, so neither row carries the concession an own-line block
+        // earns.
+        let flags = columnar_runs(&parse(
+            "q()                                #     deep\nlonger_name_here_by_far()          #     deep\n",
+        ));
+        assert_eq!(flags, [false, false]);
     }
 
     #[test]

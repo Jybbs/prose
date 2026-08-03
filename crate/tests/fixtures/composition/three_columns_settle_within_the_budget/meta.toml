@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Three Alignment Columns Settle Within One Budget"
+
+description = '''
+**`align-colons`, `align-equals`, and `align-comments` each add padding to the same rows**, and each answers `code-line-length` as it goes. Every rule measures a canonical line rather than the one the buffer holds, so the annotation, the value, and the note all reach their columns in a single pass and the widest row lands under the cap.
+'''

@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/aligned_fields_settle_their_comments/input.py
+---
+class Config:
+
+    retries         = 3   # attempts
+    timeout_seconds = 30  # per attempt

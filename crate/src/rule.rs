@@ -26,7 +26,8 @@ use crate::{
     diagnostics::Diagnostic,
     pipeline::Pipeline,
     rules::{
-        align_colons::AlignColons, align_comparisons::AlignComparisons, align_equals::AlignEquals,
+        align_colons::AlignColons, align_comments::AlignComments,
+        align_comparisons::AlignComparisons, align_equals::AlignEquals,
         align_imports::AlignImports, align_match_case::AlignMatchCase, alphabetize::Alphabetize,
         band_constants::BandConstants, bare_imports::BareImports, blank_lines::BlankLines,
         call_layout::CallLayout, chain_layout::ChainLayout, collection_layout::CollectionLayout,
@@ -394,6 +395,7 @@ register_rules! {
     "align-comparisons":      align_comparisons:      AlignmentConfig            => AlignComparisons     => [] => "align consecutive comparison operators",
     "strip-align-padding":    strip_align_padding:    ToggleOnly                 => StripAlignPadding    => ["align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"] => "drop padding that lines up with nothing",
     "comment-spacing":        comment_spacing:        ToggleOnly                 => CommentSpacing       => [] => "normalize comment spacing",
+    "align-comments":         align_comments:         AlignmentConfig            => AlignComments        => ["strip-align-padding", "comment-spacing"] => "align consecutive trailing comments",
     "bare-imports":           bare_imports:           BareImportsConfig          => BareImports          => [] => "Flag a bare import a `from` import could replace",
     "miscased-constants":     miscased_constants:     MiscasedConstantsConfig    => MiscasedConstants    => [] => "Module constant is not SCREAMING_CASE. Rename it to the SCREAMING_CASE form",
     "reassigned-constants":   reassigned_constants:   ReassignedConstantsConfig  => ReassignedConstants  => [] => "SCREAMING_CASE name is reassigned despite its constant casing. Rename it lowercase or keep it write-once",
@@ -401,7 +403,7 @@ register_rules! {
     "single-use-variables":   single_use_variables:   SingleUseVariablesConfig   => SingleUseVariables   => [] => "Binding is assigned and used once. Consider inlining",
     "unsorted-positionals":   unsorted_positionals:   ToggleOnly                 => UnsortedPositionals  => [] => "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword",
     "signature-annotations":  signature_annotations:  ToggleOnly                 => SignatureAnnotations => [] => "Flag a missing parameter or return type annotation",
-    "line-overflow":          line_overflow:          LineOverflowConfig         => LineOverflow         => ["strip-align-padding", "comment-spacing"] => "Flag a line over its length budget, offering the split form where a string literal can take the break",
+    "line-overflow":          line_overflow:          LineOverflowConfig         => LineOverflow         => ["strip-align-padding", "comment-spacing", "align-comments"] => "Flag a line over its length budget, offering the split form where a string literal can take the break",
 }
 
 #[cfg(test)]

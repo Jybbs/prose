@@ -5,7 +5,6 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
 ---
 align-equals@1626..1627
 align-equals@215..454
-align-imports@46..47
 alphabetize@35..1835
 band-constants@35..1429
 bare-imports@172..179
