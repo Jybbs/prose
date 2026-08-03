@@ -8,13 +8,16 @@ target-version              = "3.14"
 enabled      = false
 max-size-mib = 250
 
+[imports]
+first-party = ["acme", "internal"]
+
 [rules]
-align-colons           = false
-align-comments         = false
-align-comparisons      = false
-align-equals           = false
-align-imports          = false
-align-match-case       = false
+align-colons           = { enabled = false, max-shift = 4 }
+align-comments         = { enabled = false, max-shift = 4 }
+align-comparisons      = { enabled = false, max-shift = 4 }
+align-equals           = { enabled = false, max-shift = 4 }
+align-imports          = { enabled = false, max-shift = 4 }
+align-match-case       = { enabled = false, max-shift = 4 }
 alphabetize            = { enabled = false, group-methods = false, sort-definitions = false, sort-dict-keys = false, sort-docstring-entries = false, sort-dunder-lists = false }
 band-constants         = { enabled = false, group-subcategories = false, max-tiers = 4 }
 bare-imports           = { allow = ["scipy", "torch"], enabled = false, exempt-aliased = false, max-attributes = 2 }
@@ -32,6 +35,7 @@ line-overflow          = { enabled = false, suggest-string-splits = false }
 miscased-constants     = { allow-pattern = "^_", enabled = false }
 modernize-annotations  = { enabled = false, rewrite-generics = false, rewrite-unions = false }
 normalize-comparisons  = { enabled = false, rewrite-identity = false, rewrite-negation = false, rewrite-operand-order = false }
+normalize-literals     = { enabled = false, unify-numerics = false, unify-prefixes = false, unify-quotes = false }
 prune-inert-imports    = { drop-duplicates = false, drop-unreferenced = false, enabled = false }
 reassigned-constants   = { allow = ["LOG_LEVEL"], enabled = false }
 shed-parentheses       = false

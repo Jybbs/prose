@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Numeric Inside a Replacement Field Still Respells"
+
+description = '''
+Both numerics respell inside the field that holds them, the second nested one level deeper inside a format spec. **The numeric and prefix facets reach into a replacement field where the quote facet stops**, since only the quote is constrained by the string enclosing it.
+'''

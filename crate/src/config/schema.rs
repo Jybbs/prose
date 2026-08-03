@@ -474,6 +474,36 @@ impl Default for NormalizeComparisonsConfig {
     }
 }
 
+/// Configuration for the `normalize_literals` rule, each facet gating
+/// one spelling axis and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct NormalizeLiteralsConfig {
+    pub enabled: bool,
+    /// Uppercases hex digits and lowercases the `0x`, `0o`, and `0b`
+    /// radix markers, the `e` exponent, and the `j` suffix. `false`
+    /// keeps every numeric literal spelled as written.
+    pub unify_numerics: bool,
+    /// Lowercases a string prefix and drops the no-op `u`. `false`
+    /// keeps the prefix cased and ordered as written.
+    pub unify_prefixes: bool,
+    /// Settles a non-docstring string on `"`, falling to `'` only where
+    /// that drops an escape, and sheds a backslash the surviving quote
+    /// does not need. `false` keeps the literal spelled as written.
+    pub unify_quotes: bool,
+}
+
+impl Default for NormalizeLiteralsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            unify_numerics: true,
+            unify_prefixes: true,
+            unify_quotes: true,
+        }
+    }
+}
+
 /// Configuration for the `prune_inert_imports` rule, each facet gating
 /// one prune and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
@@ -617,6 +647,7 @@ impl_rule_toggle!(
     MiscasedConstantsConfig,
     ModernizeAnnotationsConfig,
     NormalizeComparisonsConfig,
+    NormalizeLiteralsConfig,
     PruneInertImportsConfig,
     ReassignedConstantsConfig,
     SignatureLayoutConfig,

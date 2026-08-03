@@ -334,6 +334,31 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       },
       "type": "object"
     },
+    "NormalizeLiteralsConfig": {
+      "description": "Configuration for the `normalize_literals` rule, each facet gating\none spelling axis and defaulting `true`.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "unify-numerics": {
+          "default": true,
+          "description": "Uppercases hex digits and lowercases the `0x`, `0o`, and `0b`\nradix markers, the `e` exponent, and the `j` suffix. `false`\nkeeps every numeric literal spelled as written.",
+          "type": "boolean"
+        },
+        "unify-prefixes": {
+          "default": true,
+          "description": "Lowercases a string prefix and drops the no-op `u`. `false`\nkeeps the prefix cased and ordered as written.",
+          "type": "boolean"
+        },
+        "unify-quotes": {
+          "default": true,
+          "description": "Settles a non-docstring string on `\"`, falling to `'` only where\nthat drops an escape, and sheds a backslash the surviving quote\ndoes not need. `false` keeps the literal spelled as written.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "PruneInertImportsConfig": {
       "description": "Configuration for the `prune_inert_imports` rule, each facet gating\none prune and defaulting `true`.",
       "properties": {
@@ -751,6 +776,22 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "rewrite-operand-order": true
           }
         },
+        "normalize-literals": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/NormalizeLiteralsConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "unify-numerics": true,
+            "unify-prefixes": true,
+            "unify-quotes": true
+          }
+        },
         "prune-inert-imports": {
           "anyOf": [
             {
@@ -1117,6 +1158,12 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "rewrite-identity": true,
           "rewrite-negation": true,
           "rewrite-operand-order": true
+        },
+        "normalize-literals": {
+          "enabled": true,
+          "unify-numerics": true,
+          "unify-prefixes": true,
+          "unify-quotes": true
         },
         "prune-inert-imports": {
           "drop-duplicates": true,

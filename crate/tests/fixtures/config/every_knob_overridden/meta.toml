@@ -3,5 +3,5 @@ previewable = false
 title       = "Every Knob Overridden Round-Trips Through the Loader"
 
 description = '''
-A `[tool.prose]` snippet that overrides **every available knob** to a non-default value, walking the top-level lengths, `target-version`, the `[tool.prose.cache]` toggles, and a per-rule override for each rule. The resolved `Config` carries every supplied value rather than any default.
+A `[tool.prose]` snippet that overrides **every available knob** to a non-default value, walking the top-level lengths, `target-version`, the `[tool.prose.cache]` and `[tool.prose.imports]` tables, and an override for each rule and every facet it carries. The resolved `Config` carries every supplied value rather than any default.
 '''

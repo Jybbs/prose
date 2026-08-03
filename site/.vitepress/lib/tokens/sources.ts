@@ -87,6 +87,9 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'split-multi-module',          href: '/reference/configuration#per-rule-facets',       blurb: 'Break a comma-joined `import a, b` into one statement per module.' },
     { key: 'suggest-string-splits',       href: '/reference/configuration#per-rule-facets',       blurb: 'Offer the adjacent-literal form for an over-budget splittable string.' },
     { key: 'target-version',              href: '/reference/configuration#top-level-keys',        blurb: 'Python version the parser reads against.' },
+    { key: 'unify-numerics',              href: '/reference/configuration#per-rule-facets',       blurb: 'Uppercase hex digits while the radix marker, exponent, and `j` suffix lowercase.' },
+    { key: 'unify-prefixes',              href: '/reference/configuration#per-rule-facets',       blurb: 'Lowercase a string prefix and drop the no-op `u`.' },
+    { key: 'unify-quotes',                href: '/reference/configuration#per-rule-facets',       blurb: 'Settle a non-docstring string on `"`, shedding an escape the quote does not need.' },
     { key: 'wrap-dict-entries',           href: '/reference/configuration#per-rule-facets',       blurb: 'Break an over-wide `key: value` at its `:` and hang the value beneath.' }
   ],
   'exit-code': [

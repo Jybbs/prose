@@ -17,6 +17,7 @@ use crate::{
     primitives::{
         docstring::{DocstringBody, docstring_body, indent_prefix, rewrite_docstrings},
         edit::narrowed_replacement,
+        quoting::{TRIPLE_QUOTE, abuts_triple_closer},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -68,19 +69,17 @@ impl Rule for DocstringFrame {
 /// the closer.
 fn requote_edits(source: &Source, lit: &StringLiteral, body: &DocstringBody) -> Vec<Edit> {
     let flags = lit.flags;
-    if flags.quote_str() == "\"\"\"" || body.text.trim_whitespace().is_empty() {
-        return Vec::new();
-    }
-    let abuts_closer =
-        body.text.contains("\"\"\"") || (!body.is_multiline() && body.text.ends_with('"'));
-    if abuts_closer {
+    if flags.quote_str() == TRIPLE_QUOTE
+        || body.text.trim_whitespace().is_empty()
+        || abuts_triple_closer(&[body.text], !body.is_multiline())
+    {
         return Vec::new();
     }
     let opener = TextRange::new(body.range.start() - flags.quote_len(), body.range.start());
     let closer = TextRange::new(body.range.end(), body.range.end() + flags.closer_len());
     [opener, closer]
         .into_iter()
-        .filter_map(|range| narrowed_replacement(source, range, "\"\"\"".to_owned()))
+        .filter_map(|range| narrowed_replacement(source, range, TRIPLE_QUOTE.to_owned()))
         .collect()
 }
 

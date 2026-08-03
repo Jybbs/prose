@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/literal_inside_a_field_keeps_its_quotes/input.py
+---
+picked = f"{'inner'}"

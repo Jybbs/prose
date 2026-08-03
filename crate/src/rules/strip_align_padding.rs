@@ -6,7 +6,6 @@
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
-use ruff_python_ast::token::TokenKind;
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
@@ -15,7 +14,7 @@ use crate::{
         aligner,
         colon_targets::ColonEmitter,
         edit::singleton_groups,
-        tokens::{is_closer, is_opener},
+        tokens::{is_closer, is_interpolated_string_start, is_opener},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -97,7 +96,7 @@ fn delimiter_padding_edits(source: &Source) -> Vec<Edit> {
     let mut edits = Vec::new();
     for (token, next) in tokens.iter().tuple_windows() {
         let kind = token.kind();
-        if matches!(kind, TokenKind::FStringStart | TokenKind::TStringStart) {
+        if is_interpolated_string_start(kind) {
             interp_depth += 1;
         } else if kind.is_interpolated_string_end() {
             interp_depth -= 1;

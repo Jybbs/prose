@@ -19,9 +19,18 @@ Config {
         99,
     ),
     imports: ImportsConfig {
-        first_party: [],
+        first_party: [
+            "acme",
+            "internal",
+        ],
     },
     rules: RuleConfigs {
+        normalize_literals: NormalizeLiteralsConfig {
+            enabled: false,
+            unify_numerics: false,
+            unify_prefixes: false,
+            unify_quotes: false,
+        },
         prune_inert_imports: PruneInertImportsConfig {
             drop_duplicates: false,
             drop_unreferenced: false,
@@ -103,7 +112,7 @@ Config {
         align_match_case: AlignmentConfig {
             enabled: false,
             max_shift: Cap(
-                16,
+                4,
             ),
         },
         import_layout: ImportLayoutConfig {
@@ -134,13 +143,13 @@ Config {
         align_imports: AlignmentConfig {
             enabled: false,
             max_shift: Cap(
-                16,
+                4,
             ),
         },
         align_colons: AlignmentConfig {
             enabled: false,
             max_shift: Cap(
-                16,
+                4,
             ),
         },
         docstring_wrap: ToggleOnly {
@@ -149,13 +158,13 @@ Config {
         align_equals: AlignmentConfig {
             enabled: false,
             max_shift: Cap(
-                16,
+                4,
             ),
         },
         align_comparisons: AlignmentConfig {
             enabled: false,
             max_shift: Cap(
-                16,
+                4,
             ),
         },
         strip_align_padding: ToggleOnly {
@@ -167,7 +176,7 @@ Config {
         align_comments: AlignmentConfig {
             enabled: false,
             max_shift: Cap(
-                16,
+                4,
             ),
         },
         bare_imports: BareImportsConfig {
