@@ -45,6 +45,8 @@ A construct with a legal multi-line reshape takes it once its line crosses the c
 
 Several alignment rules reach the same row, wherein [[align-colons]], [[align-equals]], and [[align-comments]] each seat a column on a line carrying an annotation, a value, and a note. Each answers the cap against the line it will emit rather than the one the buffer holds, measuring a trailing comment at its two-column floor and the gap after an operator at the single space an aligned row carries, both of which a later rule settles. That keeps every rule's fit decision invariant to the ones that run after it, so the columns resolve in one pass rather than trading places across repeated runs.
 
+A trailing comment counts toward the cap the way any other span on the line does, since *Prose* places it through [[comment-spacing]] and [[align-comments]] rather than leaving it as text it never touches. A row already past its cap before any padding therefore holds its own buffer and joins a shared column only where that column costs it no further width, which the widest member of a run alone satisfies. Alignment never carries an over-budget line further out, leaving [[line-overflow]] to name the remainder at the narrowest width the row can reach.
+
 A cap no legal form can satisfy *(a deep indent, a long identifier, a cap set below what a statement needs)* leaves the narrowest legal form standing, and [[line-overflow]] names that remainder, so an unsatisfiable cap reads as a finding in `prose check` and a squiggle in the sandbox rather than as a knob that did nothing.
 
 ## Cache

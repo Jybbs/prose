@@ -101,8 +101,10 @@ fn comment_slack(source: &Source, member: Member) -> usize {
 
 /// True when no member of `group` aligned to `max_w` has its line
 /// pushed past the governing line-length cap by the padding, and for a
-/// rule carrying no cap at all. A member already over the cap unpadded
-/// stays in the run rather than partitioning to no gain.
+/// rule carrying no cap at all. A member already over the cap at its
+/// buffer stays in the run only where the shared column costs it no
+/// further width, which holds for the widest member alone, so aligning
+/// never carries an over-cap line further out.
 fn fits_line_cap(source: &Source, group: &[Member], settings: Settings, max_w: usize) -> bool {
     let Some(cap) = settings.line_length else {
         return true;
@@ -110,8 +112,8 @@ fn fits_line_cap(source: &Source, group: &[Member], settings: Settings, max_w: u
     let max_op = max_op_width(group);
     group.iter().all(|m| {
         let base = emitted_base_width(source, *m);
-        base + padding_width(*m, max_w, max_op, settings.buffer) <= cap
-            || base + settings.buffer > cap
+        let padding = padding_width(*m, max_w, max_op, settings.buffer);
+        base + padding <= cap || padding == settings.buffer
     })
 }
 
@@ -457,7 +459,24 @@ mod tests {
     }
 
     #[test]
-    fn line_cap_keeps_a_row_already_past_the_cap_in_its_run() {
+    fn line_cap_holds_an_over_cap_row_costing_no_further_width() {
+        let (source, members) = rows(&[(13, 1), (13, 5)]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(16)).with_line_length(8),
+            &mut edits,
+        );
+
+        // Equal widths leave the column at each row's own buffer, so the
+        // over-cap pair aligns rather than partitioning to no gain.
+        assert_eq!(sorted_summaries(&edits), vec![fill(&members[1], 1)]);
+    }
+
+    #[test]
+    fn line_cap_holds_an_over_cap_row_out_of_a_widening_column() {
         let (source, members) = rows(&[(12, 1), (13, 1)]);
         let mut edits = Vec::new();
 
@@ -468,9 +487,10 @@ mod tests {
             &mut edits,
         );
 
-        // Both lines sit past the cap before any padding, so partitioning
-        // buys nothing and the pair still aligns at width 13.
-        assert_eq!(sorted_summaries(&edits), vec![fill(&members[0], 2)]);
+        // Both lines sit past the cap unpadded, and the shared column
+        // would carry the narrow row one further out, so the run splits
+        // and each row keeps the buffer it already holds.
+        assert!(edits.is_empty());
     }
 
     #[test]
