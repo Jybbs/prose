@@ -19,6 +19,7 @@ band-constants        = { enabled = false, group-subcategories = false, max-tier
 bare-imports          = { allow = ["scipy", "torch"], enabled = false, exempt-aliased = false, max-attributes = 2 }
 blank-lines           = false
 call-layout           = { enabled = false, max-args = 6 }
+chain-layout          = { enabled = false, max-links = 4, max-shift = 8 }
 collection-layout     = { enabled = false, explode = false, keep-multiline-literals = false, max-atomics = 3, max-dict-entries = 5, wrap-dict-entries = false }
 docstring-expand      = false
 docstring-frame       = false

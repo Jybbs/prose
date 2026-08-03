@@ -809,6 +809,7 @@ mod tests {
         config.rules.bare_imports.enabled = false;
         config.rules.blank_lines.enabled = false;
         config.rules.call_layout.enabled = false;
+        config.rules.chain_layout.enabled = false;
         config.rules.collection_layout.enabled = false;
         config.rules.docstring_expand.enabled = false;
         config.rules.docstring_frame.enabled = false;

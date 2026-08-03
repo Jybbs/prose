@@ -18,10 +18,10 @@ use thiserror::Error;
 use crate::{
     config::{
         AlignmentConfig, AlphabetizeConfig, BandConstantsConfig, BareImportsConfig,
-        CallLayoutConfig, CollectionLayoutConfig, Config, ImportLayoutConfig, LineOverflowConfig,
-        MiscasedConstantsConfig, ModernizeAnnotationsConfig, PruneInertImportsConfig,
-        ReassignedConstantsConfig, SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly,
-        rule_schema,
+        CallLayoutConfig, ChainLayoutConfig, CollectionLayoutConfig, Config, ImportLayoutConfig,
+        LineOverflowConfig, MiscasedConstantsConfig, ModernizeAnnotationsConfig,
+        PruneInertImportsConfig, ReassignedConstantsConfig, SignatureLayoutConfig,
+        SingleUseVariablesConfig, ToggleOnly, rule_schema,
     },
     diagnostics::Diagnostic,
     pipeline::Pipeline,
@@ -29,7 +29,7 @@ use crate::{
         align_colons::AlignColons, align_comparisons::AlignComparisons, align_equals::AlignEquals,
         align_imports::AlignImports, align_match_case::AlignMatchCase, alphabetize::Alphabetize,
         band_constants::BandConstants, bare_imports::BareImports, blank_lines::BlankLines,
-        call_layout::CallLayout, collection_layout::CollectionLayout,
+        call_layout::CallLayout, chain_layout::ChainLayout, collection_layout::CollectionLayout,
         docstring_expand::DocstringExpand, docstring_frame::DocstringFrame,
         docstring_wrap::DocstringWrap, group_imports::GroupImports, import_layout::ImportLayout,
         line_overflow::LineOverflow, miscased_constants::MiscasedConstants,
@@ -376,12 +376,13 @@ register_rules! {
     "docstring-frame":       docstring_frame:       ToggleOnly                 => DocstringFrame       => [] => "canonicalize docstring quotes and frame the opener and closer on their own lines",
     "docstring-expand":      docstring_expand:      ToggleOnly                 => DocstringExpand      => ["docstring-frame"] => "expand single-line docstring to multi-line form",
     "group-imports":         group_imports:         ToggleOnly                 => GroupImports         => [] => "group imports into bare, external, and local sections",
-    "collection-layout":     collection_layout:     CollectionLayoutConfig     => CollectionLayout     => [] => "lay out collection literal against the line budget",
-    "call-layout":           call_layout:           CallLayoutConfig           => CallLayout           => ["collection-layout"] => "explode call arguments to one keyword per line",
+    "chain-layout":          chain_layout:          ChainLayoutConfig          => ChainLayout          => [] => "break a long method chain to one link per line",
+    "collection-layout":     collection_layout:     CollectionLayoutConfig     => CollectionLayout     => ["chain-layout"] => "lay out collection literal against the line budget",
+    "call-layout":           call_layout:           CallLayoutConfig           => CallLayout           => ["chain-layout", "collection-layout"] => "explode call arguments to one keyword per line",
     "signature-layout":      signature_layout:      SignatureLayoutConfig      => SignatureLayout      => [] => "normalize function signature to one-line or one-per-line shape",
     "align-match-case":      align_match_case:      AlignmentConfig            => AlignMatchCase       => [] => "align match-case colons",
     "import-layout":         import_layout:         ImportLayoutConfig         => ImportLayout         => ["group-imports"] => "lay out the import block one module per line with its members gathered behind it",
-    "alphabetize":           alphabetize:           AlphabetizeConfig          => Alphabetize          => ["collection-layout", "call-layout", "signature-layout", "import-layout"] => "alphabetize this group",
+    "alphabetize":           alphabetize:           AlphabetizeConfig          => Alphabetize          => ["chain-layout", "collection-layout", "call-layout", "signature-layout", "import-layout"] => "alphabetize this group",
     "band-constants":        band_constants:        BandConstantsConfig        => BandConstants        => ["alphabetize"] => "band module constants into leading and trailing bands",
     "blank-lines":           blank_lines:           ToggleOnly                 => BlankLines           => ["group-imports", "alphabetize"] => "normalize blank-line spacing",
     "align-imports":         align_imports:         AlignmentConfig            => AlignImports         => ["alphabetize", "blank-lines", "import-layout"] => "align consecutive `import`s",
@@ -408,7 +409,7 @@ mod tests {
 
     #[rstest]
     fn dependencies_of_returns_empty_for_a_rule_without_predecessors(
-        #[values("prune-inert-imports", "collection-layout", "not-a-rule")] slug: &str,
+        #[values("prune-inert-imports", "chain-layout", "not-a-rule")] slug: &str,
     ) {
         assert!(dependencies_of(slug).is_empty());
     }

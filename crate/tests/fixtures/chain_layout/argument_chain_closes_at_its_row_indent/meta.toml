@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Chain Opening Mid-Row Hangs From That Row's Indent"
+
+description = '''
+The head sits one indent step past the row carrying the chain and the closing paren drops back to that row, measured from the row's own indent rather than from the column the chain happens to open at, so a chain bound to a keyword argument stacks against the statement instead of against the argument list.
+'''
