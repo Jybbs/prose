@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/collections_generic_holds/input.py
+---
+from typing import Deque
+
+
+def drain(queue: Deque[int]) -> None: ...

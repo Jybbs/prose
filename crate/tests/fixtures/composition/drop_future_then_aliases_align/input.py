@@ -6,4 +6,4 @@ import functools as ft
 
 
 def add(a, b):
-    return a + b
+    return (np, col, ft, a + b)

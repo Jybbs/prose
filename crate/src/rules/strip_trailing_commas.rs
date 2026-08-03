@@ -22,6 +22,8 @@ use crate::{
 pub(crate) struct StripTrailingCommas;
 
 impl StripTrailingCommas {
+    pub(crate) const MESSAGE: &'static str = "strip trailing comma";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

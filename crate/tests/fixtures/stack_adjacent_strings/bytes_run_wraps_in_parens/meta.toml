@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Bytes Run Breaks Like a String Run"
+
+description = '''
+Adjacent `bytes` literals concatenate the same way adjacent `str` literals do, so an over-budget bytes run **takes the same one-per-line break**.
+'''

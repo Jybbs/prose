@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Replacement Field Holds Its Call"
+
+description = '''
+The walk leaves an f-string replacement field unvisited, so the copying comprehension inside one stands as written while the same expression outside the literal collapses onto its constructor.
+'''

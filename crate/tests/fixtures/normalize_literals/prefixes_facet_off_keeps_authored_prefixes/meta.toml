@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Turning Off `unify-prefixes` Keeps a Prefix Cased as Written"
+
+description = '''
+With `unify-prefixes = false` both the `U` and the `R` keep the case they were typed in, while the hex marker still lowercases. The delimiters still settle, since the quote facet reads the prefix without rewriting it.
+'''

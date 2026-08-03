@@ -4,17 +4,16 @@
 //! reaches `{}`, and `tuple([1])` reaches `(1,)`. An empty sequence
 //! reaches `set()` rather than a brace form, because `{}` names an empty
 //! dict. A constructor name the module binds itself leaves every call to
-//! it alone.
+//! it alone. The walk reads expressions in source order, so an enclosing
+//! rewrite is recorded first and a nested candidate whose edits fall
+//! where it already edits drops.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    Expr,
-    visitor::{Visitor, walk_expr},
-};
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
+    primitives::walk::filter_map_over_exprs,
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -28,6 +27,8 @@ use self::{constructor::Constructor, plan::plan_for, render::edits_for};
 pub(crate) struct SimplifyComprehensions;
 
 impl SimplifyComprehensions {
+    pub(crate) const MESSAGE: &'static str = "collapse a redundant collection constructor";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }
@@ -40,13 +41,16 @@ impl Rule for SimplifyComprehensions {
             .into_iter()
             .filter(|ctor| analysis.binds_name(ctor.as_str()))
             .collect();
-        let mut walker = Walker {
-            groups: Vec::new(),
-            rebound: &rebound,
-            source,
-        };
-        walker.visit_body(&source.ast().body);
-        walker.groups
+        let mut claimed: Vec<TextRange> = Vec::new();
+        filter_map_over_exprs(&source.ast().body, |expr| {
+            let plan = plan_for(expr, &rebound)?;
+            let edits = edits_for(source, expr, &plan)?;
+            if edits.iter().any(|edit| overlaps(&claimed, edit.range())) {
+                return None;
+            }
+            claimed.extend(edits.iter().map(Ranged::range));
+            Some(edits)
+        })
     }
 
     fn id(&self) -> RuleId {
@@ -54,41 +58,7 @@ impl Rule for SimplifyComprehensions {
     }
 }
 
-/// Visits every expression in source order, recording the rewrite each
-/// earns. An enclosing rewrite lands first, so a nested candidate whose
-/// edits overlap it drops.
-struct Walker<'a> {
-    groups: Vec<Vec<Edit>>,
-    rebound: &'a [Constructor],
-    source: &'a Source,
-}
-
-impl Walker<'_> {
-    /// True when a recorded edit covers any of `range`.
-    fn claimed(&self, range: TextRange) -> bool {
-        self.groups
-            .iter()
-            .flatten()
-            .any(|edit| edit.start() < range.end() && range.start() < edit.end())
-    }
-
-    /// Records the rewrite `expr` earns, unless one of its edits falls
-    /// where an already-recorded edit does.
-    fn record(&mut self, expr: &Expr) {
-        let Some(edits) =
-            plan_for(expr, self.rebound).and_then(|plan| edits_for(self.source, expr, &plan))
-        else {
-            return;
-        };
-        if !edits.iter().any(|edit| self.claimed(edit.range())) {
-            self.groups.push(edits);
-        }
-    }
-}
-
-impl<'a> Visitor<'a> for Walker<'a> {
-    fn visit_expr(&mut self, expr: &'a Expr) {
-        self.record(expr);
-        walk_expr(self, expr);
-    }
+/// True when `range` shares at least one byte with a recorded range.
+fn overlaps(claimed: &[TextRange], range: TextRange) -> bool {
+    claimed.iter().any(|held| held.ordering(range).is_eq())
 }

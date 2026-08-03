@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Exempt Opener Still Joins the Column"
+
+description = '''
+[[comment-spacing]] leaves a `#:` or `#!` opener untouched, and that exemption covers what a comment opens with rather than where it sits. A Sphinx attribute doc and a type pragma therefore travel to the shared column alongside any other trailing comment.
+'''

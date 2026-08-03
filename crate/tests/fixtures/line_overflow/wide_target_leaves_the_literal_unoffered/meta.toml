@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Literal Past the Cap Is Not What Overflowed the Line"
+
+description = '''
+The assignment target alone crosses `code-line-length`, so the literal opens past the cap rather than straddling it and no split of that literal brings the line within budget. The finding stays a bare report ending *"with no legal reshape"*.
+'''

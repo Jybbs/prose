@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/prefixed_docstring_drops_its_prefix_only/input.py
+---
+def render():
+    """Doc."""
+    return 1
+
+
+def tally():
+    'inline.'
+    return 2

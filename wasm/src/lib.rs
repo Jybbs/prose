@@ -149,8 +149,8 @@ mod tests {
 
     #[test]
     fn rewrites_the_source() {
-        let result = formatted("", "import b\nimport a\n");
-        assert_eq!(result.formatted, "import a\nimport b\n");
+        let result = formatted("", "import b\nimport a\n\nvalue = a, b\n");
+        assert_eq!(result.formatted, "import a\nimport b\n\nvalue = a, b\n");
     }
 
     #[test]

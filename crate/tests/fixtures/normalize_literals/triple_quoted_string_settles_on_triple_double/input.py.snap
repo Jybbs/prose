@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/triple_quoted_string_settles_on_triple_double/input.py
+---
+banner = """first line
+second line"""

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/quote_prefix_survives_the_split/input.py
+---
+PATTERN = r'the quick brown fox jumps over the lazy dog'

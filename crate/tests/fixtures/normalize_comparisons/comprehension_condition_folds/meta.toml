@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comprehension's Condition Folds Like Any Other"
+
+description = '''
+The rewrite reaches a comparison wherever it sits, so the `if` clause of a comprehension folds its leading `not` the same way a statement condition does.
+'''

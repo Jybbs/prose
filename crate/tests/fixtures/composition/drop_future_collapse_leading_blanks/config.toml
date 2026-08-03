@@ -1,2 +1,2 @@
 [harness]
-rules = ["unused-future-annotations", "blank-lines"]
+rules = ["prune-inert-imports", "blank-lines"]

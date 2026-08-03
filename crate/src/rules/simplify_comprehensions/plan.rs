@@ -1,11 +1,12 @@
 //! Reads an expression into the rewrite it earns.
 
 use ruff_python_ast::{
-    Comprehension, Expr, ExprCall, ExprGenerator, ExprList, ExprListComp, ExprSetComp, ExprTuple,
-    Keyword, comparable::ComparableExpr,
+    Comprehension, Expr, ExprCall, ExprGenerator, ExprListComp, ExprSetComp, ExprTuple, Keyword,
+    comparable::ComparableExpr,
 };
 
 use super::constructor::Constructor;
+use crate::primitives::binding::sequence_elts;
 
 /// The rewrite an expression earns, each variant naming what stands in
 /// place of the source it covers.
@@ -133,16 +134,15 @@ fn copy_iter<'a>(generators: &'a [Comprehension], elements: &[&Expr]) -> Option<
     if generator.is_async || !generator.ifs.is_empty() {
         return None;
     }
-    let copies = match (elements, &generator.target) {
-        ([element], target) => same(element, target),
-        (_, Expr::List(ExprList { elts, .. }) | Expr::Tuple(ExprTuple { elts, .. })) => {
-            elts.len() == elements.len()
-                && elts
+    let copies = match elements {
+        [element] => same(element, &generator.target),
+        _ => sequence_elts(&generator.target).is_some_and(|targets| {
+            targets.len() == elements.len()
+                && targets
                     .iter()
                     .zip(elements)
                     .all(|(target, element)| same(element, target))
-        }
-        _ => false,
+        }),
     };
     copies.then_some(&generator.iter)
 }
@@ -166,11 +166,13 @@ fn dict_plan(arg: &Expr) -> Option<Plan<'_>> {
         | Expr::ListComp(ExprListComp {
             elt, generators, ..
         }) => pair_comprehension_plan(arg, generators, elt),
-        Expr::List(ExprList { elts, .. }) | Expr::Tuple(ExprTuple { elts, .. }) => {
-            let pairs = elts.iter().map(pair).collect::<Option<Vec<_>>>()?;
+        _ => {
+            let pairs = sequence_elts(arg)?
+                .iter()
+                .map(pair)
+                .collect::<Option<Vec<_>>>()?;
             Some(Plan::Pairs { inner: arg, pairs })
         }
-        _ => None,
     }
 }
 
@@ -233,15 +235,13 @@ fn set_plan(arg: &Expr) -> Option<Plan<'_>> {
         | Expr::SetComp(ExprSetComp {
             elt, generators, ..
         }) => comprehension_plan(Constructor::Set, Some(arg), generators, &[elt]),
-        Expr::List(ExprList { elts, .. }) | Expr::Tuple(ExprTuple { elts, .. })
-            if elts.is_empty() =>
-        {
-            Some(Plan::Fixed("set()"))
-        }
-        Expr::List(_) | Expr::Set(_) | Expr::Tuple(_) => Some(Plan::Rewrap {
-            ctor: Constructor::Set,
-            inner: arg,
-        }),
+        Expr::List(_) | Expr::Set(_) | Expr::Tuple(_) => match sequence_elts(arg) {
+            Some([]) => Some(Plan::Fixed("set()")),
+            _ => Some(Plan::Rewrap {
+                ctor: Constructor::Set,
+                inner: arg,
+            }),
+        },
         _ => None,
     }
 }

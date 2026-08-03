@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Equality Against a Non-Singleton Constant Holds"
+
+description = '''
+`None == 0` keeps its `==`, because `is` against a constant that is not a singleton compares two objects the interpreter never promises to share.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Run Carrying a Part with Its Own Break Stays Put"
+
+description = '''
+A run holding a triple-quoted part that spans lines **stays as written**, since moving such a part would place its opening line away from the interior the source pinned.
+'''

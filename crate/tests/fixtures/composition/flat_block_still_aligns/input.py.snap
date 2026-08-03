@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/flat_block_still_aligns/input.py
+---
+import os
+import sys
+from collections import Counter
+from typing      import Any

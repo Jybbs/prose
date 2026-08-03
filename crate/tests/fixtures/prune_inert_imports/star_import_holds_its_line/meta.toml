@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Star Import Holds, Binding a Set No Count Enumerates"
+
+description = '''
+`from os.path import *` binds a name set the reference count cannot enumerate. **The line holds** and draws neither a prune nor a report.
+'''

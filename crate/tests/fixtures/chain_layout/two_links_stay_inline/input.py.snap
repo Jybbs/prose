@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/chain_layout/two_links_stay_inline/input.py
+---
+result = obj.first(alpha).second(beta)

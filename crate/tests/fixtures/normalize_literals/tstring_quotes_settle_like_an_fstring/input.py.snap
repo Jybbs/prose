@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/tstring_quotes_settle_like_an_fstring/input.py
+---
+label = t"{mask:>8}"
+shout = t'say "hi" to {name}'

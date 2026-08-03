@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Raw String Holding a Bare Double Quote Stands"
+
+description = '''
+`r'"\d+"'` carries two unescaped `"` characters and a raw string cannot gain a backslash, so the delimiters stay where they are.
+'''

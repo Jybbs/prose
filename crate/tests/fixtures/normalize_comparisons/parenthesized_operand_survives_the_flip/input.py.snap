@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_comparisons/parenthesized_operand_survives_the_flip/input.py
+---
+def offset(a, b):
+    if (a + b) == 42:
+        return a
+    return b

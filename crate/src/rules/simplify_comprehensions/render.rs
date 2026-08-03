@@ -1,11 +1,11 @@
 //! Turns a rewrite plan into the edits that land it.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{Expr, ExprList, ExprTuple, Keyword, token::parenthesized_range};
+use ruff_python_ast::{Expr, ExprTuple, Keyword, token::parenthesized_range};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{constructor::Constructor, plan::Plan};
-use crate::source::Source;
+use crate::{primitives::binding::sequence_elts, source::Source};
 
 /// The edits `plan` lands over `expr`, or `None` where one of them would
 /// cut through a comment or a dict entry carries its own grouping pair.
@@ -46,15 +46,6 @@ fn delimiter(inner: &Expr) -> TextSize {
         _ => unreachable!("invariant: only a delimited argument reaches a rewrap"),
     };
     TextSize::from(u32::from(paired))
-}
-
-/// True when a bracketed sequence holds exactly one member.
-fn holds_one_member(inner: &Expr) -> bool {
-    matches!(
-        inner,
-        Expr::List(ExprList { elts, .. }) | Expr::Tuple(ExprTuple { elts, .. })
-            if elts.len() == 1
-    )
 }
 
 /// The edits rewriting `dict(a=1)` into its brace form, each keyword's
@@ -150,7 +141,7 @@ fn pair_edits(
 fn rewrap_edits(source: &Source, call: &Expr, ctor: Constructor, inner: &Expr) -> Vec<Edit> {
     let width = delimiter(inner);
     let (open, close) = ctor.brackets();
-    let lone = holds_one_member(inner);
+    let lone = sequence_elts(inner).is_some_and(|elts| elts.len() == 1);
     let comma = lone.then(|| source.trailing_comma(inner.range())).flatten();
     let kept_end = match comma {
         Some(comma) if ctor != Constructor::Tuple && inner.is_tuple_expr() => comma.start(),

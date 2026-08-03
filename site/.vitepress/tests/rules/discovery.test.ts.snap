@@ -7,6 +7,7 @@ exports[`discoverRules > discovers rules across family directories, sorted by sl
     "category": "auto-fix",
     "family": "alignment",
     "href": "/rules/alignment/align-equals",
+    "lints": false,
     "related": [
       "alphabetize",
     ],
@@ -17,6 +18,7 @@ exports[`discoverRules > discovers rules across family directories, sorted by sl
     "category": "auto-fix",
     "family": "ordering",
     "href": "/rules/ordering/alphabetize",
+    "lints": false,
     "related": [],
     "slug": "alphabetize",
   },

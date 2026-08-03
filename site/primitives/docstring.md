@@ -1,5 +1,5 @@
 ---
-consumedBy: [alphabetize, colon-targets, docstring-expand, docstring-frame, docstring-wrap]
+consumedBy: [alphabetize, colon-targets, docstring-expand, docstring-frame, docstring-wrap, line-overflow, normalize-literals, stack-adjacent-strings]
 consumes: [edit, source]
 layer: analysis
 stability: internal
@@ -58,9 +58,10 @@ trait DocstringHandler {
 The `pub(crate)` helpers reach for the docstring literal and its body:
 
 1. `body_docstring(body) -> Option<&StringLiteral>` returns a body's leading PEP 257 docstring literal, the shared detection point for consumers that already hold a `&[Stmt]` body rather than walking the whole module.
-2. `docstring_body(source, lit) -> Option<DocstringBody>` returns the body slice between a docstring's opener and closer whatever its quote style, paired with the source range the slice covers and a `raw` flag carrying whether the literal took an `r` prefix, which is what decides whether a backslash in the slice escapes the character after it. Returns `None` only for an inline shape like `def f(): "doc"`.
-3. `triple_quoted_body(source, lit) -> Option<DocstringBody>` narrows `docstring_body` to the canonical `"""` form, the slice `docstring-expand` and `docstring-wrap` act on once `docstring-frame` has requoted every docstring. Returns `None` for a non-triple-quoted literal.
-4. `indent_prefix(source, lit) -> &str` returns the whitespace preceding the docstring on its first line, useful when a rule rewraps the body and needs to re-indent the result.
+2. `docstring_slots(body) -> Vec<TextRange>` returns the range of the leading string expression in `body` and in every class and function body nested inside it, ascending by start. The slot is the position a docstring occupies whatever its part count, so an implicitly concatenated expression lands here where `body_docstring` skips it. A rule walking a different surface reads it to tell docstring position from an ordinary literal, which is how [[stack-adjacent-strings]] holds a concatenated run filling the slot, how [[line-overflow]] declines to offer it a break, and how [[normalize-literals]] keeps its quote facet off the frame `docstring-frame` owns.
+3. `docstring_body(source, lit) -> Option<DocstringBody>` returns the body slice between a docstring's opener and closer whatever its quote style, paired with the source range the slice covers and a `raw` flag carrying whether the literal took an `r` prefix, which is what decides whether a backslash in the slice escapes the character after it. Returns `None` only for an inline shape like `def f(): "doc"`.
+4. `triple_quoted_body(source, lit) -> Option<DocstringBody>` narrows `docstring_body` to the canonical `"""` form, the slice `docstring-expand` and `docstring-wrap` act on once `docstring-frame` has requoted every docstring. Returns `None` for a non-triple-quoted literal.
+5. `indent_prefix(source, lit) -> &str` returns the whitespace preceding the docstring on its first line, useful when a rule rewraps the body and needs to re-indent the result.
 
 [[colon-targets]] finds leading docstrings through `body_docstring` and their section entries through `entry_carrying_sections`, reading each entry's recorded `:` offset when emitting members for colon alignment. The split is deliberate, because the two primitives answer structurally different questions. *Docstring* surfaces entry names, the `:` separating each from its description, and the byte range a reorder would carry along, whereas *Colon-Targets* shapes those into the members the aligner's padding math consumes. Two views of the same source, each shaped for its consumer.
 

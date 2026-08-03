@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Parenthesized Chain Reuses Its Own Pair"
+
+description = '''
+A chain the source already wrapped breaks inside the pair it carries rather than gaining a second one.
+'''

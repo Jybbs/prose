@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/quotes_settle_on_double/input.py
+---
+name = "ada"
+greeting = "hello, world"
+empty = ""

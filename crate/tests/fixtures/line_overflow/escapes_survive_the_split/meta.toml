@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Escape Is Never Cut Down the Middle"
+
+description = '''
+Every cut lands after a run of literal whitespace, so a `\\t` or an escaped quote travels whole inside the part that holds it. The backslash and the character it escapes are adjacent with no space between them, which is what puts a cut there out of reach.
+'''

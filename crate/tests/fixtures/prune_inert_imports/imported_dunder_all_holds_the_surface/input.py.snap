@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/imported_dunder_all_holds_the_surface/input.py
+---
+from io import SEEK_CUR, __all__
+
+position = SEEK_CUR

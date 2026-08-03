@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/listed_name_survives_its_repeat/input.py
+---
+from json import loads
+from json import loads
+
+__all__ = ["loads"]

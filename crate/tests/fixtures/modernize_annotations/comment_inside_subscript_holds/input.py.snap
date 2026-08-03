@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/comment_inside_subscript_holds/input.py
+---
+from typing import Optional
+
+x: Optional[
+    int  # the count
+] = None

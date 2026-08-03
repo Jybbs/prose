@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Wide Receiver Falls Back to the Full Split"
+
+description = '''
+Hanging each dot beneath a receiver this wide would shift the column further than `max-shift` allows, so the chain takes the full split instead, standing the receiver alone on its line and running every link flush beneath it.
+'''

@@ -1,0 +1,10 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/normalize_literals/numerics_uppercase_hex_and_lowercase_markers/input.py
+---
+normalize-literals@27..28
+normalize-literals@42..43
+normalize-literals@60..61
+normalize-literals@79..80
+normalize-literals@8..13

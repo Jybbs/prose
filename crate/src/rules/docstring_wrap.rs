@@ -39,6 +39,8 @@ pub(crate) struct DocstringWrap {
 }
 
 impl DocstringWrap {
+    pub(crate) const MESSAGE: &'static str = "wrap docstring prose to the configured budget";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let description_width = config.docstring_width();
         let section_width = match config.docstring_structured_policy {

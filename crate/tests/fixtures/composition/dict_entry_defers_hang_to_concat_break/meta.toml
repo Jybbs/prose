@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Dict Entry Leaves Its Break to the String Run"
+
+description = '''
+`collection-layout` expands the dict but **declines to hang the entry at its `:`**, because the entry's key is an implicitly concatenated run that `stack-adjacent-strings` breaks instead, which is what keeps the pair settled on a second pass.
+'''

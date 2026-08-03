@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Redundant Escape Sheds Even When the Quote Holds"
+
+description = '''
+A body spelling `\"` inside single quotes needs no backslash there, so the backslash goes while the delimiter stays put. **A quote character counts once wherever it appears, escaped or not**, which is what keeps the choice stable rather than flipping the delimiter on every run.
+'''

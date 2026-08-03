@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Columnar Block Keeps Its Indents, a Scattered Comment Does Not"
+
+description = '''
+Three comments opening at one column on consecutive lines read as a block the author laid out, so every indent inside it survives. The trailing comment below shares a column with nothing, so its padded opener settles to the single space a scattered comment carries.
+'''

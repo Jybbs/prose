@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Relative Depth Keeps Two Same-Named Modules Apart"
+
+description = '''
+The merge keys on the leading-dot count alongside the module name, so `.pkg` and `..pkg` name **two distinct modules** and each keeps its own statement.
+'''
