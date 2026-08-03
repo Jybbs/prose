@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Lone Trailing Comment Collapses to the Floor"
+
+description = '''
+One annotated line is not a run, so the wide gap has no column to answer to and it settles back to the two-space floor. A row reaching no shared column ends up flush the same way whether it stood alone or partitioned out of one.
+'''

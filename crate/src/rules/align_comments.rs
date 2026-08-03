@@ -3,9 +3,10 @@
 //! the [trailing gap](TRAILING_GAP) past the widest row's code. A line
 //! carrying no trailing comment, a blank line, and an own-line comment
 //! each break the run, and a run whose rows open at differing indents
-//! aligns nothing. A lone trailing comment keeps whatever gap it
-//! carries, whereas a row partitioning out of a run on the `max-shift`
-//! or line-length cap collapses to the trailing gap itself.
+//! aligns nothing. A row reaching no shared column collapses to the
+//! trailing gap itself, covering a lone comment, a run at differing
+//! indents, and a row partitioning out on the `max-shift` or
+//! line-length cap.
 
 use ruff_diagnostics::Edit;
 use ruff_python_trivia::CommentRanges;
@@ -35,7 +36,15 @@ impl Rule for AlignComments {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut walker = aligner::AlignWalker::new(source, self.settings, Self::SLUG);
         for group in trailing_comment_groups(source, walker.rule) {
-            walker.emit_if_candidate(&group);
+            let edits = if aligner::is_alignment_candidate(source, &group) {
+                walker.group_edits(&group)
+            } else {
+                group
+                    .iter()
+                    .filter_map(|m| aligner::space_padding_edit(source, m.gap, TRAILING_GAP.len()))
+                    .collect()
+            };
+            walker.push_group(edits);
         }
         walker.groups
     }

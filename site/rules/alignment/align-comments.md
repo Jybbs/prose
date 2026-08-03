@@ -14,7 +14,7 @@ The rule walks the trailing comments in source order and grows a run while each 
 
 <Fixture rule="align_comments" case="run_shares_one_comment_column" />
 
-A run of one is not a run, so a lone trailing comment keeps whatever gap it was written with. A row that partitions out of a run instead takes the two-space floor, which is what settles a hand-set gap that lines up with nothing. Two caps drive that partition, the `max-shift` spread budget the family shares and the `code-line-length` budget, wherein a row whose aligned line would cross the budget stays where it sits rather than manufacturing an overflow for [[line-overflow]] to flag.
+A row that reaches no shared column takes the two-space floor instead, which is what settles a hand-set gap lining up with nothing. That covers a lone trailing comment, since a run of one has no column to answer to, and it covers a row partitioning out of a run. Two caps drive that partition, the `max-shift` spread budget the family shares and the `code-line-length` budget, wherein a row whose aligned line would cross the budget stays where it sits rather than manufacturing an overflow for [[line-overflow]] to flag.
 
 <Fixture rule="align_comments" case="bracket_rows_share_a_column" />
 

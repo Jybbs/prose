@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Lone Trailing Comment Is Left Where It Sits"
-
-description = '''
-One annotated line is not a run, so there is no column to settle it against and the wide gap the author set survives untouched. Only a row with a neighbor to line up against is measured.
-'''
