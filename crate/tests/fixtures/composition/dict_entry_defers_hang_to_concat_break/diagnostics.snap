@@ -4,4 +4,4 @@ expression: render(&diagnostics)
 input_file: crate/tests/fixtures/composition/dict_entry_defers_hang_to_concat_break/input.py
 ---
 collection-layout@9..77
-string-concat-layout@9..74
+stack-adjacent-strings@9..74

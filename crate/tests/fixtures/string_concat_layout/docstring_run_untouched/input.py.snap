@@ -1,8 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/string_concat_layout/docstring_run_untouched/input.py
----
-def handler():
-    "the opening clause of this notice " "and the trailing clause"
-    return 1

@@ -29,7 +29,7 @@ use crate::{
         layout::{is_layoutable, item_indent},
         reserve::settled_column,
     },
-    rules::string_concat_layout::concatenated_run,
+    rules::stack_adjacent_strings::concatenated_run,
     source::Source,
 };
 
@@ -167,7 +167,7 @@ impl<'a> Layouter<'a> {
     /// through, the column belonging to `align_colons`. Returns `None`
     /// for a `**value` unpacking item and for an entry either side of
     /// whose `:` carries an implicitly concatenated string, which
-    /// `string-concat-layout` breaks in place.
+    /// `stack-adjacent-strings` breaks in place.
     fn hang_dict_value(
         &self,
         item: &DictItem,

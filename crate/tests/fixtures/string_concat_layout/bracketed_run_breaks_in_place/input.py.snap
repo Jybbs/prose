@@ -1,9 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/string_concat_layout/bracketed_run_breaks_in_place/input.py
----
-emit(
-    "the opening clause of this notice "
-    "and the trailing clause"
-)

@@ -6,7 +6,7 @@
 //! expands whatever its width, taking any enclosing collection with it.
 //! An over-wide dict entry breaks at `:` and hangs its value, leaving an
 //! entry either side of whose `:` carries an implicitly concatenated
-//! string to `string-concat-layout`. A subscript and a comprehension
+//! string to `stack-adjacent-strings`. A subscript and a comprehension
 //! only ever rejoin, and a comment, an f-string or t-string replacement
 //! field, or a folded multi-line string holds a construct at its source
 //! shape.

@@ -91,7 +91,7 @@ Config {
                 None,
             ),
         },
-        string_concat_layout: ToggleOnly {
+        stack_adjacent_strings: ToggleOnly {
             enabled: false,
         },
         align_match_case: AlignmentConfig {

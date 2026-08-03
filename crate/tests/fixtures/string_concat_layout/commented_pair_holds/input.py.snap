@@ -1,8 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/string_concat_layout/commented_pair_holds/input.py
----
-message = (  # keep the seam here
-    "the opening clause of this notice " "and the trailing clause"
-)

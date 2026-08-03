@@ -4,4 +4,4 @@ expression: render(&diagnostics)
 input_file: crate/tests/fixtures/composition/call_explodes_then_concat_stacks/input.py
 ---
 call-layout@5..74
-string-concat-layout@12..74
+stack-adjacent-strings@12..74

@@ -1,4 +1,4 @@
 code-line-length = 60
 
 [harness]
-rules = ["collection-layout", "string-concat-layout"]
+rules = ["collection-layout", "stack-adjacent-strings"]

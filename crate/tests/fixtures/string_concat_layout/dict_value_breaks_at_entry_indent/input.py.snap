@@ -1,9 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/string_concat_layout/dict_value_breaks_at_entry_indent/input.py
----
-table = {
-    "key": "the opening clause of this notice "
-    "and the trailer"
-}

@@ -766,7 +766,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
-        "step-narration": {
+        "stack-adjacent-strings": {
           "anyOf": [
             {
               "type": "boolean"
@@ -779,7 +779,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
-        "string-concat-layout": {
+        "step-narration": {
           "anyOf": [
             {
               "type": "boolean"
@@ -1060,10 +1060,10 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "allow-pattern": "^_",
           "enabled": true
         },
-        "step-narration": {
+        "stack-adjacent-strings": {
           "enabled": true
         },
-        "string-concat-layout": {
+        "step-narration": {
           "enabled": true
         },
         "strip-align-padding": {

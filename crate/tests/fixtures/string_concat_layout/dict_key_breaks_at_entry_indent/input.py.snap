@@ -1,9 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/string_concat_layout/dict_key_breaks_at_entry_indent/input.py
----
-table = {
-    "the opening clause of this notice here "
-    "and the trailing part": 1
-}

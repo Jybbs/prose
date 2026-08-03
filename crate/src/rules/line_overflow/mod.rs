@@ -26,7 +26,7 @@ use crate::{
     diagnostics::Diagnostic,
     primitives::docstring::{body_docstring, docstring_slots},
     rule::{Rule, RuleId},
-    rules::string_concat_layout::concatenated_run,
+    rules::stack_adjacent_strings::concatenated_run,
     source::Source,
 };
 
@@ -120,7 +120,7 @@ struct Spans<'a> {
 }
 
 impl<'a> Spans<'a> {
-    /// True for an implicitly concatenated run `string-concat-layout`
+    /// True for an implicitly concatenated run `stack-adjacent-strings`
     /// still breaks, which leaves out a run filling a docstring slot.
     fn breakable_run(&self, expr: &Expr) -> bool {
         concatenated_run(expr).is_some() && !self.docstrings.contains(&expr.range())
