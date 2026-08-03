@@ -236,7 +236,7 @@ pub struct ImportLayoutConfig {
     pub merge_members: bool,
     /// Breaks a comma-joined `import a, b` into one `import` statement
     /// per module. `false` keeps the comma-joined form.
-    pub split_plain: bool,
+    pub split_multi_module: bool,
 }
 
 impl Default for ImportLayoutConfig {
@@ -244,7 +244,7 @@ impl Default for ImportLayoutConfig {
         Self {
             enabled: true,
             merge_members: true,
-            split_plain: true,
+            split_multi_module: true,
         }
     }
 }

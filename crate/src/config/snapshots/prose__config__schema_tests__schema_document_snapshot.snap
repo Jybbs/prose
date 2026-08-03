@@ -192,7 +192,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "description": "Folds repeated `from <module> import …` statements into one\nstatement carrying each member once, ordered as `alphabetize`\nwould leave it. `false` leaves each statement on its own line.",
           "type": "boolean"
         },
-        "split-plain": {
+        "split-multi-module": {
           "default": true,
           "description": "Breaks a comma-joined `import a, b` into one `import` statement\nper module. `false` keeps the comma-joined form.",
           "type": "boolean"
@@ -587,7 +587,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "default": {
             "enabled": true,
             "merge-members": true,
-            "split-plain": true
+            "split-multi-module": true
           }
         },
         "line-overflow": {
@@ -953,7 +953,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "import-layout": {
           "enabled": true,
           "merge-members": true,
-          "split-plain": true
+          "split-multi-module": true
         },
         "line-overflow": {
           "enabled": true

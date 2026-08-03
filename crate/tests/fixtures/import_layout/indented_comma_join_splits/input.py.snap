@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/import_layout/indented_plain_import_splits/input.py
+input_file: crate/tests/fixtures/import_layout/indented_comma_join_splits/input.py
 ---
 def load():
     import os

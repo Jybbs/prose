@@ -1,5 +1,5 @@
 //! Lays out an import block one module per line with its members
-//! gathered behind it. `split-plain` breaks a comma-joined
+//! gathered behind it. `split-multi-module` breaks a comma-joined
 //! `import a, b` into one statement per module, `merge-members` gathers
 //! every `from <module> import …` line of one import run onto one
 //! statement carrying each member once, and a roster overrunning
@@ -48,7 +48,7 @@ pub(crate) struct ImportLayout {
     import_line_length: usize,
     merge_members: bool,
     sort_members: bool,
-    split_plain: bool,
+    split_multi_module: bool,
 }
 
 impl ImportLayout {
@@ -63,7 +63,7 @@ impl ImportLayout {
             import_line_length: config.import_width(),
             merge_members: rules.merge_members,
             sort_members: config.alphabetize_enabled(),
-            split_plain: rules.split_plain,
+            split_multi_module: rules.split_multi_module,
         }
     }
 }
@@ -81,7 +81,7 @@ impl Rule for ImportLayout {
             newline: source.newline_str(),
             sort_members: self.sort_members,
             source,
-            split_plain: self.split_plain,
+            split_multi_module: self.split_multi_module,
         };
         visitor.visit_body(&source.ast().body);
         visitor.groups
@@ -100,7 +100,7 @@ struct Layout<'a> {
     newline: &'static str,
     sort_members: bool,
     source: &'a Source,
-    split_plain: bool,
+    split_multi_module: bool,
 }
 
 impl<'a> Layout<'a> {
@@ -178,7 +178,7 @@ impl<'a> Layout<'a> {
     }
 
     /// Folds each repeated module in `body` into one statement and
-    /// splits every comma-joined plain import, one fix group apiece.
+    /// splits every comma-joined bare import, one fix group apiece.
     fn process_body(&mut self, body: &'a [Stmt]) {
         let groups = if self.merge_members {
             module_groups(self.source, body)
@@ -191,7 +191,7 @@ impl<'a> Layout<'a> {
         }
         for (slot, stmt) in body.iter().enumerate() {
             match stmt {
-                Stmt::Import(plain) if self.split_plain => self.split_plain_import(plain),
+                Stmt::Import(bare) if self.split_multi_module => self.split_bare_import(bare),
                 Stmt::ImportFrom(lone) if !gathered.contains(&slot) => self.pack_lone(lone),
                 _ => {}
             }
@@ -213,8 +213,8 @@ impl<'a> Layout<'a> {
     }
 
     /// Emits the one-statement-per-module rewrite of a comma-joined
-    /// plain import.
-    fn split_plain_import(&mut self, node: &StmtImport) {
+    /// bare import.
+    fn split_bare_import(&mut self, node: &StmtImport) {
         let [_, _, ..] = node.names.as_slice() else {
             return;
         };
@@ -370,7 +370,7 @@ mod tests {
             import_line_length: 10,
             merge_members: true,
             sort_members: true,
-            split_plain: true,
+            split_multi_module: true,
         };
 
         assert!(rule.apply(&source).is_empty());
@@ -403,21 +403,21 @@ mod tests {
             import_line_length: 10,
             merge_members: true,
             sort_members: true,
-            split_plain: true,
+            split_multi_module: true,
         };
 
         assert!(rule.apply(&source).is_empty());
     }
 
     #[test]
-    fn semicolon_joined_plain_import_is_left_untouched() {
+    fn semicolon_joined_bare_import_is_left_untouched() {
         let source = parse("x = 1; import os, sys\n");
         let rule = ImportLayout {
             align_settings: None,
             import_line_length: 10,
             merge_members: true,
             sort_members: true,
-            split_plain: true,
+            split_multi_module: true,
         };
 
         assert!(rule.apply(&source).is_empty());

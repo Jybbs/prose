@@ -6,7 +6,7 @@
 //! that drop the aliases a rule has left unread. First-party detection
 //! reads the package-name list from `[tool.prose.imports]`.
 
-use std::ops::Range;
+use std::{cmp::Reverse, ops::Range};
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
@@ -100,13 +100,15 @@ pub(crate) fn import_group(stmt: &Stmt, first_party: &[String]) -> Option<Import
 
 /// Composite import sort key, the canonical group order ahead of a
 /// per-kind sort, bare before `from`, bare by least alias name and
-/// `from` by `(level, module)`. Ungrouped, every group below
+/// `from` by `(relative, depth, module)`. An absolute `from` import
+/// leads every relative one, and relative imports run furthest to
+/// closest, so `..pkg` precedes `.pkg`. Ungrouped, every group below
 /// `__future__` collapses to one rank. `None` pins a non-import.
 pub(crate) fn import_sort_key<'a>(
     stmt: &'a Stmt,
     first_party: &[String],
     grouped: bool,
-) -> Option<(ImportGroup, u8, u32, &'a str)> {
+) -> Option<(ImportGroup, u8, bool, Reverse<u32>, &'a str)> {
     let group = import_group(stmt, first_party)?;
     let rank = if grouped {
         group
@@ -114,8 +116,14 @@ pub(crate) fn import_sort_key<'a>(
         group.min(ImportGroup::Bare)
     };
     Some(match stmt {
-        Stmt::Import(i) => (rank, 0, 0, least_alias(&i.names)),
-        Stmt::ImportFrom(i) => (rank, 1, i.level, i.module.as_deref().unwrap_or_default()),
+        Stmt::Import(i) => (rank, 0, false, Reverse(0), least_alias(&i.names)),
+        Stmt::ImportFrom(i) => (
+            rank,
+            1,
+            i.level > 0,
+            Reverse(i.level),
+            i.module.as_deref().unwrap_or_default(),
+        ),
         _ => unreachable!("import_group returns Some only for import statements"),
     })
 }
@@ -330,6 +338,30 @@ mod tests {
         assert!(
             keys[0] < keys[1] && keys[1] < keys[2] && keys[2] < keys[3],
             "expected bare-external < external-from < local-bare < local-from",
+        );
+    }
+
+    #[test]
+    fn import_sort_key_ranks_an_absolute_from_import_ahead_of_every_relative_one() {
+        let first_party = vec!["myapp".to_owned()];
+        let s = parse("from .pkg import a\nfrom myapp.db import b\n");
+        let key = |stmt| import_sort_key(stmt, &first_party, true).expect("import statement");
+        let body = &s.ast().body;
+        assert!(key(&body[1]) < key(&body[0]));
+    }
+
+    #[test]
+    fn import_sort_key_runs_relative_imports_furthest_to_closest() {
+        let s = parse("from .pkg import a\nfrom ..pkg import b\nfrom ...pkg import c\n");
+        let keys: Vec<_> = s
+            .ast()
+            .body
+            .iter()
+            .map(|stmt| import_sort_key(stmt, &[], true).expect("import statement"))
+            .collect();
+        assert!(
+            keys[2] < keys[1] && keys[1] < keys[0],
+            "expected `...pkg` < `..pkg` < `.pkg`, furthest to closest",
         );
     }
 

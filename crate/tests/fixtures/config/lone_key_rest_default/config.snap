@@ -91,7 +91,7 @@ Config {
         import_layout: ImportLayoutConfig {
             enabled: true,
             merge_members: true,
-            split_plain: true,
+            split_multi_module: true,
         },
         alphabetize: AlphabetizeConfig {
             enabled: true,

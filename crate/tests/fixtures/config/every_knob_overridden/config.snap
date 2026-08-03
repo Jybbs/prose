@@ -89,7 +89,7 @@ Config {
         import_layout: ImportLayoutConfig {
             enabled: false,
             merge_members: false,
-            split_plain: false,
+            split_multi_module: false,
         },
         alphabetize: AlphabetizeConfig {
             enabled: false,
