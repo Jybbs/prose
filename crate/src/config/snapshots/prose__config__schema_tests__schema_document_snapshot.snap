@@ -766,6 +766,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
+        "stack-adjacent-strings": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
         "step-narration": {
           "anyOf": [
             {
@@ -1045,6 +1058,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "single-use-variables": {
           "allow-pattern": "^_",
+          "enabled": true
+        },
+        "stack-adjacent-strings": {
           "enabled": true
         },
         "step-narration": {

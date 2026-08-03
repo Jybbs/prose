@@ -91,6 +91,9 @@ Config {
                 None,
             ),
         },
+        stack_adjacent_strings: ToggleOnly {
+            enabled: false,
+        },
         align_match_case: AlignmentConfig {
             enabled: false,
             max_shift: Cap(

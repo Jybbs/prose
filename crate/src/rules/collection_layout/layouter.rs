@@ -29,6 +29,7 @@ use crate::{
         layout::{is_layoutable, item_indent},
         reserve::settled_column,
     },
+    rules::stack_adjacent_strings::concatenated_run,
     source::Source,
 };
 
@@ -164,7 +165,9 @@ impl<'a> Layouter<'a> {
     /// INDENT_STEP`. The key routes through `repaired_key` the same way
     /// `serialize_dict_item` does, and its pre-colon padding carries
     /// through, the column belonging to `align_colons`. Returns `None`
-    /// for `**value` unpacking items.
+    /// for a `**value` unpacking item and for an entry either side of
+    /// whose `:` carries an implicitly concatenated string, which
+    /// `stack-adjacent-strings` breaks in place.
     fn hang_dict_value(
         &self,
         item: &DictItem,
@@ -172,6 +175,9 @@ impl<'a> Layouter<'a> {
         item_indent: usize,
     ) -> Option<String> {
         let key = item.key.as_ref()?;
+        if concatenated_run(key).is_some() || concatenated_run(&item.value).is_some() {
+            return None;
+        }
         let key_text = self.repaired_key(key, parent, item_indent);
         let padding = pre_colon_padding(self.key_value_gap(key, &item.value));
         let hang_column = item_indent + INDENT_STEP;

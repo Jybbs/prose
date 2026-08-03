@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Run Scattered Unevenly Settles One per Line"
+
+description = '''
+A run spanning several lines with two literals sharing one **normalizes to one literal per line** whatever its width, since the ragged boundary is the shape the rule exists to settle.
+'''

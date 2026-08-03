@@ -1,6 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/line_overflow/adjacent_literals_stay_unoffered/input.py
----
-NOTICE = "the quick brown fox " "jumps over the lazy dog and keeps running on"

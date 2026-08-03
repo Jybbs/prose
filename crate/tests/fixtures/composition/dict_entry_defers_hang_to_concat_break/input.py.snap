@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/dict_entry_defers_hang_to_concat_break/input.py
+---
+table = {
+    "the opening clause of this notice here "
+    "and the trailing part": 1
+}
