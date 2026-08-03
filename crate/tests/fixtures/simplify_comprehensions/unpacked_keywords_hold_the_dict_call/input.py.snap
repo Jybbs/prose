@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/unpacked_keywords_hold_the_dict_call/input.py
+---
+merged = dict(**defaults)
+mixed  = dict(defaults, extra=1)

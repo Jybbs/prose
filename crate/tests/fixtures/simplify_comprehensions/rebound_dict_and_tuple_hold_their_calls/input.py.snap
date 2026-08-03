@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/rebound_dict_and_tuple_hold_their_calls/input.py
+---
+dict  = {}
+tuple = ()
+
+mapping = dict([(1, 2)])
+frozen  = tuple([1, 2])
+values  = [1, 2]
+unique  = {1, 2}

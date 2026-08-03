@@ -37,10 +37,8 @@ pub(crate) fn adjacent_slots(
         .collect()
 }
 
-/// True when any adjacent pair of items in `body` shares one physical line.
-/// A block-based reorder decomposes one item per line, so a body packing
-/// two onto a line (`;`-joined statements, comma-packed entries) has no such
-/// decomposition and keeps source order.
+/// True when any adjacent pair of items in `body` shares one physical
+/// line, as a `;`-joined statement run or a comma-packed entry run does.
 pub(crate) fn any_sibling_shares_line<T: Ranged>(source: &Source, body: &[T]) -> bool {
     body.windows(2)
         .any(|pair| source.same_line(pair[0].end(), pair[1].start()))

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `0` Cap Settles Every Row on the Two-Space Floor"
+
+description = '''
+Setting `max-shift` to `0` forbids any shift, so no row may travel to meet another and each stands alone at the floor. The rule reduces to a settle pass, taking the hand-set column back down to the two spaces PEP 8 prescribes.
+'''

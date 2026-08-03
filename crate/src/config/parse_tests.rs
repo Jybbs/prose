@@ -39,6 +39,10 @@ fn max_dict_entries_cap(config: &Config) -> Option<usize> {
     config.rules.collection_layout.max_dict_entries.cap()
 }
 
+fn max_links_cap(config: &Config) -> Option<usize> {
+    config.rules.chain_layout.max_links.cap()
+}
+
 fn max_params_cap(config: &Config) -> Option<usize> {
     config.rules.signature_layout.max_params.cap()
 }
@@ -207,6 +211,7 @@ fn imports_first_party_reads_kebab_case_list() {
 #[case::max_args("call-layout", "max-args", max_args_cap)]
 #[case::max_atomics("collection-layout", "max-atomics", max_atomics_cap)]
 #[case::max_dict_entries("collection-layout", "max-dict-entries", max_dict_entries_cap)]
+#[case::max_links("chain-layout", "max-links", max_links_cap)]
 #[case::max_params("signature-layout", "max-params", max_params_cap)]
 fn inline_budget_reads_integer_and_false(
     #[case] table: &str,
@@ -226,6 +231,7 @@ fn inline_budget_reads_integer_and_false(
 #[case::max_args("call-layout", "max-args")]
 #[case::max_atomics("collection-layout", "max-atomics")]
 #[case::max_dict_entries("collection-layout", "max-dict-entries")]
+#[case::max_links("chain-layout", "max-links")]
 #[case::max_params("signature-layout", "max-params")]
 fn inline_budget_rejects_non_cap_value(
     #[case] table: &str,
@@ -239,6 +245,7 @@ fn inline_budget_rejects_non_cap_value(
 #[case::max_args("call-layout", "max-args", max_args_cap)]
 #[case::max_atomics("collection-layout", "max-atomics", max_atomics_cap)]
 #[case::max_dict_entries("collection-layout", "max-dict-entries", max_dict_entries_cap)]
+#[case::max_links("chain-layout", "max-links", max_links_cap)]
 #[case::max_params("signature-layout", "max-params", max_params_cap)]
 fn inline_budget_round_trips_through_toml(
     #[case] table: &str,

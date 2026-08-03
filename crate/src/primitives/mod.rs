@@ -4,10 +4,10 @@ pub(crate) mod alias;
 pub(crate) mod aligner;
 pub(crate) mod binding;
 pub(crate) mod blanks;
-pub(crate) mod brackets;
 pub(crate) mod call_keywords;
 pub(crate) mod colon_targets;
 pub(crate) mod comments;
+pub(crate) mod comparison;
 pub(crate) mod constructor;
 pub(crate) mod decorator;
 pub(crate) mod docstring;
@@ -19,11 +19,13 @@ pub(crate) mod inline;
 pub(crate) mod layout;
 pub(crate) mod orderer;
 pub(crate) mod params;
+pub(crate) mod quoting;
 pub(crate) mod range;
 pub(crate) mod reserve;
 pub(crate) mod scope;
 pub(crate) mod sections;
 pub(crate) mod tiering;
+pub(crate) mod tokens;
 pub(crate) mod walk;
 
 /// PEP 8 indent step in spaces, the depth one nested level adds.

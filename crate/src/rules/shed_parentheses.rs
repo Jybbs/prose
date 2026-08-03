@@ -30,6 +30,8 @@ pub(crate) struct ShedParentheses {
 }
 
 impl ShedParentheses {
+    pub(crate) const MESSAGE: &'static str = "shed a redundant grouping parenthesis pair";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),

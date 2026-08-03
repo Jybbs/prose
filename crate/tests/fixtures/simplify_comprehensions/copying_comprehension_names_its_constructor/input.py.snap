@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/copying_comprehension_names_its_constructor/input.py
+---
+values = list(rows)
+unique = set(rows)
+paired = dict(rows)

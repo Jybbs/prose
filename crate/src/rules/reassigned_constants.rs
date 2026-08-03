@@ -24,6 +24,8 @@ pub(crate) struct ReassignedConstants {
 }
 
 impl ReassignedConstants {
+    pub(crate) const MESSAGE: &'static str = "SCREAMING_CASE name is reassigned despite its constant casing. Rename it lowercase or keep it write-once";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             allow: Config::allow_set(&config.rules.reassigned_constants.allow),

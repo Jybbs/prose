@@ -47,6 +47,8 @@ pub(crate) struct CallLayout {
 }
 
 impl CallLayout {
+    pub(crate) const MESSAGE: &'static str = "explode call arguments to one keyword per line";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             align_equals: AlignEquals::reserve_settings(config),

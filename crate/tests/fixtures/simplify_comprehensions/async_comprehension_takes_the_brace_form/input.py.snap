@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/async_comprehension_takes_the_brace_form/input.py
+---
+async def gather(rows):
+    return {row async for row in rows}

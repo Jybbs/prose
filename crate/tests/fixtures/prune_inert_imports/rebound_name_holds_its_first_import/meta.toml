@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Rebound Name Holds Its First Import"
+
+description = '''
+The extension shim rebinds `loads` inside the `try`, so the module-scope binding carries two writes. **The first import holds**, since the `ImportError` branch falls back to it.
+'''

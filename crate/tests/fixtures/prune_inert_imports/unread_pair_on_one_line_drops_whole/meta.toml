@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Bare Pair Neither Name Reads Goes Whole"
+
+description = '''
+`import os, sys` binds one module per name and nothing reads either. **Both aliases go and the line with them.**
+'''

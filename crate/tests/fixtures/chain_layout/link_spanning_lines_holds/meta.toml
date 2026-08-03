@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Link Already Spanning Lines Holds Its Shape"
+
+description = '''
+Reassembling a chain reads each link as one row, so a link whose argument list an earlier pass already broke across lines leaves the chain where the source put it.
+'''

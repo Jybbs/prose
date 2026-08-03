@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/bare_constructor_calls_reach_literals/input.py
+---
+mapping  = {}
+sequence = []
+frozen   = ()
+unique   = set()

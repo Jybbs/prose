@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "The Identity Facet Off Leaves the Other Rewrites Running"
+
+description = '''
+`rewrite-identity = false` holds both `==` tests as written and withdraws the boolean-literal lint, while the constant-led comparison still flips and the leading `not` still folds.
+'''

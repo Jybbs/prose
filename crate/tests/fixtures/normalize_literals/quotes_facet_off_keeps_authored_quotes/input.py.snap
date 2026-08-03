@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/quotes_facet_off_keeps_authored_quotes/input.py
+---
+mask = 0xABC
+legacy = "y"
+expression = r"a\d"
+name = 'ada'

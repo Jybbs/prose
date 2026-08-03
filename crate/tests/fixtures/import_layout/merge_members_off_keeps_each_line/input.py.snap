@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/import_layout/merge_members_off_keeps_each_line/input.py
+---
+import os
+import sys
+from pkg import beta
+from pkg import alpha
+
+value = alpha + beta + os.sep + sys.path[0]

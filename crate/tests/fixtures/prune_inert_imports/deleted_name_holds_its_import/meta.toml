@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Name a `del` Unbinds Holds Its Import"
+
+description = '''
+Nothing reads `os`, and a `del os` still needs the binding to exist. **The import holds**, since dropping it would leave the `del` raising `NameError`.
+'''

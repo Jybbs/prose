@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/literal_within_list_call/input.py
+---
+items = [1, 2, 3]
+names = ["a", "b"]

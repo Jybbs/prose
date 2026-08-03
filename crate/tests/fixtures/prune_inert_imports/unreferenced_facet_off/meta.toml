@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "The `drop-unreferenced` Facet Off Prunes Nothing Unread"
+
+description = '''
+With `drop-unreferenced = false` the unread `Any` **keeps its slot on the line** and no binding is reported.
+'''

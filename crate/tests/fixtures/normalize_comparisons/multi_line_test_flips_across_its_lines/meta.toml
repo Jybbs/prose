@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Wrapped Comparison Flips Without Rejoining Its Lines"
+
+description = '''
+Each operand trades places within the line it was written on, leaving the author's wrapping untouched, because the flip moves the two operand spans rather than regenerating the comparison.
+'''

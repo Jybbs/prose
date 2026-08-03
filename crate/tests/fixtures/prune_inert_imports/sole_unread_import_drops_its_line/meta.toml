@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Sole Unread Import Takes Its Whole Line"
+
+description = '''
+Nothing references `json`, and its line binds nothing else. **The whole line goes**, leaving the blank that followed it as a leading blank.
+'''

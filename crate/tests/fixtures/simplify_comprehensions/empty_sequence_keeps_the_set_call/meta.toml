@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Empty Sequence Leaves `set()` Standing"
+
+description = '''
+`{}` names an empty dict rather than an empty set, so an empty argument reaches the bare `set()` call instead of a brace form.
+'''

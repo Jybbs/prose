@@ -1,0 +1,8 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/simplify_comprehensions/bare_constructor_calls_reach_literals/input.py
+---
+simplify-comprehensions@11..17
+simplify-comprehensions@29..35
+simplify-comprehensions@47..54

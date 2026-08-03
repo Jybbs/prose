@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_comparisons/replacement_field_holds_its_comparison/input.py
+---
+def render(k, table, x):
+    label = f"{x == None}"
+    other = f"{not k in table}"
+    return label + other

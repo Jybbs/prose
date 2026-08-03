@@ -8,15 +8,14 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    CmpOp, Expr, ExprBoolOp,
-    token::TokenKind,
+    Expr, ExprBoolOp,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
-    primitives::aligner,
+    primitives::{aligner, comparison::opening_token_kind},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -26,6 +25,8 @@ pub(crate) struct AlignComparisons {
 }
 
 impl AlignComparisons {
+    pub(crate) const MESSAGE: &'static str = "align consecutive comparison operators";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             settings: aligner::Settings::from(&config.rules.align_comparisons)
@@ -74,7 +75,7 @@ impl Visitor<'_> {
             self.walker.source,
             compare.left.range(),
             comparator.start(),
-            cmp_op_anchor_token_kind(op),
+            opening_token_kind(op),
         )?;
         Some(member.with_op_width(op.as_str().len()))
     }
@@ -86,48 +87,5 @@ impl<'a> AstVisitor<'a> for Visitor<'a> {
             self.process_bool_op(bool_op);
         }
         walk_expr(self, expr);
-    }
-}
-
-/// Maps every `CmpOp` to the lexer token that anchors the operator's
-/// column. Compound operators (`is not`, `not in`) anchor on the first
-/// keyword, so the alignment math always treats the operator as
-/// starting at the returned token.
-fn cmp_op_anchor_token_kind(op: CmpOp) -> TokenKind {
-    match op {
-        CmpOp::Eq => TokenKind::EqEqual,
-        CmpOp::Gt => TokenKind::Greater,
-        CmpOp::GtE => TokenKind::GreaterEqual,
-        CmpOp::In => TokenKind::In,
-        CmpOp::Is | CmpOp::IsNot => TokenKind::Is,
-        CmpOp::Lt => TokenKind::Less,
-        CmpOp::LtE => TokenKind::LessEqual,
-        CmpOp::NotEq => TokenKind::NotEqual,
-        CmpOp::NotIn => TokenKind::Not,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use rstest::rstest;
-
-    use super::*;
-
-    #[rstest]
-    #[case(CmpOp::Eq, TokenKind::EqEqual)]
-    #[case(CmpOp::Gt, TokenKind::Greater)]
-    #[case(CmpOp::GtE, TokenKind::GreaterEqual)]
-    #[case(CmpOp::In, TokenKind::In)]
-    #[case(CmpOp::Is, TokenKind::Is)]
-    #[case(CmpOp::IsNot, TokenKind::Is)]
-    #[case(CmpOp::Lt, TokenKind::Less)]
-    #[case(CmpOp::LtE, TokenKind::LessEqual)]
-    #[case(CmpOp::NotEq, TokenKind::NotEqual)]
-    #[case(CmpOp::NotIn, TokenKind::Not)]
-    fn cmp_op_anchor_token_kind_covers_every_variant(
-        #[case] op: CmpOp,
-        #[case] expected: TokenKind,
-    ) {
-        assert_eq!(cmp_op_anchor_token_kind(op), expected);
     }
 }

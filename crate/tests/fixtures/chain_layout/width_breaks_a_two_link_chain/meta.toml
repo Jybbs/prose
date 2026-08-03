@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "An Over-Wide Chain Breaks Under the Link Cap"
+
+description = '''
+The length trigger is independent of the count, so a chain holding only two links still breaks once its single-line form crosses `code-line-length` from the column it lands at.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Bare Hash Joins the Column Like Any Other Comment"
+
+description = '''
+A comment carrying no text after its hash is still a trailing comment, so it travels to the shared column rather than sitting out. The rule measures the code ahead of the `#` and never reads what follows it.
+'''

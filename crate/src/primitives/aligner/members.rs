@@ -1,5 +1,6 @@
 //! `Member` construction for the alignment rules: builders that anchor
-//! a row's aligned token and measure its display width.
+//! a row's aligned token and measure its display width, over the gap
+//! locator those builders and the comment rules share.
 
 use ruff_python_ast::{
     AnyParameterRef, Parameters,
@@ -7,7 +8,7 @@ use ruff_python_ast::{
 };
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
-use ruff_text_size::{TextRange, TextSize};
+use ruff_text_size::{TextLen, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::Member;
@@ -30,15 +31,16 @@ pub(super) fn baseline(source: &Source, member: Member) -> usize {
 /// before the gap, leaving the gap free for the rule to rewrite.
 pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member {
     let line_start = source.text().line_start(anchor);
-    let prefix = source.slice(TextRange::new(line_start, anchor));
-    let trimmed_end = prefix.trim_whitespace_end();
-    let gap_start = line_start + TextSize::of(trimmed_end);
+    let gap = line_gap_before(source, anchor);
     Member {
-        gap: TextRange::new(gap_start, anchor),
+        gap,
         line_start,
         op_width: 0,
         value_gap: None,
-        width: trimmed_end.trim_whitespace_start().width(),
+        width: source
+            .slice(TextRange::new(line_start, gap.start()))
+            .trim_whitespace_start()
+            .width(),
     }
 }
 
@@ -72,6 +74,16 @@ pub(crate) fn line_anchored_member_between(
         TextRange::new(lhs.end(), rhs_start),
         kind,
     )
+}
+
+/// The whitespace run ending at `anchor`, opening no earlier than the
+/// start of `anchor`'s line.
+pub(crate) fn line_gap_before(source: &Source, anchor: TextSize) -> TextRange {
+    let line_start = source.text().line_start(anchor);
+    let trimmed = source
+        .slice(TextRange::new(line_start, anchor))
+        .trim_whitespace_end();
+    TextRange::new(line_start + trimmed.text_len(), anchor)
 }
 
 /// Walks `params` in source order, qualifying each parameter through

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Copy Sitting Against a Keyword Keeps Them Apart"
+
+description = '''
+A comprehension may open immediately after `return` or `not`, where the constructor name replacing it would run into the keyword, so the rewrite carries the space that keeps the two tokens separate.
+'''

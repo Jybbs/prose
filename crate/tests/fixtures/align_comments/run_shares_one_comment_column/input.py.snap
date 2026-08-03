@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_comments/run_shares_one_comment_column/input.py
+---
+attempts  = 1    # retries before the backoff widens
+threshold = 200  # rows per flush
+window    = 30   # seconds

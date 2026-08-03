@@ -5,15 +5,14 @@
 //! `Pipeline::with_defaults` so it sees their output.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::token::TokenKind;
 
 use crate::{
     config::Config,
     primitives::{
         aligner,
-        brackets::{is_closer, is_opener},
         colon_targets::ColonEmitter,
         edit::singleton_groups,
+        tokens::{is_closer, is_interpolated_string_start, is_opener},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -22,6 +21,8 @@ use crate::{
 pub(crate) struct StripAlignPadding;
 
 impl StripAlignPadding {
+    pub(crate) const MESSAGE: &'static str = "drop padding that lines up with nothing";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }
@@ -92,7 +93,7 @@ fn delimiter_padding_edits(source: &Source) -> Vec<Edit> {
     let mut edits = Vec::new();
     for (token, next, gap) in source.token_gaps() {
         let kind = token.kind();
-        if matches!(kind, TokenKind::FStringStart | TokenKind::TStringStart) {
+        if is_interpolated_string_start(kind) {
             interp_depth += 1;
         } else if kind.is_interpolated_string_end() {
             interp_depth -= 1;

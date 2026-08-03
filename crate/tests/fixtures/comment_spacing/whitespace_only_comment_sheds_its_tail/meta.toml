@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Hash Followed by Whitespace Alone Sheds It"
+
+description = '''
+A comment carrying whitespace and no text has nothing to put a space ahead of, so the whitespace goes and a bare `#` remains. That keeps a spacer line reading identically to the `#` an author types deliberately.
+'''

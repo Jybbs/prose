@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Bare Attribute Joins the Link Below It"
+
+description = '''
+A `.name` access that is not itself called opens no row of its own, landing on the row of the call that follows it so every row ends in a call.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Annotated Collection Entries Share a Column"
+
+description = '''
+A one-entry-per-line collection is the shape trailing comments crowd most, since each entry ends at a different width and every note starts somewhere new. The entries sit at one indent on consecutive lines, so the run settles on a single column and the notes read as a second column beside the values.
+'''

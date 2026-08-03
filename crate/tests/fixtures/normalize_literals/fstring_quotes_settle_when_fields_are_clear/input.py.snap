@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/fstring_quotes_settle_when_fields_are_clear/input.py
+---
+label = f"{mask:>8}"
+plain = f"no field at all"

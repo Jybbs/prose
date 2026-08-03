@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A SCREAMING_CASE Name Reads as the Constant Side"
+
+description = '''
+A `SCREAMING_CASE` name outranks a plain one and leads the flip, whereas two names of the same rank hold the order their author gave them.
+'''

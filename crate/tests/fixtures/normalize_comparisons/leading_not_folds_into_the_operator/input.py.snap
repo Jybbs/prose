@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_comparisons/leading_not_folds_into_the_operator/input.py
+---
+def missing(key, sentinel, table):
+    if key not in table:
+        return table
+    if key is not sentinel:
+        return sentinel
+    return key

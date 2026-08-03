@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/comment_spacing/tab_after_the_hash_becomes_a_space/input.py
+---
+value = 1
+# tabbed away from the hash

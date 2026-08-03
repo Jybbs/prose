@@ -22,6 +22,8 @@ use crate::{
 pub(crate) struct DocstringExpand;
 
 impl DocstringExpand {
+    pub(crate) const MESSAGE: &'static str = "expand single-line docstring to multi-line form";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

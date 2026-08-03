@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/prefixes_lowercase_and_unicode_drops/input.py
+---
+legacy = "unicode"
+expression = r"a\d"
+payload = b"bytes"
+combined = rb"z\d"

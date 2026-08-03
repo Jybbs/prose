@@ -1,0 +1,2 @@
+seen    = set([])
+pending = set(())

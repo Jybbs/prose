@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/raw_interpolated_string_collapses_its_prefix/input.py
+---
+pattern = rf"{mask}\d"
+guarded = rf'path "q" {x}'

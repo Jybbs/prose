@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Splittable String Carries the Concatenated Form"
+
+description = '''
+The overflow sits inside one string literal whose interior spaces give the break somewhere legal to land, so the finding carries the parenthesized adjacent-literal form as a suggestion. The parts rejoin at compile time into the identical value, and `prose format` never writes them, because the break points would become source a later edit has to reflow.
+'''

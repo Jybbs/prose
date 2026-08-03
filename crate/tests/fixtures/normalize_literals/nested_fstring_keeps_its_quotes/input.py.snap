@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/nested_fstring_keeps_its_quotes/input.py
+---
+row = f"{f'{inner}'}"

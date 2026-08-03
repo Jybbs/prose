@@ -4,10 +4,12 @@
 //! line whatever the facets hold. An overflowing single-line literal
 //! expands one entry per line, and a dict over `max_dict_entries`
 //! expands whatever its width, taking any enclosing collection with it.
-//! An over-wide dict entry breaks at `:` and hangs its value. A
-//! subscript and a comprehension only ever rejoin, and a comment, an
-//! f-string or t-string replacement field, or a folded multi-line
-//! string holds a construct at its source shape.
+//! An over-wide dict entry breaks at `:` and hangs its value, leaving an
+//! entry either side of whose `:` carries an implicitly concatenated
+//! string to `stack-adjacent-strings`. A subscript and a comprehension
+//! only ever rejoin, and a comment, an f-string or t-string replacement
+//! field, or a folded multi-line string holds a construct at its source
+//! shape.
 //!
 //! `keep_multiline_literals` holds a literal the author laid out as a
 //! flush bracketed column of two or more entries, so it re-expands to
@@ -51,6 +53,8 @@ pub(crate) struct CollectionLayout {
 }
 
 impl CollectionLayout {
+    pub(crate) const MESSAGE: &'static str = "lay out collection literal against the line budget";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.collection_layout;
         Self {

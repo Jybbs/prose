@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Over-Long Roster Holds Its Authored Order Under `alphabetize = false`"
+
+description = '''
+The roster sorts only where [[alphabetize]] runs, so a project that turned sorting off keeps the **authored member order** across the split.
+'''

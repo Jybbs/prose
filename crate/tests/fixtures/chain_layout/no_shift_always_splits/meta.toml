@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Zero `max-shift` Takes the Full Split Always"
+
+description = '''
+`max-shift = 0` forbids any hang, so even a short receiver stands alone on its line and every link runs flush beneath it.
+'''

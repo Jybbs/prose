@@ -24,6 +24,8 @@ pub(crate) struct AlignColons {
 }
 
 impl AlignColons {
+    pub(crate) const MESSAGE: &'static str = "align consecutive `:` separators";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let docstring_settings =
             aligner::Settings::from(&config.rules.align_colons).with_singleton_strip();

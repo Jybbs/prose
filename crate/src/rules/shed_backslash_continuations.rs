@@ -18,9 +18,9 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::Config,
     primitives::{
-        brackets::{is_closer, is_opener},
         edit::{apply_inline_edits, narrowed_replacement, splice_preserves_tree},
         range::blocks_span,
+        tokens::{is_closer, is_opener},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -31,6 +31,8 @@ pub(crate) struct ShedBackslashContinuations {
 }
 
 impl ShedBackslashContinuations {
+    pub(crate) const MESSAGE: &'static str = "shed a backslash line continuation";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),
@@ -161,18 +163,14 @@ fn join_text(token: TokenKind, next: TokenKind) -> &'static str {
 /// measured from the opening line's first column through the closing
 /// line's last.
 fn joined_width(source: &Source, span: TextRange, edits: &[Edit]) -> usize {
-    let text = source.text();
-    let line = TextRange::new(text.line_start(span.start()), text.line_end(span.end()));
-    apply_inline_edits(source, line, edits).width()
+    apply_inline_edits(source, source.text().lines_range(span), edits).width()
 }
 
 /// True when `earlier` and `later` are both unbracketed and their joins
 /// land on one physical line, the test gathering consecutive gaps into
 /// a run.
 fn shares_a_run(source: &Source, earlier: &Gap, later: &Gap) -> bool {
-    !earlier.bracketed
-        && !later.bracketed
-        && source.line_index(earlier.end()) == source.line_index(later.start())
+    !earlier.bracketed && !later.bracketed && source.same_line(earlier.end(), later.start())
 }
 
 /// Drops every backslash in `gap` along with the whitespace ahead of

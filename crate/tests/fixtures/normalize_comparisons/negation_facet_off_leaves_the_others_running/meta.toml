@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "The Negation Facet Off Leaves the Other Rewrites Running"
+
+description = '''
+`rewrite-negation = false` keeps `not key in table` outside its operator, while the `None` test still becomes an identity check and the constant-led comparison still flips.
+'''

@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_adjacent_strings/interpolated_part_stacks/input.py
+---
+label = (
+    f"the opening clause {value} of this notice "
+    "and the trailer"
+)

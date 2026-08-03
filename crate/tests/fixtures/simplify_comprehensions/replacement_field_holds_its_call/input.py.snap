@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/replacement_field_holds_its_call/input.py
+---
+label = f"{set([x for x in xs])}"
+plain = set(xs)

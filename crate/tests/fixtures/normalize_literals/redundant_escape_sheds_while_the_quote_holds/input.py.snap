@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/redundant_escape_sheds_while_the_quote_holds/input.py
+---
+traced = f'  File "{filename}", line {lineno}'
+spare = 'redundant " escape'
+mirror = "needless ' escape"

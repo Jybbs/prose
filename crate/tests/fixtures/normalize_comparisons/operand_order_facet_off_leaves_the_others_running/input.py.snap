@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_comparisons/operand_order_facet_off_leaves_the_others_running/input.py
+---
+def classify(flag, key, table, value):
+    if value is None:
+        return flag
+    if flag == True:
+        return value
+    if 0 == len(table):
+        return key
+    if key not in table:
+        return value
+    return value

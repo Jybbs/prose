@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_comparisons/constant_lead_flips_to_variable_lead/input.py
+---
+def route(count, name):
+    if name == "__main__":
+        return count
+    if count > 0:
+        return name
+    return count == 42

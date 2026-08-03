@@ -25,7 +25,15 @@ Config {
         shed_backslash_continuations: ToggleOnly {
             enabled: true,
         },
-        unused_future_annotations: ToggleOnly {
+        normalize_literals: NormalizeLiteralsConfig {
+            enabled: true,
+            unify_numerics: true,
+            unify_prefixes: true,
+            unify_quotes: true,
+        },
+        prune_inert_imports: PruneInertImportsConfig {
+            drop_duplicates: true,
+            drop_unreferenced: true,
             enabled: true,
         },
         strip_none_return: ToggleOnly {
@@ -42,6 +50,15 @@ Config {
         shed_parentheses: ToggleOnly {
             enabled: true,
         },
+        normalize_comparisons: NormalizeComparisonsConfig {
+            enabled: true,
+            rewrite_identity: true,
+            rewrite_negation: true,
+            rewrite_operand_order: true,
+        },
+        simplify_comprehensions: ToggleOnly {
+            enabled: true,
+        },
         docstring_frame: ToggleOnly {
             enabled: true,
         },
@@ -50,6 +67,17 @@ Config {
         },
         group_imports: ToggleOnly {
             enabled: true,
+        },
+        chain_layout: ChainLayoutConfig {
+            enabled: true,
+            max_links: InlineBudget(
+                Some(
+                    2,
+                ),
+            ),
+            max_shift: Cap(
+                16,
+            ),
         },
         collection_layout: CollectionLayoutConfig {
             enabled: true,
@@ -83,11 +111,19 @@ Config {
                 ),
             ),
         },
+        stack_adjacent_strings: ToggleOnly {
+            enabled: true,
+        },
         align_match_case: AlignmentConfig {
             enabled: true,
             max_shift: Cap(
                 16,
             ),
+        },
+        import_layout: ImportLayoutConfig {
+            enabled: true,
+            merge_members: true,
+            split_multi_module: true,
         },
         alphabetize: AlphabetizeConfig {
             enabled: true,
@@ -107,9 +143,6 @@ Config {
             ),
         },
         blank_lines: ToggleOnly {
-            enabled: true,
-        },
-        import_layout: ToggleOnly {
             enabled: true,
         },
         align_imports: AlignmentConfig {
@@ -142,6 +175,15 @@ Config {
         strip_align_padding: ToggleOnly {
             enabled: true,
         },
+        comment_spacing: ToggleOnly {
+            enabled: true,
+        },
+        align_comments: AlignmentConfig {
+            enabled: true,
+            max_shift: Cap(
+                16,
+            ),
+        },
         bare_imports: BareImportsConfig {
             allow: [],
             enabled: true,
@@ -173,8 +215,9 @@ Config {
         signature_annotations: ToggleOnly {
             enabled: true,
         },
-        line_overflow: ToggleOnly {
+        line_overflow: LineOverflowConfig {
             enabled: true,
+            suggest_string_splits: true,
         },
     },
     target_version: Some(

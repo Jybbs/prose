@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/fstring_holds_when_a_field_carries_the_target_quote/input.py
+---
+row = f'{data["key"]}'
+shout = f'say "hi" to {name}'
