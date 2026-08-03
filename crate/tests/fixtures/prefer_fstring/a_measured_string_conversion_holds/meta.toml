@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Width or Precision on `%s` Holds"
+
+description = '''
+A width on `%s` renders `None` where `{:8}` raises, and a precision cuts the
+rendered text where `{:.3}` measures the value itself.
+'''

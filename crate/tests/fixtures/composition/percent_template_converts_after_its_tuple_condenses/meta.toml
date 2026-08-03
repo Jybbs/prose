@@ -1,0 +1,9 @@
+[docs]
+previewable = true
+title       = "A Fractured Tuple Condenses Before Its Template Converts"
+
+description = '''
+**`collection-layout` gathers the tuple back onto one line first, then
+`prefer-fstring` measures the conversion against the budget** and moves each
+member inline.
+'''

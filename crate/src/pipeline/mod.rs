@@ -818,6 +818,7 @@ mod tests {
         config.rules.line_overflow.enabled = false;
         config.rules.miscased_constants.enabled = false;
         config.rules.modernize_annotations.enabled = false;
+        config.rules.prefer_fstring.enabled = false;
         config.rules.reassigned_constants.enabled = false;
         config.rules.shed_parentheses.enabled = false;
         config.rules.signature_annotations.enabled = false;

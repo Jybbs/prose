@@ -26,6 +26,7 @@ docstring-wrap            = false
 import-layout             = false
 miscased-constants        = { allow-pattern = "^_", enabled = false }
 modernize-annotations     = { enabled = false, rewrite-generics = false, rewrite-unions = false }
+prefer-fstring            = { enabled = false, rewrite-percent = false, rewrite-str-format = false }
 reassigned-constants      = { allow = ["LOG_LEVEL"], enabled = false }
 signature-annotations     = false
 signature-layout          = { enabled = false, max-params = false }

@@ -1,0 +1,4 @@
+total = "%s" % (
+    first
+    + second,
+)

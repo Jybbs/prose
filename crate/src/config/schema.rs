@@ -372,6 +372,32 @@ impl Default for ModernizeAnnotationsConfig {
     }
 }
 
+/// Configuration for the `prefer_fstring` rule, each facet gating one
+/// rewrite and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct PreferFstringConfig {
+    pub enabled: bool,
+    /// Converts printf-style `%` interpolation to an f-string, so
+    /// `"%s=%s" % (k, v)` reads as `f"{k}={v}"`. `false` leaves every
+    /// `%` template in place.
+    pub rewrite_percent: bool,
+    /// Converts a `str.format()` call to an f-string, so
+    /// `"{}={}".format(k, v)` reads as `f"{k}={v}"`. `false` leaves
+    /// every `str.format()` call in place.
+    pub rewrite_str_format: bool,
+}
+
+impl Default for PreferFstringConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            rewrite_percent: true,
+            rewrite_str_format: true,
+        }
+    }
+}
+
 /// Configuration for the `reassigned_constants` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -484,6 +510,7 @@ impl_rule_toggle!(
     CollectionLayoutConfig,
     MiscasedConstantsConfig,
     ModernizeAnnotationsConfig,
+    PreferFstringConfig,
     ReassignedConstantsConfig,
     SignatureLayoutConfig,
     SingleUseVariablesConfig,

@@ -34,3 +34,20 @@ pub(crate) fn insert_sorted_by_key<T, K: Ord>(vec: &mut Vec<T>, item: T, key: im
     let slot = vec.partition_point(|existing| key(existing) < key(&item));
     vec.insert(slot, item);
 }
+
+/// Byte offset of the first `:` in `s` that sits at paren-and-bracket
+/// depth zero, reading the walrus `:=` as one operator rather than as a
+/// colon. `None` when every colon is nested or `s` carries none.
+pub(crate) fn unbracketed_colon(s: &str) -> Option<usize> {
+    let mut depth = 0usize;
+    let bytes = s.as_bytes();
+    for (cursor, byte) in bytes.iter().enumerate() {
+        match byte {
+            b'(' | b'[' => depth += 1,
+            b')' | b']' => depth = depth.saturating_sub(1),
+            b':' if depth == 0 && bytes.get(cursor + 1) != Some(&b'=') => return Some(cursor),
+            _ => {}
+        }
+    }
+    None
+}

@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "Sign And Alternate-Form Flags Translate"
+
+description = '''
+The `+`, `#`, and blank-sign flags each carry into the format spec, the
+blank sign surviving only where no sign character supersedes it.
+'''

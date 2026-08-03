@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/a_triple_quoted_template_converts/input.py
+---
+banner = f"""{name}
+runs across two lines"""

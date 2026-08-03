@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "An Unknown Conversion Holds"
+
+description = '''
+The template grammar accepts the character where `str.format` does not, so
+the call is left to raise as written.
+'''

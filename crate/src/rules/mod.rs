@@ -22,6 +22,7 @@ pub(crate) mod import_layout;
 pub(crate) mod line_overflow;
 pub(crate) mod miscased_constants;
 pub(crate) mod modernize_annotations;
+pub(crate) mod prefer_fstring;
 pub(crate) mod reassigned_constants;
 pub(crate) mod shed_parentheses;
 pub(crate) mod signature_annotations;

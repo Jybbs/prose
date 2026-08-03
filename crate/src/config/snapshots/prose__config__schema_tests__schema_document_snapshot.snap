@@ -254,6 +254,26 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       },
       "type": "object"
     },
+    "PreferFstringConfig": {
+      "description": "Configuration for the `prefer_fstring` rule, each facet gating one\nrewrite and defaulting `true`.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "rewrite-percent": {
+          "default": true,
+          "description": "Converts printf-style `%` interpolation to an f-string, so\n`\"%s=%s\" % (k, v)` reads as `f\"{k}={v}\"`. `false` leaves every\n`%` template in place.",
+          "type": "boolean"
+        },
+        "rewrite-str-format": {
+          "default": true,
+          "description": "Converts a `str.format()` call to an f-string, so\n`\"{}={}\".format(k, v)` reads as `f\"{k}={v}\"`. `false` leaves\nevery `str.format()` call in place.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "PythonVersion": {
       "anyOf": [
         {
@@ -590,6 +610,21 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "rewrite-unions": true
           }
         },
+        "prefer-fstring": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PreferFstringConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "rewrite-percent": true,
+            "rewrite-str-format": true
+          }
+        },
         "reassigned-constants": {
           "anyOf": [
             {
@@ -920,6 +955,11 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true,
           "rewrite-generics": true,
           "rewrite-unions": true
+        },
+        "prefer-fstring": {
+          "enabled": true,
+          "rewrite-percent": true,
+          "rewrite-str-format": true
         },
         "reassigned-constants": {
           "allow": [],

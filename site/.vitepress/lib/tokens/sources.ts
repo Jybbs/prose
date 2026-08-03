@@ -72,6 +72,8 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'max-tiers',                   href: '/reference/configuration#per-rule-facets',       blurb: 'Cap the evaluation tiers that open their own sub-band.' },
     { key: 'overrides.paths',             href: '/reference/configuration#per-pattern-overrides', blurb: 'Glob list selecting the files an override entry applies its partial config to.' },
     { key: 'rewrite-generics',            href: '/reference/configuration#per-rule-facets',       blurb: 'Convert a `typing` generic to the builtin PEP 585 gave it.' },
+    { key: 'rewrite-percent',             href: '/reference/configuration#per-rule-facets',       blurb: 'Convert printf-style `%` interpolation to an f-string.' },
+    { key: 'rewrite-str-format',          href: '/reference/configuration#per-rule-facets',       blurb: 'Convert a `str.format()` call to an f-string.' },
     { key: 'rewrite-unions',              href: '/reference/configuration#per-rule-facets',       blurb: 'Rewrite `Optional` and `Union` to the PEP 604 pipe form.' },
     { key: 'sort-definitions',            href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder class and function definitions, holding each behind what it names.' },
     { key: 'sort-dict-keys',              href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder the keyed entries of a dict literal, off to hold the authored order.' },

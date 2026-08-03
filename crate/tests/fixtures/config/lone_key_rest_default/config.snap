@@ -64,6 +64,11 @@ Config {
             ),
             wrap_dict_entries: true,
         },
+        prefer_fstring: PreferFstringConfig {
+            enabled: true,
+            rewrite_percent: true,
+            rewrite_str_format: true,
+        },
         call_layout: CallLayoutConfig {
             enabled: true,
             max_args: InlineBudget(

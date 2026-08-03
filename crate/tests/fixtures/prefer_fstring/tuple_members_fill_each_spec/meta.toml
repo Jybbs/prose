@@ -1,0 +1,9 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Tuple Fills Each Spec in Order"
+
+description = '''
+Each `%s` reads the tuple member at its position, so every value moves
+inline where it renders.
+'''

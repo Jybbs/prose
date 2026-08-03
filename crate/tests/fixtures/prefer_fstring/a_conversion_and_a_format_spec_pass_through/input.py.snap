@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/a_conversion_and_a_format_spec_pass_through/input.py
+---
+shown = f"{record!r} in {column:>8}"

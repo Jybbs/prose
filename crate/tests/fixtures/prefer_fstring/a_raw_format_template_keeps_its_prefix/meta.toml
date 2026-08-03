@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Raw `str.format()` Template Comes Back As `rf`"
+
+description = '''
+The template parses under its raw reading, so no backslash in the body is
+taken for an escape.
+'''

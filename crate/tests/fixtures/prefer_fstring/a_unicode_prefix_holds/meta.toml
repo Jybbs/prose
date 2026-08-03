@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "A `u` Prefix Holds"
+
+description = '''
+An f-string carries no `u` marker, so the prefix is left for `normalize-
+literals` to drop.
+'''

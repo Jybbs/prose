@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/a_line_past_the_budget_holds/input.py
+---
+summary = "%s and %s and %s" % (
+    first_component_name,
+    second_component_name,
+    third_component_name,
+)

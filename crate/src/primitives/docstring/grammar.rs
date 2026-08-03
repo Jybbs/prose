@@ -7,6 +7,8 @@ use std::sync::LazyLock;
 
 use regex_lite::Regex;
 
+use crate::primitives::unbracketed_colon;
+
 static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^[A-Z][A-Za-z]*( [A-Z][A-Za-z]*)*:").expect("static pattern compiles")
 });
@@ -83,23 +85,6 @@ fn entry_head(trimmed: &str) -> Option<EntryHead<'_>> {
         desc_start: trimmed.len() - description.len(),
         name,
     })
-}
-
-/// Byte offset of the first `:` in `s` that sits at paren-and-bracket
-/// depth zero, skipping the colons nested inside a parenthesized type
-/// or a bracketed subscript. `None` when every colon is nested or the
-/// line carries none.
-fn unbracketed_colon(s: &str) -> Option<usize> {
-    let mut depth = 0usize;
-    for (cursor, byte) in s.bytes().enumerate() {
-        match byte {
-            b'(' | b'[' => depth += 1,
-            b')' | b']' => depth = depth.saturating_sub(1),
-            b':' if depth == 0 => return Some(cursor),
-            _ => {}
-        }
-    }
-    None
 }
 
 #[cfg(test)]

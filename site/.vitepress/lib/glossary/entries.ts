@@ -305,7 +305,9 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'in docstring position, since Python assigns it no `__doc__`, leaving it outside '
                + 'every docstring rule. The layout rules treat the replacement field as opaque '
                + 'too, since a line break spliced there parses only on Python 3.12 and later, '
-               + 'leaving an over-wide interpolation for `line-overflow` to report.',
+               + 'leaving an over-wide interpolation for `line-overflow` to report. That same '
+               + 'opacity is why `prefer-fstring` measures a conversion against the line budget '
+               + 'before it emits one.',
     families   : ['docs', 'formatting', 'layout', 'lint'],
     href       : 'https://docs.python.org/3/reference/lexical_analysis.html#f-strings'
   },
