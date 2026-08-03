@@ -1,7 +1,9 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, inlineNodeField }   from '../markdown/renderer'
-import type { InlineNode }               from '../markdown/inline-nodes'
+import type { InlineNode }              from '../markdown/inline-nodes'
+import { getRenderer, inlineNodeField } from '../markdown/renderer'
+import { discoverRuleSlugs }            from '../rules/discovery'
+import { rulesDir }                     from '../shared/paths'
 
 interface ExitCode {
   code        : number
@@ -19,6 +21,13 @@ interface ExitCodeSource {
   label   : string
   summary : string
 }
+
+const rulesDirectory = rulesDir(import.meta.url)
+
+const SHIPPED_LINTS = discoverRuleSlugs(rulesDirectory)
+  .filter(rule => rule.lints)
+  .map(rule => `\`${rule.slug}\``)
+  .join(', ')
 
 const SOURCES: readonly ExitCodeSource[] = [
   {
@@ -44,8 +53,7 @@ const SOURCES: readonly ExitCodeSource[] = [
     code   : 2,
     detail : [
       'Surfaces under both `prose check` and `prose format`.',
-      'The shipped lints contribute: `legacy-union-syntax`, `reassigned-constants`, '
-      + '`step-narration`, `single-use-variables`.'
+      `The shipped lints contribute: ${SHIPPED_LINTS}.`
     ],
     label  : 'Lint violation',
     summary: 'At least one lint-only diagnostic surfaced.'
@@ -73,7 +81,7 @@ const SOURCES: readonly ExitCodeSource[] = [
 ]
 
 export default defineLoader({
-  watch: [],
+  watch: [`${rulesDirectory}/*/*.md`],
   async load(): Promise<readonly ExitCode[]> {
     const md = await getRenderer()
     return inlineNodeField(md, SOURCES, 'detail')

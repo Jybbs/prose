@@ -1,0 +1,28 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/line_overflow/indented_string_hangs_from_its_own_indent/input.py
+---
+[
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 57,
+      "row": 2
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "\"the quick brown fox jumps over the lazy dog\"",
+          "content": "(\n        \"the quick brown fox jumps \"\n        \"over the lazy dog\"\n    )"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 2
+    },
+    "message": "Line is 56 columns, over the 40-column budget, with a legal reshape at the string literal"
+  }
+]

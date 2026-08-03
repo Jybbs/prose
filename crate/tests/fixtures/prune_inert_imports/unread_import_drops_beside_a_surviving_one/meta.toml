@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Unread Import Drops While a Sibling Keeps Its Module"
+
+description = '''
+Nothing reads the `json` namespace, and the `from json import loads` line keeps the module imported. **The bare import drops** rather than being reported.
+'''

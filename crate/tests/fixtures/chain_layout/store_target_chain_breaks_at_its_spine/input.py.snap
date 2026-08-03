@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/chain_layout/store_target_chain_breaks_at_its_spine/input.py
+---
+(
+    base.one()
+        .two()
+        .three().attr
+) = value
+del (
+    other.first()
+         .second()
+         .third().slot
+)

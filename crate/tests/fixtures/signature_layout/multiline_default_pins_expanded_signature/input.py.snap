@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/signature_layout/multiline_default_pins_expanded_signature/input.py
+---
+def configure(
+    timeout: int = 30,
+    opts: dict = {
+        "a": 1
+    },
+    mode: str = "auto",
+):
+    pass

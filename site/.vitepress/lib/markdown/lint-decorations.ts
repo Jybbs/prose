@@ -18,7 +18,6 @@ export function lintDecorations(findings: readonly LintFinding[]): DecorationIte
       }
       const suggestion = finding.fix?.edits[0]
       if (suggestion) {
-        properties['data-before']    = suggestion.before
         properties['data-suggested'] = suggestion.content
       }
       return {

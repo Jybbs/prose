@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Parenthesized Receiver Keeps Its Grouping Parens"
+
+description = '''
+The receiver runs from the chain's own opening column to the dot below the first link, so a grouping pair the receiver needs for precedence travels with it onto the head row.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Literal That Fits One Indent Down Draws No Suggestion"
+
+description = '''
+The overflow comes from the assignment target's width rather than from the literal's, so the literal would fit whole one indent below and no split is left to make. Wrapping it in parentheses unsplit is a reshape this rule does not offer, so the finding stays a bare report and withholds *"with no legal reshape"*, because one exists here.
+'''

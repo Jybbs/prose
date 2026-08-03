@@ -20,7 +20,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use super::dict::rewrite_dict_text;
 use crate::{
     primitives::{
-        binding::single_name_target,
+        binding::{sequence_elts, single_name_target},
         docstring::{body_docstring, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, insert_edit, narrowed_replacement},
         effect::value_is_effectful,
@@ -230,16 +230,6 @@ fn entry_key<'e>(name: &'e str, signature: Option<&[&str]>) -> (usize, &'e str) 
     match signature.and_then(|names| names.iter().position(|&n| n == name)) {
         Some(i) => (i, ""),
         None => (usize::MAX, name),
-    }
-}
-
-/// Returns the elements of a list or tuple expression. `None` for
-/// any other shape.
-fn sequence_elts(expr: &Expr) -> Option<&[Expr]> {
-    match expr {
-        Expr::List(l) => Some(&l.elts),
-        Expr::Tuple(t) => Some(&t.elts),
-        _ => None,
     }
 }
 

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Whitespace-Free Literal Is Offered No Break"
+
+description = '''
+A URL carries no interior whitespace, so no adjacent-literal form reproduces its value and the finding stays a bare report ending *"with no legal reshape"*. The same holds for a hash or a dense regex, where the phrase means what it says rather than naming a break the literal cannot take.
+'''

@@ -25,9 +25,9 @@ use crate::{
         aligner,
         docstring::docstring_slots,
         edit::{narrowed_replacement, singleton_groups},
-        layout::explode_parens,
+        layout::{Separator, explode_parens},
         orderer::any_sibling_shares_line,
-        reserve::{landing_column, reserved_columns},
+        reserve::{reserved_columns, settled_column},
         tokens::{is_closer, is_opener},
     },
     rule::{Rule, RuleId},
@@ -136,8 +136,9 @@ impl<'a> Layout<'a> {
         if self.source.intersects_comment(pair) {
             return;
         }
+        let start = span.start();
         if !self.source.contains_line_break(span)
-            && landing_column(self.source, &self.reservations, span.start())
+            && settled_column(&self.reservations, start, || self.source.column_of(start))
                 + self.source.slice(span).width()
                 <= self.code_line_length
         {
@@ -153,8 +154,7 @@ impl<'a> Layout<'a> {
                 indent,
                 texts.len(),
                 |out, i| out.push_str(texts[i]),
-                "",
-                false,
+                Separator::None,
             )
         };
         self.edits

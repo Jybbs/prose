@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Skipped Line Keeps the Import Nothing Reads"
+
+description = '''
+Nothing references `json`, and a `# prose: skip` directive sits on its line. **The prune is dropped as a whole group**, leaving the import exactly as written.
+'''

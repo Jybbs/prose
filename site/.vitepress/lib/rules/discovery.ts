@@ -12,6 +12,7 @@ export interface DiscoveredRule {
   category : registries.RuleCategory
   family   : registries.RuleFamily
   href     : string
+  lints    : boolean
   related  : readonly string[]
   slug     : string
 }
@@ -52,6 +53,7 @@ export const discoverRules = memoizeByPath((rulesDirectory): RuleDiscovery => {
         category : registries.categoryOf(family),
         family,
         href     : ruleRoute(family, slug),
+        lints    : fm.lints === true || registries.categoryOf(family) === 'lint',
         related  : relatedSlugs,
         slug
       })

@@ -3,5 +3,5 @@ previewable = false
 title       = "An Implicit Concatenation Stays Quiet"
 
 description = '''
-A plain string and an f-string join as one implicitly concatenated run, which `string-concat-layout` breaks one literal per line, so the over-cap line is left for that rule rather than surfacing as a finding.
+A plain string and an f-string join as one implicitly concatenated run, which `string-concat-layout` breaks one literal per line, so the over-cap line is left for that rule rather than surfacing as a finding. The split suggestion reshapes one literal and a line written as adjacent literals carries several, so this shape falls to the layout rule either way.
 '''

@@ -1,0 +1,7 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/chain_layout/store_target_chain_breaks_at_its_spine/input.py
+---
+chain-layout@0..29
+chain-layout@42..77

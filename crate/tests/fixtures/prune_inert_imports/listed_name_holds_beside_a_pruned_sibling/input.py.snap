@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/listed_name_holds_beside_a_pruned_sibling/input.py
+---
+from json import dumps
+
+__all__ = ["dumps"]

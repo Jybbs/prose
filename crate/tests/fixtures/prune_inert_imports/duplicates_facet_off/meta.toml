@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "The `drop-duplicates` Facet Off Keeps Every Repeat"
+
+description = '''
+With `drop-duplicates = false` the repeated `import os` **stays as written** while the rest of the rule runs on.
+'''

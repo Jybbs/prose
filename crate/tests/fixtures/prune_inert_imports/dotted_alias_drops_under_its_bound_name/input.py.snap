@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/dotted_alias_drops_under_its_bound_name/input.py
+---
+
+value = 1

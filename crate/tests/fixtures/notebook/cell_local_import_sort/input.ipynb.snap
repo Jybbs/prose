@@ -6,12 +6,18 @@ input_file: crate/tests/fixtures/notebook/cell_local_import_sort/input.ipynb
 import os
 import sys
 
+print(os, sys)
+
 # --- cell 2 ---
 
 import abc
 import json
 
+print(abc, json)
+
 # --- cell 3 ---
 
 import io
 import re
+
+print(io, re)
