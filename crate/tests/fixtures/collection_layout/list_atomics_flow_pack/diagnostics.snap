@@ -1,7 +1,7 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/collection_layout/list_atomics_flow_pack/input.py
+input_file: crate/tests/fixtures/collection_layout/list_atomics_flow_pack/input.py
 ---
-collection-layout@151..187
+collection-layout@152..177
 collection-layout@47..130

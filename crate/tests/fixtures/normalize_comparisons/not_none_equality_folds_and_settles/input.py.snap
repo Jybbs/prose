@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_comparisons/not_none_equality_folds_and_settles/input.py
+---
+def present(value):
+    if value is not None:
+        return value
+    return value

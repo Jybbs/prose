@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Backslash-Continued Run Is Already One per Line"
+
+description = '''
+A run continued across lines by a backslash **carries one literal per line already**, so it falls under the same hold a parenthesized stack does and keeps its continuation style.
+'''

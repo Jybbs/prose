@@ -2,10 +2,11 @@
 //! body-statement of the module, each class, and each function that
 //! holds a string literal as its first expression statement.
 //! Implementors of [`DocstringHandler`] receive every such docstring
-//! literal in source order via the trait's `walk` method. Implicitly
-//! concatenated docstring expressions are skipped. The `body`,
-//! `grammar`, `scan`, and `section` submodules carry the text-level
-//! helpers for walking a docstring body directly.
+//! literal in source order via the trait's `walk` method, which skips an
+//! implicitly concatenated docstring expression where `docstring_slots`
+//! reports the slot whatever its part count. The `body`, `grammar`,
+//! `scan`, and `section` submodules carry the text-level helpers for
+//! walking a docstring body directly.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -14,7 +15,10 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextRange};
 
-use crate::{primitives::scope::scoped_body, source::Source};
+use crate::{
+    primitives::{scope::scoped_body, walk::filter_map_over_stmts},
+    source::Source,
+};
 
 mod body;
 mod grammar;
@@ -67,25 +71,21 @@ impl<'a, H: DocstringHandler> StatementVisitor<'a> for Visitor<'_, H> {
 /// Returns `body`'s PEP 257 docstring literal, its first statement
 /// when that is a single-part string expression.
 pub(crate) fn body_docstring(body: &[Stmt]) -> Option<&StringLiteral> {
-    body.first()
-        .and_then(Stmt::as_expr_stmt)
-        .and_then(|e| e.value.as_string_literal_expr())
-        .and_then(ExprStringLiteral::as_single_part_string)
+    leading_string(body).and_then(ExprStringLiteral::as_single_part_string)
 }
 
-/// Every docstring literal's range in `source`, ascending by start.
-pub(crate) fn docstring_ranges(source: &Source) -> Vec<TextRange> {
-    struct Collector(Vec<TextRange>);
-
-    impl DocstringHandler for Collector {
-        fn handle(&mut self, lit: &StringLiteral) {
-            self.0.push(lit.range());
-        }
-    }
-
-    let mut collector = Collector(Vec::new());
-    collector.walk(source);
-    collector.0
+/// The range of the leading string expression in `body` and in every
+/// class and function body nested inside it, the slot a docstring
+/// occupies whatever its part count. An implicitly concatenated
+/// docstring lands here where [`body_docstring`] skips it.
+pub(crate) fn docstring_slots(body: &[Stmt]) -> Vec<TextRange> {
+    leading_string(body)
+        .map(Ranged::range)
+        .into_iter()
+        .chain(filter_map_over_stmts(body, |stmt| {
+            Some(leading_string(scoped_body(stmt)?.0)?.range())
+        }))
+        .collect()
 }
 
 /// Walks every docstring in `source` and gathers the edits `f` produces
@@ -124,8 +124,19 @@ where
     collector.groups
 }
 
+/// `body`'s leading string expression, the slot a docstring occupies
+/// whether or not that expression is a single part.
+fn leading_string(body: &[Stmt]) -> Option<&ExprStringLiteral> {
+    body.first()
+        .and_then(Stmt::as_expr_stmt)
+        .and_then(|e| e.value.as_string_literal_expr())
+}
+
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+    use ruff_text_size::Ranged;
+
     use super::*;
     use crate::testing::parse;
 
@@ -179,6 +190,23 @@ mod tests {
             "def outer():\n    \"\"\"o\"\"\"\n    def inner():\n        \"\"\"i\"\"\"\n        pass\n",
         );
         assert_eq!(Probe::run(&s), ["o", "i"]);
+    }
+
+    #[rstest]
+    #[case("x = 1\n", 0)]
+    #[case("\"\"\"M\"\"\"\n", 1)]
+    #[case("\"a\" \"b\"\n", 1)]
+    #[case("b\"a\" b\"b\"\n", 0)]
+    #[case("def f():\n    helper()\n    return 1\n", 0)]
+    #[case(
+        "\"\"\"M\"\"\"\nclass C:\n    \"\"\"C\"\"\"\n    def m(self):\n        \"\"\"m\"\"\"\n        pass\n",
+        3
+    )]
+    fn docstring_slots_collects_every_leading_string_expression(
+        #[case] src: &str,
+        #[case] expected: usize,
+    ) {
+        assert_eq!(docstring_slots(&parse(src).ast().body).len(), expected);
     }
 
     #[test]

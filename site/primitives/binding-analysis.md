@@ -1,5 +1,5 @@
 ---
-consumedBy: [single-use-variables, unused-future-annotations]
+consumedBy: [band-constants, bare-imports, miscased-constants, modernize-annotations, prune-inert-imports, reassigned-constants, single-use-variables]
 consumes: [source]
 layer: analysis
 stability: internal
@@ -24,7 +24,7 @@ A downstream consumer can:
 
 A downstream consumer cannot:
 
-- Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `first_write_offset`, `is_defined_before`, `module_attribute_count`, `module_function_reads`, `module_reassigned`, `module_used_bare`, `unpack_target`, `usage_count`, or `walrus_in_condition` on the returned reference. Every reader is `pub(crate)`.
+- Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `first_write_offset`, `is_defined_before`, `module_attribute_count`, `module_function_reads`, `module_reassigned`, `module_usage_count`, `module_used_bare`, `unpack_target`, `usage_count`, or `walrus_in_condition` on the returned reference. Every reader is `pub(crate)`.
 - Implement a custom rule that consumes the binding table. The `Rule` trait is `pub(crate)`.
 
 The methods stabilize toward `1.0`, where every reader becomes `pub` and the `Rule` trait opens so downstream consumers can implement project-specific binding-aware rules.
@@ -39,10 +39,12 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `binding_name(binding: BindingId) -> &str` returns the bound name.
 - `bindings_in_scope(stmt: &Stmt) -> impl Iterator<Item = BindingId>` lists every binding introduced in the lexical scope that contains the statement.
 - `first_write_offset(binding: BindingId) -> TextSize` returns the offset of the first write.
-- `is_defined_before(name: &str, offset: TextSize) -> bool` is the inverse-lookup convenience used by [[unused-future-annotations]] when checking that every name appearing in an annotation resolves to an unconditional binding introduced earlier *(a name written only inside a conditional branch like `if`, `for`, `while`, `try`, or `match` reads as runtime-unavailable)*.
+- `is_deleted(name: &str) -> bool` reports whether a `del` statement anywhere in the module names a binding, which [[prune-inert-imports]] reads to hold an import whose `del` would otherwise be left raising `NameError`.
+- `is_defined_before(name: &str, offset: TextSize) -> bool` is the inverse-lookup convenience used by [[prune-inert-imports]] when checking that every name appearing in an annotation resolves to an unconditional binding introduced earlier *(a name written only inside a conditional branch like `if`, `for`, `while`, `try`, or `match` reads as runtime-unavailable)*.
 - `module_attribute_count(name: &str) -> usize` counts the distinct attributes read off a module-scope name *(`os.environ` and `os.getcwd` count as two)*, which [[bare-imports]] reads to weigh how widely a bare import reaches.
 - `module_function_reads(name: &str) -> Option<&[TextSize]>` returns the read offsets of a module-scope name bound exactly once as a function definition, which [[call-layout]] uses through `module_call_params` to resolve the signature a module-function call binds, so it names the call's positional arguments when exploding it.
 - `module_reassigned(name: &str) -> bool` reports whether a module-scope name carries more than one write or an augmented assignment, which [[reassigned-constants]], [[miscased-constants]], and [[alphabetize]] read to skip names that are not write-once.
+- `module_usage_count(name: &str) -> usize` counts every read recorded against a module-scope name, which [[modernize-annotations]] weighs against the reads its own rewrite consumed and [[prune-inert-imports]] reads directly to decide whether an import binding still has a reader.
 - `module_used_bare(name: &str) -> bool` reports whether a module-scope name is ever read without an attribute access *(the namespace object itself is used)*, which [[bare-imports]] reads before suggesting a `from` import.
 - `unpack_target(binding: BindingId) -> Option<UnpackKind>` returns the unpack disposition of a binding whose sole write is a multi-name tuple or list target, which [[single-use-variables]] reads to choose between exempting the target and naming a subscript rewrite.
 - `usage_count(binding: BindingId) -> usize` counts every read site.

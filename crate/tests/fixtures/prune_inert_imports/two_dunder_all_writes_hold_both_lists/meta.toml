@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Two `__all__` Writes Hold Both Lists"
+
+description = '''
+A module writes `__all__` twice, and the rule reads the union rather than the last write, so **both `dumps` and `loads` hold their import** even though only the second list publishes at runtime.
+'''

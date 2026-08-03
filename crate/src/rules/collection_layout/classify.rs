@@ -1,12 +1,17 @@
 //! Item classification for collection layout: which expressions are
 //! atomic, layoutable, or force expansion, and how an atomic run
-//! partitions into flow and one-per-line segments.
+//! partitions into flow and one-per-line segments, plus whether a
+//! literal's source text is already the flush bracketed column the
+//! expand path emits.
 
 use std::ops::Range;
 
 use ruff_python_ast::{Expr, helpers::is_dotted_name};
 
-use crate::primitives::{layout::is_layoutable, orderer::slot_runs};
+use crate::primitives::{
+    layout::{flush_bracket_open, is_layoutable},
+    orderer::slot_runs,
+};
 
 /// Describes how a contiguous slice of items should lay out.
 #[derive(Debug, PartialEq)]
@@ -54,6 +59,22 @@ pub(super) fn is_collapse_only(expr: &Expr) -> bool {
 /// collapse-only forms, a subscript and the four comprehensions.
 pub(super) fn is_collapsible(expr: &Expr) -> bool {
     is_layoutable(expr) || is_collapse_only(expr)
+}
+
+/// True when `slice`, a collection literal's source text, already
+/// carries the flush bracket shape the expand path emits, its opening
+/// bracket ending its line and its closing bracket opening its own.
+pub(super) fn is_column_shaped(slice: &str) -> bool {
+    flush_bracket_open(slice).is_some_and(|(_, body)| {
+        body.rsplit_once('\n')
+            .is_some_and(|(_, close)| close.trim_start().len() == 1)
+    })
+}
+
+/// True for a literal carrying more than one entry, `requires_expand`
+/// apart from the one-entry `Dict`.
+pub(super) fn is_multi_entry(expr: &Expr) -> bool {
+    requires_expand(expr) && expr.as_dict_expr().is_none_or(|dict| dict.len() > 1)
 }
 
 /// The ASCII-space run `gap` opens with when those spaces sit directly
@@ -148,6 +169,36 @@ mod tests {
         let source = parse(src);
         let expr = first_expr(&source);
         assert_eq!(is_collapsible(expr), expected);
+    }
+
+    #[rstest]
+    #[case("[\n    1,\n    2,\n]", true)]
+    #[case("{\n    'a': 1\n}", true)]
+    #[case("(\n    'only',\n)", true)]
+    #[case("[\r\n    1,\r\n]", true)]
+    #[case("[1,\n 2]", false)]
+    #[case("(\n    value,)", false)]
+    #[case("{\n}", false)]
+    #[case("[1, 2]", false)]
+    fn is_column_shaped_wants_both_brackets_alone_on_their_lines(
+        #[case] slice: &str,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(is_column_shaped(slice), expected);
+    }
+
+    #[rstest]
+    #[case("[a, b]", true)]
+    #[case("{a: 1, b: 2}", true)]
+    #[case("(a, b)", true)]
+    #[case("{a: 1}", false)]
+    #[case("[a]", false)]
+    #[case("()", false)]
+    #[case("a, b", false)]
+    fn is_multi_entry_wants_two_bracketed_entries(#[case] src: &str, #[case] expected: bool) {
+        let source = parse(src);
+        let expr = first_expr(&source);
+        assert_eq!(is_multi_entry(expr), expected);
     }
 
     #[rstest]

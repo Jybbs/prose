@@ -1,0 +1,7 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/modernize_annotations/grouping_parens_absorbed/input.py
+---
+modernize-annotations@0..28
+modernize-annotations@46..61

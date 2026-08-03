@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `prose: off` Region Holds Its Comment Column"
+
+description = '''
+The two rows inside the off region keep the gaps they were written with, and the pair below the `prose: on` marker settles onto a shared column. The region reaches `align-comments` through the same suppression map the per-rule skip directive uses.
+'''

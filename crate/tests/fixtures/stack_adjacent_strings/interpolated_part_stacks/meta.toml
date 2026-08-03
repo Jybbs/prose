@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Run Mixing an f-String with a Plain Literal Breaks"
+
+description = '''
+A run whose parts mix an f-string with a plain literal **breaks between the parts**, leaving each replacement field untouched inside the part that carries it.
+'''

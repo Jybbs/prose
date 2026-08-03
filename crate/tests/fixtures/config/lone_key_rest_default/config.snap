@@ -28,17 +28,30 @@ Config {
             unify_prefixes: true,
             unify_quotes: true,
         },
-        unused_future_annotations: ToggleOnly {
+        prune_inert_imports: PruneInertImportsConfig {
+            drop_duplicates: true,
+            drop_unreferenced: true,
             enabled: true,
         },
         strip_none_return: ToggleOnly {
             enabled: true,
+        },
+        modernize_annotations: ModernizeAnnotationsConfig {
+            enabled: true,
+            rewrite_generics: true,
+            rewrite_unions: true,
         },
         strip_trailing_commas: ToggleOnly {
             enabled: true,
         },
         shed_parentheses: ToggleOnly {
             enabled: true,
+        },
+        normalize_comparisons: NormalizeComparisonsConfig {
+            enabled: true,
+            rewrite_identity: true,
+            rewrite_negation: true,
+            rewrite_operand_order: true,
         },
         docstring_frame: ToggleOnly {
             enabled: true,
@@ -49,10 +62,21 @@ Config {
         group_imports: ToggleOnly {
             enabled: true,
         },
+        chain_layout: ChainLayoutConfig {
+            enabled: true,
+            max_links: InlineBudget(
+                Some(
+                    2,
+                ),
+            ),
+            max_shift: Cap(
+                16,
+            ),
+        },
         collection_layout: CollectionLayoutConfig {
-            collapse: true,
             enabled: true,
             explode: true,
+            keep_multiline_literals: true,
             max_atomics: InlineBudget(
                 Some(
                     8,
@@ -81,11 +105,19 @@ Config {
                 ),
             ),
         },
+        stack_adjacent_strings: ToggleOnly {
+            enabled: true,
+        },
         align_match_case: AlignmentConfig {
             enabled: true,
             max_shift: Cap(
                 16,
             ),
+        },
+        import_layout: ImportLayoutConfig {
+            enabled: true,
+            merge_members: true,
+            split_multi_module: true,
         },
         alphabetize: AlphabetizeConfig {
             enabled: true,
@@ -97,7 +129,7 @@ Config {
         },
         band_constants: BandConstantsConfig {
             enabled: true,
-            group_constants: true,
+            group_subcategories: true,
             max_tiers: InlineBudget(
                 Some(
                     2,
@@ -105,9 +137,6 @@ Config {
             ),
         },
         blank_lines: ToggleOnly {
-            enabled: true,
-        },
-        import_layout: ToggleOnly {
             enabled: true,
         },
         align_imports: AlignmentConfig {
@@ -140,6 +169,15 @@ Config {
         strip_align_padding: ToggleOnly {
             enabled: true,
         },
+        comment_spacing: ToggleOnly {
+            enabled: true,
+        },
+        align_comments: AlignmentConfig {
+            enabled: true,
+            max_shift: Cap(
+                16,
+            ),
+        },
         bare_imports: BareImportsConfig {
             allow: [],
             enabled: true,
@@ -159,9 +197,6 @@ Config {
         step_narration: ToggleOnly {
             enabled: true,
         },
-        legacy_union_syntax: ToggleOnly {
-            enabled: true,
-        },
         single_use_variables: SingleUseVariablesConfig {
             allow_pattern: Regex(
                 "^_",
@@ -174,8 +209,9 @@ Config {
         signature_annotations: ToggleOnly {
             enabled: true,
         },
-        line_overflow: ToggleOnly {
+        line_overflow: LineOverflowConfig {
             enabled: true,
+            suggest_string_splits: true,
         },
     },
     target_version: Some(

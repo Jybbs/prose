@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Run inside a Bracket Breaks without Adding Parentheses"
+
+description = '''
+A run the enclosing call's parentheses already carry **breaks in place**, each later literal landing at the indent of the row the run opens on rather than gaining a nested pair of its own.
+'''

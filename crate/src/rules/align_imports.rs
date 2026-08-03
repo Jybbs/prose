@@ -31,6 +31,8 @@ pub(crate) struct AlignImports {
 }
 
 impl AlignImports {
+    pub(crate) const MESSAGE: &'static str = "align consecutive `import`s";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             settings: aligner::Settings::from(&config.rules.align_imports)

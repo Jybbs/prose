@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Each Part Keeps the Prefix and Quote the Source Wrote"
+
+description = '''
+The opener and closer are sliced out of the source rather than rebuilt, so an `r` prefix and a single quote ride onto every part. Rebuilding them from the quote style alone would drop the prefix and leave a suggestion that does not parse.
+'''

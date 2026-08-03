@@ -17,7 +17,7 @@ use crate::{
     primitives::{
         docstring::{DocstringBody, docstring_body, indent_prefix, rewrite_docstrings},
         edit::narrowed_replacement,
-        quoting::abuts_triple_closer,
+        quoting::{TRIPLE_QUOTE, abuts_triple_closer},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -26,6 +26,9 @@ use crate::{
 pub(crate) struct DocstringFrame;
 
 impl DocstringFrame {
+    pub(crate) const MESSAGE: &'static str =
+        "canonicalize docstring quotes and frame the opener and closer on their own lines";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }
@@ -66,7 +69,7 @@ impl Rule for DocstringFrame {
 /// the closer.
 fn requote_edits(source: &Source, lit: &StringLiteral, body: &DocstringBody) -> Vec<Edit> {
     let flags = lit.flags;
-    if flags.quote_str() == "\"\"\""
+    if flags.quote_str() == TRIPLE_QUOTE
         || body.text.trim_whitespace().is_empty()
         || abuts_triple_closer(&[body.text], !body.is_multiline())
     {
@@ -76,7 +79,7 @@ fn requote_edits(source: &Source, lit: &StringLiteral, body: &DocstringBody) -> 
     let closer = TextRange::new(body.range.end(), body.range.end() + flags.closer_len());
     [opener, closer]
         .into_iter()
-        .filter_map(|range| narrowed_replacement(source, range, "\"\"\"".to_owned()))
+        .filter_map(|range| narrowed_replacement(source, range, TRIPLE_QUOTE.to_owned()))
         .collect()
 }
 

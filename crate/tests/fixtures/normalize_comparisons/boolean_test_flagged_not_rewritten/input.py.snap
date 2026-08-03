@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_comparisons/boolean_test_flagged_not_rewritten/input.py
+---
+def gate(flag, verbose):
+    if flag == True:
+        return verbose
+    if verbose != False:
+        return flag
+    return flag

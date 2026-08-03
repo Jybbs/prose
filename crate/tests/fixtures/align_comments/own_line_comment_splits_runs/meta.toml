@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Own-Line Comment Divides Two Columns"
+
+description = '''
+A comment on its own line is a heading for what follows rather than an annotation on a line of code, so it never joins a column and it ends the run above it. The pairs on either side settle independently, leaving the heading flush at the indent it was written on.
+'''

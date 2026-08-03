@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/chain_layout/link_spanning_lines_holds/input.py
+---
+result = query.filter(
+    alpha,
+    beta,
+).order(b).limit(c)

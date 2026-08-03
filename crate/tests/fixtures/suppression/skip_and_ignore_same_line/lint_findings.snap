@@ -7,7 +7,7 @@ input_file: crate/tests/fixtures/suppression/skip_and_ignore_same_line/input.py
   {
     "code": "reassigned-constants",
     "end_location": {
-      "column": 21,
+      "column": 20,
       "row": 1
     },
     "fix": null,
@@ -20,7 +20,7 @@ input_file: crate/tests/fixtures/suppression/skip_and_ignore_same_line/input.py
   {
     "code": "reassigned-constants",
     "end_location": {
-      "column": 21,
+      "column": 20,
       "row": 3
     },
     "fix": null,

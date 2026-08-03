@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Constant-Led Test Flips So the Variable Leads"
+
+description = '''
+A literal on the left trades places with the variable on the right, and an ordered operator reverses as it crosses so the check reads the same.
+'''

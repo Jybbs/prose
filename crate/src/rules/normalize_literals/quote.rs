@@ -1,5 +1,7 @@
 //! Quote unification for the literal parts of a string.
 
+use std::iter;
+
 use ruff_python_ast::{AnyStringFlags, StringFlags, str::Quote};
 
 use crate::primitives::quoting::abuts_triple_closer;
@@ -38,11 +40,11 @@ pub(super) fn requoted(parts: &[&str], flags: AnyStringFlags) -> Option<Requote>
     if flags.is_triple_quoted() {
         return triple_requoted(parts, flags);
     }
-    let current = flags.quote_style();
-    let target = current.opposite();
     if flags.prefix().is_raw() {
         return raw_requoted(parts, flags);
     }
+    let current = flags.quote_style();
+    let target = current.opposite();
     let transcribed: Vec<Transcription> = parts
         .iter()
         .map(|part| transcribe(part, current, target))
@@ -71,18 +73,25 @@ fn delimiter_for(flags: AnyStringFlags, target: Quote) -> &'static str {
     AnyStringFlags::new(flags.prefix(), target, flags.triple_quotes()).quote_str()
 }
 
+/// Each character of `part` paired with whether a backslash escaped it,
+/// the backslash of an escape pair consuming the character after it so
+/// a `\\` pair never masks the character beyond. A trailing lone
+/// backslash yields itself unescaped.
+fn escaped_chars(part: &str) -> impl Iterator<Item = (char, bool)> {
+    let mut chars = part.chars();
+    iter::from_fn(move || {
+        let c = chars.next()?;
+        Some(match c {
+            '\\' => chars.next().map_or(('\\', false), |next| (next, true)),
+            _ => (c, false),
+        })
+    })
+}
+
 /// True when every `target` in `part` already sits behind a backslash,
 /// the condition a raw string swaps under.
 fn escaped_throughout(part: &str, target: Quote) -> bool {
-    let mut chars = part.chars();
-    while let Some(c) = chars.next() {
-        if c == '\\' {
-            chars.next();
-        } else if c == target.as_char() {
-            return false;
-        }
-    }
-    true
+    escaped_chars(part).all(|(c, escaped)| escaped || c != target.as_char())
 }
 
 /// The requote a raw string settles on, `None` when it keeps its
@@ -99,8 +108,7 @@ fn raw_requoted(parts: &[&str], flags: AnyStringFlags) -> Option<Requote> {
 /// A quote character scores once wherever it appears, whether or not
 /// the source spelled it with a backslash, so each body carries only
 /// the escapes its own delimiter needs. Every other escape sequence
-/// passes through both bodies verbatim, the backslash consuming the
-/// character after it so a `\\` pair never masks the quote beyond.
+/// passes through both bodies verbatim.
 fn transcribe(part: &str, current: Quote, target: Quote) -> Transcription {
     let mut written = Transcription {
         current_body: String::with_capacity(part.len()),
@@ -108,40 +116,24 @@ fn transcribe(part: &str, current: Quote, target: Quote) -> Transcription {
         target_body: String::with_capacity(part.len()),
         target_escapes: 0,
     };
-    let mut chars = part.chars();
-    while let Some(c) = chars.next() {
-        let quote = if c == '\\' {
-            match chars.next() {
-                Some(next) if next == current.as_char() || next == target.as_char() => next,
-                Some(next) => {
-                    for body in [&mut written.current_body, &mut written.target_body] {
-                        body.push('\\');
-                        body.push(next);
-                    }
-                    continue;
-                }
-                None => {
-                    written.current_body.push('\\');
-                    written.target_body.push('\\');
-                    continue;
-                }
-            }
-        } else {
-            c
-        };
-        if quote == current.as_char() {
+    for (c, escaped) in escaped_chars(part) {
+        if c == current.as_char() {
             written.current_escapes += 1;
             written.current_body.push('\\');
-            written.current_body.push(quote);
-            written.target_body.push(quote);
-        } else if quote == target.as_char() {
+            written.current_body.push(c);
+            written.target_body.push(c);
+        } else if c == target.as_char() {
             written.target_escapes += 1;
-            written.current_body.push(quote);
+            written.current_body.push(c);
             written.target_body.push('\\');
-            written.target_body.push(quote);
+            written.target_body.push(c);
         } else {
-            written.current_body.push(quote);
-            written.target_body.push(quote);
+            for body in [&mut written.current_body, &mut written.target_body] {
+                if escaped {
+                    body.push('\\');
+                }
+                body.push(c);
+            }
         }
     }
     written
@@ -201,6 +193,18 @@ mod tests {
             TripleQuotes::Yes,
             AnyStringPrefix::Regular(StringLiteralPrefix::Empty),
         )
+    }
+
+    #[rstest]
+    #[case("ab", &[('a', false), ('b', false)])]
+    #[case(r"a\'b", &[('a', false), ('\'', true), ('b', false)])]
+    #[case(r"a\\'", &[('a', false), ('\\', true), ('\'', false)])]
+    #[case("a\\", &[('a', false), ('\\', false)])]
+    fn escaped_chars_pairs_each_character_with_the_backslash_that_reached_it(
+        #[case] part: &str,
+        #[case] expected: &[(char, bool)],
+    ) {
+        assert_eq!(escaped_chars(part).collect::<Vec<_>>(), expected);
     }
 
     #[rstest]

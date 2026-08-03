@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/container_members_rewrite_in_place/input.py
+---
+import os
+
+from collections import deque
+from typing      import Callable
+
+handler : Callable[[int | None], list[str]] = fn
+packed  : tuple[list[int], *Ts] = ()
+mixed   : list[int] | str | None = None

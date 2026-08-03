@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/skipped_line_holds_its_unread_import/input.py
+---
+import json  # prose: skip
+
+value = 1

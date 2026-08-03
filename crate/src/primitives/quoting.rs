@@ -1,11 +1,15 @@
 //! Shared guards on the quote characters a Python literal carries.
 
+/// The canonical triple-quoted delimiter, the frame `docstring-frame`
+/// re-delimits every docstring to.
+pub(crate) const TRIPLE_QUOTE: &str = "\"\"\"";
+
 /// True when re-delimiting `parts` to the `"""` frame would break the
 /// literal. A `"""` run collides with the closer wherever it sits, and
 /// a trailing `"` collides only where `closer_abuts`, which is false
 /// for a rewrite that lands the closer on its own line.
 pub(crate) fn abuts_triple_closer(parts: &[&str], closer_abuts: bool) -> bool {
-    parts.iter().any(|part| part.contains("\"\"\""))
+    parts.iter().any(|part| part.contains(TRIPLE_QUOTE))
         || (closer_abuts && parts.last().is_some_and(|part| part.ends_with('"')))
 }
 

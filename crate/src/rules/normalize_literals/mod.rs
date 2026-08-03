@@ -4,10 +4,10 @@
 //! escapes its surviving delimiter needs. `unify-prefixes` lowercases a
 //! string prefix and drops the no-op `u`. `unify-numerics` uppercases hex
 //! digits while lowercasing the radix marker, the exponent, and the `j`
-//! suffix. The quote facet passes over a docstring, which
-//! `docstring-frame` canonicalizes, and over any literal inside a
-//! replacement field, whose quotes the enclosing string constrains
-//! before Python 3.12.
+//! suffix. The quote facet passes over the docstring slot, whose frame
+//! `docstring-frame` owns, and over any literal inside a replacement
+//! field, whose quotes the enclosing string constrains before Python
+//! 3.12.
 
 use std::borrow::Cow;
 
@@ -20,7 +20,10 @@ use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
-    primitives::{docstring::docstring_ranges, edit::narrowed_replacement},
+    primitives::{
+        docstring::docstring_slots, edit::narrowed_replacement,
+        tokens::is_interpolated_string_start,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -38,6 +41,9 @@ pub(crate) struct NormalizeLiterals {
 }
 
 impl NormalizeLiterals {
+    pub(crate) const MESSAGE: &'static str =
+        "canonicalize literal quote, prefix, and numeric spelling";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rule = &config.rules.normalize_literals;
         Self {
@@ -52,7 +58,7 @@ impl Rule for NormalizeLiterals {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut normalizer = Normalizer {
             docstrings: if self.unify_quotes {
-                docstring_ranges(source)
+                docstring_slots(&source.ast().body)
             } else {
                 Vec::new()
             },
@@ -177,15 +183,15 @@ impl<'a> Normalizer<'a> {
     }
 
     /// True when the quote facet reaches a literal opening at `range`,
-    /// which passes over a docstring and anything nested inside a
+    /// which passes over a docstring slot and anything nested inside a
     /// replacement field.
     fn quotes_reach(&self, range: TextRange) -> bool {
         self.rule.unify_quotes
             && self.open.is_empty()
-            && self
+            && !self
                 .docstrings
-                .binary_search_by_key(&range.start(), Ranged::start)
-                .is_err()
+                .iter()
+                .any(|slot| slot.contains_range(range))
     }
 
     /// Emits the edit respelling the plain string or bytes literal
@@ -221,22 +227,23 @@ impl<'a> Normalizer<'a> {
     fn walk(&mut self) {
         let source = self.source;
         for token in source.tokens() {
-            match token.kind() {
-                TokenKind::Complex | TokenKind::Float | TokenKind::Int => {
-                    self.number(token.range());
-                }
-                TokenKind::FStringStart | TokenKind::TStringStart => self.open.push(Frame {
+            let kind = token.kind();
+            match kind {
+                _ if is_interpolated_string_start(kind) => self.open.push(Frame {
                     flags: token.unwrap_string_flags(),
                     middles: Vec::new(),
                     opener: token.range(),
                 }),
+                _ if kind.is_interpolated_string_end() => self.close(token.range()),
+                TokenKind::Complex | TokenKind::Float | TokenKind::Int => {
+                    self.number(token.range());
+                }
                 TokenKind::FStringMiddle | TokenKind::TStringMiddle => self
                     .open
                     .last_mut()
                     .expect("a literal run sits inside an open interpolated string")
                     .middles
                     .push(token.range()),
-                TokenKind::FStringEnd | TokenKind::TStringEnd => self.close(token.range()),
                 TokenKind::String => self.string(token),
                 _ => {}
             }

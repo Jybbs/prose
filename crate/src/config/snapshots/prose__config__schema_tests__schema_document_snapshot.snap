@@ -61,7 +61,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "default": true,
           "type": "boolean"
         },
-        "group-constants": {
+        "group-subcategories": {
           "default": true,
           "description": "Clusters each band by subcategory, the type aliases first, then\nthe `SCREAMING_CASE` constants, then the remaining module state,\nbefore sorting by name within each. `false` sorts by tier and\nname alone.",
           "type": "boolean"
@@ -137,14 +137,29 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       },
       "type": "object"
     },
-    "CollectionLayoutConfig": {
-      "description": "Configuration for the `collection_layout` rule, each shape facet\ngating one move and defaulting `true`.",
+    "ChainLayoutConfig": {
+      "description": "Configuration for the `chain_layout` rule.",
       "properties": {
-        "collapse": {
+        "enabled": {
           "default": true,
-          "description": "Joins a fitting multi-line literal, subscript, comprehension, or\ndict key back to one line. `false` freezes those shapes where they\nsit.",
           "type": "boolean"
         },
+        "max-links": {
+          "$ref": "#/$defs/InlineBudget",
+          "default": 2,
+          "description": "Breaks a method chain to one link per line once its link count\nexceeds the cap. `false` disables the count trigger and leaves\nonly the `code-line-length` budget."
+        },
+        "max-shift": {
+          "$ref": "#/$defs/MaxShift",
+          "default": 16,
+          "description": "The width a hung link's dot column may sit past the indent the\nbroken chain opens at. A wider receiver takes the full split\ninstead, standing alone with every link flush beneath it. `0`\nalways takes that split, and `false` lifts the cap so every\nchain hangs."
+        }
+      },
+      "type": "object"
+    },
+    "CollectionLayoutConfig": {
+      "description": "Configuration for the `collection_layout` rule, each facet gating\none shape decision and defaulting `true`.",
+      "properties": {
         "enabled": {
           "default": true,
           "type": "boolean"
@@ -152,6 +167,11 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "explode": {
           "default": true,
           "description": "Expands an overflowing or over-count collection to one entry per\nline. `false` suppresses every expansion and leaves the count cap\ninert.",
+          "type": "boolean"
+        },
+        "keep-multiline-literals": {
+          "default": true,
+          "description": "Holds a literal the author laid out as a flush bracketed column\nof two or more entries. `false` joins one whose single-line form\nfits the budget, and every other break rejoins either way.",
           "type": "boolean"
         },
         "max-atomics": {
@@ -180,6 +200,26 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       ],
       "type": "string"
     },
+    "ImportLayoutConfig": {
+      "description": "Configuration for the `import_layout` rule, each facet gating one\nstatement move and defaulting `true`.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "merge-members": {
+          "default": true,
+          "description": "Folds repeated `from <module> import …` statements into one\nstatement carrying each member once, ordered as `alphabetize`\nwould leave it. `false` leaves each statement on its own line.",
+          "type": "boolean"
+        },
+        "split-multi-module": {
+          "default": true,
+          "description": "Breaks a comma-joined `import a, b` into one `import` statement\nper module. `false` keeps the comma-joined form.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "ImportsConfig": {
       "description": "Settings parsed from `[tool.prose.imports]`.",
       "properties": {
@@ -205,6 +245,21 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "const": false
         }
       ]
+    },
+    "LineOverflowConfig": {
+      "description": "Configuration for the `line_overflow` rule.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "suggest-string-splits": {
+          "default": true,
+          "description": "Offers the parenthesized adjacent-literal form on an over-budget\nline whose overflow sits inside one string literal holding\ninterior whitespace, as a display-only suggestion `prose format`\nnever writes. `false` leaves the bare overflow report.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
     },
     "MaxShift": {
       "anyOf": [
@@ -234,6 +289,51 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       },
       "type": "object"
     },
+    "ModernizeAnnotationsConfig": {
+      "description": "Configuration for the `modernize_annotations` rule, each facet\ngating one rewrite and defaulting `true`.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "rewrite-generics": {
+          "default": true,
+          "description": "Converts a `typing` generic to the builtin PEP 585 gave it, so\n`List[int]` reads as `list[int]`. Runs on `target-version` 3.9\nand higher, and `false` leaves every `typing` generic in place.",
+          "type": "boolean"
+        },
+        "rewrite-unions": {
+          "default": true,
+          "description": "Rewrites `Optional[X]` and `Union[X, Y]` to the PEP 604 `X | None`\nand `X | Y` forms. Runs on `target-version` 3.10 and higher, and\n`false` leaves every legacy union in place.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "NormalizeComparisonsConfig": {
+      "description": "Configuration for the `normalize_comparisons` rule, each facet\ngating one rewrite and defaulting `true`.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "rewrite-identity": {
+          "default": true,
+          "description": "Rewrites a `==` or `!=` test against `None` to `is` or `is not`,\nand flags a test against `True` or `False` without rewriting it.\n`false` leaves every singleton comparison as written.",
+          "type": "boolean"
+        },
+        "rewrite-negation": {
+          "default": true,
+          "description": "Folds a leading `not` into the `in` or `is` it negates, so\n`not a in b` reads `a not in b`. `false` keeps the outer `not`.",
+          "type": "boolean"
+        },
+        "rewrite-operand-order": {
+          "default": true,
+          "description": "Flips a comparison whose constant side leads, so `42 == n` reads\n`n == 42`. `false` keeps the authored operand order.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "NormalizeLiteralsConfig": {
       "description": "Configuration for the `normalize_literals` rule, each facet gating\none spelling axis and defaulting `true`.",
       "properties": {
@@ -254,6 +354,26 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "unify-quotes": {
           "default": true,
           "description": "Settles a non-docstring string on `\"`, falling to `'` only where\nthat drops an escape, and sheds a backslash the surviving quote\ndoes not need. `false` keeps the literal spelled as written.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "PruneInertImportsConfig": {
+      "description": "Configuration for the `prune_inert_imports` rule, each facet gating\none prune and defaulting `true`.",
+      "properties": {
+        "drop-duplicates": {
+          "default": true,
+          "description": "Drops an import rebinding a name an earlier import already bound\nto the same source. `false` keeps every repeat.",
+          "type": "boolean"
+        },
+        "drop-unreferenced": {
+          "default": true,
+          "description": "Drops an import binding a name nothing references, where the\nbinding is not marked for re-export, read by a `del` or a quoted\nannotation, or bound in a package `__init__.py`, where it is\nreported instead. `false` leaves every unreferenced import in\nplace and reports none of them.",
+          "type": "boolean"
+        },
+        "enabled": {
+          "default": true,
           "type": "boolean"
         }
       },
@@ -325,6 +445,20 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "description": "Per-rule configuration under `[tool.prose.rules]`.",
       "properties": {
         "align-colons": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/AlignmentConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-shift": 16
+          }
+        },
+        "align-comments": {
           "anyOf": [
             {
               "type": "boolean"
@@ -423,7 +557,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           ],
           "default": {
             "enabled": true,
-            "group-constants": true,
+            "group-subcategories": true,
             "max-tiers": 2
           }
         },
@@ -470,6 +604,21 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "max-args": 3
           }
         },
+        "chain-layout": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ChainLayoutConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-links": 2,
+            "max-shift": 16
+          }
+        },
         "collection-layout": {
           "anyOf": [
             {
@@ -480,12 +629,25 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             }
           ],
           "default": {
-            "collapse": true,
             "enabled": true,
             "explode": true,
+            "keep-multiline-literals": true,
             "max-atomics": 8,
             "max-dict-entries": 3,
             "wrap-dict-entries": true
+          }
+        },
+        "comment-spacing": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
           }
         },
         "docstring-expand": {
@@ -546,24 +708,13 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
               "type": "boolean"
             },
             {
-              "$ref": "#/$defs/ToggleOnly"
+              "$ref": "#/$defs/ImportLayoutConfig"
             }
           ],
           "default": {
-            "enabled": true
-          }
-        },
-        "legacy-union-syntax": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/ToggleOnly"
-            }
-          ],
-          "default": {
-            "enabled": true
+            "enabled": true,
+            "merge-members": true,
+            "split-multi-module": true
           }
         },
         "line-overflow": {
@@ -572,11 +723,12 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
               "type": "boolean"
             },
             {
-              "$ref": "#/$defs/ToggleOnly"
+              "$ref": "#/$defs/LineOverflowConfig"
             }
           ],
           "default": {
-            "enabled": true
+            "enabled": true,
+            "suggest-string-splits": true
           }
         },
         "miscased-constants": {
@@ -593,6 +745,37 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
+        "modernize-annotations": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ModernizeAnnotationsConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "rewrite-generics": true,
+            "rewrite-unions": true
+          }
+        },
+        "normalize-comparisons": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/NormalizeComparisonsConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "rewrite-identity": true,
+            "rewrite-negation": true,
+            "rewrite-operand-order": true
+          }
+        },
         "normalize-literals": {
           "anyOf": [
             {
@@ -607,6 +790,21 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "unify-numerics": true,
             "unify-prefixes": true,
             "unify-quotes": true
+          }
+        },
+        "prune-inert-imports": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PruneInertImportsConfig"
+            }
+          ],
+          "default": {
+            "drop-duplicates": true,
+            "drop-unreferenced": true,
+            "enabled": true
           }
         },
         "reassigned-constants": {
@@ -677,6 +875,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
+        "stack-adjacent-strings": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
         "step-narration": {
           "anyOf": [
             {
@@ -730,19 +941,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           }
         },
         "unsorted-positionals": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/ToggleOnly"
-            }
-          ],
-          "default": {
-            "enabled": true
-          }
-        },
-        "unused-future-annotations": {
           "anyOf": [
             {
               "type": "boolean"
@@ -863,6 +1061,10 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true,
           "max-shift": 16
         },
+        "align-comments": {
+          "enabled": true,
+          "max-shift": 16
+        },
         "align-comparisons": {
           "enabled": true,
           "max-shift": 16
@@ -889,7 +1091,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "band-constants": {
           "enabled": true,
-          "group-constants": true,
+          "group-subcategories": true,
           "max-tiers": 2
         },
         "bare-imports": {
@@ -905,13 +1107,21 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true,
           "max-args": 3
         },
+        "chain-layout": {
+          "enabled": true,
+          "max-links": 2,
+          "max-shift": 16
+        },
         "collection-layout": {
-          "collapse": true,
           "enabled": true,
           "explode": true,
+          "keep-multiline-literals": true,
           "max-atomics": 8,
           "max-dict-entries": 3,
           "wrap-dict-entries": true
+        },
+        "comment-spacing": {
+          "enabled": true
         },
         "docstring-expand": {
           "enabled": true
@@ -926,23 +1136,39 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true
         },
         "import-layout": {
-          "enabled": true
-        },
-        "legacy-union-syntax": {
-          "enabled": true
+          "enabled": true,
+          "merge-members": true,
+          "split-multi-module": true
         },
         "line-overflow": {
-          "enabled": true
+          "enabled": true,
+          "suggest-string-splits": true
         },
         "miscased-constants": {
           "allow-pattern": "",
           "enabled": true
+        },
+        "modernize-annotations": {
+          "enabled": true,
+          "rewrite-generics": true,
+          "rewrite-unions": true
+        },
+        "normalize-comparisons": {
+          "enabled": true,
+          "rewrite-identity": true,
+          "rewrite-negation": true,
+          "rewrite-operand-order": true
         },
         "normalize-literals": {
           "enabled": true,
           "unify-numerics": true,
           "unify-prefixes": true,
           "unify-quotes": true
+        },
+        "prune-inert-imports": {
+          "drop-duplicates": true,
+          "drop-unreferenced": true,
+          "enabled": true
         },
         "reassigned-constants": {
           "allow": [],
@@ -962,6 +1188,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "allow-pattern": "^_",
           "enabled": true
         },
+        "stack-adjacent-strings": {
+          "enabled": true
+        },
         "step-narration": {
           "enabled": true
         },
@@ -975,9 +1204,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true
         },
         "unsorted-positionals": {
-          "enabled": true
-        },
-        "unused-future-annotations": {
           "enabled": true
         }
       }

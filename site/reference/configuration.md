@@ -31,17 +31,21 @@ The top-level keys carry settings that span multiple rules. They sit at the docu
 
 <ConfigKeys section="top" />
 
-`target-version` names the Python runtime a project ships to, taking the bare `major.minor` form (*`"3.13"`, `"3.14"`*) used by `mypy`'s `python_version` setting. Rules whose safety depends on the runtime read this field directly. [[legacy-union-syntax]] and [[unused-future-annotations]] are the two current consumers.
+`target-version` names the Python runtime a project ships to, taking the bare `major.minor` form (*`"3.13"`, `"3.14"`*) used by `mypy`'s `python_version` setting. Rules whose safety depends on the runtime read this field directly. [[modernize-annotations]] and [[prune-inert-imports]] are the two current consumers.
 
 ::: info Version Gates Need Opt-In
-With no value set, every version-dependent arm skips rather than assume a default, leaving [[legacy-union-syntax]] and [[unused-future-annotations]] quiet on every project that has not opted into a target.
+With no value set, every version-dependent arm skips rather than assume a default, leaving [[modernize-annotations]] and [[prune-inert-imports]] quiet on every project that has not opted into a target.
 :::
 
 ## Lengths
 
-The `*-line-length` caps are hard constraints, and every shaping rule resolves within them rather than reading the budget as a hint. `code-line-length` governs code lines and `import-line-length` governs import lines, with the count knobs *(`max-args`, `max-params`, `max-dict-entries`)* choosing shapes only for the lines that already fit beneath a cap.
+The `*-line-length` caps are hard constraints, and every shaping rule resolves within them rather than reading the budget as a hint. `code-line-length` governs code lines and `import-line-length` governs import lines, with the count knobs *(`max-args`, `max-params`, `max-dict-entries`, `max-links`)* choosing shapes only for the lines that already fit beneath a cap.
 
 A construct with a legal multi-line reshape takes it once its line crosses the cap, whatever a count threshold says, so a call over `code-line-length` explodes to one argument per line even at or under `max-args`, and a signature, collection, or `from` import does the same against its budget. An alignment run whose padding would carry a member past its cap reshapes that member first *(an import splits per [[import-layout]], a call or collection value explodes per its layout rule)* and then aligns within the cap, a member partitioning out of the run unpadded the way an over-`max-shift` outlier does only when no reshape can bring its aligned width under.
+
+Several alignment rules reach the same row, wherein [[align-colons]], [[align-equals]], and [[align-comments]] each seat a column on a line carrying an annotation, a value, and a note. Each answers the cap against the line it will emit rather than the one the buffer holds, measuring a trailing comment at its two-column floor and the gap after an operator at the single space an aligned row carries, both of which a later rule settles. That keeps every rule's fit decision invariant to the ones that run after it, so the columns resolve in one pass rather than trading places across repeated runs.
+
+A trailing comment counts toward the cap the way any other span on the line does, since *Prose* places it through [[comment-spacing]] and [[align-comments]] rather than leaving it as text it never touches. A row already past its cap before any padding therefore holds its own buffer and joins a shared column only where that column costs it no further width, which the widest member of a run alone satisfies. Alignment never carries an over-budget line further out, leaving [[line-overflow]] to name the remainder at the narrowest width the row can reach.
 
 A cap no legal form can satisfy *(a deep indent, a long identifier, a cap set below what a statement needs)* leaves the narrowest legal form standing, and [[line-overflow]] names that remainder, so an unsatisfiable cap reads as a finding in `prose check` and a squiggle in the sandbox rather than as a knob that did nothing.
 

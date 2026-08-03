@@ -1,8 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/collection_layout/tuple_collapse_keeps_brackets/input.py
----
-collection-layout@120..129
-collection-layout@160..258
-collection-layout@71..92

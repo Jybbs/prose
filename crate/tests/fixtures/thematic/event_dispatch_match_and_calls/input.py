@@ -4,6 +4,7 @@ import logging
 
 def dispatch(event, registry, fallback):
     """Route an event to its handler."""
+    logging.debug(event)
     match event.kind:
         case "create":
             return registry.create(source=event.source, actor=event.actor, timestamp=event.ts, priority=event.priority)

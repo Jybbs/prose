@@ -12,11 +12,12 @@ use ruff_text_size::Ranged;
 
 use super::Exploder;
 use crate::primitives::{
-    INDENT_STEP,
     call_keywords::{CallKeywords, keyword_args, resolve_call_params},
     edit::apply_inline_edits,
     inline::end_column,
-    layout::{explode_parens, is_layoutable, reindent_block, reindent_shift},
+    layout::{
+        Separator, explode_parens, is_layoutable, item_indent, reindent_block, reindent_shift,
+    },
 };
 
 impl<'a> Exploder<'a> {
@@ -30,13 +31,13 @@ impl<'a> Exploder<'a> {
         count: usize,
         render: impl Fn(&mut String, usize, usize),
     ) -> String {
-        let item_indent = indent + INDENT_STEP;
+        let item_indent = item_indent(indent);
         explode_parens(
             self.source.newline_str(),
             indent,
             count,
             |out, i| render(out, i, item_indent),
-            self.source.trailing_comma(arguments.range()).is_some(),
+            Separator::comma(self.source.trailing_comma(arguments.range()).is_some()),
         )
     }
 

@@ -1,21 +1,19 @@
 import loader                 from '../../lib/reference/config-keys.data'
 import { repoRoot, runProse } from '../../lib/shared/paths'
+import { declaredKeys }       from '../../lib/shared/rule-schema'
 
 const keys = await loader.load([])
 
-const schema = JSON.parse(runProse(repoRoot(import.meta.url), ['schema']))
-const NESTED = new Set(['cache', 'imports', 'rules'])
-
-const topKeys = Object.keys(schema.properties).filter(key => !NESTED.has(key))
+const declared = declaredKeys(JSON.parse(runProse(repoRoot(import.meta.url), ['schema'])))
 
 describe('derived config keys', () => {
   it('covers every top-level schema key outside the nested tables', () => {
-    expect(keys.top.map(row => row.key).toSorted()).toEqual(topKeys.toSorted())
+    expect(keys.top.map(row => row.key).toSorted()).toEqual(declared.top.toSorted())
   })
 
   it('mirrors the cache and imports sub-tables', () => {
-    expect(keys.cache.map(row => row.key)).toEqual(['enabled', 'max-size-mib'])
-    expect(keys.imports.map(row => row.key)).toEqual(['first-party'])
+    expect(keys.cache.map(row => row.key)).toEqual(declared.cache.toSorted())
+    expect(keys.imports.map(row => row.key)).toEqual(declared.imports.toSorted())
   })
 
   it('renders a null default as unset', () => {

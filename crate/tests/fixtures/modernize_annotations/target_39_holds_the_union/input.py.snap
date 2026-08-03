@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/target_39_holds_the_union/input.py
+---
+from typing import Optional
+
+
+def load(names: list[str], limit: Optional[int]) -> None: ...

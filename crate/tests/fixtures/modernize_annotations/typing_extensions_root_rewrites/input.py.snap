@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/typing_extensions_root_rewrites/input.py
+---
+
+
+def widen(names: list[str], limit: int | None) -> None: ...

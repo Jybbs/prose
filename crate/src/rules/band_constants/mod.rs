@@ -16,6 +16,7 @@ use ruff_text_size::{Ranged, TextRange};
 use crate::{
     config::Config,
     primitives::{
+        comments::TRAILING_GAP,
         edit::{singleton_groups, splice_bodies},
         imports::defers_annotations,
         orderer::{
@@ -37,26 +38,27 @@ use self::{
     plan::{Banding, Carry, banded_gap},
 };
 
-/// The gap PEP 8 seats between code and a trailing comment.
-const TRAILING_GAP: &str = "  ";
-
 pub(crate) struct BandConstants {
     code_width: usize,
     first_party: Vec<String>,
-    group_constants: bool,
     group_imports: bool,
+    group_subcategories: bool,
     max_tiers: Option<usize>,
     target_version: Option<PythonVersion>,
 }
 
 impl BandConstants {
+    pub(crate) const MESSAGE: &'static str =
+        "band module constants into leading and trailing bands";
+
     pub(crate) fn from_config(config: &Config) -> Self {
+        let rules = &config.rules.band_constants;
         Self {
             code_width: config.code_width(),
             first_party: config.first_party(),
-            group_constants: config.rules.band_constants.group_constants,
             group_imports: config.group_imports_enabled(),
-            max_tiers: config.rules.band_constants.max_tiers.cap(),
+            group_subcategories: rules.group_subcategories,
+            max_tiers: rules.max_tiers.cap(),
             target_version: config.target_version,
         }
     }
@@ -167,21 +169,22 @@ impl<'a> Bander<'a> {
         sections: &Sections,
         order: &mut Vec<usize>,
     ) -> Option<Banding> {
+        let rule = self.rule;
         module_band_plan(
             self.source,
             body,
             blocks,
-            self.rule.code_width,
+            rule.code_width,
             self.defer_annotations,
-            self.rule.group_constants,
-            self.rule.target_version,
+            rule.group_subcategories,
+            rule.target_version,
         )?
         .apply(
             body,
             sections,
-            &self.rule.first_party,
-            self.rule.group_imports,
-            self.rule.max_tiers,
+            &rule.first_party,
+            rule.group_imports,
+            rule.max_tiers,
             order,
         )
     }
@@ -265,8 +268,8 @@ mod tests {
         let rule = BandConstants {
             code_width: 88,
             first_party: Vec::new(),
-            group_constants: true,
             group_imports: true,
+            group_subcategories: true,
             max_tiers: Some(2),
             target_version: None,
         };

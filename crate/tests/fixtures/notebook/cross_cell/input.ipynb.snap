@@ -5,10 +5,10 @@ input_file: crate/tests/fixtures/notebook/cross_cell/input.ipynb
 ---
 import os
 
-b = 1
+b = os
 
 # --- cell 2 ---
 
 import abc
 
-a = b + 1
+a = (b, abc)

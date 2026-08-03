@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/align_comments/false_cap_folds_a_wide_spread/input.py
+---
+align-comments@6..8

@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Dotted Name Ahead of One Call Is Not a Chain"
+
+description = '''
+A long dotted prefix carrying a single call at its end holds one link, leaving it below the two-link floor a chain needs before either trigger can reach it.
+'''

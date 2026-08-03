@@ -5,7 +5,6 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
 ---
 align-equals@1626..1627
 align-equals@215..454
-align-imports@46..47
 alphabetize@35..1835
 band-constants@35..1429
 bare-imports@172..179
@@ -22,10 +21,15 @@ call-layout@1055..1147
 collection-layout@496..605
 docstring-expand@765..809
 group-imports@35..206
-import-layout@148..149
-legacy-union-syntax@292..309
-legacy-union-syntax@739..756
-legacy-union-syntax@907..936
+import-layout@59..164
+modernize-annotations@218..219
+modernize-annotations@292..309
+modernize-annotations@59..125
+modernize-annotations@618..619
+modernize-annotations@739..756
+modernize-annotations@907..936
+prune-inert-imports@0..35
+prune-inert-imports@138..164
 shed-parentheses@1338..1339
 shed-parentheses@1358..1359
 signature-annotations@1494..1499
@@ -40,4 +44,3 @@ strip-none-return@680..688
 strip-trailing-commas@438..439
 unsorted-positionals@656..680
 unsorted-positionals@874..975
-unused-future-annotations@0..35
