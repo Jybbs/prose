@@ -1,0 +1,7 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/composition/aligned_fields_settle_their_comments/input.py
+---
+align-comments@30..32
+align-equals@26..27

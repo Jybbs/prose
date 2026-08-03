@@ -1,6 +1,6 @@
 ---
 caption : "Settles every comment onto one space after its hash run and two columns clear of the code beside it."
-related : [blank-lines, step-narration, line-overflow]
+related : [align-comments, blank-lines, step-narration, line-overflow]
 layout  : doc
 ---
 

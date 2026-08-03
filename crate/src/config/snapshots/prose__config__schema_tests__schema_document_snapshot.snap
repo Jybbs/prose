@@ -408,6 +408,20 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "max-shift": 16
           }
         },
+        "align-comments": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/AlignmentConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-shift": 16
+          }
+        },
         "align-comparisons": {
           "anyOf": [
             {
@@ -962,6 +976,10 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "$ref": "#/$defs/RuleConfigs",
       "default": {
         "align-colons": {
+          "enabled": true,
+          "max-shift": 16
+        },
+        "align-comments": {
           "enabled": true,
           "max-shift": 16
         },

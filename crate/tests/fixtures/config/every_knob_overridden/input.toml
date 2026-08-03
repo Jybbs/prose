@@ -10,6 +10,7 @@ max-size-mib = 250
 
 [rules]
 align-colons           = false
+align-comments         = false
 align-comparisons      = false
 align-equals           = false
 align-imports          = false

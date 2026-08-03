@@ -13,8 +13,8 @@ use crate::{config::MaxShift, primitives::edit::repeat_edit, source::Source};
 
 /// Aligns `members` by splitting the source-ordered run into the
 /// contiguous groups `reading_order_groups` yields and emitting each at
-/// its widest member. A singleton group collapses its gap to one space,
-/// or to zero when `settings.strip_singleton` is set.
+/// its widest member. A singleton group collapses its gap to the
+/// settings' buffer, or to zero when `settings.strip_singleton` is set.
 pub(super) fn emit_group(
     source: &Source,
     members: &[Member],
@@ -30,7 +30,8 @@ pub(super) fn emit_group(
 /// Per-member display column where each member's aligned token lands
 /// under the same column math `emit_group` applies. A candidate group
 /// reports its shared column, split on the `max-shift` cap, while any
-/// other group reports a one-space buffer past each member's own width.
+/// other group reports the settings' buffer past each member's own
+/// width.
 /// The token's following value sits two columns further on, the
 /// operator's final character plus the one-space value gap.
 pub(crate) fn operator_columns(
@@ -41,7 +42,7 @@ pub(crate) fn operator_columns(
     if !is_alignment_candidate(source, members) {
         return members
             .iter()
-            .map(|m| baseline(source, *m) + m.width + 1)
+            .map(|m| baseline(source, *m) + m.width + settings.buffer)
             .collect();
     }
     group_paddings(source, members, settings)
@@ -71,29 +72,28 @@ fn emitted_base_width(source: &Source, member: Member) -> usize {
 }
 
 /// True when no member of `group` aligned to `max_w` has its line
-/// pushed past `cap` by the padding. A member already over `cap`
-/// unpadded stays in the run rather than partitioning to no gain.
-fn fits_line_cap(source: &Source, group: &[Member], max_w: usize, cap: usize) -> bool {
+/// pushed past the governing line-length cap by the padding, and for a
+/// rule carrying no cap at all. A member already over the cap unpadded
+/// stays in the run rather than partitioning to no gain.
+fn fits_line_cap(source: &Source, group: &[Member], settings: Settings, max_w: usize) -> bool {
+    let Some(cap) = settings.line_length else {
+        return true;
+    };
     let max_op = max_op_width(group);
     group.iter().all(|m| {
         let base = emitted_base_width(source, *m);
-        base + padding_width(*m, max_w, max_op, 1) <= cap || base + 1 > cap
+        base + padding_width(*m, max_w, max_op, settings.buffer) <= cap
+            || base + settings.buffer > cap
     })
 }
 
 /// True when `group` may align as one column: its width spread stays
 /// within `shift_cap` and, when a `line_length` cap governs, every
 /// member's aligned line stays within it.
-fn group_holds(
-    source: &Source,
-    group: &[Member],
-    shift_cap: usize,
-    line_length: Option<usize>,
-) -> bool {
+fn group_holds(source: &Source, group: &[Member], settings: Settings, shift_cap: usize) -> bool {
     let max_w = group_max_width(group);
     let min_w = group.iter().map(|m| m.width).min().unwrap_or(0);
-    max_w - min_w <= shift_cap
-        && line_length.is_none_or(|cap| fits_line_cap(source, group, max_w, cap))
+    max_w - min_w <= shift_cap && fits_line_cap(source, group, settings, max_w)
 }
 
 /// The widest member width in `group`, zero for an empty slice.
@@ -164,7 +164,7 @@ fn reading_order_groups<'m>(
     let mut groups = Vec::new();
     let mut start = 0;
     for i in 1..members.len() {
-        if !group_holds(source, &members[start..=i], shift_cap, settings.line_length) {
+        if !group_holds(source, &members[start..=i], settings, shift_cap) {
             let prev = &members[start..i];
             groups.push((prev, group_max_width(prev)));
             start = i;
@@ -307,6 +307,25 @@ mod tests {
     }
 
     #[test]
+    fn emit_group_seats_a_widened_buffer_ahead_of_the_token() {
+        let (source, members) = rows(&[(1, 1), (3, 1)]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(8)).with_buffer(2),
+            &mut edits,
+        );
+
+        // max_w=3, buffer=2 → targets 4 and 2 spaces.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![fill(&members[0], 4), fill(&members[1], 2)],
+        );
+    }
+
+    #[test]
     fn emit_group_strips_lone_member_gap_when_flag_is_set() {
         let (source, members) = rows(&[(3, 5)]);
         let mut edits = Vec::new();
@@ -385,6 +404,23 @@ mod tests {
             sorted_summaries(&edits),
             vec![fill(&members[0], 6), fill(&members[1], 1)],
         );
+    }
+
+    #[test]
+    fn line_cap_keeps_a_row_already_past_the_cap_in_its_run() {
+        let (source, members) = rows(&[(12, 1), (13, 1)]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(16)).with_line_length(8),
+            &mut edits,
+        );
+
+        // Both lines sit past the cap before any padding, so partitioning
+        // buys nothing and the pair still aligns at width 13.
+        assert_eq!(sorted_summaries(&edits), vec![fill(&members[0], 2)]);
     }
 
     #[test]
