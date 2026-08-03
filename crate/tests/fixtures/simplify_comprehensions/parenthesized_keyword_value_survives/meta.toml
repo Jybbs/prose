@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Parenthesized Keyword Value Keeps Its Parentheses"
+
+description = '''
+A keyword value wrapped in grouping parentheses to span lines carries those parentheses outside its own range, so the rewrite reads the value's full extent rather than starting inside the opening one.
+'''

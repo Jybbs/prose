@@ -187,6 +187,12 @@ impl BindingAnalysis {
             .flat_map(move |s| self.scopes[s.0 as usize].bindings.values().copied())
     }
 
+    /// Returns `true` when any scope in the module binds `name`, the
+    /// test that reports a builtin shadowed somewhere in the file.
+    pub(crate) fn binds_name(&self, name: &str) -> bool {
+        self.bindings.iter().any(|binding| binding.name == name)
+    }
+
     /// Returns the offset of the earliest recorded write of `binding`.
     pub(crate) fn first_write_offset(&self, binding: BindingId) -> TextSize {
         self.binding(binding).write_offsets[0]
@@ -337,6 +343,23 @@ mod tests {
         let analysis = BindingAnalysis::new(source.ast());
         let stmt = &source.ast().body[0];
         assert!(analysis.bindings_in_scope(stmt).next().is_none());
+    }
+
+    #[rstest]
+    fn binds_name_rejects_a_name_the_module_never_binds(
+        #[values("", "xs = [1]\n", "xs = list(rows)\n")] src: &str,
+    ) {
+        assert!(!analyze(src).binds_name("list"));
+    }
+
+    #[rstest]
+    #[case::comprehension_target("xs = [set for set in rows]\n", "set")]
+    #[case::function_local("def f():\n    dict = {}\n    return dict\n", "dict")]
+    #[case::import("from x import list\n", "list")]
+    #[case::module_assignment("list = [9]\n", "list")]
+    #[case::parameter("def f(tuple):\n    return tuple\n", "tuple")]
+    fn binds_name_reports_a_name_bound_in_any_scope(#[case] src: &str, #[case] name: &str) {
+        assert!(analyze(src).binds_name(name));
     }
 
     #[test]

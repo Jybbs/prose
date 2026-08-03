@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/interior_comment_survives/input.py
+---
+marks = {
+    1,  # the first
+    2
+}

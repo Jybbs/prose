@@ -1,0 +1,7 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/simplify_comprehensions/pair_sequence_within_dict_call/input.py
+---
+simplify-comprehensions@49..82
+simplify-comprehensions@9..39

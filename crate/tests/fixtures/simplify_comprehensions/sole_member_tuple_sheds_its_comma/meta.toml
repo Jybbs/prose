@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A One-Member Tuple Drops Its Comma on the Way Out"
+
+description = '''
+The comma in `(only,)` is grammar rather than content, so a result that is no longer a tuple leaves it behind.
+'''

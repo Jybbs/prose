@@ -1,5 +1,5 @@
 ---
-consumedBy: [band-constants, bare-imports, miscased-constants, modernize-annotations, prune-inert-imports, reassigned-constants, single-use-variables]
+consumedBy: [band-constants, bare-imports, miscased-constants, modernize-annotations, prune-inert-imports, reassigned-constants, simplify-comprehensions, single-use-variables]
 consumes: [source]
 layer: analysis
 stability: internal
@@ -24,7 +24,7 @@ A downstream consumer can:
 
 A downstream consumer cannot:
 
-- Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `first_write_offset`, `is_defined_before`, `module_attribute_count`, `module_function_reads`, `module_reassigned`, `module_usage_count`, `module_used_bare`, `unpack_target`, `usage_count`, or `walrus_in_condition` on the returned reference. Every reader is `pub(crate)`.
+- Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `binds_name`, `first_write_offset`, `is_deleted`, `is_defined_before`, `module_attribute_count`, `module_function_reads`, `module_reassigned`, `module_usage_count`, `module_used_bare`, `unpack_target`, `usage_count`, or `walrus_in_condition` on the returned reference. Every reader is `pub(crate)`.
 - Implement a custom rule that consumes the binding table. The `Rule` trait is `pub(crate)`.
 
 The methods stabilize toward `1.0`, where every reader becomes `pub` and the `Rule` trait opens so downstream consumers can implement project-specific binding-aware rules.
@@ -38,6 +38,7 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `binding_kinds(binding: BindingId) -> &[BindingKind]` returns each kind that produced this binding *(a single binding may carry several kinds when shadowing or augmented assignment is involved)*.
 - `binding_name(binding: BindingId) -> &str` returns the bound name.
 - `bindings_in_scope(stmt: &Stmt) -> impl Iterator<Item = BindingId>` lists every binding introduced in the lexical scope that contains the statement.
+- `binds_name(name: &str) -> bool` reports whether any scope in the module binds a name, which [[simplify-comprehensions]] reads to hold every call to a constructor the module rebinds.
 - `first_write_offset(binding: BindingId) -> TextSize` returns the offset of the first write.
 - `is_deleted(name: &str) -> bool` reports whether a `del` statement anywhere in the module names a binding, which [[prune-inert-imports]] reads to hold an import whose `del` would otherwise be left raising `NameError`.
 - `is_defined_before(name: &str, offset: TextSize) -> bool` is the inverse-lookup convenience used by [[prune-inert-imports]] when checking that every name appearing in an annotation resolves to an unconditional binding introduced earlier *(a name written only inside a conditional branch like `if`, `for`, `while`, `try`, or `match` reads as runtime-unavailable)*.

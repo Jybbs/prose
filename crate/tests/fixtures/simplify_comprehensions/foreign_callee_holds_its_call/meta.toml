@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Call to Anything Else Holds Its Argument"
+
+description = '''
+Neither an attribute call nor a call to some other name reaches a constructor, so the bracketed literal each one carries stays exactly where it was written.
+'''

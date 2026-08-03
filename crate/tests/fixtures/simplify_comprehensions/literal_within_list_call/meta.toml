@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Literal Inside `list()` Becomes a List Literal"
+
+description = '''
+Both a list and a tuple literal handed to `list()` reach the bracket form, so the outer call disappears and the members stay as written.
+'''

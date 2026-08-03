@@ -861,6 +861,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "max-params": 4
           }
         },
+        "simplify-comprehensions": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
         "single-use-variables": {
           "anyOf": [
             {
@@ -1183,6 +1196,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "signature-layout": {
           "enabled": true,
           "max-params": 4
+        },
+        "simplify-comprehensions": {
+          "enabled": true
         },
         "single-use-variables": {
           "allow-pattern": "^_",

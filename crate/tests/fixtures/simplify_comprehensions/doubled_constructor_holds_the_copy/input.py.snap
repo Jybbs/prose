@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/doubled_constructor_holds_the_copy/input.py
+---
+values = [row for row in list(rows)]
+unique = [row for row in set(rows)]

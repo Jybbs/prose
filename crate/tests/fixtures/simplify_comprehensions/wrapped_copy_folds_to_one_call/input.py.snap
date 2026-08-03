@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/wrapped_copy_folds_to_one_call/input.py
+---
+values = list(rows)
+unique = set(rows)
+paired = dict(rows)

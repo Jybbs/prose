@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/rebound_constructor_holds_its_calls/input.py
+---
+list = [9]
+
+values = list([1, 2])
+unique = {1, 2}

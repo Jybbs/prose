@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Constructor Wrapping a Copy Settles in One Step"
+
+description = '''
+Unwrapping alone would leave a copying comprehension the next pass collapses, so the rewrite reaches `list(rows)` directly rather than through `[row for row in rows]`.
+'''

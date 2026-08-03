@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/literal_within_tuple_call/input.py
+---
+pair   = (1, 2)
+single = (only,)
+kept   = (only,)

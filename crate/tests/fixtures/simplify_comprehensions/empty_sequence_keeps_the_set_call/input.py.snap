@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/empty_sequence_keeps_the_set_call/input.py
+---
+seen    = set()
+pending = set()

@@ -53,6 +53,9 @@ Config {
             rewrite_negation: true,
             rewrite_operand_order: true,
         },
+        simplify_comprehensions: ToggleOnly {
+            enabled: true,
+        },
         docstring_frame: ToggleOnly {
             enabled: true,
         },
