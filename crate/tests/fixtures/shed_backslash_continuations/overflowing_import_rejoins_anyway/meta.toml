@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Over-Budget Split With No Expression Rejoins Regardless"
+
+description = '''
+An `import` list carries no expression across the break, so no parenthesized form is available and the statement rejoins even though the joined line runs past the budget, leaving [[line-overflow]] to flag what no reshape reaches.
+'''

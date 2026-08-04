@@ -2,6 +2,7 @@
 
 use std::{path::Path, str::FromStr};
 
+use itertools::Itertools;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
 use ruff_python_ast::{
     AnyNodeRef, ExprRef, ModModule, PySourceType, Stmt,
@@ -422,6 +423,15 @@ impl Source {
 
     pub fn text(&self) -> &str {
         self.file.source_text()
+    }
+
+    /// Yields each adjacent token pair with the source range between
+    /// them, the trivia the lexer skipped.
+    pub(crate) fn token_gaps(&self) -> impl Iterator<Item = (&Token, &Token, TextRange)> {
+        self.tokens()
+            .iter()
+            .tuple_windows()
+            .map(|(token, next)| (token, next, TextRange::new(token.end(), next.start())))
     }
 
     /// Borrows the token stream produced during parsing.

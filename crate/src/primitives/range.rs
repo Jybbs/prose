@@ -1,10 +1,18 @@
-//! Parenthesis-aware source ranges for expression nodes.
+//! Parenthesis-aware source ranges for expression nodes, plus the
+//! extent a slice of ranged items covers.
 
 use ruff_python_ast::{
     AnyNodeRef, Expr, ExprRef, StmtFunctionDef,
     token::{Tokens, parenthesized_range},
 };
 use ruff_text_size::{Ranged, TextRange};
+
+/// Total source extent covered by `blocks`. Requires non-empty input.
+pub(crate) fn blocks_span<T: Ranged>(blocks: &[T]) -> TextRange {
+    blocks[0]
+        .range()
+        .cover(blocks.last().expect("non-empty blocks").range())
+}
 
 /// Returns `expr`'s range widened to the explicit parentheses recovered
 /// against `parent`, falling back to the bare expression range when none

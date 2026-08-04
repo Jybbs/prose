@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_backslash_continuations/statement_split_rejoins/input.py
+---
+import os, sys
+
+assert ready, "the resource never came up"
+
+with open("a") as first, open("b") as second:
+    pass

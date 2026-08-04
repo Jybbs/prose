@@ -4,9 +4,7 @@
 //! bracket delimiter. Runs after the alignment rules in
 //! `Pipeline::with_defaults` so it sees their output.
 
-use itertools::Itertools;
 use ruff_diagnostics::Edit;
-use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
@@ -91,10 +89,9 @@ impl ColonEmitter for Emitter<'_> {
 /// break. Tokens inside an f-string or t-string replacement field stay
 /// untouched, tracked through `interp_depth`.
 fn delimiter_padding_edits(source: &Source) -> Vec<Edit> {
-    let tokens = source.tokens();
     let mut interp_depth: u32 = 0;
     let mut edits = Vec::new();
-    for (token, next) in tokens.iter().tuple_windows() {
+    for (token, next, gap) in source.token_gaps() {
         let kind = token.kind();
         if is_interpolated_string_start(kind) {
             interp_depth += 1;
@@ -104,7 +101,6 @@ fn delimiter_padding_edits(source: &Source) -> Vec<Edit> {
         if interp_depth > 0 {
             continue;
         }
-        let gap = TextRange::new(token.end(), next.start());
         if gap.is_empty() || source.contains_line_break(gap) {
             continue;
         }

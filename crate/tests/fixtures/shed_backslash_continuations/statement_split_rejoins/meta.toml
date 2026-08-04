@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Split Between Statement Clauses Rejoins"
+
+description = '''
+An `import` list, an `assert` message, and a `with` item list carry no expression across the break, so each rejoins onto one line rather than taking parentheses.
+'''

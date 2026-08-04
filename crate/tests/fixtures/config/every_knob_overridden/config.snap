@@ -25,6 +25,9 @@ Config {
         ],
     },
     rules: RuleConfigs {
+        shed_backslash_continuations: ToggleOnly {
+            enabled: false,
+        },
         normalize_literals: NormalizeLiteralsConfig {
             enabled: false,
             unify_numerics: false,

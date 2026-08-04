@@ -1,6 +1,6 @@
 ---
 caption : "Lays an import block out one module per line, gathering each module's members behind it and packing an over-budget roster to the import budget."
-related : [align-imports, alphabetize, bare-imports, collection-layout, group-imports, signature-layout]
+related : [align-imports, alphabetize, bare-imports, collection-layout, group-imports, shed-backslash-continuations, signature-layout]
 layout  : doc
 ---
 
@@ -14,7 +14,7 @@ Further shape questions sit below that width split, each a facet rather than a r
 
 The rule runs ahead of [[group-imports]] and [[alphabetize]], so each module it puts on its own line reaches its canonical group and slot in the same pass, and the gathered roster lands in the order [[alphabetize]] would leave it. Setting `alphabetize = false` holds the authored member order across both moves.
 
-The rule acts on single-line imports that open their own line. A `from ... import *`, a from-import already within budget, a `;`-joined statement, and a multi-line (*parenthesized or backslash-continued*) import stay untouched, and a lone name whose own line still overflows keeps its place rather than splitting further. A comment anywhere across the lines a gather would clear holds it back, since folding those statements together would leave the comment describing nothing, and a notebook's cell boundary holds a gather the same way. Pair with [[align-imports]] to align the `import` keyword across the resulting run, which already carries one identical prefix per line.
+The rule acts on single-line imports that open their own line. A `from ... import *`, a from-import already within budget, a `;`-joined statement, and a parenthesized multi-line import stay untouched, and a lone name whose own line still overflows keeps its place rather than splitting further. A backslash-continued import arrives here already rejoined, since [[shed-backslash-continuations]] sheds the escape well ahead of it, so every move below reads the single line that rejoin produced. A comment anywhere across the lines a gather would clear holds it back, since folding those statements together would leave the comment describing nothing, and a notebook's cell boundary holds a gather the same way. Pair with [[align-imports]] to align the `import` keyword across the resulting run, which already carries one identical prefix per line.
 
 <template #configuration>
 

@@ -10,15 +10,14 @@
 use std::{borrow::Cow, cmp::Reverse};
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{AnyNodeRef, Expr, comparable::ComparableStmt, token::parenthesized_range};
-use ruff_python_parser::parse_module;
+use ruff_python_ast::{AnyNodeRef, Expr, token::parenthesized_range};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,
     primitives::{
-        edit::{apply_inline_edits, insert_edit, singleton_groups, splice_reparse},
+        edit::{apply_inline_edits, insert_edit, singleton_groups, splice_preserves_tree},
         inline::{end_column, single_line_form, soft_wrap_runs},
         walk::{Descent, ParentedProbe, walk_parented_exprs},
     },
@@ -96,29 +95,7 @@ impl<'a> Scout<'a> {
         }
         let inner = expr.range();
         let bare = single_line_form(expr, self.source.slice(inner))?;
-        self.preserves_tree(pair, &bare)
-            .then_some(Candidate { bare, inner, pair })
-    }
-
-    /// Reports whether splicing the bare interior in place of `pair`
-    /// reparses to the same statement tree, the question that decides
-    /// whether the pair carries syntax or only wraps.
-    fn preserves_tree(&self, pair: TextRange, bare: &str) -> bool {
-        let Ok(reparsed) = splice_reparse(
-            self.source,
-            self.source.module_range(),
-            pair,
-            bare,
-            parse_module,
-        ) else {
-            return false;
-        };
-        self.source
-            .ast()
-            .body
-            .iter()
-            .map(ComparableStmt::from)
-            .eq(reparsed.syntax().body.iter().map(ComparableStmt::from))
+        splice_preserves_tree(self.source, pair, &bare).then_some(Candidate { bare, inner, pair })
     }
 }
 

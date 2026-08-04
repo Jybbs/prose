@@ -401,6 +401,17 @@ export const glossary: Record<string, GlossaryEntry> = {
     href       : '/primitives/binding-analysis'
   },
 
+  'line continuation': {
+    aliases    : ['backslash continuation'],
+    definition : 'A line continuation is a trailing `\\` that joins a physical line to the '
+               + 'next, splitting one logical line without a bracket. '
+               + '`shed-backslash-continuations` removes it and settles the split through '
+               + 'brackets, whereas a backslash inside a docstring escapes the newline of the '
+               + 'string value rather than the source line.',
+    families   : ['formatting'],
+    rule       : 'shed-backslash-continuations'
+  },
+
   'lint': {
     aliases    : ['Lint', 'lint violation', 'lint-only', 'linting'],
     definition : 'Lint is the rule category whose diagnostics surface as `Severity::Lint` '

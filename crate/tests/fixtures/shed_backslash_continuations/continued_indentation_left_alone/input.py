@@ -1,0 +1,3 @@
+if ready:
+   \
+    started = True

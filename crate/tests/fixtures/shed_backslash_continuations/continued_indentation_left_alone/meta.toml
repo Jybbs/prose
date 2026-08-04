@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Backslash Inside an Indent Is Left Alone"
+
+description = '''
+A backslash the lexer folds into a block's indentation declares that indent, so no rejoin preserves it and the rule leaves the source unchanged.
+'''

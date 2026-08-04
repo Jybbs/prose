@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_backslash_continuations/comment_rides_the_rejoined_line/input.py
+---
+x = 1 + 2  # note

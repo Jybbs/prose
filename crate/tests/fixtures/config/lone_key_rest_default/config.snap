@@ -22,6 +22,9 @@ Config {
         first_party: [],
     },
     rules: RuleConfigs {
+        shed_backslash_continuations: ToggleOnly {
+            enabled: true,
+        },
         normalize_literals: NormalizeLiteralsConfig {
             enabled: true,
             unify_numerics: true,
