@@ -1,6 +1,7 @@
 //! Predicts the column an alignment rule shifts each assignment and
 //! keyword value to, so a layout decision tests a construct against the
-//! position it lands at after alignment rather than its current one. No
+//! position it lands at after alignment rather than its current one, and
+//! reads that prediction back per offset through `settled_column`. No
 //! column is reserved for a value inside an f-string or t-string
 //! replacement field. A row whose value spans lines groups as if
 //! single-line, since a collapsing construct becomes single-line before
@@ -93,4 +94,14 @@ pub(crate) fn reserved_columns(
     };
     visitor.visit_body(&source.ast().body);
     visitor.columns
+}
+
+/// The column `offset` lands at once the alignment settles, the column
+/// `reservations` records for it and `fallback` otherwise.
+pub(crate) fn settled_column(
+    reservations: &HashMap<TextSize, usize>,
+    offset: TextSize,
+    fallback: impl FnOnce() -> usize,
+) -> usize {
+    reservations.get(&offset).copied().unwrap_or_else(fallback)
 }

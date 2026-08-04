@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Attribute or Subscript Chain Closes Up"
+
+description = '''
+A rejoin inserts a separator only where one belongs, so a chain split before `.` or `[` closes to `value.first.second.third` rather than leaving a space ahead of the operator.
+'''

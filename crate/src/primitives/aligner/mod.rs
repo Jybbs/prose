@@ -3,8 +3,9 @@
 //! `AlignWalker` in `walker` and drives it through the `emit_*`
 //! methods, with the grouping, hold, and member-construction machinery
 //! in the sibling modules. This root carries the `Member` row and the
-//! per-rule `Settings` knobs both of those share. Aligned rows always
-//! carry a one-space buffer between content and the aligned token.
+//! per-rule `Settings` knobs both of those share. An aligned row
+//! carries its settings' buffer between content and the aligned token,
+//! one space unless the rule widens it.
 
 use ruff_text_size::{TextRange, TextSize};
 
@@ -27,7 +28,7 @@ pub(crate) use grouping::{
 pub(crate) use holds::{is_alignment_candidate, is_held, retain_unheld};
 pub(crate) use members::{
     line_anchored_member, line_anchored_member_at_kind, line_anchored_member_between,
-    parameter_split_groups, range_anchored_member_single_line,
+    line_gap_before, parameter_split_groups, range_anchored_member_single_line,
 };
 pub(crate) use walker::AlignWalker;
 
@@ -90,13 +91,15 @@ impl Member {
 
 /// Emission knobs shared by every alignment rule.
 ///
-/// `max_shift` caps the run's width spread. `strip_singleton`
-/// collapses a size-one group's gap to zero width. `line_length`
-/// carries the governing cap when the rule resolves within it, so a
-/// member whose aligned line would cross the cap partitions out of the
-/// run the way an over-`max_shift` outlier does.
+/// `buffer` is the gap an aligned row holds between its content and the
+/// aligned token. `max_shift` caps the run's width spread.
+/// `strip_singleton` collapses a size-one group's gap to zero width.
+/// `line_length` carries the governing cap when the rule resolves
+/// within it, so a member whose aligned line would cross the cap
+/// partitions out of the run the way an over-`max_shift` outlier does.
 #[derive(Clone, Copy)]
 pub(crate) struct Settings {
+    buffer: usize,
     line_length: Option<usize>,
     max_shift: MaxShift,
     strip_singleton: bool,
@@ -104,9 +107,11 @@ pub(crate) struct Settings {
 
 impl Settings {
     /// Builds the alignment settings carried by an alignment rule, with
-    /// `strip_singleton` off and no line cap until a rule opts in.
+    /// a one-space buffer, `strip_singleton` off, and no line cap until
+    /// a rule opts in.
     fn aligned(max_shift: MaxShift) -> Self {
         Self {
+            buffer: 1,
             line_length: None,
             max_shift,
             strip_singleton: false,
@@ -114,10 +119,21 @@ impl Settings {
     }
 
     /// Returns the gap width before the aligned token for a group of
-    /// `member_count` rows, zero for a stripped singleton and one
-    /// space otherwise.
+    /// `member_count` rows, zero for a stripped singleton and the
+    /// settings' buffer otherwise.
     fn suffix_len(self, member_count: usize) -> usize {
-        usize::from(member_count != 1 || !self.strip_singleton)
+        if member_count == 1 && self.strip_singleton {
+            0
+        } else {
+            self.buffer
+        }
+    }
+
+    /// Returns a copy of `self` carrying `width` as the gap an aligned
+    /// row holds ahead of the aligned token.
+    pub(crate) fn with_buffer(mut self, width: usize) -> Self {
+        self.buffer = width;
+        self
     }
 
     /// Returns a copy of `self` carrying `cap` as the governing line

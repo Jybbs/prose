@@ -3,7 +3,7 @@ import type { GlossaryFamily } from '../shared/registries'
 export interface GlossaryEntry {
   aliases   ?: readonly string[]
   definition : string
-  families   : readonly [GlossaryFamily, ...GlossaryFamily[]]
+  families   ?: readonly GlossaryFamily[]
   href      ?: string
   rule      ?: string
 }
@@ -158,7 +158,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['annotations', 'type annotation', 'type annotations'],
     definition : 'An annotation is a `name: Type` declaration on a function parameter, return '
                + 'value, or variable. Type checkers and version-gated rules like '
-               + '`modernize-annotations` and `unused-future-annotations` read it, and '
+               + '`modernize-annotations` and `prune-inert-imports` read it, and '
                + '`alphabetize` treats a non-deferred annotation as a reference that pins '
                + 'definition order.',
     families   : ['formatting', 'alignment', 'ordering'],
@@ -179,7 +179,6 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : 'An atomic is a simple, indivisible code element (integer, float, string, '
                + 'single name) that `collection-layout` can safely keep on one line without '
                + 'readability loss.',
-    families   : ['layout'],
     rule       : 'collection-layout'
   },
 
@@ -197,7 +196,6 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'groups per the `blank-lines` rule, and binds description-shaped own-line '
                + 'comment blocks tight against the following statement while leaving '
                + 'banner-shaped blocks separated by 1 blank line below.',
-    families   : ['formatting'],
     rule       : 'blank-lines'
   },
 
@@ -238,7 +236,6 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'with `max-params` and `collection-layout` counts dict entries with '
                + '`max-dict-entries`, and `false` disables either. It replaces the magic '
                + 'trailing comma that Black and Ruff read with an explicit, configurable count.',
-    families   : ['layout'],
     rule       : 'collection-layout'
   },
 
@@ -322,13 +319,13 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['forward references'],
     definition : 'A forward reference is an annotation that names a class or alias defined '
                + 'later in the file. The `from __future__ import annotations` directive made '
-               + 'these safe on older Python runtimes, and `unused-future-annotations` removes '
+               + 'these safe on older Python runtimes, and `prune-inert-imports` removes '
                + 'the directive when no annotation needs the forward reference. `alphabetize` '
                + 'never introduces one, holding a class or function behind any sibling it names '
                + 'at evaluation time so the reorder cannot lift a definition above a name it '
                + 'depends on.',
-    families   : ['lint', 'ordering'],
-    rule       : 'unused-future-annotations'
+    families   : ['ordering'],
+    rule       : 'prune-inert-imports'
   },
 
   'gitignore': {
@@ -347,6 +344,18 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'further edits. Every rule preserves this property, so re-running the '
                + 'formatter never thrashes the source.',
     families   : ['engine']
+  },
+
+  'implicit concatenation': {
+    aliases    : ['adjacent literals', 'implicitly concatenated'],
+    definition : 'Two string literals written adjacent to one another join at compile time '
+               + 'into a single value, so `("one " "two")` is the same string as `"one two"`. '
+               + '`line-overflow` offers that form as a display-only suggestion when an '
+               + 'over-budget line\'s overflow sits inside one literal carrying interior '
+               + 'whitespace, and never writes it, because the break points would become '
+               + 'source a later edit has to reflow.',
+    families   : ['layout', 'lint'],
+    href       : 'https://docs.python.org/3/reference/lexical_analysis.html#string-literal-concatenation'
   },
 
   'import-line-length': {
@@ -378,7 +387,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + '`#`, or `~`)*, with the canonical above-gap measured from the topmost '
                + 'comment either way. The orderer primitive\'s `block_range` carries the '
                + 'block with its item when reordering siblings.',
-    families   : ['formatting', 'ordering'],
+    families   : ['ordering'],
     rule       : 'blank-lines'
   },
 
@@ -390,6 +399,17 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'read.',
     families   : ['engine'],
     href       : '/primitives/binding-analysis'
+  },
+
+  'line continuation': {
+    aliases    : ['backslash continuation'],
+    definition : 'A line continuation is a trailing `\\` that joins a physical line to the '
+               + 'next, splitting one logical line without a bracket. '
+               + '`shed-backslash-continuations` removes it and settles the split through '
+               + 'brackets, whereas a backslash inside a docstring escapes the newline of the '
+               + 'string value rather than the source line.',
+    families   : ['formatting'],
+    rule       : 'shed-backslash-continuations'
   },
 
   'lint': {
@@ -406,7 +426,6 @@ export const glossary: Record<string, GlossaryEntry> = {
                + '`case Pattern: body` arm pairs a pattern with a body, and `align-match-case` '
                + 'shares a column for the post-pattern `:` separator across consecutive '
                + 'single-expression arms.',
-    families   : ['alignment'],
     rule       : 'align-match-case'
   },
 
@@ -453,7 +472,6 @@ export const glossary: Record<string, GlossaryEntry> = {
                + '`dict[str, int]` replace `List[int]` and `Dict[str, int]`, and '
                + '`modernize-annotations` applies the conversion on projects whose '
                + '`target-version` carries the builtin form.',
-    families   : ['formatting'],
     rule       : 'modernize-annotations'
   },
 
@@ -463,7 +481,6 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'None` replace `Union[X, Y]` and `Optional[T]` at the type level, and '
                + '`modernize-annotations` applies the rewrite on projects whose '
                + '`target-version` allows the pipe form.',
-    families   : ['formatting'],
     rule       : 'modernize-annotations'
   },
 
@@ -472,9 +489,8 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : 'PEP 749 is the deferred-annotation-evaluation PEP, landing in Python 3.14. '
                + 'The runtime no longer evaluates annotations eagerly for typing-only code, so '
                + '`from __future__ import annotations` becomes redundant and '
-               + '`unused-future-annotations` removes it on 3.14+.',
-    families   : ['lint'],
-    rule       : 'unused-future-annotations'
+               + '`prune-inert-imports` removes it on 3.14+.',
+    rule       : 'prune-inert-imports'
   },
 
   'Pydantic': {
@@ -537,7 +553,6 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'single-member group or a multi-member group whose colons share one source '
                + 'line, and it clears the space run just inside a bracket delimiter, so a '
                + 'one-key dict reads as plain code and `int(a )` settles to `int(a)`.',
-    families   : ['alignment'],
     rule       : 'strip-align-padding'
   },
 
@@ -550,7 +565,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + '`docstring-wrap` budgets its prose lines against `code-line-length` by '
                + 'default, whereas its `name: description` entries wrap to `docstring-line-length` '
                + 'with a hanging indent at the description\'s start column.',
-    families   : ['docs', 'alignment'],
+    families   : ['alignment'],
     rule       : 'docstring-wrap'
   },
 

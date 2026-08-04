@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/parenthesized_keyword_value_survives/input.py
+---
+labels = {"name": "Name of the member.",
+    "kind": ("File type, usually one of these constants: "
+            "REGTYPE, LNKTYPE, SYMTYPE.")}

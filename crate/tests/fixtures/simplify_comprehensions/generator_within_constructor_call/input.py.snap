@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/generator_within_constructor_call/input.py
+---
+widths = [row.width for row in rows]
+labels = {row.label for row in rows}

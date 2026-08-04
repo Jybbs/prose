@@ -13,6 +13,8 @@ use std::{borrow::Cow, cmp::Ordering};
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_notebook::CellOffsets;
+use ruff_python_ast::comparable::ComparableStmt;
+use ruff_python_parser::parse_module;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::{primitives::insert_sorted_by_key, source::Source};
@@ -160,22 +162,33 @@ pub(crate) fn splice_parses<T, E>(
     splice_reparse(source, outer, inner, replacement, parse).is_ok()
 }
 
-/// Splices `replacement` into `outer` at `inner` and returns the parsed
-/// result, the round-trip a rule runs to inspect the reparsed tree
-/// rather than merely confirm it parses.
-pub(crate) fn splice_reparse<T, E>(
-    source: &Source,
-    outer: TextRange,
-    inner: TextRange,
-    replacement: &str,
-    parse: impl Fn(&str) -> Result<T, E>,
-) -> Result<T, E> {
-    let candidate = format!(
-        "{}{replacement}{}",
-        source.slice(TextRange::new(outer.start(), inner.start())),
-        source.slice(TextRange::new(inner.end(), outer.end())),
-    );
-    parse(&candidate)
+/// Reports whether splicing `replacement` over `range` reparses the
+/// whole module to the same statement tree, the round-trip a rule runs
+/// before committing a rewrite it means to leave semantics-free.
+pub(crate) fn splice_preserves_tree(source: &Source, range: TextRange, replacement: &str) -> bool {
+    let Ok(reparsed) = splice_reparse(
+        source,
+        source.module_range(),
+        range,
+        replacement,
+        parse_module,
+    ) else {
+        return false;
+    };
+    source
+        .ast()
+        .body
+        .iter()
+        .map(ComparableStmt::from)
+        .eq(reparsed.syntax().body.iter().map(ComparableStmt::from))
+}
+
+/// The edit clearing every full line `range` sits on, its final line
+/// terminator included, held back from the newline closing a notebook
+/// cell so the deletion empties that cell rather than merging it into
+/// the next.
+pub(crate) fn whole_line_deletion(source: &Source, range: TextRange) -> Edit {
+    Edit::range_deletion(source.full_lines_within_cell(range))
 }
 
 /// Returns `Cow::Borrowed` of `source.slice(span)` when every part is
@@ -261,6 +274,24 @@ fn replacement_or_deletion(range: TextRange, content: String) -> Edit {
     } else {
         Edit::range_replacement(content, range)
     }
+}
+
+/// Splices `replacement` into `outer` at `inner` and returns the parsed
+/// result, the shared body under [`splice_parses`] and
+/// [`splice_preserves_tree`].
+fn splice_reparse<T, E>(
+    source: &Source,
+    outer: TextRange,
+    inner: TextRange,
+    replacement: &str,
+    parse: impl Fn(&str) -> Result<T, E>,
+) -> Result<T, E> {
+    let candidate = format!(
+        "{}{replacement}{}",
+        source.slice(TextRange::new(outer.start(), inner.start())),
+        source.slice(TextRange::new(inner.end(), outer.end())),
+    );
+    parse(&candidate)
 }
 
 /// Weaves `edits` into the `span` slice of `text` and returns the
@@ -586,5 +617,14 @@ mod tests {
         assert_eq!(r.start().to_u32(), 0);
         assert_eq!(r.end().to_u32(), 1);
         assert_eq!(text, "a");
+    }
+
+    #[test]
+    fn whole_line_deletion_clears_through_the_line_terminator() {
+        let source = parse("import os\nimport sys\nx = 1\n");
+        let edit = whole_line_deletion(&source, range(10, 16));
+
+        assert_eq!(edit.range(), range(10, 21));
+        assert_eq!(edit.content(), None);
     }
 }

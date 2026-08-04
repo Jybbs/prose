@@ -194,6 +194,10 @@ impl Config {
         allow.iter().cloned().collect()
     }
 
+    pub(crate) fn alphabetize_enabled(&self) -> bool {
+        self.rules.alphabetize.enabled
+    }
+
     pub(crate) fn code_width(&self) -> usize {
         self.code_line_length
             .expect("Config::default synthesizes Some(88)")

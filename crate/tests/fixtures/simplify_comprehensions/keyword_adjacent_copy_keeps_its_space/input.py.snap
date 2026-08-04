@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/keyword_adjacent_copy_keeps_its_space/input.py
+---
+def collect(rows):
+    return list(rows)
+
+
+def gather(rows):
+    return not set(rows)

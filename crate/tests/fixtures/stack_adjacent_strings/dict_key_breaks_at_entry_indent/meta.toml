@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Dict Key Breaks the Way a Dict Value Does"
+
+description = '''
+A run standing as a dict key **breaks at the entry's own indent**, and the entry keeps its `key: value` line rather than hanging at the `:`, since the break is what brings the row inside the budget whichever half of the entry carries the run.
+'''

@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Subscript on the Result Stays Outside the Pair"
+
+description = '''
+The break replaces the chain rather than whatever the chain feeds, so a subscript applied to its result sits past the closing paren and reads as the one operation that happens after the pipeline settles.
+'''

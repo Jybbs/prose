@@ -1,7 +1,7 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: json
-input_file: tests/fixtures/thematic/class_method_groups_then_align/input.py
+input_file: crate/tests/fixtures/thematic/class_method_groups_then_align/input.py
 ---
 [
   {
@@ -29,6 +29,19 @@ input_file: tests/fixtures/thematic/class_method_groups_then_align/input.py
       "row": 22
     },
     "message": "`name` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 18,
+      "row": 25
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 25
+    },
+    "message": "`_internal` returns a value but has no return type annotation"
   },
   {
     "code": "signature-annotations",

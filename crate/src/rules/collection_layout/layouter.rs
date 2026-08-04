@@ -23,7 +23,13 @@ use super::{
     flow::flow_lines,
 };
 use crate::{
-    primitives::{INDENT_STEP, edit::narrowed_replacement, layout::is_layoutable},
+    primitives::{
+        INDENT_STEP,
+        edit::narrowed_replacement,
+        layout::{is_layoutable, item_indent},
+        reserve::settled_column,
+    },
+    rules::stack_adjacent_strings::concatenated_run,
     source::Source,
 };
 
@@ -44,7 +50,7 @@ impl<'a> Layouter<'a> {
     /// Builds the expanded form of `expr` as a string, recursively
     /// laying out any qualifying child collections.
     fn expand(&self, expr: &Expr, indent: usize) -> String {
-        let item_indent = indent + INDENT_STEP;
+        let item_indent = item_indent(indent);
         let dict_items = expr.as_dict_expr().map(|d| &d.items);
         let parent = AnyNodeRef::from(expr);
         let GatheredItems {
@@ -159,7 +165,9 @@ impl<'a> Layouter<'a> {
     /// INDENT_STEP`. The key routes through `repaired_key` the same way
     /// `serialize_dict_item` does, and its pre-colon padding carries
     /// through, the column belonging to `align_colons`. Returns `None`
-    /// for `**value` unpacking items.
+    /// for a `**value` unpacking item and for an entry either side of
+    /// whose `:` carries an implicitly concatenated string, which
+    /// `stack-adjacent-strings` breaks in place.
     fn hang_dict_value(
         &self,
         item: &DictItem,
@@ -167,6 +175,9 @@ impl<'a> Layouter<'a> {
         item_indent: usize,
     ) -> Option<String> {
         let key = item.key.as_ref()?;
+        if concatenated_run(key).is_some() || concatenated_run(&item.value).is_some() {
+            return None;
+        }
         let key_text = self.repaired_key(key, parent, item_indent);
         let padding = pre_colon_padding(self.key_value_gap(key, &item.value));
         let hang_column = item_indent + INDENT_STEP;
@@ -318,15 +329,12 @@ impl<'a> Visitor<'a> for Layouter<'a> {
             return;
         }
         let range = expr.range();
+        let start = range.start();
         // Test the collapse against the column `align_equals` shifts the
         // value to, not the unaligned column the literal currently opens
         // at, so a fit that survives the shift is what the rule collapses.
-        let column = self
-            .reservations
-            .get(&range.start())
-            .copied()
-            .unwrap_or_else(|| self.source.column_of(range.start()));
-        let indent = self.source.line_indent_width(range.start());
+        let column = settled_column(&self.reservations, start, || self.source.column_of(start));
+        let indent = self.source.line_indent_width(start);
         match self.replacement_for(expr, column, indent) {
             Some(text) => self
                 .edits

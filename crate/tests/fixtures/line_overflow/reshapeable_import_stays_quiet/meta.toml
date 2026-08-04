@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comma-Joined Import Stays Quiet"
+
+description = '''
+The over-cap line joins two modules with a comma, the form `import-layout` splits into one statement per module, so `line-overflow` leaves it for that rule and emits nothing even with the splitting facet off.
+'''

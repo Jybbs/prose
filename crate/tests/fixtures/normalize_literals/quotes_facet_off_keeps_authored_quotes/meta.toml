@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Turning Off `unify-quotes` Leaves the Other Facets Running"
+
+description = '''
+With `unify-quotes = false` the single-quoted name stands as written, while the hex marker still lowercases and the no-op `u` still drops. Each facet gates one spelling axis on its own.
+'''

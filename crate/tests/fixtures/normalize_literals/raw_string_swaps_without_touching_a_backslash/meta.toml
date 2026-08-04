@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Raw String Swaps Only Its Delimiters"
+
+description = '''
+A raw string carries every backslash into its value, so the rule rewrites the delimiters and leaves the body byte-for-byte. `r'\"exact\"'` still swaps, since each `"` it holds already sits behind a backslash and needs none added.
+'''

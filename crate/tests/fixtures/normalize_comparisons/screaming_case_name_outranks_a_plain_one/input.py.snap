@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_comparisons/screaming_case_name_outranks_a_plain_one/input.py
+---
+FLOOR = 2
+LIMIT = 10
+
+
+def within(size):
+    if size == LIMIT:
+        return FLOOR == LIMIT
+    return size

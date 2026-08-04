@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/composition/drop_future_sort_align_cushion/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/drop_future_sort_align_cushion/input.py
 ---
 import collections as col
 import numpy       as np
@@ -9,4 +9,4 @@ import requests    as req
 
 
 def add(a, b):
-    return a + b
+    return (req, np, col, a + b)

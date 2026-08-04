@@ -1,0 +1,20 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/line_overflow/dense_token_string_keeps_the_no_reshape_message/input.py
+---
+[
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 53,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Line is 52 columns, over the 40-column budget, with no legal reshape"
+  }
+]

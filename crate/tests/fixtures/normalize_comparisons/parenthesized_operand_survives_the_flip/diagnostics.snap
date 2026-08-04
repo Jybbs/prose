@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/normalize_comparisons/parenthesized_operand_survives_the_flip/input.py
+---
+normalize-comparisons@25..38

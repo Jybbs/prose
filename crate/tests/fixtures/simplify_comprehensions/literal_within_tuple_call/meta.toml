@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Literal Inside `tuple()` Becomes a Tuple Literal"
+
+description = '''
+A one-member result carries the comma its grammar needs, arriving where the source lacked one and staying where the source already had it.
+'''

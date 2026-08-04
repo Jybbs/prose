@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/concat_docstring_still_reports/input.py
+---
+def handler():
+    "a leading part here " "and the trailing part"

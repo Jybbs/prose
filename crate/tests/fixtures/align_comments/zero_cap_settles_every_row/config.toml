@@ -1,0 +1,2 @@
+[rules]
+align-comments = { max-shift = 0 }

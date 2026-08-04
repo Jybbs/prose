@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/literal_within_set_call/input.py
+---
+squares = {1, 4, 9}
+labels  = {"alpha", "beta"}

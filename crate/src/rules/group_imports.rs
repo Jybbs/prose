@@ -8,17 +8,16 @@ use std::{borrow::Cow, ops::Range};
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::Stmt;
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::TextRange;
 
 use crate::{
     config::Config,
     primitives::{
         edit::{narrowed_replacement, singleton_groups},
         imports::{import_group, sectioned_import_runs},
-        orderer::{
-            any_sibling_shares_line, assemble_blocks, blocks_span, member_blocks, permute_full,
-        },
-        scope::{compound_sub_bodies, scoped_body},
+        orderer::{any_sibling_shares_line, assemble_blocks, member_blocks, permute_full},
+        range::blocks_span,
+        scope::sub_bodies,
         sections::Sections,
     },
     rule::{Rule, RuleId},
@@ -30,6 +29,9 @@ pub(crate) struct GroupImports {
 }
 
 impl GroupImports {
+    pub(crate) const MESSAGE: &'static str =
+        "group imports into bare, external, and local sections";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             first_party: config.first_party(),
@@ -101,14 +103,4 @@ impl Walker<'_> {
             self.edits.push(edit);
         }
     }
-}
-
-/// Returns the body and enclosing range of every direct sub-body a
-/// statement opens, the class- or function-definition suite and each arm
-/// of a compound statement alike.
-fn sub_bodies(stmt: &Stmt) -> Vec<(&[Stmt], TextRange)> {
-    if let Some((body, _)) = scoped_body(stmt) {
-        return vec![(body, stmt.range())];
-    }
-    compound_sub_bodies(stmt)
 }

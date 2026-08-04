@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Legacy `Optional` Inside a Replacement Field Is Rewritten"
+
+description = '''
+The rewrite reaches inside an f-string replacement field, so a legacy `Optional` written there takes the same PEP 604 form one written in an annotation does.
+'''

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/fitting_content_needs_no_split/input.py
+---
+WELCOME_MESSAGE_BANNER = "hello there, friend"

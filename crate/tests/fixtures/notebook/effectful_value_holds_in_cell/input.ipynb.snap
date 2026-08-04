@@ -10,4 +10,4 @@ def helper():
     return 1
 
 
-CACHE = dict(size=10)
+CACHE = build_cache(size=10)

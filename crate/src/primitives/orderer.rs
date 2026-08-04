@@ -16,6 +16,7 @@ use crate::{
     primitives::{
         comments::bound_block_start,
         edit::{any_owned, narrowed_replacement, splice_parses},
+        range::blocks_span,
     },
     source::Source,
 };
@@ -36,10 +37,8 @@ pub(crate) fn adjacent_slots(
         .collect()
 }
 
-/// True when any adjacent pair of items in `body` shares one physical line.
-/// A block-based reorder decomposes one item per line, so a body packing
-/// two onto a line (`;`-joined statements, comma-packed entries) has no such
-/// decomposition and keeps source order.
+/// True when any adjacent pair of items in `body` shares one physical
+/// line, as a `;`-joined statement run or a comma-packed entry run does.
 pub(crate) fn any_sibling_shares_line<T: Ranged>(source: &Source, body: &[T]) -> bool {
     body.windows(2)
         .any(|pair| source.same_line(pair[0].end(), pair[1].start()))
@@ -195,11 +194,6 @@ pub(crate) fn block_ranges<T: Ranged>(
     (0..items.len())
         .map(|i| block_range(source, items, i, outer))
         .collect()
-}
-
-/// Total source extent covered by `blocks`. Requires non-empty input.
-pub(crate) fn blocks_span(blocks: &[TextRange]) -> TextRange {
-    blocks[0].cover(*blocks.last().expect("non-empty blocks"))
 }
 
 /// Member blocks for every slot of `items`, the `Vec<TextRange>` a

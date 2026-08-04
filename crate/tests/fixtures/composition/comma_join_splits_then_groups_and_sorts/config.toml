@@ -1,0 +1,5 @@
+[imports]
+first-party = ["myapp"]
+
+[harness]
+rules = ["import-layout", "group-imports", "alphabetize", "blank-lines"]

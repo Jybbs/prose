@@ -1,0 +1,28 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/line_overflow/escapes_survive_the_split/input.py
+---
+[
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 78,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "\"the quick brown fox\\tjumps over the \\\"lazy\\\" dog and keeps running\"",
+          "content": "(\n    \"the quick brown fox\\tjumps over \"\n    \"the \\\"lazy\\\" dog and keeps running\"\n)"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Line is 77 columns, over the 40-column budget, with a legal reshape at the string literal"
+  }
+]

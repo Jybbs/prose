@@ -26,6 +26,8 @@ pub(crate) struct BareImports {
 }
 
 impl BareImports {
+    pub(crate) const MESSAGE: &'static str = "Flag a bare import a `from` import could replace";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.bare_imports;
         Self {

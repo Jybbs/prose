@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/thematic/class_method_groups_then_align/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/class_method_groups_then_align/input.py
 ---
 import os
 import sys
@@ -28,7 +28,7 @@ class Posting:
         return self.title
 
     def _internal(self):
-        pass
+        return (Any, Counter, sys, os)
 
     def update(self, *, atomic=True, retries=3):
         return self

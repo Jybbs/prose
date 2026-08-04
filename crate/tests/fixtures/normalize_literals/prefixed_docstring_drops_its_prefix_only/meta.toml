@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Docstring Drops Its Prefix and Keeps Its Quotes"
+
+description = '''
+Both docstrings lose the no-op `u` while neither one's delimiters move, the second staying single-quoted precisely because it sits in docstring position. **The prefix facet reaches a docstring and the quote facet does not**, leaving that frame to [[docstring-frame]].
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An F-String Swaps When No Field Carries the Target Quote"
+
+description = '''
+Both f-strings move to `"`, the first carrying a format spec through the swap and the second holding no replacement field at all. The opener, the closer, and every literal run between them move as one edit.
+'''

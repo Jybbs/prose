@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Constructor Called With Nothing Reaches Its Literal"
+
+description = '''
+`dict()`, `list()`, and `tuple()` each have an empty literal to reach, whereas `set()` has none and stays as written.
+'''

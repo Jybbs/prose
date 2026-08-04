@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/align_comments/bare_hash_joins_the_run/input.py
+---
+align-comments@5..7

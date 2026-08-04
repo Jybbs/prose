@@ -25,4 +25,4 @@ class Posting:
         return self.title
 
     def _internal(self):
-        pass
+        return (Any, Counter, sys, os)

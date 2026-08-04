@@ -27,6 +27,9 @@ use crate::{
 pub(crate) struct BareSuper;
 
 impl BareSuper {
+    pub(crate) const MESSAGE: &'static str =
+        "rewrite a parameterized `super()` call to the bare form";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }
@@ -35,7 +38,7 @@ impl BareSuper {
 impl Rule for BareSuper {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let analysis = source.binding_analysis();
-        if analysis.binds_anywhere("__class__") || analysis.binds_anywhere("super") {
+        if analysis.binds_name("__class__") || analysis.binds_name("super") {
             return Vec::new();
         }
         let mut walker = Walker {

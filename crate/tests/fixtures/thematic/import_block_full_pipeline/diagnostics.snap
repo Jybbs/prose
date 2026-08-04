@@ -8,6 +8,6 @@ alphabetize@43..160
 band-constants@43..160
 blank-lines@160..161
 group-imports@35..160
+prune-inert-imports@0..35
 signature-annotations@165..171
 signature-annotations@172..176
-unused-future-annotations@0..35

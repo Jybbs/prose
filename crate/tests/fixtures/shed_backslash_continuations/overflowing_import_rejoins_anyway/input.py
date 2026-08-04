@@ -1,0 +1,2 @@
+import collections_module_alpha, \
+    collections_module_beta_with_a_much_longer_name_that_overflows_here

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Backslash Alone on Its Line Takes the Line With It"
+
+description = '''
+A backslash occupying a whole physical line inside brackets leaves nothing behind once it goes, so the empty line goes with it.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comma-Joined Import Splits, Then Groups and Sorts in One Pass"
+
+description = '''
+[[import-layout]] runs ahead of [[group-imports]] and [[alphabetize]], so each module it breaks onto its own line **reaches its canonical group and slot in the same pass**, a first-party module landing in the local section rather than riding along with the stdlib name it was comma-joined to.
+'''

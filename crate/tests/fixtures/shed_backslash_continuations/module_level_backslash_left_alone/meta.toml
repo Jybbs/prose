@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Backslash Opening Its Own Line at Module Level Is Left Alone"
+
+description = '''
+A backslash at column zero between two statements declares the indentation of the line it continues, so a rejoin would move that line off column zero and the rule leaves the source unchanged.
+'''

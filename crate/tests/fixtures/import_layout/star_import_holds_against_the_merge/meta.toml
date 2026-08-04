@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Star Import Holds Its Own Line Against the Merge"
+
+description = '''
+`from pkg import *` admits no sibling member on its line, so the merge leaves it and its named counterpart **as two statements**.
+'''

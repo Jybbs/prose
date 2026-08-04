@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Triple-Quoted Body Abutting the Closer Stands"
+
+description = '''
+A body holding a `"""` run and a body ending in `"` would each collide with the closer the swap installs, so both keep their original delimiters rather than corrupt the literal.
+'''

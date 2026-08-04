@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/chain_layout/bare_attribute_joins_the_link_below/input.py
+---
+result = (
+    source.first()
+          .second.third()
+          .fourth()
+)

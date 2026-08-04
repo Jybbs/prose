@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/double_quotes_swap_when_an_escape_drops/input.py
+---
+quoted = 'already " escaped'
+apostrophe = "it's fine"
