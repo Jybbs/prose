@@ -17,8 +17,8 @@ use unicode_width::UnicodeWidthStr;
 
 use super::{
     classify::{
-        Segment, is_align_colons_gap, is_atomic, is_collapse_only, is_collapsible,
-        is_column_shaped, is_multi_entry, pre_colon_padding, requires_expand, segments,
+        Segment, is_align_colons_gap, is_atomic, is_collapse_only, is_collapsible, is_multi_entry,
+        pre_colon_padding, requires_expand, segments,
     },
     flow::flow_lines,
 };
@@ -26,7 +26,7 @@ use crate::{
     primitives::{
         INDENT_STEP,
         edit::narrowed_replacement,
-        layout::{is_layoutable, item_indent},
+        layout::{is_column_shaped, is_layoutable, item_indent},
         reserve::settled_column,
     },
     rules::stack_adjacent_strings::concatenated_run,

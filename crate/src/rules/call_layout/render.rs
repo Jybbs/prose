@@ -8,7 +8,8 @@ use ruff_python_ast::{
     ArgOrKeyword, Arguments, Expr, ExprCall, StringLike, helpers::any_over_expr,
     visitor::Visitor as AstVisitor,
 };
-use ruff_text_size::Ranged;
+use ruff_text_size::{Ranged, TextRange};
+use unicode_width::UnicodeWidthStr;
 
 use super::Exploder;
 use crate::primitives::{
@@ -16,7 +17,8 @@ use crate::primitives::{
     edit::apply_inline_edits,
     inline::end_column,
     layout::{
-        Separator, explode_parens, is_layoutable, item_indent, reindent_block, reindent_shift,
+        Separator, explode_parens, is_column_shaped, is_layoutable, item_indent, reindent_block,
+        reindent_shift,
     },
 };
 
@@ -141,13 +143,48 @@ impl<'a> Exploder<'a> {
         apply_inline_edits(self.source, value.range(), &nested.edits)
     }
 
+    /// The display width `range` reaches once the fractures inside it
+    /// close up, each continuation line shedding its indent and one
+    /// column standing in for the separator a join restores. A range
+    /// holding a flush column measures long and declines the rejoin
+    /// that reads it, since that column keeps its break.
+    fn settled_width(&self, range: TextRange) -> usize {
+        self.source
+            .slice(range)
+            .lines()
+            .enumerate()
+            .map(|(i, line)| usize::from(i > 0) + line.trim_start().width())
+            .sum()
+    }
+
+    /// The one-line `(...)` text for an argument list the author
+    /// fractured, or `None` where it holds no break, carries the flush
+    /// column shape the explode path emits, or spans lines once joined.
+    /// The joined row measures from `column` across the text trailing
+    /// the call to the end of its logical line, so a rejoin never lands
+    /// a row the length trigger would explode again.
+    fn rejoined(&self, arguments: &Arguments, column: usize) -> Option<String> {
+        let range = arguments.range();
+        if !self.source.contains_line_break(range) || is_column_shaped(self.source.slice(range)) {
+            return None;
+        }
+        let joined = self.inline_args(arguments);
+        if joined.contains('\n') {
+            return None;
+        }
+        let tail = TextRange::new(range.end(), self.source.logical_line_end(range.end()));
+        let width = column + joined.width() + self.settled_width(tail);
+        (width <= self.code_line_length).then_some(joined)
+    }
+
     /// Returns the exploded `(...)` text for `call` when the count or
     /// length trigger fires, the closing `)` landing at `indent` and the
     /// length trigger measured from `column`, where the `(` lands. A
     /// keyword-expressible call renders one keyword per line, while any
     /// other call renders positionally under the length trigger only. A
-    /// nested call in an argument value explodes in the same text. `None`
-    /// leaves the call inline.
+    /// nested call in an argument value explodes in the same text. Where
+    /// neither trigger fires, a fractured list rejoins onto one line and
+    /// every other call is left inline.
     pub(super) fn explode_args(
         &self,
         call: &'a ExprCall,
@@ -161,7 +198,7 @@ impl<'a> Exploder<'a> {
         let count_trips = self.cap.is_some_and(|cap| arguments.len() > cap);
         let length_trips = self.overflows_line(arguments, column);
         if !count_trips && !length_trips {
-            return None;
+            return self.rejoined(arguments, column);
         }
         match keyword_args(self.source, call, resolve_call_params(call, self.targets)) {
             Some(keywords) if !keywords.has_posonly_prefix => {

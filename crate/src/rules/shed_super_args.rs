@@ -12,7 +12,6 @@
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Expr, ExprCall, Stmt, StmtClassDef,
-    token::TokenKind,
     visitor::{Visitor, walk_expr, walk_stmt},
 };
 use ruff_python_trivia::leading_indentation;
@@ -126,17 +125,6 @@ impl<'a> Walker<'a> {
         Some(Edit::range_deletion(span))
     }
 
-    /// The offset ending the logical line `span` sits on, the first
-    /// `Newline` token past it or the module's own end.
-    fn logical_end(&self, span: TextRange) -> TextSize {
-        let module_end = self.source.module_range().end();
-        self.source
-            .first_token_offset_in_range(TextRange::new(span.end(), module_end), |token| {
-                token.kind() == TokenKind::Newline
-            })
-            .unwrap_or(module_end)
-    }
-
     /// True when an enclosing `def` binds `name` in its own scope,
     /// leaving the argument reading that binding rather than the class.
     fn shadows(&self, name: &str) -> bool {
@@ -153,7 +141,7 @@ impl<'a> Walker<'a> {
     /// same way. A line opening ahead of `span` hangs from the
     /// statement's own indent and survives the deletion.
     fn strands_a_continuation(&self, span: TextRange) -> bool {
-        let tail = TextRange::new(span.end(), self.logical_end(span));
+        let tail = TextRange::new(span.end(), self.source.logical_line_end(span.end()));
         if !self.source.contains_line_break(tail) {
             return false;
         }

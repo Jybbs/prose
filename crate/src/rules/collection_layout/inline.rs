@@ -9,11 +9,8 @@ use ruff_python_ast::{AnyNodeRef, Comprehension, Expr, ExprDict};
 use ruff_text_size::Ranged;
 use unicode_width::UnicodeWidthStr;
 
-use super::{
-    classify::{is_column_shaped, is_multi_entry},
-    layouter::Layouter,
-};
-use crate::primitives::inline::single_line_form;
+use super::{classify::is_multi_entry, layouter::Layouter};
+use crate::primitives::{inline::single_line_form, layout::is_column_shaped};
 
 impl<'a> Layouter<'a> {
     /// Builds the inline form of `expr`, recursively inlining any nested

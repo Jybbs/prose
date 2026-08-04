@@ -75,6 +75,17 @@ pub(crate) fn flush_bracket_open(block: &str) -> Option<(&str, &str)> {
     (open.trim().len() == 1).then_some((open, body))
 }
 
+/// True when `slice`, a bracketed construct's source text, already
+/// carries the flush column shape the expand path emits, its opening
+/// bracket ending its line and its closing bracket opening its own.
+/// Every other break is a fracture.
+pub(crate) fn is_column_shaped(slice: &str) -> bool {
+    flush_bracket_open(slice).is_some_and(|(_, body)| {
+        body.rsplit_once('\n')
+            .is_some_and(|(_, close)| close.trim_start().len() == 1)
+    })
+}
+
 /// True for the four collection-literal `Expr` variants the layout
 /// rules lay out, `Dict`, `List`, `Set`, and `Tuple`.
 pub(crate) fn is_layoutable(expr: &Expr) -> bool {
@@ -158,6 +169,24 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
+
+    #[rstest]
+    #[case("[\n    1,\n    2,\n]", true)]
+    #[case("{\n    'a': 1\n}", true)]
+    #[case("(\n    'only',\n)", true)]
+    #[case("[\r\n    1,\r\n]", true)]
+    #[case("(\n    alpha,\n    beta,\n)", true)]
+    #[case("[1,\n 2]", false)]
+    #[case("(\n    value,)", false)]
+    #[case("(1,\n    2,\n    3)", false)]
+    #[case("{\n}", false)]
+    #[case("[1, 2]", false)]
+    fn is_column_shaped_wants_both_brackets_alone_on_their_lines(
+        #[case] slice: &str,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(is_column_shaped(slice), expected);
+    }
 
     #[test]
     fn pack_carries_a_lone_overflowing_item_onto_its_own_line() {

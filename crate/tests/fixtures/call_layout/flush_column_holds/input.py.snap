@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/call_layout/flush_column_holds/input.py
+---
+value = helper(
+    alpha,
+    beta
+)

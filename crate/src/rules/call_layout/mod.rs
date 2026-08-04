@@ -12,6 +12,13 @@
 //! `=` alignment, and trailing commas stay with `alphabetize`,
 //! `align_equals`, and `strip_trailing_commas`.
 //!
+//! Where neither trigger fires, an argument list the author fractured
+//! rejoins onto one row, measured across the column its `(` lands at,
+//! the joined arguments, and the text trailing the call to the end of
+//! its logical line. A list carrying the flush column shape the
+//! explode path emits holds its break instead, the same reading
+//! `collection_layout` gives a literal.
+//!
 //! `measure` answers the column a construct reaches and the width it
 //! reads, and `render` builds the text that replaces an argument list.
 

@@ -62,9 +62,6 @@ Config {
         simplify_comprehensions: ToggleOnly {
             enabled: false,
         },
-        shed_super_args: ToggleOnly {
-            enabled: false,
-        },
         docstring_frame: ToggleOnly {
             enabled: false,
         },
@@ -108,6 +105,9 @@ Config {
                     6,
                 ),
             ),
+        },
+        shed_super_args: ToggleOnly {
+            enabled: false,
         },
         signature_layout: SignatureLayoutConfig {
             enabled: false,
