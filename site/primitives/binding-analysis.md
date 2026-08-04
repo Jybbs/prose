@@ -1,5 +1,5 @@
 ---
-consumedBy: [band-constants, bare-imports, bare-super, miscased-constants, modernize-annotations, prune-inert-imports, reassigned-constants, simplify-comprehensions, single-use-variables]
+consumedBy: [band-constants, bare-imports, miscased-constants, modernize-annotations, prune-inert-imports, reassigned-constants, shed-super-args, simplify-comprehensions, single-use-variables]
 consumes: [source]
 layer: analysis
 stability: internal
@@ -38,7 +38,7 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `binding_kinds(binding: BindingId) -> &[BindingKind]` returns each kind that produced this binding *(a single binding may carry several kinds when shadowing or augmented assignment is involved)*.
 - `binding_name(binding: BindingId) -> &str` returns the bound name.
 - `bindings_in_scope(stmt: &Stmt) -> impl Iterator<Item = BindingId>` lists every binding introduced in the lexical scope that contains the statement.
-- `binds_name(name: &str) -> bool` reports whether any scope in the module binds a name, which [[simplify-comprehensions]] reads to hold every call to a constructor the module rebinds, and which [[bare-super]] reads to leave every call in place where the module binds `super` or `__class__` itself.
+- `binds_name(name: &str) -> bool` reports whether any scope in the module binds a name, which [[simplify-comprehensions]] reads to hold every call to a constructor the module rebinds, and which [[shed-super-args]] reads to leave every call in place where the module binds `super` or `__class__` itself.
 - `first_write_offset(binding: BindingId) -> TextSize` returns the offset of the first write.
 - `is_deleted(name: &str) -> bool` reports whether a `del` statement anywhere in the module names a binding, which [[prune-inert-imports]] reads to hold an import whose `del` would otherwise be left raising `NameError`.
 - `is_defined_before(name: &str, offset: TextSize) -> bool` is the inverse-lookup convenience used by [[prune-inert-imports]] when checking that every name appearing in an annotation resolves to an unconditional binding introduced earlier *(a name written only inside a conditional branch like `if`, `for`, `while`, `try`, or `match` reads as runtime-unavailable)*.
@@ -49,7 +49,7 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `module_reassigned(name: &str) -> bool` reports whether a module-scope name carries more than one write or an augmented assignment, which [[reassigned-constants]], [[miscased-constants]], and [[alphabetize]] read to skip names that are not write-once.
 - `module_usage_count(name: &str) -> usize` counts every read recorded against a module-scope name, which [[modernize-annotations]] weighs against the reads its own rewrite consumed and [[prune-inert-imports]] reads directly to decide whether an import binding still has a reader.
 - `module_used_bare(name: &str) -> bool` reports whether a module-scope name is ever read without an attribute access *(the namespace object itself is used)*, which [[bare-imports]] reads before suggesting a `from` import.
-- `scope_binds(stmt: &Stmt, name: &str) -> bool` reports whether the local scope of a `def` binds a name, which [[bare-super]] reads to hold a call whose first argument names a local rather than the enclosing class.
+- `scope_binds(stmt: &Stmt, name: &str) -> bool` reports whether the local scope of a `def` binds a name, which [[shed-super-args]] reads to hold a call whose first argument names a local rather than the enclosing class.
 - `unpack_target(binding: BindingId) -> Option<UnpackKind>` returns the unpack disposition of a binding whose sole write is a multi-name tuple or list target, which [[single-use-variables]] reads to choose between exempting the target and naming a subscript rewrite.
 - `usage_count(binding: BindingId) -> usize` counts every read site.
 - `walrus_in_condition(binding: BindingId) -> bool` reports whether a binding's walrus write lands in the test of an `if`, `elif`, or `while`, which [[single-use-variables]] reads to exempt that assign-and-test walrus from the lint.

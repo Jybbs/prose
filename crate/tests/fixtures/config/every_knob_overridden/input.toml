@@ -21,7 +21,6 @@ align-match-case             = { enabled = false, max-shift = 4 }
 alphabetize                  = { enabled = false, group-methods = false, sort-definitions = false, sort-dict-keys = false, sort-docstring-entries = false, sort-dunder-lists = false }
 band-constants               = { enabled = false, group-subcategories = false, max-tiers = 4 }
 bare-imports                 = { allow = ["scipy", "torch"], enabled = false, exempt-aliased = false, max-attributes = 2 }
-bare-super                   = false
 blank-lines                  = false
 call-layout                  = { enabled = false, max-args = 6 }
 chain-layout                 = { enabled = false, max-links = 4, max-shift = 8 }
@@ -41,6 +40,7 @@ prune-inert-imports          = { drop-duplicates = false, drop-unreferenced = fa
 reassigned-constants         = { allow = ["LOG_LEVEL"], enabled = false }
 shed-backslash-continuations = false
 shed-parentheses             = false
+shed-super-args              = false
 signature-annotations        = false
 signature-layout             = { enabled = false, max-params = false }
 simplify-comprehensions      = false

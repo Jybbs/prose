@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_super_args/commented_arguments_kept/input.py
+---
+class Base:
+    def apply(self):
+        return 1
+
+
+class Child(Base):
+    def apply(self):
+        return super(
+            Child,  # the defining class
+            self
+        ).apply()

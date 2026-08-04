@@ -577,19 +577,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "max-attributes": 4
           }
         },
-        "bare-super": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/ToggleOnly"
-            }
-          ],
-          "default": {
-            "enabled": true
-          }
-        },
         "blank-lines": {
           "anyOf": [
             {
@@ -848,6 +835,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           }
         },
         "shed-parentheses": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "shed-super-args": {
           "anyOf": [
             {
               "type": "boolean"
@@ -1139,9 +1139,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "exempt-aliased": true,
           "max-attributes": 4
         },
-        "bare-super": {
-          "enabled": true
-        },
         "blank-lines": {
           "enabled": true
         },
@@ -1220,6 +1217,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true
         },
         "shed-parentheses": {
+          "enabled": true
+        },
+        "shed-super-args": {
           "enabled": true
         },
         "signature-annotations": {

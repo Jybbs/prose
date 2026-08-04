@@ -59,7 +59,7 @@ Config {
         simplify_comprehensions: ToggleOnly {
             enabled: true,
         },
-        bare_super: ToggleOnly {
+        shed_super_args: ToggleOnly {
             enabled: true,
         },
         docstring_frame: ToggleOnly {

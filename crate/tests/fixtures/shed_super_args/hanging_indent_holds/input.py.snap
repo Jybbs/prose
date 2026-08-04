@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_super_args/hanging_indent_holds/input.py
+---
+class Connection:
+    def __init__(self, host, port, timeout):
+        self.host = host
+
+
+class SecureConnection(Connection):
+    def __init__(self, host, port, timeout):
+        super().__init__(
+            host,
+            port,
+            timeout,
+        )

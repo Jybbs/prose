@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Compound Header Shortens Without Reaching Its Body"
+
+description = '''
+A `super(...)` call in an `if` header loses its arguments while every line of the body below keeps its indentation, the shift stopping at the end of the header's own logical line.
+'''
