@@ -29,7 +29,7 @@ use crate::{
 mod offsets;
 mod policy;
 
-use offsets::{header_signature_end, whitespace_start_before};
+use offsets::whitespace_start_before;
 use policy::canonical_blanks;
 
 pub(crate) struct BlankLines {
@@ -38,6 +38,8 @@ pub(crate) struct BlankLines {
 }
 
 impl BlankLines {
+    pub(crate) const MESSAGE: &'static str = "normalize blank-line spacing";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             first_party: config.first_party(),
@@ -134,7 +136,7 @@ impl Walker<'_> {
 
     fn pair_in_scope(&mut self, header: &Stmt, body: &[Stmt], scope: BodyScope) {
         if let Some(first) = body.first() {
-            let prev_end = header_signature_end(self.source, first.start());
+            let prev_end = self.source.prev_token_end(first.start());
             self.pair_with_end(header, prev_end, first, scope);
         }
         self.pair_siblings(body, scope);

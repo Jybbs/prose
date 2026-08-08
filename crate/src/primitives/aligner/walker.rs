@@ -57,6 +57,22 @@ impl<'a> AlignWalker<'a> {
     }
 
     /// Aligns `members` as one fix group when they form an alignment
+    /// candidate, rewriting each member's gap to the settings' buffer
+    /// otherwise, and folding in the post-operator gaps either way.
+    pub(crate) fn emit_group_or_buffer(&mut self, members: &[Member]) {
+        let name_edits = if is_alignment_candidate(self.source, members) {
+            self.group_edits(members)
+        } else {
+            members
+                .iter()
+                .filter_map(|m| space_padding_edit(self.source, m.gap, self.settings.buffer))
+                .collect()
+        };
+        let gaps = self.value_gaps(members);
+        self.push_with_gaps(name_edits, gaps);
+    }
+
+    /// Aligns `members` as one fix group when they form an alignment
     /// candidate, folding in a one-space rewrite of each member's
     /// [post-operator gap](Self::value_gaps). Records nothing otherwise.
     pub(crate) fn emit_if_candidate(&mut self, members: &[Member]) {

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_comments/over_shift_row_falls_back_to_two/input.py
+---
+seed()  # hand-set to line up with nothing
+reconcile_every_pending_shipment_record()  # slow

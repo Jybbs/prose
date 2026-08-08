@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Nested Flush Column Holds the Fracture"
+
+description = '''
+An argument carrying a flush bracketed column keeps the enclosing fracture held, since the held break leaves the joined form spanning lines.
+'''

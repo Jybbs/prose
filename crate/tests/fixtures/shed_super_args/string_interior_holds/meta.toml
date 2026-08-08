@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A String Interior Holds the Call"
+
+description = '''
+A `super(...)` call whose argument list carries a multi-line string keeps its arguments, since shifting a later line would respell that string rather than re-indent a continuation.
+'''

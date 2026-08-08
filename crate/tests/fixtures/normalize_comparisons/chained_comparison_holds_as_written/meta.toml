@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Chained Comparison Holds as Written"
+
+description = '''
+A comparison carrying more than two operands is left alone, so a range check keeps its reading order and a chain never comes back mixing `==` with `is`.
+'''

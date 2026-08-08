@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Async Method and a Closure Taking a Receiver Shorten"
+
+description = '''
+An `async def` shortens the way any method does, and so does a closure whose own first positional parameter is the receiver, the rewrite reading the innermost callable rather than the method around it.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`object` Beside a Real Base Goes Alone"
+
+description = '''
+Where a base list names something else too, only the `object` entry and the comma binding it to the preceding base go, so `class C(Mapping, object):` becomes `class C(Mapping):` with the parentheses kept.
+'''

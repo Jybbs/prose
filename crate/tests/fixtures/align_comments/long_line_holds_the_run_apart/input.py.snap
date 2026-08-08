@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_comments/long_line_holds_the_run_apart/input.py
+---
+warm_the_cache_now()      # cheap
+reconcile_open_charges()  # slow
+flush_writes()  # padding this one out to the shared column would cross the budget

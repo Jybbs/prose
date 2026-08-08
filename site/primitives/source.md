@@ -15,7 +15,7 @@ Every rule reads the source file through one shared value. *Source* bundles the 
 
 ## Public Surface
 
-`Source` is fully public today, so a downstream Rust consumer can construct one, walk the AST, query offsets, and reparse after mutating the text without needing to reach inside the crate.
+`Source` is fully public today, so a downstream Rust consumer can construct one, walk the AST, and query offsets without needing to reach inside the crate.
 
 ### Construction
 
@@ -31,6 +31,8 @@ A Python file the parser cannot recover surfaces as `SourceError::Parse(...)` fr
 - `text() -> &str` returns the original source text. Every other reader's offsets land in this string.
 - `ast() -> &ModModule` returns the parsed AST root. The wrapping *Source* owns the parse, so the AST is borrow-stable for the value's lifetime.
 - `tokens() -> &Tokens` returns the token stream. Useful when a rule's question is comment-shaped or trivia-shaped rather than AST-shaped.
+- `token_gaps() -> impl Iterator<Item = (&Token, &Token, TextRange)>` yields each adjacent token pair with the range between them, the trivia the lexer skipped. [[strip-align-padding]] reads it for the padding inside a bracket and [[shed-backslash-continuations]] for the gap a continuation sits in.
+- `prev_token_end(offset: TextSize) -> TextSize` returns the end of the token before an offset, scanning backward over whitespace and comments. [[blank-lines]] reads it for where a header's signature closes and [[shed-redundant-base]] for the position a shed base list reaches back to.
 - `binding_analysis() -> &BindingAnalysis` returns the per-source [[binding-analysis]] table, built once during construction.
 - `comment_ranges() -> &CommentRanges` returns the comment-range table for trivia walking.
 
@@ -39,14 +41,14 @@ A Python file the parser cannot recover surfaces as `SourceError::Parse(...)` fr
 Methods covering the common *"where does this offset land?"* and *"what does the source look like around it?"* questions, grouped by what they answer:
 
 - **Position-from-offset.** `column_of`, `line_column`, `line_index` map a `TextSize` to a column, a `(line, column)` pair, or a 1-indexed line number.
-- **Line geometry.** `line_indent_width` reports the indent on the line containing an offset, and `slice` returns the source text covering any `Ranged` value.
+- **Line geometry.** `line_indent_width` reports the indent on the line containing an offset, `logical_line_tail` reports the range from an offset to where its logical line closes, a break inside a bracketed construct leaving it open, and `slice` returns the source text covering any `Ranged` value.
 - **Line-ending convention.** `newline_str` returns the per-file newline (`\n` or `\r\n`), matching what `from_path` detected at read time.
 - **Range and line predicates.** `contains_line_break`, `has_blank_line_before`, `consecutive_lines` answer line-shaped questions about a range.
 - **Comment-aware predicates.** `intersects_comment` reports whether a range crosses a comment span, and `first_token_offset_in_range` finds the first non-trivia token inside a range.
 
 ### Mutation
 
-`reparse(text: String) -> Result<Self, ParseError>` returns a fresh *Source* over the mutated text. The pipeline drives this between rules, so each downstream rule reads a settled AST.
+`reparse_carrying(text: String, cell_offsets: CellOffsets) -> Result<Self, ParseError>` returns a fresh *Source* over the mutated text, carrying a notebook's cell boundaries forward across the rule. The pipeline drives this between rules, so each downstream rule reads a settled AST, and the method is `pub(crate)`, leaving reparsing inside the crate.
 
 ### Errors
 

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Sequence of Pairs Inside `dict()` Becomes a Dict Literal"
+
+description = '''
+Each two-member tuple sheds its parentheses and trades its comma for a colon, so the pair sequence reads as the mapping it was building.
+'''

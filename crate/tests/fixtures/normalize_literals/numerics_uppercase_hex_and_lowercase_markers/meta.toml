@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Hex Digits Uppercase While Every Marker Lowercases"
+
+description = '''
+The `0x`, `0o`, and `0b` radix markers, the `e` exponent, and the `j` suffix all read lowercase while hex digits read uppercase. **The marker and the payload take opposite cases**, so the digits stand clear of the notation that introduces them.
+'''

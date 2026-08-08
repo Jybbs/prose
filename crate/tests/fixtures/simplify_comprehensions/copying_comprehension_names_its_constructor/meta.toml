@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comprehension That Copies Its Input Names the Constructor Instead"
+
+description = '''
+Where the element repeats the target unchanged, the comprehension is spelling a copy, so it collapses to the constructor it was always building.
+'''

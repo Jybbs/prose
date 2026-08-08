@@ -68,6 +68,8 @@ pub(crate) struct Alphabetize {
 }
 
 impl Alphabetize {
+    pub(crate) const MESSAGE: &'static str = "alphabetize this group";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let alphabetize = &config.rules.alphabetize;
         Self {

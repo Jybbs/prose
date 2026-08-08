@@ -5,7 +5,6 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
 ---
 align-equals@1626..1627
 align-equals@215..454
-align-imports@46..47
 alphabetize@35..1835
 band-constants@35..1429
 bare-imports@172..179
@@ -22,7 +21,7 @@ call-layout@1055..1147
 collection-layout@496..605
 docstring-expand@765..809
 group-imports@35..206
-import-layout@148..149
+import-layout@59..164
 modernize-annotations@218..219
 modernize-annotations@292..309
 modernize-annotations@59..125

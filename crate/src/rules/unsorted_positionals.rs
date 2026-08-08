@@ -17,8 +17,8 @@ use crate::{
     diagnostics::Diagnostic,
     primitives::{
         constructor::{classify_field, keyword_field_start},
-        orderer::blocks_span,
         params::{params_unsorted, pins_positional_params},
+        range::blocks_span,
         walk::filter_map_over_stmts,
     },
     rule::{Rule, RuleId},
@@ -28,6 +28,8 @@ use crate::{
 pub(crate) struct UnsortedPositionals;
 
 impl UnsortedPositionals {
+    pub(crate) const MESSAGE: &'static str = "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

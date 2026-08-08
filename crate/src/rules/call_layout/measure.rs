@@ -1,18 +1,14 @@
-//! The column and width measures an explode decision reads: where a
-//! call's `(` lands once its callee renders, and whether the argument
-//! list joined onto that row crosses the budget.
+//! The column measures an explode decision reads: where a call's `(`
+//! lands once its callee renders, and the indent an exploded closing
+//! `)` drops to.
 
 use std::borrow::Cow;
 
-use itertools::Itertools;
-use ruff_python_ast::{ArgOrKeyword, Arguments, ExprCall};
+use ruff_python_ast::ExprCall;
 use ruff_text_size::{Ranged, TextSize};
 
 use super::Exploder;
-use crate::primitives::{
-    edit::apply_inline_edits,
-    inline::{end_column, opening_width},
-};
+use crate::primitives::{edit::apply_inline_edits, inline::end_column};
 
 impl<'a> Exploder<'a> {
     /// The column `offset` reaches once this walk's subtree is placed,
@@ -26,27 +22,6 @@ impl<'a> Exploder<'a> {
                 .column_of(offset)
                 .saturating_add_signed(self.line_shift)
         }
-    }
-
-    /// `arguments` rendered on one line, joined by `", "` inside the
-    /// parens. A named keyword measures at its canonical `name=value`
-    /// rather than at whatever padding `align_equals` gave it.
-    fn inline_args(&self, arguments: &Arguments) -> String {
-        format!(
-            "({})",
-            arguments
-                .iter_source_order()
-                .map(|arg| match arg {
-                    ArgOrKeyword::Arg(expr) => Cow::Borrowed(self.source.slice(expr)),
-                    ArgOrKeyword::Keyword(kw) => match &kw.arg {
-                        Some(name) => {
-                            Cow::Owned(format!("{name}={}", self.source.slice(&kw.value)))
-                        }
-                        None => Cow::Borrowed(self.source.slice(kw)),
-                    },
-                })
-                .join(", "),
-        )
     }
 
     /// `call`'s callee rendered with the edits this walk emitted so
@@ -75,18 +50,8 @@ impl<'a> Exploder<'a> {
         if callee.contains('\n') {
             return end_column(callee, 0).saturating_add_signed(self.line_shift) + gap;
         }
-        let head = self
-            .reservations
-            .get(&call.start())
-            .copied()
-            .unwrap_or_else(|| self.column_of(call.start()));
+        let start = call.start();
+        let head = self.reservations.column(start, || self.column_of(start));
         end_column(callee, head) + gap
-    }
-
-    /// True when `arguments` rendered inline from `column` crosses
-    /// `code_line_length`. An argument that itself spans lines caps the
-    /// measure at the row the join opens.
-    pub(super) fn overflows_line(&self, arguments: &Arguments, column: usize) -> bool {
-        column + opening_width(&self.inline_args(arguments)) > self.code_line_length
     }
 }

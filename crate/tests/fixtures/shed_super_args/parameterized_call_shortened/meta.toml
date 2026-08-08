@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Parameterized Call Loses Its Arguments"
+
+description = '''
+A `super(Button, self)` call inside `Button.render` drops to `super()`, since the interpreter resolves the same class and instance from the enclosing method.
+'''

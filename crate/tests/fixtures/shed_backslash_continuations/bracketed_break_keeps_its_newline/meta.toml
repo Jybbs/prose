@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Backslash a Bracket Already Spans Just Goes"
+
+description = '''
+A bracket carries the break on its own, so the backslash inside a list or a call drops and the newline stays for the layout rules to shape.
+'''

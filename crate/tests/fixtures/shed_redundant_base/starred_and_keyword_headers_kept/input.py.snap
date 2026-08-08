@@ -1,0 +1,23 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_redundant_base/starred_and_keyword_headers_kept/input.py
+---
+class Configured(metaclass=ConfiguredMeta):
+    def configure(self):
+        return self.options
+
+
+class Dynamic(*RESOLVED_BASES):
+    def resolve(self):
+        return self.target
+
+
+class Forwarded(**NAMESPACE):
+    def forward(self):
+        return self.inner
+
+
+class Plain:
+    def plain(self):
+        return None

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Test Against a Boolean Literal Is Flagged Rather Than Rewritten"
+
+description = '''
+`== True` and `!= False` survive untouched and draw a lint apiece, because dropping the literal for a bare operand changes the test wherever that operand is not itself a boolean.
+'''

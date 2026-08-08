@@ -15,9 +15,15 @@ pub(crate) enum Descent {
     Over,
 }
 
-/// Reads each expression of a module alongside the node enclosing it.
+/// Reads each expression of a module alongside the node enclosing it
+/// and the full ancestor chain, outermost first.
 pub(crate) trait ParentedProbe<'src> {
-    fn probe(&mut self, expr: &'src Expr, parent: AnyNodeRef<'src>) -> Descent;
+    fn probe(
+        &mut self,
+        expr: &'src Expr,
+        parent: AnyNodeRef<'src>,
+        ancestors: &[AnyNodeRef<'src>],
+    ) -> Descent;
 }
 
 struct ParentedWalk<'src, 'probe, P> {
@@ -34,7 +40,7 @@ impl<'src, P: ParentedProbe<'src>> Visitor<'src> for ParentedWalk<'src, '_, P> {
 
     fn visit_expr(&mut self, expr: &'src Expr) {
         let parent = *self.parents.last().expect("seeded with the module node");
-        if matches!(self.probe.probe(expr, parent), Descent::Over) {
+        if matches!(self.probe.probe(expr, parent, &self.parents), Descent::Over) {
             return;
         }
         self.parents.push(expr.into());
@@ -49,11 +55,18 @@ impl<'src, P: ParentedProbe<'src>> Visitor<'src> for ParentedWalk<'src, '_, P> {
     }
 }
 
+/// True for an f-string or t-string, the expression a probe reports
+/// `Descent::Over` on to leave every replacement field inside it the
+/// shape its author gave it.
+pub(crate) const fn is_interpolated_string(expr: &Expr) -> bool {
+    matches!(expr, Expr::FString(_) | Expr::TString(_))
+}
+
 /// Walks every expression in `module`, handing each to `probe` with the
-/// node enclosing it and descending unless the probe reports `Over`. A
-/// call argument names its `Arguments` list rather than the call, so a
-/// sole argument's enclosing range stops short of the call's own
-/// parentheses.
+/// node enclosing it and the ancestor chain above it, descending unless
+/// the probe reports `Over`. A call argument names its `Arguments` list
+/// rather than the call, so a sole argument's enclosing range stops
+/// short of the call's own parentheses.
 pub(crate) fn walk_parented_exprs<'src>(
     module: &'src ModModule,
     probe: &mut impl ParentedProbe<'src>,
@@ -81,7 +94,12 @@ mod tests {
     }
 
     impl<'a> ParentedProbe<'a> for Trace<'a> {
-        fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>) -> Descent {
+        fn probe(
+            &mut self,
+            expr: &'a Expr,
+            parent: AnyNodeRef<'a>,
+            _: &[AnyNodeRef<'a>],
+        ) -> Descent {
             let text = self.source.slice(expr);
             self.seen
                 .push((text, matches!(parent, AnyNodeRef::Arguments(_))));
@@ -91,6 +109,22 @@ mod tests {
                 Descent::Into
             }
         }
+    }
+
+    #[rstest]
+    #[case::f_string("f\"{a}\"\n", true)]
+    #[case::t_string("t\"{a}\"\n", true)]
+    #[case::plain_string("\"a\"\n", false)]
+    #[case::name("a\n", false)]
+    fn is_interpolated_string_names_the_two_replacement_field_carriers(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let expr = source.ast().body[0]
+            .as_expr_stmt()
+            .expect("the fixture is one expression statement");
+        assert_eq!(is_interpolated_string(&expr.value), expected);
     }
 
     #[rstest]

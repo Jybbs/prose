@@ -1,5 +1,5 @@
 ---
-consumedBy: [align-colons, align-comparisons, align-equals, align-imports, align-match-case]
+consumedBy: [align-colons, align-comments, align-comparisons, align-equals, align-imports, align-match-case]
 consumes: [edit, source]
 layer: orchestration
 stability: internal
@@ -11,7 +11,7 @@ tagline: shared alignment math
 
 <PrimitiveLayout primitive="aligner">
 
-*Aligner* computes padding widths and emits the alignment edits that every alignment rule consumes. The shipped consumers ([[align-colons]], [[align-comparisons]], [[align-equals]], [[align-imports]], [[align-match-case]]) share the same column-resolution math, so the math lives once in *Aligner* and each rule supplies a member list plus a facet-set rather than re-implementing the resolution from scratch.
+*Aligner* computes padding widths and emits the alignment edits that every alignment rule consumes. The shipped consumers ([[align-colons]], [[align-comments]], [[align-comparisons]], [[align-equals]], [[align-imports]], [[align-match-case]]) share the same column-resolution math, so the math lives once in *Aligner* and each rule supplies a member list plus a facet-set rather than re-implementing the resolution from scratch.
 
 
 ## Public Surface
@@ -30,10 +30,10 @@ A downstream consumer cannot directly construct a `Member`, drive `emit_group`, 
 The types every consumer touches:
 
 1. `Member { gap: TextRange, line_start: TextSize, op_width: usize, value_gap: Option<TextRange>, width: usize }` describes one row in an alignment group. `gap` is the whitespace range immediately before the aligned token, rewritten into padding. `line_start` is the offset of the source-line start, used by `is_alignment_candidate` to confirm each member sits on its own line. `op_width` is the display width of variable-width operators *(`==`, `!=`, `<=`)* opting into right-alignment. `value_gap` is the span from just past the operator to the value, which an aligned row rewrites to one space, left `None` by a rule that leaves the post-operator spacing alone. `width` is the display-column width from member start to gap start, which is what the math compares to find the target column.
-2. `Settings { line_length, max_shift, strip_singleton }` carries the rule's `[rules]` facets plus the governing length cap. `From<&AlignmentConfig>` builds the canonical settings, `with_line_length` supplies the cap the run resolves within, and `with_singleton_strip` flips the singleton-collapse behavior on.
-3. `AlignWalker { groups: Vec<Vec<Edit>>, rule: RuleId, source: &'a Source }` is the carrier each rule's visitor struct wraps, holding its `Settings` privately. `AlignWalker::new(source, settings, rule)` builds one with an empty `groups` accumulator, where each entry is one fix the pipeline maps to a single diagnostic. `emit_if_candidate(&mut self, members)` records a group's alignment edits together with a one-space rewrite of each member's `value_gap`, `emit_if_candidate_under(settings, members)` does the same under a caller-supplied `Settings` rather than the walker's own, the `group_edits` / `push_group` pair lets a rule fold extra edits into a group before committing it, and `is_held(anchor)` reports whether a row's line is skip-suppressed for `rule`.
+2. `Settings { buffer, line_length, max_shift, strip_singleton }` carries the rule's `[rules]` facets plus the governing length cap. `From<&AlignmentConfig>` builds the canonical settings, `with_buffer` widens the gap an aligned row holds ahead of the token, `with_line_length` supplies the cap the run resolves within, and `with_singleton_strip` flips the singleton-collapse behavior on.
+3. `AlignWalker { groups: Vec<Vec<Edit>>, rule: RuleId, source: &'a Source }` is the carrier each rule's visitor struct wraps, holding its `Settings` privately. `AlignWalker::new(source, settings, rule)` builds one with an empty `groups` accumulator, where each entry is one fix the pipeline maps to a single diagnostic. `emit_if_candidate(&mut self, members)` records a group's alignment edits together with a one-space rewrite of each member's `value_gap`, `emit_if_candidate_under(settings, members)` does the same under a caller-supplied `Settings` rather than the walker's own, `emit_group_or_buffer(members)` records those same edits for a group that aligns and falls back to the settings' buffer for one that does not, the `group_edits` / `push_group` pair lets a rule fold extra edits into a group before committing it, and `is_held(anchor)` reports whether a row's line is skip-suppressed for `rule`.
 
-The entry point `emit_group(source: &Source, members: &[Member], settings: Settings, edits: &mut Vec<Edit>)` splits `members` into contiguous groups whose width spread stays within `max_shift`, resolves each group's column at its widest member, and pushes one `Edit` per row that needs padding into the caller's accumulator. A singleton group collapses its gap to one space, or to zero when `settings.strip_singleton` is set.
+The entry point `emit_group(source: &Source, members: &[Member], settings: Settings, edits: &mut Vec<Edit>)` splits `members` into contiguous groups whose width spread stays within `max_shift`, resolves each group's column at its widest member, and pushes one `Edit` per row that needs padding into the caller's accumulator. A singleton group collapses its gap to the settings' buffer, or to zero when `settings.strip_singleton` is set.
 
 ### Supporting Helpers
 
@@ -45,12 +45,13 @@ A consuming rule rarely hand-builds the walker from raw AST traversal, since the
 4. `line_anchored_member(source, anchor)` builds a `Member` whose `gap` starts at `anchor` and whose `width` measures the leading display column on the line.
 5. `line_anchored_member_at_kind(source, lhs_start, search, kind)` finds the first token of `kind` in `search` and anchors a `Member` at its end.
 6. `range_anchored_member_single_line(source, target, search, predicate, extra_width)` builds a `Member` whose `width` is the display-column width of `target`'s slice plus `extra_width`, for left-hand sides that are sub-ranges of one line.
-7. `space_padding_edit(source, range, n)` produces a `Some(Edit)` replacing `range` with `n` spaces, or `None` when the current contents already match.
-8. `is_alignment_candidate(source, members)` returns `true` when the group has at least two members, each on a distinct line and opening at a shared column baseline, so the padding lands on a column every row can reach.
+7. `line_gap_before(source, anchor)` returns the whitespace run ending at `anchor`, opening no earlier than that line's start. The member builders locate a row's `gap` through it, and `comment-spacing` reaches it directly to find the run ahead of a trailing comment.
+8. `space_padding_edit(source, range, n)` produces a `Some(Edit)` replacing `range` with `n` spaces, or `None` when the current contents already match.
+9. `is_alignment_candidate(source, members)` returns `true` when the group has at least two members, each on a distinct line and opening at a shared column baseline, so the padding lands on a column every row can reach.
 
 ## How the Math Resolves
 
-Aligners always carry a **one-space buffer** between content and the aligned token. The target column for a group is `max(member.width) + 1`, so every row whose existing column falls short of the target gets an `Edit` replacing its `gap` range with the right number of spaces, and rows already at the target stay unchanged without an edit.
+Aligners carry a **settings-supplied buffer** between content and the aligned token, one space for every rule but [[align-comments]], which seats its `#` at the two-column trailing gap. The target column for a group is `max(member.width) + buffer`, so every row whose existing column falls short of the target gets an `Edit` replacing its `gap` range with the right number of spaces, and rows already at the target stay unchanged without an edit.
 
 A run also resolves within its governing length cap, so a group grows only while every member's aligned line stays inside it. The width each member is measured at is the line *Prose* will emit rather than the line it read, meaning both spaces an aligned row carries around its operator count against the budget even when the source holds neither. A member whose padded line would cross the cap partitions out of the run unpadded, and a member already past the cap before any padding stays in the run rather than partitioning to no gain.
 
@@ -105,7 +106,7 @@ Writing a new alignment rule comes down to wrapping an `AlignWalker` in a visito
 
 <template #related>
 
-- [[align-colons]], [[align-comparisons]], [[align-equals]], [[align-imports]], and [[align-match-case]] are the consumers.
+- [[align-colons]], [[align-comments]], [[align-comparisons]], [[align-equals]], [[align-imports]], and [[align-match-case]] are the consumers.
 - [[colon-targets]] constructs `Member` lists from every `:` context, consumed by [[align-colons]] and [[strip-align-padding]].
 - [[edit]] is the shape `emit_group` pushes into the caller's accumulator.
 - [[orderer]] composes line-adjacency grouping differently *(by source-range block extents rather than `Member` widths)*, so a rule whose math is reorder-shaped rather than padding-shaped reaches for that primitive instead.

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/pair_sequence_within_dict_call/input.py
+---
+codes  = {1: "one", 2: "two"}
+ranges = {3: "three", 4: "four"}

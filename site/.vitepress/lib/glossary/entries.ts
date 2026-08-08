@@ -348,6 +348,18 @@ export const glossary: Record<string, GlossaryEntry> = {
     families   : ['engine']
   },
 
+  'implicit concatenation': {
+    aliases    : ['adjacent literals', 'implicitly concatenated'],
+    definition : 'Two string literals written adjacent to one another join at compile time '
+               + 'into a single value, so `("one " "two")` is the same string as `"one two"`. '
+               + '`line-overflow` offers that form as a display-only suggestion when an '
+               + 'over-budget line\'s overflow sits inside one literal carrying interior '
+               + 'whitespace, and never writes it, because the break points would become '
+               + 'source a later edit has to reflow.',
+    families   : ['layout', 'lint'],
+    href       : 'https://docs.python.org/3/reference/lexical_analysis.html#string-literal-concatenation'
+  },
+
   'import-line-length': {
     definition : '`import-line-length` is the top-level config key for the wrap budget '
                + '`import-layout` holds long from-imports to. It defaults to **120** and '
@@ -389,6 +401,17 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'read.',
     families   : ['engine'],
     href       : '/primitives/binding-analysis'
+  },
+
+  'line continuation': {
+    aliases    : ['backslash continuation'],
+    definition : 'A line continuation is a trailing `\\` that joins a physical line to the '
+               + 'next, splitting one logical line without a bracket. '
+               + '`shed-backslash-continuations` removes it and settles the split through '
+               + 'brackets, whereas a backslash inside a docstring escapes the newline of the '
+               + 'string value rather than the source line.',
+    families   : ['formatting'],
+    rule       : 'shed-backslash-continuations'
   },
 
   'lint': {

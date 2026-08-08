@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Local Name Shadowing the Class Keeps the Call Written"
+
+description = '''
+A method whose own scope binds the class name leaves the call written, because the first argument reads that binding rather than the enclosing class.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Run Following a Closed Bracket Reads Its Own Enclosing One"
+
+description = '''
+A completed `helper(...)` pair ahead of the run opens and closes before it, so the bracket the break answers to is the call's own **rather than the nested pair that already shut**.
+'''

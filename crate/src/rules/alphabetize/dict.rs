@@ -17,8 +17,10 @@ use crate::{
         layout::is_layoutable,
         orderer::{
             adjacent_slots, any_sibling_shares_line, assemble_blocks, assemble_separated,
-            block_ranges, blocks_span, permute_runs, runs_where,
+            block_ranges, permute_runs,
         },
+        range::blocks_span,
+        slots::runs_where,
     },
     source::Source,
 };
@@ -34,13 +36,10 @@ pub(super) fn rewrite_dict_text(
     d: &ExprDict,
     edits: &[Edit],
 ) -> Option<(TextRange, String)> {
-    let [first, .., last] = d.items.as_slice() else {
-        return None;
-    };
-    if has_keep_marker(source, d) {
+    if d.len() < 2 || has_keep_marker(source, d) {
         return None;
     }
-    let multi_line = source.contains_line_break(first.range().cover(last.range()));
+    let multi_line = source.contains_line_break(blocks_span(&d.items));
     // The block model decomposes one item per line. A multi-line dict that
     // packs entries onto a shared physical line has no such decomposition, so a
     // block reorder would reflow it. Decline, leaving it in source order.

@@ -2,10 +2,11 @@
 
 use std::{path::Path, str::FromStr};
 
+use itertools::Itertools;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
 use ruff_python_ast::{
     AnyNodeRef, ExprRef, ModModule, PySourceType, Stmt,
-    token::{Token, Tokens},
+    token::{Token, TokenKind, Tokens},
 };
 use ruff_python_parser::{ParseError, ParseOptions, Parsed, parse};
 use ruff_python_trivia::{
@@ -327,6 +328,20 @@ impl Source {
         self.file.to_source_code().line_index(offset)
     }
 
+    /// Returns the range from `offset` to the end of its logical line,
+    /// the start of the first `Newline` token past it or the module's
+    /// own end. A break inside a bracketed construct carries
+    /// `NonLogicalNewline` and leaves the logical line open.
+    pub fn logical_line_tail(&self, offset: TextSize) -> TextRange {
+        let module_end = self.module_range().end();
+        let end = self
+            .first_token_offset_in_range(TextRange::new(offset, module_end), |token| {
+                token.kind() == TokenKind::Newline
+            })
+            .unwrap_or(module_end);
+        TextRange::new(offset, end)
+    }
+
     /// Returns the range spanning the entire source text.
     pub fn module_range(&self) -> TextRange {
         TextRange::up_to(self.text().text_len())
@@ -348,10 +363,18 @@ impl Source {
 
     /// Returns the first non-trivia token scanning backward from
     /// `offset`, or `None` when the scan finds none.
-    pub(crate) fn prev_non_trivia_token(&self, offset: TextSize) -> Option<SimpleToken> {
+    fn prev_non_trivia_token(&self, offset: TextSize) -> Option<SimpleToken> {
         BackwardsTokenizer::up_to(offset, self.text(), self.comment_ranges())
             .skip_trivia()
             .next()
+    }
+
+    /// Returns the end offset of the token preceding `offset`, scanning
+    /// backward over whitespace and comments.
+    pub(crate) fn prev_token_end(&self, offset: TextSize) -> TextSize {
+        self.prev_non_trivia_token(offset)
+            .expect("invariant: a token precedes the scanned offset")
+            .end()
     }
 
     /// Reparses with replacement source text, preserving the original
@@ -422,6 +445,15 @@ impl Source {
 
     pub fn text(&self) -> &str {
         self.file.source_text()
+    }
+
+    /// Yields each adjacent token pair with the source range between
+    /// them, the trivia the lexer skipped.
+    pub(crate) fn token_gaps(&self) -> impl Iterator<Item = (&Token, &Token, TextRange)> {
+        self.tokens()
+            .iter()
+            .tuple_windows()
+            .map(|(token, next)| (token, next, TextRange::new(token.end(), next.start())))
     }
 
     /// Borrows the token stream produced during parsing.
@@ -501,7 +533,10 @@ mod tests {
     use ruff_text_size::TextRange;
 
     use super::*;
-    use crate::testing::{assert_send_sync, notebook, parse, range};
+    use crate::{
+        primitives::scope::sub_bodies,
+        testing::{assert_send_sync, notebook, parse, range},
+    };
 
     /// Replaces `before`'s interior boundaries with `drifts` in order and
     /// its closing offset with `after`'s length, the shape a rule's edits
@@ -804,6 +839,19 @@ mod tests {
     fn parse_error_returns_ruff_parse_error() {
         let result: Result<Source, ParseError> = Source::from_str("def foo(");
         assert!(result.is_err());
+    }
+
+    #[rstest]
+    #[case("class C:\n    pass\n", "class C:")]
+    #[case("class C:  # eol\n    pass\n", "class C:")]
+    #[case("class C:\n    # comment\n    pass\n", "class C:")]
+    #[case("def f():\n    pass\n", "def f():")]
+    #[case("def f(\n    x,\n    y,\n):\n    pass\n", "def f(\n    x,\n    y,\n):")]
+    fn prev_token_end_lands_past_the_header_colon(#[case] src: &str, #[case] header: &str) {
+        let source = parse(src);
+        let (body, _) = sub_bodies(&source.ast().body[0])[0];
+        let end = source.prev_token_end(body[0].start());
+        assert_eq!(&source.text()[..end.to_usize()], header);
     }
 
     #[test]

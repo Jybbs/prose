@@ -1,0 +1,21 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_super_args/classmethod_and_positional_only_shortened/input.py
+---
+class Record:
+    @classmethod
+    def build(cls):
+        return cls()
+
+    def merge(self, /, other):
+        return other
+
+
+class Entry(Record):
+    @classmethod
+    def build(cls):
+        return super().build()
+
+    def merge(self, /, other):
+        return super().merge(other)

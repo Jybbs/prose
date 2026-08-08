@@ -1,0 +1,7 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/shed_backslash_continuations/run_of_continuations_folds_once/input.py
+---
+shed-backslash-continuations@35..54
+shed-backslash-continuations@8..20

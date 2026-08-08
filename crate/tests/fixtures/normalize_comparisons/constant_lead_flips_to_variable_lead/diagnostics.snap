@@ -1,0 +1,8 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/normalize_comparisons/constant_lead_flips_to_variable_lead/input.py
+---
+normalize-comparisons@121..132
+normalize-comparisons@31..49
+normalize-comparisons@79..88

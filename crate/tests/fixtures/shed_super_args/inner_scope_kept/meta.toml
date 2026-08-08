@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Nested in Its Own Scope Stays Written"
+
+description = '''
+A `super(...)` call inside a comprehension, a parameterless lambda, or a closure taking no arguments keeps its written form, because none of those frames carries the leading positional argument the bare call reads.
+'''

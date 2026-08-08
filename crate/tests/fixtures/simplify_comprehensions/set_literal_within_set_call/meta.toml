@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Set Literal Inside `set()` Stands On Its Own"
+
+description = '''
+A set literal handed to `set()` is already the set, leaving the outer call nothing to build.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pair Wrapped in Its Own Grouping Pair Holds the Call"
+
+description = '''
+Dropping the tuple's parentheses would strand the grouping pair around it, so the rewrite declines and leaves `shed-parentheses` to clear the grouping first.
+'''

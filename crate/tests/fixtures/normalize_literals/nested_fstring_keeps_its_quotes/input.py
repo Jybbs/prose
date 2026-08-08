@@ -1,0 +1,1 @@
+row = f"{f'{inner}'}"

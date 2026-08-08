@@ -1,0 +1,2 @@
+[rules]
+normalize-comparisons = { rewrite-negation = false }

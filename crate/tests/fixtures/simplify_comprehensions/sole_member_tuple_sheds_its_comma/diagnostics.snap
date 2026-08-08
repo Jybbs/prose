@@ -1,0 +1,7 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/simplify_comprehensions/sole_member_tuple_sheds_its_comma/input.py
+---
+simplify-comprehensions@31..44
+simplify-comprehensions@9..21

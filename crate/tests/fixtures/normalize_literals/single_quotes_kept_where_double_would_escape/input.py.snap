@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/single_quotes_kept_where_double_would_escape/input.py
+---
+shout = 'say "hi"'
+mixed = 'it\'s "quoted"'

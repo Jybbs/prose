@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Two Identical From-Imports Collapse to One"
+
+description = '''
+The gathered roster carries each member once, so a module imported twice under the same name settles as **a single statement** rather than a line naming it twice.
+'''

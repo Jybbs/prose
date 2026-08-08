@@ -3,16 +3,19 @@
 
 use std::borrow::Cow;
 
-use ruff_python_ast::{ExprStringLiteral, StringFlags, str_prefix::StringLiteralPrefix};
+use ruff_python_ast::{
+    AnyStringFlags, ExprStringLiteral, StringFlags,
+    str_prefix::{AnyStringPrefix, FStringPrefix, StringLiteralPrefix},
+};
 
 use crate::source::Source;
 
 /// One template literal, holding the body between its quotes alongside
-/// the delimiters the rewritten f-string reuses.
+/// the flags the rewritten f-string carries.
 pub(super) struct Template<'src> {
     pub(super) body: &'src str,
+    flags: AnyStringFlags,
     pub(super) raw: bool,
-    quote: &'static str,
 }
 
 impl<'src> Template<'src> {
@@ -22,14 +25,18 @@ impl<'src> Template<'src> {
     pub(super) fn read(source: &'src Source, expr: &ExprStringLiteral) -> Option<Self> {
         let literal = expr.as_single_part_string()?;
         let flags = literal.flags;
-        let raw = match flags.prefix() {
-            StringLiteralPrefix::Empty => false,
-            StringLiteralPrefix::Raw { .. } => true,
-            StringLiteralPrefix::Unicode => return None,
-        };
+        if flags.prefix() == StringLiteralPrefix::Unicode {
+            return None;
+        }
+        let raw = flags.prefix().is_raw();
+        let prefix = AnyStringPrefix::Format(if raw {
+            FStringPrefix::Raw { uppercase_r: false }
+        } else {
+            FStringPrefix::Regular
+        });
         Some(Self {
             body: source.slice(literal.content_range()),
-            quote: flags.quote_str(),
+            flags: AnyStringFlags::new(prefix, flags.quote_style(), flags.triple_quotes()),
             raw,
         })
     }
@@ -37,8 +44,8 @@ impl<'src> Template<'src> {
     /// `body` wrapped in the f-string prefix and the quotes the source
     /// wrote, so a raw template comes back as `rf"..."`.
     pub(super) fn wrap(&self, body: &str) -> String {
-        let prefix = if self.raw { "rf" } else { "f" };
-        format!("{prefix}{}{body}{}", self.quote, self.quote)
+        let quote = self.flags.quote_str();
+        format!("{}{quote}{body}{quote}", self.flags.prefix())
     }
 }
 

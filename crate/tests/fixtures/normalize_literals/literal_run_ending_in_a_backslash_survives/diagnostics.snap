@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/normalize_literals/literal_run_ending_in_a_backslash_survives/input.py
+---
+normalize-literals@10..20

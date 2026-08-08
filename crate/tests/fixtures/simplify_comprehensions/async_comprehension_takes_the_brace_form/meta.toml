@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Async Comprehension Takes the Brace Form"
+
+description = '''
+An async generator is never the plain copy a constructor call spells, so the comprehension keeps its body and the wrapping `set()` gives way to braces.
+'''

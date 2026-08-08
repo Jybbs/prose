@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "An Implicit Concatenation Still Reports"
-
-description = '''
-A plain string and an f-string join as one expression, and the call inside the interpolated half is out of every layout rule's reach, so the over-cap line surfaces as a finding rather than being left for `call-layout`.
-'''

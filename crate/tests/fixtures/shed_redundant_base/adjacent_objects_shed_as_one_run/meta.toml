@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Adjacent `object` Bases Shed as One Run"
+
+description = '''
+Two `object` bases sitting side by side go as a single deletion covering the whole run rather than one apiece. Per-base spans would overlap here, and an overlapping set is declined for the entire file, which the ordinary `class Single(object):` above the duplicate would otherwise show by staying unshed.
+'''

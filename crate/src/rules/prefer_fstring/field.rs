@@ -40,38 +40,22 @@ pub(super) fn field_text<'src>(
     if text.contains(BARRED) || unbracketed_colon(text).is_some() {
         return None;
     }
-    Some(if needs_parentheses(value, text, placement) {
+    Some(if needs_parentheses(value, placement) {
         Cow::Owned(format!("({text})"))
     } else {
         Cow::Borrowed(text)
     })
 }
 
-/// True when `text` opens and closes on the parentheses that group it
-/// whole, so `(a := 1)` reads as grouped whereas `(a) + (b)` does not.
-fn is_parenthesized(text: &str) -> bool {
-    let Some(inner) = text.strip_prefix('(').and_then(|t| t.strip_suffix(')')) else {
-        return false;
-    };
-    let mut depth = 0usize;
-    for c in inner.chars() {
-        match c {
-            '(' => depth += 1,
-            ')' if depth == 0 => return false,
-            ')' => depth -= 1,
-            _ => {}
-        }
-    }
-    true
-}
-
 /// True when `value` renders as a field only inside parentheses. A bare
 /// generator and a walrus need them wherever they sit, whereas an
 /// operator expression and a plain integer need them only under an
-/// attribute or index.
-fn needs_parentheses(value: &Expr, text: &str, placement: Placement) -> bool {
-    let grouped = match value {
-        Expr::Generator(generator) => return !generator.parenthesized,
+/// attribute or index. Every variant but the parenthesized generator
+/// carries a range excluding its own grouping pair, so the wrap lands
+/// once however many pairs the source wrote.
+fn needs_parentheses(value: &Expr, placement: Placement) -> bool {
+    match value {
+        Expr::Generator(generator) => !generator.parenthesized,
         Expr::Named(_) => true,
         Expr::Await(_)
         | Expr::BinOp(_)
@@ -84,8 +68,7 @@ fn needs_parentheses(value: &Expr, text: &str, placement: Placement) -> bool {
             ..
         }) => matches!(placement, Placement::Accessed),
         _ => false,
-    };
-    grouped && !is_parenthesized(text)
+    }
 }
 
 #[cfg(test)]
@@ -95,6 +78,8 @@ mod tests {
     use super::*;
     use crate::testing::{first_value, parse};
 
+    /// The field text `src` renders as, parsed as a whole value so a
+    /// grouping pair the source wrote sits outside the expression range.
     fn rendered(src: &str, placement: Placement) -> Option<String> {
         let source = parse(&format!("X = {src}\n"));
         field_text(&source, first_value(&source), placement).map(Cow::into_owned)
@@ -149,7 +134,7 @@ mod tests {
     #[rstest]
     #[case("((n := 5))", "(n := 5)")]
     #[case("((a for a in seq))", "(a for a in seq)")]
-    fn field_text_suppresses_a_second_wrap_around_grouped_text(
+    fn field_text_wraps_once_however_many_pairs_the_source_wrote(
         #[case] src: &str,
         #[case] expected: &str,
     ) {
@@ -168,19 +153,5 @@ mod tests {
     fn field_text_declines_a_value_spanning_two_lines() {
         let source = parse("X = (\n    a\n    + b\n)\n");
         assert!(field_text(&source, first_value(&source), Placement::Whole).is_none());
-    }
-
-    #[rstest]
-    #[case("(a)", true)]
-    #[case("(a := 1)", true)]
-    #[case("((a))", true)]
-    #[case("(a) + (b)", false)]
-    #[case("a + b", false)]
-    #[case("(a", false)]
-    fn is_parenthesized_reads_only_a_pair_wrapping_the_whole_text(
-        #[case] text: &str,
-        #[case] expected: bool,
-    ) {
-        assert_eq!(is_parenthesized(text), expected, "{text}");
     }
 }

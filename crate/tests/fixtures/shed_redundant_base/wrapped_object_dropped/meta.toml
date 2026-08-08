@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Wrapped Base List Loses the `object` Line"
+
+description = '''
+Where the base list spans lines, the `object` entry goes with the separator on its side, taking the whole line it occupied and leaving the remaining members at the indent they already had.
+'''

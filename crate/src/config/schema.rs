@@ -173,6 +173,33 @@ impl Default for CallLayoutConfig {
     }
 }
 
+/// Configuration for the `chain_layout` rule.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct ChainLayoutConfig {
+    pub enabled: bool,
+    /// Breaks a method chain to one link per line once its link count
+    /// exceeds the cap. `false` disables the count trigger and leaves
+    /// only the `code-line-length` budget.
+    pub max_links: InlineBudget,
+    /// The width a hung link's dot column may sit past the indent the
+    /// broken chain opens at. A wider receiver takes the full split
+    /// instead, standing alone with every link flush beneath it. `0`
+    /// always takes that split, and `false` lifts the cap so every
+    /// chain hangs.
+    pub max_shift: MaxShift,
+}
+
+impl Default for ChainLayoutConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_links: InlineBudget(NonZeroUsize::new(2)),
+            max_shift: MaxShift::default(),
+        }
+    }
+}
+
 /// Configuration for the `collection_layout` rule, each facet gating
 /// one shape decision and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
@@ -224,6 +251,31 @@ pub enum DocstringStructuredPolicy {
     DocstringLineLength,
 }
 
+/// Configuration for the `import_layout` rule, each facet gating one
+/// statement move and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct ImportLayoutConfig {
+    pub enabled: bool,
+    /// Folds repeated `from <module> import …` statements into one
+    /// statement carrying each member once, ordered as `alphabetize`
+    /// would leave it. `false` leaves each statement on its own line.
+    pub merge_members: bool,
+    /// Breaks a comma-joined `import a, b` into one `import` statement
+    /// per module. `false` keeps the comma-joined form.
+    pub split_multi_module: bool,
+}
+
+impl Default for ImportLayoutConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            merge_members: true,
+            split_multi_module: true,
+        }
+    }
+}
+
 /// Settings parsed from `[tool.prose.imports]`.
 #[derive(Debug, Default, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -266,6 +318,27 @@ impl JsonSchema for InlineBudget {
 impl Serialize for InlineBudget {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serialize_optional_cap(&self.0, serializer)
+    }
+}
+
+/// Configuration for the `line_overflow` rule.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct LineOverflowConfig {
+    pub enabled: bool,
+    /// Offers the parenthesized adjacent-literal form on an over-budget
+    /// line whose overflow sits inside one string literal holding
+    /// interior whitespace, as a display-only suggestion `prose format`
+    /// never writes. `false` leaves the bare overflow report.
+    pub suggest_string_splits: bool,
+}
+
+impl Default for LineOverflowConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            suggest_string_splits: true,
+        }
     }
 }
 
@@ -368,6 +441,65 @@ impl Default for ModernizeAnnotationsConfig {
             enabled: true,
             rewrite_generics: true,
             rewrite_unions: true,
+        }
+    }
+}
+
+/// Configuration for the `normalize_comparisons` rule, each facet
+/// gating one rewrite and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct NormalizeComparisonsConfig {
+    pub enabled: bool,
+    /// Rewrites a `==` or `!=` test against `None` to `is` or `is not`,
+    /// and flags a test against `True` or `False` without rewriting it.
+    /// `false` leaves every singleton comparison as written.
+    pub rewrite_identity: bool,
+    /// Folds a leading `not` into the `in` or `is` it negates, so
+    /// `not a in b` reads `a not in b`. `false` keeps the outer `not`.
+    pub rewrite_negation: bool,
+    /// Flips a comparison whose constant side leads, so `42 == n` reads
+    /// `n == 42`. `false` keeps the authored operand order.
+    pub rewrite_operand_order: bool,
+}
+
+impl Default for NormalizeComparisonsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            rewrite_identity: true,
+            rewrite_negation: true,
+            rewrite_operand_order: true,
+        }
+    }
+}
+
+/// Configuration for the `normalize_literals` rule, each facet gating
+/// one spelling axis and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct NormalizeLiteralsConfig {
+    pub enabled: bool,
+    /// Uppercases hex digits and lowercases the `0x`, `0o`, and `0b`
+    /// radix markers, the `e` exponent, and the `j` suffix. `false`
+    /// keeps every numeric literal spelled as written.
+    pub unify_numerics: bool,
+    /// Lowercases a string prefix and drops the no-op `u`. `false`
+    /// keeps the prefix cased and ordered as written.
+    pub unify_prefixes: bool,
+    /// Settles a non-docstring string on `"`, falling to `'` only where
+    /// that drops an escape, and sheds a backslash the surviving quote
+    /// does not need. `false` keeps the literal spelled as written.
+    pub unify_quotes: bool,
+}
+
+impl Default for NormalizeLiteralsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            unify_numerics: true,
+            unify_prefixes: true,
+            unify_quotes: true,
         }
     }
 }
@@ -534,9 +666,14 @@ impl_rule_toggle!(
     BandConstantsConfig,
     BareImportsConfig,
     CallLayoutConfig,
+    ChainLayoutConfig,
     CollectionLayoutConfig,
+    ImportLayoutConfig,
+    LineOverflowConfig,
     MiscasedConstantsConfig,
     ModernizeAnnotationsConfig,
+    NormalizeComparisonsConfig,
+    NormalizeLiteralsConfig,
     PreferFstringConfig,
     PruneInertImportsConfig,
     ReassignedConstantsConfig,

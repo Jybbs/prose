@@ -5,14 +5,14 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Expr, PythonVersion};
+use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,
     primitives::{
-        edit::{narrowed_replacement, singleton_groups},
-        inline::{end_column, opening_width},
+        edit::{apply_inline_edits, narrowed_replacement, padded, singleton_groups},
         walk::filter_map_over_exprs,
     },
     rule::{Rule, RuleId},
@@ -35,6 +35,9 @@ pub(crate) struct PreferFstring {
 }
 
 impl PreferFstring {
+    pub(crate) const MESSAGE: &'static str =
+        "convert `%` or `str.format()` interpolation to an f-string";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let facets = &config.rules.prefer_fstring;
         let targets = config
@@ -57,7 +60,7 @@ impl PreferFstring {
             _ => None,
         }?;
         let span = expr.range();
-        let rewrite = spaced(source, span, rewrite);
+        let rewrite = padded(source, span.start(), rewrite);
         if !self.fits(source, span, &rewrite) {
             return None;
         }
@@ -66,18 +69,13 @@ impl PreferFstring {
     }
 
     /// True when every physical line `rewrite` lands on stays inside
-    /// the budget. Only the first line carries the text preceding
-    /// `span` and only the last carries what follows it.
+    /// the budget, measured over the lines `span` spans with the
+    /// rewrite spliced in.
     fn fits(&self, source: &Source, span: TextRange, rewrite: &str) -> bool {
-        let after = &source.text()[span.end().to_usize()..];
-        let tail = after.split_once('\n').map_or(after, |(head, _)| head);
-        let inner = rewrite.lines().skip(1);
-        !source.column_overflows(span.start(), opening_width(rewrite), self.budget)
-            && end_column(rewrite, source.column_of(span.start())) + tail.width() <= self.budget
-            && inner
-                .clone()
-                .zip(inner.skip(1))
-                .all(|(line, _)| line.width() <= self.budget)
+        let spliced = Edit::range_replacement(rewrite.to_owned(), span);
+        apply_inline_edits(source, source.text().lines_range(span), &[spliced])
+            .lines()
+            .all(|line| line.width() <= self.budget)
     }
 }
 
@@ -93,20 +91,6 @@ impl Rule for PreferFstring {
 
     fn id(&self) -> RuleId {
         Self::SLUG
-    }
-}
-
-/// `rewrite` behind a space wherever a keyword abuts the template, so
-/// `return"{}".format(x)` does not settle as `returnf"{x}"`.
-fn spaced(source: &Source, span: TextRange, rewrite: String) -> String {
-    let abuts = source.text()[TextRange::up_to(span.start())]
-        .chars()
-        .next_back()
-        .is_some_and(|c| c.is_alphanumeric() || c == '_');
-    if abuts {
-        format!(" {rewrite}")
-    } else {
-        rewrite
     }
 }
 

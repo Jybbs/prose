@@ -15,9 +15,8 @@ use crate::{
     primitives::{
         edit::{narrowed_replacement, singleton_groups},
         imports::{import_group, sectioned_import_runs},
-        orderer::{
-            any_sibling_shares_line, assemble_blocks, blocks_span, member_blocks, permute_full,
-        },
+        orderer::{any_sibling_shares_line, assemble_blocks, member_blocks, permute_full},
+        range::blocks_span,
         scope::sub_bodies,
         sections::Sections,
     },
@@ -30,6 +29,9 @@ pub(crate) struct GroupImports {
 }
 
 impl GroupImports {
+    pub(crate) const MESSAGE: &'static str =
+        "group imports into bare, external, and local sections";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             first_party: config.first_party(),

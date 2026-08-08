@@ -19,9 +19,21 @@ Config {
         99,
     ),
     imports: ImportsConfig {
-        first_party: [],
+        first_party: [
+            "acme",
+            "internal",
+        ],
     },
     rules: RuleConfigs {
+        shed_backslash_continuations: ToggleOnly {
+            enabled: false,
+        },
+        normalize_literals: NormalizeLiteralsConfig {
+            enabled: false,
+            unify_numerics: false,
+            unify_prefixes: false,
+            unify_quotes: false,
+        },
         prune_inert_imports: PruneInertImportsConfig {
             drop_duplicates: false,
             drop_unreferenced: false,
@@ -39,7 +51,19 @@ Config {
             enabled: false,
         },
         shed_parentheses: ToggleOnly {
-            enabled: true,
+            enabled: false,
+        },
+        shed_redundant_base: ToggleOnly {
+            enabled: false,
+        },
+        normalize_comparisons: NormalizeComparisonsConfig {
+            enabled: false,
+            rewrite_identity: false,
+            rewrite_negation: false,
+            rewrite_operand_order: false,
+        },
+        simplify_comprehensions: ToggleOnly {
+            enabled: false,
         },
         docstring_frame: ToggleOnly {
             enabled: false,
@@ -48,7 +72,18 @@ Config {
             enabled: false,
         },
         group_imports: ToggleOnly {
-            enabled: true,
+            enabled: false,
+        },
+        chain_layout: ChainLayoutConfig {
+            enabled: false,
+            max_links: InlineBudget(
+                Some(
+                    4,
+                ),
+            ),
+            max_shift: Cap(
+                8,
+            ),
         },
         collection_layout: CollectionLayoutConfig {
             enabled: false,
@@ -79,17 +114,28 @@ Config {
                 ),
             ),
         },
+        shed_super_args: ToggleOnly {
+            enabled: false,
+        },
         signature_layout: SignatureLayoutConfig {
             enabled: false,
             max_params: InlineBudget(
                 None,
             ),
         },
+        stack_adjacent_strings: ToggleOnly {
+            enabled: false,
+        },
         align_match_case: AlignmentConfig {
             enabled: false,
             max_shift: Cap(
-                16,
+                4,
             ),
+        },
+        import_layout: ImportLayoutConfig {
+            enabled: false,
+            merge_members: false,
+            split_multi_module: false,
         },
         alphabetize: AlphabetizeConfig {
             enabled: false,
@@ -111,19 +157,16 @@ Config {
         blank_lines: ToggleOnly {
             enabled: false,
         },
-        import_layout: ToggleOnly {
-            enabled: false,
-        },
         align_imports: AlignmentConfig {
             enabled: false,
             max_shift: Cap(
-                16,
+                4,
             ),
         },
         align_colons: AlignmentConfig {
             enabled: false,
             max_shift: Cap(
-                16,
+                4,
             ),
         },
         docstring_wrap: ToggleOnly {
@@ -132,17 +175,26 @@ Config {
         align_equals: AlignmentConfig {
             enabled: false,
             max_shift: Cap(
-                16,
+                4,
             ),
         },
         align_comparisons: AlignmentConfig {
             enabled: false,
             max_shift: Cap(
-                16,
+                4,
             ),
         },
         strip_align_padding: ToggleOnly {
             enabled: false,
+        },
+        comment_spacing: ToggleOnly {
+            enabled: false,
+        },
+        align_comments: AlignmentConfig {
+            enabled: false,
+            max_shift: Cap(
+                4,
+            ),
         },
         bare_imports: BareImportsConfig {
             allow: [
@@ -180,8 +232,9 @@ Config {
         signature_annotations: ToggleOnly {
             enabled: false,
         },
-        line_overflow: ToggleOnly {
-            enabled: true,
+        line_overflow: LineOverflowConfig {
+            enabled: false,
+            suggest_string_splits: false,
         },
     },
     target_version: Some(

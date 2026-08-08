@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A `false` `max-links` Leaves Only the Width Budget"
+
+description = '''
+Clearing the count trigger holds a short chain inline whatever its link count, leaving `code-line-length` as the only reason a chain breaks.
+'''

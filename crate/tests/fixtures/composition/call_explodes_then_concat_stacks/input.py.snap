@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/call_explodes_then_concat_stacks/input.py
+---
+emit(
+    alpha,
+    "the opening clause of this notice "
+    "and the trailing clause"
+)

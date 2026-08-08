@@ -4,16 +4,14 @@
 //! `-> None` in place.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    Stmt, StmtFunctionDef,
-    helpers::body_without_leading_docstring,
-    statement_visitor::{StatementVisitor, walk_stmt},
-};
+use ruff_python_ast::{Stmt, StmtFunctionDef, helpers::body_without_leading_docstring};
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
-    primitives::{edit::singleton_groups, range::return_annotation_range},
+    primitives::{
+        edit::singleton_groups, range::return_annotation_range, walk::filter_map_over_stmts,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -21,6 +19,8 @@ use crate::{
 pub(crate) struct StripNoneReturn;
 
 impl StripNoneReturn {
+    pub(crate) const MESSAGE: &'static str = "drop a redundant `-> None` return annotation";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }
@@ -28,45 +28,13 @@ impl StripNoneReturn {
 
 impl Rule for StripNoneReturn {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let mut walker = Walker {
-            edits: Vec::new(),
-            source,
-        };
-        walker.visit_body(&source.ast().body);
-        singleton_groups(walker.edits)
+        singleton_groups(filter_map_over_stmts(&source.ast().body, |stmt| {
+            strip(source, stmt.as_function_def_stmt()?)
+        }))
     }
 
     fn id(&self) -> RuleId {
         Self::SLUG
-    }
-}
-
-struct Walker<'a> {
-    edits: Vec<Edit>,
-    source: &'a Source,
-}
-
-impl Walker<'_> {
-    /// Deletes the ` -> None` span from `(`'s close through the
-    /// annotation, parens included.
-    fn strip(&mut self, fd: &StmtFunctionDef) {
-        if let Some(returns) = fd.returns.as_deref()
-            && returns.is_none_literal_expr()
-            && !is_ellipsis_stub(&fd.body)
-        {
-            let annotation = return_annotation_range(returns, fd, self.source.tokens());
-            let span = TextRange::new(fd.parameters.range().end(), annotation.end());
-            self.edits.push(Edit::range_deletion(span));
-        }
-    }
-}
-
-impl<'a> StatementVisitor<'a> for Walker<'a> {
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        if let Stmt::FunctionDef(fd) = stmt {
-            self.strip(fd);
-        }
-        walk_stmt(self, stmt);
     }
 }
 
@@ -77,6 +45,21 @@ fn is_ellipsis_stub(body: &[Stmt]) -> bool {
         body_without_leading_docstring(body),
         [Stmt::Expr(stmt)] if stmt.value.is_ellipsis_literal_expr()
     )
+}
+
+/// The deletion taking the ` -> None` span from `(`'s close through the
+/// annotation, parens included. `None` where the annotation holds, which
+/// covers a non-bare return type and a declaration-only stub.
+fn strip(source: &Source, fd: &StmtFunctionDef) -> Option<Edit> {
+    let returns = fd.returns.as_deref()?;
+    if !returns.is_none_literal_expr() || is_ellipsis_stub(&fd.body) {
+        return None;
+    }
+    let annotation = return_annotation_range(returns, fd, source.tokens());
+    Some(Edit::range_deletion(TextRange::new(
+        fd.parameters.range().end(),
+        annotation.end(),
+    )))
 }
 
 #[cfg(test)]

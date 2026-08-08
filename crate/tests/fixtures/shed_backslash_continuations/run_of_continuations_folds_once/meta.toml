@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Several Continuations on One Statement Fold Together"
+
+description = '''
+Consecutive backslashes across one logical line are weighed as a single rejoin, so the run answers the budget with the line it actually produces rather than one break at a time.
+'''

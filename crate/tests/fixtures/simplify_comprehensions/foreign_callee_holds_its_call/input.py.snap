@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/foreign_callee_holds_its_call/input.py
+---
+built = registry.make([1, 2])
+plain = record([1, 2])

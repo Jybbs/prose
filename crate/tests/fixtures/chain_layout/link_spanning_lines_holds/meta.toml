@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Link Still Spanning Lines Holds Its Shape"
+
+description = '''
+Reassembling a chain reads each link as one row, so a link carrying the flush column [[call-layout]] never closes still spans lines when the chain is measured and leaves the shape where the source put it.
+'''

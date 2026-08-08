@@ -6,15 +6,18 @@
 //! that drop the aliases a rule has left unread. First-party detection
 //! reads the package-name list from `[tool.prose.imports]`.
 
-use std::ops::Range;
+use std::{cmp::Reverse, ops::Range};
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
-    primitives::{comments::leading_comment_block, orderer::runs_where, sections::Sections},
+    primitives::{
+        comments::leading_comment_block, edit::whole_line_deletion, range::dropped_member_spans,
+        sections::Sections, slots::runs_where,
+    },
     source::Source,
 };
 
@@ -97,13 +100,15 @@ pub(crate) fn import_group(stmt: &Stmt, first_party: &[String]) -> Option<Import
 
 /// Composite import sort key, the canonical group order ahead of a
 /// per-kind sort, bare before `from`, bare by least alias name and
-/// `from` by `(level, module)`. Ungrouped, every group below
+/// `from` by `(relative, depth, module)`. An absolute `from` import
+/// leads every relative one, and relative imports run furthest to
+/// closest, so `..pkg` precedes `.pkg`. Ungrouped, every group below
 /// `__future__` collapses to one rank. `None` pins a non-import.
 pub(crate) fn import_sort_key<'a>(
     stmt: &'a Stmt,
     first_party: &[String],
     grouped: bool,
-) -> Option<(ImportGroup, u8, u32, &'a str)> {
+) -> Option<(ImportGroup, u8, bool, Reverse<u32>, &'a str)> {
     let group = import_group(stmt, first_party)?;
     let rank = if grouped {
         group
@@ -111,10 +116,26 @@ pub(crate) fn import_sort_key<'a>(
         group.min(ImportGroup::Bare)
     };
     Some(match stmt {
-        Stmt::Import(i) => (rank, 0, 0, least_alias(&i.names)),
-        Stmt::ImportFrom(i) => (rank, 1, i.level, i.module.as_deref().unwrap_or_default()),
+        Stmt::Import(i) => (rank, 0, false, Reverse(0), least_alias(&i.names)),
+        Stmt::ImportFrom(i) => (
+            rank,
+            1,
+            i.level > 0,
+            Reverse(i.level),
+            i.module.as_deref().unwrap_or_default(),
+        ),
         _ => unreachable!("import_group returns Some only for import statements"),
     })
+}
+
+/// True for an absolute `from __future__ import …` statement.
+pub(crate) fn is_future(node: &StmtImportFrom) -> bool {
+    node.level == 0 && node.module.as_deref() == Some(FUTURE_MODULE)
+}
+
+/// True for an `import` or `from`-import statement.
+pub(crate) fn is_import(stmt: &Stmt) -> bool {
+    stmt.is_import_stmt() || stmt.is_import_from_stmt()
 }
 
 /// The deletions dropping every alias of an import statement that
@@ -125,39 +146,27 @@ pub(crate) fn import_sort_key<'a>(
 /// lines. One losing a subset keeps the survivors byte-for-byte, each
 /// deletion covering one run of dropped aliases together with the
 /// separator binding it to the survivor beside it.
-/// True for an absolute `from __future__ import …` statement.
-pub(crate) fn is_future(node: &StmtImportFrom) -> bool {
-    node.level == 0 && node.module.as_deref() == Some(FUTURE_MODULE)
-}
-
 pub(crate) fn prune_import_aliases(
     source: &Source,
     stmt: TextRange,
     names: &[Alias],
     keep: impl Fn(usize) -> bool,
 ) -> Vec<Edit> {
-    let kept: Vec<usize> = (0..names.len()).filter(|&index| keep(index)).collect();
-    if kept.len() == names.len() || !stands_alone(source, stmt) || source.intersects_comment(stmt) {
+    let kept = (0..names.len()).filter(|&index| keep(index)).count();
+    if kept == names.len() || !stands_alone(source, stmt) || source.intersects_comment(stmt) {
         return Vec::new();
     }
-    let Some(&last_kept) = kept.last() else {
+    if kept == 0 {
         return if comment_leads(source, stmt) {
             Vec::new()
         } else {
-            vec![Edit::range_deletion(source.full_lines_within_cell(stmt))]
+            vec![whole_line_deletion(source, stmt)]
         };
-    };
-    let starts = std::iter::once(0).chain(kept.iter().map(|&index| index + 1));
-    let ends = kept.iter().copied().chain(std::iter::once(names.len()));
-    starts
-        .zip(ends)
-        .filter(|&(start, end)| start < end)
-        .map(|(start, end)| {
-            Edit::range_deletion(match names.get(end) {
-                Some(survivor) => TextRange::new(names[start].start(), survivor.start()),
-                None => TextRange::new(names[last_kept].end(), names[end - 1].end()),
-            })
-        })
+    }
+    let members: Vec<TextRange> = names.iter().map(|alias| alias.range).collect();
+    dropped_member_spans(&members, |index| !keep(index))
+        .into_iter()
+        .map(Edit::range_deletion)
         .collect()
 }
 
@@ -198,11 +207,6 @@ fn is_first_party(name: &str, first_party: &[String]) -> bool {
     first_party.iter().any(|p| p == root)
 }
 
-/// True for an `import` or `from`-import statement.
-fn is_import(stmt: &Stmt) -> bool {
-    stmt.is_import_stmt() || stmt.is_import_from_stmt()
-}
-
 /// Returns the alphabetically least alias name in a bare import's
 /// name list. An `import` statement always binds at least one name.
 fn least_alias(names: &[Alias]) -> &str {
@@ -227,6 +231,7 @@ fn stands_alone(source: &Source, stmt: TextRange) -> bool {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+    use ruff_text_size::Ranged;
 
     use super::*;
     use crate::primitives::edit::apply_edits;
@@ -327,6 +332,30 @@ mod tests {
         assert!(
             keys[0] < keys[1] && keys[1] < keys[2] && keys[2] < keys[3],
             "expected bare-external < external-from < local-bare < local-from",
+        );
+    }
+
+    #[test]
+    fn import_sort_key_ranks_an_absolute_from_import_ahead_of_every_relative_one() {
+        let first_party = vec!["myapp".to_owned()];
+        let s = parse("from .pkg import a\nfrom myapp.db import b\n");
+        let key = |stmt| import_sort_key(stmt, &first_party, true).expect("import statement");
+        let body = &s.ast().body;
+        assert!(key(&body[1]) < key(&body[0]));
+    }
+
+    #[test]
+    fn import_sort_key_runs_relative_imports_furthest_to_closest() {
+        let s = parse("from .pkg import a\nfrom ..pkg import b\nfrom ...pkg import c\n");
+        let keys: Vec<_> = s
+            .ast()
+            .body
+            .iter()
+            .map(|stmt| import_sort_key(stmt, &[], true).expect("import statement"))
+            .collect();
+        assert!(
+            keys[2] < keys[1] && keys[1] < keys[0],
+            "expected `...pkg` < `..pkg` < `.pkg`, furthest to closest",
         );
     }
 

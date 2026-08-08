@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_backslash_continuations/overflowing_split_takes_parentheses/input.py
+---
+total = (first_operand_value + second_operand_value + third_operand_x +
+    fourth_operand_value + fifth_operand_value + sixth_operand_value_x)

@@ -30,6 +30,10 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub use crate::rule::RuleConfigs;
+use crate::{
+    primitives::{aligner, fracture, reserve},
+    rules::align_equals::AlignEquals,
+};
 
 mod de;
 mod json_schema;
@@ -194,6 +198,10 @@ impl Config {
         allow.iter().cloned().collect()
     }
 
+    pub(crate) fn alphabetize_enabled(&self) -> bool {
+        self.rules.alphabetize.enabled
+    }
+
     pub(crate) fn code_width(&self) -> usize {
         self.code_line_length
             .expect("Config::default synthesizes Some(88)")
@@ -206,8 +214,24 @@ impl Config {
             .get()
     }
 
+    /// The `align-equals` reservation a rule measures a construct
+    /// against, reserving no column where that rule is off.
+    pub(crate) fn equals_reservations(&self) -> reserve::Reservations {
+        let rules = &self.rules.align_equals;
+        let settings = rules
+            .enabled
+            .then(|| aligner::Settings::from(rules).with_line_length(self.code_width()));
+        reserve::Reservations::new(AlignEquals::SLUG, settings)
+    }
+
     pub(crate) fn first_party(&self) -> Vec<String> {
         self.imports.first_party.clone()
+    }
+
+    /// The terms a fractured argument list closes under, closing
+    /// none where `call-layout` is off.
+    pub(crate) fn fracture_settings(&self) -> fracture::Settings {
+        fracture::Settings::from(&self.rules.call_layout)
     }
 
     pub(crate) fn group_imports_enabled(&self) -> bool {

@@ -31,6 +31,9 @@ pub(crate) struct ModernizeAnnotations {
 }
 
 impl ModernizeAnnotations {
+    pub(crate) const MESSAGE: &'static str =
+        "modernize a legacy `typing` annotation to its builtin or PEP 604 form";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let facets = &config.rules.modernize_annotations;
         let targets = |version: PythonVersion| {
@@ -107,7 +110,7 @@ impl<'a> Walker<'a> {
 }
 
 impl<'a> ParentedProbe<'a> for Walker<'a> {
-    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>) -> Descent {
+    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
         if self.rewrite(expr, parent) {
             Descent::Over
         } else {

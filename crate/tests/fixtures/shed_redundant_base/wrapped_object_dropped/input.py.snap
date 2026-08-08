@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_redundant_base/wrapped_object_dropped/input.py
+---
+class Adapter(
+    Mapping,
+):
+    def get(self, key):
+        return self.data[key]
+
+
+class Wrapper(
+    metaclass=WrapperMeta,
+):
+    def unwrap(self):
+        return self.inner

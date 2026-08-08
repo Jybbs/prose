@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Chain in a Nested Scope Opens at Its Own Indent"
+
+description = '''
+The head sits one indent step past the row carrying the chain and the closing paren drops back to that row, so a chain inside a `def` opens against the body indent rather than the margin.
+'''

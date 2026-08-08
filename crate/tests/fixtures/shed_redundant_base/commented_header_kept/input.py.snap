@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_redundant_base/commented_header_kept/input.py
+---
+class Annotated(
+    object,  # spelled out for the reader
+):
+    def note(self):
+        return self.comment
+
+
+class Bare(  # no bases at all
+):
+    def note(self):
+        return None

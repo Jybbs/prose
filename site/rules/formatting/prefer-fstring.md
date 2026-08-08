@@ -1,6 +1,6 @@
 ---
 caption : "Converts printf-style `%` interpolation and `str.format()` calls to f-strings wherever both forms render the same text."
-related : [modernize-annotations]
+related : [normalize-literals, stack-adjacent-strings, modernize-annotations]
 layout  : doc
 ---
 

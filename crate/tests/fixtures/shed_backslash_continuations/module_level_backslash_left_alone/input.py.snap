@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_backslash_continuations/module_level_backslash_left_alone/input.py
+---
+x = 1
+\
+y = 2
