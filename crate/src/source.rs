@@ -363,7 +363,7 @@ impl Source {
 
     /// Returns the first non-trivia token scanning backward from
     /// `offset`, or `None` when the scan finds none.
-    pub(crate) fn prev_non_trivia_token(&self, offset: TextSize) -> Option<SimpleToken> {
+    fn prev_non_trivia_token(&self, offset: TextSize) -> Option<SimpleToken> {
         BackwardsTokenizer::up_to(offset, self.text(), self.comment_ranges())
             .skip_trivia()
             .next()

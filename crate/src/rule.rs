@@ -387,7 +387,7 @@ register_rules! {
     "modernize-annotations":        modernize_annotations:        ModernizeAnnotationsConfig => ModernizeAnnotations       => [],
     "strip-trailing-commas":        strip_trailing_commas:        ToggleOnly                 => StripTrailingCommas        => [],
     "shed-parentheses":             shed_parentheses:             ToggleOnly                 => ShedParentheses            => ["shed-backslash-continuations"],
-    "shed-redundant-base":          shed_redundant_base:          ToggleOnly                 => ShedRedundantBase         => [],
+    "shed-redundant-base":          shed_redundant_base:          ToggleOnly                 => ShedRedundantBase          => [],
     "normalize-comparisons":        normalize_comparisons:        NormalizeComparisonsConfig => NormalizeComparisons       => ["shed-parentheses"],
     "simplify-comprehensions":      simplify_comprehensions:      ToggleOnly                 => SimplifyComprehensions     => ["shed-parentheses"],
     "docstring-frame":              docstring_frame:              ToggleOnly                 => DocstringFrame             => [],

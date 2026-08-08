@@ -17,9 +17,10 @@ use crate::{
         layout::is_layoutable,
         orderer::{
             adjacent_slots, any_sibling_shares_line, assemble_blocks, assemble_separated,
-            block_ranges, permute_runs, runs_where,
+            block_ranges, permute_runs,
         },
         range::blocks_span,
+        slots::runs_where,
     },
     source::Source,
 };

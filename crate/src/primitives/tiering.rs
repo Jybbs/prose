@@ -13,7 +13,7 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextSize};
 
-use crate::primitives::orderer::{permute_in_place, slot_positions};
+use crate::primitives::{orderer::permute_in_place, slots::slot_positions};
 
 /// Accumulates load-context names through `eval_time_refs`, pruning
 /// function and lambda bodies and skipping deferred annotations.

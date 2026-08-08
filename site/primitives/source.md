@@ -32,6 +32,7 @@ A Python file the parser cannot recover surfaces as `SourceError::Parse(...)` fr
 - `ast() -> &ModModule` returns the parsed AST root. The wrapping *Source* owns the parse, so the AST is borrow-stable for the value's lifetime.
 - `tokens() -> &Tokens` returns the token stream. Useful when a rule's question is comment-shaped or trivia-shaped rather than AST-shaped.
 - `token_gaps() -> impl Iterator<Item = (&Token, &Token, TextRange)>` yields each adjacent token pair with the range between them, the trivia the lexer skipped. [[strip-align-padding]] reads it for the padding inside a bracket and [[shed-backslash-continuations]] for the gap a continuation sits in.
+- `prev_token_end(offset: TextSize) -> TextSize` returns the end of the token before an offset, scanning backward over whitespace and comments. [[blank-lines]] reads it for where a header's signature closes and [[shed-redundant-base]] for the position a shed base list reaches back to.
 - `binding_analysis() -> &BindingAnalysis` returns the per-source [[binding-analysis]] table, built once during construction.
 - `comment_ranges() -> &CommentRanges` returns the comment-range table for trivia walking.
 

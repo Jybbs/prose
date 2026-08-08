@@ -11,7 +11,7 @@ use ruff_text_size::TextRange;
 use crate::{
     primitives::{
         comments::{is_banner_block, leading_comment_block},
-        orderer::slot_runs,
+        slots::slot_runs,
     },
     source::Source,
 };

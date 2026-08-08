@@ -48,7 +48,8 @@ fn is_ellipsis_stub(body: &[Stmt]) -> bool {
 }
 
 /// The deletion taking the ` -> None` span from `(`'s close through the
-/// annotation, parens included, `None` where the annotation stays.
+/// annotation, parens included. `None` where the annotation holds, which
+/// covers a non-bare return type and a declaration-only stub.
 fn strip(source: &Source, fd: &StmtFunctionDef) -> Option<Edit> {
     let returns = fd.returns.as_deref()?;
     if !returns.is_none_literal_expr() || is_ellipsis_stub(&fd.body) {

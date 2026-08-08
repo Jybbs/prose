@@ -7,15 +7,13 @@
 //! any span carrying a comment.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{Expr, StmtClassDef};
+use ruff_python_ast::{ArgOrKeyword, Expr, StmtClassDef};
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
     primitives::{
-        edit::singleton_groups,
-        range::{blocks_span, member_deletion_span},
-        walk::filter_map_over_stmts,
+        edit::singleton_groups, range::dropped_member_spans, walk::filter_map_over_stmts,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -39,7 +37,7 @@ impl Rule for ShedRedundantBase {
         let per_class = filter_map_over_stmts(&source.ast().body, |stmt| {
             Some(shed(source, stmt.as_class_def_stmt()?))
         });
-        singleton_groups(per_class.concat())
+        singleton_groups(per_class.into_iter().flatten())
     }
 
     fn id(&self) -> RuleId {
@@ -54,8 +52,9 @@ fn names_object(base: &Expr) -> bool {
 
 /// The deletions `class`'s header earns, the whole argument list and the
 /// space ahead of it where nothing in it survives, and one span per
-/// contiguous run of redundant bases otherwise. A span carrying a
-/// comment is dropped, leaving that header as written.
+/// contiguous run of redundant bases otherwise. Each base widens to the
+/// grouping parentheses around it, which sit outside its own range. A
+/// span carrying a comment is dropped, leaving that header as written.
 fn shed(source: &Source, class: &StmtClassDef) -> Vec<Edit> {
     let Some(arguments) = class.arguments.as_deref() else {
         return Vec::new();
@@ -63,19 +62,20 @@ fn shed(source: &Source, class: &StmtClassDef) -> Vec<Edit> {
     let rebound = source
         .binding_analysis()
         .is_defined_before(OBJECT, class.start());
-    let redundant = |base: &Expr| !rebound && names_object(base);
-    let spans: Vec<TextRange> =
-        if arguments.args.iter().filter(|base| redundant(base)).count() == arguments.len() {
-            let opener = source.prev_token_end(arguments.start());
-            vec![TextRange::new(opener, arguments.end())]
-        } else {
-            arguments
-                .args
-                .chunk_by(|a, b| redundant(a) == redundant(b))
-                .filter(|run| redundant(&run[0]))
-                .map(|run| member_deletion_span(arguments.iter_source_order(), blocks_span(run)))
-                .collect()
-        };
+    let widen = |base: &Expr| source.paren_aware_range(base.into(), class.into());
+    let (members, rejected): (Vec<TextRange>, Vec<bool>) = arguments
+        .iter_source_order()
+        .map(|member| match member {
+            ArgOrKeyword::Arg(base) => (widen(base), !rebound && names_object(base)),
+            ArgOrKeyword::Keyword(keyword) => (keyword.range(), false),
+        })
+        .unzip();
+    let spans = if rejected.iter().all(|&dropped| dropped) {
+        let opener = source.prev_token_end(arguments.start());
+        vec![TextRange::new(opener, arguments.end())]
+    } else {
+        dropped_member_spans(&members, |index| rejected[index])
+    };
     spans
         .into_iter()
         .filter(|&span| !source.intersects_comment(span))
@@ -99,6 +99,13 @@ mod tests {
             .flatten()
             .map(|edit| source.text()[edit.range()].to_owned())
             .collect()
+    }
+
+    #[rstest]
+    #[case("class C(object, object, Mapping):\n    pass\n", vec!["object, object, "])]
+    #[case("class C(object, Mapping, object):\n    pass\n", vec!["object, ", ", object"])]
+    fn deletes_each_run_of_the_header_separately(#[case] src: &str, #[case] expected: Vec<&str>) {
+        assert_eq!(deleted(src), expected);
     }
 
     #[rstest]
@@ -129,6 +136,7 @@ mod tests {
     #[case("class C(Mapping, object):\n    pass\n", ", object")]
     #[case("class C(Mapping, object, object):\n    pass\n", ", object, object")]
     #[case("class C(\n    Mapping,\n    object,\n):\n    pass\n", ",\n    object")]
+    #[case("class C(*BASES, object):\n    pass\n", ", object")]
     fn deletes_the_object_and_its_preceding_separator(#[case] src: &str, #[case] expected: &str) {
         assert_eq!(deleted(src), [expected]);
     }
@@ -148,5 +156,13 @@ mod tests {
         src: &str,
     ) {
         assert!(deleted(src).is_empty());
+    }
+
+    #[rstest]
+    #[case("class C(Mapping, (object)):\n    pass\n", ", (object)")]
+    #[case("class C((object), Mapping):\n    pass\n", "(object), ")]
+    #[case("class C(object, (Mapping)):\n    pass\n", "object, ")]
+    fn widens_each_base_to_its_grouping_parentheses(#[case] src: &str, #[case] expected: &str) {
+        assert_eq!(deleted(src), [expected]);
     }
 }
