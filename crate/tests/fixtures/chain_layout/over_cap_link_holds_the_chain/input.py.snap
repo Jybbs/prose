@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/chain_layout/over_cap_link_holds_the_chain/input.py
+---
+result = base.first(alpha,
+                    beta,
+                    gamma,
+                    delta).second(x).third(y)

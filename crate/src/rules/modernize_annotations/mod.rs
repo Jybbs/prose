@@ -110,7 +110,7 @@ impl<'a> Walker<'a> {
 }
 
 impl<'a> ParentedProbe<'a> for Walker<'a> {
-    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>) -> Descent {
+    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
         if self.rewrite(expr, parent) {
             Descent::Over
         } else {

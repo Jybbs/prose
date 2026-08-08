@@ -164,7 +164,7 @@ mod tests {
     #[case("[a]", false)]
     #[case("()", false)]
     #[case("a, b", false)]
-    fn is_multi_entry_wants_two_bracketed_entries(#[case] src: &str, #[case] expected: bool) {
+    fn is_multi_entry_requires_two_bracketed_entries(#[case] src: &str, #[case] expected: bool) {
         let source = parse(src);
         let expr = first_expr(&source);
         assert_eq!(is_multi_entry(expr), expected);

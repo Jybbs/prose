@@ -9,35 +9,29 @@
 //! span holds a comment, and a run carrying a part with its own line
 //! break each stay as written.
 
-use std::collections::HashMap;
-
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    AnyNodeRef, Arguments, Expr, InterpolatedStringElement, Stmt, StringLike,
-    visitor::{Visitor, walk_arguments, walk_expr, walk_stmt},
-};
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_python_ast::{AnyNodeRef, Expr, StringLike};
+use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,
     primitives::{
-        aligner,
         docstring::docstring_slots,
         edit::{narrowed_replacement, singleton_groups},
         layout::{Separator, explode_parens},
         orderer::any_sibling_shares_line,
-        reserve::{reserved_columns, settled_column},
+        reserve,
         tokens::{is_closer, is_opener},
+        walk::{Descent, ParentedProbe, is_interpolated_string, walk_parented_exprs},
     },
     rule::{Rule, RuleId},
-    rules::align_equals::AlignEquals,
     source::Source,
 };
 
 pub(crate) struct StackAdjacentStrings {
-    align_equals: Option<aligner::Settings>,
     code_line_length: usize,
+    reservations: reserve::Reservations,
 }
 
 impl StackAdjacentStrings {
@@ -46,25 +40,23 @@ impl StackAdjacentStrings {
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            align_equals: AlignEquals::reserve_settings(config),
             code_line_length: config.code_width(),
+            reservations: config.equals_reservations(),
         }
     }
 }
 
 impl Rule for StackAdjacentStrings {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let body = &source.ast().body;
         let mut layout = Layout {
             code_line_length: self.code_line_length,
-            docstrings: docstring_slots(body),
+            docstrings: docstring_slots(&source.ast().body),
             edits: Vec::new(),
             newline: source.newline_str(),
-            parents: vec![AnyNodeRef::from(source.ast())],
-            reservations: reserved_columns(source, self.align_equals, AlignEquals::SLUG),
+            reservations: self.reservations.columns(source),
             source,
         };
-        layout.visit_body(body);
+        walk_parented_exprs(source.ast(), &mut layout);
         singleton_groups(layout.edits)
     }
 
@@ -73,17 +65,17 @@ impl Rule for StackAdjacentStrings {
     }
 }
 
-/// Walks a module emitting the break each over-budget or raggedly
-/// stacked string run needs. `parents` carries the ancestor chain, which
-/// recovers a run's grouping parentheses and locates the statement its
-/// bracket depth counts from.
+/// Emits the break each over-budget or raggedly stacked string run
+/// needs, probing each expression the parent-tracking walk hands it
+/// alongside its enclosing node, which recovers a run's grouping
+/// parentheses, and the ancestor chain above it, which locates the
+/// statement its bracket depth counts from.
 struct Layout<'a> {
     code_line_length: usize,
     docstrings: Vec<TextRange>,
     edits: Vec<Edit>,
     newline: &'static str,
-    parents: Vec<AnyNodeRef<'a>>,
-    reservations: HashMap<TextSize, usize>,
+    reservations: reserve::Columns,
     source: &'a Source,
 }
 
@@ -93,9 +85,8 @@ impl<'a> Layout<'a> {
     /// rather than in parentheses of its own. A bracket still sharing
     /// the run's row leaves no deeper indent for a continuation to land
     /// at, and an unbracketed run has none at all.
-    fn breaks_in_place(&self, span: TextRange) -> bool {
-        let statement = self
-            .parents
+    fn breaks_in_place(&self, span: TextRange, ancestors: &[AnyNodeRef]) -> bool {
+        let statement = ancestors
             .iter()
             .rev()
             .find(|node| node.is_statement())
@@ -120,7 +111,7 @@ impl<'a> Layout<'a> {
     /// Emits the one-literal-per-line rewrite `run` needs, or nothing
     /// where the run already reads that way, sits within budget, or falls
     /// under one of the holds.
-    fn process_run(&mut self, run: StringLike<'a>, parent: AnyNodeRef) {
+    fn process_run(&mut self, run: StringLike<'a>, parent: AnyNodeRef, ancestors: &[AnyNodeRef]) {
         let span = run.range();
         if self.docstrings.contains(&span) {
             return;
@@ -140,16 +131,15 @@ impl<'a> Layout<'a> {
             return;
         }
         let start = span.start();
+        let column = self.reservations.column_in(self.source, start);
         if !self.source.contains_line_break(span)
-            && settled_column(&self.reservations, start, || self.source.column_of(start))
-                + self.source.slice(span).width()
-                <= self.code_line_length
+            && column + self.source.slice(span).width() <= self.code_line_length
         {
             return;
         }
         let texts: Vec<&str> = parts.iter().map(|part| self.source.slice(part)).collect();
         let indent = self.source.line_indent_width(pair.start());
-        let text = if pair == span && self.breaks_in_place(span) {
+        let text = if pair == span && self.breaks_in_place(span, ancestors) {
             texts.join(&format!("{}{}", self.newline, " ".repeat(indent)))
         } else {
             explode_parens(
@@ -165,30 +155,22 @@ impl<'a> Layout<'a> {
     }
 }
 
-impl<'a> Visitor<'a> for Layout<'a> {
-    fn visit_arguments(&mut self, arguments: &'a Arguments) {
-        self.parents.push(arguments.into());
-        walk_arguments(self, arguments);
-        self.parents.pop();
-    }
-
-    fn visit_expr(&mut self, expr: &'a Expr) {
+impl<'a> ParentedProbe<'a> for Layout<'a> {
+    /// Probes each expression for a run to break, leaving a replacement
+    /// field unwalked.
+    fn probe(
+        &mut self,
+        expr: &'a Expr,
+        parent: AnyNodeRef<'a>,
+        ancestors: &[AnyNodeRef<'a>],
+    ) -> Descent {
         if let Some(run) = concatenated_run(expr) {
-            let parent = *self.parents.last().expect("seeded with the module node");
-            self.process_run(run, parent);
+            self.process_run(run, parent, ancestors);
         }
-        self.parents.push(expr.into());
-        walk_expr(self, expr);
-        self.parents.pop();
-    }
-
-    /// Leaves a replacement field unwalked.
-    fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
-
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        self.parents.push(stmt.into());
-        walk_stmt(self, stmt);
-        self.parents.pop();
+        if is_interpolated_string(expr) {
+            return Descent::Over;
+        }
+        Descent::Into
     }
 }
 

@@ -7,8 +7,12 @@ use std::{borrow::Cow, ops::Range};
 
 use ruff_python_ast::Expr;
 use ruff_python_trivia::textwrap::{dedent, indent};
+use ruff_text_size::TextRange;
 
-use crate::primitives::{INDENT_STEP, inline::indent_width};
+use crate::{
+    primitives::{INDENT_STEP, inline::indent_width},
+    source::Source,
+};
 
 /// What [`explode_parens`] writes after each exploded item.
 #[derive(Clone, Copy)]
@@ -66,15 +70,6 @@ pub(crate) fn explode_parens(
     out
 }
 
-/// Splits `block` at its first line break when that opening line holds
-/// its bracket alone, yielding the bracket and the body beneath. A
-/// single-line block and one whose first line carries content beside
-/// the bracket both return `None`.
-pub(crate) fn flush_bracket_open(block: &str) -> Option<(&str, &str)> {
-    let (open, body) = block.split_once('\n')?;
-    (open.trim().len() == 1).then_some((open, body))
-}
-
 /// True when `slice`, a bracketed construct's source text, already
 /// carries the flush column shape the expand path emits, its opening
 /// bracket ending its line and its closing bracket opening its own.
@@ -84,6 +79,12 @@ pub(crate) fn is_column_shaped(slice: &str) -> bool {
         body.rsplit_once('\n')
             .is_some_and(|(_, close)| close.trim_start().len() == 1)
     })
+}
+
+/// True when `range` carries a break a join could close, spanning
+/// lines without already holding the flush column shape.
+pub(crate) fn is_fractured(source: &Source, range: TextRange) -> bool {
+    source.contains_line_break(range) && !is_column_shaped(source.slice(range))
 }
 
 /// True for the four collection-literal `Expr` variants the layout
@@ -162,6 +163,15 @@ fn closing_indent(block: &str) -> usize {
     indent_width(block.rsplit_once('\n').map_or(block, |(_, last)| last))
 }
 
+/// Splits `block` at its first line break when that opening line holds
+/// its bracket alone, yielding the bracket and the body beneath. A
+/// single-line block and one whose first line carries content beside
+/// the bracket both return `None`.
+fn flush_bracket_open(block: &str) -> Option<(&str, &str)> {
+    let (open, body) = block.split_once('\n')?;
+    (open.trim().len() == 1).then_some((open, body))
+}
+
 #[cfg(test)]
 mod tests {
     use std::assert_matches;
@@ -181,7 +191,7 @@ mod tests {
     #[case("(1,\n    2,\n    3)", false)]
     #[case("{\n}", false)]
     #[case("[1, 2]", false)]
-    fn is_column_shaped_wants_both_brackets_alone_on_their_lines(
+    fn is_column_shaped_requires_both_brackets_alone_on_their_lines(
         #[case] slice: &str,
         #[case] expected: bool,
     ) {

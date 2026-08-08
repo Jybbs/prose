@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Fracture Inside an Argument Settles the Spine"
+
+description = '''
+A segment runs from one dot to the next and so covers the whole argument list, leaving a fracture nested inside a value enough to span the link until it closes.
+'''

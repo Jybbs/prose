@@ -18,7 +18,7 @@ use crate::{
     config::Config,
     primitives::{
         edit::{apply_inline_edits, insert_edit, singleton_groups, splice_preserves_tree},
-        inline::{end_column, single_line_form, soft_wrap_runs},
+        inline::{end_column, folded_line_form, soft_wrap_runs},
         walk::{Descent, ParentedProbe, walk_parented_exprs},
     },
     rule::{Rule, RuleId},
@@ -94,13 +94,13 @@ impl<'a> Scout<'a> {
             return None;
         }
         let inner = expr.range();
-        let bare = single_line_form(expr, self.source.slice(inner))?;
+        let bare = folded_line_form(expr, self.source.slice(inner))?;
         splice_preserves_tree(self.source, pair, &bare).then_some(Candidate { bare, inner, pair })
     }
 }
 
 impl<'a> ParentedProbe<'a> for Scout<'a> {
-    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>) -> Descent {
+    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
         self.candidates.extend(self.candidate(expr, parent));
         Descent::Into
     }

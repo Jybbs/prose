@@ -1,6 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/shed_super_args/aligned_continuation_holds/input.py
----
-

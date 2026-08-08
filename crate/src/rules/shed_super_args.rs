@@ -14,15 +14,14 @@ use ruff_python_ast::{
     Expr, ExprCall, Stmt, StmtClassDef,
     visitor::{Visitor, walk_expr, walk_stmt},
 };
-use ruff_python_trivia::leading_indentation;
-use ruff_source_file::UniversalNewlineIterator;
-use ruff_text_size::{TextRange, TextSize};
+use ruff_source_file::UniversalNewlines;
+use ruff_text_size::TextRange;
 
 use crate::{
     config::Config,
     primitives::{
         binding::BindingAnalysis, decorator::is_slots_dataclass, edit::singleton_groups,
-        params::first_positional,
+        inline::indent_width, params::first_positional,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -111,11 +110,13 @@ impl<'a> Walker<'a> {
         };
         let frame = self.frames.last()?;
         let class = self.classes.last()?;
+        let depth = self.classes.len();
+        let name = class_arg.id.as_str();
         let span = call.arguments.inner_range();
-        if frame.class_depth != self.classes.len()
+        if frame.class_depth != depth
             || frame.receiver != Some(instance_arg.id.as_str())
-            || !names_the_class(class_arg.id.as_str(), class, self.classes.len())
-            || self.shadows(class_arg.id.as_str())
+            || !names_the_class(name, class, depth)
+            || self.shadows(name)
             || is_slots_dataclass(class)
             || self.source.intersects_comment(span)
             || self.strands_a_continuation(span)
@@ -141,7 +142,7 @@ impl<'a> Walker<'a> {
     /// same way. A line opening ahead of `span` hangs from the
     /// statement's own indent and survives the deletion.
     fn strands_a_continuation(&self, span: TextRange) -> bool {
-        let tail = TextRange::new(span.end(), self.source.logical_line_end(span.end()));
+        let tail = self.source.logical_line_tail(span.end());
         if !self.source.contains_line_break(tail) {
             return false;
         }
@@ -149,12 +150,11 @@ impl<'a> Walker<'a> {
             return true;
         }
         let opening = self.source.column_of(span.start());
-        UniversalNewlineIterator::with_offset(self.source.slice(tail), tail.start())
+        self.source
+            .slice(tail)
+            .universal_newlines()
             .skip(1)
-            .any(|line| {
-                let content = line.start() + TextSize::of(leading_indentation(&line));
-                self.source.column_of(content) >= opening
-            })
+            .any(|line| indent_width(&line) >= opening)
     }
 }
 
@@ -215,8 +215,10 @@ mod tests {
     use crate::testing::parse;
 
     #[rstest]
-    #[case("class C:\n    marker = super(C, marker)\n")]
-    #[case("def f(self):\n    class C:\n        marker = super(C, self)\n")]
+    #[case::no_enclosing_callable("class C:\n    marker = super(C, marker)\n")]
+    #[case::class_nested_in_a_callable(
+        "def f(self):\n    class C:\n        marker = super(C, self)\n"
+    )]
     fn degenerate_scope_holds_the_call(#[case] src: &str) {
         assert!(ShedSuperArgs.apply(&parse(src)).is_empty());
     }
@@ -230,14 +232,6 @@ mod tests {
         assert_eq!(&source.text()[edit.range()], "C, self");
     }
 
-    #[test]
-    fn misaligned_continuation_holds_the_call() {
-        let source = parse(
-            "class C:\n    def m(self, a, b):\n        return super(C, self).m(a,\n                        b)\n",
-        );
-        assert!(ShedSuperArgs.apply(&source).is_empty());
-    }
-
     #[rstest]
     fn reserved_name_binding_holds_every_call(#[values("__class__", "super")] name: &str) {
         let source = parse(&format!(
@@ -246,11 +240,14 @@ mod tests {
         assert!(ShedSuperArgs.apply(&source).is_empty());
     }
 
-    #[test]
-    fn spread_span_over_a_continuation_holds_the_call() {
-        let source = parse(
-            "class C:\n    def m(self, a, b):\n        return super(\n            C,\n            self\n        ).m(a,\n            b)\n",
-        );
-        assert!(ShedSuperArgs.apply(&source).is_empty());
+    #[rstest]
+    #[case::aligned_continuation(
+        "class C:\n    def m(self, a, b):\n        return super(C, self).m(a,\n                        b)\n"
+    )]
+    #[case::spread_span(
+        "class C:\n    def m(self, a, b):\n        return super(\n            C,\n            self\n        ).m(a,\n            b)\n"
+    )]
+    fn stranding_continuation_holds_the_call(#[case] src: &str) {
+        assert!(ShedSuperArgs.apply(&parse(src)).is_empty());
     }
 }

@@ -15,7 +15,7 @@ Every rule reads the source file through one shared value. *Source* bundles the 
 
 ## Public Surface
 
-`Source` is fully public today, so a downstream Rust consumer can construct one, walk the AST, query offsets, and reparse after mutating the text without needing to reach inside the crate.
+`Source` is fully public today, so a downstream Rust consumer can construct one, walk the AST, and query offsets without needing to reach inside the crate.
 
 ### Construction
 
@@ -40,14 +40,14 @@ A Python file the parser cannot recover surfaces as `SourceError::Parse(...)` fr
 Methods covering the common *"where does this offset land?"* and *"what does the source look like around it?"* questions, grouped by what they answer:
 
 - **Position-from-offset.** `column_of`, `line_column`, `line_index` map a `TextSize` to a column, a `(line, column)` pair, or a 1-indexed line number.
-- **Line geometry.** `line_indent_width` reports the indent on the line containing an offset, `logical_line_end` reports where that offset's logical line closes, a break inside a bracketed construct leaving it open, and `slice` returns the source text covering any `Ranged` value.
+- **Line geometry.** `line_indent_width` reports the indent on the line containing an offset, `logical_line_tail` reports the range from an offset to where its logical line closes, a break inside a bracketed construct leaving it open, and `slice` returns the source text covering any `Ranged` value.
 - **Line-ending convention.** `newline_str` returns the per-file newline (`\n` or `\r\n`), matching what `from_path` detected at read time.
 - **Range and line predicates.** `contains_line_break`, `has_blank_line_before`, `consecutive_lines` answer line-shaped questions about a range.
 - **Comment-aware predicates.** `intersects_comment` reports whether a range crosses a comment span, and `first_token_offset_in_range` finds the first non-trivia token inside a range.
 
 ### Mutation
 
-`reparse(text: String) -> Result<Self, ParseError>` returns a fresh *Source* over the mutated text. The pipeline drives this between rules, so each downstream rule reads a settled AST.
+`reparse_carrying(text: String, cell_offsets: CellOffsets) -> Result<Self, ParseError>` returns a fresh *Source* over the mutated text, carrying a notebook's cell boundaries forward across the rule. The pipeline drives this between rules, so each downstream rule reads a settled AST, and the method is `pub(crate)`, leaving reparsing inside the crate.
 
 ### Errors
 

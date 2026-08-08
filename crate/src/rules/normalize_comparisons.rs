@@ -150,7 +150,7 @@ struct Rewriter<'a> {
 }
 
 impl<'a> ParentedProbe<'a> for Rewriter<'a> {
-    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>) -> Descent {
+    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
         if is_interpolated_string(expr) {
             return Descent::Over;
         }

@@ -42,14 +42,6 @@ impl AlignEquals {
                 .with_line_length(config.code_width()),
         }
     }
-
-    /// The settings `align_equals` runs with, or `None` where the rule
-    /// is disabled.
-    pub(crate) fn reserve_settings(config: &Config) -> Option<aligner::Settings> {
-        let rule = &config.rules.align_equals;
-        rule.enabled
-            .then(|| aligner::Settings::from(rule).with_line_length(config.code_width()))
-    }
 }
 
 impl Rule for AlignEquals {
@@ -71,30 +63,14 @@ struct Visitor<'a> {
 }
 
 impl Visitor<'_> {
-    /// Emits `group` as one fix: the aligner's column when the members
-    /// align on distinct lines, a one-space name-side buffer otherwise,
-    /// plus the [value-side gaps](aligner::AlignWalker::value_gaps) so
-    /// every row reads as `name = value`.
-    fn emit_equal_group(&mut self, group: &[aligner::Member]) {
-        let source = self.walker.source;
-        let name_edits = if aligner::is_alignment_candidate(source, group) {
-            self.walker.group_edits(group)
-        } else {
-            group
-                .iter()
-                .filter_map(|m| aligner::space_padding_edit(source, m.gap, 1))
-                .collect()
-        };
-        let gaps = self.walker.value_gaps(group);
-        self.walker.push_with_gaps(name_edits, gaps);
-    }
-
+    /// Aligns each adjacent assignment run in `body`, descending into
+    /// every nested block the walk reaches.
     fn process_body(&mut self, body: &[Stmt]) {
         let source = self.walker.source;
         for group in aligner::line_adjacent_groups(source, body, self.walker.rule, |s| {
             equal_targets::assignment(source, s)
         }) {
-            self.emit_equal_group(&group);
+            self.walker.emit_group_or_buffer(&group);
         }
     }
 
@@ -110,7 +86,7 @@ impl Visitor<'_> {
     fn process_call(&mut self, call: &ExprCall) {
         for group in equal_targets::keyword_groups(self.walker.source, self.walker.rule, call, true)
         {
-            self.emit_equal_group(&group);
+            self.walker.emit_group_or_buffer(&group);
         }
     }
 

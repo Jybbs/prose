@@ -328,16 +328,18 @@ impl Source {
         self.file.to_source_code().line_index(offset)
     }
 
-    /// Returns the offset ending the logical line `offset` sits on, the
-    /// start of the first `Newline` token past it or the module's own
-    /// end. A break inside a bracketed construct carries
+    /// Returns the range from `offset` to the end of its logical line,
+    /// the start of the first `Newline` token past it or the module's
+    /// own end. A break inside a bracketed construct carries
     /// `NonLogicalNewline` and leaves the logical line open.
-    pub fn logical_line_end(&self, offset: TextSize) -> TextSize {
+    pub fn logical_line_tail(&self, offset: TextSize) -> TextRange {
         let module_end = self.module_range().end();
-        self.first_token_offset_in_range(TextRange::new(offset, module_end), |token| {
-            token.kind() == TokenKind::Newline
-        })
-        .unwrap_or(module_end)
+        let end = self
+            .first_token_offset_in_range(TextRange::new(offset, module_end), |token| {
+                token.kind() == TokenKind::Newline
+            })
+            .unwrap_or(module_end);
+        TextRange::new(offset, end)
     }
 
     /// Returns the range spanning the entire source text.

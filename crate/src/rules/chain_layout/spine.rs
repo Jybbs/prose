@@ -6,7 +6,7 @@ use ruff_python_ast::{Expr, ExprAttribute, token::TokenKind};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
-use crate::source::Source;
+use crate::{primitives::fracture, source::Source};
 
 /// A chain's receiver and its `.name(...)` links in source order, each
 /// link running from its own dot to the one opening the link below it,
@@ -70,17 +70,19 @@ impl Chain {
         source.slice(self.receiver_range).width()
     }
 
-    /// True when a segment carries a line break, the shape a break
-    /// declines rather than reassemble onto its rows.
-    pub(super) fn spans_lines(&self, source: &Source) -> bool {
+    /// True when a segment still carries a line break once the
+    /// fractured argument lists in `joins` close up, the shape the
+    /// break leaves untouched.
+    pub(super) fn spans_lines(&self, source: &Source, joins: &fracture::Joins) -> bool {
         self.segments()
-            .any(|segment| source.contains_line_break(segment))
+            .any(|segment| joins.settled(source, segment).contains('\n'))
     }
 
-    /// The display width the chain reads joined onto one line.
-    pub(super) fn width(&self, source: &Source) -> usize {
+    /// The display width the chain reads joined onto one line, each
+    /// segment measured at the width its own fractures settle to.
+    pub(super) fn width(&self, source: &Source, joins: &fracture::Joins) -> usize {
         self.segments()
-            .map(|segment| source.slice(segment).width())
+            .map(|segment| joins.settled(source, segment).width())
             .sum()
     }
 }
@@ -106,7 +108,10 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{first_value, parse};
+    use crate::{
+        config::Config,
+        testing::{first_value, parse},
+    };
 
     /// The chain `source`'s first assigned value divides into.
     fn chain_of(source: &Source) -> Option<Chain> {
@@ -144,22 +149,30 @@ mod tests {
     }
 
     #[rstest]
-    #[case("x = base.one().two()\n", false)]
-    #[case("x = (\n    base.one()\n        .two()\n)\n", false)]
-    #[case("x = base.one(\n    arg,\n).two()\n", true)]
-    fn spans_lines_reads_the_segments_rather_than_the_gaps(
+    #[case::single_line("x = base.one().two()\n", false)]
+    #[case::broken_at_the_gaps("x = (\n    base.one()\n        .two()\n)\n", false)]
+    #[case::fracture_that_closes("x = base.one(alpha,\n    beta).two()\n", false)]
+    #[case::flush_column_that_holds("x = base.one(\n    arg,\n).two()\n", true)]
+    #[case::multiline_string_holds("x = base.one(\"\"\"a\nb\"\"\").two()\n", true)]
+    fn spans_lines_reads_the_settled_segments_rather_than_the_gaps(
         #[case] src: &str,
         #[case] expected: bool,
     ) {
         let source = parse(src);
+        let value = first_value(&source);
         let chain = chain_of(&source).expect("the spine carries two links");
-        assert_eq!(chain.spans_lines(&source), expected);
+        let joins = Config::default().fracture_settings().joins(&source, value);
+        assert_eq!(chain.spans_lines(&source, &joins), expected);
     }
 
-    #[test]
-    fn width_measures_the_joined_form_past_the_source_spacing() {
-        let source = parse("x = base.one() .two()\n");
+    #[rstest]
+    #[case::past_the_source_spacing("x = base.one() .two()\n", "base.one().two()")]
+    #[case::past_a_fracture("x = base.one(a,\n    b).two()\n", "base.one(a, b).two()")]
+    fn width_measures_the_settled_joined_form(#[case] src: &str, #[case] joined: &str) {
+        let source = parse(src);
+        let value = first_value(&source);
         let chain = chain_of(&source).expect("the spine carries two links");
-        assert_eq!(chain.width(&source), "base.one().two()".len());
+        let joins = Config::default().fracture_settings().joins(&source, value);
+        assert_eq!(chain.width(&source, &joins), joined.len());
     }
 }

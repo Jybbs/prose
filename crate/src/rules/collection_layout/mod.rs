@@ -27,11 +27,8 @@ use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
-    primitives::{
-        aligner, edit::singleton_groups, reserve::reserved_columns, walk::filter_map_over_exprs,
-    },
+    primitives::{edit::singleton_groups, fracture, reserve, walk::filter_map_over_exprs},
     rule::{Rule, RuleId},
-    rules::align_equals::AlignEquals,
     source::Source,
 };
 
@@ -43,12 +40,13 @@ mod layouter;
 use layouter::Layouter;
 
 pub(crate) struct CollectionLayout {
-    align_equals: Option<aligner::Settings>,
     code_line_length: usize,
     explode: bool,
     keep_multiline_literals: bool,
     max_atomics: usize,
     max_dict_entries: Option<usize>,
+    rejoin: fracture::Settings,
+    reservations: reserve::Reservations,
     wrap_dict_entries: bool,
 }
 
@@ -58,12 +56,13 @@ impl CollectionLayout {
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.collection_layout;
         Self {
-            align_equals: AlignEquals::reserve_settings(config),
             code_line_length: config.code_width(),
             explode: rules.explode,
             keep_multiline_literals: rules.keep_multiline_literals,
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
             max_dict_entries: rules.max_dict_entries.cap(),
+            rejoin: config.fracture_settings(),
+            reservations: config.equals_reservations(),
             wrap_dict_entries: rules.wrap_dict_entries,
         }
     }
@@ -83,7 +82,7 @@ impl Rule for CollectionLayout {
                     .map(Ranged::range)
             })
         });
-        let reservations = reserved_columns(source, self.align_equals, AlignEquals::SLUG);
+        let reservations = self.reservations.columns(source);
         let mut visitor = Layouter {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
@@ -91,6 +90,7 @@ impl Rule for CollectionLayout {
             keep_multiline_literals: self.keep_multiline_literals,
             max_atomics: self.max_atomics,
             newline: source.newline_str(),
+            rejoin: self.rejoin,
             reservations,
             source,
             tripping_dicts,

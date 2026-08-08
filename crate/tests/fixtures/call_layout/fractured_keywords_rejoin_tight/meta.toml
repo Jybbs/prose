@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Fractured Keyword List Rejoins Tight"
+
+description = '''
+A fractured list carrying a named keyword and a `**` unpacking rejoins on one row at the tight `name=value` form the condensed shape takes.
+'''

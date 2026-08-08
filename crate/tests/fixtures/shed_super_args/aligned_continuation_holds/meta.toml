@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "An Aligned Continuation Holds the Call"
-
-description = '''
-A `super(...)` call whose sibling arguments align under the callee's open parenthesis keeps its arguments, since deleting them would move the column each of those lines was measured against.
-'''
