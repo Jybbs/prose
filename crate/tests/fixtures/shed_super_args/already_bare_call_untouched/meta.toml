@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Call Already in the Bare Form Draws No Edit"
+
+description = '''
+A module whose methods already call `super()` passes through untouched, since the rule reads only the two-argument form.
+'''

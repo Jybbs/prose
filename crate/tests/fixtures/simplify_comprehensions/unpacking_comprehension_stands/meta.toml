@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Unpacking Comprehension Stands"
+
+description = '''
+A comprehension that unpacks each member spreads it rather than copying it, so neither the dict form nor the list form reaches a constructor call.
+'''

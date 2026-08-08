@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_backslash_continuations/overflowing_import_rejoins_anyway/input.py
+---
+import collections_module_alpha, collections_module_beta_with_a_much_longer_name_that_overflows_here

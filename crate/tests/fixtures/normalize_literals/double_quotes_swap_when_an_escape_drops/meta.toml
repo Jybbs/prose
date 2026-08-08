@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Double-Quoted Body Swaps When That Sheds an Escape"
+
+description = '''
+`already \" escaped` loses its backslash by moving to `'`, so the swap runs even though it moves away from the preferred quote. The neighbouring `it's fine` holds its double quotes, where the same move would trade one escape for another.
+'''

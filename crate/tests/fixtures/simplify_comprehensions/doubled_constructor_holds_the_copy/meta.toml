@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Copy Over a Constructor Call Stands"
+
+description = '''
+Collapsing here would spell `list(list(rows))`, which reads no better than the comprehension it would replace, so the source stays as written.
+'''

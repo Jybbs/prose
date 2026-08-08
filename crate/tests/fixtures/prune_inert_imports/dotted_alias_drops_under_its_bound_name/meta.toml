@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Dotted Alias Is Read Under the Name It Binds"
+
+description = '''
+`import os.path as p` binds `p` and imports `os.path`, the two names diverging as far as an import lets them. **Nothing reads `p`, so the line goes.**
+'''

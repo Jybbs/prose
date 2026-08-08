@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `false` Cap Folds a Wide Spread into One Column"
+
+description = '''
+Setting `max-shift` to `false` lifts the spread budget, so a run the default cap would split **folds into one column** measured at its widest row. The narrow row reaches all the way across rather than falling back to the two-space floor.
+'''

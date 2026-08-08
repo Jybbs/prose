@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/three_columns_settle_within_the_budget/input.py
+---
+retries         : int   = 3     # attempts before the backoff widens
+timeout_seconds : float = 30.5  # per attempt
+window          : int   = 30    # seconds

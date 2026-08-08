@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Quoted Annotation Holds the Import It Names"
+
+description = '''
+`List` is read only inside a string-literal annotation, where the binding table cannot see it. **The import holds**, the rule parsing each quoted annotation for the names it reads.
+'''

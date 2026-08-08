@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/conditional_dunder_all_holds_every_name/input.py
+---
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    __all__ = ["dumps"]
+
+from json import dumps

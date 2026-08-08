@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/chain_layout/over_cap_link_holds_the_chain/input.py
+---
+

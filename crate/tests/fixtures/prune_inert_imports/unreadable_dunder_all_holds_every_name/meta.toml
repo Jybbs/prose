@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An `__all__` No Static Pass Reads Holds Every Name"
+
+description = '''
+`__all__` is built by a call rather than written as a list of literals, so the public surface cannot be settled. **Every import holds** and none is reported.
+'''

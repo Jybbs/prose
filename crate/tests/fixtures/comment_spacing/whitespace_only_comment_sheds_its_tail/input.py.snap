@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/comment_spacing/whitespace_only_comment_sheds_its_tail/input.py
+---
+value = 1
+#
+other = 2

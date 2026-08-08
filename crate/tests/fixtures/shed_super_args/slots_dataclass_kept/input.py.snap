@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_super_args/slots_dataclass_kept/input.py
+---
+from dataclasses import dataclass
+
+
+class Base:
+    def label(self):
+        return ""
+
+
+@dataclass(slots=True)
+class Tag(Base):
+    name: str = ""
+
+    def label(self):
+        return super(Tag, self).label()

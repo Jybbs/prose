@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_adjacent_strings/stacked_run_holds/input.py
+---
+message = (
+    "a short clause "
+    "and another"
+)

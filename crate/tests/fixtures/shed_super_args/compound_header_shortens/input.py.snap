@@ -1,0 +1,21 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_super_args/compound_header_shortens/input.py
+---
+def merge(primary, fallback):
+    return primary
+
+
+class Loader:
+    def ready(self):
+        return True
+
+
+class CachedLoader(Loader):
+    def ready(self):
+        if super().ready:
+            value = merge(primary,
+                          fallback)
+            return value
+        return False

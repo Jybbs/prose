@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Filtered or Chained Comprehension Stands"
+
+description = '''
+A guard drops members and a second generator flattens two levels, so neither shape is the plain copy a constructor call would spell.
+'''

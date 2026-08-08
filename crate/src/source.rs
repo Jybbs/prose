@@ -2,10 +2,11 @@
 
 use std::{path::Path, str::FromStr};
 
+use itertools::Itertools;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
 use ruff_python_ast::{
     AnyNodeRef, ExprRef, ModModule, PySourceType, Stmt,
-    token::{Token, Tokens},
+    token::{Token, TokenKind, Tokens},
 };
 use ruff_python_parser::{ParseError, ParseOptions, Parsed, parse};
 use ruff_python_trivia::{
@@ -210,6 +211,19 @@ impl Source {
             .map(TextRange::start)
     }
 
+    /// The full lines `range` spans, held back from the synthetic
+    /// newline closing the notebook cell that holds it. An ordinary
+    /// module takes the span unclamped, and a deletion over the result
+    /// empties a cell rather than merging it into the next.
+    pub(crate) fn full_lines_within_cell(&self, range: TextRange) -> TextRange {
+        let lines = self.text().full_lines_range(range);
+        let Some(cell) = self.cell_offsets.containing_range(range.start()) else {
+            return lines;
+        };
+        let content_end = cell.end() - TextSize::from(1);
+        TextRange::new(lines.start(), lines.end().min(content_end))
+    }
+
     /// Returns the source text of each notebook cell, the whole buffer
     /// as one slice for an ordinary module.
     pub fn cell_texts(&self) -> Vec<&str> {
@@ -312,6 +326,20 @@ impl Source {
     /// Returns the one-indexed line number for `offset`.
     pub fn line_index(&self, offset: TextSize) -> OneIndexed {
         self.file.to_source_code().line_index(offset)
+    }
+
+    /// Returns the range from `offset` to the end of its logical line,
+    /// the start of the first `Newline` token past it or the module's
+    /// own end. A break inside a bracketed construct carries
+    /// `NonLogicalNewline` and leaves the logical line open.
+    pub fn logical_line_tail(&self, offset: TextSize) -> TextRange {
+        let module_end = self.module_range().end();
+        let end = self
+            .first_token_offset_in_range(TextRange::new(offset, module_end), |token| {
+                token.kind() == TokenKind::Newline
+            })
+            .unwrap_or(module_end);
+        TextRange::new(offset, end)
     }
 
     /// Returns the range spanning the entire source text.
@@ -419,6 +447,15 @@ impl Source {
         self.file.source_text()
     }
 
+    /// Yields each adjacent token pair with the source range between
+    /// them, the trivia the lexer skipped.
+    pub(crate) fn token_gaps(&self) -> impl Iterator<Item = (&Token, &Token, TextRange)> {
+        self.tokens()
+            .iter()
+            .tuple_windows()
+            .map(|(token, next)| (token, next, TextRange::new(token.end(), next.start())))
+    }
+
     /// Borrows the token stream produced during parsing.
     pub fn tokens(&self) -> &Tokens {
         self.parsed.tokens()
@@ -496,7 +533,10 @@ mod tests {
     use ruff_text_size::TextRange;
 
     use super::*;
-    use crate::testing::{assert_send_sync, first_class, first_def, notebook, parse, range};
+    use crate::{
+        primitives::scope::sub_bodies,
+        testing::{assert_send_sync, notebook, parse, range},
+    };
 
     /// Replaces `before`'s interior boundaries with `drifts` in order and
     /// its closing offset with `after`'s length, the shape a rule's edits
@@ -709,6 +749,31 @@ mod tests {
     }
 
     #[test]
+    fn full_lines_within_cell_holds_the_separator_closing_a_cell() {
+        // The first cell carries no newline of its own, so the one that
+        // ends its line is the separator `ruff_notebook` synthesized.
+        let source = notebook(&["import os", "value = 1\n"]);
+        let first = source.ast().body[0].range();
+
+        assert_eq!(
+            &source.text()[source.full_lines_within_cell(first)],
+            "import os",
+            "the span stops before the newline separating the cells",
+        );
+    }
+
+    #[test]
+    fn full_lines_within_cell_takes_the_whole_lines_of_an_ordinary_module() {
+        let source = parse("import os\nvalue = 1\n");
+        let first = source.ast().body[0].range();
+
+        assert_eq!(
+            &source.text()[source.full_lines_within_cell(first)],
+            "import os\n"
+        );
+    }
+
+    #[test]
     fn from_path_bad_syntax_returns_parse_error() {
         let tmp = tempfile::NamedTempFile::new().expect("temp file creates");
         std::fs::write(tmp.path(), b"def foo(").expect("temp file writes");
@@ -776,44 +841,17 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[test]
-    fn prev_token_end_handles_multi_line_function_signature() {
-        let s = parse("def f(\n    x,\n    y,\n):\n    pass\n");
-        let func = first_def(&s);
-        let end = s.prev_token_end(func.body[0].start());
-        assert!(s.text()[..end.to_usize()].ends_with("):"));
-    }
-
-    #[test]
-    fn prev_token_end_points_after_colon_in_simple_class() {
-        let s = parse("class C:\n    pass\n");
-        let class = first_class(&s);
-        let end = s.prev_token_end(class.body[0].start());
-        assert_eq!(&s.text()[..end.to_usize()], "class C:");
-    }
-
-    #[test]
-    fn prev_token_end_points_after_colon_in_simple_function() {
-        let s = parse("def f():\n    pass\n");
-        let func = first_def(&s);
-        let end = s.prev_token_end(func.body[0].start());
-        assert_eq!(&s.text()[..end.to_usize()], "def f():");
-    }
-
-    #[test]
-    fn prev_token_end_skips_eol_comment_on_header_line() {
-        let s = parse("class C:  # eol\n    pass\n");
-        let class = first_class(&s);
-        let end = s.prev_token_end(class.body[0].start());
-        assert_eq!(&s.text()[..end.to_usize()], "class C:");
-    }
-
-    #[test]
-    fn prev_token_end_skips_own_line_comment_above_body() {
-        let s = parse("class C:\n    # comment\n    pass\n");
-        let class = first_class(&s);
-        let end = s.prev_token_end(class.body[0].start());
-        assert_eq!(&s.text()[..end.to_usize()], "class C:");
+    #[rstest]
+    #[case("class C:\n    pass\n", "class C:")]
+    #[case("class C:  # eol\n    pass\n", "class C:")]
+    #[case("class C:\n    # comment\n    pass\n", "class C:")]
+    #[case("def f():\n    pass\n", "def f():")]
+    #[case("def f(\n    x,\n    y,\n):\n    pass\n", "def f(\n    x,\n    y,\n):")]
+    fn prev_token_end_lands_past_the_header_colon(#[case] src: &str, #[case] header: &str) {
+        let source = parse(src);
+        let (body, _) = sub_bodies(&source.ast().body[0])[0];
+        let end = source.prev_token_end(body[0].start());
+        assert_eq!(&source.text()[..end.to_usize()], header);
     }
 
     #[test]

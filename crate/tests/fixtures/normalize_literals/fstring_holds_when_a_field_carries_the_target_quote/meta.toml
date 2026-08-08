@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An F-String Holds When the Target Quote Appears Inside"
+
+description = '''
+The first line carries `"` inside a replacement field, where a swap would collide with the enclosing quote before Python 3.12, and the second carries it in a literal run that would need two new escapes. Both stand.
+'''

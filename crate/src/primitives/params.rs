@@ -1,8 +1,8 @@
-//! Parameter-reorder primitives shared by `alphabetize`, the
-//! `unsorted-positionals` lint, and `call-layout`. The sort key drives
-//! the keyword-only sort and docstring mirror, and the decorator
-//! predicate gates the rules that must not reorder a positionally-bound
-//! signature.
+//! Parameter primitives shared by `alphabetize`, the
+//! `unsorted-positionals` lint, `call-layout`, and the rules that read a
+//! signature's receiver. The sort key drives the keyword-only sort and
+//! docstring mirror, and the decorator predicate gates the rules that
+//! must not reorder a positionally-bound signature.
 
 use ruff_python_ast::{ParameterWithDefault, Parameters, StmtFunctionDef};
 
@@ -17,6 +17,13 @@ pub(crate) fn classify_param(p: &ParameterWithDefault) -> Option<(u8, &str)> {
         return None;
     }
     Some((u8::from(p.default.is_some()), name))
+}
+
+/// The parameter holding a signature's leading positional slot, the
+/// receiver a method binds. `None` where the leading slot is
+/// keyword-only or variadic.
+pub(crate) fn first_positional(parameters: &Parameters) -> Option<&ParameterWithDefault> {
+    parameters.posonlyargs.first().or(parameters.args.first())
 }
 
 /// True when sorting a function's positional-or-keyword parameters by
@@ -41,6 +48,20 @@ mod tests {
 
     use super::*;
     use crate::testing::{first_def, parse};
+
+    #[rstest]
+    #[case("def m(self): pass", Some("self"))]
+    #[case("def m(self, /, x): pass", Some("self"))]
+    #[case("def m(x, *rest): pass", Some("x"))]
+    #[case("def m(*, self): pass", None)]
+    #[case("def m(*args): pass", None)]
+    #[case("def m(**kwargs): pass", None)]
+    #[case("def m(): pass", None)]
+    fn first_positional_reads_the_leading_slot(#[case] src: &str, #[case] expected: Option<&str>) {
+        let source = parse(&format!("{src}\n"));
+        let receiver = first_positional(&first_def(&source).parameters);
+        assert_eq!(receiver.map(|p| p.name().as_str()), expected);
+    }
 
     #[rstest]
     #[case("def f(b, a): pass\n", true)]

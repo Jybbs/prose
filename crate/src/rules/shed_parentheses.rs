@@ -10,21 +10,16 @@
 use std::{borrow::Cow, cmp::Reverse};
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    AnyNodeRef, Arguments, Expr, Stmt,
-    comparable::ComparableStmt,
-    token::parenthesized_range,
-    visitor::{Visitor, walk_arguments, walk_expr, walk_stmt},
-};
-use ruff_python_parser::parse_module;
+use ruff_python_ast::{AnyNodeRef, Expr, token::parenthesized_range};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,
     primitives::{
-        edit::{apply_inline_edits, insert_edit, singleton_groups, splice_reparse},
-        inline::{end_column, single_line_form, soft_wrap_runs},
+        edit::{apply_inline_edits, insert_edit, singleton_groups, splice_preserves_tree},
+        inline::{end_column, folded_line_form, soft_wrap_runs},
+        walk::{Descent, ParentedProbe, walk_parented_exprs},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -35,6 +30,8 @@ pub(crate) struct ShedParentheses {
 }
 
 impl ShedParentheses {
+    pub(crate) const MESSAGE: &'static str = "shed a redundant grouping parenthesis pair";
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),
@@ -46,10 +43,9 @@ impl Rule for ShedParentheses {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut scout = Scout {
             candidates: Vec::new(),
-            parents: vec![AnyNodeRef::from(source.ast())],
             source,
         };
-        scout.visit_body(&source.ast().body);
+        walk_parented_exprs(source.ast(), &mut scout);
         let mut candidates = scout.candidates;
         candidates.sort_unstable_by_key(|c| (c.pair.start(), Reverse(c.pair.end())));
         let mut shedder = Shedder {
@@ -79,7 +75,6 @@ struct Candidate<'src> {
 /// budget to [`Shedder`].
 struct Scout<'a> {
     candidates: Vec<Candidate<'a>>,
-    parents: Vec<AnyNodeRef<'a>>,
     source: &'a Source,
 }
 
@@ -99,52 +94,15 @@ impl<'a> Scout<'a> {
             return None;
         }
         let inner = expr.range();
-        let bare = single_line_form(expr, self.source.slice(inner))?;
-        self.preserves_tree(pair, &bare)
-            .then_some(Candidate { bare, inner, pair })
-    }
-
-    /// Reports whether splicing the bare interior in place of `pair`
-    /// reparses to the same statement tree, the question that decides
-    /// whether the pair carries syntax or only wraps.
-    fn preserves_tree(&self, pair: TextRange, bare: &str) -> bool {
-        let Ok(reparsed) = splice_reparse(
-            self.source,
-            self.source.module_range(),
-            pair,
-            bare,
-            parse_module,
-        ) else {
-            return false;
-        };
-        self.source
-            .ast()
-            .body
-            .iter()
-            .map(ComparableStmt::from)
-            .eq(reparsed.syntax().body.iter().map(ComparableStmt::from))
+        let bare = folded_line_form(expr, self.source.slice(inner))?;
+        splice_preserves_tree(self.source, pair, &bare).then_some(Candidate { bare, inner, pair })
     }
 }
 
-impl<'a> Visitor<'a> for Scout<'a> {
-    fn visit_arguments(&mut self, arguments: &'a Arguments) {
-        self.parents.push(arguments.into());
-        walk_arguments(self, arguments);
-        self.parents.pop();
-    }
-
-    fn visit_expr(&mut self, expr: &'a Expr) {
-        let parent = *self.parents.last().expect("seeded with the module node");
+impl<'a> ParentedProbe<'a> for Scout<'a> {
+    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
         self.candidates.extend(self.candidate(expr, parent));
-        self.parents.push(expr.into());
-        walk_expr(self, expr);
-        self.parents.pop();
-    }
-
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        self.parents.push(stmt.into());
-        walk_stmt(self, stmt);
-        self.parents.pop();
+        Descent::Into
     }
 }
 

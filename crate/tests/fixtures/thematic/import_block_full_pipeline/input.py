@@ -9,4 +9,4 @@ from typing import Any
 
 import functools as ft
 def render(text):
-    return text
+    return (requests, np, os, Counter, Any, ft, text)

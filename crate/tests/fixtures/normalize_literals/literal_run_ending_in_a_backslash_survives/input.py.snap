@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/literal_run_ending_in_a_backslash_survives/input.py
+---
+traced = f"path\{x}"

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/raw_string_swaps_without_touching_a_backslash/input.py
+---
+digits = r"\d+"
+guarded = r"\"exact\""

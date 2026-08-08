@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "An Unused Sole Import Is Removed, Leaving Its Blank Line"
-
-description = '''
-No function or assignment in the file carries an annotation, so the directive is unused regardless of target version. **The sole import line is removed**, leaving the blank line that followed it as a leading blank.
-'''

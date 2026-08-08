@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An F-String Nested in a Field Keeps Its Quotes"
+
+description = '''
+The inner f-string closes while the outer one is still open, so the quote facet passes over it exactly as it passes over a plain literal inside a field. Swapping it would put a bare `"` inside the outer string's replacement field, which Python rejects before 3.12.
+'''

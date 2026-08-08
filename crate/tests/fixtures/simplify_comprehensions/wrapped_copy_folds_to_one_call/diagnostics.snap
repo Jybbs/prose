@@ -1,0 +1,8 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/simplify_comprehensions/wrapped_copy_folds_to_one_call/input.py
+---
+simplify-comprehensions@44..70
+simplify-comprehensions@80..121
+simplify-comprehensions@9..34

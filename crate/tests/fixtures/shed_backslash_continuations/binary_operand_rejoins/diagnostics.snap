@@ -1,0 +1,7 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/shed_backslash_continuations/binary_operand_rejoins/input.py
+---
+shed-backslash-continuations@34..40
+shed-backslash-continuations@8..14

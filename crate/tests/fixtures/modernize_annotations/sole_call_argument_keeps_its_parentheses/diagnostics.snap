@@ -1,0 +1,8 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/modernize_annotations/sole_call_argument_keeps_its_parentheses/input.py
+---
+modernize-annotations@158..171
+modernize-annotations@19..29
+modernize-annotations@89..102

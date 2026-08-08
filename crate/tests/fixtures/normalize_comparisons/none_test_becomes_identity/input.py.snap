@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_comparisons/none_test_becomes_identity/input.py
+---
+def classify(fallback, value):
+    if value is None:
+        return fallback
+    if fallback is not None:
+        return value
+    return fallback

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Parenthesized Operand Carries Its Parentheses Across the Flip"
+
+description = '''
+The grouping pair around an operand travels with it, leaving the flipped form parsing exactly as the authored one did.
+'''

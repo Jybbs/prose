@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/import_layout/scattered_module_members_gather/input.py
+---
+from pkg import alpha, beta
+from other import thing

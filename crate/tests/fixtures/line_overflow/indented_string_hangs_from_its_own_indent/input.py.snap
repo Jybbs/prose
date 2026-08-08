@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/indented_string_hangs_from_its_own_indent/input.py
+---
+def render():
+    return "the quick brown fox jumps over the lazy dog"

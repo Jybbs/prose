@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Generator Inside a Constructor Becomes a Comprehension"
+
+description = '''
+The constructor's own brackets carry the comprehension, so the wrapping call goes and the generator's body stays as written.
+'''

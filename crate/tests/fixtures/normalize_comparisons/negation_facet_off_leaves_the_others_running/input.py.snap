@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_comparisons/negation_facet_off_leaves_the_others_running/input.py
+---
+def classify(flag, key, table, value):
+    if value is None:
+        return flag
+    if flag == True:
+        return value
+    if len(table) == 0:
+        return key
+    if not key in table:
+        return value
+    return value

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/splittable_string_offers_the_concatenation/input.py
+---
+BANNER = "the quick brown fox jumps over the lazy dog"

@@ -1,0 +1,8 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/normalize_literals/quotes_facet_off_keeps_authored_quotes/input.py
+---
+normalize-literals@22..23
+normalize-literals@40..41
+normalize-literals@8..9

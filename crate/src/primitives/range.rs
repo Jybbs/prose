@@ -1,10 +1,19 @@
-//! Source ranges for expression nodes and comma-separated lists.
+//! Parenthesis-aware source ranges for expression nodes, the extent a
+//! slice of ranged items covers, and the span a deletion takes out of a
+//! comma-separated list.
 
 use ruff_python_ast::{
     AnyNodeRef, Expr, ExprRef, StmtFunctionDef,
     token::{Tokens, parenthesized_range},
 };
 use ruff_text_size::{Ranged, TextRange};
+
+/// Total source extent covered by `blocks`. Requires non-empty input.
+pub(crate) fn blocks_span<T: Ranged>(blocks: &[T]) -> TextRange {
+    blocks[0]
+        .range()
+        .cover(blocks.last().expect("non-empty blocks").range())
+}
 
 /// The span deleting `target` leaves in a comma-separated list whose
 /// members `ordered` yields in source order, where `target` covers one

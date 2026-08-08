@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Run past the Budget Breaks One Literal per Line"
+
+description = '''
+An implicitly concatenated run whose joined line overruns `code-line-length` **wraps in parentheses and takes one literal per line**, so the seam between one literal and the next falls at a line end.
+'''

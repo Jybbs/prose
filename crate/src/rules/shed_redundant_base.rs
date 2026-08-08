@@ -7,15 +7,16 @@
 //! any span carrying a comment.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    Expr, Stmt, StmtClassDef,
-    statement_visitor::{StatementVisitor, walk_stmt},
-};
+use ruff_python_ast::{Expr, StmtClassDef};
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
-    primitives::{edit::singleton_groups, range::member_deletion_span},
+    primitives::{
+        edit::singleton_groups,
+        range::{blocks_span, member_deletion_span},
+        walk::filter_map_over_stmts,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -25,6 +26,9 @@ const OBJECT: &str = "object";
 pub(crate) struct ShedRedundantBase;
 
 impl ShedRedundantBase {
+    pub(crate) const MESSAGE: &'static str =
+        "shed a redundant `object` base or empty class parentheses";
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }
@@ -32,12 +36,10 @@ impl ShedRedundantBase {
 
 impl Rule for ShedRedundantBase {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let mut walker = Walker {
-            edits: Vec::new(),
-            source,
-        };
-        walker.visit_body(&source.ast().body);
-        singleton_groups(walker.edits)
+        let per_class = filter_map_over_stmts(&source.ast().body, |stmt| {
+            Some(shed(source, stmt.as_class_def_stmt()?))
+        });
+        singleton_groups(per_class.concat())
     }
 
     fn id(&self) -> RuleId {
@@ -45,61 +47,40 @@ impl Rule for ShedRedundantBase {
     }
 }
 
-struct Walker<'a> {
-    edits: Vec<Edit>,
-    source: &'a Source,
-}
-
-impl Walker<'_> {
-    /// Records a deletion of `span`, holding off where `span` carries a
-    /// comment.
-    fn push_deletion(&mut self, span: TextRange) {
-        if !self.source.intersects_comment(span) {
-            self.edits.push(Edit::range_deletion(span));
-        }
-    }
-
-    /// Emits the deletions `class`'s header earns, the whole argument
-    /// list and the space ahead of it where nothing in it survives, and
-    /// one span per contiguous run of redundant bases otherwise.
-    fn shed(&mut self, class: &StmtClassDef) {
-        let Some(arguments) = class.arguments.as_deref() else {
-            return;
-        };
-        let rebound = self
-            .source
-            .binding_analysis()
-            .is_defined_before(OBJECT, class.start());
-        let redundant = |base: &Expr| !rebound && names_object(base);
-        if arguments.args.iter().filter(|base| redundant(base)).count() == arguments.len() {
-            let opener = self.source.prev_token_end(arguments.start());
-            self.push_deletion(TextRange::new(opener, arguments.end()));
-            return;
-        }
-        let runs: Vec<TextRange> = arguments
-            .args
-            .chunk_by(|a, b| redundant(a) == redundant(b))
-            .filter(|run| redundant(&run[0]))
-            .map(|run| TextRange::new(run[0].start(), run.last().expect("non-empty run").end()))
-            .collect();
-        for run in runs {
-            self.push_deletion(member_deletion_span(arguments.iter_source_order(), run));
-        }
-    }
-}
-
-impl<'a> StatementVisitor<'a> for Walker<'a> {
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        if let Stmt::ClassDef(class) = stmt {
-            self.shed(class);
-        }
-        walk_stmt(self, stmt);
-    }
-}
-
 /// True when `base` is a bare `object` name.
 fn names_object(base: &Expr) -> bool {
     base.as_name_expr().is_some_and(|name| name.id == OBJECT)
+}
+
+/// The deletions `class`'s header earns, the whole argument list and the
+/// space ahead of it where nothing in it survives, and one span per
+/// contiguous run of redundant bases otherwise. A span carrying a
+/// comment is dropped, leaving that header as written.
+fn shed(source: &Source, class: &StmtClassDef) -> Vec<Edit> {
+    let Some(arguments) = class.arguments.as_deref() else {
+        return Vec::new();
+    };
+    let rebound = source
+        .binding_analysis()
+        .is_defined_before(OBJECT, class.start());
+    let redundant = |base: &Expr| !rebound && names_object(base);
+    let spans: Vec<TextRange> =
+        if arguments.args.iter().filter(|base| redundant(base)).count() == arguments.len() {
+            let opener = source.prev_token_end(arguments.start());
+            vec![TextRange::new(opener, arguments.end())]
+        } else {
+            arguments
+                .args
+                .chunk_by(|a, b| redundant(a) == redundant(b))
+                .filter(|run| redundant(&run[0]))
+                .map(|run| member_deletion_span(arguments.iter_source_order(), blocks_span(run)))
+                .collect()
+        };
+    spans
+        .into_iter()
+        .filter(|&span| !source.intersects_comment(span))
+        .map(Edit::range_deletion)
+        .collect()
 }
 
 #[cfg(test)]

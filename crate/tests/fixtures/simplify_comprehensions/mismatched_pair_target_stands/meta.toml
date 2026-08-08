@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comprehension Whose Target Does Not Match Its Entry Stands"
+
+description = '''
+The target binds one name while the entry names two others, so the comprehension is not copying its input and no constructor call spells what it builds.
+'''

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/sole_member_tuple_sheds_its_comma/input.py
+---
+marks  = {only}
+values = [only]

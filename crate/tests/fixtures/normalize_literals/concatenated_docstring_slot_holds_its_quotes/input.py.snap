@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_literals/concatenated_docstring_slot_holds_its_quotes/input.py
+---
+def render():
+    'Summary ' 'continued.'
+    return "body"

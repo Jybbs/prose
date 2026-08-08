@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Unpacked or Mixed Argument List Holds the `dict()` Call"
+
+description = '''
+A `**` unpacking names no key at all and a positional argument beside a keyword builds from two sources, so neither shape reaches a literal.
+'''

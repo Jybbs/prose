@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Argument List Spread Across Lines Collapses"
+
+description = '''
+A `super(...)` call whose arguments sit one per line collapses onto the callee's own line, the deletion spanning everything between the parentheses.
+'''

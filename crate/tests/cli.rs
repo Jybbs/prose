@@ -45,11 +45,12 @@ const ESCAPE_IN_LITERAL: &str = "AB = \"X\u{1b}Y\"\nc = 2\n";
 
 /// A two-cell notebook whose out-of-order imports sit in the first cell,
 /// so the lone diagnostic falls in a non-last cell and the text emitter
-/// renders it under that cell's header.
+/// renders it under that cell's header. The second cell reads both
+/// modules bare, leaving the import lints quiet.
 const FIRST_CELL_UNSORTED: &str = r#"{
   "cells": [
     {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["import sys\n", "import os"]},
-    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["value = 1\n"]}
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["value = 1\n", "print(os, sys)"]}
   ],
   "metadata": {
     "language_info": {"name": "python"}
@@ -88,10 +89,12 @@ const SUPPRESSING_PYPROJECT: &str = "[tool.prose.rules]\nalign-equals = false\n"
 /// Two code cells, the second carrying a misaligned assignment pair so
 /// its diagnostic ranges into a row the first cell pushes past in the
 /// concatenated source, proving the report translates it cell-relative.
+/// That cell also reads both modules bare, leaving the import lints
+/// quiet.
 const TWO_CODE_CELLS: &str = r#"{
   "cells": [
     {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["import os\n", "import sys"]},
-    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["x = 1\n", "yyy = 2"]}
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["x = 1\n", "yyy = 2\n", "print(os, sys)"]}
   ],
   "metadata": {
     "language_info": {"name": "python"}
@@ -491,6 +494,21 @@ fn check_json_summary_counts_a_changed_file() {
 #[test]
 fn check_no_cache_flag_runs_clean() {
     run_fixture("clean.py", "x = 1\n", &["check", "--no-cache"]).success();
+}
+
+#[test]
+fn check_ordinary_module_prunes_its_unread_import() {
+    run_fixture("mod.py", "import numpy as np\n", &["check", "--no-cache"]).code(1);
+}
+
+#[test]
+fn check_package_init_reports_its_unread_import() {
+    run_fixture(
+        "__init__.py",
+        "import numpy as np\n",
+        &["check", "--no-cache"],
+    )
+    .code(2);
 }
 
 #[test]

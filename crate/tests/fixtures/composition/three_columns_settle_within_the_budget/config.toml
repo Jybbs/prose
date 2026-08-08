@@ -1,0 +1,4 @@
+code-line-length = 72
+
+[harness]
+rules = ["align-colons", "align-equals", "align-comments"]

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Body Carrying Double Quotes Keeps Its Single Ones"
+
+description = '''
+Swapping either body would add more backslashes than it drops, so both keep the quotes they were written with. **The preference for `"` yields wherever honoring it would cost the reader an escape**, which is what keeps `say "hi"` readable.
+'''

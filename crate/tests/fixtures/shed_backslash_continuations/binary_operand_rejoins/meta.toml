@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Split Operand Rejoins Its Line"
+
+description = '''
+A binary expression broken across a trailing backslash rejoins onto one line, so `x = 1 + \` and its continuation read as `x = 1 + 2`.
+'''

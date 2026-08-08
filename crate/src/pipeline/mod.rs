@@ -210,6 +210,7 @@ mod tests {
     use std::assert_matches;
     use std::sync::{Arc, Mutex};
 
+    use itertools::Itertools;
     use ruff_diagnostics::Edit;
     use ruff_text_size::{TextRange, TextSize};
 
@@ -217,7 +218,6 @@ mod tests {
     use crate::config::Config;
     use crate::diagnostics::Severity;
     use crate::primitives::edit::singleton_groups;
-    use crate::rule::RuleConfigs;
     use crate::testing::{
         FUTURE_LEAD, GroupSentinelRule, assert_send_sync, breaks_compile, breaks_parse, notebook,
         parse, range, self_overlapping,
@@ -799,10 +799,13 @@ mod tests {
 
     #[test]
     fn with_defaults_respects_rule_toggles() {
-        let config = Config {
-            rules: RuleConfigs::all_disabled(),
-            ..Config::default()
-        };
+        let disabled = Pipeline::known_ids()
+            .iter()
+            .map(|id| format!("{id} = false"))
+            .join("\n");
+        let config: Config = toml::from_str(&format!("[rules]\n{disabled}\n"))
+            .expect("every registered slug parses as a rule toggle");
+
         assert!(Pipeline::with_defaults(&config).is_empty());
     }
 

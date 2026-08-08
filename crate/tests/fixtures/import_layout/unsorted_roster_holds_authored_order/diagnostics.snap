@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/import_layout/unsorted_roster_holds_authored_order/input.py
+---
+import-layout@28..42

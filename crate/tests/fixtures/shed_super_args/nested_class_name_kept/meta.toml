@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Nested Class Named by Its Bare Name Stays Written"
+
+description = '''
+A method of a class nested inside another keeps `super(Inner, self)`, because the bare name binds on the outer class rather than in the scope the method reads.
+'''

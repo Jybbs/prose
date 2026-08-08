@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/modernize_annotations/forward_reference_member_held/input.py
+---
+from typing import Optional
+
+
+class Node:
+
+    parent: Optional["Node"] = None

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/filtered_comprehension_stands/input.py
+---
+active = [row for row in rows if row.live]
+nested = [cell for row in rows for cell in row]
