@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Inside a Replacement Field Shortens"
+
+description = '''
+A `super(...)` call sitting in an f-string replacement field shortens like any other, the walk reaching the expression the field interpolates.
+'''

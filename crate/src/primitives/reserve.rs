@@ -1,7 +1,7 @@
 //! Predicts the column an alignment rule shifts each assignment and
 //! keyword value to, so a layout decision tests a construct against the
 //! position it lands at after alignment rather than its current one, and
-//! reads that prediction back per offset through `settled_column`. No
+//! reads that prediction back per offset through [`Columns`]. No
 //! column is reserved for a value inside an f-string or t-string
 //! replacement field. A row whose value spans lines groups as if
 //! single-line, since a collapsing construct becomes single-line before
@@ -21,6 +21,58 @@ use crate::{
     rule::RuleId,
     source::Source,
 };
+
+/// The column each aligned value lands at once the alignment settles,
+/// keyed by the value's start offset.
+pub(crate) struct Columns(HashMap<TextSize, usize>);
+
+impl Columns {
+    /// The column `offset` lands at, the column reserved for it where
+    /// the alignment moves it and `fallback` otherwise.
+    pub(crate) fn column(&self, offset: TextSize, fallback: impl FnOnce() -> usize) -> usize {
+        self.0.get(&offset).copied().unwrap_or_else(fallback)
+    }
+
+    /// The column `offset` lands at, falling back to the column its own
+    /// source line puts it at.
+    pub(crate) fn column_in(&self, source: &Source, offset: TextSize) -> usize {
+        self.column(offset, || source.column_of(offset))
+    }
+}
+
+/// The alignment a layout rule measures against, resolved from
+/// configuration once and carried as a value. `settings` is `None`
+/// where the alignment rule is off, leaving every column unreserved.
+#[derive(Clone, Copy)]
+pub(crate) struct Reservations {
+    rule: RuleId,
+    settings: Option<aligner::Settings>,
+}
+
+impl Reservations {
+    /// The reservation for `rule` running under `settings`.
+    pub(crate) fn new(rule: RuleId, settings: Option<aligner::Settings>) -> Self {
+        Self { rule, settings }
+    }
+
+    /// Maps each aligned value's start offset to the display column it
+    /// lands at once the run is aligned. A value the run leaves where it
+    /// sits maps to that same column, so a lookup is a no-op for a value
+    /// the alignment does not move.
+    pub(crate) fn columns(self, source: &Source) -> Columns {
+        let Some(settings) = self.settings else {
+            return Columns(HashMap::new());
+        };
+        let mut visitor = ReserveVisitor {
+            columns: HashMap::new(),
+            rule: self.rule,
+            settings,
+            source,
+        };
+        visitor.visit_body(&source.ast().body);
+        Columns(visitor.columns)
+    }
+}
 
 struct ReserveVisitor<'a> {
     columns: HashMap<TextSize, usize>,
@@ -71,37 +123,4 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
 
     /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
-}
-
-/// Maps each aligned value's start offset to the display column it lands
-/// at once `rule`'s run is aligned. A value the run leaves at its current
-/// column maps to that same column, so a lookup is a no-op for a value
-/// the alignment does not move. Passing `None` for `settings` yields an
-/// empty map.
-pub(crate) fn reserved_columns(
-    source: &Source,
-    settings: Option<aligner::Settings>,
-    rule: RuleId,
-) -> HashMap<TextSize, usize> {
-    let Some(settings) = settings else {
-        return HashMap::new();
-    };
-    let mut visitor = ReserveVisitor {
-        columns: HashMap::new(),
-        rule,
-        settings,
-        source,
-    };
-    visitor.visit_body(&source.ast().body);
-    visitor.columns
-}
-
-/// The column `offset` lands at once the alignment settles, the column
-/// `reservations` records for it and `fallback` otherwise.
-pub(crate) fn settled_column(
-    reservations: &HashMap<TextSize, usize>,
-    offset: TextSize,
-    fallback: impl FnOnce() -> usize,
-) -> usize {
-    reservations.get(&offset).copied().unwrap_or_else(fallback)
 }

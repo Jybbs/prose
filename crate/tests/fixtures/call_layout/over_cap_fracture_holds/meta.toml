@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "An Over-Cap Fracture Holds Its Break"
+
+description = '''
+An inner argument list carrying more arguments than `max-args` never joins inside the measure, so the enclosing call reads it as spanning lines and every break stays.
+'''

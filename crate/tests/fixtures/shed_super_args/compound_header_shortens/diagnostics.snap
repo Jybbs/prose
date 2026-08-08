@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/shed_super_args/compound_header_shortens/input.py
+---
+shed-super-args@174..192

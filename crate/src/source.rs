@@ -6,7 +6,7 @@ use itertools::Itertools;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
 use ruff_python_ast::{
     AnyNodeRef, ExprRef, ModModule, PySourceType, Stmt,
-    token::{Token, Tokens},
+    token::{Token, TokenKind, Tokens},
 };
 use ruff_python_parser::{ParseError, ParseOptions, Parsed, parse};
 use ruff_python_trivia::{
@@ -326,6 +326,20 @@ impl Source {
     /// Returns the one-indexed line number for `offset`.
     pub fn line_index(&self, offset: TextSize) -> OneIndexed {
         self.file.to_source_code().line_index(offset)
+    }
+
+    /// Returns the range from `offset` to the end of its logical line,
+    /// the start of the first `Newline` token past it or the module's
+    /// own end. A break inside a bracketed construct carries
+    /// `NonLogicalNewline` and leaves the logical line open.
+    pub fn logical_line_tail(&self, offset: TextSize) -> TextRange {
+        let module_end = self.module_range().end();
+        let end = self
+            .first_token_offset_in_range(TextRange::new(offset, module_end), |token| {
+                token.kind() == TokenKind::Newline
+            })
+            .unwrap_or(module_end);
+        TextRange::new(offset, end)
     }
 
     /// Returns the range spanning the entire source text.

@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_super_args/string_interior_holds/input.py
+---
+class Report:
+    def render(self, body, footer):
+        return body
+
+
+class Invoice(Report):
+    def render(self, body, footer):
+        return super(Invoice, self).render(body, """
+                                           trailing note
+                                           """)

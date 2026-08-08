@@ -14,6 +14,7 @@ pub(crate) mod docstring;
 pub(crate) mod edit;
 pub(crate) mod effect;
 pub(crate) mod equal_targets;
+pub(crate) mod fracture;
 pub(crate) mod imports;
 pub(crate) mod inline;
 pub(crate) mod layout;

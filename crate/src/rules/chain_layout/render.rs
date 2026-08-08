@@ -3,7 +3,10 @@
 
 use super::spine::Chain;
 use crate::{
-    primitives::layout::{Separator, explode_parens},
+    primitives::{
+        fracture,
+        layout::{Separator, explode_parens},
+    },
     source::Source,
 };
 
@@ -11,8 +14,15 @@ use crate::{
 /// indent step past `indent` and its closing `)` back at `indent`.
 /// `hang` is the columns each later link's dot sits past the head's
 /// indent, `None` standing the receiver alone and running every link
-/// flush beneath it.
-pub(super) fn broken(source: &Source, chain: &Chain, indent: usize, hang: Option<usize>) -> String {
+/// flush beneath it. Each segment renders at the width `joins` settles
+/// it to, so a row carries no break the measure did not count.
+pub(super) fn broken(
+    source: &Source,
+    chain: &Chain,
+    indent: usize,
+    hang: Option<usize>,
+    joins: &fracture::Joins,
+) -> String {
     let (head, tail) = chain.links.split_at(usize::from(hang.is_some()));
     let pad = " ".repeat(hang.unwrap_or(0));
     explode_parens(
@@ -21,14 +31,14 @@ pub(super) fn broken(source: &Source, chain: &Chain, indent: usize, hang: Option
         1 + tail.len(),
         |out, row| match row.checked_sub(1) {
             None => {
-                out.push_str(source.slice(chain.receiver_range));
+                out.push_str(&joins.settled(source, chain.receiver_range));
                 for &link in head {
-                    out.push_str(source.slice(link));
+                    out.push_str(&joins.settled(source, link));
                 }
             }
             Some(link) => {
                 out.push_str(&pad);
-                out.push_str(source.slice(tail[link]));
+                out.push_str(&joins.settled(source, tail[link]));
             }
         },
         Separator::None,

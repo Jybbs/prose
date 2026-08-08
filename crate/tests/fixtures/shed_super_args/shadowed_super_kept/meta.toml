@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Module Binding `super` Keeps Every Call Written"
+
+description = '''
+A module that binds the name `super` itself leaves every parameterized call untouched, since the bare form would reach that binding rather than the builtin.
+'''

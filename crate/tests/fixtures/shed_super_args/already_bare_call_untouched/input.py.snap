@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_super_args/already_bare_call_untouched/input.py
+---
+class Widget:
+    def render(self):
+        return ""
+
+
+class Button(Widget):
+    def render(self):
+        return super().render() + "!"

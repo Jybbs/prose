@@ -1,19 +1,36 @@
 //! The single-line form of a leaf expression, collapsing a soft-wrapped
-//! operator-atom tree onto one line and declining a leaf whose join
-//! would respace a token, plus the column measures a rendered form or a
-//! source line answers the budget with.
+//! operator-atom tree onto one line, closing a fractured argument list
+//! inside it, and declining a leaf whose join would respace a token,
+//! plus the column measures a rendered form or a source line answers
+//! the budget with.
 
 use std::borrow::Cow;
 
 use ruff_python_ast::{Expr, helpers::is_dotted_name};
 use ruff_python_trivia::leading_indentation;
+use ruff_text_size::TextRange;
 use unicode_width::UnicodeWidthStr;
+
+use crate::{primitives::fracture, source::Source};
 
 /// The column `text` ends at when its opening line starts at `indent`,
 /// measured past the last line break `text` carries.
 pub(crate) fn end_column(text: &str, indent: usize) -> usize {
     text.rsplit_once('\n')
         .map_or_else(|| indent + text.width(), |(_, last)| last.width())
+}
+
+/// `slice`'s single-line form reachable by folding whitespace alone:
+/// the borrowed slice when it carries no break, the soft-wrap collapse
+/// when `expr` is a break-carrying operator-atom tree, and `None` for a
+/// multi-line leaf a fold would split or respace. Every form it returns
+/// is reachable by folding whitespace, where [`single_line_form`] also
+/// closes a fracture.
+pub(crate) fn folded_line_form<'s>(expr: &Expr, slice: &'s str) -> Option<Cow<'s, str>> {
+    if !slice.contains('\n') {
+        return Some(Cow::Borrowed(slice));
+    }
+    is_operator_atom_tree(expr).then(|| Cow::Owned(collapse_soft_wraps(slice)))
 }
 
 /// The character width of `line`'s leading indentation. Tabs and
@@ -27,15 +44,21 @@ pub(crate) fn opening_width(text: &str) -> usize {
     text.lines().next().unwrap_or_default().width()
 }
 
-/// `expr`'s single-line form when collapsing it respaces no token: the
-/// borrowed slice when it carries no break, the soft-wrap collapse when
-/// it is a break-carrying operator-atom tree, and `None` for a multi-line
-/// leaf a join would split or respace.
-pub(crate) fn single_line_form<'s>(expr: &Expr, slice: &'s str) -> Option<Cow<'s, str>> {
-    if !slice.contains('\n') {
-        return Some(Cow::Borrowed(slice));
+/// `range`'s single-line form, the fold of [`folded_line_form`] and
+/// otherwise the fracture close when every break inside `range` shuts.
+/// The returned text is the whole replacement, so a caller splices it
+/// rather than reproducing it.
+pub(crate) fn single_line_form<'s>(
+    source: &'s Source,
+    rejoin: fracture::Settings,
+    expr: &Expr,
+    range: TextRange,
+) -> Option<Cow<'s, str>> {
+    if let Some(folded) = folded_line_form(expr, source.slice(range)) {
+        return Some(folded);
     }
-    is_operator_atom_tree(expr).then(|| Cow::Owned(collapse_soft_wraps(slice)))
+    let settled = rejoin.text(source, expr, range);
+    (!settled.contains('\n')).then_some(settled)
 }
 
 /// Yields the `(start, len)` byte span of each whitespace run in `text`
@@ -81,11 +104,11 @@ fn is_operator_atom_tree(expr: &Expr) -> bool {
     match expr {
         Expr::BinOp(b) => is_operator_atom_tree(&b.left) && is_operator_atom_tree(&b.right),
         Expr::BoolOp(b) => b.values.iter().all(is_operator_atom_tree),
+        Expr::BooleanLiteral(_) | Expr::NoneLiteral(_) | Expr::NumberLiteral(_) => true,
         Expr::Compare(c) => {
             is_operator_atom_tree(&c.left) && c.comparators.iter().all(is_operator_atom_tree)
         }
         Expr::UnaryOp(u) => is_operator_atom_tree(&u.operand),
-        Expr::NumberLiteral(_) | Expr::BooleanLiteral(_) | Expr::NoneLiteral(_) => true,
         _ => is_dotted_name(expr),
     }
 }
@@ -96,7 +119,10 @@ mod tests {
     use ruff_text_size::Ranged;
 
     use super::*;
-    use crate::testing::{first_expr, parse};
+    use crate::{
+        config::Config,
+        testing::{first_expr, parse},
+    };
 
     #[rstest]
     #[case("a", "a")]
@@ -165,16 +191,22 @@ mod tests {
     }
 
     #[rstest]
-    #[case("value", Some("value"))]
-    #[case("(a +\n    b)", Some("a + b"))]
-    #[case("helper(\n    x)", None)]
-    fn single_line_form_collapses_atom_breaks_and_declines_the_rest(
+    #[case::no_break("value", Some("value"))]
+    #[case::operator_soft_wrap("(a +\n    b)", Some("a + b"))]
+    #[case::fracture_closes("helper(\n    x)", Some("helper(x)"))]
+    #[case::flush_column_holds("helper(\n    x,\n)", None)]
+    #[case::multiline_string_holds("\"\"\"x\ny\"\"\"", None)]
+    #[case::joined_text_still_spans("helper(\n    \"\"\"x\ny\"\"\")", None)]
+    fn single_line_form_collapses_every_break_that_closes(
         #[case] src: &str,
         #[case] expected: Option<&str>,
     ) {
         let source = parse(src);
         let expr = first_expr(&source);
-        let slice = source.slice(expr.range());
-        assert_eq!(single_line_form(expr, slice).as_deref(), expected);
+        let settings = Config::default().fracture_settings();
+        assert_eq!(
+            single_line_form(&source, settings, expr, expr.range()).as_deref(),
+            expected,
+        );
     }
 }

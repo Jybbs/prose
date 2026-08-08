@@ -4,7 +4,7 @@
 //! budget. The one-line rendering the decision measures against lives
 //! in the sibling `inline` module.
 
-use std::{borrow::Cow, collections::HashMap};
+use std::borrow::Cow;
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
@@ -12,13 +12,13 @@ use ruff_python_ast::{
     AnyNodeRef, DictItem, Expr, InterpolatedStringElement,
     visitor::{Visitor, walk_expr},
 };
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 
 use super::{
     classify::{
-        Segment, is_align_colons_gap, is_atomic, is_collapse_only, is_collapsible,
-        is_column_shaped, is_multi_entry, pre_colon_padding, requires_expand, segments,
+        Segment, is_align_colons_gap, is_atomic, is_collapse_only, is_collapsible, is_multi_entry,
+        pre_colon_padding, requires_expand, segments,
     },
     flow::flow_lines,
 };
@@ -26,8 +26,9 @@ use crate::{
     primitives::{
         INDENT_STEP,
         edit::narrowed_replacement,
-        layout::{is_layoutable, item_indent},
-        reserve::settled_column,
+        fracture,
+        layout::{is_column_shaped, is_layoutable, item_indent},
+        reserve,
     },
     rules::stack_adjacent_strings::concatenated_run,
     source::Source,
@@ -40,7 +41,8 @@ pub(super) struct Layouter<'a> {
     pub(super) keep_multiline_literals: bool,
     pub(super) max_atomics: usize,
     pub(super) newline: &'static str,
-    pub(super) reservations: HashMap<TextSize, usize>,
+    pub(super) rejoin: fracture::Settings,
+    pub(super) reservations: reserve::Columns,
     pub(super) source: &'a Source,
     pub(super) tripping_dicts: Vec<TextRange>,
     pub(super) wrap_dict_entries: bool,
@@ -69,6 +71,19 @@ impl<'a> Layouter<'a> {
         out.push_str(self.newline);
         for segment in segments(&atomics) {
             match segment {
+                Segment::Flow(range) => {
+                    let run_start = range.start;
+                    for line_range in flow_lines(&widths[range], available, self.max_atomics) {
+                        let line_start = run_start + line_range.start;
+                        let line_end = run_start + line_range.end;
+                        out.push_str(&item_prefix);
+                        out.push_str(&texts[line_start..line_end].join(", "));
+                        if line_end < total {
+                            out.push(',');
+                        }
+                        out.push_str(self.newline);
+                    }
+                }
                 Segment::OnePerLine(range) => {
                     for idx in range {
                         let has_more = idx + 1 < total;
@@ -90,19 +105,6 @@ impl<'a> Layouter<'a> {
                         if has_more && self.source.has_blank_line_before(ranges[idx + 1].start()) {
                             out.push_str(self.newline);
                         }
-                    }
-                }
-                Segment::Flow(range) => {
-                    let run_start = range.start;
-                    for line_range in flow_lines(&widths[range], available, self.max_atomics) {
-                        let line_start = run_start + line_range.start;
-                        let line_end = run_start + line_range.end;
-                        out.push_str(&item_prefix);
-                        out.push_str(&texts[line_start..line_end].join(", "));
-                        if line_end < total {
-                            out.push(',');
-                        }
-                        out.push_str(self.newline);
                     }
                 }
             }
@@ -250,9 +252,7 @@ impl<'a> Layouter<'a> {
         let expandable = requires_expand(expr);
         let over_count = self.has_over_count_dict(expr);
         if self.source.contains_line_break(range) {
-            let held = self.keep_multiline_literals
-                && is_multi_entry(expr)
-                && is_column_shaped(self.source.slice(range));
+            let held = self.holds_its_column(expr);
             if !held
                 && !over_count
                 && let Some(inline) = self.joined_if_fits(expr, column)
@@ -270,10 +270,10 @@ impl<'a> Layouter<'a> {
     /// Serializes a dict item as `key: value` or `**value`, paired with
     /// its display width at the canonical `": "` separator. The key
     /// routes through `repaired_key` so one written across lines rejoins
-    /// beside its `:`, and the value's fit column
-    /// sits past the key text and `": "`. A borrowed key and value over
-    /// an `align-colons`-padded gap return the source slice whole so the
-    /// padding round-trips, the width counting the canonical `": "`.
+    /// beside its `:`, and the value's fit column sits past the key text
+    /// and `": "`. A borrowed key and value over an `align-colons`-padded
+    /// gap return the source slice whole so the padding round-trips, the
+    /// width counting the canonical `": "`.
     fn serialize_dict_item(
         &self,
         item: &DictItem,
@@ -315,10 +315,18 @@ impl<'a> Layouter<'a> {
         column: usize,
         indent: usize,
     ) -> Cow<'a, str> {
-        match self.replacement_for(expr, column, indent) {
-            Some(text) => Cow::Owned(text),
-            None => Cow::Borrowed(self.slice_with_parens(expr, parent)),
-        }
+        self.replacement_for(expr, column, indent).map_or_else(
+            || Cow::Borrowed(self.slice_with_parens(expr, parent)),
+            Cow::Owned,
+        )
+    }
+
+    /// True for a multi-entry literal the author laid out as a flush
+    /// column while `keep_multiline_literals` holds it.
+    pub(super) fn holds_its_column(&self, expr: &Expr) -> bool {
+        self.keep_multiline_literals
+            && is_multi_entry(expr)
+            && is_column_shaped(self.source.slice(expr.range()))
     }
 }
 
@@ -333,14 +341,14 @@ impl<'a> Visitor<'a> for Layouter<'a> {
         // Test the collapse against the column `align_equals` shifts the
         // value to, not the unaligned column the literal currently opens
         // at, so a fit that survives the shift is what the rule collapses.
-        let column = settled_column(&self.reservations, start, || self.source.column_of(start));
+        let column = self.reservations.column_in(self.source, start);
         let indent = self.source.line_indent_width(start);
-        match self.replacement_for(expr, column, indent) {
-            Some(text) => self
-                .edits
-                .extend(narrowed_replacement(self.source, range, text)),
-            None => walk_expr(self, expr),
-        }
+        let Some(text) = self.replacement_for(expr, column, indent) else {
+            walk_expr(self, expr);
+            return;
+        };
+        self.edits
+            .extend(narrowed_replacement(self.source, range, text));
     }
 
     /// Leaves a replacement field unwalked.

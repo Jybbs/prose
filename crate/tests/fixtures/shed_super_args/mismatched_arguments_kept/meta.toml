@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Arguments Naming Anything Else Stay Written"
+
+description = '''
+A second argument naming a parameter other than the receiver, and a first argument naming a class other than the enclosing one, each keep the written form, since the bare call would resolve a different pair.
+'''

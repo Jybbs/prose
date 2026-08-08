@@ -6,35 +6,35 @@
 use std::borrow::Cow;
 
 use ruff_python_ast::{AnyNodeRef, Comprehension, Expr, ExprDict};
-use ruff_text_size::Ranged;
+use ruff_text_size::TextRange;
 use unicode_width::UnicodeWidthStr;
 
-use super::{
-    classify::{is_column_shaped, is_multi_entry},
-    layouter::Layouter,
-};
+use super::layouter::Layouter;
 use crate::primitives::inline::single_line_form;
 
 impl<'a> Layouter<'a> {
     /// Builds the inline form of `expr`, recursively inlining any nested
-    /// collection or subscript that is not itself a held column. Leaves
-    /// and held columns pass through as their source slice, explicit
-    /// parens recovered against `parent` so a precedence-bearing
-    /// `(-a) ** 2` survives the collapse.
+    /// collection or subscript that is not itself a held column. A held
+    /// column passes through as its source slice and a leaf takes its
+    /// single-line form, explicit parens recovered against `parent` so a
+    /// precedence-bearing `(-a) ** 2` survives the collapse.
     fn inline_form(&self, expr: &Expr) -> String {
         let mut buf = String::new();
         self.write_inline(&mut buf, expr, AnyNodeRef::from(expr));
         buf
     }
 
+    /// The range covering `expr` with explicit parens recovered against
+    /// `parent`.
+    fn range_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> TextRange {
+        self.source.paren_aware_range(expr.into(), parent)
+    }
+
     /// Appends a child `expr`'s inline serialization to `buf`, a held
     /// multi-line literal passing through at its source shape so the
     /// enclosing rejoin fails its line-break check.
     fn write_child(&self, buf: &mut String, expr: &Expr, parent: AnyNodeRef) {
-        if self.keep_multiline_literals
-            && is_multi_entry(expr)
-            && is_column_shaped(self.source.slice(expr.range()))
-        {
+        if self.holds_its_column(expr) {
             buf.push_str(self.slice_with_parens(expr, parent));
             return;
         }
@@ -111,12 +111,17 @@ impl<'a> Layouter<'a> {
                 self.write_inline_seq(buf, brackets, &t.elts, here, t.len() == 1);
             }
             _ => {
-                let slice = self.slice_with_parens(expr, parent);
+                let range = self.range_with_parens(expr, parent);
+                let slice = self.source.slice(range);
                 // An operator tree over atoms soft-wrapped across lines
-                // rejoins by collapsing its break, where any other leaf
-                // passes through with its source breaks intact for the
-                // fit guard to reject.
-                buf.push_str(&single_line_form(expr, slice).unwrap_or(Cow::Borrowed(slice)));
+                // rejoins by collapsing its break and a leaf carrying a
+                // fractured argument list closes it, where any other
+                // leaf passes through with its source breaks intact for
+                // the fit guard to reject.
+                buf.push_str(
+                    &single_line_form(self.source, self.rejoin, expr, range)
+                        .unwrap_or(Cow::Borrowed(slice)),
+                );
             }
         }
     }
@@ -207,7 +212,6 @@ impl<'a> Layouter<'a> {
     /// recovered against `parent` so precedence-bearing parens like
     /// `(-a) ** 2` survive a borrow.
     pub(super) fn slice_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> &'a str {
-        let range = self.source.paren_aware_range(expr.into(), parent);
-        self.source.slice(range)
+        self.source.slice(self.range_with_parens(expr, parent))
     }
 }

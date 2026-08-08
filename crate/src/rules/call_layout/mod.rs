@@ -12,6 +12,13 @@
 //! `=` alignment, and trailing commas stay with `alphabetize`,
 //! `align_equals`, and `strip_trailing_commas`.
 //!
+//! Where neither trigger fires, an argument list the author fractured
+//! rejoins onto one row, measured across the column its `(` lands at,
+//! the joined arguments, and the text trailing the call to the end of
+//! its logical line. A list carrying the flush column shape the
+//! explode path emits holds its break instead, the same reading
+//! `collection_layout` gives a literal.
+//!
 //! `measure` answers the column a construct reaches and the width it
 //! reads, and `render` builds the text that replaces an argument list.
 
@@ -27,13 +34,11 @@ use ruff_text_size::{Ranged, TextSize};
 use crate::{
     config::Config,
     primitives::{
-        aligner,
         call_keywords::module_call_params,
         edit::{insert_edit, narrowed_replacement, singleton_groups},
-        reserve::reserved_columns,
+        fracture, reserve,
     },
     rule::{Rule, RuleId},
-    rules::align_equals::AlignEquals,
     source::Source,
 };
 
@@ -41,9 +46,10 @@ mod measure;
 mod render;
 
 pub(crate) struct CallLayout {
-    align_equals: Option<aligner::Settings>,
     code_line_length: usize,
     max_args: Option<usize>,
+    rejoin: fracture::Settings,
+    reservations: reserve::Reservations,
 }
 
 impl CallLayout {
@@ -51,9 +57,10 @@ impl CallLayout {
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            align_equals: AlignEquals::reserve_settings(config),
             code_line_length: config.code_width(),
             max_args: config.rules.call_layout.max_args.cap(),
+            rejoin: config.fracture_settings(),
+            reservations: config.equals_reservations(),
         }
     }
 }
@@ -61,15 +68,16 @@ impl CallLayout {
 impl Rule for CallLayout {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
-        let reservations = reserved_columns(source, self.align_equals, AlignEquals::SLUG);
+        let reservations = self.reservations.columns(source);
         let mut exploder = Exploder {
-            cap: self.max_args,
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             indent: None,
             line_shift: 0,
+            max_args: self.max_args,
             origin: TextSize::new(0),
             origin_column: 0,
+            rejoin: self.rejoin,
             reservations: &reservations,
             source,
             targets: &targets,
@@ -89,14 +97,15 @@ impl Rule for CallLayout {
 /// moves by, and `indent` is the indent an exploded closing `)` drops to,
 /// unset where each call answers to its own source line.
 struct Exploder<'a> {
-    cap: Option<usize>,
     code_line_length: usize,
     edits: Vec<Edit>,
     indent: Option<usize>,
     line_shift: isize,
+    max_args: Option<usize>,
     origin: TextSize,
     origin_column: usize,
-    reservations: &'a HashMap<TextSize, usize>,
+    rejoin: fracture::Settings,
+    reservations: &'a reserve::Columns,
     source: &'a Source,
     targets: &'a HashMap<TextSize, &'a Parameters>,
 }
@@ -110,9 +119,8 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
         // The callee settles first, so the argument list measures against
         // the row a reshaped receiver leaves it on.
         self.visit_expr(&call.func);
-        let callee = self.callee_text(call);
         let indent = self.indent_for(call);
-        let column = self.open_paren_column(call, &callee);
+        let column = self.open_paren_column(call, &self.callee_text(call));
         if let Some(text) = self.explode_args(call, indent, column)
             && let Some(edit) = narrowed_replacement(self.source, call.arguments.range(), text)
         {

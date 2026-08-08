@@ -38,15 +38,7 @@ impl Rule for AlignComments {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut walker = aligner::AlignWalker::new(source, self.settings, Self::SLUG);
         for group in trailing_comment_groups(source, walker.rule) {
-            let edits = if aligner::is_alignment_candidate(source, &group) {
-                walker.group_edits(&group)
-            } else {
-                group
-                    .iter()
-                    .filter_map(|m| aligner::space_padding_edit(source, m.gap, TRAILING_GAP.len()))
-                    .collect()
-            };
-            walker.push_group(edits);
+            walker.emit_group_or_buffer(&group);
         }
         walker.groups
     }

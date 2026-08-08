@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_super_args/mismatched_arguments_kept/input.py
+---
+class Base:
+    def run(self):
+        return 1
+
+
+class Child(Base):
+    def run(self, other):
+        return super(Child, other).run() + super(Other, self).run()
+
+
+class Other(Base):
+    def run(self):
+        return 2

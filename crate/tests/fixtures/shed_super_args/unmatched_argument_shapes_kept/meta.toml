@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Argument List of Any Other Shape Stays Written"
+
+description = '''
+A call carrying a keyword argument, a single argument, or an unpacked sequence keeps its written form, since none of the three is the class-and-instance pair the bare call replaces.
+'''

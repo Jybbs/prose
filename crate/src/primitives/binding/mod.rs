@@ -283,6 +283,14 @@ impl BindingAnalysis {
             .is_some_and(|binding| binding.bare_read)
     }
 
+    /// Returns `true` when the local scope of `stmt` binds `name`.
+    /// `stmt` must be a `Stmt::FunctionDef`, and any other statement
+    /// yields `false`.
+    pub(crate) fn scope_binds(&self, stmt: &Stmt, name: &str) -> bool {
+        self.bindings_in_scope(stmt)
+            .any(|id| self.binding_name(id) == name)
+    }
+
     /// Returns the unpack disposition of `binding` when its sole write
     /// is a multi-name tuple or list unpack target, `None` otherwise.
     pub(crate) fn unpack_target(&self, binding: BindingId) -> Option<UnpackKind> {

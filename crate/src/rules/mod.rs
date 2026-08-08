@@ -31,6 +31,7 @@ pub(crate) mod prune_inert_imports;
 pub(crate) mod reassigned_constants;
 pub(crate) mod shed_backslash_continuations;
 pub(crate) mod shed_parentheses;
+pub(crate) mod shed_super_args;
 pub(crate) mod signature_annotations;
 pub(crate) mod signature_layout;
 pub(crate) mod simplify_comprehensions;

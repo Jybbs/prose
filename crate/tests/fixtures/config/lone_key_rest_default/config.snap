@@ -103,6 +103,9 @@ Config {
                 ),
             ),
         },
+        shed_super_args: ToggleOnly {
+            enabled: true,
+        },
         signature_layout: SignatureLayoutConfig {
             enabled: true,
             max_params: InlineBudget(
