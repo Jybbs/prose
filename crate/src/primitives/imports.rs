@@ -11,12 +11,12 @@ use std::{cmp::Reverse, ops::Range};
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
     primitives::{
-        comments::leading_comment_block, edit::whole_line_deletion, orderer::runs_where,
-        sections::Sections,
+        comments::leading_comment_block, edit::whole_line_deletion, range::dropped_member_spans,
+        sections::Sections, slots::runs_where,
     },
     source::Source,
 };
@@ -152,28 +152,21 @@ pub(crate) fn prune_import_aliases(
     names: &[Alias],
     keep: impl Fn(usize) -> bool,
 ) -> Vec<Edit> {
-    let kept: Vec<usize> = (0..names.len()).filter(|&index| keep(index)).collect();
-    if kept.len() == names.len() || !stands_alone(source, stmt) || source.intersects_comment(stmt) {
+    let kept = (0..names.len()).filter(|&index| keep(index)).count();
+    if kept == names.len() || !stands_alone(source, stmt) || source.intersects_comment(stmt) {
         return Vec::new();
     }
-    let Some(&last_kept) = kept.last() else {
+    if kept == 0 {
         return if comment_leads(source, stmt) {
             Vec::new()
         } else {
             vec![whole_line_deletion(source, stmt)]
         };
-    };
-    let starts = std::iter::once(0).chain(kept.iter().map(|&index| index + 1));
-    let ends = kept.iter().copied().chain(std::iter::once(names.len()));
-    starts
-        .zip(ends)
-        .filter(|&(start, end)| start < end)
-        .map(|(start, end)| {
-            Edit::range_deletion(match names.get(end) {
-                Some(survivor) => TextRange::new(names[start].start(), survivor.start()),
-                None => TextRange::new(names[last_kept].end(), names[end - 1].end()),
-            })
-        })
+    }
+    let members: Vec<TextRange> = names.iter().map(|alias| alias.range).collect();
+    dropped_member_spans(&members, |index| !keep(index))
+        .into_iter()
+        .map(Edit::range_deletion)
         .collect()
 }
 
@@ -238,6 +231,7 @@ fn stands_alone(source: &Source, stmt: TextRange) -> bool {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+    use ruff_text_size::Ranged;
 
     use super::*;
     use crate::primitives::edit::apply_edits;

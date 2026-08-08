@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Base Wrapped in Its Own Parentheses Goes With Them"
+
+description = '''
+A grouping pair around a base sits outside the expression's own range, so the deletion widens to take the pair with the base. A span that stopped inside the pair would strand its closer and leave the file unparseable rather than merely unshed. [[shed-parentheses]] clears such a pair ahead of this rule in the default pipeline, so the case reaches the rule in isolation.
+'''

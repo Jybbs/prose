@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_redundant_base/object_beside_a_sibling_dropped/input.py
+---
+class Layered(Mapping, Sized):
+    def values(self):
+        return self.data.values()
+
+
+class Trailing(Mapping):
+    def keys(self):
+        return self.data.keys()

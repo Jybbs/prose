@@ -6,7 +6,7 @@ use std::ops::Range;
 
 use ruff_python_ast::{Expr, helpers::is_dotted_name};
 
-use crate::primitives::{layout::is_layoutable, orderer::slot_runs};
+use crate::primitives::{layout::is_layoutable, slots::slot_runs};
 
 /// Describes how a contiguous slice of items should lay out.
 #[derive(Debug, PartialEq)]

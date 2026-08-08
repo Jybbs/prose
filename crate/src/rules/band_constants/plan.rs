@@ -13,8 +13,8 @@ use ruff_text_size::TextRange;
 use crate::primitives::{
     blanks::{blank_gap, module_blank_lines},
     imports::{import_blank_lines, import_sort_key},
-    orderer::slot_positions,
     sections::Sections,
+    slots::slot_positions,
 };
 
 /// The applied banding: a band rank per banded statement, the rendered

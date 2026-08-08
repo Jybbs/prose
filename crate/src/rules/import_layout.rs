@@ -29,7 +29,7 @@ use crate::{
         edit::{apply_inline_edits, narrowed_replacement, whole_line_deletion},
         imports::is_import,
         layout::pack,
-        orderer::runs_where,
+        slots::runs_where,
     },
     rule::{Rule, RuleId},
     rules::align_imports,

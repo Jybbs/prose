@@ -1,5 +1,5 @@
 ---
-consumedBy: [band-constants, bare-imports, miscased-constants, modernize-annotations, prune-inert-imports, reassigned-constants, shed-super-args, simplify-comprehensions, single-use-variables]
+consumedBy: [band-constants, bare-imports, miscased-constants, modernize-annotations, prune-inert-imports, reassigned-constants, shed-redundant-base, shed-super-args, simplify-comprehensions, single-use-variables]
 consumes: [source]
 layer: analysis
 stability: internal
@@ -41,7 +41,7 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `binds_name(name: &str) -> bool` reports whether any scope in the module binds a name, which [[simplify-comprehensions]] reads to hold every call to a constructor the module rebinds, and which [[shed-super-args]] reads to leave every call in place where the module binds `super` or `__class__` itself.
 - `first_write_offset(binding: BindingId) -> TextSize` returns the offset of the first write.
 - `is_deleted(name: &str) -> bool` reports whether a `del` statement anywhere in the module names a binding, which [[prune-inert-imports]] reads to hold an import whose `del` would otherwise be left raising `NameError`.
-- `is_defined_before(name: &str, offset: TextSize) -> bool` is the inverse-lookup convenience used by [[prune-inert-imports]] when checking that every name appearing in an annotation resolves to an unconditional binding introduced earlier *(a name written only inside a conditional branch like `if`, `for`, `while`, `try`, or `match` reads as runtime-unavailable)*.
+- `is_defined_before(name: &str, offset: TextSize) -> bool` is the inverse-lookup convenience used by [[prune-inert-imports]] when checking that every name appearing in an annotation resolves to an unconditional binding introduced earlier *(a name written only inside a conditional branch like `if`, `for`, `while`, `try`, or `match` reads as runtime-unavailable)*, and read by [[shed-redundant-base]] to hold a header whose `object` base a module-scope write rebound ahead of the class.
 - `module_attribute_count(name: &str) -> usize` counts the distinct attributes read off a module-scope name *(`os.environ` and `os.getcwd` count as two)*, which [[bare-imports]] reads to weigh how widely a bare import reaches.
 - `module_binding_kinds(name: &str) -> &[BindingKind]` returns the write kinds recorded against a module-scope name, empty where the name is unbound there.
 - `module_function_reads(name: &str) -> Option<&[TextSize]>` returns the read offsets of a module-scope name bound exactly once as a function definition, which [[call-layout]] uses through `module_call_params` to resolve the signature a module-function call binds, so it names the call's positional arguments when exploding it.

@@ -1,0 +1,10 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/shed_redundant_base/nested_and_parameterized_headers_shed/input.py
+---
+shed-redundant-base@122..130
+shed-redundant-base@147..155
+shed-redundant-base@212..220
+shed-redundant-base@26..34
+shed-redundant-base@77..86

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comment Inside the Header Holds It"
+
+description = '''
+A comment sitting in the span that would go takes the deletion with it, so a base list carrying one is left as written whether the comment annotates an `object` base or an empty pair of parentheses.
+'''

@@ -50,6 +50,9 @@ Config {
         shed_parentheses: ToggleOnly {
             enabled: true,
         },
+        shed_redundant_base: ToggleOnly {
+            enabled: true,
+        },
         normalize_comparisons: NormalizeComparisonsConfig {
             enabled: true,
             rewrite_identity: true,
