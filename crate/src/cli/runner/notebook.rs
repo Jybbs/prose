@@ -45,6 +45,16 @@ pub(super) fn process(text: String, name: String, pipeline: &Pipeline, pass: Pas
     }
 }
 
+/// Reparses `written`, the JSON a notebook rewrite lands on disk, back
+/// into a `Source`, so a caller reads the cells that file will carry
+/// rather than the concatenation they were serialized from. The two
+/// diverge where `Notebook::update` cuts a cell at a different boundary
+/// than the run carried.
+pub(super) fn as_written(written: &str, name: &str) -> Option<Source> {
+    let notebook = Notebook::from_source_code(written).ok()?;
+    Source::from_notebook(&notebook, name).ok()
+}
+
 /// Returns the concatenated code-cell source of a notebook paired with
 /// its cell index, the text a cache hit rebuilds its diagnostics file
 /// from and the translator it renders cell-relative positions through.

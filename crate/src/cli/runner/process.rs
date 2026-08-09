@@ -2,7 +2,7 @@
 //! pipeline, and classify the outcome.
 
 use std::{
-    io::{self, Read},
+    io::{self, Read, Write},
     path::{Path, PathBuf},
 };
 
@@ -10,6 +10,7 @@ use rayon::iter::{ParallelBridge, ParallelIterator};
 use ruff_notebook::NotebookIndex;
 use ruff_python_ast::PySourceType;
 use ruff_source_file::{SourceFile, SourceFileBuilder};
+use tempfile::NamedTempFile;
 
 use super::{FileOutcome, Pass, RunSetup, has_format_change, notebook};
 use crate::{
@@ -17,7 +18,7 @@ use crate::{
     cli::exit_status::ExitStatus,
     pipeline::Pipeline,
     source::Source,
-    walker,
+    walker::{self, Found},
 };
 
 pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
@@ -28,10 +29,33 @@ pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
     else {
         return outcome;
     };
-    if let Err(e) = fs_err::write(path, kind.written()) {
+    if let Err(e) = write_atomic(path, kind.written()) {
         return failed(ExitStatus::ConfigError, e);
     }
     outcome
+}
+
+/// Replaces `path`'s contents with `contents` through a temporary file
+/// renamed over the target, so a write that fails partway leaves the
+/// original intact rather than truncated at its opening byte. `path`
+/// resolves through a symlink first, leaving the link in place and
+/// rewriting what it points at. Opening the target beforehand holds the
+/// permission check a direct write makes, and the temporary takes the
+/// target's mode, which a fresh temporary would otherwise narrow to
+/// owner-only. Creating that temporary needs write permission on the
+/// containing directory, which a direct write does not.
+fn write_atomic(path: &Path, contents: &str) -> io::Result<()> {
+    let target = fs_err::canonicalize(path)?;
+    let permissions = fs_err::OpenOptions::new()
+        .write(true)
+        .open(&target)?
+        .metadata()?
+        .permissions();
+    let mut temp = NamedTempFile::new_in(target.parent().unwrap_or(&target))?;
+    temp.write_all(contents.as_bytes())?;
+    temp.as_file().set_permissions(permissions)?;
+    temp.persist(&target).map_err(|e| e.error)?;
+    Ok(())
 }
 
 /// Dispatches `source` by `pass`, collecting the as-written diagnostics on
@@ -133,8 +157,13 @@ where
 {
     walker::walk(paths)
         .par_bridge()
-        .map(|entry| {
-            entry.map_or_else(walk_error, |(path, source_type)| handle(&path, source_type))
+        .filter_map(|entry| match entry {
+            Ok(Found::Formattable(path, source_type)) => Some(handle(&path, source_type)),
+            Ok(Found::PassedLink(path)) => {
+                eprintln!("note: passed over the symlink {}", path.display());
+                None
+            }
+            Err(e) => Some(walk_error(e)),
         })
         .collect()
 }
@@ -268,10 +297,23 @@ fn run_and_assemble(
     match pipeline.run(source) {
         Ok((formatted, run_diagnostics)) => {
             let rewrite = rewrite(&formatted, &file);
-            if matches!(rewrite, Rewrite::Changed(_))
-                && let Err(e) = pipeline.reject_unsettled(&formatted)
-            {
-                return failed(ExitStatus::ConfigError, e);
+            if let Rewrite::Changed(kind) = &rewrite {
+                let landed = if formatted.is_notebook() {
+                    match notebook::as_written(kind.written(), file.name()) {
+                        Some(source) => Some(source),
+                        None => {
+                            return failed(
+                                ExitStatus::ConfigError,
+                                format_args!("{} did not re-read as a notebook", file.name()),
+                            );
+                        }
+                    }
+                } else {
+                    None
+                };
+                if let Err(e) = pipeline.reject_unsettled(landed.as_ref().unwrap_or(&formatted)) {
+                    return failed(ExitStatus::ConfigError, e);
+                }
             }
             FileOutcome::Done {
                 cached: false,
@@ -488,5 +530,58 @@ mod tests {
     fn walk_error_returns_failed_with_config_error() {
         let outcome = walk_error("synthetic walk failure");
         assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_atomic_holds_the_original_where_no_temporary_can_land() {
+        use std::{fs::Permissions, os::unix::fs::PermissionsExt};
+
+        let dir = TempDir::new().expect("a temporary directory");
+        let file = dir.path().join("t.py");
+        fs_err::write(&file, "x = 1\n").expect("seeds the file");
+        fs_err::set_permissions(dir.path(), Permissions::from_mode(0o500)).expect("seals the dir");
+
+        let result = write_atomic(&file, "y = 2\n");
+
+        fs_err::set_permissions(dir.path(), Permissions::from_mode(0o700))
+            .expect("reopens the dir");
+        assert_matches!(result, Err(_));
+        assert_eq!(fs_err::read_to_string(&file).expect("reads"), "x = 1\n");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_atomic_keeps_the_targets_mode() {
+        use std::{fs::Permissions, os::unix::fs::PermissionsExt};
+
+        let dir = TempDir::new().expect("a temporary directory");
+        let file = dir.path().join("t.py");
+        fs_err::write(&file, "x = 1\n").expect("seeds the file");
+        fs_err::set_permissions(&file, Permissions::from_mode(0o755)).expect("sets the mode");
+
+        write_atomic(&file, "y = 2\n").expect("writes the file");
+
+        let mode = fs_err::metadata(&file)
+            .expect("metadata")
+            .permissions()
+            .mode();
+        assert_eq!(mode & 0o777, 0o755);
+        assert_eq!(fs_err::read_to_string(&file).expect("reads"), "y = 2\n");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_atomic_rewrites_through_a_symlink_leaving_the_link() {
+        let dir = TempDir::new().expect("a temporary directory");
+        let target = dir.path().join("real.py");
+        let link = dir.path().join("link.py");
+        fs_err::write(&target, "x = 1\n").expect("seeds the target");
+        std::os::unix::fs::symlink(&target, &link).expect("links to the target");
+
+        write_atomic(&link, "y = 2\n").expect("writes the file");
+
+        assert!(link.is_symlink());
+        assert_eq!(fs_err::read_to_string(&target).expect("reads"), "y = 2\n");
     }
 }
