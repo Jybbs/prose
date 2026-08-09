@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Value Carrying a Quote Holds"
+
+description = '''
+The inner quote would close the delimiter the f-string opened with.
+'''

@@ -1,0 +1,9 @@
+[docs]
+previewable = true
+title       = "A Rewrite Past the Line Budget Holds"
+
+description = '''
+No layout rule reaches inside an f-string, so a conversion that would push
+its line past `code-line-length` is left as the wrapped form the layout
+rules can still reach.
+'''

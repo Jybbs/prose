@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/a_comment_inside_the_construct_holds/input.py
+---
+noted = "%s" % (  # the note stays
+    value,
+)

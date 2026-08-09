@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "A Format Spec Carrying Its Own Field Holds"
+
+description = '''
+The inner field reads a second argument, which the outer field cannot carry
+once the call is gone.
+'''

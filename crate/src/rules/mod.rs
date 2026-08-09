@@ -27,6 +27,7 @@ pub(crate) mod miscased_constants;
 pub(crate) mod modernize_annotations;
 pub(crate) mod normalize_comparisons;
 pub(crate) mod normalize_literals;
+pub(crate) mod prefer_fstring;
 pub(crate) mod prune_inert_imports;
 pub(crate) mod reassigned_constants;
 pub(crate) mod shed_backslash_continuations;

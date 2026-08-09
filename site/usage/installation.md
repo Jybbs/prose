@@ -34,7 +34,7 @@ A source distribution ships alongside the wheels for any target outside this mat
 
 ## Python Compatibility
 
-The install path needs Python **{{ $frontmatter.requiresPython }} or newer**, which is the lower bound declared in the wheel's `requires-python` metadata. The Python interpreter is used only by the installer *(uv, pip, pipx)* to land the binary on `PATH`, and the running formatter doesn't load it on the hot path. For the runtime version a project's source itself targets *(read by [[modernize-annotations]] and [[prune-inert-imports]] when judging safety)*, see the `target-version` field in the [**Configuration**](/reference/configuration) reference.
+The install path needs Python **{{ $frontmatter.requiresPython }} or newer**, which is the lower bound declared in the wheel's `requires-python` metadata. The Python interpreter is used only by the installer *(uv, pip, pipx)* to land the binary on `PATH`, and the running formatter doesn't load it on the hot path. For the runtime version a project's source itself targets *(read by the version-gated rules when judging safety)*, see the `target-version` field in the [**Configuration**](/reference/configuration) reference.
 
 ## Next Steps
 

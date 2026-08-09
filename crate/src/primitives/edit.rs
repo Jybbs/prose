@@ -105,6 +105,18 @@ pub(crate) fn narrowed_replacement(source: &Source, span: TextRange, text: Strin
     Some(replacement_or_deletion(narrowed_span, narrowed_text))
 }
 
+/// `text` carrying a leading space where the character before `start`
+/// would otherwise run into it, as `return[x for x in xs]` does.
+pub(crate) fn padded(source: &Source, start: TextSize, text: String) -> String {
+    let joins = |c: char| c.is_alphanumeric() || c == '_';
+    let merges = text.starts_with(joins)
+        && source.text()[..start.to_usize()]
+            .chars()
+            .next_back()
+            .is_some_and(joins);
+    if merges { format!(" {text}") } else { text }
+}
+
 /// The edit rewriting `range` to `n` copies of `unit`, a deletion when
 /// `n` is zero.
 pub(crate) fn repeat_edit(range: TextRange, unit: &str, n: usize) -> Edit {
@@ -328,6 +340,8 @@ fn weave<'a>(
 #[cfg(test)]
 mod tests {
     use std::assert_matches;
+
+    use rstest::rstest;
 
     use super::*;
     use crate::testing::{parse, range};
@@ -617,6 +631,23 @@ mod tests {
         assert_eq!(r.start().to_u32(), 0);
         assert_eq!(r.end().to_u32(), 1);
         assert_eq!(text, "a");
+    }
+
+    #[rstest]
+    #[case(6, "dict(", " dict(")]
+    #[case(7, "dict(", "dict(")]
+    #[case(6, "{", "{")]
+    #[case(0, "dict(", "dict(")]
+    fn padded_spaces_a_replacement_only_where_the_two_would_merge(
+        #[case] start: u32,
+        #[case] text: &str,
+        #[case] expected: &str,
+    ) {
+        let source = parse("return [x for x in xs]\n");
+        assert_eq!(
+            padded(&source, TextSize::new(start), text.to_owned()),
+            expected,
+        );
     }
 
     #[test]

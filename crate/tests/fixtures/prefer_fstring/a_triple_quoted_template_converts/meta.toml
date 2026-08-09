@@ -1,0 +1,9 @@
+[docs]
+previewable = true
+title       = "A Triple-Quoted Template Keeps Its Delimiters"
+
+description = '''
+The rewrite reuses the quotes the source wrote, so a multi-line body
+carries across unchanged and each of its lines answers to the budget on
+its own.
+'''

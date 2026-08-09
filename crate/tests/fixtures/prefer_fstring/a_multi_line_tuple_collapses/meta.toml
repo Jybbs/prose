@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Tuple Broken Across Lines Collapses Into the Fields"
+
+description = '''
+The members each sit on one line, so every one reads as a field and the
+call's own layout falls away with it.
+'''

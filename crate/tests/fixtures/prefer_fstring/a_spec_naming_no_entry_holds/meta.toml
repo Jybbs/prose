@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "A Spec Naming No Entry Holds"
+
+description = '''
+The dict carries no entry the key names, so the template is left to
+raise as written.
+'''

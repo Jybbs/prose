@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "A Star Width Holds"
+
+description = '''
+The `*` reads its width from an argument out of order, which no single field
+can express.
+'''

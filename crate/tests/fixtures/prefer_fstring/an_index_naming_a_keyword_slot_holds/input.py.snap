@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/an_index_naming_a_keyword_slot_holds/input.py
+---
+entry = "{1}".format(first, second=other)

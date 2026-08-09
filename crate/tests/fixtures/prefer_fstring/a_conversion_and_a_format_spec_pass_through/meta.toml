@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Conversion and a Format Spec Pass Through"
+
+description = '''
+Both trail the value unchanged, in that an f-string field reads the same
+grammar the template did.
+'''

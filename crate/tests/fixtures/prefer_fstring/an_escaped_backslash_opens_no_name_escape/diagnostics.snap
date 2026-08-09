@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/prefer_fstring/an_escaped_backslash_opens_no_name_escape/input.py
+---
+prefer-fstring@7..32
