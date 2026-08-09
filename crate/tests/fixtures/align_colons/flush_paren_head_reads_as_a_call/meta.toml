@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Flush Paren Keeps Its Call Shape"
+
+description = '''
+A head whose `(` sits flush against its name documents a call rather than a type, so no type-group column opens and the call keeps the shape its author wrote. The `:` column still settles across the run, since padding after the `)` leaves the call untouched.
+'''

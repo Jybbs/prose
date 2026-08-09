@@ -75,7 +75,7 @@ The `pub(crate)` helpers reach for the docstring literal and its body:
 5. `indent_prefix(source, lit) -> &str` returns the whitespace preceding the docstring on its first line, useful when a rule rewraps the body and needs to re-indent the result.
 6. `documented_definitions(source) -> Vec<(&Stmt, &StringLiteral)>` returns every class and function definition whose body opens on a docstring, paired with that literal in source order. The module docstring is absent, since a module owns no definition, which is what a rule reading a docstring against the code beneath it needs.
 
-[[colon-targets]] finds leading docstrings through `body_docstring` and their section entries through `entry_carrying_sections`, reading each entry's recorded `:` offset when emitting members for colon alignment. The split is deliberate, because the two primitives answer structurally different questions. *Docstring* surfaces entry names, the `:` separating each from its description, and the byte range a reorder would carry along, whereas *Colon-Targets* shapes those into the members the aligner's padding math consumes. Two views of the same source, each shaped for its consumer.
+[[colon-targets]] finds leading docstrings through `body_docstring` and their entry runs through `entry_runs`, reading each entry's recorded `:` offset when emitting members for colon alignment. The split is deliberate, because the two primitives answer structurally different questions. *Docstring* surfaces entry names, the `:` separating each from its description, and the byte range a reorder would carry along, whereas *Colon-Targets* shapes those into the members the aligner's padding math consumes. Two views of the same source, each shaped for its consumer.
 
 ## Section-Parsing Surface
 
@@ -88,7 +88,7 @@ pub(crate) fn sibling_entry_head(
     section_body_indent: usize,
     trimmed: &str,
 ) -> Option<EntryHead<'_>>;
-pub(crate) fn typed_entry_head(trimmed: &str) -> bool;
+pub(crate) fn typed_entry_head(trimmed: &str) -> Option<EntryHead<'_>>;
 ```
 
 `section_heading` returns the heading a line opens with, read without its trailing `:`, matching a Title-case word or multi-word run with every word capitalized, so Google's canonical headings (`Args:`, `Attributes:`, `Raises:`, `Returns:`, `Yields:`), Numpy's multi-word headings (`Other Parameters:`, `See Also:`), and project-specific custom headings (`Inputs:`, `Steps:`, `Outputs:`) all qualify. `sibling_entry_head` reads a line as the `name: description` head of a sibling to the entry above it, returning an `EntryHead` carrying that name with any `*` or `**` prefix excluded, the byte offset where its description begins, and the offset of the separating `:`, found through the shared `unbracketed_colon`, which skips a colon nested inside a parenthesized type (*`markup (str): a string`*) or a bracketed subscript and reads a walrus `:=` as one operator rather than as the separator. A head opens only at the section body indent, one `INDENT_STEP` past the body indent, so a deeper line returns `None` whatever its shape, leaving it a continuation of the entry above. `typed_entry_head` reports whether a head carries that parenthesized type group, which is what holds a `name (type):` line standing outside any section clear of the description wrap. An empty or whitespace-only paren pair restates no type and does not qualify, so a `name ():` line wraps as the prose it is. List-marker recognition (`-`, `*`, `+`, numeric openers) lives in the shared `LineScanner`, which classifies every structured shape it recognizes, along with their continuations, as verbatim passthrough, so a section entry whose description carries a bulleted list, a table, or an interactive example keeps it attached as part of the entry. A line opening on `{` or `[` joins that set as a bracketed literal, whereas `(` reads as prose because a parenthetical aside takes the same opener. An interpreted-text role closes its name on a backtick rather than on whitespace, so a line opening with one reads as prose and wraps with the paragraph carrying it.
@@ -106,15 +106,26 @@ pub(crate) struct Section<'a> {
     pub(crate) heading: &'a str,
 }
 
-pub(crate) struct SectionEntry<'a> {
+pub(crate) fn entry_runs<'src>(
+    source: &'src Source,
+    lit: &StringLiteral,
+) -> Vec<Vec<SectionEntry<'src>>>;
+
+pub(crate) fn entry_runs<'src>(
+    source: &'src Source,
+    lit: &StringLiteral,
+) -> Vec<Vec<DocstringEntry<'src>>>;
+
+pub(crate) struct DocstringEntry<'a> {
     pub(crate) colon: TextSize,
     pub(crate) name: &'a str,
+    pub(crate) paren: Option<TextSize>,
     pub(crate) range: TextRange,
     pub(crate) type_group: Option<TextRange>,
 }
 ```
 
-`entry_carrying_sections` returns one `Section` per section whose body carries at least one entry-shaped line, each holding the heading that opened it beside its entries. Each `SectionEntry` carries the parameter name, the source offset of its head line's separating `:`, the byte range covering the entry's head line through every line attached to it, and the range of the parenthesized type where the head carries one. The walker drops sections whose body is prose-only, since the content-shape check filters them out, and drops any docstring whose body is single-line or non-triple-quoted. Continuation attachment reuses the fence and list-indent state the leaf classifiers expose, so a section entry whose description embeds an indented code block keeps the block attached through any downstream reorder.
+`entry_carrying_sections` returns one `Section` per section whose body carries at least one entry-shaped line, each holding the heading that opened it beside its entries. Each `SectionEntry` carries the parameter name, the source offset of its head line's separating `:`, the byte range covering the entry's head line through every line attached to it, and the range of the parenthesized type where the head carries one. `entry_runs` returns those same entries alongside every contiguous run of type-bearing heads standing at the body indent outside any section, which is the wider set [[colon-targets]] aligns and the narrower set [[alphabetize]] sorts, and `SectionEntry::column_anchor` narrows a type group to the ones written in the Google `name (type)` form, since a `(` flush against its name documents a call and opens no type column, leaving its entry to join a run on the `:` alone. The walker drops sections whose body is prose-only, since the content-shape check filters them out, and drops any docstring whose body is single-line or non-triple-quoted. Continuation attachment reuses the fence and list-indent state the leaf classifiers expose, so a section entry whose description embeds an indented code block keeps the block attached through any downstream reorder.
 
 ## How `alphabetize` Composes
 

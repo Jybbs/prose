@@ -1,19 +1,24 @@
 //! Aligns `:` vertically in dict/mapping literals, annotated
-//! assignments, annotated function parameters, and Google-style
-//! docstring sections. Single-line groups, single-item groups, and
-//! groups whose rows open at differing column baselines pass through to
-//! `strip_align_padding` downstream. Each aligned `:` keeps a one-space
-//! buffer before it, and the dict, annotation, and parameter contexts
-//! collapse the gap after it to one space. Those three resolve within
-//! `code_line_length`, whereas a docstring run carries no cap and
-//! `docstring_wrap` reflows each entry to `docstring_line_length` from
-//! the padded column.
+//! assignments, annotated function parameters, and docstring entry
+//! runs. Single-line groups, single-item groups, and groups whose rows
+//! open at differing baselines pass through to `strip_align_padding`.
+//! Each aligned `:` keeps a one-space buffer before it, and the dict,
+//! annotation, and parameter contexts collapse the gap after it to one
+//! space and resolve within `code_line_length`, whereas a docstring run
+//! carries no cap. A docstring run settles its parenthesized type
+//! groups into a column first, so the `:` column measures the widths
+//! that padding leaves, and a `(` flush against its name documents a
+//! call rather than a type, opening no type column while its `:` still
+//! settles with the run.
 
 use ruff_diagnostics::Edit;
 
 use crate::{
     config::Config,
-    primitives::{aligner, colon_targets::ColonEmitter},
+    primitives::{
+        aligner,
+        colon_targets::{ColonEmitter, EntryColumns},
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -21,17 +26,19 @@ use crate::{
 pub(crate) struct AlignColons {
     docstring_settings: aligner::Settings,
     settings: aligner::Settings,
+    type_settings: aligner::Settings,
 }
 
 impl AlignColons {
     pub(crate) const MESSAGE: &'static str = "align consecutive `:` separators";
 
     pub(crate) fn from_config(config: &Config) -> Self {
-        let docstring_settings =
-            aligner::Settings::from(&config.rules.align_colons).with_singleton_strip();
+        let type_settings = aligner::Settings::from(&config.rules.align_colons);
+        let docstring_settings = type_settings.with_singleton_strip();
         Self {
             docstring_settings,
             settings: docstring_settings.with_line_length(config.code_width()),
+            type_settings,
         }
     }
 }
@@ -39,7 +46,7 @@ impl AlignColons {
 impl Rule for AlignColons {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut emitter = Emitter {
-            docstring_settings: self.docstring_settings,
+            rule: self,
             walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
         emitter.walk(source);
@@ -52,14 +59,25 @@ impl Rule for AlignColons {
 }
 
 struct Emitter<'a> {
-    docstring_settings: aligner::Settings,
+    rule: &'a AlignColons,
     walker: aligner::AlignWalker<'a>,
 }
 
 impl ColonEmitter for Emitter<'_> {
-    fn docstring_entries(&mut self, members: &[aligner::Member]) {
-        self.walker
-            .emit_if_candidate_under(self.docstring_settings, members);
+    /// Seats the type-group column first, then the `:` column against
+    /// the widths that padding leaves, recording both as one fix group
+    /// so a run settles in a single pass. The type-group column takes
+    /// no singleton strip, collapsing instead to its one-space buffer.
+    fn docstring_entries(&mut self, run: &EntryColumns) {
+        let (parens, colons) = run.settled_columns(self.walker.source, self.rule.type_settings);
+        let mut edits = self
+            .walker
+            .column_or_buffer_edits(self.rule.type_settings, &parens);
+        edits.extend(
+            self.walker
+                .candidate_edits_under(self.rule.docstring_settings, &colons),
+        );
+        self.walker.push_group(edits);
     }
 
     fn handle(&mut self, members: &[aligner::Member]) {

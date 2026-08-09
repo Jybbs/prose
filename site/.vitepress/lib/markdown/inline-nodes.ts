@@ -1,15 +1,25 @@
-import type Token from 'markdown-it/lib/token.mjs'
-
 import { inertEnv } from './inert-env'
+
+// The fields the walk reads off a parsed token, declared structurally so
+// neither parser interface below couples to markdown-it's own type layout.
+interface ParsedToken {
+  attrs    : [string, string][] | null
+  children : ParsedToken[] | null
+  content  : string
+  meta     : Record<string, unknown> | null
+  nesting  : 0 | 1 | -1
+  tag      : string
+  type     : string
+}
 
 // Both `MarkdownIt` and VitePress's `MarkdownRenderer` satisfy these, and they
 // disagree on the `highlight` option's return type.
 export interface BlockParser {
-  parse(src: string, env: object): Token[]
+  parse(src: string, env: object): ParsedToken[]
 }
 
 export interface InlineParser {
-  parseInline(src: string, env: object): Token[]
+  parseInline(src: string, env: object): ParsedToken[]
 }
 
 export type InlineNode =
@@ -22,7 +32,7 @@ export type InlineNode =
 
 // A leaf the walker cannot model would vanish silently from the rendered
 // prose, so an unmapped token type fails the build instead.
-function leaf(token: Token): InlineNode {
+function leaf(token: ParsedToken): InlineNode {
   switch (token.type) {
     case 'code_inline': return { kind: 'code', text: token.content }
     case 'softbreak':   return { kind: 'text', text: ' ' }
@@ -51,7 +61,7 @@ export function inlineNodes(md: InlineParser, src: string): InlineNode[] {
 
 // A block parse nests its inline content one level down, under an `inline`
 // token, whereas the open and close tokens around it nest like any other pair.
-function walk(tokens: readonly Token[]): InlineNode[] {
+function walk(tokens: readonly ParsedToken[]): InlineNode[] {
   const root  : InlineNode[]   = []
   const stack : InlineNode[][] = [root]
 
