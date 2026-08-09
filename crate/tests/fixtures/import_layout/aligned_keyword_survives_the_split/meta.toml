@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Aligned `import` Keyword Survives the Split"
+
+description = '''
+The over-long roster splits into repeated-prefix lines, and each repeated prefix carries the gap the source holds before its `import` keyword rather than collapsing to a single space. That gap is the column `align-imports` seats, so every split line lands on it.
+'''

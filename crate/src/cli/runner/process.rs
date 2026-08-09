@@ -204,7 +204,8 @@ pub(super) fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
 }
 
 /// Collects the as-written diagnostics, and with `validate` guards the
-/// would-be rewrite against an output that fails to re-parse or compile.
+/// would-be rewrite against an output that fails to re-parse, to compile,
+/// or to settle.
 fn diagnose_only(
     source: Source,
     pipeline: &Pipeline,
@@ -252,7 +253,9 @@ fn process_source(
 /// Runs the pipeline and assembles the outcome, deferring the rewrite
 /// to `rewrite`. The caller handles the diagnose-only pass, while the
 /// `diagnose_as_written` flag adds the as-written diagnostics an output
-/// format renders beside the rewrite.
+/// format renders beside the rewrite. A rewritten file passes the settle
+/// check before its outcome is built, so an unsettled rewrite fails
+/// rather than reaching the writer.
 fn run_and_assemble(
     source: Source,
     pipeline: &Pipeline,
@@ -265,6 +268,11 @@ fn run_and_assemble(
     match pipeline.run(source) {
         Ok((formatted, run_diagnostics)) => {
             let rewrite = rewrite(&formatted, &file);
+            if matches!(rewrite, Rewrite::Changed(_))
+                && let Err(e) = pipeline.reject_unsettled(&formatted)
+            {
+                return failed(ExitStatus::ConfigError, e);
+            }
             FileOutcome::Done {
                 cached: false,
                 diagnostics: diagnosed.unwrap_or(run_diagnostics),
@@ -281,16 +289,18 @@ fn run_and_assemble(
 mod tests {
     use std::assert_matches;
 
+    use rstest::rstest;
     use ruff_diagnostics::Edit;
     use tempfile::TempDir;
 
-    use super::super::report::status_from_outcomes;
-    use super::super::resolve::ConfigResolver;
+    use super::super::{report::status_from_outcomes, resolve::ConfigResolver};
     use super::*;
-    use crate::cache::RewriteKind;
-    use crate::config::Config;
-    use crate::rule::RuleId;
-    use crate::testing::{GroupSentinelRule, breaks_parse, parse, range};
+    use crate::{
+        cache::RewriteKind,
+        config::Config,
+        rule::RuleId,
+        testing::{GroupSentinelRule, breaks_parse, never_settles, parse, range},
+    };
 
     #[test]
     fn check_validate_fails_on_unparseable_rule_output() {
@@ -316,6 +326,18 @@ mod tests {
                 ..
             }
         );
+    }
+
+    #[rstest]
+    fn every_pass_refuses_a_rewrite_a_rule_still_edits(
+        #[values(Pass::Both, Pass::Rewrite, Pass::Diagnose { validate: true })] pass: Pass,
+    ) {
+        let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
+        let source = parse("x = 1\n");
+
+        let outcome = run_pipeline(source, &pipeline, pass);
+
+        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
     }
 
     #[test]
@@ -432,6 +454,8 @@ mod tests {
     #[test]
     fn run_pipeline_reports_unchanged_when_edits_cancel() {
         let range = range(0, 1);
+        // `x-to-y` still edits the cancelled output, so a settle check
+        // ahead of the `Rewrite::Changed` guard would fail this file.
         let pipeline = Pipeline::from_rules(vec![
             Box::new(GroupSentinelRule {
                 groups: vec![vec![Edit::range_replacement("y".to_owned(), range)]],

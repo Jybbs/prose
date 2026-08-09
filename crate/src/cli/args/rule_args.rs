@@ -17,8 +17,9 @@ pub(crate) struct CheckArgs {
     #[arg(conflicts_with = "stdin", value_name = "PATH")]
     pub(crate) paths: Vec<PathBuf>,
 
-    /// Confirm each file's would-be rewrite re-parses, surfacing an
-    /// unparseable rule output as a failure. Off by default.
+    /// Confirm each file's would-be rewrite re-parses and settles,
+    /// surfacing an unparseable rule output or a rule still editing the
+    /// rewrite as a failure. Off by default.
     #[arg(long)]
     pub(crate) validate: bool,
 }

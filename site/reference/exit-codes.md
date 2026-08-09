@@ -6,6 +6,10 @@ Every `prose check` and `prose format` invocation resolves into a discrete exit 
 Parse failures on a single file surface as exit code `3` for that file, leaving the rest of the walked tree to settle independently.
 :::
 
+::: info A File That Does Not Settle Is Left Alone
+When a rule still edits what the run wrote, that file is reported and skipped rather than rewritten, so the source on disk stays as the author left it. Narrowing the run with `--select` names the smallest set of rules that reproduces it.
+:::
+
 <ExitCodeMatrix />
 
 ## CI Gating

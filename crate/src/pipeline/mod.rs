@@ -6,7 +6,8 @@
 //! handing the new `Source` to the next rule. Registration order follows
 //! the data dependency, seating every rule that mutates a line's width,
 //! a group's member order, or a statement's position ahead of every rule
-//! that reads one.
+//! that reads one. The settle check re-applies the enabled rules to a
+//! completed run's output and names every rule still editing it.
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_python_ast::PythonVersion;
@@ -53,6 +54,36 @@ impl Pipeline {
         self
     }
 
+    /// Folds each rule's edits into `source` in registration order,
+    /// reparsing between rules and extending `diagnostics` with each
+    /// rule's format findings when the caller supplies one.
+    ///
+    /// # Errors
+    ///
+    /// Returns whichever `PipelineError` a rule's output draws from
+    /// [`reparse_or_reject`].
+    fn fold_rules(
+        &self,
+        source: Source,
+        mut diagnostics: Option<&mut Vec<Diagnostic>>,
+    ) -> Result<Source, PipelineError> {
+        let gate = compile_gate(&source, self.target_version);
+        self.rules.iter().try_fold(source, |source, rule| {
+            let rule_id = rule.id();
+            let Some((groups, new_text, map)) = woven_groups(&**rule, &source) else {
+                return Ok(source);
+            };
+            debug_assert!(
+                new_text != source.text(),
+                "rule `{rule_id}` emitted edits that produced identical text",
+            );
+            if let Some(collected) = diagnostics.as_deref_mut() {
+                collected.extend(format_diagnostics(&**rule, groups));
+            }
+            reparse_or_reject(&source, new_text, rule_id, map, gate)
+        })
+    }
+
     #[cfg(test)]
     fn is_empty(&self) -> bool {
         self.rules.is_empty()
@@ -89,6 +120,25 @@ impl Pipeline {
         crate::rule::KNOWN_IDS
     }
 
+    /// Rejects `source` when [`unsettled`](Self::unsettled) names any
+    /// rule, the state a completed run's output holds only when a
+    /// second pass would rewrite it.
+    ///
+    /// # Errors
+    ///
+    /// Returns `PipelineError::Unsettled` carrying the source's name
+    /// and every rule still emitting an edit against it.
+    pub(crate) fn reject_unsettled(&self, source: &Source) -> Result<(), PipelineError> {
+        let rules = self.unsettled(source);
+        if rules.is_empty() {
+            return Ok(());
+        }
+        Err(PipelineError::Unsettled {
+            file: source.source_file().name().to_owned(),
+            rules,
+        })
+    }
+
     /// This pipeline's enabled rule ids in registration order, the
     /// resolved selection that keys the check cache so two runs
     /// differing only in `--select` / `--ignore` key separately.
@@ -122,51 +172,48 @@ impl Pipeline {
         if source.suppression_map().file_is_suppressed() {
             return Ok((source, Vec::new()));
         }
-        let gate = compile_gate(&source, self.target_version);
-        let (source, mut diagnostics) = self.rules.iter().try_fold(
-            (source, Vec::new()),
-            |(source, mut diagnostics), rule| {
-                let rule_id = rule.id();
-                let Some((groups, new_text, map)) = woven_groups(&**rule, &source) else {
-                    return Ok((source, diagnostics));
-                };
-                debug_assert!(
-                    new_text != source.text(),
-                    "rule `{rule_id}` emitted edits that produced identical text",
-                );
-                diagnostics.extend(format_diagnostics(&**rule, groups));
-                let next = reparse_or_reject(&source, new_text, rule_id, map, gate)?;
-                Ok((next, diagnostics))
-            },
-        )?;
+        let mut diagnostics = Vec::new();
+        let source = self.fold_rules(source, Some(&mut diagnostics))?;
         diagnostics.extend(settled_lints(&self.rules, &source));
         Ok((source, diagnostics))
     }
 
+    /// The enabled rules whose edits would still rewrite `source`,
+    /// empty once the run has settled. Reads whichever subset this
+    /// pipeline carries, so a `--select` run answers for that subset
+    /// alone, and a file-level `# prose: off` answers empty. A rule
+    /// whose surviving groups do not splice, or splice back to the same
+    /// text, is left out.
+    pub fn unsettled(&self, source: &Source) -> Vec<RuleId> {
+        if source.suppression_map().file_is_suppressed() {
+            return Vec::new();
+        }
+        self.rules
+            .iter()
+            .filter_map(|rule| {
+                let (_, text, _) = woven_groups(&**rule, source)?;
+                (text != source.text()).then(|| rule.id())
+            })
+            .collect()
+    }
+
     /// Replays the editing rules to surface a rule whose output fails to
-    /// re-parse or to compile, discarding the rewritten text and the
-    /// diagnostics [`run`](Self::run) would build. `check` calls this when
-    /// [`diagnose`](Self::diagnose) flags format work, in place of the
-    /// full `run`.
+    /// re-parse, to compile, or to settle, discarding the rewritten text
+    /// and the diagnostics [`run`](Self::run) would build. `check` calls
+    /// this when [`diagnose`](Self::diagnose) flags format work, in place
+    /// of the full `run`.
     ///
     /// # Errors
     ///
     /// Returns `PipelineError::Reparse` when a rule's edit list produces
     /// text that does not re-parse as Python, `PipelineError::Compile`
-    /// when it parses but no longer compiles, and `PipelineError::Cell`
+    /// when it parses but no longer compiles, `PipelineError::Cell`
     /// when a notebook cell that parsed on its own before the rule ran no
-    /// longer does.
+    /// longer does, and `PipelineError::Unsettled` when a rule still
+    /// edits the replayed output.
     pub(crate) fn validate(&self, source: Source) -> Result<(), PipelineError> {
-        let gate = compile_gate(&source, self.target_version);
-        self.rules
-            .iter()
-            .try_fold(source, |source, rule| {
-                let Some((_, new_text, map)) = woven_groups(&**rule, &source) else {
-                    return Ok(source);
-                };
-                reparse_or_reject(&source, new_text, rule.id(), map, gate)
-            })
-            .map(drop)
+        let settled = self.fold_rules(source, None)?;
+        self.reject_unsettled(&settled)
     }
 }
 
@@ -207,20 +254,24 @@ fn woven_groups(
 
 #[cfg(test)]
 mod tests {
-    use std::assert_matches;
-    use std::sync::{Arc, Mutex};
+    use std::{
+        assert_matches,
+        sync::{Arc, Mutex},
+    };
 
     use itertools::Itertools;
     use ruff_diagnostics::Edit;
     use ruff_text_size::{TextRange, TextSize};
 
     use super::*;
-    use crate::config::Config;
-    use crate::diagnostics::Severity;
-    use crate::primitives::edit::singleton_groups;
-    use crate::testing::{
-        FUTURE_LEAD, GroupSentinelRule, assert_send_sync, breaks_compile, breaks_parse, notebook,
-        parse, range, self_overlapping,
+    use crate::{
+        config::Config,
+        diagnostics::Severity,
+        primitives::edit::singleton_groups,
+        testing::{
+            FUTURE_LEAD, GroupSentinelRule, assert_send_sync, breaks_compile, breaks_parse,
+            never_settles, notebook, parse, range, self_overlapping,
+        },
     };
 
     /// Test-only lint-only rule that returns the range list supplied
@@ -469,6 +520,44 @@ mod tests {
     #[test]
     fn pipeline_is_send_and_sync() {
         assert_send_sync::<Pipeline>();
+    }
+
+    #[test]
+    fn reject_unsettled_names_the_file_and_every_rule_still_editing() {
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(never_settles("first-widener")),
+            Box::new(never_settles("second-widener")),
+        ]);
+        let source = parse("x = 1\n");
+
+        let err = pipeline
+            .reject_unsettled(&source)
+            .expect_err("both rules still edit");
+
+        assert_matches!(
+            err,
+            PipelineError::Unsettled { ref file, ref rules }
+                if file == source.source_file().name()
+                    && rules.iter().map(RuleId::as_str).eq(["first-widener", "second-widener"])
+        );
+        assert_eq!(
+            err.to_string(),
+            format!(
+                "{} did not settle, `first-widener`, `second-widener` still edit the formatted output",
+                source.source_file().name(),
+            ),
+        );
+    }
+
+    #[test]
+    fn reject_unsettled_passes_a_settled_source() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: Vec::new(),
+            id: RuleId::from("emits-nothing"),
+        })]);
+        let source = parse("x = 1\n");
+
+        assert_matches!(pipeline.reject_unsettled(&source), Ok(()));
     }
 
     #[test]
@@ -739,6 +828,70 @@ mod tests {
     }
 
     #[test]
+    fn unsettled_answers_empty_under_a_file_level_suppression() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
+        let source = parse("# prose: off\nx = 1\n");
+
+        assert!(pipeline.unsettled(&source).is_empty());
+    }
+
+    #[test]
+    fn unsettled_names_a_rule_still_editing_a_notebook() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
+        let source = notebook(&["x = 1\n", "y = 2\n"]);
+
+        assert_eq!(pipeline.unsettled(&source), vec![RuleId::from("widener")]);
+    }
+
+    #[test]
+    fn unsettled_names_only_the_rules_whose_edits_would_rewrite() {
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(never_settles("widener")),
+            Box::new(GroupSentinelRule {
+                groups: Vec::new(),
+                id: RuleId::from("emits-nothing"),
+            }),
+            Box::new(self_overlapping()),
+        ]);
+        let source = parse("x = 1\n");
+
+        assert_eq!(
+            pipeline.unsettled(&source),
+            vec![RuleId::from("widener")],
+            "an empty group and an unspliceable one both leave the source settled",
+        );
+    }
+
+    #[test]
+    fn unsettled_reads_the_subset_the_pipeline_carries() {
+        let source = parse("x = 1\n");
+        let carried = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
+        let bare = Pipeline::empty();
+
+        assert_eq!(carried.unsettled(&source), vec![RuleId::from("widener")]);
+        assert!(bare.unsettled(&source).is_empty());
+    }
+
+    #[test]
+    fn unsettled_skips_a_rule_whose_edits_fall_in_a_suppressed_block() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
+        let source = parse("# prose: off\nx = 1\n# prose: on\n");
+
+        assert!(pipeline.unsettled(&source).is_empty());
+    }
+
+    #[test]
+    fn unsettled_skips_a_rule_whose_edits_splice_back_to_the_same_text() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![Edit::range_replacement("x".to_owned(), range(0, 1))]],
+            id: RuleId::from("rewrite-x-to-x"),
+        })]);
+        let source = parse("x = 1\n");
+
+        assert!(pipeline.unsettled(&source).is_empty());
+    }
+
+    #[test]
     fn validate_passes_a_clean_rewrite() {
         let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
             groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
@@ -766,6 +919,18 @@ mod tests {
         let source = parse("x = 1\n");
 
         assert!(pipeline.validate(source).is_ok());
+    }
+
+    #[test]
+    fn validate_surfaces_a_replay_a_rule_still_edits() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
+        let source = parse("x = 1\n");
+
+        assert_matches!(
+            pipeline.validate(source),
+            Err(PipelineError::Unsettled { rules, .. })
+                if rules.iter().map(RuleId::as_str).eq(["widener"])
+        );
     }
 
     #[test]

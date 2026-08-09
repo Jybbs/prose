@@ -538,6 +538,18 @@ export const glossary: Record<string, GlossaryEntry> = {
     families   : ['engine']
   },
 
+  'settle': {
+    aliases    : ['settled', 'settles', 'settling'],
+    definition : 'A file settles when no enabled rule would rewrite it again. `prose format` '
+               + 'confirms it over every file it rewrote and `prose check --validate` over '
+               + 'every file it would rewrite, naming the rule still editing rather than '
+               + 'emitting output a second run would change. The guarantee covers any subset '
+               + 'a project enables rather than the default set alone, so a `--select` run '
+               + 'settles in one pass too.',
+    families   : ['engine'],
+    href       : '/reference/pipeline-order#every-subset-settles'
+  },
+
   'stdin mode': {
     aliases    : ['--stdin', 'stdin'],
     definition : 'Stdin mode is the CLI shape that reads a single source from standard input '

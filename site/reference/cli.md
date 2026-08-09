@@ -62,7 +62,7 @@ Reports violations without modifying source, returning the canonical [**Exit Cod
 | `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count line, dropping the anchor and color |
 | `--stdin` | bool | off | Read source from stdin instead of the filesystem |
 | `--stdin-filename` | path | unset | Treat stdin as this path, its extension selecting the source type. A `.ipynb` name reads stdin as a notebook |
-| `--validate` | bool | off | Confirm each file's would-be rewrite re-parses, surfacing an unparseable rule output as a config error |
+| `--validate` | bool | off | Confirm each file's would-be rewrite re-parses and settles, surfacing an unparseable rule output or a rule still editing the rewrite as a config error |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules |
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules |
 | `PATH...` | one or more paths, or `-` | required when not `--stdin` | Files or directories to check, or `-` to read source from stdin |
@@ -178,7 +178,7 @@ A clean run anchors on 🪻, `check` violations or a `format` run's unfixed lint
 
 ANSI color draws on the project palette, with **Ube** on the anchor, **Celadon** on a clean count, and **Apricot** on a violation or change count. Each span renders as 24-bit color when the terminal advertises truecolor *(via `COLORTERM`)* and falls back to ANSI 8-color otherwise.
 
-`--quiet` / `-q` reduces the line to its bare count *(`5 diagnostics in 2 files.`)*, dropping the anchor emoji and color, which is the shape a CI log wants. A non-TTY stderr keeps the anchored line but strips color, so a redirected run stays readable without escape noise. `--color never` strips color while leaving the anchor. Under `--output-format json`, `sarif`, or `github`, the machine output on stdout stays untouched by the summary.
+`--quiet` / `-q` reduces the line to its bare count *(`5 diagnostics in 2 files.`)*, dropping the anchor emoji and color, which is the shape a CI log captures cleanly. A non-TTY stderr keeps the anchored line but strips color, so a redirected run stays readable without escape noise. `--color never` strips color while leaving the anchor. Under `--output-format json`, `sarif`, or `github`, the machine output on stdout stays untouched by the summary.
 
 `format --diff` heads each file's diff with a 🧵 `<path>` line on an interactive stdout. Off a TTY *(a pipe or redirect)* it keeps the plain `--- / +++` header instead, so the output stays a diff that `patch` and `delta` can read.
 

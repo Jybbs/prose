@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Aligned Colon Survives the Expand"
+
+description = '''
+Expanding the over-long list value re-renders every entry of the enclosing dict, and each entry's pre-colon padding carries through, including the one whose value opens a parenthesized multi-line string. That padding is the column `align-colons` seats, so dropping it on the re-render would leave the two rules trading the same line back and forth.
+'''

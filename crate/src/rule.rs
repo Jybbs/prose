@@ -7,8 +7,14 @@
 //! [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
 //! [`Pipeline::with_filters`] from a registry table.
 
-use std::{borrow::Cow, fmt, str::FromStr};
+use std::{
+    borrow::Cow,
+    collections::BTreeSet,
+    fmt::{self, Display},
+    str::FromStr,
+};
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use schemars::{JsonSchema, Schema, SchemaGenerator, json_schema};
 use serde::{Deserialize, Serialize};
@@ -150,10 +156,38 @@ impl Serialize for RuleId {
     }
 }
 
-/// The slugs whose output the rule named `slug` reads, empty for a rule
-/// that depends on nothing seated ahead of it and for an unknown slug.
-pub(crate) fn dependencies_of(slug: &str) -> &'static [&'static str] {
+/// The slugs the rule named `slug` must run behind, empty for a rule
+/// that settles wherever it sits and for an unknown slug.
+pub fn dependencies_of(slug: &str) -> &'static [&'static str] {
     slug_index(slug).map_or(&[], |i| PIPELINE_DEPENDENCIES[i])
+}
+
+/// Renders `rules` as a comma-separated list of backticked slugs.
+pub fn render_slugs(rules: &[RuleId]) -> impl Display + '_ {
+    rules
+        .iter()
+        .format_with(", ", |rule, f| f(&format_args!("`{rule}`")))
+}
+
+/// Whether `later`'s dependency column reaches `earlier`, directly or
+/// through the column of a rule it already names. `false` for an
+/// unknown slug on either side. Takes its pair in the opposite order
+/// from [`precedes`], which asks about registration rather than the
+/// declared column.
+pub fn runs_behind(later: &str, earlier: &str) -> bool {
+    let mut seen = BTreeSet::new();
+    let mut pending = vec![later];
+    while let Some(slug) = pending.pop() {
+        for dependency in dependencies_of(slug) {
+            if *dependency == earlier {
+                return true;
+            }
+            if seen.insert(*dependency) {
+                pending.push(dependency);
+            }
+        }
+    }
+    false
 }
 
 /// Returns `true` when `bytes` is a valid kebab-case slug. Non-empty,
@@ -181,7 +215,9 @@ const fn is_valid_slug(bytes: &[u8]) -> bool {
 }
 
 /// Returns `true` when `earlier` is registered before `later`, and
-/// `false` when either is absent from the registry.
+/// `false` when either is absent from the registry. Answers about the
+/// registry's own order rather than the declared column [`runs_behind`]
+/// walks, and takes its pair in the opposite order.
 const fn precedes(earlier: &str, later: &str) -> bool {
     match (slug_index(earlier), slug_index(later)) {
         (Some(a), Some(b)) => a < b,
@@ -221,7 +257,7 @@ const fn slug_index(slug: &str) -> Option<usize> {
 /// [`Pipeline::with_defaults`], and [`Pipeline::with_filters`] from a
 /// registry table. Each row leads with the rule's kebab-case slug,
 /// then its `[tool.prose.rules]` field name, config sub-table type,
-/// rule struct, and the slugs whose output it reads. The slug is the
+/// rule struct, and the slugs it must run behind. The slug is the
 /// single source consumed by `RuleId::from_str`, the
 /// `[tool.prose.rules.<slug>]` section name, the
 /// `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
@@ -244,7 +280,7 @@ macro_rules! register_rules {
         /// Each rule's one-line imperative, indexed alongside [`KNOWN_IDS`].
         const MESSAGES: &[&str] = &[$($ty::MESSAGE),*];
 
-        /// Each rule's dependency slugs, indexed alongside [`KNOWN_IDS`].
+        /// The slugs each rule runs behind, indexed alongside [`KNOWN_IDS`].
         const PIPELINE_DEPENDENCIES: &[&[&str]] = &[$(&[$($after),*]),*];
 
         // Asserts each declared dependency names a rule seated earlier.
@@ -394,24 +430,24 @@ register_rules! {
     "docstring-expand":             docstring_expand:             ToggleOnly                 => DocstringExpand            => ["docstring-frame"],
     "group-imports":                group_imports:                ToggleOnly                 => GroupImports               => [],
     "chain-layout":                 chain_layout:                 ChainLayoutConfig          => ChainLayout                => [],
-    "collection-layout":            collection_layout:            CollectionLayoutConfig     => CollectionLayout           => ["chain-layout"],
-    "call-layout":                  call_layout:                  CallLayoutConfig           => CallLayout                 => ["chain-layout", "collection-layout"],
+    "collection-layout":            collection_layout:            CollectionLayoutConfig     => CollectionLayout           => ["simplify-comprehensions", "chain-layout"],
+    "call-layout":                  call_layout:                  CallLayoutConfig           => CallLayout                 => ["shed-backslash-continuations", "chain-layout", "collection-layout"],
     "shed-super-args":              shed_super_args:              ToggleOnly                 => ShedSuperArgs              => ["call-layout"],
-    "signature-layout":             signature_layout:             SignatureLayoutConfig      => SignatureLayout            => [],
+    "signature-layout":             signature_layout:             SignatureLayoutConfig      => SignatureLayout            => ["collection-layout"],
     "stack-adjacent-strings":       stack_adjacent_strings:       ToggleOnly                 => StackAdjacentStrings       => ["chain-layout", "collection-layout", "call-layout", "signature-layout"],
-    "align-match-case":             align_match_case:             AlignmentConfig            => AlignMatchCase             => [],
-    "import-layout":                import_layout:                ImportLayoutConfig         => ImportLayout               => ["group-imports"],
-    "alphabetize":                  alphabetize:                  AlphabetizeConfig          => Alphabetize                => ["chain-layout", "collection-layout", "call-layout", "signature-layout", "import-layout"],
-    "band-constants":               band_constants:               BandConstantsConfig        => BandConstants              => ["alphabetize"],
-    "blank-lines":                  blank_lines:                  ToggleOnly                 => BlankLines                 => ["group-imports", "alphabetize"],
-    "align-imports":                align_imports:                AlignmentConfig            => AlignImports               => ["alphabetize", "blank-lines", "import-layout"],
-    "align-colons":                 align_colons:                 AlignmentConfig            => AlignColons                => [],
+    "align-match-case":             align_match_case:             AlignmentConfig            => AlignMatchCase             => ["shed-parentheses"],
+    "import-layout":                import_layout:                ImportLayoutConfig         => ImportLayout               => ["shed-backslash-continuations", "prune-inert-imports", "group-imports"],
+    "alphabetize":                  alphabetize:                  AlphabetizeConfig          => Alphabetize                => ["shed-parentheses", "chain-layout", "collection-layout", "call-layout", "signature-layout", "import-layout"],
+    "band-constants":               band_constants:               BandConstantsConfig        => BandConstants              => ["simplify-comprehensions", "alphabetize"],
+    "blank-lines":                  blank_lines:                  ToggleOnly                 => BlankLines                 => ["prune-inert-imports", "group-imports", "alphabetize", "band-constants"],
+    "align-imports":                align_imports:                AlignmentConfig            => AlignImports               => ["import-layout", "alphabetize", "band-constants", "blank-lines"],
+    "align-colons":                 align_colons:                 AlignmentConfig            => AlignColons                => ["shed-parentheses", "collection-layout", "signature-layout", "alphabetize", "band-constants"],
     "docstring-wrap":               docstring_wrap:               ToggleOnly                 => DocstringWrap              => ["docstring-frame", "docstring-expand", "align-colons"],
-    "align-equals":                 align_equals:                 AlignmentConfig            => AlignEquals                => ["collection-layout", "alphabetize", "align-colons"],
+    "align-equals":                 align_equals:                 AlignmentConfig            => AlignEquals                => ["strip-trailing-commas", "shed-parentheses", "collection-layout", "alphabetize", "band-constants", "align-colons"],
     "align-comparisons":            align_comparisons:            AlignmentConfig            => AlignComparisons           => [],
-    "strip-align-padding":          strip_align_padding:          ToggleOnly                 => StripAlignPadding          => ["align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"],
+    "strip-align-padding":          strip_align_padding:          ToggleOnly                 => StripAlignPadding          => ["shed-parentheses", "align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"],
     "comment-spacing":              comment_spacing:              ToggleOnly                 => CommentSpacing             => [],
-    "align-comments":               align_comments:               AlignmentConfig            => AlignComments              => ["strip-align-padding", "comment-spacing"],
+    "align-comments":               align_comments:               AlignmentConfig            => AlignComments              => ["strip-trailing-commas", "strip-align-padding", "comment-spacing"],
     "bare-imports":                 bare_imports:                 BareImportsConfig          => BareImports                => [],
     "miscased-constants":           miscased_constants:           MiscasedConstantsConfig    => MiscasedConstants          => [],
     "reassigned-constants":         reassigned_constants:         ReassignedConstantsConfig  => ReassignedConstants        => [],
@@ -439,7 +475,14 @@ mod tests {
     fn dependencies_of_returns_the_declared_predecessors() {
         assert_eq!(
             dependencies_of("align-equals"),
-            ["collection-layout", "alphabetize", "align-colons"],
+            [
+                "strip-trailing-commas",
+                "shed-parentheses",
+                "collection-layout",
+                "alphabetize",
+                "band-constants",
+                "align-colons",
+            ],
         );
     }
 
@@ -493,6 +536,24 @@ mod tests {
             let parsed: RuleId = id.to_string().parse().expect("known id parses");
             assert_eq!(parsed, *id);
         }
+    }
+
+    #[test]
+    fn runs_behind_reaches_a_dependency_through_another_rules_column() {
+        assert!(
+            !dependencies_of("align-comments").contains(&"align-colons"),
+            "the direct column does not name it",
+        );
+        assert!(runs_behind("align-comments", "align-colons"));
+    }
+
+    #[rstest]
+    #[case("align-comparisons", "shed-parentheses")]
+    #[case("shed-parentheses", "align-comments")]
+    #[case("not-a-rule", "align-colons")]
+    #[case("align-colons", "not-a-rule")]
+    fn runs_behind_rejects_a_slug_no_column_reaches(#[case] later: &str, #[case] earlier: &str) {
+        assert!(!runs_behind(later, earlier));
     }
 
     #[test]

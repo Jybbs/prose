@@ -3,7 +3,7 @@ consumedBy: [cli, wasm]
 consumes: [edit, rule-id, source, suppression-map]
 layer: orchestration
 stability: public
-summary: "Runs registered rules in deterministic order, reparses between rules, returns the final source."
+summary: "Runs registered rules in deterministic order, reparses between rules, returns the final source, and answers which rules a buffer still leaves unsettled."
 tagline: deterministic rule runner
 ---
 
@@ -11,7 +11,7 @@ tagline: deterministic rule runner
 
 <PrimitiveLayout primitive="pipeline">
 
-*Pipeline* is the value `prose format` and `prose check` resolve into. It carries the registered rules in their canonical order and exposes two ways to run them. `run` applies each rule's edits to a fresh buffer, reparses between rules so every downstream pass reads a settled AST, and emits the final [[source]] plus a diagnostic list, while `diagnose` collects every rule's findings against the source as written for reporting.
+*Pipeline* is the value `prose format` and `prose check` resolve into. It carries the registered rules in their canonical order and exposes three ways to read them. `run` applies each rule's edits to a fresh buffer, reparses between rules so every downstream pass reads a settled AST, and emits the final [[source]] plus a diagnostic list, `diagnose` collects every rule's findings against the source as written for reporting, and `unsettled` answers which of the carried rules would still rewrite a buffer a run has already produced.
 
 ## Public Surface
 
@@ -34,6 +34,8 @@ tagline: deterministic rule runner
 
 `diagnose(&self, source: &Source) -> Vec<Diagnostic>` collects every enabled rule's findings against the unmodified source, applying no edits and never reparsing, so each range stays anchored to the source as written rather than to an intermediate rewrite. `prose check` and `prose server` report through `diagnose`, where a rendered diagnostic points at the file the author wrote, while `run` feeds the rewritten text behind `prose format`'s diff, on-disk rewrite, and would-reformat summary. Both consult the same [[suppression-map]] and rule set, diverging only in that `diagnose` reads every rule against the original where `run` reads each against the prior rule's reparsed output.
 
+`unsettled(&self, source: &Source) -> Vec<RuleId>` names every rule this pipeline carries whose edits would still rewrite `source`, and answers empty for a buffer that has settled. It reads the subset the pipeline was built with rather than the default set, so a `--select` run answers for that selection alone, and a file carrying a file-level `# prose: off` answers empty because no rule reaches it. `prose format` runs it over every file it rewrote and `prose check --validate` over every file it would rewrite, both refusing the rewrite rather than emitting output a second run would change.
+
 `Diagnostic` carries the per-finding payload returned in the `Vec`:
 
 ```rust
@@ -55,10 +57,11 @@ pub enum PipelineError {
     Cell { cell: OneIndexed, rule: RuleId, source: ParseError },
     Compile { error: SemanticSyntaxError, rule: RuleId },
     Reparse { rule: RuleId, source: ParseError },
+    Unsettled { file: String, rules: Vec<RuleId> },
 }
 ```
 
-Every variant names the rule whose output failed. A `Reparse` error means a rule produced syntactically invalid Python, a `Compile` error means the output parses yet fails the semantic-syntax check Python's own `compile` applies, and a `Cell` error means a notebook cell that parsed on its own before the rule ran no longer does, naming that cell by its position in the notebook. All three are rule-authoring bugs rather than consumer-recoverable conditions. The intermediate `Source` is dropped either way, leaving no partial output for the caller to inspect.
+Every variant names the rules whose output failed. A `Reparse` error means a rule produced syntactically invalid Python, a `Compile` error means the output parses yet fails the semantic-syntax check Python's own `compile` applies, a `Cell` error means a notebook cell that parsed on its own before the rule ran no longer does, naming that cell by its position in the notebook, and an `Unsettled` error means the run finished with a rule still editing what it wrote, naming the file and every such rule. All four are rule-authoring bugs rather than consumer-recoverable conditions. The intermediate `Source` is dropped either way, leaving no partial output for the caller to inspect.
 
 ## Determinism
 

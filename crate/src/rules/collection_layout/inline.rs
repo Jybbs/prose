@@ -26,7 +26,7 @@ impl<'a> Layouter<'a> {
 
     /// The range covering `expr` with explicit parens recovered against
     /// `parent`.
-    fn range_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> TextRange {
+    pub(super) fn range_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> TextRange {
         self.source.paren_aware_range(expr.into(), parent)
     }
 

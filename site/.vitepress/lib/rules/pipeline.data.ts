@@ -30,14 +30,14 @@ export default defineLoader({
     const rules      = readPipeline(import.meta.url).map(({ after, position, slug }) => {
       const entry      = discovered.get(slug)
       const familyMeta = entry ? registries.FAMILY_META[entry.family] : null
-      const reads      = after.length > 0 ? ` · reads ${after.join(', ')}` : ''
+      const behind     = after.length > 0 ? ` · runs behind ${after.join(', ')}` : ''
       return {
         documented  : entry !== undefined,
         family      : entry?.family ?? null,
         familyBadge : familyMeta?.badge ?? null,
         position,
         slug,
-        title       : `${slug}${entry ? ` (${entry.family})` : ''}${reads}`
+        title       : `${slug}${entry ? ` (${entry.family})` : ''}${behind}`
       }
     })
     return { rules }

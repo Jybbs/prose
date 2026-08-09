@@ -12,7 +12,7 @@ use ruff_python_ast::{
     AnyNodeRef, DictItem, Expr, InterpolatedStringElement,
     visitor::{Visitor, walk_expr},
 };
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::{
@@ -181,7 +181,8 @@ impl<'a> Layouter<'a> {
             return None;
         }
         let key_text = self.repaired_key(key, parent, item_indent);
-        let padding = pre_colon_padding(self.key_value_gap(key, &item.value));
+        let value_start = self.range_with_parens(&item.value, parent).start();
+        let padding = pre_colon_padding(self.key_value_gap(key.end(), value_start));
         let hang_column = item_indent + INDENT_STEP;
         let value_text = self.serialize_expr(&item.value, parent, hang_column, hang_column);
         let hang_prefix = " ".repeat(hang_column);
@@ -201,10 +202,11 @@ impl<'a> Layouter<'a> {
             .any(|dict| range.contains_range(*dict))
     }
 
-    /// The source text between a keyed dict entry's `key` and its
-    /// `value`, the span carrying the `:` and the padding around it.
-    fn key_value_gap(&self, key: &Expr, value: &Expr) -> &'a str {
-        self.source.slice(TextRange::new(key.end(), value.start()))
+    /// The source text between a keyed dict entry's `key` and the
+    /// `value_start` its parens are recovered against, the span carrying
+    /// the `:` and the padding around it.
+    fn key_value_gap(&self, key_end: TextSize, value_start: TextSize) -> &'a str {
+        self.source.slice(TextRange::new(key_end, value_start))
     }
 
     /// The one-line form of a fractured `expr`, or `None` when it holds
@@ -287,15 +289,21 @@ impl<'a> Layouter<'a> {
         };
         let key_text = self.repaired_key(key, parent, indent);
         let value_column = indent + key_text.width() + 2;
-        let value_text = self.serialize_expr(&item.value, parent, value_column, indent);
+        let value_range = self.range_with_parens(&item.value, parent);
+        let value_text = self
+            .replacement_for(&item.value, value_column, indent)
+            .map_or_else(|| Cow::Borrowed(self.source.slice(value_range)), Cow::Owned);
         let width = key_text.width() + 2 + value_text.width();
-        let gap = self.key_value_gap(key, &item.value);
+        let gap = self.key_value_gap(key.end(), value_range.start());
         // A rewritten key drops the source slice's alignment padding, so
         // the padded separator and the borrowed round-trip both hold only
         // while the key passes through unchanged.
         let padded = is_align_colons_gap(gap) && matches!(key_text, Cow::Borrowed(_));
         let text = if padded && matches!(value_text, Cow::Borrowed(_)) {
-            Cow::Borrowed(self.source.slice(item))
+            Cow::Borrowed(
+                self.source
+                    .slice(TextRange::new(key.start(), value_range.end())),
+            )
         } else {
             let separator = if padded { gap } else { ": " };
             Cow::Owned(format!("{key_text}{separator}{value_text}"))
