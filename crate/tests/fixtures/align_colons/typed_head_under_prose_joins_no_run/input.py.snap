@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_colons/typed_head_under_prose_joins_no_run/input.py
+---
+class Frame:
+    """
+    A summary paragraph opening the docstring.
+    handler (Callable): reads as prose rather than a head.
+    codec (bytes): reads as prose too.
+    """

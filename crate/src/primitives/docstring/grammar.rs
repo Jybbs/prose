@@ -12,12 +12,15 @@ static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 /// A parsed `name: description` entry head. `colon` is the byte offset
-/// of the separating `:` within the trimmed line, and `desc_start` is
-/// the byte offset where the description begins.
+/// of the separating `:` within the trimmed line, `desc_start` is the
+/// byte offset where the description begins, and `paren` the byte
+/// offset of the parenthesized type group's `(` where the head names a
+/// type.
 pub(crate) struct EntryHead<'a> {
     pub(crate) colon: usize,
     pub(crate) desc_start: usize,
     pub(crate) name: &'a str,
+    pub(crate) paren: Option<usize>,
 }
 
 /// True when `trimmed` opens with a Title-case word or multi-word
@@ -40,11 +43,11 @@ pub(crate) fn sibling_entry_head(
         .and_then(entry_head)
 }
 
-/// True when `trimmed` is an entry head carrying a parenthesized type
-/// group, the `name (type): description` shape.
-pub(crate) fn typed_entry_head(trimmed: &str) -> bool {
-    unbracketed_colon(trimmed).is_some_and(|colon| trimmed[..colon].trim_end().ends_with(')'))
-        && entry_head(trimmed).is_some()
+/// Parses `trimmed` as an entry head carrying a parenthesized type
+/// group, the `name (type): description` shape. `None` for a head
+/// naming no type and for any line that is no entry head at all.
+pub(crate) fn typed_entry_head(trimmed: &str) -> Option<EntryHead<'_>> {
+    entry_head(trimmed).filter(|head| head.paren.is_some())
 }
 
 /// Parses `trimmed` as a Google-style `name: description` entry head,
@@ -67,9 +70,9 @@ fn entry_head(trimmed: &str) -> Option<EntryHead<'_>> {
     if !name.starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_') {
         return None;
     }
-    let paren_type = after_stars[name_end..].trim();
-    let has_type_group = paren_type.starts_with('(') && paren_type.ends_with(')');
-    if !(paren_type.is_empty() || has_type_group) {
+    let type_group = after_stars[name_end..].trim();
+    let has_type_group = type_group.starts_with('(') && type_group.ends_with(')');
+    if !(type_group.is_empty() || has_type_group) {
         return None;
     }
     let description = trimmed[colon + 1..]
@@ -82,6 +85,7 @@ fn entry_head(trimmed: &str) -> Option<EntryHead<'_>> {
         colon,
         desc_start: trimmed.len() - description.len(),
         name,
+        paren: has_type_group.then(|| head.len() - type_group.len()),
     })
 }
 
@@ -110,6 +114,12 @@ mod tests {
 
     fn name_and_start(head: Option<EntryHead<'_>>) -> Option<(&str, usize)> {
         head.map(|h| (h.name, h.desc_start))
+    }
+
+    #[test]
+    fn entry_head_leaves_paren_unset_for_a_head_naming_no_type() {
+        let head = entry_head("markup: a string.").expect("entry head parses");
+        assert!(head.paren.is_none());
     }
 
     #[test]
@@ -232,16 +242,30 @@ mod tests {
         assert!(sibling_entry_head(8, 8, "just prose").is_none());
     }
 
-    #[test]
-    fn typed_entry_head_requires_a_parenthesized_type_group() {
-        assert!(typed_entry_head("markup (str): a string."));
-        assert!(typed_entry_head("records (List[Tuple[int, str]]): rows"));
-        assert!(typed_entry_head("*args (int): payload"));
-        assert!(!typed_entry_head("markup: a string."));
-        assert!(!typed_entry_head("name (only: parens)"));
-        assert!(!typed_entry_head("two words (int): not an entry"));
-        assert!(!typed_entry_head("See https://example.com for details."));
-        assert!(!typed_entry_head("just prose with no colon"));
+    #[rstest]
+    fn typed_entry_head_rejects_a_head_naming_no_type(
+        #[values(
+            "markup: a string.",
+            "name (only: parens)",
+            "two words (int): not an entry",
+            "See https://example.com for details.",
+            "just prose with no colon"
+        )]
+        line: &str,
+    ) {
+        assert!(typed_entry_head(line).is_none());
+    }
+
+    #[rstest]
+    #[case("markup (str): a string.", 7)]
+    #[case("records (List[Tuple[int, str]]): rows", 8)]
+    #[case("*args (int): payload", 6)]
+    #[case("**kwargs   (dict): extra", 11)]
+    #[case("padded      (str)  : already aligned", 12)]
+    fn typed_entry_head_reports_the_type_group_offset(#[case] line: &str, #[case] expected: usize) {
+        let head = typed_entry_head(line).expect("a type-bearing head parses");
+        assert_eq!(head.paren, Some(expected));
+        assert!(line[expected..].starts_with('('));
     }
 
     #[test]

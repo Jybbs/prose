@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Flush Paren Reads as a Call Signature"
+
+description = '''
+A head whose `(` sits flush against its name documents a call rather than a type, so it opens no type-group column and the aligner leaves the line as the author wrote it.
+'''

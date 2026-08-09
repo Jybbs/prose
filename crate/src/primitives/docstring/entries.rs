@@ -1,6 +1,8 @@
-//! Google-style section walking: the entries of each Title-case-headed
-//! section, with the continuation lines attached to each entry. The
-//! per-line grammar the walk dispatches on lives in `grammar`.
+//! Docstring entry walking: the entries of each Title-case-headed
+//! Google-style section with the continuation lines attached to each,
+//! and each contiguous run of type-bearing heads sitting at the body
+//! indent outside every section. The per-line grammar the walk
+//! dispatches on lives in `grammar`.
 
 use ruff_python_ast::StringLiteral;
 use ruff_source_file::{Line, UniversalNewlineIterator};
@@ -8,42 +10,64 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{
     body::{DocstringBody, triple_quoted_body},
-    grammar::{section_heading, sibling_entry_head},
+    grammar::{EntryHead, section_heading, sibling_entry_head, typed_entry_head},
     scan::{LineScan, LineScanner, ScannedLine},
 };
 use crate::source::Source;
 
-/// One `name: description` entry inside a Google-style section. The
-/// range covers the entry's head line through the last continuation
-/// line attached to it, excluding the trailing newline. `colon` is the
-/// source offset of the head line's separating `:`.
-pub(crate) struct SectionEntry<'a> {
+/// One `name: description` entry inside a docstring. The range covers
+/// the entry's head line through the last continuation line attached to
+/// it, excluding the trailing newline. `colon` is the source offset of
+/// the head line's separating `:`, and `paren` the source offset of its
+/// parenthesized type group's `(` where the head names a type.
+pub(crate) struct DocstringEntry<'a> {
     pub(crate) colon: TextSize,
     pub(crate) name: &'a str,
+    pub(crate) paren: Option<TextSize>,
     pub(crate) range: TextRange,
 }
 
-impl Ranged for SectionEntry<'_> {
+impl Ranged for DocstringEntry<'_> {
     fn range(&self) -> TextRange {
         self.range
     }
 }
 
+/// One run of docstring entries the walk yields, either the entries of
+/// a Title-case-headed section or a contiguous run of type-bearing
+/// heads at the body indent outside every section.
+struct EntryRun<'src> {
+    entries: Vec<DocstringEntry<'src>>,
+    sectioned: bool,
+}
+
 struct EntryWalker<'src> {
-    open_entry: Option<SectionEntry<'src>>,
-    open_section: Option<Vec<SectionEntry<'src>>>,
+    open_entry: Option<DocstringEntry<'src>>,
+    open_loose: Vec<DocstringEntry<'src>>,
+    open_section: Option<Vec<DocstringEntry<'src>>>,
+    prose_open: bool,
+    runs: Vec<EntryRun<'src>>,
     scanner: LineScanner,
-    sections: Vec<Vec<SectionEntry<'src>>>,
 }
 
 impl<'src> EntryWalker<'src> {
     fn new(body_indent_chars: usize) -> Self {
         Self {
             open_entry: None,
+            open_loose: Vec::new(),
             open_section: None,
+            prose_open: false,
+            runs: Vec::new(),
             scanner: LineScanner::new(body_indent_chars),
-            sections: Vec::new(),
         }
+    }
+
+    /// Closes the open loose run and the open description paragraph,
+    /// the pair a blank line, a verbatim region, and a section heading
+    /// all reset.
+    fn close_prose(&mut self) {
+        self.finish_loose();
+        self.prose_open = false;
     }
 
     fn consume(&mut self, line: Line<'src>) {
@@ -57,7 +81,7 @@ impl<'src> EntryWalker<'src> {
         } = self.scanner.scan_line(line.as_str());
 
         match scan {
-            LineScan::Blank => {}
+            LineScan::Blank => self.close_prose(),
             LineScan::Body => {
                 self.consume_body(line_start, line_end, indent, trimmed, indent_chars);
             }
@@ -67,11 +91,16 @@ impl<'src> EntryWalker<'src> {
             | LineScan::ListMarker
             | LineScan::Verbatim
             | LineScan::VerbatimOpen => {
+                self.close_prose();
                 self.extend_open_entry(line_end);
             }
         }
     }
 
+    /// Dispatches a body line on its indent. A line at the body indent
+    /// opens a section, joins the loose run, or opens a description
+    /// paragraph, whereas a deeper line continues the open entry inside
+    /// a section and a shallower one joins the paragraph.
     fn consume_body(
         &mut self,
         line_start: TextSize,
@@ -84,11 +113,26 @@ impl<'src> EntryWalker<'src> {
         if indent_chars == body_indent {
             self.finish_section();
             if section_heading(trimmed) {
+                self.close_prose();
                 self.open_section = Some(Vec::new());
+                return;
             }
+            let Some(head) = typed_entry_head(trimmed).filter(|_| !self.prose_open) else {
+                self.finish_loose();
+                self.prose_open = true;
+                return;
+            };
+            let entry = entry(line_start, line_end, indent, trimmed, &head);
+            if entry.paren.is_none() {
+                self.finish_loose();
+                return;
+            }
+            self.open_loose.push(entry);
             return;
         }
         if self.open_section.is_none() {
+            self.finish_loose();
+            self.prose_open = indent_chars < body_indent;
             return;
         }
         if let Some(head) = sibling_entry_head(
@@ -97,11 +141,7 @@ impl<'src> EntryWalker<'src> {
             trimmed,
         ) {
             self.finish_entry();
-            self.open_entry = Some(SectionEntry {
-                colon: line_start + TextSize::of(indent) + TextSize::of(&trimmed[..head.colon]),
-                name: head.name,
-                range: TextRange::new(line_start, line_end),
-            });
+            self.open_entry = Some(entry(line_start, line_end, indent, trimmed, &head));
             return;
         }
         self.extend_open_entry(line_end);
@@ -123,10 +163,23 @@ impl<'src> EntryWalker<'src> {
             .push(entry);
     }
 
+    fn finish_loose(&mut self) {
+        let entries = std::mem::take(&mut self.open_loose);
+        self.push_run(entries, false);
+    }
+
     fn finish_section(&mut self) {
         self.finish_entry();
-        if let Some(entries) = self.open_section.take().filter(|e| !e.is_empty()) {
-            self.sections.push(entries);
+        if let Some(entries) = self.open_section.take() {
+            self.push_run(entries, true);
+        }
+    }
+
+    /// Records `entries` as a run, dropping an empty one so a section
+    /// with no entry and a run that never opened both yield nothing.
+    fn push_run(&mut self, entries: Vec<DocstringEntry<'src>>, sectioned: bool) {
+        if !entries.is_empty() {
+            self.runs.push(EntryRun { entries, sectioned });
         }
     }
 }
@@ -139,7 +192,56 @@ impl<'src> EntryWalker<'src> {
 pub(crate) fn entry_carrying_sections<'src>(
     source: &'src Source,
     lit: &StringLiteral,
-) -> Vec<Vec<SectionEntry<'src>>> {
+) -> Vec<Vec<DocstringEntry<'src>>> {
+    walk(source, lit)
+        .into_iter()
+        .filter(|run| run.sectioned)
+        .map(|run| run.entries)
+        .collect()
+}
+
+/// Every run of entries `lit`'s body carries in source order, one per
+/// entry-carrying Google-style section and one per contiguous run of
+/// type-bearing heads at the body indent outside every section. A
+/// sectionless run gathers the heads `docstring-wrap` passes through
+/// verbatim, leaving out a head that reflows into the prose above it.
+pub(crate) fn entry_runs<'src>(
+    source: &'src Source,
+    lit: &StringLiteral,
+) -> Vec<Vec<DocstringEntry<'src>>> {
+    walk(source, lit)
+        .into_iter()
+        .map(|run| run.entries)
+        .collect()
+}
+
+/// Builds the entry a head line opens, resolving the head's in-line
+/// byte offsets against the line's start and indent. `paren` lands only
+/// for a type group written with a space, since a `(` flush against its
+/// name documents a call rather than a type.
+fn entry<'src>(
+    line_start: TextSize,
+    line_end: TextSize,
+    indent: &str,
+    trimmed: &'src str,
+    head: &EntryHead<'src>,
+) -> DocstringEntry<'src> {
+    let head_start = line_start + TextSize::of(indent);
+    DocstringEntry {
+        colon: head_start + TextSize::of(&trimmed[..head.colon]),
+        name: head.name,
+        paren: head
+            .paren
+            .filter(|at| trimmed[..*at].ends_with(char::is_whitespace))
+            .map(|at| head_start + TextSize::of(&trimmed[..at])),
+        range: TextRange::new(line_start, line_end),
+    }
+}
+
+/// Walks `lit`'s body and returns every entry run it carries, in
+/// source order. Yields nothing unless `lit` is a multi-line
+/// triple-quoted docstring sitting on its own line.
+fn walk<'src>(source: &'src Source, lit: &StringLiteral) -> Vec<EntryRun<'src>> {
     let Some(body) = triple_quoted_body(source, lit).filter(DocstringBody::is_multiline) else {
         return Vec::new();
     };
@@ -148,21 +250,27 @@ pub(crate) fn entry_carrying_sections<'src>(
         walker.consume(line);
     }
     walker.finish_section();
-    walker.sections
+    walker.finish_loose();
+    walker.runs
 }
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
     use crate::{
         primitives::docstring::body_docstring,
-        testing::{first_def, parse},
+        testing::{first_class, first_def, parse},
     };
 
-    fn entry_names<'a>(sections: &[Vec<SectionEntry<'a>>]) -> Vec<Vec<&'a str>> {
-        sections
-            .iter()
-            .map(|s| s.iter().map(|e| e.name).collect())
+    fn class_docstring(source: &Source) -> &StringLiteral {
+        body_docstring(&first_class(source).body).expect("class body starts with a docstring")
+    }
+
+    fn entry_names<'a>(runs: &[Vec<DocstringEntry<'a>>]) -> Vec<Vec<&'a str>> {
+        runs.iter()
+            .map(|run| run.iter().map(|e| e.name).collect())
             .collect()
     }
 
@@ -214,6 +322,17 @@ mod tests {
         let lit = first_function_docstring(&s);
         let sections = entry_carrying_sections(&s, lit);
         assert_eq!(entry_names(&sections), vec![vec!["b", "a"], vec!["z", "y"]]);
+    }
+
+    #[test]
+    fn entry_carrying_sections_omits_a_sectionless_run() {
+        let src = "class C:\n    \"\"\"\n    Args:\n        foo: one\n\n    handler (Callable): a sectionless head.\n    codec (bytes): another.\n    \"\"\"\n";
+        let s = parse(src);
+        let lit = class_docstring(&s);
+        assert_eq!(
+            entry_names(&entry_carrying_sections(&s, lit)),
+            vec![vec!["foo"]],
+        );
     }
 
     #[test]
@@ -280,5 +399,62 @@ mod tests {
         let lit = first_function_docstring(&s);
         let sections = entry_carrying_sections(&s, lit);
         assert_eq!(entry_names(&sections), vec![vec!["value"]]);
+    }
+
+    #[rstest]
+    #[case::blank_line_splits_a_run(
+        "class C:\n    \"\"\"\n    handler (Callable): one.\n\n    codec (bytes): two.\n    \"\"\"\n",
+        vec![vec!["handler"], vec!["codec"]]
+    )]
+    #[case::verbatim_line_splits_a_run(
+        "class C:\n    \"\"\"\n    handler (Callable): one.\n    ---\n    codec (bytes): two.\n    \"\"\"\n",
+        vec![vec!["handler"], vec!["codec"]]
+    )]
+    #[case::verbatim_block_swallows_the_head_below_it(
+        "class C:\n    \"\"\"\n    handler (Callable): one.\n    >>> probe()\n    codec (bytes): two.\n    \"\"\"\n",
+        vec![vec!["handler"]]
+    )]
+    #[case::a_section_and_a_loose_run_stay_apart(
+        "class C:\n    \"\"\"\n    Args:\n        foo: one\n\n    handler (Callable): a sectionless head.\n    codec (bytes): another.\n    \"\"\"\n",
+        vec![vec!["foo"], vec!["handler", "codec"]]
+    )]
+    #[case::a_flush_paren_reads_as_a_call_signature(
+        "class C:\n    \"\"\"\n    divmod(self, other): The pair.\n    trunc(self): Truncates self.\n    \"\"\"\n",
+        Vec::new()
+    )]
+    #[case::a_head_naming_no_type_opens_no_run(
+        "class C:\n    \"\"\"\n    handler: no type group.\n    codec: none either.\n    \"\"\"\n",
+        Vec::new()
+    )]
+    #[case::a_head_under_prose_opens_no_run(
+        "class C:\n    \"\"\"\n    A summary line.\n    handler (Callable): reflowed into the prose above it.\n    \"\"\"\n",
+        Vec::new()
+    )]
+    #[case::a_loose_run_above_a_section_stays_apart(
+        "class C:\n    \"\"\"\n    handler (Callable): a sectionless head.\n\n    Args:\n        foo: one\n    \"\"\"\n",
+        vec![vec!["handler"], vec!["foo"]]
+    )]
+    #[case::a_head_under_dedented_prose_opens_no_run(
+        "class C:\n    \"\"\"\n  dedented opening prose.\n    handler (Callable): reflowed into the prose above it.\n    \"\"\"\n",
+        Vec::new()
+    )]
+    fn entry_runs_groups_each_contiguous_run(#[case] src: &str, #[case] expected: Vec<Vec<&str>>) {
+        let s = parse(src);
+        let lit = class_docstring(&s);
+        assert_eq!(entry_names(&entry_runs(&s, lit)), expected);
+    }
+
+    #[test]
+    fn entry_runs_reports_each_type_group_offset() {
+        let src = "class C:\n    \"\"\"\n    handler (Callable): one.\n    codec (bytes): two.\n    \"\"\"\n";
+        let s = parse(src);
+        let lit = class_docstring(&s);
+        for entry in &entry_runs(&s, lit)[0] {
+            let paren = entry.paren.expect("a type-bearing head reports its `(`");
+            assert_eq!(
+                s.slice(TextRange::new(paren, paren + TextSize::of('('))),
+                "(",
+            );
+        }
     }
 }

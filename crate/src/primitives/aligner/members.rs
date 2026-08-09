@@ -32,15 +32,17 @@ pub(super) fn baseline(source: &Source, member: Member) -> usize {
 pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member {
     let line_start = source.text().line_start(anchor);
     let gap = line_gap_before(source, anchor);
+    let width = source
+        .slice(TextRange::new(line_start, gap.start()))
+        .trim_whitespace_start()
+        .width();
     Member {
         gap,
         line_start,
         op_width: 0,
+        settled_width: width,
         value_gap: None,
-        width: source
-            .slice(TextRange::new(line_start, gap.start()))
-            .trim_whitespace_start()
-            .width(),
+        width,
     }
 }
 
@@ -132,12 +134,14 @@ fn range_anchored_member(
     anchor: TextSize,
     extra_width: usize,
 ) -> Member {
+    let width = source.slice(target).width() + extra_width;
     Member {
         gap: TextRange::new(target.end(), anchor),
         line_start: source.text().line_start(anchor),
         op_width: 0,
+        settled_width: width,
         value_gap: None,
-        width: source.slice(target).width() + extra_width,
+        width,
     }
 }
 

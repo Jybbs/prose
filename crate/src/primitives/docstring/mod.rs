@@ -4,8 +4,8 @@
 //! Implementors of [`DocstringHandler`] receive every such docstring
 //! literal in source order via the trait's `walk` method, which skips an
 //! implicitly concatenated docstring expression where `docstring_slots`
-//! reports the slot whatever its part count. The `body`, `grammar`,
-//! `scan`, and `section` submodules carry the text-level helpers for
+//! reports the slot whatever its part count. The `body`, `entries`,
+//! `grammar`, and `scan` submodules carry the text-level helpers for
 //! walking a docstring body directly.
 
 use ruff_diagnostics::Edit;
@@ -21,14 +21,14 @@ use crate::{
 };
 
 mod body;
+mod entries;
 mod grammar;
 mod scan;
-mod section;
 
 pub(crate) use body::{DocstringBody, docstring_body, indent_prefix, triple_quoted_body};
+pub(crate) use entries::{entry_carrying_sections, entry_runs};
 pub(crate) use grammar::{section_heading, sibling_entry_head, typed_entry_head};
 pub(crate) use scan::{LineScan, LineScanner, ScannedLine};
-pub(crate) use section::entry_carrying_sections;
 
 /// Receiver for the docstring walker. Implementors handle each
 /// docstring `StringLiteral` reached in source order. Call `walk`

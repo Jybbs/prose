@@ -34,22 +34,21 @@ pub(crate) use walker::AlignWalker;
 
 /// One row in an alignment group.
 ///
-/// `width` is the display-column width of the row's left-hand-side
-/// region, from the start of the member to the start of the gap. `gap`
-/// is the whitespace range ending immediately before the aligned
-/// token that the rule will rewrite. `line_start` is the offset of
-/// the start of the source line containing the gap. `op_width` is the
-/// display width of the aligned operator itself, used to right-align
-/// variable-width operators within a group. Rules with fixed-width
-/// operators leave `op_width` at zero. `value_gap` is the span from
-/// just past the operator to the value, which an aligned row rewrites
-/// to one space, and stays `None` for a rule that leaves the
-/// post-operator spacing alone.
+/// `gap` is the whitespace ending immediately before the aligned token
+/// the rule rewrites, on the source line opening at `line_start`.
+/// `width` measures the row's left-hand side as the source carries it
+/// and `settled_width` measures it once an earlier column has padded
+/// the content ahead of the gap, so the column math reads the second
+/// while the baseline reads the first. `op_width` right-aligns a
+/// variable-width operator and stays zero otherwise. `value_gap` runs
+/// from just past the operator to the value, `None` where the rule
+/// leaves that spacing alone.
 #[derive(Clone, Copy)]
 pub(crate) struct Member {
     pub gap: TextRange,
     pub line_start: TextSize,
     pub op_width: usize,
+    pub settled_width: usize,
     pub value_gap: Option<TextRange>,
     pub width: usize,
 }
@@ -77,6 +76,14 @@ impl Member {
     /// display width, opting the member into right-alignment math.
     pub(crate) fn with_op_width(mut self, op_width: usize) -> Self {
         self.op_width = op_width;
+        self
+    }
+
+    /// Returns a copy of `self` measuring its left-hand side at `width`
+    /// for the column math, the width the row carries once an earlier
+    /// column has padded the content ahead of the gap.
+    pub(crate) fn with_settled_width(mut self, width: usize) -> Self {
+        self.settled_width = width;
         self
     }
 

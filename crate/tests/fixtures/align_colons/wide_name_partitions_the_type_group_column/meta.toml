@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Outlier Name Partitions Out of the Type-Group Column"
+
+description = '''
+`max-shift` bounds the type-group column the way it bounds the `:` column, so a name whose width breaks the spread starts a fresh column rather than dragging its neighbors' type groups across the page.
+'''

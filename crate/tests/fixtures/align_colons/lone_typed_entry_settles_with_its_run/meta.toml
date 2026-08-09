@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lone Type Group Settles Beside Untyped Siblings"
+
+description = '''
+One type group among untyped entries reaches no shared type-group column, so it collapses to its one-space buffer inside the same pass that seats the `:` column, leaving both columns settled on the first run.
+'''

@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_colons/overwide_type_gap_pulls_the_column_left/input.py
+---
+def dial(host, port):
+    """
+    Args:
+        host (str) : the remote.
+        port (int) : the port.
+    """
+    return None

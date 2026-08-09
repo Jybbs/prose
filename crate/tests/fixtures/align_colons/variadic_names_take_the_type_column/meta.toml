@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Variadic Names Measure Into the Type Column"
+
+description = '''
+A `*args` or `**kwargs` entry carries its star prefix into the width the type-group column measures, so the stars sit inside the column rather than hanging off its left edge.
+'''

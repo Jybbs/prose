@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Verbatim Block Leaves the Run Beneath It Intact"
+
+description = '''
+A block indented past the docstring body passes through untouched outside any section, and the run of type-bearing heads below it still settles both columns rather than reading as a continuation of the block.
+'''

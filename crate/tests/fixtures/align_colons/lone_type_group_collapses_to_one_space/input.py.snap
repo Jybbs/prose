@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/strip_align_padding/lone_type_group_collapses_to_one_space/input.py
+---
+def render(markup):
+    """
+    Returns:
+        markup (str): the rendered console markup.
+    """
+    return markup

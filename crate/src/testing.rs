@@ -64,13 +64,14 @@ impl Rule for GroupSentinelRule {
 
 /// Builds an alignment `Member` whose pre-operator whitespace is `gap`,
 /// carrying no operator width and no post-operator gap. Layer
-/// `with_op_width` or `with_value_gap` on top for a row that needs
-/// either.
+/// `with_op_width`, `with_settled_width`, or `with_value_gap` on top
+/// for a row that needs one.
 pub(crate) fn align_member(gap: TextRange, line_start: u32, width: usize) -> aligner::Member {
     aligner::Member {
         gap,
         line_start: TextSize::new(line_start),
         op_width: 0,
+        settled_width: width,
         value_gap: None,
         width,
     }
