@@ -1,0 +1,7 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/restated_types/async_definition_flagged/input.py
+---
+restated-types@142..149
+restated-types@96..101

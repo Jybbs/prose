@@ -856,6 +856,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
+        "restated-types": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
         "shed-backslash-continuations": {
           "anyOf": [
             {
@@ -1264,6 +1277,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "reassigned-constants": {
           "allow": [],
+          "enabled": true
+        },
+        "restated-types": {
           "enabled": true
         },
         "shed-backslash-continuations": {

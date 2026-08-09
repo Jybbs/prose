@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Empty Paren Pair Is Not a Type Group"
+
+description = '''
+Parens holding nothing but whitespace restate no type, so neither entry draws a report even though both parameters carry annotations.
+'''

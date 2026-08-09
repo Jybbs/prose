@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "The Parameter-Documenting Heading Synonyms"
+
+description = '''
+`Parameters:` and `Keyword Arguments:` document parameters the way `Args:` does, so an entry under either resolves against the signature.
+'''

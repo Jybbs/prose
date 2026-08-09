@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Which Class-Body Declarations Count as Annotated Fields"
+
+description = '''
+A `ClassVar` field is annotated like any other, so its entry draws a report. A field declared inside an `if TYPE_CHECKING:` block resolves against nothing, because the walk reads the class body's direct children rather than descending into a nested block.
+'''

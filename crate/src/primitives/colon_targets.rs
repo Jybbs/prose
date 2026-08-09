@@ -211,6 +211,7 @@ fn docstring_sections(source: &Source, body: &[Stmt]) -> Vec<Vec<aligner::Member
         .iter()
         .map(|section| {
             section
+                .entries
                 .iter()
                 .map(|entry| aligner::line_anchored_member(source, entry.colon))
                 .collect()

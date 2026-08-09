@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Module Docstring Documents No Signature"
+
+description = '''
+A module carries no parameters and no class body, so an entry inside its docstring resolves against nothing.
+'''

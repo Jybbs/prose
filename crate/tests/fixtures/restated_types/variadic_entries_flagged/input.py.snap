@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/restated_types/variadic_entries_flagged/input.py
+---
+def relay(*args: int, **kwargs: str):
+    """
+    Forward every argument onward.
+
+    Args:
+        *args (int): Positional payload.
+        **kwargs (str): Keyword payload.
+    """

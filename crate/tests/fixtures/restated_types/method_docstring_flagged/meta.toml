@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Method Resolves Against Its Own Signature"
+
+description = '''
+The walk reaches a definition nested inside a class body, so a method's `Args:` entry resolves against that method's parameters.
+'''
