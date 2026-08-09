@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/sole_dict_arg_explodes_around_its_block/input.py
+---
+foo(
+    {
+        "alpha" : 1,
+        "beta"  : 2,
+        "delta" : 4,
+        "gamma" : 3
+    }
+)

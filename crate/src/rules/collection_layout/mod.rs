@@ -11,6 +11,11 @@
 //! field, or a folded multi-line string holds a construct at its source
 //! shape.
 //!
+//! A member the expansion holds rather than lays out itself moves with
+//! the row it lands on, its continuation lines hanging from the item
+//! column, and a member running through a multi-line string stays at
+//! its source column instead.
+//!
 //! `keep_multiline_literals` holds a literal the author laid out as a
 //! flush bracketed column of two or more entries, so it re-expands to
 //! the canonical shape rather than joining, and a held literal keeps

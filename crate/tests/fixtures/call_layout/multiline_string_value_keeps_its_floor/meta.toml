@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Multi-Line String Value Explodes the List and Keeps Its Floor"
+
+description = '''
+A value whose break falls inside one string literal explodes the list the same way any other row-spanning argument does, while the literal itself stays at its source column, since moving it would pad the string's own interior.
+'''

@@ -1,13 +1,14 @@
 //! Shared layout helpers for laying a construct out across lines,
 //! covering one-per-line expansion, greedy line filling, reading the
-//! bracket shape a block already carries, and re-indenting an
-//! already-exploded block.
+//! bracket shape a block already carries, measuring where a block's
+//! continuation lines hang, and moving them to a new column.
 
 use std::{borrow::Cow, ops::Range};
 
-use ruff_python_ast::Expr;
+use ruff_python_ast::{Expr, StringLike, helpers::any_over_expr};
 use ruff_python_trivia::textwrap::{dedent, indent};
-use ruff_text_size::TextRange;
+use ruff_source_file::UniversalNewlines;
+use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
     primitives::{INDENT_STEP, inline::indent_width},
@@ -70,6 +71,14 @@ pub(crate) fn explode_parens(
     out
 }
 
+/// True where `block`, the text of one construct, hangs from the row
+/// `start` opens on rather than from a column inside that row, so the
+/// whole block travels with the row. A run aligned under an interior
+/// bracket would land against nothing once the row moves.
+pub(crate) fn hangs_from_its_row(source: &Source, start: TextSize, block: &str) -> bool {
+    continuation_indent(block).is_some_and(|body| body <= source.line_indent_width(start))
+}
+
 /// True when `slice`, a bracketed construct's source text, already
 /// carries the flush column shape the expand path emits, its opening
 /// bracket ending its line and its closing bracket opening its own.
@@ -130,17 +139,36 @@ pub(crate) fn pack(
     lines
 }
 
-/// Re-indents the multi-line bracket `block` that `explode_parens` or
-/// collection layout emits at one indent so its closing bracket lands
-/// at `to`, keeping the body's relative depth. The opening line stays
-/// flush, since the caller places it inline after the keyword. The body
-/// dedents to its least-indented line, the closing bracket, then
-/// re-indents to `to`. Only the exploded form re-indents, so a
-/// single-line `block` and one whose opening bracket shares its first
-/// line with content both return borrowed. A caller excludes a block
-/// whose interior spans a string literal, whose lines `indent` would pad.
-pub(crate) fn reindent_block(block: &str, to: usize) -> Cow<'_, str> {
-    let Some((open, body)) = flush_bracket_open(block) else {
+/// `range`'s source text with its continuation lines moved so it hangs
+/// from `indent`, and borrowed where it holds no break, hangs from a
+/// column inside its own row, or carries a string part spanning rows
+/// whose interior the move would pad. `strings` names the expressions
+/// whose parts the move must leave alone.
+pub(crate) fn placed_block<'s, 'e>(
+    source: &'s Source,
+    range: TextRange,
+    strings: impl IntoIterator<Item = &'e Expr>,
+    indent: usize,
+) -> Cow<'s, str> {
+    let block = source.slice(range);
+    if hangs_from_its_row(source, range.start(), block)
+        && !strings
+            .into_iter()
+            .any(|expr| spans_a_string_part(source, expr))
+    {
+        return reindent_continuation(block, indent);
+    }
+    Cow::Borrowed(block)
+}
+
+/// Re-indents `block`'s continuation lines so its least-indented line
+/// lands at `to`, keeping the body's relative depth. The opening line
+/// stays as written, since the caller places it inline after whatever
+/// precedes it. A single-line `block` returns borrowed. A caller
+/// screens the block through [`spans_a_string_part`] first, whose
+/// interior `to` would otherwise pad.
+pub(crate) fn reindent_continuation(block: &str, to: usize) -> Cow<'_, str> {
+    let Some((open, body)) = block.split_once('\n') else {
         return Cow::Borrowed(block);
     };
     Cow::Owned(format!(
@@ -149,18 +177,32 @@ pub(crate) fn reindent_block(block: &str, to: usize) -> Cow<'_, str> {
     ))
 }
 
-/// The columns [`reindent_block`] moves `block`'s body by when it
+/// The columns [`reindent_continuation`] moves `block`'s body by when it
 /// re-indents to `to`, zero where it leaves the block borrowed.
 pub(crate) fn reindent_shift(block: &str, to: usize) -> isize {
-    match reindent_block(block, to) {
-        Cow::Borrowed(_) => 0,
-        Cow::Owned(moved) => closing_indent(&moved) as isize - closing_indent(block) as isize,
-    }
+    continuation_indent(block).map_or(0, |body| to.cast_signed() - body.cast_signed())
 }
 
-/// The indent width of `block`'s last line.
-fn closing_indent(block: &str) -> usize {
-    indent_width(block.rsplit_once('\n').map_or(block, |(_, last)| last))
+/// True where a string part inside `expr` itself spans rows, whose
+/// interior a re-indent would pad. A stacked run of single-line parts
+/// carries its break between parts and moves whole, so it reads false.
+pub(crate) fn spans_a_string_part(source: &Source, expr: &Expr) -> bool {
+    any_over_expr(expr, |e| {
+        StringLike::try_from(e)
+            .is_ok_and(|run| run.parts().any(|part| source.contains_line_break(part)))
+    })
+}
+
+/// The least indent among `block`'s continuation lines, blank lines
+/// skipped, and `None` where `block` carries no continuation. The value
+/// is the column [`reindent_continuation`] moves to `to`, so the lines
+/// are counted the way the `dedent` behind that move counts them.
+fn continuation_indent(block: &str) -> Option<usize> {
+    let (_, body) = block.split_once('\n')?;
+    body.universal_newlines()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| indent_width(&line))
+        .min()
 }
 
 /// Splits `block` at its first line break when that opening line holds
@@ -177,8 +219,40 @@ mod tests {
     use std::assert_matches;
 
     use rstest::rstest;
+    use ruff_text_size::Ranged;
 
     use super::*;
+    use crate::testing::{first_expr, parse};
+
+    #[rstest]
+    #[case("[a, b]", None)]
+    #[case("{\n    a,\n}", Some(0))]
+    #[case("helper(a,\n       b)", Some(7))]
+    #[case("{\n        a,\n    }", Some(4))]
+    #[case("{\n    a,\n\n    b,\n}", Some(0))]
+    #[case("\"aaa\"\n    \"bbb\"", Some(4))]
+    #[case("{\r\n    a,\r\n}", Some(0))]
+    #[case("{\n        a,\n    \n}", Some(0))]
+    fn continuation_indent_reads_the_shallowest_continuation_line(
+        #[case] block: &str,
+        #[case] expected: Option<usize>,
+    ) {
+        assert_eq!(continuation_indent(block), expected);
+    }
+
+    #[rstest]
+    #[case("f(\n    a,\n)", true)]
+    #[case("[\n    a,\n]", true)]
+    #[case("f(a,\n  b)", false)]
+    #[case("f(a)", false)]
+    fn hangs_from_its_row_rejects_a_run_under_an_interior_bracket(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let expr = first_expr(&source);
+        assert_eq!(hangs_from_its_row(&source, expr.start(), src), expected);
+    }
 
     #[rstest]
     #[case("[\n    1,\n    2,\n]", true)]
@@ -225,18 +299,8 @@ mod tests {
     }
 
     #[test]
-    fn reindent_block_borrows_a_packed_first_line() {
-        // Content beside the opening bracket marks a packed block, not
-        // the exploded form, so it holds its source shape.
-        assert_matches!(
-            reindent_block("(a, b,\n    c)", 8),
-            Cow::Borrowed("(a, b,\n    c)")
-        );
-    }
-
-    #[test]
-    fn reindent_block_borrows_a_single_line_block() {
-        assert_matches!(reindent_block("{a: b}", 4), Cow::Borrowed("{a: b}"));
+    fn reindent_continuation_borrows_a_single_line_block() {
+        assert_matches!(reindent_continuation("{a: b}", 4), Cow::Borrowed("{a: b}"));
     }
 
     #[rstest]
@@ -249,16 +313,23 @@ mod tests {
         "[\n        a,\n        [\n            b,\n        ],\n    ]"
     )]
     #[case("{\n    a,\n\n    b,\n}", 4, "{\n        a,\n\n        b,\n    }")]
-    fn reindent_block_shifts_body_to_target_keeping_relative_depth(
+    #[case(
+        "helper(\n    b,\n    c\n)",
+        4,
+        "helper(\n        b,\n        c\n    )"
+    )]
+    #[case("\"aaa\"\n\"bbb\"", 4, "\"aaa\"\n    \"bbb\"")]
+    #[case("(a, b,\n    c)", 8, "(a, b,\n        c)")]
+    fn reindent_continuation_shifts_body_to_target_keeping_relative_depth(
         #[case] block: &str,
         #[case] to: usize,
         #[case] expected: &str,
     ) {
-        assert_eq!(reindent_block(block, to), expected);
+        assert_eq!(reindent_continuation(block, to), expected);
     }
 
     #[rstest]
-    #[case("(a, b,\n    c)", 8, 0)]
+    #[case("(a, b,\n    c)", 8, 4)]
     #[case("{a: b}", 4, 0)]
     #[case("{\n    a,\n    b,\n}", 4, 4)]
     #[case("{\n        a,\n    }", 0, -4)]
@@ -268,5 +339,22 @@ mod tests {
         #[case] expected: isize,
     ) {
         assert_eq!(reindent_shift(block, to), expected);
+    }
+
+    #[rstest]
+    #[case("\"\"\"line1\nline2\"\"\"", true)]
+    #[case("[\n    a,\n    \"\"\"line1\nline2\"\"\",\n]", true)]
+    #[case("f\"\"\"head\nline2 {value}\"\"\"", true)]
+    #[case("(\"aaa\"\n\"bbb\")", false)]
+    #[case("[\n    a,\n    b,\n]", false)]
+    #[case("helper(\n    a,\n    b\n)", false)]
+    #[case("[a, b]", false)]
+    fn spans_a_string_part_reads_each_part_rather_than_the_run(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let expr = first_expr(&source);
+        assert_eq!(spans_a_string_part(&source, expr), expected);
     }
 }
