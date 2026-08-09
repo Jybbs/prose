@@ -1,0 +1,33 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/restated_types/annotated_entries_flagged/input.py
+---
+[
+  {
+    "code": "restated-types",
+    "end_location": {
+      "column": 19,
+      "row": 6
+    },
+    "fix": null,
+    "location": {
+      "column": 14,
+      "row": 6
+    },
+    "message": "`host` restates a type the signature already annotates"
+  },
+  {
+    "code": "restated-types",
+    "end_location": {
+      "column": 24,
+      "row": 7
+    },
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 7
+    },
+    "message": "`timeout` restates a type the signature already annotates"
+  }
+]

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Head Below a Paragraph Joins No Run"
+
+description = '''
+`docstring-wrap` reflows a type-bearing head sitting directly under prose into the paragraph above it, so the aligner leaves those lines alone rather than padding a column the reflow would collapse.
+'''

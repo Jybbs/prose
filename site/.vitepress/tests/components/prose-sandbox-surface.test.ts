@@ -10,7 +10,7 @@ import { domTest, isHidden }  from '../dom'
 
 const drawSettled = (): Promise<void> => promiseTimeout(550)
 
-vi.mock('../../lib/sandbox/highlight', () => import('../highlight-stub'))
+vi.mock('../../lib/shared/highlight', () => import('../highlight-stub'))
 
 vi.mock('../../lib/markdown/magic-move', () => ({
   precompileMagicMove: () => Promise.resolve([{ tokens: [] }, { tokens: [] }])
@@ -169,5 +169,14 @@ describe('ProseSandboxSurface', () => {
 
     // The freshly enabled underline draws back in rather than staying staged.
     expect(wrapper.get('.lint-flag[data-rule="r1"]').classes()).not.toContain('lint-undrawn')
+  })
+
+  domTest('washes a whole-row finding rather than underlining it', async ({ reducedMotion }) => {
+    reducedMotion(true)
+    const sandbox = fakeSandbox('x = 1')
+    sandbox.diagnostics.value = [{ ...FINDING, end_location: { column: 6, row: 1 } }]
+    const wrapper = await mountSurface(sandbox)
+
+    expect(wrapper.get('.lint-flag[data-rule="r1"]').classes()).toContain('lint-flag-line')
   })
 })

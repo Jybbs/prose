@@ -27,7 +27,7 @@ use crate::{
         INDENT_STEP,
         edit::narrowed_replacement,
         fracture,
-        layout::{is_column_shaped, is_layoutable, item_indent},
+        layout::{is_column_shaped, is_layoutable, item_indent, placed_block},
         reserve,
     },
     rules::stack_adjacent_strings::concatenated_run,
@@ -117,8 +117,8 @@ impl<'a> Layouter<'a> {
     /// Collects the bracket pair and per-item text, atomicity, and source
     /// range for the collection at `expr`, each child serialized through
     /// `serialize_expr` / `serialize_dict_item` at `indent` so nested
-    /// collections arrive already laid out. An item needing no rewrite
-    /// borrows its source slice.
+    /// collections arrive already laid out. An item needing neither a
+    /// rewrite nor a move borrows its source slice.
     fn gather_items(&self, expr: &Expr, indent: usize) -> GatheredItems<'a> {
         let parent = AnyNodeRef::from(expr);
         if let Expr::Dict(d) = expr {
@@ -207,6 +207,16 @@ impl<'a> Layouter<'a> {
     /// the `:` and the padding around it.
     fn key_value_gap(&self, key_end: TextSize, value_start: TextSize) -> &'a str {
         self.source.slice(TextRange::new(key_end, value_start))
+    }
+
+    /// `expr`'s paren-recovered source range placed at `indent`.
+    fn placed_slice(&self, expr: &Expr, parent: AnyNodeRef, indent: usize) -> Cow<'a, str> {
+        placed_block(
+            self.source,
+            self.range_with_parens(expr, parent),
+            Some(expr),
+            indent,
+        )
     }
 
     /// The one-line form of a fractured `expr`, or `None` when it holds
@@ -312,10 +322,10 @@ impl<'a> Layouter<'a> {
     }
 
     /// Serializes `expr` into a child slot of an enclosing expand.
-    /// Dispatches through `replacement_for`, falling back to a
-    /// paren-recovered source slice when no rewrite applies.
-    /// `column` and `indent` differ for dict values, where the key
-    /// text sits between the line indent and the value's own start.
+    /// Dispatches through `replacement_for`, falling back to the
+    /// paren-recovered source slice placed at `indent` when no rewrite
+    /// applies. `column` and `indent` differ for dict values, where the
+    /// key text sits between the line indent and the value's own start.
     fn serialize_expr(
         &self,
         expr: &Expr,
@@ -323,10 +333,8 @@ impl<'a> Layouter<'a> {
         column: usize,
         indent: usize,
     ) -> Cow<'a, str> {
-        self.replacement_for(expr, column, indent).map_or_else(
-            || Cow::Borrowed(self.slice_with_parens(expr, parent)),
-            Cow::Owned,
-        )
+        self.replacement_for(expr, column, indent)
+            .map_or_else(|| self.placed_slice(expr, parent, indent), Cow::Owned)
     }
 
     /// True for a multi-entry literal the author laid out as a flush

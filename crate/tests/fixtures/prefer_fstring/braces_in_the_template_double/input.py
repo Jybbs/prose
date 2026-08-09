@@ -1,0 +1,1 @@
+shape = "{outer} %s" % (inner,)

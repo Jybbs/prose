@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Docstring Entry's Type Group Takes a Column of Its Own"
+
+description = '''
+Every entry's parenthesized type group opens on one shared column, each name padded to the widest beside it, and the `:` column then settles past the widest `name (type)` pair. Both columns resolve in the same pass, so the `:` measures the widths the type-group padding leaves rather than the ones the source wrote.
+'''

@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "Doubled Braces Survive the Rewrite"
+
+description = '''
+The escaped braces stay escaped, so the rendered text matches what the call
+produced.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Unannotated Signature Leaves the Docstring Types Alone"
+
+description = '''
+The same entries under a signature carrying no annotations stay silent, because the docstring is then the only place the type is written.
+'''

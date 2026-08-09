@@ -19,7 +19,7 @@ use crate::{
     primitives::{
         edit::{apply_inline_edits, insert_edit, singleton_groups, splice_preserves_tree},
         inline::{end_column, folded_line_form, soft_wrap_runs},
-        walk::{Descent, ParentedProbe, walk_parented_exprs},
+        walk::{Descent, filter_map_over_parented_exprs},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -41,12 +41,10 @@ impl ShedParentheses {
 
 impl Rule for ShedParentheses {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let mut scout = Scout {
-            candidates: Vec::new(),
-            source,
-        };
-        walk_parented_exprs(source.ast(), &mut scout);
-        let mut candidates = scout.candidates;
+        let mut candidates =
+            filter_map_over_parented_exprs(source.ast(), Descent::Into, |expr, parent| {
+                candidate(source, expr, parent)
+            });
         candidates.sort_unstable_by_key(|c| (c.pair.start(), Reverse(c.pair.end())));
         let mut shedder = Shedder {
             code_line_length: self.code_line_length,
@@ -69,41 +67,6 @@ struct Candidate<'src> {
     bare: Cow<'src, str>,
     inner: TextRange,
     pair: TextRange,
-}
-
-/// Collects every structurally redundant pair in a module, leaving the
-/// budget to [`Shedder`].
-struct Scout<'a> {
-    candidates: Vec<Candidate<'a>>,
-    source: &'a Source,
-}
-
-impl<'a> Scout<'a> {
-    /// The candidate `expr` contributes, or `None` where no pair
-    /// encloses it, the pair carries syntax, its interior has no
-    /// single-line form, or stripping the pair shifts the parse.
-    fn candidate(&self, expr: &'a Expr, parent: AnyNodeRef) -> Option<Candidate<'a>> {
-        let pair = parenthesized_range(expr.into(), parent, self.source.tokens())?;
-        // A walrus binding keeps its pair whatever the context, since the
-        // grammar needs it almost everywhere, and a multi-line return
-        // annotation is signature-layout's to reshape, so neither sheds here.
-        if expr.is_named_expr()
-            || (is_return_annotation(expr, parent) && self.source.contains_line_break(pair))
-            || self.source.intersects_comment(pair)
-        {
-            return None;
-        }
-        let inner = expr.range();
-        let bare = folded_line_form(expr, self.source.slice(inner))?;
-        splice_preserves_tree(self.source, pair, &bare).then_some(Candidate { bare, inner, pair })
-    }
-}
-
-impl<'a> ParentedProbe<'a> for Scout<'a> {
-    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
-        self.candidates.extend(self.candidate(expr, parent));
-        Descent::Into
-    }
 }
 
 /// Turns a candidate list into edits, walking it in source order so each
@@ -184,6 +147,29 @@ impl Shedder<'_> {
             0,
         )
     }
+}
+
+/// The candidate `expr` contributes, or `None` where no pair encloses
+/// it, the pair carries syntax, its interior has no single-line form, or
+/// stripping the pair shifts the parse.
+fn candidate<'src>(
+    source: &'src Source,
+    expr: &'src Expr,
+    parent: AnyNodeRef,
+) -> Option<Candidate<'src>> {
+    let pair = parenthesized_range(expr.into(), parent, source.tokens())?;
+    // A walrus binding keeps its pair whatever the context, since the
+    // grammar needs it almost everywhere, and a multi-line return
+    // annotation is signature-layout's to reshape, so neither sheds here.
+    if expr.is_named_expr()
+        || (is_return_annotation(expr, parent) && source.contains_line_break(pair))
+        || source.intersects_comment(pair)
+    {
+        return None;
+    }
+    let inner = expr.range();
+    let bare = folded_line_form(expr, source.slice(inner))?;
+    splice_preserves_tree(source, pair, &bare).then_some(Candidate { bare, inner, pair })
 }
 
 /// True when `expr` is the return annotation of the function `parent`.

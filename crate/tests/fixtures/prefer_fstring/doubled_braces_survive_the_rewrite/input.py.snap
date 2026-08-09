@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/doubled_braces_survive_the_rewrite/input.py
+---
+shape = f"{{literal}} {value}"

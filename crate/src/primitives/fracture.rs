@@ -8,7 +8,7 @@ use std::{borrow::Cow, cmp::Reverse};
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    ArgOrKeyword, Arguments, Expr,
+    AnyNodeRef, ArgOrKeyword, Arguments, Expr,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange};
@@ -114,11 +114,11 @@ fn join_args(source: &Source, cap: Option<usize>, arguments: &Arguments) -> Stri
         arguments
             .iter_source_order()
             .map(|arg| match arg {
-                ArgOrKeyword::Arg(expr) => settled_argument(source, cap, expr),
+                ArgOrKeyword::Arg(expr) => settled_argument(source, cap, expr, arguments.into()),
                 ArgOrKeyword::Keyword(kw) => match &kw.arg {
                     Some(name) => Cow::Owned(format!(
                         "{name}={}",
-                        settled_argument(source, cap, &kw.value)
+                        settled_argument(source, cap, &kw.value, kw.into())
                     )),
                     None => Cow::Borrowed(source.slice(kw)),
                 },
@@ -153,9 +153,23 @@ fn outermost(mut edits: Vec<Edit>) -> Vec<Edit> {
 
 /// One argument's text with every fractured list beneath it closed onto
 /// one line. A column-shaped list keeps its break, so an enclosing
-/// measure still reads it as spanning lines.
-fn settled_argument<'a>(source: &'a Source, cap: Option<usize>, expr: &Expr) -> Cow<'a, str> {
-    Joins(join_edits(source, cap, expr)).settled(source, expr.range())
+/// measure still reads it as spanning lines. An argument whose own text
+/// spans rows reaches the grouping parentheses recovered against
+/// `parent`, which hold those rows together once the list closes,
+/// whereas a single-row argument leaves a redundant pair out of the
+/// joined form.
+fn settled_argument<'a>(
+    source: &'a Source,
+    cap: Option<usize>,
+    expr: &Expr,
+    parent: AnyNodeRef,
+) -> Cow<'a, str> {
+    let range = if source.contains_line_break(expr.range()) {
+        source.paren_aware_range(expr.into(), parent)
+    } else {
+        expr.range()
+    };
+    Joins(join_edits(source, cap, expr)).settled(source, range)
 }
 
 #[cfg(test)]
@@ -177,6 +191,13 @@ mod tests {
         "f(g(a,\n  b,\n  c,\n  d), e)\n",
         Some(3),
         "(g(a,\n  b,\n  c,\n  d), e)"
+    )]
+    #[case::grouping_pair_holds("f((x.a()\n   .b()), c)\n", None, "((x.a()\n   .b()), c)")]
+    #[case::single_row_grouping_pair_drops("f((a),\n  b)\n", None, "(a, b)")]
+    #[case::keyword_grouping_pair_holds(
+        "f(c, k=(x.a()\n   .b()))\n",
+        None,
+        "(c, k=(x.a()\n   .b()))"
     )]
     fn join_args_settles_each_nested_list(
         #[case] src: &str,

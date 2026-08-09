@@ -1,4 +1,5 @@
 export const BODY_LINK_CLASSES = 'body-link underline-draw'
+export const MS_PER_SEC        = 1000
 export const PYPI_PACKAGE      = 'prose-formatter'
 export const REPO_SLUG         = 'Jybbs/prose'
 export const REPO_URL          = `https://github.com/${REPO_SLUG}`

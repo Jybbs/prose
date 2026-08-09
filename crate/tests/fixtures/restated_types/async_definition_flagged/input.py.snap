@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/restated_types/async_definition_flagged/input.py
+---
+async def fetch(url: str, timeout: float):
+    """
+    Fetch a resource.
+
+    Args:
+        url (str): The resource to fetch.
+        timeout (float): Seconds before the fetch is abandoned.
+    """

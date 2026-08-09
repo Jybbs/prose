@@ -1,10 +1,13 @@
 //! Normalizes function signatures to a binary shape, one line or one
-//! parameter per line, gated by `code_line_length` and `max_params`.
-//! Comments inside `()` pin the existing shape.
+//! parameter per line, gated by `code_line_length`, `max_params`, and a
+//! parameter whose annotation or default spans rows while hanging from
+//! the parameter's own row. Comments inside `()` pin the existing shape.
+
+use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    ParameterWithDefault, Parameters, Stmt, StmtFunctionDef,
+    AnyParameterRef, ParameterWithDefault, Parameters, Stmt, StmtFunctionDef,
     statement_visitor::{StatementVisitor, walk_stmt},
     token::TokenKind,
 };
@@ -16,7 +19,7 @@ use crate::{
     primitives::{
         edit::{narrowed_replacement, singleton_groups, splice_parses},
         inline::opening_width,
-        layout::{Separator, explode_parens},
+        layout::{Separator, explode_parens, hangs_from_its_row, item_indent, placed_block},
         range::return_annotation_range,
     },
     rule::{Rule, RuleId},
@@ -69,12 +72,12 @@ struct Layout<'a> {
 impl Layout<'_> {
     /// Builds the canonical expanded text spanning `(` through `:` from
     /// `parts`, one parameter per line.
-    fn build_expanded(&self, fd: &StmtFunctionDef, parts: &[&str], indent: usize) -> String {
+    fn build_expanded(&self, fd: &StmtFunctionDef, parts: &[Cow<str>], indent: usize) -> String {
         let mut out = explode_parens(
             self.newline,
             indent,
             parts.len(),
-            |out, i| out.push_str(parts[i]),
+            |out, i| out.push_str(&parts[i]),
             Separator::Comma,
         );
         self.push_return_and_colon(&mut out, fd);
@@ -83,10 +86,32 @@ impl Layout<'_> {
 
     /// Builds the canonical inline text spanning `(` through `:` from
     /// `parts`.
-    fn build_inline(&self, fd: &StmtFunctionDef, parts: &[&str]) -> String {
+    fn build_inline(&self, fd: &StmtFunctionDef, parts: &[Cow<str>]) -> String {
         let mut out = format!("({})", parts.join(", "));
         self.push_return_and_colon(&mut out, fd);
         out
+    }
+
+    /// `param`'s source text placed at `indent`, its annotation and its
+    /// default the expressions a move must not pad. A variadic parameter
+    /// carries its `*` or `**` prefix and holds no default.
+    fn place<'p>(&'p self, param: AnyParameterRef, indent: usize) -> Cow<'p, str> {
+        placed_block(
+            self.source,
+            param.range(),
+            [param.annotation(), param.default()].into_iter().flatten(),
+            indent,
+        )
+    }
+
+    fn place_params<'p>(
+        &'p self,
+        params: &'p [ParameterWithDefault],
+        indent: usize,
+    ) -> impl Iterator<Item = Cow<'p, str>> + 'p {
+        params
+            .iter()
+            .map(move |p| self.place(AnyParameterRef::NonVariadic(p), indent))
     }
 
     /// Emits one expand or collapse edit when `fd`'s signature
@@ -100,23 +125,23 @@ impl Layout<'_> {
         {
             return;
         }
-        let parts: Vec<&str> = self.signature_parts(params).collect();
-        // A parameter default that spans lines leaves both canonical forms
-        // carrying that break, the joined signature fractured and the
-        // expanded one holding continuation lines at their source indent.
-        if parts.iter().any(|part| part.contains('\n')) {
-            return;
-        }
+        let indent = self.source.line_indent_width(fd.start());
+        let parts: Vec<Cow<str>> = self.signature_parts(params, item_indent(indent)).collect();
         let replacement_range = self.replacement_range(fd);
         let inline = self.build_inline(fd, &parts);
         let count_trips = self.max_params.is_some_and(|cap| params.len() > cap);
+        // A part aligned under an interior bracket would land against
+        // nothing once its row moves, so it leaves the signature alone.
+        let span_trips = params.iter().any(|param| {
+            hangs_from_its_row(self.source, param.start(), self.source.slice(param.range()))
+        });
         let length_trips = self.source.column_overflows(
             params.range().start(),
             opening_width(&inline),
             self.code_line_length,
         );
-        let replacement = if count_trips || length_trips {
-            self.build_expanded(fd, &parts, self.source.line_indent_width(fd.start()))
+        let replacement = if count_trips || length_trips || span_trips {
+            self.build_expanded(fd, &parts, indent)
         } else if self.source.contains_line_break(replacement_range) {
             inline
         } else {
@@ -171,33 +196,32 @@ impl Layout<'_> {
         TextRange::new(fd.parameters.range().start(), colon + TextSize::from(1u32))
     }
 
-    /// Returns each parameter's source slice in source order, with
-    /// `/` and bare `*` separators inserted at their canonical
-    /// positions. Variadic parameters carry their `*` or `**` prefix.
-    fn signature_parts<'p>(&'p self, params: &'p Parameters) -> impl Iterator<Item = &'p str> + 'p {
-        let posonly_sep = (!params.posonlyargs.is_empty()).then_some("/");
+    /// Returns each parameter's text in source order, with `/` and bare
+    /// `*` separators inserted at their canonical positions and a
+    /// row-spanning annotation or default hung from `indent`. Variadic
+    /// parameters are placed the same way and carry their `*` or `**`
+    /// prefix.
+    fn signature_parts<'p>(
+        &'p self,
+        params: &'p Parameters,
+        indent: usize,
+    ) -> impl Iterator<Item = Cow<'p, str>> + 'p {
+        let posonly_sep = (!params.posonlyargs.is_empty()).then_some(Cow::Borrowed("/"));
         let star = params
             .vararg
             .as_deref()
-            .map(|va| self.source.slice(va.range()))
-            .or((!params.kwonlyargs.is_empty()).then_some("*"));
+            .map(|va| self.place(AnyParameterRef::Variadic(va), indent))
+            .or((!params.kwonlyargs.is_empty()).then_some(Cow::Borrowed("*")));
         let kwarg = params
             .kwarg
             .as_deref()
-            .map(|kw| self.source.slice(kw.range()));
-        self.slice_params(&params.posonlyargs)
+            .map(|kw| self.place(AnyParameterRef::Variadic(kw), indent));
+        self.place_params(&params.posonlyargs, indent)
             .chain(posonly_sep)
-            .chain(self.slice_params(&params.args))
+            .chain(self.place_params(&params.args, indent))
             .chain(star)
-            .chain(self.slice_params(&params.kwonlyargs))
+            .chain(self.place_params(&params.kwonlyargs, indent))
             .chain(kwarg)
-    }
-
-    fn slice_params<'p>(
-        &'p self,
-        params: &'p [ParameterWithDefault],
-    ) -> impl Iterator<Item = &'p str> + 'p {
-        params.iter().map(move |p| self.source.slice(p.range()))
     }
 }
 

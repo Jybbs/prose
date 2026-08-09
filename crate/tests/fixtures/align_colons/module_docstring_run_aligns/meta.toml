@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Module Docstring Aligns Like Any Other"
+
+description = '''
+The colon walker reaches the module's own docstring alongside every class and function one, so a module-level section and a sectionless run below it settle their columns the same way.
+'''

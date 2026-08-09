@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/align_colons/overwide_type_gap_pulls_the_column_left/input.py
+---
+align-colons@52..100

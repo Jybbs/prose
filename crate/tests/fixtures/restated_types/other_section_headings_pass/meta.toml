@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `Returns:` or `Raises:` Entry Documents No Parameter"
+
+description = '''
+Only a parameter-documenting section resolves against the signature, so an entry that happens to share a parameter's name under another heading stays silent.
+'''

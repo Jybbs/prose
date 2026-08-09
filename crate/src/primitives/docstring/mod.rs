@@ -1,12 +1,12 @@
 //! Shared walker for PEP 257 docstring statements, the first
 //! body-statement of the module, each class, and each function that
 //! holds a string literal as its first expression statement.
-//! Implementors of [`DocstringHandler`] receive every such docstring
-//! literal in source order via the trait's `walk` method, which skips an
-//! implicitly concatenated docstring expression where `docstring_slots`
-//! reports the slot whatever its part count. The `body`, `grammar`,
-//! `scan`, and `section` submodules carry the text-level helpers for
-//! walking a docstring body directly.
+//! [`walk_docstrings`] drives a caller's function across every such
+//! literal in source order, paired with the definition that owns it,
+//! and skips an implicitly concatenated docstring expression where
+//! [`docstring_slots`] reports the slot whatever its part count. The
+//! `body`, `entries`, `grammar`, and `scan` submodules carry the
+//! text-level helpers for walking a docstring body directly.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -21,48 +21,53 @@ use crate::{
 };
 
 mod body;
+mod entries;
 mod grammar;
 mod scan;
-mod section;
 
 pub(crate) use body::{DocstringBody, docstring_body, indent_prefix, triple_quoted_body};
+pub(crate) use entries::{entry_carrying_sections, entry_runs};
 pub(crate) use grammar::{section_heading, sibling_entry_head, typed_entry_head};
 pub(crate) use scan::{LineScan, LineScanner, ScannedLine};
-pub(crate) use section::entry_carrying_sections;
 
 /// Receiver for the docstring walker. Implementors handle each
-/// docstring `StringLiteral` reached in source order. Call `walk`
-/// to drive the receiver across `source`'s module body.
-trait DocstringHandler {
-    fn handle(&mut self, lit: &StringLiteral);
+/// docstring `StringLiteral` reached in source order, paired with the
+/// class or function definition whose body opens on it and `None` for
+/// the module docstring. Call `walk` to drive the receiver across
+/// `source`'s module body.
+trait DocstringHandler<'src> {
+    fn handle(&mut self, owner: Option<&'src Stmt>, lit: &'src StringLiteral);
 
-    fn walk(&mut self, source: &Source)
+    fn walk(&mut self, source: &'src Source)
     where
         Self: Sized,
     {
         let mut visitor = Visitor { handler: self };
         let body = &source.ast().body;
-        visitor.consider(body);
+        visitor.consider(None, body);
         visitor.visit_body(body);
     }
 }
 
-struct Visitor<'a, H: DocstringHandler> {
+struct Visitor<'a, H> {
     handler: &'a mut H,
 }
 
-impl<H: DocstringHandler> Visitor<'_, H> {
-    fn consider(&mut self, body: &[Stmt]) {
+impl<H> Visitor<'_, H> {
+    fn consider<'src>(&mut self, owner: Option<&'src Stmt>, body: &'src [Stmt])
+    where
+        H: DocstringHandler<'src>,
+    {
         if let Some(lit) = body_docstring(body) {
-            self.handler.handle(lit);
+            self.handler.handle(owner, lit);
         }
     }
 }
 
-impl<'a, H: DocstringHandler> StatementVisitor<'a> for Visitor<'_, H> {
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+impl<'src, H: DocstringHandler<'src>> StatementVisitor<'src> for Visitor<'_, H> {
+    fn visit_stmt(&mut self, stmt: &'src Stmt) {
         if let Some((body, _)) = scoped_body(stmt) {
-            self.consider(body);
+            self.consider(Some(stmt), body);
         }
         walk_stmt(self, stmt);
     }
@@ -88,40 +93,55 @@ pub(crate) fn docstring_slots(body: &[Stmt]) -> Vec<TextRange> {
         .collect()
 }
 
+/// Every class and function definition in `source` whose body opens on
+/// a docstring, paired with that docstring literal in source order. The
+/// module docstring carries no definition and is absent.
+pub(crate) fn documented_definitions(source: &Source) -> Vec<(&Stmt, &StringLiteral)> {
+    let mut found = Vec::new();
+    walk_docstrings(source, |owner, lit| {
+        found.extend(owner.map(|definition| (definition, lit)));
+    });
+    found
+}
+
 /// Walks every docstring in `source` and gathers the edits `f` produces
 /// against each into one fix group per docstring. The closure receives
 /// `source`, the docstring literal, and that docstring's edit buffer. A
 /// docstring whose buffer stays empty contributes no group.
-pub(crate) fn rewrite_docstrings<F>(source: &Source, f: F) -> Vec<Vec<Edit>>
+pub(crate) fn rewrite_docstrings<F>(source: &Source, mut f: F) -> Vec<Vec<Edit>>
 where
     F: FnMut(&Source, &StringLiteral, &mut Vec<Edit>),
 {
-    struct Collector<'a, F> {
-        f: F,
-        groups: Vec<Vec<Edit>>,
-        source: &'a Source,
-    }
+    let mut groups = Vec::new();
+    walk_docstrings(source, |_, lit| {
+        let mut edits = Vec::new();
+        f(source, lit, &mut edits);
+        if !edits.is_empty() {
+            groups.push(edits);
+        }
+    });
+    groups
+}
 
-    impl<F> DocstringHandler for Collector<'_, F>
+/// Drives `f` across every docstring in `source` in source order,
+/// paired with the class or function definition whose body opens on it
+/// and `None` for the module docstring.
+pub(crate) fn walk_docstrings<'src>(
+    source: &'src Source,
+    f: impl FnMut(Option<&'src Stmt>, &'src StringLiteral),
+) {
+    struct Closure<F>(F);
+
+    impl<'src, F> DocstringHandler<'src> for Closure<F>
     where
-        F: FnMut(&Source, &StringLiteral, &mut Vec<Edit>),
+        F: FnMut(Option<&'src Stmt>, &'src StringLiteral),
     {
-        fn handle(&mut self, lit: &StringLiteral) {
-            let mut edits = Vec::new();
-            (self.f)(self.source, lit, &mut edits);
-            if !edits.is_empty() {
-                self.groups.push(edits);
-            }
+        fn handle(&mut self, owner: Option<&'src Stmt>, lit: &'src StringLiteral) {
+            (self.0)(owner, lit);
         }
     }
 
-    let mut collector = Collector {
-        f,
-        groups: Vec::new(),
-        source,
-    };
-    collector.walk(source);
-    collector.groups
+    Closure(f).walk(source);
 }
 
 /// `body`'s leading string expression, the slot a docstring occupies
@@ -156,8 +176,8 @@ mod tests {
         }
     }
 
-    impl DocstringHandler for Probe<'_> {
-        fn handle(&mut self, lit: &StringLiteral) {
+    impl DocstringHandler<'_> for Probe<'_> {
+        fn handle(&mut self, _: Option<&Stmt>, lit: &StringLiteral) {
             self.values.push(lit.value.to_string());
             if let Some(source) = self.source {
                 self.indents.push(indent_prefix(source, lit).to_owned());
@@ -207,6 +227,18 @@ mod tests {
         #[case] expected: usize,
     ) {
         assert_eq!(docstring_slots(&parse(src).ast().body).len(), expected);
+    }
+
+    #[test]
+    fn documented_definitions_pairs_each_definition_with_its_own_docstring() {
+        let s = parse(
+            "\"\"\"M\"\"\"\nclass C:\n    \"\"\"C\"\"\"\n    def m(self):\n        \"\"\"m\"\"\"\n        pass\n\ndef bare():\n    pass\n",
+        );
+        let paired: Vec<(bool, String)> = documented_definitions(&s)
+            .into_iter()
+            .map(|(definition, lit)| (definition.is_class_def_stmt(), lit.value.to_string()))
+            .collect();
+        assert_eq!(paired, [(true, "C".to_owned()), (false, "m".to_owned())]);
     }
 
     #[test]

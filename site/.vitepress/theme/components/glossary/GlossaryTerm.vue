@@ -2,14 +2,16 @@
 import { useRoute } from 'vitepress'
 import { computed } from 'vue'
 
+import { useAriaHidden }    from '../../../lib/composables/use-aria-hidden'
 import { data as glossary } from '../../../lib/glossary/glossary.data'
 import { lookup }           from '../../../lib/shared/lookup'
 import { stripSuffix }      from '../../../lib/shared/strip-suffix'
 
 const props = defineProps<{ slug: string }>()
 
-const entry = lookup(glossary.entries, props.slug, 'Glossary entry')
-const route = useRoute()
+const ariaHidden = useAriaHidden()
+const entry      = lookup(glossary.entries, props.slug, 'Glossary entry')
+const route      = useRoute()
 
 const tooltipHtml = computed(() => {
   const parts = [
@@ -40,6 +42,6 @@ const showLink = computed(() => {
       theme              : 'glossary'
     }"
     class="glossary-anchor underline-draw"
-    tabindex="0"
+    :tabindex="ariaHidden ? -1 : 0"
   ><slot /></span>
 </template>

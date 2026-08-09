@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/align_colons/flush_paren_head_reads_as_a_call/input.py
+---
+align-colons@47..104

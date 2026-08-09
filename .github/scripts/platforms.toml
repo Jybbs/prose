@@ -21,7 +21,7 @@ target    = "aarch64-unknown-linux-gnu"
 label   = "🍎 macOS x86_64"
 name    = "macos-x86_64"
 pattern = "*macosx*x86_64.whl"
-runner  = "macos-15-intel"
+runner  = "macos-latest"
 target  = "x86_64-apple-darwin"
 
 [[platforms]]
@@ -37,6 +37,13 @@ name    = "windows-x86_64"
 pattern = "*win_amd64.whl"
 runner  = "windows-latest"
 target  = "x86_64-pc-windows-msvc"
+
+[[platforms]]
+label   = "🪟 Windows aarch64"
+name    = "windows-aarch64"
+pattern = "*win_arm64.whl"
+runner  = "windows-11-arm"
+target  = "aarch64-pc-windows-msvc"
 
 [[platforms]]
 label   = "🚢 sdist"

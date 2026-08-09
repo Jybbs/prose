@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "An Index Naming a Keyword Slot Holds"
+
+description = '''
+Positional numbering reaches the positional arguments alone, so an index
+landing on a keyword argument names nothing it may read.
+'''

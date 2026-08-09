@@ -10,7 +10,7 @@ import type { ProseSandbox }     from '../../../lib/composables/use-prose-sandbo
 import { useReducedMotion }      from '../../../lib/composables/use-reduced-motion'
 import { useSquiggleDraw }       from '../../../lib/composables/use-squiggle-draw'
 import { lintDecorations }       from '../../../lib/markdown/lint-decorations'
-import { highlight }             from '../../../lib/sandbox/highlight'
+import { highlight }             from '../../../lib/shared/highlight'
 import { latestRun }             from '../../../lib/shared/latest-run'
 import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
@@ -59,7 +59,7 @@ let shownRules = new Set<string>()
 async function render(next: string): Promise<void> {
   const superseded = run.begin()
   const from       = previous
-  const html       = await highlight(next, 'python', lintDecorations(diagnostics.value))
+  const html       = await highlight(next, 'python', lintDecorations(diagnostics.value, next))
   if (superseded()) return
   // Mid-edit the display sits behind the editor, so stage the html silently.
   if (editing.value) { commit(html, next); return }

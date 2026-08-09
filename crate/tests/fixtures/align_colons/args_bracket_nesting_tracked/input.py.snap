@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/align_colons/args_bracket_nesting_tracked/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_colons/args_bracket_nesting_tracked/input.py
 ---
 def index(records: list, schema: dict, options: dict) -> None:
     """
@@ -9,7 +9,7 @@ def index(records: list, schema: dict, options: dict) -> None:
 
     Args:
         records (List[Tuple[int, str]]) : rows to write.
-        schema (Dict[str, int])         : column type map.
+        schema  (Dict[str, int])        : column type map.
         options (Dict[str, str])        : backend-specific settings.
     """
     _write(records, schema, options)

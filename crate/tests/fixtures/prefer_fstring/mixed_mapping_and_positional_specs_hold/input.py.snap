@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/mixed_mapping_and_positional_specs_hold/input.py
+---
+line = "%(named)s %s" % (table, extra)

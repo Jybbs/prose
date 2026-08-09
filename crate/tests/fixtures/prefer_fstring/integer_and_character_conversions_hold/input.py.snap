@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/integer_and_character_conversions_hold/input.py
+---
+count = "%d items" % (total,)
+index = "%i" % (n,)
+glyph = "%c" % (code,)

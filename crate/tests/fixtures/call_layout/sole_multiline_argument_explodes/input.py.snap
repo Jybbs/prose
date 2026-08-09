@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/call_layout/sole_multiline_argument_explodes/input.py
+---
+gather(
+    mapping={
+        "a": 1,
+        "b": 2
+    }
+)

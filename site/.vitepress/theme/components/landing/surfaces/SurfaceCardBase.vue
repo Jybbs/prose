@@ -1,46 +1,48 @@
 <script setup lang="ts">
 import { useElementHover, useElementSize, useMouseInElement } from '@vueuse/core'
-import { computed, ref, useTemplateRef }                      from 'vue'
+import { computed, useTemplateRef }                           from 'vue'
 
+import { provideAriaHidden } from '../../../../lib/composables/use-aria-hidden'
 import type { InlineNode }   from '../../../../lib/markdown/inline-nodes'
 import type { RenderedRule } from '../../../../lib/rules/rules.data'
-import { formatFolio }       from '../../../../lib/shared/numerals'
 import * as registries       from '../../../../lib/shared/registries'
 import InlineProse           from '../../base/InlineProse.vue'
+import SurfaceRail           from './SurfaceRail.vue'
+
+const SPOTLIGHT_FALLBACK_PCT = 50
+const SPOTLIGHT_PCT_SCALE    = 100
 
 const props = defineProps<{
   bodyNodes : InlineNode[]
-  family   : registries.RuleFamily
-  number   : string
-  rules    : readonly RenderedRule[]
+  duplicate : boolean
+  family    : registries.RuleFamily
+  number    : string
+  rules     : readonly RenderedRule[]
 }>()
 
-const meta     = computed(() => registries.FAMILY_META[props.family])
+provideAriaHidden(() => props.duplicate)
+
 const category = computed(() => registries.categoryOf(props.family))
 const href     = computed(() => `/rules/${props.family}/`)
+const meta     = computed(() => registries.FAMILY_META[props.family])
+const tabindex = computed(() => (props.duplicate ? -1 : undefined))
 
 const rootRef = useTemplateRef<HTMLElement>('root')
 
 const active = useElementHover(rootRef)
-
-const SPOTLIGHT_FALLBACK_PCT = 50
-const SPOTLIGHT_PCT_SCALE    = 100
 
 const { elementX: rx, elementY: ry } = useMouseInElement(rootRef)
 const { width: rw, height: rh }      = useElementSize(rootRef)
 
 const spotlightX = computed(() => rw.value ? (rx.value / rw.value) * SPOTLIGHT_PCT_SCALE : SPOTLIGHT_FALLBACK_PCT)
 const spotlightY = computed(() => rh.value ? (ry.value / rh.value) * SPOTLIGHT_PCT_SCALE : SPOTLIGHT_FALLBACK_PCT)
-
-const hoveredIdx = ref<number | null>(null)
-const activeIdx  = computed(() => hoveredIdx.value ?? 0)
-const activeRule = computed(() => props.rules[activeIdx.value])
 </script>
 
 <template>
   <div
     ref="root"
-    class="surface-card surface-card-tab-index panel"
+    class="surface-card panel"
+    :aria-hidden="duplicate || undefined"
     :data-family="family"
     :data-category="category"
     :data-active="active"
@@ -53,38 +55,12 @@ const activeRule = computed(() => props.rules[activeIdx.value])
       class="surface-card-cover-link"
       :href="href"
       :aria-label="`See all ${meta.label.toLowerCase()} rules`"
+      :tabindex="tabindex"
     />
     <span class="surface-card-number">— {{ number }}</span>
     <span class="surface-card-icon" aria-hidden="true">{{ meta.badge }}</span>
     <h3 class="surface-card-label">{{ meta.label }}</h3>
     <p class="surface-card-blurb"><InlineProse :nodes="bodyNodes" /></p>
-    <div class="surface-card-chips">
-      <div class="tab-index">
-        <div class="tab-row">
-          <a
-            v-for="(rule, idx) in rules"
-            :key="rule.slug"
-            class="tab"
-            :class="{ active: idx === activeIdx }"
-            :href="rule.href"
-            :aria-label="rule.slug"
-            @mouseenter="hoveredIdx = idx"
-            @focus="hoveredIdx = idx"
-          >
-            {{ formatFolio(idx + 1) }}
-          </a>
-        </div>
-        <div class="tab-label" aria-live="polite">
-          <Transition name="tab-swap" mode="out-in">
-            <a
-              :key="activeIdx"
-              class="tab-label-link"
-              :href="activeRule?.href"
-              :aria-label="activeRule?.slug"
-            >{{ activeRule?.slug }}</a>
-          </Transition>
-        </div>
-      </div>
-    </div>
+    <SurfaceRail :rules="rules" />
   </div>
 </template>

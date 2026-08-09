@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Hand-Set Type-Group Gutter Tightens Onto the Column"
+
+description = '''
+The type-group column pulls a gap left as readily as it pushes one right, so a run whose author spaced every `(` out past the widest name tightens onto the one space the column leaves.
+'''

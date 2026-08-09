@@ -73,6 +73,16 @@ describe('walkBodyInlines', () => {
 })
 
 describe('lintDecorations', () => {
+  const spanning = (column: number, endColumn: number, row = 1, endRow = row) => ({
+    code         : 'a',
+    end_location : { column: endColumn, row: endRow },
+    location     : { column, row },
+    message      : 'm'
+  })
+
+  const classOf = (code: string, column: number, endColumn: number): string =>
+    String(decorations.lintDecorations([spanning(column, endColumn)], code)[0].properties?.class)
+
   it('sorts findings by position and maps them to shiki decorations', () => {
     const findings = [
       { code: 'b', end_location: { column: 6, row: 2 }, location: { column: 3, row: 2 }, message: 'second' },
@@ -84,10 +94,16 @@ describe('lintDecorations', () => {
         message      : 'first'
       }
     ]
-    expect(decorations.lintDecorations(findings)).toEqual([
+    expect(decorations.lintDecorations(findings, 'x = 1\nyyyyy')).toEqual([
       {
         end        : { character: 3, line: 0 },
-        properties : { class: 'lint-flag underline-draw', 'data-message': 'first', 'data-rule': 'a', 'data-suggested': 'y' },
+        properties : {
+          class            : 'lint-flag underline-draw',
+          'data-message'   : 'first',
+          'data-replaced'  : 'x',
+          'data-rule'      : 'a',
+          'data-suggested' : 'y'
+        },
         start      : { character: 0, line: 0 }
       },
       {
@@ -96,6 +112,36 @@ describe('lintDecorations', () => {
         start      : { character: 2, line: 1 }
       }
     ])
+  })
+
+  it('orders two findings sharing a row by column', () => {
+    const findings = [spanning(4, 6), spanning(1, 3)]
+    expect(decorations.lintDecorations(findings, 'x = 1').map(item => item.start))
+      .toEqual([{ character: 0, line: 0 }, { character: 3, line: 0 }])
+  })
+
+  it('omits the edit attributes when the fix carries neither side', () => {
+    const finding = { ...spanning(1, 4), fix: { applicability: 'safe', edits: [{ before: '', content: '' }] } }
+    expect(decorations.lintDecorations([finding], 'x = 1')[0].properties)
+      .toEqual({ class: 'lint-flag underline-draw', 'data-message': 'm', 'data-rule': 'a' })
+  })
+
+  it.each([
+    ['a span reaching the whole line',        'x = 1', 1, 6, 'lint-flag lint-flag-line'],
+    ['a span opening past the first column',  'x = 1', 3, 6, 'lint-flag underline-draw'],
+    ['a span stopping short of the line end', 'x = 1', 1, 4, 'lint-flag underline-draw'],
+    ['a span whose end row has no line',      '',      1, 6, 'lint-flag underline-draw']
+  ])('classes %s', (_name, code, column, endColumn, expected) => {
+    expect(classOf(code, column, endColumn)).toBe(expected)
+  })
+
+  it('measures the line end in UTF scalar values rather than code units', () => {
+    expect(classOf('x = "🪻"', 1, 8)).toBe('lint-flag lint-flag-line')
+  })
+
+  it('measures a multi-row span against its last line', () => {
+    expect(decorations.lintDecorations([spanning(1, 6, 1, 2)], 'xx\nx = 1')[0].properties?.class)
+      .toBe('lint-flag lint-flag-line')
   })
 })
 
@@ -113,6 +159,17 @@ describe('lintDecorationTransformer', () => {
     expect(options.decorations).toEqual([{
       end        : { character: 3, line: 0 },
       properties : { class: 'lint-flag underline-draw', 'data-message': 'm', 'data-rule': 'a' },
+      start      : { character: 0, line: 0 }
+    }])
+  })
+
+  it('measures the row treatment against the fence it preprocesses', () => {
+    const options: { decorations?: unknown[]; meta?: { __raw?: string } } =
+      { meta: { __raw: `python ${decorations.lintFenceMeta('demo-rule/basic')}` } }
+    preprocess('x =', options)
+    expect(options.decorations).toEqual([{
+      end        : { character: 3, line: 0 },
+      properties : { class: 'lint-flag lint-flag-line', 'data-message': 'm', 'data-rule': 'a' },
       start      : { character: 0, line: 0 }
     }])
   })
