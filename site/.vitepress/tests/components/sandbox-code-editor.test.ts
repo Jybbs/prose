@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 import SandboxCodeEditor from '../../theme/components/sandbox/SandboxCodeEditor.vue'
 
-vi.mock('../../lib/sandbox/highlight', () => import('../highlight-stub'))
+vi.mock('../../lib/shared/highlight', () => import('../highlight-stub'))
 
 const mountEditor = (modelValue: string) =>
   mount(SandboxCodeEditor, { props: { lang: 'python', modelValue } })

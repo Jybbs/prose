@@ -7,8 +7,8 @@ import SandboxCodeEditor from './SandboxCodeEditor.vue'
 
 import type { ProseSandbox } from '../../../lib/composables/use-prose-sandbox'
 import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
-import { highlight }         from '../../../lib/sandbox/highlight'
 import * as typewriter       from '../../../lib/sandbox/typewriter'
+import { highlight }         from '../../../lib/shared/highlight'
 import { latestRun }         from '../../../lib/shared/latest-run'
 
 const STEP_MS = 12
