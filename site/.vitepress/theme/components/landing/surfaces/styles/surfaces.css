@@ -33,7 +33,7 @@
   width           : 100%;
 }
 
-.surfaces-carousel-static .surfaces-carousel-track > [inert] {
+.surfaces-carousel-static .surfaces-carousel-track > [aria-hidden="true"] {
   display : none;
 }
 

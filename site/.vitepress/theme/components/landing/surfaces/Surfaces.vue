@@ -1,16 +1,13 @@
 <script setup lang="ts">
 import { computed, useTemplateRef, watchEffect } from 'vue'
 
-import LandingSection from '../LandingSection.vue'
-
-import { data as landing }  from '../../../../lib/landing/landing.data'
-import { data as rules }    from '../../../../lib/rules/rules.data'
-import { useReducedMotion } from '../../../../lib/composables/use-reduced-motion'
-
 import { useCarouselMeasurement } from '../../../../lib/composables/use-carousel-measurement'
 import { useCarouselVelocity }    from '../../../../lib/composables/use-carousel-velocity'
-
-import SurfaceCardBase from './SurfaceCardBase.vue'
+import { useReducedMotion }       from '../../../../lib/composables/use-reduced-motion'
+import { data as landing }        from '../../../../lib/landing/landing.data'
+import { data as rules }          from '../../../../lib/rules/rules.data'
+import LandingSection             from '../LandingSection.vue'
+import SurfaceCardBase            from './SurfaceCardBase.vue'
 
 const BASE_SPEED_PX_PER_SEC = 32
 const EDGE_MARGIN_PX        = 32
@@ -82,10 +79,10 @@ const trackStyle = computed(() => ({
             v-for="card in surfaceCards"
             :key="`${copy}-${card.family}`"
             :body-nodes="card.bodyNodes"
+            :duplicate="copy === 2"
             :family="card.family"
             :number="card.number"
             :rules="card.rules"
-            :inert="copy === 2"
           />
         </template>
       </div>

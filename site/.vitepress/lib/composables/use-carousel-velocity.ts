@@ -1,7 +1,7 @@
 import { useElementBounding, useRafFn } from '@vueuse/core'
 import { ref, type Ref }                from 'vue'
 
-const MS_PER_SEC = 1000
+import { MS_PER_SEC } from '../shared/constants'
 
 interface CarouselVelocityOptions {
   baseSpeedPxPerSec : number
