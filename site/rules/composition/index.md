@@ -1,12 +1,10 @@
 # Rule Composition
 
-The per-rule pages walk each rule's canonical case in isolation, but the real question for most projects is what happens when several rules apply to the same block. The composition fixtures answer that question. Each case here pairs a small Python source with the rule set it activates, and the before/after pair shows the combined effect of those rules running together in [**Pipeline Order**](/reference/pipeline-order).
-
-The cases are the same `crate/tests/fixtures/composition/` set the binary's integration tests run against, so the rendered output on this page is the canonical answer to what *Prose* does when these rules compose.
+Where a per-rule page walks one rule's canonical case in isolation, each case here pairs a small Python source with the rule set it activates and shows the combined effect of those rules running together in [**Pipeline Order**](/reference/pipeline-order). They are the same `crate/tests/fixtures/composition/` set the binary's integration tests run against.
 
 ## The Canonical Case
 
-One module-level constant carries the full composition story. The right-hand dict starts in a state that puts a rule from each family in motion:
+One module-level constant puts a rule from each family in motion:
 
 - Values use the legacy `Union[…]` form, so [[modernize-annotations]] rewrites them to the `|` operator and retires the `typing` import they read through.
 - The literal overflows `code-line-length` on a single line, so [[collection-layout]] breaks it apart.
@@ -14,7 +12,7 @@ One module-level constant carries the full composition story. The right-hand dic
 - Keys line up against a vertical column, so [[align-colons]] computes the padding against the widths the rewrite leaves.
 - The retired import leaves a gap where it stood, so [[blank-lines]] closes it.
 
-The rules fire in [**Pipeline Order**](/reference/pipeline-order) against the same block, reparsing between each so every rule downstream measures against the rewritten source rather than the original.
+The rules fire against the same block, reparsing between each so every rule downstream measures the rewritten source.
 
 <Fixture rule="composition" case="overflow_dict_constants_modernize_unions" />
 
@@ -24,7 +22,7 @@ The rules fire in [**Pipeline Order**](/reference/pipeline-order) against the sa
 
 ## How Composition Resolves
 
-Each case's pipeline runs the listed rules in canonical order, reparsing between rules. A rule downstream of another sees the rewritten source from the upstream rule, not the original source. The cases here cover the common interaction shapes.
+Each case runs its listed rules in canonical order, and the shapes below are the common interactions.
 
 ### Layout Before Alignment
 
@@ -40,8 +38,8 @@ Each case's pipeline runs the listed rules in canonical order, reparsing between
 
 ### Module Reorder Around a Block Marker
 
-[[alphabetize]]'s module-level branch reorders the assigns above and below a `# fmt: off` block while the bracketed lines stay verbatim. The suppression directive bounds its own scope, so [[alphabetize]] and [[align-equals]] fire freely on every assign outside the bracket and the run boundary respects the marker.
+[[alphabetize]]'s module-level branch reorders the assigns above and below a `# fmt: off` block while the bracketed lines stay verbatim, so both it and [[align-equals]] fire freely outside the bracket.
 
 <Fixture rule="composition" case="constants_sort_around_fmt_off" />
 
-For the per-rule canonical case, click any rule chip above. For the deterministic order the pipeline runs in, see the [**Pipeline Order**](/reference/pipeline-order) reference. For the runner that drives the composition, see the [[pipeline]] primitive. For the full rule catalog, see the [**Rules**](/rules/).
+Click any rule chip above for its canonical case, the [**Pipeline Order**](/reference/pipeline-order) reference for the order the pipeline runs in, the [[pipeline]] primitive for the runner, and the [**Rules**](/rules/) catalog for the rest.

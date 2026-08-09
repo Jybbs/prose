@@ -8,7 +8,7 @@ layout  : doc
 
 <RuleLayout rule="modernize_annotations">
 
-`Optional[T]`, `Union[X, Y]`, and `List[int]` all come from the `typing` module and were the canonical spellings for years. The language has since absorbed each of them, with PEP 585 giving the generics their builtin form on Python **3.9** and PEP 604 giving the unions their `|` form on Python **3.10**. Both modern spellings read more directly than the ones they replace, and together they retire the `typing` import a module carried only to reach them. `modernize-annotations` applies both rewrites and drops the import that no longer earns its line.
+`modernize-annotations` moves an annotation onto the spelling the language absorbed, PEP 585 giving the `typing` generics their builtin form on Python 3.9 and PEP 604 giving the unions their `|` form on 3.10, and it drops the `typing` import a module carried only to reach them.
 
 Each rewrite runs behind its own facet and its own version floor, so a project on 3.9 converts its generics while its unions wait for 3.10. A project that has set no `target-version` at all holds both, since an unset field clears neither floor.
 
@@ -22,11 +22,11 @@ Both facets resolve their target through whatever name the module bound, so a ba
 
 ## Dropping the Import
 
-A `typing` name the rewrite read out entirely leaves its import binding unread, and the rule drops it in the same pass. The accounting runs per name, so an import naming several members keeps the ones something still reads:
+A `typing` name the rewrite read out entirely leaves its import unread, and the rule drops it in the same pass, per name rather than per line:
 
 <Fixture rule="modernize_annotations" case="import_keeps_its_surviving_names" />
 
-A read the rewrite could not consume counts the same as any other, so a suppressed line or a held forward reference keeps the import standing. The [**Suppression**](/usage/suppression) chapter covers the directives that hold a line.
+A read the rewrite could not consume keeps the import standing, so a suppressed line or a held forward reference holds it. The [**Suppression**](/usage/suppression) chapter covers the directives.
 
 ::: tabs key:prose-target-version
 == Python 3.10

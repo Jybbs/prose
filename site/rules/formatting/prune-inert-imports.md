@@ -9,41 +9,41 @@ layout  : doc
 
 <RuleLayout rule="prune_inert_imports">
 
-An import that binds a name nothing references, and a second import that rebinds a name already bound, both add a line a reader parses for no information. `prune-inert-imports` reaches either shape, dropping the unread member under `drop-unreferenced` and the repeat under `drop-duplicates`, and it resolves both against the same binding table [[single-use-variables]] reads.
+`prune-inert-imports` drops an import binding a name nothing references under `drop-unreferenced`, and a second import rebinding a name already bound under `drop-duplicates`, resolving both against the binding table [[single-use-variables]] reads.
 
 <Fixture rule="prune_inert_imports" case="repeat_and_unread_member_both_go" />
 
-The accounting runs per bound name rather than per line, so a member prunes off a shared `from` import while its siblings stay, and a line whose every member goes unread leaves with them.
+The accounting runs per bound name, so a member prunes off a shared `from` import while its siblings stay.
 
 <Fixture rule="prune_inert_imports" case="every_member_unread_drops_the_whole_line" />
 
-A repeat matches on the pair of names it carries, the one it binds and the qualified path it names at its source, so `import os` beside `import os.path` is two imports of two modules rather than one repeated.
+A repeat matches on both the name it binds and the path it names, so `import os` beside `import os.path` is two imports.
 
 ## What Holds Its Line
 
-A name a module publishes is meant to go unread inside it, and both facets read the same two markers. A name listed in `__all__` holds its import, and so does the PEP 484 redundant-alias form `from x import y as y`, which is why a repeated self-alias survives `drop-duplicates` rather than dropping as a repeat.
+Both facets read the same two re-export markers, a name listed in `__all__` and the PEP 484 redundant-alias form `from x import y as y`, so a repeated self-alias survives `drop-duplicates`.
 
 <Fixture rule="prune_inert_imports" case="self_alias_marks_a_reexport" />
 
-An `__all__` built from anything other than a list or tuple of string literals leaves the public surface unsettled, and every import in that module holds, as does one written anywhere below module scope. A `from … import *` holds too, binding a name set no reference count enumerates.
+An `__all__` built from anything other than a list or tuple of string literals, or written below module scope, holds every import in that module, as does a `from … import *`.
 
-Two other reads keep an import the reference count alone would call unused. A `del` of the bound name needs the binding to exist, so removing the import would leave the statement raising `NameError`. And a name read only inside a quoted annotation sits in a string literal rather than in the tree the binding table walks, so the rule parses each quoted annotation for the names it reads and holds their imports, following the nesting where one quoted member encloses another.
+Two reads the count misses hold an import too. A `del` of the bound name needs that binding to exist, and a name read only inside a quoted annotation sits in a string literal rather than the tree the table walks, so each quoted annotation is parsed for the names it reads.
 
 <Fixture rule="prune_inert_imports" case="quoted_annotation_holds_its_import" />
 
-An import binding `__all__` itself sets the whole export surface in one line, so it holds on the same ground a listed name does. A name a second import rebinds holds as well, because the module-scope binding then carries more than one write, and the extension shim that pairs `try: from _speedups import loads` with a pure-Python import above it needs that earlier binding on the branch the `ImportError` takes.
+An import binding `__all__` itself holds on the same ground, as does a name a second import rebinds, keeping the fallback in a `try: from _speedups import loads` shim standing.
 
-An own-line comment sitting directly above an import holds the whole statement too. Dropping the line would strand the comment on whatever statement follows, where it reads as a description of code it was never written about, and a comment in that position is often the record of why the import is load-bearing despite binding a name nothing reads.
+An own-line comment directly above an import holds the whole statement, dropping the line stranding the comment on whatever follows.
 
 <Fixture rule="prune_inert_imports" case="leading_comment_holds_its_import" />
 
-A package `__init__.py` is the one file where an unreferenced import is reported rather than dropped, since the names it binds are the package's re-export surface and no single-file pass settles whether the package itself is what reads them. A repeat still drops there, resolving out of `sys.modules` without running its module again.
+A package `__init__.py` reports an unreferenced import rather than dropping it, its bindings being the package's re-export surface, whereas a repeat still drops there.
 
 ## The `__future__` Directive
 
-`from __future__ import annotations` drops on any of three branches, when the module carries no annotation at all, when `target-version` is 3.14 or higher and PEP 749 defers annotation evaluation, or when every name every annotation reads resolves to an unconditional module-scope binding written before it.
+`from __future__ import annotations` drops on three branches, where the module carries no annotation, where `target-version` is 3.14 or higher and PEP 749 defers evaluation, and where every annotated name resolves to an unconditional module-scope binding written before it.
 
-Every other `__future__` feature stays. A directive such as `division` changes how the module compiles rather than binding a name a reference count can settle.
+Every other `__future__` feature stays, `division` and its siblings changing how the module compiles rather than binding a name.
 
 <Fixture rule="prune_inert_imports" case="division_directive_out_of_scope" />
 

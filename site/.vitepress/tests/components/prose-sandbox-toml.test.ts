@@ -7,7 +7,7 @@ import ProseSandboxToml      from '../../theme/components/sandbox/ProseSandboxTo
 import type { ProseSandbox } from '../../lib/composables/use-prose-sandbox'
 import { domTest, isHidden } from '../dom'
 
-vi.mock('../../lib/sandbox/highlight', () => import('../highlight-stub'))
+vi.mock('../../lib/shared/highlight', () => import('../highlight-stub'))
 
 vi.mock('../../lib/markdown/highlighter', () => import('../highlighter-stub'))
 
