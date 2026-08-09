@@ -1,0 +1,194 @@
+.surface-rail {
+  --ripple : 0ms;
+  display        : flex;
+  flex-direction : column;
+  gap            : 10px;
+}
+
+.surface-pip {
+  position             : relative;
+  display              : grid;
+  place-items          : center;
+  flex                 : 0 0 auto;
+  height               : calc(var(--slot) + 8px);
+  text-decoration-line : none;
+  --ripple             : min(70ms, calc(var(--d) * 9ms));
+}
+
+.surface-pip:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : 1px;
+  border-radius  : 999px;
+}
+
+.surface-pip-mark {
+  position      : relative;
+  z-index       : 1;
+  box-sizing    : border-box;
+  width         : 7px;
+  height        : 7px;
+  border-radius : 999px;
+  background    : color-mix(in srgb, var(--family-color) 45%, transparent);
+  scale         : max(0.55, calc(1 - var(--d) * 0.06));
+  opacity       : max(0.22, calc(1 - var(--d) * 0.16));
+  transition    : background 240ms linear var(--ripple),
+                  height     240ms var(--prose-ease-emphasized) var(--ripple),
+                  opacity    240ms linear var(--ripple),
+                  scale      240ms var(--prose-ease-emphasized) var(--ripple),
+                  width      240ms var(--prose-ease-emphasized) var(--ripple);
+}
+
+.surface-pip-folio {
+  position             : absolute;
+  inset                : 0;
+  z-index              : 2;
+  display              : grid;
+  place-items          : center;
+  padding-top          : 1px;
+  font-family          : var(--vp-font-family-mono);
+  font-size            : var(--prose-text-meta);
+  font-variant-numeric : tabular-nums;
+  line-height          : 1;
+  color                : var(--vp-c-text-3);
+  opacity              : 0;
+  translate            : 0 3px;
+  transition           : color     200ms linear var(--ripple),
+                         opacity   170ms linear var(--ripple),
+                         translate 240ms var(--prose-ease-emphasized) var(--ripple);
+}
+
+.surface-pip:hover .surface-pip-mark,
+.surface-pip.active .surface-pip-mark {
+  width      : var(--circle);
+  height     : var(--circle);
+  scale      : 1;
+  opacity    : 1;
+  background : color-mix(in srgb, var(--family-color) 22%, var(--vp-c-bg-soft));
+}
+
+.surface-pip:hover .surface-pip-folio,
+.surface-pip.active .surface-pip-folio {
+  opacity   : 1;
+  translate : 0 0;
+  color     : var(--family-color);
+}
+
+.surface-rail-row {
+  --circle    : calc(var(--slot) - 4px);
+  position    : relative;
+  display     : flex;
+  align-items : center;
+}
+
+.surface-rail-end { flex: 0 0 var(--slot); }
+
+.surface-rail-row[data-bookends="true"] .surface-rail-end::before {
+  content        : "";
+  position       : absolute;
+  inset          : 0;
+  z-index        : 0;
+  margin         : auto;
+  width          : var(--circle);
+  height         : var(--circle);
+  border         : 1px solid color-mix(in srgb, var(--family-color) 30%, transparent);
+  border-radius  : 999px;
+  pointer-events : none;
+  transition     : border-color 240ms linear;
+}
+
+.surface-rail-row[data-bookends="true"] .surface-rail-end:hover::before,
+.surface-rail-row[data-bookends="true"] .surface-rail-end.active::before {
+  border-color : color-mix(in srgb, var(--family-color) 64%, transparent);
+}
+
+.surface-rail-window {
+  position                   : relative;
+  flex                       : 1 1 auto;
+  min-width                  : 0;
+  height                     : calc(var(--slot) + 8px);
+  overflow-x                 : auto;
+  overflow-y                 : hidden;
+  scrollbar-width            : none;
+  overscroll-behavior-inline : contain;
+  -webkit-mask-image : linear-gradient(
+    90deg,
+    transparent 0,
+    black var(--fade-start),
+    black calc(100% - var(--fade-end)),
+    transparent 100%
+  );
+          mask-image : linear-gradient(
+    90deg,
+    transparent 0,
+    black var(--fade-start),
+    black calc(100% - var(--fade-end)),
+    transparent 100%
+  );
+  transition : mask-image 260ms linear;
+}
+
+.surface-rail-window::-webkit-scrollbar { display: none; }
+
+.surface-rail-window[data-edge="start"] { cursor: w-resize; }
+.surface-rail-window[data-edge="end"]   { cursor: e-resize; }
+
+.surface-rail-track {
+  display     : flex;
+  align-items : center;
+  width       : max-content;
+}
+
+.surface-rail-track .surface-pip { width: var(--slot); }
+
+.surface-rail-chevron {
+  position    : absolute;
+  top         : 50%;
+  z-index     : 3;
+  display     : grid;
+  place-items : center;
+  width       : 18px;
+  height      : calc(var(--slot) + 8px);
+  padding     : 0;
+  border      : 0;
+  background  : none;
+  color       : var(--family-color);
+  font-family : var(--vp-font-family-mono);
+  font-size   : 15px;
+  line-height : 1;
+  opacity     : calc(0.26 + 0.4 * var(--reach));
+  cursor      : pointer;
+  transition  : opacity 220ms linear,
+                scale   140ms var(--prose-ease-emphasized),
+                translate 220ms var(--prose-ease-emphasized);
+}
+
+.surface-rail-chevron[data-side="start"] { left  : var(--rail-inset); translate: 0 -50%; }
+.surface-rail-chevron[data-side="end"]   { right : var(--rail-inset); translate: 0 -50%; }
+
+.surface-rail-chevron:hover { opacity: 1; }
+.surface-rail-chevron[data-side="start"]:hover { translate: -3px -50%; }
+.surface-rail-chevron[data-side="end"]:hover   { translate:  3px -50%; }
+.surface-rail-chevron:active { scale: 0.86; }
+.surface-rail-chevron:disabled { opacity: 0; pointer-events: none; }
+
+.surface-rail-chevron:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : 1px;
+  opacity        : 1;
+}
+
+.surface-rail-name { min-height: 26px; }
+
+.surface-rail-back-enter-active, .surface-rail-back-leave-active,
+.surface-rail-fwd-enter-active,  .surface-rail-fwd-leave-active {
+  transition : opacity 110ms linear, translate 180ms var(--prose-ease-emphasized);
+}
+
+.surface-rail-fwd-enter-from  { opacity: 0; translate:  5px 0; }
+.surface-rail-fwd-leave-to    { opacity: 0; translate: -5px 0; }
+.surface-rail-back-enter-from { opacity: 0; translate: -5px 0; }
+.surface-rail-back-leave-to   { opacity: 0; translate:  5px 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .surface-pip-mark, .surface-pip-folio { transition-delay: 0s; }
+}

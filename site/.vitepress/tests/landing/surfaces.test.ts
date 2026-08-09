@@ -61,11 +61,11 @@ describe('Surfaces', () => {
       .toEqual([undefined, undefined, 'true', 'true'])
   })
 
-  domTest('leaves every link in the hidden copy out of the tab order', ({ reducedMotion }) => {
+  domTest('leaves every focusable node in the hidden copy out of the tab order', ({ reducedMotion }) => {
     reducedMotion(true)
     const cards      = mountSurfaces().findAll('.surface-card')
     const tabindexes = (card: (typeof cards)[number]): (string | undefined)[] =>
-      card.findAll('a').map(a => a.attributes('tabindex'))
+      card.findAll('a, button').map(node => node.attributes('tabindex'))
 
     expect(tabindexes(cards[0]).every(t => t === undefined)).toBe(true)
     expect(tabindexes(cards[2]).length).toBeGreaterThan(0)
@@ -88,7 +88,7 @@ describe('Surfaces', () => {
     reducedMotion(true)
     const first = mountSurfaces().findAll('.surface-card')[0]
     expect(first.get('.surface-card-cover-link').attributes('href')).toBe('/rules/alignment/')
-    expect(first.get('.surface-key').attributes('href')).toBe('/rules/alignment/align-equals')
+    expect(first.get('.surface-pip').attributes('href')).toBe('/rules/alignment/align-equals')
   })
 
   domTest('renders with no axe violations', async ({ reducedMotion }) => {
