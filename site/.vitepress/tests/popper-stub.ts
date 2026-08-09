@@ -1,6 +1,10 @@
-// Renders both VDropdown slots inline so popper content is reachable without
-// floating-vue's real positioning.
+// Stands in for floating-vue without its positioning. `VDropdown` renders both
+// slots inline so popper content is reachable, whereas `VTooltip` renders the
+// trigger alone, and the directives are inert.
 export const popperStubMount = {
-  directives : { 'close-popper': {} },
-  stubs      : { VDropdown: { template: '<div><slot /><slot name="popper" /></div>' } }
+  directives : { 'close-popper': {}, tooltip: {} },
+  stubs      : {
+    VDropdown : { template: '<div><slot /><slot name="popper" /></div>' },
+    VTooltip  : { template: '<div><slot /></div>' }
+  }
 }

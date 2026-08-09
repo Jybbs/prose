@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
-import { mount } from '@vue/test-utils'
+import { mount }              from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
 
-import GlossaryTerm from '../../theme/components/glossary/GlossaryTerm.vue'
+import { provideAriaHidden } from '../../lib/composables/use-aria-hidden'
+import GlossaryTerm          from '../../theme/components/glossary/GlossaryTerm.vue'
 
 vi.mock('vitepress', () => ({ useRoute: () => ({ path: '/primitives/' }) }))
 
@@ -47,5 +49,30 @@ describe('GlossaryTerm tooltip wiring', () => {
     expect(binding.theme).toBe('glossary')
     expect(binding.content).toContain('An indivisible literal.')
     expect(binding.content).toContain('href="/reference/glossary#atomic"')
+  })
+})
+
+describe('GlossaryTerm tab order', () => {
+  const tooltip = vi.fn<() => void>()
+
+  const anchor = (hidden: boolean) => {
+    const Child = defineComponent({
+      setup: () => () => h(GlossaryTerm, { slug: 'atomic' }, () => 'atom')
+    })
+    const Parent = defineComponent({
+      setup() {
+        provideAriaHidden(hidden)
+        return () => h(Child)
+      }
+    })
+    return mount(Parent, { global: { directives: { tooltip } } }).get('.glossary-anchor')
+  }
+
+  it('stays focusable in ordinary prose', () => {
+    expect(anchor(false).attributes('tabindex')).toBe('0')
+  })
+
+  it('leaves the tab order inside an aria-hidden subtree', () => {
+    expect(anchor(true).attributes('tabindex')).toBe('-1')
   })
 })
