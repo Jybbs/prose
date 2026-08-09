@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "Mapping Keys Bind Their Entries by Name"
+
+description = '''
+A parenthesized key names the dict entry it reads, and the rewrite splices
+that entry's value into the field.
+'''

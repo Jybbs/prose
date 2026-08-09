@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "An Indexed Field Binds by Position"
+
+description = '''
+Explicit indices read the arguments in whatever order the template states
+them.
+'''

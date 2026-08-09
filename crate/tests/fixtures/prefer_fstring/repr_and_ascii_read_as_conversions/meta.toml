@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`%r` and `%a` Read as Field Conversions"
+
+description = '''
+Each becomes the `!r` or `!a` conversion an f-string field already carries.
+'''

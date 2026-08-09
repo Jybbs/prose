@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Redundant Grouping Pair Goes With the Rewrite"
+
+description = '''
+The f-string leaves the pair around it redundant, so the replaced span
+takes the pair in rather than leaving it for a later pass.
+'''

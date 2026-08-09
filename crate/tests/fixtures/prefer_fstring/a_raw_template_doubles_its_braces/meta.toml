@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Raw Template Doubles Every Brace"
+
+description = '''
+A raw template processes no escape, so `\N{...}` reads as literal text
+and its braces double like any other.
+'''

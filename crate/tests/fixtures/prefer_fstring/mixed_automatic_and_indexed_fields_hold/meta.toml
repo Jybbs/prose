@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "A Template Mixing Automatic and Indexed Fields Holds"
+
+description = '''
+`str.format` rejects the mix outright, so the rewrite leaves the raising
+call as written.
+'''

@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Literal Brace Doubles so the Field Boundary Holds"
+
+description = '''
+The brace the template wrote literally becomes `{{`, so the f-string renders
+it rather than opening a field on it.
+'''

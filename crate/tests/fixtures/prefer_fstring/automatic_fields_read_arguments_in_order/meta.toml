@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "Automatic Fields Read the Arguments in Order"
+
+description = '''
+An empty field takes the next positional argument, the same numbering
+`str.format` applies.
+'''

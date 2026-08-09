@@ -1,0 +1,8 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/prefer_fstring/numeric_conversions_keep_their_spec/input.py
+---
+prefer-fstring@36..57
+prefer-fstring@65..86
+prefer-fstring@7..29

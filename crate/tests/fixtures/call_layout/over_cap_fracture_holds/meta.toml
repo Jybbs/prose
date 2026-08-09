@@ -4,5 +4,5 @@ previewable = false
 title       = "An Over-Cap Fracture Holds Its Break"
 
 description = '''
-An inner argument list carrying more arguments than `max-args` never joins inside the measure, so the enclosing call reads it as spanning lines and every break stays.
+An inner argument list carrying more arguments than `max-args` never joins inside the measure, so the enclosing call still reads it as spanning rows. Its continuation rows align under its own opening parenthesis rather than under the row it sits on, so the span trigger passes it over and every break stays.
 '''

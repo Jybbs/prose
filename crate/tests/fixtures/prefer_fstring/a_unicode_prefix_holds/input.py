@@ -1,0 +1,1 @@
+legacy = u"%s" % (value,)

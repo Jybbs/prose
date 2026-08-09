@@ -2,7 +2,10 @@
 
 mod parented;
 
-pub(crate) use parented::{Descent, ParentedProbe, is_interpolated_string, walk_parented_exprs};
+pub(crate) use parented::{
+    Descent, ParentedProbe, filter_map_over_parented_exprs, is_interpolated_string,
+    walk_parented_exprs,
+};
 
 use ruff_python_ast::{
     Expr, InterpolatedStringElement, Stmt,

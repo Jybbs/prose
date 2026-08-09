@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "A Field Naming No Argument Holds"
+
+description = '''
+The call passes no keyword the field names, so the field reads nothing
+the rewrite could splice inline.
+'''

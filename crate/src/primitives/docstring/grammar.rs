@@ -7,6 +7,8 @@ use std::{ops::Range, sync::LazyLock};
 
 use regex_lite::Regex;
 
+use crate::primitives::unbracketed_colon;
+
 static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^[A-Z][A-Za-z]*( [A-Z][A-Za-z]*)*:").expect("static pattern compiles")
 });
@@ -93,23 +95,6 @@ fn entry_head(trimmed: &str) -> Option<EntryHead<'_>> {
             .filter(|_| carries_type)
             .map(|start| start..head.len()),
     })
-}
-
-/// Byte offset of the first `:` in `s` that sits at paren-and-bracket
-/// depth zero, skipping the colons nested inside a parenthesized type
-/// or a bracketed subscript. `None` when every colon is nested or the
-/// line carries none.
-fn unbracketed_colon(s: &str) -> Option<usize> {
-    let mut depth = 0usize;
-    for (cursor, byte) in s.bytes().enumerate() {
-        match byte {
-            b'(' | b'[' => depth += 1,
-            b')' | b']' => depth = depth.saturating_sub(1),
-            b':' if depth == 0 => return Some(cursor),
-            _ => {}
-        }
-    }
-    None
 }
 
 #[cfg(test)]
@@ -276,21 +261,5 @@ mod tests {
         assert!(!typed_entry_head("two words (int): not an entry"));
         assert!(!typed_entry_head("See https://example.com for details."));
         assert!(!typed_entry_head("just prose with no colon"));
-    }
-
-    #[test]
-    fn unbracketed_colon_returns_none_when_colon_nested_or_absent() {
-        assert!(unbracketed_colon("name (only: parens)").is_none());
-        assert!(unbracketed_colon("List[str, int]").is_none());
-        assert!(unbracketed_colon("no colon here").is_none());
-    }
-
-    #[test]
-    fn unbracketed_colon_skips_balanced_parens_and_brackets() {
-        assert_eq!(unbracketed_colon("markup (str): desc"), Some(12));
-        assert_eq!(
-            unbracketed_colon("x (Dict[str, int]): mapping"),
-            Some("x (Dict[str, int])".len()),
-        );
     }
 }

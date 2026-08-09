@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Default Aligned Under an Interior Bracket Holds the Signature"
+
+description = '''
+A default whose continuation rows align under its own opening bracket rather than under the parameter's row would land against nothing once the parameter moves, so the span trigger passes it over and the signature stays as written.
+'''

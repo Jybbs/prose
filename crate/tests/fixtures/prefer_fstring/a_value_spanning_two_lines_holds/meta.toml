@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Value Spanning Two Lines Holds"
+
+description = '''
+A replacement field carries no line break below the PEP 701 floor.
+'''

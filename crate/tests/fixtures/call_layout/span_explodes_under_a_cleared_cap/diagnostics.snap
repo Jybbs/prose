@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/call_layout/span_explodes_under_a_cleared_cap/input.py
+---
+call-layout@9..77

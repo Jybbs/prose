@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "An Escaped Backslash Opens No Name Escape"
+
+description = '''
+The second backslash of an escaped pair is data rather than an escape
+introducer, so the braces after it double.
+'''

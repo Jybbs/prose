@@ -79,6 +79,8 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'rewrite-identity',            href: '/reference/configuration#per-rule-facets',       blurb: 'Rewrite a `None` test to `is`, and flag a test against `True` or `False`.' },
     { key: 'rewrite-negation',            href: '/reference/configuration#per-rule-facets',       blurb: 'Fold a leading `not` into the `in` or `is` it negates.' },
     { key: 'rewrite-operand-order',       href: '/reference/configuration#per-rule-facets',       blurb: 'Flip a comparison whose constant side leads, so the variable leads.' },
+    { key: 'rewrite-percent',             href: '/reference/configuration#per-rule-facets',       blurb: 'Convert printf-style `%` interpolation to an f-string.' },
+    { key: 'rewrite-str-format',          href: '/reference/configuration#per-rule-facets',       blurb: 'Convert a `str.format()` call to an f-string.' },
     { key: 'rewrite-unions',              href: '/reference/configuration#per-rule-facets',       blurb: 'Rewrite `Optional` and `Union` to the PEP 604 pipe form.' },
     { key: 'sort-definitions',            href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder class and function definitions, holding each behind what it names.' },
     { key: 'sort-dict-keys',              href: '/reference/configuration#per-rule-facets',       blurb: 'Reorder the keyed entries of a dict literal, off to hold the authored order.' },
