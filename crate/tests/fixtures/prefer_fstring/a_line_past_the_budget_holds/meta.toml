@@ -1,6 +1,6 @@
 [docs]
 previewable = true
-title       = "A Rewrite Past The Line Budget Holds"
+title       = "A Rewrite Past the Line Budget Holds"
 
 description = '''
 No layout rule reaches inside an f-string, so a conversion that would push

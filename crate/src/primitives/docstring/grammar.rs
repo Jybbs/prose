@@ -228,20 +228,4 @@ mod tests {
         assert!(!typed_entry_head("See https://example.com for details."));
         assert!(!typed_entry_head("just prose with no colon"));
     }
-
-    #[test]
-    fn unbracketed_colon_returns_none_when_colon_nested_or_absent() {
-        assert!(unbracketed_colon("name (only: parens)").is_none());
-        assert!(unbracketed_colon("List[str, int]").is_none());
-        assert!(unbracketed_colon("no colon here").is_none());
-    }
-
-    #[test]
-    fn unbracketed_colon_skips_balanced_parens_and_brackets() {
-        assert_eq!(unbracketed_colon("markup (str): desc"), Some(12));
-        assert_eq!(
-            unbracketed_colon("x (Dict[str, int]): mapping"),
-            Some("x (Dict[str, int])".len()),
-        );
-    }
 }

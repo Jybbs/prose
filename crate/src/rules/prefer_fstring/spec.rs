@@ -51,19 +51,18 @@ pub(super) fn suffix(spec: &CFormatSpec) -> Option<String> {
 /// a sign character supersedes and the zero pad a left adjust does.
 fn flag_text(flags: CConversionFlags) -> String {
     let mut text = String::new();
-    if flags.intersects(CConversionFlags::LEFT_ADJUST) {
+    if flags.contains(CConversionFlags::LEFT_ADJUST) {
         text.push('<');
     }
-    if flags.intersects(CConversionFlags::SIGN_CHAR) {
+    if flags.contains(CConversionFlags::SIGN_CHAR) {
         text.push('+');
-    } else if flags.intersects(CConversionFlags::BLANK_SIGN) {
+    } else if flags.contains(CConversionFlags::BLANK_SIGN) {
         text.push(' ');
     }
-    if flags.intersects(CConversionFlags::ALTERNATE_FORM) {
+    if flags.contains(CConversionFlags::ALTERNATE_FORM) {
         text.push('#');
     }
-    if flags.intersects(CConversionFlags::ZERO_PAD)
-        && !flags.intersects(CConversionFlags::LEFT_ADJUST)
+    if flags.contains(CConversionFlags::ZERO_PAD) && !flags.contains(CConversionFlags::LEFT_ADJUST)
     {
         text.push('0');
     }
@@ -81,7 +80,10 @@ fn numeric_spec(spec: &CFormatSpec) -> String {
             let _ = write!(text, ".{digits}");
         }
         Some(CFormatPrecision::Dot) => text.push_str(".0"),
-        _ => {}
+        Some(CFormatPrecision::Quantity(CFormatQuantity::FromValuesTuple)) => {
+            unreachable!("invariant: `suffix` declines a `*` precision")
+        }
+        None => {}
     }
     text.push(spec.format_char);
     text

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/an_escaped_backslash_opens_no_name_escape/input.py
+---
+note = f"\\N{{token}} {name}"

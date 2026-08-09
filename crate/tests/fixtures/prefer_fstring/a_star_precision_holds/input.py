@@ -1,0 +1,1 @@
+measured = "%.*f" % (places, measure)

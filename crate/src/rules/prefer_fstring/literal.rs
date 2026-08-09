@@ -15,7 +15,6 @@ use crate::source::Source;
 pub(super) struct Template<'src> {
     pub(super) body: &'src str,
     flags: AnyStringFlags,
-    pub(super) raw: bool,
 }
 
 impl<'src> Template<'src> {
@@ -37,8 +36,13 @@ impl<'src> Template<'src> {
         Some(Self {
             body: source.slice(literal.content_range()),
             flags: AnyStringFlags::new(prefix, flags.quote_style(), flags.triple_quotes()),
-            raw,
         })
+    }
+
+    /// True when the template carries an `r` prefix, so the f-string it
+    /// wraps into processes no escape.
+    pub(super) fn raw(&self) -> bool {
+        self.flags.prefix().is_raw()
     }
 
     /// `body` wrapped in the f-string prefix and the quotes the source
@@ -49,11 +53,15 @@ impl<'src> Template<'src> {
     }
 }
 
-/// `text` with each brace doubled so an f-string reads it as a literal,
-/// leaving a `\N{...}` name escape whole.
-pub(super) fn escape_braces(text: &str) -> Cow<'_, str> {
+/// `text` with each brace doubled so an f-string reads it as a literal.
+/// A non-raw template keeps a `\N{...}` name escape whole, whereas a raw
+/// one processes no escapes, so every brace in it doubles.
+pub(super) fn escape_braces(text: &str, raw: bool) -> Cow<'_, str> {
     if !text.contains(['{', '}']) {
         return Cow::Borrowed(text);
+    }
+    if raw {
+        return Cow::Owned(text.replace('{', "{{").replace('}', "}}"));
     }
     let mut escaped = String::with_capacity(text.len() + 2);
     let mut rest = text;
@@ -63,15 +71,22 @@ pub(super) fn escape_braces(text: &str) -> Cow<'_, str> {
         if let Some(len) = name_escape_len(tail) {
             escaped.push_str(&tail[..len]);
             rest = &tail[len..];
-        } else {
-            let mut chars = tail.chars();
-            let c = chars.next().expect("`find` located a character");
-            escaped.push(c);
-            if c != '\\' {
-                escaped.push(c);
-            }
-            rest = chars.as_str();
+            continue;
         }
+        let mut chars = tail.chars();
+        let c = chars.next().expect("`find` located a character");
+        escaped.push(c);
+        if c == '\\' {
+            if let Some(escaped_char) = chars.next() {
+                escaped.push(escaped_char);
+                if escaped_char == '{' || escaped_char == '}' {
+                    escaped.push(escaped_char);
+                }
+            }
+        } else {
+            escaped.push(c);
+        }
+        rest = chars.as_str();
     }
     escaped.push_str(rest);
     Cow::Owned(escaped)
@@ -104,17 +119,29 @@ mod tests {
 
     #[rstest]
     #[case("plain", "plain")]
+    #[case("\\N{SNOWMAN}", "\\N{{SNOWMAN}}")]
+    #[case("\\N{SNOWMAN} and {x}", "\\N{{SNOWMAN}} and {{x}}")]
+    fn escape_braces_doubles_every_brace_in_a_raw_template(
+        #[case] text: &str,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(escape_braces(text, true), expected, "{text}");
+    }
+
+    #[rstest]
+    #[case("plain", "plain")]
     #[case("a {brace} b", "a {{brace}} b")]
     #[case("}closes{", "}}closes{{")]
     #[case("\\N{SNOWMAN}", "\\N{SNOWMAN}")]
     #[case("\\N{SNOWMAN} and {x}", "\\N{SNOWMAN} and {{x}}")]
     #[case("\\\\{x}", "\\\\{{x}}")]
+    #[case("\\\\N{x}", "\\\\N{{x}}")]
     #[case("\\N{", "\\N{{")]
     fn escape_braces_doubles_every_brace_outside_a_name_escape(
         #[case] text: &str,
         #[case] expected: &str,
     ) {
-        assert_eq!(escape_braces(text), expected, "{text}");
+        assert_eq!(escape_braces(text, false), expected, "{text}");
     }
 
     #[rstest]

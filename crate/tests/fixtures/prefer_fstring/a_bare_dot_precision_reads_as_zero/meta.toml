@@ -1,6 +1,6 @@
 [docs]
 previewable = false
-title       = "A Bare Dot Precision Reads As Zero"
+title       = "A Bare Dot Precision Reads as Zero"
 
 description = '''
 `%.f` cuts to no decimal places, which the format spec writes as `.0`.

@@ -38,24 +38,25 @@ impl<'src> Arguments<'src> {
     /// argument or a `**` expansion, neither of which names the value
     /// a field reads.
     fn read(call: &'src ExprCall) -> Option<Self> {
-        let positional = call.arguments.args.iter().map(|value| Argument {
-            name: None,
-            reads: 0,
-            value,
-        });
-        let keyword = call
+        let slots = call
             .arguments
-            .keywords
+            .args
             .iter()
-            .map(|keyword| {
+            .map(|value| {
+                Some(Argument {
+                    name: None,
+                    reads: 0,
+                    value,
+                })
+            })
+            .chain(call.arguments.keywords.iter().map(|keyword| {
                 Some(Argument {
                     name: Some(keyword.arg.as_ref()?.as_str()),
                     reads: 0,
                     value: &keyword.value,
                 })
-            })
+            }))
             .collect::<Option<Vec<_>>>()?;
-        let slots: Vec<Argument<'src>> = positional.chain(keyword).collect();
         (!slots.is_empty()).then_some(Self {
             auto: 0,
             manual: false,
@@ -107,7 +108,7 @@ pub(super) fn rewritten(source: &Source, call: &ExprCall) -> Option<String> {
     }
     let template = Template::read(source, attribute.value.as_string_literal_expr()?)?;
     let mut arguments = Arguments::read(call)?;
-    let parsed = if template.raw {
+    let parsed = if template.raw() {
         FormatString::from_raw_str(template.body)
     } else {
         FormatString::from_str(template.body)
@@ -123,7 +124,7 @@ pub(super) fn rewritten(source: &Source, call: &ExprCall) -> Option<String> {
     let mut body = String::with_capacity(template.body.len());
     for part in &parsed.format_parts {
         match part {
-            FormatPart::Literal(text) => body.push_str(&escape_braces(text)),
+            FormatPart::Literal(text) => body.push_str(&escape_braces(text, template.raw())),
             FormatPart::Field {
                 field_name,
                 conversion_spec,
@@ -163,16 +164,10 @@ fn rendered<'src>(
     if slot.reads > 1 && value_is_effectful(slot.value) {
         return None;
     }
-    let placement = if field.parts.is_empty() {
-        Placement::Whole
-    } else {
-        Placement::Accessed
-    };
-    let text = field_text(source, slot.value, placement)?;
     if field.parts.is_empty() {
-        return Some(text);
+        return field_text(source, slot.value, Placement::Whole);
     }
-    let mut text = text.into_owned();
+    let mut text = field_text(source, slot.value, Placement::Accessed)?.into_owned();
     for part in &field.parts {
         match part {
             FieldNamePart::Attribute(name) => {

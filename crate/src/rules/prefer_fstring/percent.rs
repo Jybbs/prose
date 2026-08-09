@@ -1,6 +1,6 @@
 //! Rewrites a printf-style `%` interpolation as an f-string.
 
-use std::{borrow::Cow, str::FromStr};
+use std::{borrow::Cow, slice, str::FromStr};
 
 use ruff_python_ast::{DictItem, Expr, ExprBinOp, ExprDict, Operator};
 use ruff_python_literal::cformat::{CFormatPart, CFormatSpec, CFormatString};
@@ -38,7 +38,7 @@ pub(super) fn rewritten(source: &Source, binop: &ExprBinOp) -> Option<String> {
     let mut body = String::with_capacity(template.body.len());
     for (_, part) in parsed.iter() {
         match part {
-            CFormatPart::Literal(text) => body.push_str(&escape_braces(text)),
+            CFormatPart::Literal(text) => body.push_str(&escape_braces(text, template.raw())),
             CFormatPart::Spec(spec) => {
                 body.push('{');
                 body.push_str(&values.next().expect("bind yields one value per spec"));
@@ -65,9 +65,11 @@ fn bind<'src>(
     let none_keyed = specs.iter().all(|spec| spec.mapping_key.is_none());
     match right {
         Expr::Dict(dict) if all_keyed => bind_dict(source, specs, dict),
-        Expr::Tuple(tuple) if none_keyed => bind_in_order(source, specs.len(), &tuple.elts),
-        _ if none_keyed && right.as_literal_expr().is_some() => {
-            bind_in_order(source, specs.len(), std::slice::from_ref(right))
+        Expr::Tuple(tuple) if none_keyed && tuple.elts.len() == specs.len() => {
+            rendered_fields(source, &tuple.elts)
+        }
+        _ if none_keyed && specs.len() == 1 && right.as_literal_expr().is_some() => {
+            rendered_fields(source, slice::from_ref(right))
         }
         _ => None,
     }
@@ -108,17 +110,6 @@ fn bind_dict<'src>(
         })
         .collect::<Option<Vec<&Expr>>>()?;
     rendered_fields(source, ordered)
-}
-
-/// Renders `values` in order, `None` unless there are exactly `arity`
-/// of them and each one reads as a field.
-fn bind_in_order<'src>(
-    source: &'src Source,
-    arity: usize,
-    values: &[Expr],
-) -> Option<Vec<Cow<'src, str>>> {
-    (values.len() == arity).then_some(())?;
-    rendered_fields(source, values)
 }
 
 /// Every value rendered as a replacement field, in the order given,

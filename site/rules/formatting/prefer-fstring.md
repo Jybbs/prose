@@ -36,7 +36,7 @@ An argument no field reads holds the whole call, because dropping it would drop 
 
 <Fixture rule="prefer_fstring" case="a_repeated_effectful_argument_holds" />
 
-A value the field itself cannot carry holds too, covering a quote that would close the delimiter the f-string opened with, a backslash, a line break, and a brace. Those bounds are the ones every Python version accepts, so an emitted f-string parses below the PEP 701 floor as readily as above it.
+A value the field itself cannot carry holds too, covering a quote that would close the delimiter the f-string opened with, a backslash, a line break, and a brace. Those bounds are the ones every Python version accepts, so an emitted f-string parses below the PEP 701 floor as readily as above it. A comment anywhere inside the template or the call holds it as well, since an f-string has no place for one.
 
 <template #configuration>
 

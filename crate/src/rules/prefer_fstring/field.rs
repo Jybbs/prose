@@ -21,19 +21,16 @@ pub(super) enum Placement {
 }
 
 /// The text `value` reads as inside a replacement field, `None` when
-/// splicing it in would not parse. A comment, a line break, a starred
-/// argument, any character from [`BARRED`], and an ungrouped `:` each
-/// decline, the last of them covering a bare `lambda` whose colon the
-/// field would read as its format spec.
+/// splicing it in would not parse. A line break, a starred argument,
+/// any character from [`BARRED`], and an ungrouped `:` each decline,
+/// the last of them covering a bare `lambda` whose colon the field
+/// would read as its format spec.
 pub(super) fn field_text<'src>(
     source: &'src Source,
     value: &Expr,
     placement: Placement,
 ) -> Option<Cow<'src, str>> {
-    if matches!(value, Expr::Starred(_))
-        || source.contains_line_break(value)
-        || source.intersects_comment(value)
-    {
+    if matches!(value, Expr::Starred(_)) || source.contains_line_break(value) {
         return None;
     }
     let text = source.slice(value);
@@ -86,18 +83,25 @@ mod tests {
     }
 
     #[rstest]
-    #[case("value", "value")]
-    #[case("obj.attr", "obj.attr")]
-    #[case("table[0]", "table[0]")]
-    #[case("a + b", "a + b")]
-    #[case("a if cond else b", "a if cond else b")]
-    #[case("call(1)", "call(1)")]
-    #[case("-n", "-n")]
-    #[case("12", "12")]
-    #[case("(n := 5)", "(n := 5)")]
-    #[case("(a for a in seq)", "(a for a in seq)")]
-    fn field_text_leaves_a_whole_field_ungrouped(#[case] src: &str, #[case] expected: &str) {
-        assert_eq!(rendered(src, Placement::Whole).as_deref(), Some(expected));
+    fn field_text_declines_a_value_a_field_cannot_carry(
+        #[values(
+            "\"text\"",
+            "'text'",
+            "{1: 2}",
+            "{1, 2}",
+            "lambda: 1",
+            "x if p else lambda: 1",
+            "*rest"
+        )]
+        src: &str,
+    ) {
+        assert!(rendered(src, Placement::Whole).is_none(), "{src}");
+    }
+
+    #[test]
+    fn field_text_declines_a_value_spanning_two_lines() {
+        let source = parse("X = (\n    a\n    + b\n)\n");
+        assert!(field_text(&source, first_value(&source), Placement::Whole).is_none());
     }
 
     #[rstest]
@@ -116,28 +120,17 @@ mod tests {
     }
 
     #[rstest]
-    fn field_text_declines_a_value_a_field_cannot_carry(
-        #[values(
-            "\"text\"",
-            "'text'",
-            "{1: 2}",
-            "{1, 2}",
-            "lambda: 1",
-            "x if p else lambda: 1",
-            "*rest"
-        )]
-        src: &str,
-    ) {
-        assert!(rendered(src, Placement::Whole).is_none(), "{src}");
-    }
-
-    #[rstest]
-    #[case("((n := 5))", "(n := 5)")]
-    #[case("((a for a in seq))", "(a for a in seq)")]
-    fn field_text_wraps_once_however_many_pairs_the_source_wrote(
-        #[case] src: &str,
-        #[case] expected: &str,
-    ) {
+    #[case("value", "value")]
+    #[case("obj.attr", "obj.attr")]
+    #[case("table[0]", "table[0]")]
+    #[case("a + b", "a + b")]
+    #[case("a if cond else b", "a if cond else b")]
+    #[case("call(1)", "call(1)")]
+    #[case("-n", "-n")]
+    #[case("12", "12")]
+    #[case("(n := 5)", "(n := 5)")]
+    #[case("(a for a in seq)", "(a for a in seq)")]
+    fn field_text_leaves_a_whole_field_ungrouped(#[case] src: &str, #[case] expected: &str) {
         assert_eq!(rendered(src, Placement::Whole).as_deref(), Some(expected));
     }
 
@@ -149,9 +142,13 @@ mod tests {
         );
     }
 
-    #[test]
-    fn field_text_declines_a_value_spanning_two_lines() {
-        let source = parse("X = (\n    a\n    + b\n)\n");
-        assert!(field_text(&source, first_value(&source), Placement::Whole).is_none());
+    #[rstest]
+    #[case("((n := 5))", "(n := 5)")]
+    #[case("((a for a in seq))", "(a for a in seq)")]
+    fn field_text_wraps_once_however_many_pairs_the_source_wrote(
+        #[case] src: &str,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(rendered(src, Placement::Whole).as_deref(), Some(expected));
     }
 }

@@ -3,5 +3,5 @@ previewable = true
 title       = "An Implicitly Concatenated Template Holds"
 
 description = '''
-The run stays the one authored shape `string-concat-layout` lays out.
+The run stays the one authored shape `stack-adjacent-strings` lays out.
 '''

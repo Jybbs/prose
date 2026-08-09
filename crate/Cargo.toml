@@ -41,46 +41,46 @@ native  = [
 workspace = true
 
 [dependencies]
-annotate-snippets  = { version = "=0.12.16", optional = true }
-anstream           = { version = "1.0", optional = true }
-anstyle            = { version = "1.0", optional = true }
-anstyle-query      = { version = "1.1", optional = true }
-anyhow             = { version = "1.0", optional = true }
-blake3             = { version = "1", optional = true }
-clap               = { version = "4.5", features = ["derive"], optional = true }
-clap_complete      = { version = "4.5", optional = true }
-dirs               = { version = "6", optional = true }
-fluent-uri         = { version = "0.4", optional = true }
-fs-err             = "3"
-globset            = "0.4"
-heck               = "0.5"
-ignore             = { version = "0.4", optional = true }
-itertools          = "0.15"
-lsp-server         = { version = "0.10", optional = true }
-lsp-types          = { version = "0.97", optional = true }
-postcard           = { version = "1", features = ["use-std"], optional = true }
-rayon              = { version = "1.10", optional = true }
-regex-lite         = "0.1"
-ruff_diagnostics   = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22", features = ["serde"] }
-ruff_notebook      = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22" }
-ruff_python_ast    = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22", features = ["schemars", "serde"] }
+annotate-snippets   = { version = "=0.12.16", optional = true }
+anstream            = { version = "1.0", optional = true }
+anstyle             = { version = "1.0", optional = true }
+anstyle-query       = { version = "1.1", optional = true }
+anyhow              = { version = "1.0", optional = true }
+blake3              = { version = "1", optional = true }
+clap                = { version = "4.5", features = ["derive"], optional = true }
+clap_complete       = { version = "4.5", optional = true }
+dirs                = { version = "6", optional = true }
+fluent-uri          = { version = "0.4", optional = true }
+fs-err              = "3"
+globset             = "0.4"
+heck                = "0.5"
+ignore              = { version = "0.4", optional = true }
+itertools           = "0.15"
+lsp-server          = { version = "0.10", optional = true }
+lsp-types           = { version = "0.97", optional = true }
+postcard            = { version = "1", features = ["use-std"], optional = true }
+rayon               = { version = "1.10", optional = true }
+regex-lite          = "0.1"
+ruff_diagnostics    = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22", features = ["serde"] }
+ruff_notebook       = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22" }
+ruff_python_ast     = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22", features = ["schemars", "serde"] }
 ruff_python_literal = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22" }
-ruff_python_parser = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22" }
-ruff_python_stdlib = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22" }
-ruff_python_trivia = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22" }
-ruff_source_file   = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22", features = ["serde"] }
-ruff_text_size     = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22", features = ["serde"] }
-schemars           = "1"
-serde              = { version = "1.0", features = ["derive"] }
-serde-sarif        = { version = "0.8", optional = true }
-serde_ignored      = "0.1"
-serde_json         = "1.0"
-similar            = { version = "3", optional = true }
-tempfile           = { version = "3", optional = true }
-textwrap           = { version = "0.16", default-features = false, features = ["smawk", "unicode-width"] }
-thiserror          = "2.0"
-toml               = "1"
-unicode-width      = "0.2"
+ruff_python_parser  = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22" }
+ruff_python_stdlib  = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22" }
+ruff_python_trivia  = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22" }
+ruff_source_file    = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22", features = ["serde"] }
+ruff_text_size      = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22", features = ["serde"] }
+schemars            = "1"
+serde               = { version = "1.0", features = ["derive"] }
+serde-sarif         = { version = "0.8", optional = true }
+serde_ignored       = "0.1"
+serde_json          = "1.0"
+similar             = { version = "3", optional = true }
+tempfile            = { version = "3", optional = true }
+textwrap            = { version = "0.16", default-features = false, features = ["smawk", "unicode-width"] }
+thiserror           = "2.0"
+toml                = "1"
+unicode-width       = "0.2"
 
 [dev-dependencies]
 assert_cmd            = "2"
