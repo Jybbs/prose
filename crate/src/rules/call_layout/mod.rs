@@ -1,18 +1,22 @@
-//! Explodes a call to one argument per line under two triggers. The
+//! Explodes a call to one argument per line under three triggers. The
 //! count trigger fires on a keyword-expressible call carrying more than
 //! `max_args` arguments, rendering one keyword per line. The length
 //! trigger fires on any call whose inline argument list crosses
 //! `code_line_length` from the column that list lands at, exploding a
 //! keyword-expressible call in keyword form and any other call
-//! positionally. The closing `)` drops to the indent of the row carrying
-//! the call, a nested call in an argument value explodes in the same
-//! pass, and a chained call settles its receiver before the link that
-//! carries it, so every link measures the column it lands at. Neither
+//! positionally. The span trigger fires on any call one of whose
+//! arguments still spans rows once every closable fracture inside the
+//! list shuts and hangs from its own row rather than from a column
+//! inside it, whatever the argument count and whatever the joined width
+//! would have been. The closing `)` drops to the indent of the row
+//! carrying the call, a nested call in an argument value explodes in the
+//! same pass, and a chained call settles its receiver before the link
+//! that carries it, so every link measures the column it lands at. No
 //! trigger reaches a call inside an f-string or t-string. Order,
 //! `=` alignment, and trailing commas stay with `alphabetize`,
 //! `align_equals`, and `strip_trailing_commas`.
 //!
-//! Where neither trigger fires, an argument list the author fractured
+//! Where no trigger fires, an argument list the author fractured
 //! rejoins onto one row, measured across the column its `(` lands at,
 //! the joined arguments, and the text trailing the call to the end of
 //! its logical line. A list carrying the flush column shape the

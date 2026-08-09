@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Member Running Through a Multi-Line String Keeps Its Floor"
+
+description = '''
+A member carrying a string literal that itself spans rows stays at its source columns while the expansion moves the row around it, since re-indenting the block would pad the literal's own interior.
+'''

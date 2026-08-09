@@ -538,6 +538,18 @@ export const glossary: Record<string, GlossaryEntry> = {
     families   : ['engine']
   },
 
+  'span trigger': {
+    aliases    : ['span-based trigger', 'row-span trigger'],
+    definition : 'A span trigger expands a layout once one of its members still spans rows '
+               + 'after every closable break inside it shuts, whatever the member count and '
+               + 'whatever the joined width. `call-layout` reads its arguments this way and '
+               + '`signature-layout` its parameters, so a construct the author left across '
+               + 'rows takes the one-per-line shape a long one takes. A member aligned under '
+               + 'its own opening bracket is passed over, since that alignment would land '
+               + 'against nothing once its row moves.',
+    rule       : 'call-layout'
+  },
+
   'stdin mode': {
     aliases    : ['--stdin', 'stdin'],
     definition : 'Stdin mode is the CLI shape that reads a single source from standard input '
