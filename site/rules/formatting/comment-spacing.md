@@ -8,9 +8,9 @@ layout  : doc
 
 <RuleLayout rule="comment_spacing">
 
-A comment's leading edge is the first thing the eye lands on, and a file where one comment opens `#note` and the next `##note` makes the reader re-parse that delimiter before reaching the note itself. `comment-spacing` settles the opener onto a single space after the hash run and holds a trailing comment at least two columns clear of the code beside it, so the delimiter reads once and the text lines up behind it.
+`comment-spacing` settles a comment's opener onto a single space after the hash run and holds a trailing comment at least two columns clear of the code beside it, so the delimiter reads the same way on every line.
 
-Indentation inside a comment is sometimes structure the author drew and sometimes drift, and what separates the two is whether the comment stands in a column. A comment opening at the same column as the comment above or below it belongs to a block that was laid out deliberately, so every indent inside that block survives:
+What separates deliberate indentation inside a comment from drift is whether the comment stands in a column. A comment opening at the same column as the one above or below it belongs to a laid-out block, so every indent inside that block survives:
 
 ```python
 # options for the run:
