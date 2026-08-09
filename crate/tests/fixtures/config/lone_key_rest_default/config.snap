@@ -221,6 +221,9 @@ Config {
         signature_annotations: ToggleOnly {
             enabled: true,
         },
+        restated_types: ToggleOnly {
+            enabled: true,
+        },
         line_overflow: LineOverflowConfig {
             enabled: true,
             suggest_string_splits: true,

@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/restated_types/method_docstring_flagged/input.py
+---
+class Remote:
+    def dial(self, host: str):
+        """
+        Open a session against a remote.
+
+        Args:
+            host (str): The remote to dial.
+        """

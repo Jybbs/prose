@@ -38,7 +38,7 @@ use crate::{
         miscased_constants::MiscasedConstants, modernize_annotations::ModernizeAnnotations,
         normalize_comparisons::NormalizeComparisons, normalize_literals::NormalizeLiterals,
         prune_inert_imports::PruneInertImports, reassigned_constants::ReassignedConstants,
-        shed_backslash_continuations::ShedBackslashContinuations,
+        restated_types::RestatedTypes, shed_backslash_continuations::ShedBackslashContinuations,
         shed_parentheses::ShedParentheses, shed_redundant_base::ShedRedundantBase,
         shed_super_args::ShedSuperArgs, signature_annotations::SignatureAnnotations,
         signature_layout::SignatureLayout, simplify_comprehensions::SimplifyComprehensions,
@@ -419,6 +419,7 @@ register_rules! {
     "single-use-variables":         single_use_variables:         SingleUseVariablesConfig   => SingleUseVariables         => [],
     "unsorted-positionals":         unsorted_positionals:         ToggleOnly                 => UnsortedPositionals        => [],
     "signature-annotations":        signature_annotations:        ToggleOnly                 => SignatureAnnotations       => [],
+    "restated-types":               restated_types:               ToggleOnly                 => RestatedTypes              => ["docstring-frame", "docstring-expand", "docstring-wrap"],
     "line-overflow":                line_overflow:                LineOverflowConfig         => LineOverflow               => ["strip-align-padding", "comment-spacing", "align-comments"],
 }
 

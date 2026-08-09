@@ -29,6 +29,7 @@ pub(crate) mod normalize_comparisons;
 pub(crate) mod normalize_literals;
 pub(crate) mod prune_inert_imports;
 pub(crate) mod reassigned_constants;
+pub(crate) mod restated_types;
 pub(crate) mod shed_backslash_continuations;
 pub(crate) mod shed_parentheses;
 pub(crate) mod shed_redundant_base;

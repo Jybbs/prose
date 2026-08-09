@@ -38,6 +38,7 @@ normalize-comparisons        = { enabled = false, rewrite-identity = false, rewr
 normalize-literals           = { enabled = false, unify-numerics = false, unify-prefixes = false, unify-quotes = false }
 prune-inert-imports          = { drop-duplicates = false, drop-unreferenced = false, enabled = false }
 reassigned-constants         = { allow = ["LOG_LEVEL"], enabled = false }
+restated-types               = false
 shed-backslash-continuations = false
 shed-parentheses             = false
 shed-redundant-base          = false

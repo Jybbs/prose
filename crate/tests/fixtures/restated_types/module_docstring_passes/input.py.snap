@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/restated_types/module_docstring_passes/input.py
+---
+"""
+Dial helpers.
+
+Args:
+    host (str): A module docstring documents no signature.
+"""
