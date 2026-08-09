@@ -19,10 +19,7 @@ use crate::{
     diagnostics::Diagnostic,
     primitives::{
         comparison::opening_token_kind,
-        walk::{
-            Descent, ParentedProbe, filter_map_over_exprs, is_interpolated_string,
-            walk_parented_exprs,
-        },
+        walk::{Descent, filter_map_over_exprs, filter_map_over_parented_exprs},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -98,13 +95,10 @@ impl NormalizeComparisons {
 
 impl Rule for NormalizeComparisons {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let mut rewriter = Rewriter {
-            groups: Vec::new(),
-            rule: self,
-            source,
-        };
-        walk_parented_exprs(source.ast(), &mut rewriter);
-        rewriter.groups
+        filter_map_over_parented_exprs(source.ast(), Descent::Over, |expr, parent| {
+            expr.as_compare_expr()
+                .and_then(|compare| self.rewrite(source, compare, parent))
+        })
     }
 
     fn id(&self) -> RuleId {
@@ -138,28 +132,6 @@ struct Plan {
     drop_not: bool,
     flip: bool,
     op: CmpOp,
-}
-
-/// Collects the edit group each comparison earns, stepping over an
-/// f-string or t-string so a replacement field keeps the shape its
-/// author gave it.
-struct Rewriter<'a> {
-    groups: Vec<Vec<Edit>>,
-    rule: &'a NormalizeComparisons,
-    source: &'a Source,
-}
-
-impl<'a> ParentedProbe<'a> for Rewriter<'a> {
-    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
-        if is_interpolated_string(expr) {
-            return Descent::Over;
-        }
-        if let Some(compare) = expr.as_compare_expr() {
-            self.groups
-                .extend(self.rule.rewrite(self.source, compare, parent));
-        }
-        Descent::Into
-    }
 }
 
 /// The two-operand comparison this rule reads, its operands paired with

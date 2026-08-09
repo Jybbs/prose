@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Skipped Line Keeps Its Template"
+
+description = '''
+The directive holds the line it sits on, leaving the neighbour below it to
+convert.
+'''

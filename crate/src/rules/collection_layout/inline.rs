@@ -24,10 +24,11 @@ impl<'a> Layouter<'a> {
         buf
     }
 
-    /// The range covering `expr` with explicit parens recovered against
-    /// `parent`.
-    fn range_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> TextRange {
-        self.source.paren_aware_range(expr.into(), parent)
+    /// Returns the source slice covering `expr`, with explicit parens
+    /// recovered against `parent` so precedence-bearing parens like
+    /// `(-a) ** 2` survive a borrow.
+    fn slice_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> &'a str {
+        self.source.slice(self.range_with_parens(expr, parent))
     }
 
     /// Appends a child `expr`'s inline serialization to `buf`, a held
@@ -208,10 +209,9 @@ impl<'a> Layouter<'a> {
             .then_some(inline)
     }
 
-    /// Returns the source slice covering `expr`, with explicit parens
-    /// recovered against `parent` so precedence-bearing parens like
-    /// `(-a) ** 2` survive a borrow.
-    pub(super) fn slice_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> &'a str {
-        self.source.slice(self.range_with_parens(expr, parent))
+    /// The range covering `expr` with explicit parens recovered against
+    /// `parent`.
+    pub(super) fn range_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> TextRange {
+        self.source.paren_aware_range(expr.into(), parent)
     }
 }

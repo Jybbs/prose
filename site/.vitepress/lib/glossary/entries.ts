@@ -302,7 +302,9 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'in docstring position, since Python assigns it no `__doc__`, leaving it outside '
                + 'every docstring rule. The layout rules treat the replacement field as opaque '
                + 'too, since a line break spliced there parses only on Python 3.12 and later, '
-               + 'leaving an over-wide interpolation for `line-overflow` to report.',
+               + 'leaving an over-wide interpolation for `line-overflow` to report. That same '
+               + 'opacity is why `prefer-fstring` measures a conversion against the line budget '
+               + 'before it emits one.',
     families   : ['docs', 'formatting', 'layout', 'lint'],
     href       : 'https://docs.python.org/3/reference/lexical_analysis.html#f-strings'
   },
@@ -536,6 +538,18 @@ export const glossary: Record<string, GlossaryEntry> = {
                + '`prose format` and surfaces as a pending change under `prose check`, whereas '
                + '`Lint` only reports and never rewrites.',
     families   : ['engine']
+  },
+
+  'span trigger': {
+    aliases    : ['span-based trigger', 'row-span trigger'],
+    definition : 'A span trigger expands a layout once one of its members still spans rows '
+               + 'after every closable break inside it shuts, whatever the member count and '
+               + 'whatever the joined width. `call-layout` reads its arguments this way and '
+               + '`signature-layout` its parameters, so a construct the author left across '
+               + 'rows takes the one-per-line shape a long one takes. A member aligned under '
+               + 'its own opening bracket is passed over, since that alignment would land '
+               + 'against nothing once its row moves.',
+    rule       : 'call-layout'
   },
 
   'stdin mode': {

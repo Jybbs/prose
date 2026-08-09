@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "An Annotated Signature Makes the Docstring Types Redundant"
+
+description = '''
+Both `Args:` entries name a parameter the signature annotates, so each parenthesized type group draws a report anchored on the group itself rather than on the whole entry. A type checker reads the annotation on every run whereas nothing reads the docstring type, leaving the prose free to describe what the parameter is for.
+'''

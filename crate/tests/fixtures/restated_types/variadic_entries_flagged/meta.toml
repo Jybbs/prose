@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Variadic Entry Resolves Past Its Star Prefix"
+
+description = '''
+An entry name drops its `*` or `**` prefix before it resolves, so `*args` and `**kwargs` reach the annotated variadics the signature declares.
+'''

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/automatic_fields_read_arguments_in_order/input.py
+---
+label = f"{key}={value}"

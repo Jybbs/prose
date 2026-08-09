@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/restated_types/other_section_headings_pass/input.py
+---
+def resolve(value: int, error: str):
+    """
+    Resolve a value.
+
+    Returns:
+        value (int): The resolved value, sharing the parameter's name.
+
+    Raises:
+        error (str): Raised when the same-named parameter is set.
+    """

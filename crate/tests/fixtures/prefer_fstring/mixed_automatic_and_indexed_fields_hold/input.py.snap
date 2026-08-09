@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/mixed_automatic_and_indexed_fields_hold/input.py
+---
+mixed = "{} {0}".format(value)
+reversed_mix = "{0} {}".format(other)

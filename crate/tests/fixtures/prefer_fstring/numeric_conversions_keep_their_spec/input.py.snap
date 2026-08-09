@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/numeric_conversions_keep_their_spec/input.py
+---
+mask = f"{bits:x}/{mode:o}"
+pad = f"{measure:08.3f}"
+left = f"{score:<10.2f}|"

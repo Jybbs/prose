@@ -3,31 +3,33 @@
 //! head. Every predicate here takes a trimmed line and returns a
 //! verdict, carrying no state across lines.
 
-use std::sync::LazyLock;
+use std::{ops::Range, sync::LazyLock};
 
 use regex_lite::Regex;
+
+use crate::primitives::unbracketed_colon;
 
 static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^[A-Z][A-Za-z]*( [A-Z][A-Za-z]*)*:").expect("static pattern compiles")
 });
 
-/// A parsed `name: description` entry head. `colon` is the byte offset
-/// of the separating `:` within the trimmed line, `desc_start` is the
-/// byte offset where the description begins, and `paren` the byte
-/// offset of the parenthesized type group's `(` where the head names a
-/// type.
+/// A parsed `name: description` entry head, its byte offsets measured
+/// within the trimmed line. `colon` locates the separating `:`,
+/// `desc_start` the first byte of the description, and `type_group`
+/// spans the parenthesized type where the head carries one.
 pub(crate) struct EntryHead<'a> {
     pub(crate) colon: usize,
     pub(crate) desc_start: usize,
     pub(crate) name: &'a str,
-    pub(crate) paren: Option<usize>,
+    pub(crate) type_group: Option<Range<usize>>,
 }
 
-/// True when `trimmed` opens with a Title-case word or multi-word
-/// run with every word capitalized, immediately followed by `:`.
-/// Trailing content after the `:` is permitted.
-pub(crate) fn section_heading(trimmed: &str) -> bool {
-    SECTION_HEADING.is_match(trimmed)
+/// The heading `trimmed` opens with, read without its trailing `:`. A
+/// heading is a Title-case word or multi-word run with every word
+/// capitalized, immediately followed by `:`, and trailing content after
+/// the `:` is permitted. `None` for every other line.
+pub(crate) fn section_heading(trimmed: &str) -> Option<&str> {
+    SECTION_HEADING.find(trimmed)?.as_str().strip_suffix(':')
 }
 
 /// Parses `trimmed` as a sibling of the entry above it. `None` when the
@@ -43,11 +45,11 @@ pub(crate) fn sibling_entry_head(
         .and_then(entry_head)
 }
 
-/// Parses `trimmed` as an entry head carrying a parenthesized type
-/// group, the `name (type): description` shape. `None` for a head
-/// naming no type and for any line that is no entry head at all.
-pub(crate) fn typed_entry_head(trimmed: &str) -> Option<EntryHead<'_>> {
-    entry_head(trimmed).filter(|head| head.paren.is_some())
+/// True when `trimmed` is an entry head carrying a parenthesized type
+/// group holding a type, the `name (type): description` shape. An empty
+/// or whitespace-only paren pair does not qualify.
+pub(crate) fn typed_entry_head(trimmed: &str) -> bool {
+    entry_head(trimmed).is_some_and(|head| head.type_group.is_some())
 }
 
 /// Parses `trimmed` as a Google-style `name: description` entry head,
@@ -70,9 +72,11 @@ fn entry_head(trimmed: &str) -> Option<EntryHead<'_>> {
     if !name.starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_') {
         return None;
     }
-    let type_group = after_stars[name_end..].trim();
-    let has_type_group = type_group.starts_with('(') && type_group.ends_with(')');
-    if !(type_group.is_empty() || has_type_group) {
+    let paren_type = after_stars[name_end..].trim();
+    let inner_type = paren_type
+        .strip_prefix('(')
+        .and_then(|inner| inner.strip_suffix(')'));
+    if !(paren_type.is_empty() || inner_type.is_some()) {
         return None;
     }
     let description = trimmed[colon + 1..]
@@ -81,29 +85,16 @@ fn entry_head(trimmed: &str) -> Option<EntryHead<'_>> {
     if description.is_empty() {
         return None;
     }
+    let carries_type = inner_type.is_some_and(|inner| !inner.trim().is_empty());
     Some(EntryHead {
         colon,
         desc_start: trimmed.len() - description.len(),
         name,
-        paren: has_type_group.then(|| head.len() - type_group.len()),
+        type_group: head
+            .find('(')
+            .filter(|_| carries_type)
+            .map(|start| start..head.len()),
     })
-}
-
-/// Byte offset of the first `:` in `s` that sits at paren-and-bracket
-/// depth zero, skipping the colons nested inside a parenthesized type
-/// or a bracketed subscript. `None` when every colon is nested or the
-/// line carries none.
-fn unbracketed_colon(s: &str) -> Option<usize> {
-    let mut depth = 0usize;
-    for (cursor, byte) in s.bytes().enumerate() {
-        match byte {
-            b'(' | b'[' => depth += 1,
-            b')' | b']' => depth = depth.saturating_sub(1),
-            b':' if depth == 0 => return Some(cursor),
-            _ => {}
-        }
-    }
-    None
 }
 
 #[cfg(test)]
@@ -114,12 +105,6 @@ mod tests {
 
     fn name_and_start(head: Option<EntryHead<'_>>) -> Option<(&str, usize)> {
         head.map(|h| (h.name, h.desc_start))
-    }
-
-    #[test]
-    fn entry_head_leaves_paren_unset_for_a_head_naming_no_type() {
-        let head = entry_head("markup: a string.").expect("entry head parses");
-        assert!(head.paren.is_none());
     }
 
     #[test]
@@ -169,6 +154,25 @@ mod tests {
         );
     }
 
+    #[rstest]
+    #[case("markup (str): a string.", Some("(str)"))]
+    #[case(
+        "records (List[Tuple[int, str]]): rows",
+        Some("(List[Tuple[int, str]])")
+    )]
+    #[case("*args (int): payload", Some("(int)"))]
+    #[case("**kwargs  (Any)  : extra", Some("(Any)"))]
+    #[case("markup: a string.", None)]
+    #[case("x (): desc", None)]
+    #[case("x (  ): desc", None)]
+    fn entry_head_spans_the_parenthesized_type_group(
+        #[case] line: &str,
+        #[case] expected: Option<&str>,
+    ) {
+        let head = entry_head(line).expect("entry head parses");
+        assert_eq!(head.type_group.map(|group| &line[group]), expected);
+    }
+
     #[test]
     fn entry_head_strips_up_to_two_star_prefixes_from_the_name() {
         assert_eq!(
@@ -188,47 +192,50 @@ mod tests {
 
     #[test]
     fn section_heading_accepts_multi_word_title_case_with_colon() {
-        assert!(section_heading("Other Parameters:"));
-        assert!(section_heading("See Also:"));
-        assert!(section_heading("Side Effects:"));
+        assert_eq!(
+            section_heading("Other Parameters:"),
+            Some("Other Parameters")
+        );
+        assert_eq!(section_heading("See Also:"), Some("See Also"));
+        assert_eq!(section_heading("Side Effects:"), Some("Side Effects"));
     }
 
     #[rstest]
     fn section_heading_accepts_title_case_word_with_colon(
         #[values(
-            "Args:",
-            "Attributes:",
-            "Raises:",
-            "Returns:",
-            "Yields:",
-            "Examples:",
-            "Note:",
-            "Warning:",
-            "Arguments:",
-            "Parameters:",
-            "Inputs:",
-            "Steps:",
-            "Outputs:"
+            "Args",
+            "Attributes",
+            "Raises",
+            "Returns",
+            "Yields",
+            "Examples",
+            "Note",
+            "Warning",
+            "Arguments",
+            "Parameters",
+            "Inputs",
+            "Steps",
+            "Outputs"
         )]
         heading: &str,
     ) {
-        assert!(section_heading(heading));
+        assert_eq!(section_heading(&format!("{heading}:")), Some(heading));
     }
 
     #[test]
-    fn section_heading_accepts_trailing_content_after_colon() {
-        assert!(section_heading("Returns: int"));
-        assert!(section_heading("Note: see below"));
+    fn section_heading_reads_the_name_before_trailing_content() {
+        assert_eq!(section_heading("Returns: int"), Some("Returns"));
+        assert_eq!(section_heading("Note: see below"), Some("Note"));
     }
 
     #[test]
     fn section_heading_rejects_lowercase_start_or_missing_colon() {
-        assert!(!section_heading("args:"));
-        assert!(!section_heading("Args :"));
-        assert!(!section_heading("Args"));
-        assert!(!section_heading("Foo bar:"));
-        assert!(!section_heading("1Args:"));
-        assert!(!section_heading(": no name"));
+        assert!(section_heading("args:").is_none());
+        assert!(section_heading("Args :").is_none());
+        assert!(section_heading("Args").is_none());
+        assert!(section_heading("Foo bar:").is_none());
+        assert!(section_heading("1Args:").is_none());
+        assert!(section_heading(": no name").is_none());
     }
 
     #[test]
@@ -242,45 +249,17 @@ mod tests {
         assert!(sibling_entry_head(8, 8, "just prose").is_none());
     }
 
-    #[rstest]
-    fn typed_entry_head_rejects_a_head_naming_no_type(
-        #[values(
-            "markup: a string.",
-            "name (only: parens)",
-            "two words (int): not an entry",
-            "See https://example.com for details.",
-            "just prose with no colon"
-        )]
-        line: &str,
-    ) {
-        assert!(typed_entry_head(line).is_none());
-    }
-
-    #[rstest]
-    #[case("markup (str): a string.", 7)]
-    #[case("records (List[Tuple[int, str]]): rows", 8)]
-    #[case("*args (int): payload", 6)]
-    #[case("**kwargs   (dict): extra", 11)]
-    #[case("padded      (str)  : already aligned", 12)]
-    fn typed_entry_head_reports_the_type_group_offset(#[case] line: &str, #[case] expected: usize) {
-        let head = typed_entry_head(line).expect("a type-bearing head parses");
-        assert_eq!(head.paren, Some(expected));
-        assert!(line[expected..].starts_with('('));
-    }
-
     #[test]
-    fn unbracketed_colon_returns_none_when_colon_nested_or_absent() {
-        assert!(unbracketed_colon("name (only: parens)").is_none());
-        assert!(unbracketed_colon("List[str, int]").is_none());
-        assert!(unbracketed_colon("no colon here").is_none());
-    }
-
-    #[test]
-    fn unbracketed_colon_skips_balanced_parens_and_brackets() {
-        assert_eq!(unbracketed_colon("markup (str): desc"), Some(12));
-        assert_eq!(
-            unbracketed_colon("x (Dict[str, int]): mapping"),
-            Some("x (Dict[str, int])".len()),
-        );
+    fn typed_entry_head_requires_a_parenthesized_type_group() {
+        assert!(typed_entry_head("markup (str): a string."));
+        assert!(typed_entry_head("records (List[Tuple[int, str]]): rows"));
+        assert!(typed_entry_head("*args (int): payload"));
+        assert!(!typed_entry_head("markup: a string."));
+        assert!(!typed_entry_head("markup (): a string."));
+        assert!(!typed_entry_head("markup (  ): a string."));
+        assert!(!typed_entry_head("name (only: parens)"));
+        assert!(!typed_entry_head("two words (int): not an entry"));
+        assert!(!typed_entry_head("See https://example.com for details."));
+        assert!(!typed_entry_head("just prose with no colon"));
     }
 }

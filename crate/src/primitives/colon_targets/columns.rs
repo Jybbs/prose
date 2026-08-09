@@ -2,12 +2,10 @@
 //! entry naming a parenthesized type and the `:` measured against the
 //! column those `(` reach.
 
-use ruff_python_ast::Stmt;
-
 use crate::{
     primitives::{
         aligner,
-        docstring::{body_docstring, entry_runs},
+        docstring::{entry_runs, walk_docstrings},
     },
     source::Source,
 };
@@ -59,18 +57,17 @@ impl EntryColumns {
     }
 }
 
-/// Returns one alignment group per entry run in the body's leading
-/// docstring, each carrying a `:` row per entry anchored on its head
-/// line's unbracketed `:` and a `(` row per entry naming a
-/// parenthesized type. Returns an empty `Vec` when the body has no
-/// leading docstring or carries no entry run. Each run is its own
-/// group, so one run's widths never shift another's column.
-pub(super) fn docstring_runs(source: &Source, body: &[Stmt]) -> Vec<EntryColumns> {
-    let Some(lit) = body_docstring(body) else {
-        return Vec::new();
-    };
-    entry_runs(source, lit)
-        .iter()
+/// Returns one alignment group per entry run in every docstring
+/// `source` carries, each holding a `:` row per entry anchored on its
+/// head line's unbracketed `:` and a `(` row per entry naming a
+/// parenthesized type. Each run is its own group, so one run's widths
+/// never shift another's column.
+pub(super) fn docstring_runs(source: &Source) -> Vec<EntryColumns> {
+    let mut literals = Vec::new();
+    walk_docstrings(source, |_, lit| literals.push(lit));
+    literals
+        .into_iter()
+        .flat_map(|lit| entry_runs(source, lit))
         .map(|entries| {
             let (colons, parens) = entries
                 .iter()
@@ -78,7 +75,7 @@ pub(super) fn docstring_runs(source: &Source, body: &[Stmt]) -> Vec<EntryColumns
                     (
                         aligner::line_anchored_member(source, entry.colon),
                         entry
-                            .paren
+                            .column_anchor(source)
                             .map(|at| aligner::line_anchored_member(source, at)),
                     )
                 })

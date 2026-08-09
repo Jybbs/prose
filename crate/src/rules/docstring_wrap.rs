@@ -135,7 +135,7 @@ impl<'a> Walker<'a> {
         }
 
         let body_indent = self.scanner.body_indent_chars();
-        if indent_chars == body_indent && section_heading(trimmed) {
+        if indent_chars == body_indent && section_heading(trimmed).is_some() {
             self.flush_verbatim(line);
             self.region = Region::Section;
             return;
@@ -165,9 +165,7 @@ impl<'a> Walker<'a> {
         }
 
         match self.region {
-            Region::Description
-                if self.paragraph.lines.is_empty() && typed_entry_head(text).is_some() =>
-            {
+            Region::Description if self.paragraph.lines.is_empty() && typed_entry_head(text) => {
                 self.flush_verbatim(line);
             }
             Region::Description => self.buffer_description(indent, text),

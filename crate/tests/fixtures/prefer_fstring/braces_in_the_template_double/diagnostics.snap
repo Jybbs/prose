@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/prefer_fstring/braces_in_the_template_double/input.py
+---
+prefer-fstring@8..31

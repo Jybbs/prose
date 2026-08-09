@@ -31,10 +31,10 @@ The top-level keys carry settings that span multiple rules. They sit at the docu
 
 <ConfigKeys section="top" />
 
-`target-version` names the Python runtime a project ships to, taking the bare `major.minor` form (*`"3.13"`, `"3.14"`*) used by `mypy`'s `python_version` setting. Rules whose safety depends on the runtime read this field directly. [[modernize-annotations]] and [[prune-inert-imports]] are the two current consumers.
+`target-version` names the Python runtime a project ships to, taking the bare `major.minor` form (*`"3.13"`, `"3.14"`*) used by `mypy`'s `python_version` setting. Every rule whose safety depends on the runtime reads this field directly, covering [[modernize-annotations]], [[prefer-fstring]], and [[prune-inert-imports]].
 
 ::: info Version Gates Need Opt-In
-With no value set, every version-dependent arm skips rather than assume a default, leaving [[modernize-annotations]] and [[prune-inert-imports]] quiet on every project that has not opted into a target.
+With no value set, every version-dependent arm skips rather than assume a default, leaving every version-gated rule quiet on a project that has not opted into a target.
 :::
 
 ## Lengths

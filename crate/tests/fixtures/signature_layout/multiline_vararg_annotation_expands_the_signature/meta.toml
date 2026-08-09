@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Multi-Line Variadic Annotation Expands and Hangs From Its Row"
+
+description = '''
+A `*args` annotation the author wrote across rows expands the signature and moves with its parameter, its continuation landing under the parameter column rather than at the column the source left it.
+'''

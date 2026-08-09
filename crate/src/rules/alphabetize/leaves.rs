@@ -1,11 +1,11 @@
 //! Leaf-edit collection for `alphabetize`. A single AST walk emits one
-//! non-overlapping edit per outermost reordering structure and maps
-//! each function docstring to its signature-order names, the mirror key
-//! the docstring-entry sort consumes. Positional-or-keyword parameters
-//! never reorder, since no single-file rewrite can keep every caller's
-//! positional binding intact. Only the keyword-only block sorts. A call
-//! keyword bound to an effectful value holds its slot while the inert
-//! keywords around it sort.
+//! non-overlapping edit per outermost reordering structure, and the
+//! docstring-entry sort reads each function's signature-order names as
+//! its mirror key. Positional-or-keyword parameters never reorder,
+//! since no single-file rewrite can keep every caller's positional
+//! binding intact. Only the keyword-only block sorts. A call keyword
+//! bound to an effectful value holds its slot while the inert keywords
+//! around it sort.
 
 use std::{borrow::Cow, collections::HashMap};
 
@@ -21,7 +21,7 @@ use super::dict::rewrite_dict_text;
 use crate::{
     primitives::{
         binding::{sequence_elts, single_name_target},
-        docstring::{body_docstring, entry_carrying_sections, rewrite_docstrings},
+        docstring::{documented_definitions, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, insert_edit, narrowed_replacement},
         effect::value_is_effectful,
         orderer::{any_sibling_shares_line, permute_full, reorder_separated, reorder_text},
@@ -32,7 +32,6 @@ use crate::{
 
 struct LeafCollector<'a> {
     edits: Vec<Edit>,
-    param_docs: HashMap<TextSize, Vec<&'a str>>,
     sort_dict_keys: bool,
     sort_dunder_lists: bool,
     source: &'a Source,
@@ -152,13 +151,7 @@ impl<'a> AstVisitor<'a> for LeafCollector<'a> {
         match stmt {
             Stmt::Assign(a) => self.emit_dunder_list(a),
             Stmt::Delete(d) => self.emit_delete(d),
-            Stmt::FunctionDef(f) => {
-                if let Some(lit) = body_docstring(&f.body) {
-                    self.param_docs
-                        .insert(lit.start(), signature_order(&f.parameters));
-                }
-                self.emit_parameters(&f.parameters);
-            }
+            Stmt::FunctionDef(f) => self.emit_parameters(&f.parameters),
             Stmt::Global(g) => self.emit_id_run(&g.names),
             Stmt::Import(i) => self.emit_alias_run(&i.names),
             Stmt::ImportFrom(i) => self.emit_alias_run(&i.names),
@@ -177,16 +170,20 @@ impl<'a> AstVisitor<'a> for LeafCollector<'a> {
 /// signature, so their sections alphabetize throughout. Each edit
 /// replaces the section's entries-span with the reordered text.
 /// Returns an empty list when no docstring carries a sortable section.
-pub(super) fn collect_docstring_entry_edits(
-    source: &Source,
-    param_docs: &HashMap<TextSize, Vec<&str>>,
-) -> Vec<Edit> {
+pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
+    let param_docs: HashMap<TextSize, Vec<&str>> = documented_definitions(source)
+        .into_iter()
+        .filter_map(|(definition, lit)| {
+            let function = definition.as_function_def_stmt()?;
+            Some((lit.start(), signature_order(&function.parameters)))
+        })
+        .collect();
     rewrite_docstrings(source, |source, lit, edits| {
         let signature = param_docs.get(&lit.start()).map(Vec::as_slice);
-        for entries in entry_carrying_sections(source, lit) {
+        for section in entry_carrying_sections(source, lit) {
             let (cow, span) = reorder_text(
                 source,
-                &entries,
+                &section.entries,
                 |entry| Some(entry_key(entry.name, signature)),
                 |_, block| Cow::Borrowed(source.slice(block)),
             );
@@ -202,25 +199,23 @@ pub(super) fn collect_docstring_entry_edits(
 }
 
 /// Walks the AST collecting one non-overlapping leaf edit per outermost
-/// reordering structure, each folding its nested reorders in, and maps
-/// each function docstring's start to its signature-order names, the
-/// mirror key for docstring-entry sorting. `sort_dict_keys` and
-/// `sort_dunder_lists` gate the dict-literal and `__all__` / `__slots__`
-/// reorders, every other shape sorting regardless.
+/// reordering structure, each folding its nested reorders in.
+/// `sort_dict_keys` and `sort_dunder_lists` gate the dict-literal and
+/// `__all__` / `__slots__` reorders, every other shape sorting
+/// regardless.
 pub(super) fn collect_leaf_edits(
     source: &Source,
     sort_dict_keys: bool,
     sort_dunder_lists: bool,
-) -> (Vec<Edit>, HashMap<TextSize, Vec<&str>>) {
+) -> Vec<Edit> {
     let mut collector = LeafCollector {
         edits: Vec::new(),
-        param_docs: HashMap::new(),
         sort_dict_keys,
         sort_dunder_lists,
         source,
     };
     collector.visit_body(&source.ast().body);
-    (collector.edits, collector.param_docs)
+    collector.edits
 }
 
 /// Composite docstring-entry sort key. An entry naming a signature
@@ -263,8 +258,7 @@ mod tests {
     /// The source with every docstring-entry reorder applied.
     fn entry_sorted_text(src: &str) -> String {
         let source = parse(src);
-        let (_, param_docs) = collect_leaf_edits(&source, true, true);
-        let edits = collect_docstring_entry_edits(&source, &param_docs);
+        let edits = collect_docstring_entry_edits(&source);
         applied_text(&source, edits)
     }
 
@@ -382,7 +376,7 @@ mod tests {
         #[case] expected: &str,
     ) {
         let source = parse(src);
-        let (edits, _) = collect_leaf_edits(&source, true, true);
+        let edits = collect_leaf_edits(&source, true, true);
         assert_eq!(applied_text(&source, edits), expected);
     }
 
@@ -391,7 +385,7 @@ mod tests {
         #[values("__all__ = get_names()\n", "__slots__ = BASE_SLOTS\n")] src: &str,
     ) {
         let source = parse(src);
-        let (edits, _) = collect_leaf_edits(&source, true, true);
+        let edits = collect_leaf_edits(&source, true, true);
         assert!(edits.is_empty());
     }
 
@@ -404,7 +398,7 @@ mod tests {
         #[case] expected: &str,
     ) {
         let source = parse(src);
-        let (edits, _) = collect_leaf_edits(&source, true, true);
+        let edits = collect_leaf_edits(&source, true, true);
         assert_eq!(applied_text(&source, edits), expected);
     }
 
@@ -418,7 +412,7 @@ mod tests {
             foo(b=2, a=1)
         "};
         let source = parse(src);
-        let (edits, _) = collect_leaf_edits(&source, true, true);
+        let edits = collect_leaf_edits(&source, true, true);
         assert!(edits.len() >= 5, "fixture must trigger multiple producers");
         assert!(
             edits.is_sorted(),

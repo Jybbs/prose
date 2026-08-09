@@ -2,6 +2,9 @@
   "name"    : "prose",
   "private" : true,
   "type"    : "module",
+  "overrides": {
+    "postcss" : "8.5.23"
+  },
   "devDependencies": {
     "@csstools/postcss-global-data"       : "4.0.0",
     "@fast-check/vitest"                  : "0.4.1",
@@ -39,7 +42,7 @@
     "markdown-it"                         : "14.3.0",
     "ohash"                               : "2.0.11",
     "oxlint"                              : "1.74.0",
-    "postcss"                             : "8.5.19",
+    "postcss"                             : "8.5.23",
     "postcss-custom-media"                : "12.0.1",
     "romans"                              : "3.1.0",
     "satori"                              : "0.28.0",

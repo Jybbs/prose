@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Multi-Line Default Pins a Signature Past the Count Cap"
-
-description = '''
-A signature carrying more parameters than `max-params` still declines to reshape while one default spans lines, because the expanded form would place that default's continuation lines at their source indent and a second pass would move them.
-'''

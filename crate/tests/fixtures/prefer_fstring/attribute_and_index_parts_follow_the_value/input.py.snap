@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/attribute_and_index_parts_follow_the_value/input.py
+---
+detail = f"{record.attr} and {rows[2]}"

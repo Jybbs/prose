@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Precision on a Hex Conversion Holds"
+
+description = '''
+A precision on `%x` sets a floor on the digit count where `{:.5x}` cuts
+the rendered text instead.
+'''

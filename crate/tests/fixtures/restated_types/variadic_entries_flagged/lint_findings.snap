@@ -1,0 +1,33 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/restated_types/variadic_entries_flagged/input.py
+---
+[
+  {
+    "code": "restated-types",
+    "end_location": {
+      "column": 20,
+      "row": 6
+    },
+    "fix": null,
+    "location": {
+      "column": 15,
+      "row": 6
+    },
+    "message": "`args` restates a type the signature already annotates"
+  },
+  {
+    "code": "restated-types",
+    "end_location": {
+      "column": 23,
+      "row": 7
+    },
+    "fix": null,
+    "location": {
+      "column": 18,
+      "row": 7
+    },
+    "message": "`kwargs` restates a type the signature already annotates"
+  }
+]

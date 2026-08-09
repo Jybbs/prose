@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/a_double_star_expansion_holds/input.py
+---
+line = "{key}".format(**table)

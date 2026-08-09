@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Literal Right-Hand Side Binds Without a Tuple"
+
+description = '''
+No literal hides a one-element tuple for `%` to unpack, so a lone spec reads
+it directly.
+'''

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/indexed_fields_bind_by_position/input.py
+---
+swap = f"{first} before {second}"

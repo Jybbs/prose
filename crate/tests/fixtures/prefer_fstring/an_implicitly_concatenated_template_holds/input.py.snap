@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/an_implicitly_concatenated_template_holds/input.py
+---
+notice = "%s opening " "and closing" % (lead,)

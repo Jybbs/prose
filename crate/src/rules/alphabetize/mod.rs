@@ -90,10 +90,10 @@ impl Rule for Alphabetize {
         if body.is_empty() {
             return Vec::new();
         }
-        let (mut leaf_edits, param_docs) =
+        let mut leaf_edits =
             collect_leaf_edits(source, self.sort_dict_keys, self.sort_dunder_lists);
         if self.sort_docstring_entries {
-            leaf_edits.extend(collect_docstring_entry_edits(source, &param_docs));
+            leaf_edits.extend(collect_docstring_entry_edits(source));
             leaf_edits.sort_unstable();
         }
         let ctx = RewriteCtx {

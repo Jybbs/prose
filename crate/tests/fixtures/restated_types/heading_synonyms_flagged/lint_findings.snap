@@ -1,0 +1,46 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/restated_types/heading_synonyms_flagged/input.py
+---
+[
+  {
+    "code": "restated-types",
+    "end_location": {
+      "column": 20,
+      "row": 6
+    },
+    "fix": null,
+    "location": {
+      "column": 15,
+      "row": 6
+    },
+    "message": "`width` restates a type the signature already annotates"
+  },
+  {
+    "code": "restated-types",
+    "end_location": {
+      "column": 20,
+      "row": 9
+    },
+    "fix": null,
+    "location": {
+      "column": 15,
+      "row": 9
+    },
+    "message": "`depth` restates a type the signature already annotates"
+  },
+  {
+    "code": "restated-types",
+    "end_location": {
+      "column": 21,
+      "row": 10
+    },
+    "fix": null,
+    "location": {
+      "column": 16,
+      "row": 10
+    },
+    "message": "`height` restates a type the signature already annotates"
+  }
+]

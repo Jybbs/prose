@@ -1,8 +1,8 @@
-//! Docstring entry walking: the entries of each Title-case-headed
-//! Google-style section with the continuation lines attached to each,
-//! and each contiguous run of type-bearing heads sitting at the body
-//! indent outside every section. The per-line grammar the walk
-//! dispatches on lives in `grammar`.
+//! Docstring entry walking: each Title-case heading with the entries
+//! beneath it and the continuation lines attached to each, plus every
+//! contiguous run of type-bearing heads sitting at the body indent
+//! outside those sections. The per-line grammar the walk dispatches on
+//! lives in `grammar`.
 
 use ruff_python_ast::StringLiteral;
 use ruff_source_file::{Line, UniversalNewlineIterator};
@@ -10,55 +10,81 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{
     body::{DocstringBody, triple_quoted_body},
-    grammar::{EntryHead, section_heading, sibling_entry_head, typed_entry_head},
+    grammar::{EntryHead, section_heading, sibling_entry_head},
     scan::{LineScan, LineScanner, ScannedLine},
 };
 use crate::source::Source;
 
+/// One Google-style section, its heading read without the trailing `:`
+/// and its entries in source order.
+pub(crate) struct Section<'a> {
+    pub(crate) entries: Vec<SectionEntry<'a>>,
+    pub(crate) heading: &'a str,
+}
+
 /// One `name: description` entry inside a docstring. The range covers
 /// the entry's head line through the last continuation line attached to
 /// it, excluding the trailing newline. `colon` is the source offset of
-/// the head line's separating `:`, and `paren` the source offset of its
-/// parenthesized type group's `(` where the head names a type.
-pub(crate) struct DocstringEntry<'a> {
+/// the head line's separating `:`, and `type_group` the source range of
+/// the parenthesized type where the head carries one.
+pub(crate) struct SectionEntry<'a> {
     pub(crate) colon: TextSize,
     pub(crate) name: &'a str,
-    pub(crate) paren: Option<TextSize>,
     pub(crate) range: TextRange,
+    pub(crate) type_group: Option<TextRange>,
 }
 
-impl Ranged for DocstringEntry<'_> {
+impl SectionEntry<'_> {
+    /// The offset of a type group written in the Google `name (type)`
+    /// form, whitespace separating the name from the `(`. `None` for a
+    /// head naming no type and for a `(` sitting flush against its
+    /// name, which documents a call rather than a type and so opens no
+    /// alignment column.
+    pub(crate) fn column_anchor(&self, source: &Source) -> Option<TextSize> {
+        let group = self.type_group?;
+        source
+            .slice(TextRange::new(self.range.start(), group.start()))
+            .ends_with(char::is_whitespace)
+            .then(|| group.start())
+    }
+}
+
+impl Ranged for SectionEntry<'_> {
     fn range(&self) -> TextRange {
         self.range
     }
 }
 
-/// One run of docstring entries the walk yields, either the entries of
-/// a Title-case-headed section or a contiguous run of type-bearing
-/// heads at the body indent outside every section.
+/// One run of entries the walk yields, carrying its heading where a
+/// Title-case section opened it and `None` where a contiguous run of
+/// type-bearing heads stands outside every section.
 struct EntryRun<'src> {
-    entries: Vec<DocstringEntry<'src>>,
-    sectioned: bool,
+    entries: Vec<SectionEntry<'src>>,
+    heading: Option<&'src str>,
 }
 
 struct EntryWalker<'src> {
-    open_entry: Option<DocstringEntry<'src>>,
-    open_loose: Vec<DocstringEntry<'src>>,
-    open_section: Option<Vec<DocstringEntry<'src>>>,
+    open_entry: Option<SectionEntry<'src>>,
+    open_heading: Option<&'src str>,
+    open_loose: Vec<SectionEntry<'src>>,
+    open_section: Option<Vec<SectionEntry<'src>>>,
     prose_open: bool,
     runs: Vec<EntryRun<'src>>,
     scanner: LineScanner,
+    source: &'src Source,
 }
 
 impl<'src> EntryWalker<'src> {
-    fn new(body_indent_chars: usize) -> Self {
+    fn new(source: &'src Source, body_indent_chars: usize) -> Self {
         Self {
             open_entry: None,
+            open_heading: None,
             open_loose: Vec::new(),
             open_section: None,
             prose_open: false,
             runs: Vec::new(),
             scanner: LineScanner::new(body_indent_chars),
+            source,
         }
     }
 
@@ -112,18 +138,21 @@ impl<'src> EntryWalker<'src> {
         let body_indent = self.scanner.body_indent_chars();
         if indent_chars == body_indent {
             self.finish_section();
-            if section_heading(trimmed) {
+            if let Some(heading) = section_heading(trimmed) {
                 self.close_prose();
+                self.open_heading = Some(heading);
                 self.open_section = Some(Vec::new());
                 return;
             }
-            let Some(head) = typed_entry_head(trimmed).filter(|_| !self.prose_open) else {
+            let Some(head) =
+                sibling_entry_head(indent_chars, body_indent, trimmed).filter(|_| !self.prose_open)
+            else {
                 self.finish_loose();
                 self.prose_open = true;
                 return;
             };
             let entry = entry(line_start, line_end, indent, trimmed, &head);
-            if entry.paren.is_none() {
+            if entry.column_anchor(self.source).is_none() {
                 self.finish_loose();
                 return;
             }
@@ -165,38 +194,43 @@ impl<'src> EntryWalker<'src> {
 
     fn finish_loose(&mut self) {
         let entries = std::mem::take(&mut self.open_loose);
-        self.push_run(entries, false);
+        self.push_run(entries, None);
     }
 
     fn finish_section(&mut self) {
         self.finish_entry();
         if let Some(entries) = self.open_section.take() {
-            self.push_run(entries, true);
+            let heading = self.open_heading.take();
+            self.push_run(entries, heading);
         }
     }
 
     /// Records `entries` as a run, dropping an empty one so a section
     /// with no entry and a run that never opened both yield nothing.
-    fn push_run(&mut self, entries: Vec<DocstringEntry<'src>>, sectioned: bool) {
+    fn push_run(&mut self, entries: Vec<SectionEntry<'src>>, heading: Option<&'src str>) {
         if !entries.is_empty() {
-            self.runs.push(EntryRun { entries, sectioned });
+            self.runs.push(EntryRun { entries, heading });
         }
     }
 }
 
 /// Walks the entry-carrying Google-style sections in `lit`'s body
-/// and returns each section's entries with source-relative byte
-/// ranges. Returns an empty vector unless `lit` is a multi-line
+/// and returns each section's heading and entries with source-relative
+/// byte ranges. Returns an empty vector unless `lit` is a multi-line
 /// triple-quoted docstring on its own line holding at least one
 /// recognized entry inside an entry-carrying section.
 pub(crate) fn entry_carrying_sections<'src>(
     source: &'src Source,
     lit: &StringLiteral,
-) -> Vec<Vec<DocstringEntry<'src>>> {
+) -> Vec<Section<'src>> {
     walk(source, lit)
         .into_iter()
-        .filter(|run| run.sectioned)
-        .map(|run| run.entries)
+        .filter_map(|run| {
+            Some(Section {
+                entries: run.entries,
+                heading: run.heading?,
+            })
+        })
         .collect()
 }
 
@@ -208,7 +242,7 @@ pub(crate) fn entry_carrying_sections<'src>(
 pub(crate) fn entry_runs<'src>(
     source: &'src Source,
     lit: &StringLiteral,
-) -> Vec<Vec<DocstringEntry<'src>>> {
+) -> Vec<Vec<SectionEntry<'src>>> {
     walk(source, lit)
         .into_iter()
         .map(|run| run.entries)
@@ -216,25 +250,25 @@ pub(crate) fn entry_runs<'src>(
 }
 
 /// Builds the entry a head line opens, resolving the head's in-line
-/// byte offsets against the line's start and indent. `paren` lands only
-/// for a type group written with a space, since a `(` flush against its
-/// name documents a call rather than a type.
+/// byte offsets against the line's start and indent.
 fn entry<'src>(
     line_start: TextSize,
     line_end: TextSize,
     indent: &str,
     trimmed: &'src str,
     head: &EntryHead<'src>,
-) -> DocstringEntry<'src> {
+) -> SectionEntry<'src> {
     let head_start = line_start + TextSize::of(indent);
-    DocstringEntry {
+    SectionEntry {
         colon: head_start + TextSize::of(&trimmed[..head.colon]),
         name: head.name,
-        paren: head
-            .paren
-            .filter(|at| trimmed[..*at].ends_with(char::is_whitespace))
-            .map(|at| head_start + TextSize::of(&trimmed[..at])),
         range: TextRange::new(line_start, line_end),
+        type_group: head.type_group.clone().map(|group| {
+            TextRange::at(
+                head_start + TextSize::of(&trimmed[..group.start]),
+                TextSize::of(&trimmed[group]),
+            )
+        }),
     }
 }
 
@@ -245,7 +279,7 @@ fn walk<'src>(source: &'src Source, lit: &StringLiteral) -> Vec<EntryRun<'src>> 
     let Some(body) = triple_quoted_body(source, lit).filter(DocstringBody::is_multiline) else {
         return Vec::new();
     };
-    let mut walker = EntryWalker::new(source.line_indent_width(lit.start()));
+    let mut walker = EntryWalker::new(source, source.line_indent_width(lit.start()));
     for line in UniversalNewlineIterator::with_offset(body.text, body.range.start()) {
         walker.consume(line);
     }
@@ -268,9 +302,16 @@ mod tests {
         body_docstring(&first_class(source).body).expect("class body starts with a docstring")
     }
 
-    fn entry_names<'a>(runs: &[Vec<DocstringEntry<'a>>]) -> Vec<Vec<&'a str>> {
+    fn entry_names<'a>(runs: &[Vec<SectionEntry<'a>>]) -> Vec<Vec<&'a str>> {
         runs.iter()
             .map(|run| run.iter().map(|e| e.name).collect())
+            .collect()
+    }
+
+    fn section_names<'a>(sections: &[Section<'a>]) -> Vec<Vec<&'a str>> {
+        sections
+            .iter()
+            .map(|s| s.entries.iter().map(|e| e.name).collect())
             .collect()
     }
 
@@ -285,8 +326,11 @@ mod tests {
         let s = parse(src);
         let lit = first_function_docstring(&s);
         let sections = entry_carrying_sections(&s, lit);
-        assert_eq!(entry_names(&sections), vec![vec!["ValueError", "OSError"]]);
-        let value_error_slice = s.slice(sections[0][0].range);
+        assert_eq!(
+            section_names(&sections),
+            vec![vec!["ValueError", "OSError"]]
+        );
+        let value_error_slice = s.slice(sections[0].entries[0].range);
         assert!(value_error_slice.contains("```python"));
         assert!(value_error_slice.contains("raise ValueError"));
     }
@@ -297,8 +341,8 @@ mod tests {
         let s = parse(src);
         let lit = first_function_docstring(&s);
         let sections = entry_carrying_sections(&s, lit);
-        assert_eq!(entry_names(&sections), vec![vec!["foo", "bar"]]);
-        let foo_slice = s.slice(sections[0][0].range);
+        assert_eq!(section_names(&sections), vec![vec!["foo", "bar"]]);
+        let foo_slice = s.slice(sections[0].entries[0].range);
         assert!(foo_slice.contains("- item one"));
         assert!(foo_slice.contains("still item one"));
         assert!(foo_slice.contains("- item two"));
@@ -310,8 +354,11 @@ mod tests {
         let s = parse(src);
         let lit = first_function_docstring(&s);
         let sections = entry_carrying_sections(&s, lit);
-        assert_eq!(entry_names(&sections), vec![vec!["ValueError", "OSError"]]);
-        let value_error_slice = s.slice(sections[0][0].range);
+        assert_eq!(
+            section_names(&sections),
+            vec![vec!["ValueError", "OSError"]]
+        );
+        let value_error_slice = s.slice(sections[0].entries[0].range);
         assert!(value_error_slice.contains(">>> sample"));
     }
 
@@ -321,7 +368,10 @@ mod tests {
         let s = parse(src);
         let lit = first_function_docstring(&s);
         let sections = entry_carrying_sections(&s, lit);
-        assert_eq!(entry_names(&sections), vec![vec!["b", "a"], vec!["z", "y"]]);
+        assert_eq!(
+            section_names(&sections),
+            vec![vec!["b", "a"], vec!["z", "y"]]
+        );
     }
 
     #[test]
@@ -330,7 +380,7 @@ mod tests {
         let s = parse(src);
         let lit = class_docstring(&s);
         assert_eq!(
-            entry_names(&entry_carrying_sections(&s, lit)),
+            section_names(&entry_carrying_sections(&s, lit)),
             vec![vec!["foo"]],
         );
     }
@@ -341,7 +391,7 @@ mod tests {
         let s = parse(src);
         let lit = first_function_docstring(&s);
         let sections = entry_carrying_sections(&s, lit);
-        assert_eq!(entry_names(&sections), vec![vec!["bar", "alpha"]]);
+        assert_eq!(section_names(&sections), vec![vec!["bar", "alpha"]]);
     }
 
     #[test]
@@ -350,7 +400,7 @@ mod tests {
         let s = parse(src);
         let lit = first_function_docstring(&s);
         let sections = entry_carrying_sections(&s, lit);
-        assert_eq!(entry_names(&sections), vec![vec!["markup", "width"]]);
+        assert_eq!(section_names(&sections), vec![vec!["markup", "width"]]);
     }
 
     #[test]
@@ -359,12 +409,36 @@ mod tests {
         let s = parse(src);
         let lit = first_function_docstring(&s);
         let sections = entry_carrying_sections(&s, lit);
-        for entry in &sections[0] {
+        for entry in &sections[0].entries {
             assert_eq!(
                 s.slice(TextRange::new(entry.colon, entry.colon + TextSize::of(':'))),
                 ":",
             );
         }
+    }
+
+    #[test]
+    fn entry_carrying_sections_reports_each_head_line_type_group() {
+        let src = "def f():\n    \"\"\"\n    Args:\n        markup (str): console markup.\n        width (Dict[str, int]): the budget.\n        plain: no type group.\n    \"\"\"\n    pass\n";
+        let s = parse(src);
+        let lit = first_function_docstring(&s);
+        let sections = entry_carrying_sections(&s, lit);
+        let groups: Vec<Option<&str>> = sections[0]
+            .entries
+            .iter()
+            .map(|entry| entry.type_group.map(|range| s.slice(range)))
+            .collect();
+        assert_eq!(groups, [Some("(str)"), Some("(Dict[str, int])"), None]);
+    }
+
+    #[test]
+    fn entry_carrying_sections_reports_the_section_heading() {
+        let src = "def f():\n    \"\"\"\n    Args:\n        b: one\n\n    Other Parameters:\n        z: three\n    \"\"\"\n    pass\n";
+        let s = parse(src);
+        let lit = first_function_docstring(&s);
+        let sections = entry_carrying_sections(&s, lit);
+        let headings: Vec<&str> = sections.iter().map(|section| section.heading).collect();
+        assert_eq!(headings, ["Args", "Other Parameters"]);
     }
 
     #[test]
@@ -389,7 +463,7 @@ mod tests {
         let s = parse(src);
         let lit = first_function_docstring(&s);
         let sections = entry_carrying_sections(&s, lit);
-        assert_eq!(entry_names(&sections), vec![vec!["bar", "alpha"]]);
+        assert_eq!(section_names(&sections), vec![vec!["bar", "alpha"]]);
     }
 
     #[test]
@@ -398,7 +472,7 @@ mod tests {
         let s = parse(src);
         let lit = first_function_docstring(&s);
         let sections = entry_carrying_sections(&s, lit);
-        assert_eq!(entry_names(&sections), vec![vec!["value"]]);
+        assert_eq!(section_names(&sections), vec![vec!["value"]]);
     }
 
     #[rstest]
@@ -445,14 +519,16 @@ mod tests {
     }
 
     #[test]
-    fn entry_runs_reports_each_type_group_offset() {
+    fn entry_runs_anchors_each_column_on_its_type_group() {
         let src = "class C:\n    \"\"\"\n    handler (Callable): one.\n    codec (bytes): two.\n    \"\"\"\n";
         let s = parse(src);
         let lit = class_docstring(&s);
         for entry in &entry_runs(&s, lit)[0] {
-            let paren = entry.paren.expect("a type-bearing head reports its `(`");
+            let anchor = entry
+                .column_anchor(&s)
+                .expect("a spaced type group anchors a column");
             assert_eq!(
-                s.slice(TextRange::new(paren, paren + TextSize::of('('))),
+                s.slice(TextRange::new(anchor, anchor + TextSize::of('('))),
                 "(",
             );
         }

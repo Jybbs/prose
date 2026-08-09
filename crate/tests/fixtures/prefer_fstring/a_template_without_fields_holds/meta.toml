@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "A Template Stating No Field Holds"
+
+description = '''
+Neither form carries a substitution, so the rewrite would drop the call and
+its arguments rather than move them inline.
+'''

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/a_suppressed_line_holds/input.py
+---
+held = "%s" % (value,)  # prose: skip
+converted = f"{other}"

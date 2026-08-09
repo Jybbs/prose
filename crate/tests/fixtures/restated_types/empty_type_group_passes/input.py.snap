@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/restated_types/empty_type_group_passes/input.py
+---
+def dial(host: str, port: int):
+    """
+    Open a session.
+
+    Args:
+        host (): The parens hold no type.
+        port (  ): Whitespace is not a type either.
+    """

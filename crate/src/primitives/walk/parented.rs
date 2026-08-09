@@ -26,6 +26,29 @@ pub(crate) trait ParentedProbe<'src> {
     ) -> Descent;
 }
 
+struct ParentedCollector<F, T> {
+    found: Vec<T>,
+    interpolations: Descent,
+    probe: F,
+}
+
+impl<'src, F: FnMut(&'src Expr, AnyNodeRef<'src>) -> Option<T>, T> ParentedProbe<'src>
+    for ParentedCollector<F, T>
+{
+    fn probe(
+        &mut self,
+        expr: &'src Expr,
+        parent: AnyNodeRef<'src>,
+        _: &[AnyNodeRef<'src>],
+    ) -> Descent {
+        if is_interpolated_string(expr) && matches!(self.interpolations, Descent::Over) {
+            return Descent::Over;
+        }
+        self.found.extend((self.probe)(expr, parent));
+        Descent::Into
+    }
+}
+
 struct ParentedWalk<'src, 'probe, P> {
     parents: Vec<AnyNodeRef<'src>>,
     probe: &'probe mut P,
@@ -53,6 +76,23 @@ impl<'src, P: ParentedProbe<'src>> Visitor<'src> for ParentedWalk<'src, '_, P> {
         visitor::walk_stmt(self, stmt);
         self.parents.pop();
     }
+}
+
+/// Every `Some` that `probe` returns over each expression in `module`,
+/// each read alongside the node enclosing it. `interpolations` decides
+/// whether the walk reads the interior of a replacement field.
+pub(crate) fn filter_map_over_parented_exprs<'src, T>(
+    module: &'src ModModule,
+    interpolations: Descent,
+    probe: impl FnMut(&'src Expr, AnyNodeRef<'src>) -> Option<T>,
+) -> Vec<T> {
+    let mut collector = ParentedCollector {
+        found: Vec::new(),
+        interpolations,
+        probe,
+    };
+    walk_parented_exprs(module, &mut collector);
+    collector.found
 }
 
 /// True for an f-string or t-string, the expression a probe reports
@@ -109,6 +149,30 @@ mod tests {
                 Descent::Into
             }
         }
+    }
+
+    #[test]
+    fn filter_map_over_parented_exprs_hands_each_expression_its_parent() {
+        let source = parse("f(a)\n");
+        let enclosed =
+            filter_map_over_parented_exprs(source.ast(), Descent::Over, |expr, parent| {
+                matches!(expr, Expr::Name(_)).then(|| matches!(parent, AnyNodeRef::Arguments(_)))
+            });
+        assert_eq!(enclosed, vec![false, true], "the argument names its list");
+    }
+
+    #[rstest]
+    #[case(Descent::Over, vec![1])]
+    #[case(Descent::Into, vec![1, 2])]
+    fn filter_map_over_parented_exprs_reads_a_replacement_field_on_request(
+        #[case] interpolations: Descent,
+        #[case] expected: Vec<usize>,
+    ) {
+        let source = parse("plain = {\"a\": 1}\nlabel = f\"{ {'b': 2, 'c': 3} }\"\n");
+        let sizes = filter_map_over_parented_exprs(source.ast(), interpolations, |expr, _| {
+            expr.as_dict_expr().map(|dict| dict.items.len())
+        });
+        assert_eq!(sizes, expected);
     }
 
     #[rstest]
