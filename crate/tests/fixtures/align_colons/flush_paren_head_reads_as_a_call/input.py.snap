@@ -5,6 +5,6 @@ input_file: crate/tests/fixtures/align_colons/flush_paren_head_reads_as_a_call/i
 ---
 class Integral:
     """
-    divmod(self, other): The pair (self // other, self % other).
-    trunc(self): Truncates self to an Integral.
+    divmod(self, other) : The pair (self // other, self % other).
+    trunc(self)         : Truncates self to an Integral.
     """

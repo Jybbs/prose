@@ -8,7 +8,8 @@
 //! carries no cap. A docstring run settles its parenthesized type
 //! groups into a column first, so the `:` column measures the widths
 //! that padding leaves, and a `(` flush against its name documents a
-//! call rather than a type and opens no column.
+//! call rather than a type, opening no type column while its `:` still
+//! settles with the run.
 
 use ruff_diagnostics::Edit;
 

@@ -71,11 +71,10 @@ struct EntryWalker<'src> {
     prose_open: bool,
     runs: Vec<EntryRun<'src>>,
     scanner: LineScanner,
-    source: &'src Source,
 }
 
 impl<'src> EntryWalker<'src> {
-    fn new(source: &'src Source, body_indent_chars: usize) -> Self {
+    fn new(body_indent_chars: usize) -> Self {
         Self {
             open_entry: None,
             open_heading: None,
@@ -84,7 +83,6 @@ impl<'src> EntryWalker<'src> {
             prose_open: false,
             runs: Vec::new(),
             scanner: LineScanner::new(body_indent_chars),
-            source,
         }
     }
 
@@ -152,7 +150,7 @@ impl<'src> EntryWalker<'src> {
                 return;
             };
             let entry = entry(line_start, line_end, indent, trimmed, &head);
-            if entry.column_anchor(self.source).is_none() {
+            if entry.type_group.is_none() {
                 self.finish_loose();
                 return;
             }
@@ -279,7 +277,7 @@ fn walk<'src>(source: &'src Source, lit: &StringLiteral) -> Vec<EntryRun<'src>> 
     let Some(body) = triple_quoted_body(source, lit).filter(DocstringBody::is_multiline) else {
         return Vec::new();
     };
-    let mut walker = EntryWalker::new(source, source.line_indent_width(lit.start()));
+    let mut walker = EntryWalker::new(source.line_indent_width(lit.start()));
     for line in UniversalNewlineIterator::with_offset(body.text, body.range.start()) {
         walker.consume(line);
     }
@@ -492,9 +490,9 @@ mod tests {
         "class C:\n    \"\"\"\n    Args:\n        foo: one\n\n    handler (Callable): a sectionless head.\n    codec (bytes): another.\n    \"\"\"\n",
         vec![vec!["foo"], vec!["handler", "codec"]]
     )]
-    #[case::a_flush_paren_reads_as_a_call_signature(
+    #[case::a_flush_paren_still_joins_its_run(
         "class C:\n    \"\"\"\n    divmod(self, other): The pair.\n    trunc(self): Truncates self.\n    \"\"\"\n",
-        Vec::new()
+        vec![vec!["divmod", "trunc"]]
     )]
     #[case::a_head_naming_no_type_opens_no_run(
         "class C:\n    \"\"\"\n    handler: no type group.\n    codec: none either.\n    \"\"\"\n",
