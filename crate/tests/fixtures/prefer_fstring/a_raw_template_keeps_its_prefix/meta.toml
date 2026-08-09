@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Raw Template Comes Back as `rf`"
+
+description = '''
+The raw marker leads the `f`, leaving every backslash in the body unread as
+it was.
+'''

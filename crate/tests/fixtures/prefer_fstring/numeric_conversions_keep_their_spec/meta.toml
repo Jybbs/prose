@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Numeric Conversion Carries Its Flags, Width, and Precision"
+
+description = '''
+The printf flags translate to their format-spec counterparts, `-` reading as
+`<` and a zero pad surviving wherever no left adjust supersedes it.
+'''

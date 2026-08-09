@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/a_repeated_effectful_argument_holds/input.py
+---
+twice = "{x} {x}".format(x=build())

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Key Two Specs Read Holds an Effectful Value"
+
+description = '''
+The dict evaluates `build()` once where the two fields would call it twice.
+'''

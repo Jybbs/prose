@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/a_raw_template_doubles_its_braces/input.py
+---
+banner = rf"\N{{SNOWMAN}} {name}"

@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "A Comment Inside the Pair Keeps It"
+
+description = '''
+The comment sits between the parentheses and the template rather than
+inside it, so the conversion lands and the pair stays.
+'''

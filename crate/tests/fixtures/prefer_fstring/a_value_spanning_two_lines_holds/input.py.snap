@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/a_value_spanning_two_lines_holds/input.py
+---
+total = "%s" % (
+    first
+    + second,
+)

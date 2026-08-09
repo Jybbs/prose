@@ -1,0 +1,1 @@
+shape = "{{literal}} {}".format(value)

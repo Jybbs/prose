@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Doubled Percent Reads as One Literal"
+
+description = '''
+`%%` collapses to the single `%` an f-string renders verbatim, leaving the
+precision on the field beside it.
+'''

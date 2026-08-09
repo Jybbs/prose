@@ -1,0 +1,1 @@
+label = "{}={}".format(key, value)

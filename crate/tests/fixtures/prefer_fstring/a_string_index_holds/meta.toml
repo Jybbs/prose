@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A String Index Holds"
+
+description = '''
+Writing `table["key"]` inline would reuse the delimiter the f-string opened
+with.
+'''

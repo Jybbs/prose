@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Repeated Effectful Argument Holds"
+
+description = '''
+The call evaluates `build()` once where the two fields would call it twice.
+'''
