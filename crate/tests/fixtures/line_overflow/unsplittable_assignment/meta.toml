@@ -1,8 +1,7 @@
 [docs]
-canonical   = true
 previewable = true
 title       = "An Unsplittable Line Surfaces as a Finding"
 
 description = '''
-An attribute-target assignment carries no call, collection, import, or signature a layout rule could split, so once it crosses `code-line-length` no legal form brings it within the cap. `line-overflow` names the narrowest form that stands, turning an unsatisfiable cap into a finding rather than a knob that did nothing.
+An attribute-target assignment carries no call, collection, import, or signature a layout rule could split, so once it crosses `code-line-length` **no legal form brings it within the cap**. `line-overflow` names the narrowest form that stands, turning an unsatisfiable cap into a finding rather than a knob that did nothing.
 '''

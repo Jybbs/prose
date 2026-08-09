@@ -8,7 +8,7 @@ layout  : doc
 
 <RuleLayout rule="prefer_fstring">
 
-Old `%`-formatting and `str.format()` read at a remove from the values they splice, because the placeholders sit in the template whereas the expressions trail behind in a separate tuple or argument list. Counting positional slots back to the tuple is work the reader does on every line. An f-string sets each expression inline where it renders, so a substitution is read in place. `prefer-fstring` applies both conversions behind a facet apiece, `rewrite-percent` reaching the `%` operator and `rewrite-str-format` reaching the method call.
+`prefer-fstring` moves a `%`-formatted template or a `str.format()` call onto the f-string that sets each expression inline where it renders, behind a facet apiece, `rewrite-percent` reaching the `%` operator and `rewrite-str-format` reaching the method call.
 
 Both facets read `target-version` and both hold until it names Python **3.6** or higher, the release f-strings landed in. A project that has set no `target-version` at all holds every template.
 
@@ -36,7 +36,7 @@ An argument no field reads holds the whole call, because dropping it would drop 
 
 <Fixture rule="prefer_fstring" case="a_repeated_effectful_argument_holds" />
 
-A value the field itself cannot carry holds too, covering a quote that would close the delimiter the f-string opened with, a backslash, a line break, and a brace. Those bounds are the ones every Python version accepts, so an emitted f-string parses below the PEP 701 floor as readily as above it. A comment anywhere inside the template or the call holds it as well, since an f-string has no place for one.
+A value the field itself cannot carry holds too, covering a quote closing the delimiter the f-string opened with, a backslash, a line break, and a brace, which are the bounds every Python version accepts. A comment anywhere inside the template or the call holds it as well, since an f-string has no place for one.
 
 <template #configuration>
 
