@@ -1,0 +1,7 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/restated_types/variadic_entries_flagged/input.py
+---
+restated-types@106..111
+restated-types@150..155

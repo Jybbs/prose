@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Multi-Line Default Pins the Expanded Signature"
-
-description = '''
-A parameter default the author wrote across lines leaves the joined signature carrying that break, so the collapse declines and the parameters **stay one per line**. Joining anyway would strand the default's continuation lines at an indent the next pass re-computes.
-'''

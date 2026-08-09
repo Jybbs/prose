@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/restated_types/unmatched_name_passes/input.py
+---
+def dial(host: str):
+    """
+    Open a session against a remote.
+
+    Args:
+        host: The remote to dial.
+        retries (int): Named by no parameter of this signature.
+    """

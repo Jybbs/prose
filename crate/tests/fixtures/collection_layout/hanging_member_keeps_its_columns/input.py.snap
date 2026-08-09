@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/collection_layout/hanging_member_keeps_its_columns/input.py
+---
+hanging = [
+    alpha,
+    helper(one,
+                         two,
+                         three,
+                         four),
+    zeta
+]

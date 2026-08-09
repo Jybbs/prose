@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Comment Inside the Construct Holds"
+
+description = '''
+An f-string has no place for a comment, so a template carrying one is
+left as written rather than converted without it.
+'''

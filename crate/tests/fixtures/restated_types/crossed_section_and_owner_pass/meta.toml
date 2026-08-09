@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Section Heading Crossed With the Wrong Definition Kind"
+
+description = '''
+An `Attributes:` section inside a function docstring and an `Args:` section inside a class docstring each resolve against a member set the definition does not declare.
+'''

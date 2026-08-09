@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/restated_types/unannotated_signature_passes/input.py
+---
+def dial(host, timeout):
+    """
+    Open a session against a remote.
+
+    Args:
+        host (str): The remote to dial.
+        timeout (float): Seconds before the dial is abandoned.
+    """

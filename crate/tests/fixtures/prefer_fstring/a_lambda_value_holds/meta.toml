@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Lambda Value Holds"
+
+description = '''
+The field would read the lambda's colon as the start of its format
+spec, so the template is left as written.
+'''

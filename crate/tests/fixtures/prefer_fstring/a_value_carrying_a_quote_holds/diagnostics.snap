@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/prefer_fstring/a_value_carrying_a_quote_holds/input.py
+---
+

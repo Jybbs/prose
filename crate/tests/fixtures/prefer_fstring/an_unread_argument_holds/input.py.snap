@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/an_unread_argument_holds/input.py
+---
+one = "{}".format(used, spare)

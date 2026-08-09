@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/repr_and_ascii_read_as_conversions/input.py
+---
+dump = f"{record!r} beside {name!a}"

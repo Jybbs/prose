@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/tuple_members_fill_each_spec/input.py
+---
+label = f"{key}={value}"

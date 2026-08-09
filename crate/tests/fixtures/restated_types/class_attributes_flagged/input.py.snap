@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/restated_types/class_attributes_flagged/input.py
+---
+class Remote:
+    """
+    A remote endpoint.
+
+    Attributes:
+        host (str): The dialled host.
+        port (int): Left unannotated in the body.
+        proxy (str): Declared nowhere in the body.
+    """
+
+    host: str
+    port = 8080
