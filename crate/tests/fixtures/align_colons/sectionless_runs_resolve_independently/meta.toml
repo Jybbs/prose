@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Each Sectionless Run Settles Its Own Two Columns"
+
+description = '''
+Ordinary prose between two runs of type-bearing heads breaks them apart, so each run measures its own widths and one run's long name never drags the other's columns wide.
+'''

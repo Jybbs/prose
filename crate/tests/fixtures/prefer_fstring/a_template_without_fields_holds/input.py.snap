@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/a_template_without_fields_holds/input.py
+---
+plain = "no fields here".format(value)
+bare = "no specs here" % ()

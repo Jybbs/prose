@@ -1,8 +1,22 @@
 .surface-rail {
   --ripple : 0ms;
+  position       : relative;
   display        : flex;
   flex-direction : column;
   gap            : 10px;
+  margin-top     : auto;
+  padding-top    : 18px;
+}
+
+.surface-rail::before {
+  content    : "";
+  position   : absolute;
+  top        : 0;
+  left       : 0;
+  right      : 0;
+  height     : 1px;
+  background : var(--vp-c-divider);
+  opacity    : 0.65;
 }
 
 .surface-pip {
@@ -16,7 +30,6 @@
 }
 
 .surface-pip:focus-visible {
-  outline        : var(--prose-focus-ring);
   outline-offset : 1px;
   border-radius  : 999px;
 }
@@ -45,11 +58,8 @@
   display              : grid;
   place-items          : center;
   padding-top          : 1px;
-  font-family          : var(--vp-font-family-mono);
   font-size            : var(--prose-text-meta);
-  font-variant-numeric : tabular-nums;
   line-height          : 1;
-  color                : var(--vp-c-text-3);
   opacity              : 0;
   translate            : 0 3px;
   transition           : color     200ms linear var(--ripple),
@@ -57,8 +67,7 @@
                          translate 240ms var(--prose-ease-emphasized) var(--ripple);
 }
 
-.surface-pip:hover .surface-pip-mark,
-.surface-pip.active .surface-pip-mark {
+.surface-pip:is(:hover, .active) .surface-pip-mark {
   width      : var(--circle);
   height     : var(--circle);
   scale      : 1;
@@ -66,8 +75,7 @@
   background : color-mix(in srgb, var(--family-color) 22%, var(--vp-c-bg-soft));
 }
 
-.surface-pip:hover .surface-pip-folio,
-.surface-pip.active .surface-pip-folio {
+.surface-pip:is(:hover, .active) .surface-pip-folio {
   opacity   : 1;
   translate : 0 0;
   color     : var(--family-color);
@@ -96,8 +104,7 @@
   transition     : border-color 240ms linear;
 }
 
-.surface-rail-row[data-bookends="true"] .surface-rail-end:hover::before,
-.surface-rail-row[data-bookends="true"] .surface-rail-end.active::before {
+.surface-rail-row[data-bookends="true"] .surface-rail-end:is(:hover, .active)::before {
   border-color : color-mix(in srgb, var(--family-color) 64%, transparent);
 }
 
@@ -110,21 +117,16 @@
   overflow-y                 : hidden;
   scrollbar-width            : none;
   overscroll-behavior-inline : contain;
-  -webkit-mask-image : linear-gradient(
+  --rail-mask : linear-gradient(
     90deg,
     transparent 0,
     black var(--fade-start),
     black calc(100% - var(--fade-end)),
     transparent 100%
   );
-          mask-image : linear-gradient(
-    90deg,
-    transparent 0,
-    black var(--fade-start),
-    black calc(100% - var(--fade-end)),
-    transparent 100%
-  );
-  transition : mask-image 260ms linear;
+  -webkit-mask-image : var(--rail-mask);
+          mask-image : var(--rail-mask);
+  transition         : mask-image 260ms linear;
 }
 
 .surface-rail-window::-webkit-scrollbar { display: none; }
@@ -172,7 +174,6 @@
 .surface-rail-chevron:disabled { opacity: 0; pointer-events: none; }
 
 .surface-rail-chevron:focus-visible {
-  outline        : var(--prose-focus-ring);
   outline-offset : 1px;
   opacity        : 1;
 }

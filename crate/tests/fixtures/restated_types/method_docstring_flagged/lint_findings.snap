@@ -1,0 +1,20 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/restated_types/method_docstring_flagged/input.py
+---
+[
+  {
+    "code": "restated-types",
+    "end_location": {
+      "column": 23,
+      "row": 7
+    },
+    "fix": null,
+    "location": {
+      "column": 18,
+      "row": 7
+    },
+    "message": "`host` restates a type the signature already annotates"
+  }
+]

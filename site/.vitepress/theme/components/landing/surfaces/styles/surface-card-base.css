@@ -54,7 +54,7 @@
 }
 
 .surface-card-blurb .glossary-anchor,
-.surface-card-chips > * {
+.surface-rail > * {
   position       : relative;
   z-index        : 2;
   pointer-events : auto;
@@ -147,21 +147,4 @@
 .surface-card-blurb :where(code) {
   font-family : var(--vp-font-family-mono);
   font-size   : 0.9em;
-}
-
-.surface-card-chips {
-  position    : relative;
-  margin-top  : auto;
-  padding-top : 18px;
-}
-
-.surface-card-chips::before {
-  content    : "";
-  position   : absolute;
-  top        : 0;
-  left       : 0;
-  right      : 0;
-  height     : 1px;
-  background : var(--vp-c-divider);
-  opacity    : 0.65;
 }

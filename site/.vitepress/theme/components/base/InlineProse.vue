@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { useAriaHidden }     from '../../../lib/composables/use-aria-hidden'
-import type { InlineNode }   from '../../../lib/markdown/inline-nodes'
-import { BODY_LINK_CLASSES } from '../../../lib/shared/constants'
-import GlossaryTerm          from '../glossary/GlossaryTerm.vue'
-import InlineRuleLink        from '../rules/InlineRuleLink.vue'
+import { useAriaHidden, useHiddenTabindex } from '../../../lib/composables/use-aria-hidden'
+import type { InlineNode }                  from '../../../lib/markdown/inline-nodes'
+import { BODY_LINK_CLASSES }                from '../../../lib/shared/constants'
+import GlossaryTerm                         from '../glossary/GlossaryTerm.vue'
+import InlineRuleLink                       from '../rules/InlineRuleLink.vue'
 
 defineProps<{ nodes: readonly InlineNode[] }>()
 
 const ariaHidden = useAriaHidden()
+const tabindex   = useHiddenTabindex()
 </script>
 
 <template>
@@ -18,7 +19,7 @@ const ariaHidden = useAriaHidden()
       v-else-if="node.kind === 'primitive'"
       :class="BODY_LINK_CLASSES"
       :href="`/primitives/${node.slug}`"
-      :tabindex="ariaHidden ? -1 : undefined"
+      :tabindex="tabindex"
     ><strong><code>{{ node.display }}</code></strong></a>
     <code v-else-if="node.kind === 'code'">{{ node.text }}</code>
     <component

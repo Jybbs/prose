@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useAriaHidden }     from '../../../../lib/composables/use-aria-hidden'
+import { useHiddenTabindex } from '../../../../lib/composables/use-aria-hidden'
 import type { RenderedRule } from '../../../../lib/rules/rules.data'
 import RuleTooltipPopper     from '../../rules/RuleTooltipPopper.vue'
 
 defineProps<{ rule: RenderedRule | undefined, swap: string }>()
 
-const ariaHidden = useAriaHidden()
+const tabindex = useHiddenTabindex()
 </script>
 
 <template>
@@ -14,7 +14,7 @@ const ariaHidden = useAriaHidden()
       class="rule-chip surface-rail-chip"
       :href="rule.href"
       :data-family="rule.family"
-      :tabindex="ariaHidden ? -1 : undefined"
+      :tabindex="tabindex"
     >
       <span class="rule-chip-badge" aria-hidden="true">{{ rule.familyBadge }}</span>
       <Transition :name="swap" mode="out-in">

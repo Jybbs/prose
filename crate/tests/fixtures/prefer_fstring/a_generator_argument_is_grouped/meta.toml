@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "A Bare Generator Argument Is Grouped"
+
+description = '''
+A generator standing as the call's only argument carries no parentheses of
+its own, so the field supplies them.
+'''

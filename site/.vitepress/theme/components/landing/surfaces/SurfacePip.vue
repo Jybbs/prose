@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useAriaHidden }     from '../../../../lib/composables/use-aria-hidden'
+import { useHiddenTabindex } from '../../../../lib/composables/use-aria-hidden'
 import type { RenderedRule } from '../../../../lib/rules/rules.data'
 import { formatFolio }       from '../../../../lib/shared/numerals'
 
@@ -12,7 +12,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ select: [] }>()
 
-const ariaHidden = useAriaHidden()
+const tabindex = useHiddenTabindex()
 </script>
 
 <template>
@@ -22,8 +22,8 @@ const ariaHidden = useAriaHidden()
     :style="{ '--d': distance }"
     :href="rule.href"
     :aria-label="rule.slug"
-    :tabindex="ariaHidden ? -1 : undefined"
+    :tabindex="tabindex"
     @focus="emit('select')"
     @mouseenter="emit('select')"
-  ><span class="surface-pip-mark" aria-hidden="true" /><span class="surface-pip-folio">{{ formatFolio(index + 1) }}</span></a>
+  ><span class="surface-pip-mark" aria-hidden="true" /><span class="folio surface-pip-folio">{{ formatFolio(index + 1) }}</span></a>
 </template>

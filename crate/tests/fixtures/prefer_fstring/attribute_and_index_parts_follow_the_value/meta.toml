@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Attribute or Index Part Follows the Value Inline"
+
+description = '''
+The accessor the field name spelled moves onto the value it accessed.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Named Field Binds Its Keyword Argument"
+
+description = '''
+Each field carries the value its keyword named, leaving the call behind.
+'''

@@ -32,69 +32,34 @@
   opacity : 0;
 }
 
+.lint-flag-line {
+  isolation : isolate;
+}
+
+/* A span reaching a whole row underlines nothing in particular, so the wave
+   gives way to a wash over exactly the rows the finding names. */
+.lint-flag-line::after {
+  inset-block         : -1px;
+  z-index             : -1;
+  height              : auto;
+  border-inline-start : 2px solid var(--family-color);
+  background          : color-mix(in srgb, var(--family-color) 12%, transparent);
+  -webkit-mask        : none;
+  mask                : none;
+}
+
+.lint-flag-line:hover::after {
+  opacity : 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lint-flag,
   .lint-flag::after {
     transition : none;
   }
 
-  .lint-undrawn .lint-flag::after {
+  .lint-undrawn .lint-flag::after,
+  .lint-flag.lint-undrawn::after {
     transform : scaleX(1);
   }
-}
-
-.lint-popover .rule-card {
-  grid-template-columns : auto auto 1fr;
-  min-height            : auto;
-  overflow              : hidden;
-  padding-bottom        : 8px;
-  row-gap               : 8px;
-}
-
-.lint-popover .rule-card-header {
-  background    : var(--vp-c-bg-alt);
-  border-bottom : 1px solid var(--vp-c-divider);
-  grid-column   : 1 / -1;
-  margin        : -12px -16px 0;
-  padding       : 8px 16px;
-}
-
-.lint-shorthand {
-  align-items : center;
-  display     : flex;
-  flex-wrap   : wrap;
-  font-family : var(--vp-font-family-mono);
-  font-size   : var(--prose-text-xs);
-  gap         : 0.4rem;
-}
-
-.lint-chip {
-  border-radius : var(--prose-radius-sm);
-  padding       : 0.1rem 0.45rem;
-}
-
-.lint-chip-struck {
-  background      : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
-  color           : var(--vp-c-text-3);
-  text-decoration : line-through;
-}
-
-.lint-chip-suggest {
-  background : color-mix(in srgb, var(--family-color) 12%, transparent);
-  color      : var(--family-color);
-}
-
-.lint-into {
-  color : var(--vp-c-text-3);
-}
-
-.lint-message {
-  font-family : var(--vp-font-family-base);
-  font-size   : var(--prose-text-sm);
-}
-
-.lint-message code {
-  color       : var(--family-color);
-  font-family : var(--vp-font-family-mono);
-  font-size   : 0.86em;
 }

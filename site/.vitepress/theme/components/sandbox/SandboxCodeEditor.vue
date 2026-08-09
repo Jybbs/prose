@@ -2,7 +2,7 @@
 import { computedAsync }  from '@vueuse/core'
 import { useTemplateRef } from 'vue'
 
-import { highlight } from '../../../lib/sandbox/highlight'
+import { highlight } from '../../../lib/shared/highlight'
 
 const props = defineProps<{ lang: 'python' | 'toml' }>()
 const model = defineModel<string>({ required: true })

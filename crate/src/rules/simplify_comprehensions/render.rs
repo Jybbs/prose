@@ -5,7 +5,10 @@ use ruff_python_ast::{Expr, ExprTuple, Keyword, token::parenthesized_range};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{constructor::Constructor, plan::Plan};
-use crate::{primitives::binding::sequence_elts, source::Source};
+use crate::{
+    primitives::{binding::sequence_elts, edit::padded},
+    source::Source,
+};
 
 /// The edits `plan` lands over `expr`, or `None` where one of them would
 /// cut through a comment or a dict entry carries its own grouping pair.
@@ -73,18 +76,6 @@ fn keyword_edits(source: &Source, call: &Expr, keywords: &[Keyword]) -> Vec<Edit
         TextRange::new(last.end(), call.end()),
     ));
     edits
-}
-
-/// `text` carrying a leading space where the character before `start`
-/// would otherwise run into it, as `return[x for x in xs]` does.
-fn padded(source: &Source, start: TextSize, text: String) -> String {
-    let joins = |c: char| c.is_alphanumeric() || c == '_';
-    let merges = text.starts_with(joins)
-        && source.text()[..start.to_usize()]
-            .chars()
-            .next_back()
-            .is_some_and(joins);
-    if merges { format!(" {text}") } else { text }
 }
 
 /// The edits rewriting a sequence of two-element tuples into a dict

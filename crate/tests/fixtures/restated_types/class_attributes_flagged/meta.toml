@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An `Attributes:` Entry Resolves Against the Class Body"
+
+description = '''
+`host` is annotated in the class body and draws a report. `port` is bound by a plain assignment carrying no annotation and `proxy` is declared nowhere, so both stay silent.
+'''

@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "A Bytes Conversion Holds"
+
+description = '''
+`%b` belongs to a bytes template, so a str template carrying it is left as
+written.
+'''

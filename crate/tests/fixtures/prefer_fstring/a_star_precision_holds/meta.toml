@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "A Star Precision Holds"
+
+description = '''
+The `*` reads its precision from an argument out of order, which no
+single field can express.
+'''

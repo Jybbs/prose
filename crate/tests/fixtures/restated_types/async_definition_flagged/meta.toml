@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Async Definition Resolves Like Any Other"
+
+description = '''
+An `async def` carries the same parameters a plain `def` does, so its `Args:` entries resolve against the signature identically.
+'''

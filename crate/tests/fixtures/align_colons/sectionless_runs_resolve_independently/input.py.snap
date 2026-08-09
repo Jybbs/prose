@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_colons/sectionless_runs_resolve_independently/input.py
+---
+class Frame:
+    """
+    handler (Callable) : The sink each frame is written to.
+    codec   (bytes)    : The wire encoding in force.
+
+    Prose between the runs.
+
+    deadline (float) : When the dial is abandoned.
+    tag      (str)   : The label carried on every frame.
+    """

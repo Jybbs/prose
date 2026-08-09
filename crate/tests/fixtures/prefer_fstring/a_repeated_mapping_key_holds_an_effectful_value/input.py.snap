@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prefer_fstring/a_repeated_mapping_key_holds_an_effectful_value/input.py
+---
+twice = "%(v)s %(v)s" % {"v": build()}

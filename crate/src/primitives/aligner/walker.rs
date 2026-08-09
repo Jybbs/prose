@@ -42,33 +42,83 @@ impl<'a> AlignWalker<'a> {
         edits
     }
 
+    /// Records `name_edits` together with a one-space rewrite of each gap
+    /// in `gaps` as one fix group. A gap already holding one space emits
+    /// nothing. The gaps are the secondary spans a rule normalizes beside
+    /// its aligned column, like the `=`-to-value gap or the `:`-to-body
+    /// gap.
+    fn push_with_gaps(
+        &mut self,
+        mut name_edits: Vec<Edit>,
+        gaps: impl IntoIterator<Item = TextRange>,
+    ) {
+        name_edits.extend(
+            gaps.into_iter()
+                .filter_map(|r| space_padding_edit(self.source, r, 1)),
+        );
+        self.push_group(name_edits);
+    }
+
+    /// The post-operator gaps this rule rewrites to one space, one per
+    /// member whose value shares the operator's line.
+    fn value_gaps(&self, members: &[Member]) -> Vec<TextRange> {
+        members
+            .iter()
+            .filter_map(|m| m.rewritten_value_gap(self.source))
+            .collect()
+    }
+
+    /// The alignment edits `members` take under `settings` rather than
+    /// the walker's own, empty when they form no alignment candidate.
+    /// The caller folds them into a wider fix group rather than
+    /// recording them on their own.
+    pub(crate) fn candidate_edits_under(
+        &self,
+        settings: Settings,
+        members: &[Member],
+    ) -> Vec<Edit> {
+        if is_alignment_candidate(self.source, members) {
+            self.group_edits_under(settings, members)
+        } else {
+            Vec::new()
+        }
+    }
+
+    /// The alignment edits `members` take under `settings`, their shared
+    /// column where they form an alignment candidate and each member's
+    /// own buffer otherwise.
+    pub(crate) fn column_or_buffer_edits(
+        &self,
+        settings: Settings,
+        members: &[Member],
+    ) -> Vec<Edit> {
+        if is_alignment_candidate(self.source, members) {
+            return self.group_edits_under(settings, members);
+        }
+        members
+            .iter()
+            .filter_map(|m| space_padding_edit(self.source, m.gap, settings.buffer))
+            .collect()
+    }
+
+    /// Records [`Self::column_or_buffer_edits`] for `members` as one
+    /// fix group, folding in the post-operator gaps.
+    pub(crate) fn emit_group_or_buffer(&mut self, members: &[Member]) {
+        let name_edits = self.column_or_buffer_edits(self.settings, members);
+        let gaps = self.value_gaps(members);
+        self.push_with_gaps(name_edits, gaps);
+    }
+
     /// Aligns `members` to their shared column and folds in a one-space
     /// rewrite of each gap in `gaps`, recording the combined fix as one
     /// group. The members-level analog of [`Self::push_with_gaps`],
-    /// pairing the column math of [`Self::group_edits`] with the gap
-    /// normalization.
+    /// pairing the column math with the gap normalization.
     pub(crate) fn emit_group_with_gaps(
         &mut self,
         members: &[Member],
         gaps: impl IntoIterator<Item = TextRange>,
     ) {
-        let name_edits = self.group_edits(members);
-        self.push_with_gaps(name_edits, gaps);
-    }
-
-    /// Aligns `members` as one fix group when they form an alignment
-    /// candidate, rewriting each member's gap to the settings' buffer
-    /// otherwise, and folding in the post-operator gaps either way.
-    pub(crate) fn emit_group_or_buffer(&mut self, members: &[Member]) {
-        let name_edits = if is_alignment_candidate(self.source, members) {
-            self.group_edits(members)
-        } else {
-            members
-                .iter()
-                .filter_map(|m| space_padding_edit(self.source, m.gap, self.settings.buffer))
-                .collect()
-        };
-        let gaps = self.value_gaps(members);
+        let name_edits = self.group_edits_under(self.settings, members);
         self.push_with_gaps(name_edits, gaps);
     }
 
@@ -76,18 +126,9 @@ impl<'a> AlignWalker<'a> {
     /// candidate, folding in a one-space rewrite of each member's
     /// [post-operator gap](Self::value_gaps). Records nothing otherwise.
     pub(crate) fn emit_if_candidate(&mut self, members: &[Member]) {
-        self.emit_if_candidate_under(self.settings, members);
-    }
-
-    /// Aligns `members` as one fix group under `settings` rather than the
-    /// walker's own, folding in the same post-operator gap rewrite
-    /// [`Self::emit_if_candidate`] applies. Records nothing when
-    /// `members` form no alignment candidate.
-    pub(crate) fn emit_if_candidate_under(&mut self, settings: Settings, members: &[Member]) {
         if is_alignment_candidate(self.source, members) {
             let gaps = self.value_gaps(members);
-            let name_edits = self.group_edits_under(settings, members);
-            self.push_with_gaps(name_edits, gaps);
+            self.emit_group_with_gaps(members, gaps);
         }
     }
 
@@ -96,13 +137,6 @@ impl<'a> AlignWalker<'a> {
     pub(crate) fn emit_unheld(&mut self, members: impl IntoIterator<Item = Member>) {
         let kept = retain_unheld(self.source, self.rule, members);
         self.emit_if_candidate(&kept);
-    }
-
-    /// Computes the alignment edits for `members` without recording
-    /// them, leaving the caller to fold in further edits before
-    /// committing the group through [`Self::push_group`].
-    pub(crate) fn group_edits(&self, members: &[Member]) -> Vec<Edit> {
-        self.group_edits_under(self.settings, members)
     }
 
     /// Returns `true` when `anchor`'s source line is skip-suppressed for
@@ -117,31 +151,5 @@ impl<'a> AlignWalker<'a> {
         if !edits.is_empty() {
             self.groups.push(edits);
         }
-    }
-
-    /// Records `name_edits` together with a one-space rewrite of each gap
-    /// in `gaps` as one fix group. A gap already holding one space emits
-    /// nothing. The gaps are the secondary spans a rule normalizes beside
-    /// its aligned column, like the `=`-to-value gap or the `:`-to-body
-    /// gap.
-    pub(crate) fn push_with_gaps(
-        &mut self,
-        mut name_edits: Vec<Edit>,
-        gaps: impl IntoIterator<Item = TextRange>,
-    ) {
-        name_edits.extend(
-            gaps.into_iter()
-                .filter_map(|r| space_padding_edit(self.source, r, 1)),
-        );
-        self.push_group(name_edits);
-    }
-
-    /// The post-operator gaps this rule rewrites to one space, one per
-    /// member whose value shares the operator's line.
-    pub(crate) fn value_gaps(&self, members: &[Member]) -> Vec<TextRange> {
-        members
-            .iter()
-            .filter_map(|m| m.rewritten_value_gap(self.source))
-            .collect()
     }
 }

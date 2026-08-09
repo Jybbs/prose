@@ -1,0 +1,24 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/restated_types/crossed_section_and_owner_pass/input.py
+---
+def measure(width: int):
+    """
+    Measure something.
+
+    Attributes:
+        width (int): A function declares no attributes.
+    """
+
+
+class Session:
+    """
+    A live session.
+
+    Args:
+        host (str): A class body declares no parameters.
+    """
+
+    def __init__(self, host: str):
+        self.host = host

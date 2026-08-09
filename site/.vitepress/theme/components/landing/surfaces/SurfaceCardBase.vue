@@ -2,12 +2,12 @@
 import { useElementHover, useElementSize, useMouseInElement } from '@vueuse/core'
 import { computed, useTemplateRef }                           from 'vue'
 
-import { provideAriaHidden }  from '../../../../lib/composables/use-aria-hidden'
-import type { InlineNode }    from '../../../../lib/markdown/inline-nodes'
-import type { RenderedRule }  from '../../../../lib/rules/rules.data'
-import * as registries        from '../../../../lib/shared/registries'
-import InlineProse            from '../../base/InlineProse.vue'
-import SurfaceRail            from './SurfaceRail.vue'
+import { provideAriaHidden } from '../../../../lib/composables/use-aria-hidden'
+import type { InlineNode }   from '../../../../lib/markdown/inline-nodes'
+import type { RenderedRule } from '../../../../lib/rules/rules.data'
+import * as registries       from '../../../../lib/shared/registries'
+import InlineProse           from '../../base/InlineProse.vue'
+import SurfaceRail           from './SurfaceRail.vue'
 
 const SPOTLIGHT_FALLBACK_PCT = 50
 const SPOTLIGHT_PCT_SCALE    = 100
@@ -61,8 +61,6 @@ const spotlightY = computed(() => rh.value ? (ry.value / rh.value) * SPOTLIGHT_P
     <span class="surface-card-icon" aria-hidden="true">{{ meta.badge }}</span>
     <h3 class="surface-card-label">{{ meta.label }}</h3>
     <p class="surface-card-blurb"><InlineProse :nodes="bodyNodes" /></p>
-    <div class="surface-card-chips">
-      <SurfaceRail :rules="rules" />
-    </div>
+    <SurfaceRail :rules="rules" />
   </div>
 </template>

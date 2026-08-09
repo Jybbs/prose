@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Zero Cap Collapses the Type Column Too"
+
+description = '''
+`max-shift = 0` forbids any shift on the type-group column the way it does on the `:` column, so every `(` sits one space past its own name and every `:` sits flush.
+'''

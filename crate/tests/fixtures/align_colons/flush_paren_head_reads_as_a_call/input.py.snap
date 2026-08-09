@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_colons/flush_paren_head_reads_as_a_call/input.py
+---
+class Integral:
+    """
+    divmod(self, other) : The pair (self // other, self % other).
+    trunc(self)         : Truncates self to an Integral.
+    """

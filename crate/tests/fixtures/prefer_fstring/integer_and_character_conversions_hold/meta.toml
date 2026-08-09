@@ -1,0 +1,8 @@
+[docs]
+previewable = true
+title       = "An Integer or Character Conversion Holds"
+
+description = '''
+`%d` truncates a float and `%c` maps an ordinal, where the matching
+presentation type raises instead.
+'''
