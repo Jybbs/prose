@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Module Holding Only Comments Clears Its Leading Run"
+
+description = '''
+A file with no statement at all still **clears the blank run opening it**, measured above the comment block the way it is measured above a first statement. Nothing sits below the block to seat a gap against.
+'''

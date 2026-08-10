@@ -386,9 +386,12 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'above a statement. `blank-lines` binds description-shaped blocks tight '
                + 'against the following statement and keeps 1 blank line below banner-shaped '
                + 'blocks *(any line of which is a decorative rule of `=`, `-`, `*`, `_`, '
-               + '`#`, or `~`)*, with the canonical above-gap measured from the topmost '
-               + 'comment either way. The orderer primitive\'s `block_range` carries the '
-               + 'block with its item when reordering siblings.',
+               + '`#`, `~`, `─`, `━`, or `═`)*, with the canonical above-gap measured from '
+               + 'the topmost comment either way. A block opening the file clears the run '
+               + 'above it and caps the run below at 1 blank line, seated where the block '
+               + 'anchors in place or where the author already left one. The orderer '
+               + 'primitive\'s `block_range` carries the block with its item when '
+               + 'reordering siblings.',
     families   : ['ordering'],
     rule       : 'blank-lines'
   },

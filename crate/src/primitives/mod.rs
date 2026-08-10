@@ -18,6 +18,7 @@ pub(crate) mod fracture;
 pub(crate) mod imports;
 pub(crate) mod inline;
 pub(crate) mod layout;
+pub(crate) mod offsets;
 pub(crate) mod orderer;
 pub(crate) mod params;
 pub(crate) mod quoting;

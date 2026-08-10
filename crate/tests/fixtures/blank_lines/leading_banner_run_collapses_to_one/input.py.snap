@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/blank_lines/leading_banner_run_collapses_to_one/input.py
+---
+# ============================================================
+# Section: Configuration
+# ============================================================
+
+import os
+
+value = os

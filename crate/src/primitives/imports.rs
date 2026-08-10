@@ -11,11 +11,11 @@ use std::{cmp::Reverse, ops::Range};
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
 use ruff_source_file::LineRanges;
-use ruff_text_size::{TextRange, TextSize};
+use ruff_text_size::TextRange;
 
 use crate::{
     primitives::{
-        comments::leading_comment_block, edit::whole_line_deletion, range::dropped_member_spans,
+        comments::comment_leads, edit::whole_line_deletion, range::dropped_member_spans,
         sections::Sections, slots::runs_where,
     },
     source::Source,
@@ -143,8 +143,9 @@ pub(crate) fn is_import(stmt: &Stmt) -> bool {
 /// shares its lines with other code, or when a comment sits inside it.
 ///
 /// A statement losing all of its aliases goes whole, taking its full
-/// lines. One losing a subset keeps the survivors byte-for-byte, each
-/// deletion covering one run of dropped aliases together with the
+/// lines, unless an own-line comment block leads it, which the deletion
+/// would strand. One losing a subset keeps the survivors byte-for-byte,
+/// each deletion covering one run of dropped aliases together with the
 /// separator binding it to the survivor beside it.
 pub(crate) fn prune_import_aliases(
     source: &Source,
@@ -157,7 +158,7 @@ pub(crate) fn prune_import_aliases(
         return Vec::new();
     }
     if kept == 0 {
-        return if comment_leads(source, stmt) {
+        return if comment_leads(source, stmt.start()) {
             Vec::new()
         } else {
             vec![whole_line_deletion(source, stmt)]
@@ -184,20 +185,6 @@ pub(crate) fn sectioned_import_runs(sections: &Sections, body: &[Stmt]) -> Vec<R
                 .map(move |run| section.start + run.start..section.start + run.end)
         })
         .collect()
-}
-
-/// True when an own-line comment sits on the line directly above
-/// `stmt`, describing the statement a whole-line deletion removes.
-fn comment_leads(source: &Source, stmt: TextRange) -> bool {
-    let text = source.text();
-    let line_start = text.line_start(stmt.start());
-    line_start > TextSize::default()
-        && leading_comment_block(
-            source,
-            text.line_start(line_start - TextSize::from(1)),
-            line_start,
-        )
-        .is_some()
 }
 
 /// True when the root package of `name` (the substring up to the
@@ -234,9 +221,10 @@ mod tests {
     use ruff_text_size::Ranged;
 
     use super::*;
-    use crate::primitives::edit::apply_edits;
-    use crate::primitives::orderer::member_blocks;
-    use crate::testing::parse;
+    use crate::{
+        primitives::{edit::apply_edits, orderer::member_blocks},
+        testing::parse,
+    };
 
     #[rstest]
     #[case("from __future__ import annotations\n", true)]
@@ -320,6 +308,15 @@ mod tests {
     }
 
     #[test]
+    fn import_sort_key_ranks_an_absolute_from_import_ahead_of_every_relative_one() {
+        let first_party = vec!["myapp".to_owned()];
+        let s = parse("from .pkg import a\nfrom myapp.db import b\n");
+        let key = |stmt| import_sort_key(stmt, &first_party, true).expect("import statement");
+        let body = &s.ast().body;
+        assert!(key(&body[1]) < key(&body[0]));
+    }
+
+    #[test]
     fn import_sort_key_ranks_groups_then_bare_before_from_within_local() {
         let first_party = vec!["myapp".to_owned()];
         let s = parse("import os\nfrom os import path\nimport myapp.core\nfrom myapp import app\n");
@@ -336,12 +333,9 @@ mod tests {
     }
 
     #[test]
-    fn import_sort_key_ranks_an_absolute_from_import_ahead_of_every_relative_one() {
-        let first_party = vec!["myapp".to_owned()];
-        let s = parse("from .pkg import a\nfrom myapp.db import b\n");
-        let key = |stmt| import_sort_key(stmt, &first_party, true).expect("import statement");
-        let body = &s.ast().body;
-        assert!(key(&body[1]) < key(&body[0]));
+    fn import_sort_key_returns_none_for_non_import() {
+        let s = parse("x = 1\n");
+        assert!(import_sort_key(&s.ast().body[0], &[], true).is_none());
     }
 
     #[test]
@@ -357,12 +351,6 @@ mod tests {
             keys[2] < keys[1] && keys[1] < keys[0],
             "expected `...pkg` < `..pkg` < `.pkg`, furthest to closest",
         );
-    }
-
-    #[test]
-    fn import_sort_key_returns_none_for_non_import() {
-        let s = parse("x = 1\n");
-        assert!(import_sort_key(&s.ast().body[0], &[], true).is_none());
     }
 
     #[test]
@@ -412,6 +400,11 @@ mod tests {
         "# loaded for the side effect\nimport typing\n",
         &[0],
         "# loaded for the side effect\nimport typing\n"
+    )]
+    #[case::leading_comment_across_a_blank_holds_the_statement(
+        "# loaded for the side effect\n\nimport typing\n",
+        &[0],
+        "# loaded for the side effect\n\nimport typing\n"
     )]
     #[case::leading_comment_leaves_a_partial_prune_alone(
         "# the typing pair\nfrom typing import a, b\n",

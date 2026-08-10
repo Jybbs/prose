@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Module's Leading Banner Cushions the First Statement"
+
+description = '''
+A banner opening a module reads as a **section divider** rather than a description of the statement below it, so it takes one blank line beneath even where the author wrote none, matching its treatment between statements.
+'''

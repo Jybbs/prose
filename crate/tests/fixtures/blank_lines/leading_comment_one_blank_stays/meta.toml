@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "One Blank Below a Module's Leading Comment Stays"
+
+description = '''
+A leading comment block the author already separated from the first statement by one blank line **passes through untouched**, the head position keeping the separation rather than binding the block tight the way it does between statements.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Shebang Header Stays Tight Against the First Statement"
+
+description = '''
+A shebang and an encoding line read as neither marker, directive, nor pragma, so a header the author wrote tight **passes through tight**, taking no divider blank beneath it.
+'''

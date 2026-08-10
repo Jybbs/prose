@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/blank_lines/comment_only_module_clears_its_leading_run/input.py
+---
+# Placeholder until the loader lands.
