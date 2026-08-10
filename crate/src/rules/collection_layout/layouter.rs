@@ -69,7 +69,7 @@ impl<'a> Layouter<'a> {
         let mut out = String::new();
         out.push(open);
         out.push_str(self.newline);
-        for segment in segments(&atomics) {
+        for segment in segments(&atomics, expr.is_set_expr()) {
             match segment {
                 Segment::Flow(range) => {
                     let run_start = range.start;

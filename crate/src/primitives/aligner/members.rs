@@ -8,11 +8,11 @@ use ruff_python_ast::{
 };
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
-use ruff_text_size::{TextLen, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::Member;
-use crate::source::Source;
+use crate::{primitives::tokens::is_delimiter_padding, source::Source};
 
 /// The display column where `member`'s left-hand side begins, the width
 /// of its line up to the gap less the member's own width. An
@@ -32,18 +32,32 @@ pub(super) fn baseline(source: &Source, member: Member) -> usize {
 pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member {
     let line_start = source.text().line_start(anchor);
     let gap = line_gap_before(source, anchor);
-    let width = source
-        .slice(TextRange::new(line_start, gap.start()))
-        .trim_whitespace_start()
-        .width();
+    let head = TextRange::new(line_start, gap.start());
+    let width = source.slice(head).trim_whitespace_start().width();
     Member {
         gap,
         line_start,
         op_width: 0,
-        settled_width: width,
+        settled_width: width - delimiter_padding_width(source, head),
         value_gap: None,
         width,
     }
+}
+
+/// The display width of the bracket-delimiter padding inside `range`,
+/// the columns `strip-align-padding` deletes once it runs. A settled
+/// width reads past them, so an alignment measures the row the pipeline
+/// lands on rather than the one the source wrote.
+fn delimiter_padding_width(source: &Source, range: TextRange) -> usize {
+    source
+        .token_gaps()
+        .skip_while(|(_, next, _)| next.end() <= range.start())
+        .take_while(|(token, _, _)| token.start() < range.end())
+        .filter(|(token, next, gap)| {
+            range.contains_range(*gap) && is_delimiter_padding(token.kind(), next.kind())
+        })
+        .map(|(_, _, gap)| source.slice(gap).width())
+        .sum()
 }
 
 /// Builds a `Member` whose anchor is the first `kind` token in `search`
