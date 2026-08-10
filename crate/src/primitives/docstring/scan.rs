@@ -3,7 +3,10 @@
 
 use ruff_python_trivia::{PythonWhitespace, leading_indentation};
 
-use crate::primitives::INDENT_STEP;
+use crate::primitives::{
+    INDENT_STEP,
+    docstring::grammar::{is_entry_head, section_heading},
+};
 
 /// The classification of a docstring body line by [`LineScanner`].
 /// Every variant but `Body` is terminal for the line, with `Body`
@@ -126,6 +129,27 @@ pub(crate) struct ScannedLine<'a> {
 /// True when `trimmed` is a delimited head, an `open` prefix then a
 /// non-empty name run then a `close` delimiter that ends the line or
 /// carries whitespace after it.
+/// True where `rest` opens a structure a docstring walker reads
+/// verbatim rather than as prose, so a wrap putting `rest` at a row
+/// head would have the next pass parse that row as the structure. Reads
+/// the whole remainder rather than its leading token, which makes the
+/// suppression transitive and so terminating, a multi-word heading
+/// pulling the break back word by word until the row head is prose.
+pub(crate) fn opens_structure(rest: &str) -> bool {
+    let trimmed = rest.trim_whitespace_start();
+    is_bracketed_literal(trimmed)
+        || is_comment_marker(trimmed)
+        || is_directive(trimmed)
+        || is_doctest_prompt(trimmed)
+        || is_entry_head(trimmed)
+        || is_field_marker(trimmed)
+        || is_grid_table_line(trimmed)
+        || is_list_marker(trimmed)
+        || is_section_underline(trimmed)
+        || is_simple_table_rule(trimmed)
+        || section_heading(trimmed).is_some()
+}
+
 fn head_delimited(trimmed: &str, open: &str, close: &str) -> bool {
     trimmed
         .strip_prefix(open)

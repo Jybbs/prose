@@ -45,6 +45,12 @@ pub(crate) fn sibling_entry_head(
         .and_then(entry_head)
 }
 
+/// True when `trimmed` opens with a Google-style `name: description`
+/// entry head, whatever its type group.
+pub(crate) fn is_entry_head(trimmed: &str) -> bool {
+    entry_head(trimmed).is_some()
+}
+
 /// True when `trimmed` is an entry head carrying a parenthesized type
 /// group holding a type, the `name (type): description` shape. An empty
 /// or whitespace-only paren pair does not qualify.

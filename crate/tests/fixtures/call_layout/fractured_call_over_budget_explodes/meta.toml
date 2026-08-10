@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Fractured Call Whose Joined Row Overflows Explodes"
+
+description = '''
+The length trigger measures the joined row across the column the list lands at and the code trailing the call on its own row, so a fracture whose join would overflow explodes one argument per line rather than keeping the break the author wrote.
+'''

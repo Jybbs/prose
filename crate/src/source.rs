@@ -21,7 +21,10 @@ use thiserror::Error;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    primitives::{binding::BindingAnalysis, inline::indent_width, range::paren_aware_range},
+    primitives::{
+        binding::BindingAnalysis, comments::trailing_comment_start, inline::indent_width,
+        range::paren_aware_range,
+    },
     suppression::SuppressionMap,
 };
 
@@ -349,6 +352,19 @@ impl Source {
     /// would charge every row beneath it.
     pub fn row_tail(&self, offset: TextSize) -> TextRange {
         TextRange::new(offset, self.text().line_end(offset))
+    }
+
+    /// The display width of the code from `offset` to the end of its
+    /// physical row, the columns a construct ending there shares its row
+    /// with once it joins. A trailing comment closes the measure, since
+    /// charging one against the code budget would let a comment reshape
+    /// the code it annotates.
+    pub fn row_tail_width(&self, offset: TextSize) -> usize {
+        let tail = self.row_tail(offset);
+        let end = trailing_comment_start(self, offset)
+            .filter(|start| tail.contains(*start))
+            .unwrap_or(tail.end());
+        self.slice(TextRange::new(offset, end)).trim_end().width()
     }
 
     /// Returns the range spanning the entire source text.

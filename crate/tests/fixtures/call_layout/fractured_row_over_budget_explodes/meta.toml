@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Rejoin Landing One Column Over Budget Explodes"
+
+description = '''
+The length measure counts the code trailing the closing parenthesis on its own row, so a fracture whose joined row would land one column past the budget explodes rather than joining.
+'''

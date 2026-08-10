@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Fracture Whose Row Would Overflow Holds"
-
-description = '''
-The rejoin measures the whole row, the column the parenthesis lands at plus the joined arguments plus the text trailing the call to the end of its logical line, so a fracture whose joined row would cross the budget keeps its break rather than landing a line that overflows. The length trigger reads the argument list alone, which fits here, so nothing would catch that row on a later pass.
-'''

@@ -354,9 +354,7 @@ impl<'a> Layouter<'a> {
     /// the expand path relocates lands on a row of its own instead, so
     /// only the walk's own entry reads this.
     fn row_tail(&self, expr: &Expr) -> usize {
-        self.source
-            .slice(self.source.row_tail(expr.range().end()))
-            .width()
+        self.source.row_tail_width(expr.range().end())
     }
 
     /// The range covering `expr` with explicit parens recovered against

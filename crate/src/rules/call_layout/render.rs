@@ -6,7 +6,7 @@
 use std::borrow::Cow;
 
 use ruff_python_ast::{ArgOrKeyword, Arguments, Expr, ExprCall, visitor::Visitor as AstVisitor};
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::Exploder;
@@ -18,6 +18,7 @@ use crate::primitives::{
         Separator, explode_parens, hangs_from_its_row, is_fractured, item_indent,
         reindent_continuation, reindent_shift, spans_a_string_part,
     },
+    tokens::is_opener,
 };
 
 impl<'a> Exploder<'a> {
@@ -90,18 +91,46 @@ impl<'a> Exploder<'a> {
     /// The one-line `(...)` text for an argument list the author
     /// fractured, or `None` where it holds no break or carries the flush
     /// column shape the explode path emits. The joined row measures from
-    /// `column` across the text trailing the call to the end of its
-    /// logical line, so a rejoin never lands a row the length trigger
-    /// would explode again. A nested literal the join leaves open stays
-    /// open, that interior belonging to `collection-layout`.
+    /// `column` across the text trailing the call on its own physical
+    /// row, so a rejoin never lands a row the length trigger would
+    /// explode again. A nested literal the join leaves open stays open,
+    /// that interior belonging to `collection-layout`.
     fn rejoined(&self, arguments: &Arguments, column: usize, joined: String) -> Option<String> {
         let range = arguments.range();
         if !is_fractured(self.source, range) {
             return None;
         }
-        let tail = self.source.logical_line_tail(range.end());
-        let width = column + joined.width() + self.settled_width(tail);
+        let width = column + joined.width() + self.row_tail(range.end());
         (width <= self.code_line_length).then_some(joined)
+    }
+
+    /// The columns trailing this call on its own physical row, which a
+    /// joined or exploded row lands beside. A walk inside a relocated
+    /// value carries its own region rather than the source row, whose
+    /// tail belongs to the text the outer walk assembles. A tail opening
+    /// a bracket of its own carries a construct this rule still
+    /// reshapes, so its width is not yet settled and goes uncharged.
+    fn row_tail(&self, end: TextSize) -> usize {
+        let tail = self.source.row_tail(end);
+        if self.indent.is_some() || self.opens_a_bracket(tail) {
+            return 0;
+        }
+        self.source.row_tail_width(end)
+    }
+
+    /// True where `range` carries an opening bracket, the token that
+    /// marks a construct whose own layout has yet to settle. Walks from
+    /// the nearest token start rather than slicing the stream, since a
+    /// row inside a multi-line string ends partway through a token.
+    fn opens_a_bracket(&self, range: TextRange) -> bool {
+        let tokens = self.source.tokens();
+        let first = tokens
+            .binary_search_by_start(range.start())
+            .unwrap_or_else(|slot| slot.saturating_sub(1));
+        tokens[first..]
+            .iter()
+            .take_while(|token| token.start() < range.end())
+            .any(|token| range.contains(token.start()) && is_opener(token.kind()))
     }
 
     /// True where `rendered`, the text of one argument, re-indents as a
@@ -169,21 +198,6 @@ impl<'a> Exploder<'a> {
         apply_inline_edits(self.source, value.range(), &nested.edits)
     }
 
-    /// The display width `range` reaches once the fractures inside it
-    /// close up, each continuation line shedding its indent and one
-    /// column standing in for the separator a join restores. A range
-    /// holding a break that never closes counts the lines beneath it
-    /// too and so measures long, declining a rejoin whose result would
-    /// otherwise move once the call around it explodes.
-    fn settled_width(&self, range: TextRange) -> usize {
-        let text = self.source.slice(range);
-        let mut lines = text.lines();
-        let head = lines.next().map_or(0, UnicodeWidthStr::width);
-        head + lines
-            .map(|line| 1 + line.trim_start().width())
-            .sum::<usize>()
-    }
-
     /// Returns the exploded `(...)` text for `call` when the count or
     /// length trigger fires, the closing `)` landing at `indent` and the
     /// length trigger measured from `column`, where the `(` lands. The
@@ -206,10 +220,11 @@ impl<'a> Exploder<'a> {
             return None;
         }
         let count_trips = self.max_args.is_some_and(|cap| arguments.len() > cap);
+        let tail = self.row_tail(arguments.range().end());
         let length_trips = !self
             .one_row
             .arguments_form(self.source, arguments)
-            .is_some_and(|form| self.one_row.fits(column + form.width()));
+            .is_some_and(|form| self.one_row.fits(column + form.width() + tail));
         if !count_trips && !length_trips {
             return self.rejoined(arguments, column, self.rejoin.joined(self.source, arguments));
         }
@@ -222,45 +237,5 @@ impl<'a> Exploder<'a> {
             // leaving such calls inline.
             _ => length_trips.then(|| self.explode_source_order(call, indent)),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::collections::HashMap;
-
-    use rstest::rstest;
-    use ruff_text_size::TextSize;
-
-    use super::*;
-    use crate::{config::Config, testing::parse};
-
-    #[rstest]
-    #[case::no_break("value = f(a) + tail_name\n", 12)]
-    #[case::fracture_that_closes("value = f(a) + g(b,\n               c)\n", 10)]
-    #[case::held_break_measures_long("value = f(a) + [\n    b,\n]\n", 9)]
-    fn settled_width_counts_the_opening_line_whole(#[case] src: &str, #[case] expected: usize) {
-        let source = parse(src);
-        let config = Config::default();
-        let reservations = config.equals_reservations().columns(&source);
-        let targets = HashMap::new();
-        let exploder = Exploder {
-            code_line_length: 88,
-            edits: Vec::new(),
-            indent: None,
-            line_shift: 0,
-            max_args: None,
-            one_row: config.one_row_settings(),
-            origin: TextSize::new(0),
-            origin_column: 0,
-            rejoin: config.fracture_settings(),
-            reservations: &reservations,
-            source: &source,
-            targets: &targets,
-        };
-        let start = TextSize::try_from(src.find(')').expect("a closing paren") + 1)
-            .expect("the offset fits");
-        let tail = source.logical_line_tail(start);
-        assert_eq!(exploder.settled_width(tail), expected);
     }
 }
