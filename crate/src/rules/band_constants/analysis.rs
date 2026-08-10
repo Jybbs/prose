@@ -248,9 +248,18 @@ pub(super) fn module_band_plan<'src>(
         }
     }
     // A bound comment only travels when its member bands, leaving an
-    // anchored member's comment where the source put it.
+    // anchored member's comment where the source put it. A carry onto an
+    // anchored member reverts to heading the member whose block folds it
+    // in, so the run travels as that member's own heading rather than
+    // holding a shape the reassembled text reads back as a carry.
+    carries.retain(|carry| {
+        let banded = ranks.contains_key(&carry.carrier);
+        if !banded {
+            attached.insert(carry.absorbs, carry.comment);
+        }
+        banded
+    });
     attached.retain(|idx, _| ranks.contains_key(idx));
-    carries.retain(|carry| ranks.contains_key(&carry.carrier));
     Some(BandPlan {
         attached,
         carries,

@@ -1,14 +1,14 @@
 //! Shared layout helpers for laying a construct out across lines,
 //! covering one-per-line expansion, greedy line filling, reading the
-//! bracket shape a block already carries, measuring where a block's
-//! continuation lines hang, and moving them to a new column.
+//! bracket shape a block already carries, and moving a block's
+//! continuation rows to a new column.
 
 use std::{borrow::Cow, ops::Range};
 
-use ruff_python_ast::{Expr, StringLike, helpers::any_over_expr};
-use ruff_python_trivia::textwrap::{dedent, indent};
+use ruff_python_ast::{Expr, StringLike, helpers::any_over_expr, token::TokenKind};
+use ruff_python_trivia::{leading_indentation, textwrap::{dedent, indent}};
 use ruff_source_file::UniversalNewlines;
-use ruff_text_size::{TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     primitives::{INDENT_STEP, inline::indent_width},
@@ -71,6 +71,7 @@ pub(crate) fn explode_parens(
     out
 }
 
+
 /// True where `block`, the text of one construct, hangs from the row
 /// `start` opens on rather than from a column inside that row, so the
 /// whole block travels with the row. A run aligned under an interior
@@ -96,6 +97,27 @@ pub(crate) fn is_fractured(source: &Source, range: TextRange) -> bool {
     source.contains_line_break(range) && !is_column_shaped(source.slice(range))
 }
 
+/// True for the collapse-only forms, a subscript whose `[index]` joins
+/// onto one line whatever the index shape and the four comprehensions,
+/// each joining when it fits and never expanding the way a literal does.
+pub(crate) fn is_collapse_only(expr: &Expr) -> bool {
+    matches!(
+        expr,
+        Expr::DictComp(_)
+            | Expr::Generator(_)
+            | Expr::ListComp(_)
+            | Expr::SetComp(_)
+            | Expr::Subscript(_)
+    )
+}
+
+/// True for the bracketed expressions the visitor measures for a
+/// single-line collapse: the four collection literals plus the
+/// collapse-only forms, a subscript and the four comprehensions.
+pub(crate) fn is_collapsible(expr: &Expr) -> bool {
+    is_layoutable(expr) || is_collapse_only(expr)
+}
+
 /// True for the four collection-literal `Expr` variants the layout
 /// rules lay out, `Dict`, `List`, `Set`, and `Tuple`.
 pub(crate) fn is_layoutable(expr: &Expr) -> bool {
@@ -103,6 +125,27 @@ pub(crate) fn is_layoutable(expr: &Expr) -> bool {
         expr,
         Expr::Dict(_) | Expr::List(_) | Expr::Set(_) | Expr::Tuple(_)
     )
+}
+
+/// True for a literal carrying more than one entry, `requires_expand`
+/// apart from the one-entry `Dict`.
+pub(crate) fn is_multi_entry(expr: &Expr) -> bool {
+    requires_expand(expr) && expr.as_dict_expr().is_none_or(|dict| dict.len() > 1)
+}
+
+/// True for a `Dict`, `List`, `Set`, or parenthesized `Tuple` shape
+/// the expand path canonicalizes. Multi-item `List`, `Set`, and
+/// parenthesized `Tuple` qualify, as does any non-empty `Dict`. A bare
+/// tuple carries no bracket pair to hang broken lines on, and an empty
+/// or single-item collection has nothing to flow.
+pub(crate) fn requires_expand(expr: &Expr) -> bool {
+    match expr {
+        Expr::Dict(d) => !d.is_empty(),
+        Expr::List(l) => l.len() > 1,
+        Expr::Set(s) => s.len() > 1,
+        Expr::Tuple(t) => t.parenthesized && t.len() > 1,
+        _ => false,
+    }
 }
 
 /// The column an exploded construct opens its items at, one
@@ -139,26 +182,59 @@ pub(crate) fn pack(
     lines
 }
 
-/// `range`'s source text with its continuation lines moved so it hangs
-/// from `indent`, and borrowed where it holds no break, hangs from a
-/// column inside its own row, or carries a string part spanning rows
-/// whose interior the move would pad. `strings` names the expressions
-/// whose parts the move must leave alone.
-pub(crate) fn placed_block<'s, 'e>(
-    source: &'s Source,
-    range: TextRange,
-    strings: impl IntoIterator<Item = &'e Expr>,
-    indent: usize,
-) -> Cow<'s, str> {
+/// `range`'s source text placed at `indent`, every continuation row
+/// travelling by one shift and every row a row-spanning string part
+/// freezes left where the source wrote it. Borrowed where the block
+/// holds no movable continuation row or already sits where it lands.
+///
+/// A block whose movable rows sit at or left of the column it opens at
+/// hangs from its own row, so its shallowest row rebases onto `indent`.
+/// One whose rows sit right of that column is aligned under a bracket
+/// inside its opening row, so the whole block shifts by however far that
+/// row moved and the alignment survives the move.
+pub(crate) fn placed_block(source: &Source, range: TextRange, indent: usize) -> Cow<'_, str> {
     let block = source.slice(range);
-    if hangs_from_its_row(source, range.start(), block)
-        && !strings
-            .into_iter()
-            .any(|expr| spans_a_string_part(source, expr))
-    {
-        return reindent_continuation(block, indent);
+    let travel = travel(source, range, block, indent);
+    if travel.shift == 0 {
+        return Cow::Borrowed(block);
     }
-    Cow::Borrowed(block)
+    Cow::Owned(travel.applied(block))
+}
+
+/// How the block covering `range` moves when it lands at `indent`.
+/// `block` is the text about to be written, whose rows mirror `range`'s
+/// own source rows, so a caller rendering that text with a prefix
+/// measures the same rows the source carries.
+pub(crate) fn travel(source: &Source, range: TextRange, block: &str, indent: usize) -> Travel {
+    let frozen = frozen_rows(source, range);
+    let Some(floor) = movable_floor(block, &frozen) else {
+        return Travel { frozen, shift: 0 };
+    };
+    let from = source.column_of(range.start());
+    let anchor = if floor <= from { floor } else { from };
+    Travel {
+        frozen,
+        shift: indent.cast_signed() - anchor.cast_signed(),
+    }
+}
+
+
+
+
+/// The move a block makes when it lands at a new indent: the columns
+/// its continuation rows shift by, and one flag per row marking the rows
+/// a row-spanning string part holds where the source wrote them.
+pub(crate) struct Travel {
+    frozen: Vec<bool>,
+    pub(crate) shift: isize,
+}
+
+impl Travel {
+    /// `block` with this move applied, each blank row and each row a
+    /// string part holds passing through as written.
+    pub(crate) fn applied(&self, block: &str) -> String {
+        shifted_rows(block, self.shift, &self.frozen)
+    }
 }
 
 /// Re-indents `block`'s continuation lines so its least-indented line
@@ -204,6 +280,66 @@ fn continuation_indent(block: &str) -> Option<usize> {
         .map(|line| indent_width(&line))
         .min()
 }
+
+/// One flag per row of the block at `range`, set for every row opening
+/// strictly inside a string token that itself spans rows. Shifting such
+/// a row would pad the string's own interior, so a move holds it.
+fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
+    let rows = source.line_index(range.end()).get() - source.line_index(range.start()).get() + 1;
+    let mut frozen = vec![false; rows];
+    let tokens = source.tokens();
+    let first = tokens
+        .binary_search_by_start(range.start())
+        .unwrap_or_else(|slot| slot.saturating_sub(1));
+    let head = source.line_index(range.start()).get();
+    for token in tokens[first..].iter().take_while(|t| t.start() < range.end()) {
+        if !matches!(
+            token.kind(),
+            TokenKind::String | TokenKind::FStringMiddle | TokenKind::TStringMiddle
+        ) || !source.contains_line_break(token.range())
+        {
+            continue;
+        }
+        let opens = source.line_index(token.start()).get();
+        let closes = source.line_index(token.end()).get();
+        for row in (opens + 1)..=closes {
+            if let Some(slot) = row.checked_sub(head).and_then(|r| frozen.get_mut(r)) {
+                *slot = true;
+            }
+        }
+    }
+    frozen
+}
+
+/// The least indent among the movable non-blank continuation rows of
+/// `block`, `None` where every continuation row is blank or frozen.
+fn movable_floor(block: &str, frozen: &[bool]) -> Option<usize> {
+    block
+        .universal_newlines()
+        .enumerate()
+        .skip(1)
+        .filter(|(row, line)| !frozen.get(*row).copied().unwrap_or(false) && !line.trim().is_empty())
+        .map(|(_, line)| indent_width(&line))
+        .min()
+}
+
+/// `block`'s continuation rows moved by `shift`, each blank row and each
+/// row `frozen` marks passing through as written.
+fn shifted_rows(block: &str, shift: isize, frozen: &[bool]) -> String {
+    let mut out = String::with_capacity(block.len());
+    for (row, line) in block.split_inclusive('\n').enumerate() {
+        let held = row == 0 || frozen.get(row).copied().unwrap_or(false) || line.trim().is_empty();
+        if held {
+            out.push_str(line);
+            continue;
+        }
+        let lead = leading_indentation(line);
+        out.push_str(&" ".repeat(lead.chars().count().saturating_add_signed(shift)));
+        out.push_str(&line[lead.len()..]);
+    }
+    out
+}
+
 
 /// Splits `block` at its first line break when that opening line holds
 /// its bracket alone, yielding the bracket and the body beneath. A
@@ -272,6 +408,57 @@ mod tests {
         assert_eq!(is_column_shaped(slice), expected);
     }
 
+    #[rstest]
+    #[case("[a]", true)]
+    #[case("{b}", true)]
+    #[case("(c, d)", true)]
+    #[case("{e: f}", true)]
+    #[case("g[h]", true)]
+    #[case("[x for x in y]", true)]
+    #[case("{x for x in y}", true)]
+    #[case("{k: v for k, v in y}", true)]
+    #[case("(x for x in y)", true)]
+    #[case("plain", false)]
+    #[case("a + b", false)]
+    fn is_collapsible_covers_literals_subscripts_and_comprehensions(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let expr = first_expr(&source);
+        assert_eq!(is_collapsible(expr), expected);
+    }
+
+    #[rstest]
+    #[case("[a, b]", true)]
+    #[case("{a: 1, b: 2}", true)]
+    #[case("(a, b)", true)]
+    #[case("{a: 1}", false)]
+    #[case("[a]", false)]
+    #[case("()", false)]
+    #[case("a, b", false)]
+    fn is_multi_entry_requires_two_bracketed_entries(#[case] src: &str, #[case] expected: bool) {
+        let source = parse(src);
+        let expr = first_expr(&source);
+        assert_eq!(is_multi_entry(expr), expected);
+    }
+
+    #[rstest]
+    #[case("(a, b)", true)]
+    #[case("(a,)", false)]
+    #[case("()", false)]
+    #[case("a, b, c", false)]
+    #[case("(a + b)", false)]
+    #[case("[a, b]", true)]
+    fn requires_expand_gates_parenthesized_multi_item_tuples(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let expr = first_expr(&source);
+        assert_eq!(requires_expand(expr), expected);
+    }
+
     #[test]
     fn pack_carries_a_lone_overflowing_item_onto_its_own_line() {
         // prefix 10, budget 14, item widths 8/8: neither pairs onto a
@@ -296,65 +483,5 @@ mod tests {
     #[test]
     fn pack_keeps_one_line_when_every_item_fits() {
         assert_eq!(pack(&[1, 1, 1], 5, 2, 80), vec![0..3]);
-    }
-
-    #[test]
-    fn reindent_continuation_borrows_a_single_line_block() {
-        assert_matches!(reindent_continuation("{a: b}", 4), Cow::Borrowed("{a: b}"));
-    }
-
-    #[rstest]
-    #[case("{\n    a,\n    b,\n}", 4, "{\n        a,\n        b,\n    }")]
-    #[case("{\n        a,\n    }", 0, "{\n    a,\n}")]
-    #[case("{\n        a,\n    }", 4, "{\n        a,\n    }")]
-    #[case(
-        "[\n    a,\n    [\n        b,\n    ],\n]",
-        4,
-        "[\n        a,\n        [\n            b,\n        ],\n    ]"
-    )]
-    #[case("{\n    a,\n\n    b,\n}", 4, "{\n        a,\n\n        b,\n    }")]
-    #[case(
-        "helper(\n    b,\n    c\n)",
-        4,
-        "helper(\n        b,\n        c\n    )"
-    )]
-    #[case("\"aaa\"\n\"bbb\"", 4, "\"aaa\"\n    \"bbb\"")]
-    #[case("(a, b,\n    c)", 8, "(a, b,\n        c)")]
-    fn reindent_continuation_shifts_body_to_target_keeping_relative_depth(
-        #[case] block: &str,
-        #[case] to: usize,
-        #[case] expected: &str,
-    ) {
-        assert_eq!(reindent_continuation(block, to), expected);
-    }
-
-    #[rstest]
-    #[case("(a, b,\n    c)", 8, 4)]
-    #[case("{a: b}", 4, 0)]
-    #[case("{\n    a,\n    b,\n}", 4, 4)]
-    #[case("{\n        a,\n    }", 0, -4)]
-    fn reindent_shift_reports_the_columns_the_body_moves(
-        #[case] block: &str,
-        #[case] to: usize,
-        #[case] expected: isize,
-    ) {
-        assert_eq!(reindent_shift(block, to), expected);
-    }
-
-    #[rstest]
-    #[case("\"\"\"line1\nline2\"\"\"", true)]
-    #[case("[\n    a,\n    \"\"\"line1\nline2\"\"\",\n]", true)]
-    #[case("f\"\"\"head\nline2 {value}\"\"\"", true)]
-    #[case("(\"aaa\"\n\"bbb\")", false)]
-    #[case("[\n    a,\n    b,\n]", false)]
-    #[case("helper(\n    a,\n    b\n)", false)]
-    #[case("[a, b]", false)]
-    fn spans_a_string_part_reads_each_part_rather_than_the_run(
-        #[case] src: &str,
-        #[case] expected: bool,
-    ) {
-        let source = parse(src);
-        let expr = first_expr(&source);
-        assert_eq!(spans_a_string_part(&source, expr), expected);
     }
 }

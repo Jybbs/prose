@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "A Member Aligned Under an Interior Bracket Keeps Its Columns"
+title       = "A Member Aligned Under an Interior Bracket Keeps Its Alignment"
 
 description = '''
-A member whose continuation rows align under its own opening bracket would land against nothing once the row it sits on moves, so the expansion carries the row and leaves the member's own columns as the source wrote them.
+A member whose continuation rows align under its own opening bracket travels by however far the row it sits on moved, so the rows stay under that bracket rather than stranding at the columns the source wrote them at.
 '''

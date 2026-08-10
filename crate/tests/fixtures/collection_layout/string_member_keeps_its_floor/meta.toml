@@ -4,5 +4,5 @@ previewable = false
 title       = "A Member Running Through a Multi-Line String Keeps Its Floor"
 
 description = '''
-A member carrying a string literal that itself spans rows stays at its source columns while the expansion moves the row around it, since re-indenting the block would pad the literal's own interior.
+A member carrying a string literal that itself spans rows travels to the item column with every row outside that literal, while the rows inside it stay on the floor the source wrote them at, since moving them would pad the literal's own interior.
 '''

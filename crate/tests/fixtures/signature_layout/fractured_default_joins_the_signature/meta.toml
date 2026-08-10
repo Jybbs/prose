@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Fractured Default Joins and the Signature Collapses"
+
+description = '''
+A default the author hand-wrapped across rows closes back onto one row, so the signature it sits in reaches a single row too and collapses to it.
+'''

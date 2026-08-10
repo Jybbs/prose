@@ -82,6 +82,23 @@ Config {
                 16,
             ),
         },
+        call_layout: CallLayoutConfig {
+            enabled: true,
+            max_args: InlineBudget(
+                Some(
+                    3,
+                ),
+            ),
+        },
+        shed_super_args: ToggleOnly {
+            enabled: true,
+        },
+        signature_layout: SignatureLayoutConfig {
+            enabled: true,
+            max_params: InlineBudget(
+                None,
+            ),
+        },
         collection_layout: CollectionLayoutConfig {
             enabled: true,
             explode: true,
@@ -103,23 +120,6 @@ Config {
             rewrite_percent: true,
             rewrite_str_format: true,
         },
-        call_layout: CallLayoutConfig {
-            enabled: true,
-            max_args: InlineBudget(
-                Some(
-                    3,
-                ),
-            ),
-        },
-        shed_super_args: ToggleOnly {
-            enabled: true,
-        },
-        signature_layout: SignatureLayoutConfig {
-            enabled: true,
-            max_params: InlineBudget(
-                None,
-            ),
-        },
         stack_adjacent_strings: ToggleOnly {
             enabled: true,
         },
@@ -134,14 +134,6 @@ Config {
             merge_members: true,
             split_multi_module: true,
         },
-        alphabetize: AlphabetizeConfig {
-            enabled: false,
-            group_methods: true,
-            sort_definitions: true,
-            sort_dict_keys: true,
-            sort_docstring_entries: true,
-            sort_dunder_lists: true,
-        },
         band_constants: BandConstantsConfig {
             enabled: true,
             group_subcategories: true,
@@ -150,6 +142,14 @@ Config {
                     2,
                 ),
             ),
+        },
+        alphabetize: AlphabetizeConfig {
+            enabled: false,
+            group_methods: true,
+            sort_definitions: true,
+            sort_dict_keys: true,
+            sort_docstring_entries: true,
+            sort_dunder_lists: true,
         },
         blank_lines: ToggleOnly {
             enabled: true,

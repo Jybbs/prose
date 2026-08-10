@@ -290,7 +290,7 @@ pub struct ImportsConfig {
 /// holds inline, and `None` lifts the cap so width alone gates the
 /// shape.
 #[derive(Clone, Copy, Debug)]
-pub struct InlineBudget(Option<NonZeroUsize>);
+pub struct InlineBudget(pub(crate) Option<NonZeroUsize>);
 
 impl InlineBudget {
     /// The cap as a plain count, `None` when the budget is uncapped.

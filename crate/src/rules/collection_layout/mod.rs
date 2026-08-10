@@ -32,14 +32,13 @@ use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
-    primitives::{edit::singleton_groups, fracture, reserve, walk::filter_map_over_exprs},
+    primitives::{edit::singleton_groups, one_row, reserve, walk::filter_map_over_exprs},
     rule::{Rule, RuleId},
     source::Source,
 };
 
 mod classify;
 mod flow;
-mod inline;
 mod layouter;
 
 use layouter::Layouter;
@@ -47,10 +46,9 @@ use layouter::Layouter;
 pub(crate) struct CollectionLayout {
     code_line_length: usize,
     explode: bool,
-    keep_multiline_literals: bool,
     max_atomics: usize,
     max_dict_entries: Option<usize>,
-    rejoin: fracture::Settings,
+    one_row: one_row::Settings,
     reservations: reserve::Reservations,
     wrap_dict_entries: bool,
 }
@@ -63,10 +61,9 @@ impl CollectionLayout {
         Self {
             code_line_length: config.code_width(),
             explode: rules.explode,
-            keep_multiline_literals: rules.keep_multiline_literals,
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
             max_dict_entries: rules.max_dict_entries.cap(),
-            rejoin: config.fracture_settings(),
+            one_row: config.one_row_settings(),
             reservations: config.equals_reservations(),
             wrap_dict_entries: rules.wrap_dict_entries,
         }
@@ -92,10 +89,9 @@ impl Rule for CollectionLayout {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             explode: self.explode,
-            keep_multiline_literals: self.keep_multiline_literals,
             max_atomics: self.max_atomics,
             newline: source.newline_str(),
-            rejoin: self.rejoin,
+            one_row: self.one_row,
             reservations,
             source,
             tripping_dicts,

@@ -31,7 +31,7 @@ use thiserror::Error;
 
 pub use crate::rule::RuleConfigs;
 use crate::{
-    primitives::{aligner, fracture, reserve},
+    primitives::{aligner, fracture, one_row, reserve},
     rules::align_equals::AlignEquals,
 };
 
@@ -232,6 +232,12 @@ impl Config {
     /// none where `call-layout` is off.
     pub(crate) fn fracture_settings(&self) -> fracture::Settings {
         fracture::Settings::from(&self.rules.call_layout)
+    }
+
+    /// The terms a construct reaches one row under, read by every rule
+    /// deciding where that construct lands.
+    pub(crate) fn one_row_settings(&self) -> one_row::Settings {
+        one_row::Settings::from(self)
     }
 
     pub(crate) fn group_imports_enabled(&self) -> bool {

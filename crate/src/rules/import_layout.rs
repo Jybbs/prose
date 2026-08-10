@@ -51,6 +51,7 @@ type ModuleKey<'a> = (u32, Option<&'a str>);
 
 pub(crate) struct ImportLayout {
     align_settings: Option<aligner::Settings>,
+    divided: Option<Vec<String>>,
     import_line_length: usize,
     merge_members: bool,
     sort_members: bool,
@@ -69,6 +70,8 @@ impl ImportLayout {
             // carrying its `max-shift` but no line cap so a to-be-split
             // import reads the column it aligns to once split.
             align_settings: align.enabled.then(|| aligner::Settings::from(align)),
+            divided: (config.group_imports_enabled() && config.rules.blank_lines.enabled)
+                .then(|| config.first_party()),
             import_line_length: config.import_width(),
             merge_members: rules.merge_members,
             sort_members: config.alphabetize_enabled(),
@@ -80,7 +83,7 @@ impl ImportLayout {
 impl Rule for ImportLayout {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let columns = self.align_settings.map_or_else(HashMap::new, |settings| {
-            align_imports::aligned_import_columns(source, settings)
+            align_imports::aligned_import_columns(source, settings, self.divided.as_deref())
         });
         let mut visitor = Layout {
             columns,
@@ -402,6 +405,7 @@ mod tests {
         let source = parse("from pkg import (\n    alpha,\n    beta,\n    gamma,\n)\n");
         let rule = ImportLayout {
             align_settings: None,
+            divided: None,
             import_line_length: 10,
             merge_members: true,
             sort_members: true,
@@ -416,6 +420,7 @@ mod tests {
         let source = parse("x = 1; import os, sys\n");
         let rule = ImportLayout {
             align_settings: None,
+            divided: None,
             import_line_length: 10,
             merge_members: true,
             sort_members: true,
@@ -430,6 +435,7 @@ mod tests {
         let source = parse("x = 1; from pkg import alpha, beta, gamma\n");
         let rule = ImportLayout {
             align_settings: None,
+            divided: None,
             import_line_length: 10,
             merge_members: true,
             sort_members: true,

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Multi-Line Default Keeps the Signature One Per Line"
 
 description = '''
-A signature the author already laid out one parameter per line around a multi-line default re-emits at that shape, its default's block hanging from the parameter column. The trailing comma goes to `strip-trailing-commas` rather than surviving the reshape.
+A default the author laid out as a flush bracketed column reaches no one-row form, so the signature stays one parameter per line whatever its width would have been. The trailing comma goes to `strip-trailing-commas` rather than surviving the reshape.
 '''

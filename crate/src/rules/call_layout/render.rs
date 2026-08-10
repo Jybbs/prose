@@ -13,7 +13,7 @@ use super::Exploder;
 use crate::primitives::{
     call_keywords::{CallKeywords, keyword_args, resolve_call_params},
     edit::apply_inline_edits,
-    inline::{end_column, opening_width},
+    inline::end_column,
     layout::{
         Separator, explode_parens, hangs_from_its_row, is_fractured, item_indent,
         reindent_continuation, reindent_shift, spans_a_string_part,
@@ -64,7 +64,10 @@ impl<'a> Exploder<'a> {
     /// Renders `call`'s arguments verbatim in source order, one per line
     /// at `indent`, the fallback for a call that cannot take keyword
     /// form. A nested call or row-spanning value still resolves through
-    /// [`Self::render_value`].
+    /// [`Self::render_value`]. An argument whose own text spans rows
+    /// carries the grouping pair recovered against the list, the pair
+    /// holding those rows together, which the join path recovers the
+    /// same way.
     fn explode_source_order(&self, call: &'a ExprCall, indent: usize) -> String {
         let args: Vec<ArgOrKeyword> = call.arguments.iter_source_order().collect();
         self.explode_items(
@@ -72,19 +75,16 @@ impl<'a> Exploder<'a> {
             indent,
             args.len(),
             |out, i, item_indent| {
-                let rendered = self.source.slice(args[i].range());
-                self.render_value(out, args[i].value(), rendered, item_indent);
+                let value = args[i].value();
+                let range = if self.source.contains_line_break(value.range()) {
+                    self.source
+                        .paren_aware_range(value.into(), (&call.arguments).into())
+                } else {
+                    args[i].range()
+                };
+                self.render_value(out, value, self.source.slice(range), item_indent);
             },
         )
-    }
-
-    /// True where `rendered`, the text of one argument, re-indents as a
-    /// block to the item column. It hangs from its own row, and no
-    /// string part inside `value` spans rows, whose interior the move
-    /// would pad.
-    fn placeable(&self, value: &Expr, rendered: &str) -> bool {
-        hangs_from_its_row(self.source, value.start(), rendered)
-            && !spans_a_string_part(self.source, value)
     }
 
     /// The one-line `(...)` text for an argument list the author
@@ -92,7 +92,8 @@ impl<'a> Exploder<'a> {
     /// column shape the explode path emits. The joined row measures from
     /// `column` across the text trailing the call to the end of its
     /// logical line, so a rejoin never lands a row the length trigger
-    /// would explode again.
+    /// would explode again. A nested literal the join leaves open stays
+    /// open, that interior belonging to `collection-layout`.
     fn rejoined(&self, arguments: &Arguments, column: usize, joined: String) -> Option<String> {
         let range = arguments.range();
         if !is_fractured(self.source, range) {
@@ -103,17 +104,26 @@ impl<'a> Exploder<'a> {
         (width <= self.code_line_length).then_some(joined)
     }
 
+    /// True where `rendered`, the text of one argument, re-indents as a
+    /// block to the item column. It hangs from its own row, and no
+    /// string part inside `value` spans rows, whose interior the move
+    /// would pad.
+    fn reindents(&self, value: &Expr, rendered: &str) -> bool {
+        hangs_from_its_row(self.source, value.start(), rendered)
+            && !spans_a_string_part(self.source, value)
+    }
+
     /// Appends `rendered` to `out`, its nested calls reshaped and, where
-    /// the argument re-indents as a block, its continuation lines moved
-    /// so the whole argument hangs from `indent`. A grouping pair around
-    /// the value stays outside the reshape and moves with the rest of the
+    /// the argument re-indents, its continuation lines moved so the
+    /// whole argument hangs from `indent`. A grouping pair around the
+    /// value stays outside the reshape and moves with the rest of the
     /// argument, whether the source carries it or `keyword_args` adds it.
     fn render_value(&self, out: &mut String, value: &'a Expr, rendered: &str, indent: usize) {
         let slice = self.source.slice(value.range());
         let (head, tail) = rendered
             .rsplit_once(slice)
             .expect("a rendered argument carries its value's source text");
-        if !self.placeable(value, rendered) {
+        if !self.reindents(value, rendered) {
             let column = end_column(head, indent).saturating_add_signed(self.line_shift);
             out.push_str(head);
             out.push_str(&self.reshape_value(value, Some(indent), column, self.line_shift));
@@ -174,27 +184,17 @@ impl<'a> Exploder<'a> {
             .sum::<usize>()
     }
 
-    /// True where an argument still spans rows once every closable
-    /// fracture inside the list shuts and that argument hangs from its
-    /// own row, so the explode carries it whole. A span aligned under an
-    /// interior bracket leaves the list alone.
-    fn spans_movable_rows(&self, arguments: &Arguments) -> bool {
-        arguments.iter_source_order().any(|arg| {
-            let settled = self.rejoin.text(self.source, arg.value(), arg.range());
-            hangs_from_its_row(self.source, arg.value().start(), &settled)
-        })
-    }
-
-    /// Returns the exploded `(...)` text for `call` when the count,
-    /// length, or span trigger fires, the closing `)` landing at `indent`
-    /// and the length trigger measured from `column`, where the `(`
-    /// lands. The span trigger reads the joined list, which still carries
-    /// a break where an argument's own text spans rows. A
-    /// keyword-expressible call renders one keyword per line, while any
-    /// other call renders positionally under the length and span triggers.
-    /// A nested call in an argument value explodes in the same text. Where
-    /// no trigger fires, a fractured list rejoins onto one line and every
-    /// other call is left inline.
+    /// Returns the exploded `(...)` text for `call` when the count or
+    /// length trigger fires, the closing `)` landing at `indent` and the
+    /// length trigger measured from `column`, where the `(` lands. The
+    /// length trigger asks `primitives::one_row` whether the list
+    /// reaches one row at all and whether that row fits, so a list
+    /// holding an argument no join closes explodes whatever its first
+    /// row measures. A keyword-expressible call renders one keyword per
+    /// line, while any other call renders positionally under the length
+    /// trigger. A nested call in an argument value explodes in the same
+    /// text. Where no trigger fires, a fractured list rejoins onto one
+    /// line and every other call is left inline.
     pub(super) fn explode_args(
         &self,
         call: &'a ExprCall,
@@ -206,20 +206,21 @@ impl<'a> Exploder<'a> {
             return None;
         }
         let count_trips = self.max_args.is_some_and(|cap| arguments.len() > cap);
-        let joined = self.rejoin.joined(self.source, arguments);
-        let span_trips = joined.contains('\n') && self.spans_movable_rows(arguments);
-        let length_trips = column + opening_width(&joined) > self.code_line_length;
-        if !count_trips && !length_trips && !span_trips {
-            return self.rejoined(arguments, column, joined);
+        let length_trips = !self
+            .one_row
+            .arguments_form(self.source, arguments)
+            .is_some_and(|form| self.one_row.fits(column + form.width()));
+        if !count_trips && !length_trips {
+            return self.rejoined(arguments, column, self.rejoin.joined(self.source, arguments));
         }
         match keyword_args(self.source, call, resolve_call_params(call, self.targets)) {
             Some(keywords) if !keywords.has_posonly_prefix => {
                 Some(self.explode_keywords(&keywords, arguments, indent))
             }
             // A call that cannot take keyword form explodes positionally,
-            // but only on the length and span triggers, so the count
-            // trigger keeps leaving such calls inline.
-            _ => (length_trips || span_trips).then(|| self.explode_source_order(call, indent)),
+            // but only on the length trigger, so the count trigger keeps
+            // leaving such calls inline.
+            _ => length_trips.then(|| self.explode_source_order(call, indent)),
         }
     }
 }
@@ -249,6 +250,7 @@ mod tests {
             indent: None,
             line_shift: 0,
             max_args: None,
+            one_row: config.one_row_settings(),
             origin: TextSize::new(0),
             origin_column: 0,
             rejoin: config.fracture_settings(),

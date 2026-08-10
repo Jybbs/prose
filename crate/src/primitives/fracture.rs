@@ -56,16 +56,13 @@ impl Settings {
         Joins(join_edits(source, self.cap, expr))
     }
 
-    /// `range`'s text with every fracture inside `expr` closed onto one
-    /// line. A break that holds leaves the text spanning lines.
-    pub(crate) fn text<'a>(
-        self,
-        source: &'a Source,
-        expr: &Expr,
-        range: TextRange,
-    ) -> Cow<'a, str> {
-        self.joins(source, expr).settled(source, range)
+    /// True where a list of `count` arguments sits past the cap a
+    /// closing fracture holds to, the list `call-layout` explodes on its
+    /// count trigger. False throughout where `call-layout` is off.
+    pub(crate) fn over_cap(self, count: usize) -> bool {
+        self.closes && self.cap.is_some_and(|cap| count > cap)
     }
+
 }
 
 impl From<&CallLayoutConfig> for Settings {
@@ -145,7 +142,7 @@ fn join_edits(source: &Source, cap: Option<usize>, expr: &Expr) -> Vec<Edit> {
 /// `edits` sorted ascending with every range an earlier edit already
 /// covers dropped. A nested list is reached twice over, once on its own
 /// and once inside the join its parent renders.
-fn outermost(mut edits: Vec<Edit>) -> Vec<Edit> {
+pub(crate) fn outermost(mut edits: Vec<Edit>) -> Vec<Edit> {
     edits.sort_by_key(|edit| (edit.start(), Reverse(edit.end())));
     edits.dedup_by(|edit, last| last.end() > edit.start());
     edits
@@ -174,15 +171,10 @@ fn settled_argument<'a>(
 
 #[cfg(test)]
 mod tests {
-    use std::assert_matches;
-
     use rstest::rstest;
 
     use super::*;
-    use crate::{
-        config::Config,
-        testing::{first_expr, parse},
-    };
+    use crate::testing::{first_expr, parse};
 
     #[rstest]
     #[case::fracture_closes("f(g(a,\n  b), c)\n", None, "(g(a, b), c)")]
@@ -209,34 +201,6 @@ mod tests {
         assert_eq!(join_args(&source, cap, &call.arguments), expected);
     }
 
-    #[test]
-    fn text_holds_a_list_carrying_a_comment() {
-        let source = parse("f(a,  # note\n  b)\n");
-        let expr = first_expr(&source);
-        let settings = Config::default().fracture_settings();
-        assert_matches!(settings.text(&source, expr, expr.range()), Cow::Borrowed(_));
-    }
 
-    #[test]
-    fn text_holds_every_break_where_call_layout_is_off() {
-        let mut config = Config::default();
-        config.rules.call_layout.enabled = false;
-        let source = parse("f(a,\n  b)\n");
-        let expr = first_expr(&source);
-        assert_matches!(
-            config.fracture_settings().text(&source, expr, expr.range()),
-            Cow::Borrowed(_)
-        );
-    }
 
-    #[test]
-    fn text_keeps_the_outermost_join_of_a_doubly_nested_fracture() {
-        let source = parse("f(g(h(a,\n      b),\n  c))\n");
-        let expr = first_expr(&source);
-        let settings = Config::default().fracture_settings();
-        assert_eq!(
-            settings.text(&source, expr, expr.range()),
-            "f(g(h(a, b), c))"
-        );
-    }
 }

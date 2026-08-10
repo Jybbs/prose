@@ -207,11 +207,14 @@ impl<'a> Walker<'a> {
                 lines,
                 subsequent_indent,
             } = std::mem::take(&mut self.paragraph);
-            let text = [head, &collapsed(lines)].concat();
+            // The head is a fixed prefix rather than wrappable text, so
+            // it rides the initial indent, which `textwrap` never breaks
+            // inside and never emits a row without a word after.
+            let opening = [initial_indent, head].concat();
             self.emit_wrapped(
-                initial_indent,
+                &opening,
                 &subsequent_indent,
-                &text,
+                &collapsed(lines),
                 self.rule.description_width,
             );
         }

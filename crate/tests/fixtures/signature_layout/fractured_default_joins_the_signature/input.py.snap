@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/signature_layout/fractured_default_joins_the_signature/input.py
+---
+def render(alpha, beta=helper(one, two, three), gamma=1):
+    pass

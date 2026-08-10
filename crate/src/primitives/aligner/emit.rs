@@ -71,11 +71,12 @@ pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) ->
     Some(repeat_edit(range, " ", n))
 }
 
-/// The columns the gap ahead of a trailing comment carries past
-/// [`TRAILING_GAP`] on `member`'s line, zero where that line carries no
-/// trailing comment and where the gap is the one `member` rewrites
-/// itself.
-fn comment_slack(source: &Source, member: Member) -> usize {
+/// The columns the gap ahead of a trailing comment carries away from
+/// [`TRAILING_GAP`] on `member`'s line, negative where the source
+/// writes a narrower gap than the floor, and zero where that line
+/// carries no trailing comment and where the gap is the one `member`
+/// rewrites itself.
+fn comment_slack(source: &Source, member: Member) -> isize {
     let Some(comment) = trailing_comment_start(source, member.line_start) else {
         return 0;
     };
@@ -83,7 +84,7 @@ fn comment_slack(source: &Source, member: Member) -> usize {
     if gap == member.gap {
         return 0;
     }
-    source.slice(gap).width().saturating_sub(TRAILING_GAP.len())
+    source.slice(gap).width().cast_signed() - TRAILING_GAP.len().cast_signed()
 }
 
 /// The width of `member`'s line as the aligner emits it, less the
@@ -93,7 +94,8 @@ fn comment_slack(source: &Source, member: Member) -> usize {
 /// rather than wherever the source leaves it.
 fn emitted_base_width(source: &Source, member: Member) -> usize {
     let line = source.text().line_str(member.line_start).width();
-    let base = line - source.slice(member.gap).width() - comment_slack(source, member);
+    let base = (line - source.slice(member.gap).width())
+        .saturating_add_signed(-comment_slack(source, member));
     member
         .rewritten_value_gap(source)
         .map_or(base, |gap| base + 1 - source.slice(gap).width())

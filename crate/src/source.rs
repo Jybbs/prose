@@ -342,6 +342,15 @@ impl Source {
         TextRange::new(offset, end)
     }
 
+    /// Returns the range from `offset` to the end of its physical row,
+    /// the columns a construct ending at `offset` shares its row with
+    /// once it joins. A construct inside brackets leaves its logical
+    /// line open past that row, so [`logical_line_tail`](Self::logical_line_tail)
+    /// would charge every row beneath it.
+    pub fn row_tail(&self, offset: TextSize) -> TextRange {
+        TextRange::new(offset, self.text().line_end(offset))
+    }
+
     /// Returns the range spanning the entire source text.
     pub fn module_range(&self) -> TextRange {
         TextRange::up_to(self.text().text_len())

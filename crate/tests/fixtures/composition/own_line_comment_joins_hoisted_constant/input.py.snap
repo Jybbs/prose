@@ -4,7 +4,6 @@ expression: snapshot
 input_file: crate/tests/fixtures/composition/own_line_comment_joins_hoisted_constant/input.py
 ---
 # the request ceiling shared across workers
-
 MAX_WORKERS = 8
 
 
