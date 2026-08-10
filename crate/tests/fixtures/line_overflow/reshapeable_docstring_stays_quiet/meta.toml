@@ -3,5 +3,5 @@ previewable = false
 title       = "A Reshapeable Docstring Stays Quiet"
 
 description = '''
-The over-cap lines sit inside a leading docstring `docstring-wrap` reflows to the budget, so `line-overflow` leaves them for that rule and emits nothing.
+The over-cap lines sit inside a leading docstring `wrap-docstrings` reflows to the budget, so `line-overflow` leaves them for that rule and emits nothing.
 '''

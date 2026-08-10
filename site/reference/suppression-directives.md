@@ -67,7 +67,7 @@ A bare `# prose: ignore` suppresses every lint rule on the line. A bracketed lis
 
 ## Dict-Literal Order Preservation
 
-`# prose: keep` on the opening `{` line of a dict literal tells [[alphabetize]] to leave the entries in their authored order:
+`# prose: keep` on the opening `{` line of a dict literal tells [[alphabetize-siblings]] to leave the entries in their authored order:
 
 ```python
 config = {  # prose: keep
@@ -77,7 +77,7 @@ config = {  # prose: keep
 }
 ```
 
-The directive scopes to that one dict literal, where [[alphabetize]] holds the entry order and [[band-constants]] leaves the statement out of the leading band.
+The directive scopes to that one dict literal, where [[alphabetize-siblings]] holds the entry order and [[band-constants]] leaves the statement out of the leading band.
 
 ## Composition
 

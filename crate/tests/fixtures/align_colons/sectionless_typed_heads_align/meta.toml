@@ -3,5 +3,5 @@ previewable = true
 title       = "Type-Bearing Heads Outside Any Section Align Too"
 
 description = '''
-A `name (type):` head sitting at the docstring body indent under no Title-case heading passes through `docstring-wrap` verbatim, so a contiguous run of them settles both columns the way a section's entries do.
+A `name (type):` head sitting at the docstring body indent under no Title-case heading passes through `wrap-docstrings` verbatim, so a contiguous run of them settles both columns the way a section's entries do.
 '''

@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reflow_calls/positional_to_external_stays_inline/input.py
+---
+result = compute(alpha, beta, gamma, delta)

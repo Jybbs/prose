@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_method_chains/decorator_chain_takes_its_pair/input.py
+---
+@(
+    registry.route(path)
+            .methods(verbs)
+            .build()
+)
+def handler():
+    pass

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_method_chains/multiline_string_link_holds/input.py
+---
+result = base.first("""alpha
+beta""").second(gamma).third(delta)

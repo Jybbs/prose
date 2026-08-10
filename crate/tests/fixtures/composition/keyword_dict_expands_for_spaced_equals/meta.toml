@@ -3,5 +3,5 @@ previewable = false
 title       = "A Keyword Dict Expands at the Spaced Equals"
 
 description = '''
-The keyword `KW` sits at the budget before `align-equals` spaces its `=` from the tight `KW={...}` to `KW = {...}`. `collection-layout` accounts for the two columns that spacing adds, so the value **expands once** and holds rather than collapsing inline and exploding on the next pass.
+The keyword `KW` sits at the budget before `align-equals` spaces its `=` from the tight `KW={...}` to `KW = {...}`. `reflow-collections` accounts for the two columns that spacing adds, so the value **expands once** and holds rather than collapsing inline and exploding on the next pass.
 '''

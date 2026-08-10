@@ -3,5 +3,5 @@ previewable = false
 title       = "A Lone Type Group Collapses to One Space"
 
 description = '''
-A section holding one entry reaches no shared column, so the gap ahead of its type group collapses to the single space a written `name (type)` carries while `strip-align-padding` clears the pre-colon gap behind it.
+A section holding one entry reaches no shared column, so the gap ahead of its type group collapses to the single space a written `name (type)` carries while `strip-stranded-padding` clears the pre-colon gap behind it.
 '''

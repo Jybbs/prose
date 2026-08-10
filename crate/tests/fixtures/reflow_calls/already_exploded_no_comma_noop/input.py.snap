@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reflow_calls/already_exploded_no_comma_noop/input.py
+---
+response = fetch(
+    headers=h,
+    method=m,
+    params=p,
+    url=u
+)

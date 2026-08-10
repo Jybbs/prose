@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/blank_lines/import_pair_comment_binds_to_from/input.py
----
-blank-lines@9..10

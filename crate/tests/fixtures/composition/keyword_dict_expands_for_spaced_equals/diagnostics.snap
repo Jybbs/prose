@@ -4,4 +4,4 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/keyword_dict_expands_for_spaced_equals/input.py
 ---
 align-equals@9..10
-collection-layout@11..90
+reflow-collections@11..90

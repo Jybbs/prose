@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/wrap_docstrings/description_body_indent_wrap/input.py
+---
+wrap-docstrings@97..97

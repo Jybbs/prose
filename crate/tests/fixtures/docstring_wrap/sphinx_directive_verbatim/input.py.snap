@@ -1,9 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/docstring_wrap/sphinx_directive_verbatim/input.py
----
-"""
-.. versionadded:: 0.10
-.. deprecated:: 1.0
-"""

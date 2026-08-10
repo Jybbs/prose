@@ -1,6 +1,6 @@
 ---
 caption : "Flags a signature parameter or a value-returning function that carries no type annotation."
-related : [strip-none-return, signature-layout, modernize-annotations, restated-types]
+related : [strip-none-return, reflow-signatures, modernize-annotations, restated-types]
 layout  : doc
 ---
 

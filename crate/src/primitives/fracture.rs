@@ -14,7 +14,7 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
-    config::CallLayoutConfig,
+    config::ReflowCallsConfig,
     primitives::{edit::apply_inline_edits, layout::is_fractured},
     source::Source,
 };
@@ -32,7 +32,7 @@ impl Joins {
 
 /// The terms a fracture closes under, resolved from configuration.
 /// `cap` is the argument count past which a list keeps its break, and
-/// `closes` is clear where `call_layout` is off and no fracture shuts
+/// `closes` is clear where `reflow_calls` is off and no fracture shuts
 /// at all.
 #[derive(Clone, Copy)]
 pub(crate) struct Settings {
@@ -68,8 +68,8 @@ impl Settings {
     }
 }
 
-impl From<&CallLayoutConfig> for Settings {
-    fn from(rules: &CallLayoutConfig) -> Self {
+impl From<&ReflowCallsConfig> for Settings {
+    fn from(rules: &ReflowCallsConfig) -> Self {
         Self {
             cap: rules.max_args.cap(),
             closes: rules.enabled,
@@ -197,9 +197,9 @@ mod tests {
     }
 
     #[test]
-    fn text_holds_every_break_where_call_layout_is_off() {
+    fn text_holds_every_break_where_reflow_calls_is_off() {
         let mut config = Config::default();
-        config.rules.call_layout.enabled = false;
+        config.rules.reflow_calls.enabled = false;
         let source = parse("f(a,\n  b)\n");
         let expr = first_expr(&source);
         assert_matches!(

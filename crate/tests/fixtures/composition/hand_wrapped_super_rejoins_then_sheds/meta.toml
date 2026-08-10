@@ -4,5 +4,5 @@ previewable = true
 title       = "A Hand-Wrapped `super()` Call Rejoins Before It Sheds"
 
 description = '''
-[[call-layout]] closes the fractured argument list onto one row, and [[shed-super-args]] then sheds the class and instance from the call it left behind. The order is what makes the shed reachable, since the continuation lines the author aligned under the open parenthesis are gone by the time the deletion is measured.
+[[reflow-calls]] closes the fractured argument list onto one row, and [[shed-super-args]] then sheds the class and instance from the call it left behind. The order is what makes the shed reachable, since the continuation lines the author aligned under the open parenthesis are gone by the time the deletion is measured.
 '''

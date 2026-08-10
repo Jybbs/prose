@@ -1,0 +1,2 @@
+[tool.prose.rules.reflow-calls]
+max-args = false

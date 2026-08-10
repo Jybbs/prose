@@ -1,2 +1,2 @@
 [harness]
-rules = ["alphabetize", "strip-trailing-commas", "align-colons"]
+rules = ["alphabetize-siblings", "strip-trailing-commas", "align-colons"]

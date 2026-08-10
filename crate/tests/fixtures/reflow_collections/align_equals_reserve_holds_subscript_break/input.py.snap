@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/align_equals_reserve_holds_subscript_break/input.py
+---
+_VALID_HEADER_VALUE_RE_BYTE = 1
+HEADER_VALIDATORS = registry[
+    _AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+]

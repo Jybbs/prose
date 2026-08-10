@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "`Returns:` Entries Sort When Named"
+
+description = '''
+The `Returns:` section **reorders alphabetically** when each entry carries a `name: description` shape. Single-paragraph `Returns:` prose without entries falls through to the description path that `wrap-docstrings` owns.
+'''

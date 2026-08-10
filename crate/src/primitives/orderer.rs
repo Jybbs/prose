@@ -439,7 +439,7 @@ fn leading_attached_start(source: &Source, item_start: TextSize, lower: TextSize
 /// directive stays in the gap rather than traveling through a reorder.
 /// That gap is what [`Sections`](crate::primitives::sections::Sections)
 /// reads to divide the body. Binding never reads the blank run, so a
-/// block spans the same text either side of `blank-lines`.
+/// block spans the same text either side of `space-statements`.
 fn member_block<T: Ranged>(source: &Source, items: &[T], i: usize, outer: TextRange) -> TextRange {
     let raw = block_range(source, items, i, outer);
     // The first member has no predecessor to bound the gap, so its own

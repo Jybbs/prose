@@ -1,0 +1,11 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/strip_stranded_padding/interior_padding_strips_each_side/input.py
+---
+strip-stranded-padding@17..18
+strip-stranded-padding@32..33
+strip-stranded-padding@45..46
+strip-stranded-padding@50..51
+strip-stranded-padding@64..65
+strip-stranded-padding@73..74

@@ -3,5 +3,5 @@ previewable = false
 title       = "An Over-Budget Import Splits, Then Aligns Within the Cap"
 
 description = '''
-Aligning the `import` keyword to the wider `apps.registry.longpath` prefix would carry `apps.io`'s names past `import-line-length`. `import-layout` looks ahead to that aligned prefix and splits the names against it, so the run then aligns with every row inside the cap rather than one member overflowing.
+Aligning the `import` keyword to the wider `apps.registry.longpath` prefix would carry `apps.io`'s names past `import-line-length`. `reflow-imports` looks ahead to that aligned prefix and splits the names against it, so the run then aligns with every row inside the cap rather than one member overflowing.
 '''

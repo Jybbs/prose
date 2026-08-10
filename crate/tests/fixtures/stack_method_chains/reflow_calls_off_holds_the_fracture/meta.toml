@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Cleared `reflow-calls` Holds the Whole Chain"
+
+description = '''
+The chain measure reads each link at the width the fractures inside it settle to, and no fracture closes while [[reflow-calls]] is off. The link carrying the hand-wrapped argument list therefore still spans lines when the chain is read, so the break declines and the spine stays where the source put it.
+'''

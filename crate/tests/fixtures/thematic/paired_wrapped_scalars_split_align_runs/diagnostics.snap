@@ -4,8 +4,8 @@ expression: render(&diagnostics)
 input_file: crate/tests/fixtures/thematic/paired_wrapped_scalars_split_align_runs/input.py
 ---
 align-colons@22..239
-alphabetize@16..243
-collection-layout@41..245
+alphabetize-siblings@16..243
 line-overflow@136..227
 line-overflow@29..118
+reflow-collections@41..245
 strip-trailing-commas@244..245

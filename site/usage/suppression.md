@@ -29,7 +29,7 @@ weights = [[0.7, 0.1, 0.1, 0.1],
 # fmt: on
 ```
 
-The bracket bounds its own scope, leaving rules outside the markers to fire on every sibling, so [[alphabetize]]'s module-level branch reorders the assigns above and below the bracket while the bracketed region stays untouched. The directive confines suppression to the region between `# fmt: off` and `# fmt: on` rather than disabling formatting for the surrounding lines.
+The bracket bounds its own scope, leaving rules outside the markers to fire on every sibling, so [[alphabetize-siblings]]'s module-level branch reorders the assigns above and below the bracket while the bracketed region stays untouched. The directive confines suppression to the region between `# fmt: off` and `# fmt: on` rather than disabling formatting for the surrounding lines.
 
 ### Tagging a Line
 
@@ -43,7 +43,7 @@ The two families stay separate, so a statement that needs its layout pinned and 
 
 ### Pinning a Dict Literal
 
-`# prose: keep` is the one directive tied to a single construct. [[alphabetize]] reorders dict entries by key as its default, which is the wrong call when source order encodes meaning *(a pipeline whose stages run in declared order, a state machine whose transitions read top-to-bottom as a narrative, a dispatch table whose first match wins)*. The marker on the opening `{` line tells [[alphabetize]] to leave that one literal's authored order alone, and [[band-constants]] reads it too, pinning the statement where the author left it rather than gathering it into the leading band. Where a whole project reads its dicts positionally, the `sort-dict-keys` facet turns the reorder off everywhere and leaves the directive for the remaining exceptions.
+`# prose: keep` is the one directive tied to a single construct. [[alphabetize-siblings]] reorders dict entries by key as its default, which is the wrong call when source order encodes meaning *(a pipeline whose stages run in declared order, a state machine whose transitions read top-to-bottom as a narrative, a dispatch table whose first match wins)*. The marker on the opening `{` line tells [[alphabetize-siblings]] to leave that one literal's authored order alone, and [[band-constants]] reads it too, pinning the statement where the author left it rather than gathering it into the leading band. Where a whole project reads its dicts positionally, the `sort-dict-keys` facet turns the reorder off everywhere and leaves the directive for the remaining exceptions.
 
 ```python
 stages = {  # prose: keep

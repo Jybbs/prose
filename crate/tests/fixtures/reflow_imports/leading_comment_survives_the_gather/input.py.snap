@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_imports/leading_comment_survives_the_gather/input.py
+---
+# the package this module leans on
+from pkg import alpha, beta

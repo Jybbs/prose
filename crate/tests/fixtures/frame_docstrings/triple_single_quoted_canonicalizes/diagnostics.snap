@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/frame_docstrings/triple_single_quoted_canonicalizes/input.py
+---
+frame-docstrings@21..72

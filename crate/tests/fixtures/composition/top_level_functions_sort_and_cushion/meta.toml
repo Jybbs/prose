@@ -3,5 +3,5 @@ previewable = true
 title       = "Top-Level Functions Sort and Gain Two-Blank Cushions"
 
 description = '''
-Module-level functions out of order with no spacing between them. **`alphabetize` reorders the definitions and `blank-lines` settles the canonical two-blank-line cushion** around each top-level function.
+Module-level functions out of order with no spacing between them. **`alphabetize-siblings` reorders the definitions and `space-statements` settles the canonical two-blank-line cushion** around each top-level function.
 '''

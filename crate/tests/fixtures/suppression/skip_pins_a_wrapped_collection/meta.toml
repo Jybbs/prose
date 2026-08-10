@@ -3,5 +3,5 @@ previewable = false
 title       = "Skip on a Wrapped Collection Keeps It Exploded"
 
 description = '''
-A `# fmt: skip` trailing a multi-line list **spans every line between the brackets**, so `collection-layout` leaves the exploded entries rather than condensing them onto one line.
+A `# fmt: skip` trailing a multi-line list **spans every line between the brackets**, so `reflow-collections` leaves the exploded entries rather than condensing them onto one line.
 '''

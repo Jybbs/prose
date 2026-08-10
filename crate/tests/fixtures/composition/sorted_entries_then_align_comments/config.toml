@@ -1,2 +1,2 @@
 [harness]
-rules = ["alphabetize", "align-comments"]
+rules = ["alphabetize-siblings", "align-comments"]

@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/frame_docstrings/triple_quote_run_in_body_left_alone/input.py
+---
+def render():
+    'Wraps the """ sentinel token.'
+    return 1

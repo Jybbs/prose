@@ -1,2 +1,2 @@
 [harness]
-rules = ["band-constants", "blank-lines"]
+rules = ["band-constants", "space-statements"]

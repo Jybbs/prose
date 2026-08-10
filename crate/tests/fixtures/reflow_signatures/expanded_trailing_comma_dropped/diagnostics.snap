@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_signatures/expanded_trailing_comma_dropped/input.py
+---
+reflow-signatures@112..113

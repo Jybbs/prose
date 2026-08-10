@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/expand_docstrings/nested_defs_rewrite_each_level/input.py
+---
+expand-docstrings@20..36
+expand-docstrings@69..85

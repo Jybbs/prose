@@ -3,5 +3,5 @@ previewable = true
 title       = "Reordered Entries Settle Their Comment Column Behind the Sort"
 
 description = '''
-Each trailing comment travels with the entry `alphabetize` moves, so the notes arrive in a new order at new widths. **`align-comments` then settles the column against the sorted run** rather than against the order the author wrote.
+Each trailing comment travels with the entry `alphabetize-siblings` moves, so the notes arrive in a new order at new widths. **`align-comments` then settles the column against the sorted run** rather than against the order the author wrote.
 '''

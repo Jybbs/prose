@@ -811,12 +811,15 @@ mod tests {
 
     #[test]
     fn with_filters_ignore_subtracts_from_configured_set() {
-        let ignore = [RuleId::from("align-equals"), RuleId::from("alphabetize")];
+        let ignore = [
+            RuleId::from("align-equals"),
+            RuleId::from("alphabetize-siblings"),
+        ];
         let pipeline = Pipeline::with_filters(&Config::default(), &[], &ignore);
         let slugs = registered_slugs(&pipeline);
         assert_eq!(slugs.len(), Pipeline::known_ids().len() - ignore.len());
         assert!(!slugs.contains(&"align-equals"));
-        assert!(!slugs.contains(&"alphabetize"));
+        assert!(!slugs.contains(&"alphabetize-siblings"));
     }
 
     #[test]

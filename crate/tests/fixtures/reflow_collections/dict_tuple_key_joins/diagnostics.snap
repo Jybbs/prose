@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_collections/dict_tuple_key_joins/input.py
+---
+reflow-collections@177..288
+reflow-collections@23..155
+reflow-collections@315..454

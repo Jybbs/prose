@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Docstring's Quotes Are Left to `frame-docstrings`"
+
+description = '''
+The docstring keeps the quotes it was written with while the return value beside it swaps to `"`. **The quote facet passes over docstring position entirely**, leaving that frame to the rule that owns it.
+'''

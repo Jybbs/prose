@@ -1,0 +1,8 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/composition/normalize_comment_spacing_settles_before_align_comments/input.py
+---
+align-comments@6..92
+normalize-comment-spacing@36..41
+normalize-comment-spacing@93..98

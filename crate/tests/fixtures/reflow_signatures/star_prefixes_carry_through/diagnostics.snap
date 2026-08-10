@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_signatures/star_prefixes_carry_through/input.py
+---
+reflow-signatures@13..114

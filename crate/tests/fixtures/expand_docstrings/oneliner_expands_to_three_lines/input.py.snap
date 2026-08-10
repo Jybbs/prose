@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/expand_docstrings/oneliner_expands_to_three_lines/input.py
+---
+def greet():
+    """
+    Hello, world.
+    """
+    return 1

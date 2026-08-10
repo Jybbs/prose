@@ -1,7 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/call_layout/nested_fracture_measures_joined/input.py
----
-def emit(offset):
-    raise TypeError("offset must be a non-negative integer (got {!r})".format(offset))

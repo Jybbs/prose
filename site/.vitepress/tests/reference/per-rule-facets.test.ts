@@ -23,8 +23,8 @@ vi.mock('../../lib/reference/facets.data', () => ({
       family: 'layout',
       label : 'Layout',
       rules : [
-        { rule: 'call-layout', facets: [{ default: '3', key: 'max-args', meaningNodes: [{ kind: 'text', text: 'Explode a call.' }], type: 'positive int | false' }] },
-        { rule: 'collection-layout', facets: [
+        { rule: 'reflow-calls', facets: [{ default: '3', key: 'max-args', meaningNodes: [{ kind: 'text', text: 'Explode a call.' }], type: 'positive int | false' }] },
+        { rule: 'reflow-collections', facets: [
           { default: 'true', key: 'keep-multiline-literals', meaningNodes: [{ kind: 'text', text: 'Join with ' }, { kind: 'code', text: 'false' }, { kind: 'text', text: '.' }], type: 'bool' },
           { default: '8', key: 'max-atomics', meaningNodes: [{ kind: 'text', text: 'Keep short.' }], type: 'positive int | false' }
         ] }
@@ -55,7 +55,7 @@ describe('PerRuleFacets', () => {
   it('nests facets under a rule chip, keeping a generic scope as plain text', () => {
     const w = mountFacets()
     expect(w.get('.per-rule-facets-scope').text()).toBe('every rule')
-    expect(w.findAllComponents(InlineRuleLink).map(c => c.props('slug'))).toEqual(['call-layout', 'collection-layout'])
+    expect(w.findAllComponents(InlineRuleLink).map(c => c.props('slug'))).toEqual(['reflow-calls', 'reflow-collections'])
     expect(w.findAll('.per-rule-facets-key').map(k => k.text())).toEqual(['enabled', 'max-args', 'keep-multiline-literals', 'max-atomics'])
   })
 

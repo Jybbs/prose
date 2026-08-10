@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/space_statements/hash_heading_divides_methods/input.py
+---
+space-statements@14..15
+space-statements@47..48
+space-statements@65..66

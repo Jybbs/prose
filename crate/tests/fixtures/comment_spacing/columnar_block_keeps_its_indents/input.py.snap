@@ -1,9 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/comment_spacing/columnar_block_keeps_its_indents/input.py
----
-#   options for the run:
-#     --fast   skip the checks
-#     --slow   run everything
-value = 1  # already clear of the code

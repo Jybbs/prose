@@ -24,10 +24,10 @@ const rules: readonly DiscoveredRule[] = [
     caption  : 'Alphabetize sibling entries',
     category : 'auto-fix',
     family   : 'ordering',
-    href     : '/rules/ordering/alphabetize',
+    href     : '/rules/ordering/alphabetize-siblings',
     lints    : false,
     related  : [],
-    slug     : 'alphabetize'
+    slug     : 'alphabetize-siblings'
   }
 ]
 

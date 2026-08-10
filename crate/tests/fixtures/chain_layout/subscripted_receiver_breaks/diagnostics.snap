@@ -1,6 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/chain_layout/subscripted_receiver_breaks/input.py
----
-chain-layout@9..50

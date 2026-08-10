@@ -3,5 +3,5 @@ previewable = true
 title       = "A `kw_only=True` Generator Draws No Report"
 
 description = '''
-A generator carrying a literal `kw_only=True` binds every field by name, so the out-of-order run **draws no diagnostic**. Nothing here needs a human's read of the callers, in that [[alphabetize]] sorts these fields as an auto-fix.
+A generator carrying a literal `kw_only=True` binds every field by name, so the out-of-order run **draws no diagnostic**. Nothing here needs a human's read of the callers, in that [[alphabetize-siblings]] sorts these fields as an auto-fix.
 '''

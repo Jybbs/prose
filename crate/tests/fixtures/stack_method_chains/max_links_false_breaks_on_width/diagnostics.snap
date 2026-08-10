@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/stack_method_chains/max_links_false_breaks_on_width/input.py
+---
+stack-method-chains@47..128

@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reflow_imports/within_budget_untouched/input.py
+---
+from pkg import alpha, beta

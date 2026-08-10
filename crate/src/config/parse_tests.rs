@@ -28,23 +28,23 @@ fn cap(n: usize) -> MaxShift {
 }
 
 fn max_args_cap(config: &Config) -> Option<usize> {
-    config.rules.call_layout.max_args.cap()
+    config.rules.reflow_calls.max_args.cap()
 }
 
 fn max_atomics_cap(config: &Config) -> Option<usize> {
-    config.rules.collection_layout.max_atomics.cap()
+    config.rules.reflow_collections.max_atomics.cap()
 }
 
 fn max_dict_entries_cap(config: &Config) -> Option<usize> {
-    config.rules.collection_layout.max_dict_entries.cap()
+    config.rules.reflow_collections.max_dict_entries.cap()
 }
 
 fn max_links_cap(config: &Config) -> Option<usize> {
-    config.rules.chain_layout.max_links.cap()
+    config.rules.stack_method_chains.max_links.cap()
 }
 
 fn max_params_cap(config: &Config) -> Option<usize> {
-    config.rules.signature_layout.max_params.cap()
+    config.rules.reflow_signatures.max_params.cap()
 }
 
 /// A config parsed from an empty `[tool.prose]` table, every key at its
@@ -54,33 +54,19 @@ fn parsed_defaults() -> Config {
 }
 
 #[test]
-fn alphabetize_facet_false_in_sub_table_leaves_siblings_default() {
-    let config =
-        Config::from_pyproject_str("[tool.prose.rules.alphabetize]\ngroup-methods = false\n")
-            .expect("parses");
+fn alphabetize_siblings_facet_false_in_sub_table_leaves_siblings_default() {
+    let config = Config::from_pyproject_str(
+        "[tool.prose.rules.alphabetize-siblings]\ngroup-methods = false\n",
+    )
+    .expect("parses");
 
-    let rules = &config.rules.alphabetize;
+    let rules = &config.rules.alphabetize_siblings;
     assert!(!rules.group_methods);
     assert!(rules.enabled);
     assert!(rules.sort_definitions);
     assert!(rules.sort_dict_keys);
     assert!(rules.sort_docstring_entries);
     assert!(rules.sort_dunder_lists);
-}
-
-#[test]
-fn collection_layout_facet_false_in_sub_table_leaves_siblings_default() {
-    let config = Config::from_pyproject_str(
-        "[tool.prose.rules.collection-layout]\nkeep-multiline-literals = false\n",
-    )
-    .expect("parses");
-
-    let rules = &config.rules.collection_layout;
-    assert!(!rules.keep_multiline_literals);
-    assert!(rules.enabled);
-    assert!(rules.explode);
-    assert!(rules.wrap_dict_entries);
-    assert_eq!(rules.max_dict_entries.cap(), Some(3));
 }
 
 #[test]
@@ -131,12 +117,13 @@ fn from_prose_toml_str_empty_returns_defaults() {
 
 #[test]
 fn from_prose_toml_str_reads_bare_root_keys() {
-    let config =
-        Config::from_prose_toml_str("code-line-length = 120\n[rules]\nalphabetize = false\n")
-            .expect("parses");
+    let config = Config::from_prose_toml_str(
+        "code-line-length = 120\n[rules]\nalphabetize-siblings = false\n",
+    )
+    .expect("parses");
 
     assert_eq!(config.code_line_length, NonZeroUsize::new(120));
-    assert!(!config.rules.alphabetize.enabled);
+    assert!(!config.rules.alphabetize_siblings.enabled);
 }
 
 #[test]
@@ -208,11 +195,11 @@ fn imports_first_party_reads_kebab_case_list() {
 }
 
 #[rstest]
-#[case::max_args("call-layout", "max-args", max_args_cap)]
-#[case::max_atomics("collection-layout", "max-atomics", max_atomics_cap)]
-#[case::max_dict_entries("collection-layout", "max-dict-entries", max_dict_entries_cap)]
-#[case::max_links("chain-layout", "max-links", max_links_cap)]
-#[case::max_params("signature-layout", "max-params", max_params_cap)]
+#[case::max_args("reflow-calls", "max-args", max_args_cap)]
+#[case::max_atomics("reflow-collections", "max-atomics", max_atomics_cap)]
+#[case::max_dict_entries("reflow-collections", "max-dict-entries", max_dict_entries_cap)]
+#[case::max_links("stack-method-chains", "max-links", max_links_cap)]
+#[case::max_params("reflow-signatures", "max-params", max_params_cap)]
 fn inline_budget_reads_integer_and_false(
     #[case] table: &str,
     #[case] key: &str,
@@ -228,11 +215,11 @@ fn inline_budget_reads_integer_and_false(
 }
 
 #[rstest]
-#[case::max_args("call-layout", "max-args")]
-#[case::max_atomics("collection-layout", "max-atomics")]
-#[case::max_dict_entries("collection-layout", "max-dict-entries")]
-#[case::max_links("chain-layout", "max-links")]
-#[case::max_params("signature-layout", "max-params")]
+#[case::max_args("reflow-calls", "max-args")]
+#[case::max_atomics("reflow-collections", "max-atomics")]
+#[case::max_dict_entries("reflow-collections", "max-dict-entries")]
+#[case::max_links("stack-method-chains", "max-links")]
+#[case::max_params("reflow-signatures", "max-params")]
 fn inline_budget_rejects_non_cap_value(
     #[case] table: &str,
     #[case] key: &str,
@@ -242,11 +229,11 @@ fn inline_budget_rejects_non_cap_value(
 }
 
 #[rstest]
-#[case::max_args("call-layout", "max-args", max_args_cap)]
-#[case::max_atomics("collection-layout", "max-atomics", max_atomics_cap)]
-#[case::max_dict_entries("collection-layout", "max-dict-entries", max_dict_entries_cap)]
-#[case::max_links("chain-layout", "max-links", max_links_cap)]
-#[case::max_params("signature-layout", "max-params", max_params_cap)]
+#[case::max_args("reflow-calls", "max-args", max_args_cap)]
+#[case::max_atomics("reflow-collections", "max-atomics", max_atomics_cap)]
+#[case::max_dict_entries("reflow-collections", "max-dict-entries", max_dict_entries_cap)]
+#[case::max_links("stack-method-chains", "max-links", max_links_cap)]
+#[case::max_params("reflow-signatures", "max-params", max_params_cap)]
 fn inline_budget_round_trips_through_toml(
     #[case] table: &str,
     #[case] key: &str,
@@ -310,27 +297,43 @@ fn max_shift_round_trips_through_toml(#[case] value: &str) {
 }
 
 #[test]
-fn rules_bare_bool_false_leaves_other_knobs_default() {
-    let config =
-        Config::from_pyproject_str("[tool.prose.rules]\nalphabetize = false\n").expect("parses");
+fn reflow_collections_facet_false_in_sub_table_leaves_siblings_default() {
+    let config = Config::from_pyproject_str(
+        "[tool.prose.rules.reflow-collections]\nkeep-multiline-literals = false\n",
+    )
+    .expect("parses");
 
-    assert!(!config.rules.alphabetize.enabled);
-    assert!(config.rules.alphabetize.group_methods);
-    assert!(config.rules.alphabetize.sort_definitions);
-    assert!(config.rules.alphabetize.sort_dict_keys);
-    assert!(config.rules.alphabetize.sort_docstring_entries);
-    assert!(config.rules.alphabetize.sort_dunder_lists);
+    let rules = &config.rules.reflow_collections;
+    assert!(!rules.keep_multiline_literals);
+    assert!(rules.enabled);
+    assert!(rules.explode);
+    assert!(rules.wrap_dict_entries);
+    assert_eq!(rules.max_dict_entries.cap(), Some(3));
+}
+
+#[test]
+fn rules_bare_bool_false_leaves_other_knobs_default() {
+    let config = Config::from_pyproject_str("[tool.prose.rules]\nalphabetize-siblings = false\n")
+        .expect("parses");
+
+    assert!(!config.rules.alphabetize_siblings.enabled);
+    assert!(config.rules.alphabetize_siblings.group_methods);
+    assert!(config.rules.alphabetize_siblings.sort_definitions);
+    assert!(config.rules.alphabetize_siblings.sort_dict_keys);
+    assert!(config.rules.alphabetize_siblings.sort_docstring_entries);
+    assert!(config.rules.alphabetize_siblings.sort_dunder_lists);
 }
 
 #[rstest]
 #[case("false", false)]
 #[case("true", true)]
 fn rules_bare_bool_sets_enabled(#[case] literal: &str, #[case] expected: bool) {
-    let config =
-        Config::from_pyproject_str(&format!("[tool.prose.rules]\nalphabetize = {literal}\n"))
-            .expect("parses");
+    let config = Config::from_pyproject_str(&format!(
+        "[tool.prose.rules]\nalphabetize-siblings = {literal}\n"
+    ))
+    .expect("parses");
 
-    assert_eq!(config.rules.alphabetize.enabled, expected);
+    assert_eq!(config.rules.alphabetize_siblings.enabled, expected);
     assert!(config.rules.align_equals.enabled);
 }
 
@@ -354,12 +357,12 @@ fn rules_inline_table_compiles_regex_knob() {
 #[test]
 fn rules_inline_table_resolves_nested_max_params() {
     let config = Config::from_pyproject_str(
-        "[tool.prose.rules]\nsignature-layout = { max-params = false }\n",
+        "[tool.prose.rules]\nreflow-signatures = { max-params = false }\n",
     )
     .expect("parses");
 
-    assert!(config.rules.signature_layout.enabled);
-    assert!(config.rules.signature_layout.max_params.cap().is_none());
+    assert!(config.rules.reflow_signatures.enabled);
+    assert!(config.rules.reflow_signatures.max_params.cap().is_none());
 }
 
 #[test]

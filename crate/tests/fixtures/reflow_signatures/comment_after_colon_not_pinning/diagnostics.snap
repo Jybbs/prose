@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_signatures/comment_after_colon_not_pinning/input.py
+---
+reflow-signatures@11..91

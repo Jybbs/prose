@@ -91,7 +91,7 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
 }
 
 /// Maps each aligned `from M import N` statement's start to the display
-/// column its `import` keyword lands at, so `import-layout` packs an
+/// column its `import` keyword lands at, so `reflow-imports` packs an
 /// over-budget import's names against the prefix width the alignment
 /// gives it. `settings` carries no line cap, so a to-be-split import
 /// reads the column it aligns to once split rather than the natural

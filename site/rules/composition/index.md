@@ -7,10 +7,10 @@ Where a per-rule page walks one rule's canonical case in isolation, each case he
 One module-level constant puts a rule from each family in motion:
 
 - Values use the legacy `Union[…]` form, so [[modernize-annotations]] rewrites them to the `|` operator and retires the `typing` import they read through.
-- The literal overflows `code-line-length` on a single line, so [[collection-layout]] breaks it apart.
-- Entries arrive in authorship order rather than alphabetical, so [[alphabetize]] sorts them.
+- The literal overflows `code-line-length` on a single line, so [[reflow-collections]] breaks it apart.
+- Entries arrive in authorship order rather than alphabetical, so [[alphabetize-siblings]] sorts them.
 - Keys line up against a vertical column, so [[align-colons]] computes the padding against the widths the rewrite leaves.
-- The retired import leaves a gap where it stood, so [[blank-lines]] closes it.
+- The retired import leaves a gap where it stood, so [[space-statements]] closes it.
 
 The rules fire against the same block, reparsing between each so every rule downstream measures the rewritten source.
 
@@ -26,19 +26,19 @@ Each case runs its listed rules in canonical order, and the shapes below are the
 
 ### Layout Before Alignment
 
-[[collection-layout]] running upstream of [[align-colons]] commits the per-line shape against which the alignment columns are computed.
+[[reflow-collections]] running upstream of [[align-colons]] commits the per-line shape against which the alignment columns are computed.
 
 ### Reorder Before Align
 
-[[alphabetize]] running upstream of [[align-equals]] settles the entry order, meaning the alignment math measures against the final column positions rather than the source ones.
+[[alphabetize-siblings]] running upstream of [[align-equals]] settles the entry order, meaning the alignment math measures against the final column positions rather than the source ones.
 
 ### Docstring Discipline Before Wrap
 
-[[docstring-expand]] and [[docstring-frame]] running upstream of [[docstring-wrap]] settle the quote placement before the body rewrap measures budgets.
+[[expand-docstrings]] and [[frame-docstrings]] running upstream of [[wrap-docstrings]] settle the quote placement before the body rewrap measures budgets.
 
 ### Module Reorder Around a Block Marker
 
-[[alphabetize]]'s module-level branch reorders the assigns above and below a `# fmt: off` block while the bracketed lines stay verbatim, so both it and [[align-equals]] fire freely outside the bracket.
+[[alphabetize-siblings]]'s module-level branch reorders the assigns above and below a `# fmt: off` block while the bracketed lines stay verbatim, so both it and [[align-equals]] fire freely outside the bracket.
 
 <Fixture rule="composition" case="constants_sort_around_fmt_off" />
 

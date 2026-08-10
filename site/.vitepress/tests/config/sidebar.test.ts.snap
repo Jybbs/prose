@@ -152,8 +152,8 @@ exports[`buildSidebar > builds the route-keyed sidebar tree 1`] = `
     {
       "items": [
         {
-          "link": "/rules/ordering/alphabetize",
-          "text": "alphabetize",
+          "link": "/rules/ordering/alphabetize-siblings",
+          "text": "alphabetize-siblings",
         },
       ],
       "link": "/rules/ordering/",

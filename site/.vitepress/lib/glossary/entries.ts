@@ -159,7 +159,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : 'An annotation is a `name: Type` declaration on a function parameter, return '
                + 'value, or variable. Type checkers and version-gated rules like '
                + '`modernize-annotations` and `prune-inert-imports` read it, and '
-               + '`alphabetize` treats a non-deferred annotation as a reference that pins '
+               + '`alphabetize-siblings` treats a non-deferred annotation as a reference that pins '
                + 'definition order.',
     families   : ['formatting', 'alignment', 'ordering'],
     href       : 'https://docs.python.org/3/glossary.html#term-annotation'
@@ -177,9 +177,9 @@ export const glossary: Record<string, GlossaryEntry> = {
   'atomic': {
     aliases    : ['atomic literal', 'atomic literals'],
     definition : 'An atomic is a simple, indivisible code element (integer, float, string, '
-               + 'single name) that `collection-layout` can safely keep on one line without '
+               + 'single name) that `reflow-collections` can safely keep on one line without '
                + 'readability loss.',
-    rule       : 'collection-layout'
+    rule       : 'reflow-collections'
   },
 
   'auto-fix': {
@@ -193,10 +193,10 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['blank-line', 'blank lines', 'blank-lines'],
     definition : 'A blank line is an empty line separating logical units. *Prose* enforces '
                + 'blank-line counts between module-level definitions, class members, and import '
-               + 'groups per the `blank-lines` rule, and binds description-shaped own-line '
+               + 'groups per the `space-statements` rule, and binds description-shaped own-line '
                + 'comment blocks tight against the following statement while leaving '
                + 'banner-shaped blocks separated by 1 blank line below.',
-    rule       : 'blank-lines'
+    rule       : 'space-statements'
   },
 
   'cache': {
@@ -223,7 +223,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     ],
     definition : 'A comprehension is one of Python\'s `[x for x in xs]`, `{k: v for ...}`, or '
                + '`{x for ...}` literal forms that build a list, dict, or set inline. '
-               + '`collection-layout` joins them back onto one line when they fit, and their bound '
+               + '`reflow-collections` joins them back onto one line when they fit, and their bound '
                + 'targets sit outside `single-use-variables`.',
     families   : ['layout', 'lint'],
     href       : 'https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions'
@@ -232,18 +232,18 @@ export const glossary: Record<string, GlossaryEntry> = {
   'count trigger': {
     aliases    : ['count-based trigger', 'count gate'],
     definition : 'A count trigger expands a layout once an element count crosses a '
-               + 'configured cap, whatever the width. `signature-layout` counts parameters '
-               + 'with `max-params` and `collection-layout` counts dict entries with '
+               + 'configured cap, whatever the width. `reflow-signatures` counts parameters '
+               + 'with `max-params` and `reflow-collections` counts dict entries with '
                + '`max-dict-entries`, and `false` disables either. It replaces the magic '
                + 'trailing comma that Black and Ruff read with an explicit, configurable count.',
-    rule       : 'collection-layout'
+    rule       : 'reflow-collections'
   },
 
   'dataclass': {
     aliases    : ['dataclasses', 'dataclass field', 'dataclass fields'],
     definition : 'A dataclass is a class decorated with `@dataclass` whose body lists typed '
                + 'field declarations. Those fields become the generated `__init__`\'s positional '
-               + 'parameters, so `alphabetize` holds their source order and `unsorted-positionals` '
+               + 'parameters, so `alphabetize-siblings` holds their source order and `unsorted-positionals` '
                + 'reports an out-of-order run, while `align-colons` aligns their annotation colons '
                + 'and `align-equals` aligns their default-value `=` signs.',
     families   : ['ordering', 'alignment', 'lint'],
@@ -253,8 +253,8 @@ export const glossary: Record<string, GlossaryEntry> = {
   'decorator': {
     aliases    : ['decorators', 'decorated function', 'decorated functions'],
     definition : 'A decorator is an `@name` prefix attached to a function or class definition '
-               + 'that wraps it at definition time. `alphabetize` sorts decorated functions '
-               + 'together inside framework-decorator groups, and `blank-lines` keeps each '
+               + 'that wraps it at definition time. `alphabetize-siblings` sorts decorated functions '
+               + 'together inside framework-decorator groups, and `space-statements` keeps each '
                + 'decorator attached to its `def`.',
     families   : ['ordering', 'formatting'],
     href       : 'https://docs.python.org/3/glossary.html#term-decorator'
@@ -264,8 +264,8 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['docstrings'],
     definition : 'A docstring is a string literal placed as the first statement in a module, '
                + 'class, or function, whatever quotes surround it. *Prose* canonicalizes each '
-               + 'to the `"""` frame under `docstring-frame`, rewraps multi-line bodies under '
-               + '`docstring-wrap`, and gates single-line shapes under `docstring-expand`.',
+               + 'to the `"""` frame under `frame-docstrings`, rewraps multi-line bodies under '
+               + '`wrap-docstrings`, and gates single-line shapes under `expand-docstrings`.',
     families   : ['docs', 'engine'],
     href       : '/primitives/docstring'
   },
@@ -281,7 +281,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['dunder name', 'dunder names', '__all__', '__slots__'],
     definition : 'A dunder is the Python convention for names wrapped in double underscores '
                + '(`__name__`, `__all__`, `__init__`). `reassigned-constants` treats them as runtime '
-               + 'sentinels, and `alphabetize` treats them as ordering anchors that surface '
+               + 'sentinels, and `alphabetize-siblings` treats them as ordering anchors that surface '
                + 'before properties and privates inside a class body.',
     families   : ['ordering', 'lint']
   },
@@ -289,7 +289,7 @@ export const glossary: Record<string, GlossaryEntry> = {
   'enum': {
     aliases    : ['Enum', 'enums', 'enum member', 'enum members'],
     definition : 'An enum is a subclass of `enum.Enum` whose body lists named constants. '
-               + '`alphabetize` sorts the members, except when they carry explicit integer or '
+               + '`alphabetize-siblings` sorts the members, except when they carry explicit integer or '
                + 'string values that encode ordering.',
     families   : ['ordering'],
     href       : 'https://docs.python.org/3/library/enum.html'
@@ -322,7 +322,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : 'A forward reference is an annotation that names a class or alias defined '
                + 'later in the file. The `from __future__ import annotations` directive made '
                + 'these safe on older Python runtimes, and `prune-inert-imports` removes '
-               + 'the directive when no annotation needs the forward reference. `alphabetize` '
+               + 'the directive when no annotation needs the forward reference. `alphabetize-siblings` '
                + 'never introduces one, holding a class or function behind any sibling it names '
                + 'at evaluation time so the reorder cannot lift a definition above a name it '
                + 'depends on.',
@@ -362,7 +362,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'import-line-length': {
     definition : '`import-line-length` is the top-level config key for the wrap budget '
-               + '`import-layout` holds long from-imports to. It defaults to **120** and '
+               + '`reflow-imports` holds long from-imports to. It defaults to **120** and '
                + 'falls back to `code-line-length` when set to `false`.',
     families   : ['cli', 'layout'],
     href       : '/reference/configuration#top-level-keys'
@@ -383,14 +383,14 @@ export const glossary: Record<string, GlossaryEntry> = {
       'own-line comment block'
     ],
     definition : 'A leading comment block is a run of own-line `#` comments sitting directly '
-               + 'above a statement. `blank-lines` binds description-shaped blocks tight '
+               + 'above a statement. `space-statements` binds description-shaped blocks tight '
                + 'against the following statement and keeps 1 blank line below banner-shaped '
                + 'blocks *(any line of which is a decorative rule of `=`, `-`, `*`, `_`, '
                + '`#`, or `~`)*, with the canonical above-gap measured from the topmost '
                + 'comment either way. The orderer primitive\'s `block_range` carries the '
                + 'block with its item when reordering siblings.',
     families   : ['ordering'],
-    rule       : 'blank-lines'
+    rule       : 'space-statements'
   },
 
   'lexical scope': {
@@ -444,7 +444,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['module level', 'module-scope', 'module scope'],
     definition : 'Module-level names the outermost lexical scope of a Python file, sitting '
                + 'outside any class or function body. `reassigned-constants` fires only on '
-               + 'module-level assignments, and `blank-lines` reserves two blanks above every '
+               + 'module-level assignments, and `space-statements` reserves two blanks above every '
                + 'module-level `def` and `class`.',
     families   : ['engine', 'formatting', 'lint']
   },
@@ -498,7 +498,7 @@ export const glossary: Record<string, GlossaryEntry> = {
   'Pydantic': {
     aliases    : ['pydantic', 'Pydantic field', 'Pydantic fields'],
     definition : 'Pydantic is a widely used data-validation library whose models declare typed '
-               + 'fields in the class body. `alphabetize` sorts a `BaseModel`\'s fields with '
+               + 'fields in the class body. `alphabetize-siblings` sorts a `BaseModel`\'s fields with '
                + 'required before optional, and holds a `pydantic.dataclasses` field run in '
                + 'source order because that decorator generates a positional constructor. '
                + '`align-colons` aligns the annotation colons across either field block.',
@@ -544,12 +544,12 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['span-based trigger', 'row-span trigger'],
     definition : 'A span trigger expands a layout once one of its members still spans rows '
                + 'after every closable break inside it shuts, whatever the member count and '
-               + 'whatever the joined width. `call-layout` reads its arguments this way and '
-               + '`signature-layout` its parameters, so a construct the author left across '
+               + 'whatever the joined width. `reflow-calls` reads its arguments this way and '
+               + '`reflow-signatures` its parameters, so a construct the author left across '
                + 'rows takes the one-per-line shape a long one takes. A member aligned under '
                + 'its own opening bracket is passed over, since that alignment would land '
                + 'against nothing once its row moves.',
-    rule       : 'call-layout'
+    rule       : 'reflow-calls'
   },
 
   'stdin mode': {
@@ -560,14 +560,14 @@ export const glossary: Record<string, GlossaryEntry> = {
     families   : ['cli']
   },
 
-  'strip-align-padding': {
+  'strip-stranded-padding': {
     aliases    : ['singleton rule', 'singleton rules'],
-    definition : '`strip-align-padding` drops padding that lines up with nothing. It strips the '
+    definition : '`strip-stranded-padding` drops padding that lines up with nothing. It strips the '
                + 'pre-`:` padding on a colon group with no column to align to, either a '
                + 'single-member group or a multi-member group whose colons share one source '
                + 'line, and it clears the space run just inside a bracket delimiter, so a '
                + 'one-key dict reads as plain code and `int(a )` settles to `int(a)`.',
-    rule       : 'strip-align-padding'
+    rule       : 'strip-stranded-padding'
   },
 
   'structured section': {
@@ -576,11 +576,11 @@ export const glossary: Record<string, GlossaryEntry> = {
     ],
     definition : 'A structured section is a docstring section like `Args:`, `Returns:`, or '
                + '`Raises:` that reads as a code-shaped table rather than prose. '
-               + '`docstring-wrap` budgets its prose lines against `code-line-length` by '
+               + '`wrap-docstrings` budgets its prose lines against `code-line-length` by '
                + 'default, whereas its `name: description` entries wrap to `docstring-line-length` '
                + 'with a hanging indent at the description\'s start column.',
     families   : ['alignment'],
-    rule       : 'docstring-wrap'
+    rule       : 'wrap-docstrings'
   },
 
   'target-version': {
@@ -617,7 +617,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['typeddict'],
     definition : 'A `TypedDict` is a `typing.TypedDict` subclass declaring a dict\'s '
                + 'key-to-value-type contract. It accepts no positional field arguments, so '
-               + '`alphabetize` sorts its fields the same way it sorts `BaseModel` fields.',
+               + '`alphabetize-siblings` sorts its fields the same way it sorts `BaseModel` fields.',
     families   : ['ordering', 'alignment'],
     href       : 'https://docs.python.org/3/library/typing.html#typing.TypedDict'
   },

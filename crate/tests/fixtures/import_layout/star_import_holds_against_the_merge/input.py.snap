@@ -1,7 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/import_layout/star_import_holds_against_the_merge/input.py
----
-from pkg import *
-from pkg import alpha

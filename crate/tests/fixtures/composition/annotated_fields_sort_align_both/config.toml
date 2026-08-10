@@ -1,2 +1,2 @@
 [harness]
-rules = ["alphabetize", "align-colons", "align-equals"]
+rules = ["alphabetize-siblings", "align-colons", "align-equals"]

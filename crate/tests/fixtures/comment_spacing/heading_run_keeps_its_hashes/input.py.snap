@@ -1,8 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/comment_spacing/heading_run_keeps_its_hashes/input.py
----
-## notes
-### Section
-#### deeper

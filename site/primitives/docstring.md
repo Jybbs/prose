@@ -1,5 +1,5 @@
 ---
-consumedBy: [alphabetize, colon-targets, docstring-expand, docstring-frame, docstring-wrap, line-overflow, normalize-literals, restated-types, stack-adjacent-strings]
+consumedBy: [alphabetize-siblings, colon-targets, expand-docstrings, frame-docstrings, line-overflow, normalize-literals, restated-types, stack-adjacent-strings, wrap-docstrings]
 consumes: [edit, source]
 layer: analysis
 stability: internal
@@ -69,9 +69,9 @@ trait DocstringHandler<'src> {
 The `pub(crate)` helpers reach for the docstring literal and its body:
 
 1. `body_docstring(body) -> Option<&StringLiteral>` returns a body's leading PEP 257 docstring literal, the shared detection point for consumers that already hold a `&[Stmt]` body rather than walking the whole module.
-2. `docstring_slots(body) -> Vec<TextRange>` returns the range of the leading string expression in `body` and in every class and function body nested inside it, ascending by start. The slot is the position a docstring occupies whatever its part count, so an implicitly concatenated expression lands here where `body_docstring` skips it. A rule walking a different surface reads it to tell docstring position from an ordinary literal, which is how [[stack-adjacent-strings]] holds a concatenated run filling the slot, how [[line-overflow]] declines to offer it a break, and how [[normalize-literals]] keeps its quote facet off the frame `docstring-frame` owns.
+2. `docstring_slots(body) -> Vec<TextRange>` returns the range of the leading string expression in `body` and in every class and function body nested inside it, ascending by start. The slot is the position a docstring occupies whatever its part count, so an implicitly concatenated expression lands here where `body_docstring` skips it. A rule walking a different surface reads it to tell docstring position from an ordinary literal, which is how [[stack-adjacent-strings]] holds a concatenated run filling the slot, how [[line-overflow]] declines to offer it a break, and how [[normalize-literals]] keeps its quote facet off the frame `frame-docstrings` owns.
 3. `docstring_body(source, lit) -> Option<DocstringBody>` returns the body slice between a docstring's opener and closer whatever its quote style, paired with the source range the slice covers and a `raw` flag carrying whether the literal took an `r` prefix, which is what decides whether a backslash in the slice escapes the character after it. Returns `None` only for an inline shape like `def f(): "doc"`.
-4. `triple_quoted_body(source, lit) -> Option<DocstringBody>` narrows `docstring_body` to the canonical `"""` form, the slice `docstring-expand` and `docstring-wrap` act on once `docstring-frame` has requoted every docstring. Returns `None` for a non-triple-quoted literal.
+4. `triple_quoted_body(source, lit) -> Option<DocstringBody>` narrows `docstring_body` to the canonical `"""` form, the slice `expand-docstrings` and `wrap-docstrings` act on once `frame-docstrings` has requoted every docstring. Returns `None` for a non-triple-quoted literal.
 5. `indent_prefix(source, lit) -> &str` returns the whitespace preceding the docstring on its first line, useful when a rule rewraps the body and needs to re-indent the result.
 6. `documented_definitions(source) -> Vec<(&Stmt, &StringLiteral)>` returns every class and function definition whose body opens on a docstring, paired with that literal in source order. The module docstring is absent, since a module owns no definition, which is what a rule reading a docstring against the code beneath it needs.
 
@@ -125,17 +125,17 @@ pub(crate) struct DocstringEntry<'a> {
 }
 ```
 
-`entry_carrying_sections` returns one `Section` per section whose body carries at least one entry-shaped line, each holding the heading that opened it beside its entries. Each `SectionEntry` carries the parameter name, the source offset of its head line's separating `:`, the byte range covering the entry's head line through every line attached to it, and the range of the parenthesized type where the head carries one. `entry_runs` returns those same entries alongside every contiguous run of type-bearing heads standing at the body indent outside any section, which is the wider set [[colon-targets]] aligns and the narrower set [[alphabetize]] sorts, and `SectionEntry::column_anchor` narrows a type group to the ones written in the Google `name (type)` form, since a `(` flush against its name documents a call and opens no type column, leaving its entry to join a run on the `:` alone. The walker drops sections whose body is prose-only, since the content-shape check filters them out, and drops any docstring whose body is single-line or non-triple-quoted. Continuation attachment reuses the fence and list-indent state the leaf classifiers expose, so a section entry whose description embeds an indented code block keeps the block attached through any downstream reorder.
+`entry_carrying_sections` returns one `Section` per section whose body carries at least one entry-shaped line, each holding the heading that opened it beside its entries. Each `SectionEntry` carries the parameter name, the source offset of its head line's separating `:`, the byte range covering the entry's head line through every line attached to it, and the range of the parenthesized type where the head carries one. `entry_runs` returns those same entries alongside every contiguous run of type-bearing heads standing at the body indent outside any section, which is the wider set [[colon-targets]] aligns and the narrower set [[alphabetize-siblings]] sorts, and `SectionEntry::column_anchor` narrows a type group to the ones written in the Google `name (type)` form, since a `(` flush against its name documents a call and opens no type column, leaving its entry to join a run on the `:` alone. The walker drops sections whose body is prose-only, since the content-shape check filters them out, and drops any docstring whose body is single-line or non-triple-quoted. Continuation attachment reuses the fence and list-indent state the leaf classifiers expose, so a section entry whose description embeds an indented code block keeps the block attached through any downstream reorder.
 
-## How `alphabetize` Composes
+## How `alphabetize-siblings` Composes
 
-[[alphabetize]] consumes the entry iterator when its `sort-docstring-entries` facet is on, which is the default. For each docstring, the rule walks `entry_carrying_sections` and reorders the entries within each section, threading the result through the shared `reorder_text` machinery from [[orderer]], so the no-op case allocates nothing. An entry naming a parameter of the documented signature takes that parameter's position as the rule leaves the signature (*source order for the positional run, sorted for the keyword-only block*), and every other entry sinks below the mirrored ones, alphabetized by name. Module and class docstrings carry no signature, so their sections alphabetize throughout. Each section emits one [[edit]] when its entries arrive out of order, with the edit's range covering the section's entries span and leaving the heading and trailing blank line untouched.
+[[alphabetize-siblings]] consumes the entry iterator when its `sort-docstring-entries` facet is on, which is the default. For each docstring, the rule walks `entry_carrying_sections` and reorders the entries within each section, threading the result through the shared `reorder_text` machinery from [[orderer]], so the no-op case allocates nothing. An entry naming a parameter of the documented signature takes that parameter's position as the rule leaves the signature (*source order for the positional run, sorted for the keyword-only block*), and every other entry sinks below the mirrored ones, alphabetized by name. Module and class docstrings carry no signature, so their sections alphabetize throughout. Each section emits one [[edit]] when its entries arrive out of order, with the edit's range covering the section's entries span and leaving the heading and trailing blank line untouched.
 
-Section headings, blank lines between entries, and verbatim continuations *(indented code blocks, fenced blocks, list items)* stay attached to their parent entries through the move because each `SectionEntry`'s range already covers its continuations, leaving the reorder as a straight permutation of byte slices. The `alphabetize` rule carries `sort-docstring-entries` in the `[rules]` table, defaulting to `true`. Setting `alphabetize = { sort-docstring-entries = false }` keeps the AST-level sorts firing while opting out of the docstring-entry reorder, useful when a project curates entry order to match a narrative rather than the signature alphabet.
+Section headings, blank lines between entries, and verbatim continuations *(indented code blocks, fenced blocks, list items)* stay attached to their parent entries through the move because each `SectionEntry`'s range already covers its continuations, leaving the reorder as a straight permutation of byte slices. The `alphabetize-siblings` rule carries `sort-docstring-entries` in the `[rules]` table, defaulting to `true`. Setting `alphabetize = { sort-docstring-entries = false }` keeps the AST-level sorts firing while opting out of the docstring-entry reorder, useful when a project curates entry order to match a narrative rather than the signature alphabet.
 
-## How `docstring-wrap` Composes
+## How `wrap-docstrings` Composes
 
-[[docstring-wrap]] consumes the walker and the body helper together. For each discovered docstring, the rule extracts the body, partitions it into description prose and structured sections *(`Args:`, `Returns:`, `Raises:`)*, and rewraps each part against its configured budget *(`docstring-line-length` for description prose, `code-line-length` for structured sections, or both collapsed to one when `docstring-structured-policy = "docstring-line-length"`)*. The rule emits one [[edit]] per docstring body that needs rewrapping.
+[[wrap-docstrings]] consumes the walker and the body helper together. For each discovered docstring, the rule extracts the body, partitions it into description prose and structured sections *(`Args:`, `Returns:`, `Raises:`)*, and rewraps each part against its configured budget *(`docstring-line-length` for description prose, `code-line-length` for structured sections, or both collapsed to one when `docstring-structured-policy = "docstring-line-length"`)*. The rule emits one [[edit]] per docstring body that needs rewrapping.
 
 ## How `restated-types` Composes
 
@@ -143,7 +143,7 @@ Section headings, blank lines between entries, and verbatim continuations *(inde
 
 ## How Multi-Line and Single-Line Rules Compose
 
-[[docstring-frame]] canonicalizes each discovered docstring to the `"""` frame whatever quotes the source carried, and lands a multi-line opener and closer on their own lines. [[docstring-expand]] expands docstrings that fit on one line into the canonical multi-line shape. Both rules read the literal's source position and emit edits that reshape the quote placement without touching the body text.
+[[frame-docstrings]] canonicalizes each discovered docstring to the `"""` frame whatever quotes the source carried, and lands a multi-line opener and closer on their own lines. [[expand-docstrings]] expands docstrings that fit on one line into the canonical multi-line shape. Both rules read the literal's source position and emit edits that reshape the quote placement without touching the body text.
 
 ## Build Pattern
 
@@ -169,10 +169,10 @@ A new docstring rule's `apply` body is a single `rewrite_docstrings` call carryi
 
 <template #related>
 
-- [[alphabetize]] orders the `name: description` entries within each Title-case-headed section, mirroring the documented signature's parameters.
-- [[docstring-wrap]] wraps description prose and structured sections to their budgets.
-- [[docstring-frame]] enforces own-line quote placement.
-- [[docstring-expand]] expands single-line shapes.
+- [[alphabetize-siblings]] orders the `name: description` entries within each Title-case-headed section, mirroring the documented signature's parameters.
+- [[wrap-docstrings]] wraps description prose and structured sections to their budgets.
+- [[frame-docstrings]] enforces own-line quote placement.
+- [[expand-docstrings]] expands single-line shapes.
 - [[restated-types]] reads each section entry's type group against the definition the docstring documents.
 - [[edit]] is the output shape rules emit per docstring.
 

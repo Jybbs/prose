@@ -1,0 +1,7 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/strip_stranded_padding/fstring_replacement_field_untouched/input.py
+---
+strip-stranded-padding@55..56
+strip-stranded-padding@60..61

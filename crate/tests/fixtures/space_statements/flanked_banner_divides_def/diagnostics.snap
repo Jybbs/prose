@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/space_statements/flanked_banner_divides_def/input.py
+---
+space-statements@25..26
+space-statements@53..54

@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_calls/aligned_keyword_value_measures_its_column/input.py
+---
+emit(
+    alpha=1,
+    beta=2,
+    gamma=3,
+    note=helper(
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    ),
+)

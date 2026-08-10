@@ -17,36 +17,39 @@ use thiserror::Error;
 
 use crate::{
     config::{
-        AlignmentConfig, AlphabetizeConfig, BandConstantsConfig, BareImportsConfig,
-        CallLayoutConfig, ChainLayoutConfig, CollectionLayoutConfig, Config, ImportLayoutConfig,
+        AlignmentConfig, AlphabetizeSiblingsConfig, BandConstantsConfig, BareImportsConfig, Config,
         LineOverflowConfig, MiscasedConstantsConfig, ModernizeAnnotationsConfig,
         NormalizeComparisonsConfig, NormalizeLiteralsConfig, PreferFstringConfig,
-        PruneInertImportsConfig, ReassignedConstantsConfig, SignatureLayoutConfig,
-        SingleUseVariablesConfig, ToggleOnly, rule_schema,
+        PruneInertImportsConfig, ReassignedConstantsConfig, ReflowCallsConfig,
+        ReflowCollectionsConfig, ReflowImportsConfig, ReflowSignaturesConfig,
+        SingleUseVariablesConfig, StackMethodChainsConfig, ToggleOnly, rule_schema,
     },
     diagnostics::Diagnostic,
     pipeline::Pipeline,
     rules::{
         align_colons::AlignColons, align_comments::AlignComments,
         align_comparisons::AlignComparisons, align_equals::AlignEquals,
-        align_imports::AlignImports, align_match_case::AlignMatchCase, alphabetize::Alphabetize,
-        band_constants::BandConstants, bare_imports::BareImports, blank_lines::BlankLines,
-        call_layout::CallLayout, chain_layout::ChainLayout, collection_layout::CollectionLayout,
-        comment_spacing::CommentSpacing, docstring_expand::DocstringExpand,
-        docstring_frame::DocstringFrame, docstring_wrap::DocstringWrap,
-        group_imports::GroupImports, import_layout::ImportLayout, line_overflow::LineOverflow,
-        miscased_constants::MiscasedConstants, modernize_annotations::ModernizeAnnotations,
+        align_imports::AlignImports, align_match_case::AlignMatchCase,
+        alphabetize_siblings::AlphabetizeSiblings, band_constants::BandConstants,
+        bare_imports::BareImports, expand_docstrings::ExpandDocstrings,
+        frame_docstrings::FrameDocstrings, group_imports::GroupImports,
+        line_overflow::LineOverflow, miscased_constants::MiscasedConstants,
+        modernize_annotations::ModernizeAnnotations,
+        normalize_comment_spacing::NormalizeCommentSpacing,
         normalize_comparisons::NormalizeComparisons, normalize_literals::NormalizeLiterals,
         prefer_fstring::PreferFstring, prune_inert_imports::PruneInertImports,
-        reassigned_constants::ReassignedConstants, restated_types::RestatedTypes,
+        reassigned_constants::ReassignedConstants, reflow_calls::ReflowCalls,
+        reflow_collections::ReflowCollections, reflow_imports::ReflowImports,
+        reflow_signatures::ReflowSignatures, restated_types::RestatedTypes,
         shed_backslash_continuations::ShedBackslashContinuations,
         shed_parentheses::ShedParentheses, shed_redundant_base::ShedRedundantBase,
         shed_super_args::ShedSuperArgs, signature_annotations::SignatureAnnotations,
-        signature_layout::SignatureLayout, simplify_comprehensions::SimplifyComprehensions,
-        single_use_variables::SingleUseVariables, stack_adjacent_strings::StackAdjacentStrings,
-        step_narration::StepNarration, strip_align_padding::StripAlignPadding,
-        strip_none_return::StripNoneReturn, strip_trailing_commas::StripTrailingCommas,
-        unsorted_positionals::UnsortedPositionals,
+        simplify_comprehensions::SimplifyComprehensions, single_use_variables::SingleUseVariables,
+        space_statements::SpaceStatements, stack_adjacent_strings::StackAdjacentStrings,
+        stack_method_chains::StackMethodChains, step_narration::StepNarration,
+        strip_none_return::StripNoneReturn, strip_stranded_padding::StripStrandedPadding,
+        strip_trailing_commas::StripTrailingCommas, unsorted_positionals::UnsortedPositionals,
+        wrap_docstrings::WrapDocstrings,
     },
     source::Source,
 };
@@ -391,29 +394,29 @@ register_rules! {
     "shed-redundant-base":          shed_redundant_base:          ToggleOnly                 => ShedRedundantBase          => [],
     "normalize-comparisons":        normalize_comparisons:        NormalizeComparisonsConfig => NormalizeComparisons       => ["shed-parentheses"],
     "simplify-comprehensions":      simplify_comprehensions:      ToggleOnly                 => SimplifyComprehensions     => ["shed-parentheses"],
-    "docstring-frame":              docstring_frame:              ToggleOnly                 => DocstringFrame             => [],
-    "docstring-expand":             docstring_expand:             ToggleOnly                 => DocstringExpand            => ["docstring-frame"],
+    "frame-docstrings":             frame_docstrings:             ToggleOnly                 => FrameDocstrings            => [],
+    "expand-docstrings":            expand_docstrings:            ToggleOnly                 => ExpandDocstrings           => ["frame-docstrings"],
     "group-imports":                group_imports:                ToggleOnly                 => GroupImports               => [],
-    "chain-layout":                 chain_layout:                 ChainLayoutConfig          => ChainLayout                => [],
-    "collection-layout":            collection_layout:            CollectionLayoutConfig     => CollectionLayout           => ["chain-layout"],
-    "prefer-fstring":               prefer_fstring:               PreferFstringConfig        => PreferFstring              => ["normalize-literals", "collection-layout"],
-    "call-layout":                  call_layout:                  CallLayoutConfig           => CallLayout                 => ["chain-layout", "collection-layout"],
-    "shed-super-args":              shed_super_args:              ToggleOnly                 => ShedSuperArgs              => ["call-layout"],
-    "signature-layout":             signature_layout:             SignatureLayoutConfig      => SignatureLayout            => [],
-    "stack-adjacent-strings":       stack_adjacent_strings:       ToggleOnly                 => StackAdjacentStrings       => ["chain-layout", "collection-layout", "call-layout", "signature-layout"],
+    "stack-method-chains":          stack_method_chains:          StackMethodChainsConfig    => StackMethodChains          => [],
+    "reflow-collections":           reflow_collections:           ReflowCollectionsConfig    => ReflowCollections          => ["stack-method-chains"],
+    "prefer-fstring":               prefer_fstring:               PreferFstringConfig        => PreferFstring              => ["normalize-literals", "reflow-collections"],
+    "reflow-calls":                 reflow_calls:                 ReflowCallsConfig          => ReflowCalls                => ["stack-method-chains", "reflow-collections"],
+    "shed-super-args":              shed_super_args:              ToggleOnly                 => ShedSuperArgs              => ["reflow-calls"],
+    "reflow-signatures":            reflow_signatures:            ReflowSignaturesConfig     => ReflowSignatures           => [],
+    "stack-adjacent-strings":       stack_adjacent_strings:       ToggleOnly                 => StackAdjacentStrings       => ["stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures"],
     "align-match-case":             align_match_case:             AlignmentConfig            => AlignMatchCase             => [],
-    "import-layout":                import_layout:                ImportLayoutConfig         => ImportLayout               => ["group-imports"],
-    "alphabetize":                  alphabetize:                  AlphabetizeConfig          => Alphabetize                => ["chain-layout", "collection-layout", "call-layout", "signature-layout", "import-layout"],
-    "band-constants":               band_constants:               BandConstantsConfig        => BandConstants              => ["alphabetize"],
-    "blank-lines":                  blank_lines:                  ToggleOnly                 => BlankLines                 => ["group-imports", "alphabetize"],
-    "align-imports":                align_imports:                AlignmentConfig            => AlignImports               => ["alphabetize", "blank-lines", "import-layout"],
+    "reflow-imports":               reflow_imports:               ReflowImportsConfig        => ReflowImports              => ["group-imports"],
+    "alphabetize-siblings":         alphabetize_siblings:         AlphabetizeSiblingsConfig  => AlphabetizeSiblings        => ["stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures", "reflow-imports"],
+    "band-constants":               band_constants:               BandConstantsConfig        => BandConstants              => ["alphabetize-siblings"],
+    "space-statements":             space_statements:             ToggleOnly                 => SpaceStatements            => ["group-imports", "alphabetize-siblings"],
+    "align-imports":                align_imports:                AlignmentConfig            => AlignImports               => ["alphabetize-siblings", "space-statements", "reflow-imports"],
     "align-colons":                 align_colons:                 AlignmentConfig            => AlignColons                => [],
-    "docstring-wrap":               docstring_wrap:               ToggleOnly                 => DocstringWrap              => ["docstring-frame", "docstring-expand", "align-colons"],
-    "align-equals":                 align_equals:                 AlignmentConfig            => AlignEquals                => ["collection-layout", "alphabetize", "align-colons"],
+    "wrap-docstrings":              wrap_docstrings:              ToggleOnly                 => WrapDocstrings             => ["frame-docstrings", "expand-docstrings", "align-colons"],
+    "align-equals":                 align_equals:                 AlignmentConfig            => AlignEquals                => ["reflow-collections", "alphabetize-siblings", "align-colons"],
     "align-comparisons":            align_comparisons:            AlignmentConfig            => AlignComparisons           => [],
-    "strip-align-padding":          strip_align_padding:          ToggleOnly                 => StripAlignPadding          => ["align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"],
-    "comment-spacing":              comment_spacing:              ToggleOnly                 => CommentSpacing             => [],
-    "align-comments":               align_comments:               AlignmentConfig            => AlignComments              => ["strip-align-padding", "comment-spacing"],
+    "strip-stranded-padding":       strip_stranded_padding:       ToggleOnly                 => StripStrandedPadding       => ["align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"],
+    "normalize-comment-spacing":    normalize_comment_spacing:    ToggleOnly                 => NormalizeCommentSpacing    => [],
+    "align-comments":               align_comments:               AlignmentConfig            => AlignComments              => ["strip-stranded-padding", "normalize-comment-spacing"],
     "bare-imports":                 bare_imports:                 BareImportsConfig          => BareImports                => [],
     "miscased-constants":           miscased_constants:           MiscasedConstantsConfig    => MiscasedConstants          => [],
     "reassigned-constants":         reassigned_constants:         ReassignedConstantsConfig  => ReassignedConstants        => [],
@@ -421,8 +424,8 @@ register_rules! {
     "single-use-variables":         single_use_variables:         SingleUseVariablesConfig   => SingleUseVariables         => [],
     "unsorted-positionals":         unsorted_positionals:         ToggleOnly                 => UnsortedPositionals        => [],
     "signature-annotations":        signature_annotations:        ToggleOnly                 => SignatureAnnotations       => [],
-    "restated-types":               restated_types:               ToggleOnly                 => RestatedTypes              => ["docstring-frame", "docstring-expand", "docstring-wrap"],
-    "line-overflow":                line_overflow:                LineOverflowConfig         => LineOverflow               => ["strip-align-padding", "comment-spacing", "align-comments"],
+    "restated-types":               restated_types:               ToggleOnly                 => RestatedTypes              => ["frame-docstrings", "expand-docstrings", "wrap-docstrings"],
+    "line-overflow":                line_overflow:                LineOverflowConfig         => LineOverflow               => ["strip-stranded-padding", "normalize-comment-spacing", "align-comments"],
 }
 
 #[cfg(test)]
@@ -433,7 +436,7 @@ mod tests {
 
     #[rstest]
     fn dependencies_of_returns_empty_for_a_rule_without_predecessors(
-        #[values("prune-inert-imports", "chain-layout", "not-a-rule")] slug: &str,
+        #[values("prune-inert-imports", "stack-method-chains", "not-a-rule")] slug: &str,
     ) {
         assert!(dependencies_of(slug).is_empty());
     }
@@ -442,7 +445,7 @@ mod tests {
     fn dependencies_of_returns_the_declared_predecessors() {
         assert_eq!(
             dependencies_of("align-equals"),
-            ["collection-layout", "alphabetize", "align-colons"],
+            ["reflow-collections", "alphabetize-siblings", "align-colons"],
         );
     }
 
@@ -461,8 +464,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case("collection-layout", "align-equals", true)]
-    #[case("align-equals", "collection-layout", false)]
+    #[case("reflow-collections", "align-equals", true)]
+    #[case("align-equals", "reflow-collections", false)]
     #[case("align-equals", "not-a-rule", false)]
     #[case("not-a-rule", "align-equals", false)]
     fn precedes_orders_registered_slugs(
@@ -478,6 +481,31 @@ mod tests {
         let id = RuleId("align-equals");
         assert_eq!(format!("{id}"), "align-equals");
         assert_eq!(format!("{id:?}"), "align-equals");
+    }
+
+    #[rstest]
+    fn rule_id_from_str_rejects_a_retired_slug(
+        #[values(
+            "alphabetize",
+            "blank-lines",
+            "call-layout",
+            "chain-layout",
+            "collection-layout",
+            "comment-spacing",
+            "docstring-expand",
+            "docstring-frame",
+            "docstring-wrap",
+            "import-layout",
+            "signature-layout",
+            "strip-align-padding"
+        )]
+        retired: &str,
+    ) {
+        let err = retired
+            .parse::<RuleId>()
+            .expect_err("a retired slug resolves against nothing");
+        assert_eq!(err.0, retired);
+        assert!(Pipeline::for_rule(retired, &Config::default()).is_none());
     }
 
     #[rstest]

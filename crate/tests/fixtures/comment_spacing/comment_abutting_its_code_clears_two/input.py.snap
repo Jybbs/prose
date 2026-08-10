@@ -1,6 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/comment_spacing/comment_abutting_its_code_clears_two/input.py
----
-value = 1  # right against the code

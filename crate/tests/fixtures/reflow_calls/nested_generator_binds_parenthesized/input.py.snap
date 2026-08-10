@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_calls/nested_generator_binds_parenthesized/input.py
+---
+def inner(beta):
+    return beta
+
+
+def outer(alpha):
+    return alpha
+
+
+outer(
+    alpha=inner(
+        beta=(row for row in rows if row.enabled)
+    )
+)

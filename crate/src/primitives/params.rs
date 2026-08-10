@@ -1,5 +1,5 @@
-//! Parameter primitives shared by `alphabetize`, the
-//! `unsorted-positionals` lint, `call-layout`, and the rules that read a
+//! Parameter primitives shared by `alphabetize-siblings`, the
+//! `unsorted-positionals` lint, `reflow-calls`, and the rules that read a
 //! signature's receiver. The sort key drives the keyword-only sort and
 //! docstring mirror, and the decorator predicate gates the rules that
 //! must not reorder a positionally-bound signature.

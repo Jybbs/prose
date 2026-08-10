@@ -1,0 +1,2 @@
+[rules]
+stack-method-chains = { max-links = false }

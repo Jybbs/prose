@@ -4,5 +4,5 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/match_arm_dicts_expand_no_sort/input.py
 ---
 align-match-case@292..305
-collection-layout@197..275
-collection-layout@78..154
+reflow-collections@197..275
+reflow-collections@78..154

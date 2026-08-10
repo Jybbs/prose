@@ -55,7 +55,10 @@ mod tests {
     }
 
     fn rules() -> [RuleId; 2] {
-        [RuleId::from("align-equals"), RuleId::from("alphabetize")]
+        [
+            RuleId::from("align-equals"),
+            RuleId::from("alphabetize-siblings"),
+        ]
     }
 
     #[test]
@@ -108,7 +111,7 @@ mod tests {
     #[test]
     fn cache_key_differs_when_rule_selection_changes() {
         let key_a = CacheKey::compute(b"x = 1\n", CONFIG_A, [RuleId::from("align-equals")]);
-        let key_b = CacheKey::compute(b"x = 1\n", CONFIG_A, [RuleId::from("alphabetize")]);
+        let key_b = CacheKey::compute(b"x = 1\n", CONFIG_A, [RuleId::from("alphabetize-siblings")]);
         assert_ne!(key_a, key_b);
         let key_c = CacheKey::compute(b"x = 1\n", CONFIG_A, [RuleId::from("align-equals")]);
         assert_eq!(key_a, key_c);

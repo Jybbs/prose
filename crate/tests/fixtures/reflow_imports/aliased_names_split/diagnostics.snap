@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_imports/aliased_names_split/input.py
+---
+reflow-imports@37..38

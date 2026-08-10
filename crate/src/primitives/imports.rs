@@ -58,7 +58,7 @@ pub(crate) fn future_annotations_alias(node: &StmtImportFrom) -> Option<usize> {
 
 /// Canonical blank-line count between two adjacent import statements,
 /// the one decider the import collapse, the banded import arm, and
-/// `blank-lines` share. `Some(1)` divides distinct groups while
+/// `space-statements` share. `Some(1)` divides distinct groups while
 /// `grouped`, `Some(0)` seats every other import pair tight, and `None`
 /// pins any pair that is not two imports. Ungrouped, the imports read as
 /// one flat block, so no pair carries a divider.
@@ -172,7 +172,7 @@ pub(crate) fn prune_import_aliases(
 
 /// Slot ranges of every import run across a sectioned body, each run
 /// offset to absolute slot indices so it never spans a section divider.
-/// The unit `group-imports` partitions and `alphabetize` sorts, one run
+/// The unit `group-imports` partitions and `alphabetize-siblings` sorts, one run
 /// at a time within each section.
 pub(crate) fn sectioned_import_runs(sections: &Sections, body: &[Stmt]) -> Vec<Range<usize>> {
     sections

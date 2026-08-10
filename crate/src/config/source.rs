@@ -190,7 +190,7 @@ mod tests {
         let tmp = TempDir::new().expect("tempdir");
         write_pyproject(
             tmp.path(),
-            "[tool.prose.rules]\nalphabetize = false\n[tool.prose.rules.align-equals]\nmax-shift = 8\n\n[[tool.prose.overrides]]\npaths = [\"wide/**\"]\n[tool.prose.overrides.rules.align-equals]\nmax-shift = 2\n",
+            "[tool.prose.rules]\nalphabetize-siblings = false\n[tool.prose.rules.align-equals]\nmax-shift = 8\n\n[[tool.prose.overrides]]\npaths = [\"wide/**\"]\n[tool.prose.overrides.rules.align-equals]\nmax-shift = 2\n",
         );
         let source = discover(tmp.path()).expect("loads").expect("a source");
 
@@ -200,7 +200,7 @@ mod tests {
             config.rules.align_equals.max_shift,
             MaxShift::Cap(std::num::NonZeroUsize::new(2).expect("non-zero")),
         );
-        assert!(!config.rules.alphabetize.enabled);
+        assert!(!config.rules.alphabetize_siblings.enabled);
     }
 
     #[test]

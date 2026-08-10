@@ -3,5 +3,5 @@ previewable = true
 title       = "Grouping Off Leaves One Flat, Aligned Import Block"
 
 description = '''
-With `group-imports = false`, `alphabetize` sorts the imports as **one flat block**, `blank-lines` adds no section dividers, and `align-imports` still aligns the `import` keyword across the `from` lines.
+With `group-imports = false`, `alphabetize-siblings` sorts the imports as **one flat block**, `space-statements` adds no section dividers, and `align-imports` still aligns the `import` keyword across the `from` lines.
 '''

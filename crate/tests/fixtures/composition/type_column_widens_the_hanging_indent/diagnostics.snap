@@ -4,4 +4,4 @@ expression: render(&diagnostics)
 input_file: crate/tests/fixtures/composition/type_column_widens_the_hanging_indent/input.py
 ---
 align-colons@60..172
-docstring-wrap@120..120
+wrap-docstrings@120..120

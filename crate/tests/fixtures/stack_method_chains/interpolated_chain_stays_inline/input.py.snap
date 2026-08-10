@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_method_chains/interpolated_chain_stays_inline/input.py
+---
+label = f"{query.filter(a).order(b).limit(c)}"

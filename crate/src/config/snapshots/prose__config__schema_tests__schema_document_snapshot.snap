@@ -19,8 +19,8 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       },
       "type": "object"
     },
-    "AlphabetizeConfig": {
-      "description": "Configuration for the `alphabetize` rule, each facet gating one\nsort pass and defaulting `true`.",
+    "AlphabetizeSiblingsConfig": {
+      "description": "Configuration for the `alphabetize_siblings` rule, each facet gating one\nsort pass and defaulting `true`.",
       "properties": {
         "enabled": {
           "default": true,
@@ -122,76 +122,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       },
       "type": "object"
     },
-    "CallLayoutConfig": {
-      "description": "Configuration for the `call_layout` rule.",
-      "properties": {
-        "enabled": {
-          "default": true,
-          "type": "boolean"
-        },
-        "max-args": {
-          "$ref": "#/$defs/InlineBudget",
-          "default": 3,
-          "description": "Explodes a call to one keyword argument per line once its argument\ncount exceeds the cap. `false` disables the count trigger and\nleaves every call inline."
-        }
-      },
-      "type": "object"
-    },
-    "ChainLayoutConfig": {
-      "description": "Configuration for the `chain_layout` rule.",
-      "properties": {
-        "enabled": {
-          "default": true,
-          "type": "boolean"
-        },
-        "max-links": {
-          "$ref": "#/$defs/InlineBudget",
-          "default": 2,
-          "description": "Breaks a method chain to one link per line once its link count\nexceeds the cap. `false` disables the count trigger and leaves\nonly the `code-line-length` budget."
-        },
-        "max-shift": {
-          "$ref": "#/$defs/MaxShift",
-          "default": 16,
-          "description": "The width a hung link's dot column may sit past the indent the\nbroken chain opens at. A wider receiver takes the full split\ninstead, standing alone with every link flush beneath it. `0`\nalways takes that split, and `false` lifts the cap so every\nchain hangs."
-        }
-      },
-      "type": "object"
-    },
-    "CollectionLayoutConfig": {
-      "description": "Configuration for the `collection_layout` rule, each facet gating\none shape decision and defaulting `true`.",
-      "properties": {
-        "enabled": {
-          "default": true,
-          "type": "boolean"
-        },
-        "explode": {
-          "default": true,
-          "description": "Expands an overflowing or over-count collection to one entry per\nline. `false` suppresses every expansion and leaves the count cap\ninert.",
-          "type": "boolean"
-        },
-        "keep-multiline-literals": {
-          "default": true,
-          "description": "Holds a literal the author laid out as a flush bracketed column\nof two or more entries. `false` joins one whose single-line form\nfits the budget, and every other break rejoins either way.",
-          "type": "boolean"
-        },
-        "max-atomics": {
-          "$ref": "#/$defs/InlineBudget",
-          "default": 8,
-          "description": "Keeps short collections on one line when each entry is an atomic\nliteral and the run fits the cap. `false` removes the cap and\npacks by width alone."
-        },
-        "max-dict-entries": {
-          "$ref": "#/$defs/InlineBudget",
-          "default": 3,
-          "description": "Expands a dict once its entry count exceeds the cap, whatever its\nwidth. `false` disables the count trigger."
-        },
-        "wrap-dict-entries": {
-          "default": true,
-          "description": "Breaks an over-wide `key: value` at its `:` and hangs the value\nbeneath. `false` leaves the oversized entry on one line.",
-          "type": "boolean"
-        }
-      },
-      "type": "object"
-    },
     "DocstringStructuredPolicy": {
       "description": "Which budget structured docstring sections wrap to.\n\n`CodeLineLength` reuses `Config::code_line_length`.\n`DocstringLineLength` reuses `Config::docstring_line_length`.",
       "enum": [
@@ -199,26 +129,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "docstring-line-length"
       ],
       "type": "string"
-    },
-    "ImportLayoutConfig": {
-      "description": "Configuration for the `import_layout` rule, each facet gating one\nstatement move and defaulting `true`.",
-      "properties": {
-        "enabled": {
-          "default": true,
-          "type": "boolean"
-        },
-        "merge-members": {
-          "default": true,
-          "description": "Folds repeated `from <module> import …` statements into one\nstatement carrying each member once, ordered as `alphabetize`\nwould leave it. `false` leaves each statement on its own line.",
-          "type": "boolean"
-        },
-        "split-multi-module": {
-          "default": true,
-          "description": "Breaks a comma-joined `import a, b` into one `import` statement\nper module. `false` keeps the comma-joined form.",
-          "type": "boolean"
-        }
-      },
-      "type": "object"
     },
     "ImportsConfig": {
       "description": "Settings parsed from `[tool.prose.imports]`.",
@@ -461,6 +371,91 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       },
       "type": "object"
     },
+    "ReflowCallsConfig": {
+      "description": "Configuration for the `reflow_calls` rule.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "max-args": {
+          "$ref": "#/$defs/InlineBudget",
+          "default": 3,
+          "description": "Explodes a call to one keyword argument per line once its argument\ncount exceeds the cap. `false` disables the count trigger and\nleaves every call inline."
+        }
+      },
+      "type": "object"
+    },
+    "ReflowCollectionsConfig": {
+      "description": "Configuration for the `reflow_collections` rule, each facet gating\none shape decision and defaulting `true`.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "explode": {
+          "default": true,
+          "description": "Expands an overflowing or over-count collection to one entry per\nline. `false` suppresses every expansion and leaves the count cap\ninert.",
+          "type": "boolean"
+        },
+        "keep-multiline-literals": {
+          "default": true,
+          "description": "Holds a literal the author laid out as a flush bracketed column\nof two or more entries. `false` joins one whose single-line form\nfits the budget, and every other break rejoins either way.",
+          "type": "boolean"
+        },
+        "max-atomics": {
+          "$ref": "#/$defs/InlineBudget",
+          "default": 8,
+          "description": "Keeps short collections on one line when each entry is an atomic\nliteral and the run fits the cap. `false` removes the cap and\npacks by width alone."
+        },
+        "max-dict-entries": {
+          "$ref": "#/$defs/InlineBudget",
+          "default": 3,
+          "description": "Expands a dict once its entry count exceeds the cap, whatever its\nwidth. `false` disables the count trigger."
+        },
+        "wrap-dict-entries": {
+          "default": true,
+          "description": "Breaks an over-wide `key: value` at its `:` and hangs the value\nbeneath. `false` leaves the oversized entry on one line.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "ReflowImportsConfig": {
+      "description": "Configuration for the `reflow_imports` rule, each facet gating one\nstatement move and defaulting `true`.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "merge-members": {
+          "default": true,
+          "description": "Folds repeated `from <module> import …` statements into one\nstatement carrying each member once, ordered as `alphabetize-siblings`\nwould leave it. `false` leaves each statement on its own line.",
+          "type": "boolean"
+        },
+        "split-multi-module": {
+          "default": true,
+          "description": "Breaks a comma-joined `import a, b` into one `import` statement\nper module. `false` keeps the comma-joined form.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "ReflowSignaturesConfig": {
+      "description": "Configuration for the `reflow_signatures` rule.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "max-params": {
+          "$ref": "#/$defs/InlineBudget",
+          "default": 4,
+          "description": "Expands a signature to one parameter per line once its parameter\ncount exceeds the cap. `false` disables the count trigger and\nleaves only the `code-line-length` budget."
+        }
+      },
+      "type": "object"
+    },
     "RuleConfigs": {
       "description": "Per-rule configuration under `[tool.prose.rules]`.",
       "properties": {
@@ -548,13 +543,13 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "max-shift": 16
           }
         },
-        "alphabetize": {
+        "alphabetize-siblings": {
           "anyOf": [
             {
               "type": "boolean"
             },
             {
-              "$ref": "#/$defs/AlphabetizeConfig"
+              "$ref": "#/$defs/AlphabetizeSiblingsConfig"
             }
           ],
           "default": {
@@ -597,7 +592,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "max-attributes": 4
           }
         },
-        "blank-lines": {
+        "expand-docstrings": {
           "anyOf": [
             {
               "type": "boolean"
@@ -610,93 +605,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
-        "call-layout": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/CallLayoutConfig"
-            }
-          ],
-          "default": {
-            "enabled": true,
-            "max-args": 3
-          }
-        },
-        "chain-layout": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/ChainLayoutConfig"
-            }
-          ],
-          "default": {
-            "enabled": true,
-            "max-links": 2,
-            "max-shift": 16
-          }
-        },
-        "collection-layout": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/CollectionLayoutConfig"
-            }
-          ],
-          "default": {
-            "enabled": true,
-            "explode": true,
-            "keep-multiline-literals": true,
-            "max-atomics": 8,
-            "max-dict-entries": 3,
-            "wrap-dict-entries": true
-          }
-        },
-        "comment-spacing": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/ToggleOnly"
-            }
-          ],
-          "default": {
-            "enabled": true
-          }
-        },
-        "docstring-expand": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/ToggleOnly"
-            }
-          ],
-          "default": {
-            "enabled": true
-          }
-        },
-        "docstring-frame": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/ToggleOnly"
-            }
-          ],
-          "default": {
-            "enabled": true
-          }
-        },
-        "docstring-wrap": {
+        "frame-docstrings": {
           "anyOf": [
             {
               "type": "boolean"
@@ -720,21 +629,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           ],
           "default": {
             "enabled": true
-          }
-        },
-        "import-layout": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/ImportLayoutConfig"
-            }
-          ],
-          "default": {
-            "enabled": true,
-            "merge-members": true,
-            "split-multi-module": true
           }
         },
         "line-overflow": {
@@ -778,6 +672,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true,
             "rewrite-generics": true,
             "rewrite-unions": true
+          }
+        },
+        "normalize-comment-spacing": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
           }
         },
         "normalize-comparisons": {
@@ -856,6 +763,67 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
+        "reflow-calls": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ReflowCallsConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-args": 3
+          }
+        },
+        "reflow-collections": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ReflowCollectionsConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "explode": true,
+            "keep-multiline-literals": true,
+            "max-atomics": 8,
+            "max-dict-entries": 3,
+            "wrap-dict-entries": true
+          }
+        },
+        "reflow-imports": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ReflowImportsConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "merge-members": true,
+            "split-multi-module": true
+          }
+        },
+        "reflow-signatures": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ReflowSignaturesConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-params": 4
+          }
+        },
         "restated-types": {
           "anyOf": [
             {
@@ -934,20 +902,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
-        "signature-layout": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/SignatureLayoutConfig"
-            }
-          ],
-          "default": {
-            "enabled": true,
-            "max-params": 4
-          }
-        },
         "simplify-comprehensions": {
           "anyOf": [
             {
@@ -975,6 +929,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
+        "space-statements": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
         "stack-adjacent-strings": {
           "anyOf": [
             {
@@ -986,6 +953,21 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           ],
           "default": {
             "enabled": true
+          }
+        },
+        "stack-method-chains": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/StackMethodChainsConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-links": 2,
+            "max-shift": 16
           }
         },
         "step-narration": {
@@ -1001,7 +983,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
-        "strip-align-padding": {
+        "strip-none-return": {
           "anyOf": [
             {
               "type": "boolean"
@@ -1014,7 +996,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
-        "strip-none-return": {
+        "strip-stranded-padding": {
           "anyOf": [
             {
               "type": "boolean"
@@ -1052,21 +1034,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "default": {
             "enabled": true
           }
-        }
-      },
-      "type": "object"
-    },
-    "SignatureLayoutConfig": {
-      "description": "Configuration for the `signature_layout` rule.",
-      "properties": {
-        "enabled": {
-          "default": true,
-          "type": "boolean"
         },
-        "max-params": {
-          "$ref": "#/$defs/InlineBudget",
-          "default": 4,
-          "description": "Expands a signature to one parameter per line once its parameter\ncount exceeds the cap. `false` disables the count trigger and\nleaves only the `code-line-length` budget."
+        "wrap-docstrings": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
         }
       },
       "type": "object"
@@ -1083,6 +1063,26 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "enabled": {
           "default": true,
           "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "StackMethodChainsConfig": {
+      "description": "Configuration for the `stack_method_chains` rule.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "max-links": {
+          "$ref": "#/$defs/InlineBudget",
+          "default": 2,
+          "description": "Breaks a method chain to one link per line once its link count\nexceeds the cap. `false` disables the count trigger and leaves\nonly the `code-line-length` budget."
+        },
+        "max-shift": {
+          "$ref": "#/$defs/MaxShift",
+          "default": 16,
+          "description": "The width a hung link's dot column may sit past the indent the\nbroken chain opens at. A wider receiver takes the full split\ninstead, standing alone with every link flush beneath it. `0`\nalways takes that split, and `false` lifts the cap so every\nchain hangs."
         }
       },
       "type": "object"
@@ -1121,7 +1121,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
     },
     "docstring-line-length": {
       "default": 76,
-      "description": "The description-prose budget for `docstring-wrap`.",
+      "description": "The description-prose budget for `wrap-docstrings`.",
       "format": "uint",
       "minimum": 1,
       "type": [
@@ -1146,7 +1146,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         }
       ],
       "default": 120,
-      "description": "The import-wrap budget for `import-layout`, falling back to\n`code-line-length` when `false`."
+      "description": "The import-wrap budget for `reflow-imports`, falling back to\n`code-line-length` when `false`."
     },
     "imports": {
       "$ref": "#/$defs/ImportsConfig",
@@ -1181,7 +1181,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true,
           "max-shift": 16
         },
-        "alphabetize": {
+        "alphabetize-siblings": {
           "enabled": true,
           "group-methods": true,
           "sort-definitions": true,
@@ -1200,45 +1200,14 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "exempt-aliased": true,
           "max-attributes": 4
         },
-        "blank-lines": {
+        "expand-docstrings": {
           "enabled": true
         },
-        "call-layout": {
-          "enabled": true,
-          "max-args": 3
-        },
-        "chain-layout": {
-          "enabled": true,
-          "max-links": 2,
-          "max-shift": 16
-        },
-        "collection-layout": {
-          "enabled": true,
-          "explode": true,
-          "keep-multiline-literals": true,
-          "max-atomics": 8,
-          "max-dict-entries": 3,
-          "wrap-dict-entries": true
-        },
-        "comment-spacing": {
-          "enabled": true
-        },
-        "docstring-expand": {
-          "enabled": true
-        },
-        "docstring-frame": {
-          "enabled": true
-        },
-        "docstring-wrap": {
+        "frame-docstrings": {
           "enabled": true
         },
         "group-imports": {
           "enabled": true
-        },
-        "import-layout": {
-          "enabled": true,
-          "merge-members": true,
-          "split-multi-module": true
         },
         "line-overflow": {
           "enabled": true,
@@ -1252,6 +1221,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true,
           "rewrite-generics": true,
           "rewrite-unions": true
+        },
+        "normalize-comment-spacing": {
+          "enabled": true
         },
         "normalize-comparisons": {
           "enabled": true,
@@ -1279,6 +1251,27 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "allow": [],
           "enabled": true
         },
+        "reflow-calls": {
+          "enabled": true,
+          "max-args": 3
+        },
+        "reflow-collections": {
+          "enabled": true,
+          "explode": true,
+          "keep-multiline-literals": true,
+          "max-atomics": 8,
+          "max-dict-entries": 3,
+          "wrap-dict-entries": true
+        },
+        "reflow-imports": {
+          "enabled": true,
+          "merge-members": true,
+          "split-multi-module": true
+        },
+        "reflow-signatures": {
+          "enabled": true,
+          "max-params": 4
+        },
         "restated-types": {
           "enabled": true
         },
@@ -1297,10 +1290,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "signature-annotations": {
           "enabled": true
         },
-        "signature-layout": {
-          "enabled": true,
-          "max-params": 4
-        },
         "simplify-comprehensions": {
           "enabled": true
         },
@@ -1308,22 +1297,33 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "allow-pattern": "^_",
           "enabled": true
         },
+        "space-statements": {
+          "enabled": true
+        },
         "stack-adjacent-strings": {
           "enabled": true
+        },
+        "stack-method-chains": {
+          "enabled": true,
+          "max-links": 2,
+          "max-shift": 16
         },
         "step-narration": {
           "enabled": true
         },
-        "strip-align-padding": {
+        "strip-none-return": {
           "enabled": true
         },
-        "strip-none-return": {
+        "strip-stranded-padding": {
           "enabled": true
         },
         "strip-trailing-commas": {
           "enabled": true
         },
         "unsorted-positionals": {
+          "enabled": true
+        },
+        "wrap-docstrings": {
           "enabled": true
         }
       }

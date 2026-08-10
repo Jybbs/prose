@@ -1,7 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/import_layout/trailing_comment_holds_the_merge_back/input.py
----
-from pkg import beta
-from pkg import alpha  # the reader wants this member named

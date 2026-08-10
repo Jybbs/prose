@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_imports/commented_import_holds_its_line/input.py
+---
+from pkg import beta  # the reader wants this one named
+from pkg import alpha

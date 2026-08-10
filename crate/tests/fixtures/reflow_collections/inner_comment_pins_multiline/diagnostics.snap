@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_collections/inner_comment_pins_multiline/input.py
+---
+reflow-collections@240..305

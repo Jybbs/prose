@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/frame_docstrings/raw_prefix_kept_on_requote/input.py
+---
+frame-docstrings@28..52

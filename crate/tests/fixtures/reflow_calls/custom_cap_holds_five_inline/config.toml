@@ -1,0 +1,2 @@
+[rules]
+reflow-calls = { max-args = 5 }

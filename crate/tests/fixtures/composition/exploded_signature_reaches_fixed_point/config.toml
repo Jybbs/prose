@@ -1,2 +1,2 @@
 [harness]
-rules = ["strip-trailing-commas", "signature-layout"]
+rules = ["strip-trailing-commas", "reflow-signatures"]

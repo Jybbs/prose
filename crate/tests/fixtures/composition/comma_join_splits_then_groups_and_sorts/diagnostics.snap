@@ -3,8 +3,8 @@ source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/composition/comma_join_splits_then_groups_and_sorts/input.py
 ---
-alphabetize@7..69
-blank-lines@14..15
-blank-lines@46..47
-import-layout@10..11
-import-layout@64..65
+alphabetize-siblings@7..69
+reflow-imports@10..11
+reflow-imports@64..65
+space-statements@14..15
+space-statements@46..47

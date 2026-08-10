@@ -4,10 +4,10 @@ expression: render(&diagnostics)
 input_file: crate/tests/fixtures/thematic/import_block_full_pipeline/input.py
 ---
 align-imports@125..126
-alphabetize@43..160
+alphabetize-siblings@43..160
 band-constants@43..160
-blank-lines@160..161
 group-imports@35..160
 prune-inert-imports@0..35
 signature-annotations@165..171
 signature-annotations@172..176
+space-statements@160..161

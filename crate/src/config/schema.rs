@@ -38,11 +38,11 @@ impl Default for AlignmentConfig {
     }
 }
 
-/// Configuration for the `alphabetize` rule, each facet gating one
+/// Configuration for the `alphabetize_siblings` rule, each facet gating one
 /// sort pass and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
-pub struct AlphabetizeConfig {
+pub struct AlphabetizeSiblingsConfig {
     pub enabled: bool,
     /// Groups methods into dunders, properties, privates, and publics
     /// before sorting within each group. `false` sorts methods by plain
@@ -69,7 +69,7 @@ pub struct AlphabetizeConfig {
     pub sort_dunder_lists: bool,
 }
 
-impl Default for AlphabetizeConfig {
+impl Default for AlphabetizeSiblingsConfig {
     fn default() -> Self {
         Self {
             enabled: true,
@@ -153,92 +153,6 @@ impl Default for CacheConfig {
     }
 }
 
-/// Configuration for the `call_layout` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
-#[serde(default, rename_all = "kebab-case")]
-pub struct CallLayoutConfig {
-    pub enabled: bool,
-    /// Explodes a call to one keyword argument per line once its argument
-    /// count exceeds the cap. `false` disables the count trigger and
-    /// leaves every call inline.
-    pub max_args: InlineBudget,
-}
-
-impl Default for CallLayoutConfig {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            max_args: InlineBudget(NonZeroUsize::new(3)),
-        }
-    }
-}
-
-/// Configuration for the `chain_layout` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
-#[serde(default, rename_all = "kebab-case")]
-pub struct ChainLayoutConfig {
-    pub enabled: bool,
-    /// Breaks a method chain to one link per line once its link count
-    /// exceeds the cap. `false` disables the count trigger and leaves
-    /// only the `code-line-length` budget.
-    pub max_links: InlineBudget,
-    /// The width a hung link's dot column may sit past the indent the
-    /// broken chain opens at. A wider receiver takes the full split
-    /// instead, standing alone with every link flush beneath it. `0`
-    /// always takes that split, and `false` lifts the cap so every
-    /// chain hangs.
-    pub max_shift: MaxShift,
-}
-
-impl Default for ChainLayoutConfig {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            max_links: InlineBudget(NonZeroUsize::new(2)),
-            max_shift: MaxShift::default(),
-        }
-    }
-}
-
-/// Configuration for the `collection_layout` rule, each facet gating
-/// one shape decision and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
-#[serde(default, rename_all = "kebab-case")]
-pub struct CollectionLayoutConfig {
-    pub enabled: bool,
-    /// Expands an overflowing or over-count collection to one entry per
-    /// line. `false` suppresses every expansion and leaves the count cap
-    /// inert.
-    pub explode: bool,
-    /// Holds a literal the author laid out as a flush bracketed column
-    /// of two or more entries. `false` joins one whose single-line form
-    /// fits the budget, and every other break rejoins either way.
-    pub keep_multiline_literals: bool,
-    /// Keeps short collections on one line when each entry is an atomic
-    /// literal and the run fits the cap. `false` removes the cap and
-    /// packs by width alone.
-    pub max_atomics: InlineBudget,
-    /// Expands a dict once its entry count exceeds the cap, whatever its
-    /// width. `false` disables the count trigger.
-    pub max_dict_entries: InlineBudget,
-    /// Breaks an over-wide `key: value` at its `:` and hangs the value
-    /// beneath. `false` leaves the oversized entry on one line.
-    pub wrap_dict_entries: bool,
-}
-
-impl Default for CollectionLayoutConfig {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            explode: true,
-            keep_multiline_literals: true,
-            max_atomics: InlineBudget(NonZeroUsize::new(8)),
-            max_dict_entries: InlineBudget(NonZeroUsize::new(3)),
-            wrap_dict_entries: true,
-        }
-    }
-}
-
 /// Which budget structured docstring sections wrap to.
 ///
 /// `CodeLineLength` reuses `Config::code_line_length`.
@@ -249,31 +163,6 @@ pub enum DocstringStructuredPolicy {
     #[default]
     CodeLineLength,
     DocstringLineLength,
-}
-
-/// Configuration for the `import_layout` rule, each facet gating one
-/// statement move and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
-#[serde(default, rename_all = "kebab-case")]
-pub struct ImportLayoutConfig {
-    pub enabled: bool,
-    /// Folds repeated `from <module> import …` statements into one
-    /// statement carrying each member once, ordered as `alphabetize`
-    /// would leave it. `false` leaves each statement on its own line.
-    pub merge_members: bool,
-    /// Breaks a comma-joined `import a, b` into one `import` statement
-    /// per module. `false` keeps the comma-joined form.
-    pub split_multi_module: bool,
-}
-
-impl Default for ImportLayoutConfig {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            merge_members: true,
-            split_multi_module: true,
-        }
-    }
 }
 
 /// Settings parsed from `[tool.prose.imports]`.
@@ -575,17 +464,94 @@ impl Default for ReassignedConstantsConfig {
     }
 }
 
-/// A per-rule config a bare bool can toggle. `with_enabled` is the
-/// shorthand for the `{ enabled = <bool> }` table under
-/// `[tool.prose.rules]`, leaving every other knob at its default.
-pub(crate) trait RuleToggle: Default {
-    fn with_enabled(enabled: bool) -> Self;
-}
-
-/// Configuration for the `signature_layout` rule.
+/// Configuration for the `reflow_calls` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
-pub struct SignatureLayoutConfig {
+pub struct ReflowCallsConfig {
+    pub enabled: bool,
+    /// Explodes a call to one keyword argument per line once its argument
+    /// count exceeds the cap. `false` disables the count trigger and
+    /// leaves every call inline.
+    pub max_args: InlineBudget,
+}
+
+impl Default for ReflowCallsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_args: InlineBudget(NonZeroUsize::new(3)),
+        }
+    }
+}
+
+/// Configuration for the `reflow_collections` rule, each facet gating
+/// one shape decision and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct ReflowCollectionsConfig {
+    pub enabled: bool,
+    /// Expands an overflowing or over-count collection to one entry per
+    /// line. `false` suppresses every expansion and leaves the count cap
+    /// inert.
+    pub explode: bool,
+    /// Holds a literal the author laid out as a flush bracketed column
+    /// of two or more entries. `false` joins one whose single-line form
+    /// fits the budget, and every other break rejoins either way.
+    pub keep_multiline_literals: bool,
+    /// Keeps short collections on one line when each entry is an atomic
+    /// literal and the run fits the cap. `false` removes the cap and
+    /// packs by width alone.
+    pub max_atomics: InlineBudget,
+    /// Expands a dict once its entry count exceeds the cap, whatever its
+    /// width. `false` disables the count trigger.
+    pub max_dict_entries: InlineBudget,
+    /// Breaks an over-wide `key: value` at its `:` and hangs the value
+    /// beneath. `false` leaves the oversized entry on one line.
+    pub wrap_dict_entries: bool,
+}
+
+impl Default for ReflowCollectionsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            explode: true,
+            keep_multiline_literals: true,
+            max_atomics: InlineBudget(NonZeroUsize::new(8)),
+            max_dict_entries: InlineBudget(NonZeroUsize::new(3)),
+            wrap_dict_entries: true,
+        }
+    }
+}
+
+/// Configuration for the `reflow_imports` rule, each facet gating one
+/// statement move and defaulting `true`.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct ReflowImportsConfig {
+    pub enabled: bool,
+    /// Folds repeated `from <module> import …` statements into one
+    /// statement carrying each member once, ordered as `alphabetize-siblings`
+    /// would leave it. `false` leaves each statement on its own line.
+    pub merge_members: bool,
+    /// Breaks a comma-joined `import a, b` into one `import` statement
+    /// per module. `false` keeps the comma-joined form.
+    pub split_multi_module: bool,
+}
+
+impl Default for ReflowImportsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            merge_members: true,
+            split_multi_module: true,
+        }
+    }
+}
+
+/// Configuration for the `reflow_signatures` rule.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct ReflowSignaturesConfig {
     pub enabled: bool,
     /// Expands a signature to one parameter per line once its parameter
     /// count exceeds the cap. `false` disables the count trigger and
@@ -593,13 +559,20 @@ pub struct SignatureLayoutConfig {
     pub max_params: InlineBudget,
 }
 
-impl Default for SignatureLayoutConfig {
+impl Default for ReflowSignaturesConfig {
     fn default() -> Self {
         Self {
             enabled: true,
             max_params: InlineBudget(NonZeroUsize::new(4)),
         }
     }
+}
+
+/// A per-rule config a bare bool can toggle. `with_enabled` is the
+/// shorthand for the `{ enabled = <bool> }` table under
+/// `[tool.prose.rules]`, leaving every other knob at its default.
+pub(crate) trait RuleToggle: Default {
+    fn with_enabled(enabled: bool) -> Self;
 }
 
 /// Configuration for the `single_use_variables` rule.
@@ -624,6 +597,33 @@ impl Default for SingleUseVariablesConfig {
         Self {
             allow_pattern: Regex::new("^_").expect("`^_` compiles"),
             enabled: true,
+        }
+    }
+}
+
+/// Configuration for the `stack_method_chains` rule.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct StackMethodChainsConfig {
+    pub enabled: bool,
+    /// Breaks a method chain to one link per line once its link count
+    /// exceeds the cap. `false` disables the count trigger and leaves
+    /// only the `code-line-length` budget.
+    pub max_links: InlineBudget,
+    /// The width a hung link's dot column may sit past the indent the
+    /// broken chain opens at. A wider receiver takes the full split
+    /// instead, standing alone with every link flush beneath it. `0`
+    /// always takes that split, and `false` lifts the cap so every
+    /// chain hangs.
+    pub max_shift: MaxShift,
+}
+
+impl Default for StackMethodChainsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_links: InlineBudget(NonZeroUsize::new(2)),
+            max_shift: MaxShift::default(),
         }
     }
 }
@@ -662,13 +662,9 @@ macro_rules! impl_rule_toggle {
 
 impl_rule_toggle!(
     AlignmentConfig,
-    AlphabetizeConfig,
+    AlphabetizeSiblingsConfig,
     BandConstantsConfig,
     BareImportsConfig,
-    CallLayoutConfig,
-    ChainLayoutConfig,
-    CollectionLayoutConfig,
-    ImportLayoutConfig,
     LineOverflowConfig,
     MiscasedConstantsConfig,
     ModernizeAnnotationsConfig,
@@ -677,6 +673,10 @@ impl_rule_toggle!(
     PreferFstringConfig,
     PruneInertImportsConfig,
     ReassignedConstantsConfig,
-    SignatureLayoutConfig,
+    ReflowCallsConfig,
+    ReflowCollectionsConfig,
+    ReflowImportsConfig,
+    ReflowSignaturesConfig,
     SingleUseVariablesConfig,
+    StackMethodChainsConfig,
 );

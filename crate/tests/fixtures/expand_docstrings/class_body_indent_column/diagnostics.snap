@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/expand_docstrings/class_body_indent_column/input.py
+---
+expand-docstrings@18..31

@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/space_statements/decorated_class_docstring_and_field_cushions/input.py
+---
+space-statements@128..129
+space-statements@32..34
+space-statements@96..97

@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_calls/held_literal_value_explodes_the_list/input.py
+---
+d = emit(
+    alpha=1,
+    mapping={
+        "a": 1,
+        "b": 2,
+        "c": 3,
+        "d": 4
+    },
+    zeta=2
+)

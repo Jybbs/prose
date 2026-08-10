@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/expand_docstrings/oneliner_expands_to_three_lines/input.py
+---
+expand-docstrings@20..33

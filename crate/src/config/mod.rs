@@ -68,11 +68,11 @@ pub struct Config {
     pub cache: CacheConfig,
     /// The line budget every length-aware rule honors.
     pub code_line_length: Option<NonZeroUsize>,
-    /// The description-prose budget for `docstring-wrap`.
+    /// The description-prose budget for `wrap-docstrings`.
     pub docstring_line_length: Option<NonZeroUsize>,
     /// The budget structured docstring sections wrap to.
     pub docstring_structured_policy: DocstringStructuredPolicy,
-    /// The import-wrap budget for `import-layout`, falling back to
+    /// The import-wrap budget for `reflow-imports`, falling back to
     /// `code-line-length` when `false`.
     #[schemars(schema_with = "json_schema::optional_cap_schema")]
     #[serde(
@@ -198,8 +198,8 @@ impl Config {
         allow.iter().cloned().collect()
     }
 
-    pub(crate) fn alphabetize_enabled(&self) -> bool {
-        self.rules.alphabetize.enabled
+    pub(crate) fn alphabetize_siblings_enabled(&self) -> bool {
+        self.rules.alphabetize_siblings.enabled
     }
 
     pub(crate) fn code_width(&self) -> usize {
@@ -229,9 +229,9 @@ impl Config {
     }
 
     /// The terms a fractured argument list closes under, closing
-    /// none where `call-layout` is off.
+    /// none where `reflow-calls` is off.
     pub(crate) fn fracture_settings(&self) -> fracture::Settings {
-        fracture::Settings::from(&self.rules.call_layout)
+        fracture::Settings::from(&self.rules.reflow_calls)
     }
 
     pub(crate) fn group_imports_enabled(&self) -> bool {

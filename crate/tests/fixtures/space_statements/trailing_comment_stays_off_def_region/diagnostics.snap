@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/space_statements/trailing_comment_stays_off_def_region/input.py
+---
+space-statements@39..41

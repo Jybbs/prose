@@ -1,2 +1,2 @@
 [harness]
-rules = ["docstring-expand", "blank-lines"]
+rules = ["expand-docstrings", "space-statements"]

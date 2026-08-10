@@ -1,6 +1,6 @@
 ---
 caption : "Surfaces a docstring type group the signature or the class body already annotates."
-related : [signature-annotations, docstring-wrap, alphabetize]
+related : [signature-annotations, wrap-docstrings, alphabetize-siblings]
 layout  : doc
 ---
 

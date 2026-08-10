@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_method_chains/reflow_calls_off_holds_the_fracture/input.py
+---
+result = registry.lookup(compute(alpha,
+                                 beta)).filter(flag).render()

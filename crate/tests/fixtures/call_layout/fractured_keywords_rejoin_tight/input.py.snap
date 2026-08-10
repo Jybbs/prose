@@ -1,6 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/call_layout/fractured_keywords_rejoin_tight/input.py
----
-value = wrap(alpha, beta=2, **rest)

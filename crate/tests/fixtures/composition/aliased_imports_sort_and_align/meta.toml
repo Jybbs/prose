@@ -3,5 +3,5 @@ previewable = true
 title       = "Aliased Imports Sort Then Align Their `as` Column"
 
 description = '''
-A run of aliased module imports arrives out of alphabetical order. **`alphabetize` reorders the statements first, then `align-imports` settles the `as` keyword onto a shared column** across the sorted run.
+A run of aliased module imports arrives out of alphabetical order. **`alphabetize-siblings` reorders the statements first, then `align-imports` settles the `as` keyword onto a shared column** across the sorted run.
 '''

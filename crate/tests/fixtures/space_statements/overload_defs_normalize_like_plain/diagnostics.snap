@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/space_statements/overload_defs_normalize_like_plain/input.py
+---
+space-statements@112..113
+space-statements@27..29
+space-statements@70..71

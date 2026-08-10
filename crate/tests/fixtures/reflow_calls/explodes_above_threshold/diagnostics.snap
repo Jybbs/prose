@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_calls/explodes_above_threshold/input.py
+---
+reflow-calls@99..109

@@ -1,7 +1,7 @@
 //! Partitions a module's imports into the canonical sections
 //! `__future__` → bare → external `from` → local-package, relocating
 //! each contiguous import run within a section into group order while
-//! leaving the names within a group to `alphabetize`. The first-party
+//! leaving the names within a group to `alphabetize-siblings`. The first-party
 //! list under `[imports]` decides local-package membership.
 
 use std::{borrow::Cow, ops::Range};
@@ -84,7 +84,7 @@ impl Walker<'_> {
     /// names within a group left in place. Emits one edit only when the
     /// partition rewrites the order, seating every import tight against
     /// its neighbor and leaving the blank dividing one section from the
-    /// next to `blank-lines`.
+    /// next to `space-statements`.
     fn group_run(&mut self, body: &[Stmt], blocks: &[TextRange], run: Range<usize>) {
         let items = &body[run.clone()];
         let mut order: Vec<usize> = (0..items.len()).collect();

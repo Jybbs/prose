@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/strip_stranded_padding/colon_gap_normalizes_by_context/input.py
+---
+mapping = {"only": 1}
+
+
+def handler(payload: dict):
+    result: int = compute()

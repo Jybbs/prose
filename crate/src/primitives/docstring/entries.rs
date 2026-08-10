@@ -235,7 +235,7 @@ pub(crate) fn entry_carrying_sections<'src>(
 /// Every run of entries `lit`'s body carries in source order, one per
 /// entry-carrying Google-style section and one per contiguous run of
 /// type-bearing heads at the body indent outside every section. A
-/// sectionless run gathers the heads `docstring-wrap` passes through
+/// sectionless run gathers the heads `wrap-docstrings` passes through
 /// verbatim, leaving out a head that reflows into the prose above it.
 pub(crate) fn entry_runs<'src>(
     source: &'src Source,

@@ -1,9 +1,9 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/composition/method_docstring_openers_split_and_cushion/input.py
+input_file: crate/tests/fixtures/composition/method_docstring_openers_split_and_cushion/input.py
 ---
-blank-lines@14..15
-blank-lines@144..145
-docstring-frame@181..247
-docstring-frame@49..113
+frame-docstrings@181..247
+frame-docstrings@49..113
+space-statements@14..15
+space-statements@144..145

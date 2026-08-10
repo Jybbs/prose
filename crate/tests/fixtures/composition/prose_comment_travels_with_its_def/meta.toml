@@ -3,5 +3,5 @@ previewable = false
 title       = "A Prose Comment Travels With the Def It Heads"
 
 description = '''
-A prose comment block sits between the module constants and a def-run that `alphabetize` reorders. The block binds to `rgb_to_yiq`, the definition the author wrote it above, so the comment **moves with that def** rather than being handed to whichever definition sorts into the slot beneath it.
+A prose comment block sits between the module constants and a def-run that `alphabetize-siblings` reorders. The block binds to `rgb_to_yiq`, the definition the author wrote it above, so the comment **moves with that def** rather than being handed to whichever definition sorts into the slot beneath it.
 '''

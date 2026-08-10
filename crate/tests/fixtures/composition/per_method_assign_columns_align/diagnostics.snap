@@ -5,6 +5,6 @@ input_file: tests/fixtures/composition/per_method_assign_columns_align/input.py
 ---
 align-equals@174..175
 align-equals@48..92
-alphabetize@23..269
-blank-lines@136..137
-blank-lines@14..15
+alphabetize-siblings@23..269
+space-statements@136..137
+space-statements@14..15

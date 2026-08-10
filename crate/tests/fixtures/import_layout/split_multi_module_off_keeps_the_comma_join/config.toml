@@ -1,2 +1,0 @@
-[rules]
-import-layout = { split-multi-module = false }

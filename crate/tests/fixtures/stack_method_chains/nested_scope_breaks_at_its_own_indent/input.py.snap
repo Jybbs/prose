@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_method_chains/nested_scope_breaks_at_its_own_indent/input.py
+---
+def build():
+    return (
+        query.filter(a)
+             .order(b)
+             .limit(c)
+    )

@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_collections/count_nests_outermost_first/input.py
+---
+reflow-collections@76..132
+reflow-collections@9..58
