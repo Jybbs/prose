@@ -352,8 +352,6 @@ fn flush_bracket_open(block: &str) -> Option<(&str, &str)> {
 
 #[cfg(test)]
 mod tests {
-    use std::assert_matches;
-
     use rstest::rstest;
     use ruff_text_size::Ranged;
 
