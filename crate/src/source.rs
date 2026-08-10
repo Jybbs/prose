@@ -345,6 +345,26 @@ impl Source {
         TextRange::new(offset, end)
     }
 
+    /// Returns the range from the start of `offset`'s logical line to
+    /// `offset`, the text already placed ahead of it on that line. A
+    /// break inside a bracketed construct carries `NonLogicalNewline`,
+    /// so the range covers the whole statement rather than one row.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `offset` falls inside a token rather than on a
+    /// boundary between two.
+    pub fn logical_line_start(&self, offset: TextSize) -> TextRange {
+        let start = self
+            .tokens()
+            .before(offset)
+            .iter()
+            .rev()
+            .find(|token| token.kind() == TokenKind::Newline)
+            .map_or_else(TextSize::default, Ranged::end);
+        TextRange::new(start, offset)
+    }
+
     /// Returns the range from `offset` to the end of its physical row,
     /// the columns a construct ending at `offset` shares its row with
     /// once it joins. A construct inside brackets leaves its logical

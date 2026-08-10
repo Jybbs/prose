@@ -8,7 +8,10 @@ use ruff_python_ast::ExprCall;
 use ruff_text_size::{Ranged, TextSize};
 
 use super::Exploder;
-use crate::primitives::{edit::apply_inline_edits, inline::end_column};
+use crate::primitives::{
+    edit::apply_inline_edits,
+    inline::{end_column, indent_width},
+};
 
 impl<'a> Exploder<'a> {
     /// The column `offset` reaches once this walk's subtree is placed,
@@ -31,11 +34,16 @@ impl<'a> Exploder<'a> {
     }
 
     /// The indent an exploded closing `)` drops to for `call`, this
-    /// walk's own indent inside a relocated value and the call's source
-    /// line indent otherwise.
+    /// walk's own indent inside a relocated value and otherwise the
+    /// indent of the row this walk has already placed ahead of the call,
+    /// which an earlier edit on the same statement may have moved.
     pub(super) fn indent_for(&self, call: &ExprCall) -> usize {
-        self.indent
-            .unwrap_or_else(|| self.source.line_indent_width(call.start()))
+        if let Some(indent) = self.indent {
+            return indent;
+        }
+        let head = self.source.logical_line_start(call.start());
+        let placed = apply_inline_edits(self.source, head, &self.edits);
+        indent_width(placed.rsplit('\n').next().unwrap_or(&placed))
     }
 
     /// The column `call`'s `(` reaches once `callee` renders. A call
