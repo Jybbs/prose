@@ -17,7 +17,8 @@ use crate::{
         layout::is_layoutable,
         orderer::{
             adjacent_slots, any_sibling_shares_line, assemble_blocks, assemble_separated,
-            block_ranges, permute_runs,
+            block_ranges, opens_its_line, permute_runs, reordered_lines_fit,
+            swap_relocates_spanning, swap_span_commented,
         },
         range::blocks_span,
         slots::runs_where,
@@ -35,6 +36,7 @@ pub(super) fn rewrite_dict_text(
     source: &Source,
     d: &ExprDict,
     edits: &[Edit],
+    code_width: usize,
 ) -> Option<(TextRange, String)> {
     if d.len() < 2 || has_keep_marker(source, d) {
         return None;
@@ -44,6 +46,14 @@ pub(super) fn rewrite_dict_text(
     // packs entries onto a shared physical line has no such decomposition, so a
     // block reorder would reflow it. Decline, leaving it in source order.
     if multi_line && any_sibling_shares_line(source, &d.items) {
+        return None;
+    }
+    // A first entry trailing the `{` on its row has no whole row to move, so
+    // the reorder swaps bare entry slices in place, the separators and
+    // indents kept in the verbatim gaps. A comment anywhere in the span
+    // would land against the wrong entry, holding the group instead.
+    let head_shared = multi_line && !opens_its_line(source, d.items[0].start());
+    if head_shared && swap_span_commented(source, &d.items) {
         return None;
     }
     // Widen each item to its value's paren-aware end, so a parenthesized
@@ -57,7 +67,8 @@ pub(super) fn rewrite_dict_text(
             TextRange::new(item.start(), value.end())
         })
         .collect();
-    let expanded = multi_line.then(|| block_ranges(source, &item_ranges, d.range()));
+    let expanded =
+        (multi_line && !head_shared).then(|| block_ranges(source, &item_ranges, d.range()));
     let blocks = expanded.as_deref().unwrap_or(&item_ranges);
     let span = blocks_span(blocks);
     let block_texts: Vec<_> = blocks
@@ -71,7 +82,10 @@ pub(super) fn rewrite_dict_text(
         runs_where(&d.items, |item| item.key.is_some()),
         |item| dict_sort_key(source, item),
     );
-    let assembled = if multi_line {
+    if head_shared && swap_relocates_spanning(source, &order, |idx| item_ranges[idx]) {
+        return None;
+    }
+    let assembled = if multi_line && !head_shared {
         let divider_slots = partition_divider_slots(source, &order, &d.items, &item_ranges);
         let source_last_has_comma = source.trailing_comma(d.range()).is_some();
         let value_ends: Vec<TextSize> = item_ranges.iter().map(Ranged::end).collect();
@@ -87,6 +101,11 @@ pub(super) fn rewrite_dict_text(
         assemble_blocks(source, blocks, &block_texts, &order, |_| None)
     };
     if !permuted && !any_owned(&block_texts) && assembled == source.slice(span) {
+        return None;
+    }
+    // A head-shared swap whose rows neither fit the budget nor keep their
+    // source width holds the dict in source order.
+    if head_shared && !reordered_lines_fit(source, span, &assembled, code_width) {
         return None;
     }
     // Decline the reorder when the reassembled dict no longer parses, the

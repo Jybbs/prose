@@ -3,5 +3,5 @@ previewable = false
 title       = "max-tiers = 1 Holds the Band Tight"
 
 description = '''
-`max-tiers = 1` holds the whole band tight, so no tier boundary opens a blank line.
+`X = A + B` and `Y = A * B` derive from `A` and `B`, so the band holds two dependency tiers. With `max-tiers = 1` no tier boundary opens a blank line, leaving the four assignments as one tight run with the literal tier still seated first.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Comment Pins a Comprehension at Its Source Shape"
 
 description = '''
-A comprehension carrying a comment holds its source line breaks even when its single-line form would fit, since folding the soft-wraps would swallow the comment.
+The `squares` comprehension would fit on one line, but the comment trailing `value * value` has no place in the joined form, so collapsing would drop it. The comment therefore pins the comprehension at its source line breaks.
 '''

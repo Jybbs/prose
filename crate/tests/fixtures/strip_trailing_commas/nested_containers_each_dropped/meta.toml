@@ -3,5 +3,5 @@ previewable = true
 title       = "Nested Multi-Line Collections Strip Independently"
 
 description = '''
-An outer call wrapping an inner dict and an inner list each carry a trailing `,`. **Every container emits its own separate deletion edit**, and the edits do not interact across nesting levels.
+`Posting(...)`'s call, its `keywords` list, its `metadata` dict, and `metadata`'s nested `tags` list each carry a trailing `,` before their own closing bracket. **`strip-trailing-commas` emits a separate deletion edit for each container**, so nesting the four inside one another does not make the edits interact.
 '''

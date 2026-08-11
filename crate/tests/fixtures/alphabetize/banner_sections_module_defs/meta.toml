@@ -3,5 +3,5 @@ previewable = true
 title       = "A Banner Sections Module Definitions"
 
 description = '''
-A banner at module scope divides the top-level functions into sections, each sorting on its own while the dividers stay between the clusters they separate.
+The `# ===== Parsing =====` and `# ===== Emitting =====` banners divide the top-level functions into sections that sort on their own, `lex` moving above `tokenize` and `emit` above `render`. Each divider stays put between the clusters it separates, so no function crosses from one section into the other.
 '''

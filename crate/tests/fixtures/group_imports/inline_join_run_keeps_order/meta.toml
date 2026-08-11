@@ -3,5 +3,5 @@ previewable = false
 title       = "A Semicolon-Joined Run Keeps Source Order"
 
 description = '''
-Two imports packed onto one physical line with `;` have no one-per-line block to relocate, so the rule **leaves them untouched** rather than risk abutting the displaced sibling.
+`from collections import abc` and `import sys` share one physical line, joined by a `;`. The partition relocates whole one-per-line statements, and neither of these owns its line, so the rule **leaves the pair untouched** in source order.
 '''

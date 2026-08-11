@@ -3,5 +3,5 @@ previewable = true
 title       = "A Run inside a Bracket Breaks without Adding Parentheses"
 
 description = '''
-A run the enclosing call's parentheses already carry **breaks in place**, each later literal landing at the indent of the row the run opens on rather than gaining a nested pair of its own.
+`emit`'s call parentheses already enclose the two-clause run, so `stack-adjacent-strings` **breaks the run in place** rather than wrapping it in a nested pair of its own. `"and the trailing clause"` lands at the indent of the row the run opens on, one literal per line inside `emit(...)`.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Value Spanning Two Lines Holds"
 
 description = '''
-A replacement field carries no line break below the PEP 701 floor.
+The tuple's one member, `first + second`, is written across two lines. Below the PEP 701 floor a replacement field cannot contain a line break, and the `target-version = "3.10"` config sits below that floor, so the expression stays outside the template and the statement holds.
 '''

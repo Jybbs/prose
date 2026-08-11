@@ -3,5 +3,5 @@ previewable = true
 title       = "A Chained Compare Anchors on Its First Operator"
 
 description = '''
-A chained compare such as `0 < bar < 100` **anchors on its first operator**. The remaining operators stay in place and take no part in the column math, while the surrounding single-comparator rows align around it.
+The chained compare `0 < bar < 100` **anchors on its first operator**, so only that `<` moves into the column shared with the `==` rows for `foo` and `qux`. The second `<` stays in place and takes no part in the column math.
 '''

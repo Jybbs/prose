@@ -3,5 +3,5 @@ previewable = false
 title       = "A Self-Referential Type Alias Bands With Its Run"
 
 description = '''
-A recursive `type` alias names itself in its own value, which constrains nothing about the order the band seats it in. The alias and the constant beside it **both hoist above the definition**, the self-reference neither pinning the alias nor declining the run around it.
+`type Node = Node | None` names itself in its own value, a reference that resolves to the alias being defined and so adds no dependency on anything else in the module. The alias and `LIMIT = 5` **both hoist above `build`** into the leading band, the self-reference neither pinning `Node` where it sat nor blocking the move of the run around it.
 '''

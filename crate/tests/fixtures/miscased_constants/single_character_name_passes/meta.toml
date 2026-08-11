@@ -3,5 +3,5 @@ previewable = true
 title       = "Single-Character Names Are Spared"
 
 description = '''
-A lone letter at module scope usually names a mathematical scalar, and its `SCREAMING` form is a single capital, which linear algebra reads as a matrix. So `x` and `n` stay silent, where the suggestion would mislead more than help.
+`x = 3` and `n = 100` assign single-letter names at module scope, the shape that usually names a mathematical scalar. Uppercasing one leaves a lone capital, which by mathematical convention reads as a matrix rather than a constant, so the lint exempts single-character names instead of suggesting a rename that would mislead.
 '''

@@ -4,5 +4,5 @@ previewable = true
 title       = "A Repeated Import and an Unread Member Both Go"
 
 description = '''
-A module repeats `import os` and names `Any` on a shared `typing` line that nothing reads. **The repeat drops because the first import already ran the module, and `Any` drops off its line**, leaving `Final` and the surviving `os` binding in place.
+The module imports `os` twice and imports `Any` alongside `Final` from `typing`, though only `os.getcwd()` and `Final` are read. **The second `import os` drops because it repeats a binding the first import already made, and `Any` drops off its line** for going unread, leaving the surviving `os` import and `Final` in place.
 '''

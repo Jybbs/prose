@@ -3,5 +3,5 @@ previewable = false
 title       = "Method Lookup Skips the Class Scope"
 
 description = '''
-A class-body binding is **invisible to a nested method's lookup chain**, so the method's reference to the same name walks past the class scope and resolves to the outer binding instead.
+`get` returns `x` from inside a method, and a method's lookup chain skips the class scope, so **the read resolves to the module-level `x = "outer"` rather than the class-body `x = "inner"`**. The snapshot shows the module `x` carrying the read from `return x` while `C`'s own `x` has none.
 '''

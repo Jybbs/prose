@@ -3,5 +3,5 @@ previewable = true
 title       = "The Import Removes Cleanly from a Mixed Import Block"
 
 description = '''
-The `annotations` alias leads a multi-name `from __future__ import annotations, division`. **Only the `annotations` entry is removed**, taking its separator comma with it, leaving `division` as the sole import.
+`annotations` sits first in the two-name `from __future__ import annotations, division`, and the file holds no annotations that would justify it. **Only the `annotations` entry is removed**, taking the `,` after it along, leaving `from __future__ import division` as the surviving line.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A TypeAlias-Annotated Target Is Exempt"
 
 description = '''
-A `TypeAlias` annotation marks the target a type rather than a constant, so `Vector` skips the gate on the annotation alone, ahead of the value-shape read that would spare it anyway.
+`Vector: TypeAlias = list[float]` carries a `TypeAlias` annotation, which marks the target as a type rather than a constant. The annotation alone exempts `Vector`, before the rule ever reads the assigned value, whose `list[float]` type expression would exempt it anyway.
 '''

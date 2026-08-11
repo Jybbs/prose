@@ -3,5 +3,5 @@ previewable = false
 title       = "A Dotted Alias Is Read Under the Name It Binds"
 
 description = '''
-`import os.path as p` binds `p` and imports `os.path`, the two names diverging as far as an import lets them. **Nothing reads `p`, so the line goes.**
+`import os.path as p` imports the module `os.path` but binds only the alias `p`, so reads are counted against `p` rather than `os`. **Nothing in the file reads `p`, so the import line is removed**, leaving only `value = 1`.
 '''

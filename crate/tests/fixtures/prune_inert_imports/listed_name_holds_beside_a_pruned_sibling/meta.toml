@@ -3,5 +3,5 @@ previewable = true
 title       = "A Listed Name Holds While Its Sibling Prunes"
 
 description = '''
-`__all__` publishes `dumps` and says nothing of `loads`, and neither is read inside the module. **The listed name holds its slot on the line while the unlisted one prunes off it.**
+Neither `dumps` nor `loads` is read inside the module, but `__all__ = ["dumps"]` marks `dumps` as a re-export. **The listed name holds its place on the import line while the unlisted `loads` is pruned off it**, leaving `from json import dumps`.
 '''

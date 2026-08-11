@@ -3,5 +3,5 @@ previewable = false
 title       = "`Attributes:` Entries Sort, Carrying Their Continuations"
 
 description = '''
-The `Attributes:` section **reorders alphabetically by attribute name**, with each entry's hanging continuation lines carried along to its new position.
+`Config`'s `Attributes:` entries **reorder alphabetically by attribute name**, settling into `retries`, `timeout`, `verbose`. The `verbose` description spills onto an indented continuation line, and that hanging line travels with its entry to the new last position.
 '''

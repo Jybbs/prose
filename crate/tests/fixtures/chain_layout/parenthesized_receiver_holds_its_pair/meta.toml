@@ -4,5 +4,5 @@ previewable = false
 title       = "A Parenthesized Receiver Keeps Its Grouping Parens"
 
 description = '''
-The receiver runs from the chain's own opening column to the dot below the first link, so a grouping pair the receiver needs for precedence travels with it onto the head row.
+The receiver `(alpha + beta)` needs its parentheses, because dropping them would attach `.filter` to `beta` alone. Breaking the chain carries the pair with the receiver onto the head row, `(alpha + beta).filter(a)` opening the block while `.order` and `.limit` stack beneath its dot.
 '''

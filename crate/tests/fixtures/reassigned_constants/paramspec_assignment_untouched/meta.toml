@@ -3,5 +3,5 @@ previewable = false
 title       = "ParamSpec Bindings Pass Through Untouched"
 
 description = '''
-A `ParamSpec("P")` binding uses a single-letter type-parameter name rather than `SCREAMING_CASE` and is **structural by definition**, so the rule leaves it untouched and emits no diagnostic.
+`P = ParamSpec("P")` binds a single-letter type-parameter name rather than the `SCREAMING_CASE` shape the rule targets. A `ParamSpec` binding is also **structural by definition**, declaring a parameter specification rather than storing a value, so the rule emits no diagnostic.
 '''

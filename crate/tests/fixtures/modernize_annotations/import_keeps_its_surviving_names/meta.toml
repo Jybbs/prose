@@ -3,5 +3,5 @@ previewable = true
 title       = "Only the Names the Rewrite Read Are Dropped"
 
 description = '''
-`cast` is read at runtime and survives, so the alias beside it goes on its own rather than the whole import line.
+`Optional[int]` rewrites to `int | None`, leaving `Optional` unread, whereas the `cast(object, value)` call still reads `cast` at runtime. Only `Optional` is dropped from the import, which survives as `from typing import cast`.
 '''

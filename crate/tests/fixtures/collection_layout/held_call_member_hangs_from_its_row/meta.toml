@@ -4,5 +4,5 @@ previewable = true
 title       = "A Held Call Member Hangs From the Item Column"
 
 description = '''
-A member the expansion holds rather than lays out itself moves with the row it lands on, its block hanging from the item column instead of staying at the column the source wrote it at.
+Expanding `nested` puts `alpha`, the `helper` call, and `zeta` each on their own row, and the already multi-line call is held rather than re-laid-out. Its block moves with the row it lands on, hanging from the item column with `beta` and `gamma` re-indented beneath `helper(` instead of staying at the columns the source wrote them at.
 '''

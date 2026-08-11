@@ -3,5 +3,5 @@ previewable = false
 title       = "A Re-Bound Target Skips the Run"
 
 description = '''
-A run that re-binds the same target name **skips entirely**. The second `LIMIT` shadows the first within the module, and reordering could invert the source-defined sequence in ways the rule does not pin.
+`LIMIT` binds twice in one run, first to `10` and again to `20`, and the later write is the one the module keeps. Reordering could swap the two writes and change the final value, so **the whole run skips**, leaving `ALPHA = 1` where it sits between them.
 '''

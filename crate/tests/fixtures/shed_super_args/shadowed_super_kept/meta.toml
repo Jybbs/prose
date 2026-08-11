@@ -3,5 +3,5 @@ previewable = false
 title       = "A Module Binding `super` Keeps Every Call Written"
 
 description = '''
-A module that binds the name `super` itself leaves every parameterized call untouched, since the bare form would reach that binding rather than the builtin.
+The module defines `def super(*args):` at module level, rebinding the name `super` itself ahead of `Child.read`'s call to `super(Child, self).read()`. Every parameterized call stays untouched, since the bare form would reach that local binding rather than the `super` builtin.
 '''

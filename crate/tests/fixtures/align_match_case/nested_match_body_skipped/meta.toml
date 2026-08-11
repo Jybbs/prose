@@ -3,5 +3,5 @@ previewable = true
 title       = "Nested Matches Align Independently"
 
 description = '''
-An outer arm whose body is itself a `match` disqualifies and stays multi-line, while the lone sibling arm collapses without padding. **The inner `match` is visited as its own group**, collapsing and aligning its three single-statement arms on a separate `:` column.
+`case "wrap"` holds a whole `match inner:` as its body, so it cannot fold onto one line and stays multi-line, whereas `case "skip"` collapses to `value = 0` with its `:` hugging the pattern because it aligns alone. **The inner `match` is processed as its own group**, folding `"alpha"`, `"beta"`, and `"gamma"` onto their `case` lines and aligning their `:` on a separate column.
 '''

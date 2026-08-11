@@ -3,5 +3,5 @@ previewable = true
 title       = "Trailing Comments Travel with Their Entries"
 
 description = '''
-Reordering a multi-line dict keeps every entry's trailing `#` comment, with the separator `,` placed after the value and before the comment. Values carrying their own `#`, such as hex color strings, **stay intact** because the comma resolves against the value span rather than a raw `#` scan.
+Sorting `theme` moves `"ruler"` below `"accent"` and `"background"`, and each entry's trailing `#` comment travels with its entry, the separator `,` sitting after the value and before the comment. Values that contain their own `#`, like the hex string `"#ff8800"`, **stay intact** because the comma is placed from the parsed value span rather than from the first `#` on the line.
 '''

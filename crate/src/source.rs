@@ -21,7 +21,10 @@ use thiserror::Error;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    primitives::{binding::BindingAnalysis, inline::indent_width, range::paren_aware_range},
+    primitives::{
+        binding::BindingAnalysis, comments::trailing_comment_start, inline::indent_width,
+        range::paren_aware_range,
+    },
     suppression::SuppressionMap,
 };
 
@@ -342,6 +345,48 @@ impl Source {
         TextRange::new(offset, end)
     }
 
+    /// Returns the range from the start of `offset`'s logical line to
+    /// `offset`, the text already placed ahead of it on that line. A
+    /// break inside a bracketed construct carries `NonLogicalNewline`,
+    /// so the range covers the whole statement rather than one row.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `offset` falls inside a token rather than on a
+    /// boundary between two.
+    pub fn logical_line_start(&self, offset: TextSize) -> TextRange {
+        let start = self
+            .tokens()
+            .before(offset)
+            .iter()
+            .rev()
+            .find(|token| token.kind() == TokenKind::Newline)
+            .map_or_else(TextSize::default, Ranged::end);
+        TextRange::new(start, offset)
+    }
+
+    /// Returns the range from `offset` to the end of its physical row,
+    /// the columns a construct ending at `offset` shares its row with
+    /// once it joins. A construct inside brackets leaves its logical
+    /// line open past that row, so [`logical_line_tail`](Self::logical_line_tail)
+    /// would charge every row beneath it.
+    pub fn row_tail(&self, offset: TextSize) -> TextRange {
+        TextRange::new(offset, self.text().line_end(offset))
+    }
+
+    /// The display width of the code from `offset` to the end of its
+    /// physical row, the columns a construct ending there shares its row
+    /// with once it joins. A trailing comment closes the measure, since
+    /// charging one against the code budget would let a comment reshape
+    /// the code it annotates.
+    pub fn row_tail_width(&self, offset: TextSize) -> usize {
+        let tail = self.row_tail(offset);
+        let end = trailing_comment_start(self, offset)
+            .filter(|start| tail.contains(*start))
+            .unwrap_or(tail.end());
+        self.slice(TextRange::new(offset, end)).trim_end().width()
+    }
+
     /// Returns the range spanning the entire source text.
     pub fn module_range(&self) -> TextRange {
         TextRange::up_to(self.text().text_len())
@@ -399,7 +444,7 @@ impl Source {
             cell_offsets,
             parsed,
         );
-        next.cell_numbers = self.cell_numbers.clone();
+        next.cell_numbers.clone_from(&self.cell_numbers);
         Ok(next)
     }
 
@@ -438,6 +483,17 @@ impl Source {
         self.file.to_source_code().source_location(offset, encoding)
     }
 
+    /// `expr`'s range, widened to its recovered parentheses only where
+    /// its own text spans rows, the pair holding those rows together
+    /// once the text around it joins.
+    pub(crate) fn spanning_paren_range(&self, expr: ExprRef, parent: AnyNodeRef) -> TextRange {
+        if self.contains_line_break(expr.range()) {
+            self.paren_aware_range(expr, parent)
+        } else {
+            expr.range()
+        }
+    }
+
     /// Returns the suppression index built during parsing.
     pub(crate) fn suppression_map(&self) -> &SuppressionMap {
         &self.suppression
@@ -459,6 +515,19 @@ impl Source {
     /// Borrows the token stream produced during parsing.
     pub fn tokens(&self) -> &Tokens {
         self.parsed.tokens()
+    }
+
+    /// Yields the tokens overlapping `range`, opening at the nearest
+    /// token start at or before `range.start()`, so a boundary inside a
+    /// token still reaches the token spanning it.
+    pub(crate) fn tokens_overlapping(&self, range: TextRange) -> impl Iterator<Item = &Token> {
+        let tokens = self.tokens();
+        let first = tokens
+            .binary_search_by_start(range.start())
+            .unwrap_or_else(|slot| slot.saturating_sub(1));
+        tokens[first..]
+            .iter()
+            .take_while(move |token| token.start() < range.end())
     }
 
     /// Returns the range of the trailing comma immediately before the

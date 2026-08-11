@@ -1,7 +1,7 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Union-Valued Dict Expands, Sorts, and Aligns Colons"
 
 description = '''
-An overflowing single-line dict whose values are `Optional` and `Union` expressions. **The dict expands, sorts its keys, and aligns the `:` column**, leaving the legacy union values on the right untouched.
+The one-line `ALIASES` dict overflows the budget, and its values are `Optional` and `Union` expressions. **`collection-layout` explodes it to one entry per row, `alphabetize` sorts the keys so `"extended_label"` leads, and `align-colons` pads every key to a shared `:` column**, while the legacy union values on the right pass through unchanged.
 '''

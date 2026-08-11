@@ -3,7 +3,5 @@ previewable = false
 title       = "A `u` Prefix Holds"
 
 description = '''
-An f-string carries no `u` marker, so the template holds. `normalize-literals`
-drops the prefix earlier in the pipeline, leaving this the shape a project
-reaches with `unify-prefixes` off.
+Python accepts `u"..."` but no `uf"..."`, so the `u`-prefixed template cannot become an f-string and the line holds. In the full pipeline `normalize-literals` drops the prefix before this rule runs, leaving this the shape a project reaches with `unify-prefixes` off.
 '''

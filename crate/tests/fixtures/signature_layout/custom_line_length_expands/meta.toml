@@ -3,5 +3,5 @@ previewable = false
 title       = "Custom Line-Length Budget Drives Expansion"
 
 description = '''
-A three-parameter signature that fits the default `code-line-length` of 88 but overflows a custom budget of 50 **expands under the custom budget**. The length trigger consumes the configured threshold rather than a hard-coded one.
+`render`'s three parameters stay under `max-params`, so only line length can trigger a reshape. With `code-line-length` configured to `50`, `render`'s inline form overflows that budget though it would fit the default of `88`, so `signature-layout` **expands `left`, `palette`, and `right` onto their own lines**.
 '''

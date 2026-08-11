@@ -4,5 +4,5 @@ previewable = true
 title       = "An Outer Call Measures Its Nested Fracture Joined"
 
 description = '''
-An argument carrying a fractured call of its own measures at that call joined rather than at the truncated width its opening row reads, so the enclosing call reaches the same explode decision on the first pass that it would reach once the nested rejoin lands.
+The `TypeError` call and the `format` call inside it both arrive fractured. Measuring whether the outer call fits back on one line counts the nested call at its joined width rather than the truncated width its opening row shows, so the whole `raise` collapses onto one line in a single pass instead of waiting for the inner rejoin to land first.
 '''

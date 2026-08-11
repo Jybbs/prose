@@ -3,5 +3,5 @@ previewable = true
 title       = "A Base Class Pins Its Subclass After It"
 
 description = '''
-`Alpha` names `Beta` as a base class, so the alphabetical sort holds `Beta` ahead of `Alpha` instead of moving the subclass above the name it inherits, leaving the module import-safe.
+`class Alpha(Beta)` inherits from the class defined above it, and `Beta` must already exist when `Alpha`'s header evaluates. Alphabetizing would move `Alpha` above the name it inherits and the module would fail to import, so the base-class reference holds `Beta` ahead of `Alpha` and the file passes through unchanged.
 '''

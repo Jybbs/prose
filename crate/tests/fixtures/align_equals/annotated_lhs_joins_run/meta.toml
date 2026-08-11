@@ -3,5 +3,5 @@ previewable = true
 title       = "Type Annotations Sit inside the Alignment"
 
 description = '''
-An annotated assignment carrying an initializer like `beta: int = 2` **joins the run**, its effective left-hand width extending through the annotation so its `=` lands on the shared column with the plain bindings alongside.
+The annotated assignment `beta: int = 2` **joins the run** with the plain bindings `alpha` and `gamma_long`. Its left-hand width runs through the annotation, so the `int` counts toward the column and its `=` lands in line with the other two.
 '''

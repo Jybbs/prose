@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize/head_sharing_keyword_only_params_swap_in_place/input.py
+---
+def extract(member, path="", set_attrs=True, *, filter=None,
+            numeric_owner=False):
+    pass

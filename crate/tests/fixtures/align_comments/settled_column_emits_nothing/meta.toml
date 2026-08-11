@@ -3,5 +3,5 @@ previewable = true
 title       = "A Run Already on Its Column Emits Nothing"
 
 description = '''
-The pair qualifies as a column and resolves to the offset it already occupies, so every row's target matches what it carries and no edit is produced. The rule reports nothing rather than reporting a fix that would change no bytes.
+`seed()` and `flush()` form a run whose column resolves to the offset the two `#` already occupy, so every row's target matches what it carries and no edit is produced. The rule reports nothing rather than reporting a fix that would change no bytes.
 '''

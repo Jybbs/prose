@@ -4,5 +4,5 @@ previewable = false
 title       = "A `false` `max-shift` Hangs Every Chain"
 
 description = '''
-Lifting the cap hangs each dot beneath the head whatever the receiver's width, so the full split never fires.
+`max-shift = false` lifts the cap on how deep the dot column may sit, so `.order` and `.limit` hang aligned beneath the dot of `an_extremely_long_receiver_name` however wide that receiver runs. The full split that would otherwise catch an over-shift chain never fires.
 '''

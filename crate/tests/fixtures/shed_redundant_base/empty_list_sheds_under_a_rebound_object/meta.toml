@@ -3,5 +3,5 @@ previewable = false
 title       = "An Empty List Sheds Even Where `object` Is Rebound"
 
 description = '''
-A module that rebinds `object` holds every header naming it as a base, and a header carrying no base at all still sheds its parentheses, since an empty list has nothing to survive either way.
+`object = LegacyBase` rebinds the name, so any header in this module naming `object` as a base would be held rather than shed. `class Rebound():` names no base at all, and its empty parentheses still drop, leaving `class Rebound:`, because there is no `object` base whose meaning the rebinding could change.
 '''

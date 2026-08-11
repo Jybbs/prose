@@ -3,5 +3,5 @@ previewable = true
 title       = "Dunder Names like `__all__` Are Recognized as Runtime Sentinels"
 
 description = '''
-Dunder names such as `__version__`, `__all__`, and `__author__` are module-level by convention, so the rule **leaves them untouched** and emits no diagnostic for any of them.
+`__version__`, `__all__`, and `__author__` each lead with an underscore, so none of them match the `SCREAMING_CASE` pattern the rule looks for. **The rule leaves them untouched and emits no diagnostic for any of them**, dunder names carrying their own semantics distinct from a reassigned constant.
 '''

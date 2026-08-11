@@ -3,5 +3,5 @@ previewable = false
 title       = "An Ordered Commented Dict Stays Untouched"
 
 description = '''
-A dict already in key order keeps its trailing `#` comments and magic trailing `,` exactly as written, emitting **no edit**. The reassembly reproduces the source verbatim, so an ordered commented dict is left alone.
+The `palette` keys `"amber"`, `"cyan"`, and `"magenta"` already sit in alphabetical order, so the sort emits **no edit**. The trailing `#` comments and the magic trailing `,` come through exactly as written, leaving the dict untouched.
 '''

@@ -84,36 +84,34 @@ pub(super) fn module_band_plan<'src>(
     let mut carries: Vec<Carry> = Vec::new();
     let mut sites: Vec<ConstSite<'src>> = Vec::new();
     for (idx, stmt) in body.iter().enumerate() {
-        // A `# prose: off` span or a skip directive pins its statement, so
-        // a reorder never moves a member the pipeline would then drop the
-        // whole group for.
-        if suppression.suppresses(stmt, BandConstants::SLUG) {
-            continue;
-        }
-        // The own-line comment run left standing between two blocks, one
-        // `member_block` declined to bind because it anchors in place,
-        // opens at another indent, or sits behind a notebook cell wall.
-        // The member beneath it pins, bounding the bands to its side so
-        // no reorder drops the run out of the gap holding it. A cell wall
-        // already holds a run clear of the cell-local reorder below it,
-        // leaving a constant behind one free to band.
+        // A `# prose: off` span or a skip directive pins its statement, and
+        // so does an own-line comment run left standing between two blocks,
+        // one `member_block` declined to bind because it anchors in place,
+        // opens at another indent, or sits behind a notebook cell wall. A
+        // pinned member holds its slot, bounding the bands to its side so
+        // no reorder drops the run out of the gap holding it, while its
+        // name still binds below, so a reference to a pinned definition or
+        // import reads as resolved. A cell wall already holds a run clear
+        // of the cell-local reorder below it, leaving a constant behind one
+        // free to band.
         let gap_comment = idx.checked_sub(1).and_then(|prev| {
             leading_comment_block(source, blocks[prev].end(), blocks[idx].start())
         });
         let const_target = const_binding(stmt);
-        if gap_comment.is_some_and(|block| {
-            const_target.is_none()
-                || anchors_in_place(source, block)
-                || source.same_cell(block.start(), stmt.start())
-        }) {
-            continue;
-        }
+        let pinned = suppression.suppresses(stmt, BandConstants::SLUG)
+            || gap_comment.is_some_and(|block| {
+                const_target.is_none()
+                    || anchors_in_place(source, block)
+                    || source.same_cell(block.start(), stmt.start())
+            });
         // The run this member's block folds in ahead of its code. One
         // sitting directly below the previous member and a blank line
         // off this one documents that member and carries backward onto
         // it, while every other run heads this member and relocates
         // only when a sort reseats it.
-        if let Some(block) = leading_comment_block(source, blocks[idx].start(), stmt.start()) {
+        if !pinned
+            && let Some(block) = leading_comment_block(source, blocks[idx].start(), stmt.start())
+        {
             match backward_carry(source, body, blocks, idx, block, code_width) {
                 Some(carry) => carries.push(carry),
                 None => {
@@ -127,18 +125,24 @@ pub(super) fn module_band_plan<'src>(
                 if def_at.insert(name.as_str(), idx).is_some() {
                     dup_defs.insert(name.as_str());
                 }
-                ranks.insert(idx, BandRank::Definition);
+                if !pinned {
+                    ranks.insert(idx, BandRank::Definition);
+                }
             }
             Stmt::Import(node) => {
                 imports.extend(node.names.iter().map(bare_import_bound_name));
-                ranks.insert(idx, BandRank::Import);
+                if !pinned {
+                    ranks.insert(idx, BandRank::Import);
+                }
             }
             Stmt::ImportFrom(node) => {
                 imports.extend(node.names.iter().map(from_import_bound_name));
-                ranks.insert(idx, BandRank::Import);
+                if !pinned {
+                    ranks.insert(idx, BandRank::Import);
+                }
             }
             _ => {
-                if let Some((name, value)) = const_target {
+                if !pinned && let Some((name, value)) = const_target {
                     // A `# prose: keep` dict pins its statement, so the
                     // marker freezes module position as well as entry order.
                     if let Some(Expr::Dict(dict)) = value
@@ -248,9 +252,18 @@ pub(super) fn module_band_plan<'src>(
         }
     }
     // A bound comment only travels when its member bands, leaving an
-    // anchored member's comment where the source put it.
+    // anchored member's comment where the source put it. A carry onto an
+    // anchored member reverts to heading the member whose block folds it
+    // in, so the run travels as that member's own heading rather than
+    // holding a shape the reassembled text reads back as a carry.
+    carries.retain(|carry| {
+        let banded = ranks.contains_key(&carry.carrier);
+        if !banded {
+            attached.insert(carry.absorbs, carry.comment);
+        }
+        banded
+    });
     attached.retain(|idx, _| ranks.contains_key(idx));
-    carries.retain(|carry| ranks.contains_key(&carry.carrier));
     Some(BandPlan {
         attached,
         carries,

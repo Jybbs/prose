@@ -3,5 +3,5 @@ previewable = false
 title       = "Skip and Ignore Coexist on One Line"
 
 description = '''
-One line carries both `# prose: skip[<rule>]` and `# prose: ignore[<rule>]`. The **skip suppresses the named format rule's edit**, the **ignore suppresses the named lint rule's diagnostic**, and every other rule on the line continues to fire.
+One line assigning `RETRY_INTERVAL` carries both `# prose: skip[strip-trailing-commas]` and `# prose: ignore[reassigned-constants]`. The **skip stops `strip-trailing-commas` from removing the trailing comma in `func(3, 4,)`**, and the **ignore stops `reassigned-constants` from reporting `RETRY_INTERVAL`'s later `+= 1`**, while `align-equals` still aligns the line's `=` against `DEFAULT_LIMIT` and `PAGE_SIZE`.
 '''

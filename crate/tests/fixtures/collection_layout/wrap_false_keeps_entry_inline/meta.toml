@@ -3,5 +3,5 @@ previewable = true
 title       = "A False Wrap Facet Leaves an Oversized Entry on One Line"
 
 description = '''
-Setting `wrap-dict-entries` to `false` keeps an over-wide `key: value` on a single line as the dict expands, rather than breaking at `:` and hanging the value beneath. The width and count caps keep their meaning.
+The `config` dict overflows and expands one entry per line, and its `"extremely_long_key_name_that_pushes_its_row_past_the_budget"` row still runs past the budget. With `wrap-dict-entries` set to `false`, that over-wide `key: value` entry stays on a single line rather than breaking at `:` and hanging its value beneath, the width and count caps still governing the expansion itself.
 '''

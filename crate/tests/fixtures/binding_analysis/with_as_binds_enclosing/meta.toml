@@ -3,5 +3,5 @@ previewable = false
 title       = "With-As Binds in the Enclosing Scope"
 
 description = '''
-A `with ... as f` clause **binds the as-target in the enclosing scope**, and reads of that binding inside the body resolve back to it.
+`with open(path) as f` **binds `f` in `read_lines`'s function scope** with the `With` kind, in the same table as the `path` parameter. The body's `f.readlines()` resolves back to that binding, recording both the read and the `readlines` attribute access.
 '''

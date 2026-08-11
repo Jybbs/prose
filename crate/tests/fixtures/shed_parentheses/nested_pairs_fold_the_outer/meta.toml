@@ -3,5 +3,5 @@ previewable = true
 title       = "A Wrapped Pair Counts the Pairs Nested Inside It"
 
 description = '''
-The budget test narrows the interior by the two columns each nested pair sheds alongside the fold, so a grouping that only fits once its inner pairs are gone folds in the same pass rather than the one after.
+`ready = (` wraps two nested groupings, `(server.up)` and `(cache.warm)`, each carrying its own redundant parentheses, inside an outer grouping split across lines. With the budget set to `34` characters, the fold test already counts those two sets of parentheses as shed, so the whole expression fits and folds in the same pass to `ready = server.up and cache.warm` rather than waiting for a later one.
 '''

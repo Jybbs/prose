@@ -3,5 +3,5 @@ previewable = false
 title       = "Ignore Silences One Lint Line, Format Rewrites Persist"
 
 description = '''
-`# prose: ignore[<rule>]` **suppresses one named lint diagnostic on its line only**, leaving the same rule's diagnostics on unrelated lines in place. Format-side rewrites for every line, including the ignored one, still apply.
+`RETRY_INTERVAL = 30  # prose: ignore[reassigned-constants]` carries that inline suppression, and it **suppresses the `reassigned-constants` diagnostic on its own line only**, leaving the same diagnostic on `DEFAULT_LIMIT` and `PAGE_SIZE` in place. Format-side rewrites still apply to every line, so `RETRY_INTERVAL`'s `=` and `+=` still align alongside the other two constants.
 '''

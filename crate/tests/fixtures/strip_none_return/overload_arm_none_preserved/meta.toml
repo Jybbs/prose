@@ -3,5 +3,5 @@ previewable = true
 title       = "An Overload Stub's None Return Annotation Survives"
 
 description = '''
-An `@overload` arm whose body is a single `...` keeps its `-> None`, because the placeholder declares the type-checker contract rather than a redundant annotation. Stripping it would leave one arm declaring no return beside an arm that declares `str`.
+The first `@overload` arm of `f` declares `-> None` with a body of a single `...`, and `strip-none-return` leaves it untouched, because the placeholder declares the type-checker contract rather than a redundant annotation. Stripping it would leave that arm declaring no return beside the second arm's `-> str`.
 '''

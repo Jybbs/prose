@@ -3,5 +3,5 @@ previewable = false
 title       = "An Import Carries Its Prose Comment Into the Sorted Run"
 
 description = '''
-A free-standing prose comment heads `binascii`, and the import run sorts around it. The comment forward-attaches to the import it heads and **moves to the front of the run with it**, rather than stranding above whichever import lands there.
+`# the hex helpers both writers reach for` stands above `import binascii` and forward-attaches to it. When the run sorts and `binascii` moves ahead of `zlib`, the comment **travels to the front of the run with its import** rather than stranding above whichever import lands where it stood.
 '''

@@ -26,6 +26,7 @@ use ruff_text_size::TextSize;
 use crate::{
     config::{Config, MaxShift},
     primitives::{
+        call_keywords::module_call_params,
         edit::{insert_edit, narrowed_replacement, singleton_groups},
         fracture, reserve,
         walk::{Descent, ParentedProbe, is_interpolated_string, walk_parented_exprs},
@@ -43,7 +44,7 @@ pub(crate) struct ChainLayout {
     code_line_length: usize,
     max_links: Option<usize>,
     max_shift: MaxShift,
-    rejoin: fracture::Settings,
+    rejoin: fracture::Settings<'static>,
     reservations: reserve::Reservations,
 }
 
@@ -64,13 +65,14 @@ impl ChainLayout {
 
 impl Rule for ChainLayout {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        let targets = module_call_params(source);
         let reservations = self.reservations.columns(source);
         let mut breaker = Breaker {
             cap: self.max_links,
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             max_shift: self.max_shift,
-            rejoin: self.rejoin,
+            rejoin: self.rejoin.against(&targets),
             reservations: &reservations,
             source,
         };
@@ -90,7 +92,7 @@ struct Breaker<'a> {
     code_line_length: usize,
     edits: Vec<Edit>,
     max_shift: MaxShift,
-    rejoin: fracture::Settings,
+    rejoin: fracture::Settings<'a>,
     reservations: &'a reserve::Columns,
     source: &'a Source,
 }

@@ -3,5 +3,5 @@ previewable = true
 title       = "Docstring Args Blocks Align the Parameter-Name Column"
 
 description = '''
-The phrase `Args:` appears both in the docstring's body prose and as the real section header. **Only the header triggers alignment**, leaving the inline mention as-is while the named entries beneath the header align on one `:` column.
+The docstring of `emit` contains the text `Args:` twice, once inside a prose sentence and once as the real section header. **Only the section header starts an alignable block**, so the prose mention stays as written whereas `channel`, `severity`, and `payload` beneath the header align on one `:` column.
 '''

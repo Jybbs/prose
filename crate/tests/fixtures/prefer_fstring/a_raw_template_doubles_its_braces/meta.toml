@@ -3,6 +3,5 @@ previewable = true
 title       = "A Raw Template Doubles Every Brace"
 
 description = '''
-A raw template processes no escape, so `\N{...}` reads as literal text
-and its braces double like any other.
+In the raw template, `\N{SNOWMAN}` is literal text rather than a name escape, because an `r` prefix processes no escapes. Bare braces would open a replacement field once the string becomes an f-string, so the rewrite doubles them to `\N{{SNOWMAN}}` while `%s` becomes `{name}`.
 '''

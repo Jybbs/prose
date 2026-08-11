@@ -3,5 +3,5 @@ previewable = false
 title       = "PEP 695 Type Parameters Survive the Rewrite"
 
 description = '''
-A generic function with PEP 695 type parameters between the name and `(` expands when its parameter count trips the cap. **The type parameter list, annotations, and return annotation all survive intact**, because the replacement range starts at `(` rather than the function name.
+`render[T]`'s five parameters, each annotated `T`, exceed `max-params`, so `signature-layout` expands them one per line. **The `[T]` type parameter list, each parameter's `T` annotation, and the `-> tuple[T, T]` return annotation all survive intact**, because the rewrite's range starts at the `(` rather than the function name.
 '''

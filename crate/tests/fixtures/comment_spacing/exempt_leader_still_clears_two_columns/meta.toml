@@ -3,5 +3,5 @@ previewable = true
 title       = "An Exempt Opener Still Clears Two Columns"
 
 description = '''
-Sphinx's `#:` attribute doc keeps its opener verbatim, and the two-column floor still applies to the gap ahead of it. The exemption covers what the comment opens with rather than where the comment sits.
+The Sphinx attribute doc trailing `value = 1` keeps its `#:` opener verbatim, and the two-column floor still applies ahead of it, widening the single space before the `#:` to two. The exemption covers what the comment opens with rather than where the comment sits.
 '''

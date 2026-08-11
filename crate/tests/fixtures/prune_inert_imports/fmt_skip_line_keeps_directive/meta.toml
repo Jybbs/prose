@@ -3,5 +3,5 @@ previewable = false
 title       = "A Trailing `# fmt: skip` Holds the Directive in Place"
 
 description = '''
-A trailing `# fmt: skip` on the directive line **drops the edit through the pipeline's central suppression filter**, leaving the import in place even though the file carries no annotations to justify it.
+The file holds no annotations, so the `from __future__ import annotations` directive would normally be removed. The trailing `# fmt: skip` marks that line as suppressed, and the pipeline's central filter **drops the edit whose range overlaps the suppressed line**, leaving the import in place.
 '''

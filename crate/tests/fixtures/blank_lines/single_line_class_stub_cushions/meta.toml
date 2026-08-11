@@ -3,5 +3,5 @@ previewable = false
 title       = "A Single-Line Class Stub Gains Cushions like a Block Class"
 
 description = '''
-A single-line-suite class sandwiched between block-bodied classes settles the canonical **two-blank-line** cushion on both sides, the same as any block-bodied class, because its body opens on the header line, leaving no own-line gap to normalize.
+`class Beta: ...` keeps its `...` body on the header line, sitting between the block-bodied `Alpha` and `Gamma`. **Two blank lines separate `Beta` from each neighbor**, the same spacing a block-bodied class takes, and because the `...` opens on the header there is no gap inside `Beta` to normalize.
 '''

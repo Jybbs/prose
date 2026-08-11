@@ -3,5 +3,5 @@ previewable = true
 title       = "A Key Two Specs Read Holds an Effectful Value"
 
 description = '''
-The dict evaluates `build()` once where the two fields would call it twice.
+Both `%(v)s` specs read the same mapping key, and the dict binds `"v"` to a call. The original evaluates `build()` once while filling both slots, whereas an f-string repeating the expression would call it twice, so the line holds.
 '''

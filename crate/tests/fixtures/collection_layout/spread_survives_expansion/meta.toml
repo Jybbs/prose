@@ -3,5 +3,5 @@ previewable = false
 title       = "Spreads Survive Expansion and Split Atomic Runs"
 
 description = '''
-Dict `**` and list or set `*` unpacking survive expansion, each landing on its own line, and a spread inside a held multi-line dict survives the re-expansion the same way. **Being non-atomic, a `*` spread in a list splits its surrounding atomics into two independent runs**, and a set of pure spreads goes one per line. A `**value` row that overflows stays single-line, because the hang shape needs a `:`.
+`dict_unpack`, `list_unpack`, and `set_unpack` each explode with their `**` or `*` spread landing on its own line, and the `**extra_config` inside the held `held_dict_unpack` keeps that line through the re-layout. **Being non-atomic, `*middle_range` splits the numbers around it in `list_unpack` into two independent packed runs**, and `set_unpack`, holding nothing but spreads, lands one per line. The overflowing `**` row in `overflowing_dict_unpack` stays on a single line because the hang shape needs a `:` to break at.
 '''

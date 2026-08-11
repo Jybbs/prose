@@ -1,3 +1,3 @@
-from pkg.sub import epsilon
-from pkg.sub import alpha, beta, delta
-from pkg.sub import gamma
+from pkg.sub import alpha, beta
+from pkg.sub import delta
+from pkg.sub import epsilon, gamma

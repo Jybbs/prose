@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize/head_shared_dict_sorts_in_place/input.py
+---
+options.append({'default': def_str,
+                'name': opt_name,
+                'type': opt_type,
+                'value': value,
+                'var': var,
+                })

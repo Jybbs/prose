@@ -24,6 +24,14 @@ Each rule's edits shape the source the next rule reads. Three kinds of dependenc
 
 The pipeline reparses between rules, so a rule that depends on a token surface earlier in the order sees that surface in the AST it walks. The cost is one parse per rule transition, paid against the marginal benefit of a clean borrow-stable input to each rule.
 
+## Every Subset Settles
+
+The order carries more than the default set settling a file in one pass. Any subset a project enables settles too, `--select`, `--ignore`, and a rule disabled under `[tool.prose.rules]` each producing one, because a subset needing a second pass would be a defect for whoever configured it rather than a curiosity. A corpus sweep in CI holds the promise, so a rule leaning on a later rule to finish its work is caught where the fault lives rather than through a default pipeline that hides it.
+
+Holding the guarantee needs no exhaustive sweep, in that a rule that settles alone and never un-settles an earlier one leaves every larger subset holding it settled, so each rule alone and each ordered rule pair carry it between them.
+
+Each ordering the guarantee rests on is recorded in the registry's dependency column, which `prose rules --output-format json` renders as the `after` list per rule, rather than left to a seating that happens to work.
+
 ## Lint Rules
 
 Lint-only rules *(the entries above with the 🧶 badge)* never rewrite, so they don't shape the source the next rule reads. They could in principle run in any order, but they sit at their canonical positions to make the registered set stable for the [`Pipeline::known_ids`](/primitives/pipeline) consumer and for the CLI's `--select` / `--ignore` ergonomics.

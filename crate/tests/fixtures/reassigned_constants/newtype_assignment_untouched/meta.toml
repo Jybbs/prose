@@ -3,5 +3,5 @@ previewable = false
 title       = "NewType Bindings Pass Through Untouched"
 
 description = '''
-A `NewType("UserId", int)` binding uses a `PascalCase` name rather than the `SCREAMING_CASE` the rule targets and is **structural by definition**, so it passes through the rule without a diagnostic.
+`UserId = NewType("UserId", int)` binds a `PascalCase` name rather than the `SCREAMING_CASE` shape the rule targets. A `NewType` binding is also **structural by definition**, declaring a type rather than storing a value, so it passes through without a diagnostic.
 '''

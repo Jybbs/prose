@@ -3,4 +3,4 @@ source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/import_layout/repeated_module_members_gather/input.py
 ---
-import-layout@16..43
+import-layout@21..43

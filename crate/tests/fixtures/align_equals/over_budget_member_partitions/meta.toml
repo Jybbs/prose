@@ -3,5 +3,5 @@ previewable = true
 title       = "An Over-Budget Row Partitions Out of the Aligned Run"
 
 description = '''
-`q`'s width sits well within `max-shift` of the run, but padding its `=` to the widest name would carry its long value past `code-line-length`. `q` partitions out unpadded while the two narrower rows align beneath the cap, so the alignment holds without any line crossing the budget.
+`q`'s name is narrow enough to join the run, but padding its `=` out to `wider_name`'s width would carry its long string value past the `code-line-length` cap of 40. `q` partitions out unpadded instead, while `wider_name` and `also_wide` align beneath the cap, leaving no line over budget.
 '''

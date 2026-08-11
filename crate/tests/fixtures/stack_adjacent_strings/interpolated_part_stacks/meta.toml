@@ -3,5 +3,5 @@ previewable = true
 title       = "A Run Mixing an f-String with a Plain Literal Breaks"
 
 description = '''
-A run whose parts mix an f-string with a plain literal **breaks between the parts**, leaving each replacement field untouched inside the part that carries it.
+`label`'s run mixes an f-string, `f"the opening clause {value} of this notice "`, with a plain literal, `"and the trailer"`. `stack-adjacent-strings` **breaks between the two parts**, leaving the `{value}` replacement field untouched inside the f-string part that carries it.
 '''

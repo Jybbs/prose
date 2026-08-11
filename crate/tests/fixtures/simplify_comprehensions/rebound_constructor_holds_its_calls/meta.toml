@@ -3,5 +3,5 @@ previewable = true
 title       = "A Rebound Constructor Name Holds Every Call to It"
 
 description = '''
-A module that binds `list` itself leaves that name pointing somewhere other than the builtin, so its calls stand while `set` collapses as usual.
+The module binds `list = [9]`, so that name no longer refers to the builtin constructor and `values = list([1, 2])` stays untouched. `set` keeps its usual meaning, so `unique = set([1, 2])` still collapses to `unique = {1, 2}`.
 '''

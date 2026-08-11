@@ -3,5 +3,5 @@ previewable = true
 title       = "A Call after a Module-Level Def Carries Two Blanks"
 
 description = '''
-A module-level `def` followed by a bare call normalizes to **two blank lines** between them, the same after-definition cushion an assignment already received.
+`print("ready")` sits on the line directly after `configure`'s body ends. **The gap between a module-level `def` and a bare call normalizes to two blank lines**, the same spacing any other statement after a definition receives.
 '''

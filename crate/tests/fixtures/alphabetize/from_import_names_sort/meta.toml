@@ -3,5 +3,5 @@ previewable = false
 title       = "Alias Lists Sort within One `from` Statement"
 
 description = '''
-The alias list inside one `from M import a, b, c` **alphabetizes by alias name**. Inline lists run through inline block mode and multi-line lists run through line block mode.
+The names imported by one `from collections import` statement bind independently of their listed order, so the alias list **alphabetizes by name**, `deque, defaultdict, Counter` settling into `Counter, defaultdict, deque`. The same sort covers an inline list like this one and a parenthesized multi-line list alike.
 '''

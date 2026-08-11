@@ -3,5 +3,5 @@ previewable = true
 title       = "A Comment Inside the Rewritten Call Survives"
 
 description = '''
-Only the delimiters on either side of the members are rewritten, so a comment sitting among them keeps the line it describes.
+`marks`'s call to `set([...])` spans three lines, and `# the first` trails the `1` member on its own line. `simplify-comprehensions` rewrites only the delimiters on either side of the members, trading `set([` and `])` for `{` and `}`, so the comment keeps describing `1` on the line it was written.
 '''

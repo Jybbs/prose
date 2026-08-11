@@ -3,5 +3,5 @@ previewable = false
 title       = "Decimal-Version Comments Sit Out"
 
 description = '''
-A decimal-version comment such as `# 1.2 release notes` carries a digit right after the `.`, so the numeric-dot pattern's **whitespace-after-dot requirement excludes it**. Version annotations never trigger the rule.
+`# 1.2 release notes` and `# 2.0 spec compliance` each place a digit immediately after the `.`, and `step-narration`'s numbered-step shape **requires whitespace there before it counts as a step**. Because that whitespace is missing, neither comment matches, so decimal-version comments never trigger the lint.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Body Holding a Triple-Quote Run Keeps Its Quotes"
 
 description = '''
-A docstring whose body already holds a `"""` run **keeps its original quotes**, because re-delimiting to `"""` would abut the closer and break the string. The safe fallback leaves this rare shape untouched.
+`render`'s single-quoted docstring holds a literal `"""` run in its body. **The original quotes stay**, because a `"""` frame around a body already containing `"""` would end the string early, so this rare shape passes through untouched.
 '''

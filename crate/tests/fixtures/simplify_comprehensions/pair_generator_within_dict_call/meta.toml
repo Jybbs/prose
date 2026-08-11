@@ -3,5 +3,5 @@ previewable = true
 title       = "A Pair-Yielding Comprehension Inside `dict()` Becomes a Dict Comprehension"
 
 description = '''
-The pair splits on its comma into a key and a value, so the comprehension builds the mapping in place rather than through a call.
+`dict((row.key, row.width) for row in rows)` and `dict([(row.key, row.label) for row in rows])` each yield two-member tuples, so the pair inside each one splits on its comma into a key and a value. `simplify-comprehensions` rewrites both as dict comprehensions, `widths = {row.key: row.width for row in rows}` and `labels = {row.key: row.label for row in rows}`, building the mapping directly instead of through a `dict()` call.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Bare and Annotated Assignments Sort Together"
 
 description = '''
-A run intermixing annotated and bare assignments has **both forms contribute their target name** and sort by name within tier. The annotation kind stays transparent to the reorder.
+The run mixes annotated and bare assignments, and **both forms sort by their target name alone**, so `apple = 1` climbs above `banana: str = "two"` and `zoo: int = 3` drops to the bottom. Whether an assignment carries an annotation makes no difference to the reorder.
 '''

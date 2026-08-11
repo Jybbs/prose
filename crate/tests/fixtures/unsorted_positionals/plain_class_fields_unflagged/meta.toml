@@ -3,5 +3,5 @@ previewable = true
 title       = "A Plain Class Draws No Report"
 
 description = '''
-A class whose header names no constructor generator binds no field by position, so the out-of-order run **draws no diagnostic**. [[alphabetize]] sorts these fields by name as an auto-fix instead.
+`Endpoint`'s header names no constructor generator, so it binds no field by position and its out-of-order `timeout`, `method` run **gets no diagnostic**. [[alphabetize]] sorts these fields by name as an auto-fix instead.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "The Literal Crossing the Cap Is the One Offered"
 
 description = '''
-Two literals sit on the line and the selection reads the cap column rather than source order, so the short key is passed over and the value carries the break.
+Both `"key"` and its long value are literals on the 75-column line, and the suggestion lands on the one that crosses the 40-column cap rather than the first in source order. `"key"` sits well inside the budget, so splitting it would shorten nothing, leaving the value literal to carry the break.
 '''

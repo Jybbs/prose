@@ -3,5 +3,5 @@ previewable = true
 title       = "A Continued Value Measures Where It Actually Sits"
 
 description = '''
-A value that opens on a line after its `=` keeps the column the source gave it, because `align-equals` sits out a continued row rather than shifting it. The length trigger reads that real column, so a call well inside the budget stays inline instead of answering to a shift the alignment never makes.
+The `guess_quote_and_delimiter(sample_text, delimiters)` call opens on the line after its `=`, behind a `\` continuation, at the column the source indented it to. `align-equals` does not shift a continued row, so the length check reads that real column, finds the call well inside the limit, and leaves it inline.
 '''

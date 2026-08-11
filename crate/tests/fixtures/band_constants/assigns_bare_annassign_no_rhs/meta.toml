@@ -3,5 +3,5 @@ previewable = false
 title       = "Bare Annotated Declarations Carry a Name but No RHS"
 
 description = '''
-A run mixing bare annotated declarations with valued bindings reorders normally. **A bare `AnnAssign` contributes its target name** but has no right-hand side to walk for dependencies or side-effect taint.
+`zebra: int` declares a name with no value, and it still sorts alongside the valued bindings, landing below `apple = 1` and `banana: str = "two"`. **A bare `AnnAssign` contributes its target name to the sort**, whereas it has no right-hand side to walk for dependencies or side effects.
 '''

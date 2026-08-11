@@ -3,5 +3,5 @@ previewable = true
 title       = "A Mapping Inside `dict()` Stands On Its Own"
 
 description = '''
-A dict literal handed to `dict()` is already the mapping, leaving the outer call nothing to build.
+`dict({"size": 10})` wraps a dict literal that is already the mapping it would build, so the call is dropped and `config` becomes `{"size": 10}`.
 '''

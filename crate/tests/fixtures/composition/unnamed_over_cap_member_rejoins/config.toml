@@ -1,0 +1,3 @@
+[harness]
+rules = ["call-layout", "collection-layout"]
+skip_ruff_coexistence = true

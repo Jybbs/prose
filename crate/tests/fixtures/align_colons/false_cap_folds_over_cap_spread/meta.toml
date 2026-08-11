@@ -3,5 +3,5 @@ previewable = true
 title       = "A `false` Cap Folds an Over-Cap Spread into One Column"
 
 description = '''
-Setting `max-shift` to `false` lifts the cap, so a contiguous run always aligns to its widest key. A spread the default would break **folds into one column**.
+The key `"a_substantially_longer_configuration_key"` sits far wider than `"id"` and `"name"`, a spread the default `max-shift` cap would split. Setting `max-shift` to `false` lifts the cap, so the whole run **folds into one column** and even `"id"` shifts the full distance to the widest key's width.
 '''

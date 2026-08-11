@@ -3,5 +3,5 @@ previewable = true
 title       = "A SCREAMING_CASE Name Reads as the Constant Side"
 
 description = '''
-A `SCREAMING_CASE` name outranks a plain one and leads the flip, whereas two names of the same rank hold the order their author gave them.
+The SCREAMING_CASE `LIMIT` reads as the constant side of `LIMIT == size`, so the operands flip and the plain name leads, the test coming back as `size == LIMIT`. `FLOOR == LIMIT` sets two names of the same rank against each other, so that order holds as its author wrote it.
 '''

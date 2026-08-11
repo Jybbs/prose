@@ -3,5 +3,5 @@ previewable = false
 title       = "`Raises:` Entries Sort by Exception Name"
 
 description = '''
-The `Raises:` section **reorders alphabetically by exception name**, so `KeyError`, `OSError`, and `ValueError` settle into name order regardless of source position.
+`load`'s `Raises:` section lists `ValueError`, `OSError`, and `KeyError` in no particular order, and no signature exists to dictate one. The entries **reorder alphabetically by exception name**, settling into `KeyError`, `OSError`, `ValueError`.
 '''

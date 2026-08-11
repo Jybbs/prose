@@ -3,5 +3,5 @@ previewable = false
 title       = "A Flush Annotated Run Spaces Its Values"
 
 description = '''
-Annotated assignments gain the value-side space after `=` alongside the name-side column padding, so each row reads as `name: T = value`.
+`x: int=1` and `name: str=2` arrive with the `=` flush on both sides. The rule inserts the value-side space along with the name-side column padding, so both rows land on the `name: str = 2` shape with their `=` in one column.
 '''

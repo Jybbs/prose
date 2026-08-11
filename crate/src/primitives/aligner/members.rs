@@ -2,17 +2,18 @@
 //! a row's aligned token and measure its display width, over the gap
 //! locator those builders and the comment rules share.
 
+use itertools::Itertools;
 use ruff_python_ast::{
     AnyParameterRef, Parameters,
     token::{Token, TokenKind},
 };
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
-use ruff_text_size::{TextLen, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::Member;
-use crate::source::Source;
+use crate::{primitives::tokens::is_delimiter_padding, source::Source};
 
 /// The display column where `member`'s left-hand side begins, the width
 /// of its line up to the gap less the member's own width. An
@@ -32,15 +33,13 @@ pub(super) fn baseline(source: &Source, member: Member) -> usize {
 pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member {
     let line_start = source.text().line_start(anchor);
     let gap = line_gap_before(source, anchor);
-    let width = source
-        .slice(TextRange::new(line_start, gap.start()))
-        .trim_whitespace_start()
-        .width();
+    let head = TextRange::new(line_start, gap.start());
+    let width = source.slice(head).trim_whitespace_start().width();
     Member {
         gap,
         line_start,
         op_width: 0,
-        settled_width: width,
+        settled_width: width - delimiter_padding_width(source, head),
         value_gap: None,
         width,
     }
@@ -119,6 +118,22 @@ where
 {
     single_line_anchor(source, target.start(), search, predicate)
         .map(|anchor| range_anchored_member(source, target, anchor, extra_width))
+}
+
+/// The display width of the bracket-delimiter padding inside `range`,
+/// the columns `strip-align-padding` deletes once it runs. A settled
+/// width reads past them, so an alignment measures the row the pipeline
+/// lands on rather than the one the source wrote.
+fn delimiter_padding_width(source: &Source, range: TextRange) -> usize {
+    source
+        .tokens_overlapping(range)
+        .tuple_windows()
+        .filter_map(|(token, next)| {
+            let gap = TextRange::new(token.end(), next.start());
+            (range.contains_range(gap) && is_delimiter_padding(token.kind(), next.kind()))
+                .then(|| source.slice(gap).width())
+        })
+        .sum()
 }
 
 /// Builds a `Member` for a row whose aligned token sits at `anchor`,

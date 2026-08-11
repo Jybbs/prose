@@ -3,5 +3,5 @@ previewable = true
 title       = "A Backslash a Bracket Already Spans Just Goes"
 
 description = '''
-A bracket carries the break on its own, so the backslash inside a list or a call drops and the newline stays for the layout rules to shape.
+`data = [` and `result = call(` already break across brackets before the backslash reaches them, so the backslash after `alpha,` and after `first,` is redundant and drops. The newline each one sat on stays in place, leaving the layout rules to shape the bracketed lines.
 '''

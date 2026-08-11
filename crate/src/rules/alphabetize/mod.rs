@@ -25,6 +25,7 @@ use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Stmt, helpers::is_compound_statement};
+use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
@@ -58,6 +59,7 @@ use self::{
 };
 
 pub(crate) struct Alphabetize {
+    code_width: usize,
     first_party: Vec<String>,
     group_imports: bool,
     group_methods: bool,
@@ -73,6 +75,7 @@ impl Alphabetize {
     pub(crate) fn from_config(config: &Config) -> Self {
         let alphabetize = &config.rules.alphabetize;
         Self {
+            code_width: config.code_width(),
             first_party: config.first_party(),
             group_imports: config.group_imports_enabled(),
             group_methods: alphabetize.group_methods,
@@ -90,8 +93,12 @@ impl Rule for Alphabetize {
         if body.is_empty() {
             return Vec::new();
         }
-        let mut leaf_edits =
-            collect_leaf_edits(source, self.sort_dict_keys, self.sort_dunder_lists);
+        let mut leaf_edits = collect_leaf_edits(
+            source,
+            self.code_width,
+            self.sort_dict_keys,
+            self.sort_dunder_lists,
+        );
         if self.sort_docstring_entries {
             leaf_edits.extend(collect_docstring_entry_edits(source));
             leaf_edits.sort_unstable();
@@ -229,10 +236,18 @@ fn body_layout<'a>(
             |s| import_sort_key(s, first_party, group_imports),
         );
         // Same-group import neighbors collapse to one line, except across a
-        // section marker, whose dividing gap must survive in place.
+        // section marker, whose dividing gap must survive in place. A slot
+        // gap holding a comment and a member block opening on a bound run
+        // both keep their source gap, so no collapse deletes or reseats a
+        // comment.
         import_run_slots = adjacent_slots(&order, |slot, a, b| {
             import_blank_lines(&body[a], &body[b], first_party, group_imports) == Some(0)
                 && !sections.is_boundary(slot + 1)
+                && source
+                    .comment_ranges()
+                    .comments_in_range(TextRange::new(blocks[slot].end(), blocks[slot + 1].start()))
+                    .is_empty()
+                && blocks[b].start() == source.text().line_start(body[b].start())
         });
     }
     BodyLayout {

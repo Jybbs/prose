@@ -3,5 +3,5 @@ previewable = false
 title       = "Backslash-Split Operands Skip the Phantom Column"
 
 description = '''
-Two `in` comparisons split across a backslash continuation sit at different indents. **The members fail the shared-baseline check** because their left edges occupy different screen columns, leaving the second operand unpadded.
+The chain splits across a backslash continuation, so `filename in breaks` starts after `result = ` while `lineno in breaks[filename]` starts at the continuation indent. **The two members fail the shared-baseline check** because their left edges occupy different screen columns, so neither `in` is padded and the source passes through unchanged.
 '''

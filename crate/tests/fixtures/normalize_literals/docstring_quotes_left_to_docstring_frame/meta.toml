@@ -3,5 +3,5 @@ previewable = true
 title       = "A Docstring's Quotes Are Left to `docstring-frame`"
 
 description = '''
-The docstring keeps the quotes it was written with while the return value beside it swaps to `"`. **The quote facet passes over docstring position entirely**, leaving that frame to the rule that owns it.
+`render`'s docstring `'Summary.'` keeps its single quotes, whereas `'body'` in the return below it swaps to `"body"`. **The quotes facet skips the docstring position entirely**, because reframing a docstring is `docstring-frame`'s job rather than this rule's.
 '''

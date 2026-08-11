@@ -3,5 +3,5 @@ previewable = true
 title       = "Mixed Description + Args Apply Both Budgets in Sequence"
 
 description = '''
-A docstring carrying both a description paragraph and a structured `Args:` section **wraps each region to its own shape**. The paragraph wraps at the docstring budget against the body indent, and the `Args:` entry wraps at the same budget with a hanging indent at the description column.
+`render`'s docstring carries both a description paragraph and a structured `Args:` section, and **each region wraps to its own shape**. The paragraph wraps at the docstring budget against the body indent, whereas the over-long `label` entry wraps at the same budget with a hanging indent at its description column, leaving the short `count` entry untouched.
 '''

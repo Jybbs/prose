@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Fractured Default Joins and the Signature Collapses"
+
+description = '''
+The `beta` default, a `helper(one, two, three)` call the author hand-wrapped across three rows, rejoins onto a single row. With no multi-line construct left inside it, the whole `render` signature fits on one line and collapses to it.
+'''

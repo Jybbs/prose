@@ -18,6 +18,7 @@ pub(crate) mod fracture;
 pub(crate) mod imports;
 pub(crate) mod inline;
 pub(crate) mod layout;
+pub(crate) mod one_row;
 pub(crate) mod orderer;
 pub(crate) mod params;
 pub(crate) mod quoting;
@@ -28,6 +29,7 @@ pub(crate) mod sections;
 pub(crate) mod slots;
 pub(crate) mod tiering;
 pub(crate) mod tokens;
+pub(crate) mod travel;
 pub(crate) mod walk;
 
 /// PEP 8 indent step in spaces, the depth one nested level adds.

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Call to Anything Else Holds Its Argument"
 
 description = '''
-Neither an attribute call nor a call to some other name reaches a constructor, so the bracketed literal each one carries stays exactly where it was written.
+`registry.make([1, 2])` calls an attribute, and `record([1, 2])` calls a name that isn't `dict`, `list`, `set`, or `tuple`. Neither callee matches a constructor `simplify-comprehensions` acts on, so the `[1, 2]` literal each one carries stays exactly where it was written.
 '''

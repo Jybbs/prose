@@ -3,5 +3,5 @@ previewable = true
 title       = "A `cls` Receiver and a Positional-Only `self` Shorten Alike"
 
 description = '''
-A classmethod naming `cls` and a method whose `self` sits before a `/` marker each shorten, the rewrite reading whichever parameter holds the leading positional slot.
+`Entry.build`, a classmethod naming `cls`, calls `super(Entry, cls).build()`, and `Entry.merge(self, /, other)` calls `super(Entry, self).merge(other)` with `self` ahead of the `/` marker. Both shorten to `super()`, the rewrite reading whichever parameter holds the leading positional slot.
 '''

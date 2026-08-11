@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/unnamed_over_cap_member_rejoins/input.py
+---
+hanging = [alpha, helper(one, two, three, four), zeta]

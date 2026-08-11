@@ -3,5 +3,5 @@ previewable = false
 title       = "A Function-Body Import Splits at Its Own Indent"
 
 description = '''
-The split reads the indent of the line it rewrites, so a deferred import inside a function body opens every new statement at the **body's own column**.
+The deferred `import os, sys` inside `load` splits into one statement per module, and the split reads the indent of the line it rewrites. Both `import os` and `import sys` open at the **body's own column** rather than at the module margin.
 '''

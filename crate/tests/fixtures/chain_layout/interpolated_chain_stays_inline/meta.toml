@@ -4,5 +4,5 @@ previewable = false
 title       = "A Chain Inside a Replacement Field Stays Inline"
 
 description = '''
-A line break spliced into a single-quoted replacement field is PEP 701 syntax that parses on Python 3.12 and later and fails everywhere earlier, so the field is opaque to layout.
+The chain `query.filter(a).order(b).limit(c)` sits inside an f-string replacement field, where breaking it would splice a line break into a single-quoted field. That is PEP 701 syntax, parsing on Python 3.12 and later and failing everywhere earlier, so the field stays opaque to layout and the chain stays inline.
 '''

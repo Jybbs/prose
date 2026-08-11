@@ -3,5 +3,5 @@ previewable = true
 title       = "Call Expressions on the Left Pad the Same as Names"
 
 description = '''
-A **call expression on the left side qualifies** for the group like any other operand. The call's display width, `len(b)`, counts as the left-hand side that the operator column pads against.
+A **call expression on the left side qualifies** for the group like any other operand. The display width of `len(b)` counts as the widest left-hand side, so the `==` after `foo` and `qux` pad out to the column it sets.
 '''

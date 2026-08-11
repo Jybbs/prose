@@ -3,5 +3,5 @@ previewable = false
 title       = "Decorated Class Threads Docstring and Field Cushions"
 
 description = '''
-A decorated class with a first-member docstring binds that docstring tight against `class Posting:` *(zero blanks)*. The docstring then **cushions the next member by one blank**, and the field block cushions the following method by one.
+The blank line between `class Posting:` and its docstring **closes to zero**, binding the docstring to the header even under the `@final` and `@dataclass` decorators. One blank then separates the docstring from the `company` field, and another separates `title` from `def summary(self):`.
 '''

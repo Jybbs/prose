@@ -3,5 +3,5 @@ previewable = false
 title       = "A Chained Comparison Holds as Written"
 
 description = '''
-A comparison carrying more than two operands is left alone, so a range check keeps its reading order and a chain never comes back mixing `==` with `is`.
+Both comparisons here chain more than two operands, and the rule holds any chain as written. The range check `0 < n < 10` keeps its reading order, and even the `None` in `value == low == None` stays under `==`, so a chain never comes back mixing `==` with `is`.
 '''

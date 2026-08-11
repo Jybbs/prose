@@ -4,5 +4,5 @@ previewable = false
 title       = "An Exploded Call Keeps Its Trailing Comma"
 
 description = '''
-A call already exploded with a trailing comma is left untouched, the rule deferring comma policy to `strip-trailing-commas`.
+The `fetch` call arrives already exploded, with a trailing comma after `url=u`. `call-layout` leaves that comma exactly where it is, because comma policy belongs to `strip-trailing-commas` and this rule rewrites only the layout.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Band a Lambda Constant Within a Cell"
 
 description = '''
-A `lambda` value is inert, since its body runs only when the lambda is later called rather than when the assignment binds, so `KEY = lambda row: row.score` still hoists into the leading band above the definition inside its cell.
+`KEY = lambda row: row.score` sits below `helper` in its cell, and a `lambda` value is inert, because its body runs only when the lambda is later called rather than when the assignment binds. The constant therefore hoists into the leading band above the definition, all inside the one cell.
 '''

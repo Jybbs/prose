@@ -3,5 +3,5 @@ previewable = true
 title       = "Bare Imports with Aliases Align on the `as` Keyword"
 
 description = '''
-A run of `import M as A` statements aligns the `as` keyword across them. The **widest module name fixes the shared column**, and shorter rows pad between the module and `as` to reach it.
+Four aliased imports run from `collections as c` down to `itertools as it`. **The widest module name, `collections`, fixes the shared `as` column**, and each shorter row pads between its module and the `as` to reach it, so every alias starts at the same place.
 '''

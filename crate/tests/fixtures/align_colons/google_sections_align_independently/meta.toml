@@ -3,5 +3,5 @@ previewable = true
 title       = "Every Google-Style Docstring Section Aligns on Its Own Column"
 
 description = '''
-`align-colons` settles the `:` across `Args:`, `Returns:`, and every other Google-style section, each section resolving its own column so a wide `Args:` entry never shifts the `Returns:` table beside it.
+The docstring of `build` holds both an `Args:` and a `Returns:` section, and each section resolves its own `:` column. The wide `source_channel` sets the `Args:` column, whereas `ok` and `payload` align on the much narrower column their own section needs, so one section's widest entry never shifts the other's table.
 '''

@@ -32,14 +32,16 @@ use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
-    primitives::{edit::singleton_groups, fracture, reserve, walk::filter_map_over_exprs},
+    primitives::{
+        call_keywords::module_call_params, edit::singleton_groups, one_row, reserve,
+        walk::filter_map_over_exprs,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
 
 mod classify;
 mod flow;
-mod inline;
 mod layouter;
 
 use layouter::Layouter;
@@ -47,10 +49,8 @@ use layouter::Layouter;
 pub(crate) struct CollectionLayout {
     code_line_length: usize,
     explode: bool,
-    keep_multiline_literals: bool,
     max_atomics: usize,
-    max_dict_entries: Option<usize>,
-    rejoin: fracture::Settings,
+    one_row: one_row::Settings<'static>,
     reservations: reserve::Reservations,
     wrap_dict_entries: bool,
 }
@@ -63,10 +63,8 @@ impl CollectionLayout {
         Self {
             code_line_length: config.code_width(),
             explode: rules.explode,
-            keep_multiline_literals: rules.keep_multiline_literals,
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
-            max_dict_entries: rules.max_dict_entries.cap(),
-            rejoin: config.fracture_settings(),
+            one_row: config.one_row_settings(),
             reservations: config.equals_reservations(),
             wrap_dict_entries: rules.wrap_dict_entries,
         }
@@ -79,7 +77,7 @@ impl Rule for CollectionLayout {
         // The count cap reads the `explode` facet, so a cleared `explode`
         // leaves no tripping dicts and the cap goes inert. Precomputed once
         // so the per-node check is a containment scan rather than a re-walk.
-        let count_cap = self.max_dict_entries.filter(|_| self.explode);
+        let count_cap = self.one_row.dict_entry_cap();
         let tripping_dicts = count_cap.map_or_else(Vec::new, |cap| {
             filter_map_over_exprs(body, |expr| {
                 expr.as_dict_expr()
@@ -87,15 +85,15 @@ impl Rule for CollectionLayout {
                     .map(Ranged::range)
             })
         });
+        let targets = module_call_params(source);
         let reservations = self.reservations.columns(source);
         let mut visitor = Layouter {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             explode: self.explode,
-            keep_multiline_literals: self.keep_multiline_literals,
             max_atomics: self.max_atomics,
             newline: source.newline_str(),
-            rejoin: self.rejoin,
+            one_row: self.one_row.against(&targets),
             reservations,
             source,
             tripping_dicts,

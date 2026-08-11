@@ -3,5 +3,5 @@ previewable = false
 title       = "A `msgspec.Struct` Base Holds Its Field Order"
 
 description = '''
-A base class can generate the field-ordered constructor just as a decorator can, so a `msgspec.Struct` subclass **pins its run**. Detection reads the base's tail segment, leaving a dotted or aliased import to match alike.
+`Posting`'s fields hold their order, `title`, `company`, `date_posted`, even though `company` sorts first, because the `msgspec.Struct` base generates a constructor that binds those fields positionally and reordering them would change every call site. The base **pins the run** the way a constructor-generating decorator does, matched by the `Struct` tail of the dotted name so an aliased import would match just as well.
 '''

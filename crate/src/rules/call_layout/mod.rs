@@ -9,11 +9,11 @@
 //! list shuts and hangs from its own row rather than from a column
 //! inside it, whatever the argument count and whatever the joined width
 //! would have been. The closing `)` drops to the indent of the row
-//! carrying the call, a nested call in an argument value explodes in the
-//! same pass, and a chained call settles its receiver before the link
-//! that carries it, so every link measures the column it lands at. No
-//! trigger reaches a call inside an f-string or t-string. Order,
-//! `=` alignment, and trailing commas stay with `alphabetize`,
+//! carrying the argument list's `(`, a nested call in an argument value
+//! explodes in the same pass, and a chained call settles its receiver
+//! before the link that carries it, so every link measures the column it
+//! lands at. No trigger reaches a call inside an f-string or t-string.
+//! Order, `=` alignment, and trailing commas stay with `alphabetize`,
 //! `align_equals`, and `strip_trailing_commas`.
 //!
 //! Where no trigger fires, an argument list the author fractured
@@ -30,7 +30,7 @@ use std::collections::HashMap;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Expr, InterpolatedStringElement, Parameters,
+    Expr, InterpolatedStringElement, Parameters, Stmt,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextSize};
@@ -40,7 +40,8 @@ use crate::{
     primitives::{
         call_keywords::module_call_params,
         edit::{insert_edit, narrowed_replacement, singleton_groups},
-        fracture, reserve,
+        one_row, reserve,
+        walk::walk_stmt,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -50,9 +51,7 @@ mod measure;
 mod render;
 
 pub(crate) struct CallLayout {
-    code_line_length: usize,
-    max_args: Option<usize>,
-    rejoin: fracture::Settings,
+    one_row: one_row::Settings<'static>,
     reservations: reserve::Reservations,
 }
 
@@ -61,9 +60,7 @@ impl CallLayout {
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            code_line_length: config.code_width(),
-            max_args: config.rules.call_layout.max_args.cap(),
-            rejoin: config.fracture_settings(),
+            one_row: config.one_row_settings(),
             reservations: config.equals_reservations(),
         }
     }
@@ -74,14 +71,12 @@ impl Rule for CallLayout {
         let targets = module_call_params(source);
         let reservations = self.reservations.columns(source);
         let mut exploder = Exploder {
-            code_line_length: self.code_line_length,
             edits: Vec::new(),
             indent: None,
             line_shift: 0,
-            max_args: self.max_args,
+            one_row: self.one_row.against(&targets),
             origin: TextSize::new(0),
             origin_column: 0,
-            rejoin: self.rejoin,
             reservations: &reservations,
             source,
             targets: &targets,
@@ -101,14 +96,12 @@ impl Rule for CallLayout {
 /// moves by, and `indent` is the indent an exploded closing `)` drops to,
 /// unset where each call answers to its own source line.
 struct Exploder<'a> {
-    code_line_length: usize,
     edits: Vec<Edit>,
     indent: Option<usize>,
     line_shift: isize,
-    max_args: Option<usize>,
+    one_row: one_row::Settings<'a>,
     origin: TextSize,
     origin_column: usize,
-    rejoin: fracture::Settings,
     reservations: &'a reserve::Columns,
     source: &'a Source,
     targets: &'a HashMap<TextSize, &'a Parameters>,
@@ -125,10 +118,13 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
         self.visit_expr(&call.func);
         let indent = self.indent_for(call);
         let column = self.open_paren_column(call, &self.callee_text(call));
-        if let Some(text) = self.explode_args(call, indent, column)
-            && let Some(edit) = narrowed_replacement(self.source, call.arguments.range(), text)
-        {
-            insert_edit(&mut self.edits, edit);
+        // The rendered list already carries every nested reshape, so a
+        // walk into the arguments would decide the same text twice, the
+        // second reading measuring against columns the first one set.
+        if let Some(text) = self.explode_args(call, indent, column) {
+            if let Some(edit) = narrowed_replacement(self.source, call.arguments.range(), text) {
+                insert_edit(&mut self.edits, edit);
+            }
             return;
         }
         self.visit_arguments(&call.arguments);
@@ -136,6 +132,10 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
 
     /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
+
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        walk_stmt(self, stmt);
+    }
 }
 
 #[cfg(test)]

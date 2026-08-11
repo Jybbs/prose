@@ -3,5 +3,5 @@ previewable = true
 title       = "A `Returns:` or `Raises:` Entry Documents No Parameter"
 
 description = '''
-Only a parameter-documenting section resolves against the signature, so an entry that happens to share a parameter's name under another heading stays silent.
+`resolve`'s `Returns:` entry names `value` and its `Raises:` entry names `error`, both sharing a parameter's name and matching type. **Neither entry is flagged**, because only a parameter-documenting section resolves against the signature, and `Returns:` and `Raises:` are not among them.
 '''

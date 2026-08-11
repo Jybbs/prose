@@ -3,5 +3,5 @@ previewable = false
 title       = "Resolve a Callee Defined Below the Call"
 
 description = '''
-A call whose callee is a module function **defined later in the file** resolves against the completed module bindings, so the over-threshold call explodes to keyword form on the first pass rather than staying inline until a reorder brings the definition above it.
+`parse_str` calls `ints_to_rgba` before that function's `def` appears, the definition sitting lower in the file. **Signature resolution reads the completed module bindings rather than only the lines above the call**, so the four-positional call explodes to `red_channel=red_channel` through `alpha_channel=alpha_channel` on the first pass instead of waiting for a reorder to move the definition up.
 '''

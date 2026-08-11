@@ -3,5 +3,5 @@ previewable = true
 title       = "A Uniform Gutter Tightens onto the Shared Column"
 
 description = '''
-Every row here is the same width, so the comments already line up and the run carries no spread at all. The shared column still resolves to two past the widest row, which pulls the hand-set gutter in without disturbing the alignment it was drawn to create.
+The three `DECODING_TABLE` entries carry a wide hand-set gutter that already lines their comments up in one column. The shared column still resolves to two past the widest row, so the gutter pulls in as a block and the alignment it was written to create survives at the tighter offset.
 '''

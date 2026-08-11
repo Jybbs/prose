@@ -3,5 +3,5 @@ previewable = false
 title       = "Inline Dict Overflows Budget and Expands One Per Line"
 
 description = '''
-A dict literal fits on one source line but overflows `code-line-length` once expanded. **`collection_layout` puts each entry on its own line and recursively expands the long nested value**, scalar-valued entries partition before the collection-valued ones, `:` columns align, and dangling commas drop.
+`CONFIG` is one long dict literal that fits on a single source line, yet that line overflows the width budget once measured. **`collection-layout` puts each entry on its own line and recursively expands the long nested `limits` dict**, the scalar-valued entries (`backoff`, `label`, `retries`, `timeout`, `verbose`) partition ahead of the collection-valued `limits` and `tags`, their `:` columns align, and the dangling commas drop.
 '''

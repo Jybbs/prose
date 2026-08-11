@@ -3,5 +3,5 @@ previewable = true
 title       = "A Single-Line Return Annotation's Pair Drops"
 
 description = '''
-A redundant pair around a single-line return annotation sheds, so `def total() -> (int):` reflows to `def total() -> int:`.
+The parentheses around `int` in `def total() -> (int):` wrap a single name and change nothing about how the annotation parses. The pair sheds, leaving the header as `def total() -> int:`.
 '''

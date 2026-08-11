@@ -3,5 +3,5 @@ previewable = false
 title       = "Zero Blanks between Module Defs Insert Two"
 
 description = '''
-Zero blank lines between two module-level defs **expand to the canonical two**. The rule inserts the missing newlines into the inter-statement whitespace.
+`def second` opens on the very next line after `first`'s `return 1`, with no blank between the two defs. **The gap expands to the standard two blank lines**, in that the rule inserts the missing newlines into the whitespace between the statements.
 '''

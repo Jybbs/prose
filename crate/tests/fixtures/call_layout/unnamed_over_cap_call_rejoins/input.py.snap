@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/call_layout/unnamed_over_cap_call_rejoins/input.py
+---
+value = wrap(alpha, helper(beta, gamma, delta, epsilon))

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Multi-Line Field Value Breaks the Group"
 
 description = '''
-A class field whose value is a multi-line dict literal **breaks the alignment group**. The following single-line field lands in its own group rather than aligning across the multi-line entry, and the inner dict aligns independently.
+The field `primary` opens a multi-line dict literal as its value, which **breaks the alignment group** inside `C`. The following `secondary` lands in a group of one and keeps its tight `secondary: str` form, while `"alpha"` and `"beta"` align independently inside the inner dict.
 '''

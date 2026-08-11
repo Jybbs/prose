@@ -1,7 +1,7 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Method Docstring Openers Split and Methods Gain Cushions"
 
 description = '''
-Methods carry multi-line docstrings with opener and closer sharing prose lines, and no spacing between methods. **The opener and closer move to their own lines, the prose reflows, and `blank-lines` cushions the methods**.
+`primary` and `secondary` each carry a docstring whose prose shares the `"""` opener and closer lines, and nothing separates the two methods. **`docstring-frame` moves each `"""` onto its own line, `docstring-wrap` reflows the two short prose lines into one, and `blank-lines` inserts a blank line between the methods** and after the `class Service:` header.
 '''

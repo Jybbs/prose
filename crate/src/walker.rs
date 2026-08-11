@@ -10,8 +10,19 @@ use std::path::PathBuf;
 use ignore::Walk;
 use ruff_python_ast::PySourceType;
 
+/// One entry a walk yields.
+pub(crate) enum Found {
+    /// A file to format, paired with its `PySourceType`.
+    Formattable(PathBuf, PySourceType),
+    /// A Python-named symlink the walk passed over. Following one
+    /// reaches a file outside the tree the caller named, so the walk
+    /// leaves it and the runner says so.
+    PassedLink(PathBuf),
+}
+
 /// Walks `paths` recursively and yields the formattable files under
-/// them, each paired with its `PySourceType`.
+/// them, each paired with its `PySourceType`, alongside any Python-named
+/// symlink it passed over.
 ///
 /// `paths` may contain directories or individual files. Regular files
 /// are yielded only when `PySourceType` classifies them as Python
@@ -19,15 +30,19 @@ use ruff_python_ast::PySourceType;
 /// empty.
 pub(crate) fn walk(
     paths: &[PathBuf],
-) -> impl Iterator<Item = Result<(PathBuf, PySourceType), ignore::Error>> + Send + use<> {
+) -> impl Iterator<Item = Result<Found, ignore::Error>> + Send + use<> {
     Walk::from_iter(paths).filter_map(|entry| {
         entry
             .map(|e| {
-                e.file_type()
-                    .is_some_and(|ft| ft.is_file())
-                    .then(|| PySourceType::try_from_path(e.path()))
-                    .flatten()
-                    .map(|t| (e.into_path(), t))
+                let source_type = PySourceType::try_from_path(e.path())?;
+                let file_type = e.file_type()?;
+                if file_type.is_file() {
+                    Some(Found::Formattable(e.into_path(), source_type))
+                } else if file_type.is_symlink() {
+                    Some(Found::PassedLink(e.into_path()))
+                } else {
+                    None
+                }
             })
             .transpose()
     })
@@ -43,7 +58,21 @@ mod tests {
     use super::*;
 
     fn collect(paths: &[PathBuf]) -> BTreeSet<PathBuf> {
-        walk(paths).map(|r| r.expect("walk entry").0).collect()
+        walk(paths)
+            .filter_map(|r| match r.expect("walk entry") {
+                Found::Formattable(path, _) => Some(path),
+                Found::PassedLink(_) => None,
+            })
+            .collect()
+    }
+
+    fn passed_links(paths: &[PathBuf]) -> BTreeSet<PathBuf> {
+        walk(paths)
+            .filter_map(|r| match r.expect("walk entry") {
+                Found::PassedLink(path) => Some(path),
+                Found::Formattable(..) => None,
+            })
+            .collect()
     }
 
     fn write(path: &std::path::Path, contents: &str) {
@@ -132,7 +161,9 @@ mod tests {
 
         let types: BTreeSet<_> = walk(&[root.to_path_buf()])
             .map(|r| {
-                let (path, source_type) = r.expect("walk entry");
+                let Found::Formattable(path, source_type) = r.expect("walk entry") else {
+                    unreachable!("invariant: the tree holds no symlink");
+                };
                 (path.extension().unwrap().to_owned(), source_type.is_ipynb())
             })
             .collect();
@@ -152,5 +183,23 @@ mod tests {
         let found = collect(std::slice::from_ref(&file));
 
         assert_eq!(found, BTreeSet::from([file]));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn walk_reports_a_python_symlink_it_passed_over() {
+        let tmp = TempDir::new().expect("tempdir");
+        let root = tmp.path();
+        write(&root.join("real.py"), "");
+        std::os::unix::fs::symlink(root.join("real.py"), root.join("link.py")).expect("links");
+
+        assert_eq!(
+            passed_links(&[root.to_path_buf()]),
+            BTreeSet::from([root.join("link.py")])
+        );
+        assert_eq!(
+            collect(&[root.to_path_buf()]),
+            BTreeSet::from([root.join("real.py")])
+        );
     }
 }

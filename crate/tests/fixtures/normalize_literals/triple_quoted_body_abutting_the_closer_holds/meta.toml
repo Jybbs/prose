@@ -3,5 +3,5 @@ previewable = false
 title       = "A Triple-Quoted Body Abutting the Closer Stands"
 
 description = '''
-A body holding a `"""` run and a body ending in `"` would each collide with the closer the swap installs, so both keep their original delimiters rather than corrupt the literal.
+`sentinel` holds a `"""` run in its body and `trailing` ends in a bare `"`, and either one would collide with the `"""` closer a swap would install. Both keep their triple-single delimiters rather than corrupt the literal.
 '''

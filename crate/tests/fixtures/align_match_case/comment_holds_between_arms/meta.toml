@@ -3,5 +3,5 @@ previewable = true
 title       = "Comments between Cases Keep the Shared Column"
 
 description = '''
-A standalone `# comment` line sits between two arms. **The comment passes through unchanged** while the arms on either side collapse and align their `:` to one shared column around it.
+The standalone `# legacy synonyms` line sits between the first two arms, and **the comment passes through unchanged** without splitting the group. All three bodies still fold onto their `case` lines and share one `:` column, so `"certification"` and `"program"` below the comment pad to the width `"apprenticeship"` sets above it.
 '''

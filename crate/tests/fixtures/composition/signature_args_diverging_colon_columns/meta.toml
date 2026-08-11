@@ -1,7 +1,7 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Signature and Args Colons Align as Independent Columns"
 
 description = '''
-A typed signature and an `Args:` section whose names diverge by design. **`align_colons` treats the two as independent groups with separate columns, and `docstring_wrap` wraps the Args descriptions at the Args hanging column** rather than the signature's.
+The signature's parameters `destination`, `contents`, and `overwrite` are named differently from the docstring's `Args:` entries `dst`, `body`, and `force`. **`align-colons` treats the two as independent groups, each aligning its own `:` column, and `docstring-wrap` wraps the `Args:` descriptions at that section's own hanging column** rather than the wider column the signature's longer names produce.
 '''

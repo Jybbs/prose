@@ -3,5 +3,5 @@ previewable = true
 title       = "An Off Region Holds Comment Spacing, Its Closer Included"
 
 description = '''
-Comment spacing is the first rewrite whose subject is the comment itself, so a directive is both the marker and a candidate. The `off` directive keeps its spelling because it sits inside the region it opens, whereas the `on` directive is settled because the region closes at that line's start, and it classifies afterward either way.
+Comment spacing rewrites the comment itself, so a directive here is both the region marker and a candidate for the edit. `#prose: off` keeps its tight spelling because it sits inside the region it opens, whereas the closing directive is rewritten to `# prose: on` because the region ends where that line begins. Below it, `y = 2` gains the standard two spaces before its `#` and one after.
 '''

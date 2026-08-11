@@ -3,5 +3,5 @@ previewable = true
 title       = "Every `typing` Generic Reaches Its Builtin"
 
 description = '''
-PEP 585 gave each of these a builtin spelling on Python 3.9, so the whole `typing` import goes once the last one converts.
+PEP 585 gave each of these generics a builtin spelling on Python 3.9, so under `target-version = "3.9"` every annotation in `sizes` converts in place, `List`, `Dict`, `Set`, `Tuple`, `FrozenSet`, and `Type` becoming `list`, `dict`, `set`, `tuple`, `frozenset`, and `type`. Once the last one converts, nothing reads the `typing` import, so the whole line is removed.
 '''

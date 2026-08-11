@@ -4,5 +4,5 @@ previewable = true
 title       = "A Parameterized Call Loses Its Arguments"
 
 description = '''
-A `super(Button, self)` call inside `Button.render` drops to `super()`, since the interpreter resolves the same class and instance from the enclosing method.
+`Button.render` calls `super(Button, self).render()`, naming both the enclosing class and its own receiver. Both arguments drop to produce `super().render()`, since the interpreter resolves the same class and instance from the enclosing method.
 '''

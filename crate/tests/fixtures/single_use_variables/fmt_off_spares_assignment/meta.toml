@@ -3,5 +3,5 @@ previewable = true
 title       = "A `# fmt: off` Block Suppresses the Lint"
 
 description = '''
-A `# fmt: off` block **drops the diagnostic** for any single-use binding inside the suppressed span. The pipeline filters `Severity::Lint` diagnostics by range alongside edits, so suppression covers lint output and rewrites alike.
+`x` in `basic` is bound once and read once, the shape `single-use-variables` normally flags, but the whole function sits inside a `# fmt: off` block. **The diagnostic is dropped for anything inside a suppressed span**, because the pipeline filters diagnostics by range the same way it filters edits, so lint output and rewrites are suppressed together.
 '''

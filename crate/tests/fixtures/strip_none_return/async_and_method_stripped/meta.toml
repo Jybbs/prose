@@ -3,5 +3,5 @@ previewable = true
 title       = "Async Functions and Methods Drop the Annotation Alike"
 
 description = '''
-An `async def` and an `__init__` method each lose their redundant `-> None` return annotation, the strip reaching every function shape uniformly.
+`Service.__init__` and the `async def shutdown` function each declare a redundant `-> None`, and `strip-none-return` drops the annotation from both. The strip reaches an `async def` and a method the same way, landing on `def __init__(self):` and `async def shutdown():`.
 '''

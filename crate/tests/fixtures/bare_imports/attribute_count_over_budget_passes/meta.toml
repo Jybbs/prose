@@ -3,5 +3,5 @@ previewable = true
 title       = "A Wide Fan-Out Passes the Attribute Budget"
 
 description = '''
-`os` is reached through five distinct attributes, one past the `max-attributes` budget of 4, so the bare import stays. A `from os import ...` would have to name every symbol, at which point the namespace import earns its keep.
+`os` is reached through five distinct attributes, from `os.getcwd` to `os.path`, one past the `max-attributes` budget of 4, so `import os` passes unflagged. Rewriting it as `from os import ...` would have to name all five symbols, and at that width the namespace import is the more legible form.
 '''

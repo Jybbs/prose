@@ -4,5 +4,5 @@ previewable = false
 title       = "Star Unpacking Blocks the Explode"
 
 description = '''
-A `*` unpacking at the call site cannot be expressed as a keyword argument, so the call stays inline.
+`*parts` unpacks an unknown number of arguments into `send`, so there is no telling which of `body` through `wrap` the trailing `extra`, `more`, and `last` bind to, and the unpacking itself can never take a `name=` form. The reshape is blocked, leaving the call inline as written.
 '''

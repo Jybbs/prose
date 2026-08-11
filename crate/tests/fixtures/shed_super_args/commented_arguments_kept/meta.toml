@@ -3,5 +3,5 @@ previewable = true
 title       = "A Comment Inside the Arguments Holds Them in Place"
 
 description = '''
-An argument list carrying a comment keeps its written form, since deleting the span would take the comment with it.
+`super(Child, self)` in `Child.apply` spans three lines, with `# the defining class` commenting the first argument. Deleting the argument span would take that comment with it, so the call stays exactly as written.
 '''

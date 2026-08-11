@@ -3,5 +3,5 @@ previewable = false
 title       = "Except-As Binds in the Enclosing Scope"
 
 description = '''
-An `except ... as e` clause **introduces a binding in the enclosing scope**, classified as `ExceptHandler`, with every read of the name inside the handler body counted against it.
+`except FileNotFoundError as e` **binds `e` in the enclosing module scope**, recorded with the `ExceptHandler` kind rather than in any scope of its own. Both `print(e)` calls inside the handler count as reads of that binding, so its `read_offsets` lists the two sites.
 '''

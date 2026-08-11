@@ -4,5 +4,5 @@ previewable = true
 title       = "Varying Left-Hand Widths Settle on One Column"
 
 description = '''
-Three consecutive bindings with varying left-hand widths align on the `=` sign. The eye drops down the column of equals signs and reads the right-hand sides as a parallel list.
+`x`, `foo`, and `bar_baz` bind on three consecutive lines at three different widths. All three `=` settle on one column set by `bar_baz`, the widest name, so the eye drops straight down the operators and reads `1`, `2`, `3` as a parallel list.
 '''

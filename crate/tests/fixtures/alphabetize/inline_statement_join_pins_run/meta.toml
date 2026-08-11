@@ -3,5 +3,5 @@ previewable = false
 title       = "A Semicolon-Joined Sibling Pins the Import Run"
 
 description = '''
-An import run whose last member shares a physical line with another statement through `;` keeps source order. Moving the joined import would carry its `;` separator into the new slot and abut the displaced sibling, so the run stays put rather than reordering into text that no longer parses.
+The last import in the run, `import a`, shares its physical line with `x = 1` through a `;`. Moving that import would take the `;` and the joined statement along into the new slot, producing text that no longer parses, so the run keeps `import b` then `import a` exactly as written.
 '''

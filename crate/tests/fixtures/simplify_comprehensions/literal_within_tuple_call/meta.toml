@@ -3,5 +3,5 @@ previewable = true
 title       = "A Literal Inside `tuple()` Becomes a Tuple Literal"
 
 description = '''
-A one-member result carries the comma its grammar needs, arriving where the source lacked one and staying where the source already had it.
+`tuple([1, 2])`'s two members need no special handling, but `tuple([only])`'s single member requires the trailing comma a one-element tuple's grammar needs, arriving where the source list lacked one. `tuple((only,))`'s source tuple already carries that comma, so `simplify-comprehensions` keeps it rather than adding a second.
 '''

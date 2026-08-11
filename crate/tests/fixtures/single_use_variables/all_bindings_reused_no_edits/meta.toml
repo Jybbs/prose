@@ -3,5 +3,5 @@ previewable = false
 title       = "A Clean File Passes Through Unchanged"
 
 description = '''
-A file with no single-use bindings draws **no diagnostic and no edit**, so it passes through untouched on every run. This pins the rule's lint-only shape, where a clean input is left exactly as written.
+`main` binds no name at all, so the file holds nothing for this lint to flag. The run produces **no diagnostic and no edit**, pinning the rule's lint-only shape wherein a clean input passes through exactly as written.
 '''

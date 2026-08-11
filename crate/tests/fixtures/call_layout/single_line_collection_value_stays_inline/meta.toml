@@ -4,5 +4,5 @@ previewable = true
 title       = "A Single-Line Collection Value Stays Inline"
 
 description = '''
-A call explodes to one keyword per line while one keyword holds a single-line dict value. The value stays inline rather than re-indenting, since a single-line collection block has no rows to shift.
+The `build` call explodes to one keyword per line, and `opts` carries the single-line dict `{"k": "v"}`. A collection already on one line has no rows to re-indent, so the value moves with its keyword and stays inline.
 '''

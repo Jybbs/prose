@@ -3,5 +3,5 @@ previewable = false
 title       = "A Skipped Line Keeps the Import Its Neighbor Would Drop"
 
 description = '''
-The suppressed annotation is left as written and its read still counts, so the import survives the rewrite of the line below it.
+The `# prose: skip` comment suppresses the rewrite on `x`'s line, so `x: Optional[int]` stays as written while `y: Optional[str]` below it becomes `y: str | None`. The suppressed annotation still reads `Optional`, so the import survives a rewrite that would otherwise have removed it.
 '''

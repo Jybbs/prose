@@ -3,5 +3,5 @@ previewable = true
 title       = "`rewrite-generics = false` Leaves the `typing` Generic"
 
 description = '''
-The union facet runs while the generic facet is off, so `List` keeps both its spelling and its import.
+With `rewrite-generics = false`, the generic facet stops applying while the union facet still runs. `limit`'s `Optional[int]` becomes `int | None` and the now-unread `Optional` import is removed, whereas `names: List[str]` keeps both its spelling and its `List` import.
 '''

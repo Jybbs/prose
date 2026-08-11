@@ -3,5 +3,5 @@ previewable = true
 title       = "A Value Return Is Flagged While a Procedure Passes"
 
 description = '''
-A function whose body returns a value draws the missing-return report, whereas a procedure that returns nothing stays silent, so the absent annotation reads as a function returning nothing.
+`fetch` returns `store[key]`, a value, so `signature-annotations` reports its two unannotated parameters, `store` and `key`, alongside a missing return type on `fetch` itself. `persist` only assigns `store[key] = value` and returns nothing, so its three unannotated parameters are reported while no missing-return diagnostic fires.
 '''

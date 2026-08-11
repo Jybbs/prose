@@ -3,5 +3,5 @@ previewable = true
 title       = "A Sole Unread Import Takes Its Whole Line"
 
 description = '''
-Nothing references `json`, and its line binds nothing else. **The whole line goes**, leaving the blank that followed it as a leading blank.
+`import json` binds only `json`, and nothing in the module reads it. **The whole line drops**, leaving the blank line that followed it as the file's new leading blank.
 '''

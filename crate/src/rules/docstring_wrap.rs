@@ -18,14 +18,14 @@ use std::borrow::Cow;
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_text_size::Ranged;
-use textwrap::{Options, WordSeparator, WordSplitter};
+use textwrap::{Options, WordSeparator, WordSplitter, core::Word};
 
 use crate::{
     config::{Config, DocstringStructuredPolicy},
     primitives::{
         docstring::{
-            DocstringBody, LineScan, LineScanner, ScannedLine, rewrite_docstrings, section_heading,
-            sibling_entry_head, triple_quoted_body, typed_entry_head,
+            DocstringBody, LineScan, LineScanner, ScannedLine, opens_structure, rewrite_docstrings,
+            section_heading, sibling_entry_head, triple_quoted_body, typed_entry_head,
         },
         edit::narrowed_replacement,
     },
@@ -186,13 +186,14 @@ impl<'a> Walker<'a> {
     }
 
     fn emit_wrapped(&mut self, initial: &str, subsequent: &str, text: &str, width: usize) {
-        // AsciiSpace and NoHyphenation keep a slash- or hyphen-bearing token
-        // atomic, so an over-budget URL or path overflows instead of splitting.
+        // The separator keeps a slash- or hyphen-bearing token atomic
+        // alongside NoHyphenation, so an over-budget URL or path
+        // overflows instead of splitting.
         let opts = Options::new(width)
             .break_words(false)
             .initial_indent(initial)
             .subsequent_indent(subsequent)
-            .word_separator(WordSeparator::AsciiSpace)
+            .word_separator(WordSeparator::Custom(prose_words))
             .word_splitter(WordSplitter::NoHyphenation);
         for piece in textwrap::wrap(text, opts) {
             self.emit_verbatim(&piece);
@@ -207,11 +208,14 @@ impl<'a> Walker<'a> {
                 lines,
                 subsequent_indent,
             } = std::mem::take(&mut self.paragraph);
-            let text = [head, &collapsed(lines)].concat();
+            // The head is a fixed prefix rather than wrappable text, so
+            // it rides the initial indent, which `textwrap` never breaks
+            // inside and never emits a row without a word after.
+            let opening = [initial_indent, head].concat();
             self.emit_wrapped(
-                initial_indent,
+                &opening,
                 &subsequent_indent,
-                &text,
+                &collapsed(lines),
                 self.rule.description_width,
             );
         }
@@ -254,6 +258,30 @@ impl<'a> Walker<'a> {
 /// between words to a single space.
 fn collapsed<'a>(lines: impl IntoIterator<Item = &'a str>) -> String {
     lines.into_iter().flat_map(str::split_whitespace).join(" ")
+}
+
+/// Splits `line` on ASCII spaces, dropping every break opportunity
+/// whose remainder opens a verbatim structure. A row head reading as a
+/// list marker, a section heading, an entry head, or any other
+/// structure would be parsed as that structure on the next pass, so the
+/// break folds back into the word before it and the run stays on one
+/// row.
+fn prose_words(line: &str) -> Box<dyn Iterator<Item = Word<'_>> + '_> {
+    let mut starts = Vec::new();
+    let mut cursor = 0;
+    for word in WordSeparator::AsciiSpace.find_words(line) {
+        if starts.is_empty() || !opens_structure(&line[cursor..]) {
+            starts.push(cursor);
+        }
+        cursor += word.word.len() + word.whitespace.len();
+    }
+    starts.push(line.len());
+    Box::new(
+        starts
+            .into_iter()
+            .tuple_windows()
+            .map(|(start, end)| Word::from(&line[start..end])),
+    )
 }
 
 fn rewrite_body<'a>(

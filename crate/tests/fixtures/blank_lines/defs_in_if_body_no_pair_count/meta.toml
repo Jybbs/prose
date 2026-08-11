@@ -3,5 +3,5 @@ previewable = false
 title       = "Defs inside an If Body Don't Pair-Count"
 
 description = '''
-Defs nested in a module-level `if` block **do not pair-count**. The walker descends into the if body to find nested classes and functions but applies no canonical rule at the if-body indentation.
+`alpha` and `beta` sit directly against each other inside the `if FEATURE_X:` body, and **no blank lines are inserted between them**. The walker descends into the if body to find nested classes and functions, yet it applies no canonical count at the if-body indentation, so the source passes through unchanged.
 '''

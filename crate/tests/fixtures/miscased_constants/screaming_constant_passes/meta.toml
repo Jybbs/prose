@@ -3,5 +3,5 @@ previewable = true
 title       = "A SCREAMING_CASE Constant Stays Silent"
 
 description = '''
-`MAX_RETRIES` already reads as a constant, so the lint leaves it alone. This is the shape every flagged case suggests renaming to.
+`MAX_RETRIES = 5` assigns a module-level constant whose name is already SCREAMING_CASE, so the lint reports nothing. This is the shape every flagged case suggests renaming to.
 '''

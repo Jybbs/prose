@@ -3,5 +3,5 @@ previewable = true
 title       = "Async Function Bodies Are Recognized the Same Way"
 
 description = '''
-A single-use binding inside an `async def` is **flagged the same way** as one inside a plain `def`. The rule consumes the unified function-def shape and treats both as the same scope kind, so `await`-driven code earns no exemption.
+`payload` is written once from `await get(url)` and read once in the `return`, the exact shape this lint reports. Its position inside an `async def` is **flagged the same way** a plain `def` body would be, because the rule treats both function kinds as the same scope, leaving `await`-driven code no exemption.
 '''

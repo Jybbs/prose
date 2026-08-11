@@ -3,5 +3,5 @@ previewable = false
 title       = "An Empty Paren Pair Is Not a Type Group"
 
 description = '''
-Parens holding nothing but whitespace restate no type, so neither entry draws a report even though both parameters carry annotations.
+`host ()` and `port (  )` carry empty or whitespace-only parens, even though `host: str` and `port: int` are both annotated in the signature. **Neither entry is flagged**, because an empty or whitespace-only paren group restates no type at all.
 '''

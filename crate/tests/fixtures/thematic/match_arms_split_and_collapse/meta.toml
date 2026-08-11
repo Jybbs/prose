@@ -3,5 +3,5 @@ previewable = false
 title       = "Match Arms Split or Collapse by Budget, Kwargs Sort"
 
 description = '''
-`align_match_case` splits the three over-budget arms onto their own lines and collapses the under-budget `case _` fallback inline. **Kwargs inside the dispatched calls sort, dangling commas drop, and the lone-key `SETTINGS` dict rejoins, carrying too few entries to hold**, with a second pass stable.
+`dispatch`'s three named cases, `create`, `update`, `delete`, each call an over-budget `Counter(...)` inline, with the `case _` fallback already padded to align its `:` with them, and a module-level `SETTINGS` dict holds one key while `required_only` returns a one-item set with a trailing comma. **`call-layout` explodes each `Counter(...)` call to one keyword per line while `alphabetize` sorts its `action`, `source`, `timestamp` keywords, `strip-trailing-commas` drops the dangling commas from `SETTINGS` and `{name,}`, and `SETTINGS` rejoins onto one line since one entry is too few to hold**, and once the three cases turn multi-line, `align-match-case` no longer groups `case _` with them, so its padding collapses to a single flush space. A second pass leaves the result stable.
 '''

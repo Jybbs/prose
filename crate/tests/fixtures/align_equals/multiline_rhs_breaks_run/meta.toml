@@ -3,5 +3,5 @@ previewable = false
 title       = "A Multi-Line Right-Hand Side Breaks the Run"
 
 description = '''
-A right-hand side spanning multiple source lines **breaks the alignment group**, so the following single-line assignment lands in its own group rather than aligning across the multi-line entry.
+`PRIMARY`'s value is an exploded dict spanning several lines, and **the multi-line right-hand side breaks the alignment group**. `SECONDARY = 3` below it lands in a group of its own, so `PRIMARY` never pads out to meet the wider name even though the two would otherwise share an `=` column.
 '''

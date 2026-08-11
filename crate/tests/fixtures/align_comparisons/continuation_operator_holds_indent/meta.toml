@@ -3,5 +3,5 @@ previewable = false
 title       = "A Continuation-Line Operator Holds Its Indent"
 
 description = '''
-A boolean operand whose comparison operator opens a continuation line leaves its left side on the prior line. **The cross-line operand drops out of the run** rather than re-anchoring against the continuation, so the line's indentation survives untouched.
+The `in` of `"supports_collation" in model.required_features` opens a continuation line, leaving its left side on the line above. **The cross-line operand drops out of the run** rather than aligning against `collation is None`, so every line keeps its indentation untouched.
 '''

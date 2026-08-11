@@ -3,6 +3,5 @@ previewable = false
 title       = "A Template Stating No Field Holds"
 
 description = '''
-Neither form carries a substitution, so the rewrite would drop the call and
-its arguments rather than move them inline.
+Neither template carries a substitution, in that `"no fields here"` holds no `{}` field and `"no specs here"` holds no `%` spec. Converting would not move `value` or the empty tuple inline, it would delete them outright, so both lines hold.
 '''

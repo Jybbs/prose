@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Configured First-Party Packages Lift into the Local-Package Group"
+
+description = '''
+With `first-party = ["myapp"]` in the config, **every `myapp` import moves into the local-package group alongside the relative `from . import shared`**. Within that group the bare `import myapp.core` precedes `from myapp import app` and `from myapp.db import Session`, while `import os` and `from collections import Counter` stay in the leading bare and external groups. No blank lines separate the groups here, because this case runs without `blank-lines`.
+'''

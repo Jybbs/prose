@@ -3,5 +3,5 @@ previewable = true
 title       = "Parenthesized Argument Lists Strip the Trailing Comma"
 
 description = '''
-Each argument carries its own parenthesized expression, so an inner `)` sits between the expression and the trailing `,`. **The scan reads from the call's outer `)` and reaches the comma directly**, never needing to step over the inner paren.
+`compute`'s arguments, `(a + b)` and `(c * d)`, each wrap their own expression in parentheses, so an inner `)` sits between the expression and the call's trailing `,`. **`strip-trailing-commas` reads backward from the call's outer `)` and reaches that comma directly**, never needing to step over the inner paren.
 '''

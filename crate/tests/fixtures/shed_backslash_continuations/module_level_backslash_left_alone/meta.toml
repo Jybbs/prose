@@ -3,5 +3,5 @@ previewable = false
 title       = "A Backslash Opening Its Own Line at Module Level Is Left Alone"
 
 description = '''
-A backslash at column zero between two statements declares the indentation of the line it continues, so a rejoin would move that line off column zero and the rule leaves the source unchanged.
+The backslash sitting alone on its own line between `x = 1` and `y = 2` sets the indentation of the statement it continues, here column zero. Rejoining `y = 2` onto that line would shift it off column zero, so the source is left exactly as written.
 '''

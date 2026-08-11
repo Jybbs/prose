@@ -3,5 +3,5 @@ previewable = true
 title       = "A Row Whose Aligned Line Would Overflow Stays Put"
 
 description = '''
-The first two rows settle on a shared column, and the third would need its already-long line pushed past `code-line-length` to reach that same column. It partitions out of the run and keeps the two-space floor instead, so alignment never manufactures an overflow.
+`warm_the_cache_now()` and `reconcile_open_charges()` settle on a shared column, but padding `flush_writes()` out to that column would push its already-long line past `code-line-length`. The third row partitions out of the run and keeps the two-space floor instead, so alignment never creates an overflowing line.
 '''

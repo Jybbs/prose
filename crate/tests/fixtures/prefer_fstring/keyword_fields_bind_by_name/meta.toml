@@ -3,5 +3,5 @@ previewable = true
 title       = "A Named Field Binds Its Keyword Argument"
 
 description = '''
-Each field carries the value its keyword named, leaving the call behind.
+Each field binds its keyword argument by name, `{who}` resolving to `name` and `{points}` to `score`, whatever order the call lists them in. The rewrite inlines those expressions and drops the `.format` call, landing on `f"{name} scored {score}"`.
 '''

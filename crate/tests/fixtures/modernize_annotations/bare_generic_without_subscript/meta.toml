@@ -3,5 +3,5 @@ previewable = false
 title       = "An Unsubscripted Generic Converts Too"
 
 description = '''
-A bare `List` names the same object its subscripted form does, so it reaches `list` without a slice to carry.
+The `values: List` annotation carries no subscript, yet a bare `List` still names the same object its subscripted form does, so it rewrites to the builtin `list` all the same. That was the only read of `List`, so the `from typing import List` line is removed along with it.
 '''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Multi-Line Member Holds the Packed Swap"
+
+description = '''
+Sorted, `args=` would move ahead of `target=worker`, and the group opens mid-row, so the reorder would swap the member texts in place. The `args=(...)` member spans lines whose interior rows would keep their source columns wherever the text landed, garbling the layout, so the sort holds the group in source order instead.
+'''

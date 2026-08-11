@@ -1,7 +1,7 @@
 [docs]
-previewable = true
+previewable = false
 title       = "A Forward Call Explodes Before Its Callee Sorts Above"
 
 description = '''
-`call-layout` resolves a callee defined below the call against the completed module bindings, so **the crowded forward call explodes to keyword form and its keywords sort in the same pass** that `alphabetize` lifts the callee above its caller, leaving the file settled on the first run.
+`parse` calls `build(r, g, b, a)` before `build` is defined, and `call-layout` resolves that callee from the completed module bindings anyway. **The four-argument call explodes to keyword form, each positional matched to its parameter so `r` becomes `red=r`, and the keywords sort alphabetically in the same pass** that `alphabetize` moves `build` above `parse`, leaving the file settled after one run.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Backslash-Continued Run Is Already One per Line"
 
 description = '''
-A run continued across lines by a backslash **carries one literal per line already**, so it falls under the same hold a parenthesized stack does and keeps its continuation style.
+`message`'s run already breaks one literal per line, using a trailing backslash instead of parentheses to continue across the line break. `stack-adjacent-strings` gives this shape the same hold a parenthesized run gets, **so the backslash continuation stays exactly as written**.
 '''

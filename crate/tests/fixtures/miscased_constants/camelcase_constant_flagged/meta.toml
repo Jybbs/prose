@@ -3,5 +3,5 @@ previewable = true
 title       = "A camelCase Constant Suggests the SCREAMING_CASE Form"
 
 description = '''
-Word-boundary case folding turns `maxRetries` into `MAX_RETRIES` for the help line, where a naive uppercasing would produce `MAXRETRIES`. The same fold covers a PascalCase `MaxRetries`.
+The module constant `maxRetries` is flagged, and the suggested rename splits the name at its case boundary to produce `MAX_RETRIES`, where a naive uppercasing would produce `MAXRETRIES`. The same word-boundary fold would cover a PascalCase `MaxRetries`.
 '''

@@ -13,7 +13,6 @@ def hls_to_rgb(h):
 
 # coefficients the converters rely on
 # drawn from the FCC reference
-
 def rgb_to_yiq(r):
     return r
 

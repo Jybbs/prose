@@ -3,5 +3,5 @@ previewable = false
 title       = "Comments Around the Comma Ride Through"
 
 description = '''
-A trailing `,` trailed by a same-line comment loses only the comma, and a comment sitting between the last element and the closing bracket survives untouched. **The backward scan treats comments as trivia before testing for a comma**, so neither comment is disturbed.
+`title="Electrician",  # primary listing title` loses only its `,`, keeping the trailing comment intact, and `retired`'s own-line `# legacy identifier kept for audit history` survives untouched between the last element and the closing `]`. **`strip-trailing-commas` treats both comments as trivia before it tests for a comma**, so neither comment is disturbed.
 '''

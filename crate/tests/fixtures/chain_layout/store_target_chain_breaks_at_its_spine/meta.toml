@@ -4,5 +4,5 @@ previewable = true
 title       = "A Chain in a Store Target Breaks Like Any Other"
 
 description = '''
-A chain naming where a value is written breaks the same way a chain a reader scans does, wrapping the whole target in the pair. Python accepts a parenthesized target and the output compiles, so the shape is pinned here rather than guarded, since suppressing it needs the walk to carry a target flag down through every nested shape.
+The assignment target `base.one().two().three().attr` and the `del` target `other.first().second().third().slot` each break like any other chain, wrapped in parentheses with the calls stacked and the trailing `.attr` or `.slot` staying on its last call's line. Python accepts a parenthesized target and the output compiles, so the shape is pinned here as deliberate, whereas suppressing it would need the walk to pass a target flag down through every nested shape.
 '''

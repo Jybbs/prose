@@ -3,5 +3,5 @@ previewable = true
 title       = "An Aliased Bare Import Passes"
 
 description = '''
-`import os as o` carries the author's deliberate namespace handle, so the `exempt-aliased` default **exempts it from the rule** whatever its attribute count.
+`import os as o` binds the module to an alias the author chose, a deliberate namespace handle rather than a leftover bare import. The `exempt-aliased` default therefore **exempts the aliased import from this lint**, whatever its attribute count.
 '''

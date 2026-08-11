@@ -4,5 +4,5 @@ previewable = false
 title       = "A Link Spanning a Multi-Line String Holds the Chain"
 
 description = '''
-A multi-line string keeps its break through the settling measure, so its link still spans lines when the chain is read and the spine stays where the source put it.
+The `.first(` link carries a triple-quoted string whose line break is string content, so no settling can bring that link onto one row. The link still spans lines when the chain is read, and a chain holding such a link stays where the source put it.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Hand-Set Type-Group Gutter Tightens Onto the Column"
 
 description = '''
-The type-group column pulls a gap left as readily as it pushes one right, so a run whose author spaced every `(` out past the widest name tightens onto the one space the column leaves.
+The author spaced every `(` out past the widest name, so `host      (str)` and `port      (int)` carry a hand-set gutter wider than the column needs. The type-group column pulls a gap left as readily as it pushes one right, so both parens tighten onto the single space the column leaves and the `:` settles just past them.
 '''

@@ -11,7 +11,7 @@
 
 use std::{borrow::Cow, cmp::Ordering};
 
-use ruff_diagnostics::{Edit, SourceMap};
+use ruff_diagnostics::{Edit, SourceMap, SourceMarker};
 use ruff_notebook::CellOffsets;
 use ruff_python_ast::comparable::ComparableStmt;
 use ruff_python_parser::parse_module;
@@ -79,14 +79,21 @@ pub(crate) fn apply_inline_edits<'src>(
 
 /// Forwards each cell boundary in `offsets` through `map`, shifting it
 /// by the delta of the nearest marker at or before it, the slide that
-/// keeps notebook cell boundaries current across a reparse. The cloned
-/// offsets and the markers both run ascending by source position, so
-/// the slide preserves their order.
-pub(crate) fn forward_offsets(offsets: &CellOffsets, map: &SourceMap) -> CellOffsets {
+/// keeps notebook cell boundaries current across a reparse. `limit` is
+/// the length of the text the forwarded offsets describe, and every
+/// boundary lands inside it and at or after the boundary before it, so
+/// the result indexes that text and cuts its cells in order.
+pub(crate) fn forward_offsets(
+    offsets: &CellOffsets,
+    map: &SourceMap,
+    limit: TextSize,
+) -> CellOffsets {
     let mut forwarded = offsets.clone();
     let last = forwarded.len().saturating_sub(1);
+    let mut floor = TextSize::default();
     for (i, offset) in forwarded.iter_mut().enumerate() {
-        *offset = forward_offset(*offset, map, i == last);
+        *offset = forward_offset(*offset, map, i == last).clamp(floor, limit);
+        floor = *offset;
     }
     forwarded
 }
@@ -228,21 +235,26 @@ fn concat_or_borrow<'src>(
 /// insertion inside the last cell.
 fn forward_offset(offset: TextSize, map: &SourceMap, is_final: bool) -> TextSize {
     let markers = map.markers();
-    let marker = if is_final {
+    if is_final {
         let upto = markers.partition_point(|marker| marker.source() <= offset);
-        markers[..upto].last()
-    } else {
-        let index = markers.partition_point(|marker| marker.source() < offset);
-        markers
-            .get(index)
-            .filter(|marker| marker.source() == offset)
-            .or_else(|| markers[..index].last())
+        return markers[..upto]
+            .last()
+            .map_or(offset, |m| shifted(offset, m));
+    }
+    let index = markers.partition_point(|marker| marker.source() < offset);
+    if let Some(marker) = markers
+        .get(index)
+        .filter(|marker| marker.source() == offset)
+    {
+        return shifted(offset, marker);
+    }
+    let Some(marker) = markers[..index].last() else {
+        return offset;
     };
-    marker.map_or(offset, |marker| match marker.source().cmp(&marker.dest()) {
-        Ordering::Less => offset + (marker.dest() - marker.source()),
-        Ordering::Greater => offset - (marker.source() - marker.dest()),
-        Ordering::Equal => offset,
-    })
+    if index % 2 == 1 {
+        return marker.dest();
+    }
+    shifted(offset, marker)
 }
 
 /// Trims a candidate replacement to its minimal spanning range by
@@ -285,6 +297,15 @@ fn replacement_or_deletion(range: TextRange, content: String) -> Edit {
         Edit::range_deletion(range)
     } else {
         Edit::range_replacement(content, range)
+    }
+}
+
+/// `offset` moved by `marker`'s source-to-destination delta.
+fn shifted(offset: TextSize, marker: &SourceMarker) -> TextSize {
+    match marker.source().cmp(&marker.dest()) {
+        Ordering::Less => offset + (marker.dest() - marker.source()),
+        Ordering::Greater => offset - (marker.source() - marker.dest()),
+        Ordering::Equal => offset,
     }
 }
 
@@ -344,7 +365,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{parse, range};
+    use crate::testing::{notebook, parse, range};
 
     #[test]
     fn apply_edits_declines_overlapping_edits() {
@@ -487,6 +508,21 @@ mod tests {
     }
 
     #[test]
+    fn forward_offset_lands_a_boundary_inside_a_replacement_at_its_start() {
+        let (text, map) = apply_edits_mapped(
+            "abcdef",
+            vec![Edit::range_replacement("X".to_owned(), range(1, 5))],
+        )
+        .expect("woven");
+
+        assert_eq!(text, "aXf");
+        assert_eq!(
+            forward_offset(TextSize::new(3), &map, false),
+            TextSize::new(1)
+        );
+    }
+
+    #[test]
     fn forward_offset_leaves_an_offset_before_every_marker() {
         let (_text, map) =
             apply_edits_mapped("abcdef", vec![Edit::insertion("X".to_owned(), 3u32.into())])
@@ -511,6 +547,20 @@ mod tests {
             forward_offset(TextSize::new(2), &map, false),
             TextSize::new(2)
         );
+    }
+
+    #[test]
+    fn forward_offsets_holds_every_boundary_inside_the_shortened_text() {
+        let source = notebook(&["x = 1\n", "y = 2\n"]);
+        let (text, map) =
+            apply_edits_mapped(source.text(), vec![Edit::range_deletion(range(1, 11))])
+                .expect("woven");
+        let limit = text.text_len();
+
+        let forwarded = forward_offsets(source.cell_offsets(), &map, limit);
+
+        assert!(forwarded.iter().all(|offset| *offset <= limit));
+        assert!(forwarded.windows(2).all(|pair| pair[0] <= pair[1]));
     }
 
     #[test]

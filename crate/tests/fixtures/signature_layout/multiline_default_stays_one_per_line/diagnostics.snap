@@ -3,4 +3,4 @@ source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/signature_layout/multiline_default_stays_one_per_line/input.py
 ---
-signature-layout@101..102
+signature-layout@118..119

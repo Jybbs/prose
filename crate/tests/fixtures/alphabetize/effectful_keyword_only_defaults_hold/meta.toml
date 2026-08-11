@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Keyword-Only Parameters With Effectful Defaults Hold Their Slots"
+
+description = '''
+Default values evaluate left to right when `def build` executes, so `sink=register()` and `gate=acquire()` hold their slots to keep `register()` running before `acquire()`. The literal-default `zeta=1` and `alpha=2` around them still sort, trading the first and last positions while the two calls stay put between them.
+'''

@@ -4,5 +4,5 @@ previewable = true
 title       = "A Redundant Grouping Pair Is Dropped"
 
 description = '''
-A parenthesis pair that wraps an expression without binding anything sheds, so `total = (base + tax)` reflows to `total = base + tax`.
+The parentheses in `total = (base + tax)` and `label = (name)` change nothing, because each expression parses the same without them. Both pairs shed, leaving `total = base + tax` and `label = name`.
 '''

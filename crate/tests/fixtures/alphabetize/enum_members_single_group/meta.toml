@@ -3,5 +3,5 @@ previewable = true
 title       = "Enum Members Sort Alphabetically"
 
 description = '''
-Enum members **alphabetize as a single group**. Detection runs against the simple name of any base class, so `StrEnum` qualifies the same way `Enum` and `IntEnum` do.
+The members of `OnetSkillType` **alphabetize as a single group**, `ABILITY` rising to the top and `TECHNOLOGY` dropping to the bottom. Detection reads the simple name of any base class, so `StrEnum` qualifies the class the same way `Enum` or `IntEnum` would.
 '''

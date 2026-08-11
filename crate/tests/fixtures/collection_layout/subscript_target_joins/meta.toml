@@ -3,5 +3,5 @@ previewable = false
 title       = "Multi-Line Subscripts Join onto One Line"
 
 description = '''
-A multi-line subscript joins its `value[index]` onto one line whatever the index shape, a name, a tuple `data[a, b]`, a slice `data[a:b]`, or an operator expression over atoms whose precedence parentheses survive the join, so an augmented-assignment target then normalizes its operator and a collapsed value still aligns. The join measures the subscript **from its own column**, leaving a subscript that would overflow once joined, or whose index carries a call or other non-atomic member the inline form cannot rejoin, on its source lines.
+A multi-line subscript joins onto one line whatever its index shape, so `data[key]`, the tuple index `matrix[row, column]`, the slice `window[start:stop]`, and the operator expression in `offset_lookup` each collapse, the precedence parentheses in `coefficient_matrix` surviving the join. The join measures the result **from the subscript's own column**, so `y`, one character too wide to fit once joined, stays on its source lines, as does `guarded`, whose index carries the non-atomic call `helper(adjustment)`.
 '''

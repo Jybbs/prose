@@ -540,6 +540,18 @@ export const glossary: Record<string, GlossaryEntry> = {
     families   : ['engine']
   },
 
+  'settle': {
+    aliases    : ['settled', 'settles', 'settling'],
+    definition : 'A file settles when no enabled rule would rewrite it again, the state '
+               + 'every run leaves behind because each rule measures the columns it emits '
+               + 'rather than the ones a later rule will. The guarantee covers any subset a '
+               + 'project enables rather than the default set alone, so a `--select` run '
+               + 'settles in one pass too, and a corpus sweep over each rule alone and each '
+               + 'ordered rule pair holds it.',
+    families   : ['engine'],
+    href       : '/reference/pipeline-order#every-subset-settles'
+  },
+
   'span trigger': {
     aliases    : ['span-based trigger', 'row-span trigger'],
     definition : 'A span trigger expands a layout once one of its members still spans rows '

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Detached Heading Stays Above the Hoisted Band"
 
 description = '''
-A blank line stands on either side of the comment, so it binds forward to the band rather than to the definition above it. Heading the band's first constant in source order, it relocates to the head of the hoisted band rather than travelling with `MAX_INT` alone.
+A blank line stands on either side of `# the tunable solver knobs`, so the comment attaches forward to the constant band rather than to the `solve` definition above it. When the band hoists above `solve` and its constants sort, the comment moves to the head of the whole band instead of travelling with `MAX_INT`, the constant it originally preceded.
 '''

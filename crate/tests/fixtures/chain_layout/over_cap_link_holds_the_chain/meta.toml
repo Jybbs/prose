@@ -4,5 +4,5 @@ previewable = false
 title       = "A Link Past `max-args` Holds the Chain"
 
 description = '''
-An argument list past `max-args` never closes, so its link keeps a break the chain measure reads and the spine stays where the source put it. The list does not explode either, since its callee resolves no parameters and the width trigger misses.
+`first` takes four arguments, past `max-args`, so its hand-wrapped argument list never closes back onto one row, and it cannot explode to keyword form either, because `base.first` resolves to no signature and the line fits under the width cap. The fracture stands, so the link still spans lines when the chain is measured and the chain stays where the source put it.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Wrapped Comparison Flips Without Rejoining Its Lines"
 
 description = '''
-Each operand trades places within the line it was written on, leaving the author's wrapping untouched, because the flip moves the two operand spans rather than regenerating the comparison.
+The constant-lead comparison spans two lines inside its parentheses, `42` above and `== count` below. The flip swaps only the two operand spans, so `count` takes the first line and `42` lands after the `==`, leaving the author's wrapping untouched because the rule moves the operands rather than regenerating the comparison.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Class Header Cushions and Oversized Gaps Collapse to One Blank"
 
 description = '''
-A class body opens with a one-blank header cushion after `class Posting:`, then **collapses the oversized field-to-method and method-to-method gaps to a single blank line each**. The adjacent field pair stays tight.
+One blank line opens between `class Posting:` and its first field, and **the three-blank gaps before `m1` and between `m1` and `m2` collapse to a single blank each**. The adjacent pair of fields, `field` and `name`, stays tight with no blank inserted.
 '''

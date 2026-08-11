@@ -3,5 +3,5 @@ previewable = false
 title       = "Setting exempt-aliased False Flags an Aliased Import"
 
 description = '''
-With `exempt-aliased = false`, an aliased `import os as o` loses its exemption and flags once its alias namespace is reached through a single attribute, here `o.getcwd()`.
+By default an alias like `import os as o` is exempt from this lint, because the alias reads as a deliberate namespace handle. Setting `exempt-aliased = false` withdraws that exemption, so the alias is counted like any bare import, and its single attribute use in `o.getcwd()` is reported.
 '''

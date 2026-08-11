@@ -3,5 +3,5 @@ previewable = false
 title       = "A Value's Closer on Its Own Line Draws the Divider"
 
 description = '''
-A value whose closing grouping paren sits on its own line occupies a two-line block even though the value expression itself ends on the first, so the divider reads each entry's block extent rather than the value's range and fences both entries against the scalars between them.
+`"zulu"` and `"alpha"` each hold a parenthesized string whose closing `)` sits on its own line, so each entry occupies a two-line block even though the string itself ends on the first. The dividers read that block extent rather than the value expression's range, so blank lines fence both entries away from the one-line `"bravo"` and `"mike"` pair sorted between them.
 '''

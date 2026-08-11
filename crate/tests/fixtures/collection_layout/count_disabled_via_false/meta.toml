@@ -3,5 +3,5 @@ previewable = false
 title       = "A False Count Cap Leaves Width as the Only Dict Gate"
 
 description = '''
-Setting `max-dict-entries` to `false` disables the count trigger, so a dict that fits the line budget stays inline however many entries it carries.
+Setting `max-dict-entries` to `false` turns the count trigger off, leaving width as the only reason a dict expands. The five-entry `disabled` dict fits its line, so it stays inline however many entries it carries.
 '''

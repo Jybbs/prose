@@ -3,5 +3,5 @@ previewable = false
 title       = "Dict, Set, and Generator Comprehensions Each Push a Scope"
 
 description = '''
-Non-list comprehension shapes `{k: v for ...}`, `{x for ...}`, and `(x for ...)` **each push their own comprehension scope**, matching the list-comprehension shape already covered elsewhere.
+The dict comprehension behind `mapping`, the set comprehension behind `keys`, and the generator passed to `sum` **each push their own `Comprehension` scope**, just as a list comprehension does. The snapshot lists three such scopes parented to the module, holding `k` and `v`, `k` and `_`, and `_` and `v`, while the module table carries only `pairs`, `mapping`, `keys`, and `total`.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Leading Band Orders Its Chain by Tier"
 
 description = '''
-A constant-on-constant chain **orders within the leading band by dependency tier before name**, so `AREA` settles beneath the `HEIGHT` and `WIDTH` it multiplies even though its name sorts first.
+`AREA = WIDTH * HEIGHT` reads two other constants, so the three form a dependency chain. The leading band **orders by dependency tier before name**, meaning `HEIGHT` and `WIDTH` land first and `AREA` settles beneath the values it multiplies, even though `AREA` sorts first alphabetically.
 '''

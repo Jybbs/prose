@@ -3,5 +3,5 @@ previewable = false
 title       = "An Argument List of Any Other Shape Stays Written"
 
 description = '''
-A call carrying a keyword argument, a single argument, or an unpacked sequence keeps its written form, since none of the three is the class-and-instance pair the bare call replaces.
+`Child` defines three methods, each calling `super` with an argument shape the bare-call rewrite doesn't match. `send` passes `Child, self, **extra`, `single` passes only `Child`, and `starred` passes `*pair`, none the `ClassName, self` pair the rewrite requires, so `shed-super-args` leaves all three calls exactly as written.
 '''

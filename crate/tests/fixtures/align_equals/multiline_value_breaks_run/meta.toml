@@ -3,5 +3,5 @@ previewable = false
 title       = "A Multi-Line Value Closes the Keyword Run"
 
 description = '''
-A keyword whose value spans several lines aligns with the keywords before it, then **closes the run**, so the keywords after it align as a separate group.
+`rows` takes an exploded list as its value, and its `=` still aligns with `w` and `title` on the line where the list opens. **The multi-line value then closes the run**, so `on_click` and `label` align as a separate group below, on a column of their own.
 '''

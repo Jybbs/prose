@@ -3,5 +3,5 @@ previewable = true
 title       = "`merge-members = false` Leaves Each Statement Its Own Line"
 
 description = '''
-Clearing one facet leaves the others running, so the two `from pkg` statements **stay apart** while `split-multi-module` still breaks `import os, sys` into one statement per module.
+With `merge-members = false`, the two `from pkg` statements **stay apart**, `beta` and `alpha` each keeping their own line. Turning off one facet leaves the others running, so `split-multi-module` still breaks `import os, sys` into one statement per module.
 '''

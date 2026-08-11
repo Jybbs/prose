@@ -3,6 +3,5 @@ previewable = true
 title       = "A Width or Precision on `%s` Holds"
 
 description = '''
-A width on `%s` renders `None` where `{:8}` raises, and a precision cuts the
-rendered text where `{:.3}` measures the value itself.
+`padded` puts a width on `%s`, a form that renders `None` where the field spelling `{:8}` raises, and the `%.3s` in `cut` trims the rendered text where `{:.3}` measures the value itself. Both templates hold, because the f-string spelling would change what the line computes.
 '''

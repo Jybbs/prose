@@ -3,5 +3,5 @@ previewable = true
 title       = "Banner Comments Don't Block the Blank-Line Discipline"
 
 description = '''
-A banner-style block of own-line comments above a `def` reads as a **section divider**, not a description of the def. The canonical gap lands above the banner, with one blank line between the banner and the def below.
+The `# ====` banner block between `first` and `second` reads as a **section divider rather than a comment describing `second`**. The canonical two-blank gap between module defs therefore lands above the banner, and a single blank separates the banner from the `def second():` below it.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Stacked Off Directives Flatten, First On Closes"
 
 description = '''
-Two consecutive `# fmt: off` directives **flatten into a single span** rather than nesting, so the first `# fmt: on` closes the block. Assignments after that closing directive align as a normal group.
+Two `# fmt: off` directives stack ahead of `much_longer_name` and its neighbors, and they **flatten into a single span** rather than nesting, so the one `# fmt: on` closes the whole block. If the directives nested, that closer would leave a region open to the end of the file, whereas here `a`, `bb`, and `ccc` align as a normal run below it.
 '''

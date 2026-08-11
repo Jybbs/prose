@@ -3,5 +3,5 @@ previewable = false
 title       = "A Starred Target Flags Without a Suggestion"
 
 description = '''
-A starred target like `*rest` shifts the positions of the names around it, so a fixed `items[0]` subscript no longer lines up. The lint flags each single-use target without naming a rewrite whenever the unpack carries a star.
+`head` and `rest` in `head, *rest = items` are each read exactly once, in `wrap(head, rest)`, so `single-use-variables` flags both. **Neither message names a value to inline**, because `*rest` shifts the positions of the names around it and a fixed `items[0]` subscript would no longer line up.
 '''

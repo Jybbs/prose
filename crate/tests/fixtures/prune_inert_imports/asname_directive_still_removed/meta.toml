@@ -3,5 +3,5 @@ previewable = true
 title       = "An Aliased Directive Is Recognized Through the `as` Form"
 
 description = '''
-A `from __future__ import annotations as legacy` still imports the `annotations` feature regardless of the local binding name. **The rule recognizes the directive through the `as` form and deletes the line.**
+`from __future__ import annotations as legacy` enables the same `annotations` feature whatever local name the `as` clause binds. The body holds only `x = 1`, no annotation in sight, so **the rule recognizes the directive through the `as` form and deletes the line**.
 '''

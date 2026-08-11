@@ -3,5 +3,5 @@ previewable = true
 title       = "Keyword Arguments to `dict()` Become Quoted Keys"
 
 description = '''
-Each keyword names a key the literal can carry directly, so `dict(alpha=1)` reads as `{"alpha": 1}`.
+`dict(alpha=1, beta=2)` passes two keyword arguments, `alpha` and `beta`, each naming a key the brace literal can carry directly. `simplify-comprehensions` rewrites the call to `{"alpha": 1, "beta": 2}`, quoting each keyword's name as its dict key.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Default-Less Parameter Splits the Run"
 
 description = '''
-An annotated parameter without a default value **splits the surrounding parameter run**. The remaining parameters have widths that would align if grouped, yet they stay unpadded as singletons.
+`flag: bool` carries no default, and **it splits the parameter run**, leaving `x` and `verbose` on opposite sides of the break. Each is then a singleton with no partner to align against, so `x: int = 1` keeps its natural width instead of padding out to match `verbose: bool = True`.
 '''

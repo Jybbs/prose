@@ -3,5 +3,5 @@ previewable = true
 title       = "Source Without Numbered Comments Surfaces Nothing"
 
 description = '''
-A module carrying no numbered-step comments produces **no diagnostics**. The rule is lint-only, so any pass over clean source leaves the text unchanged and reports nothing.
+`process` carries no comments at all, so there is no numbered-step narration for the lint to flag and the run produces **no diagnostics**. The rule is lint-only, leaving the source byte-for-byte unchanged.
 '''

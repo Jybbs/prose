@@ -3,5 +3,5 @@ previewable = false
 title       = "Malformed Arg Line Starting With Punctuation Is Skipped"
 
 description = '''
-An `Args:` block holds a malformed entry whose line opens with `:` rather than an identifier. The rule **drops that line from the member set**, so the well-formed entries above and below it still align with each other.
+One line in the `Args:` block of `render` opens with a bare `:` rather than an identifier, so it does not parse as an entry. The rule **drops that line from the alignment group**, leaving it untouched while `template`, `context`, and `partials` around it still align on one `:` column.
 '''

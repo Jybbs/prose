@@ -3,5 +3,5 @@ previewable = true
 title       = "A `prose: off` Region Holds Its Comment Column"
 
 description = '''
-The two rows inside the off region keep the gaps they were written with, and the pair below the `prose: on` marker settles onto a shared column. The region reaches `align-comments` through the same suppression map the per-rule skip directive uses.
+`seed()` and `compact_the_index()` sit inside a `#prose: off` region, so their trailing comments keep the gaps they were written with. Once `# prose: on` closes the region, `align-comments` settles the comments on `flush()` and `warm_the_cache_now()` onto a shared column.
 '''

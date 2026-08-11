@@ -3,5 +3,5 @@ previewable = false
 title       = "A Blank Run Above a Module's Leading Comment Clears"
 
 description = '''
-The run opening a module is **measured above the comment block leading the first statement** rather than above the statement itself, so a module whose first line is an own-line comment clears the same run. The comment's own tight binding to the statement below is unchanged.
+The file opens with two blank lines above `# Configure the sink.`, and the module's leading run is **measured above the comment block that leads `import os`** rather than above the import itself. Both blanks clear away, while the comment stays tight against the import below it.
 '''

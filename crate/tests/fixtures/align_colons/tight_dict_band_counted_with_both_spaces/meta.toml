@@ -3,5 +3,5 @@ previewable = true
 title       = "A Tight Dict Band Is Measured With Both Inserted Spaces"
 
 description = '''
-Each entry sits flush against its `:`, so aligning the band inserts a space before the colon and another after it. Counting both puts the long-valued entry one column past `code-line-length` at the shared column, so it partitions out and sits flush against its own colon under the singleton rule while the two narrower entries align beneath it.
+Every entry of `paths` sits flush against its `:`, so aligning the band inserts one space before each colon and another after it. Counting both spaces puts the `"label"` row, with its long `"docs/annual-summary.html"` value, one column past `code-line-length` at the shared column, so it partitions out and keeps its colon flush under the singleton rule while `"verbose"` and `"dry"` align beneath it.
 '''

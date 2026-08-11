@@ -3,5 +3,5 @@ previewable = false
 title       = "Step Over IPython Magics"
 
 description = '''
-A cell opening with a line magic and a shell escape parses in IPython mode, where **the rules step over the magics and align the assignments below**.
+The cell opens with the line magic `%matplotlib inline` and the shell escape `!pip install numpy`, syntax that parses only in IPython mode. **The rules step over both magics and align the `x` and `yy` assignments below them** on the `=` column.
 '''

@@ -4,5 +4,5 @@ previewable = false
 title       = "A Positional Call to an Unresolved Callee Stays Inline"
 
 description = '''
-The rule cannot name the positional arguments of a call whose callee does not resolve to a module function, so the call reads as written.
+`compute` does not resolve to a function defined in this module, so the rule has no signature to name `alpha` through `delta` against. Without names to bind, the four-positional call stays inline exactly as written.
 '''

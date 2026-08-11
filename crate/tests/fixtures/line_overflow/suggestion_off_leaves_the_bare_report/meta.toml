@@ -3,5 +3,5 @@ previewable = true
 title       = "Turning the Facet Off Leaves the Bare Report"
 
 description = '''
-`suggest-string-splits = false` drops the suggested form where naming the line is all a project needs. The report still withholds *"with no legal reshape"*, because one exists here whether or not the finding spells it out.
+With `suggest-string-splits = false`, the finding on `BANNER`'s 54-column line carries no suggested split, only the report naming the line and its budget. The message still omits `with no legal reshape`, because the split of this string exists whether or not the finding spells it out.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Body Opening on a Role Still Wraps"
 
 description = '''
-A docstring whose first body line opens with a role **wraps to the budget like any other paragraph**. That line is a true block boundary, so the field-list test runs and rejects it on the closing backtick, leaving the overflow measured rather than passed through untouched.
+This docstring's body opens with the `:class:` role naming `~ensemble.VotingClassifier`, a position where a field list could begin. The field-list test runs at that block boundary and fails on the role's closing backtick, so the line reads as prose and **the paragraph wraps to the budget like any other**.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Args Section Aligns While Other Sections Stay Put"
 
 description = '''
-A function docstring carries a Google-style `Args:` section. Each entry's `:` aligns to the widest argument name's column, while **the surrounding `Returns:` section and the function body stay untouched**.
+The docstring of `transfer` carries a Google-style `Args:` section listing `source`, `destination`, `amount`, and `memo`. Each entry's `:` aligns to the column set by `destination`, the widest name, while **the `Returns:` section below and the function body stay untouched**.
 '''

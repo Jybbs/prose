@@ -3,5 +3,5 @@ previewable = true
 title       = "Constants Sort and Align Around a `# fmt: off` Block"
 
 description = '''
-Module constants above a `# fmt: off` block sort alphabetically and align their `=` column. **The suppressed block stays verbatim because the directive bounds its own scope**, and the run boundary respects that bracket.
+The constants `zebra`, `foo`, and `bar_baz` sit above a `# fmt: off` block, so they sort alphabetically and their `=` pads into one column. **The hand-shaped `matrix` between `# fmt: off` and `# fmt: on` stays byte for byte as written**, because the directives bound a region no rule edits, and the sort-and-align run stops at that boundary.
 '''

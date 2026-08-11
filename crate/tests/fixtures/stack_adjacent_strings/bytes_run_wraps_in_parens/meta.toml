@@ -3,5 +3,5 @@ previewable = true
 title       = "A Bytes Run Breaks Like a String Run"
 
 description = '''
-Adjacent `bytes` literals concatenate the same way adjacent `str` literals do, so an over-budget bytes run **takes the same one-per-line break**.
+`payload`'s two `bytes` literals concatenate the same way adjacent `str` literals do, and together they overflow the line. `stack-adjacent-strings` **gives the bytes run the same one-per-line break** as an overflowing `str` run, wrapping the assignment in parentheses the source did not have.
 '''

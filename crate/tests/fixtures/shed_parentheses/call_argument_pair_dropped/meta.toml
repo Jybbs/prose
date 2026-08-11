@@ -3,5 +3,5 @@ previewable = false
 title       = "A Redundant Pair Around a Call Argument Drops"
 
 description = '''
-A grouping wrapped around a single call argument sheds, so `record((event))` reflows to `record(event)`.
+`record((event))` wraps its single argument `event` in an extra set of parentheses inside the call's own. The inner set sheds, reflowing the call to `record(event)`.
 '''

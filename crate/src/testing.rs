@@ -143,6 +143,15 @@ pub(crate) fn format_diagnostic(range: TextRange) -> Diagnostic {
     )
 }
 
+/// A rule replacing the source's first byte with `yy`, so every pass
+/// over its own output grows the line and edits again.
+pub(crate) fn never_settles(id: &'static str) -> GroupSentinelRule {
+    GroupSentinelRule {
+        groups: vec![vec![Edit::range_replacement("yy".to_owned(), range(0, 1))]],
+        id: RuleId::from(id),
+    }
+}
+
 /// Builds a notebook-backed `Source` from per-cell Python sources, the
 /// `Ipynb` counterpart to [`parse`]. The cells concatenate through the
 /// synthetic separator `ruff_notebook` inserts, so the returned source

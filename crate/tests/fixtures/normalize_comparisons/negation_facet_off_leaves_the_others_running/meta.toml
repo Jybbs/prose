@@ -3,5 +3,5 @@ previewable = false
 title       = "The Negation Facet Off Leaves the Other Rewrites Running"
 
 description = '''
-`rewrite-negation = false` keeps `not key in table` outside its operator, while the `None` test still becomes an identity check and the constant-led comparison still flips.
+With `rewrite-negation = false`, `not key in table` keeps its leading `not` rather than folding into `not in`. The other facets keep running, so `value == None` still becomes `value is None`, `0 == len(table)` still flips to `len(table) == 0`, and `flag == True` is still flagged as a boolean-literal comparison.
 '''

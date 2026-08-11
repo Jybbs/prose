@@ -3,5 +3,5 @@ previewable = true
 title       = "Stranded Padding around an Annotated Assignment Strips at Any Scope"
 
 description = '''
-An annotated assignment that survives its aligned group as a lone row keeps the pre-`:` padding that once lined up with a column now gone. A module-level `_handlers   : Dict[Text, Callable] = {}` and a function-body `timeout   : int = 30` each **shed that padding down to `name:`**, since no `align-colons` run claims the column.
+`_handlers   : Dict[Text, Callable] = {}` sits at module scope and `timeout   : int = 30` sits inside `configure`, each the lone annotated assignment in its group, so `align-colons` never claims a shared column for its pre-`:` padding. `strip-align-padding` **strips that padding down to `name:`** at both scopes, since no other row remains to align with.
 '''

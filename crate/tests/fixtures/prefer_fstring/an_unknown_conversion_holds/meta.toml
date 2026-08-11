@@ -3,6 +3,5 @@ previewable = false
 title       = "An Unknown Conversion Holds"
 
 description = '''
-The template grammar accepts the character where `str.format` does not, so
-the call is left to raise as written.
+The conversion `!b` names no converter `str.format` defines, the known set being `!s`, `!r`, and `!a`, so the call raises `ValueError` at runtime. The template grammar itself parses the character, and the call is left to raise as written rather than becoming an f-string that would not compile.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Imports in a Function Body Form Their Own Group"
 
 description = '''
-Imports inside a function body align at the function's indent level, **independent of any module-level imports above**. The visitor descends into the nested body, so its per-block run reaches its own `import` column without crossing the outer group.
+The two module-level imports and the three inside `lazy_setup` align as separate groups, **each with its own `import` column independent of the other**. At module level `collections` sets the column, whereas inside the function `contextlib` sets a narrower one, so neither group's widest module widens the other.
 '''

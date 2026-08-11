@@ -4,13 +4,17 @@ use std::io::{self, Write};
 
 use serde::Serialize;
 
-use super::args::{RulesArgs, RulesFormat};
-use super::exit_status::ExitStatus;
-use crate::pipeline::Pipeline;
-use crate::rule::{dependencies_of, message_for_id};
+use super::{
+    args::{RulesArgs, RulesFormat},
+    exit_status::ExitStatus,
+};
+use crate::{
+    pipeline::Pipeline,
+    rule::{dependencies_of, message_for_id},
+};
 
 /// One registered rule, carrying its one-based pipeline position and
-/// the slugs whose output it reads.
+/// the slugs it must run behind.
 #[derive(Serialize)]
 struct RuleInfo {
     after: &'static [&'static str],

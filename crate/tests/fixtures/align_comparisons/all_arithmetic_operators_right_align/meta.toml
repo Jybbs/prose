@@ -3,5 +3,5 @@ previewable = false
 title       = "All Six Comparison Operators Right-Align in One Group"
 
 description = '''
-All six comparison operators, `==`, `!=`, `<`, `<=`, `>`, and `>=`, align in one group with **right-alignment**. Each operator's last character sits in the shared column, so the single-character `<` and `>` indent further than the two-character forms.
+The `and` chain compares `a` through `f` using all six comparison operators, `==`, `!=`, `<`, `<=`, `>`, and `>=`, and they align in one group with **right-alignment**. Each operator's last character sits in the shared column, so the single-character `<` and `>` sit one column deeper than the two-character forms.
 '''

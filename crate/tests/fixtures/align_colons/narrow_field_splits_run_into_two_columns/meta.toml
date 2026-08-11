@@ -3,5 +3,5 @@ previewable = true
 title       = "A Narrow Field Splits the Run into Two Aligned Columns"
 
 description = '''
-A narrow field reading mid-run sits more than `max-shift` from the wide fields above it, so it **breaks the run in reading order**. The fields before it share one column and the fields from it onward share another.
+The narrow `id` sits more than `max-shift` from the wide database fields above it, so it **breaks the run in reading order**. `primary_database_connection` and `backup_database_connection` share one column, and `id` and `short` open a second, much narrower one from that point onward.
 '''

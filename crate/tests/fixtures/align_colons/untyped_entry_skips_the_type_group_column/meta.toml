@@ -3,5 +3,5 @@ previewable = true
 title       = "An Entry Naming No Type Still Reaches the Colon Column"
 
 description = '''
-An entry written without a parenthesized type group joins no type-group column, since it has no `(` to seat there, and its `:` still pads to the edge its type-bearing neighbors share.
+The entry `plain` carries no parenthesized type, so it joins no type-group column, having no `(` to seat there. `host (str)` and `retry_budget (int)` open their parens on a shared column, and the `:` of `plain` still pads out to the same colon column all three entries share.
 '''

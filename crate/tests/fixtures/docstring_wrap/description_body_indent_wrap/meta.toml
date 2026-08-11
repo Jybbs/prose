@@ -4,5 +4,5 @@ previewable = true
 title       = "Description Paragraphs Wrap at the Body Indent"
 
 description = '''
-Description prose wraps to `docstring-line-length`, with the existing paragraph structure preserved across the rewrap.
+The single over-long paragraph in `greet`'s docstring wraps to `docstring-line-length`, each wrapped line landing at the docstring body indent. The rewrap moves words across the line break without splitting or merging the paragraph itself.
 '''

@@ -4,5 +4,5 @@ previewable = false
 title       = "A Parenthesized Chain Reuses Its Own Pair"
 
 description = '''
-A chain the source already wrapped breaks inside the pair it carries rather than gaining a second one.
+The source already wraps `query.filter(a).order(b).limit(c)` in parentheses. Breaking the chain reuses that pair, the head dropping inside it with `.order` and `.limit` stacked beneath, rather than wrapping the block in a second one.
 '''

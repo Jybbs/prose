@@ -3,5 +3,5 @@ previewable = false
 title       = "Literal-Valued Bindings Sort within Tier Zero"
 
 description = '''
-A module-level run of single-name `Assign` statements with literal right-hand sides **alphabetizes within tier 0**. With no intra-run references, the dependency graph is empty and every name sorts directly against the rest.
+`charlie`, `alpha`, and `bravo` each bind a string literal and none reads another, so the dependency graph inside the run is empty. **The run alphabetizes freely**, landing `alpha = "first"` above `bravo = "second"` above `charlie = "third"`.
 '''

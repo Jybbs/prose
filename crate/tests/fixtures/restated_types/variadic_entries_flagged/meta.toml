@@ -3,5 +3,5 @@ previewable = true
 title       = "A Variadic Entry Resolves Past Its Star Prefix"
 
 description = '''
-An entry name drops its `*` or `**` prefix before it resolves, so `*args` and `**kwargs` reach the annotated variadics the signature declares.
+`*args (int)` and `**kwargs (str)` restate the same types `*args: int` and `**kwargs: str` annotate in `relay`'s signature. **Both entries are flagged**, an entry name dropping its `*` or `**` prefix before it resolves against the signature's variadic parameters.
 '''

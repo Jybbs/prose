@@ -3,5 +3,5 @@ previewable = true
 title       = "A Generator Inside a Constructor Becomes a Comprehension"
 
 description = '''
-The constructor's own brackets carry the comprehension, so the wrapping call goes and the generator's body stays as written.
+`list(row.width for row in rows)` and `set(row.label for row in rows)` each pass a bare generator expression as the constructor's sole argument. `simplify-comprehensions` drops the wrapping call and lets the constructor's own brackets carry the comprehension, so `list(...)` becomes `[row.width for row in rows]` and `set(...)` becomes `{row.label for row in rows}`.
 '''

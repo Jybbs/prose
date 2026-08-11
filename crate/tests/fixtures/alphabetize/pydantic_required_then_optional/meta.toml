@@ -3,5 +3,5 @@ previewable = true
 title       = "Pydantic Fields Sort, Required before Optional"
 
 description = '''
-Pydantic fields **split into required (no default) and optional (has default) sub-groups**. Each sub-group alphabetizes independently and the required group lands above the optional group regardless of source order.
+`Posting`'s fields **split into required and optional sub-groups**, a field with no default counting as required. `company`, `date_posted`, and `url` rise above the defaulted `description`, `location`, and `title` regardless of source order, and each sub-group alphabetizes independently.
 '''

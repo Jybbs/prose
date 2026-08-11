@@ -3,5 +3,5 @@ previewable = false
 title       = "Yapf Disable and Enable Alias the Fmt Span"
 
 description = '''
-The `# yapf: disable` / `# yapf: enable` aliases produce **the same suppressed span** as `# fmt: off` / `# fmt: on`, leaving the bracketed assignments verbatim while the surrounding runs align.
+`# yapf: disable` and `# yapf: enable` around `short`, `much_longer_name`, and `mid` **produce the same suppressed span** `# fmt: off` and `# fmt: on` would, leaving those three assignments verbatim. The `bar_baz`, `foo`, `x` run above the block and the `a`, `bb`, `ccc` run below it still align to their own group widths.
 '''

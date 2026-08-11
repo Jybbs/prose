@@ -4,5 +4,5 @@ previewable = true
 title       = "A List or Tuple Literal Inside `set()` Becomes a Set Literal"
 
 description = '''
-A bracketed literal handed to `set()` already spells its members, so the call gives way to the brace form and `set([1, 4, 9])` reads as `{1, 4, 9}`.
+`set([1, 4, 9])` passes a list literal, and `set(("alpha", "beta"))` passes a tuple literal, each already spelling the set's members. `simplify-comprehensions` trades the call for the brace form, so `squares` becomes `{1, 4, 9}` and `labels` becomes `{"alpha", "beta"}`.
 '''

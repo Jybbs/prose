@@ -3,5 +3,5 @@ previewable = false
 title       = "A Trailing Comment Keeps the Run Intact"
 
 description = '''
-A trailing comment after the prev-operand source line **does not break the alignment run**, since the operands stay on adjacent lines. The pipeline's `SuppressionMap` filter handles directive comments separately on emitted edits.
+The `# trailing` comment after `foo == 1` **does not break the alignment run**, since the three operands still sit on adjacent source lines. The `==` for `foo`, `bar_baz`, and `qux` settle into one column, whereas a comment ends a run only when it takes a line of its own.
 '''

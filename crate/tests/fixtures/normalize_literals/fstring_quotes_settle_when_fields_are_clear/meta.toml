@@ -3,5 +3,5 @@ previewable = true
 title       = "An F-String Swaps When No Field Carries the Target Quote"
 
 description = '''
-Both f-strings move to `"`, the first carrying a format spec through the swap and the second holding no replacement field at all. The opener, the closer, and every literal run between them move as one edit.
+Neither f-string carries a `"` anywhere inside it, so both settle on double quotes, `label` bringing its `:>8` format spec through the swap untouched and `plain` holding no replacement field at all. The opener, the closer, and the literal text between them swap in a single edit.
 '''

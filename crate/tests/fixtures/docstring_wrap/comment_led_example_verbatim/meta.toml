@@ -3,5 +3,5 @@ previewable = true
 title       = "Comment-Led Code Examples Pass Through Verbatim"
 
 description = '''
-A code example introduced by a `#` comment **keeps one statement per line**. The comment opens a passthrough block that runs to the next blank line, so the statements below it stay valid Python instead of merging into a single run-on.
+The example under `Summary line.` opens with a `#` comment and continues into `total = sum(values)` and `print(total)`. **The comment opens a passthrough block running to the next blank line**, so each statement keeps its own line instead of merging into a single run-on paragraph.
 '''

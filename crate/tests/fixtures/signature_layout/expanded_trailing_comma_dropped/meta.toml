@@ -3,5 +3,5 @@ previewable = false
 title       = "Expansion Drops the Trailing Comma"
 
 description = '''
-A multi-line signature whose last parameter carries a trailing `,` **loses it in the canonical expansion**. The exploded emission ends its final parameter bare, the shape `strip-trailing-commas` accepts.
+`render`'s five parameters are already written one per line, and the last, `verbose: bool,`, carries a trailing comma. `signature-layout`'s canonical expansion **ends the final parameter bare**, leaving nothing for `strip-trailing-commas` to remove.
 '''

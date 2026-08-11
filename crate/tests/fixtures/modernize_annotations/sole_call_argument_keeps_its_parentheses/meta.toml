@@ -3,5 +3,5 @@ previewable = false
 title       = "A Sole Call Argument Keeps the Call's Parentheses"
 
 description = '''
-A legacy annotation standing as a call's only argument rewrites inside the parentheses rather than absorbing them, the argument list bounding the span the rewrite replaces rather than the call around it.
+In `narrow`, `Optional[int]` stands as `cast`'s only argument, so the parentheses around it belong to the call rather than to grouping. The rewrite replaces just the argument, producing `cast(int | None)` with the call's parentheses intact, and the two-argument `cast(Optional[int], value)` in `widen` rewrites the same way. Only `Optional` drops from the import, because `cast` is still read.
 '''

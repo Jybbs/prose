@@ -3,5 +3,5 @@ previewable = false
 title       = "Nested Redundant Pairs Drop in One Pass"
 
 description = '''
-A pair nested inside another redundant pair sheds in the same pass, so `((base + bonus))` reduces to `base + bonus` and `(left + (right))` to `left + right`.
+`doubled = ((base + bonus))` nests one redundant set of parentheses inside another, and `mixed = (left + (right))` nests one around `right` alone. Both shed in the same pass, reducing them to `doubled = base + bonus` and `mixed = left + right`.
 '''

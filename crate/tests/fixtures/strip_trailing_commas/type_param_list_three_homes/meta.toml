@@ -3,5 +3,5 @@ previewable = false
 title       = "Type-Parameter Lists Strip in All Three Homes"
 
 description = '''
-A generic-syntax type-parameter list spanning `[...]` drops its trailing `,` whether it sits on a function, a class, or a `type` alias. **The backward scan from before the closing `]` lands on the comma after the last parameter** in every one of the three homes.
+`transform`'s `[T, U,]`, `Container`'s `[T, U,]`, and `Pair`'s `[T, U,]` are the three homes a generic-syntax type-parameter list can sit on, a `def`, a `class`, and a `type` alias. **`strip-trailing-commas` scans backward from each closing `]` and lands on the `,` after `U`**, dropping it in every one of the three homes.
 '''

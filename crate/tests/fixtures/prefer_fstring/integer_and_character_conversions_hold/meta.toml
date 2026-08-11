@@ -3,6 +3,5 @@ previewable = true
 title       = "An Integer or Character Conversion Holds"
 
 description = '''
-`%d` truncates a float and `%c` maps an ordinal, where the matching
-presentation type raises instead.
+These `%` conversions accept values their f-string presentation types reject, in that `%d` and `%i` truncate a float where `:d` raises, and `%c` maps an ordinal where `:c` raises instead. Nothing in the source pins the runtime types of `total`, `n`, or `code`, so all three lines hold.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "An Unread Mapping Entry Holds"
 
 description = '''
-Dropping the entry no spec names would drop its evaluation along with it.
+The template's one spec reads `kept`, whereas the dict also carries `"spare": ignored`, an entry no spec names. The dict literal still evaluates `ignored` at runtime, and a rewrite to `f"{chosen}"` would drop that evaluation with the entry, so the line holds.
 '''

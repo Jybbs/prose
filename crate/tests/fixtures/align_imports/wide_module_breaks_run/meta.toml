@@ -3,5 +3,5 @@ previewable = false
 title       = "A Wide Module Breaks the `from`-Import Run"
 
 description = '''
-A module whose `from M` prefix overshoots `max-shift` **breaks the run in reading order**, landing its `import` flush. The imports before it and after it each align the keyword at their own column.
+Aligning all six lines would shift every `import` keyword out past `collections.abc.mapping_helpers.namespaced`, farther than `max-shift` allows, so the wide module **breaks the run in reading order** and its own `import` stays a single space from the module. The three imports above the break, `io`, `re`, and `os`, are equally wide and need no padding, whereas below it `sys` pads to match `os.path`.
 '''

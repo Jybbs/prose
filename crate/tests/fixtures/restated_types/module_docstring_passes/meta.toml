@@ -3,5 +3,5 @@ previewable = false
 title       = "A Module Docstring Documents No Signature"
 
 description = '''
-A module carries no parameters and no class body, so an entry inside its docstring resolves against nothing.
+The module's own docstring carries an `Args:` section naming `host (str)`, but the file defines no function and no class. **The entry resolves against nothing and stays silent**, since a module docstring documents no signature and no class body.
 '''

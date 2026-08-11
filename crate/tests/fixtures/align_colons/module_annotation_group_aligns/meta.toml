@@ -3,5 +3,5 @@ previewable = true
 title       = "Module-Level Annotation Colons Align across a Line-Adjacent Group"
 
 description = '''
-A run of line-adjacent annotated assignments **settles its `:` onto a shared column** at the widest name's width, the same way class fields and dict entries do. Each aligned row keeps one space before the colon and one after it, so a padded `x:   int` reads as a row in the same table as `yyyy : str`.
+The module-level annotations `x` and `yyyy` sit on adjacent lines, so they **settle their `:` onto a shared column** at the width of `yyyy`, the same way class fields and dict entries do. Each aligned row carries one space either side of the colon, so the padded `x:   int` lands as `x    : int` in the same table as `yyyy : str`.
 '''

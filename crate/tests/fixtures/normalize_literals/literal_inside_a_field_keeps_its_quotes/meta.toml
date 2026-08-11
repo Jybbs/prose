@@ -3,5 +3,5 @@ previewable = true
 title       = "A Literal Inside a Field Keeps Its Quotes and Loses Its Prefix"
 
 description = '''
-The nested `u'inner'` drops its no-op prefix while keeping the single quotes the enclosing f-string constrains. **The prefix and numeric facets reach inside a replacement field and the quote facet does not**, since only the quote is version-sensitive.
+Inside `picked`'s replacement field, `u'inner'` drops its no-op `u` prefix but keeps its single quotes, since a `"` nested inside the double-quoted f-string only parses from Python 3.12. **The prefixes and numerics facets reach inside a replacement field, whereas the quotes facet does not**, because only the quote choice is version-sensitive.
 '''

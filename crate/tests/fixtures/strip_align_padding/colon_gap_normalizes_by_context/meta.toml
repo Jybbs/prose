@@ -3,5 +3,5 @@ previewable = true
 title       = "The Post-`:` Gap Settles to One Space across Every Colon Context"
 
 description = '''
-The run after a colon that aligns with nothing **settles to one space**, whichever context carries the colon. A one-key dict value, a lone annotated parameter, and a function-body annotation each read as `name: value`, collapsing a padded `payload:   dict` and inserting the missing space into `result:int`.
+A `:` that aligns with nothing **keeps exactly one space after it**, wherever it appears. The one-key dict collapses `"only":   1`, the signature collapses `payload:   dict`, and the annotation `result:int` gains its missing space, each landing on plain `name: value`.
 '''

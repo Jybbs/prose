@@ -1,7 +1,7 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Each Method's Assignment Run Aligns on Its Own `=`"
 
 description = '''
-Out-of-order class methods each carry a run of body assignments. The methods sort and gain blank-line cushions, and **each method's `=` column aligns independently within its own body**.
+`render` and `configure` arrive out of order, each opening with three assignments. `alphabetize` puts `configure` first and `blank-lines` inserts a blank line between the methods, and **each body aligns its own `=` column independently**, so `configure`'s pads to `port_id` and `retries` while `render`'s pads to the wider `markup_text`.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Comment Trailing an Open Bracket Takes the Floor Too"
 
 description = '''
-The two-column floor applies wherever a comment trails code, an open bracket included. [[strip-align-padding]] declines the padding in that exact position so the comment never fuses onto the bracket, leaving this rule to settle how wide the gap reads.
+The two-column floor applies wherever a comment trails code, an open bracket included, so the single space between `call(` and `# note on the opener` widens to two. [[strip-align-padding]] exempts the gap in that exact position so the comment never fuses onto the bracket, leaving this rule to settle its width.
 '''

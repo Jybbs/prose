@@ -17,6 +17,7 @@ use ruff_python_ast::{
     Alias, Stmt, StmtImport, StmtImportFrom,
     helpers::format_import_from,
     statement_visitor::{StatementVisitor, walk_body},
+    token::TokenKind,
 };
 use ruff_python_trivia::indentation_at_offset;
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -50,6 +51,7 @@ type ModuleKey<'a> = (u32, Option<&'a str>);
 
 pub(crate) struct ImportLayout {
     align_settings: Option<aligner::Settings>,
+    divided: Option<Vec<String>>,
     import_line_length: usize,
     merge_members: bool,
     sort_members: bool,
@@ -68,6 +70,8 @@ impl ImportLayout {
             // carrying its `max-shift` but no line cap so a to-be-split
             // import reads the column it aligns to once split.
             align_settings: align.enabled.then(|| aligner::Settings::from(align)),
+            divided: (config.group_imports_enabled() && config.rules.blank_lines.enabled)
+                .then(|| config.first_party()),
             import_line_length: config.import_width(),
             merge_members: rules.merge_members,
             sort_members: config.alphabetize_enabled(),
@@ -79,7 +83,7 @@ impl ImportLayout {
 impl Rule for ImportLayout {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let columns = self.align_settings.map_or_else(HashMap::new, |settings| {
-            align_imports::aligned_import_columns(source, settings)
+            align_imports::aligned_import_columns(source, settings, self.divided.as_deref())
         });
         let mut visitor = Layout {
             columns,
@@ -128,7 +132,11 @@ impl<'a> Layout<'a> {
             .filter_map(|&slot| body[slot].as_import_from_stmt())
             .flat_map(|member| &member.names);
         let names = self.roster(aliases);
-        let mut edits: Vec<Edit> = self.packed_edit(node, &names).into_iter().collect();
+        let prefix = import_prefix(self.source, node);
+        let mut edits: Vec<Edit> = self
+            .packed_edit(node, &prefix, &names)
+            .into_iter()
+            .collect();
         edits.extend(
             group[1..]
                 .iter()
@@ -150,23 +158,27 @@ impl<'a> Layout<'a> {
         };
         let names = self.roster(node.names.iter());
         let names_width: usize = names.iter().map(|name| name.width()).sum();
-        if self.prefix_width(node) + names_width + MEMBER_SEPARATOR.len() * (names.len() - 1)
+        let prefix = import_prefix(self.source, node);
+        if self.prefix_width(node, &prefix)
+            + names_width
+            + MEMBER_SEPARATOR.len() * (names.len() - 1)
             <= self.import_line_length
         {
             return;
         }
-        self.groups
-            .extend(self.packed_edit(node, &names).map(|edit| vec![edit]));
+        self.groups.extend(
+            self.packed_edit(node, &prefix, &names)
+                .map(|edit| vec![edit]),
+        );
     }
 
-    /// The edit rewriting `node` to carry `names` under its repeated
-    /// prefix, each line packed from the prefix column up to the import
-    /// budget. `None` when the statement does not open its own line or
-    /// already reads that way.
-    fn packed_edit(&self, node: &StmtImportFrom, names: &[&str]) -> Option<Edit> {
+    /// The edit rewriting `node` to carry `names` under `prefix`,
+    /// repeated on each line and packed from the prefix column up to the
+    /// import budget. `None` when the statement does not open its own
+    /// line or already reads that way.
+    fn packed_edit(&self, node: &StmtImportFrom, prefix: &str, names: &[&str]) -> Option<Edit> {
         let indent = own_line_indent(self.source, node)?;
-        let prefix = import_prefix(node);
-        let prefix_width = self.prefix_width(node);
+        let prefix_width = self.prefix_width(node, prefix);
         let widths: Vec<usize> = names.iter().map(|name| name.width()).collect();
         let joiner = format!("{}{indent}", self.newline);
         let rewrite = pack(
@@ -184,9 +196,9 @@ impl<'a> Layout<'a> {
     /// Display width the first name lands at, the aligned `import`
     /// column when `align-imports` pads the keyword rightward and the
     /// natural prefix width otherwise.
-    fn prefix_width(&self, node: &StmtImportFrom) -> usize {
+    fn prefix_width(&self, node: &StmtImportFrom, prefix: &str) -> usize {
         self.columns.get(&node.start()).map_or_else(
-            || self.source.line_indent_width(node.start()) + import_prefix(node).width(),
+            || self.source.line_indent_width(node.start()) + prefix.width(),
             |&column| column + IMPORT_KEYWORD_WIDTH,
         )
     }
@@ -267,12 +279,27 @@ fn gathers_cleanly(source: &Source, body: &[Stmt], slots: &[usize]) -> bool {
     source.same_cell(span.start(), span.end()) && !source.intersects_comment(span)
 }
 
+/// The whitespace between `node`'s module and its `import` keyword, the
+/// column `align-imports` pads the keyword to. `None` when the keyword
+/// opens a line of its own.
+fn import_keyword_gap<'src>(source: &'src Source, node: &StmtImportFrom) -> Option<&'src str> {
+    let anchored = aligner::line_anchored_member_at_kind(
+        source,
+        node.start(),
+        node.range(),
+        TokenKind::Import,
+    )?;
+    Some(source.slice(anchored.gap))
+}
+
 /// Builds the `from <dots><module> import ` prefix each split line
-/// repeats, with the relative-import leading dots folded into it.
-fn import_prefix(node: &StmtImportFrom) -> String {
+/// repeats, with the relative-import leading dots folded into it and
+/// the source's own gap before `import` carried through.
+fn import_prefix(source: &Source, node: &StmtImportFrom) -> String {
     format!(
-        "from {} import ",
+        "from {}{}import ",
         format_import_from(node.level, node.module.as_deref()),
+        import_keyword_gap(source, node).unwrap_or(" "),
     )
 }
 
@@ -338,10 +365,30 @@ mod tests {
     use crate::testing::parse;
 
     #[rstest]
+    #[case("from pkg import x\n", Some(" "))]
+    #[case("from pkg     import x\n", Some("     "))]
+    #[case("from pkg\timport x\n", Some("\t"))]
+    #[case("from . import x\n", Some(" "))]
+    #[case("from pkg import (\n    x,\n)\n", Some(" "))]
+    #[case("from pkg \\\n    import x\n", None)]
+    fn import_keyword_gap_reads_the_spaces_before_the_keyword(
+        #[case] src: &str,
+        #[case] expected: Option<&str>,
+    ) {
+        let source = parse(src);
+        let node = source.ast().body[0]
+            .as_import_from_stmt()
+            .expect("first statement is a from-import");
+
+        assert_eq!(import_keyword_gap(&source, node), expected);
+    }
+
+    #[rstest]
     #[case("from a.b.c import x\n", "from a.b.c import ")]
     #[case("from . import x\n", "from . import ")]
     #[case("from .sub import x\n", "from .sub import ")]
     #[case("from ..pkg import x\n", "from ..pkg import ")]
+    #[case("from typing     import x\n", "from typing     import ")]
     fn import_prefix_folds_relative_dots_into_the_repeated_prefix(
         #[case] src: &str,
         #[case] expected: &str,
@@ -350,7 +397,7 @@ mod tests {
         let node = source.ast().body[0]
             .as_import_from_stmt()
             .expect("first statement is a from-import");
-        assert_eq!(import_prefix(node), expected);
+        assert_eq!(import_prefix(&source, node), expected);
     }
 
     #[test]
@@ -358,20 +405,7 @@ mod tests {
         let source = parse("from pkg import (\n    alpha,\n    beta,\n    gamma,\n)\n");
         let rule = ImportLayout {
             align_settings: None,
-            import_line_length: 10,
-            merge_members: true,
-            sort_members: true,
-            split_multi_module: true,
-        };
-
-        assert!(rule.apply(&source).is_empty());
-    }
-
-    #[test]
-    fn semicolon_joined_import_is_left_untouched() {
-        let source = parse("x = 1; from pkg import alpha, beta, gamma\n");
-        let rule = ImportLayout {
-            align_settings: None,
+            divided: None,
             import_line_length: 10,
             merge_members: true,
             sort_members: true,
@@ -386,6 +420,22 @@ mod tests {
         let source = parse("x = 1; import os, sys\n");
         let rule = ImportLayout {
             align_settings: None,
+            divided: None,
+            import_line_length: 10,
+            merge_members: true,
+            sort_members: true,
+            split_multi_module: true,
+        };
+
+        assert!(rule.apply(&source).is_empty());
+    }
+
+    #[test]
+    fn semicolon_joined_import_is_left_untouched() {
+        let source = parse("x = 1; from pkg import alpha, beta, gamma\n");
+        let rule = ImportLayout {
+            align_settings: None,
+            divided: None,
             import_line_length: 10,
             merge_members: true,
             sort_members: true,

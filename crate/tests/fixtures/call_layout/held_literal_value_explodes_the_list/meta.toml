@@ -4,5 +4,5 @@ previewable = true
 title       = "A Held Literal Explodes the Argument List Around It"
 
 description = '''
-An argument the author left laid out across rows explodes the list around it, so every sibling takes its own row rather than packing against the block's closing brace. The count and width triggers both stay clear here, leaving the row break itself as what fires.
+The `mapping=` dict arrives laid out across rows, with `alpha=1` and `zeta=2` packed onto the lines its braces open and close. A held multi-line argument explodes the list around it, so each sibling moves to its own row, and since the call is inside both the argument cap and the line limit, the row break alone is what fires the explode.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Paired Multi-Line Scalars Take Their Dividers Mid-Run"
 
 description = '''
-A second keyed multi-line entry brings the blank-line dividers out, and because each parenthesized scalar now holds its alphabetical slot among the scalars rather than sinking to the tail, a divider opens **mid-run** instead of fencing one contiguous trailing block.
+`"bravo"` and `"charlie"` each hold a parenthesized two-line string, and a dict with more than one multi-line entry takes blank-line dividers around each of them. Both entries sort into their alphabetical slots as the scalars they are, so the dividers open **mid-run**, between `"alpha"` and `"delta"`, rather than fencing one contiguous block at the tail.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Set Literals Drop the Trailing Comma"
 
 description = '''
-A multi-line set literal spanning `{...}` drops the `,` after its last element. **The backward scan from before the closing `}` lands on that comma**, matching the path used for dicts.
+`allowed`'s last element, `"INST_2021_0044",`, carries a `,` before the set's closing `}`. **`strip-trailing-commas` scans backward from that `}` and lands on the comma**, matching the path used for dicts.
 '''

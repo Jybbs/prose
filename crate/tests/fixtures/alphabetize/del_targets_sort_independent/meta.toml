@@ -3,5 +3,5 @@ previewable = false
 title       = "`del` Targets Sort Independently"
 
 description = '''
-Targets in `del a, b, c` **alphabetize** because each delete is independent of the others. They are sorted by source-text key, mirroring how set-literal elements sort.
+`del registry, cache, buffer` removes each name independently, so the statement means the same thing in any order. The targets therefore **alphabetize**, landing as `del buffer, cache, registry`, the same source-text sort set-literal elements take.
 '''

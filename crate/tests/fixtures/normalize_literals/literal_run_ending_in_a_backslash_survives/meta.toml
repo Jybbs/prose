@@ -3,5 +3,5 @@ previewable = false
 title       = "A Literal Run Ending in a Lone Backslash Survives the Swap"
 
 description = '''
-`\{` is not an escape sequence, so the literal run before the replacement field genuinely ends in a backslash. **That backslash consumes no quote and carries into both candidate spellings**, leaving the delimiters free to settle.
+In `traced`, `\{` is not an escape sequence, so the literal text `path\` before the replacement field genuinely ends in a lone backslash. **That backslash escapes nothing in either spelling**, so the surrounding quotes still settle from `'` to `"`.
 '''

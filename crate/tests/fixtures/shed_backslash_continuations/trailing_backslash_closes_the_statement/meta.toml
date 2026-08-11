@@ -3,5 +3,5 @@ previewable = false
 title       = "A Backslash Ahead of the Closing Newline Leaves No Space"
 
 description = '''
-A rejoin against the newline that closes a logical line inserts nothing rather than a separator, so shedding the backslash leaves no trailing whitespace behind.
+`x = 1 \` continues onto the newline that closes the statement, so nothing follows the backslash to join it to. It drops without inserting a separator, leaving `x = 1` with no trailing whitespace.
 '''

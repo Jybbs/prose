@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Over-Budget Wrapped Pair Sheds in Place"
+
+description = '''
+Inside the call to `report_invalid_enum_member_names`, the parentheses around `", ".join(repr(name) for name in invalid_names)` span two lines, and folding them onto one row would overflow the line budget. They shed anyway, in place, because the call's own enclosing parentheses already hold the break they used to carry. The outcome does not depend on the columns they happened to sit at in the original source.
+'''
