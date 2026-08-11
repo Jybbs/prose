@@ -5,3 +5,4 @@ input_file: crate/tests/fixtures/align_equals/statement_shift_breaks_the_keyword
 ---
 align-equals@10..86
 align-equals@102..232
+align-equals@275..319
