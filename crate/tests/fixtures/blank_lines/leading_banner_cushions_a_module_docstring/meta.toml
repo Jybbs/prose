@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Leading Banner Cushions a Module Docstring"
+
+description = '''
+The head clause reads the statement below the block without inspecting its kind, so a **module docstring** takes the divider blank exactly as a first import does.
+'''

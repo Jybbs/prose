@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/leading_header_settles_above_a_sorted_import_block/input.py
+---
+# Copyright (c) the Prose authors
+# Licensed under the MIT License
+
+import numpy as np
+import os
+import requests
+
+from collections import Counter
+
+
+def render(text):
+    return (requests, np, os, Counter, text)

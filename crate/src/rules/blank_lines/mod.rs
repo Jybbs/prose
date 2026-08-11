@@ -4,10 +4,11 @@
 //! returned by `canonical_blanks`. Own-line comments between adjacent
 //! statements carry the pair's canonical count above the comment block,
 //! 0 blank lines below a description block, and 1 blank line below a
-//! run that anchors in place, a section banner, a suppression
-//! directive, or a tool pragma. A module's leading block clears the run
-//! above it and caps the run below at 1 blank line, seated where the
-//! block anchors in place or where the author already left one.
+//! run that anchors in place, carrying a section banner, a suppression
+//! directive, or a tool pragma on any line. A module's leading block
+//! clears the run above it and caps the run below at 1 blank line, kept
+//! where the block anchors in place or where the author left any and
+//! dropped to none otherwise.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -128,9 +129,10 @@ impl Walker<'_> {
 
     /// Clears the blank run above the module's first statement, or
     /// above the comment block leading it, and caps the run below that
-    /// block at 1 blank line, seated where the block anchors in place
-    /// or where the author left one. A module holding only comments
-    /// clears the run above them and has no run below to seat.
+    /// block at 1 blank line, kept where the block anchors in place or
+    /// where the author left any and dropped to none otherwise. A
+    /// module holding only comments clears the run above them and has
+    /// no run below to seat.
     fn normalize_module_head(&mut self, body: &[Stmt]) {
         let text = self.source.text();
         let head = body.first().map_or(TextSize::of(text), Ranged::start);
@@ -237,6 +239,15 @@ mod tests {
         assert!(
             edits.is_empty(),
             "the leading banner cushioned across a cell boundary",
+        );
+    }
+
+    #[test]
+    fn normalize_module_head_holds_a_comment_only_module_lacking_its_last_newline() {
+        let source = parse("# a placeholder");
+        assert!(
+            edits_of(&source).is_empty(),
+            "a lone comment with no newline after it has no run below to seat",
         );
     }
 

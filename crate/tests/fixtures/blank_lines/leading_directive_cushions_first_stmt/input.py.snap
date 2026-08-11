@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/blank_lines/leading_directive_cushions_first_stmt/input.py
+---
+# prose: skip[align-equals]
+
+import os
+
+value = os

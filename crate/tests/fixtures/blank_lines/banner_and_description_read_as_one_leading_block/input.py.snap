@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/blank_lines/banner_and_description_read_as_one_leading_block/input.py
+---
+# ============================================================
+# Section: Configuration
+# ============================================================
+
+# describes the sink
+
+import os
+
+value = os

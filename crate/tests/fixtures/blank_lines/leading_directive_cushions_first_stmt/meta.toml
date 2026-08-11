@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Module's Leading Suppression Directive Cushions the First Statement"
+
+description = '''
+A suppression directive opening a module **anchors in place** the way a banner and a pragma do, taking one blank line beneath it rather than binding to the statement below.
+'''

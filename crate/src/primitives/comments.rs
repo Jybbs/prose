@@ -3,9 +3,10 @@
 //! multi-hash heading, and where the block binding to the member below
 //! it starts. A run anchors in place on a section marker, a suppression
 //! directive, or a tool pragma, and binds to the member otherwise,
-//! whatever blank line sits between the two, and a whole-line deletion
-//! of that member would strand the run leading it. The trailing-comment
-//! gap the banding and spacing rules both seat lives here as well.
+//! whatever blank line sits between the two. A whole-line deletion of a
+//! member strands the run leading it, which the import prune reads
+//! before it deletes. The trailing-comment gap the banding and spacing
+//! rules both seat lives here as well.
 
 use ruff_python_ast::ExprDict;
 use ruff_python_trivia::{CommentRanges, is_pragma_comment};
@@ -53,19 +54,15 @@ pub(super) fn bound_block_start(
 }
 
 /// True when an own-line comment block leads the item at `item_start`,
-/// reached across the blank run between the two. A whole-line deletion
-/// of that item strands the block.
+/// reached across the blank run between the two and stopped at a
+/// notebook cell wall. A whole-line deletion of that item strands the
+/// block.
 pub(super) fn comment_leads(source: &Source, item_start: TextSize) -> bool {
     let text = source.text();
     let line_start = text.line_start(item_start);
     let above = whitespace_start_before(text, line_start);
-    above > TextSize::default()
-        && leading_comment_block(
-            source,
-            text.line_start(above - TextSize::from(1)),
-            line_start,
-        )
-        .is_some()
+    source.same_cell(above, line_start)
+        && leading_comment_block(source, text.line_start(above), line_start).is_some()
 }
 
 /// True when the line containing the dict's opening `{` carries a
@@ -86,9 +83,11 @@ pub(super) fn is_banner_block(source: &Source, block: TextRange) -> bool {
     source.slice(block).lines().any(is_marker_line)
 }
 
-/// Returns the contiguous range of own-line comments lying between
-/// `lower` and `upper`. `None` when no own-line comment sits in that
-/// gap. End-of-line comments on the predecessor's line are excluded.
+/// Returns the range spanning every own-line comment between `lower`
+/// and `upper`, from the first comment's line start to the last
+/// comment's end, so a blank run dividing two comment runs falls
+/// inside it. `None` when no own-line comment sits in that gap.
+/// End-of-line comments on the predecessor's line are excluded.
 pub(crate) fn leading_comment_block(
     source: &Source,
     lower: TextSize,
@@ -154,10 +153,9 @@ fn is_rule_line(line: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-    use ruff_text_size::Ranged;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{notebook, parse};
 
     fn gap_block(s: &Source) -> Option<TextRange> {
         let body = &s.ast().body;
@@ -231,34 +229,33 @@ mod tests {
         assert_eq!(comment_leads(&s, item.start()), expected);
     }
 
-    #[test]
-    fn is_banner_block_detects_block_with_any_rule_line() {
-        let s = parse(
-            "x = 1\n# ========================\n# Section: helpers\n# ========================\ndef f(): pass\n",
-        );
-        let block = gap_block(&s).expect("block");
-        assert!(is_banner_block(&s, block));
+    #[rstest]
+    #[case::across_a_blank_run(&["# describes it\n", "import os"])]
+    #[case::written_tight(&["# describes it", "import os"])]
+    fn comment_leads_stops_at_a_notebook_cell_wall(#[case] cells: &[&str]) {
+        let s = notebook(cells);
+        let item = s.ast().body.last().expect("a statement");
+        assert!(!comment_leads(&s, item.start()));
     }
 
-    #[test]
-    fn is_banner_block_detects_block_with_hash_heading() {
-        let s = parse("x = 1\n### Codec APIs\ndef f(): pass\n");
+    #[rstest]
+    #[case::rule_line(
+        "x = 1\n# ========================\n# Section: helpers\n# ========================\ndef f(): pass\n",
+        true
+    )]
+    #[case::hash_heading("x = 1\n### Codec APIs\ndef f(): pass\n", true)]
+    #[case::heading_below_prose(
+        "x = 1\n# see the module docs\n### API Reference\ndef f(): pass\n",
+        true
+    )]
+    #[case::all_prose("x = 1\n# describes f\n# helper\ndef f(): pass\n", false)]
+    fn is_banner_block_reads_a_rule_line_or_a_hash_heading(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let s = parse(src);
         let block = gap_block(&s).expect("block");
-        assert!(is_banner_block(&s, block));
-    }
-
-    #[test]
-    fn is_banner_block_detects_heading_on_non_leading_line() {
-        let s = parse("x = 1\n# see the module docs\n### API Reference\ndef f(): pass\n");
-        let block = gap_block(&s).expect("block");
-        assert!(is_banner_block(&s, block));
-    }
-
-    #[test]
-    fn is_banner_block_returns_false_for_all_prose_block() {
-        let s = parse("x = 1\n# describes f\n# helper\ndef f(): pass\n");
-        let block = gap_block(&s).expect("block");
-        assert!(!is_banner_block(&s, block));
+        assert_eq!(is_banner_block(&s, block), expected);
     }
 
     #[rstest]
@@ -330,15 +327,10 @@ mod tests {
         assert_eq!(block.end(), comments[1].end());
     }
 
-    #[test]
-    fn leading_comment_block_returns_none_when_no_own_line_comments_between() {
-        let s = parse("x = 1\ndef f(): pass\n");
-        assert!(gap_block(&s).is_none());
-    }
-
-    #[test]
-    fn leading_comment_block_skips_trailing_end_of_line_comments() {
-        let s = parse("x = 1  # trail\ndef f(): pass\n");
-        assert!(gap_block(&s).is_none());
+    #[rstest]
+    #[case::no_own_line_comment("x = 1\ndef f(): pass\n")]
+    #[case::trailing_comment_only("x = 1  # trail\ndef f(): pass\n")]
+    fn leading_comment_block_returns_none_without_an_own_line_comment(#[case] src: &str) {
+        assert!(gap_block(&parse(src)).is_none());
     }
 }

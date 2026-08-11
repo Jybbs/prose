@@ -12,8 +12,8 @@
 //! does a `from … import *`, a name `__all__` lists, an import binding
 //! `__all__` itself, a name a second import rebinds, and an `x as x`
 //! alias marking a re-export. An own-line comment block leading an
-//! import holds the whole statement across any blank run between the
-//! two.
+//! import holds the whole statement across a blank run between the
+//! two, up to the wall closing a notebook cell.
 
 use std::{ffi::OsStr, path::Path};
 

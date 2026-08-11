@@ -143,10 +143,10 @@ pub(crate) fn is_import(stmt: &Stmt) -> bool {
 /// shares its lines with other code, or when a comment sits inside it.
 ///
 /// A statement losing all of its aliases goes whole, taking its full
-/// lines, unless an own-line comment block leads it, which the deletion
-/// would strand. One losing a subset keeps the survivors byte-for-byte,
-/// each deletion covering one run of dropped aliases together with the
-/// separator binding it to the survivor beside it.
+/// lines, unless an own-line comment block leads it, since the deletion
+/// would strand that block. One losing a subset keeps the survivors
+/// byte-for-byte, each deletion covering one run of dropped aliases
+/// together with the separator binding it to the survivor beside it.
 pub(crate) fn prune_import_aliases(
     source: &Source,
     stmt: TextRange,

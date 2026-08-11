@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Banner and a Description Read as One Leading Block"
+
+description = '''
+A leading block runs from its first own-line comment to its last and takes in any blank dividing two runs, so a banner above a bound description **classifies the pair together** and the whole span anchors in place.
+'''
