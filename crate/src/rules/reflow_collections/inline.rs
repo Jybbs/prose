@@ -1,4 +1,4 @@
-//! The one-line serializer behind every reflow-collections rejoin.
+//! The one-line serializer behind every `reflow-collections` rejoin.
 //! Renders an expression and its children onto a single line, a held
 //! column passing through at its source shape so the fit check
 //! declines the join.

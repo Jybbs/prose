@@ -1223,6 +1223,18 @@ fn quiet_check_reduces_summary_to_a_bare_count() {
 }
 
 #[test]
+fn rules_json_lists_every_registered_rule_in_pipeline_order() {
+    let assert = prose()
+        .args(["rules", "--output-format", "json"])
+        .assert()
+        .success();
+
+    let rules = json(&stdout_utf8(&assert));
+
+    insta::assert_snapshot!(serde_json::to_string_pretty(&rules).expect("renders"));
+}
+
+#[test]
 fn schema_subcommand_exits_zero_and_prints_the_schema() {
     let assert = prose().arg("schema").assert().success();
 

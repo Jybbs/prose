@@ -10,5 +10,5 @@ export const page: OgPage = {
   kind       : 'rules',
   outputPath : 'og/rules/ordering/alphabetize-siblings.png',
   pipeline   : { position: 3, total: 20 },
-  title      : 'Alphabetize'
+  title      : 'Alphabetize Siblings'
 }

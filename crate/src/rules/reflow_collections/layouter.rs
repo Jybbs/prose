@@ -1,4 +1,4 @@
-//! The reflow-collections walker. Visits each literal and subscript
+//! The `reflow-collections` walker. Visits each literal and subscript
 //! outside an f-string or t-string replacement field, decides between
 //! the rejoin and the expansion, and emits the edit that fits the
 //! budget. The one-line rendering the decision measures against lives

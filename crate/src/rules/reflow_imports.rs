@@ -57,8 +57,7 @@ pub(crate) struct ReflowImports {
 }
 
 impl ReflowImports {
-    pub(crate) const MESSAGE: &'static str =
-        "split an over-long `from` import into repeated-prefix lines";
+    pub(crate) const MESSAGE: &'static str = "lay out an import block one module per line";
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let align = &config.rules.align_imports;
@@ -213,8 +212,8 @@ impl<'a> Layout<'a> {
     }
 
     /// The de-duplicated source text of `aliases`, the member roster one
-    /// module's line carries, ordered as `alphabetize-siblings` would leave it
-    /// unless that rule is off.
+    /// module's line carries, ordered as `alphabetize-siblings` would
+    /// leave it unless that rule is off.
     fn roster(&self, aliases: impl Iterator<Item = &'a Alias>) -> Vec<&'a str> {
         let mut names: Vec<&str> = aliases
             .map(|alias| self.source.slice(alias.range()))

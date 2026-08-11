@@ -2,4 +2,4 @@
 caption: Alphabetize sibling entries
 ---
 
-# Alphabetize
+# Alphabetize Siblings

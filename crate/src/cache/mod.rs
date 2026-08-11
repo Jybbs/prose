@@ -27,6 +27,7 @@ mod tests {
     use super::*;
     use crate::diagnostics::Diagnostic;
     use crate::rule::RuleId;
+    use crate::rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings};
     use crate::testing::{format_diagnostic, range};
 
     const CONFIG_A: &str = "code-line-length = 88\n";
@@ -47,7 +48,7 @@ mod tests {
             // deserializes through the registry and an unknown slug
             // fails the entry's round-trip.
             diagnostics: vec![Diagnostic {
-                rule: RuleId::from("align-equals"),
+                rule: AlignEquals::SLUG,
                 ..format_diagnostic(range(0, 1))
             }],
             rewrite: Rewrite::text(formatted.to_owned()),
@@ -55,10 +56,7 @@ mod tests {
     }
 
     fn rules() -> [RuleId; 2] {
-        [
-            RuleId::from("align-equals"),
-            RuleId::from("alphabetize-siblings"),
-        ]
+        [AlignEquals::SLUG, AlphabetizeSiblings::SLUG]
     }
 
     #[test]
@@ -110,10 +108,10 @@ mod tests {
 
     #[test]
     fn cache_key_differs_when_rule_selection_changes() {
-        let key_a = CacheKey::compute(b"x = 1\n", CONFIG_A, [RuleId::from("align-equals")]);
-        let key_b = CacheKey::compute(b"x = 1\n", CONFIG_A, [RuleId::from("alphabetize-siblings")]);
+        let key_a = CacheKey::compute(b"x = 1\n", CONFIG_A, [AlignEquals::SLUG]);
+        let key_b = CacheKey::compute(b"x = 1\n", CONFIG_A, [AlphabetizeSiblings::SLUG]);
         assert_ne!(key_a, key_b);
-        let key_c = CacheKey::compute(b"x = 1\n", CONFIG_A, [RuleId::from("align-equals")]);
+        let key_c = CacheKey::compute(b"x = 1\n", CONFIG_A, [AlignEquals::SLUG]);
         assert_eq!(key_a, key_c);
     }
 

@@ -223,8 +223,8 @@ export const glossary: Record<string, GlossaryEntry> = {
     ],
     definition : 'A comprehension is one of Python\'s `[x for x in xs]`, `{k: v for ...}`, or '
                + '`{x for ...}` literal forms that build a list, dict, or set inline. '
-               + '`reflow-collections` joins them back onto one line when they fit, and their bound '
-               + 'targets sit outside `single-use-variables`.',
+               + '`reflow-collections` joins them back onto one line when they fit, and their '
+               + 'bound targets sit outside `single-use-variables`.',
     families   : ['layout', 'lint'],
     href       : 'https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions'
   },
@@ -243,8 +243,9 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['dataclasses', 'dataclass field', 'dataclass fields'],
     definition : 'A dataclass is a class decorated with `@dataclass` whose body lists typed '
                + 'field declarations. Those fields become the generated `__init__`\'s positional '
-               + 'parameters, so `alphabetize-siblings` holds their source order and `unsorted-positionals` '
-               + 'reports an out-of-order run, while `align-colons` aligns their annotation colons '
+               + 'parameters, so `alphabetize-siblings` holds their source order and '
+               + '`unsorted-positionals` reports an out-of-order run, while `align-colons` aligns '
+               + 'their annotation colons '
                + 'and `align-equals` aligns their default-value `=` signs.',
     families   : ['ordering', 'alignment', 'lint'],
     href       : 'https://docs.python.org/3/library/dataclasses.html'
@@ -253,8 +254,9 @@ export const glossary: Record<string, GlossaryEntry> = {
   'decorator': {
     aliases    : ['decorators', 'decorated function', 'decorated functions'],
     definition : 'A decorator is an `@name` prefix attached to a function or class definition '
-               + 'that wraps it at definition time. `alphabetize-siblings` sorts decorated functions '
-               + 'together inside framework-decorator groups, and `space-statements` keeps each '
+               + 'that wraps it at definition time. `alphabetize-siblings` sorts decorated '
+               + 'functions together inside framework-decorator groups, and `space-statements` '
+               + 'keeps each '
                + 'decorator attached to its `def`.',
     families   : ['ordering', 'formatting'],
     href       : 'https://docs.python.org/3/glossary.html#term-decorator'
@@ -281,16 +283,16 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['dunder name', 'dunder names', '__all__', '__slots__'],
     definition : 'A dunder is the Python convention for names wrapped in double underscores '
                + '(`__name__`, `__all__`, `__init__`). `reassigned-constants` treats them as runtime '
-               + 'sentinels, and `alphabetize-siblings` treats them as ordering anchors that surface '
-               + 'before properties and privates inside a class body.',
+               + 'sentinels, and `alphabetize-siblings` treats them as ordering anchors that '
+               + 'surface before properties and privates inside a class body.',
     families   : ['ordering', 'lint']
   },
 
   'enum': {
     aliases    : ['Enum', 'enums', 'enum member', 'enum members'],
     definition : 'An enum is a subclass of `enum.Enum` whose body lists named constants. '
-               + '`alphabetize-siblings` sorts the members, except when they carry explicit integer or '
-               + 'string values that encode ordering.',
+               + '`alphabetize-siblings` sorts the members, except when they carry explicit '
+               + 'integer or string values that encode ordering.',
     families   : ['ordering'],
     href       : 'https://docs.python.org/3/library/enum.html'
   },
@@ -322,8 +324,9 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : 'A forward reference is an annotation that names a class or alias defined '
                + 'later in the file. The `from __future__ import annotations` directive made '
                + 'these safe on older Python runtimes, and `prune-inert-imports` removes '
-               + 'the directive when no annotation needs the forward reference. `alphabetize-siblings` '
-               + 'never introduces one, holding a class or function behind any sibling it names '
+               + 'the directive when no annotation needs the forward reference. '
+               + '`alphabetize-siblings` never introduces one, holding a class or function behind '
+               + 'any sibling it names '
                + 'at evaluation time so the reorder cannot lift a definition above a name it '
                + 'depends on.',
     families   : ['ordering'],
@@ -498,8 +501,8 @@ export const glossary: Record<string, GlossaryEntry> = {
   'Pydantic': {
     aliases    : ['pydantic', 'Pydantic field', 'Pydantic fields'],
     definition : 'Pydantic is a widely used data-validation library whose models declare typed '
-               + 'fields in the class body. `alphabetize-siblings` sorts a `BaseModel`\'s fields with '
-               + 'required before optional, and holds a `pydantic.dataclasses` field run in '
+               + 'fields in the class body. `alphabetize-siblings` sorts a `BaseModel`\'s fields '
+               + 'with required before optional, and holds a `pydantic.dataclasses` field run in '
                + 'source order because that decorator generates a positional constructor. '
                + '`align-colons` aligns the annotation colons across either field block.',
     families   : ['ordering', 'alignment'],
@@ -617,7 +620,8 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['typeddict'],
     definition : 'A `TypedDict` is a `typing.TypedDict` subclass declaring a dict\'s '
                + 'key-to-value-type contract. It accepts no positional field arguments, so '
-               + '`alphabetize-siblings` sorts its fields the same way it sorts `BaseModel` fields.',
+               + '`alphabetize-siblings` sorts its fields the same way it sorts `BaseModel` '
+               + 'fields.',
     families   : ['ordering', 'alignment'],
     href       : 'https://docs.python.org/3/library/typing.html#typing.TypedDict'
   },

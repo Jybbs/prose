@@ -1,5 +1,5 @@
 ---
-caption : "Explodes a call to one argument per line once its count, its width, or an argument spanning rows calls for it."
+caption : "Explodes a call to one argument per line once its count, its width, or an argument spanning rows calls for it, and rejoins a fractured list where no trigger fires."
 related : [alphabetize-siblings, reflow-collections, reflow-signatures, strip-trailing-commas]
 layout  : doc
 ---

@@ -87,21 +87,6 @@ pub struct Config {
     pub target_version: Option<PythonVersion>,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            cache: CacheConfig::default(),
-            code_line_length: NonZeroUsize::new(88),
-            docstring_line_length: NonZeroUsize::new(76),
-            docstring_structured_policy: DocstringStructuredPolicy::default(),
-            import_line_length: NonZeroUsize::new(120),
-            imports: ImportsConfig::default(),
-            rules: RuleConfigs::default(),
-            target_version: None,
-        }
-    }
-}
-
 impl Config {
     /// Parses a `prose.toml` snippet directly from a string, reading
     /// its keys at the document root.
@@ -248,6 +233,21 @@ impl Config {
     /// The config serialized to TOML.
     pub fn to_toml(&self) -> String {
         toml::to_string(self).expect("Config serializes")
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            cache: CacheConfig::default(),
+            code_line_length: NonZeroUsize::new(88),
+            docstring_line_length: NonZeroUsize::new(76),
+            docstring_structured_policy: DocstringStructuredPolicy::default(),
+            import_line_length: NonZeroUsize::new(120),
+            imports: ImportsConfig::default(),
+            rules: RuleConfigs::default(),
+            target_version: None,
+        }
     }
 }
 

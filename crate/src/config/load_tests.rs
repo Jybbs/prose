@@ -3,6 +3,7 @@
 use std::assert_matches;
 
 use indoc::indoc;
+use rstest::rstest;
 use tempfile::TempDir;
 
 use super::load::ConfigForm;
@@ -224,10 +225,29 @@ fn load_reads_pure_prose_toml() {
     assert_eq!(config.code_line_length, NonZeroUsize::new(120));
 }
 
-#[test]
-fn load_retired_rule_key_warns_as_unknown() {
+#[rstest]
+fn load_retired_rule_key_warns_as_unknown(
+    #[values(
+        "alphabetize",
+        "blank-lines",
+        "call-layout",
+        "chain-layout",
+        "collection-layout",
+        "comment-spacing",
+        "docstring-expand",
+        "docstring-frame",
+        "docstring-wrap",
+        "import-layout",
+        "signature-layout",
+        "strip-align-padding"
+    )]
+    retired: &str,
+) {
     let tmp = TempDir::new().expect("tempdir");
-    write_pyproject(tmp.path(), "[tool.prose.rules]\nblank-lines = false\n");
+    write_pyproject(
+        tmp.path(),
+        &format!("[tool.prose.rules]\n{retired} = false\n"),
+    );
 
     let mut captured = Vec::new();
     let config = Config::load_with_notices(tmp.path(), |notice| {
@@ -237,7 +257,7 @@ fn load_retired_rule_key_warns_as_unknown() {
     })
     .expect("loads");
 
-    assert_eq!(captured, ["rules.blank-lines"]);
+    assert_eq!(captured, [format!("rules.{retired}")]);
     assert!(config.rules.space_statements.enabled);
 }
 

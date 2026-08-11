@@ -57,7 +57,7 @@ pub(crate) struct ReflowCalls {
 }
 
 impl ReflowCalls {
-    pub(crate) const MESSAGE: &'static str = "explode call arguments to one keyword per line";
+    pub(crate) const MESSAGE: &'static str = "reflow call arguments against the line budget";
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

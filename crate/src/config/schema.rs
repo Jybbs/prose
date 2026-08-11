@@ -38,7 +38,7 @@ impl Default for AlignmentConfig {
     }
 }
 
-/// Configuration for the `alphabetize_siblings` rule, each facet gating one
+/// Configuration for the `alphabetize-siblings` rule, each facet gating one
 /// sort pass and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -82,7 +82,7 @@ impl Default for AlphabetizeSiblingsConfig {
     }
 }
 
-/// Configuration for the `band_constants` rule.
+/// Configuration for the `band-constants` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct BandConstantsConfig {
@@ -108,7 +108,7 @@ impl Default for BandConstantsConfig {
     }
 }
 
-/// Configuration for the `bare_imports` rule.
+/// Configuration for the `bare-imports` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct BareImportsConfig {
@@ -210,7 +210,7 @@ impl Serialize for InlineBudget {
     }
 }
 
-/// Configuration for the `line_overflow` rule.
+/// Configuration for the `line-overflow` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct LineOverflowConfig {
@@ -281,7 +281,7 @@ impl Serialize for MaxShift {
     }
 }
 
-/// Configuration for the `miscased_constants` rule.
+/// Configuration for the `miscased-constants` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct MiscasedConstantsConfig {
@@ -308,7 +308,7 @@ impl Default for MiscasedConstantsConfig {
     }
 }
 
-/// Configuration for the `modernize_annotations` rule, each facet
+/// Configuration for the `modernize-annotations` rule, each facet
 /// gating one rewrite and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -334,7 +334,7 @@ impl Default for ModernizeAnnotationsConfig {
     }
 }
 
-/// Configuration for the `normalize_comparisons` rule, each facet
+/// Configuration for the `normalize-comparisons` rule, each facet
 /// gating one rewrite and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -363,7 +363,7 @@ impl Default for NormalizeComparisonsConfig {
     }
 }
 
-/// Configuration for the `normalize_literals` rule, each facet gating
+/// Configuration for the `normalize-literals` rule, each facet gating
 /// one spelling axis and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -393,7 +393,7 @@ impl Default for NormalizeLiteralsConfig {
     }
 }
 
-/// Configuration for the `prefer_fstring` rule, each facet gating one
+/// Configuration for the `prefer-fstring` rule, each facet gating one
 /// rewrite and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -419,7 +419,7 @@ impl Default for PreferFstringConfig {
     }
 }
 
-/// Configuration for the `prune_inert_imports` rule, each facet gating
+/// Configuration for the `prune-inert-imports` rule, each facet gating
 /// one prune and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -446,7 +446,7 @@ impl Default for PruneInertImportsConfig {
     }
 }
 
-/// Configuration for the `reassigned_constants` rule.
+/// Configuration for the `reassigned-constants` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReassignedConstantsConfig {
@@ -464,7 +464,7 @@ impl Default for ReassignedConstantsConfig {
     }
 }
 
-/// Configuration for the `reflow_calls` rule.
+/// Configuration for the `reflow-calls` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReflowCallsConfig {
@@ -484,7 +484,7 @@ impl Default for ReflowCallsConfig {
     }
 }
 
-/// Configuration for the `reflow_collections` rule, each facet gating
+/// Configuration for the `reflow-collections` rule, each facet gating
 /// one shape decision and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -523,7 +523,7 @@ impl Default for ReflowCollectionsConfig {
     }
 }
 
-/// Configuration for the `reflow_imports` rule, each facet gating one
+/// Configuration for the `reflow-imports` rule, each facet gating one
 /// statement move and defaulting `true`.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -548,7 +548,7 @@ impl Default for ReflowImportsConfig {
     }
 }
 
-/// Configuration for the `reflow_signatures` rule.
+/// Configuration for the `reflow-signatures` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReflowSignaturesConfig {
@@ -575,7 +575,7 @@ pub(crate) trait RuleToggle: Default {
     fn with_enabled(enabled: bool) -> Self;
 }
 
-/// Configuration for the `single_use_variables` rule.
+/// Configuration for the `single-use-variables` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct SingleUseVariablesConfig {
@@ -601,7 +601,7 @@ impl Default for SingleUseVariablesConfig {
     }
 }
 
-/// Configuration for the `stack_method_chains` rule.
+/// Configuration for the `stack-method-chains` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct StackMethodChainsConfig {

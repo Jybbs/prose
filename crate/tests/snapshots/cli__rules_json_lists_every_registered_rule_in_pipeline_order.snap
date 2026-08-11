@@ -1,0 +1,323 @@
+---
+source: crate/tests/cli.rs
+expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
+---
+[
+  {
+    "after": [],
+    "imperative": "shed a backslash line continuation",
+    "position": 1,
+    "slug": "shed-backslash-continuations"
+  },
+  {
+    "after": [],
+    "imperative": "canonicalize literal quote, prefix, and numeric spelling",
+    "position": 2,
+    "slug": "normalize-literals"
+  },
+  {
+    "after": [],
+    "imperative": "prune an import binding nothing references or a repeat of one already bound",
+    "position": 3,
+    "slug": "prune-inert-imports"
+  },
+  {
+    "after": [],
+    "imperative": "drop a redundant `-> None` return annotation",
+    "position": 4,
+    "slug": "strip-none-return"
+  },
+  {
+    "after": [],
+    "imperative": "modernize a legacy `typing` annotation to its builtin or PEP 604 form",
+    "position": 5,
+    "slug": "modernize-annotations"
+  },
+  {
+    "after": [],
+    "imperative": "strip trailing comma",
+    "position": 6,
+    "slug": "strip-trailing-commas"
+  },
+  {
+    "after": [
+      "shed-backslash-continuations"
+    ],
+    "imperative": "shed a redundant grouping parenthesis pair",
+    "position": 7,
+    "slug": "shed-parentheses"
+  },
+  {
+    "after": [],
+    "imperative": "shed a redundant `object` base or empty class parentheses",
+    "position": 8,
+    "slug": "shed-redundant-base"
+  },
+  {
+    "after": [
+      "shed-parentheses"
+    ],
+    "imperative": "normalize a comparison to state its check directly",
+    "position": 9,
+    "slug": "normalize-comparisons"
+  },
+  {
+    "after": [
+      "shed-parentheses"
+    ],
+    "imperative": "collapse a redundant collection constructor",
+    "position": 10,
+    "slug": "simplify-comprehensions"
+  },
+  {
+    "after": [],
+    "imperative": "canonicalize docstring quotes and frame the opener and closer on their own lines",
+    "position": 11,
+    "slug": "frame-docstrings"
+  },
+  {
+    "after": [
+      "frame-docstrings"
+    ],
+    "imperative": "expand single-line docstring to multi-line form",
+    "position": 12,
+    "slug": "expand-docstrings"
+  },
+  {
+    "after": [],
+    "imperative": "group imports into bare, external, and local sections",
+    "position": 13,
+    "slug": "group-imports"
+  },
+  {
+    "after": [],
+    "imperative": "break a long method chain to one link per line",
+    "position": 14,
+    "slug": "stack-method-chains"
+  },
+  {
+    "after": [
+      "stack-method-chains"
+    ],
+    "imperative": "lay out collection literal against the line budget",
+    "position": 15,
+    "slug": "reflow-collections"
+  },
+  {
+    "after": [
+      "normalize-literals",
+      "reflow-collections"
+    ],
+    "imperative": "convert `%` or `str.format()` interpolation to an f-string",
+    "position": 16,
+    "slug": "prefer-fstring"
+  },
+  {
+    "after": [
+      "stack-method-chains",
+      "reflow-collections"
+    ],
+    "imperative": "reflow call arguments against the line budget",
+    "position": 17,
+    "slug": "reflow-calls"
+  },
+  {
+    "after": [
+      "reflow-calls"
+    ],
+    "imperative": "shed the arguments a parameterized `super()` call restates",
+    "position": 18,
+    "slug": "shed-super-args"
+  },
+  {
+    "after": [],
+    "imperative": "normalize function signature to one-line or one-per-line shape",
+    "position": 19,
+    "slug": "reflow-signatures"
+  },
+  {
+    "after": [
+      "stack-method-chains",
+      "reflow-collections",
+      "reflow-calls",
+      "reflow-signatures"
+    ],
+    "imperative": "stack an implicitly concatenated string run one literal per line",
+    "position": 20,
+    "slug": "stack-adjacent-strings"
+  },
+  {
+    "after": [],
+    "imperative": "align match-case colons",
+    "position": 21,
+    "slug": "align-match-case"
+  },
+  {
+    "after": [
+      "group-imports"
+    ],
+    "imperative": "lay out an import block one module per line",
+    "position": 22,
+    "slug": "reflow-imports"
+  },
+  {
+    "after": [
+      "stack-method-chains",
+      "reflow-collections",
+      "reflow-calls",
+      "reflow-signatures",
+      "reflow-imports"
+    ],
+    "imperative": "alphabetize this group",
+    "position": 23,
+    "slug": "alphabetize-siblings"
+  },
+  {
+    "after": [
+      "alphabetize-siblings"
+    ],
+    "imperative": "band module constants into leading and trailing bands",
+    "position": 24,
+    "slug": "band-constants"
+  },
+  {
+    "after": [
+      "group-imports",
+      "alphabetize-siblings"
+    ],
+    "imperative": "normalize the gap between adjacent statements",
+    "position": 25,
+    "slug": "space-statements"
+  },
+  {
+    "after": [
+      "alphabetize-siblings",
+      "space-statements",
+      "reflow-imports"
+    ],
+    "imperative": "align consecutive `import`s",
+    "position": 26,
+    "slug": "align-imports"
+  },
+  {
+    "after": [],
+    "imperative": "align consecutive `:` separators",
+    "position": 27,
+    "slug": "align-colons"
+  },
+  {
+    "after": [
+      "frame-docstrings",
+      "expand-docstrings",
+      "align-colons"
+    ],
+    "imperative": "wrap docstring prose to the configured budget",
+    "position": 28,
+    "slug": "wrap-docstrings"
+  },
+  {
+    "after": [
+      "reflow-collections",
+      "alphabetize-siblings",
+      "align-colons"
+    ],
+    "imperative": "align consecutive `=` operators",
+    "position": 29,
+    "slug": "align-equals"
+  },
+  {
+    "after": [],
+    "imperative": "align consecutive comparison operators",
+    "position": 30,
+    "slug": "align-comparisons"
+  },
+  {
+    "after": [
+      "align-match-case",
+      "align-imports",
+      "align-colons",
+      "align-equals",
+      "align-comparisons"
+    ],
+    "imperative": "drop padding that lines up with nothing",
+    "position": 31,
+    "slug": "strip-stranded-padding"
+  },
+  {
+    "after": [],
+    "imperative": "normalize comment spacing",
+    "position": 32,
+    "slug": "normalize-comment-spacing"
+  },
+  {
+    "after": [
+      "strip-stranded-padding",
+      "normalize-comment-spacing"
+    ],
+    "imperative": "align consecutive trailing comments",
+    "position": 33,
+    "slug": "align-comments"
+  },
+  {
+    "after": [],
+    "imperative": "Flag a bare import a `from` import could replace",
+    "position": 34,
+    "slug": "bare-imports"
+  },
+  {
+    "after": [],
+    "imperative": "Module constant is not SCREAMING_CASE. Rename it to the SCREAMING_CASE form",
+    "position": 35,
+    "slug": "miscased-constants"
+  },
+  {
+    "after": [],
+    "imperative": "SCREAMING_CASE name is reassigned despite its constant casing. Rename it lowercase or keep it write-once",
+    "position": 36,
+    "slug": "reassigned-constants"
+  },
+  {
+    "after": [],
+    "imperative": "Numbered-step comment found. Consider extracting each step as a named function",
+    "position": 37,
+    "slug": "step-narration"
+  },
+  {
+    "after": [],
+    "imperative": "Binding is assigned and used once. Consider inlining",
+    "position": 38,
+    "slug": "single-use-variables"
+  },
+  {
+    "after": [],
+    "imperative": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword",
+    "position": 39,
+    "slug": "unsorted-positionals"
+  },
+  {
+    "after": [],
+    "imperative": "Flag a missing parameter or return type annotation",
+    "position": 40,
+    "slug": "signature-annotations"
+  },
+  {
+    "after": [
+      "frame-docstrings",
+      "expand-docstrings",
+      "wrap-docstrings"
+    ],
+    "imperative": "Flag a docstring type group the code already annotates",
+    "position": 41,
+    "slug": "restated-types"
+  },
+  {
+    "after": [
+      "strip-stranded-padding",
+      "normalize-comment-spacing",
+      "align-comments"
+    ],
+    "imperative": "Flag a line over its length budget, offering the split form where a string literal can take the break",
+    "position": 42,
+    "slug": "line-overflow"
+  }
+]

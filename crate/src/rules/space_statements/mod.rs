@@ -1,5 +1,5 @@
-//! Normalizes blank-line spacing between adjacent statements at module,
-//! class, and function scopes. The walker pairs each statement with its
+//! Normalizes the gap between adjacent statements at module, class, and
+//! function scopes. The walker pairs each statement with its
 //! predecessor and emits edits to bring the gap to the canonical count
 //! returned by `canonical_blanks`. Own-line comments between adjacent
 //! statements carry 1 blank line above the comment block, 0 blank lines
@@ -38,7 +38,7 @@ pub(crate) struct SpaceStatements {
 }
 
 impl SpaceStatements {
-    pub(crate) const MESSAGE: &'static str = "normalize blank-line spacing";
+    pub(crate) const MESSAGE: &'static str = "normalize the gap between adjacent statements";
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

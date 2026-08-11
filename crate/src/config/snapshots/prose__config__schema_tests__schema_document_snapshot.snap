@@ -20,7 +20,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "AlphabetizeSiblingsConfig": {
-      "description": "Configuration for the `alphabetize_siblings` rule, each facet gating one\nsort pass and defaulting `true`.",
+      "description": "Configuration for the `alphabetize-siblings` rule, each facet gating one\nsort pass and defaulting `true`.",
       "properties": {
         "enabled": {
           "default": true,
@@ -55,7 +55,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "BandConstantsConfig": {
-      "description": "Configuration for the `band_constants` rule.",
+      "description": "Configuration for the `band-constants` rule.",
       "properties": {
         "enabled": {
           "default": true,
@@ -75,7 +75,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "BareImportsConfig": {
-      "description": "Configuration for the `bare_imports` rule.",
+      "description": "Configuration for the `bare-imports` rule.",
       "properties": {
         "allow": {
           "default": [],
@@ -157,7 +157,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       ]
     },
     "LineOverflowConfig": {
-      "description": "Configuration for the `line_overflow` rule.",
+      "description": "Configuration for the `line-overflow` rule.",
       "properties": {
         "enabled": {
           "default": true,
@@ -184,7 +184,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       ]
     },
     "MiscasedConstantsConfig": {
-      "description": "Configuration for the `miscased_constants` rule.",
+      "description": "Configuration for the `miscased-constants` rule.",
       "properties": {
         "allow-pattern": {
           "default": "",
@@ -200,7 +200,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "ModernizeAnnotationsConfig": {
-      "description": "Configuration for the `modernize_annotations` rule, each facet\ngating one rewrite and defaulting `true`.",
+      "description": "Configuration for the `modernize-annotations` rule, each facet\ngating one rewrite and defaulting `true`.",
       "properties": {
         "enabled": {
           "default": true,
@@ -220,7 +220,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "NormalizeComparisonsConfig": {
-      "description": "Configuration for the `normalize_comparisons` rule, each facet\ngating one rewrite and defaulting `true`.",
+      "description": "Configuration for the `normalize-comparisons` rule, each facet\ngating one rewrite and defaulting `true`.",
       "properties": {
         "enabled": {
           "default": true,
@@ -245,7 +245,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "NormalizeLiteralsConfig": {
-      "description": "Configuration for the `normalize_literals` rule, each facet gating\none spelling axis and defaulting `true`.",
+      "description": "Configuration for the `normalize-literals` rule, each facet gating\none spelling axis and defaulting `true`.",
       "properties": {
         "enabled": {
           "default": true,
@@ -270,7 +270,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "PreferFstringConfig": {
-      "description": "Configuration for the `prefer_fstring` rule, each facet gating one\nrewrite and defaulting `true`.",
+      "description": "Configuration for the `prefer-fstring` rule, each facet gating one\nrewrite and defaulting `true`.",
       "properties": {
         "enabled": {
           "default": true,
@@ -290,7 +290,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "PruneInertImportsConfig": {
-      "description": "Configuration for the `prune_inert_imports` rule, each facet gating\none prune and defaulting `true`.",
+      "description": "Configuration for the `prune-inert-imports` rule, each facet gating\none prune and defaulting `true`.",
       "properties": {
         "drop-duplicates": {
           "default": true,
@@ -354,7 +354,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       ]
     },
     "ReassignedConstantsConfig": {
-      "description": "Configuration for the `reassigned_constants` rule.",
+      "description": "Configuration for the `reassigned-constants` rule.",
       "properties": {
         "allow": {
           "default": [],
@@ -372,7 +372,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "ReflowCallsConfig": {
-      "description": "Configuration for the `reflow_calls` rule.",
+      "description": "Configuration for the `reflow-calls` rule.",
       "properties": {
         "enabled": {
           "default": true,
@@ -387,7 +387,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "ReflowCollectionsConfig": {
-      "description": "Configuration for the `reflow_collections` rule, each facet gating\none shape decision and defaulting `true`.",
+      "description": "Configuration for the `reflow-collections` rule, each facet gating\none shape decision and defaulting `true`.",
       "properties": {
         "enabled": {
           "default": true,
@@ -422,7 +422,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "ReflowImportsConfig": {
-      "description": "Configuration for the `reflow_imports` rule, each facet gating one\nstatement move and defaulting `true`.",
+      "description": "Configuration for the `reflow-imports` rule, each facet gating one\nstatement move and defaulting `true`.",
       "properties": {
         "enabled": {
           "default": true,
@@ -442,7 +442,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "ReflowSignaturesConfig": {
-      "description": "Configuration for the `reflow_signatures` rule.",
+      "description": "Configuration for the `reflow-signatures` rule.",
       "properties": {
         "enabled": {
           "default": true,
@@ -1052,7 +1052,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "SingleUseVariablesConfig": {
-      "description": "Configuration for the `single_use_variables` rule.",
+      "description": "Configuration for the `single-use-variables` rule.",
       "properties": {
         "allow-pattern": {
           "default": "^_",
@@ -1068,7 +1068,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "StackMethodChainsConfig": {
-      "description": "Configuration for the `stack_method_chains` rule.",
+      "description": "Configuration for the `stack-method-chains` rule.",
       "properties": {
         "enabled": {
           "default": true,

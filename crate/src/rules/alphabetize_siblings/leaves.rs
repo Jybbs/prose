@@ -1,11 +1,11 @@
-//! Leaf-edit collection for `alphabetize-siblings`. A single AST walk emits one
-//! non-overlapping edit per outermost reordering structure, and the
-//! docstring-entry sort reads each function's signature-order names as
-//! its mirror key. Positional-or-keyword parameters never reorder,
-//! since no single-file rewrite can keep every caller's positional
-//! binding intact. Only the keyword-only block sorts. A call keyword
-//! bound to an effectful value holds its slot while the inert keywords
-//! around it sort.
+//! Leaf-edit collection for `alphabetize-siblings`. A single AST walk
+//! emits one non-overlapping edit per outermost reordering structure,
+//! and the docstring-entry sort reads each function's signature-order
+//! names as its mirror key. Positional-or-keyword parameters never
+//! reorder, since no single-file rewrite can keep every caller's
+//! positional binding intact. Only the keyword-only block sorts. A call
+//! keyword bound to an effectful value holds its slot while the inert
+//! keywords around it sort.
 
 use std::{borrow::Cow, collections::HashMap};
 

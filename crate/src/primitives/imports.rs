@@ -172,8 +172,8 @@ pub(crate) fn prune_import_aliases(
 
 /// Slot ranges of every import run across a sectioned body, each run
 /// offset to absolute slot indices so it never spans a section divider.
-/// The unit `group-imports` partitions and `alphabetize-siblings` sorts, one run
-/// at a time within each section.
+/// The unit `group-imports` partitions and `alphabetize-siblings`
+/// sorts, one run at a time within each section.
 pub(crate) fn sectioned_import_runs(sections: &Sections, body: &[Stmt]) -> Vec<Range<usize>> {
     sections
         .ranges()
