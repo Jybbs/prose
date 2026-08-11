@@ -3,5 +3,5 @@ previewable = false
 title       = "A Wrapped Constant's Skip Pins It Against the Band"
 
 description = '''
-A `# prose: skip[band-constants]` trailing a multi-line constant **pins the whole statement where the author left it**, because the directive's span reaches the assignment's opening line rather than keying on the closing bracket alone.
+The `# prose: skip[band-constants]` trailing the closing `}` **pins the whole `ALPHA` assignment where the author left it**, because the directive's span reaches back to the statement's opening line rather than covering the closing bracket's line alone. `MIDDLE` and `ZEBRA` still sort above it, while `ALPHA` holds last despite sorting first by name.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Lone Nested Constant Folds Tight below Its Tier"
 
 description = '''
-A derived tier holding a single constant folds tight below the tier above rather than opening a blank sub-band, staying available to `align-equals`.
+`DERIVED = BASE + 1` reads `BASE`, which places it a dependency tier below `BASE` and `OTHER`. A tier holding a single constant folds tight below the tier above rather than opening a blank sub-band, so the three assignments stay one contiguous run that `align-equals` can treat as a single group.
 '''

@@ -4,5 +4,5 @@ previewable = false
 title       = "Setting `max-args` to `false` Disables the Explode"
 
 description = '''
-With the count trigger turned off, the rule never explodes a call whatever its argument count.
+The four-keyword `fetch` call would explode under the default cap, but `max-args = false` turns the count trigger off. The line also fits inside the default `code-line-length`, so with neither trigger firing the call keeps its one-line shape.
 '''

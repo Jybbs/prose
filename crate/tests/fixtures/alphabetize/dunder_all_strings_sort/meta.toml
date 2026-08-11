@@ -3,5 +3,5 @@ previewable = true
 title       = "`__all__` Sorts Alphabetically"
 
 description = '''
-The string-literal items inside `__all__` **alphabetize by string value**. Detection keys on the target's simple name, because the dunder-list convention is what makes the list documentary, leaving ordinary list assignments untouched.
+The string items in `__all__` **alphabetize by string value**, `"Catalog"` and `"Posting"` landing ahead of `"aggregate"` and `"render"` because uppercase sorts before lowercase. Detection keys on the assignment target's name, in that the `__all__` convention is what marks the list as documentary, so `regular_list = ["b", "a", "c"]` stays untouched.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Variadic Prefixes Count Toward the Aligned Width"
 
 description = '''
-A signature annotates `*args` and `**kwargs` beside named parameters, where the `*` and `**` prefixes count toward each variadic's display width. **The widest member `event_name` sets the `:` column**, and the variadic and named parameters alike pad to reach it.
+The signature of `record` annotates `*args` and `**kwargs` beside `event_name` and `timestamp`, and the `*` and `**` prefixes count toward each variadic's display width. **The widest member `event_name` sets the `:` column**, so variadic and named parameters alike pad out to reach it.
 '''

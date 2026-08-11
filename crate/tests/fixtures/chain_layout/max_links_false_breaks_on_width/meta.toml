@@ -4,5 +4,5 @@ previewable = false
 title       = "A `false` `max-links` Leaves Only the Width Budget"
 
 description = '''
-Clearing the count trigger holds a short chain inline whatever its link count, leaving `code-line-length` as the only reason a chain breaks.
+With `max-links = false`, the three-link `short` chain stays inline whatever its link count. The `wide` chain still crosses `code-line-length` and breaks, so the width cap survives as the only reason a chain breaks once the count trigger is cleared.
 '''

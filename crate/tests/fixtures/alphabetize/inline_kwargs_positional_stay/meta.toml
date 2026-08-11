@@ -3,5 +3,5 @@ previewable = false
 title       = "Inline Keyword Arguments Sort, Positionals Stay"
 
 description = '''
-A single-line call site's keyword arguments **reorder through inline block mode**. Positional arguments never appear in the keyword list, so they do not move.
+The keyword arguments of the one-line `Posting` call **sort in place on the single line**, reordering to `company=`, `title=`, `url=`. The positional `record` has no keyword name to sort by, so it stays first.
 '''

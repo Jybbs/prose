@@ -3,5 +3,5 @@ previewable = false
 title       = "An Over-Budget Swap Holds the Group"
 
 description = '''
-A packed keyword group swaps member slices in place, so a long member landing on a fuller row can push that row past the code budget. A swap whose rows neither fit the budget nor keep their source width holds the group in source order.
+Sorting this packed group would swap the member texts in place, landing the long `aardvark_padding_width=('courier-new-bold-typeface', 12, '')` on the first row beside `bee=3` and `xylophone=4`. That row would run past the code budget while no longer matching its source width either, so the swap is abandoned and the group holds its source order.
 '''

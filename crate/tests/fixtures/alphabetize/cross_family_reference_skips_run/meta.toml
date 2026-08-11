@@ -3,5 +3,5 @@ previewable = false
 title       = "A Reader Wedged Between Its Fields Holds Its Slot"
 
 description = '''
-`HALF` reads `width`, the annotated field directly above it, while `height` sits below. Both families tier through one graph, where `HALF` holds its slot between the fields. Alphabetizing the fields would seat `width` below the `HALF` reading it, so the field family **keeps source order** around the wedged reader rather than stranding the reference.
+`HALF` reads `width`, the annotated field directly above it, and the constant sits wedged between `width` and `height`. Alphabetizing the fields would drop `width` into `height`'s slot below the `HALF` that reads it, breaking the name lookup, so the run **keeps source order** and the body passes through unchanged.
 '''

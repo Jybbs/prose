@@ -4,5 +4,5 @@ previewable = false
 title       = "A Rejoin Landing One Column Over Budget Explodes"
 
 description = '''
-The length measure counts the code trailing the closing parenthesis on its own row, so a fracture whose joined row would land one column past the budget explodes rather than joining.
+Whether the fractured `helper(alpha, beta)` may rejoin depends on the full row a join would produce, counting the `+` and the long operand trailing the closing `)`. That joined row would land exactly one column past the limit, so the call explodes rather than joining, and the operand follows the `)` on the closing line.
 '''

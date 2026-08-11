@@ -3,5 +3,5 @@ previewable = false
 title       = "A Decorator Constant Blocks an Unsound Hoist"
 
 description = '''
-A constant naming a function would pool into the trailing band, yet a later definition decorates with it, so seating the constant last would move it past its user. The hoist **declines and the module keeps source order**, holding the import-safety invariant.
+`HANDLER = decorate` names a function, the shape that would normally drop into the trailing band at the bottom of the module. `@HANDLER` decorates `target` further down and runs when that definition executes, so seating the constant last would move it past its user and raise a `NameError` at import. **The move is blocked and the module keeps source order.**
 '''

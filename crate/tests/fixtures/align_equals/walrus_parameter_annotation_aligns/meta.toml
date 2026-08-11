@@ -3,5 +3,5 @@ previewable = false
 title       = "A Parenthesized Walrus Parameter Annotation Aligns"
 
 description = '''
-A parameter whose annotation parenthesizes an assignment expression aligns its default like any other, because the rule measures the parameter annotation through its explicit parentheses so the closing `)` stays left of the rewritten gap.
+`host`'s annotation is the parenthesized assignment expression `(c := int)`, and its default joins the signature's run like any other parameter. The annotation is measured through its closing `)`, so `portfolio` and `region` pad out to `host`'s width and all three defaults share one `=` column.
 '''

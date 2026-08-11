@@ -3,5 +3,5 @@ previewable = false
 title       = "A Base the File Cannot Resolve Stays a Type"
 
 description = '''
-Pins what the rule misses. `SETTINGS` comes from an import and `registry` is bound by a call, so nothing in this file says what either holds, and a string-sliced subscript on them looks exactly like `Literal["db"]`. Both stay types and neither draws a rename. Settling them would take a cross-file import map, which is the machinery this rule does without.
+This case pins a deliberate miss, in that `SETTINGS` arrives through an import and `registry` is bound by a `build_registry()` call, so nothing in this file says what either name holds. A string subscript on such a base reads exactly like `Literal["db"]`, so `database` and `handler` both pass as type aliases rather than being flagged, because telling them apart would take a cross-file import map, machinery this rule does without.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "`# prose: keep` on a Dict Preserves Source Order"
 
 description = '''
-A trailing `# prose: keep` comment on the opening `{` line **preserves source order** for that single dict. The unmarked sibling alphabetizes and partitions through the same machinery, so the contrast lands side by side from identical scrambled input.
+The trailing `# prose: keep` on `marked`'s opening `{` line **preserves that one dict's source order**. `unmarked` holds identical entries and shows what the marker suppressed, its scalar entries `"name"` and `"version"` sorting ahead of the nested `"config"` dict, so the two outcomes sit side by side from the same scrambled input.
 '''

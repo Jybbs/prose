@@ -3,5 +3,5 @@ previewable = false
 title       = "A Trailing Rule Above a Constant Pins It In Place"
 
 description = '''
-The decorative run closes the label rather than opening it, and a `#` caps the line, the box shape `# Cache Sizing ****#` takes. It reads as a section divider all the same, so banding leaves `CACHE_SIZE` beneath it rather than hoisting the constant across the divider into the leading band.
+The `# Cache Sizing ****#` comment puts its decorative run after the label and caps the line with a `#`, the reverse of a heading whose rule opens the line. It reads as a section divider all the same, so `CACHE_SIZE` stays pinned beneath it rather than hoisting across the divider into the leading band above `render`, leaving the file unchanged.
 '''

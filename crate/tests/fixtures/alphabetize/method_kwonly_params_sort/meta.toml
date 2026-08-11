@@ -3,5 +3,5 @@ previewable = true
 title       = "Method Keyword-Only Parameters Sort"
 
 description = '''
-The positional hold covers only the positional-or-keyword sub-list. Keyword-only parameters bind by name at every call site, so they **keep sorting** with the required-before-optional partition, while the positional parameters ahead of the `*` hold their source order as they do in every function.
+The hold on positional order covers only the parameters ahead of the `*`, so `self, target, source` stay as declared. The keyword-only block behind it **still sorts**, the required `mode` moving to the front and the defaulted `atomic=True` and `retries=3` alphabetizing after it, because keyword-only parameters bind by name at every call site and reordering them changes no caller.
 '''

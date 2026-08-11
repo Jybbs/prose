@@ -4,5 +4,5 @@ previewable = false
 title       = "A Fractured Call Whose Joined Row Overflows Explodes"
 
 description = '''
-The length trigger measures the joined row across the column the list lands at and the code trailing the call on its own row, so a fracture whose join would overflow explodes one argument per line rather than keeping the break the author wrote.
+The fractured `ValueError` call is measured as if rejoined, and that measure counts both the column the call starts at and the `from underlying_cause_error` trailing it. The joined row would overflow the limit, so the fracture explodes to one argument per line rather than keeping the break the author wrote, the `from` clause following the closing `)`.
 '''

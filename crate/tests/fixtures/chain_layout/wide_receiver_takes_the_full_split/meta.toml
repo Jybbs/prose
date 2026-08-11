@@ -4,5 +4,5 @@ previewable = true
 title       = "A Wide Receiver Falls Back to the Full Split"
 
 description = '''
-Hanging each dot beneath a receiver this wide would shift the column further than `max-shift` allows, so the chain takes the full split instead, standing the receiver alone on its line and running every link flush beneath it.
+Hanging each `.` beneath the dot that follows `an_extremely_long_receiver_name` would shift the column further than `max-shift` allows, so the chain takes the full split instead. The receiver stands alone on its line, and `.filter(alpha)`, `.order(beta)`, and `.limit(gamma)` run flush beneath it at a single indent.
 '''

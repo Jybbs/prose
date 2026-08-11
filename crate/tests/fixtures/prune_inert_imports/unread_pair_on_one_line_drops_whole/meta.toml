@@ -3,5 +3,5 @@ previewable = true
 title       = "A Bare Pair Neither Name Reads Goes Whole"
 
 description = '''
-`import os, sys` binds one module per name and nothing reads either. **Both aliases go and the line with them.**
+`import os, sys` binds two names in one statement, and nothing in the module reads either `os` or `sys`. **Neither name is read, so the whole line drops**, taking both out together rather than leaving one behind.
 '''

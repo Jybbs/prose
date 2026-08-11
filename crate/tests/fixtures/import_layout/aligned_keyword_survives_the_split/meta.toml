@@ -3,5 +3,5 @@ previewable = false
 title       = "An Aligned `import` Keyword Survives the Split"
 
 description = '''
-The over-long roster splits into repeated-prefix lines, and each repeated prefix carries the gap the source holds before its `import` keyword rather than collapsing to a single space. That gap is the column `align-imports` seats, so every split line lands on it.
+The `from typing` roster overflows and splits into repeated-prefix lines, and each repeated prefix keeps the padded gap the source holds before its `import` keyword rather than collapsing it to a single space. That gap is the alignment column `align-imports` establishes against `from __future__ import`, so every split line lands on the same column.
 '''

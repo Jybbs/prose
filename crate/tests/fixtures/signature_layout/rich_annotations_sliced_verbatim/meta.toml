@@ -3,5 +3,5 @@ previewable = false
 title       = "Rich Annotations Are Sliced Verbatim"
 
 description = '''
-A signature carrying varied annotations (*a `Callable`, a generic `Mapping`, an `Annotated` wrapper, a tuple alias, and an `Optional` default*) expands to one-per-line shape with **each annotation's source slice preserved verbatim**.
+`configure`'s five parameters carry varied annotations, `Callable[[int, str], bool]`, `Mapping[str, Any]`, `Annotated[dict[str, int], "extra"]`, `tuple[str, ...]`, and a `timeout: Optional[float] = None` default, exceeding `max-params`. `signature-layout` expands the signature to one parameter per line with **each annotation's source slice preserved verbatim**.
 '''

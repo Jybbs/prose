@@ -3,5 +3,5 @@ previewable = false
 title       = "Methods in a Doubly Nested Class Carry One Blank"
 
 description = '''
-A method inside a class nested within an outer class normalizes to **one blank line** between siblings, the same class-scope canonical that applies at any nesting depth.
+`alpha` and `beta` live in `Inner`, itself nested inside `Outer`, and the three blank lines between them **collapse to one**, because the class-scope canonical applies at any nesting depth. Both class headers also gain their one blank before the first member below them.
 '''

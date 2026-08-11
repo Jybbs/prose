@@ -3,5 +3,5 @@ previewable = false
 title       = "A Type Alias Rewrites Like an Annotation"
 
 description = '''
-The legacy spelling reads the same wherever it stands, so a bare alias binding modernizes alongside the annotations.
+`MaybeInt = Optional[int]` is a plain assignment rather than an annotation, yet its value is the same legacy spelling, so it rewrites to `MaybeInt = int | None` all the same. That was `Optional`'s only read, so the import is removed with it.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Banner Holds Imports in Separate Sections"
 
 description = '''
-A banner divides a run into independent sections, so each partitions on its own and **no import crosses the divider** into the section above it.
+The `# --- Local ---` banner divides the run into two independent sections, and each partitions on its own. `import os` is a bare stdlib import, yet it partitions within the lower section rather than joining `import sys` above, because **no import crosses the divider**.
 '''

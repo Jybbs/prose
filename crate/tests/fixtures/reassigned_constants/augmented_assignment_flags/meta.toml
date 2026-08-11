@@ -3,5 +3,5 @@ previewable = false
 title       = "Augmented Assignment Marks a Constant as Reassigned"
 
 description = '''
-An augmented assignment such as `COUNTER += 1` counts as a rebinding, so the initial `SCREAMING_CASE` assignment it follows draws the diagnostic.
+`COUNTER = 0` is followed by `COUNTER += 1`, an augmented assignment that counts as a second write to the same name. **Only the initial `COUNTER = 0` is flagged**, the augmented assignment itself carrying no separate report.
 '''

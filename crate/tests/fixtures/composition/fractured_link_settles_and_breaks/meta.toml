@@ -4,5 +4,5 @@ previewable = true
 title       = "A Fractured Link Settles Before the Chain Is Measured"
 
 description = '''
-A link the author hand-wrapped closes onto one row under [[call-layout]], so the chain reads at its settled width and the count trigger claims it on the first pass rather than the second.
+The author hand-wrapped `base.first(alpha,` mid-call, and [[call-layout]] rejoins `first(alpha, beta)` onto one row. That settles the chain's width before `chain-layout` counts its links, so the link-count trigger breaks the chain on the first pass rather than the second, wrapping the expression in parentheses and stacking `.second(gamma)` and `.third(delta)` under `.first(alpha, beta)`.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Second Note Climbs When the Line Is Already Full"
 
 description = '''
-`ZETA_CAP` already carries a trailing note, so the budget check measures from its block end rather than from the end of its code, counting the comment its line holds. The bound block takes the line above instead of joining a line that would run past the code budget.
+The comment below `ZETA_CAP` binds upward to it, yet the constant's line already ends in a trailing note, forcing the fit check to measure from the end of that note rather than from the end of the code. Appending a second note would run the line past the budget, so `# and a second note bound from below` climbs above `ZETA_CAP` instead and travels with it when `ALPHA_CAP` sorts first.
 '''

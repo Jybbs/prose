@@ -3,6 +3,5 @@ previewable = true
 title       = "A Precision on a Hex Conversion Holds"
 
 description = '''
-A precision on `%x` sets a floor on the digit count where `{:.5x}` cuts
-the rendered text instead.
+`"%.5x"` renders `bits` with at least five hex digits, because a precision on `%x` sets a floor on the digit count. The format-spec mini-language allows no precision on its integer `x` type, in that `{:.5x}` raises `ValueError`, so no equivalent spec exists and the line holds.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "An Async Filtered Comprehension Joins onto One Line"
 
 description = '''
-An `async` comprehension carrying an `if` clause joins onto one line when it fits, the `async for` keyword and the filter clause surviving the join intact.
+The broken comprehension returned by `collect` fits on one line, so it joins into `[item.value async for item in source if item.ready]`. The `async for` keyword and the `if item.ready` filter both survive the join intact.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Two Future Lines Are Processed Independently"
 
 description = '''
-Two consecutive `from __future__ import` lines carry `annotations` and `division` separately. **Each import statement is processed independently**, so the `annotations` line is removed while the `division` line remains.
+The module writes `from __future__ import annotations` and `from __future__ import division` as two separate lines. **Each import statement is evaluated independently, so `annotations` is removed because the module carries no annotation to defer, while `division` stays untouched**, since only the `annotations` feature is ever subject to removal.
 '''

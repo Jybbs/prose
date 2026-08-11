@@ -4,5 +4,5 @@ previewable = false
 title       = "A Doubly Nested Fracture Measures Joined Throughout"
 
 description = '''
-A fracture nested two deep is reached both on its own and inside the join its parent renders, so the measure keeps the outermost reading of each span and drops the ranges that one already covers, leaving every level the width it settles on rather than the one its source wrote.
+`inner_helper` arrives fractured across two lines, inside an `outer_helper` call that is itself fractured inside `TypeError`. Measuring any level joins the fractures nested under it first, so each span is read at the width it would settle to rather than the width the source wrote, resulting in `TypeError` and `outer_helper` exploding while `inner_helper(alpha_value_name, beta_value_name)` rejoins onto one line.
 '''

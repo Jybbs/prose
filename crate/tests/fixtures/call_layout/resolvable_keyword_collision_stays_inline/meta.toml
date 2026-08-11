@@ -3,5 +3,5 @@ previewable = false
 title       = "A Call Binding One Name Twice Stays Inline"
 
 description = '''
-A call whose fourth positional argument binds the same parameter a trailing keyword also names (*`color` here*) cannot be rendered in keyword form without a duplicate key, so it stays inline.
+The fourth positional `c` binds to `f`'s `color` parameter, the same parameter the trailing `color=1` keyword already names. Writing the call in keyword form would render `color=` twice, so the rule leaves the call inline as written.
 '''

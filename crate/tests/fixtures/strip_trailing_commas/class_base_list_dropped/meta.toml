@@ -3,5 +3,5 @@ previewable = true
 title       = "Class Base Lists Strip the Trailing Comma"
 
 description = '''
-A multi-line class base list shares the same argument shape as a call, so the `,` after the final base is stripped. **The backward scan from before the closing `)` lands on that comma**, treating bases exactly as it treats call arguments.
+`Loader`'s base list, `BaseLoader, CacheMixin,`, carries the same bracket shape as a call's argument list, so `strip-trailing-commas` reaches it the same way. **The scan backward from the closing `)` lands on the `,` after `CacheMixin`**, and the rule deletes it.
 '''

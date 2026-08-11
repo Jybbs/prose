@@ -3,5 +3,5 @@ previewable = false
 title       = "A Multi-Line Target Skips the Member"
 
 description = '''
-A target spanning multiple lines does not participate in the alignment and breaks the run, **leaving `alpha` and `beta` on either side as separate singletons** rather than one aligned group.
+The tuple target `(x, y)` spreads across four lines before its `= 2, 3` arrives, so that assignment never joins the alignment and it breaks the run. **`alpha` and `beta` are left on either side as separate singletons**, which is why `beta = 4` keeps its natural width instead of padding to match `alpha`.
 '''

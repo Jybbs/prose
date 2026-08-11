@@ -3,5 +3,5 @@ previewable = false
 title       = "Overload-Decorated Defs Normalize like Plain Defs"
 
 description = '''
-A module-level chain of `@overload`-decorated defs treats each adjacent pair as a regular def-after-def case, normalizing to **two blank lines**. The rule does not special-case overloads.
+Two `@overload` stubs of `process` and its plain implementation sit directly adjacent at module level. **Each adjacent pair normalizes to two blank lines, the same as any def-after-def pair**, because overloads get no special case that would keep the chain packed.
 '''

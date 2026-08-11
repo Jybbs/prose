@@ -3,5 +3,5 @@ previewable = false
 title       = "Set Atomics Flow-Pack on Overflow"
 
 description = '''
-A set stays inline within the 88-character budget and expands when it overflows. **Inside the expanded form, atomic items flow across as few balanced lines as fit** under `code-line-length` and the `max-atomics` cap. A set the author wrote across lines holds its break and flow-packs its atomics the same way rather than joining back inline.
+`short_set` fits the 88-character budget and stays inline, whereas the nine-string `long_set` overflows and expands. **Inside the expanded form, atomic items flow across as few balanced lines as fit** under `code-line-length` and the `max-atomics` cap, landing the permission strings on two balanced rows. `held_set`, written one item per line, holds its break and flow-packs to `"read", "write", "execute"` rather than joining back inline.
 '''

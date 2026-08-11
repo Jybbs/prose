@@ -3,5 +3,5 @@ previewable = false
 title       = "A Comprehension Whose Target Does Not Match Its Entry Stands"
 
 description = '''
-The target binds one name while the entry names two others, so the comprehension is not copying its input and no constructor call spells what it builds.
+The comprehension's target `pair` binds one name while its entry `key: value` names two others, so the comprehension is not copying `rows` and no `dict(...)` call could spell what it builds. `paired` stays exactly as written.
 '''

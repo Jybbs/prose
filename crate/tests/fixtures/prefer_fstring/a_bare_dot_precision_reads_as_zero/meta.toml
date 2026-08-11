@@ -3,5 +3,5 @@ previewable = false
 title       = "A Bare Dot Precision Reads as Zero"
 
 description = '''
-`%.f` cuts to no decimal places, which the format spec writes as `.0`.
+The bare `.` precision in `"%.f" % (measure,)` means zero decimal places, a value the f-string format spec spells out. The rewrite lands on `f"{measure:.0f}"`, with the implied zero written explicitly as `.0`.
 '''

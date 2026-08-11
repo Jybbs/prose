@@ -3,5 +3,5 @@ previewable = true
 title       = "A Two-Space Sentence Separator Collapses to One"
 
 description = '''
-Every whitespace run between two words of reflowed prose **collapses to a single space**, so the two-space sentence separator some codebases keep is normalized wherever it falls. The run would otherwise survive mid-line and vanish at a wrap point, leaving the paragraph a different length each time it was measured.
+The module docstring separates its two sentences with a double space after `disk.`, and every whitespace run between reflowed words **collapses to a single space**. Left alone, the run would survive mid-line and vanish only at a wrap point, making the paragraph measure a different length on each pass.
 '''

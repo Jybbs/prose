@@ -3,5 +3,5 @@ previewable = false
 title       = "A Constant Naming a Pinned Definition Still Bands"
 
 description = '''
-The divider pins `FilterError` in its slot, leaving the class outside the band. Its name still binds, so `FILTER_ERRORS` reads as reaching a definition and pools into the trailing band below `apply_filter` rather than reading the name as unresolved and anchoring where it sits.
+The `# Filters` divider pins `FilterError` to its section, keeping the class itself out of the band's reordering. `FILTER_ERRORS = (FilterError, OSError)` still resolves that name to the pinned class, so the tuple counts as derived from a definition and pools into the trailing band below `apply_filter` rather than staying anchored where it sat.
 '''

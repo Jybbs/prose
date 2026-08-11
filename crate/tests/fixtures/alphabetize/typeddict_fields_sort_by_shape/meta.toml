@@ -3,5 +3,5 @@ previewable = true
 title       = "`TypedDict` Fields Sort"
 
 description = '''
-A `TypedDict` body has its annotated fields **alphabetized**. Detection runs against the AST shape rather than the base-class name, so `class T(TypedDict)` and a hand-rolled annotated class would both fire identically.
+`Config(TypedDict)` lists `timeout`, `name`, `retries`, and `host`, and the annotated fields **alphabetize** to run `host` through `timeout`. Detection reads the AST shape rather than the base-class name, so a plain class holding the same bare annotated fields would sort identically.
 '''

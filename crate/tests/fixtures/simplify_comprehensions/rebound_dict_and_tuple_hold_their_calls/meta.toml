@@ -3,5 +3,5 @@ previewable = false
 title       = "Rebinding Holds Only the Names It Covers"
 
 description = '''
-A module that binds `dict` and `tuple` itself holds every call to those two while `list` and `set` collapse as usual, so the suppression follows each name rather than the whole rule.
+The module rebinds `dict = {}` and `tuple = ()`, so `mapping = dict([(1, 2)])` and `frozen = tuple([1, 2])` stay untouched because those two names no longer refer to their builtins. `list` and `set` keep their usual meaning, so `values` and `unique` still collapse to `[1, 2]` and `{1, 2}`, the rebinding blocking only the two names it covers rather than the whole rule.
 '''

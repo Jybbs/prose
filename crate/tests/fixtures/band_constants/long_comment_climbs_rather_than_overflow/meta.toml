@@ -3,5 +3,5 @@ previewable = false
 title       = "A Long Comment Climbs Rather Than Overrun the Budget"
 
 description = '''
-Joining this comment to its constant's line would carry it past the code budget, so the block takes the line above instead. The comment stays bound to the constant it documents without the band handing `line-overflow` a line the source never wrote that way.
+The comment below `ZETA_WITH_A_RATHER_LONG_NAME` binds to that constant, and joining it inline as a trailing comment would push the line past the length budget. It climbs to the line above the constant instead, so when the sort seats `ALPHA_CAP` first the note still travels with the constant it documents, and the band never produces an over-long line for `line-overflow` to report.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "The Shebang and the Structured Markers Pass Through"
 
 description = '''
-A hash run followed by `!`, `:`, `'`, or `|` carries meaning to a tool downstream, so its opener passes through untouched. That covers the shebang line, Sphinx's `#:` attribute doc, and the quoted and piped forms, each of them own-line here and so carrying no gap to settle either.
+A `#` followed by `!`, `:`, `'`, or `|` carries meaning to a tool downstream, so each opener here passes through with no space inserted. That covers the `#!/usr/bin/env python` shebang, the `#:sphinx` attribute doc, and the `#'quoted` and `#|piped` forms, each a full-line comment here and so carrying no gap before the hash to settle either.
 '''

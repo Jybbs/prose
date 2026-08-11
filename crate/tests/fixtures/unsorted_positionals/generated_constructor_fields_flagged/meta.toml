@@ -3,5 +3,5 @@ previewable = true
 title       = "A Generated Constructor's Field Run Is Flagged"
 
 description = '''
-A `@dataclass` whose annotated fields sit out of order **draws a report-only diagnostic across the run**. The decorator turns those fields into the constructor's positional parameters, so `Window(1920, 1080)` binds them in source order and a reorder would transpose every such call. The defaulted `title` sorts after the required pair, which is the only order Python permits.
+`@dataclass` turns `Window`'s annotated fields into its generated constructor's positional parameters, so `width` sitting before `height` fixes the order every positional call binds them in. The lint **reports the run without reordering it**, because a reorder would transpose the values at every such call. The defaulted `title` sorts after the required pair, since Python permits no defaulted field before a required one.
 '''

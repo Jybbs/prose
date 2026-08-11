@@ -3,6 +3,5 @@ previewable = true
 title       = "A Doubled Percent Reads as One Literal"
 
 description = '''
-`%%` collapses to the single `%` an f-string renders verbatim, leaving the
-precision on the field beside it.
+In the `%` template, `%%` is the escaped spelling of one literal percent sign, an escape an f-string no longer needs. The rewrite collapses it to a plain `%` while `%.1f` becomes the field `{ratio:.1f}`, its precision carried into the format spec beside it.
 '''

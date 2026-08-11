@@ -3,5 +3,5 @@ previewable = true
 title       = "A Compound Header Shortens Without Reaching Its Body"
 
 description = '''
-A `super(...)` call in an `if` header loses its arguments while every line of the body below keeps its indentation, the shift stopping at the end of the header's own logical line.
+`super(CachedLoader, self).ready` sits in an `if` header, above a body whose `merge(primary,` call wraps onto a second line. The call shortens to `super().ready`, and the shift stops at the end of the header's own logical line, leaving every line of the body below at the indentation it already had.
 '''

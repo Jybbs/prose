@@ -3,5 +3,5 @@ previewable = true
 title       = "Positional Parameters Keep Their Order, Keyword-Only Sorts"
 
 description = '''
-A function's positional-or-keyword parameters **hold their source order**, free function and method alike, because reordering them would rebind callers a single-file pass cannot see. Only the keyword-only block past the `*` sorts, with its required-before-optional partition, since a keyword-only parameter binds by name at every call site. The companion [[unsorted-positionals]] lint reports the positional run when alphabetizing it would help.
+`target` and `source` **hold their source order** because they can bind by position, so reordering them would rebind call sites a single-file pass cannot see. The keyword-only block past the `*` binds by name at every call site and sorts with required entries ahead of optional ones, which is why the default-less `mode` moves ahead of `atomic=True`. The companion [[unsorted-positionals]] lint reports the positional run when alphabetizing it would help.
 '''

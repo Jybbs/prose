@@ -3,5 +3,5 @@ previewable = true
 title       = "A Call Inside a Replacement Field Shortens"
 
 description = '''
-A `super(...)` call sitting in an f-string replacement field shortens like any other, the walk reaching the expression the field interpolates.
+`Child.label` returns `f"{super(Child, self).label()}!"`, calling `super(Child, self)` inside the f-string's replacement field. The interpolated call shortens to `super()` the same way one outside a string would.
 '''

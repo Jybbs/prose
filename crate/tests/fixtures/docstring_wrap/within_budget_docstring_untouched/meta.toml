@@ -3,5 +3,5 @@ previewable = true
 title       = "Already-Wrapped Source Is Left Alone"
 
 description = '''
-A docstring whose description and section bodies already fit their budgets **passes through unchanged**. The rule fires only when wrapping actually shortens a line, so short `Args:` and `Returns:` entries produce no edit.
+Every line of the `configure` docstring already fits its budget, so the whole docstring **passes through unchanged**. The rule rewrites only when wrapping would actually shorten a line, and the short `Args:` entries and one-line `Returns:` body produce no edit.
 '''

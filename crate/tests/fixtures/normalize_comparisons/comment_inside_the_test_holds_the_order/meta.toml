@@ -3,5 +3,5 @@ previewable = false
 title       = "A Comment Inside the Test Holds the Operand Order"
 
 description = '''
-An operand swap would leave a trailing comment attached to whichever operand landed on its line, so a comment anywhere inside the comparison declines the flip.
+`42 == count` leads with the constant, the shape the rule normally flips, but the `# the answer` comment sits inside the comparison. Swapping the operands would leave that comment attached to whichever operand landed on its line, so a comment anywhere inside the test blocks the flip and the order holds.
 '''

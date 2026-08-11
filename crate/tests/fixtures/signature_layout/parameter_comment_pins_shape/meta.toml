@@ -3,5 +3,5 @@ previewable = true
 title       = "Comments inside the Parameter List Pin the Shape"
 
 description = '''
-A comment anywhere between `(` and `)` **pins the existing shape**, overriding both count and length triggers. Each pinned signature keeps its comment in place rather than getting rewritten around, covering both own-line and trailing-line placements.
+`own_line_pin` carries `# comment between parameters` on its own line, and `trailing_line_pin` carries `# trailing on a parameter line` trailing one of its parameters, both comments sitting between `(` and `)`. Either placement **pins the signature's existing shape**, so `signature-layout` leaves both five-parameter signatures untouched despite exceeding `max-params`.
 '''

@@ -4,5 +4,5 @@ previewable = true
 title       = "A Fractured Argument List Rejoins"
 
 description = '''
-An argument list the author broke across lines without opening a flush column joins back onto one row once it fits the budget, leaving the reader one line to parse rather than a hanging indent measured against the callee's parenthesis.
+`helper(alpha, beta, gamma)` and `session.record(first, second)` arrive broken across lines, each continuation aligned to the callee's `(` rather than opening a flush column. Both joined forms fit inside the line limit, so each fracture rejoins onto one row, leaving the reader a single line instead of a hanging indent.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Compliant Input Emits Zero Edits"
 
 description = '''
-Source already in sorted form walks the AST, finds every sortable site in order, and **emits zero edits**. Imports, methods, and the four-group method rhythm all pass through untouched.
+The imports already run `collections` before `loguru`, `Alpha` precedes `Beta`, and `Alpha`'s methods already follow the four-group rhythm, dunders `__init__` and `__repr__`, then the `name` property, then the private `_helper`, then the public `update`. Every sortable site is found already in order, so **the rule emits zero edits** and the file passes through untouched.
 '''

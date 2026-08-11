@@ -3,5 +3,5 @@ previewable = false
 title       = "A Header Comment Cushions Above, Binds to the Member"
 
 description = '''
-A class header followed by an own-line comment and then the first member normalizes to **one blank line above the comment block** and binds the comment tight against the member below it.
+The comment `# describes the first method` sits between `class Posting:` and `def m1(self):`, and it reads as `m1`'s leading block. **One blank line opens between the header and the comment**, while the comment stays tight against the method it describes.
 '''

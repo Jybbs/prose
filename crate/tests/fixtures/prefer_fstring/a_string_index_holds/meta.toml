@@ -3,6 +3,5 @@ previewable = true
 title       = "A String Index Holds"
 
 description = '''
-Writing `table["key"]` inline would reuse the delimiter the f-string opened
-with.
+The spec `{0[key]}` indexes the first argument with the literal string `key`, written without quotes inside a `str.format` field. Spelled inline it becomes `table["key"]`, whose quotes would reuse the `"` delimiter the f-string opened with, a nesting the `target-version = "3.10"` config rules out, so the call holds.
 '''

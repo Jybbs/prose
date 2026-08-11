@@ -3,5 +3,5 @@ previewable = false
 title       = "TypeVar Bindings Pass Through Untouched"
 
 description = '''
-A `TypeVar("T")` binding is `SCREAMING_CASE` by Python convention and **structural by definition**, so it passes through the rule untouched and draws no diagnostic.
+`T = TypeVar("T")` binds a name whose all-uppercase casing matches the `SCREAMING_CASE` shape the rule targets. A `TypeVar` binding is **structural by definition**, declaring a type variable rather than storing a value, so it passes through untouched and no diagnostic is emitted.
 '''

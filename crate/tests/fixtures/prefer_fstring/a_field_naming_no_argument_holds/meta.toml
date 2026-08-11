@@ -3,6 +3,5 @@ previewable = false
 title       = "A Field Naming No Argument Holds"
 
 description = '''
-The call passes no keyword the field names, so the field reads nothing
-the rewrite could splice inline.
+The `{missing}` field names a keyword the `.format` call never passes, `present=value` being the only argument there. The field reads nothing the rewrite could splice inline, so the template holds.
 '''

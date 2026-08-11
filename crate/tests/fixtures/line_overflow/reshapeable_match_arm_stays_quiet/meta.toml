@@ -3,5 +3,5 @@ previewable = false
 title       = "A Reshapeable Match Arm Stays Quiet"
 
 description = '''
-The over-cap `case` arm holds a single statement `align-match-case` could still split onto its own line, so `line-overflow` leaves it for that rule and emits nothing.
+The `case "begin"` arm packs `run_the_initial_setup_routine()` onto its pattern line, running past the 40-column budget, yet `line-overflow` emits nothing. The arm holds a single statement `align-match-case` can still move onto its own line, so the overflow is left to that rule.
 '''

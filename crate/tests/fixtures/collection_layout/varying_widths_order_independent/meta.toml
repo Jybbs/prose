@@ -3,5 +3,5 @@ previewable = false
 title       = "Pack Against the Widest Row, Not the Source Order"
 
 description = '''
-An expanded collection packs against the **widest items a row could hold** rather than the items in their current order, so the line distribution stays the same and within budget however `alphabetize` later reorders the entries.
+The `__all__` list alternates wide strings with two-character ones, and the expansion packs against the **widest items a row could hold** rather than the items in their current order. Each row therefore carries one wide string and one short one, a distribution that stays the same and within budget however `alphabetize` later reorders the entries.
 '''

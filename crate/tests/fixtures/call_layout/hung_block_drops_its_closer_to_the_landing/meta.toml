@@ -3,5 +3,5 @@ previewable = false
 title       = "A Hung Block Drops Its Closing Bracket to the Landing Indent"
 
 description = '''
-An argument whose first row leaves a bracket open already holds its own rows one step inside that bracket, so the move leaves them where they sit and drops the closing bracket back to the indent the argument lands at.
+The call's one argument is the `%` format expression, whose first row ends by leaving a `(` hanging open while the `", ".join(...)` line already sits one step inside it. Exploding the call moves the argument onto its own row and leaves that interior line where it sits, dropping only the hung group's closing `)` down to the indent the argument lands at.
 '''

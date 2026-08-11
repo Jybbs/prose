@@ -3,5 +3,5 @@ previewable = false
 title       = "A `nonlocal` Declaration Skips the Function"
 
 description = '''
-A function whose body declares `nonlocal` is **skipped entirely**, because an accurate single-use reading would have to follow the binding out along the closure chain. The whole scope is exempted rather than analyzed in isolation.
+`inner` declares `nonlocal counter`, so `single-use-variables` **skips the whole function** rather than reasoning about `bumped` on its own, because tracking whether `counter` is truly single-use would mean following the binding out along the closure chain to `outer`. The exemption covers the entire body of `inner`, not just the `nonlocal` line.
 '''

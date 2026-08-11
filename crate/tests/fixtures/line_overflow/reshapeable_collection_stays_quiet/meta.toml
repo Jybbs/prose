@@ -3,5 +3,5 @@ previewable = false
 title       = "A Reshapeable Collection Stays Quiet"
 
 description = '''
-The over-cap line carries an inline multi-element dict `collection-layout` could still explode one entry per line, so `line-overflow` leaves it for that rule and emits nothing.
+The 44-column `data` assignment runs over the 40-column budget, yet `line-overflow` emits nothing. The three-entry dict is a collection `collection-layout` can still explode one entry per line, so the overflow is left to that rule.
 '''

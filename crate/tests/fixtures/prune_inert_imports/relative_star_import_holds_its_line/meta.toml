@@ -3,5 +3,5 @@ previewable = false
 title       = "A Relative Star Import Holds Its Line"
 
 description = '''
-A relative `from . import *` binds the same unenumerable name set an absolute star does. **The line holds**, its qualified path leading with the relative segment.
+`from . import *` is a relative star import, binding an unenumerable set of names the same way an absolute `from module import *` would. **The import line holds** because the rule cannot resolve which names a star import binds, so it never prunes one.
 '''

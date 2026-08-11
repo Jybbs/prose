@@ -3,5 +3,5 @@ previewable = false
 title       = "A Semicolon-Joined Pair Takes No Gap"
 
 description = '''
-Two imports packed onto one physical line with `;` leave no own-line gap above the second to normalize, so the pair **emits no edit** rather than anchoring the gap to the shared line's start.
+`from collections import abc` and `import sys` share one physical line, joined by `;`. Because `import sys` opens no line of its own, there is no blank run above it to normalize, so **the pair emits no edit** and the line passes through unchanged.
 '''

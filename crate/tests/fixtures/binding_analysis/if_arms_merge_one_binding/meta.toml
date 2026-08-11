@@ -3,5 +3,5 @@ previewable = false
 title       = "Both If Arms Merge Into One Binding"
 
 description = '''
-A name rebound across the arms of an `if`/`else` **collapses into a single module-scope binding** carrying two write offsets, independent of which arm actually runs.
+`x` is assigned in both arms of the `if cond:` / `else:` split and then read by `print(x)`. **The two writes merge into a single module-scope binding** whose `write_offsets` lists both arms, and because neither arm is guaranteed to run, `first_unconditional_write` stays empty.
 '''

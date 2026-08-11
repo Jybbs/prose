@@ -3,5 +3,5 @@ previewable = true
 title       = "A Generator's Pair Survives"
 
 description = '''
-A generator expression is illegal without its surrounding parentheses, so the pair stays.
+`squares = (item for item in items)` wraps a bare generator expression, and Python requires those parentheses for the generator to parse at all. They stay rather than shed.
 '''

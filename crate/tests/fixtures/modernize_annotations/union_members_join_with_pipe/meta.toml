@@ -3,5 +3,5 @@ previewable = true
 title       = "`Union[X, Y]` Becomes `X | Y`"
 
 description = '''
-Each member of a `Union` joins with the PEP 604 `|`, in their order inside the subscript.
+`x: Union[int, str]` rewrites to `x: int | str`, each member joining with the PEP 604 `|` in the order the subscript listed them. That was the only read of `Union`, so its import is removed too.
 '''

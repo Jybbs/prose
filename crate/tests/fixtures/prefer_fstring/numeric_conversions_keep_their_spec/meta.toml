@@ -3,6 +3,5 @@ previewable = true
 title       = "A Numeric Conversion Carries Its Flags, Width, and Precision"
 
 description = '''
-The printf flags translate to their format-spec counterparts, `-` reading as
-`<` and a zero pad surviving wherever no left adjust supersedes it.
+Each printf conversion translates to its format-spec counterpart, so `%x` and `%o` become `{bits:x}` and `{mode:o}`, and `%08.3f` carries its zero pad, width, and precision into `{measure:08.3f}`. The `-` left-adjust flag reads as `<`, so `%-10.2f` lands as `{score:<10.2f}` with the trailing `|` untouched.
 '''

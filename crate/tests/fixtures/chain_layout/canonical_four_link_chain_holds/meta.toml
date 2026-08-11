@@ -4,5 +4,5 @@ previewable = false
 title       = "A Chain Already in the Broken Shape Emits Nothing"
 
 description = '''
-A chain the break would emit verbatim yields no edit, and the walk then passes its spine by rather than descending into it, leaving the first three links unwrapped where a spine descent would gather them into a second pair.
+The `pstats.Stats(profile)` chain already sits in exactly the shape the break would emit, so the rule produces no edit. The walk then passes the chain's spine by rather than descending into it, because a descent would read the first three links as a chain of their own and gather them into a second pair of parentheses.
 '''

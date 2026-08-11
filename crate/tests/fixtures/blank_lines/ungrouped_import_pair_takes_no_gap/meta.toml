@@ -3,5 +3,5 @@ previewable = false
 title       = "An Import Pair Takes No Gap without the Grouping Rule"
 
 description = '''
-A `from` import butted against a bare `import` **keeps the shape its author wrote** where [[group-imports]] is not running, the two kinds forming no canonical boundary for a blank line to mark.
+`from sys import argv` and `import os` sit on adjacent lines with [[group-imports]] not running. **The pair keeps the shape its author wrote**, because `blank-lines` alone treats two imports as ordinary neighboring statements, leaving no boundary between them for a blank line to mark.
 '''

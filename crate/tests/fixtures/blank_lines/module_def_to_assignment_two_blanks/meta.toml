@@ -3,5 +3,5 @@ previewable = false
 title       = "An Annotated Assignment after a Def Carries Two Blanks"
 
 description = '''
-A module-level `def` followed by an annotated assignment normalizes to **two blank lines** between them, regardless of the source's actual count.
+`TIMEOUT: float = 30.0` follows directly on the line after `configure`'s body ends. **The gap after a module-level `def` normalizes to two blank lines**, so the annotated assignment gains that spacing even though the source held none.
 '''

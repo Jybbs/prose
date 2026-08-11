@@ -3,5 +3,5 @@ previewable = false
 title       = "A Function Rebind Leaves the Module Constant Silent"
 
 description = '''
-The reassignment check counts module-scope writes only, so a write-once `TIMEOUT` at module level stays silent even when a function rebinds the same name in its own scope.
+`TIMEOUT = 30` is assigned once at module level, and the `TIMEOUT = 60` inside `override` creates a function-local binding rather than rewriting the module name. The lint counts module-scope writes only, so the module constant goes unreported.
 '''

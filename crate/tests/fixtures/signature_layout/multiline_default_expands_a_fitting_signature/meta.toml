@@ -4,5 +4,5 @@ previewable = true
 title       = "A Multi-Line Default Expands a Signature That Would Otherwise Fit"
 
 description = '''
-A signature under both `max-params` and the line budget still expands one parameter per line while a default spans rows, so a `def` and a call arrive at one shape rather than two.
+`configure` passes both gates, two parameters under `max-params` and an inline width under the line budget, yet the `opts` default is a dict spanning rows. A signature holding a multi-line default expands one parameter per line anyway, so a `def` and a call arrive at the same shape rather than two.
 '''

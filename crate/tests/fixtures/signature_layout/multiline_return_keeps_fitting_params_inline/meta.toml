@@ -3,5 +3,5 @@ previewable = true
 title       = "Parameters That Fit Stay Inline Beneath a Multi-Line Return Annotation"
 
 description = '''
-The parameters fit on one line, so **they are left inline** even though the return annotation spans several lines. The line-budget check measures the header up to the return annotation rather than the annotation's own wrapped width, so a tall return type no longer drags fitting parameters onto separate lines.
+`resolve`'s two parameters, `payload` and `fallback`, fit on a single line even though the return annotation `PrimaryEnvelope | SecondaryEnvelope | DeferredEnvelope` spans three. `signature-layout` measures the line budget only up to the return annotation rather than its full wrapped width, so **the parameters stay inline** and the signature is left as written.
 '''

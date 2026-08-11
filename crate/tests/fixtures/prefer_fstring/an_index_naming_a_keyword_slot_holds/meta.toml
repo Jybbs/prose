@@ -3,6 +3,5 @@ previewable = false
 title       = "An Index Naming a Keyword Slot Holds"
 
 description = '''
-Positional numbering reaches the positional arguments alone, so an index
-landing on a keyword argument names nothing it may read.
+The field `{1}` names the second positional slot, but the call passes only `first` positionally, `second=other` arriving by keyword. Positional numbering reaches the positional arguments alone, so the index resolves to nothing and the call holds as written.
 '''

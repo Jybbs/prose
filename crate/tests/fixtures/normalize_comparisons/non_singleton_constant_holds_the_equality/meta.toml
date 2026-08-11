@@ -3,5 +3,5 @@ previewable = false
 title       = "An Equality Against a Non-Singleton Constant Holds"
 
 description = '''
-`None == 0` keeps its `==`, because `is` against a constant that is not a singleton compares two objects the interpreter never promises to share.
+`None == 0` compares `None` against `0`, and `0` is not a singleton, so rewriting the `==` to `is` would test whether the two are the same object, something the interpreter never guarantees for an integer. The equality therefore holds as written.
 '''

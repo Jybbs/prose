@@ -3,5 +3,5 @@ previewable = true
 title       = "Multi-Line Singleton Signatures Drop the Padding Too"
 
 description = '''
-A multi-line single-parameter signature **strips its pre-`:` padding**, since the lone parameter and its `:` share a line with non-zero width. A multi-line multi-parameter signature qualifies two distinct-line members, so the rule defers to `align_colons` and the padding stays.
+`fetch`'s signature spans multiple lines but holds only `timeout : float,`, the lone parameter, so `strip-align-padding` **strips its pre-`:` padding** down to `timeout: float,`. `render`'s signature holds two parameters, `template : str,` and `context  : dict,`, each on its own line, so the rule defers to `align-colons` and their padding stays.
 '''

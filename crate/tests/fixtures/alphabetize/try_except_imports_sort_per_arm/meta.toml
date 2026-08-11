@@ -3,5 +3,5 @@ previewable = false
 title       = "`try` and `except` Imports Sort Per Arm"
 
 description = '''
-Imports inside `try` and `except` arms **alphabetize independently per arm**. The handler arm sorts on its own without leaking into the `try` body, mirroring how blank-line-separated import runs each sort within their own bucket.
+The imports inside the `try` body and the `except ImportError` handler **alphabetize independently per arm**, so `from alpha import b` climbs to the top of one arm while `from delta import e` climbs to the top of the other. Neither sort leaks into the other arm, the same way blank-line-separated import runs each sort within their own group.
 '''

@@ -3,6 +3,5 @@ previewable = true
 title       = "A Literal Right-Hand Side Binds Without a Tuple"
 
 description = '''
-No literal hides a one-element tuple for `%` to unpack, so a lone spec reads
-it directly.
+The right-hand side of `%` is the bare literal `42`, and a literal can never turn out to be a tuple for `%` to unpack, so the lone `%s` reads it directly. The rewrite splices it straight into the field as `f"{42}"`, with no one-element tuple required.
 '''

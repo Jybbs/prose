@@ -3,5 +3,5 @@ previewable = false
 title       = "Tuple-Unpacking Targets Skip the Run"
 
 description = '''
-A destructuring target **skips the whole run**. Tuple unpacking binds several names from one statement, and reordering would risk a sortable item referencing those names landing before the unpacking that defines them.
+`(alpha, beta) = (2, 3)` binds two names from one statement, and that destructuring target **stops the whole run from sorting**, so `zebra = 1` and `delta = 4` hold their places around it. Reordering could land a statement that reads `alpha` or `beta` above the unpacking that defines them.
 '''

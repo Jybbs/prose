@@ -3,6 +3,5 @@ previewable = true
 title       = "Mapping Keys Bind Their Entries by Name"
 
 description = '''
-A parenthesized key names the dict entry it reads, and the rewrite splices
-that entry's value into the field.
+Each `%(...)s` spec names the dict entry it reads, `%(name)s` resolving to `who` and `%(age)s` to `years`, regardless of the order the dict lists them. The rewrite splices each entry's value into its field and drops the mapping, landing on `f"{who} is {years}"`.
 '''

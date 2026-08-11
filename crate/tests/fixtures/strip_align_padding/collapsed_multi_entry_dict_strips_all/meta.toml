@@ -3,5 +3,5 @@ previewable = false
 title       = "Collapsed Multi-Entry Dict Strips Every Colon"
 
 description = '''
-A multi-entry dict squashed onto one line **strips every entry's pre-`:` padding**, since same-line `:` have no column to align against. The same dict spread across multiple lines belongs to `align_colons` and stays padded for that pass to handle.
+`oneline = {"first" : 1, "second" : 2, "third" : 3}` sits on a single line, so each entry's `:` has no column to line up with, and `strip-align-padding` **strips every entry's pre-`:` padding** down to `oneline = {"first": 1, "second": 2, "third": 3}`. `multiline`'s two entries stay spread across separate lines, so their padding belongs to `align-colons` instead and stays untouched here.
 '''

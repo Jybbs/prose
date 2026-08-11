@@ -3,5 +3,5 @@ previewable = true
 title       = "A Template-String Run Breaks Like Any Other"
 
 description = '''
-Adjacent `t"..."` literals concatenate the way `str` and `bytes` literals do, so an over-budget template run **takes the same one-per-line break** and each replacement field keeps its own text.
+`label`'s two `t"..."` template-string literals concatenate the way `str` and `bytes` literals do, and together they overflow the line. `stack-adjacent-strings` **gives the template run the same one-per-line break** that any other over-budget run gets, wrapping the assignment in parentheses the source did not have.
 '''

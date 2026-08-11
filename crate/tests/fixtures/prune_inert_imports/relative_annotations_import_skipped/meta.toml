@@ -3,5 +3,5 @@ previewable = false
 title       = "A Relative `annotations` Import Is Skipped"
 
 description = '''
-A `from . import annotations` carries `level > 0`, so the detector skips it. The directive-shaped import resolves against the package, not `__future__`, and **stays in place**.
+`from . import annotations` binds a name that happens to be spelled `annotations`, but the leading `.` makes it a relative import from the current package rather than the `__future__` directive. **`prune-inert-imports` leaves it alone**, matching the directive only in its absolute `from __future__ import annotations` form, and `x = annotations` reads the name besides.
 '''

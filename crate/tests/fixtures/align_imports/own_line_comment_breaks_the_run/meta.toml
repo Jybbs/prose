@@ -3,5 +3,5 @@ previewable = true
 title       = "Own-Line Comments Reset the Run, like Blank Lines"
 
 description = '''
-An own-line comment between two imports **breaks adjacency**, so each comment-bracketed sub-run aligns only with its own contiguous neighbors. A trailing comment sits inside its own import's row rather than between two rows, leaving the run around it intact.
+The own-line comment between `from typing import Optional` and `from sys import path` **breaks the run in two**, so `typing` pads out to match `collections` whereas `sys` pads only to `os.path`, each half aligning with its own contiguous neighbors. The trailing comment on `import re as regex` sits inside that row rather than between rows, so `re` and `json` still align their `as` keywords as one run.
 '''

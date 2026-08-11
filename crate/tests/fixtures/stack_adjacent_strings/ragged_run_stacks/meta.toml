@@ -3,5 +3,5 @@ previewable = true
 title       = "A Run Scattered Unevenly Settles One per Line"
 
 description = '''
-A run spanning several lines with two literals sharing one **normalizes to one literal per line** whatever its width, since the ragged boundary is the shape the rule exists to settle.
+`message`'s run spans two lines with two literals sharing the first one, `"the opening clause "` and `"and a middle clause"`, and a third literal on its own line. `stack-adjacent-strings` **normalizes the whole run to one literal per line**, the ragged boundary being exactly the shape the rule exists to settle.
 '''

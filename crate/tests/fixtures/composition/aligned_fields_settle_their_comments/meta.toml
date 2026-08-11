@@ -3,5 +3,5 @@ previewable = false
 title       = "Aligned Fields Settle Their Comment Column Behind the `=`"
 
 description = '''
-**`align-equals` fixes each row's width first, then `align-comments` measures against those settled widths** rather than the ones the author wrote. Both columns land in one pass over the class body, so the values read down one edge and the notes down another.
+Both fields of `Config` carry trailing comments, and **`align-equals` fixes each row's width first, then `align-comments` measures against those settled widths** rather than the ones the author wrote. `retries` gains the padding that clears `timeout_seconds`, then `# attempts` and `# per attempt` land on a shared column, so the values read down one edge and the notes down another.
 '''

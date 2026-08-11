@@ -3,7 +3,5 @@ previewable = true
 title       = "A Rewrite Past the Line Budget Holds"
 
 description = '''
-No layout rule reaches inside an f-string, so a conversion that would push
-its line past `code-line-length` is left as the wrapped form the layout
-rules can still reach.
+Splicing `first_component_name`, `second_component_name`, and `third_component_name` into one f-string would push `summary`'s line past `code-line-length`, and no layout rule reaches inside an f-string to wrap it back. The template keeps its `%` form, whose argument tuple the layout rules can still reach.
 '''

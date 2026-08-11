@@ -3,5 +3,5 @@ previewable = false
 title       = "Backslash Before the Equals Sits Out"
 
 description = '''
-A backslash continuation between the target and the `=` **drops the assignment out of the group**, leaving the neighboring binding unaligned rather than padded to a shared column.
+A backslash continuation splits `foo` from its `=`, which lands on the next line, and that **drops the assignment out of the group**. `bar = 2` stands alone with no partner to align against, so nothing is padded and the source passes through unchanged.
 '''

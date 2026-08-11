@@ -3,5 +3,5 @@ previewable = true
 title       = "Class-Body Numbered Steps Surface the Lint Too"
 
 description = '''
-A numbered-step comment inside a class body is **flagged the same way as one inside a function**. The own-line filter passes and the enclosing scope plays no part in the match.
+`# 1. normalize input` sits on its own line inside `Processor`'s class body, ahead of `run`, and `step-narration` **flags it the same way it flags a numbered-step comment inside a function**. The comment's enclosing scope plays no part in the match, only its own-line numbered-step shape.
 '''

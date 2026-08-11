@@ -3,5 +3,5 @@ previewable = false
 title       = "A Validator Decorator Pins Every Method"
 
 description = '''
-A field-bearing class with a validator-shaped method **skips method alphabetization entirely**. The validator's positional-binding decorator (`@field_validator("title")`) signals that methods may carry declaration-order semantics, so all methods stay put while fields still sort.
+`Posting` holds two `@field_validator` methods, and their presence means the class **skips method alphabetization entirely**, so `normalize_title`, `normalize_name`, and `display` stay in source order even though `display` would sort first. A decorator like `@field_validator("title")` signals that methods may run in declaration order, whereas the fields still sort, `name: str` climbing above `title: str`.
 '''

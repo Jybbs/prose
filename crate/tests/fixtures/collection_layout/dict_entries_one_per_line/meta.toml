@@ -4,5 +4,5 @@ previewable = true
 title       = "Dict Entries Break to One Per Line Past the Threshold"
 
 description = '''
-A dict literal with non-atomic entries expands to one entry per line, and the reader reads the entries as a column of key-value pairs. A dict the author already laid out as a column of two or more entries holds that shape rather than joining back, because `keep-multiline-literals` defaults on, whereas a single-entry one rejoins.
+The three-entry `short_dict` stays inline, while the seven-entry `long_dict` crosses the threshold and expands to one entry per line, reading as a column of key-value pairs. `held_dict`, already laid out as a column of three entries, holds that shape rather than joining back because `keep-multiline-literals` defaults on, whereas the broken `single_entry_dict` rejoins onto one line.
 '''

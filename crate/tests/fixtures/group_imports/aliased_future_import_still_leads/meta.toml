@@ -3,5 +3,5 @@ previewable = false
 title       = "An Aliased `__future__` Import Still Leads"
 
 description = '''
-The directive carries an `as` alias, which the classifier never reads, so **the statement holds the front** while the bare and external imports below it partition as usual.
+`from __future__ import annotations as _annotations` aliases the directive, and the classifier reads only the `__future__` module name, never the alias, so **the statement holds the front**. Below it, the bare `import os` and the external `from collections import Counter` partition as usual.
 '''

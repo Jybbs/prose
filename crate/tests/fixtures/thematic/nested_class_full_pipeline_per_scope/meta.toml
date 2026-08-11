@@ -3,5 +3,5 @@ previewable = false
 title       = "Nested Classes Sort and Align Independently Per Scope"
 
 description = '''
-An outer class wraps an inner helper class, each carrying fields and methods in arbitrary order. **The pipeline sorts fields and methods at every nesting depth and aligns the declaration columns within each scope independently**, settling the blank-line cushion between methods.
+`Order` wraps the inner `LineItem` class, each carrying its fields, `total`/`customer_id`/`placed_on` and `sku`/`price`/`quantity`, and its methods in arbitrary order. **The pipeline alphabetizes the fields and reorders the methods at every nesting depth, aligning the `:` and `=` declaration columns within each scope independently**, landing `customer_id`, `placed_on`, `total` in `Order` and `price`, `quantity`, `sku` in `LineItem`, and settling the blank-line cushion between methods.
 '''

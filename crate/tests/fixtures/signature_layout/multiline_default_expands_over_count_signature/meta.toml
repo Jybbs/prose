@@ -3,5 +3,5 @@ previewable = false
 title       = "A Multi-Line Default Expands a Signature Past the Count Cap"
 
 description = '''
-A signature carrying more parameters than `max-params` around a multi-line default expands one parameter per line, the default's block re-indented so its entries and its closing brace hang from the parameter column rather than staying at their source indent.
+`configure` carries five parameters, over the `max-params` cap, and the `opts` default is a dict spanning rows. The signature expands one parameter per line, and the dict's block is re-indented so its `"a": 1` entry and its closing `}` hang from the parameter column rather than staying at their source indent.
 '''

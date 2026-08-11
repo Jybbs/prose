@@ -3,5 +3,5 @@ previewable = false
 title       = "A Decorated Definition Holds Its Slot Inside an Arm"
 
 description = '''
-A module-scope `if` arm carries the module's own reordering rules into its body, so a decorated definition inside it holds its source slot while the undecorated classes around it sort.
+The body of a module-scope `if TYPE_CHECKING:` arm sorts under the same rules as the module itself. `Zeta` carries the `@dec` decorator and holds its source slot at the top, whereas the undecorated `Mid` and `Alpha` sort into alphabetical order below it.
 '''

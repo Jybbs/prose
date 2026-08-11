@@ -3,7 +3,5 @@ previewable = true
 title       = "A Fractured Tuple Condenses Before Its Template Converts"
 
 description = '''
-**`collection-layout` gathers the tuple back onto one line first, then
-`prefer-fstring` measures the conversion against the budget** and moves each
-member inline.
+The `%` template's tuple arrives exploded, `first` and `second` each on their own line. **`collection-layout` condenses the tuple back onto one line first, and `prefer-fstring` then measures the conversion against the budget**, rewriting `"%s and %s" % (first, second)` into `f"{first} and {second}"` with each member inline in the template.
 '''

@@ -4,5 +4,5 @@ previewable = true
 title       = "Every Collapsible Body Kind Aligns on One Colon"
 
 description = '''
-A `match` whose arms carry a variety of collapsible body kinds, from `pass` and `break` to `raise` and `return`, all aligning on the post-pattern `:` separator.
+Every arm body in the `match` on `token` is a single collapsible statement, spanning `pass`, `continue`, `break`, a `raise`, a bare `log(token)` call, and a `return`. **Each folds onto its `case` line and every `:` lands on one shared column**, with the wildcard `_` padded out to the width the string patterns set.
 '''

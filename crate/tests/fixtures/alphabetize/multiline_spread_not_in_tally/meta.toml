@@ -3,5 +3,5 @@ previewable = false
 title       = "A Multi-Line Spread Does Not Count Toward the Divider Tally"
 
 description = '''
-A `**spread` whose value spans lines pins in source position and stays out of the multi-line tally, so a dict with one keyed multi-line entry beside it still drops the divider and reads as one block.
+The `**load_defaults(...)` spread spans lines but pins in its source slot and stays out of the count of multi-line entries that triggers blank-line dividers. That leaves `"limits"` as the only keyed multi-line entry, so the dict reads as one undivided block, while the keys inside `"limits"` still sort, `"retries"` moving ahead of `"timeout"`.
 '''

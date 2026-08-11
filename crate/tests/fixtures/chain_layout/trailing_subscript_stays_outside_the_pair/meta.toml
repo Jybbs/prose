@@ -4,5 +4,5 @@ previewable = true
 title       = "A Subscript on the Result Stays Outside the Pair"
 
 description = '''
-The break replaces the chain rather than whatever the chain feeds, so a subscript applied to its result sits past the closing paren and reads as the one operation that happens after the pipeline settles.
+The subscript `[index]` applies to the result of the whole `frame.select(cols).where(cond).rows()` chain rather than to any one link, so the added parentheses wrap only the chain and `[index]` sits past the closing paren. Read in order, the stacked calls run first and the subscript is the one operation that happens after the pipeline settles.
 '''

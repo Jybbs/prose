@@ -3,5 +3,5 @@ previewable = true
 title       = "A Parenthesized Keyword Value Keeps Its Parentheses"
 
 description = '''
-A keyword value wrapped in grouping parentheses to span lines carries those parentheses outside its own range, so the rewrite reads the value's full extent rather than starting inside the opening one.
+`kind`'s value inside the `dict()` call building `labels` spans two lines wrapped in grouping parentheses, and those parentheses sit outside the value's own parsed range. `simplify-comprehensions` reads the value's full extent rather than starting inside the opening parenthesis, so the rewritten dict literal carries `kind`'s parenthesized string over whole rather than truncating it.
 '''

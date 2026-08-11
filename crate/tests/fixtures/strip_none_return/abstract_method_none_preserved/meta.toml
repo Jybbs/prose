@@ -3,5 +3,5 @@ previewable = false
 title       = "An Abstract Method Stub's None Return Annotation Survives"
 
 description = '''
-An abstract method whose body is a single `...` keeps its `-> None`, because the placeholder stands in for an implementation rather than demonstrating a return of nothing.
+`Base.run` is decorated `@abstractmethod` and its body is a single `...`, so `strip-none-return` leaves its `-> None` untouched. The placeholder stands in for an implementation, not a demonstrated return of nothing, which is the shape the rule strips.
 '''

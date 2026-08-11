@@ -3,5 +3,5 @@ previewable = true
 title       = "A Call Over the Budget Explodes Below max-args"
 
 description = '''
-The call carries three arguments, at `max-args`, so the count trigger leaves it inline. Its line still crosses `code-line-length`, so the width trigger explodes it to one keyword per line regardless of the count. The `*-line-length` cap is a hard constraint the count knob sits beneath.
+The `build` call carries three arguments, sitting at `max-args`, so the count alone would leave it inline. Its line still crosses `code-line-length`, so the call explodes to one keyword per line regardless of the count, each positional bound to its parameter name. The `*-line-length` cap is a hard constraint the count knob sits beneath.
 '''

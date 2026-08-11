@@ -3,5 +3,5 @@ previewable = false
 title       = "An Optional Import Keeps the Directive"
 
 description = '''
-`Bar` is imported under `try` and the handler swallows a missing dependency, leaving the name unbound whenever the import fails. Eager evaluation on Python 3.13 would raise `NameError`, so **the directive stays** to keep the annotation deferred.
+`Bar` is imported inside a `try` block whose `except ImportError: pass` leaves the name unbound whenever the import fails, so `value: Bar` never resolves to an unconditional binding written before it. **The directive stays** because evaluating that annotation eagerly, without a `target-version` deferring it, could raise `NameError` when the import fails.
 '''

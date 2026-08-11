@@ -3,5 +3,5 @@ previewable = false
 title       = "An Over-Cap Pair Declines to Align"
 
 description = '''
-Two line-adjacent targets whose widths sit further apart than `max-shift`. Each seeds its own width band, so **neither pads toward the other** and both keep the natural single space before `=`.
+`ttl` is three characters wide and `maximum_connection_backoff_seconds` thirty-four, a spread wider than `max-shift` permits. Each seeds its own width band, so **neither pads toward the other**, and both keep the natural single space before `=`.
 '''

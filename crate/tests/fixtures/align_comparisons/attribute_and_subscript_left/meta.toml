@@ -3,5 +3,5 @@ previewable = false
 title       = "Attribute and Subscript Left Sides Qualify"
 
 description = '''
-Operands whose left sides are **attribute access or subscript expressions qualify** for the alignment group, alongside plain name references. The `foo.attr` and `bar[0]` widths pad the operator column the same as a bare name.
+An **attribute access or subscript on the left side qualifies** for the alignment group the same way a plain name does. `foo.attr`, `bar[0]`, and the bare `qux` all count their full width toward the shared `==` column, so all three rows align as one group.
 '''

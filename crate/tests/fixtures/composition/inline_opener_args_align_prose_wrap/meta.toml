@@ -3,5 +3,5 @@ previewable = true
 title       = "Inline-Opener Docstring Splits, Aligns Args, Wraps Prose"
 
 description = '''
-A multi-line docstring opens on the triple-quote line and carries an `Args:` section. **The opener and closer move to their own lines, the Args entries align their `:` column, and the prose paragraph wraps to the docstring budget**.
+`render`'s docstring starts its summary on the `"""` line itself and carries an `Args:` section. **`docstring-frame` moves the summary off the opener line, `align-colons` pads the `:` after `template`, `context_map`, and `escape_html` into one column, and `docstring-wrap` re-wraps the summary to the docstring budget**, breaking it across two lines.
 '''

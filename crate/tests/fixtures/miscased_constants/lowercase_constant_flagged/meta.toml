@@ -4,5 +4,5 @@ previewable = true
 title       = "A Lowercase Module Constant Draws a SCREAMING_CASE Rename"
 
 description = '''
-`max_retries` binds an inert literal nothing in the module reassigns, so it reads as a constant whose casing never says so. The lint reports it without rewriting and names the `MAX_RETRIES` form in its help line, because renaming a module constant breaks importers outside the file.
+`max_retries = 5` binds an inert literal nothing in the module reassigns, so the name is a constant whose casing never says so. The lint reports it and suggests `MAX_RETRIES` without rewriting anything, because renaming a module constant breaks importers outside the file.
 '''

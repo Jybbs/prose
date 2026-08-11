@@ -3,5 +3,5 @@ previewable = true
 title       = "An Implicitly Concatenated Template Holds"
 
 description = '''
-The run stays the one authored shape `stack-adjacent-strings` lays out.
+The template is two adjacent literals, `"%s opening "` and `"and closing"`, joined by implicit concatenation. That authored split is the shape `stack-adjacent-strings` lays out, so `prefer-fstring` does not convert across it and the line holds.
 '''

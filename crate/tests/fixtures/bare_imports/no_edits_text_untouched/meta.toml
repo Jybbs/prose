@@ -3,5 +3,5 @@ previewable = true
 title       = "Lint Diagnostics Never Rewrite the Source"
 
 description = '''
-`os` is reached through one attribute and draws the lint, yet `bare-imports` emits no fix. The source text is left exactly as written, the diagnostic standing as a report rather than a rewrite.
+`os` is reached only through `os.getcwd`, so `bare-imports` reports the import, yet it emits no fix. The source text is left exactly as written, because a lint diagnostic is a report rather than a rewrite.
 '''

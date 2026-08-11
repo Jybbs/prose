@@ -3,5 +3,5 @@ previewable = false
 title       = "A Docstring Run Aligns Past the Code Budget"
 
 description = '''
-A docstring section whose padded entries would cross `code-line-length` **still aligns as one column**, because the docstring contexts resolve under no line cap while the dict, annotation, and parameter contexts resolve within `code-line-length`.
+Padding `host` out to the width of `connection_timeout` pushes both `Attributes:` lines past `code-line-length`, and the section **still aligns as one column**. Docstring contexts resolve under no line cap, whereas the dict, annotation, and parameter contexts resolve within `code-line-length`.
 '''

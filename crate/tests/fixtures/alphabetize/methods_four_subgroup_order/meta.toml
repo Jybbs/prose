@@ -3,5 +3,5 @@ previewable = false
 title       = "Methods Sort into Four Sub-Groups"
 
 description = '''
-Methods within a class **sort into four sub-groups in order**: dunders, then properties (`@property` and `@cached_property`), then private methods (single leading underscore), then public methods. Each sub-group sorts alphabetically among its members.
+`Matcher`'s methods **sort into four sub-groups in order**: dunders, then properties, then private methods, then publics. `__init__` and `__repr__` lead, the `@cached_property` `adjacency` and the `@property` `cluster_count` follow, `_validate_one` and `_validate_two` come next on their single leading underscore, and `public_one` and `public_two` close, each sub-group alphabetized within.
 '''

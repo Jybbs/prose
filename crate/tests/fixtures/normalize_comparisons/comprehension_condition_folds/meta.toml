@@ -3,5 +3,5 @@ previewable = true
 title       = "A Comprehension's Condition Folds Like Any Other"
 
 description = '''
-The rewrite reaches a comparison wherever it sits, so the `if` clause of a comprehension folds its leading `not` the same way a statement condition does.
+The `if not row in seen` clause inside the comprehension folds its leading `not` into the operator, coming back as `if row not in seen`. The rewrite reaches a comparison wherever it sits, so a comprehension condition folds the same way a statement condition does.
 '''

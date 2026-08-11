@@ -3,5 +3,5 @@ previewable = false
 title       = "An Already-Sorted `Args:` Section Passes Through"
 
 description = '''
-An `Args:` section whose entries already sit in alphabetical order **passes through untouched**, producing no edit to the docstring.
+`render`'s `Args:` entries for `context`, `encoding`, and `template` already sit in alphabetical order, so the section **passes through untouched** and the docstring takes no edit.
 '''

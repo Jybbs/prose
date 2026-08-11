@@ -3,5 +3,5 @@ previewable = true
 title       = "A Copy Over a Literal Reaches That Literal"
 
 description = '''
-The iterable is itself a form the constructor absorbs, so the copy and the wrapper resolve together instead of leaving an intermediate call behind.
+`values` copies the list literal `[1, 2]`, so the comprehension collapses straight to `[1, 2]` with no `list(...)` left standing. `nested` copies a comprehension over `cells` that would itself resolve to `list(cells)`, so the outer copy and that inner resolution fold together in one pass, landing directly on `list(cells)` instead of first producing `list(list(cells))`, which a later pass would leave standing rather than clean up.
 '''

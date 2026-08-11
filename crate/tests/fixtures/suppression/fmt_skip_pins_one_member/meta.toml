@@ -3,5 +3,5 @@ previewable = false
 title       = "Skip Holds One Line Out While Its Group Aligns Around It"
 
 description = '''
-A trailing `# fmt: skip` **holds one line out of its alignment group** as a transparent gap, so it keeps the spacing the author wrote while every other row in the run aligns to one shared column around it.
+`short = 4  # fmt: skip` sits between `x`, `foo`, `bar_baz` and `aa`, `bbb`, `cccc` in one assignment run, and the trailing `# fmt: skip` **holds that one line out of the run's alignment group** as a transparent gap. `short` keeps the spacing the author wrote, while every other row in the run still aligns its `=` to one shared column around it.
 '''

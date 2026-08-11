@@ -3,5 +3,5 @@ previewable = false
 title       = "Each Sectionless Run Settles Its Own Two Columns"
 
 description = '''
-Ordinary prose between two runs of type-bearing heads breaks them apart, so each run measures its own widths and one run's long name never drags the other's columns wide.
+The docstring of `Frame` holds two runs of type-bearing heads with an ordinary prose line between them, which breaks the runs apart. `handler` and `codec` measure their own type and `:` columns above the prose, and `deadline` and `tag` measure theirs below it, so the wide `(Callable)` never pushes the lower run's columns out.
 '''

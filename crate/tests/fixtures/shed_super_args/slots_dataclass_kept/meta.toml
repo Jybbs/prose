@@ -3,5 +3,5 @@ previewable = true
 title       = "A `slots=True` Dataclass Keeps Its Arguments"
 
 description = '''
-A method on a `@dataclass(slots=True)` class keeps the written form, because that decorator builds a replacement class the bare call's cell does not follow.
+`Tag.label` calls `super(Tag, self).label()` on a class decorated `@dataclass(slots=True)`. The call stays written, because that decorator builds a replacement class the bare call's `__class__` cell does not follow.
 '''

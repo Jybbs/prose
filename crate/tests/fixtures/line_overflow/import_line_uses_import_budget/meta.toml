@@ -3,5 +3,5 @@ previewable = false
 title       = "An Import Line Answers to the Import Budget"
 
 description = '''
-The single-name import runs past `code-line-length` but stays within `import-line-length`, and a line inside an import statement answers to the import budget, so `line-overflow` leaves it unflagged.
+`from deep.nested.package.path import single_name` is 48 columns, past the `code-line-length` budget of 40 but within the default `import-line-length`. An import line is measured against the import budget rather than the code budget, so `line-overflow` leaves it unflagged.
 '''

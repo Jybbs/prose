@@ -3,5 +3,5 @@ previewable = false
 title       = "Keyword-Only Parameters Opening Mid-Row Swap in Place"
 
 description = '''
-A keyword-only group whose first member trails the `def` head on its row cannot reorder by whole rows, because the first row's head is not a member and would travel with it. The group swaps member slices in place instead, leaving the head, the gaps, and the closing `):` where the source wrote them.
+The keyword-only group after the `*` opens mid-row, `numeric_owner=False` trailing the `def extract` head on its line, so reordering whole rows would drag the head along with the first member. The sort swaps the parameter texts in place instead, `filter=None` into the first slot and `numeric_owner=False` into the second, leaving the head, the indent, and the closing `):` where the source wrote them.
 '''

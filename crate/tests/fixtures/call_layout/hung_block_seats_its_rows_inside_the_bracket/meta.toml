@@ -3,5 +3,5 @@ previewable = true
 title       = "A Hung Block Seats Its Rows Inside the Bracket That Opened Them"
 
 description = '''
-A relocated block whose rows the author wrote level with the row opening them moves those rows one step further in, so the contents read as sitting inside the bracket rather than beside it, while the closing bracket stays on the indent the block lands at.
+Each `[` here hangs at the end of the row that opens it, with its contents written one step in from that row. Exploding `parser.Header` and `parser.HeaderLabel` seats each `[` on a row of its own, and the `parser.ValueTerminal` rows move one step further in so they read as sitting inside the bracket rather than beside it, while each closing bracket takes the indent its block lands at.
 '''

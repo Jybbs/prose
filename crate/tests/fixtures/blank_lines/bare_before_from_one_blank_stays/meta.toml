@@ -3,5 +3,5 @@ previewable = true
 title       = "Already-Conforming Source Is Left Alone"
 
 description = '''
-A bare `import` and a following `from` import already separated by one blank line **stay at one**, passing through untouched.
+`import os` and `from sys import argv` arrive already separated by a single blank line, the canonical gap between the bare form and the `from` form. The source **passes through untouched**, staying at one blank.
 '''

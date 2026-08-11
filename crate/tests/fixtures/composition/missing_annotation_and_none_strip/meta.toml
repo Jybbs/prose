@@ -3,5 +3,5 @@ previewable = false
 title       = "A Signature Draws the Report and the Strip Together"
 
 description = '''
-One signature loses its redundant `-> None` to `strip-none-return` while `signature-annotations` flags its unannotated parameter, the two rules acting on the same `def` in a single pass.
+`emit` declares `-> None` and takes the unannotated parameter `event`. `strip-none-return` removes the redundant return annotation, and `signature-annotations` reports the missing annotation on `event` in the same pass, so the one `def` picks up both the rewrite and the diagnostic.
 '''

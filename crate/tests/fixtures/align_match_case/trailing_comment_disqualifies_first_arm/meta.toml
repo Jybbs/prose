@@ -3,5 +3,5 @@ previewable = false
 title       = "A Trailing Comment Disqualifies the First Arm"
 
 description = '''
-The first arm carries a `# comment` between its `:` and its body. **That trailing comment disqualifies the arm**, leaving it multi-line, while the two qualifying arms after it form one sub-group and align at the wider of their patterns.
+`case "apprenticeship"` carries the `# explain` comment after its `:`, and folding `icon = "wrench"` up would strand that comment mid-line, so **the trailing comment disqualifies the arm** and it stays multi-line. `"license"` and `"degree"` still qualify, forming their own sub-group whose `:` column the wider `"license"` sets.
 '''

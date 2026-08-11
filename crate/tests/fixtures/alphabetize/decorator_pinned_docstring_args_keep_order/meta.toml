@@ -3,5 +3,5 @@ previewable = false
 title       = "A Function's Docstring Entries Mirror Its Held Signature"
 
 description = '''
-A signature holds its positional parameter order, so an `Args:` section whose every entry names one of those parameters **holds the same order**, mirroring the held signature. The hold owes nothing to the decorator the function happens to carry.
+`normalize(target, source)` takes positional parameters, whose order is held because call sites can pass them by position, so the `Args:` entries for `target` and `source` **keep that same order** rather than sorting alphabetically. The hold comes from the positional signature itself, not from the `@pytest.mark.parametrize` decorator the function happens to carry.
 '''

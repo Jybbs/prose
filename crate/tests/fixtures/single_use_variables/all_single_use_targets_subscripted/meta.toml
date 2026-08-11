@@ -3,5 +3,5 @@ previewable = true
 title       = "Every Target Read Once Names Its Subscript Rewrite"
 
 description = '''
-When every target of `first, second = batch` reads exactly once, the whole statement can dissolve into subscripts, so the lint flags each target and names the rewrite (*`batch[0]` for the first, `batch[1]` for the second*).
+Both targets of `first, second = batch` are read exactly once, inside `combine(first, second)`, so the whole unpacking could dissolve into subscripts. The lint flags each target and names its rewrite, `batch[0]` for `first` and `batch[1]` for `second`, while the source itself is left unedited.
 '''

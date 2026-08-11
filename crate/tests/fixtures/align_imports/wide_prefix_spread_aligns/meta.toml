@@ -3,5 +3,5 @@ previewable = true
 title       = "A Wide Prefix Spread Still Aligns under the Import Default"
 
 description = '''
-A run of `from ... import ...` statements whose module prefixes spread past the operator-alignment default **still aligns on the `import` keyword**, because `align-imports` seeds a wider `max-shift` than the operator rules.
+`from re import loads` runs nine characters narrower than `from collections import Counter`, a spread past what the operator-alignment default would pad. `align-imports` seeds a wider `max-shift` than the operator rules, so **the run still aligns on the `import` keyword**, with `re` padded out to the column `collections` and `dataclasses` share.
 '''

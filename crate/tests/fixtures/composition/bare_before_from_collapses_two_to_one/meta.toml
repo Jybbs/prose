@@ -3,5 +3,5 @@ previewable = false
 title       = "Excess Blanks Collapse to the Canonical Single Blank"
 
 description = '''
-A bare `import` followed by a `from` import with two blank lines between them **collapses to one**, the canonical separation between adjacent import groups.
+Two blank lines separate `import os` from `from sys import argv`, one more than the boundary needs. **The gap collapses to a single blank**, the canonical separation between adjacent import groups.
 '''

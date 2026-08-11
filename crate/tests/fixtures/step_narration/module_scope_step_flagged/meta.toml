@@ -4,5 +4,5 @@ previewable = true
 title       = "Module-Scope Numbered Steps Are Flagged"
 
 description = '''
-A module-level own-line numbered-step comment surfaces the lint.
+The comments `# 1. normalize input` and `# 2. emit the result` sit at module scope, above `process`, outside any function or class body. `step-narration` flags each one, because the numbered-step shape triggers the lint no matter which scope contains it.
 '''

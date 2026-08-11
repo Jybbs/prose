@@ -3,5 +3,5 @@ previewable = false
 title       = "Interleaved Markdown Shifts Each Code Cell's Number"
 
 description = '''
-Markdown cells interleave with code, so the diff numbers each changed code cell by its absolute notebook position and skips an unchanged cell.
+The markdown cells `Intro` and `Middle` interleave with three code cells. Both assignment pairs align inside their own cells while the `pass` cell between them stands unchanged, and neither markdown cell enters the formatted stream, so the cell banners count code cells alone.
 '''

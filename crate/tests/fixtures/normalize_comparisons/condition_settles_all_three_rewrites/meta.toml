@@ -3,5 +3,5 @@ previewable = true
 title       = "One Condition Settles Every Rewrite in a Single Pass"
 
 description = '''
-A condition carrying a Yoda comparison, a `None` equality, and a leading `not` comes back stating each check directly, every operand resolving in the run that finds it.
+One `if` carries all three shapes this rule rewrites, and a single pass settles them together. The constant-lead `0 == n` flips to `n == 0`, the equality `x == None` becomes the identity test `x is None`, and `not y in ys` folds into `y not in ys`.
 '''

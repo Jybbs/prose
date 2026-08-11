@@ -3,5 +3,5 @@ previewable = true
 title       = "An Exploded Call's Keywords Align on One Column"
 
 description = '''
-A call written one keyword per line aligns its `=` the same way a multi-line signature aligns its defaults, with each row padded between the keyword name and the `=`.
+The `connect` call is already exploded, one keyword per line, with `host`, `port`, and `use_tls` each written tight as `name=value`. Padding lands between each keyword name and its `=`, so all three rows share one `=` column, with the widest name, `use_tls`, setting where that column falls.
 '''

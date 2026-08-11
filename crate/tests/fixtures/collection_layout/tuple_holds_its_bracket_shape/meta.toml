@@ -3,5 +3,5 @@ previewable = false
 title       = "Held Tuples Keep Their Source Bracket Shape"
 
 description = '''
-A multi-line tuple holds its break while **preserving its source bracket shape**, so a paren tuple keeps its parens through the re-expansion. A one-element tuple carries too few entries to hold, so it rejoins, keeping both its parens and the trailing `,` that makes it a tuple. A single-line tuple that fits is untouched whatever its bracket shape, whereas one carrying an over-count dict expands along with the inner it encloses.
+`held_paren_tuple` holds its multi-line break while **preserving its source bracket shape**, keeping its parens as the interior repacks onto one row. `joined_one_element` carries too few entries to hold, so it rejoins to `(42,)` with both its parens and the trailing `,` that makes it a tuple. `paren_tuple` and `bare_tuple` fit and are untouched whatever their bracket shape, whereas `qualifying_inner_in_tuple` expands along with the five-key dict it encloses.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "`global` and `nonlocal` Name Lists Sort"
 
 description = '''
-`global` and `nonlocal` name lists **alphabetize**. Order is semantically meaningless because both declarations affect every listed name uniformly within the enclosing scope.
+The name lists after `global` and `nonlocal` **alphabetize**, so `nonlocal items, registry, counter` inside `inner` becomes `nonlocal counter, items, registry`. The order has no semantic effect, because the declaration applies to every listed name uniformly, and the two module-level functions sort as well, `reset_outer` ahead of `update`.
 '''

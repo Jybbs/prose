@@ -3,5 +3,5 @@ previewable = true
 title       = "A Comprehension That Transforms Its Input Stands"
 
 description = '''
-The element differs from the target, so the comprehension does work no constructor call would do and stays exactly as written.
+The element `row.width` differs from the loop target `row`, and `row.label` likewise, so each comprehension transforms its input rather than copying it. A rewrite to `list(rows)` or `set(rows)` would lose that transformation, so both stand exactly as written.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "Imports Inside a Function Body Partition Too"
 
 description = '''
-The rule reaches into every nested body, so a function whose first lines mix a bare and a `from` import **groups them in place** the same as a module run.
+The rule reaches into every nested body, so the run opening `load` partitions exactly as a module run would. **The rule groups the pair in place**, lifting the bare `import sys` above `from collections import Counter` while both keep the function-body indent.
 '''

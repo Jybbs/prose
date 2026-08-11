@@ -3,5 +3,5 @@ previewable = true
 title       = "An Exploded Closing Bracket Drops to the Row Its `(` Sits On"
 
 description = '''
-A call whose `(` lands on a later row than the call's own start explodes against that later row, so its arguments hang one step inside the row carrying the bracket and the `)` returns to that row's own indent rather than to the row the call opened on.
+The `format` call's `(` sits on the second row of the concatenated string, one row below where the statement opened. Exploding the call works against that row, so `alpha` through `zeta` hang one step inside its indent and the `)` drops back to that row's own indent rather than to the row the statement opened on.
 '''

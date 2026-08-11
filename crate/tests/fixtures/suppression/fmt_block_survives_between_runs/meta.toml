@@ -3,5 +3,5 @@ previewable = false
 title       = "Off Block Survives Verbatim Between Aligned Runs"
 
 description = '''
-A `# fmt: off` / `# fmt: on` block sits between two assignment runs the alignment rules would otherwise touch. The bracketed lines **survive verbatim** while the runs above and below pad to their respective group widths.
+A `# fmt: off` / `# fmt: on` block sits between two assignment runs, and the lines it encloses, `short`, `much_longer_name`, and `mid`, **survive verbatim**. The runs on either side stay eligible, so `x`, `foo`, and `bar_baz` sort and pad to a shared `=` column above the block and `a`, `bb`, and `ccc` align below it.
 '''

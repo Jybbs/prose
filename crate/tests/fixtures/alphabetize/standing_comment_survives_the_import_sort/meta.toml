@@ -3,5 +3,5 @@ previewable = false
 title       = "A Standing Comment Survives the Import Sort"
 
 description = '''
-An own-line comment at a mismatched indent binds to no member and stands in the gap between two imports. The sort permutes the imports around it, leaving the standing run in place.
+The comment `# migration note pinned between the runs` sits on its own line at a two-space indent that matches neither import, so it attaches to no member. The sort swaps `import zlib` and `import os` around it, leaving the comment standing in place between them rather than traveling with either name.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Comment Inside the Header Holds It"
 
 description = '''
-A comment sitting in the span that would go takes the deletion with it, so a base list carrying one is left as written whether the comment annotates an `object` base or an empty pair of parentheses.
+Removing `object` from `Annotated`'s base list would also remove the comment sharing its line, and dropping `Bare`'s empty parentheses would take `# no bases at all` with them. A deletion span that holds a comment is skipped, so both headers stay exactly as written.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Wrapped Base List Loses the `object` Line"
 
 description = '''
-Where the base list spans lines, the `object` entry goes with the separator on its side, taking the whole line it occupied and leaving the remaining members at the indent they already had.
+`Adapter`'s base list spans multiple lines with `object,` as its own line after `Mapping,`, and `Wrapper`'s spans lines with `object,` as its own line before `metaclass=WrapperMeta,`. The `object,` line drops along with its trailing comma in each, leaving `Mapping,` and `metaclass=WrapperMeta,` at the indent they already had.
 '''

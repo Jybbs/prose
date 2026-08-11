@@ -3,5 +3,5 @@ previewable = false
 title       = "Outer Dict Expands and Aligns Over Single-Key Values"
 
 description = '''
-An overflowing single-line dict whose entries each carry a single-key nested dict. **The outer dict expands and sorts, and after expansion each nested single-key dict stays inline** as its own one-row group while the outer `:` column aligns.
+`CONFIG` overflows its line, four keys each holding a one-key nested dict as its value. **The outer dict expands to one entry per row and sorts so `"delta"` moves ahead of `"gamma"`, while each nested value like `{"only_alpha_key": 1}` stays inline** on its row. `align-colons` pads only the outer `:` into a shared column, in that a nested one-entry dict forms no alignment group of its own.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "Field Defaults Are Preserved Across the Reorder"
 
 description = '''
-Fields whose default arrives through `Annotated[type, Field(default=...)]` or `Annotated[type, Field(default_factory=...)]` **register as optional**. A structural walk finds the nested `Call` carrying a `default` or `default_factory` keyword, covering Pydantic, msgspec, and attrs without naming the constructor.
+`title` and `tags` take their defaults through `Field(default="Untitled")` and `Field(default_factory=list)` inside `Annotated`, and **a field whose nested call carries a `default` or `default_factory` keyword registers as optional**. The required `company` and `description` sort ahead of that optional pair, each half alphabetized, keeping every default-carrying field behind the fields that lack one. The walk finds the call structurally rather than by name, so the detection does not depend on the constructor being `pydantic`'s `Field`.
 '''

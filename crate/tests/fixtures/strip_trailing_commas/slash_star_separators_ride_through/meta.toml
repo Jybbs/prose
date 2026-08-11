@@ -3,5 +3,5 @@ previewable = false
 title       = "Positional and Keyword-Only Separators Ride Through"
 
 description = '''
-The positional-only `/` and keyword-only `*` separators have no AST node of their own. **The backward scan only asks whether the immediate previous non-trivia token is a `,`**, so the separators pass through with no special handling.
+`split_pos_only`'s parameter list ends in `/,` right before its closing `)`, and `split_kw_only`'s ends in `b,`, with the positional-only `/` and keyword-only `*` markers carrying no AST node of their own. **`strip-trailing-commas` only asks whether the token right before the `)` is a `,`**, so both separators pass through with no special handling, stripping to `/` and `b`.
 '''

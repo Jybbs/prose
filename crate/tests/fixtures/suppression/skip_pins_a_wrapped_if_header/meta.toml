@@ -3,5 +3,5 @@ previewable = false
 title       = "Skip on a Wrapped Condition Pins the Header, Not the Body"
 
 description = '''
-A `# fmt: skip` trailing a wrapped `if` header **covers the header's own logical line only**, so the header keeps its parentheses while `strip-trailing-commas` still reaches the indented body below it.
+A `# fmt: skip` trailing the wrapped `if ready:` header **covers only that header's own logical line**, so the header keeps its parentheses while `strip-trailing-commas` still reaches into the indented body and strips the trailing comma from `compute(1, 2,)`.
 '''

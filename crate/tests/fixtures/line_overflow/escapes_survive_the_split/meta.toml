@@ -3,5 +3,5 @@ previewable = true
 title       = "An Escape Is Never Cut Down the Middle"
 
 description = '''
-Every cut lands after a run of literal whitespace, so a `\\t` or an escaped quote travels whole inside the part that holds it. The backslash and the character it escapes are adjacent with no space between them, which is what puts a cut there out of reach.
+The suggested split cuts `BANNER`'s string only after a run of literal whitespace, landing between `over` and `the`, so the `\\t` and the escaped quotes around `\"lazy\"` each travel whole inside one part. A backslash sits flush against the character it escapes with no whitespace between them, which is what keeps every cut out of an escape.
 '''

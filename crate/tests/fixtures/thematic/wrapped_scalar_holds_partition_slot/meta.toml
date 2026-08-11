@@ -3,5 +3,5 @@ previewable = false
 title       = "A Wrapped Scalar Holds Its Partition Slot Across Passes"
 
 description = '''
-A long string value the layout rules wrap onto a continuation line keeps its alphabetical slot among the scalars, so the ordering and the wrapping settle together rather than alternating across passes. The same dict written unaligned and unwrapped reaches this form in a single pipeline pass.
+The dict inside `outer`'s nested `inner` function already sits in its settled form, with `sha256`'s long hex value wrapped onto its own continuation line while keeping its alphabetical slot between `legacy` and `short`. Running it through the pipeline again reproduces the identical output, confirming the ordering and the wrapping stay stable once the shape settles.
 '''

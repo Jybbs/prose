@@ -3,5 +3,5 @@ previewable = false
 title       = "Multi-Line Dict Sorts Keys, Strips Comma, Aligns `:`"
 
 description = '''
-An already-expanded dict with out-of-order string keys and a trailing comma. **`alphabetize` sorts the keys, `strip-trailing-commas` drops the final comma, and `align-colons` aligns the `:` column** across the rows.
+The `config` dict already sits one entry per row, its string keys out of order and a comma left after the last entry. **`alphabetize` sorts the keys so `"alpha"` through `"zeta"` read in order, `strip-trailing-commas` drops the comma after the final entry, and `align-colons` pads each key to a shared `:` column**.
 '''

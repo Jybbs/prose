@@ -3,5 +3,5 @@ previewable = false
 title       = "Function-Local Constants Fall Outside Module Scope"
 
 description = '''
-A `SCREAMING_CASE` binding inside a `def` body is not module-level, so the rule **leaves it alone**. The walker stops at `def` and `class` boundaries by design.
+`PI` is assigned inside `compute`'s body, a function-local binding rather than a module-level one. **The rule leaves it alone**, `reassigned-constants` weighing only module-level `SCREAMING_CASE` assignments and stopping at `def` and `class` boundaries by design.
 '''

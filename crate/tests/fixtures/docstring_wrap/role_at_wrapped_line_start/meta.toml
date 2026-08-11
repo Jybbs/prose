@@ -3,5 +3,5 @@ previewable = true
 title       = "An Interpreted-Text Role Reads as Prose at a Line Start"
 
 description = '''
-A role the wrap lands at the start of a line **stays inside the paragraph**. A field list opens only at a block boundary, so a marker on a continuation line reads as the prose it is rather than freezing the rest of the paragraph against the next pass.
+The wrap lands the `:class:` role of `~ensemble.VotingClassifier` at the start of a line. A field list opens only at a block boundary, so the marker on a continuation line still reads as prose, and **the role stays inside the reflowed paragraph** rather than opening a field list that would pass the rest through verbatim on the next run.
 '''

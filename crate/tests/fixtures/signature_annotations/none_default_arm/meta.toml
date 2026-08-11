@@ -3,5 +3,5 @@ previewable = true
 title       = "A Bare None Default Contributes a None Arm"
 
 description = '''
-A parameter defaulting to `None` carries no suggestion on its own, yet a literal-only call site passing a `str` lifts it to a `str | None` suggestion, the `None` contributing the optional arm.
+`connect`'s only parameter, `host`, defaults to `None`, contributing no type on its own. The call site `connect(host="localhost")` binds a `str` literal to `host`, and `signature-annotations` folds the two signals into a display-only `host: str | None` suggestion.
 '''

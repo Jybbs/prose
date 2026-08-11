@@ -3,5 +3,5 @@ previewable = false
 title       = "A False Explode Facet Lets an Over-Count Dict Collapse"
 
 description = '''
-With `explode` off the count cap is inert, so a multi-line dict carrying more entries than `max-dict-entries` collapses to one line when its inline form fits. Clearing `keep-multiline-literals` alongside it restores the join the inert cap no longer blocks.
+With `explode` set to `false` the count cap stops applying, so the four-entry `fits_but_over_count` dict no longer breaks on `max-dict-entries` alone. Clearing `keep-multiline-literals` alongside it releases the already-broken shape, and the inline form fits, so the dict collapses to one line.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Module Import Reached Through One Attribute Across Functions Flags"
 
 description = '''
-`import torch` is module-level, reached only through `torch.tensor` inside two functions. Attribute reads in nested scopes still resolve to the module binding, so the single distinct attribute draws the lint.
+`import torch` sits at module level and is used only through `torch.tensor`, once in `train` and once in `evaluate`. Attribute reads inside function bodies still resolve to the module-level binding, so both uses count toward the same import, and one distinct attribute is exactly the shape this lint flags.
 '''

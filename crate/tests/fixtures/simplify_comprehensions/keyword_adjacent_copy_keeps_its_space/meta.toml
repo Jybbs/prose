@@ -3,5 +3,5 @@ previewable = false
 title       = "A Copy Sitting Against a Keyword Keeps Them Apart"
 
 description = '''
-A comprehension may open immediately after `return` or `not`, where the constructor name replacing it would run into the keyword, so the rewrite carries the space that keeps the two tokens separate.
+`return[row for row in rows]` opens its comprehension immediately after `return` with no space, and `return not{row for row in rows}` does the same after `not`. Collapsing to `list(rows)` or `set(rows)` would run the constructor name into the keyword without a separating edit, so `simplify-comprehensions` inserts the space that keeps `return list` and `not set` as two tokens.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Nested Class Fields Sort and Align Per Scope"
 
 description = '''
-An outer class and its nested helper class each carry out-of-order annotated fields. **`alphabetize` and the alignment rules act independently within each scope**, giving the inner class its own `:` and `=` columns.
+`Order` and its nested `LineItem` each declare three annotated fields out of order. **Sorting and alignment run independently within each scope**, so `customer_id`, `placed_on`, and `total` sort and share `:` and `=` columns inside `Order`, while `price`, `quantity`, and `sku` sort against separate columns of their own inside `LineItem`.
 '''

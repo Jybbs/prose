@@ -3,6 +3,5 @@ previewable = false
 title       = "A Spec Naming No Entry Holds"
 
 description = '''
-The dict carries no entry the key names, so the template is left to
-raise as written.
+The spec `%(missing)s` names a key the dict does not hold, in that the mapping's only entry is `"other"`. The line raises `KeyError` at runtime, and no expression exists to substitute for the absent value, so the template is left to raise as written.
 '''

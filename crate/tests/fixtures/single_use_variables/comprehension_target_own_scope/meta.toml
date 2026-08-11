@@ -3,5 +3,5 @@ previewable = true
 title       = "Comprehension Targets Stay outside the Rule's Reach"
 
 description = '''
-A comprehension target such as `x` in `[x * x for x in xs]` lives in the **comprehension's own scope**, not the enclosing function, so its lone use never enters the function-scope enumeration the rule walks.
+`x` in `[x * x for x in xs]` lives in the comprehension's own scope, not `squares`'s function scope, even though it is read only once. `single-use-variables` enumerates bindings at function scope, **so a comprehension target never enters that enumeration** and stays unflagged.
 '''

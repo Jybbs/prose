@@ -3,5 +3,5 @@ previewable = false
 title       = "The Same Call Explodes With No Star Import in Scope"
 
 description = '''
-With no `from x import *` to cloud resolution, the callee resolves to its module `def` and the over-threshold call explodes to keyword form, confirming the guard withholds the rewrite only when a star import is present.
+No `from x import *` sits in this module, so `bisect_left` resolves to the `def` above it with nothing clouding the lookup. The four positionals bind to `a`, `x`, `lo`, and `hi` and the call explodes to keyword form, confirming the guard blocks the rewrite only when a star import is present.
 '''

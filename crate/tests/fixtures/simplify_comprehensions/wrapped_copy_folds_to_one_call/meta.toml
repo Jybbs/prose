@@ -3,5 +3,5 @@ previewable = true
 title       = "A Constructor Wrapping a Copy Settles in One Step"
 
 description = '''
-Unwrapping alone would leave a copying comprehension the next pass collapses, so the rewrite reaches `list(rows)` directly rather than through `[row for row in rows]`.
+`list(row for row in rows)`, `set([row for row in rows])`, and `dict((key, value) for key, value in rows)` each wrap a comprehension that only copies its input. Each folds straight to `list(rows)`, `set(rows)`, and `dict(rows)` in one rewrite, rather than first unwrapping to a bare `[row for row in rows]` that a later pass would collapse anyway.
 '''

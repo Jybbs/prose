@@ -3,5 +3,5 @@ previewable = false
 title       = "A Comment Past the Closing Bracket Stays Put"
 
 description = '''
-A trailing comment after a list's closing `]` **stays put** while the entries sort, a closing delimiter between the last entry and the comment leaving the comment disowned.
+The `# noqa` comment sits past the closing `]`, so the bracket between it and `"Ant"` cuts it off from any entry. Sorting swaps `"Zebra"` and `"Ant"` while the comment **stays put** after the bracket, traveling with neither string.
 '''

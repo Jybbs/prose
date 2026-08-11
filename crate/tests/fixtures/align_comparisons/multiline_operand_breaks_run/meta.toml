@@ -3,5 +3,5 @@ previewable = true
 title       = "A Multi-Line Operand Breaks the Run"
 
 description = '''
-An operand whose own range **spans multiple source lines breaks the run**. The parenthesized `(1 + 2)` operand pushes its neighbors out of column, leaving the trailing rows to align among themselves.
+`foo` compares against a parenthesized `1 + 2` whose range **spans multiple source lines, which breaks the run**, so the `foo` row takes no padding. `bar_baz == 3` and `qux == 4` below it align among themselves.
 '''

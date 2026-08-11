@@ -3,5 +3,5 @@ previewable = true
 title       = "A Derived Constant Pools into the Trailing Band"
 
 description = '''
-A constant naming a module-level function **pools into the trailing band beneath the definitions**, never rising above the `make` it names, because evaluating its right-hand side reaches that definition at once.
+`HANDLER = make` starts the file above the `def make()` it references, so running the module as written would raise a `NameError`. The constant therefore **moves into the trailing band beneath the definitions**, because its right-hand side evaluates `make` and that name must already be defined when the line runs.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "The Allow Pattern Spares a Project's Own Names"
 
 description = '''
-A project keeping a name out of `SCREAMING_CASE` on purpose sets `allow-pattern = "^[A-Z][a-z]"`, so the constructed `Defaults` dict passes while the unmatched `timeout` still draws the `TIMEOUT` rename. The pattern is empty by default, exempting nothing.
+Setting `allow-pattern = "^[A-Z][a-z]"` exempts names a project keeps out of `SCREAMING_CASE` on purpose, so the `Defaults` dict matches the pattern and passes. `timeout` matches nothing and is still flagged with the suggested `TIMEOUT` rename, whereas the pattern defaults to empty and exempts no name at all.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "`object` Beside a Real Base Goes Alone"
 
 description = '''
-Where a base list names something else too, only the `object` entry and the comma binding it to the preceding base go, so `class C(Mapping, object):` becomes `class C(Mapping):` with the parentheses kept.
+`class Layered(Mapping, Sized, object):` and `class Trailing(Mapping, object):` each name a real base alongside `object`. Only the `object` entry and the comma binding it to the preceding base drop, leaving `class Layered(Mapping, Sized):` and `class Trailing(Mapping):` with their parentheses kept.
 '''

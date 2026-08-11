@@ -3,5 +3,5 @@ previewable = true
 title       = "Rows at Differing Indents Keep Their Own Gaps"
 
 description = '''
-The two annotated lines sit on adjacent rows yet open at different indents, so a shared column would land where neither row's code actually ends. The run realizes no column and both comments keep the two-space gap they carry.
+`flush()` sits indented inside the `if ready:` branch while `compact_the_index()` sits at the top level, so the two annotated rows open at different indents and a shared column would land where neither row's code ends. The rule aligns nothing, leaving both comments the two-space gap they already carry.
 '''

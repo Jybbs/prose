@@ -3,5 +3,5 @@ previewable = true
 title       = "An Imported `__all__` Holds the Export Surface"
 
 description = '''
-Nothing reads `__all__` inside the module, and the import is what sets the whole export surface. **The alias holds**, on the same ground a name a written `__all__` lists does.
+`from io import SEEK_CUR, __all__` binds `__all__` itself, so the imported list becomes this module's export list even though nothing reads it afterward. **The `__all__` entry holds**, on the same ground as a name a written `__all__` lists, and `SEEK_CUR` stays because `position` reads it.
 '''

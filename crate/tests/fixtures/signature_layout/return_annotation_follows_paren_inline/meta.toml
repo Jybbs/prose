@@ -3,5 +3,5 @@ previewable = true
 title       = "Return Annotations Trail the Closing `)`"
 
 description = '''
-A single typed parameter in expanded shape collapses to an inline signature once the inline form fits under both thresholds. **The return annotation trails the closing `)` on the same line**, rather than landing on its own line.
+`render`'s single parameter, `target: int`, is written in expanded shape though it fits comfortably inline. `signature-layout` collapses it to `render(target: int) -> int:`, **the `-> int` return annotation trailing the closing `)` on the same line** rather than landing on its own.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "An Aligned Keyword Value Measures Its Padded Column"
 
 description = '''
-A keyword value in an exploded call answers the budget from the column `align-equals` pads it to, not from the column the tight `name=value` gave it. A nested call that fits its source column and crosses the padded one explodes here rather than leaving an over-budget line for the next run.
+Inside the exploded `emit` call, `align-equals` spaces the keyword `=` into a shared column, moving `note`'s value right of where the tight `note=helper(...)` put it. The `helper` call fits the line at its source column but crosses the budget at the padded one, so it explodes here rather than leaving an over-budget line for the next run.
 '''

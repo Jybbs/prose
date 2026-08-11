@@ -3,5 +3,5 @@ previewable = false
 title       = "A Decorator Pins the Decorated Function After It"
 
 description = '''
-`dispatch` is decorated with `@register`, applied at definition time, so the sort holds `register` ahead of `dispatch` rather than calling the decorator before it exists.
+`@register` runs the moment `def dispatch` executes, so `register` must already be defined at that point. Alphabetically `dispatch` would sort ahead of `register`, but swapping them would call the decorator before it exists, so the pair holds source order.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Function-Local Binding Is Not a Module Constant"
 
 description = '''
-The scan does not descend into a `def`, so a local `max_retries` is a working variable rather than a module constant and stays silent.
+`max_retries = 5` sits inside `configure`, and the scan does not descend into a `def`. A function local is a working variable rather than a module constant, so the lowercase name goes unflagged.
 '''

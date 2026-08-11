@@ -3,5 +3,5 @@ previewable = false
 title       = "From-Imports Are Outside the Rule's Reach"
 
 description = '''
-`from os import path` carries no diagnostic because the rule inspects `Stmt::Import` and **never `Stmt::ImportFrom`**. The explicit member-import shape the rule nudges toward is already what this statement uses.
+`from os import path` already names the exact symbol it binds, the explicit member-import shape this lint steers bare imports toward. The rule inspects plain `import` statements and **never a `from … import …`**, so the file carries no diagnostic.
 '''

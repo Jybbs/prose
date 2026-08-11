@@ -3,5 +3,5 @@ previewable = false
 title       = "A Lone Assignment Collapses to One Space"
 
 description = '''
-A solitary assignment with extra pre-`=` whitespace **collapses to a single space**, matching the whitespace-normalization default every `=` rule shares.
+`solitary` is the only assignment in the file, leaving nothing to align against, so the padding before its `=` serves no column. **The stretch of spaces collapses to a single one**, landing the statement on plain `solitary = 1`.
 '''

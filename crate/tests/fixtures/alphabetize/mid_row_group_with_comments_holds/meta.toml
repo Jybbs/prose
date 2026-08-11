@@ -3,5 +3,5 @@ previewable = false
 title       = "A Mid-Row Group Holding Comments Keeps Its Order"
 
 description = '''
-A group whose first member trails other text on its row reorders by swapping member slices in place, wherein a comment cannot travel with its member, so a group carrying one holds the order its author sectioned it into.
+`__all__` opens mid-row, `"delta"` trailing the `[`, so a sort here would swap the string texts in place and leave every other character where it is. The own-line `# section` comment cannot travel with any member under such a swap, so the group keeps the order its author sectioned it into.
 '''

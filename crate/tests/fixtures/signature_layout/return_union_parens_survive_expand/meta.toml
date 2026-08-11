@@ -3,5 +3,5 @@ previewable = true
 title       = "A Multi-Line Return Annotation Keeps Its Parentheses When Parameters Expand"
 
 description = '''
-A signature whose parameters overflow the line budget expands to one per line, while the parenthesized multi-line return annotation passes through with **its grouping parentheses intact**. Those parentheses are what let the return type span several lines, so dropping them would leave output that no longer parses.
+`assemble_result`'s four parameters make the inline header overflow `code-line-length`, so `signature-layout` expands them one per line. The return annotation's parentheses wrap a three-line union, `PrimaryEnvelope | SecondaryEnvelope | DeferredEnvelope`, and **those parentheses pass through intact**, since they are what let the type span multiple lines and dropping them would leave output that fails to parse.
 '''

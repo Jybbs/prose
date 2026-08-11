@@ -3,5 +3,5 @@ previewable = false
 title       = "A Section Heading Crossed With the Wrong Definition Kind"
 
 description = '''
-An `Attributes:` section inside a function docstring and an `Args:` section inside a class docstring each resolve against a member set the definition does not declare.
+`measure`, a function, carries an `Attributes:` section, and `Session`, a class, carries an `Args:` section, each the heading meant for the other definition kind. **Neither entry is flagged**, because a function declares no attributes and a class body declares no parameters for the section to resolve against.
 '''

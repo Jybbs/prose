@@ -3,5 +3,5 @@ previewable = false
 title       = "A `# prose: ignore` Comment Drops the Diagnostic"
 
 description = '''
-`os` is reached through one attribute and would draw the lint, but the `# prose: ignore[bare-imports]` comment on the import line silences it for that rule alone.
+`os` is reached only through `os.getcwd`, the single-attribute shape this lint reports. The `# prose: ignore[bare-imports]` trailing the import line drops the diagnostic for that rule alone, so the import passes while every other rule still reads the line.
 '''

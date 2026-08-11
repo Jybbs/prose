@@ -3,5 +3,5 @@ previewable = false
 title       = "The `__future__` Pin Survives a Flat Import Block"
 
 description = '''
-With `group-imports` off, the run sorts as one flat block, and `from __future__ import division` still holds the first slot rather than sorting among the names below it.
+With `group-imports = false` the imports sort as one flat block, and `from __future__ import division` still holds the first slot rather than sorting among the names below it, because Python requires `__future__` imports to lead the module. `import os` and `import sys` follow, with `from collections import Counter` last.
 '''

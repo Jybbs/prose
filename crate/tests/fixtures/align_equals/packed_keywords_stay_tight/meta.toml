@@ -3,5 +3,5 @@ previewable = false
 title       = "Condensed Keywords Stay Tight"
 
 description = '''
-Keywords condensed several to a physical line keep their tight `name=value` form the way PEP 8 writes a call-site keyword, rather than taking the exploded `=` buffer.
+The `check_output` call packs several keywords onto each physical line, `shell=True` through `errors=errors`. A keyword sharing its line with others keeps the tight `name=value` form PEP 8 gives a call-site keyword, so none of these takes the spaced-out `=` an exploded keyword would.
 '''

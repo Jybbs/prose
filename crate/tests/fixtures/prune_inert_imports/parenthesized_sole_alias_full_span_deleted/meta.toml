@@ -3,5 +3,5 @@ previewable = false
 title       = "Parenthesized Sole Alias Deletes the Whole Statement"
 
 description = '''
-The sole `__future__` import wraps across lines with parentheses. **The deletion spans every line of the statement**, so no orphaned parenthesized tail survives once `annotations`, the only alias named, is gone.
+`annotations` is the only name inside the parenthesized `from __future__ import`, which spans three lines. **The deletion covers every line of the statement**, so removing `annotations` takes the parentheses with it rather than leaving an empty pair behind, and only `x = 1` remains.
 '''

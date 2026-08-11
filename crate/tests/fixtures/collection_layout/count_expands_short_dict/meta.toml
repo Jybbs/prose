@@ -3,5 +3,5 @@ previewable = true
 title       = "Dicts Past the Entry-Count Cap Expand Whatever Their Width"
 
 description = '''
-A dict carrying more entries than `max-dict-entries` breaks to one entry per line even when it fits the line budget, while a dict at or under the cap stays inline and an already-expanded dict past the cap stays expanded.
+The four-entry `over_threshold` dict carries more entries than `max-dict-entries`, so it breaks to one entry per line even though it fits the width budget. The three-entry `under_threshold` sits at or under the cap and stays inline, and `already_expanded`, past the cap and already broken, keeps its expanded shape.
 '''

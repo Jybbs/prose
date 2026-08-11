@@ -3,5 +3,5 @@ previewable = false
 title       = "A Dict Entry Leaves Its Break to the String Run"
 
 description = '''
-`collection-layout` expands the dict but **declines to hang the entry at its `:`**, because the entry's key is an implicitly concatenated run that `stack-adjacent-strings` breaks instead, which is what keeps the pair settled on a second pass.
+`table` holds one entry too long for the line, so `collection-layout` expands the dict onto multiple rows. **The entry does not break at its `:`**, because its key is an implicitly concatenated pair of string literals that `stack-adjacent-strings` splits instead, leaving `"and the trailing part": 1` intact on the second fragment's line. With the break landing between the fragments, a second pass finds nothing left to move, so the layout settles.
 '''
