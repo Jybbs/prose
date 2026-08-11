@@ -139,14 +139,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         let Some(once) = ran(solo, text, &label, &mut findings.unsettled, path) else {
             continue;
         };
-        let left = solo.unsettled(&once);
-        if !left.is_empty() {
-            record(
-                &mut findings.unsettled,
-                format!("`{rule}` alone leaves {} editing", render_slugs(&left)),
-                path,
-            );
-        }
+        reports_left(solo, &once, &label, &mut findings.unsettled, path);
     }
 
     let reachable: BTreeSet<usize> = active
@@ -163,16 +156,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         if forward.text() == text {
             continue;
         }
-        let left = pair.unsettled(&forward);
-        if !left.is_empty() {
-            record(
-                &mut findings.unsettled,
-                format!(
-                    "`{earlier}` then `{later}` leaves {} editing",
-                    render_slugs(&left)
-                ),
-                path,
-            );
+        if reports_left(pair, &forward, &label, &mut findings.unsettled, path) {
             continue;
         }
         let Some(reversed) = in_order(probes, [later, earlier], text) else {
@@ -238,6 +222,27 @@ fn render(heading: &str, defects: &BTreeMap<String, Site>) -> String {
         String::new()
     };
     format!("\n{heading} ({}):\n{shown}{tail}", defects.len())
+}
+
+/// Files a `label`-keyed defect for the rules still editing `output`,
+/// true when any were.
+fn reports_left(
+    pipeline: &Pipeline,
+    output: &Source,
+    label: &str,
+    into: &mut BTreeMap<String, Site>,
+    path: &Path,
+) -> bool {
+    let left = pipeline.unsettled(output);
+    if left.is_empty() {
+        return false;
+    }
+    record(
+        into,
+        format!("{label} leaves {} editing", render_slugs(&left)),
+        path,
+    );
+    true
 }
 
 /// Runs `pipeline` over a fresh parse of `text`. `None` when `text`

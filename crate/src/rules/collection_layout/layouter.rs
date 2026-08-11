@@ -23,11 +23,9 @@ use crate::{
     primitives::{
         INDENT_STEP,
         edit::narrowed_replacement,
-        layout::{
-            Landing, is_collapse_only, is_collapsible, is_layoutable, item_indent, placed_block,
-            requires_expand,
-        },
+        layout::{is_collapse_only, is_collapsible, is_layoutable, item_indent, requires_expand},
         one_row, reserve,
+        travel::{Landing, placed_block},
         walk::walk_stmt,
     },
     rules::stack_adjacent_strings::concatenated_run,

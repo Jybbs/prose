@@ -126,9 +126,6 @@ pub(crate) struct ScannedLine<'a> {
     pub(crate) trimmed: &'a str,
 }
 
-/// True when `trimmed` is a delimited head, an `open` prefix then a
-/// non-empty name run then a `close` delimiter that ends the line or
-/// carries whitespace after it.
 /// True where `rest` opens a structure a docstring walker reads
 /// verbatim rather than as prose, so a wrap putting `rest` at a row
 /// head would have the next pass parse that row as the structure. Reads
@@ -150,6 +147,9 @@ pub(crate) fn opens_structure(rest: &str) -> bool {
         || section_heading(trimmed).is_some()
 }
 
+/// True when `trimmed` is a delimited head, an `open` prefix then a
+/// non-empty name run then a `close` delimiter that ends the line or
+/// carries whitespace after it.
 fn head_delimited(trimmed: &str, open: &str, close: &str) -> bool {
     trimmed
         .strip_prefix(open)

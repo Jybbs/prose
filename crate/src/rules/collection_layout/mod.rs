@@ -50,7 +50,6 @@ pub(crate) struct CollectionLayout {
     code_line_length: usize,
     explode: bool,
     max_atomics: usize,
-    max_dict_entries: Option<usize>,
     one_row: one_row::Settings<'static>,
     reservations: reserve::Reservations,
     wrap_dict_entries: bool,
@@ -65,7 +64,6 @@ impl CollectionLayout {
             code_line_length: config.code_width(),
             explode: rules.explode,
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
-            max_dict_entries: rules.max_dict_entries.cap(),
             one_row: config.one_row_settings(),
             reservations: config.equals_reservations(),
             wrap_dict_entries: rules.wrap_dict_entries,
@@ -79,7 +77,7 @@ impl Rule for CollectionLayout {
         // The count cap reads the `explode` facet, so a cleared `explode`
         // leaves no tripping dicts and the cap goes inert. Precomputed once
         // so the per-node check is a containment scan rather than a re-walk.
-        let count_cap = self.max_dict_entries.filter(|_| self.explode);
+        let count_cap = self.one_row.dict_entry_cap();
         let tripping_dicts = count_cap.map_or_else(Vec::new, |cap| {
             filter_map_over_exprs(body, |expr| {
                 expr.as_dict_expr()

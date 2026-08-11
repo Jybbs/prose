@@ -260,6 +260,30 @@ fn collapsed<'a>(lines: impl IntoIterator<Item = &'a str>) -> String {
     lines.into_iter().flat_map(str::split_whitespace).join(" ")
 }
 
+/// Splits `line` on ASCII spaces, dropping every break opportunity
+/// whose remainder opens a verbatim structure. A row head reading as a
+/// list marker, a section heading, an entry head, or any other
+/// structure would be parsed as that structure on the next pass, so the
+/// break folds back into the word before it and the run stays on one
+/// row.
+fn prose_words(line: &str) -> Box<dyn Iterator<Item = Word<'_>> + '_> {
+    let mut starts = Vec::new();
+    let mut cursor = 0;
+    for word in WordSeparator::AsciiSpace.find_words(line) {
+        if starts.is_empty() || !opens_structure(&line[cursor..]) {
+            starts.push(cursor);
+        }
+        cursor += word.word.len() + word.whitespace.len();
+    }
+    starts.push(line.len());
+    Box::new(
+        starts
+            .into_iter()
+            .tuple_windows()
+            .map(|(start, end)| Word::from(&line[start..end])),
+    )
+}
+
 fn rewrite_body<'a>(
     body: &DocstringBody<'a>,
     body_indent_chars: usize,
@@ -324,30 +348,6 @@ fn without_continuation(line: &str, raw: bool) -> &str {
         return line;
     }
     &line[..line.len() - 1]
-}
-
-/// Splits `line` on ASCII spaces, dropping every break opportunity
-/// whose remainder opens a verbatim structure. A row head reading as a
-/// list marker, a section heading, an entry head, or any other
-/// structure would be parsed as that structure on the next pass, so the
-/// break folds back into the word before it and the run stays on one
-/// row.
-fn prose_words(line: &str) -> Box<dyn Iterator<Item = Word<'_>> + '_> {
-    let mut starts = Vec::new();
-    let mut cursor = 0;
-    for word in WordSeparator::AsciiSpace.find_words(line) {
-        if starts.is_empty() || !opens_structure(&line[cursor..]) {
-            starts.push(cursor);
-        }
-        cursor += word.word.len() + word.whitespace.len();
-    }
-    starts.push(line.len());
-    Box::new(
-        starts
-            .into_iter()
-            .tuple_windows()
-            .map(|(start, end)| Word::from(&line[start..end])),
-    )
 }
 
 #[cfg(test)]

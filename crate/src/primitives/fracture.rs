@@ -8,7 +8,7 @@ use std::{borrow::Cow, cmp::Reverse};
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    AnyNodeRef, ArgOrKeyword, Arguments, Expr,
+    AnyNodeRef, ArgOrKeyword, Arguments, Expr, ExprCall,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange};
@@ -45,7 +45,7 @@ pub(crate) struct Settings<'a> {
     targets: Option<&'a CallTargets<'a>>,
 }
 
-impl<'a> Settings<'a> {
+impl Settings<'_> {
     /// These settings resolving a call against `targets`, the map
     /// [`module_call_params`] builds for one source, so the join reads
     /// the count trigger the way `call-layout` explodes it.
@@ -57,18 +57,24 @@ impl<'a> Settings<'a> {
         }
     }
 
+    /// True where `call-layout`'s count trigger explodes `call`, its
+    /// arguments past the cap and every one taking keyword form.
+    pub(crate) fn explodes(self, source: &Source, call: &ExprCall) -> bool {
+        self.over_cap(call.arguments.len()) && takes_keyword_form(source, call, self.targets)
+    }
+
     /// The joins closing every fractured argument list beneath `expr`.
     pub(crate) fn joins(self, source: &Source, expr: &Expr) -> Joins {
         if !self.closes {
             return Joins(Vec::new());
         }
-        Joins(join_edits(source, self.cap, self.targets, expr))
+        Joins(join_edits(source, self, expr))
     }
 
     /// True where a list of `count` arguments sits past the cap a
     /// closing fracture holds to, the list `call-layout` explodes on its
     /// count trigger. False throughout where `call-layout` is off.
-    pub(crate) fn over_cap(self, count: usize) -> bool {
+    fn over_cap(self, count: usize) -> bool {
         self.closes && self.cap.is_some_and(|cap| count > cap)
     }
 }
@@ -86,10 +92,9 @@ impl From<&CallLayoutConfig> for Settings<'_> {
 /// Emits one replacement per fractured argument list beneath the
 /// visited expression.
 struct FractureJoiner<'a> {
-    cap: Option<usize>,
     edits: Vec<Edit>,
+    settings: Settings<'a>,
     source: &'a Source,
-    targets: Option<&'a CallTargets<'a>>,
 }
 
 impl<'ast> AstVisitor<'ast> for FractureJoiner<'_> {
@@ -100,66 +105,17 @@ impl<'ast> AstVisitor<'ast> for FractureJoiner<'_> {
         };
         let range = call.arguments.range();
         if call.arguments.is_empty()
-            || (self.cap.is_some_and(|cap| call.arguments.len() > cap)
-                && takes_keyword_form(self.source, call, self.targets))
+            || self.settings.explodes(self.source, call)
             || !is_fractured(self.source, range)
             || self.source.intersects_comment(call.arguments.inner_range())
         {
             return;
         }
         self.edits.push(Edit::range_replacement(
-            join_args(self.source, self.cap, self.targets, &call.arguments),
+            join_args(self.source, self.settings, &call.arguments),
             range,
         ));
     }
-}
-
-/// `arguments` joined by `", "` inside the parens, each argument
-/// settled so a nested fracture reads at its joined width.
-fn join_args(
-    source: &Source,
-    cap: Option<usize>,
-    targets: Option<&CallTargets<'_>>,
-    arguments: &Arguments,
-) -> String {
-    format!(
-        "({})",
-        arguments
-            .iter_source_order()
-            .map(|arg| match arg {
-                ArgOrKeyword::Arg(expr) =>
-                    settled_argument(source, cap, targets, expr, arguments.into()),
-                ArgOrKeyword::Keyword(kw) => match &kw.arg {
-                    Some(name) => Cow::Owned(format!(
-                        "{name}={}",
-                        settled_argument(source, cap, targets, &kw.value, kw.into())
-                    )),
-                    None => Cow::Borrowed(source.slice(kw)),
-                },
-            })
-            .join(", "),
-    )
-}
-
-/// The replacement edits closing every fractured argument list beneath
-/// `expr`, ascending by start and disjoint.
-fn join_edits(
-    source: &Source,
-    cap: Option<usize>,
-    targets: Option<&CallTargets<'_>>,
-    expr: &Expr,
-) -> Vec<Edit> {
-    if !source.contains_line_break(expr.range()) {
-        return Vec::new();
-    }
-    let mut joiner = FractureJoiner {
-        cap,
-        edits: Vec::new(),
-        source,
-        targets,
-    };
-    joiner.visit_expr(expr);
-    outermost(joiner.edits)
 }
 
 /// `edits` sorted ascending with every range an earlier edit already
@@ -171,6 +127,43 @@ pub(crate) fn outermost(mut edits: Vec<Edit>) -> Vec<Edit> {
     edits
 }
 
+/// `arguments` joined by `", "` inside the parens, each argument
+/// settled so a nested fracture reads at its joined width.
+fn join_args(source: &Source, settings: Settings<'_>, arguments: &Arguments) -> String {
+    format!(
+        "({})",
+        arguments
+            .iter_source_order()
+            .map(|arg| match arg {
+                ArgOrKeyword::Arg(expr) =>
+                    settled_argument(source, settings, expr, arguments.into()),
+                ArgOrKeyword::Keyword(kw) => match &kw.arg {
+                    Some(name) => Cow::Owned(format!(
+                        "{name}={}",
+                        settled_argument(source, settings, &kw.value, kw.into())
+                    )),
+                    None => Cow::Borrowed(source.slice(kw)),
+                },
+            })
+            .join(", "),
+    )
+}
+
+/// The replacement edits closing every fractured argument list beneath
+/// `expr`, ascending by start and disjoint.
+fn join_edits(source: &Source, settings: Settings<'_>, expr: &Expr) -> Vec<Edit> {
+    if !source.contains_line_break(expr.range()) {
+        return Vec::new();
+    }
+    let mut joiner = FractureJoiner {
+        edits: Vec::new(),
+        settings,
+        source,
+    };
+    joiner.visit_expr(expr);
+    outermost(joiner.edits)
+}
+
 /// One argument's text with every fractured list beneath it closed onto
 /// one line. A column-shaped list keeps its break, so an enclosing
 /// measure still reads it as spanning lines. An argument whose own text
@@ -180,17 +173,12 @@ pub(crate) fn outermost(mut edits: Vec<Edit>) -> Vec<Edit> {
 /// joined form.
 fn settled_argument<'a>(
     source: &'a Source,
-    cap: Option<usize>,
-    targets: Option<&CallTargets<'_>>,
+    settings: Settings<'_>,
     expr: &Expr,
     parent: AnyNodeRef,
 ) -> Cow<'a, str> {
-    let range = if source.contains_line_break(expr.range()) {
-        source.paren_aware_range(expr.into(), parent)
-    } else {
-        expr.range()
-    };
-    Joins(join_edits(source, cap, targets, expr)).settled(source, range)
+    let range = source.spanning_paren_range(expr.into(), parent);
+    Joins(join_edits(source, settings, expr)).settled(source, range)
 }
 
 #[cfg(test)]
@@ -222,6 +210,11 @@ mod tests {
     ) {
         let source = parse(src);
         let call = first_expr(&source).as_call_expr().expect("a call");
-        assert_eq!(join_args(&source, cap, None, &call.arguments), expected);
+        let settings = Settings {
+            cap,
+            closes: true,
+            targets: None,
+        };
+        assert_eq!(join_args(&source, settings, &call.arguments), expected);
     }
 }

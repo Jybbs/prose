@@ -51,7 +51,7 @@ impl Rule for AlignEquals {
             walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
         visitor.visit_body(&source.ast().body);
-        let members = visitor.runs.iter().flat_map(|run| run.members()).copied();
+        let members = visitor.runs.iter().flat_map(Run::members).copied();
         let widenings = aligner::Widenings::of(source, self.settings, members);
         visitor.walker.set_widenings(widenings);
         for run in std::mem::take(&mut visitor.runs) {

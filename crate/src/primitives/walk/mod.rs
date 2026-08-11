@@ -13,23 +13,6 @@ use ruff_python_ast::{
     visitor::{self, Visitor, walk_expr},
 };
 
-/// Walks `stmt`'s children the way `visitor::walk_stmt` does, visiting
-/// each elif clause's test once. The upstream walk visits that test
-/// directly and then again through `walk_elif_else_clause`, so an `if`
-/// statement walks its parts here and every other statement walks
-/// upstream.
-pub(crate) fn walk_stmt<'src, V: Visitor<'src> + ?Sized>(visitor: &mut V, stmt: &'src Stmt) {
-    let Stmt::If(stmt_if) = stmt else {
-        visitor::walk_stmt(visitor, stmt);
-        return;
-    };
-    visitor.visit_expr(&stmt_if.test);
-    visitor.visit_body(&stmt_if.body);
-    for clause in &stmt_if.elif_else_clauses {
-        visitor::walk_elif_else_clause(visitor, clause);
-    }
-}
-
 /// Carries a caller's function to every annotation the walk reaches,
 /// leaving the annotation's own subtree unvisited so the function reads
 /// each one whole.
@@ -137,6 +120,23 @@ pub(crate) fn filter_map_over_stmts<T>(
 pub(crate) fn for_each_annotation(body: &[Stmt], run: impl FnMut(&Expr)) {
     let mut probe = AnnotationProbe { run };
     probe.visit_body(body);
+}
+
+/// Walks `stmt`'s children the way `visitor::walk_stmt` does, visiting
+/// each elif clause's test once. The upstream walk visits that test
+/// directly and then again through `walk_elif_else_clause`, so an `if`
+/// statement walks its parts here and every other statement walks
+/// upstream.
+pub(crate) fn walk_stmt<'src, V: Visitor<'src> + ?Sized>(visitor: &mut V, stmt: &'src Stmt) {
+    let Stmt::If(stmt_if) = stmt else {
+        visitor::walk_stmt(visitor, stmt);
+        return;
+    };
+    visitor.visit_expr(&stmt_if.test);
+    visitor.visit_body(&stmt_if.body);
+    for clause in &stmt_if.elif_else_clauses {
+        visitor::walk_elif_else_clause(visitor, clause);
+    }
 }
 
 #[cfg(test)]

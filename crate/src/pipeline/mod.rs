@@ -197,6 +197,16 @@ impl Pipeline {
     }
 }
 
+/// True when no two edits across `groups` match on both range and
+/// content. A byte-identical duplicate is the signature of a walk
+/// reaching one node twice, whereas two differing edits over one span
+/// are the overlap the weave declines on its own.
+fn distinct_edits(groups: &[Vec<Edit>]) -> bool {
+    let mut edits: Vec<&Edit> = groups.iter().flatten().collect();
+    edits.sort_by_key(|edit| (edit.start(), edit.end()));
+    edits.windows(2).all(|pair| pair[0] != pair[1])
+}
+
 /// The format diagnostics `rule`'s surviving fix groups emit, one per
 /// group.
 fn format_diagnostics(rule: &dyn Rule, groups: Vec<Vec<Edit>>) -> impl Iterator<Item = Diagnostic> {
@@ -235,16 +245,6 @@ fn woven_groups(
     );
     let (new_text, map) = weave_groups(source, groups.concat())?;
     Some((groups, new_text, map))
-}
-
-/// True when no two edits across `groups` match on both range and
-/// content. A byte-identical duplicate is the signature of a walk
-/// reaching one node twice, whereas two differing edits over one span
-/// are the overlap the weave declines on its own.
-fn distinct_edits(groups: &[Vec<Edit>]) -> bool {
-    let mut edits: Vec<&Edit> = groups.iter().flatten().collect();
-    edits.sort_by_key(|edit| (edit.start(), edit.end()));
-    edits.windows(2).all(|pair| pair[0] != pair[1])
 }
 
 #[cfg(test)]

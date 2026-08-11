@@ -26,7 +26,7 @@ use crate::{
         effect::value_is_effectful,
         orderer::{
             any_sibling_shares_line, opens_its_line, permute_full, reorder_separated, reorder_text,
-            reordered_lines_fit, swap_span_commented,
+            reordered_lines_fit, swap_relocates_spanning, swap_span_commented,
         },
         params::classify_param,
         walk::walk_stmt,
@@ -146,16 +146,10 @@ impl<'a> LeafCollector<'a> {
         // with its member. A swap whose rows neither fit the budget nor
         // keep their source width holds the group.
         let swapped = any_sibling_shares_line(source, items) || head_shared;
-        // A relocated member spanning lines keeps its interior rows at
-        // their source columns, so a swap moving one holds the group.
         if swapped {
             let mut order: Vec<usize> = (0..items.len()).collect();
             permute_full(&mut order, items, &mut classify);
-            if order
-                .iter()
-                .enumerate()
-                .any(|(slot, &idx)| slot != idx && source.contains_line_break(items[idx].range()))
-            {
+            if swap_relocates_spanning(source, &order, |idx| items[idx].range()) {
                 return;
             }
         }

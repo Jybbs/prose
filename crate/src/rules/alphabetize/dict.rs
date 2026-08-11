@@ -17,7 +17,8 @@ use crate::{
         layout::is_layoutable,
         orderer::{
             adjacent_slots, any_sibling_shares_line, assemble_blocks, assemble_separated,
-            block_ranges, opens_its_line, permute_runs, reordered_lines_fit, swap_span_commented,
+            block_ranges, opens_its_line, permute_runs, reordered_lines_fit,
+            swap_relocates_spanning, swap_span_commented,
         },
         range::blocks_span,
         slots::runs_where,
@@ -81,14 +82,7 @@ pub(super) fn rewrite_dict_text(
         runs_where(&d.items, |item| item.key.is_some()),
         |item| dict_sort_key(source, item),
     );
-    // A relocated entry spanning lines keeps its interior rows at their
-    // source columns, so a head-shared swap moving one holds the dict.
-    if head_shared
-        && order
-            .iter()
-            .enumerate()
-            .any(|(slot, &idx)| slot != idx && source.contains_line_break(item_ranges[idx]))
-    {
+    if head_shared && swap_relocates_spanning(source, &order, |idx| item_ranges[idx]) {
         return None;
     }
     let assembled = if multi_line && !head_shared {

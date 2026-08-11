@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Concat-Valued Entry Holds Its Line"
+
+description = '''
+An over-wide `key: value` entry hangs its value beneath the key, except where either side of the `:` carries an implicitly concatenated string, whose break belongs to `stack-adjacent-strings`. The entry survives the expansion on one line rather than hanging around a run another rule splits.
+'''

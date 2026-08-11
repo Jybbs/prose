@@ -103,20 +103,6 @@ where
     groups
 }
 
-/// One flag per item, set where the item shares a source row with the
-/// sibling on either side of it.
-fn shared_rows<T: Ranged>(source: &Source, items: &[T]) -> Vec<bool> {
-    let touches = |a: &T, b: &T| source.same_line(a.range().end(), b.range().start());
-    items
-        .iter()
-        .enumerate()
-        .map(|(i, item)| {
-            i.checked_sub(1).is_some_and(|p| touches(&items[p], item))
-                || items.get(i + 1).is_some_and(|next| touches(item, next))
-        })
-        .collect()
-}
-
 /// Generalization of [`line_adjacent_groups`] for rules that admit
 /// more than one member shape. The qualifier returns `Option<(K, M)>`
 /// where `K` tags the shape, and a run extends only while the next
@@ -201,6 +187,20 @@ fn flush_run<M>(groups: &mut Vec<Vec<M>>, current: &mut Vec<M>) {
     if !current.is_empty() {
         groups.push(std::mem::take(current));
     }
+}
+
+/// One flag per item, set where the item shares a source row with the
+/// sibling on either side of it.
+fn shared_rows<T: Ranged>(source: &Source, items: &[T]) -> Vec<bool> {
+    let touches = |a: &T, b: &T| source.same_line(a.range().end(), b.range().start());
+    items
+        .iter()
+        .enumerate()
+        .map(|(i, item)| {
+            i.checked_sub(1).is_some_and(|p| touches(&items[p], item))
+                || items.get(i + 1).is_some_and(|next| touches(item, next))
+        })
+        .collect()
 }
 
 #[cfg(test)]

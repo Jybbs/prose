@@ -15,7 +15,7 @@ use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    AnyNodeRef, AnyParameterRef, ArgOrKeyword, Arguments, Comprehension, Expr, ExprDict,
+    AnyNodeRef, AnyParameterRef, ArgOrKeyword, Arguments, Comprehension, Expr, ExprCall, ExprDict,
     helpers::any_over_expr,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
@@ -25,7 +25,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::Config,
     primitives::{
-        call_keywords::{CallTargets, takes_keyword_form},
+        call_keywords::CallTargets,
         edit::apply_inline_edits,
         fracture::{self, outermost},
         inline::folded_line_form,
@@ -44,7 +44,6 @@ pub(crate) struct Settings<'a> {
     keep_multiline_literals: bool,
     max_dict_entries: Option<usize>,
     rejoin: fracture::Settings<'a>,
-    targets: Option<&'a CallTargets<'a>>,
 }
 
 impl<'a> Settings<'a> {
@@ -101,8 +100,19 @@ impl<'a> Settings<'a> {
             keep_multiline_literals: self.keep_multiline_literals,
             max_dict_entries: self.max_dict_entries,
             rejoin: self.rejoin.against(targets),
-            targets: Some(targets),
         }
+    }
+
+    /// True where `call-layout`'s count trigger explodes `call`, read
+    /// off the rejoin terms these settings carry.
+    pub(crate) fn count_explodes(&self, source: &Source, call: &ExprCall) -> bool {
+        self.rejoin.explodes(source, call)
+    }
+
+    /// The dict entry cap the `explode` facet leaves armed, `None` where
+    /// no count expands a dict.
+    pub(crate) fn dict_entry_cap(&self) -> Option<usize> {
+        self.max_dict_entries
     }
 
     /// True where a row reaching `width` columns sits inside the budget.
@@ -232,7 +242,6 @@ impl From<&Config> for Settings<'_> {
                 .cap()
                 .filter(|_| collection.explode),
             rejoin: config.fracture_settings(),
-            targets: None,
         }
     }
 }
@@ -369,14 +378,13 @@ impl<'a> Writer<'a> {
     /// standing.
     fn reopens(&self, expr: &Expr) -> bool {
         any_over_expr(expr, |e| {
-            e.as_call_expr().is_some_and(|call| {
-                self.settings.rejoin.over_cap(call.arguments.len())
-                    && takes_keyword_form(self.source, call, self.settings.targets)
-            }) || e.as_dict_expr().is_some_and(|dict| {
-                self.settings
-                    .max_dict_entries
-                    .is_some_and(|cap| dict.len() > cap)
-            })
+            e.as_call_expr()
+                .is_some_and(|call| self.settings.rejoin.explodes(self.source, call))
+                || e.as_dict_expr().is_some_and(|dict| {
+                    self.settings
+                        .max_dict_entries
+                        .is_some_and(|cap| dict.len() > cap)
+                })
         })
     }
 
@@ -430,11 +438,7 @@ impl<'a> Writer<'a> {
     /// Appends one top-level call argument to `out`, its grouping parens
     /// recovered only where its own text spans rows.
     fn write_argument(&self, out: &mut String, expr: &Expr, parent: AnyNodeRef) -> Option<()> {
-        let range = if self.source.contains_line_break(expr.range()) {
-            self.source.paren_aware_range(expr.into(), parent)
-        } else {
-            expr.range()
-        };
+        let range = self.source.spanning_paren_range(expr.into(), parent);
         out.push_str(&self.formed(expr, range, Column::Holds)?);
         Some(())
     }

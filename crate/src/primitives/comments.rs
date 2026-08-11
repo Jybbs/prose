@@ -47,19 +47,7 @@ pub(crate) fn bound_block_start(
             !anchors_in_place(source, *block)
                 && source.line_indent_width(block.start()) == source.line_indent_width(item_start)
         })
-        .map_or(line_start, |block| block.start())
-}
-
-/// The start of the trailing comment on `offset`'s line, `None` where
-/// that line carries no comment or carries an own-line one alone.
-pub(crate) fn trailing_comment_start(source: &Source, offset: TextSize) -> Option<TextSize> {
-    let line = source.text().full_line_range(offset);
-    source
-        .comment_ranges()
-        .comments_in_range(line)
-        .iter()
-        .map(Ranged::start)
-        .find(|start| !CommentRanges::is_own_line(*start, source.text()))
+        .map_or(line_start, TextRange::start)
 }
 
 /// True when the line containing the dict's opening `{` carries a
@@ -78,12 +66,6 @@ pub(crate) fn has_keep_marker(source: &Source, dict: &ExprDict) -> bool {
 /// either a decorative rule line or a multi-hash heading.
 pub(crate) fn is_banner_block(source: &Source, block: TextRange) -> bool {
     source.slice(block).lines().any(is_marker_line)
-}
-
-/// True when `line` reads as a section marker, a decorative rule line or
-/// a multi-hash heading.
-fn is_marker_line(line: &str) -> bool {
-    is_rule_line(line) || is_heading_line(line)
 }
 
 /// Returns the contiguous range of own-line comments lying between
@@ -106,10 +88,28 @@ pub(crate) fn leading_comment_block(
     Some(TextRange::new(text.line_start(first.start()), last.end()))
 }
 
+/// The start of the trailing comment on `offset`'s line, `None` where
+/// that line carries no comment or carries an own-line one alone.
+pub(crate) fn trailing_comment_start(source: &Source, offset: TextSize) -> Option<TextSize> {
+    let line = source.text().full_line_range(offset);
+    source
+        .comment_ranges()
+        .comments_in_range(line)
+        .iter()
+        .map(Ranged::start)
+        .find(|start| !CommentRanges::is_own_line(*start, source.text()))
+}
+
 /// True when `line` opens with two or more `#`, the Markdown-style
 /// heading shape that reads as a section divider.
 fn is_heading_line(line: &str) -> bool {
     line.trim_start().starts_with("##")
+}
+
+/// True when `line` reads as a section marker, a decorative rule line or
+/// a multi-hash heading.
+fn is_marker_line(line: &str) -> bool {
+    is_rule_line(line) || is_heading_line(line)
 }
 
 /// True for a character authors repeat to draw a divider rule.

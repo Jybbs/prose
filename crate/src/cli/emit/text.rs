@@ -66,6 +66,16 @@ impl Emitter for Text {
     }
 }
 
+/// The source span a diagnostic renders against, its own range widened
+/// to every edit its fix would apply, so the snippet holds each patch
+/// the renderer draws.
+fn annotated(diag: &Diagnostic) -> TextRange {
+    diag.fix
+        .iter()
+        .flat_map(Fix::edits)
+        .fold(diag.range, |span, edit| span.cover(edit.range()))
+}
+
 /// The notebook cell holding `range`, paired with the byte range it
 /// spans, derived from the index by walking from the cell's first row to
 /// the next cell's. `None` for an offset outside every cell.
@@ -89,16 +99,6 @@ fn cell_slice(
         }
     }
     start.map(|start| (cell, TextRange::new(start, end)))
-}
-
-/// The source span a diagnostic renders against, its own range widened
-/// to every edit its fix would apply, so the snippet holds each patch
-/// the renderer draws.
-fn annotated(diag: &Diagnostic) -> TextRange {
-    diag.fix
-        .iter()
-        .flat_map(Fix::edits)
-        .fold(diag.range, |span, edit| span.cover(edit.range()))
 }
 
 /// The snippet view for a diagnostic spanning `range`: the byte offset

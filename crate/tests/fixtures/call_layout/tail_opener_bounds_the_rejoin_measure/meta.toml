@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Tail Bracket Bounds the Rejoin Measure"
+
+description = '''
+The rejoin measure charges the text trailing the call only through the first opening bracket on its row, because exploding the construct that bracket opens ends the row there. A fracture whose full tail would overflow still rejoins, leaving the collection to its own rule.
+'''

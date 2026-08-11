@@ -2,6 +2,7 @@
 //! a row's aligned token and measure its display width, over the gap
 //! locator those builders and the comment rules share.
 
+use itertools::Itertools;
 use ruff_python_ast::{
     AnyParameterRef, Parameters,
     token::{Token, TokenKind},
@@ -42,22 +43,6 @@ pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member 
         value_gap: None,
         width,
     }
-}
-
-/// The display width of the bracket-delimiter padding inside `range`,
-/// the columns `strip-align-padding` deletes once it runs. A settled
-/// width reads past them, so an alignment measures the row the pipeline
-/// lands on rather than the one the source wrote.
-fn delimiter_padding_width(source: &Source, range: TextRange) -> usize {
-    source
-        .token_gaps()
-        .skip_while(|(_, next, _)| next.end() <= range.start())
-        .take_while(|(token, _, _)| token.start() < range.end())
-        .filter(|(token, next, gap)| {
-            range.contains_range(*gap) && is_delimiter_padding(token.kind(), next.kind())
-        })
-        .map(|(_, _, gap)| source.slice(gap).width())
-        .sum()
 }
 
 /// Builds a `Member` whose anchor is the first `kind` token in `search`
@@ -133,6 +118,22 @@ where
 {
     single_line_anchor(source, target.start(), search, predicate)
         .map(|anchor| range_anchored_member(source, target, anchor, extra_width))
+}
+
+/// The display width of the bracket-delimiter padding inside `range`,
+/// the columns `strip-align-padding` deletes once it runs. A settled
+/// width reads past them, so an alignment measures the row the pipeline
+/// lands on rather than the one the source wrote.
+fn delimiter_padding_width(source: &Source, range: TextRange) -> usize {
+    source
+        .tokens_overlapping(range)
+        .tuple_windows()
+        .filter_map(|(token, next)| {
+            let gap = TextRange::new(token.end(), next.start());
+            (range.contains_range(gap) && is_delimiter_padding(token.kind(), next.kind()))
+                .then(|| source.slice(gap).width())
+        })
+        .sum()
 }
 
 /// Builds a `Member` for a row whose aligned token sits at `anchor`,

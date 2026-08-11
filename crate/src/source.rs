@@ -444,7 +444,7 @@ impl Source {
             cell_offsets,
             parsed,
         );
-        next.cell_numbers = self.cell_numbers.clone();
+        next.cell_numbers.clone_from(&self.cell_numbers);
         Ok(next)
     }
 
@@ -483,6 +483,17 @@ impl Source {
         self.file.to_source_code().source_location(offset, encoding)
     }
 
+    /// `expr`'s range, widened to its recovered parentheses only where
+    /// its own text spans rows, the pair holding those rows together
+    /// once the text around it joins.
+    pub(crate) fn spanning_paren_range(&self, expr: ExprRef, parent: AnyNodeRef) -> TextRange {
+        if self.contains_line_break(expr.range()) {
+            self.paren_aware_range(expr, parent)
+        } else {
+            expr.range()
+        }
+    }
+
     /// Returns the suppression index built during parsing.
     pub(crate) fn suppression_map(&self) -> &SuppressionMap {
         &self.suppression
@@ -504,6 +515,19 @@ impl Source {
     /// Borrows the token stream produced during parsing.
     pub fn tokens(&self) -> &Tokens {
         self.parsed.tokens()
+    }
+
+    /// Yields the tokens overlapping `range`, opening at the nearest
+    /// token start at or before `range.start()`, so a boundary inside a
+    /// token still reaches the token spanning it.
+    pub(crate) fn tokens_overlapping(&self, range: TextRange) -> impl Iterator<Item = &Token> {
+        let tokens = self.tokens();
+        let first = tokens
+            .binary_search_by_start(range.start())
+            .unwrap_or_else(|slot| slot.saturating_sub(1));
+        tokens[first..]
+            .iter()
+            .take_while(move |token| token.start() < range.end())
     }
 
     /// Returns the range of the trailing comma immediately before the

@@ -24,6 +24,12 @@ pub(crate) struct EntryHead<'a> {
     pub(crate) type_group: Option<Range<usize>>,
 }
 
+/// True when `trimmed` opens with a Google-style `name: description`
+/// entry head, whatever its type group.
+pub(crate) fn is_entry_head(trimmed: &str) -> bool {
+    entry_head(trimmed).is_some()
+}
+
 /// The heading `trimmed` opens with, read without its trailing `:`. A
 /// heading is a Title-case word or multi-word run with every word
 /// capitalized, immediately followed by `:`, and trailing content after
@@ -43,12 +49,6 @@ pub(crate) fn sibling_entry_head(
     (indent_chars == section_body_indent)
         .then_some(trimmed)
         .and_then(entry_head)
-}
-
-/// True when `trimmed` opens with a Google-style `name: description`
-/// entry head, whatever its type group.
-pub(crate) fn is_entry_head(trimmed: &str) -> bool {
-    entry_head(trimmed).is_some()
 }
 
 /// True when `trimmed` is an entry head carrying a parenthesized type

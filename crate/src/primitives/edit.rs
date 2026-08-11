@@ -257,15 +257,6 @@ fn forward_offset(offset: TextSize, map: &SourceMap, is_final: bool) -> TextSize
     shifted(offset, marker)
 }
 
-/// `offset` moved by `marker`'s source-to-destination delta.
-fn shifted(offset: TextSize, marker: &SourceMarker) -> TextSize {
-    match marker.source().cmp(&marker.dest()) {
-        Ordering::Less => offset + (marker.dest() - marker.source()),
-        Ordering::Greater => offset - (marker.source() - marker.dest()),
-        Ordering::Equal => offset,
-    }
-}
-
 /// Trims a candidate replacement to its minimal spanning range by
 /// stripping the longest common codepoint prefix and suffix shared
 /// with `source_slice`. Returns `None` when `text` already equals
@@ -306,6 +297,15 @@ fn replacement_or_deletion(range: TextRange, content: String) -> Edit {
         Edit::range_deletion(range)
     } else {
         Edit::range_replacement(content, range)
+    }
+}
+
+/// `offset` moved by `marker`'s source-to-destination delta.
+fn shifted(offset: TextSize, marker: &SourceMarker) -> TextSize {
+    match marker.source().cmp(&marker.dest()) {
+        Ordering::Less => offset + (marker.dest() - marker.source()),
+        Ordering::Greater => offset - (marker.source() - marker.dest()),
+        Ordering::Equal => offset,
     }
 }
 

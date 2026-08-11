@@ -35,29 +35,6 @@ pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
     outcome
 }
 
-/// Replaces `path`'s contents with `contents` through a temporary file
-/// renamed over the target, so a write that fails partway leaves the
-/// original intact rather than truncated at its opening byte. `path`
-/// resolves through a symlink first, leaving the link in place and
-/// rewriting what it points at. Opening the target beforehand holds the
-/// permission check a direct write makes, and the temporary takes the
-/// target's mode, which a fresh temporary would otherwise narrow to
-/// owner-only. Creating that temporary needs write permission on the
-/// containing directory, which a direct write does not.
-fn write_atomic(path: &Path, contents: &str) -> io::Result<()> {
-    let target = fs_err::canonicalize(path)?;
-    let permissions = fs_err::OpenOptions::new()
-        .write(true)
-        .open(&target)?
-        .metadata()?
-        .permissions();
-    let mut temp = NamedTempFile::new_in(target.parent().unwrap_or(&target))?;
-    temp.write_all(contents.as_bytes())?;
-    temp.as_file().set_permissions(permissions)?;
-    temp.persist(&target).map_err(|e| e.error)?;
-    Ok(())
-}
-
 /// Dispatches `source` by `pass`, collecting the as-written diagnostics on
 /// a check pass and building the rewrite through `rewrite` on a format
 /// pass. A notebook threads its `index`, a module passes `None`.
@@ -217,21 +194,6 @@ pub(super) fn rehydrate(
     })
 }
 
-/// Runs a text source through the pipeline via [`drive`], building the
-/// text rewrite from the formatted output against the original. A module
-/// carries no notebook index.
-pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
-    drive(source, pipeline, pass, None, |formatted, file| {
-        formatted
-            .changed_from(file.source_text())
-            .map_or(Rewrite::Unchanged, |text| Rewrite::text(text.to_owned()))
-    })
-}
-
-pub(super) fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
-    failed(ExitStatus::ConfigError, format_args!("cannot walk: {err}"))
-}
-
 /// Collects the as-written diagnostics, and with `validate` guards the
 /// would-be rewrite against an output that fails to re-parse or to
 /// compile.
@@ -316,6 +278,44 @@ fn run_and_assemble(
         }
         Err(e) => failed(ExitStatus::ConfigError, e),
     }
+}
+
+/// Runs a text source through the pipeline via [`drive`], building the
+/// text rewrite from the formatted output against the original. A module
+/// carries no notebook index.
+fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
+    drive(source, pipeline, pass, None, |formatted, file| {
+        formatted
+            .changed_from(file.source_text())
+            .map_or(Rewrite::Unchanged, |text| Rewrite::text(text.to_owned()))
+    })
+}
+
+fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
+    failed(ExitStatus::ConfigError, format_args!("cannot walk: {err}"))
+}
+
+/// Replaces `path`'s contents with `contents` through a temporary file
+/// renamed over the target, so a write that fails partway leaves the
+/// original intact rather than truncated at its opening byte. `path`
+/// resolves through a symlink first, leaving the link in place and
+/// rewriting what it points at. Opening the target beforehand holds the
+/// permission check a direct write makes, and the temporary takes the
+/// target's mode, which a fresh temporary would otherwise narrow to
+/// owner-only. Creating that temporary needs write permission on the
+/// containing directory, which a direct write does not.
+fn write_atomic(path: &Path, contents: &str) -> io::Result<()> {
+    let target = fs_err::canonicalize(path)?;
+    let permissions = fs_err::OpenOptions::new()
+        .write(true)
+        .open(&target)?
+        .metadata()?
+        .permissions();
+    let mut temp = NamedTempFile::new_in(target.parent().unwrap_or(&target))?;
+    temp.write_all(contents.as_bytes())?;
+    temp.as_file().set_permissions(permissions)?;
+    temp.persist(&target).map_err(|e| e.error)?;
+    Ok(())
 }
 
 #[cfg(test)]

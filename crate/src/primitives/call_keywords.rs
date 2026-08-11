@@ -19,6 +19,10 @@ pub(crate) struct CallKeywords<'src> {
     pub(crate) has_posonly_prefix: bool,
 }
 
+/// The callee-offset lookup [`module_call_params`] returns, resolving a
+/// call to the module function it binds.
+pub(crate) type CallTargets<'src> = HashMap<TextSize, &'src Parameters>;
+
 /// One argument of a call rendered as a `name=value` keyword binding.
 pub(crate) struct KeywordArg<'src> {
     /// The bound parameter or keyword name, the key for the
@@ -91,28 +95,6 @@ pub(crate) fn keyword_args<'src>(
         })
 }
 
-/// True where `call-layout`'s count trigger explodes `call`, meaning
-/// every argument takes keyword form against the module function the
-/// callee binds and no positional-only prefix pins the order. A call the
-/// cap claims but cannot name stays inline, so a join or a one-row form
-/// written around it stands rather than being reopened. Without a target
-/// map the answer holds at true, the reading that never writes a form a
-/// later explode would undo.
-pub(crate) fn takes_keyword_form(
-    source: &Source,
-    call: &ExprCall,
-    targets: Option<&CallTargets<'_>>,
-) -> bool {
-    targets.is_none_or(|targets| {
-        keyword_args(source, call, resolve_call_params(call, targets))
-            .is_some_and(|keywords| !keywords.has_posonly_prefix)
-    })
-}
-
-/// The callee-offset lookup [`module_call_params`] returns, resolving a
-/// call to the module function it binds.
-pub(crate) type CallTargets<'src> = HashMap<TextSize, &'src Parameters>;
-
 /// Maps each in-module call's callee offset to the parameters of the
 /// top-level function it resolves to, over every function whose
 /// decorators do not bind by position and whose name binds uniquely to
@@ -141,6 +123,24 @@ pub(crate) fn resolve_call_params<'src>(
     targets
         .get(&call.func.as_name_expr()?.range().start())
         .copied()
+}
+
+/// True where `call-layout`'s count trigger explodes `call`, meaning
+/// every argument takes keyword form against the module function the
+/// callee binds and no positional-only prefix pins the order. A call the
+/// cap claims but cannot name stays inline, so a join or a one-row form
+/// written around it stands rather than being reopened. Without a target
+/// map the answer holds at true, the reading that never writes a form a
+/// later explode would undo.
+pub(crate) fn takes_keyword_form(
+    source: &Source,
+    call: &ExprCall,
+    targets: Option<&CallTargets<'_>>,
+) -> bool {
+    targets.is_none_or(|targets| {
+        keyword_args(source, call, resolve_call_params(call, targets))
+            .is_some_and(|keywords| !keywords.has_posonly_prefix)
+    })
 }
 
 /// True for the argument shapes whose source slice does not parse after

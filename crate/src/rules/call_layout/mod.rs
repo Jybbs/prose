@@ -51,8 +51,6 @@ mod measure;
 mod render;
 
 pub(crate) struct CallLayout {
-    code_line_length: usize,
-    max_args: Option<usize>,
     one_row: one_row::Settings<'static>,
     reservations: reserve::Reservations,
 }
@@ -62,8 +60,6 @@ impl CallLayout {
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            code_line_length: config.code_width(),
-            max_args: config.rules.call_layout.max_args.cap(),
             one_row: config.one_row_settings(),
             reservations: config.equals_reservations(),
         }
@@ -75,11 +71,9 @@ impl Rule for CallLayout {
         let targets = module_call_params(source);
         let reservations = self.reservations.columns(source);
         let mut exploder = Exploder {
-            code_line_length: self.code_line_length,
             edits: Vec::new(),
             indent: None,
             line_shift: 0,
-            max_args: self.max_args,
             one_row: self.one_row.against(&targets),
             origin: TextSize::new(0),
             origin_column: 0,
@@ -102,11 +96,9 @@ impl Rule for CallLayout {
 /// moves by, and `indent` is the indent an exploded closing `)` drops to,
 /// unset where each call answers to its own source line.
 struct Exploder<'a> {
-    code_line_length: usize,
     edits: Vec<Edit>,
     indent: Option<usize>,
     line_shift: isize,
-    max_args: Option<usize>,
     one_row: one_row::Settings<'a>,
     origin: TextSize,
     origin_column: usize,

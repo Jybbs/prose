@@ -15,18 +15,6 @@ pub(crate) fn is_alignment_candidate(source: &Source, members: &[Member]) -> boo
     shares_column(members, |m| baseline(source, m))
 }
 
-/// Returns `true` when `members` form a multi-row group on distinct
-/// source lines whose `baseline_of` columns match pairwise.
-pub(crate) fn shares_column(
-    members: &[Member],
-    mut baseline_of: impl FnMut(Member) -> usize,
-) -> bool {
-    members.len() >= 2
-        && members
-            .windows(2)
-            .all(|w| w[0].line_start != w[1].line_start && baseline_of(w[0]) == baseline_of(w[1]))
-}
-
 /// Returns `true` when the line containing `anchor` falls under a skip
 /// directive for `rule`: a bare `# prose: skip` span, a `# prose: off`
 /// region, or a `# prose: skip[<id>]` listing `rule`. A directive
@@ -48,6 +36,18 @@ pub(crate) fn retain_unheld(
         .into_iter()
         .filter(|m| !is_held(source, rule, m.line_start))
         .collect()
+}
+
+/// Returns `true` when `members` form a multi-row group on distinct
+/// source lines whose `baseline_of` columns match pairwise.
+pub(crate) fn shares_column(
+    members: &[Member],
+    mut baseline_of: impl FnMut(Member) -> usize,
+) -> bool {
+    members.len() >= 2
+        && members
+            .windows(2)
+            .all(|w| w[0].line_start != w[1].line_start && baseline_of(w[0]) == baseline_of(w[1]))
 }
 
 #[cfg(test)]

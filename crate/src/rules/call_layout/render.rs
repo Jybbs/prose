@@ -11,14 +11,12 @@ use unicode_width::UnicodeWidthStr;
 
 use super::Exploder;
 use crate::primitives::{
-    call_keywords::{CallKeywords, keyword_args, resolve_call_params, takes_keyword_form},
+    call_keywords::{CallKeywords, keyword_args, resolve_call_params},
     edit::apply_inline_edits,
     inline::end_column,
-    layout::{
-        Landing, Separator, Travel, block_shift, explode_parens, is_fractured, item_indent,
-        shifted_block, spans_a_string_part,
-    },
+    layout::{Separator, explode_parens, is_fractured, item_indent},
     tokens::is_opener,
+    travel::{Landing, Travel, block_shift, shifted_block, spans_a_string_part},
 };
 
 impl<'a> Exploder<'a> {
@@ -97,22 +95,6 @@ impl<'a> Exploder<'a> {
         )
     }
 
-    /// The one-line `(...)` text for an argument list the author
-    /// fractured, or `None` where it holds no break or carries the flush
-    /// column shape the explode path emits. `joined` is the list's
-    /// one-row form, each argument's interior closed with it. The joined
-    /// row measures from `column` across the text trailing the call on
-    /// its own physical row, so a rejoin never lands a row the length
-    /// trigger would explode again.
-    fn rejoined(&self, arguments: &Arguments, column: usize, joined: String) -> Option<String> {
-        let range = arguments.range();
-        if !is_fractured(self.source, range) {
-            return None;
-        }
-        let width = column + joined.width() + self.row_tail(range.end());
-        (width <= self.code_line_length).then_some(joined)
-    }
-
     /// The columns trailing this call on its own physical row, which a
     /// joined or exploded row lands beside. A walk inside a relocated
     /// value carries its own region rather than the source row, whose
@@ -131,17 +113,10 @@ impl<'a> Exploder<'a> {
     }
 
     /// The offset of the first opening bracket inside `range`, the token
-    /// that marks a construct whose own layout has yet to settle. Walks
-    /// from the nearest token start rather than slicing the stream, since
-    /// a row inside a multi-line string ends partway through a token.
+    /// that marks a construct whose own layout has yet to settle.
     fn first_opener(&self, range: TextRange) -> Option<TextSize> {
-        let tokens = self.source.tokens();
-        let first = tokens
-            .binary_search_by_start(range.start())
-            .unwrap_or_else(|slot| slot.saturating_sub(1));
-        tokens[first..]
-            .iter()
-            .take_while(|token| token.start() < range.end())
+        self.source
+            .tokens_overlapping(range)
             .find(|token| range.contains(token.start()) && is_opener(token.kind()))
             .map(Ranged::start)
     }
@@ -258,16 +233,17 @@ impl<'a> Exploder<'a> {
         if arguments.is_empty() || self.source.intersects_comment(arguments.inner_range()) {
             return None;
         }
-        let count_trips = self.max_args.is_some_and(|cap| arguments.len() > cap)
-            && takes_keyword_form(self.source, call, Some(self.targets));
+        let count_trips = self.one_row.count_explodes(self.source, call);
         let tail = self.row_tail(arguments.range().end());
         let form = self
             .one_row
             .arguments_form(self.source, arguments)
             .filter(|form| self.one_row.fits(column + form.width() + tail));
         let length_trips = form.is_none();
+        // The filter above already fit the joined row, leaving only the
+        // fracture question.
         if !count_trips && let Some(form) = form {
-            return self.rejoined(arguments, column, form);
+            return is_fractured(self.source, arguments.range()).then_some(form);
         }
         match keyword_args(self.source, call, resolve_call_params(call, self.targets)) {
             Some(keywords) if !keywords.has_posonly_prefix => {

@@ -7,7 +7,7 @@ use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    AnyParameterRef, ParameterWithDefault, Parameters, Stmt, StmtFunctionDef,
+    AnyParameterRef, Parameters, Stmt, StmtFunctionDef,
     statement_visitor::{StatementVisitor, walk_stmt},
     token::TokenKind,
 };
@@ -20,9 +20,10 @@ use crate::{
         call_keywords::module_call_params,
         edit::{narrowed_replacement, singleton_groups, splice_parses},
         inline::opening_width,
-        layout::{Landing, Separator, explode_parens, item_indent, placed_block},
+        layout::{Separator, explode_parens, item_indent},
         one_row,
         range::return_annotation_range,
+        travel::{Landing, placed_block},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -110,16 +111,6 @@ impl Layout<'_> {
         )
     }
 
-    fn place_params<'p>(
-        &'p self,
-        params: &'p [ParameterWithDefault],
-        indent: usize,
-    ) -> impl Iterator<Item = Cow<'p, str>> + 'p {
-        params
-            .iter()
-            .map(move |p| self.place(AnyParameterRef::NonVariadic(p), indent))
-    }
-
     /// Emits one expand or collapse edit when `fd`'s signature
     /// diverges from the canonical inline-or-expanded form.
     fn process_def(&mut self, fd: &StmtFunctionDef) {
@@ -137,9 +128,10 @@ impl Layout<'_> {
         // The one-row reading answers whether every parameter reaches a
         // single row at all, so a signature holding one that cannot is
         // laid out one per line whatever its width would have been.
-        let inline = self
-            .one_row_parts(params)
-            .map(|parts| self.build_inline(fd, &parts));
+        let inline = rendered_parts(params, |p| {
+            self.one_row.parameter_form(self.source, p).map(Cow::Owned)
+        })
+        .map(|parts| self.build_inline(fd, &parts));
         let fits = inline.as_ref().is_some_and(|text| {
             !self.source.column_overflows(
                 params.range().start(),
@@ -148,7 +140,9 @@ impl Layout<'_> {
             )
         });
         let replacement = if count_trips || !fits {
-            let parts: Vec<Cow<str>> = self.signature_parts(params, item_indent(indent)).collect();
+            let item = item_indent(indent);
+            let parts = rendered_parts(params, |p| Some(self.place(p, item)))
+                .expect("placing a parameter always renders");
             self.build_expanded(fd, &parts, indent)
         } else if self.source.contains_line_break(replacement_range) {
             inline.expect("a fitting signature carries its one-row parts")
@@ -170,48 +164,6 @@ impl Layout<'_> {
                 replacement,
             ));
         }
-    }
-
-    /// Every parameter's one-row text in source order, with `/` and bare
-    /// `*` seated at their canonical positions, `None` where any
-    /// parameter reaches no single row.
-    fn one_row_parts(&self, params: &Parameters) -> Option<Vec<Cow<'_, str>>> {
-        let posonly_sep = (!params.posonlyargs.is_empty()).then_some(Cow::Borrowed("/"));
-        let star = params
-            .vararg
-            .as_deref()
-            .map(AnyParameterRef::Variadic)
-            .map(Some)
-            .unwrap_or_else(|| (!params.kwonlyargs.is_empty()).then_some(None).flatten());
-        let bare_star = params.vararg.is_none() && !params.kwonlyargs.is_empty();
-        let mut parts: Vec<Cow<'_, str>> = Vec::new();
-        for param in params.posonlyargs.iter().map(AnyParameterRef::NonVariadic) {
-            parts.push(Cow::Owned(self.one_row_part(param)?));
-        }
-        parts.extend(posonly_sep);
-        for param in params.args.iter().map(AnyParameterRef::NonVariadic) {
-            parts.push(Cow::Owned(self.one_row_part(param)?));
-        }
-        if let Some(va) = star {
-            parts.push(Cow::Owned(self.one_row_part(va)?));
-        } else if bare_star {
-            parts.push(Cow::Borrowed("*"));
-        }
-        for param in params.kwonlyargs.iter().map(AnyParameterRef::NonVariadic) {
-            parts.push(Cow::Owned(self.one_row_part(param)?));
-        }
-        if let Some(kw) = params.kwarg.as_deref() {
-            parts.push(Cow::Owned(
-                self.one_row_part(AnyParameterRef::Variadic(kw))?,
-            ));
-        }
-        Some(parts)
-    }
-
-    /// One parameter's one-row text, `None` where it reaches no single
-    /// row.
-    fn one_row_part(&self, param: AnyParameterRef) -> Option<String> {
-        self.one_row.parameter_form(self.source, param)
     }
 
     fn push_return_and_colon(&self, out: &mut String, fd: &StmtFunctionDef) {
@@ -245,34 +197,6 @@ impl Layout<'_> {
             .expect("function def carries a `:` between `)` and the body");
         TextRange::new(fd.parameters.range().start(), colon + TextSize::from(1u32))
     }
-
-    /// Returns each parameter's text in source order, with `/` and bare
-    /// `*` separators inserted at their canonical positions and a
-    /// row-spanning annotation or default hung from `indent`. Variadic
-    /// parameters are placed the same way and carry their `*` or `**`
-    /// prefix.
-    fn signature_parts<'p>(
-        &'p self,
-        params: &'p Parameters,
-        indent: usize,
-    ) -> impl Iterator<Item = Cow<'p, str>> + 'p {
-        let posonly_sep = (!params.posonlyargs.is_empty()).then_some(Cow::Borrowed("/"));
-        let star = params
-            .vararg
-            .as_deref()
-            .map(|va| self.place(AnyParameterRef::Variadic(va), indent))
-            .or((!params.kwonlyargs.is_empty()).then_some(Cow::Borrowed("*")));
-        let kwarg = params
-            .kwarg
-            .as_deref()
-            .map(|kw| self.place(AnyParameterRef::Variadic(kw), indent));
-        self.place_params(&params.posonlyargs, indent)
-            .chain(posonly_sep)
-            .chain(self.place_params(&params.args, indent))
-            .chain(star)
-            .chain(self.place_params(&params.kwonlyargs, indent))
-            .chain(kwarg)
-    }
 }
 
 impl<'a> StatementVisitor<'a> for Layout<'a> {
@@ -282,4 +206,35 @@ impl<'a> StatementVisitor<'a> for Layout<'a> {
         }
         walk_stmt(self, stmt);
     }
+}
+
+/// Every parameter of `params` rendered in source order through
+/// `render`, with `/` and bare `*` seated at their canonical positions,
+/// `None` where any parameter renders to `None`.
+fn rendered_parts<'p>(
+    params: &'p Parameters,
+    mut render: impl FnMut(AnyParameterRef<'p>) -> Option<Cow<'p, str>>,
+) -> Option<Vec<Cow<'p, str>>> {
+    let mut parts = Vec::new();
+    for param in params.posonlyargs.iter().map(AnyParameterRef::NonVariadic) {
+        parts.push(render(param)?);
+    }
+    if !params.posonlyargs.is_empty() {
+        parts.push(Cow::Borrowed("/"));
+    }
+    for param in params.args.iter().map(AnyParameterRef::NonVariadic) {
+        parts.push(render(param)?);
+    }
+    if let Some(va) = params.vararg.as_deref() {
+        parts.push(render(AnyParameterRef::Variadic(va))?);
+    } else if !params.kwonlyargs.is_empty() {
+        parts.push(Cow::Borrowed("*"));
+    }
+    for param in params.kwonlyargs.iter().map(AnyParameterRef::NonVariadic) {
+        parts.push(render(param)?);
+    }
+    if let Some(kw) = params.kwarg.as_deref() {
+        parts.push(render(AnyParameterRef::Variadic(kw))?);
+    }
+    Some(parts)
 }

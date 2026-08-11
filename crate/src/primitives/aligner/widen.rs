@@ -53,3 +53,46 @@ impl Widenings {
             .sum()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        config::AlignmentConfig,
+        testing::{align_member, parse, range},
+    };
+
+    fn settings() -> Settings {
+        Settings::from(&AlignmentConfig::default())
+    }
+
+    #[test]
+    fn delta_answers_zero_for_a_member_alone_on_its_line() {
+        let source = parse("a=1\nbc=2\n");
+        let members = [
+            align_member(range(1, 1), 0, 1),
+            align_member(range(6, 6), 4, 2),
+        ];
+        let widenings = Widenings::of(&source, settings(), members.iter().copied());
+        assert_eq!(widenings.delta(members[0]), 0);
+    }
+
+    #[test]
+    fn delta_sums_only_the_other_members_sharing_the_line() {
+        let source = parse("f(a=1, b=2)\n");
+        let members = [
+            align_member(range(3, 3), 0, 1),
+            align_member(range(8, 8), 0, 1),
+        ];
+        let widenings = Widenings::of(&source, settings(), members.iter().copied());
+        assert_eq!(widenings.delta(members[0]), 1);
+    }
+
+    #[test]
+    fn of_drops_a_member_already_at_the_buffer() {
+        let source = parse("a =1\n");
+        let members = [align_member(range(1, 2), 0, 1)];
+        let widenings = Widenings::of(&source, settings(), members.iter().copied());
+        assert!(widenings.0.is_empty());
+    }
+}
