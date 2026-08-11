@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Hung Block Drops Its Closing Bracket to the Landing Indent"
+
+description = '''
+An argument whose first row leaves a bracket open already holds its own rows one step inside that bracket, so the move leaves them where they sit and drops the closing bracket back to the indent the argument lands at.
+'''

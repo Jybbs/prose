@@ -11,6 +11,7 @@
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_python_ast::PythonVersion;
+use ruff_text_size::Ranged;
 
 use crate::{
     diagnostics::Diagnostic,
@@ -227,8 +228,23 @@ fn woven_groups(
     if groups.is_empty() {
         return None;
     }
+    debug_assert!(
+        distinct_edits(&groups),
+        "rule `{}` emitted a duplicate edit, the signature of a walk reaching one node twice",
+        rule.id(),
+    );
     let (new_text, map) = weave_groups(source, groups.concat())?;
     Some((groups, new_text, map))
+}
+
+/// True when no two edits across `groups` match on both range and
+/// content. A byte-identical duplicate is the signature of a walk
+/// reaching one node twice, whereas two differing edits over one span
+/// are the overlap the weave declines on its own.
+fn distinct_edits(groups: &[Vec<Edit>]) -> bool {
+    let mut edits: Vec<&Edit> = groups.iter().flatten().collect();
+    edits.sort_by_key(|edit| (edit.start(), edit.end()));
+    edits.windows(2).all(|pair| pair[0] != pair[1])
 }
 
 #[cfg(test)]
@@ -553,6 +569,18 @@ mod tests {
 
         assert_eq!(result.text(), "y = 1\n");
         assert_eq!(diagnostics.len(), 1);
+    }
+
+    #[test]
+    #[should_panic(expected = "emitted a duplicate edit")]
+    fn run_flags_a_byte_identical_duplicate_edit() {
+        let edit = Edit::range_replacement("y".to_owned(), range(0, 1));
+        let rule = GroupSentinelRule {
+            groups: vec![vec![edit.clone()], vec![edit]],
+            id: RuleId::from("duplicating"),
+        };
+        let pipeline = Pipeline::from_rules(vec![Box::new(rule)]);
+        let _ = pipeline.run(parse("x = 1\n"));
     }
 
     #[test]

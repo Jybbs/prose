@@ -8,14 +8,14 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Expr, ExprBoolOp,
+    Expr, ExprBoolOp, Stmt,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
-    primitives::{aligner, comparison::opening_token_kind},
+    primitives::{aligner, comparison::opening_token_kind, walk::walk_stmt},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -87,5 +87,9 @@ impl<'a> AstVisitor<'a> for Visitor<'a> {
             self.process_bool_op(bool_op);
         }
         walk_expr(self, expr);
+    }
+
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        walk_stmt(self, stmt);
     }
 }

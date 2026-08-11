@@ -9,11 +9,11 @@
 //! list shuts and hangs from its own row rather than from a column
 //! inside it, whatever the argument count and whatever the joined width
 //! would have been. The closing `)` drops to the indent of the row
-//! carrying the call, a nested call in an argument value explodes in the
-//! same pass, and a chained call settles its receiver before the link
-//! that carries it, so every link measures the column it lands at. No
-//! trigger reaches a call inside an f-string or t-string. Order,
-//! `=` alignment, and trailing commas stay with `alphabetize`,
+//! carrying the argument list's `(`, a nested call in an argument value
+//! explodes in the same pass, and a chained call settles its receiver
+//! before the link that carries it, so every link measures the column it
+//! lands at. No trigger reaches a call inside an f-string or t-string.
+//! Order, `=` alignment, and trailing commas stay with `alphabetize`,
 //! `align_equals`, and `strip_trailing_commas`.
 //!
 //! Where no trigger fires, an argument list the author fractured
@@ -30,7 +30,7 @@ use std::collections::HashMap;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Expr, InterpolatedStringElement, Parameters,
+    Expr, InterpolatedStringElement, Parameters, Stmt,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextSize};
@@ -41,6 +41,7 @@ use crate::{
         call_keywords::module_call_params,
         edit::{insert_edit, narrowed_replacement, singleton_groups},
         fracture, one_row, reserve,
+        walk::walk_stmt,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -143,6 +144,10 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
 
     /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
+
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        walk_stmt(self, stmt);
+    }
 }
 
 #[cfg(test)]

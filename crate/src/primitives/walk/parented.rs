@@ -73,7 +73,7 @@ impl<'src, P: ParentedProbe<'src>> Visitor<'src> for ParentedWalk<'src, '_, P> {
 
     fn visit_stmt(&mut self, stmt: &'src Stmt) {
         self.parents.push(stmt.into());
-        visitor::walk_stmt(self, stmt);
+        super::walk_stmt(self, stmt);
         self.parents.pop();
     }
 }

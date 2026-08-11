@@ -9,7 +9,7 @@ use std::borrow::Cow;
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    AnyNodeRef, DictItem, Expr, InterpolatedStringElement,
+    AnyNodeRef, DictItem, Expr, InterpolatedStringElement, Stmt,
     visitor::{Visitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -28,6 +28,7 @@ use crate::{
             requires_expand,
         },
         one_row, reserve,
+        walk::walk_stmt,
     },
     rules::stack_adjacent_strings::concatenated_run,
     source::Source,
@@ -398,6 +399,10 @@ impl<'a> Visitor<'a> for Layouter<'a> {
 
     /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
+
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        walk_stmt(self, stmt);
+    }
 }
 
 /// Per-item state for a dict, list, set, or tuple literal: serialized

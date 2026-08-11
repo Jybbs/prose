@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Keyword-Only Parameters Opening Mid-Row Swap in Place"
+
+description = '''
+A keyword-only group whose first member trails the `def` head on its row cannot reorder by whole rows, because the first row's head is not a member and would travel with it. The group swaps member slices in place instead, leaving the head, the gaps, and the closing `):` where the source wrote them.
+'''

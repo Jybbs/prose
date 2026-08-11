@@ -15,7 +15,7 @@ use ruff_python_ast::{
     Expr, ExprStringLiteral, InterpolatedStringElement, Stmt, StmtFunctionDef, StmtMatch,
     StringLiteral,
     helpers::is_compound_statement,
-    visitor::{Visitor, walk_expr, walk_stmt},
+    visitor::{Visitor, walk_expr},
 };
 use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange};
@@ -24,7 +24,10 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::docstring::{body_docstring, docstring_slots},
+    primitives::{
+        docstring::{body_docstring, docstring_slots},
+        walk::walk_stmt,
+    },
     rule::{Rule, RuleId},
     rules::stack_adjacent_strings::concatenated_run,
     source::Source,

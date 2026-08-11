@@ -196,56 +196,92 @@ impl Landing {
     }
 }
 
-/// The columns `block`'s continuation rows move by when it lands per
+/// How a relocated block's rows move, `rows` carrying every movable
+/// continuation row and `closer` seating the block's final movable row
+/// on one column outright.
+#[derive(Clone, Copy)]
+pub(crate) struct Travel {
+    pub(crate) rows: isize,
+    closer: Option<usize>,
+}
+
+impl Travel {
+    /// The move carrying every continuation row by `rows`.
+    fn rigid(rows: isize) -> Self {
+        Self { rows, closer: None }
+    }
+
+    /// True where every row stays where it was written.
+    fn is_still(self) -> bool {
+        self.rows == 0 && self.closer.is_none()
+    }
+
+    /// The indent the row at `lead` lands on, `is_last` marking the
+    /// block's final movable row.
+    fn placed(self, lead: usize, is_last: bool) -> usize {
+        match self.closer {
+            Some(column) if is_last => column,
+            _ => lead.saturating_add_signed(self.rows),
+        }
+    }
+}
+
+/// The move `block`'s continuation rows make when it lands per
 /// `landing`, its own start sitting at `start` in the source and its
 /// frozen rows flagged in `frozen`. `None` where every continuation row
 /// is blank or frozen.
 ///
 /// A block whose movable rows sit at or left of the column its item
-/// opens at hangs from its own row, so its shallowest row rebases onto
-/// the landing indent. One whose rows sit right of that column is
-/// aligned under a bracket inside its opening row, so the whole block
-/// shifts by however far its own start moved and the alignment survives.
-/// Reading the test against the item's column rather than the block's
-/// keeps the answer the same once an alignment pads the text ahead of
-/// the block, which moves the block alone.
+/// opens at hangs from its own row, so it rebases through
+/// [`hanging_travel`] or, where that reads no bracket to hang inside,
+/// rebases its shallowest row onto the landing indent. One whose rows
+/// sit right of that column is aligned under a bracket inside its
+/// opening row, so the whole block shifts by however far its own start
+/// moved and the alignment survives. Reading the test against the
+/// item's column rather than the block's keeps the answer the same once
+/// an alignment pads the text ahead of the block, which moves the block
+/// alone.
 pub(crate) fn block_shift(
     source: &Source,
     block: &str,
     frozen: &[bool],
     start: TextSize,
     landing: Landing,
-) -> Option<isize> {
+) -> Option<Travel> {
     let floor = movable_floor(block, frozen)?;
-    Some(if floor <= source.column_of(landing.item) {
-        landing.indent.cast_signed() - floor.cast_signed()
-    } else {
-        landing.column.cast_signed() - source.column_of(start).cast_signed()
-    })
+    if floor > source.column_of(landing.item) {
+        return Some(Travel::rigid(
+            landing.column.cast_signed() - source.column_of(start).cast_signed(),
+        ));
+    }
+    Some(
+        hanging_travel(block, frozen, landing)
+            .unwrap_or_else(|| Travel::rigid(landing.indent.cast_signed() - floor.cast_signed())),
+    )
 }
 
-/// `range`'s source text placed per `landing`, every continuation row
-/// travelling by one shift and every row a row-spanning string part
-/// freezes left where the source wrote it. Borrowed where the block
-/// holds no movable continuation row or already sits where it lands.
+/// `range`'s source text placed per `landing`, its continuation rows
+/// travelling and every row a row-spanning string part freezes left
+/// where the source wrote it. Borrowed where the block holds no movable
+/// continuation row or already sits where it lands.
 pub(crate) fn placed_block(source: &Source, range: TextRange, landing: Landing) -> Cow<'_, str> {
     let block = source.slice(range);
     let frozen = frozen_rows(source, range);
     match block_shift(source, block, &frozen, range.start(), landing) {
-        Some(shift) if shift != 0 => Cow::Owned(shifted_rows(block, shift, &frozen)),
+        Some(travel) if !travel.is_still() => Cow::Owned(shifted_rows(block, travel, &frozen)),
         _ => Cow::Borrowed(block),
     }
 }
 
-/// `block`'s continuation rows moved by `shift`, every blank row
-/// passing through as written and the block borrowed where the move is
-/// zero. A caller screens the block through [`spans_a_string_part`]
+/// `block`'s continuation rows moved per `travel`, every blank row
+/// passing through as written and the block borrowed where no row
+/// moves. A caller screens the block through [`spans_a_string_part`]
 /// first, whose interior a move would pad.
-pub(crate) fn shifted_block(block: &str, shift: isize) -> Cow<'_, str> {
-    if shift == 0 {
+pub(crate) fn shifted_block(block: &str, travel: Travel) -> Cow<'_, str> {
+    if travel.is_still() {
         return Cow::Borrowed(block);
     }
-    Cow::Owned(shifted_rows(block, shift, &[]))
+    Cow::Owned(shifted_rows(block, travel, &[]))
 }
 
 /// True where a string part inside `expr` itself spans rows, whose
@@ -291,6 +327,54 @@ fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
     frozen
 }
 
+/// The move for a block whose first row leaves a bracket open, seating
+/// the shallowest interior row one [`INDENT_STEP`] inside
+/// `landing.indent` and a closing row of the block's own back on that
+/// indent, the shape [`explode_parens`] writes. A closing row the row
+/// move already lands there travels with the rest. `None` where the
+/// first row opens no bracket, where a row-spanning string opens on it,
+/// or where an interior row itself opens with a closing bracket, whose
+/// depth one move cannot follow.
+fn hanging_travel(block: &str, frozen: &[bool], landing: Landing) -> Option<Travel> {
+    let head = block.universal_newlines().next()?;
+    if !head.trim_end().ends_with(['(', '[', '{']) || frozen.get(1).copied().unwrap_or(false) {
+        return None;
+    }
+    let mut interior: Vec<(usize, bool)> = block
+        .universal_newlines()
+        .enumerate()
+        .skip(1)
+        .filter(|(row, line)| {
+            !frozen.get(*row).copied().unwrap_or(false) && !line.trim().is_empty()
+        })
+        .map(|(_, line)| {
+            (
+                indent_width(&line),
+                line.trim_start().starts_with([')', ']', '}']),
+            )
+        })
+        .collect();
+    let close = interior
+        .last()
+        .copied()
+        .filter(|(_, closes)| *closes)
+        .map(|(indent, _)| indent);
+    if close.is_some() {
+        interior.pop();
+    }
+    if interior.iter().any(|(_, closes)| *closes) {
+        return None;
+    }
+    let floor = interior.iter().map(|(indent, _)| *indent).min()?;
+    let rows = item_indent(landing.indent).cast_signed() - floor.cast_signed();
+    Some(Travel {
+        rows,
+        closer: close
+            .filter(|indent| indent.saturating_add_signed(rows) != landing.indent)
+            .map(|_| landing.indent),
+    })
+}
+
 /// The least indent among the movable non-blank continuation rows of
 /// `block`, `None` where every continuation row is blank or frozen. An
 /// empty `frozen` holds no row, the shape a caller passes when nothing
@@ -307,18 +391,27 @@ pub(crate) fn movable_floor(block: &str, frozen: &[bool]) -> Option<usize> {
         .min()
 }
 
-/// `block`'s continuation rows moved by `shift`, each blank row and each
-/// row `frozen` marks passing through as written.
-fn shifted_rows(block: &str, shift: isize, frozen: &[bool]) -> String {
+/// `block`'s continuation rows moved per `travel`, each blank row and
+/// each row `frozen` marks passing through as written.
+fn shifted_rows(block: &str, travel: Travel, frozen: &[bool]) -> String {
+    let movable = |row: usize, line: &str| {
+        row > 0 && !frozen.get(row).copied().unwrap_or(false) && !line.trim().is_empty()
+    };
+    let last = block
+        .split_inclusive('\n')
+        .enumerate()
+        .filter(|(row, line)| movable(*row, line))
+        .map(|(row, _)| row)
+        .last();
     let mut out = String::with_capacity(block.len());
     for (row, line) in block.split_inclusive('\n').enumerate() {
-        let held = row == 0 || frozen.get(row).copied().unwrap_or(false) || line.trim().is_empty();
-        if held {
+        if !movable(row, line) {
             out.push_str(line);
             continue;
         }
         let lead = leading_indentation(line);
-        out.push_str(&" ".repeat(lead.chars().count().saturating_add_signed(shift)));
+        let placed = travel.placed(lead.chars().count(), Some(row) == last);
+        out.push_str(&" ".repeat(placed));
         out.push_str(&line[lead.len()..]);
     }
     out
@@ -360,6 +453,30 @@ mod tests {
     }
 
     #[rstest]
+    #[case("(\n        a,\n        )", &[], Some((0, Some(4))))]
+    #[case("(\n  a,\n  )", &[], Some((6, Some(4))))]
+    #[case("[\n  a,\n\n  b,\n  ]", &[], Some((6, Some(4))))]
+    #[case("(\n      a,\n  )", &[], Some((2, None)))]
+    #[case("(\n  a,\n  b)", &[], Some((6, None)))]
+    #[case("{\r\n  a,\r\n  }", &[], Some((6, Some(4))))]
+    #[case("(a,\n  b)", &[], None)]
+    #[case("plain", &[], None)]
+    #[case("(\n)", &[], None)]
+    #[case("f(\n  a,\n) + g(\n  b,\n)", &[], None)]
+    #[case("(\n  a,\n  )", &[false, true, false], None)]
+    fn hanging_travel_seats_an_open_bracket_one_step_in(
+        #[case] block: &str,
+        #[case] frozen: &[bool],
+        #[case] expected: Option<(isize, Option<usize>)>,
+    ) {
+        let landing = Landing::own_row(TextSize::new(0), 4);
+        assert_eq!(
+            hanging_travel(block, frozen, landing).map(|travel| (travel.rows, travel.closer)),
+            expected,
+        );
+    }
+
+    #[rstest]
     #[case("f(a,\n  b)", 0, "f(a,\n  b)")]
     #[case("f(a,\n  b)", 3, "f(a,\n     b)")]
     #[case("f(a,\n    b)", -2, "f(a,\n  b)")]
@@ -370,7 +487,20 @@ mod tests {
         #[case] shift: isize,
         #[case] expected: &str,
     ) {
-        assert_eq!(shifted_block(block, shift), expected);
+        assert_eq!(shifted_block(block, Travel::rigid(shift)), expected);
+    }
+
+    #[rstest]
+    #[case("f(\n  a,\n  )", "f(\n    a,\n  )")]
+    #[case("f(\n  a,\n  )\n", "f(\n    a,\n  )\n")]
+    #[case("f(\n  a,\n\n  )", "f(\n    a,\n\n  )")]
+    #[case("f(\n  a,\n      )", "f(\n    a,\n  )")]
+    fn a_closer_row_seats_on_its_own_column(#[case] block: &str, #[case] expected: &str) {
+        let travel = Travel {
+            rows: 2,
+            closer: Some(2),
+        };
+        assert_eq!(shifted_block(block, travel), expected);
     }
 
     #[rstest]

@@ -8,7 +8,7 @@
 use std::{borrow::Cow, ops::Range};
 
 use ruff_diagnostics::Edit;
-use ruff_python_trivia::CommentRanges;
+use ruff_python_trivia::{CommentRanges, PythonWhitespace};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -43,6 +43,15 @@ pub(crate) fn adjacent_slots(
 pub(crate) fn any_sibling_shares_line<T: Ranged>(source: &Source, body: &[T]) -> bool {
     body.windows(2)
         .any(|pair| source.same_line(pair[0].end(), pair[1].start()))
+}
+
+/// True when only whitespace sits between `offset` and the start of its
+/// physical line.
+pub(crate) fn opens_its_line(source: &Source, offset: TextSize) -> bool {
+    source
+        .slice(TextRange::new(source.text().line_start(offset), offset))
+        .trim_whitespace_start()
+        .is_empty()
 }
 
 /// Splices each rendered child at its sorted position. `gap_override`
@@ -454,7 +463,7 @@ fn member_block<T: Ranged>(source: &Source, items: &[T], i: usize, outer: TextRa
 /// Extends `item_end` over a trailing comma and inline comment on its line,
 /// reached across only commas and whitespace. Stops at any other token, so a
 /// comment past a `}`, `)`, or `]` stays disowned.
-fn tail_end(source: &Source, item_end: TextSize) -> TextSize {
+pub(crate) fn tail_end(source: &Source, item_end: TextSize) -> TextSize {
     let line_end = source.text().line_end(item_end);
     let mut consumed = 0u32;
     for &byte in source.slice(TextRange::new(item_end, line_end)).as_bytes() {

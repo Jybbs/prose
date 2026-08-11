@@ -15,8 +15,8 @@ use crate::primitives::{
     edit::apply_inline_edits,
     inline::end_column,
     layout::{
-        Landing, Separator, block_shift, explode_parens, is_fractured, item_indent, shifted_block,
-        spans_a_string_part,
+        Landing, Separator, Travel, block_shift, explode_parens, is_fractured, item_indent,
+        shifted_block, spans_a_string_part,
     },
     tokens::is_opener,
 };
@@ -146,8 +146,8 @@ impl<'a> Exploder<'a> {
             .map(Ranged::start)
     }
 
-    /// The columns `rendered`, the text of the argument opening at
-    /// `start` with head `head`, moves its continuation rows by when the
+    /// The move `rendered`, the text of the argument opening at `start`
+    /// with head `head`, makes over its continuation rows when the
     /// argument lands at `indent`, read through [`block_shift`]. `None`
     /// where the argument holds no continuation row, or where a
     /// row-spanning string part inside `value` holds the whole argument,
@@ -160,7 +160,7 @@ impl<'a> Exploder<'a> {
         head: &str,
         start: TextSize,
         indent: usize,
-    ) -> Option<isize> {
+    ) -> Option<Travel> {
         if spans_a_string_part(self.source, value) {
             return None;
         }
@@ -197,7 +197,7 @@ impl<'a> Exploder<'a> {
             out.push_str(tail);
             return;
         };
-        let shift = self.line_shift + travel;
+        let shift = self.line_shift + travel.rows;
         // The value opens on the argument's own row while the head holds
         // no break, and on a row the move carries otherwise.
         let opening_shift = if head.contains('\n') {
@@ -208,7 +208,7 @@ impl<'a> Exploder<'a> {
         let column = end_column(head, indent).saturating_add_signed(opening_shift);
         // The nested walk writes its rows where the source wrote them,
         // so the move below carries its exploded closer to `indent`.
-        let landing = indent.saturating_add_signed(-travel);
+        let landing = indent.saturating_add_signed(-travel.rows);
         let reshaped = self.reshape_value(value, Some(landing), column, shift);
         out.push_str(&shifted_block(&format!("{head}{reshaped}{tail}"), travel));
     }

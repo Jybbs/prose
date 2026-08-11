@@ -11,7 +11,7 @@ use ruff_python_ast::{
     ExprListComp, ExprNamed, ExprSetComp, ExprTuple, Identifier, MatchCase, Operator, Parameters,
     Stmt, StmtAnnAssign, StmtAssign, StmtAugAssign, StmtClassDef, StmtDelete, StmtFor,
     StmtFunctionDef, StmtIf, StmtImport, StmtImportFrom, StmtTry, StmtWhile, StmtWith, UnaryOp,
-    visitor::{Visitor, walk_arguments, walk_expr, walk_parameters, walk_stmt},
+    visitor::{Visitor, walk_arguments, walk_expr, walk_parameters},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -19,7 +19,7 @@ use super::{
     Binding, BindingAnalysis, BindingId, BindingKind, Scope, ScopeId, ScopeKind, UnpackKind,
     names::{bare_import_bound_name, from_import_bound_name},
 };
-use crate::primitives::insert_sorted_by_key;
+use crate::primitives::{insert_sorted_by_key, walk::walk_stmt};
 
 pub(super) struct Builder {
     annotation_depth: usize,

@@ -15,7 +15,7 @@ use ruff_python_ast::{
 use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
-    primitives::{aligner, equal_targets},
+    primitives::{aligner, equal_targets, walk},
     rule::RuleId,
     source::Source,
 };
@@ -144,4 +144,8 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
 
     /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
+
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        walk::walk_stmt(self, stmt);
+    }
 }

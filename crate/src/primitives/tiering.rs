@@ -9,11 +9,11 @@ use std::{
 
 use ruff_python_ast::{
     Expr, ExprLambda, Stmt,
-    visitor::{Visitor as AstVisitor, walk_expr, walk_parameters, walk_stmt},
+    visitor::{Visitor as AstVisitor, walk_expr, walk_parameters},
 };
 use ruff_text_size::{Ranged, TextSize};
 
-use crate::primitives::{orderer::permute_in_place, slots::slot_positions};
+use crate::primitives::{orderer::permute_in_place, slots::slot_positions, walk::walk_stmt};
 
 /// Accumulates load-context names through `eval_time_refs`, pruning
 /// function and lambda bodies and skipping deferred annotations.

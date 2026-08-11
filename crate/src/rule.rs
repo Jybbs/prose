@@ -439,20 +439,20 @@ register_rules! {
     "chain-layout":                 chain_layout:                 ChainLayoutConfig          => ChainLayout                => [],
     "call-layout":                  call_layout:                  CallLayoutConfig           => CallLayout                 => ["shed-backslash-continuations", "chain-layout"],
     "shed-super-args":              shed_super_args:              ToggleOnly                 => ShedSuperArgs              => ["call-layout"],
-    "signature-layout":             signature_layout:             SignatureLayoutConfig      => SignatureLayout            => [],
+    "signature-layout":             signature_layout:             SignatureLayoutConfig      => SignatureLayout            => ["strip-none-return"],
     "collection-layout":            collection_layout:            CollectionLayoutConfig     => CollectionLayout           => ["simplify-comprehensions", "chain-layout", "call-layout", "signature-layout"],
     "prefer-fstring":               prefer_fstring:               PreferFstringConfig        => PreferFstring              => ["normalize-literals", "collection-layout"],
     "stack-adjacent-strings":       stack_adjacent_strings:       ToggleOnly                 => StackAdjacentStrings       => ["chain-layout", "collection-layout", "call-layout", "signature-layout"],
     "align-match-case":             align_match_case:             AlignmentConfig            => AlignMatchCase             => ["shed-parentheses"],
     "import-layout":                import_layout:                ImportLayoutConfig         => ImportLayout               => ["shed-backslash-continuations", "prune-inert-imports", "group-imports"],
     "band-constants":               band_constants:               BandConstantsConfig        => BandConstants              => ["simplify-comprehensions", "import-layout"],
-    "alphabetize":                  alphabetize:                  AlphabetizeConfig          => Alphabetize                => ["shed-parentheses", "chain-layout", "collection-layout", "call-layout", "signature-layout", "import-layout", "band-constants"],
+    "alphabetize":                  alphabetize:                  AlphabetizeConfig          => Alphabetize                => ["normalize-literals", "shed-parentheses", "chain-layout", "collection-layout", "call-layout", "signature-layout", "import-layout", "band-constants"],
     "blank-lines":                  blank_lines:                  ToggleOnly                 => BlankLines                 => ["prune-inert-imports", "group-imports", "alphabetize", "band-constants"],
     "align-imports":                align_imports:                AlignmentConfig            => AlignImports               => ["import-layout", "alphabetize", "band-constants", "blank-lines"],
     "align-colons":                 align_colons:                 AlignmentConfig            => AlignColons                => ["shed-parentheses", "collection-layout", "signature-layout", "alphabetize", "band-constants"],
     "docstring-wrap":               docstring_wrap:               ToggleOnly                 => DocstringWrap              => ["docstring-frame", "docstring-expand", "align-colons"],
     "align-equals":                 align_equals:                 AlignmentConfig            => AlignEquals                => ["strip-trailing-commas", "shed-parentheses", "collection-layout", "alphabetize", "band-constants", "align-colons"],
-    "align-comparisons":            align_comparisons:            AlignmentConfig            => AlignComparisons           => [],
+    "align-comparisons":            align_comparisons:            AlignmentConfig            => AlignComparisons           => ["shed-parentheses", "normalize-comparisons", "call-layout"],
     "strip-align-padding":          strip_align_padding:          ToggleOnly                 => StripAlignPadding          => ["shed-parentheses", "align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"],
     "comment-spacing":              comment_spacing:              ToggleOnly                 => CommentSpacing             => [],
     "align-comments":               align_comments:               AlignmentConfig            => AlignComments              => ["strip-trailing-commas", "strip-align-padding", "comment-spacing"],
@@ -557,7 +557,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case("align-comparisons", "shed-parentheses")]
+    #[case("bare-imports", "align-colons")]
     #[case("shed-parentheses", "align-comments")]
     #[case("not-a-rule", "align-colons")]
     #[case("align-colons", "not-a-rule")]

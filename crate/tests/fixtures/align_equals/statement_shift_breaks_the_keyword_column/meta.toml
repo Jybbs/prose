@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Statement Shift Unseats the Keyword Column Beneath It"
+
+description = '''
+The statement group pads `formatter` to its neighbors, which moves the call and the first keyword right while the keywords beneath stay put, so the keyword run no longer shares a column once the pass's own edits land. The run reads that placed row rather than the source one and takes the one-space buffer on every keyword, the form a second pass would otherwise produce.
+'''

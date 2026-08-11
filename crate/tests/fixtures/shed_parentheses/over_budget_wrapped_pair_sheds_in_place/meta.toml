@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Over-Budget Wrapped Pair Sheds in Place"
+
+description = '''
+A redundant pair spanning lines folds onto one row only when that row fits the budget. One whose joined row overflows sheds in place instead when an enclosing bracket holds its breaks, leaving the layout rules to seat the rows, so the pair never survives to a later run purely because of where the author's columns left it.
+'''

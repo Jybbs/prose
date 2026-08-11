@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Mid-Row Group Holding Comments Keeps Its Order"
+
+description = '''
+A group whose first member trails other text on its row reorders by swapping member slices in place, wherein a comment cannot travel with its member, so a group carrying one holds the order its author sectioned it into.
+'''

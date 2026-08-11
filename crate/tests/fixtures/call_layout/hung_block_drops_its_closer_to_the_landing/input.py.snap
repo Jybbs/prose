@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/call_layout/hung_block_drops_its_closer_to_the_landing/input.py
+---
+report_invalid_enum_member_names(
+    "invalid enum member name(s) %s, aborting" % (
+        ", ".join(repr(name) for name in invalid_names if name not in allowed)
+    )
+)

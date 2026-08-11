@@ -3,13 +3,14 @@
 //! math with the skip-hold check and the gap normalization.
 
 use ruff_diagnostics::Edit;
-use ruff_text_size::{TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
+use unicode_width::UnicodeWidthStr;
 
 use super::{
-    Member, Settings, emit::emit_group, is_alignment_candidate, is_held, retain_unheld,
+    Member, Settings, emit::emit_group, is_held, members::baseline, retain_unheld, shares_column,
     space_padding_edit,
 };
-use crate::{rule::RuleId, source::Source};
+use crate::{primitives::edit::apply_inline_edits, rule::RuleId, source::Source};
 
 /// Bundles the `groups` accumulator, `settings`, the owning `rule`, and
 /// borrowed `source` shared by every alignment-rule visitor. Each entry
@@ -40,6 +41,36 @@ impl<'a> AlignWalker<'a> {
         let mut edits = Vec::new();
         emit_group(self.source, members, settings, &mut edits);
         edits
+    }
+
+    /// True when `members` form a multi-row group whose aligned tokens
+    /// share a display column once the edits this walker has already
+    /// recorded land, so a run whose opening row an earlier column in
+    /// the same pass moves reads that row where it will sit rather than
+    /// where the source wrote it.
+    fn is_placed_candidate(&self, members: &[Member]) -> bool {
+        shares_column(members, |m| self.placed_baseline(m))
+    }
+
+    /// The display column where `member`'s left-hand side begins once
+    /// the edits this walker has already recorded land on its line ahead
+    /// of the gap, falling back to the source baseline where none do.
+    fn placed_baseline(&self, member: Member) -> usize {
+        let prefix = TextRange::new(member.line_start, member.gap.start());
+        let mut edits: Vec<Edit> = self
+            .groups
+            .iter()
+            .flatten()
+            .filter(|edit| prefix.contains_range(edit.range()))
+            .cloned()
+            .collect();
+        if edits.is_empty() {
+            return baseline(self.source, member);
+        }
+        edits.sort_by_key(Ranged::start);
+        apply_inline_edits(self.source, prefix, &edits)
+            .width()
+            .saturating_sub(member.width)
     }
 
     /// Records `name_edits` together with a one-space rewrite of each gap
@@ -77,7 +108,7 @@ impl<'a> AlignWalker<'a> {
         settings: Settings,
         members: &[Member],
     ) -> Vec<Edit> {
-        if is_alignment_candidate(self.source, members) {
+        if self.is_placed_candidate(members) {
             self.group_edits_under(settings, members)
         } else {
             Vec::new()
@@ -92,7 +123,7 @@ impl<'a> AlignWalker<'a> {
         settings: Settings,
         members: &[Member],
     ) -> Vec<Edit> {
-        if is_alignment_candidate(self.source, members) {
+        if self.is_placed_candidate(members) {
             return self.group_edits_under(settings, members);
         }
         members
@@ -126,7 +157,7 @@ impl<'a> AlignWalker<'a> {
     /// candidate, folding in a one-space rewrite of each member's
     /// [post-operator gap](Self::value_gaps). Records nothing otherwise.
     pub(crate) fn emit_if_candidate(&mut self, members: &[Member]) {
-        if is_alignment_candidate(self.source, members) {
+        if self.is_placed_candidate(members) {
             let gaps = self.value_gaps(members);
             self.emit_group_with_gaps(members, gaps);
         }

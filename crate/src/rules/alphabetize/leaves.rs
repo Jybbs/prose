@@ -13,7 +13,7 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Alias, Expr, ExprCall, ExprDict, ExprLambda, ExprSet, Identifier, Parameters, Stmt, StmtAssign,
     StmtDelete,
-    visitor::{Visitor as AstVisitor, walk_expr, walk_stmt},
+    visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -24,8 +24,12 @@ use crate::{
         docstring::{documented_definitions, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, insert_edit, narrowed_replacement},
         effect::value_is_effectful,
-        orderer::{any_sibling_shares_line, permute_full, reorder_separated, reorder_text},
+        orderer::{
+            any_sibling_shares_line, opens_its_line, permute_full, reorder_separated, reorder_text,
+            tail_end,
+        },
         params::classify_param,
+        walk::walk_stmt,
     },
     source::Source,
 };
@@ -114,16 +118,32 @@ impl<'a> LeafCollector<'a> {
         T: Ranged,
         S: Ord,
     {
-        if items.len() < 2 {
+        let [first, .., last] = items else {
+            return;
+        };
+        let source = self.source;
+        // A group opening mid-row sits on a line whose head is not a
+        // member, so it swaps member slices through the lighter
+        // `reorder_text`, which keeps every gap verbatim. A comment
+        // inside such a group when it spans lines cannot travel with
+        // its member, so the group holds its order, whereas a
+        // single-line group's trailing comment reads against the whole
+        // line and rides out the swap in place.
+        let head_shared = !opens_its_line(source, first.start());
+        let commented = TextRange::new(first.start(), tail_end(source, last.end()));
+        if head_shared
+            && source.contains_line_break(TextRange::new(first.start(), last.end()))
+            && source.intersects_comment(commented)
+        {
             return;
         }
-        let source = self.source;
         let render = |_: usize, block| apply_inline_edits(source, block, &self.edits);
-        // A single-line or atomics-packed group shares lines, so the lighter
-        // `reorder_text` keeps its verbatim gaps. One member per line routes
-        // through `reorder_separated` so each trailing comment travels with
-        // its member.
-        let (folded, span) = if any_sibling_shares_line(source, items) {
+        // A single-line or atomics-packed group shares lines, so both it
+        // and a mid-row-opening group keep their verbatim gaps through
+        // `reorder_text`. A group laid out one member per line routes
+        // through `reorder_separated` so each trailing comment travels
+        // with its member.
+        let (folded, span) = if any_sibling_shares_line(source, items) || head_shared {
             reorder_text(source, items, classify, render)
         } else {
             reorder_separated(source, items, classify, render)

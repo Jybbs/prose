@@ -19,12 +19,12 @@
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Expr, ExprCall, Parameters, Stmt,
-    visitor::{Visitor as AstVisitor, walk_body, walk_expr, walk_stmt},
+    visitor::{Visitor as AstVisitor, walk_body, walk_expr},
 };
 
 use crate::{
     config::Config,
-    primitives::{aligner, equal_targets},
+    primitives::{aligner, equal_targets, walk::walk_stmt},
     rule::{Rule, RuleId},
     source::Source,
 };

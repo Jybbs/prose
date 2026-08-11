@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment on the Last Member Holds the Group"
+
+description = '''
+A group opening mid-row swaps member slices in place, and a swap would strand a trailing comment on whichever member lands on its row, so a line-spanning group holds its order when any member carries one, the comment on the final member included.
+'''

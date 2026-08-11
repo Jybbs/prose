@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Keyword-Only Parameters With Effectful Defaults Hold Their Slots"
+
+description = '''
+Default values evaluate in signature order when the `def` executes, so a keyword-only parameter whose default calls out holds its slot while the inert-default parameters around it sort, keeping the side effects in the order the author ran them.
+'''

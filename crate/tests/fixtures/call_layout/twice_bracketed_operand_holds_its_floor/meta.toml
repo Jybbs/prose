@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Operand Closing and Reopening a Bracket Holds Its Floor"
+
+description = '''
+A value whose continuation rows close one bracket and open the next changes depth mid-block, which one move cannot follow, so the block rebases its shallowest row onto the landing indent and every row keeps the column the source gave it relative to that floor.
+'''

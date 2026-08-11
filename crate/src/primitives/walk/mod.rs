@@ -9,9 +9,26 @@ pub(crate) use parented::{
 
 use ruff_python_ast::{
     Expr, InterpolatedStringElement, Stmt,
-    statement_visitor::{StatementVisitor, walk_stmt},
-    visitor::{Visitor, walk_expr},
+    statement_visitor::{self, StatementVisitor},
+    visitor::{self, Visitor, walk_expr},
 };
+
+/// Walks `stmt`'s children the way `visitor::walk_stmt` does, visiting
+/// each elif clause's test once. The upstream walk visits that test
+/// directly and then again through `walk_elif_else_clause`, so an `if`
+/// statement walks its parts here and every other statement walks
+/// upstream.
+pub(crate) fn walk_stmt<'src, V: Visitor<'src> + ?Sized>(visitor: &mut V, stmt: &'src Stmt) {
+    let Stmt::If(stmt_if) = stmt else {
+        visitor::walk_stmt(visitor, stmt);
+        return;
+    };
+    visitor.visit_expr(&stmt_if.test);
+    visitor.visit_body(&stmt_if.body);
+    for clause in &stmt_if.elif_else_clauses {
+        visitor::walk_elif_else_clause(visitor, clause);
+    }
+}
 
 /// Carries a caller's function to every annotation the walk reaches,
 /// leaving the annotation's own subtree unvisited so the function reads
@@ -23,6 +40,10 @@ struct AnnotationProbe<F> {
 impl<'src, F: FnMut(&Expr)> Visitor<'src> for AnnotationProbe<F> {
     fn visit_annotation(&mut self, annotation: &'src Expr) {
         (self.run)(annotation);
+    }
+
+    fn visit_stmt(&mut self, stmt: &'src Stmt) {
+        walk_stmt(self, stmt);
     }
 }
 
@@ -39,7 +60,7 @@ impl<'src, F: FnMut(&Stmt) -> bool> StatementVisitor<'src> for AnyProbe<F> {
         if (self.hit)(stmt) {
             self.found = true;
         } else {
-            walk_stmt(self, stmt);
+            statement_visitor::walk_stmt(self, stmt);
         }
     }
 }
@@ -52,7 +73,7 @@ struct Collector<F, T> {
 impl<'src, F: FnMut(&Stmt) -> Option<T>, T> StatementVisitor<'src> for Collector<F, T> {
     fn visit_stmt(&mut self, stmt: &'src Stmt) {
         self.found.extend((self.probe)(stmt));
-        walk_stmt(self, stmt);
+        statement_visitor::walk_stmt(self, stmt);
     }
 }
 
