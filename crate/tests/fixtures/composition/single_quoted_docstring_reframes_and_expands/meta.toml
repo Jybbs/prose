@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "A Plain Docstring Reframes Then Expands"
 
 description = '''

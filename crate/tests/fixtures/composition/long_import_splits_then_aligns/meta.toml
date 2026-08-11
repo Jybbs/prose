@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "A Split Run Needs No Realignment"
 
 description = '''

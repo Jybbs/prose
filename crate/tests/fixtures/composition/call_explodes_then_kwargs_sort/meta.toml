@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "A Resolvable Call Explodes, Then Its Keywords Sort"
 
 description = '''

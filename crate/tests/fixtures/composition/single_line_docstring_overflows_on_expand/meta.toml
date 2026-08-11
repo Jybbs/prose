@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Expanded Single-Line Docstring Overflows and Rewraps"
 
 description = '''

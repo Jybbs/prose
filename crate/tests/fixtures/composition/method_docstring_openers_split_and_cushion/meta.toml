@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Method Docstring Openers Split and Methods Gain Cushions"
 
 description = '''

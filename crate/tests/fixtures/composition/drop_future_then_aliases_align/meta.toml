@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Dropped Future Import Leaves a Blank Before Aligned Aliases"
 
 description = '''

@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Aligned Local Run Carries the Single-Use Lint Past Padding"
 
 description = '''

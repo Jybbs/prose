@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Annotated Fields Sort Then Align Both `:` and `=`"
 
 description = '''

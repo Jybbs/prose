@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Arm Dicts Expand and Align Colons, Keys Unsorted"
 
 description = '''

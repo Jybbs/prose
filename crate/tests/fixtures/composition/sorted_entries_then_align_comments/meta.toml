@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Reordered Entries Settle Their Comment Column Behind the Sort"
 
 description = '''

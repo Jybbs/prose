@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Aligned Constants Carry the Reassigned-Constants Lint Past Padding"
 
 description = '''

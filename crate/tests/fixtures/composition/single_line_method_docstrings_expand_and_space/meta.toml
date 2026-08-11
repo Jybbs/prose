@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Method Docstrings Expand and Methods Gain Blank Lines"
 
 description = '''

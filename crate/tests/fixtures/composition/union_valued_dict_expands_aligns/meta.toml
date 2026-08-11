@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Union-Valued Dict Expands, Sorts, and Aligns Colons"
 
 description = '''

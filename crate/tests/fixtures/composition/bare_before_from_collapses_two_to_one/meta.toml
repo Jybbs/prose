@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Excess Blanks Collapse to the Canonical Single Blank"
 
 description = '''

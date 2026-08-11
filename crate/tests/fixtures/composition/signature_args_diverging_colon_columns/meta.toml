@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Signature and Args Colons Align as Independent Columns"
 
 description = '''

@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Multi-Line Dict Sorts Keys, Strips Comma, Aligns `:`"
 
 description = '''

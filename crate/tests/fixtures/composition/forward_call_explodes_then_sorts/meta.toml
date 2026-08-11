@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "A Forward Call Explodes Before Its Callee Sorts Above"
 
 description = '''

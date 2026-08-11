@@ -1,6 +1,6 @@
 [docs]
 canonical   = false
-previewable = true
+previewable = false
 title       = "A Fracture Inside an Argument Settles the Spine"
 
 description = '''

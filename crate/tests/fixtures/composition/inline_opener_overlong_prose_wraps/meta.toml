@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Inline-Opener Docstring Splits and Rewraps Overlong Prose"
 
 description = '''

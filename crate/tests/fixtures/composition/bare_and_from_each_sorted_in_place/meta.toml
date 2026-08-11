@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Bare and From Imports Each Sort Within Their Group"
 
 description = '''

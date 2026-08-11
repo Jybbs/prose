@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Optional and Union Field Annotations Align in Width Groups"
 
 description = '''

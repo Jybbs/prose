@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Nested Class Fields Sort and Align Per Scope"
 
 description = '''

@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Each Method's Assignment Run Aligns on Its Own `=`"
 
 description = '''

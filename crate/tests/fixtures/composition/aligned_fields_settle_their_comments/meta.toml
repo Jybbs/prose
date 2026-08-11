@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Aligned Fields Settle Their Comment Column Behind the `=`"
 
 description = '''

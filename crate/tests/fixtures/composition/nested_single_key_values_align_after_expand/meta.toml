@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Outer Dict Expands and Aligns Over Single-Key Values"
 
 description = '''

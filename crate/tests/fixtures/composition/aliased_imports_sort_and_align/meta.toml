@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Aliased Imports Sort Then Align Their `as` Column"
 
 description = '''

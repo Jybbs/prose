@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Methods Sort Around One Opening With `try`/`except`"
 
 description = '''

@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "A Cleared `explode` Knob Freezes a Dict Argument"
 
 description = '''

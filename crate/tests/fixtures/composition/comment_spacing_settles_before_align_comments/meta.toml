@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Comment Spacing Settles an Opener Before the Column Moves"
 
 description = '''

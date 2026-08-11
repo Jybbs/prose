@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "One Blank Lands between Adjacent Bare and `from` Import Groups"
 
 description = '''

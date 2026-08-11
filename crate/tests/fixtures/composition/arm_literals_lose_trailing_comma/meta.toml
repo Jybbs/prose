@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Arm Literals Drop Trailing Commas as Bodies Collapse"
 
 description = '''

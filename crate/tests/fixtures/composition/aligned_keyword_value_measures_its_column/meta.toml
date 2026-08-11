@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "An Aligned Keyword Value Measures Its Padded Column"
 
 description = '''
