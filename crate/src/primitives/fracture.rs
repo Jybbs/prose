@@ -57,13 +57,6 @@ impl<'a> Settings<'a> {
         }
     }
 
-    /// `arguments` joined by `", "` inside the parens, each argument
-    /// settled so a nested fracture reads at its joined width. The join
-    /// runs whatever `closes` holds.
-    pub(crate) fn joined(self, source: &Source, arguments: &Arguments) -> String {
-        join_args(source, self.cap, self.targets, arguments)
-    }
-
     /// The joins closing every fractured argument list beneath `expr`.
     pub(crate) fn joins(self, source: &Source, expr: &Expr) -> Joins {
         if !self.closes {

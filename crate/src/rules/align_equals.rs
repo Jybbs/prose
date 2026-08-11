@@ -47,9 +47,19 @@ impl AlignEquals {
 impl Rule for AlignEquals {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Visitor {
+            runs: Vec::new(),
             walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
         visitor.visit_body(&source.ast().body);
+        let members = visitor.runs.iter().flat_map(|run| run.members()).copied();
+        let widenings = aligner::Widenings::of(source, self.settings, members);
+        visitor.walker.set_widenings(widenings);
+        for run in std::mem::take(&mut visitor.runs) {
+            match run {
+                Run::Buffered(group) => visitor.walker.emit_group_or_buffer(&group),
+                Run::Candidate(group) => visitor.walker.emit_if_candidate(&group),
+            }
+        }
         visitor.walker.groups
     }
 
@@ -58,7 +68,25 @@ impl Rule for AlignEquals {
     }
 }
 
+/// One collected alignment run, held until every run is gathered so
+/// the walker's widening entries cover the whole pass before any group
+/// emits. `Buffered` runs take a column or each member's own buffer,
+/// `Candidate` runs a column or nothing.
+enum Run {
+    Buffered(Vec<aligner::Member>),
+    Candidate(Vec<aligner::Member>),
+}
+
+impl Run {
+    fn members(&self) -> &[aligner::Member] {
+        match self {
+            Run::Buffered(group) | Run::Candidate(group) => group,
+        }
+    }
+}
+
 struct Visitor<'a> {
+    runs: Vec<Run>,
     walker: aligner::AlignWalker<'a>,
 }
 
@@ -70,7 +98,7 @@ impl Visitor<'_> {
         for group in aligner::line_adjacent_groups(source, body, self.walker.rule, |s| {
             equal_targets::assignment(source, s)
         }) {
-            self.walker.emit_group_or_buffer(&group);
+            self.runs.push(Run::Buffered(group));
         }
     }
 
@@ -86,7 +114,7 @@ impl Visitor<'_> {
     fn process_call(&mut self, call: &ExprCall) {
         for group in equal_targets::keyword_groups(self.walker.source, self.walker.rule, call, true)
         {
-            self.walker.emit_group_or_buffer(&group);
+            self.runs.push(Run::Buffered(group));
         }
     }
 
@@ -102,7 +130,11 @@ impl Visitor<'_> {
                 equal_targets::parameter(source, p).into()
             });
         for group in groups {
-            self.walker.emit_unheld(group);
+            self.runs.push(Run::Candidate(aligner::retain_unheld(
+                source,
+                self.walker.rule,
+                group,
+            )));
         }
     }
 }

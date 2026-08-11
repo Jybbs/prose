@@ -11,6 +11,7 @@ use ruff_diagnostics::Edit;
 use ruff_python_trivia::{CommentRanges, PythonWhitespace};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
+use unicode_width::UnicodeWidthStr;
 
 use crate::{
     primitives::{
@@ -382,6 +383,42 @@ where
     let mut order: Vec<usize> = (0..items.len()).collect();
     permute_full(&mut order, items, classify);
     assemble_or_borrow(source, &blocks, &rendered, &order, false, |_| None)
+}
+
+/// True when a comment sits inside the swap span of `items`, from the
+/// first member's start through the last member's tail.
+pub(crate) fn swap_span_commented<T: Ranged>(source: &Source, items: &[T]) -> bool {
+    let (Some(first), Some(last)) = (items.first(), items.last()) else {
+        return false;
+    };
+    source.intersects_comment(TextRange::new(first.start(), tail_end(source, last.end())))
+}
+
+/// True when every line of `span` rewritten to `assembled` fits inside
+/// `budget` display columns or keeps the width its source line held,
+/// the head and tail of the boundary lines counted in.
+pub(crate) fn reordered_lines_fit(
+    source: &Source,
+    span: TextRange,
+    assembled: &str,
+    budget: usize,
+) -> bool {
+    let text = source.text();
+    let outer = TextRange::new(text.line_start(span.start()), text.line_end(span.end()));
+    let head = source.slice(TextRange::new(outer.start(), span.start()));
+    let tail = source.slice(TextRange::new(span.end(), outer.end()));
+    let source_widths: Vec<usize> = source
+        .slice(outer)
+        .lines()
+        .map(UnicodeWidthStr::width)
+        .collect();
+    format!("{head}{assembled}{tail}")
+        .lines()
+        .enumerate()
+        .all(|(i, line)| {
+            let width = line.width();
+            width <= budget || source_widths.get(i) == Some(&width)
+        })
 }
 
 /// Lower bound of the backward comment scan for `items[i]`, the latest

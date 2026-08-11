@@ -26,7 +26,7 @@ use crate::{
         effect::value_is_effectful,
         orderer::{
             any_sibling_shares_line, opens_its_line, permute_full, reorder_separated, reorder_text,
-            tail_end,
+            reordered_lines_fit, swap_span_commented,
         },
         params::classify_param,
         walk::walk_stmt,
@@ -35,6 +35,7 @@ use crate::{
 };
 
 struct LeafCollector<'a> {
+    code_width: usize,
     edits: Vec<Edit>,
     sort_dict_keys: bool,
     sort_dunder_lists: bool,
@@ -61,7 +62,8 @@ impl<'a> LeafCollector<'a> {
 
     fn emit_dict(&mut self, d: &'a ExprDict) {
         if self.sort_dict_keys
-            && let Some((span, text)) = rewrite_dict_text(self.source, d, &self.edits)
+            && let Some((span, text)) =
+                rewrite_dict_text(self.source, d, &self.edits, self.code_width)
         {
             self.fold_into(span, text);
         }
@@ -113,7 +115,7 @@ impl<'a> LeafCollector<'a> {
     fn try_emit_inline_reorder<T, S>(
         &mut self,
         items: &'a [T],
-        classify: impl FnMut(&'a T) -> Option<S>,
+        mut classify: impl FnMut(&'a T) -> Option<S>,
     ) where
         T: Ranged,
         S: Ord,
@@ -130,10 +132,9 @@ impl<'a> LeafCollector<'a> {
         // single-line group's trailing comment reads against the whole
         // line and rides out the swap in place.
         let head_shared = !opens_its_line(source, first.start());
-        let commented = TextRange::new(first.start(), tail_end(source, last.end()));
         if head_shared
             && source.contains_line_break(TextRange::new(first.start(), last.end()))
-            && source.intersects_comment(commented)
+            && swap_span_commented(source, items)
         {
             return;
         }
@@ -142,13 +143,30 @@ impl<'a> LeafCollector<'a> {
         // and a mid-row-opening group keep their verbatim gaps through
         // `reorder_text`. A group laid out one member per line routes
         // through `reorder_separated` so each trailing comment travels
-        // with its member.
-        let (folded, span) = if any_sibling_shares_line(source, items) || head_shared {
+        // with its member. A swap whose rows neither fit the budget nor
+        // keep their source width holds the group.
+        let swapped = any_sibling_shares_line(source, items) || head_shared;
+        // A relocated member spanning lines keeps its interior rows at
+        // their source columns, so a swap moving one holds the group.
+        if swapped {
+            let mut order: Vec<usize> = (0..items.len()).collect();
+            permute_full(&mut order, items, &mut classify);
+            if order
+                .iter()
+                .enumerate()
+                .any(|(slot, &idx)| slot != idx && source.contains_line_break(items[idx].range()))
+            {
+                return;
+            }
+        }
+        let (folded, span) = if swapped {
             reorder_text(source, items, classify, render)
         } else {
             reorder_separated(source, items, classify, render)
         };
-        if let Cow::Owned(text) = folded {
+        if let Cow::Owned(text) = folded
+            && (!swapped || reordered_lines_fit(source, span, &text, self.code_width))
+        {
             self.fold_into(span, text);
         }
     }
@@ -225,10 +243,12 @@ pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
 /// regardless.
 pub(super) fn collect_leaf_edits(
     source: &Source,
+    code_width: usize,
     sort_dict_keys: bool,
     sort_dunder_lists: bool,
 ) -> Vec<Edit> {
     let mut collector = LeafCollector {
+        code_width,
         edits: Vec::new(),
         sort_dict_keys,
         sort_dunder_lists,
@@ -396,7 +416,7 @@ mod tests {
         #[case] expected: &str,
     ) {
         let source = parse(src);
-        let edits = collect_leaf_edits(&source, true, true);
+        let edits = collect_leaf_edits(&source, 88, true, true);
         assert_eq!(applied_text(&source, edits), expected);
     }
 
@@ -405,7 +425,7 @@ mod tests {
         #[values("__all__ = get_names()\n", "__slots__ = BASE_SLOTS\n")] src: &str,
     ) {
         let source = parse(src);
-        let edits = collect_leaf_edits(&source, true, true);
+        let edits = collect_leaf_edits(&source, 88, true, true);
         assert!(edits.is_empty());
     }
 
@@ -418,7 +438,7 @@ mod tests {
         #[case] expected: &str,
     ) {
         let source = parse(src);
-        let edits = collect_leaf_edits(&source, true, true);
+        let edits = collect_leaf_edits(&source, 88, true, true);
         assert_eq!(applied_text(&source, edits), expected);
     }
 
@@ -432,7 +452,7 @@ mod tests {
             foo(b=2, a=1)
         "};
         let source = parse(src);
-        let edits = collect_leaf_edits(&source, true, true);
+        let edits = collect_leaf_edits(&source, 88, true, true);
         assert!(edits.len() >= 5, "fixture must trigger multiple producers");
         assert!(
             edits.is_sorted(),

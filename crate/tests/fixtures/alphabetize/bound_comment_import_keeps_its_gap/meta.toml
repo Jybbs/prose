@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Bound Comment Holds the Gap Above Its Import"
+
+description = '''
+The bare-import collapse joins same-group neighbors onto adjacent lines, but an import whose block opens on a bound comment run keeps the source gap above that run. The sort still reorders the run around it.
+'''

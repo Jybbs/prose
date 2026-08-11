@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An At-Cap Member Holds the Group Tight"
+
+description = '''
+A colon group whose widest member already sits at the line cap declines its alignment, because the one-space buffer would push that line past the budget. Each row falls back to its tight singleton form instead.
+'''

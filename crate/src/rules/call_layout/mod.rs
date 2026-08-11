@@ -40,7 +40,7 @@ use crate::{
     primitives::{
         call_keywords::module_call_params,
         edit::{insert_edit, narrowed_replacement, singleton_groups},
-        fracture, one_row, reserve,
+        one_row, reserve,
         walk::walk_stmt,
     },
     rule::{Rule, RuleId},
@@ -54,7 +54,6 @@ pub(crate) struct CallLayout {
     code_line_length: usize,
     max_args: Option<usize>,
     one_row: one_row::Settings<'static>,
-    rejoin: fracture::Settings<'static>,
     reservations: reserve::Reservations,
 }
 
@@ -66,7 +65,6 @@ impl CallLayout {
             code_line_length: config.code_width(),
             max_args: config.rules.call_layout.max_args.cap(),
             one_row: config.one_row_settings(),
-            rejoin: config.fracture_settings(),
             reservations: config.equals_reservations(),
         }
     }
@@ -85,7 +83,6 @@ impl Rule for CallLayout {
             one_row: self.one_row.against(&targets),
             origin: TextSize::new(0),
             origin_column: 0,
-            rejoin: self.rejoin.against(&targets),
             reservations: &reservations,
             source,
             targets: &targets,
@@ -113,7 +110,6 @@ struct Exploder<'a> {
     one_row: one_row::Settings<'a>,
     origin: TextSize,
     origin_column: usize,
-    rejoin: fracture::Settings<'a>,
     reservations: &'a reserve::Columns,
     source: &'a Source,
     targets: &'a HashMap<TextSize, &'a Parameters>,

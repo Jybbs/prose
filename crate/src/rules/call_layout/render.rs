@@ -99,11 +99,11 @@ impl<'a> Exploder<'a> {
 
     /// The one-line `(...)` text for an argument list the author
     /// fractured, or `None` where it holds no break or carries the flush
-    /// column shape the explode path emits. The joined row measures from
-    /// `column` across the text trailing the call on its own physical
-    /// row, so a rejoin never lands a row the length trigger would
-    /// explode again. A nested literal the join leaves open stays open,
-    /// that interior belonging to `collection-layout`.
+    /// column shape the explode path emits. `joined` is the list's
+    /// one-row form, each argument's interior closed with it. The joined
+    /// row measures from `column` across the text trailing the call on
+    /// its own physical row, so a rejoin never lands a row the length
+    /// trigger would explode again.
     fn rejoined(&self, arguments: &Arguments, column: usize, joined: String) -> Option<String> {
         let range = arguments.range();
         if !is_fractured(self.source, range) {
@@ -246,7 +246,8 @@ impl<'a> Exploder<'a> {
     /// line, while any other call renders positionally under the length
     /// trigger. A nested call in an argument value explodes in the same
     /// text. Where no trigger fires, a fractured list rejoins onto one
-    /// line and every other call is left inline.
+    /// line through that same one-row form and every other call is left
+    /// inline.
     pub(super) fn explode_args(
         &self,
         call: &'a ExprCall,
@@ -260,16 +261,13 @@ impl<'a> Exploder<'a> {
         let count_trips = self.max_args.is_some_and(|cap| arguments.len() > cap)
             && takes_keyword_form(self.source, call, Some(self.targets));
         let tail = self.row_tail(arguments.range().end());
-        let length_trips = !self
+        let form = self
             .one_row
             .arguments_form(self.source, arguments)
-            .is_some_and(|form| self.one_row.fits(column + form.width() + tail));
-        if !count_trips && !length_trips {
-            return self.rejoined(
-                arguments,
-                column,
-                self.rejoin.joined(self.source, arguments),
-            );
+            .filter(|form| self.one_row.fits(column + form.width() + tail));
+        let length_trips = form.is_none();
+        if !count_trips && let Some(form) = form {
+            return self.rejoined(arguments, column, form);
         }
         match keyword_args(self.source, call, resolve_call_params(call, self.targets)) {
             Some(keywords) if !keywords.has_posonly_prefix => {

@@ -449,7 +449,7 @@ register_rules! {
     "alphabetize":                  alphabetize:                  AlphabetizeConfig          => Alphabetize                => ["normalize-literals", "shed-parentheses", "chain-layout", "collection-layout", "call-layout", "signature-layout", "import-layout", "band-constants"],
     "blank-lines":                  blank_lines:                  ToggleOnly                 => BlankLines                 => ["prune-inert-imports", "group-imports", "alphabetize", "band-constants"],
     "align-imports":                align_imports:                AlignmentConfig            => AlignImports               => ["import-layout", "alphabetize", "band-constants", "blank-lines"],
-    "align-colons":                 align_colons:                 AlignmentConfig            => AlignColons                => ["shed-parentheses", "collection-layout", "signature-layout", "alphabetize", "band-constants"],
+    "align-colons":                 align_colons:                 AlignmentConfig            => AlignColons                => ["strip-trailing-commas", "shed-parentheses", "collection-layout", "signature-layout", "alphabetize", "band-constants"],
     "docstring-wrap":               docstring_wrap:               ToggleOnly                 => DocstringWrap              => ["docstring-frame", "docstring-expand", "align-colons"],
     "align-equals":                 align_equals:                 AlignmentConfig            => AlignEquals                => ["strip-trailing-commas", "shed-parentheses", "collection-layout", "alphabetize", "band-constants", "align-colons"],
     "align-comparisons":            align_comparisons:            AlignmentConfig            => AlignComparisons           => ["shed-parentheses", "normalize-comparisons", "call-layout"],

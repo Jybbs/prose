@@ -20,6 +20,7 @@ mod grouping;
 mod holds;
 mod members;
 mod walker;
+mod widen;
 
 pub(crate) use emit::{operator_columns, space_padding_edit};
 pub(crate) use grouping::{
@@ -31,6 +32,7 @@ pub(crate) use members::{
     line_gap_before, parameter_split_groups, range_anchored_member_single_line,
 };
 pub(crate) use walker::AlignWalker;
+pub(crate) use widen::Widenings;
 
 /// One row in an alignment group.
 ///

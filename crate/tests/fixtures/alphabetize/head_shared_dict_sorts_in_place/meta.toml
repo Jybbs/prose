@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Head-Shared Dict Sorts in Place"
+
+description = '''
+A dict whose first entry trails the `{` on its row has no whole row to move, so the sort swaps bare entry slices in place, the separators and indents kept in the verbatim gaps. The brace hug and the standing closer both survive the reorder.
+'''

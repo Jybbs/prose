@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Two-Row Generator Argument Rejoins Whole"
+
+description = '''
+The rejoin emits the argument list's one-row form, so a generator expression wrapped across rows closes with the list when the joined row fits the budget. The interior break folds in the same edit rather than waiting on a collection pass.
+'''

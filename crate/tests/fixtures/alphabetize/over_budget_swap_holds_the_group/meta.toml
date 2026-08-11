@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Over-Budget Swap Holds the Group"
+
+description = '''
+A packed keyword group swaps member slices in place, so a long member landing on a fuller row can push that row past the code budget. A swap whose rows neither fit the budget nor keep their source width holds the group in source order.
+'''

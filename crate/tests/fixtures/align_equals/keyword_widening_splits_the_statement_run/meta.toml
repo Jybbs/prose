@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Keyword Widening Splits the Statement Run"
+
+description = '''
+The statement run's line-cap check reads each line at the width the pass leaves it, keyword buffers counted in. A statement whose padded row would cross the cap once its call's keywords widen splits out of the run, leaving the keyword column to align in the same pass.
+'''

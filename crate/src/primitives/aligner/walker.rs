@@ -7,8 +7,8 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::{
-    Member, Settings, emit::emit_group, is_held, members::baseline, retain_unheld, shares_column,
-    space_padding_edit,
+    Member, Settings, Widenings, emit::emit_group, is_held, members::baseline, retain_unheld,
+    shares_column, space_padding_edit,
 };
 use crate::{primitives::edit::apply_inline_edits, rule::RuleId, source::Source};
 
@@ -22,6 +22,7 @@ pub(crate) struct AlignWalker<'a> {
     pub rule: RuleId,
     settings: Settings,
     pub source: &'a Source,
+    widenings: Widenings,
 }
 
 impl<'a> AlignWalker<'a> {
@@ -32,14 +33,21 @@ impl<'a> AlignWalker<'a> {
             rule,
             settings,
             source,
+            widenings: Widenings::default(),
         }
+    }
+
+    /// Installs the widening entries the rule's collected groups seat,
+    /// read by every later line-cap check.
+    pub(crate) fn set_widenings(&mut self, widenings: Widenings) {
+        self.widenings = widenings;
     }
 
     /// Computes the alignment edits for `members` under `settings`
     /// rather than the walker's own.
     fn group_edits_under(&self, settings: Settings, members: &[Member]) -> Vec<Edit> {
         let mut edits = Vec::new();
-        emit_group(self.source, members, settings, &mut edits);
+        emit_group(self.source, members, settings, &self.widenings, &mut edits);
         edits
     }
 
