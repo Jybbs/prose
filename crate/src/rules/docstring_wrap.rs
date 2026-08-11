@@ -24,9 +24,8 @@ use crate::{
     config::{Config, DocstringStructuredPolicy},
     primitives::{
         docstring::{
-            DocstringBody, LineScan, LineScanner, ScannedLine, opens_structure,
-            rewrite_docstrings, section_heading, sibling_entry_head, triple_quoted_body,
-            typed_entry_head,
+            DocstringBody, LineScan, LineScanner, ScannedLine, opens_structure, rewrite_docstrings,
+            section_heading, sibling_entry_head, triple_quoted_body, typed_entry_head,
         },
         edit::narrowed_replacement,
     },

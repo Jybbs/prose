@@ -84,7 +84,9 @@ impl Reservations {
             source,
         };
         visitor.visit_body(&source.ast().body);
-        visitor.columns.sort_unstable_by_key(|(range, _)| range.start());
+        visitor
+            .columns
+            .sort_unstable_by_key(|(range, _)| range.start());
         Columns(visitor.columns)
     }
 }

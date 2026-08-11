@@ -25,6 +25,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::Config,
     primitives::{
+        call_keywords::{CallTargets, takes_keyword_form},
         edit::apply_inline_edits,
         fracture::{self, outermost},
         inline::folded_line_form,
@@ -38,14 +39,15 @@ use crate::{
 /// closes a fracture at all, and `max_dict_entries` is `None` where the
 /// `explode` facet leaves the entry cap inert.
 #[derive(Clone, Copy)]
-pub(crate) struct Settings {
+pub(crate) struct Settings<'a> {
     code_line_length: usize,
     keep_multiline_literals: bool,
     max_dict_entries: Option<usize>,
-    rejoin: fracture::Settings,
+    rejoin: fracture::Settings<'a>,
+    targets: Option<&'a CallTargets<'a>>,
 }
 
-impl Settings {
+impl<'a> Settings<'a> {
     /// The one-row `(...)` form of `arguments`, `None` where no one-row
     /// form exists. A single-row argument sheds a redundant grouping
     /// pair, which a top-level argument slot never needs, and a
@@ -53,7 +55,11 @@ impl Settings {
     /// list's own argument count is left to the caller's count trigger,
     /// whereas an argument holding a construct a later rule lays out
     /// across rows reaches no form at all.
-    pub(crate) fn arguments_form(&self, source: &Source, arguments: &Arguments) -> Option<String> {
+    pub(crate) fn arguments_form(
+        &self,
+        source: &'a Source,
+        arguments: &Arguments,
+    ) -> Option<String> {
         let writer = Writer {
             settings: *self,
             source,
@@ -85,6 +91,20 @@ impl Settings {
         Some(out)
     }
 
+    /// These settings resolving a call against `targets`, the map
+    /// [`module_call_params`](crate::primitives::call_keywords::module_call_params)
+    /// builds for one source. A rule reads the count trigger the same
+    /// way `call-layout` does once it carries the map.
+    pub(crate) fn against<'t>(self, targets: &'t CallTargets<'t>) -> Settings<'t> {
+        Settings {
+            code_line_length: self.code_line_length,
+            keep_multiline_literals: self.keep_multiline_literals,
+            max_dict_entries: self.max_dict_entries,
+            rejoin: self.rejoin.against(targets),
+            targets: Some(targets),
+        }
+    }
+
     /// True where a row reaching `width` columns sits inside the budget.
     pub(crate) fn fits(&self, width: usize) -> bool {
         width <= self.code_line_length
@@ -93,14 +113,14 @@ impl Settings {
     /// `expr`'s one-row form measured from `column` with `tail` columns
     /// of text following it, `None` where no one-row form exists or the
     /// row it lands on overflows the budget.
-    pub(crate) fn fitted<'s>(
+    pub(crate) fn fitted(
         &self,
-        source: &'s Source,
+        source: &'a Source,
         expr: &Expr,
         parent: AnyNodeRef,
         column: usize,
         tail: usize,
-    ) -> Option<Cow<'s, str>> {
+    ) -> Option<Cow<'a, str>> {
         self.measured(source, expr, parent, column, tail, Column::Holds)
     }
 
@@ -108,7 +128,11 @@ impl Settings {
     /// spliced back at its own one-row form so the spacing the source
     /// wrote around `:` and `=` survives, `None` where either reaches no
     /// single row.
-    pub(crate) fn parameter_form(&self, source: &Source, param: AnyParameterRef) -> Option<String> {
+    pub(crate) fn parameter_form(
+        &self,
+        source: &'a Source,
+        param: AnyParameterRef,
+    ) -> Option<String> {
         let range = param.range();
         if source.intersects_comment(range) {
             return None;
@@ -143,29 +167,29 @@ impl Settings {
     /// on, meaning a dict key, a subscript index, and a comprehension. A
     /// flush column nested inside it still holds, that one being an
     /// entry boundary.
-    pub(crate) fn repaired<'s>(
+    pub(crate) fn repaired(
         &self,
-        source: &'s Source,
+        source: &'a Source,
         expr: &Expr,
         parent: AnyNodeRef,
         column: usize,
         tail: usize,
-    ) -> Option<Cow<'s, str>> {
+    ) -> Option<Cow<'a, str>> {
         self.measured(source, expr, parent, column, tail, Column::Joins)
     }
 
     /// `expr`'s one-row form when it fits from `column` across `tail`
     /// trailing columns, `hold` deciding whether its own flush column
     /// blocks the form.
-    fn measured<'s>(
+    fn measured(
         &self,
-        source: &'s Source,
+        source: &'a Source,
         expr: &Expr,
         parent: AnyNodeRef,
         column: usize,
         tail: usize,
         hold: Column,
-    ) -> Option<Cow<'s, str>> {
+    ) -> Option<Cow<'a, str>> {
         let range = source.paren_aware_range(expr.into(), parent);
         let form = self.written(source, expr, range, hold)?;
         self.fits(column + form.width() + tail).then_some(form)
@@ -173,13 +197,13 @@ impl Settings {
 
     /// `expr`'s one-row form over `range`, `hold` deciding whether its
     /// own flush column blocks the form.
-    fn written<'s>(
+    fn written(
         &self,
-        source: &'s Source,
+        source: &'a Source,
         expr: &Expr,
         range: TextRange,
         hold: Column,
-    ) -> Option<Cow<'s, str>> {
+    ) -> Option<Cow<'a, str>> {
         let writer = Writer {
             settings: *self,
             source,
@@ -197,14 +221,18 @@ impl Settings {
     }
 }
 
-impl From<&Config> for Settings {
+impl From<&Config> for Settings<'_> {
     fn from(config: &Config) -> Self {
         let collection = &config.rules.collection_layout;
         Self {
             code_line_length: config.code_width(),
             keep_multiline_literals: collection.keep_multiline_literals,
-            max_dict_entries: collection.max_dict_entries.cap().filter(|_| collection.explode),
+            max_dict_entries: collection
+                .max_dict_entries
+                .cap()
+                .filter(|_| collection.explode),
             rejoin: config.fracture_settings(),
+            targets: None,
         }
     }
 }
@@ -284,7 +312,7 @@ impl<'ast> AstVisitor<'ast> for Joiner<'_, '_> {
 /// the caller's buffer and answering `None` where its subtree reaches no
 /// one-row form.
 struct Writer<'a> {
-    settings: Settings,
+    settings: Settings<'a>,
     source: &'a Source,
 }
 
@@ -333,18 +361,22 @@ impl<'a> Writer<'a> {
     }
 
     /// True where a later rule reopens `expr` whatever its current
-    /// shape. An argument list past `max_args` and a dict past
-    /// `max_dict_entries` each explode on their own count trigger, so no
-    /// one-row form written around either survives the pipeline.
+    /// shape. A dict past `max_dict_entries` explodes on its own count
+    /// trigger, and so does an argument list past `max_args` that
+    /// `call-layout` can name, so no one-row form written around either
+    /// survives the pipeline. A call the count trigger claims but cannot
+    /// rewrite into keyword form stays inline, leaving its one-row form
+    /// standing.
     fn reopens(&self, expr: &Expr) -> bool {
         any_over_expr(expr, |e| {
-            e.as_call_expr()
-                .is_some_and(|call| self.settings.rejoin.over_cap(call.arguments.len()))
-                || e.as_dict_expr().is_some_and(|dict| {
-                    self.settings
-                        .max_dict_entries
-                        .is_some_and(|cap| dict.len() > cap)
-                })
+            e.as_call_expr().is_some_and(|call| {
+                self.settings.rejoin.over_cap(call.arguments.len())
+                    && takes_keyword_form(self.source, call, self.settings.targets)
+            }) || e.as_dict_expr().is_some_and(|dict| {
+                self.settings
+                    .max_dict_entries
+                    .is_some_and(|cap| dict.len() > cap)
+            })
         })
     }
 
@@ -505,7 +537,6 @@ impl<'a> Writer<'a> {
         Some(())
     }
 }
-
 
 #[cfg(test)]
 mod tests {

@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/bare_before_from_inserts_one_blank/input.py
+---
+import os
+
+from sys import argv

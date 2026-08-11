@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Constant Naming a Pinned Definition Still Bands"
+
+description = '''
+The divider pins `FilterError` in its slot, leaving the class outside the band. Its name still binds, so `FILTER_ERRORS` reads as reaching a definition and pools into the trailing band below `apply_filter` rather than reading the name as unresolved and anchoring where it sits.
+'''

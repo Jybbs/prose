@@ -6,7 +6,7 @@
 use std::{borrow::Cow, ops::Range};
 
 use ruff_python_ast::{Expr, StringLike, helpers::any_over_expr, token::TokenKind};
-use ruff_python_trivia::{leading_indentation, textwrap::{dedent, indent}};
+use ruff_python_trivia::leading_indentation;
 use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -69,15 +69,6 @@ pub(crate) fn explode_parens(
     out.push_str(&prefix[..indent]);
     out.push(')');
     out
-}
-
-
-/// True where `block`, the text of one construct, hangs from the row
-/// `start` opens on rather than from a column inside that row, so the
-/// whole block travels with the row. A run aligned under an interior
-/// bracket would land against nothing once the row moves.
-pub(crate) fn hangs_from_its_row(source: &Source, start: TextSize, block: &str) -> bool {
-    continuation_indent(block).is_some_and(|body| body <= source.line_indent_width(start))
 }
 
 /// True when `slice`, a bracketed construct's source text, already
@@ -182,81 +173,79 @@ pub(crate) fn pack(
     lines
 }
 
-/// `range`'s source text placed at `indent`, every continuation row
+/// Where a block lands: the indent the row carrying it lands at, the
+/// column the block's own start lands at, and the offset of the item
+/// opening that row. A block that is its own item takes
+/// [`Landing::own_row`].
+#[derive(Clone, Copy)]
+pub(crate) struct Landing {
+    pub(crate) column: usize,
+    pub(crate) indent: usize,
+    pub(crate) item: TextSize,
+}
+
+impl Landing {
+    /// The landing of a block that opens its own row at `indent`,
+    /// carrying no text ahead of `start` on that row.
+    pub(crate) fn own_row(start: TextSize, indent: usize) -> Self {
+        Self {
+            column: indent,
+            indent,
+            item: start,
+        }
+    }
+}
+
+/// The columns `block`'s continuation rows move by when it lands per
+/// `landing`, its own start sitting at `start` in the source and its
+/// frozen rows flagged in `frozen`. `None` where every continuation row
+/// is blank or frozen.
+///
+/// A block whose movable rows sit at or left of the column its item
+/// opens at hangs from its own row, so its shallowest row rebases onto
+/// the landing indent. One whose rows sit right of that column is
+/// aligned under a bracket inside its opening row, so the whole block
+/// shifts by however far its own start moved and the alignment survives.
+/// Reading the test against the item's column rather than the block's
+/// keeps the answer the same once an alignment pads the text ahead of
+/// the block, which moves the block alone.
+pub(crate) fn block_shift(
+    source: &Source,
+    block: &str,
+    frozen: &[bool],
+    start: TextSize,
+    landing: Landing,
+) -> Option<isize> {
+    let floor = movable_floor(block, frozen)?;
+    Some(if floor <= source.column_of(landing.item) {
+        landing.indent.cast_signed() - floor.cast_signed()
+    } else {
+        landing.column.cast_signed() - source.column_of(start).cast_signed()
+    })
+}
+
+/// `range`'s source text placed per `landing`, every continuation row
 /// travelling by one shift and every row a row-spanning string part
 /// freezes left where the source wrote it. Borrowed where the block
 /// holds no movable continuation row or already sits where it lands.
-///
-/// A block whose movable rows sit at or left of the column it opens at
-/// hangs from its own row, so its shallowest row rebases onto `indent`.
-/// One whose rows sit right of that column is aligned under a bracket
-/// inside its opening row, so the whole block shifts by however far that
-/// row moved and the alignment survives the move.
-pub(crate) fn placed_block(source: &Source, range: TextRange, indent: usize) -> Cow<'_, str> {
+pub(crate) fn placed_block(source: &Source, range: TextRange, landing: Landing) -> Cow<'_, str> {
     let block = source.slice(range);
-    let travel = travel(source, range, block, indent);
-    if travel.shift == 0 {
-        return Cow::Borrowed(block);
-    }
-    Cow::Owned(travel.applied(block))
-}
-
-/// How the block covering `range` moves when it lands at `indent`.
-/// `block` is the text about to be written, whose rows mirror `range`'s
-/// own source rows, so a caller rendering that text with a prefix
-/// measures the same rows the source carries.
-pub(crate) fn travel(source: &Source, range: TextRange, block: &str, indent: usize) -> Travel {
     let frozen = frozen_rows(source, range);
-    let Some(floor) = movable_floor(block, &frozen) else {
-        return Travel { frozen, shift: 0 };
-    };
-    let from = source.column_of(range.start());
-    let anchor = if floor <= from { floor } else { from };
-    Travel {
-        frozen,
-        shift: indent.cast_signed() - anchor.cast_signed(),
+    match block_shift(source, block, &frozen, range.start(), landing) {
+        Some(shift) if shift != 0 => Cow::Owned(shifted_rows(block, shift, &frozen)),
+        _ => Cow::Borrowed(block),
     }
 }
 
-
-
-
-/// The move a block makes when it lands at a new indent: the columns
-/// its continuation rows shift by, and one flag per row marking the rows
-/// a row-spanning string part holds where the source wrote them.
-pub(crate) struct Travel {
-    frozen: Vec<bool>,
-    pub(crate) shift: isize,
-}
-
-impl Travel {
-    /// `block` with this move applied, each blank row and each row a
-    /// string part holds passing through as written.
-    pub(crate) fn applied(&self, block: &str) -> String {
-        shifted_rows(block, self.shift, &self.frozen)
-    }
-}
-
-/// Re-indents `block`'s continuation lines so its least-indented line
-/// lands at `to`, keeping the body's relative depth. The opening line
-/// stays as written, since the caller places it inline after whatever
-/// precedes it. A single-line `block` returns borrowed. A caller
-/// screens the block through [`spans_a_string_part`] first, whose
-/// interior `to` would otherwise pad.
-pub(crate) fn reindent_continuation(block: &str, to: usize) -> Cow<'_, str> {
-    let Some((open, body)) = block.split_once('\n') else {
+/// `block`'s continuation rows moved by `shift`, every blank row
+/// passing through as written and the block borrowed where the move is
+/// zero. A caller screens the block through [`spans_a_string_part`]
+/// first, whose interior a move would pad.
+pub(crate) fn shifted_block(block: &str, shift: isize) -> Cow<'_, str> {
+    if shift == 0 {
         return Cow::Borrowed(block);
-    };
-    Cow::Owned(format!(
-        "{open}\n{}",
-        indent(&dedent(body), &" ".repeat(to))
-    ))
-}
-
-/// The columns [`reindent_continuation`] moves `block`'s body by when it
-/// re-indents to `to`, zero where it leaves the block borrowed.
-pub(crate) fn reindent_shift(block: &str, to: usize) -> isize {
-    continuation_indent(block).map_or(0, |body| to.cast_signed() - body.cast_signed())
+    }
+    Cow::Owned(shifted_rows(block, shift, &[]))
 }
 
 /// True where a string part inside `expr` itself spans rows, whose
@@ -267,18 +256,6 @@ pub(crate) fn spans_a_string_part(source: &Source, expr: &Expr) -> bool {
         StringLike::try_from(e)
             .is_ok_and(|run| run.parts().any(|part| source.contains_line_break(part)))
     })
-}
-
-/// The least indent among `block`'s continuation lines, blank lines
-/// skipped, and `None` where `block` carries no continuation. The value
-/// is the column [`reindent_continuation`] moves to `to`, so the lines
-/// are counted the way the `dedent` behind that move counts them.
-fn continuation_indent(block: &str) -> Option<usize> {
-    let (_, body) = block.split_once('\n')?;
-    body.universal_newlines()
-        .filter(|line| !line.trim().is_empty())
-        .map(|line| indent_width(&line))
-        .min()
 }
 
 /// One flag per row of the block at `range`, set for every row opening
@@ -292,7 +269,10 @@ fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
         .binary_search_by_start(range.start())
         .unwrap_or_else(|slot| slot.saturating_sub(1));
     let head = source.line_index(range.start()).get();
-    for token in tokens[first..].iter().take_while(|t| t.start() < range.end()) {
+    for token in tokens[first..]
+        .iter()
+        .take_while(|t| t.start() < range.end())
+    {
         if !matches!(
             token.kind(),
             TokenKind::String | TokenKind::FStringMiddle | TokenKind::TStringMiddle
@@ -312,13 +292,17 @@ fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
 }
 
 /// The least indent among the movable non-blank continuation rows of
-/// `block`, `None` where every continuation row is blank or frozen.
-fn movable_floor(block: &str, frozen: &[bool]) -> Option<usize> {
+/// `block`, `None` where every continuation row is blank or frozen. An
+/// empty `frozen` holds no row, the shape a caller passes when nothing
+/// inside the block spans rows.
+pub(crate) fn movable_floor(block: &str, frozen: &[bool]) -> Option<usize> {
     block
         .universal_newlines()
         .enumerate()
         .skip(1)
-        .filter(|(row, line)| !frozen.get(*row).copied().unwrap_or(false) && !line.trim().is_empty())
+        .filter(|(row, line)| {
+            !frozen.get(*row).copied().unwrap_or(false) && !line.trim().is_empty()
+        })
         .map(|(_, line)| indent_width(&line))
         .min()
 }
@@ -340,7 +324,6 @@ fn shifted_rows(block: &str, shift: isize, frozen: &[bool]) -> String {
     out
 }
 
-
 /// Splits `block` at its first line break when that opening line holds
 /// its bracket alone, yielding the bracket and the body beneath. A
 /// single-line block and one whose first line carries content beside
@@ -353,39 +336,41 @@ fn flush_bracket_open(block: &str) -> Option<(&str, &str)> {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-    use ruff_text_size::Ranged;
 
     use super::*;
     use crate::testing::{first_expr, parse};
 
     #[rstest]
-    #[case("[a, b]", None)]
-    #[case("{\n    a,\n}", Some(0))]
-    #[case("helper(a,\n       b)", Some(7))]
-    #[case("{\n        a,\n    }", Some(4))]
-    #[case("{\n    a,\n\n    b,\n}", Some(0))]
-    #[case("\"aaa\"\n    \"bbb\"", Some(4))]
-    #[case("{\r\n    a,\r\n}", Some(0))]
-    #[case("{\n        a,\n    \n}", Some(0))]
-    fn continuation_indent_reads_the_shallowest_continuation_line(
+    #[case("[a, b]", &[], None)]
+    #[case("{\n    a,\n}", &[], Some(0))]
+    #[case("helper(a,\n       b)", &[], Some(7))]
+    #[case("{\n        a,\n    }", &[], Some(4))]
+    #[case("{\n    a,\n\n    b,\n}", &[], Some(0))]
+    #[case("\"aaa\"\n    \"bbb\"", &[], Some(4))]
+    #[case("{\r\n    a,\r\n}", &[], Some(0))]
+    #[case("{\n        a,\n    \n}", &[], Some(0))]
+    #[case("f(\n  a,\n)", &[false, true, false], Some(0))]
+    #[case("f(\n  a,\n)", &[false, true, true], None)]
+    fn movable_floor_reads_the_shallowest_movable_continuation_row(
         #[case] block: &str,
+        #[case] frozen: &[bool],
         #[case] expected: Option<usize>,
     ) {
-        assert_eq!(continuation_indent(block), expected);
+        assert_eq!(movable_floor(block, frozen), expected);
     }
 
     #[rstest]
-    #[case("f(\n    a,\n)", true)]
-    #[case("[\n    a,\n]", true)]
-    #[case("f(a,\n  b)", false)]
-    #[case("f(a)", false)]
-    fn hangs_from_its_row_rejects_a_run_under_an_interior_bracket(
-        #[case] src: &str,
-        #[case] expected: bool,
+    #[case("f(a,\n  b)", 0, "f(a,\n  b)")]
+    #[case("f(a,\n  b)", 3, "f(a,\n     b)")]
+    #[case("f(a,\n    b)", -2, "f(a,\n  b)")]
+    #[case("f(a,\n\n  b)", 2, "f(a,\n\n    b)")]
+    #[case("single", 4, "single")]
+    fn shifted_block_moves_every_non_blank_continuation_row(
+        #[case] block: &str,
+        #[case] shift: isize,
+        #[case] expected: &str,
     ) {
-        let source = parse(src);
-        let expr = first_expr(&source);
-        assert_eq!(hangs_from_its_row(&source, expr.start(), src), expected);
+        assert_eq!(shifted_block(block, shift), expected);
     }
 
     #[rstest]

@@ -15,7 +15,11 @@ use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::CallLayoutConfig,
-    primitives::{edit::apply_inline_edits, layout::is_fractured},
+    primitives::{
+        call_keywords::{CallTargets, takes_keyword_form},
+        edit::apply_inline_edits,
+        layout::is_fractured,
+    },
     source::Source,
 };
 
@@ -35,17 +39,29 @@ impl Joins {
 /// `closes` is clear where `call_layout` is off and no fracture shuts
 /// at all.
 #[derive(Clone, Copy)]
-pub(crate) struct Settings {
+pub(crate) struct Settings<'a> {
     cap: Option<usize>,
     closes: bool,
+    targets: Option<&'a CallTargets<'a>>,
 }
 
-impl Settings {
+impl<'a> Settings<'a> {
+    /// These settings resolving a call against `targets`, the map
+    /// [`module_call_params`] builds for one source, so the join reads
+    /// the count trigger the way `call-layout` explodes it.
+    pub(crate) fn against<'t>(self, targets: &'t CallTargets<'t>) -> Settings<'t> {
+        Settings {
+            cap: self.cap,
+            closes: self.closes,
+            targets: Some(targets),
+        }
+    }
+
     /// `arguments` joined by `", "` inside the parens, each argument
     /// settled so a nested fracture reads at its joined width. The join
     /// runs whatever `closes` holds.
     pub(crate) fn joined(self, source: &Source, arguments: &Arguments) -> String {
-        join_args(source, self.cap, arguments)
+        join_args(source, self.cap, self.targets, arguments)
     }
 
     /// The joins closing every fractured argument list beneath `expr`.
@@ -53,7 +69,7 @@ impl Settings {
         if !self.closes {
             return Joins(Vec::new());
         }
-        Joins(join_edits(source, self.cap, expr))
+        Joins(join_edits(source, self.cap, self.targets, expr))
     }
 
     /// True where a list of `count` arguments sits past the cap a
@@ -62,14 +78,14 @@ impl Settings {
     pub(crate) fn over_cap(self, count: usize) -> bool {
         self.closes && self.cap.is_some_and(|cap| count > cap)
     }
-
 }
 
-impl From<&CallLayoutConfig> for Settings {
+impl From<&CallLayoutConfig> for Settings<'_> {
     fn from(rules: &CallLayoutConfig) -> Self {
         Self {
             cap: rules.max_args.cap(),
             closes: rules.enabled,
+            targets: None,
         }
     }
 }
@@ -80,6 +96,7 @@ struct FractureJoiner<'a> {
     cap: Option<usize>,
     edits: Vec<Edit>,
     source: &'a Source,
+    targets: Option<&'a CallTargets<'a>>,
 }
 
 impl<'ast> AstVisitor<'ast> for FractureJoiner<'_> {
@@ -90,14 +107,15 @@ impl<'ast> AstVisitor<'ast> for FractureJoiner<'_> {
         };
         let range = call.arguments.range();
         if call.arguments.is_empty()
-            || self.cap.is_some_and(|cap| call.arguments.len() > cap)
+            || (self.cap.is_some_and(|cap| call.arguments.len() > cap)
+                && takes_keyword_form(self.source, call, self.targets))
             || !is_fractured(self.source, range)
             || self.source.intersects_comment(call.arguments.inner_range())
         {
             return;
         }
         self.edits.push(Edit::range_replacement(
-            join_args(self.source, self.cap, &call.arguments),
+            join_args(self.source, self.cap, self.targets, &call.arguments),
             range,
         ));
     }
@@ -105,17 +123,23 @@ impl<'ast> AstVisitor<'ast> for FractureJoiner<'_> {
 
 /// `arguments` joined by `", "` inside the parens, each argument
 /// settled so a nested fracture reads at its joined width.
-fn join_args(source: &Source, cap: Option<usize>, arguments: &Arguments) -> String {
+fn join_args(
+    source: &Source,
+    cap: Option<usize>,
+    targets: Option<&CallTargets<'_>>,
+    arguments: &Arguments,
+) -> String {
     format!(
         "({})",
         arguments
             .iter_source_order()
             .map(|arg| match arg {
-                ArgOrKeyword::Arg(expr) => settled_argument(source, cap, expr, arguments.into()),
+                ArgOrKeyword::Arg(expr) =>
+                    settled_argument(source, cap, targets, expr, arguments.into()),
                 ArgOrKeyword::Keyword(kw) => match &kw.arg {
                     Some(name) => Cow::Owned(format!(
                         "{name}={}",
-                        settled_argument(source, cap, &kw.value, kw.into())
+                        settled_argument(source, cap, targets, &kw.value, kw.into())
                     )),
                     None => Cow::Borrowed(source.slice(kw)),
                 },
@@ -126,7 +150,12 @@ fn join_args(source: &Source, cap: Option<usize>, arguments: &Arguments) -> Stri
 
 /// The replacement edits closing every fractured argument list beneath
 /// `expr`, ascending by start and disjoint.
-fn join_edits(source: &Source, cap: Option<usize>, expr: &Expr) -> Vec<Edit> {
+fn join_edits(
+    source: &Source,
+    cap: Option<usize>,
+    targets: Option<&CallTargets<'_>>,
+    expr: &Expr,
+) -> Vec<Edit> {
     if !source.contains_line_break(expr.range()) {
         return Vec::new();
     }
@@ -134,6 +163,7 @@ fn join_edits(source: &Source, cap: Option<usize>, expr: &Expr) -> Vec<Edit> {
         cap,
         edits: Vec::new(),
         source,
+        targets,
     };
     joiner.visit_expr(expr);
     outermost(joiner.edits)
@@ -158,6 +188,7 @@ pub(crate) fn outermost(mut edits: Vec<Edit>) -> Vec<Edit> {
 fn settled_argument<'a>(
     source: &'a Source,
     cap: Option<usize>,
+    targets: Option<&CallTargets<'_>>,
     expr: &Expr,
     parent: AnyNodeRef,
 ) -> Cow<'a, str> {
@@ -166,7 +197,7 @@ fn settled_argument<'a>(
     } else {
         expr.range()
     };
-    Joins(join_edits(source, cap, expr)).settled(source, range)
+    Joins(join_edits(source, cap, targets, expr)).settled(source, range)
 }
 
 #[cfg(test)]
@@ -198,9 +229,6 @@ mod tests {
     ) {
         let source = parse(src);
         let call = first_expr(&source).as_call_expr().expect("a call");
-        assert_eq!(join_args(&source, cap, &call.arguments), expected);
+        assert_eq!(join_args(&source, cap, None, &call.arguments), expected);
     }
-
-
-
 }

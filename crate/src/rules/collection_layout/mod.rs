@@ -32,7 +32,10 @@ use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
-    primitives::{edit::singleton_groups, one_row, reserve, walk::filter_map_over_exprs},
+    primitives::{
+        call_keywords::module_call_params, edit::singleton_groups, one_row, reserve,
+        walk::filter_map_over_exprs,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -48,7 +51,7 @@ pub(crate) struct CollectionLayout {
     explode: bool,
     max_atomics: usize,
     max_dict_entries: Option<usize>,
-    one_row: one_row::Settings,
+    one_row: one_row::Settings<'static>,
     reservations: reserve::Reservations,
     wrap_dict_entries: bool,
 }
@@ -84,6 +87,7 @@ impl Rule for CollectionLayout {
                     .map(Ranged::range)
             })
         });
+        let targets = module_call_params(source);
         let reservations = self.reservations.columns(source);
         let mut visitor = Layouter {
             code_line_length: self.code_line_length,
@@ -91,7 +95,7 @@ impl Rule for CollectionLayout {
             explode: self.explode,
             max_atomics: self.max_atomics,
             newline: source.newline_str(),
-            one_row: self.one_row,
+            one_row: self.one_row.against(&targets),
             reservations,
             source,
             tripping_dicts,

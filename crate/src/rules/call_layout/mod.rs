@@ -52,8 +52,8 @@ mod render;
 pub(crate) struct CallLayout {
     code_line_length: usize,
     max_args: Option<usize>,
-    one_row: one_row::Settings,
-    rejoin: fracture::Settings,
+    one_row: one_row::Settings<'static>,
+    rejoin: fracture::Settings<'static>,
     reservations: reserve::Reservations,
 }
 
@@ -81,10 +81,10 @@ impl Rule for CallLayout {
             indent: None,
             line_shift: 0,
             max_args: self.max_args,
-            one_row: self.one_row,
+            one_row: self.one_row.against(&targets),
             origin: TextSize::new(0),
             origin_column: 0,
-            rejoin: self.rejoin,
+            rejoin: self.rejoin.against(&targets),
             reservations: &reservations,
             source,
             targets: &targets,
@@ -109,10 +109,10 @@ struct Exploder<'a> {
     indent: Option<usize>,
     line_shift: isize,
     max_args: Option<usize>,
-    one_row: one_row::Settings,
+    one_row: one_row::Settings<'a>,
     origin: TextSize,
     origin_column: usize,
-    rejoin: fracture::Settings,
+    rejoin: fracture::Settings<'a>,
     reservations: &'a reserve::Columns,
     source: &'a Source,
     targets: &'a HashMap<TextSize, &'a Parameters>,
@@ -129,10 +129,13 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
         self.visit_expr(&call.func);
         let indent = self.indent_for(call);
         let column = self.open_paren_column(call, &self.callee_text(call));
-        if let Some(text) = self.explode_args(call, indent, column)
-            && let Some(edit) = narrowed_replacement(self.source, call.arguments.range(), text)
-        {
-            insert_edit(&mut self.edits, edit);
+        // The rendered list already carries every nested reshape, so a
+        // walk into the arguments would decide the same text twice, the
+        // second reading measuring against columns the first one set.
+        if let Some(text) = self.explode_args(call, indent, column) {
+            if let Some(edit) = narrowed_replacement(self.source, call.arguments.range(), text) {
+                insert_edit(&mut self.edits, edit);
+            }
             return;
         }
         self.visit_arguments(&call.arguments);

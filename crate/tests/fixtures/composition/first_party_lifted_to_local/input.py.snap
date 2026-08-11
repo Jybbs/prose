@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/first_party_lifted_to_local/input.py
+---
+import os
+from collections import Counter
+import myapp.core
+from myapp import app
+from myapp.db import Session
+from . import shared

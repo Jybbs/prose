@@ -17,7 +17,7 @@ use super::{
 
 /// Alignment-rule config shared by every rule that aligns a token
 /// across consecutive lines.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlignmentConfig {
     pub enabled: bool,
@@ -40,7 +40,7 @@ impl Default for AlignmentConfig {
 
 /// Configuration for the `alphabetize` rule, each facet gating one
 /// sort pass and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlphabetizeConfig {
     pub enabled: bool,
@@ -83,7 +83,7 @@ impl Default for AlphabetizeConfig {
 }
 
 /// Configuration for the `band_constants` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct BandConstantsConfig {
     pub enabled: bool,
@@ -109,7 +109,7 @@ impl Default for BandConstantsConfig {
 }
 
 /// Configuration for the `bare_imports` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct BareImportsConfig {
     /// Modules whose bare-import form is preserved whatever their
@@ -154,7 +154,7 @@ impl Default for CacheConfig {
 }
 
 /// Configuration for the `call_layout` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CallLayoutConfig {
     pub enabled: bool,
@@ -174,7 +174,7 @@ impl Default for CallLayoutConfig {
 }
 
 /// Configuration for the `chain_layout` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ChainLayoutConfig {
     pub enabled: bool,
@@ -202,7 +202,7 @@ impl Default for ChainLayoutConfig {
 
 /// Configuration for the `collection_layout` rule, each facet gating
 /// one shape decision and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CollectionLayoutConfig {
     pub enabled: bool,
@@ -253,7 +253,7 @@ pub enum DocstringStructuredPolicy {
 
 /// Configuration for the `import_layout` rule, each facet gating one
 /// statement move and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ImportLayoutConfig {
     pub enabled: bool,
@@ -277,7 +277,7 @@ impl Default for ImportLayoutConfig {
 }
 
 /// Settings parsed from `[tool.prose.imports]`.
-#[derive(Debug, Default, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ImportsConfig {
     /// Root package names whose imports lift into the local-package
@@ -322,7 +322,7 @@ impl Serialize for InlineBudget {
 }
 
 /// Configuration for the `line_overflow` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct LineOverflowConfig {
     pub enabled: bool,
@@ -393,7 +393,7 @@ impl Serialize for MaxShift {
 }
 
 /// Configuration for the `miscased_constants` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct MiscasedConstantsConfig {
     /// Constant names exempted from the lint, such as old-style bare
@@ -421,7 +421,7 @@ impl Default for MiscasedConstantsConfig {
 
 /// Configuration for the `modernize_annotations` rule, each facet
 /// gating one rewrite and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ModernizeAnnotationsConfig {
     pub enabled: bool,
@@ -447,7 +447,7 @@ impl Default for ModernizeAnnotationsConfig {
 
 /// Configuration for the `normalize_comparisons` rule, each facet
 /// gating one rewrite and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct NormalizeComparisonsConfig {
     pub enabled: bool,
@@ -476,7 +476,7 @@ impl Default for NormalizeComparisonsConfig {
 
 /// Configuration for the `normalize_literals` rule, each facet gating
 /// one spelling axis and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct NormalizeLiteralsConfig {
     pub enabled: bool,
@@ -506,7 +506,7 @@ impl Default for NormalizeLiteralsConfig {
 
 /// Configuration for the `prefer_fstring` rule, each facet gating one
 /// rewrite and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct PreferFstringConfig {
     pub enabled: bool,
@@ -532,7 +532,7 @@ impl Default for PreferFstringConfig {
 
 /// Configuration for the `prune_inert_imports` rule, each facet gating
 /// one prune and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct PruneInertImportsConfig {
     /// Drops an import rebinding a name an earlier import already bound
@@ -558,7 +558,7 @@ impl Default for PruneInertImportsConfig {
 }
 
 /// Configuration for the `reassigned_constants` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReassignedConstantsConfig {
     /// Module-level names exempted from the lint.
@@ -583,7 +583,7 @@ pub(crate) trait RuleToggle: Default {
 }
 
 /// Configuration for the `signature_layout` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct SignatureLayoutConfig {
     pub enabled: bool,
@@ -603,7 +603,7 @@ impl Default for SignatureLayoutConfig {
 }
 
 /// Configuration for the `single_use_variables` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct SingleUseVariablesConfig {
     /// Binding names exempted from the lint.

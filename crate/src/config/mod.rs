@@ -62,7 +62,7 @@ pub(crate) use source::ConfigSource;
 /// `docstring_structured_policy` defaults to `CodeLineLength`.
 /// `imports.first_party` defaults to empty. `target_version` defaults
 /// to `None`. Per-rule settings live under `rules`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
     pub cache: CacheConfig,
@@ -230,13 +230,13 @@ impl Config {
 
     /// The terms a fractured argument list closes under, closing
     /// none where `call-layout` is off.
-    pub(crate) fn fracture_settings(&self) -> fracture::Settings {
+    pub(crate) fn fracture_settings(&self) -> fracture::Settings<'static> {
         fracture::Settings::from(&self.rules.call_layout)
     }
 
     /// The terms a construct reaches one row under, read by every rule
     /// deciding where that construct lands.
-    pub(crate) fn one_row_settings(&self) -> one_row::Settings {
+    pub(crate) fn one_row_settings(&self) -> one_row::Settings<'static> {
         one_row::Settings::from(self)
     }
 

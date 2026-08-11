@@ -2,4 +2,4 @@
 first-party = ["myapp"]
 
 [harness]
-rules = ["alphabetize", "align-imports", "blank-lines"]
+rules = ["group-imports", "alphabetize", "align-imports", "blank-lines"]

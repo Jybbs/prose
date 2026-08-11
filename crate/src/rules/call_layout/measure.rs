@@ -34,11 +34,16 @@ impl<'a> Exploder<'a> {
     }
 
     /// The indent an exploded closing `)` drops to for `call`, this
-    /// walk's own indent inside a relocated value and otherwise the
-    /// indent of the row this walk has already placed ahead of the call,
-    /// which an earlier edit on the same statement may have moved.
+    /// walk's own indent for a call opening on the row a relocated value
+    /// starts on, and otherwise the indent of the row this walk has
+    /// already placed ahead of the call, which an earlier edit on the
+    /// same statement may have moved. A call on a later row of a
+    /// relocated value reads that placed row, which the caller's own
+    /// move then carries with the rest of the block.
     pub(super) fn indent_for(&self, call: &ExprCall) -> usize {
-        if let Some(indent) = self.indent {
+        if let Some(indent) = self.indent
+            && self.source.same_line(self.origin, call.start())
+        {
             return indent;
         }
         let head = self.source.logical_line_start(call.start());

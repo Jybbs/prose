@@ -16,9 +16,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::{
-    classify::{
-        Segment, is_align_colons_gap, is_atomic, pre_colon_padding, segments,
-    },
+    classify::{Segment, is_align_colons_gap, is_atomic, pre_colon_padding, segments},
     flow::flow_lines,
 };
 use crate::{
@@ -26,7 +24,7 @@ use crate::{
         INDENT_STEP,
         edit::narrowed_replacement,
         layout::{
-            is_collapse_only, is_collapsible, is_layoutable, item_indent, placed_block,
+            Landing, is_collapse_only, is_collapsible, is_layoutable, item_indent, placed_block,
             requires_expand,
         },
         one_row, reserve,
@@ -41,7 +39,7 @@ pub(super) struct Layouter<'a> {
     pub(super) explode: bool,
     pub(super) max_atomics: usize,
     pub(super) newline: &'static str,
-    pub(super) one_row: one_row::Settings,
+    pub(super) one_row: one_row::Settings<'a>,
     pub(super) reservations: reserve::Columns,
     pub(super) source: &'a Source,
     pub(super) tripping_dicts: Vec<TextRange>,
@@ -209,9 +207,9 @@ impl<'a> Layouter<'a> {
         self.source.slice(TextRange::new(key_end, value_start))
     }
 
-    /// `expr`'s paren-recovered source range placed at `indent`.
-    fn placed_slice(&self, expr: &Expr, parent: AnyNodeRef, indent: usize) -> Cow<'a, str> {
-        placed_block(self.source, self.range_with_parens(expr, parent), indent)
+    /// `expr`'s paren-recovered source range placed per `landing`.
+    fn placed_slice(&self, expr: &Expr, parent: AnyNodeRef, landing: Landing) -> Cow<'a, str> {
+        placed_block(self.source, self.range_with_parens(expr, parent), landing)
     }
 
     /// The one-line form of a fractured `expr`, or `None` when it holds
@@ -285,9 +283,9 @@ impl<'a> Layouter<'a> {
     /// its display width at the canonical `": "` separator. The key
     /// routes through `repaired_key` so one written across lines rejoins
     /// beside its `:`, and the value's fit column sits past the key text
-    /// and `": "`. A borrowed key and value over an `align-colons`-padded
-    /// gap return the source slice whole so the padding round-trips, the
-    /// width counting the canonical `": "`.
+    /// and the separator that lands ahead of it. A borrowed key and value
+    /// over an `align-colons`-padded gap return the source slice whole so
+    /// the padding round-trips, the width counting the canonical `": "`.
     fn serialize_dict_item(
         &self,
         item: &DictItem,
@@ -300,24 +298,32 @@ impl<'a> Layouter<'a> {
             return (Cow::Owned(format!("**{value_text}")), width);
         };
         let key_text = self.repaired_key(key, parent, indent);
-        let value_column = indent + key_text.width() + 2;
         let value_range = self.range_with_parens(&item.value, parent);
-        let value_text = self
-            .replacement_for(&item.value, value_column, indent, 0)
-            .map_or_else(|| Cow::Borrowed(self.source.slice(value_range)), Cow::Owned);
-        let width = key_text.width() + 2 + value_text.width();
         let gap = self.key_value_gap(key.end(), value_range.start());
         // A rewritten key drops the source slice's alignment padding, so
         // the padded separator and the borrowed round-trip both hold only
         // while the key passes through unchanged.
         let padded = is_align_colons_gap(gap) && matches!(key_text, Cow::Borrowed(_));
+        let separator = if padded { gap } else { ": " };
+        let value_column = indent + key_text.width() + separator.width();
+        let landing = Landing {
+            column: value_column,
+            indent,
+            item: key.start(),
+        };
+        let value_text = self
+            .replacement_for(&item.value, value_column, indent, 0)
+            .map_or_else(
+                || self.placed_slice(&item.value, parent, landing),
+                Cow::Owned,
+            );
+        let width = key_text.width() + 2 + value_text.width();
         let text = if padded && matches!(value_text, Cow::Borrowed(_)) {
             Cow::Borrowed(
                 self.source
                     .slice(TextRange::new(key.start(), value_range.end())),
             )
         } else {
-            let separator = if padded { gap } else { ": " };
             Cow::Owned(format!("{key_text}{separator}{value_text}"))
         };
         (text, width)
@@ -335,8 +341,13 @@ impl<'a> Layouter<'a> {
         column: usize,
         indent: usize,
     ) -> Cow<'a, str> {
+        let landing = Landing {
+            column,
+            indent,
+            item: expr.start(),
+        };
         self.replacement_for(expr, column, indent, 0)
-            .map_or_else(|| self.placed_slice(expr, parent, indent), Cow::Owned)
+            .map_or_else(|| self.placed_slice(expr, parent, landing), Cow::Owned)
     }
 
     /// `expr`'s one-row form when it joins without a residual break and

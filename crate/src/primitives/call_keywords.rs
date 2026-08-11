@@ -27,6 +27,9 @@ pub(crate) struct KeywordArg<'src> {
     /// The `name=value` text, borrowed for a keyword already in that
     /// form and owned for a positional argument named from its parameter.
     pub(crate) rendered: Cow<'src, str>,
+    /// The offset the argument opens at in the source, the value's own
+    /// start for a positional argument the rendering names.
+    pub(crate) start: TextSize,
     /// The argument's value expression, the recursion point for a
     /// consumer that reshapes a nested call.
     pub(crate) value: &'src Expr,
@@ -68,12 +71,14 @@ pub(crate) fn keyword_args<'src>(
                 } else {
                     format!("{name}={value}")
                 }),
+                start: arg.start(),
                 value: arg,
             }
         })
         .chain(keywords.iter().map(|kw| KeywordArg {
             name: kw.arg.as_deref().expect("`**` keyword excluded above"),
             rendered: Cow::Borrowed(source.slice(kw)),
+            start: kw.start(),
             value: &kw.value,
         }))
         .collect();
@@ -86,12 +91,34 @@ pub(crate) fn keyword_args<'src>(
         })
 }
 
+/// True where `call-layout`'s count trigger explodes `call`, meaning
+/// every argument takes keyword form against the module function the
+/// callee binds and no positional-only prefix pins the order. A call the
+/// cap claims but cannot name stays inline, so a join or a one-row form
+/// written around it stands rather than being reopened. Without a target
+/// map the answer holds at true, the reading that never writes a form a
+/// later explode would undo.
+pub(crate) fn takes_keyword_form(
+    source: &Source,
+    call: &ExprCall,
+    targets: Option<&CallTargets<'_>>,
+) -> bool {
+    targets.is_none_or(|targets| {
+        keyword_args(source, call, resolve_call_params(call, targets))
+            .is_some_and(|keywords| !keywords.has_posonly_prefix)
+    })
+}
+
+/// The callee-offset lookup [`module_call_params`] returns, resolving a
+/// call to the module function it binds.
+pub(crate) type CallTargets<'src> = HashMap<TextSize, &'src Parameters>;
+
 /// Maps each in-module call's callee offset to the parameters of the
 /// top-level function it resolves to, over every function whose
 /// decorators do not bind by position and whose name binds uniquely to
 /// that one definition. Offsets come from `BindingAnalysis`, so a
 /// shadowing local or aliased reference resolves elsewhere.
-pub(crate) fn module_call_params(source: &Source) -> HashMap<TextSize, &Parameters> {
+pub(crate) fn module_call_params(source: &Source) -> CallTargets<'_> {
     let analysis = source.binding_analysis();
     source
         .ast()
@@ -109,7 +136,7 @@ pub(crate) fn module_call_params(source: &Source) -> HashMap<TextSize, &Paramete
 /// call, an unresolved name, or a callee outside the map.
 pub(crate) fn resolve_call_params<'src>(
     call: &ExprCall,
-    targets: &HashMap<TextSize, &'src Parameters>,
+    targets: &CallTargets<'src>,
 ) -> Option<&'src Parameters> {
     targets
         .get(&call.func.as_name_expr()?.range().start())

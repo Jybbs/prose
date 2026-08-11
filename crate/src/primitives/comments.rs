@@ -117,20 +117,28 @@ fn is_rule_char(c: char) -> bool {
     matches!(c, '-' | '=' | '~' | '*' | '_' | '#' | '─' | '━' | '═')
 }
 
-/// True when `line` reads as a decorative rule, either a pure run of five
-/// or more identical rule characters or a run of three or more flanking a
-/// label. Box-drawing dashes count as rule characters.
+/// True when `line` reads as a decorative rule, one repeated rule
+/// character standing alone at five or more or flanking a label at three
+/// or more, on whichever side of the label the author drew it. A closing
+/// `#` caps a trailing run without breaking it, the box shape
+/// `# Label ****#` takes. Box-drawing dashes count as rule characters.
 fn is_rule_line(line: &str) -> bool {
     let body = line.trim_start().strip_prefix('#').map_or("", str::trim);
-    let mut chars = body.chars();
-    let Some(first) = chars.next() else {
-        return false;
-    };
-    if !is_rule_char(first) {
-        return false;
-    }
-    let run = 1 + chars.take_while(|&c| c == first).count();
+    let capped = body.strip_suffix('#').unwrap_or_default();
+    let run = rule_run(body.chars())
+        .max(rule_run(body.chars().rev()))
+        .max(rule_run(capped.chars().rev()));
     run >= 5 || (run >= 3 && body.chars().count() > run)
+}
+
+/// The opening run of one repeated rule character in `chars`, zero when
+/// it opens on anything else. Reversing the iterator measures the run
+/// closing the same text.
+fn rule_run(mut chars: impl Iterator<Item = char>) -> usize {
+    match chars.next() {
+        Some(first) if is_rule_char(first) => 1 + chars.take_while(|&c| c == first).count(),
+        _ => 0,
+    }
 }
 
 #[cfg(test)]
@@ -218,6 +226,19 @@ mod tests {
     }
 
     #[rstest]
+    fn is_rule_line_accepts_trailing_rule(
+        #[values(
+            "# Sequence Operations *********#",
+            "# Loaders ######################",
+            "# -- Public interface ---------",
+            "# ─── Box ───────────────"
+        )]
+        line: &str,
+    ) {
+        assert!(is_rule_line(line));
+    }
+
+    #[rstest]
     fn is_rule_line_rejects_alpha_prose(
         #[values("# describes f", "# Section: helpers", "# x")] line: &str,
     ) {
@@ -226,7 +247,7 @@ mod tests {
 
     #[rstest]
     fn is_rule_line_rejects_mixed_characters(
-        #[values("# = = = =", "# -=-=-=", "# - - -")] line: &str,
+        #[values("# = = = =", "# -=-=-=", "# - - -", "# -*- coding: utf-8 -*-")] line: &str,
     ) {
         assert!(!is_rule_line(line));
     }

@@ -28,8 +28,8 @@ pub(super) fn diagnostics(
 }
 
 /// Formats the buffer against `config` and returns one whole-document
-/// edit, or `None` when the buffer is already formatted, does not parse,
-/// or does not settle.
+/// edit, or `None` when the buffer is already formatted or does not
+/// parse.
 pub(super) fn format_edits(
     original: &str,
     encoding: PositionEncoding,
@@ -39,7 +39,6 @@ pub(super) fn format_edits(
     let range = full_document_range(&source, encoding);
     let pipeline = Pipeline::with_defaults(config);
     let (formatted, _) = pipeline.run(source).ok()?;
-    pipeline.reject_unsettled(&formatted).ok()?;
     formatted.changed_from(original).map(|new_text| {
         vec![TextEdit {
             new_text: new_text.to_owned(),

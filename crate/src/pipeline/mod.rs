@@ -120,25 +120,6 @@ impl Pipeline {
         crate::rule::KNOWN_IDS
     }
 
-    /// Rejects `source` when [`unsettled`](Self::unsettled) names any
-    /// rule, the state a completed run's output holds only when a
-    /// second pass would rewrite it.
-    ///
-    /// # Errors
-    ///
-    /// Returns `PipelineError::Unsettled` carrying the source's name
-    /// and every rule still emitting an edit against it.
-    pub(crate) fn reject_unsettled(&self, source: &Source) -> Result<(), PipelineError> {
-        let rules = self.unsettled(source);
-        if rules.is_empty() {
-            return Ok(());
-        }
-        Err(PipelineError::Unsettled {
-            file: source.source_file().name().to_owned(),
-            rules,
-        })
-    }
-
     /// This pipeline's enabled rule ids in registration order, the
     /// resolved selection that keys the check cache so two runs
     /// differing only in `--select` / `--ignore` key separately.
@@ -198,22 +179,20 @@ impl Pipeline {
     }
 
     /// Replays the editing rules to surface a rule whose output fails to
-    /// re-parse, to compile, or to settle, discarding the rewritten text
-    /// and the diagnostics [`run`](Self::run) would build. `check` calls
-    /// this when [`diagnose`](Self::diagnose) flags format work, in place
-    /// of the full `run`.
+    /// re-parse or to compile, discarding the rewritten text and the
+    /// diagnostics [`run`](Self::run) would build. `check` calls this
+    /// when [`diagnose`](Self::diagnose) flags format work, in place of
+    /// the full `run`.
     ///
     /// # Errors
     ///
     /// Returns `PipelineError::Reparse` when a rule's edit list produces
     /// text that does not re-parse as Python, `PipelineError::Compile`
-    /// when it parses but no longer compiles, `PipelineError::Cell`
+    /// when it parses but no longer compiles, and `PipelineError::Cell`
     /// when a notebook cell that parsed on its own before the rule ran no
-    /// longer does, and `PipelineError::Unsettled` when a rule still
-    /// edits the replayed output.
+    /// longer does.
     pub(crate) fn validate(&self, source: Source) -> Result<(), PipelineError> {
-        let settled = self.fold_rules(source, None)?;
-        self.reject_unsettled(&settled)
+        self.fold_rules(source, None).map(|_| ())
     }
 }
 
@@ -520,44 +499,6 @@ mod tests {
     #[test]
     fn pipeline_is_send_and_sync() {
         assert_send_sync::<Pipeline>();
-    }
-
-    #[test]
-    fn reject_unsettled_names_the_file_and_every_rule_still_editing() {
-        let pipeline = Pipeline::from_rules(vec![
-            Box::new(never_settles("first-widener")),
-            Box::new(never_settles("second-widener")),
-        ]);
-        let source = parse("x = 1\n");
-
-        let err = pipeline
-            .reject_unsettled(&source)
-            .expect_err("both rules still edit");
-
-        assert_matches!(
-            err,
-            PipelineError::Unsettled { ref file, ref rules }
-                if file == source.source_file().name()
-                    && rules.iter().map(RuleId::as_str).eq(["first-widener", "second-widener"])
-        );
-        assert_eq!(
-            err.to_string(),
-            format!(
-                "{} did not settle, `first-widener`, `second-widener` still edit the formatted output",
-                source.source_file().name(),
-            ),
-        );
-    }
-
-    #[test]
-    fn reject_unsettled_passes_a_settled_source() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-            groups: Vec::new(),
-            id: RuleId::from("emits-nothing"),
-        })]);
-        let source = parse("x = 1\n");
-
-        assert_matches!(pipeline.reject_unsettled(&source), Ok(()));
     }
 
     #[test]
@@ -919,18 +860,6 @@ mod tests {
         let source = parse("x = 1\n");
 
         assert!(pipeline.validate(source).is_ok());
-    }
-
-    #[test]
-    fn validate_surfaces_a_replay_a_rule_still_edits() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
-        let source = parse("x = 1\n");
-
-        assert_matches!(
-            pipeline.validate(source),
-            Err(PipelineError::Unsettled { rules, .. })
-                if rules.iter().map(RuleId::as_str).eq(["widener"])
-        );
     }
 
     #[test]

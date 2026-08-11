@@ -17,9 +17,10 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::{
     config::Config,
     primitives::{
+        call_keywords::module_call_params,
         edit::{narrowed_replacement, singleton_groups, splice_parses},
         inline::opening_width,
-        layout::{Separator, explode_parens, item_indent, placed_block},
+        layout::{Landing, Separator, explode_parens, item_indent, placed_block},
         one_row,
         range::return_annotation_range,
     },
@@ -30,7 +31,7 @@ use crate::{
 pub(crate) struct SignatureLayout {
     code_line_length: usize,
     max_params: Option<usize>,
-    one_row: one_row::Settings,
+    one_row: one_row::Settings<'static>,
 }
 
 impl SignatureLayout {
@@ -48,12 +49,13 @@ impl SignatureLayout {
 
 impl Rule for SignatureLayout {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        let targets = module_call_params(source);
         let mut visitor = Layout {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             max_params: self.max_params,
             newline: source.newline_str(),
-            one_row: self.one_row,
+            one_row: self.one_row.against(&targets),
             source,
         };
         visitor.visit_body(&source.ast().body);
@@ -70,7 +72,7 @@ struct Layout<'a> {
     edits: Vec<Edit>,
     max_params: Option<usize>,
     newline: &'static str,
-    one_row: one_row::Settings,
+    one_row: one_row::Settings<'a>,
     source: &'a Source,
 }
 
@@ -101,7 +103,11 @@ impl Layout<'_> {
     /// default the expressions a move must not pad. A variadic parameter
     /// carries its `*` or `**` prefix and holds no default.
     fn place<'p>(&'p self, param: AnyParameterRef, indent: usize) -> Cow<'p, str> {
-        placed_block(self.source, param.range(), indent)
+        placed_block(
+            self.source,
+            param.range(),
+            Landing::own_row(param.start(), indent),
+        )
     }
 
     fn place_params<'p>(

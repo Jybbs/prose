@@ -9,11 +9,7 @@ use ruff_text_size::TextLen;
 use thiserror::Error;
 
 use super::validity::first_semantic_error;
-use crate::{
-    primitives::edit::forward_offsets,
-    rule::{RuleId, render_slugs},
-    source::Source,
-};
+use crate::{primitives::edit::forward_offsets, rule::RuleId, source::Source};
 
 /// Failure modes surfaced by the pipeline itself.
 #[derive(Debug, Error)]
@@ -36,8 +32,6 @@ pub enum PipelineError {
         #[source]
         source: ParseError,
     },
-    #[error("{file} did not settle, {} the formatted output", still_editing(rules))]
-    Unsettled { file: String, rules: Vec<RuleId> },
 }
 
 /// Reparses `new_text`, sliding the source's cell offsets through `map`
@@ -90,18 +84,9 @@ fn reject_split_cell(before: &Source, after: &Source, rule: RuleId) -> Result<()
     Ok(())
 }
 
-/// Renders `rules` as a comma-separated list of backticked slugs
-/// followed by `still edits` or `still edit`, agreeing with the count.
-fn still_editing(rules: &[RuleId]) -> String {
-    let verb = if rules.len() == 1 { "edits" } else { "edit" };
-    format!("{} still {verb}", render_slugs(rules))
-}
-
 #[cfg(test)]
 mod tests {
     use std::assert_matches;
-
-    use rstest::rstest;
 
     use super::*;
     use crate::testing::{notebook, parse};
@@ -141,17 +126,5 @@ mod tests {
         let module = parse("x = 1\n");
 
         assert_matches!(reject_split_cell(&module, &module, rule()), Ok(()));
-    }
-
-    #[rstest]
-    #[case(&["align-equals"], "`align-equals` still edits")]
-    #[case(&["align-equals", "band-constants"], "`align-equals`, `band-constants` still edit")]
-    fn still_editing_agrees_its_verb_with_the_rule_count(
-        #[case] slugs: &[&'static str],
-        #[case] expected: &str,
-    ) {
-        let rules: Vec<RuleId> = slugs.iter().copied().map(RuleId::from).collect();
-
-        assert_eq!(still_editing(&rules), expected);
     }
 }

@@ -34,7 +34,7 @@ tagline: deterministic rule runner
 
 `diagnose(&self, source: &Source) -> Vec<Diagnostic>` collects every enabled rule's findings against the unmodified source, applying no edits and never reparsing, so each range stays anchored to the source as written rather than to an intermediate rewrite. `prose check` and `prose server` report through `diagnose`, where a rendered diagnostic points at the file the author wrote, while `run` feeds the rewritten text behind `prose format`'s diff, on-disk rewrite, and would-reformat summary. Both consult the same [[suppression-map]] and rule set, diverging only in that `diagnose` reads every rule against the original where `run` reads each against the prior rule's reparsed output.
 
-`unsettled(&self, source: &Source) -> Vec<RuleId>` names every rule this pipeline carries whose edits would still rewrite `source`, and answers empty for a buffer that has settled. It reads the subset the pipeline was built with rather than the default set, so a `--select` run answers for that selection alone, and a file carrying a file-level `# prose: off` answers empty because no rule reaches it. `prose format` runs it over every file it rewrote and `prose check --validate` over every file it would rewrite, both refusing the rewrite rather than emitting output a second run would change.
+`unsettled(&self, source: &Source) -> Vec<RuleId>` names every rule this pipeline carries whose edits would still rewrite `source`, and answers empty for a buffer that has settled. It reads the subset the pipeline was built with rather than the default set, so a `--select` run answers for that selection alone, and a file carrying a file-level `# prose: off` answers empty because no rule reaches it. A corpus sweep over each rule alone and each ordered rule pair reads it, which is where a rule leaning on a later rule to finish its work surfaces.
 
 `Diagnostic` carries the per-finding payload returned in the `Vec`:
 
@@ -57,11 +57,10 @@ pub enum PipelineError {
     Cell { cell: OneIndexed, rule: RuleId, source: ParseError },
     Compile { error: SemanticSyntaxError, rule: RuleId },
     Reparse { rule: RuleId, source: ParseError },
-    Unsettled { file: String, rules: Vec<RuleId> },
 }
 ```
 
-Every variant names the rules whose output failed. A `Reparse` error means a rule produced syntactically invalid Python, a `Compile` error means the output parses yet fails the semantic-syntax check Python's own `compile` applies, a `Cell` error means a notebook cell that parsed on its own before the rule ran no longer does, naming that cell by its position in the notebook, and an `Unsettled` error means the run finished with a rule still editing what it wrote, naming the file and every such rule. All four are rule-authoring bugs rather than consumer-recoverable conditions. The intermediate `Source` is dropped either way, leaving no partial output for the caller to inspect.
+Every variant names the rule whose output failed. A `Reparse` error means a rule produced syntactically invalid Python, a `Compile` error means the output parses yet fails the semantic-syntax check Python's own `compile` applies, and a `Cell` error means a notebook cell that parsed on its own before the rule ran no longer does, naming that cell by its position in the notebook. All three are rule-authoring bugs rather than consumer-recoverable conditions. The intermediate `Source` is dropped either way, leaving no partial output for the caller to inspect.
 
 ## Determinism
 

@@ -296,7 +296,7 @@ macro_rules! register_rules {
         /// rule and `true` keeps its defaults, or a sub-table whose
         /// keys carry that rule's knobs. An absent field defaults to
         /// enabled.
-        #[derive(Debug, Default, Deserialize, Serialize)]
+        #[derive(Clone, Debug, Default, Deserialize, Serialize)]
         #[serde(default, rename_all = "kebab-case")]
         pub struct RuleConfigs {
             $(
@@ -373,11 +373,8 @@ macro_rules! register_rules {
             /// Bypasses each rule's `enabled` flag. Snake-case input is
             /// normalized to the canonical kebab form.
             pub fn for_rule(name: &str, config: &Config) -> Option<Self> {
-                let rule: Box<dyn Rule> = match name.replace('_', "-").as_str() {
-                    $($slug => Box::new($ty::from_config(config)),)*
-                    _ => return None,
-                };
-                Some(Self::from_rules(vec![rule]).targeting(config.target_version))
+                let id = RuleId::from_str(&name.replace('_', "-")).ok()?;
+                Some(Self::with_filters(config, &[id], &[]))
             }
 
             /// Builds a pipeline from every rule whose `enabled`
@@ -393,12 +390,17 @@ macro_rules! register_rules {
             /// set, whereas an empty `select` falls back to it.
             /// `ignore` then subtracts from the base, yielding
             /// `select - ignore`.
+            ///
+            /// Each rule is built from a config whose `enabled` flags
+            /// carry the resolved set, so a rule predicting what a later
+            /// rule does to a column reads whether that rule runs in this
+            /// pipeline rather than whether the file enables it.
             pub fn with_filters(
                 config: &Config,
                 select: &[RuleId],
                 ignore: &[RuleId],
             ) -> Self {
-                let mut rules: Vec<Box<dyn Rule>> = Vec::new();
+                let mut resolved = config.clone();
                 $({
                     let id = RuleId($slug);
                     let included = if select.is_empty() {
@@ -406,11 +408,15 @@ macro_rules! register_rules {
                     } else {
                         select.contains(&id)
                     };
-                    if included && !ignore.contains(&id) {
-                        rules.push(Box::new($ty::from_config(config)));
+                    resolved.rules.$field.enabled = included && !ignore.contains(&id);
+                })*
+                let mut rules: Vec<Box<dyn Rule>> = Vec::new();
+                $({
+                    if resolved.rules.$field.enabled {
+                        rules.push(Box::new($ty::from_config(&resolved)));
                     }
                 })*
-                Self::from_rules(rules).targeting(config.target_version)
+                Self::from_rules(rules).targeting(resolved.target_version)
             }
         }
     };

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Import Pair Takes No Gap without the Grouping Rule"
+
+description = '''
+A `from` import butted against a bare `import` **keeps the shape its author wrote** where [[group-imports]] is not running, the two kinds forming no canonical boundary for a blank line to mark.
+'''

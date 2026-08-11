@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/trailing_rule_above_constant_pins_it/input.py
+---
+def render(template):
+    return template
+
+
+# Cache Sizing ****************************************************************#
+
+CACHE_SIZE = 256

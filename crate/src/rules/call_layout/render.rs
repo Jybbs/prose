@@ -11,12 +11,12 @@ use unicode_width::UnicodeWidthStr;
 
 use super::Exploder;
 use crate::primitives::{
-    call_keywords::{CallKeywords, keyword_args, resolve_call_params},
+    call_keywords::{CallKeywords, keyword_args, resolve_call_params, takes_keyword_form},
     edit::apply_inline_edits,
     inline::end_column,
     layout::{
-        Separator, explode_parens, hangs_from_its_row, is_fractured, item_indent,
-        reindent_continuation, reindent_shift, spans_a_string_part,
+        Landing, Separator, block_shift, explode_parens, is_fractured, item_indent, shifted_block,
+        spans_a_string_part,
     },
     tokens::is_opener,
 };
@@ -57,7 +57,7 @@ impl<'a> Exploder<'a> {
             keywords.args.len(),
             |out, i, item_indent| {
                 let arg = &keywords.args[i];
-                self.render_value(out, arg.value, &arg.rendered, item_indent);
+                self.render_value(out, arg.value, &arg.rendered, arg.start, item_indent);
             },
         )
     }
@@ -68,7 +68,8 @@ impl<'a> Exploder<'a> {
     /// [`Self::render_value`]. An argument whose own text spans rows
     /// carries the grouping pair recovered against the list, the pair
     /// holding those rows together, which the join path recovers the
-    /// same way.
+    /// same way, covered with the argument's own range so a keyword
+    /// keeps its `name=` head.
     fn explode_source_order(&self, call: &'a ExprCall, indent: usize) -> String {
         let args: Vec<ArgOrKeyword> = call.arguments.iter_source_order().collect();
         self.explode_items(
@@ -78,12 +79,20 @@ impl<'a> Exploder<'a> {
             |out, i, item_indent| {
                 let value = args[i].value();
                 let range = if self.source.contains_line_break(value.range()) {
-                    self.source
-                        .paren_aware_range(value.into(), (&call.arguments).into())
+                    args[i].range().cover(
+                        self.source
+                            .paren_aware_range(value.into(), (&call.arguments).into()),
+                    )
                 } else {
                     args[i].range()
                 };
-                self.render_value(out, value, self.source.slice(range), item_indent);
+                self.render_value(
+                    out,
+                    value,
+                    self.source.slice(range),
+                    range.start(),
+                    item_indent,
+                );
             },
         )
     }
@@ -107,22 +116,25 @@ impl<'a> Exploder<'a> {
     /// The columns trailing this call on its own physical row, which a
     /// joined or exploded row lands beside. A walk inside a relocated
     /// value carries its own region rather than the source row, whose
-    /// tail belongs to the text the outer walk assembles. A tail opening
-    /// a bracket of its own carries a construct this rule still
-    /// reshapes, so its width is not yet settled and goes uncharged.
+    /// tail belongs to the text the outer walk assembles. A tail holding
+    /// a bracket of its own is charged only through that bracket, since
+    /// exploding the construct it opens ends the row there and leaves
+    /// the rest of the tail on rows of its own.
     fn row_tail(&self, end: TextSize) -> usize {
-        let tail = self.source.row_tail(end);
-        if self.indent.is_some() || self.opens_a_bracket(tail) {
+        if self.indent.is_some() {
             return 0;
         }
-        self.source.row_tail_width(end)
+        match self.first_opener(self.source.row_tail(end)) {
+            Some(offset) => self.source.width_between(end, offset + TextSize::from(1)),
+            None => self.source.row_tail_width(end),
+        }
     }
 
-    /// True where `range` carries an opening bracket, the token that
-    /// marks a construct whose own layout has yet to settle. Walks from
-    /// the nearest token start rather than slicing the stream, since a
-    /// row inside a multi-line string ends partway through a token.
-    fn opens_a_bracket(&self, range: TextRange) -> bool {
+    /// The offset of the first opening bracket inside `range`, the token
+    /// that marks a construct whose own layout has yet to settle. Walks
+    /// from the nearest token start rather than slicing the stream, since
+    /// a row inside a multi-line string ends partway through a token.
+    fn first_opener(&self, range: TextRange) -> Option<TextSize> {
         let tokens = self.source.tokens();
         let first = tokens
             .binary_search_by_start(range.start())
@@ -130,49 +142,75 @@ impl<'a> Exploder<'a> {
         tokens[first..]
             .iter()
             .take_while(|token| token.start() < range.end())
-            .any(|token| range.contains(token.start()) && is_opener(token.kind()))
+            .find(|token| range.contains(token.start()) && is_opener(token.kind()))
+            .map(Ranged::start)
     }
 
-    /// True where `rendered`, the text of one argument, re-indents as a
-    /// block to the item column. It hangs from its own row, and no
-    /// string part inside `value` spans rows, whose interior the move
-    /// would pad.
-    fn reindents(&self, value: &Expr, rendered: &str) -> bool {
-        hangs_from_its_row(self.source, value.start(), rendered)
-            && !spans_a_string_part(self.source, value)
+    /// The columns `rendered`, the text of the argument opening at
+    /// `start` with head `head`, moves its continuation rows by when the
+    /// argument lands at `indent`, read through [`block_shift`]. `None`
+    /// where the argument holds no continuation row, or where a
+    /// row-spanning string part inside `value` holds the whole argument,
+    /// whose interior a move would pad, leaving no row frozen for the
+    /// shift to skip.
+    fn argument_shift(
+        &self,
+        value: &Expr,
+        rendered: &str,
+        head: &str,
+        start: TextSize,
+        indent: usize,
+    ) -> Option<isize> {
+        if spans_a_string_part(self.source, value) {
+            return None;
+        }
+        let landing = Landing {
+            column: end_column(head, indent),
+            indent,
+            item: start,
+        };
+        block_shift(self.source, rendered, &[], value.start(), landing)
     }
 
-    /// Appends `rendered` to `out`, its nested calls reshaped and, where
-    /// the argument re-indents, its continuation lines moved so the
-    /// whole argument hangs from `indent`. A grouping pair around the
-    /// value stays outside the reshape and moves with the rest of the
+    /// Appends `rendered`, the text of the argument opening at `start`,
+    /// to `out`, its nested calls reshaped and, where the argument
+    /// travels, its continuation rows moved by whatever
+    /// [`Self::argument_shift`] reads. A grouping pair around the value
+    /// stays outside the reshape and moves with the rest of the
     /// argument, whether the source carries it or `keyword_args` adds it.
-    fn render_value(&self, out: &mut String, value: &'a Expr, rendered: &str, indent: usize) {
+    fn render_value(
+        &self,
+        out: &mut String,
+        value: &'a Expr,
+        rendered: &str,
+        start: TextSize,
+        indent: usize,
+    ) {
         let slice = self.source.slice(value.range());
         let (head, tail) = rendered
             .rsplit_once(slice)
             .expect("a rendered argument carries its value's source text");
-        if !self.reindents(value, rendered) {
+        let Some(travel) = self.argument_shift(value, rendered, head, start, indent) else {
             let column = end_column(head, indent).saturating_add_signed(self.line_shift);
             out.push_str(head);
             out.push_str(&self.reshape_value(value, Some(indent), column, self.line_shift));
             out.push_str(tail);
             return;
-        }
-        let shift = self.line_shift + reindent_shift(rendered, indent);
+        };
+        let shift = self.line_shift + travel;
         // The value opens on the argument's own row while the head holds
-        // no break, and on a row the re-indent moves otherwise.
+        // no break, and on a row the move carries otherwise.
         let opening_shift = if head.contains('\n') {
             shift
         } else {
             self.line_shift
         };
         let column = end_column(head, indent).saturating_add_signed(opening_shift);
-        let reshaped = self.reshape_value(value, None, column, shift);
-        out.push_str(&reindent_continuation(
-            &format!("{head}{reshaped}{tail}"),
-            indent,
-        ));
+        // The nested walk writes its rows where the source wrote them,
+        // so the move below carries its exploded closer to `indent`.
+        let landing = indent.saturating_add_signed(-travel);
+        let reshaped = self.reshape_value(value, Some(landing), column, shift);
+        out.push_str(&shifted_block(&format!("{head}{reshaped}{tail}"), travel));
     }
 
     /// `value`'s text with every call inside it exploded, its opening
@@ -219,14 +257,19 @@ impl<'a> Exploder<'a> {
         if arguments.is_empty() || self.source.intersects_comment(arguments.inner_range()) {
             return None;
         }
-        let count_trips = self.max_args.is_some_and(|cap| arguments.len() > cap);
+        let count_trips = self.max_args.is_some_and(|cap| arguments.len() > cap)
+            && takes_keyword_form(self.source, call, Some(self.targets));
         let tail = self.row_tail(arguments.range().end());
         let length_trips = !self
             .one_row
             .arguments_form(self.source, arguments)
             .is_some_and(|form| self.one_row.fits(column + form.width() + tail));
         if !count_trips && !length_trips {
-            return self.rejoined(arguments, column, self.rejoin.joined(self.source, arguments));
+            return self.rejoined(
+                arguments,
+                column,
+                self.rejoin.joined(self.source, arguments),
+            );
         }
         match keyword_args(self.source, call, resolve_call_params(call, self.targets)) {
             Some(keywords) if !keywords.has_posonly_prefix => {

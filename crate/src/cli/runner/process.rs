@@ -233,8 +233,8 @@ pub(super) fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
 }
 
 /// Collects the as-written diagnostics, and with `validate` guards the
-/// would-be rewrite against an output that fails to re-parse, to compile,
-/// or to settle.
+/// would-be rewrite against an output that fails to re-parse or to
+/// compile.
 fn diagnose_only(
     source: Source,
     pipeline: &Pipeline,
@@ -282,9 +282,9 @@ fn process_source(
 /// Runs the pipeline and assembles the outcome, deferring the rewrite
 /// to `rewrite`. The caller handles the diagnose-only pass, while the
 /// `diagnose_as_written` flag adds the as-written diagnostics an output
-/// format renders beside the rewrite. A rewritten file passes the settle
-/// check before its outcome is built, so an unsettled rewrite fails
-/// rather than reaching the writer.
+/// format renders beside the rewrite. A rewritten notebook re-reads from
+/// the bytes that reached disk, so a write that lost its cell boundaries
+/// fails rather than being reported clean.
 fn run_and_assemble(
     source: Source,
     pipeline: &Pipeline,
@@ -297,23 +297,14 @@ fn run_and_assemble(
     match pipeline.run(source) {
         Ok((formatted, run_diagnostics)) => {
             let rewrite = rewrite(&formatted, &file);
-            if let Rewrite::Changed(kind) = &rewrite {
-                let landed = if formatted.is_notebook() {
-                    match notebook::as_written(kind.written(), file.name()) {
-                        Some(source) => Some(source),
-                        None => {
-                            return failed(
-                                ExitStatus::ConfigError,
-                                format_args!("{} did not re-read as a notebook", file.name()),
-                            );
-                        }
-                    }
-                } else {
-                    None
-                };
-                if let Err(e) = pipeline.reject_unsettled(landed.as_ref().unwrap_or(&formatted)) {
-                    return failed(ExitStatus::ConfigError, e);
-                }
+            if let Rewrite::Changed(kind) = &rewrite
+                && formatted.is_notebook()
+                && notebook::as_written(kind.written(), file.name()).is_none()
+            {
+                return failed(
+                    ExitStatus::ConfigError,
+                    format_args!("{} did not re-read as a notebook", file.name()),
+                );
             }
             FileOutcome::Done {
                 cached: false,
@@ -371,7 +362,7 @@ mod tests {
     }
 
     #[rstest]
-    fn every_pass_refuses_a_rewrite_a_rule_still_edits(
+    fn every_pass_lands_a_rewrite_a_rule_still_edits(
         #[values(Pass::Both, Pass::Rewrite, Pass::Diagnose { validate: true })] pass: Pass,
     ) {
         let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
@@ -379,7 +370,7 @@ mod tests {
 
         let outcome = run_pipeline(source, &pipeline, pass);
 
-        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
+        assert_matches!(outcome, FileOutcome::Done { .. });
     }
 
     #[test]

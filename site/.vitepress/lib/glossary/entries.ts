@@ -542,12 +542,12 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'settle': {
     aliases    : ['settled', 'settles', 'settling'],
-    definition : 'A file settles when no enabled rule would rewrite it again. `prose format` '
-               + 'confirms it over every file it rewrote and `prose check --validate` over '
-               + 'every file it would rewrite, naming the rule still editing rather than '
-               + 'emitting output a second run would change. The guarantee covers any subset '
-               + 'a project enables rather than the default set alone, so a `--select` run '
-               + 'settles in one pass too.',
+    definition : 'A file settles when no enabled rule would rewrite it again, the state '
+               + 'every run leaves behind because each rule measures the columns it emits '
+               + 'rather than the ones a later rule will. The guarantee covers any subset a '
+               + 'project enables rather than the default set alone, so a `--select` run '
+               + 'settles in one pass too, and a corpus sweep over each rule alone and each '
+               + 'ordered rule pair holds it.',
     families   : ['engine'],
     href       : '/reference/pipeline-order#every-subset-settles'
   },

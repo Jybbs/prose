@@ -3,5 +3,5 @@ previewable = true
 title       = "Repeated From-Imports of One Module Gather onto One Line"
 
 description = '''
-`merge-members` folds two `from pkg import ...` statements into **one line carrying both members**, so the module appears once with its roster behind it, ordered as [[alphabetize]] would leave it.
+`merge-members` folds two `from pkg import ...` statements into **one line carrying both members**, so the module appears once with its roster behind it in the order the run wrote them.
 '''
