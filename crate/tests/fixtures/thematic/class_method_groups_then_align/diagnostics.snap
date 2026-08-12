@@ -6,9 +6,8 @@ input_file: crate/tests/fixtures/thematic/class_method_groups_then_align/input.p
 align-colons@103..183
 align-equals@108..191
 align-imports@11..12
-alphabetize@0..495
+alphabetize-siblings@0..495
 band-constants@0..76
-blank-lines@93..94
 group-imports@0..76
 signature-annotations@206..214
 signature-annotations@271..277
@@ -16,3 +15,4 @@ signature-annotations@287..293
 signature-annotations@300..307
 signature-annotations@393..397
 signature-annotations@440..449
+space-statements@93..94

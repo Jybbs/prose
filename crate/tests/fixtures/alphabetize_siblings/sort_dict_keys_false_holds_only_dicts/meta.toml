@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Only Dict Keys Hold When Sorting Is Off"
+
+description = '''
+With `sort-dict-keys = false`, `CONFIG` alone keeps `"zulu"` before `"alpha"`. The imports still sort, `__all__` still sorts under the untouched `sort-dunder-lists` setting, and the `render` keywords still reorder to `alpha=` before `zulu=`, because the setting turns off the dict-literal sort alone.
+'''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Single-Line Containers Strip Too"
 
 description = '''
-Calls, lists, dicts, and signatures whose brackets sit on one source line still lose the trailing `,`. Single-line trailing commas carry no semantic weight across the in-scope contexts, so **the same backward-scan path strips them as it does multi-line input**.
+`f(a, b, c,)`, `[1, 2, 3,]`, `{"a": 1, "b": 2,}`, and `def signature(a, b, c,):` each keep their brackets on one source line, yet still carry a trailing `,`. **`strip-trailing-commas` strips each one along the same backward-scan path it uses on multi-line input**, since a single-line trailing comma carries no semantic weight in these contexts.
 '''

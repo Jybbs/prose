@@ -1,8 +1,0 @@
-[docs]
-canonical   = true
-previewable = true
-title       = "Every Comment Opens on a Single `# ` and Clears Two Spaces of Code"
-
-description = '''
-A trailing `#note` gains the space its text was missing and moves two columns clear of `x = 1`, while the block comment below it opens the same way. The two openers land on one shape, so the eye reads the delimiter once rather than re-parsing it per line.
-'''

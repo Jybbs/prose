@@ -3,5 +3,5 @@ previewable = false
 title       = "An F-String Nested in a Field Keeps Its Quotes"
 
 description = '''
-The inner f-string closes while the outer one is still open, so the quote facet passes over it exactly as it passes over a plain literal inside a field. Swapping it would put a bare `"` inside the outer string's replacement field, which Python rejects before 3.12.
+`row` nests the f-string `f'{inner}'` inside the replacement field of a double-quoted one, and the quotes facet passes over it exactly as it passes over a plain literal in a field. Swapping the inner quotes would put a bare `"` inside the outer string's field, a nesting Python rejects before 3.12.
 '''

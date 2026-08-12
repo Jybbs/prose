@@ -3,5 +3,5 @@ previewable = false
 title       = "A Dependency Cycle Skips the Whole Run"
 
 description = '''
-When the intra-run dependency graph carries a cycle, **the run skips entirely**. `FORWARD` references `BACKWARD` and `BACKWARD` references `FORWARD`, so no topological tier exists and source order survives.
+`FORWARD` reads `BACKWARD` and `BACKWARD` reads `FORWARD`, so the run's dependency graph carries a cycle. No ordering can place each definition ahead of its use, so **the whole run skips**, leaving even the independent `MIDDLE = 0` in place.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Leading Comment Holds the Import Below It"
 
 description = '''
-Nothing reads `multiprocessing`, and the import is loaded for its side effect alone. **The line holds**, because deleting it would strand the comment on whatever statement follows.
+Nothing reads the `multiprocessing` binding, and the comment above says `multiprocessing.connection` is imported for its side effect alone. **The line holds**, because removing it would strand the leading comment on whatever statement comes next.
 '''

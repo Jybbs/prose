@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_collections/call_splits_atomic_run/input.py
+---
+reflow-collections@151..257
+reflow-collections@17..132

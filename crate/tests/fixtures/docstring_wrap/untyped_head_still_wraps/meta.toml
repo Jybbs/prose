@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "An Untyped Name-Colon Line Wraps as Prose"
-
-description = '''
-A `name: description` line carrying no parenthesized type stays ordinary prose and wraps to the description budget, which is the negative that keeps the typed-field-header passthrough from claiming every colon-bearing line it meets.
-'''

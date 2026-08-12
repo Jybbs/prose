@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Imports Sort as One Flat Block When Grouping Is Off"
+
+description = '''
+With `group-imports = false`, the four imports **sort as one flat block** with no blank-line dividers between sections. `import os` and `import sys` lead because bare `import` statements sort ahead of `from` imports, and `from collections import Counter` and `from typing import Any` follow in name order.
+'''

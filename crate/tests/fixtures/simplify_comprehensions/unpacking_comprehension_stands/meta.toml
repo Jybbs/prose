@@ -3,5 +3,5 @@ previewable = false
 title       = "An Unpacking Comprehension Stands"
 
 description = '''
-A comprehension that unpacks each member spreads it rather than copying it, so neither the dict form nor the list form reaches a constructor call.
+`{**row for row in rows}` spreads each `row`'s entries into the result, and `[*row for row in rows]` does the same with its elements, so each member is unpacked rather than copied. A constructor call like `dict(rows)` or `list(rows)` would keep the rows whole, so both comprehensions stand.
 '''

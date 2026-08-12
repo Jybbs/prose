@@ -3,5 +3,5 @@ previewable = true
 title       = "A One-Member Tuple Drops Its Comma on the Way Out"
 
 description = '''
-The comma in `(only,)` is grammar rather than content, so a result that is no longer a tuple leaves it behind.
+`set((only,))` and `list((only,))` each wrap a one-member tuple, and both rewrite to the direct literals `{only}` and `[only]`. The comma in `(only,)` is grammar rather than content, in that it only marks the expression as a tuple, so the rewritten literal drops it along with the parentheses.
 '''

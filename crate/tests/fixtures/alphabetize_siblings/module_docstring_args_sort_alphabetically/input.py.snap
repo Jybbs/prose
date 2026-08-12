@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/module_docstring_args_sort_alphabetically/input.py
+---
+"""
+Dial helpers.
+
+Args:
+    alpha: reached first alphabetically.
+    zebra: reached last alphabetically.
+"""
+
+CONNECT_TIMEOUT = 5.0

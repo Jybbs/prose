@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Already Hanging-Wrapped Entry Passes Through Unchanged"
+
+description = '''
+The `first` entry under `Args:` is already wrapped at the docstring budget, with its continuation lines sitting at the hanging-column indent, so the entry **passes through unchanged**. The rule rewrites only when re-wrapping would alter the output, leaving `first` and its short sibling `second` exactly as written.
+'''

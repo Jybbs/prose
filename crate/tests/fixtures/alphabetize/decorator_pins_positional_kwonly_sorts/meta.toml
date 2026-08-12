@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Pinned Positionals, Sorted Keyword-Only Parameters"
-
-description = '''
-Positional-or-keyword parameters hold their source order while **the keyword-only sub-list still sorts**. Keyword-only parameters sit past the `*` separator and bind by name, so they reorder freely, whereas the positionals ahead of the `*` never move because reordering them would rebind callers a single-file pass cannot see.
-'''

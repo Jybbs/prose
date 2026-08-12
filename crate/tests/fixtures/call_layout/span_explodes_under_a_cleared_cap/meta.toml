@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Row-Spanning Argument Explodes a Call Under a Cleared Cap"
-
-description = '''
-A call with `max-args` cleared, so no argument count can trip the explode, still breaks one argument per line while a member spans rows. The row break is the whole trigger here.
-'''

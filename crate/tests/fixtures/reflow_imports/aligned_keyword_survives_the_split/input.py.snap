@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_imports/aligned_keyword_survives_the_split/input.py
+---
+from __future__ import annotations
+from typing     import Any, AsyncIterator, Awaitable, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Text
+from typing     import Tuple, Union

@@ -3,5 +3,5 @@ previewable = true
 title       = "An Own-Line Comment Breaks the Operator Run"
 
 description = '''
-A comment on its own line between two operands pushes them onto non-adjacent source lines, so the **line-distance check breaks the run** regardless of comment content. The rows below the divider still align among themselves.
+The `# divider` comment on its own line pushes `foo == 1` and `bar_baz == 2` onto non-adjacent source lines, so the **line-distance check breaks the run** regardless of what the comment says. `bar_baz` and `qux` below the divider still align among themselves.
 '''

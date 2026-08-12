@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A One-Arg Function Signature Drops the Parameter Padding"
+
+description = '''
+`fetch(timeout : float)` holds a single parameter, the canonical singleton shape, so `strip-stranded-padding` **strips that padding to zero**, landing on `timeout: float`. `store` and `render` collapse multiple parameters onto one line each, and the rule strips every one of them too, because a same-line `:` has no column to align against.
+'''

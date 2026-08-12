@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Keyword Widening Splits the Statement Run"
+
+description = '''
+`formatter` would need eight spaces of padding to share `label_width_total`'s `=` column, and its first line also widens as the `Formatter` call's keywords gain their spacing in the same pass. The line-cap check reads each row at that final width, padding and keyword widening both counted, so the would-be row overflows and `formatter` splits out of the statement run, while `offset_column_padding` and `display_width` still align inside the call.
+'''

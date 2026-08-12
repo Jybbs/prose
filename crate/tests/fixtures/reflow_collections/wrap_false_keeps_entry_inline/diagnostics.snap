@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_collections/wrap_false_keeps_entry_inline/input.py
+---
+reflow-collections@10..142

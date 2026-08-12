@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/wrap_docstrings/description_and_args_each_shape/input.py
+---
+wrap-docstrings@109..323

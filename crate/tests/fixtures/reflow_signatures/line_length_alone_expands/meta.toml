@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Signature That Overflows `code-line-length` Expands"
+
+description = '''
+`render` takes only three parameters, comfortably under the count cap, but its inline form runs past the default `code-line-length` of 88 columns. **The length trigger fires alone**, so `left_descriptor`, `palette_descriptor`, and `right_descriptor` each move onto their own line.
+'''

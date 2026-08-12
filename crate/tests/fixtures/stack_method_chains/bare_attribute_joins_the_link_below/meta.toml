@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Bare Attribute Joins the Link Below It"
+
+description = '''
+Splitting the chain gives each call its own row, whereas `.second`, a bare attribute that is never called, opens no row of its own. It lands ahead of the call that follows it, the row reading `.second.third()`, so every row of the stacked chain ends in a call.
+'''

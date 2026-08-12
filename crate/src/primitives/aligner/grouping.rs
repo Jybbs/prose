@@ -39,6 +39,13 @@ impl<M> From<Option<M>> for Slot<M> {
 /// past a multi-line row. The multi-line flag tracks the last member
 /// only, so a `Bridge` extends the run's reach without tripping the
 /// break for a held row.
+///
+/// An item sharing its row with a sibling lands in a run of its own,
+/// because a column belongs to a row that one member owns. Two items on
+/// one row otherwise pair diagonally, the trailing item of one row
+/// landing in a column with the leading item of the next. The lone run
+/// still reaches the rules that read a single-member group, so a packed
+/// row sheds stale padding while seating no column.
 pub(crate) fn adjacent_member_groups<T, M, F>(
     source: &Source,
     items: impl IntoIterator<Item = T>,
@@ -53,9 +60,21 @@ where
     let mut current: Vec<M> = Vec::new();
     let mut prev_end: Option<TextSize> = None;
     let mut prev_multiline = false;
-    for item in items {
+    let items: Vec<T> = items.into_iter().collect();
+    let shared = shared_rows(source, &items);
+    for (i, item) in items.into_iter().enumerate() {
         let range = item.range();
-        match classify(item) {
+        let slot = classify(item);
+        if shared[i] {
+            flush_run(&mut groups, &mut current);
+            prev_end = None;
+            prev_multiline = false;
+            if let Slot::Member(member) = slot {
+                groups.push(vec![member]);
+            }
+            continue;
+        }
+        match slot {
             Slot::Member(member) => {
                 let extends = prev_end.is_some_and(|end| {
                     source.consecutive_lines(end, range.start())
@@ -168,6 +187,20 @@ fn flush_run<M>(groups: &mut Vec<Vec<M>>, current: &mut Vec<M>) {
     if !current.is_empty() {
         groups.push(std::mem::take(current));
     }
+}
+
+/// One flag per item, set where the item shares a source row with the
+/// sibling on either side of it.
+fn shared_rows<T: Ranged>(source: &Source, items: &[T]) -> Vec<bool> {
+    let touches = |a: &T, b: &T| source.same_line(a.range().end(), b.range().start());
+    items
+        .iter()
+        .enumerate()
+        .map(|(i, item)| {
+            i.checked_sub(1).is_some_and(|p| touches(&items[p], item))
+                || items.get(i + 1).is_some_and(|next| touches(item, next))
+        })
+        .collect()
 }
 
 #[cfg(test)]

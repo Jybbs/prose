@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Sole Generator Argument Takes a Grouping Pair"
+
+description = '''
+The line overflows the cap, so the call explodes and its sole argument binds to `entries=`. Python accepts a bare generator only as a call's lone positional and not after a `name=` prefix, so the bound value gains parentheses rather than landing as source that fails to parse.
+'''

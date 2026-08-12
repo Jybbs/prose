@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Method Docstrings Expand inside the Class Body"
+
+description = '''
+`empty`'s docstring expands at the **method-body indent, two steps deeper than the module column**. The body line lands at the same column as `return not self.items`, confirming the rewrite reads the actual enclosing indent rather than counting from column 0.
+'''

@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Positional-Only Prefix Blocks the Explode"
+
+description = '''
+`render` declares `data` positional-only through the `/` marker, so `d` can never be written `data=d`. An argument that cannot take keyword form blocks the reshape, so the four-argument call stays inline unchanged whatever its argument count.
+'''

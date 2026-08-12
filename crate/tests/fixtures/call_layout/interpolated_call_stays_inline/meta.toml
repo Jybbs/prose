@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Call Inside a Replacement Field Stays Inline"
-
-description = '''
-The enclosing call opens to one argument per line while the `len(...)` inside the f-string keeps its source shape, because an f-string literal is opaque to layout however wide the line it sits on runs. Splicing a break into a single-quoted replacement field parses only on Python 3.12 and later, so the interior is left for `line-overflow` to report.
-'''

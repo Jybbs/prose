@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "An Over-Count Dict Under a Subscript Settles in One Run"
-
-description = '''
-A dict past `max-dict-entries` standing as a subscript base expands on the count trigger, and the enclosing subscript then reads the expanded dict as a break the rejoin cannot swallow. **The literal reaches one shape on the first run** rather than exploding and rejoining on alternate passes.
-'''

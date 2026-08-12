@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Aligned Keyword Value Measures Its Padded Column"
+
+description = '''
+Inside the exploded `emit` call, `align-equals` spaces the keyword `=` into a shared column, moving `note`'s value right of where the tight `note=helper(...)` put it. The `helper` call fits the line at its source column but crosses the budget at the padded one, so it explodes here rather than leaving an over-budget line for the next run.
+'''

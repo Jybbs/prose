@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Closer Sitting on the Last Content Line Drops to Its Own Line"
+
+description = '''
+The closing `"""` in `greet`'s docstring shares a line with `Trailing line touches the closer.` **The closer drops to the next line at the docstring's indent**, and the body content above it is left untouched.
+'''

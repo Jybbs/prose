@@ -3,5 +3,5 @@ previewable = false
 title       = "Interleaved Methods Split the Field Run"
 
 description = '''
-A class body declares fields, defines methods, then declares more fields. The methods **break the field run into two independent groups**, each aligning its `:` column at its own widest name rather than as one cross-method block.
+The body of `Account` declares three fields, defines `activate` and `deactivate`, then declares two more fields. The methods **break the field run into two independent groups**, so `id` through `email` align at the width of `user_name` whereas `balance` and `currency_code` align at the wider column their own pair needs.
 '''

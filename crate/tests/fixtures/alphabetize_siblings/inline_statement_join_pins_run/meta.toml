@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Semicolon-Joined Sibling Pins the Import Run"
+
+description = '''
+The last import in the run, `import a`, shares its physical line with `x = 1` through a `;`. Moving that import would take the `;` and the joined statement along into the new slot, producing text that no longer parses, so the run keeps `import b` then `import a` exactly as written.
+'''

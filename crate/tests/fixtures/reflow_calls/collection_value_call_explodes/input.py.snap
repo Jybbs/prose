@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_calls/collection_value_call_explodes/input.py
+---
+emit(
+    alpha=1,
+    beta=[
+        helper(
+            aaaaaa,
+            bbbbbb,
+            cccccc
+        ),
+    ],
+    gamma=3,
+    delta=4
+)

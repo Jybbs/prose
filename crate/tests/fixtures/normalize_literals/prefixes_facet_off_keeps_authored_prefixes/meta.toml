@@ -3,5 +3,5 @@ previewable = true
 title       = "Turning Off `unify-prefixes` Keeps a Prefix Cased as Written"
 
 description = '''
-With `unify-prefixes = false` both the `U` and the `R` keep the case they were typed in, while the hex marker still lowercases. The delimiters still settle, since the quote facet reads the prefix without rewriting it.
+With `unify-prefixes = false` the `U` in `U"y"` and the `R` in `R"a\d"` keep the case they were typed in, whereas `0XABC` still lowercases its marker to `0xABC` and `'ada'` still settles on double quotes. The quotes facet reads a prefix without rewriting it, so turning one facet off leaves the other two running.
 '''

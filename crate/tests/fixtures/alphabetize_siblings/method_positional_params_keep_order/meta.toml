@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Method Parameters Keep Their Order"
+
+description = '''
+`forward`'s `input, hidden` and `lerp`'s `start, end, weight` **never reorder**, even though `hidden` sorts before `input` and `end` before `start`. Positional-or-keyword parameters bind callers by position, so reordering them would change call sites a single-file pass cannot see, and the `@staticmethod` on `lerp` changes nothing about that hold.
+'''

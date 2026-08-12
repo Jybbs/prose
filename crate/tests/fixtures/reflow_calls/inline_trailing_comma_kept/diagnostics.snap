@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_calls/inline_trailing_comma_kept/input.py
+---
+reflow-calls@16..50

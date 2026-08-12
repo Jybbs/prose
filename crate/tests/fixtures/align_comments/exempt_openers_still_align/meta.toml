@@ -3,5 +3,5 @@ previewable = true
 title       = "An Exempt Opener Still Joins the Column"
 
 description = '''
-[[comment-spacing]] leaves a `#:` or `#!` opener untouched, and that exemption covers what a comment opens with rather than where it sits. A Sphinx attribute doc and a type pragma therefore travel to the shared column alongside any other trailing comment.
+[[normalize-comment-spacing]] leaves special comments untouched, like the `#:` Sphinx attribute doc after `counter` and the `# type: ignore` pragma after `n`, but that exemption covers what a comment opens with rather than where it sits. Both rows still shift into one shared column like any other trailing comment.
 '''

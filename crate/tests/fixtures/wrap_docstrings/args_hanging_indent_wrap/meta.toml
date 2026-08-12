@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Structured `Args:` Sections Wrap to the Wider Budget"
+
+description = '''
+The `name` entry under `Args:` overruns its line, so it **re-wraps to the section budget with a hanging indent at the description's start column**, its continuation lines sitting under `A descriptive name` rather than at the parameter-list indent. The short `retries` entry below it is left alone.
+'''

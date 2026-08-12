@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/wrap_docstrings/within_budget_docstring_untouched/input.py
+---
+

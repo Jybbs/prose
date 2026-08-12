@@ -4,8 +4,8 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/init_assigns_then_method_sort/input.py
 ---
 align-equals@68..97
-alphabetize@142..276
-blank-lines@133..134
-blank-lines@14..15
-blank-lines@178..179
-blank-lines@227..228
+alphabetize-siblings@142..276
+space-statements@133..134
+space-statements@14..15
+space-statements@178..179
+space-statements@227..228

@@ -3,5 +3,5 @@ previewable = false
 title       = "Keyless Dict-Unpacking Comprehension Pushes a Scope"
 
 description = '''
-A PEP 798 `{**d for ...}` dict comprehension carries no key expression, yet **still pushes its own comprehension scope** binding the loop target, the way its keyed counterpart does.
+`merged = {**d for d in dicts}` is a PEP 798 dict comprehension with no key expression, only the `**d` unpacking. **It still pushes its own `Comprehension` scope** the way a keyed dict comprehension does, so the loop target `d` binds there and the module table holds only `dicts` and `merged`.
 '''

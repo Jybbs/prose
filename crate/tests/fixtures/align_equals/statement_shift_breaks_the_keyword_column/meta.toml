@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Statement Shift Unseats the Keyword Column Beneath It"
+
+description = '''
+Padding `formatter` to align with `labels_map` and `label_width` shifts its call two columns right, carrying `file` along while `offset_width`, `label_width`, and `show_caches` stay at their source columns. The keyword run is measured at those shifted positions, so the shared baseline is gone and every keyword in the call takes the single-space `=` instead, the form a second pass over the output would also produce. `renderer` below is never shifted, and its `antialias` and `color_depth` still align, showing the buffer above is the shift's consequence rather than a refusal of call-site columns.
+'''

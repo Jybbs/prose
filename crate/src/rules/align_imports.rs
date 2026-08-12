@@ -21,7 +21,7 @@ use ruff_text_size::{Ranged, TextSize};
 
 use crate::{
     config::Config,
-    primitives::aligner,
+    primitives::{aligner, imports::import_group},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -91,18 +91,25 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
 }
 
 /// Maps each aligned `from M import N` statement's start to the display
-/// column its `import` keyword lands at, so `import-layout` packs an
+/// column its `import` keyword lands at, so `reflow-imports` packs an
 /// over-budget import's names against the prefix width the alignment
 /// gives it. `settings` carries no line cap, so a to-be-split import
 /// reads the column it aligns to once split rather than the natural
 /// column the cap would leave it at unsplit.
+///
+/// `divided` keys the run on the canonical import group as well as the
+/// form, so the prediction closes where `space-statements` writes its
+/// divider rather than running across it. A caller writing no divider
+/// passes `None` and the prediction reads raw adjacency.
 pub(crate) fn aligned_import_columns(
     source: &Source,
     settings: aligner::Settings,
+    divided: Option<&[String]>,
 ) -> HashMap<TextSize, usize> {
     let groups =
         aligner::keyed_line_adjacent_groups(source, &source.ast().body, AlignImports::SLUG, |s| {
-            qualify(source, s).map(|(form, m)| (form, (s.start(), m)))
+            let group = divided.and_then(|first_party| import_group(s, first_party));
+            qualify(source, s).map(|(form, m)| ((form, group), (s.start(), m)))
         });
     let mut columns = HashMap::new();
     for group in groups {

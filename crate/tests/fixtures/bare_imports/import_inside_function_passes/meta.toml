@@ -3,5 +3,5 @@ previewable = false
 title       = "An Import Nested in a Function Passes"
 
 description = '''
-`import sys` lives inside a function, where its binding is local rather than module-level. The rule reads module-scope imports, so a function-local import is out of its reach and passes.
+`import sys` sits inside `show_version`, so its binding is local to the function rather than module-level. This lint inspects only module-scope imports, leaving the function-local import unexamined even though `sys.version` is its single attribute use.
 '''

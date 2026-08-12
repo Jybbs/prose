@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Raw Docstring Keeps Its Trailing Backslash"
-
-description = '''
-An `r` prefix stops a trailing backslash from continuing the line, leaving it **a literal character of the docstring's value**. The wrap reflows it as an ordinary word rather than dropping it, so the guard against the invalid-escape shape a non-raw body produces never costs a raw body a character it was written to carry.
-'''

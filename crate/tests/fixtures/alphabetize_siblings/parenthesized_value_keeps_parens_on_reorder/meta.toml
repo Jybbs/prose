@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Parenthesized Value Keeps Its Parentheses on Reorder"
+
+description = '''
+`"a": 2` moves ahead of `"b"`, whose value sits inside parentheses that span lines. The entry's text runs to its paren-aware end, so the closing `)` travels with the value rather than staying behind with the comma, and the reordered dict keeps every parenthesis balanced.
+'''

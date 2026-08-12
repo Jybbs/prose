@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_method_chains/dotted_receiver_opens_no_chain/input.py
+---
+result = settings.rules.stack_method_chains.max_links.cap()

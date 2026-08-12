@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Comments Already Reading Right Emit Nothing"
-
-description = '''
-A block comment opening on `# ` and a trailing comment two columns clear of its code are both already settled, so the rule emits no edit and the file passes through byte-identical.
-'''

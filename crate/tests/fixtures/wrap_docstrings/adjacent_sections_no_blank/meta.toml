@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Heading Directly After an Entry Closes Its Section"
+
+description = '''
+The `Returns:` heading sits directly below the `url` entry with no blank line between them. Reaching it wraps the still-buffered `url` description at its hanging column and then emits the heading unchanged, the one path where a heading arrives while an entry paragraph is still open.
+'''

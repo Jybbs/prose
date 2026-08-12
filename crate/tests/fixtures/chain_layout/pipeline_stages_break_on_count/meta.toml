@@ -1,8 +1,0 @@
-[docs]
-canonical   = true
-previewable = true
-title       = "A Three-Stage Chain Breaks and Hangs Each Dot"
-
-description = '''
-A chain carrying more links than `max-links` breaks even where its single-line form fits the budget, because enough stages to read as a pipeline read better stacked. The head holds the receiver with its first call, and every link below it hangs beneath that head's own dot, giving the chain one aligned column to scan down.
-'''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Multi-Line Default Closes the Parameter Run"
 
 description = '''
-A parameter whose default value spans several lines aligns with the parameters before it, then **closes the run**, so the parameters after it align as a separate group, mirroring an exploded call's keyword runs.
+`opts` takes an exploded dict as its default, spanning three lines, yet its `=` still aligns with `timeout`'s on the line where the dict opens. **The multi-line default then closes the run**, so `mode` and `level` below it align as a separate group on their own `=` column rather than joining the first.
 '''

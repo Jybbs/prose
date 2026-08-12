@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/frame_docstrings/raw_prefix_kept_on_requote/input.py
+---
+def escape_pattern():
+    r"""Matches a \d digit run."""
+    return 1

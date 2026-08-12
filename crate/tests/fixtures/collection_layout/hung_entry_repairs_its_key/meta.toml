@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Hung Entry Rejoins Its Key Before Breaking at the Colon"
-
-description = '''
-A dict entry whose key spans lines and whose joined width still overflows takes both moves, the key rejoining onto one line and the entry then breaking at its `:` to hang the value. The hang reads the repaired key rather than the source slice, so the row that breaks carries the same one-line key its siblings do.
-'''

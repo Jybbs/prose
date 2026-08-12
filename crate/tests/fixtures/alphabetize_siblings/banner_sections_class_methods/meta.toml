@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Banner Sections a Class Body"
+
+description = '''
+The `# --- Lifecycle ---` and `# --- Helpers ---` banners split `Session`'s methods into two sections, and **the methods sort within each section** while each divider holds the place the author drew it. `close` moves above `open` in the first, `decode` above `encode` in the second, and no method crosses a banner.
+'''

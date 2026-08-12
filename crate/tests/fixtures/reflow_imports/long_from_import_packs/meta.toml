@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Long From-Import Packs into Repeated-Prefix Lines"
+
+description = '''
+The five names on `from pkg.sub import` overrun the `import-line-length` budget of `40`, so the statement **splits into a run of repeated-prefix statements**. Each line greedily packs the alphabetized names up to the budget before the next opens, landing `alpha, beta, delta` on the first and `epsilon, gamma` on the second.
+'''

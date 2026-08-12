@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize_siblings/dunder_slots_strings_sort/input.py
+---
+alphabetize-siblings@33..64

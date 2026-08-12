@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "One Blank Below a Module's Leading Comment Stays"
+
+description = '''
+`# Configure the sink.` describes `import os` rather than dividing a section, and the author left one blank line between the two. **A description opening the file keeps the blank the author wrote**, where the same block between two statements would bind tight against the import.
+'''

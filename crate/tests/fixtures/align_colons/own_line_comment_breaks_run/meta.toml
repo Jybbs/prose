@@ -3,5 +3,5 @@ previewable = true
 title       = "An Own-Line Comment Splits the Alignment Run"
 
 description = '''
-An own-line comment between two entries closes the run and starts a fresh one, so the entries above and below the comment align on their own columns rather than one shared column. A trailing comment stays with its entry, whereas a standalone comment line breaks the run.
+The `#` comment on its own line between `"https"` and `"ssh"` closes one run and starts a fresh one. `"http"` and `"https"` align above it and `"ssh"` and `"ftp"` align below it, each pair on the column its own widest key sets rather than one shared column across the comment.
 '''

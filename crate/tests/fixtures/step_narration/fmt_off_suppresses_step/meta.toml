@@ -3,5 +3,5 @@ previewable = true
 title       = "A `# fmt: off` Block Suppresses the Lint"
 
 description = '''
-A `# fmt: off` block carries the **same suppression weight against lint diagnostics as it does against edits**. A numbered-step comment sitting inside the block escapes the rule's emission path entirely.
+`# 1. normalize input` sits inside a `# fmt: off` block in `process`, and `step-narration` **drops the diagnostic it would otherwise report on that comment**. The suppression carries the same weight against lint diagnostics as it does against rewrites, covering both alike.
 '''

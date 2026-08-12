@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Spread Entry Counts Toward the Dict Cap"
+
+description = '''
+`**extra` occupies an entry slot just like a keyed pair, so `counts_spread` counts four entries, crosses `max-dict-entries`, and expands to one entry per line. The keyed pairs `"a"`, `"c"`, and `"d"` alone would sit at the cap and stay inline.
+'''

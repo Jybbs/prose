@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Multi-Hash Heading Keeps Its Run and Gains the Space"
-
-description = '''
-The space lands after the whole hash run rather than flattening it, so a `##` or `####` heading survives as the section marker it was written as and only its text shifts. A run already carrying its space is left as written.
-'''

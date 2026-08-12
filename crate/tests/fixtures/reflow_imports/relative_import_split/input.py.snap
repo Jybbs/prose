@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reflow_imports/relative_import_split/input.py
+---
+from ..pkg import alpha, beta
+from ..pkg import delta, gamma

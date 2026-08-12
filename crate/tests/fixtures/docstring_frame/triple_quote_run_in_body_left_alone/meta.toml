@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Body Holding a Triple-Quote Run Keeps Its Quotes"
-
-description = '''
-A docstring whose body already holds a `"""` run **keeps its original quotes**, because re-delimiting to `"""` would abut the closer and break the string. The safe fallback leaves this rare shape untouched.
-'''

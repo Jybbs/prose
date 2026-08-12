@@ -3,5 +3,5 @@ previewable = false
 title       = "A Module Docstring Aligns Like Any Other"
 
 description = '''
-The colon walker reaches the module's own docstring alongside every class and function one, so a module-level section and a sectionless run below it settle their columns the same way.
+This docstring belongs to the module itself rather than to a class or function, and the colon walker reaches it all the same. The `Attributes:` entries `host` and `retry_budget` settle their type and `:` columns as a section, and the sectionless `handler` and `codec` run below the blank line resolves its own columns the same way.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Wide Field Breaks the Run in Reading Order"
 
 description = '''
-Reading in source order, `really_really_long_field` sits more than `max-shift` from the fields above it, so it **breaks the run** and its `:` lands flush against the name. The fields before it and the fields after it each align in their own column.
+Aligning `short` and `medium_size` out to `really_really_long_field` would shift their `:` more than `max-shift` columns, so the wide field **breaks the run** and its own `:` lands flush against the name. `short` and `medium_size` share one column above it, and `longer` and `tiny` open a fresh column below.
 '''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Dict Whose Entries Share Lines Keeps Source Order"
+
+description = '''
+`m` spans two lines, but `"b": 1` and `"a": 2` share the first, so the line-based reorder has no clean per-entry block to move without merging tokens. The reassembled candidate is run back through the parser, and because this shuffle would not re-parse, the reorder is declined and the dict keeps its source order.
+'''

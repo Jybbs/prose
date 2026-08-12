@@ -3,5 +3,5 @@ previewable = true
 title       = "A Multi-Line Condition Folds When It Fits"
 
 description = '''
-A wrapped grouping whose single-line form fits the budget sheds and folds onto one line, so the condition reflows to `ready = server.up and cache.warm`.
+`ready = (` opens a multi-line grouping around `server.up and cache.warm`, and with the line budget set to `32` characters the folded single-line form just fits. The parentheses shed and the condition folds onto `ready = server.up and cache.warm`.
 '''

@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/set_atomics_flow_pack/input.py
+---
+short_set = {"read", "write", "execute"}
+long_set = {
+    "read", "write", "execute", "delete", "admin",
+    "owner", "moderator", "guest", "root"
+}
+held_set = {
+    "read", "write", "execute"
+}

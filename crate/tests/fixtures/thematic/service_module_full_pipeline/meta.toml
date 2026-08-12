@@ -4,5 +4,5 @@ sandbox     = true
 title       = "Service Module Runs the Import, Constant, Dataclass, and Signature Pipeline"
 
 description = '''
-A service module opens with unsorted imports and a loose constant pool, then a dataclass with unsorted annotated fields and interleaved methods, and closes on an over-wide function whose body reaches a bare import through one attribute. **The imports group and align, the constants band, the fields hold their positional order while their `:` and `=` columns align, the methods regroup, the signature and the returned dict explode one-per-line**, and the bare import surfaces a lint.
+This service module opens with unsorted imports and a loose constant pool (`MAX_RETRIES`, `timeout`, `DEFAULT_TAGS`), then a `@dataclass` `ServiceConfig` with unsorted annotated fields and interleaved methods, and closes on an over-wide `build_request` function whose body reaches the bare `os` import through the single attribute `os.getcwd()`. **The imports group and align, the constants band, `ServiceConfig`'s `region`, `endpoint`, `id`, `labels` fields hold their positional order while their `:` and `=` columns align, its methods regroup into `__post_init__`, `_key`, then `describe`, and `build_request`'s signature and its returned dict explode one entry per line**, while the bare `os` import surfaces a lint.
 '''

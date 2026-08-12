@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = false
-title       = "A Chain Inside a Replacement Field Stays Inline"
-
-description = '''
-A line break spliced into a single-quoted replacement field is PEP 701 syntax that parses on Python 3.12 and later and fails everywhere earlier, so the field is opaque to layout.
-'''

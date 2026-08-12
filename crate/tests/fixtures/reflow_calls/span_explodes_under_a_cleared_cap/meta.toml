@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Row-Spanning Argument Explodes a Call Under a Cleared Cap"
+
+description = '''
+`max-args = false` clears the count trigger, so the five keywords alone would leave `emit` inline. The dict bound to `mapping=` spans rows, and a row-spanning argument explodes the call on its own, so every keyword takes its own line and the dict block re-indents to the item column.
+'''

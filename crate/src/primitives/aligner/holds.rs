@@ -10,12 +10,9 @@ use crate::{rule::RuleId, source::Source};
 
 /// Returns `true` when `members` form a multi-row group whose aligned
 /// tokens sit on distinct source lines at a shared display-column
-/// baseline.
+/// baseline, read from the source as written.
 pub(crate) fn is_alignment_candidate(source: &Source, members: &[Member]) -> bool {
-    members.len() >= 2
-        && members.windows(2).all(|w| {
-            w[0].line_start != w[1].line_start && baseline(source, w[0]) == baseline(source, w[1])
-        })
+    shares_column(members, |m| baseline(source, m))
 }
 
 /// Returns `true` when the line containing `anchor` falls under a skip
@@ -39,6 +36,18 @@ pub(crate) fn retain_unheld(
         .into_iter()
         .filter(|m| !is_held(source, rule, m.line_start))
         .collect()
+}
+
+/// Returns `true` when `members` form a multi-row group on distinct
+/// source lines whose `baseline_of` columns match pairwise.
+pub(crate) fn shares_column(
+    members: &[Member],
+    mut baseline_of: impl FnMut(Member) -> usize,
+) -> bool {
+    members.len() >= 2
+        && members
+            .windows(2)
+            .all(|w| w[0].line_start != w[1].line_start && baseline_of(w[0]) == baseline_of(w[1]))
 }
 
 #[cfg(test)]

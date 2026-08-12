@@ -1,6 +1,6 @@
 ---
 caption : "Aligns the `import` and `as` keywords across consecutive import statements."
-related : [align-colons, align-equals, alphabetize, bare-imports, blank-lines, align-match-case]
+related : [align-colons, align-equals, alphabetize-siblings, bare-imports, space-statements, align-match-case]
 layout  : doc
 ---
 
@@ -10,7 +10,7 @@ layout  : doc
 
 An import block carries two columns, the module a name comes from and the name pulled in, and at varying widths neither reads as a column at all. `align-imports` gathers consecutive `from ... import ...` statements (*or consecutive `import ... as ...` statements*) into a shared column for the `import` (*or `as`*) keyword, leaving the module column flush left and the name column flush right.
 
-The rule reads each block as the run of consecutive imports at the same indentation. A blank line, an own-line comment, or a non-import statement resets the run. [[alphabetize]] sorts the entries within each block and [[blank-lines]] separates the groups by category, both settling before this rule measures a column. [[bare-imports]] reports on the bare-versus-`from` choice without rewriting, so its finding is advice for the author rather than an input to this pass. The [**Pipeline Order**](/reference/pipeline-order) reference lists where each sits.
+The rule reads each block as the run of consecutive imports at the same indentation. A blank line, an own-line comment, or a non-import statement resets the run. [[alphabetize-siblings]] sorts the entries within each block and [[space-statements]] separates the groups by category, both settling before this rule measures a column. [[bare-imports]] reports on the bare-versus-`from` choice without rewriting, so its finding is advice for the author rather than an input to this pass. The [**Pipeline Order**](/reference/pipeline-order) reference lists where each sits.
 
 <template #configuration>
 

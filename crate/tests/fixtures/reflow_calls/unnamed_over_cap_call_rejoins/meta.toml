@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "An Over-Cap Call the Rule Cannot Name Rejoins"
+
+description = '''
+`helper` resolves to no function defined in this module, so `beta` through `epsilon` never reach `name=value` form and the over-cap argument count cannot explode the call. Nothing downstream reopens it either, so the fracture the author wrote **closes onto one row** rather than holding a shape neither trigger can improve.
+'''

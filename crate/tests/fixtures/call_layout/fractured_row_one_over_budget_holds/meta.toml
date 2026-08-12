@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = false
-title       = "A Rejoin Landing One Column Over Budget Holds"
-
-description = '''
-The rejoin measure counts the gap between the closing parenthesis and the text trailing it, so a fracture whose joined row would land exactly one column past the budget keeps its break.
-'''

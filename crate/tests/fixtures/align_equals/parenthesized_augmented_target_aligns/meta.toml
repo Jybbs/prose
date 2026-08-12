@@ -3,5 +3,5 @@ previewable = false
 title       = "A Parenthesized Augmented-Assignment Target Aligns"
 
 description = '''
-An augmented assignment whose target wears redundant parentheses aligns its `+=` like any other, the paren-aware target measurement keeping the closing `)` clear of the rewritten gap.
+`(counter)` wraps its target in parentheses Python does not require, and its `+=` still joins the alignment like any other augmented assignment. The target's width is measured through the closing `)`, so `total` pads out to `(counter)`'s nine characters and the two `+=` land on one column.
 '''

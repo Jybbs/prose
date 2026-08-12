@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Tab Directly after the Hash Becomes One Space"
-
-description = '''
-A single tab between the hash and the text is already one character wide, so only its content rather than its length falls short of the settled opener. The rewrite replaces it with a space, leaving the opener the same width on every viewer's tab setting.
-'''

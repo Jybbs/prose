@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Bulleted Lists inside the Description Are Preserved"
+
+description = '''
+The docstring's list items **pass through verbatim and are never reflowed**, even the first `-` item that runs far past the budget. The fixture exercises `-`, `+`, and `1.` markers, shapes drawn from the CommonMark marker set, and the `Continuation prose` paragraph after the list resumes the description budget.
+'''

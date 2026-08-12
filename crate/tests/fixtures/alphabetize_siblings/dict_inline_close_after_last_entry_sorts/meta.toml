@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A One-per-Line Dict Sorts When Its Close Trails the Last Entry"
+
+description = '''
+The dict passed to `collect` lays one entry per line with its closing `}` sharing the last entry's line, and it still sorts, `"a": 2` moving above `"b": 1`. The last entry's text stops at the closing brace rather than running to the end of the line, so the reorder never disturbs the `})` that closes the call.
+'''

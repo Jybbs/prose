@@ -3,5 +3,5 @@ previewable = false
 title       = "Attribute, Subscript, and Destructuring Targets Beyond Plain Names"
 
 description = '''
-Targets past a bare name behave distinctly. Attribute and subscript targets like `obj.attr` and `obj[ix]` **walk the receiver and index as reads without binding**, whereas tuple, list, and starred targets recurse into the names they contain.
+`obj.attr = 1` and `obj[ix] = 2` bind nothing new, in that the analysis **walks the receiver `obj` and the index `ix` as reads without creating a binding** for the attribute or the subscript. The destructuring targets `a, b`, `*head, tail`, and `[c, d]` recurse instead into the names they contain, so each of `a`, `b`, `head`, `tail`, `c`, and `d` records its own write.
 '''

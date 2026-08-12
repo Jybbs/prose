@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "One Blank Lands between Adjacent Bare and `from` Import Groups"
+
+description = '''
+`import os` sits directly against `from sys import argv` with no blank line between them. **One blank line is inserted at the boundary**, splitting the two import kinds into distinct groups.
+'''

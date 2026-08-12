@@ -1,0 +1,22 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/alphabetize_siblings/dict_keep_marker_vs_sorted/input.py
+---
+unmarked = {
+    "name"     : "prose",
+    "version"  : "0.1.0",
+    "config"   : {
+        "strict"  : True,
+        "verbose" : False,
+    },
+}
+
+marked = {  # prose: keep
+    "version"  : "0.1.0",
+    "config"   : {
+        "strict"  : True,
+        "verbose" : False,
+    },
+    "name"     : "prose",
+}

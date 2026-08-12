@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Continued Value Measures Where It Actually Sits"
+
+description = '''
+The `guess_quote_and_delimiter(sample_text, delimiters)` call opens on the line after its `=`, behind a `\` continuation, at the column the source indented it to. `align-equals` does not shift a continued row, so the length check reads that real column, finds the call well inside the limit, and leaves it inline.
+'''

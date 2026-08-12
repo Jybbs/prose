@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Concat-Valued Entry Holds Its Line"
+
+description = '''
+The `"alpha"` entry runs past the budget, the shape that normally hangs a value beneath its key, but its value is two implicitly concatenated string fragments whose break belongs to `stack-adjacent-strings`. The entry therefore survives the expansion on one line rather than hanging around a run another rule would split.
+'''

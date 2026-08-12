@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Dict Keys Keep Their Order When Sorting Is Off"
+
+description = '''
+With `sort-dict-keys = false`, `COLUMNS` **keeps its authored key order**, `"model"` through `"tags"`, which is the order iteration and `**` expansion observe. Both set literals still sort, the `{"zeta", "alpha"}` stored under `"tags"` as well as `TAGS` beside the dict, because a set has no observable order to disturb.
+'''

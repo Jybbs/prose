@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Nested Plain Class Sorts Inside a Pinned One"
-
-description = '''
-The pin covers the class whose own header generates the constructor, so a plain class nested inside a `@dataclass` **still sorts its fields**. Each class header settles the question for its own body rather than inheriting the answer from an enclosing one.
-'''

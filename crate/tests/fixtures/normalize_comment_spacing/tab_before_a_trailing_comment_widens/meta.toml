@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Tab Ahead of a Trailing Comment Becomes Two Spaces"
+
+description = '''
+A single tab separates `value = 1` from its trailing comment, and the gap is measured in characters rather than in rendered columns, so the tab counts as one and falls short of the two-column floor. The replacement is two spaces, leaving the gap the same width on every viewer's tab setting.
+'''

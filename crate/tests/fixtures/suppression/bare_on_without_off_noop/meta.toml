@@ -3,5 +3,5 @@ previewable = false
 title       = "Bare On Without a Preceding Off Is a No-Op"
 
 description = '''
-A `# fmt: on` with no open suppression span ahead of it **does nothing**, leaving every assignment in the file eligible for alignment. Both runs pad to their group widths as if the directive were absent.
+The `# fmt: on` here has no `# fmt: off` ahead of it to close, so it **does nothing**, leaving every assignment eligible for formatting. The run of `x`, `foo`, and `bar_baz` above the directive sorts and pads to a shared `=` column, and `aa`, `bbb`, and `cccc` below it align the same way, exactly as if the comment were absent.
 '''

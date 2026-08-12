@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`__slots__` Sorts Alphabetically"
+
+description = '''
+`Posting.__slots__` lists `"title"`, `"company"`, `"date_posted"`, and slot order carries no meaning at runtime, so the strings **alphabetize by string value** just as `__all__` entries do. The rule accepts the tuple form here the same as a list, so the parentheses change nothing.
+'''

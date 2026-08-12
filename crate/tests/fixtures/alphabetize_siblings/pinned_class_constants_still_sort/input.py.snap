@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/pinned_class_constants_still_sort/input.py
+---
+from dataclasses import dataclass
+from typing import ClassVar
+
+
+@dataclass
+class Posting:
+    MAX_AGE = 90
+    RETRIES: ClassVar[int] = 3
+    title: str
+    company: str

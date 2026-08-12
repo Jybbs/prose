@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Leading Banner Cushions a Decorated Definition"
-
-description = '''
-The divider blank seats above the `@decorator` line rather than between the decorator and its `def`, because a decorated definition's range opens at the first decorator.
-'''

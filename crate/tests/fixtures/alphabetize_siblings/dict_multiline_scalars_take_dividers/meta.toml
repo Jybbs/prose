@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Paired Multi-Line Scalars Take Their Dividers Mid-Run"
+
+description = '''
+`"bravo"` and `"charlie"` each hold a parenthesized two-line string, and a dict with more than one multi-line entry takes blank-line dividers around each of them. Both entries sort into their alphabetical slots as the scalars they are, so the dividers open **mid-run**, between `"alpha"` and `"delta"`, rather than fencing one contiguous block at the tail.
+'''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Bound Comment Re-Emits an Already-Settled Band"
 
 description = '''
-These three constants are already in band order, so the sort rewrites nothing and the rule would otherwise emit no edit at all. The comment still has to cross `DEFAULT_EPSILON`'s code to reach the line that keeps them bound, and that alone forces the band to re-emit.
+The three constants already sit in band order, so the sort alone would rewrite nothing. The comment `# the convergence floor the solver stops at` binds to `DEFAULT_EPSILON` from the line below it, and folding it up into a trailing comment on the constant's own line forces the band to re-emit, clearing the blank line so all three constants stand together.
 '''

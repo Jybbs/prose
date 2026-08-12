@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Nested Flush Column Explodes the List Around It"
+
+description = '''
+The `helper` argument arrives as a held block whose closer sits flush with `wrap`'s own, and it still spans rows after every fracture that can close has closed. An argument spanning rows explodes the enclosing argument list, so `alpha` and the `helper` block each take their own row, the held block re-indenting to the item column.
+'''

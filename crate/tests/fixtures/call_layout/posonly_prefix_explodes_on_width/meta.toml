@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Positional-Only Prefix Explodes Positionally on Width"
-
-description = '''
-The callee binds its leading arguments positionally, so the call cannot take full keyword form. The width trigger explodes it positionally rather than leaving it inline, one argument per line with the closing `)` at the call's indent.
-'''

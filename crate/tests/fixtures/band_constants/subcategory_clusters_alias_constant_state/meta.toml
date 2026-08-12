@@ -3,5 +3,5 @@ previewable = true
 title       = "Aliases, Constants, and Module State Cluster within a Band"
 
 description = '''
-A band mixing type aliases, `SCREAMING_CASE` constants, and lowercase module state clusters each kind together, the aliases first, then the constants, then the state, alphabetized within each group.
+The band mixes three kinds of entry, the type aliases `Handler` and `Interval`, the `SCREAMING_CASE` constants `DEFAULT` and `MAX`, and the lowercase module state `setting` and `threshold`. Each kind clusters together, aliases first, then constants, then state, alphabetized within each group.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Call Explodes, Then Its Keywords Sort and Align"
 
 description = '''
-`call-layout` explodes a crowded call to keyword form, `alphabetize` sorts the keywords, and `align-equals` aligns their `=` on one column, all in the same `format` pass.
+The call `draw(w, h, d, c)` packs four positional arguments, so `reflow-calls` explodes it to keyword form, naming each argument after its parameter so `w` becomes `width = w`. `alphabetize-siblings` then sorts the keywords with `color` first, and `align-equals` settles their `=` on one column, all in the same `format` pass.
 '''

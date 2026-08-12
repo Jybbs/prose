@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Description Paragraphs Wrap Independently Across a Blank Line"
+
+description = '''
+The `render` docstring holds two paragraphs separated by a blank line, and the paragraphs **wrap independently**. The short first paragraph is left alone, the long second one reflows to the budget, and the blank line between them survives the rewrite.
+'''

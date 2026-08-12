@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comment Anywhere in the Span Holds the Merge Back"
+
+description = '''
+The trailing comment on `from pkg import beta` describes that statement alone, and folding the line together with `from pkg import alpha` would leave the comment describing nothing. The commented member therefore **holds every `pkg` statement in place**, so the two lines never merge.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "NumPy Section Underlines Pass Through Verbatim"
+
+description = '''
+The `----------` underline beneath `Parameters` **passes through verbatim**, because a line that is a run of one repeated adornment character ends the open paragraph and is emitted as written. The NumPy heading keeps its landmark rather than having its underline reflowed into the prose around it.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`from` Imports Sort Alphabetically inside Their Block"
+
+description = '''
+The five `from` imports **collapse into a single alphabetized block**, sorting by module from `collections` up through `pydantic`. The blank line the source held between `extract_fields` and `BaseModel` is removed, so the imports read as one paragraph whatever arrangement they arrived in.
+'''

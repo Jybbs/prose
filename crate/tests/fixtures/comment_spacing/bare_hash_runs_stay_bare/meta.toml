@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Divider Carrying No Text Keeps Its Bare Run"
-
-description = '''
-No space is inserted where nothing follows the hash run, so a decorative rule drawn from hashes alone survives verbatim. A rule drawn from another character does carry text, so its opener settles like any other comment's.
-'''

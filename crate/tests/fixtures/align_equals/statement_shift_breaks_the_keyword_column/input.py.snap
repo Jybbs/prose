@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_equals/statement_shift_breaks_the_keyword_column/input.py
+---
+labels_map  = make_labels_map(x)
+label_width = 4 + len(str(len(labels_map)))
+formatter   = Formatter(file = file,
+                      offset_width = width,
+                      label_width = label_width,
+                      show_caches = show_caches)
+
+renderer = Renderer(antialias   = antialias,
+                    color_depth = depth)

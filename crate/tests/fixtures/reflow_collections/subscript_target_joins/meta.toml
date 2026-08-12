@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Multi-Line Subscripts Join onto One Line"
+
+description = '''
+A multi-line subscript joins onto one line whatever its index shape, so `data[key]`, the tuple index `matrix[row, column]`, the slice `window[start:stop]`, and the operator expression in `offset_lookup` each collapse, the precedence parentheses in `coefficient_matrix` surviving the join. The join measures the result **from the subscript's own column**, so `y`, one character too wide to fit once joined, stays on its source lines, as does `guarded`, whose index carries the non-atomic call `helper(adjustment)`.
+'''

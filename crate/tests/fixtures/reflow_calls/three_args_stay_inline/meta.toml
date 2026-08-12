@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Call at the Threshold Stays Inline"
+
+description = '''
+`place(d, h, w)` passes exactly three arguments, sitting at the default `max-args` cap rather than over it, and the line fits comfortably. Neither the count trigger nor the width trigger applies, so the call stays inline untouched.
+'''

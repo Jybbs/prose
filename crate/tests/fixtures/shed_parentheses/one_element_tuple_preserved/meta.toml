@@ -3,5 +3,5 @@ previewable = true
 title       = "A One-Element Tuple's Pair Survives"
 
 description = '''
-The parentheses that form a tuple belong to the tuple rather than wrapping it, so a one-element tuple keeps them.
+`single = (item,)` uses its parentheses to form the one-element tuple rather than to wrap an already-complete expression. They stay exactly as written.
 '''

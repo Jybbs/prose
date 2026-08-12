@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Validator Decorator Pins Every Method"
+
+description = '''
+`Posting` holds two `@field_validator` methods, and their presence means the class **skips method alphabetization entirely**, so `normalize_title`, `normalize_name`, and `display` stay in source order even though `display` would sort first. A decorator like `@field_validator("title")` signals that methods may run in declaration order, whereas the fields still sort, `name: str` climbing above `title: str`.
+'''

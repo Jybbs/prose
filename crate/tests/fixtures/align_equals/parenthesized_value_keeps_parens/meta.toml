@@ -3,5 +3,5 @@ previewable = true
 title       = "A Parenthesized Value Keeps Its Parentheses"
 
 description = '''
-The value-side rewrite stops at the value's parenthesis-inclusive start, so a wrapped value keeps its `(` rather than surrendering it to the gap.
+`x`'s value arrives as `(1 + 2)` written flush against its `=`. The gap rewrite treats the `(` as where the value starts, so `x` aligns with `yy`, each `=` gains its spacing, and the parentheses come through untouched as `x  = (1 + 2)`.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A String Interior Holds the Call"
 
 description = '''
-A `super(...)` call whose argument list carries a multi-line string keeps its arguments, since shifting a later line would respell that string rather than re-indent a continuation.
+Deciding whether to shed `Invoice, self` from `super(Invoice, self).render(body, ...)` means checking whether a later line of the call opens at or past the column `Invoice, self` occupies. The triple-quoted string passed as `render`'s second argument spans several lines, and its indented interior counts as such a line, so `shed-super-args` leaves `Invoice, self` written rather than collapsing the call to `super()`.
 '''

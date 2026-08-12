@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Hanging Continuation Answers the Budget"
+
+description = '''
+The hand-wrapped `render` call is measured by the single line its join would produce, and that joined form crosses the cap. Rather than keeping the two-row wrap, the call explodes to one argument per line, `first_value` through `fourth_value` each on its own row.
+'''

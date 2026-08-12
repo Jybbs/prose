@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Statement Reading a Definition Holds the Run"
-
-description = '''
-A module-level call naming `Zeta` sits between two class definitions, so sorting `Apple` above `Zeta` would seat the definition below the statement that reads it and raise a `NameError` at import. The run **holds its source order** rather than reorder into something the module cannot run.
-'''

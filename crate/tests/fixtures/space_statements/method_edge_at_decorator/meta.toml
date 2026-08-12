@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Method's Leading Edge Is Counted from Its Decorator"
+
+description = '''
+`second` sits under a `@cached_property` decorator, so its **leading edge is the decorator line rather than the `def`**. The three blank lines after `first` collapse to the class-scope canonical of one, measured above `@cached_property`, and the decorator stays tight against its method.
+'''

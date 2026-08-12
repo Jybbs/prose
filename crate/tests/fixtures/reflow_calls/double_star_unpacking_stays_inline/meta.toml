@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "Double-Star Unpacking Blocks the Explode"
+
+description = '''
+`merge` takes `alpha=1`, `beta=2`, `gamma=3`, and then `**overrides`, an unpacking with no parameter name of its own. Because the `**` argument cannot be written as a keyword row, the explode is blocked and the whole call stays inline.
+'''

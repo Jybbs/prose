@@ -3,5 +3,5 @@ previewable = true
 title       = "Pre-Match Assigns Align While Match Arms Collapse"
 
 description = '''
-A function opens with single-target assignments ahead of a `match` whose arms return one binding each. **The pre-match run aligns its `=` column, and `align-match-case` collapses each arm body onto its pattern line** with the `:` column aligned.
+`dispatch` opens with the assignments `x`, `yz`, and `qrs` ahead of a `match` whose arms each return one of those bindings. **`align-equals` pads the three `=` into a column one space past `qrs`, and `align-match-case` folds each single return onto its `case` line** with every arm `:` aligned one space past the widest pattern, `"alpha"`.
 '''

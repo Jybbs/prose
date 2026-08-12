@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Methods Sort by Plain Name When Grouping Is Off"
+
+description = '''
+With `group-methods = false`, `Report`'s methods **sort by plain name** rather than grouping into dunders, properties, privates, and publics. `__len__` leads because `_` sorts before letters, `archive` follows, and the `@property` `total` lands last by name instead of sitting in a property group above the public methods.
+'''

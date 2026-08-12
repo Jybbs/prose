@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Chain in a Nested Scope Opens at Its Own Indent"
+
+description = '''
+The three-link chain sits in a `return` inside `def build`, whose body row carries a four-space indent. Breaking the chain drops the head `query.filter(a)` one step past that row's indent and returns the closing `)` to it, so the block hangs against the body indent rather than the module margin.
+'''

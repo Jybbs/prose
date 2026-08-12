@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/dataclass_kw_only_fields_sort/input.py
+---
+alphabetize-siblings@80..123

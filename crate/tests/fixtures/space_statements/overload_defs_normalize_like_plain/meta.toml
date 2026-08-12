@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Overload-Decorated Defs Normalize like Plain Defs"
+
+description = '''
+Two `@overload` stubs of `process` and its plain implementation sit directly adjacent at module level. **Each adjacent pair normalizes to two blank lines, the same as any def-after-def pair**, because overloads get no special case that would keep the chain packed.
+'''

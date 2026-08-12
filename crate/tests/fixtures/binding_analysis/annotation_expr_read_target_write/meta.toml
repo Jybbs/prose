@@ -3,5 +3,5 @@ previewable = false
 title       = "Annotated Assignment Writes the Target and Reads the Annotation"
 
 description = '''
-An annotated assignment such as `x: int = 0` records a **write at the target offset**, while the annotation expression is walked as a read that attributes a usage to every name it references.
+The annotated assignments `x: int = 0` and `y: Pair = (1, 2)` each record a **write at the target's offset**, so `x` and `y` end up with writes and no reads. Each annotation is walked as an ordinary expression, which attributes a read to every name it references, so the `Pair` in `y: Pair` lands on the `Pair = tuple[int, int]` binding as an annotation read.
 '''

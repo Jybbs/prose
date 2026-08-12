@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reflow_signatures/posonly_slash_ends_bare/input.py
+---
+def render(
+    layout,
+    palette,
+    spread,
+    target,
+    verbose,
+    /
+):
+    return (layout, palette, spread, target, verbose)

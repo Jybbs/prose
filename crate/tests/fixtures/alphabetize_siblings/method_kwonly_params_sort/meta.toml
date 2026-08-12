@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Method Keyword-Only Parameters Sort"
+
+description = '''
+The hold on positional order covers only the parameters ahead of the `*`, so `self, target, source` stay as declared. The keyword-only block behind it **still sorts**, the required `mode` moving to the front and the defaulted `atomic=True` and `retries=3` alphabetizing after it, because keyword-only parameters bind by name at every call site and reordering them changes no caller.
+'''

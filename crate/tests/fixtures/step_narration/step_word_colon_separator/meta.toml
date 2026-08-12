@@ -3,5 +3,5 @@ previewable = false
 title       = "Step Word With a Colon Separator Is Flagged"
 
 description = '''
-A `# Step 1: text` comment matches the **step-word shape carrying a `:` separator** and earns a diagnostic. The literal `Step` keyword plus a number is enough, with `:` standing in for the dot.
+The comment `# Step 1: validate input` inside `process` matches the **step-word shape with a `:` separator**, wherein the literal word `Step` plus a number is enough and `:` stands in for the dot. The lint reports one diagnostic and leaves the source unchanged.
 '''

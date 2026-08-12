@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Trailing Comment Stays Off the Next Def's Region"
+
+description = '''
+`first`'s body ends with `return 1  # short note`, a trailing comment on the statement's own line. **The comment stays where it is rather than being treated as a leading line above `second`**, so the gap between the two defs expands from one blank to two without touching the commented line.
+'''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Repeated Self-Alias Survives the Duplicate Prune"
 
 description = '''
-`drop-duplicates` reads the same re-export guard as `drop-unreferenced`, so a second `from json import loads as loads` **stays rather than dropping as a repeat**.
+Both lines read `from json import loads as loads`, the PEP 484 redundant-alias form that marks `loads` as a re-export. **The second line survives rather than dropping as a repeat**, because `drop-duplicates` reads the same re-export guard `drop-unreferenced` does.
 '''

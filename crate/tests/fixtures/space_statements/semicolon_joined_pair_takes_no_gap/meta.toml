@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Semicolon-Joined Pair Takes No Gap"
+
+description = '''
+`from collections import abc` and `import sys` share one physical line, joined by `;`. Because `import sys` opens no line of its own, there is no blank run above it to normalize, so **the pair emits no edit** and the line passes through unchanged.
+'''

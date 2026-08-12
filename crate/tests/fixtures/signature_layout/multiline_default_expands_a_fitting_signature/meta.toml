@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Multi-Line Default Expands a Signature That Would Otherwise Fit"
-
-description = '''
-A signature under both `max-params` and the line budget still expands one parameter per line while a default spans rows, so a `def` and a call arrive at one shape rather than two.
-'''

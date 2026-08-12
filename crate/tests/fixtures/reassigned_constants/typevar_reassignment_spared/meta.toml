@@ -3,5 +3,5 @@ previewable = true
 title       = "A Reassigned TypeVar Is Spared"
 
 description = '''
-`T` is `SCREAMING_CASE` and the module writes it twice, so the reassignment gate alone would flag it. The `TypeVar` constructor read is the only thing sparing it, which is the shape the carve-out exists for.
+`T` is written twice at module scope, first as `TypeVar("T")` and again as `TypeVar("T", bound=int)`, so the reassignment count alone would flag it. Each write binds a `TypeVar` call, the structural shape the carve-out exempts, so the rule reports nothing.
 '''

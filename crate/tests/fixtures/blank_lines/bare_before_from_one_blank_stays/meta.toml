@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Already-Conforming Source Is Left Alone"
-
-description = '''
-A bare `import` and a following `from` import already separated by one blank line **stay at one**, passing through untouched.
-'''

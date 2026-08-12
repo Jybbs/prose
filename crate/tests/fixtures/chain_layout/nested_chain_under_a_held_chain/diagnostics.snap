@@ -1,6 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/chain_layout/nested_chain_under_a_held_chain/input.py
----
-chain-layout@20..44

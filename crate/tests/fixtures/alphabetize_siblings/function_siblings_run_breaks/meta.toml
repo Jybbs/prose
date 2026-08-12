@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Consecutive Free Functions Sort within Their Slice"
+
+description = '''
+Three consecutive free functions arrive in reverse alphabetical order, and the run **alphabetizes**, `aggregate` rising to the top and `render` dropping to the bottom. Inside a class body the same siblings would route through the four-group method ordering instead.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Single-Item and Empty Literals Join Back to One Line"
+
+description = '''
+A one-entry dict, a one-item list, and an empty pair of braces gain nothing from a multi-line layout, so `joined_one_entry_dict`, `joined_one_item_list`, and `joined_empty_dict` each rejoin to one line however the author spread them. **A single-entry dict that overflows still breaks at `:` and hangs its value**, the shape `oversized_one_entry_dict` lands on because any non-empty dict is an expand target.
+'''

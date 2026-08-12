@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Compliant Input Emits Zero Edits"
+
+description = '''
+The imports already run `collections` before `loguru`, `Alpha` precedes `Beta`, and `Alpha`'s methods already follow the four-group rhythm, dunders `__init__` and `__repr__`, then the `name` property, then the private `_helper`, then the public `update`. Every sortable site is found already in order, so **the rule emits zero edits** and the file passes through untouched.
+'''

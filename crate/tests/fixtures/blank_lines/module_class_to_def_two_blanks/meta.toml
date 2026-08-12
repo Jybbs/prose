@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Def after a Module-Level Class Carries Two Blanks"
-
-description = '''
-A module-level class followed by a `def` normalizes to **two blank lines** between them, regardless of the source's actual count.
-'''

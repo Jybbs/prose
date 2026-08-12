@@ -3,5 +3,5 @@ previewable = false
 title       = "A Walrus in a While Test Is Exempt"
 
 description = '''
-A walrus bound in a `while` test is **not flagged**. The loop condition consumes the value on each iteration, so the body's single read is a second use, and inlining would recompute the expression in both the condition and the body.
+`chunk := reader.read()` binds inside the `while` test in `drain`, and `chunk` is read again in `handle(chunk)`. **`single-use-variables` does not flag `chunk`**, because the `while` comparison already consumes the walrus value on each iteration, so the body's read is a second use, and inlining would recompute `reader.read()` in both the condition and the body.
 '''

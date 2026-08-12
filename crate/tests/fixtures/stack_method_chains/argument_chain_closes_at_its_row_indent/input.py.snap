@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_method_chains/argument_chain_closes_at_its_row_indent/input.py
+---
+nested = emit(value=(
+    query.filter(alpha)
+         .order(beta)
+         .limit(gamma)
+))

@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize_siblings/method_docstring_stale_entry_sinks/input.py
+---
+alphabetize-siblings@125..259

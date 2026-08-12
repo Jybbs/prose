@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Method's Leading Comment Cushions Above, Binds Below"
+
+description = '''
+`# describes the second helper` leads `second` inside `Posting`'s body, so the three blank lines after `first` **collapse to one blank above the comment**, and the comment stays tight against the `def second(self):` it describes. The class header also gains its one blank before `first`.
+'''

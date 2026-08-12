@@ -3,5 +3,5 @@ previewable = false
 title       = "A Reshapeable Signature Stays Quiet"
 
 description = '''
-The over-cap signature carries parameters `signature-layout` could still explode one per line, so `line-overflow` leaves it for that rule and emits nothing.
+`def configure(first, second, third, fourth):` runs to 44 columns, over the 40-column budget, yet `line-overflow` emits nothing. The signature carries parameters `reflow-signatures` can still explode one per line, so the overflow is left to that rule.
 '''

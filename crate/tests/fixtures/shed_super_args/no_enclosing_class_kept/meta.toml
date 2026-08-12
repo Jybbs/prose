@@ -3,5 +3,5 @@ previewable = false
 title       = "A Call Outside Any Class Stays Written"
 
 description = '''
-A module-level function calling `super(Child, instance)` keeps its arguments, because no enclosing class stands where the bare form would read one.
+`bind`, a module-level function, calls `super(Child, instance).probe` outside any class body. Its arguments stay written, because no enclosing class stands where the bare form would read one.
 '''

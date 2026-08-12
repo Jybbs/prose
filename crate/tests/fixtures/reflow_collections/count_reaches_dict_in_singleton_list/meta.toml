@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "The Count Trigger Reaches a Dict Inside a Non-Expanding Wrapper"
+
+description = '''
+The `wrapper` list holds a single element, so it never expands on its own and its `[` stays tight against the `{`. The four-entry dict inside it still crosses `max-dict-entries`, so the count trigger reaches through the wrapper and breaks the dict to one entry per line.
+'''

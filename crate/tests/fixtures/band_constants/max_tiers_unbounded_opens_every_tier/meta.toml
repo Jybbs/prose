@@ -3,5 +3,5 @@ previewable = true
 title       = "max-tiers = false Opens Every Tier"
 
 description = '''
-`max-tiers = false` opens a blank sub-band at every evaluation tier, each holding two or more constants.
+The band climbs three dependency tiers, in that `X` and `Y` derive from `A` and `B` while `P` and `Q` derive from `X` and `Y`. With `max-tiers = false` a blank line opens at every tier boundary, so each evaluation stage reads as its own sub-band.
 '''

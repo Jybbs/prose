@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/held_call_member_hangs_from_its_row/input.py
+---
+nested = [
+    alpha,
+    helper(
+        beta,
+        gamma
+    ),
+    zeta
+]

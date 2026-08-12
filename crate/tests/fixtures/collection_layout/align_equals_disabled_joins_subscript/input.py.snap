@@ -1,7 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/collection_layout/align_equals_disabled_joins_subscript/input.py
----
-_VALID_HEADER_VALUE_RE_BYTE = 1
-HEADER_VALIDATORS = registry[_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]

@@ -3,5 +3,5 @@ previewable = false
 title       = "The Identity Facet Off Leaves the Other Rewrites Running"
 
 description = '''
-`rewrite-identity = false` holds both `==` tests as written and withdraws the boolean-literal lint, while the constant-led comparison still flips and the leading `not` still folds.
+With `rewrite-identity = false`, `value == None` stays an equality rather than becoming an `is` test, and `flag == True` is not flagged either, because the boolean-literal lint belongs to the same facet. The other facets keep running, so `0 == len(table)` still flips to `len(table) == 0` and `not key in table` still folds into `key not in table`.
 '''

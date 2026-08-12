@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Single-Line Import's Comment Stays Put"
+
+description = '''
+`import beta, alpha` ends with the trailing comment `# third-party deps`. **The names sort to `import alpha, beta` while the comment stays in place**, because the comment sits past the end of the reordered span rather than attaching to either name.
+'''

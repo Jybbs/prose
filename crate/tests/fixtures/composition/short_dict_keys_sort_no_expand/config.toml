@@ -1,2 +1,2 @@
 [harness]
-rules = ["alphabetize"]
+rules = ["alphabetize-siblings"]

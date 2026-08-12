@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Comprehensions Collapse to One Line When They Fit"
+
+description = '''
+`list_comp`, `dict_comp`, `set_comp`, and `gen_exp` are each broken across lines, and each single-line form fits the budget, so all four join back onto one line, the same collapse-only move a subscript takes. A comprehension is one expression rather than a run of entries, so it only ever collapses and never explodes, and one too wide to fit would keep its source line breaks.
+'''

@@ -47,7 +47,7 @@ const SCHEMA: SandboxSchema = {
     },
     {
       family : 'formatting',
-      slug   : 'blank-lines',
+      slug   : 'space-statements',
       facets : [{ default: true, hintHtml: '', key: 'enabled', kind: 'bool', label: 'Enabled' }]
     }
   ]
@@ -115,10 +115,10 @@ describe('useProseSandbox', () => {
   })
 
   it('computes the eligible rule set from the default run on the source', async () => {
-    const fired = ['align-equals', 'blank-lines']
+    const fired = ['align-equals', 'space-statements']
     const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT', '', fired))))
     await api.start()
-    expect(api.eligible.value).toEqual(['align-equals', 'blank-lines'])
+    expect(api.eligible.value).toEqual(['align-equals', 'space-statements'])
   })
 
   it('probes each eligible rule for the facets that can affect the source', async () => {
@@ -128,14 +128,14 @@ describe('useProseSandbox', () => {
     const format: Formatter = config => ({
       config      : '',
       diagnostics : '',
-      fired_rules : ['align-equals', 'blank-lines'],
+      fired_rules : ['align-equals', 'space-statements'],
       formatted   : config.includes('max-shift = 1') ? 'SHIFTED' : 'OUT'
     })
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
     await api.start()
     await vi.waitFor(() => {
       expect(api.facetImpact.value['align-equals']).toEqual(['max-shift', 'allow-pattern'])
-      expect(api.facetImpact.value['blank-lines']).toEqual([])
+      expect(api.facetImpact.value['space-statements']).toEqual([])
     })
   })
 
@@ -151,7 +151,7 @@ describe('useProseSandbox', () => {
     await vi.waitFor(() => {
       expect(api.facetImpact.value['align-equals']).toContain('condense')
     })
-    expect(api.facetImpact.value).not.toHaveProperty('blank-lines')
+    expect(api.facetImpact.value).not.toHaveProperty('space-statements')
   })
 
   it('fails a facet probe open when its run throws', async () => {
@@ -198,7 +198,7 @@ describe('useProseSandbox', () => {
     const format = vi.fn<Formatter>((config, src) => ({
       config      : '',
       diagnostics : '',
-      fired_rules : src === 'seed a' ? ['align-equals'] : ['blank-lines'],
+      fired_rules : src === 'seed a' ? ['align-equals'] : ['space-statements'],
       formatted   : 'OUT'
     }))
     const api = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 5 })
@@ -209,7 +209,7 @@ describe('useProseSandbox', () => {
     const initialProbes = probeRuns()
     expect(initialProbes).toBeGreaterThan(0)
     api.source.value = 'seed b'
-    await vi.waitFor(() => expect(api.facetImpact.value['blank-lines']).toEqual([]))
+    await vi.waitFor(() => expect(api.facetImpact.value['space-statements']).toEqual([]))
     api.source.value = 'seed a'
     await vi.waitFor(() => expect(api.facetImpact.value['align-equals']).toBeDefined())
     expect(probeRuns()).toBe(initialProbes)
@@ -370,13 +370,13 @@ describe('useProseSandbox', () => {
     const format = vi.fn<Formatter>(formatting('OUT'))
     const api    = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 250 })
     api.setFacet('align-equals', ENABLED, false)
-    api.setFacet('blank-lines', SCHEMA.rules[1].facets[0], false)
+    api.setFacet('space-statements', SCHEMA.rules[1].facets[0], false)
     await flushPromises()
     // The two toggles coalesce into one immediate display run, trailed only
     // by the first format's eligibility baseline, with no timer advance.
     expect(format).toHaveBeenCalledTimes(2)
     expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('align-equals = false'), 'seed a')
-    expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('blank-lines = false'), 'seed a')
+    expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('space-statements = false'), 'seed a')
   })
 
   it('reads and writes a length knob and clears it back to default', () => {

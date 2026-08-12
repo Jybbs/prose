@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/space_statements/module_def_to_call_two_blanks/input.py
+---
+def configure():
+    return 1
+
+
+print("ready")

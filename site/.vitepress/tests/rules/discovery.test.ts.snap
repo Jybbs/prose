@@ -9,7 +9,7 @@ exports[`discoverRules > discovers rules across family directories, sorted by sl
     "href": "/rules/alignment/align-equals",
     "lints": false,
     "related": [
-      "alphabetize",
+      "alphabetize-siblings",
     ],
     "slug": "align-equals",
   },
@@ -17,10 +17,10 @@ exports[`discoverRules > discovers rules across family directories, sorted by sl
     "caption": "Alphabetize sibling entries",
     "category": "auto-fix",
     "family": "ordering",
-    "href": "/rules/ordering/alphabetize",
+    "href": "/rules/ordering/alphabetize-siblings",
     "lints": false,
     "related": [],
-    "slug": "alphabetize",
+    "slug": "alphabetize-siblings",
   },
 ]
 `;

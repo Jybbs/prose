@@ -1,9 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/collection_layout/single_item_literals_join_back/input.py
----
-collection-layout@122..152
-collection-layout@178..186
-collection-layout@209..210
-collection-layout@303..303

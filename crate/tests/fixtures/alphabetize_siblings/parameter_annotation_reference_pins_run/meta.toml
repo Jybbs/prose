@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Parameter Annotation Pins the Annotated Class After Its Type"
+
+description = '''
+`Loader.load` annotates `item` as `Record`, and Python evaluates that annotation when the `def` runs, so `Record` must already exist by the time `Loader`'s body executes. Alphabetical order would lift `Loader` above `Record` and break exactly that, so the sort holds `Record` first and the module keeps importing cleanly.
+'''

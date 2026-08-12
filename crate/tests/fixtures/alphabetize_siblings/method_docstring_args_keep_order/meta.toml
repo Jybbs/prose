@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Method Docstring Parameter Entries Keep Their Order"
+
+description = '''
+`update`'s positional parameters are pinned, and the docstring follows the signature, so the `Args:` entries **mirror the held order**, `target` then `source` exactly as declared. The `Raises:` section names exceptions rather than parameters, so it still sorts, `KeyError` moving ahead of `ValueError`.
+'''

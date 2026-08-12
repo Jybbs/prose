@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reflow_signatures/param_count_alone_expands/input.py
+---
+def render(
+    width: int,
+    height: int,
+    depth: int,
+    scale: int,
+    fast: bool
+):
+    return (width, height, depth, scale, fast)

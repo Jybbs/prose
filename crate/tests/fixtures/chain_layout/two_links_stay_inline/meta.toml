@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Two-Link Chain Stays on One Line"
-
-description = '''
-A chain at or under `max-links` whose single-line form fits the budget is left exactly as written, so the rule reaches a pipeline rather than every attribute call.
-'''

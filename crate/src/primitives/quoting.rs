@@ -1,6 +1,6 @@
 //! Shared guards on the quote characters a Python literal carries.
 
-/// The canonical triple-quoted delimiter, the frame `docstring-frame`
+/// The canonical triple-quoted delimiter, the frame `frame-docstrings`
 /// re-delimits every docstring to.
 pub(crate) const TRIPLE_QUOTE: &str = "\"\"\"";
 

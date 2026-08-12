@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Dict Entries Partition by Their Value's AST Kind"
+
+description = '''
+Every dict here **partitions its entries by the value's AST kind**, scalar values like `"author"` and `"version"` sorting ahead of collection values like `"config"` and `"deps"` however many lines each takes. Blank dividers fence the block-shaped entries only once two share a dict, which is why `"settings"` separates its `"logging"` and `"network"` blocks while `mixed` leaves its lone `"config"` block undivided. A `**defaults` spread pins in source position, as does `"metadata"` because its value calls `load_metadata()`, and the partition repeats at every nesting level, `"format"` sorting below `"stderr"` and `"stdout"` inside `"logging"`.
+'''

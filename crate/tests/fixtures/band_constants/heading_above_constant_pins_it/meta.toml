@@ -3,5 +3,5 @@ previewable = false
 title       = "A Heading Above a Constant Pins It In Place"
 
 description = '''
-A `### ...` heading reads as a section divider, so banding leaves `PALETTE` beneath it rather than hoisting the tuple constant across the heading into the leading band.
+The `### theme colors` comment reads as a section divider rather than an ordinary note, and a constant beneath a divider is pinned to its section. `PALETTE` therefore stays under the heading instead of hoisting across it into the leading band above `build_palette`, leaving the file unchanged.
 '''

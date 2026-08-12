@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Flush Column Holds Its Break"
+
+description = '''
+`helper(alpha, beta)` would fit on one line with room to spare, yet it arrives with the `(` ending its line and the `)` opening its own. That is the exact column shape the explode path emits, so the layout is held as deliberate rather than rejoined, whatever the joined form would measure.
+'''

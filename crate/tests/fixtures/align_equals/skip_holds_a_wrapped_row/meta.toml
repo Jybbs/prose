@@ -3,5 +3,5 @@ previewable = false
 title       = "A Wrapped Row's Skip Holds Every Line It Spans"
 
 description = '''
-A `# prose: skip[align-equals]` trailing a wrapped assignment **holds every line that statement spans out of the column math**, so the single-line row above it no longer pairs with the wrapped row into a shared column.
+The `# prose: skip[align-equals]` trailing `beta`'s closing `}` **holds every line that statement spans out of the column math**, not just the line carrying the comment. Without it, `a` would pad out to share an `=` column with `beta`'s opening line, so the skip leaves `a = 1` at its natural width.
 '''

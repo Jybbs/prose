@@ -3,5 +3,5 @@ previewable = true
 title       = "Nested Dicts Align Independently at Each Level"
 
 description = '''
-A dict whose values are themselves dicts has **each nested dict aligning its own `:` column** at its own indent. The inner alignment is unaffected by the outer dict's key widths.
+The values of `config` are themselves dicts, and **each nested dict aligns its own `:` column** at its own indent, `"host"` and `"port_number"` settling the same column inside both blocks. The outer keys `"development"` and `"production"` align on their own column, unaffected by the key widths inside them.
 '''

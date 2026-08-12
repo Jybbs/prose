@@ -3,6 +3,5 @@ previewable = false
 title       = "A Star Width Holds"
 
 description = '''
-The `*` reads its width from an argument out of order, which no single field
-can express.
+The `*` in `"%*f"` reads its field width from the argument list, so `width` is consumed as the width rather than as the value the `f` conversion renders. A single replacement field offers no slot for that extra argument, so the line holds.
 '''

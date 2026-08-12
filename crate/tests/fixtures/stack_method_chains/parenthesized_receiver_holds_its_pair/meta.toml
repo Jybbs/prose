@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Parenthesized Receiver Keeps Its Grouping Parens"
+
+description = '''
+The receiver `(alpha + beta)` needs its parentheses, because dropping them would attach `.filter` to `beta` alone. Breaking the chain carries the pair with the receiver onto the head row, `(alpha + beta).filter(a)` opening the block while `.order` and `.limit` stack beneath its dot.
+'''

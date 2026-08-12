@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Single-Field Container Does Not Pin Its Methods"
+
+description = '''
+`Counter` holds one annotated field, `value`, plus the validator-shaped `normalize`, and its methods **still sort**, `__init__` rising above `normalize` and `reset`. The pin that freezes a validator-bearing class's methods requires at least two annotated fields, so a single-field container sorts like any plain class, marking the lower bound of the detection.
+'''

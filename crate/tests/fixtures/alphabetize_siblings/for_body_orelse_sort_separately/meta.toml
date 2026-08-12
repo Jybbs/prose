@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "`for` Body and `else` Arm Sort Independently"
+
+description = '''
+The loop body's imports reorder into `from alpha import b` then `from zeta import a`, and the `else:` arm's reorder into `from delta import d` then `from omega import c`, **each arm sorting its own contents independently**. Nothing crosses between the arms, in that the rule treats the body and the `else:` clause as two ordinary statement bodies.
+'''

@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/space_statements/single_line_class_stub_cushions/input.py
+---
+space-statements@12..13
+space-statements@21..22
+space-statements@37..38
+space-statements@50..51

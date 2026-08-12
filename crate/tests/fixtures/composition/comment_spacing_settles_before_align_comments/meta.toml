@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Comment Spacing Settles an Opener Before the Column Moves"
-
-description = '''
-**`comment-spacing` decides each opener first, then `align-comments` places the hash.** The two rows share a column as written, and the spread between their code is wider than `max-shift` allows, so the run partitions and each hash lands at the two-space floor. Deciding the opener against the settled column rather than the authored one is what keeps a second pass from changing anything.
-'''

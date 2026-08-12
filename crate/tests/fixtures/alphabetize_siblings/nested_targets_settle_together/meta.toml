@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Nested Sort Targets Settle in One Pass"
+
+description = '''
+Four targets sort in one source: the `from`-imports swap so `collections` leads `loguru`, the classes reorder to `Alpha`, `Beta`, `Gamma`, `Alpha`'s methods regroup with `__repr__` joining `__init__` above `public`, and the `Counter` call's kwargs become `first=1, second=2`. **The rule iterates internally**, settling each nested reorder inside its enclosing one, so the moved `Gamma` text already carries the sorted `Counter` call.
+'''

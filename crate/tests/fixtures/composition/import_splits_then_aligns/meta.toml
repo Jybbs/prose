@@ -3,5 +3,5 @@ previewable = false
 title       = "An Over-Budget Import Splits, Then Aligns Within the Cap"
 
 description = '''
-Aligning the `import` keyword to the wider `apps.registry.longpath` prefix would carry `apps.io`'s names past `import-line-length`. `import-layout` looks ahead to that aligned prefix and splits the names against it, so the run then aligns with every row inside the cap rather than one member overflowing.
+Padding `from apps.io` out to the wider `apps.registry.longpath` prefix would push its three-name list past the `import-line-length` cap. `reflow-imports` measures against that aligned prefix ahead of the split, so `beta_helper`, `delta`, and `gamma_helper` land on one line each, and `align-imports` then pads every `import` into the shared column with each row inside the cap rather than one member overflowing.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "Already-Stripped Source Is Left Alone"
 
 description = '''
-A container that already ends without a trailing `,` round-trips untouched. **The backward scan reaches the last element rather than a comma and emits no edit**, so clean source is left exactly as written.
+`Posting(company="Cianbro", title="Electrician")` already ends without a trailing `,` before its closing `)`. **`strip-trailing-commas` scans backward, reaches `"Electrician"` rather than a comma, and emits no edit**, so the source round-trips exactly as written.
 '''

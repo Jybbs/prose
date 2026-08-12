@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Field List Opening After a Summary Passes Through"
-
-description = '''
-A field list that opens its own block after a summary paragraph **passes through unwrapped** while the summary above it reflows. The blank line restores the block boundary, so the marker reads as structure rather than as the prose a continuation line would carry.
-'''

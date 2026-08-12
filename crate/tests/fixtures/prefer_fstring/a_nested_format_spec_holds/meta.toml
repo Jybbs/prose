@@ -3,6 +3,5 @@ previewable = false
 title       = "A Format Spec Carrying Its Own Field Holds"
 
 description = '''
-The inner field reads a second argument, which the outer field cannot carry
-once the call is gone.
+The spec in `"{:{width}}"` nests a second replacement field, wherein the outer slot reads `value` and the inner one reads the keyword argument `width=size`. A format spec that carries its own field is a shape `prefer-fstring` leaves alone, so the call holds.
 '''

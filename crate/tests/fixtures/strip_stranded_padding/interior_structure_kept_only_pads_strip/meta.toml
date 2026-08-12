@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Only the Pad Strips, Interior Structure Stays"
+
+description = '''
+`d[ 1 ]` strips down to `d[1]`, and `s[ 1 : 2 ]` strips only its bracket padding, keeping the spacing around its slice `:` as `s[1 : 2]`. `trailing = [ 1, 2, ]` strips the same way to `[1, 2,]`, leaving its trailing comma for `strip-trailing-commas` to remove.
+'''

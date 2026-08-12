@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Return Annotation Pins the Annotated Class After Its Type"
+
+description = '''
+`Builder.make` declares `-> Helper`, and Python evaluates the return annotation when the `def` runs, so `Helper` must already exist by the time `Builder`'s body executes. Sorting `Builder` above `Helper` would raise `NameError` the moment the module imports, so the pair holds with `Helper` first.
+'''

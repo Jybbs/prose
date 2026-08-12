@@ -1,0 +1,23 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_calls/elif_test_call_explodes/input.py
+---
+if alpha:
+    pass
+elif gather(
+    alpha,
+    beta,
+    gamma,
+    delta,
+    epsilon,
+    zeta,
+    eta,
+    theta,
+    iota,
+    kappa,
+    lam,
+    mu,
+    nu
+):
+    pass

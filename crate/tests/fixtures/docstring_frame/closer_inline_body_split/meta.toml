@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Closer Sitting on the Last Content Line Drops to Its Own Line"
-
-description = '''
-When the closing `"""` shares a line with the final body line, **the closer drops to the next line at the docstring's indent**. The body content above it is left untouched.
-'''

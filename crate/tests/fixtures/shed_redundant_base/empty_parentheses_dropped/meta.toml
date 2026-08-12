@@ -3,5 +3,5 @@ previewable = true
 title       = "Empty Parentheses Leave the Header"
 
 description = '''
-A header written `class C():` carries a base list holding nothing, so both parentheses go and the declaration reads as `class C:`. A space written between the class name and the parentheses goes with them, leaving no gap ahead of the colon.
+`class Marker():` and `class Sentinel():` each carry an empty base list, so the parentheses drop and the headers read `class Marker:` and `class Sentinel:`. `class Spaced ():` writes a space before its pair, and that space is removed along with the parentheses, leaving no gap ahead of the `:`.
 '''

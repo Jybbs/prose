@@ -3,5 +3,5 @@ previewable = false
 title       = "A Nested Literal Measures From Its Own Indent"
 
 description = '''
-The suggested parts open one indent level past the line they replace and the closing `)` lands back on it, so each part is filled against the columns the nesting actually leaves rather than against the full budget.
+The 56-column `return` line inside `render` overflows the 40-column budget, and the suggested split opens its parts one indent level past the `return`, with the closing `)` landing back on the `return`'s own indent. Each part is filled against the columns that deeper indent leaves, not against the full budget.
 '''

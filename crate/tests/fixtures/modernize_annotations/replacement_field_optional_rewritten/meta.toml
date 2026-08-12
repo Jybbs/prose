@@ -3,5 +3,5 @@ previewable = true
 title       = "A Legacy `Optional` Inside a Replacement Field Is Rewritten"
 
 description = '''
-The rewrite reaches inside an f-string replacement field, so a legacy `Optional` written there takes the same PEP 604 form one written in an annotation does.
+The `Optional[int]` inside `label`'s f-string replacement field rewrites to `int | None` exactly as the annotation `plain: Optional[str]` rewrites to `str | None`, because the rule reaches expressions inside replacement fields too. With both reads gone, the `Optional` import is removed.
 '''

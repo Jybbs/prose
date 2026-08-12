@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Body Holding a Triple-Quote Run Keeps Its Quotes"
+
+description = '''
+`render`'s single-quoted docstring holds a literal `"""` run in its body. **The original quotes stay**, because a `"""` frame around a body already containing `"""` would end the string early, so this rare shape passes through untouched.
+'''

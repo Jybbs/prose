@@ -1,2 +1,2 @@
 [harness]
-rules = ["collection-layout", "align-match-case"]
+rules = ["reflow-collections", "align-match-case"]

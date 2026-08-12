@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/cross_group_split_imports_sort/input.py
+---
+import os
+
+from . import shared
+
+x = 1

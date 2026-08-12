@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comprehension Too Wide to Join Keeps Its Breaks"
+
+description = '''
+Joining the `filtered` comprehension would push its single line past the budget, so it stays at its source line breaks with `for record in the_complete_source_collection` and the `if` filter each on their own line. The rule only ever collapses a comprehension and never explodes one into a canonical shape the way a literal expands.
+'''

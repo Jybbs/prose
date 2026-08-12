@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "Module Docstring Rewrites at Column Zero"
+
+description = '''
+The module docstring holds its opener, body, and closer on one physical line. It expands into the multi-line block shape, lifting `Module summary on a single line.` onto its own line at column zero, the indent a module-level statement takes.
+'''

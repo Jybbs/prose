@@ -3,5 +3,5 @@ previewable = true
 title       = "A Flush Assignment Run Aligns and Spaces Its Values"
 
 description = '''
-An adjacent run of assignments written with no space after `=` pads each name to the shared column and inserts the one-space value-side buffer, so every row reads as `name = value`.
+`x=1`, `yy=2`, and `zzz=3` arrive with no space around any `=`. The rule pads each name out to the column one space past `zzz` and inserts the one-space value-side buffer, so every row reads as `name = value` with the `=` stacked.
 '''

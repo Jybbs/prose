@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_method_chains/no_shift_always_splits/input.py
+---
+result = (
+    query
+    .filter(a)
+    .order(b)
+    .limit(c)
+)

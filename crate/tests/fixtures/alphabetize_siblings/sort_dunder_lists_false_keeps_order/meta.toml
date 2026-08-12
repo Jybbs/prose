@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Dunder Lists Keep Their Order When Sorting Is Off"
+
+description = '''
+With `sort-dunder-lists = false`, `__all__` **keeps its authored order**, `"render"` before `"Posting"` before `"Catalog"`, and `Buffer`'s `__slots__` keeps `"size"` before `"data"`. The methods still sort, `read` climbing above `write`, because the setting covers only the dunder string lists.
+'''

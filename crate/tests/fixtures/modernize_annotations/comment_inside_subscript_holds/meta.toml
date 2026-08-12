@@ -3,5 +3,5 @@ previewable = false
 title       = "A Comment Inside the Subscript Holds the Rewrite"
 
 description = '''
-Rewriting the subscript would drop the comment it carries, so the annotation stays legacy.
+`x`'s multi-line subscript carries the `# the count` comment inside its brackets. Rewriting `Optional[int]` to a `|` union would rebuild the expression and drop that comment, so the annotation holds in its legacy form.
 '''

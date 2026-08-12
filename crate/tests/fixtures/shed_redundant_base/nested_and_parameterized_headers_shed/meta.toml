@@ -3,5 +3,5 @@ previewable = false
 title       = "The Walk Reaches Every Class Header"
 
 description = '''
-A decorated class, a class carrying PEP 695 type parameters, a class nested in another class body, and a class defined inside a function each shed their `object` base. The parameterized header is the one that reaches back to a `]` rather than to a class name when it takes the space ahead of its parentheses.
+The decorated `Decorated`, the parameterized `Generic[T]`, `Inner` nested inside `Outer`, and `Local` defined inside `factory` each shed their `object` base, showing the walk reaches class headers at every depth. `class Generic[T] (object):` also carries a space ahead of its parentheses, and removing that space extends the deletion back to the `]` rather than to a class name.
 '''

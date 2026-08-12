@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Grid Tables Pass Through Verbatim"
-
-description = '''
-A reStructuredText grid table **keeps its rows and its column widths**. A `+---+` corner rule and a `|`-delimited row each open a passthrough line, so the grid survives instead of filling into a paragraph that no renderer reads as a table.
-'''

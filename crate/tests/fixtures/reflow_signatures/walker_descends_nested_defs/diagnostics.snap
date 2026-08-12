@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_signatures/walker_descends_nested_defs/input.py
+---
+reflow-signatures@113..178
+reflow-signatures@16..96

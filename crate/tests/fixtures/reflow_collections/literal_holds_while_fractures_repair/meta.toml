@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Literal Holds Its Break While Fractures Repair"
+
+description = '''
+`held_list`, laid out by its author as a bracketed column, holds its break and re-expands to the canonical flow-packed layout. The multi-line `registry` subscript and the broken tuple key in `repaired_collection_key` instead rejoin onto one line whatever `keep-multiline-literals` holds, because neither carries an entry boundary for a break to sit on, leaving each to read as a fracture rather than an authored column.
+'''

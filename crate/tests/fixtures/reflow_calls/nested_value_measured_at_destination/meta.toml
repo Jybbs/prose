@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Nested Call Answers the Column It Lands At"
+
+description = '''
+The `configure` call overflows the width cap, so it explodes to one keyword per line. The nested `fn(1)` is measured at the column it lands at inside the exploded row rather than the column it occupied in the source, and `gamma=fn(1)` sits well inside the cap, so the short call stays inline.
+'''

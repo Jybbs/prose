@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Constants Sort Around a Pinned Field Run"
+
+description = '''
+`@dataclass` builds `Posting`'s constructor from its annotated data fields, so the pin covers `title` and `company` alone and they **hold their positional order**. The bare `MAX_AGE` and the `ClassVar`-annotated `RETRIES` never become constructor parameters, so the constants **still sort**, `MAX_AGE` moving above `RETRIES`.
+'''

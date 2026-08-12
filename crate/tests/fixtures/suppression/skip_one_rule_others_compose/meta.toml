@@ -3,5 +3,5 @@ previewable = false
 title       = "Per-Rule Skip Leaves Other Format Rules Composing"
 
 description = '''
-`# prose: skip[<rule>]` opts one line out of **a single format rule** while every other rule's edits stay in place on that line. Here `strip-trailing-commas` is skipped on the last assignment, yet `align-equals` still draws the `=` column across all three.
+`# prose: skip[strip-trailing-commas]` trailing `ccc`'s call opts that one line out of **a single format rule** while every other rule's edits still land on it. `strip-trailing-commas` leaves `func(5, 6,)`'s trailing comma in place, yet `align-equals` still aligns all three `=` signs, including `ccc`'s, to `longer_name`'s column.
 '''

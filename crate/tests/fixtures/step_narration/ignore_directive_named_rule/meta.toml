@@ -3,5 +3,5 @@ previewable = false
 title       = "Ignore Directive Must Name This Rule to Suppress"
 
 description = '''
-A `# prose: ignore[step-narration]` directive on a step line **suppresses its diagnostic**, while a directive naming a different rule like `align-equals` leaves the diagnostic in place. The suppression keys on the named slug, not on the directive's mere presence.
+`# 1. normalize input` carries a `# prose: ignore[step-narration]` directive naming this rule, **so its diagnostic is suppressed**, while `# 2. fold the result` carries `# prose: ignore[align-equals]` naming a different rule, so `step-narration` still reports it. The suppression keys on the directive's named slug rather than on the directive's mere presence.
 '''

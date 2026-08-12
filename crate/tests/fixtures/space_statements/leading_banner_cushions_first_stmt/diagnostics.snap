@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/space_statements/leading_banner_cushions_first_stmt/input.py
+---
+space-statements@150..151

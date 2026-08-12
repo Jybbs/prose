@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Multi-Line String Value Explodes the List and Keeps Its Floor"
+
+description = '''
+The `note=` value is a triple-quoted string whose line break falls inside the literal, so it spans rows the way any held block does and `emit` explodes around it, putting `alpha=1` and `zeta=2` on their own rows. The string's second line stays at its source column, because indenting it would insert spaces into the string's own content.
+'''

@@ -1,7 +1,7 @@
 ---
 caption: Align consecutive assignments
 related:
-  - alphabetize
+  - alphabetize-siblings
 ---
 
 # Align Equals

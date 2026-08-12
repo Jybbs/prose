@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Chain Inside a Held Chain's Argument Still Breaks"
+
+description = '''
+The outer `base.first(...).second(beta)` chain sits under both triggers, so its own shape is left alone. The walk still descends into each link's arguments, and the three-link `other.one().two().three()` passed to `first` trips the count on its own reading, breaking into a grouping pair inside the call.
+'''

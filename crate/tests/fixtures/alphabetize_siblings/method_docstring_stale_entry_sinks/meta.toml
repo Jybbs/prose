@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Stale Docstring Entry Sinks Below the Signature's Parameters"
+
+description = '''
+The `Args:` entries **mirror the signature's order**, so `target:` and `source:` rearrange to match `update(self, target, source)`. The `retries:` entry names a parameter the signature no longer has, so it sinks below the mirrored pair, where any stale entries sort among themselves.
+'''

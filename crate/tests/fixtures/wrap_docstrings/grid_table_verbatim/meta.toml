@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Grid Tables Pass Through Verbatim"
+
+description = '''
+The `Encoder` docstring holds a reStructuredText grid table mapping Python types to their JSON equivalents, and the table **keeps its rows and column widths untouched**. A line opening with a `+` border or a `|` cell delimiter is passed through verbatim, so the grid is never reflowed into a paragraph that no renderer would display as a table.
+'''

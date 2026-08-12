@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Nested Flush Column Explodes the List Around It"
-
-description = '''
-An argument carrying a flush bracketed column of its own still spans rows once every closable fracture shuts, so the span trigger explodes the enclosing list and the held block re-indents to the item column.
-'''

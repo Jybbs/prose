@@ -5,7 +5,7 @@
 //! string prefix and drops the no-op `u`. `unify-numerics` uppercases hex
 //! digits while lowercasing the radix marker, the exponent, and the `j`
 //! suffix. The quote facet passes over the docstring slot, whose frame
-//! `docstring-frame` owns, and over any literal inside a replacement
+//! `frame-docstrings` owns, and over any literal inside a replacement
 //! field, whose quotes the enclosing string constrains before Python
 //! 3.12.
 

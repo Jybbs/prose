@@ -44,7 +44,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: '--select <slug>',  href: '/reference/cli#precedence',           blurb: 'Restrict the run to the listed rule.' },
     { key: '--stdin',          href: '/reference/cli#prose-format',         blurb: 'Read source from stdin, write the rewrite to stdout.' },
     { key: '--stdin-filename', href: '/reference/cli#prose-format',         blurb: 'Treat stdin as this filename, its extension selecting Python or a notebook.' },
-    { key: '--validate',       href: '/reference/cli#prose-check',          blurb: 'Confirm the would-be rewrite re-parses, surfacing an unparseable rule output.' },
+    { key: '--validate',       href: '/reference/cli#prose-check',          blurb: 'Confirm the would-be rewrite re-parses, naming an unparseable rule output.' },
     { key: '--verbose',        href: '/reference/cache#hit-miss-telemetry', blurb: 'Print a one-line cache summary to stderr at the end of the run.' }
   ],
   'config-key': [

@@ -3,5 +3,5 @@ previewable = true
 title       = "An Unread Import Drops While a Sibling Keeps Its Module"
 
 description = '''
-Nothing reads the `json` namespace, and the `from json import loads` line keeps the module imported. **The bare import drops** rather than being reported.
+`import json` binds the `json` namespace itself, unread anywhere in the module, while the separate `from json import loads` line keeps `loads` in use through `loads("{}")`. **The bare import drops rather than being reported**, since only a package `__init__.py` treats an unreferenced import as a re-export to flag instead of remove.
 '''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Methods Sort Around Pinned Class Constants"
+
+description = '''
+`DEFAULT_TIMEOUT` and `MAX_RETRIES` interleave with `Settings`' methods, and the constants **stay pinned in their source slots** while the methods sort around them. `__init__` takes the first method slot, `_read_lock` the second, and `update` the last, each landing in a slot another method vacated.
+'''

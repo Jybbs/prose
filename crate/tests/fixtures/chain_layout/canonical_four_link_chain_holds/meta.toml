@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = false
-title       = "A Chain Already in the Broken Shape Emits Nothing"
-
-description = '''
-A chain the break would emit verbatim yields no edit, and the walk then passes its spine by rather than descending into it, leaving the first three links unwrapped where a spine descent would gather them into a second pair.
-'''

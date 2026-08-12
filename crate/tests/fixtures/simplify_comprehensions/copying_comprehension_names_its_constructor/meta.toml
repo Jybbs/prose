@@ -3,5 +3,5 @@ previewable = true
 title       = "A Comprehension That Copies Its Input Names the Constructor Instead"
 
 description = '''
-Where the element repeats the target unchanged, the comprehension is spelling a copy, so it collapses to the constructor it was always building.
+`[row for row in rows]`, `{row for row in rows}`, and `{key: value for key, value in rows}` each repeat their generator's target as the element unchanged, so every one is spelling a plain copy of `rows`. `simplify-comprehensions` collapses each to the constructor it was already building, `list(rows)`, `set(rows)`, and `dict(rows)`.
 '''

@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Fractured Argument List Rejoins"
-
-description = '''
-An argument list the author broke across lines without opening a flush column joins back onto one row once it fits the budget, leaving the reader one line to parse rather than a hanging indent measured against the callee's parenthesis.
-'''

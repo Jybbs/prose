@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A `msgspec.Struct` Base Holds Its Field Order"
-
-description = '''
-A base class can generate the field-ordered constructor just as a decorator can, so a `msgspec.Struct` subclass **pins its run**. Detection reads the base's tail segment, leaving a dotted or aliased import to match alike.
-'''

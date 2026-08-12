@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A URL or Path Token Overflows Whole Rather Than Splitting"
+
+description = '''
+The `parse_link_headers` description ends in a URL that alone exceeds the budget, and a token holding a path `/` or `-` wraps as one atomic word. The wrap breaks after `see:`, so the URL lands whole on its own line and overflows the budget intact, keeping the value copy-pasteable.
+'''

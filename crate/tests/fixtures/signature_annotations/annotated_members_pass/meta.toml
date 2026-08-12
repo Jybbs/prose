@@ -3,5 +3,5 @@ previewable = true
 title       = "Already-Annotated Members Stay Silent"
 
 description = '''
-An annotated parameter and a return-annotated function draw no report, so only the unannotated `count` surfaces, the rule flagging the gap rather than the annotation already present.
+`configured` takes an annotated `name: str` alongside the unannotated `count`, and its return type is annotated `-> int`. `signature-annotations` reports only `count`, leaving the annotated parameter and the annotated return unflagged.
 '''

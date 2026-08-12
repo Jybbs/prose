@@ -3,5 +3,5 @@ previewable = true
 title       = "Two `__all__` Writes Hold Both Lists"
 
 description = '''
-A module writes `__all__` twice, and the rule reads the union rather than the last write, so **both `dumps` and `loads` hold their import** even though only the second list publishes at runtime.
+The module writes `__all__` twice, first `["dumps"]` then `["loads"]`, and imports both `dumps` and `loads` from `json`. **`prune-inert-imports` reads the union of every `__all__` write rather than only the last one, so both imports hold**, even though only the second list is what actually publishes at runtime.
 '''

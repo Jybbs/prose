@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "Explode an All-Keyword Call to an External Function"
+
+description = '''
+`fetch` takes four keyword arguments and is defined nowhere in this module, so no signature is available to resolve against. The call explodes to one argument per line anyway, because `headers=h` through `url=u` each already name their parameter and need no signature lookup.
+'''

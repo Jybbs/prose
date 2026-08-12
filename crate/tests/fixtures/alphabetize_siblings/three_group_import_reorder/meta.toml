@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Imports Regroup into Bare → External `from` → Local-Package Order"
+
+description = '''
+The scrambled block **reorders into the canonical bare → external `from` → local-package grouping**, so `import os` and `import sys` lead, `from collections import Counter` and `from pathlib import Path` follow, and the relative imports close the block. Within that last group `from ..shared import base` sits above the single-dot pair, because relative imports rank by level first and module name second.
+'''

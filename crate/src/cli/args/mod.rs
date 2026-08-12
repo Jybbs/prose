@@ -196,7 +196,7 @@ mod tests {
             "--select",
             "align-equals,align-colons",
             "--ignore",
-            "alphabetize",
+            "alphabetize-siblings",
         ])
         .expect("parses");
         let args = command_args!(cli, Check);
@@ -204,7 +204,10 @@ mod tests {
             args.common.rules.select,
             [RuleId::from("align-equals"), RuleId::from("align-colons")],
         );
-        assert_eq!(args.common.rules.ignore, [RuleId::from("alphabetize")]);
+        assert_eq!(
+            args.common.rules.ignore,
+            [RuleId::from("alphabetize-siblings")]
+        );
     }
 
     #[test]
@@ -384,12 +387,15 @@ mod tests {
             "--select",
             "align-equals",
             "--ignore",
-            "alphabetize",
+            "alphabetize-siblings",
         ])
         .expect("parses");
         let args = command_args!(cli, Format);
         assert_eq!(args.common.rules.select, [RuleId::from("align-equals")]);
-        assert_eq!(args.common.rules.ignore, [RuleId::from("alphabetize")]);
+        assert_eq!(
+            args.common.rules.ignore,
+            [RuleId::from("alphabetize-siblings")]
+        );
     }
 
     #[test]

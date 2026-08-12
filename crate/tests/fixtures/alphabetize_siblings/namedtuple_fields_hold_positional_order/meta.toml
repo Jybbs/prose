@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`NamedTuple` Fields Hold Their Positional Order"
+
+description = '''
+The `NamedTuple` base makes the field run the tuple's element order, so building a `Point` positionally binds `y` first and `x` second. Every field **holds its source position**, `y` staying above `x` even though a sort would swap them, with the defaulted `color` keeping its final slot.
+'''

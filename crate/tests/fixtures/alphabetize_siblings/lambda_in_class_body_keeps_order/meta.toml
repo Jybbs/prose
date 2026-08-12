@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Class-Body Lambda Parameters Keep Their Order"
+
+description = '''
+The parameters of the `lambda` bound to `score` **keep their source order**, `self, weight, bias` surviving untouched even though `bias` sorts before `weight`. Positional-or-keyword parameters bind callers by position, exactly as a `def`'s do, so reordering them would change call sites a single-file pass cannot see.
+'''

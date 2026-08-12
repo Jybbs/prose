@@ -3,6 +3,5 @@ previewable = false
 title       = "A Bytes Conversion Holds"
 
 description = '''
-`%b` belongs to a bytes template, so a str template carrying it is left as
-written.
+`%b` is a bytes-template conversion, so the str template in `raw = "%b" % (payload,)` carries a placeholder with no f-string spelling to rewrite into. The statement is left as written.
 '''

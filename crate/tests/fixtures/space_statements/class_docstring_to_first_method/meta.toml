@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "The First Method after a Class Docstring Tightens Up"
+
+description = '''
+`Posting`'s docstring, written in triple-apostrophe quotes, sits flush against `def m1(self):`, and three blank lines separate `m1` from `m2`. **One blank line lands between the docstring and the first method**, and the wider drift between the two methods collapses to the canonical single blank.
+'''

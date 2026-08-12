@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize_siblings/parenthesized_value_keeps_parens_on_reorder/input.py
+---
+alphabetize-siblings@11..44

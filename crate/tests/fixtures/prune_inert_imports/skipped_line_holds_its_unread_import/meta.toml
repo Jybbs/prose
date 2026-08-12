@@ -3,5 +3,5 @@ previewable = true
 title       = "A Skipped Line Keeps the Import Nothing Reads"
 
 description = '''
-Nothing references `json`, and a `# prose: skip` directive sits on its line. **The prune is dropped as a whole group**, leaving the import exactly as written.
+Nothing references `json`, and a bare `# prose: skip` trails its import line. **The directive widens to every rewrite rule on the line, `prune-inert-imports` included**, so the import stays exactly as written.
 '''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Reserved Column Holds an Assigned Subscript's Break"
+
+description = '''
+Measured at the `=` column the source wrote, `HEADER_VALIDATORS`'s subscript would fit back on one line, yet `align-equals` is about to shift that `=` rightward to clear the longer `_VALID_HEADER_VALUE_RE_BYTE`. `reflow-collections` reserves the shifted column and measures the rejoin against it instead, so the subscript **keeps its break** rather than joining and then overflowing once the alignment lands.
+'''

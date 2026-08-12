@@ -3,5 +3,5 @@ previewable = false
 title       = "An Outlier Name Partitions Out of the Type-Group Column"
 
 description = '''
-`max-shift` bounds the type-group column the way it bounds the `:` column, so a name whose width breaks the spread starts a fresh column rather than dragging its neighbors' type groups across the page.
+`host (str)` and `port (int)` share one `:` column in the docstring's `Args:` section. Pushing that column out to `deadline_after_first_handshake_attempt (float)` would shift the short rows further than `max-shift` allows, so the wide row starts a fresh column and its `:` lands flush after the type group.
 '''

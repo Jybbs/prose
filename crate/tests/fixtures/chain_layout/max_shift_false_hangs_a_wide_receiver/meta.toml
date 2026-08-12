@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = false
-title       = "A `false` `max-shift` Hangs Every Chain"
-
-description = '''
-Lifting the cap hangs each dot beneath the head whatever the receiver's width, so the full split never fires.
-'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Reader Wedged Between Its Fields Holds Its Slot"
+
+description = '''
+`HALF` reads `width`, the annotated field directly above it, and the constant sits wedged between `width` and `height`. Alphabetizing the fields would drop `width` into `height`'s slot below the `HALF` that reads it, breaking the name lookup, so the run **keeps source order** and the body passes through unchanged.
+'''

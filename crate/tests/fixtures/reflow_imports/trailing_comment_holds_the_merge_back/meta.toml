@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comment Trailing the Last Member Holds the Merge Back"
+
+description = '''
+Merging `from pkg import alpha` into the `beta` line would delete the line the trailing comment sits on, taking the comment with it. The merge therefore skips the module, **leaving every `pkg` statement in place** and the comment where its author wrote it.
+'''

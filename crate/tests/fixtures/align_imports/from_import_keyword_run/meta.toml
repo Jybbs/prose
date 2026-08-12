@@ -4,5 +4,5 @@ previewable = true
 title       = "From-Imports Align the `import` Keyword on a Shared Column"
 
 description = '''
-A run of `from ... import ...` statements lines up on the `import` keyword, so the module column flushes left and the name column flushes right.
+Four `from ... import ...` statements form one run, with `collections` the widest module among them. Padding after the shorter modules `typing`, `sys`, and `os.path` moves every `import` keyword onto the column `collections` sets, so the imported names `OrderedDict`, `Optional`, `path`, and `join` all start at the same column.
 '''

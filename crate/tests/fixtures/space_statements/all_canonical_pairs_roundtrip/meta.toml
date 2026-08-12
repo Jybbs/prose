@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Already-Canonical Spacing Round-Trips Unchanged"
+
+description = '''
+Every gap here already matches the canonical spacing, so the source **round-trips with no edit**. Two blanks separate the module-level defs, one blank sits between `first` and `second`, `Posting`'s docstring touches its class header, one blank separates `Sized`'s header from `capacity`, and one blank precedes the `match` opening `beta`'s body.
+'''

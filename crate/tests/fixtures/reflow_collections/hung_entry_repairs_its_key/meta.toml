@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Hung Entry Rejoins Its Key Before Breaking at the Colon"
+
+description = '''
+The tuple key in `mapping` spans two source lines, and even once rejoined its full `key: value` width still overflows, so the entry takes both moves. The key joins onto one line and the entry then breaks at its `:`, hanging `some_quite_long_value_expression_padding_here` beneath it, and because the hang renders the repaired key rather than the source slice, the row that breaks carries the same one-line key shape its siblings do.
+'''

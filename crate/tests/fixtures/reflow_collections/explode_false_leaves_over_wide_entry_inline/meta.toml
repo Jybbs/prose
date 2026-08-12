@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A False Explode Facet Suppresses the Over-Wide-Entry Wrap"
+
+description = '''
+The entry keyed by `extremely_long_key_name_that_pushes_its_row_past_the_budget` overflows the budget, the shape that normally expands `config` and hangs the value beneath its key. With `explode` set to `false` that wrap is suppressed along with the expansion it belongs to, so the whole dict keeps its single line.
+'''

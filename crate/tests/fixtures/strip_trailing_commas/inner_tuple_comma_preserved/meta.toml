@@ -3,5 +3,5 @@ previewable = false
 title       = "Inner Tuple Commas Survive the Strip"
 
 description = '''
-A tuple literal like `(1,)` nested inside a call keeps its own trailing `,`, since tuples fall outside the rule's scope. **The call's trailing comma is still stripped**, leaving the tuple separators intact.
+`(1,)` and `(2,)` are tuple literals nested inside the `make_pair` call, and each keeps its own trailing `,`, since tuples fall outside `strip-trailing-commas`'s scope. **The call's own trailing comma, after `(2,)`, is still stripped**, leaving the tuple separators intact.
 '''

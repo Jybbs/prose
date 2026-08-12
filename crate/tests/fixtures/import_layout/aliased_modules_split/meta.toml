@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Each Aliased Module Keeps Its `as` Clause Across the Split"
-
-description = '''
-A comma-joined import whose modules carry aliases splits with **each `as` clause on its own module's statement**, leaving [[align-imports]] a run of single-aliased statements to line up.
-'''

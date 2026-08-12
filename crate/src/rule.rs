@@ -7,8 +7,14 @@
 //! [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
 //! [`Pipeline::with_filters`] from a registry table.
 
-use std::{borrow::Cow, fmt, str::FromStr};
+use std::{
+    borrow::Cow,
+    collections::BTreeSet,
+    fmt::{self, Display},
+    str::FromStr,
+};
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use schemars::{JsonSchema, Schema, SchemaGenerator, json_schema};
 use serde::{Deserialize, Serialize};
@@ -17,36 +23,39 @@ use thiserror::Error;
 
 use crate::{
     config::{
-        AlignmentConfig, AlphabetizeConfig, BandConstantsConfig, BareImportsConfig,
-        CallLayoutConfig, ChainLayoutConfig, CollectionLayoutConfig, Config, ImportLayoutConfig,
+        AlignmentConfig, AlphabetizeSiblingsConfig, BandConstantsConfig, BareImportsConfig, Config,
         LineOverflowConfig, MiscasedConstantsConfig, ModernizeAnnotationsConfig,
         NormalizeComparisonsConfig, NormalizeLiteralsConfig, PreferFstringConfig,
-        PruneInertImportsConfig, ReassignedConstantsConfig, SignatureLayoutConfig,
-        SingleUseVariablesConfig, ToggleOnly, rule_schema,
+        PruneInertImportsConfig, ReassignedConstantsConfig, ReflowCallsConfig,
+        ReflowCollectionsConfig, ReflowImportsConfig, ReflowSignaturesConfig,
+        SingleUseVariablesConfig, StackMethodChainsConfig, ToggleOnly, rule_schema,
     },
     diagnostics::Diagnostic,
     pipeline::Pipeline,
     rules::{
         align_colons::AlignColons, align_comments::AlignComments,
         align_comparisons::AlignComparisons, align_equals::AlignEquals,
-        align_imports::AlignImports, align_match_case::AlignMatchCase, alphabetize::Alphabetize,
-        band_constants::BandConstants, bare_imports::BareImports, blank_lines::BlankLines,
-        call_layout::CallLayout, chain_layout::ChainLayout, collection_layout::CollectionLayout,
-        comment_spacing::CommentSpacing, docstring_expand::DocstringExpand,
-        docstring_frame::DocstringFrame, docstring_wrap::DocstringWrap,
-        group_imports::GroupImports, import_layout::ImportLayout, line_overflow::LineOverflow,
-        miscased_constants::MiscasedConstants, modernize_annotations::ModernizeAnnotations,
+        align_imports::AlignImports, align_match_case::AlignMatchCase,
+        alphabetize_siblings::AlphabetizeSiblings, band_constants::BandConstants,
+        bare_imports::BareImports, expand_docstrings::ExpandDocstrings,
+        frame_docstrings::FrameDocstrings, group_imports::GroupImports,
+        line_overflow::LineOverflow, miscased_constants::MiscasedConstants,
+        modernize_annotations::ModernizeAnnotations,
+        normalize_comment_spacing::NormalizeCommentSpacing,
         normalize_comparisons::NormalizeComparisons, normalize_literals::NormalizeLiterals,
         prefer_fstring::PreferFstring, prune_inert_imports::PruneInertImports,
-        reassigned_constants::ReassignedConstants, restated_types::RestatedTypes,
+        reassigned_constants::ReassignedConstants, reflow_calls::ReflowCalls,
+        reflow_collections::ReflowCollections, reflow_imports::ReflowImports,
+        reflow_signatures::ReflowSignatures, restated_types::RestatedTypes,
         shed_backslash_continuations::ShedBackslashContinuations,
         shed_parentheses::ShedParentheses, shed_redundant_base::ShedRedundantBase,
         shed_super_args::ShedSuperArgs, signature_annotations::SignatureAnnotations,
-        signature_layout::SignatureLayout, simplify_comprehensions::SimplifyComprehensions,
-        single_use_variables::SingleUseVariables, stack_adjacent_strings::StackAdjacentStrings,
-        step_narration::StepNarration, strip_align_padding::StripAlignPadding,
-        strip_none_return::StripNoneReturn, strip_trailing_commas::StripTrailingCommas,
-        unsorted_positionals::UnsortedPositionals,
+        simplify_comprehensions::SimplifyComprehensions, single_use_variables::SingleUseVariables,
+        space_statements::SpaceStatements, stack_adjacent_strings::StackAdjacentStrings,
+        stack_method_chains::StackMethodChains, step_narration::StepNarration,
+        strip_none_return::StripNoneReturn, strip_stranded_padding::StripStrandedPadding,
+        strip_trailing_commas::StripTrailingCommas, unsorted_positionals::UnsortedPositionals,
+        wrap_docstrings::WrapDocstrings,
     },
     source::Source,
 };
@@ -151,10 +160,38 @@ impl Serialize for RuleId {
     }
 }
 
-/// The slugs whose output the rule named `slug` reads, empty for a rule
-/// that depends on nothing seated ahead of it and for an unknown slug.
-pub(crate) fn dependencies_of(slug: &str) -> &'static [&'static str] {
+/// The slugs the rule named `slug` must run behind, empty for a rule
+/// that settles wherever it sits and for an unknown slug.
+pub fn dependencies_of(slug: &str) -> &'static [&'static str] {
     slug_index(slug).map_or(&[], |i| PIPELINE_DEPENDENCIES[i])
+}
+
+/// Renders `rules` as a comma-separated list of backticked slugs.
+pub fn render_slugs(rules: &[RuleId]) -> impl Display + '_ {
+    rules
+        .iter()
+        .format_with(", ", |rule, f| f(&format_args!("`{rule}`")))
+}
+
+/// Whether `later`'s dependency column reaches `earlier`, directly or
+/// through the column of a rule it already names. `false` for an
+/// unknown slug on either side. Takes its pair in the opposite order
+/// from [`precedes`], which asks about registration rather than the
+/// declared column.
+pub fn runs_behind(later: &str, earlier: &str) -> bool {
+    let mut seen = BTreeSet::new();
+    let mut pending = vec![later];
+    while let Some(slug) = pending.pop() {
+        for dependency in dependencies_of(slug) {
+            if *dependency == earlier {
+                return true;
+            }
+            if seen.insert(*dependency) {
+                pending.push(dependency);
+            }
+        }
+    }
+    false
 }
 
 /// Returns `true` when `bytes` is a valid kebab-case slug. Non-empty,
@@ -182,7 +219,9 @@ const fn is_valid_slug(bytes: &[u8]) -> bool {
 }
 
 /// Returns `true` when `earlier` is registered before `later`, and
-/// `false` when either is absent from the registry.
+/// `false` when either is absent from the registry. Answers about the
+/// registry's own order rather than the declared column [`runs_behind`]
+/// walks, and takes its pair in the opposite order.
 const fn precedes(earlier: &str, later: &str) -> bool {
     match (slug_index(earlier), slug_index(later)) {
         (Some(a), Some(b)) => a < b,
@@ -222,7 +261,7 @@ const fn slug_index(slug: &str) -> Option<usize> {
 /// [`Pipeline::with_defaults`], and [`Pipeline::with_filters`] from a
 /// registry table. Each row leads with the rule's kebab-case slug,
 /// then its `[tool.prose.rules]` field name, config sub-table type,
-/// rule struct, and the slugs whose output it reads. The slug is the
+/// rule struct, and the slugs it must run behind. The slug is the
 /// single source consumed by `RuleId::from_str`, the
 /// `[tool.prose.rules.<slug>]` section name, the
 /// `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
@@ -245,7 +284,7 @@ macro_rules! register_rules {
         /// Each rule's one-line imperative, indexed alongside [`KNOWN_IDS`].
         const MESSAGES: &[&str] = &[$($ty::MESSAGE),*];
 
-        /// Each rule's dependency slugs, indexed alongside [`KNOWN_IDS`].
+        /// The slugs each rule runs behind, indexed alongside [`KNOWN_IDS`].
         const PIPELINE_DEPENDENCIES: &[&[&str]] = &[$(&[$($after),*]),*];
 
         // Asserts each declared dependency names a rule seated earlier.
@@ -260,7 +299,7 @@ macro_rules! register_rules {
         /// rule and `true` keeps its defaults, or a sub-table whose
         /// keys carry that rule's knobs. An absent field defaults to
         /// enabled.
-        #[derive(Debug, Default, Deserialize, Serialize)]
+        #[derive(Clone, Debug, Default, Deserialize, Serialize)]
         #[serde(default, rename_all = "kebab-case")]
         pub struct RuleConfigs {
             $(
@@ -337,11 +376,8 @@ macro_rules! register_rules {
             /// Bypasses each rule's `enabled` flag. Snake-case input is
             /// normalized to the canonical kebab form.
             pub fn for_rule(name: &str, config: &Config) -> Option<Self> {
-                let rule: Box<dyn Rule> = match name.replace('_', "-").as_str() {
-                    $($slug => Box::new($ty::from_config(config)),)*
-                    _ => return None,
-                };
-                Some(Self::from_rules(vec![rule]).targeting(config.target_version))
+                let id = RuleId::from_str(&name.replace('_', "-")).ok()?;
+                Some(Self::with_filters(config, &[id], &[]))
             }
 
             /// Builds a pipeline from every rule whose `enabled`
@@ -357,12 +393,17 @@ macro_rules! register_rules {
             /// set, whereas an empty `select` falls back to it.
             /// `ignore` then subtracts from the base, yielding
             /// `select - ignore`.
+            ///
+            /// Each rule is built from a config whose `enabled` flags
+            /// carry the resolved set, so a rule predicting what a later
+            /// rule does to a column reads whether that rule runs in this
+            /// pipeline rather than whether the file enables it.
             pub fn with_filters(
                 config: &Config,
                 select: &[RuleId],
                 ignore: &[RuleId],
             ) -> Self {
-                let mut rules: Vec<Box<dyn Rule>> = Vec::new();
+                let mut resolved = config.clone();
                 $({
                     let id = RuleId($slug);
                     let included = if select.is_empty() {
@@ -370,11 +411,15 @@ macro_rules! register_rules {
                     } else {
                         select.contains(&id)
                     };
-                    if included && !ignore.contains(&id) {
-                        rules.push(Box::new($ty::from_config(config)));
+                    resolved.rules.$field.enabled = included && !ignore.contains(&id);
+                })*
+                let mut rules: Vec<Box<dyn Rule>> = Vec::new();
+                $({
+                    if resolved.rules.$field.enabled {
+                        rules.push(Box::new($ty::from_config(&resolved)));
                     }
                 })*
-                Self::from_rules(rules).targeting(config.target_version)
+                Self::from_rules(rules).targeting(resolved.target_version)
             }
         }
     };
@@ -391,29 +436,29 @@ register_rules! {
     "shed-redundant-base":          shed_redundant_base:          ToggleOnly                 => ShedRedundantBase          => [],
     "normalize-comparisons":        normalize_comparisons:        NormalizeComparisonsConfig => NormalizeComparisons       => ["shed-parentheses"],
     "simplify-comprehensions":      simplify_comprehensions:      ToggleOnly                 => SimplifyComprehensions     => ["shed-parentheses"],
-    "docstring-frame":              docstring_frame:              ToggleOnly                 => DocstringFrame             => [],
-    "docstring-expand":             docstring_expand:             ToggleOnly                 => DocstringExpand            => ["docstring-frame"],
+    "frame-docstrings":             frame_docstrings:             ToggleOnly                 => FrameDocstrings            => [],
+    "expand-docstrings":            expand_docstrings:            ToggleOnly                 => ExpandDocstrings           => ["frame-docstrings"],
     "group-imports":                group_imports:                ToggleOnly                 => GroupImports               => [],
-    "chain-layout":                 chain_layout:                 ChainLayoutConfig          => ChainLayout                => [],
-    "collection-layout":            collection_layout:            CollectionLayoutConfig     => CollectionLayout           => ["chain-layout"],
-    "prefer-fstring":               prefer_fstring:               PreferFstringConfig        => PreferFstring              => ["normalize-literals", "collection-layout"],
-    "call-layout":                  call_layout:                  CallLayoutConfig           => CallLayout                 => ["chain-layout", "collection-layout"],
-    "shed-super-args":              shed_super_args:              ToggleOnly                 => ShedSuperArgs              => ["call-layout"],
-    "signature-layout":             signature_layout:             SignatureLayoutConfig      => SignatureLayout            => [],
-    "stack-adjacent-strings":       stack_adjacent_strings:       ToggleOnly                 => StackAdjacentStrings       => ["chain-layout", "collection-layout", "call-layout", "signature-layout"],
-    "align-match-case":             align_match_case:             AlignmentConfig            => AlignMatchCase             => [],
-    "import-layout":                import_layout:                ImportLayoutConfig         => ImportLayout               => ["group-imports"],
-    "alphabetize":                  alphabetize:                  AlphabetizeConfig          => Alphabetize                => ["chain-layout", "collection-layout", "call-layout", "signature-layout", "import-layout"],
-    "band-constants":               band_constants:               BandConstantsConfig        => BandConstants              => ["alphabetize"],
-    "blank-lines":                  blank_lines:                  ToggleOnly                 => BlankLines                 => ["group-imports", "alphabetize"],
-    "align-imports":                align_imports:                AlignmentConfig            => AlignImports               => ["alphabetize", "blank-lines", "import-layout"],
-    "align-colons":                 align_colons:                 AlignmentConfig            => AlignColons                => [],
-    "docstring-wrap":               docstring_wrap:               ToggleOnly                 => DocstringWrap              => ["docstring-frame", "docstring-expand", "align-colons"],
-    "align-equals":                 align_equals:                 AlignmentConfig            => AlignEquals                => ["collection-layout", "alphabetize", "align-colons"],
-    "align-comparisons":            align_comparisons:            AlignmentConfig            => AlignComparisons           => [],
-    "strip-align-padding":          strip_align_padding:          ToggleOnly                 => StripAlignPadding          => ["align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"],
-    "comment-spacing":              comment_spacing:              ToggleOnly                 => CommentSpacing             => [],
-    "align-comments":               align_comments:               AlignmentConfig            => AlignComments              => ["strip-align-padding", "comment-spacing"],
+    "stack-method-chains":          stack_method_chains:          StackMethodChainsConfig    => StackMethodChains          => [],
+    "reflow-calls":                 reflow_calls:                 ReflowCallsConfig          => ReflowCalls                => ["shed-backslash-continuations", "stack-method-chains"],
+    "shed-super-args":              shed_super_args:              ToggleOnly                 => ShedSuperArgs              => ["reflow-calls"],
+    "reflow-signatures":            reflow_signatures:            ReflowSignaturesConfig     => ReflowSignatures           => ["strip-none-return"],
+    "reflow-collections":           reflow_collections:           ReflowCollectionsConfig    => ReflowCollections          => ["simplify-comprehensions", "stack-method-chains", "reflow-calls", "reflow-signatures"],
+    "prefer-fstring":               prefer_fstring:               PreferFstringConfig        => PreferFstring              => ["normalize-literals", "reflow-collections"],
+    "stack-adjacent-strings":       stack_adjacent_strings:       ToggleOnly                 => StackAdjacentStrings       => ["stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures"],
+    "align-match-case":             align_match_case:             AlignmentConfig            => AlignMatchCase             => ["shed-parentheses"],
+    "reflow-imports":               reflow_imports:               ReflowImportsConfig        => ReflowImports              => ["shed-backslash-continuations", "prune-inert-imports", "group-imports"],
+    "band-constants":               band_constants:               BandConstantsConfig        => BandConstants              => ["simplify-comprehensions", "reflow-imports"],
+    "alphabetize-siblings":         alphabetize_siblings:         AlphabetizeSiblingsConfig  => AlphabetizeSiblings        => ["normalize-literals", "shed-parentheses", "stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures", "reflow-imports", "band-constants"],
+    "space-statements":             space_statements:             ToggleOnly                 => SpaceStatements            => ["prune-inert-imports", "group-imports", "alphabetize-siblings", "band-constants"],
+    "align-imports":                align_imports:                AlignmentConfig            => AlignImports               => ["reflow-imports", "alphabetize-siblings", "band-constants", "space-statements"],
+    "align-colons":                 align_colons:                 AlignmentConfig            => AlignColons                => ["strip-trailing-commas", "shed-parentheses", "reflow-collections", "reflow-signatures", "stack-adjacent-strings", "alphabetize-siblings", "band-constants"],
+    "wrap-docstrings":              wrap_docstrings:              ToggleOnly                 => WrapDocstrings             => ["frame-docstrings", "expand-docstrings", "align-colons"],
+    "align-equals":                 align_equals:                 AlignmentConfig            => AlignEquals                => ["strip-trailing-commas", "shed-parentheses", "reflow-collections", "alphabetize-siblings", "band-constants", "align-colons"],
+    "align-comparisons":            align_comparisons:            AlignmentConfig            => AlignComparisons           => ["shed-parentheses", "normalize-comparisons", "reflow-calls"],
+    "strip-stranded-padding":       strip_stranded_padding:       ToggleOnly                 => StripStrandedPadding       => ["shed-parentheses", "align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"],
+    "normalize-comment-spacing":    normalize_comment_spacing:    ToggleOnly                 => NormalizeCommentSpacing    => [],
+    "align-comments":               align_comments:               AlignmentConfig            => AlignComments              => ["strip-trailing-commas", "strip-stranded-padding", "normalize-comment-spacing"],
     "bare-imports":                 bare_imports:                 BareImportsConfig          => BareImports                => [],
     "miscased-constants":           miscased_constants:           MiscasedConstantsConfig    => MiscasedConstants          => [],
     "reassigned-constants":         reassigned_constants:         ReassignedConstantsConfig  => ReassignedConstants        => [],
@@ -421,8 +466,8 @@ register_rules! {
     "single-use-variables":         single_use_variables:         SingleUseVariablesConfig   => SingleUseVariables         => [],
     "unsorted-positionals":         unsorted_positionals:         ToggleOnly                 => UnsortedPositionals        => [],
     "signature-annotations":        signature_annotations:        ToggleOnly                 => SignatureAnnotations       => [],
-    "restated-types":               restated_types:               ToggleOnly                 => RestatedTypes              => ["docstring-frame", "docstring-expand", "docstring-wrap"],
-    "line-overflow":                line_overflow:                LineOverflowConfig         => LineOverflow               => ["strip-align-padding", "comment-spacing", "align-comments"],
+    "restated-types":               restated_types:               ToggleOnly                 => RestatedTypes              => ["frame-docstrings", "expand-docstrings", "wrap-docstrings"],
+    "line-overflow":                line_overflow:                LineOverflowConfig         => LineOverflow               => ["strip-stranded-padding", "normalize-comment-spacing", "align-comments"],
 }
 
 #[cfg(test)]
@@ -433,7 +478,7 @@ mod tests {
 
     #[rstest]
     fn dependencies_of_returns_empty_for_a_rule_without_predecessors(
-        #[values("prune-inert-imports", "chain-layout", "not-a-rule")] slug: &str,
+        #[values("prune-inert-imports", "stack-method-chains", "not-a-rule")] slug: &str,
     ) {
         assert!(dependencies_of(slug).is_empty());
     }
@@ -442,7 +487,14 @@ mod tests {
     fn dependencies_of_returns_the_declared_predecessors() {
         assert_eq!(
             dependencies_of("align-equals"),
-            ["collection-layout", "alphabetize", "align-colons"],
+            [
+                "strip-trailing-commas",
+                "shed-parentheses",
+                "reflow-collections",
+                "alphabetize-siblings",
+                "band-constants",
+                "align-colons",
+            ],
         );
     }
 
@@ -461,8 +513,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case("collection-layout", "align-equals", true)]
-    #[case("align-equals", "collection-layout", false)]
+    #[case("reflow-collections", "align-equals", true)]
+    #[case("align-equals", "reflow-collections", false)]
     #[case("align-equals", "not-a-rule", false)]
     #[case("not-a-rule", "align-equals", false)]
     fn precedes_orders_registered_slugs(
@@ -481,6 +533,31 @@ mod tests {
     }
 
     #[rstest]
+    fn rule_id_from_str_rejects_a_retired_slug(
+        #[values(
+            "alphabetize",
+            "blank-lines",
+            "call-layout",
+            "chain-layout",
+            "collection-layout",
+            "comment-spacing",
+            "docstring-expand",
+            "docstring-frame",
+            "docstring-wrap",
+            "import-layout",
+            "signature-layout",
+            "strip-align-padding"
+        )]
+        retired: &str,
+    ) {
+        let err = retired
+            .parse::<RuleId>()
+            .expect_err("a retired slug resolves against nothing");
+        assert_eq!(err.0, retired);
+        assert!(Pipeline::for_rule(retired, &Config::default()).is_none());
+    }
+
+    #[rstest]
     fn rule_id_from_str_rejects_an_unregistered_slug(
         #[values("not-a-rule", "PROSE-align-equals")] input: &str,
     ) {
@@ -496,6 +573,24 @@ mod tests {
             let parsed: RuleId = id.to_string().parse().expect("known id parses");
             assert_eq!(parsed, *id);
         }
+    }
+
+    #[test]
+    fn runs_behind_reaches_a_dependency_through_another_rules_column() {
+        assert!(
+            !dependencies_of("align-comments").contains(&"align-colons"),
+            "the direct column does not name it",
+        );
+        assert!(runs_behind("align-comments", "align-colons"));
+    }
+
+    #[rstest]
+    #[case("bare-imports", "align-colons")]
+    #[case("shed-parentheses", "align-comments")]
+    #[case("not-a-rule", "align-colons")]
+    #[case("align-colons", "not-a-rule")]
+    fn runs_behind_rejects_a_slug_no_column_reaches(#[case] later: &str, #[case] earlier: &str) {
+        assert!(!runs_behind(later, earlier));
     }
 
     #[test]

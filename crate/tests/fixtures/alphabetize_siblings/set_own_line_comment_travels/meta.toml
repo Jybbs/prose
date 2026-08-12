@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Own-Line Comments Travel With Their Set Element"
+
+description = '''
+The own-line `# the rich one` sits above `chocolate` and **travels with its element as the set alphabetizes**, landing at the top of the literal still directly above `chocolate`. The comment attaches to the element below it rather than to the slot it occupied, so `vanilla` moves down past both.
+'''

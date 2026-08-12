@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Comment Inside the Chain Pins Its Shape"
-
-description = '''
-Breaking a chain relocates every link, which would carry a comment away from the row it annotates, so a chain spanning one holds the shape the source gave it.
-'''

@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Blank Line Keeps an Indented Block Below an Entry Verbatim"
-
-description = '''
-A blank line closes the entry above it, so the indented block that follows **passes through verbatim** rather than folding into the description. The block keeps that reading with the blank line removed too, since the shape of its opening line is what marks it as a literal.
-'''

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/normalize_comment_spacing/wide_trailing_gap_survives/input.py
+---
+value = 1        # room for a shared column
+other = 22       # a second row

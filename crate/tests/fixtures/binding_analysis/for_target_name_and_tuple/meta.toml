@@ -3,5 +3,5 @@ previewable = false
 title       = "For-Loop Target Binds Enclosing as Name or Tuple"
 
 description = '''
-A for-loop target **binds in the enclosing scope** whether it is a single name or a tuple destructuring, and the iterable being looped over is visited as a read.
+`for i in xs` binds the single name `i`, and `for a, b in xs` destructures its tuple into `a` and `b`. **All three targets bind in the enclosing module scope** with the `For` kind, and each loop header counts as a read of `xs`, so its `read_offsets` lists both.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Single-Line BoolOp Passes Through Verbatim"
 
 description = '''
-A `BoolOp` that fits on **one source line passes through verbatim**. With no multi-line layout to align against, the rule makes no edit.
+The whole `and` chain assigned to `x` fits on **one source line, so it passes through verbatim**. Alignment only applies across stacked rows, and a single line holds no rows to stack, so the rule makes no edit.
 '''

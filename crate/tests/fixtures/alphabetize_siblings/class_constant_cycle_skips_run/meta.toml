@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Class-Body Dependency Cycle Skips the Whole Run"
+
+description = '''
+Inside `Knot`, `FORWARD` reads `BACKWARD` and `BACKWARD` reads `FORWARD`, so each constant depends on the other and no order puts every name after the one it reads. With the dependencies circular, **the whole run skips** and the two assignments keep their source order.
+'''

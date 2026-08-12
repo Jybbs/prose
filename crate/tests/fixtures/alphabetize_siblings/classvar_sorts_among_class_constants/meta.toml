@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A ClassVar Annotation Sorts Among the Constants"
+
+description = '''
+`RETRIES` carries a `ClassVar[int]` annotation, which marks a class-level constant rather than a per-instance field, so it sorts among the constants and moves ahead of `TIMEOUT`. The plainly annotated `host` and `port` stay in the field run below, where every non-`ClassVar` annotation lands.
+'''

@@ -1,0 +1,5 @@
+[imports]
+first-party = ["myapp"]
+
+[harness]
+rules = ["group-imports", "alphabetize-siblings"]

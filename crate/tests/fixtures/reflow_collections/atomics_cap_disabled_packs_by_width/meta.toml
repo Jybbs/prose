@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A False Atomics Cap Packs Flow Lines by Width Alone"
+
+description = '''
+Setting `max-atomics` to `false` removes the per-line count cap, leaving width as the only limit on a flow line. The integers in `many_atomics` pack twelve to a row, each line filling to the width budget instead of stopping at the default cap's count.
+'''

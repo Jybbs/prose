@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Class Docstrings Expand the Same Way"
+
+description = '''
+`Bag`'s docstring `"""A simple bag."""` splits across three lines, with the body line landing at the **class-body indent**, the same column `def __init__` starts at. The rewrite reads the enclosing scope's indent rather than adding a fixed offset.
+'''

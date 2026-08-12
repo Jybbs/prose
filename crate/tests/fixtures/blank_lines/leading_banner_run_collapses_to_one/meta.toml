@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Banner's Long Run Collapses to One Blank"
-
-description = '''
-A banner opening a module caps the run beneath it at **one blank line**, so a wide authored gap shrinks to the divider width rather than surviving as written.
-'''

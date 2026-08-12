@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "An `attrs` Class Holds Its Field Order"
-
-description = '''
-`attrs` generates the same field-ordered constructor the stdlib decorator does, so `@attrs.define` **pins the run** exactly as `@dataclass` would. The `@attr.s`, `@attrs.frozen`, and `@attrs.mutable` entry points all read the same way.
-'''

@@ -3,5 +3,5 @@ previewable = true
 title       = "Non-Import Statements Reset the Alignment Run"
 
 description = '''
-A bare `import M` carries no `as` keyword to align against, so it **breaks the surrounding `import`-as run**. A non-import statement between imports breaks it the same way, and each side aligns only with its own contiguous neighbors.
+`import os` carries no `as` to align against, so **it breaks the aliased run in two**, with `collections` and `datetime` sharing one `as` column above it while `re` and `json` share another below. The `LOG_LEVEL` assignment breaks a run the same way, which is why the two `from` imports around it stay singletons.
 '''

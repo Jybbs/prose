@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "reStructuredText Field Lists Pass Through Verbatim"
+
+description = '''
+The module docstring holds a reStructuredText field list running from `:codeauthor:` to `:platform:`, and it **passes through unwrapped, one field per line**. Each `:name: value` line opens a field-list region the wrap math skips, so the metadata lines never merge into a single paragraph.
+'''

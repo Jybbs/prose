@@ -3,5 +3,5 @@ previewable = true
 title       = "A Dict Value Breaks at Its Entry's Indent"
 
 description = '''
-A run standing as a dict value **breaks at the indent of the entry's own row** rather than at the column the value opens at, and the entry keeps its `key: value` line instead of hanging at the `:`.
+`table`'s single entry has a run standing as its value, and `stack-adjacent-strings` **breaks that run at the indent of the entry's own row** rather than at the column the value opens at. The entry keeps its `key: value` line whole instead of hanging at the `:`.
 '''

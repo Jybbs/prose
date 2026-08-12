@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/wrap_docstrings/section_prose_gap_collapses/input.py
+---
+def f():
+    """
+    Summary.
+
+    Note:
+        Short prose with a double space that does not overflow.
+    """
+    return 1

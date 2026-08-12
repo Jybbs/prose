@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Scalar Spanning Lines Keeps Its Alphabetical Slot"
-
-description = '''
-The scalar-before-collection partition reads each value's AST kind, so a string literal written as a parenthesized implicit concatenation sorts among the scalars rather than sinking to the collection tail its line count would once have put it in.
-'''

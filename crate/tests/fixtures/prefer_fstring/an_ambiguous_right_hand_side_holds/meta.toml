@@ -3,6 +3,5 @@ previewable = true
 title       = "A Bare Right-Hand Side Holds"
 
 description = '''
-`value` may hold a one-element tuple, which `%` unpacks and a replacement
-field does not, so the two forms would render differently.
+The right-hand side of `%` is the bare name `value` rather than a tuple literal, so nothing in the source pins down its runtime type. If `value` holds a one-element tuple, `%` unpacks it and renders the element, whereas `f"{value}"` would render the tuple itself, so the line holds to avoid changing what prints.
 '''

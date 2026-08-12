@@ -15,7 +15,7 @@ use ruff_python_ast::{
     Expr, ExprStringLiteral, InterpolatedStringElement, Stmt, StmtFunctionDef, StmtMatch,
     StringLiteral,
     helpers::is_compound_statement,
-    visitor::{Visitor, walk_expr, walk_stmt},
+    visitor::{Visitor, walk_expr},
 };
 use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange};
@@ -24,7 +24,10 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::docstring::{body_docstring, docstring_slots},
+    primitives::{
+        docstring::{body_docstring, docstring_slots},
+        walk::walk_stmt,
+    },
     rule::{Rule, RuleId},
     rules::stack_adjacent_strings::concatenated_run,
     source::Source,
@@ -129,7 +132,7 @@ impl<'a> Spans<'a> {
     }
 
     /// Records a leading docstring's whole range, the prose
-    /// `docstring-wrap` reflows to the budget.
+    /// `wrap-docstrings` reflows to the budget.
     fn note_docstring(&mut self, body: &[Stmt]) {
         if let Some(lit) = body_docstring(body) {
             self.reshapeable.push(lit.range());
@@ -138,7 +141,7 @@ impl<'a> Spans<'a> {
 
     /// Records an import statement's `range` as answering to the import
     /// budget, and as reshapeable when two or more `names` form the
-    /// comma join `import-layout` splits.
+    /// comma join `reflow-imports` splits.
     fn note_import(&mut self, range: TextRange, names: usize) {
         self.imports.push(range);
         if names >= 2 {
@@ -167,7 +170,7 @@ impl<'a> Spans<'a> {
     }
 
     /// Records a signature carrying parameters, the form
-    /// `signature-layout` explodes one parameter per line.
+    /// `reflow-signatures` explodes one parameter per line.
     fn note_signature(&mut self, fd: &StmtFunctionDef) {
         if !fd.parameters.is_empty() {
             self.note_inline(fd.parameters.range());

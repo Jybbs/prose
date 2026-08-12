@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Keyed Run Between Two Spreads Sorts Within"
+
+description = '''
+Later dict entries override earlier ones, so moving a key across `**base` or `**overrides` could change which value wins. The keyed run fenced between the two spreads sorts only within itself, `"a": 2` moving above `"b": 1` while neither spread moves.
+'''

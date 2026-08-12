@@ -3,5 +3,5 @@ previewable = false
 title       = "A Lambda Value Is Spared"
 
 description = '''
-A lambda binds a callable rather than data, so `to_key` never draws a `TO_KEY` rename.
+`to_key = lambda row: row.id` binds a callable rather than data, the same standing a `def` would give the name. A function is not a constant, so the lint never suggests a `TO_KEY` rename.
 '''

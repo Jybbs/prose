@@ -3,5 +3,5 @@ previewable = true
 title       = "Overflowing Dict Expands, Sorts, and Aligns"
 
 description = '''
-A long inline dict with out-of-order keys. The full dict cycle **expands the dict, sorts the keys, and aligns the `:` column** across the wider rows, leaving the much shorter `"zeta"` row outside the shared column.
+`CONFIG` arrives as one overlong line with its keys out of order. **The dict expands onto one row per entry, the keys sort alphabetically, and every `:` pads into a single column** one space past the widest key, `"beta_extended"`. Even the short `"zeta"` row joins that column, its `:` padded the full ten spaces to reach it.
 '''

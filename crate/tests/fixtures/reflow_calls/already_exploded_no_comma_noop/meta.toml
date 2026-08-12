@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "An Exploded Call Without a Trailing Comma Is Left Alone"
+
+description = '''
+The `fetch` call arrives already exploded, one keyword argument per line from `headers=h` to `url=u`, with no comma after the last. That is exactly the shape the rule would produce, so the pass emits no edit and the call comes through byte for byte.
+'''

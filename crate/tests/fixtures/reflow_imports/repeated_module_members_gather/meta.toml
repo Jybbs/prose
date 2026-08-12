@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Repeated From-Imports of One Module Gather onto One Line"
+
+description = '''
+`from pkg import alpha` and `from pkg import beta` name the same module, so `merge-members` folds them into **one line carrying both members**. `pkg` appears once, with `alpha` and `beta` listed in the order the source wrote them.
+'''

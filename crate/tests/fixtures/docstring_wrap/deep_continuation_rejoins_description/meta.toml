@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Continuation Past the Hanging Column Rejoins Its Description"
-
-description = '''
-An entry whose continuation sits deeper than the hanging column **rejoins the description and reflows at the hanging column**, and the following entry opens its own paragraph. A hand-indented continuation carries no blank line above it, so it reads as description rather than as a verbatim block.
-'''

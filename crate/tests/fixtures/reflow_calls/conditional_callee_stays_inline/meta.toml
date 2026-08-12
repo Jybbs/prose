@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Conditional Callee Keeps Its Trailing Link Inline"
+
+description = '''
+The callee here is the parenthesized conditional choosing between `alpha_fn` and `beta_fn` on `check_fn`'s result, with `.method(aa, bb)` hanging off the closing parenthesis. Under `code-line-length = 30` all three inner calls explode first, and `.method(aa, bb)` is then measured from the `))` line that explosion produces, where it fits and stays inline.
+'''

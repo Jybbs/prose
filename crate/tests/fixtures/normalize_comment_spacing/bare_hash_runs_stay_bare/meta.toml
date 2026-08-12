@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Divider Carrying No Text Keeps Its Bare Run"
+
+description = '''
+The `#####` and `##########` dividers hold nothing after their hash runs, so no space is inserted and each survives verbatim. The `#---- Section ----` line draws its rule from dashes rather than hashes, meaning text does follow the `#`, so it gains the standard space like any other comment.
+'''

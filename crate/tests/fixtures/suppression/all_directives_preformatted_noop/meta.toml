@@ -3,5 +3,5 @@ previewable = false
 title       = "Already-Formatted Source With Every Directive Is Idempotent"
 
 description = '''
-Source carrying a `# fmt: off` block, a trailing `# fmt: skip`, and surrounding aligned runs is already at rest, so a fresh pipeline pass produces **no further edits**. The suppressed spans and the eligible runs alike pass through unchanged.
+Every directive appears in already-formatted source, wherein `bar_baz`, `foo`, and `x` are padded to a shared `=` column, a `# fmt: off` block holds unaligned assignments, and `skipped = 4` carries a `# fmt: skip`. A fresh pass produces **no further edits**, because the suppressed spans stay as written and the aligned runs already sit at their group widths.
 '''

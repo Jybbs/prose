@@ -3,5 +3,5 @@ previewable = false
 title       = "The `typing_extensions` Root Reaches Both Rewrites"
 
 description = '''
-`typing_extensions` re-exports the same members `typing` carries, so an annotation reaching either generic or union through it rewrites identically and its import drops the same way.
+`typing_extensions` re-exports the same members `typing` holds, so `List` and `Optional` imported from it rewrite identically, `names: List[str]` landing on `list[str]` and `limit: Optional[int]` on `int | None`. Neither name is read afterward, so the `from typing_extensions import` line is removed the same way a `typing` import would be.
 '''

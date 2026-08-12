@@ -3,5 +3,5 @@ previewable = true
 title       = "Annotated Targets Are Reassignment Candidates"
 
 description = '''
-A reassigned `SCREAMING_CASE` annotated assignment draws the diagnostic **whether or not a value follows the annotation**. The bare `FLAG: bool` and the valued `MAX: int = 1` shapes both feed the annotated-assignment path ahead of the reassignment gate.
+`FLAG: bool` carries no value while `MAX: int = 1` does, and both names are then reassigned with a plain `FLAG = True` and `MAX = 2`. **Every one of the four assignments is flagged**, showing that an annotated assignment feeds the same reassignment count whether or not a value follows the annotation.
 '''

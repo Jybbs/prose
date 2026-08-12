@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/alphabetize_siblings/parenthesized_value_keeps_parens_on_reorder/input.py
+---
+x = {
+    "a": 2,
+    "b": (
+        1
+    ),
+}

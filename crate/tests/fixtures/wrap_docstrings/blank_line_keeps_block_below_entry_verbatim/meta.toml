@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Blank Line Keeps an Indented Block Below an Entry Verbatim"
+
+description = '''
+The blank line under the `config` entry closes it, so the deeper-indented `{"retries": 3, "timeout": 30}` block below **passes through verbatim** rather than folding into the wrapped description. The block would keep that reading even without the blank line, because the shape of its opening line is what marks it as a literal.
+'''

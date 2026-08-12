@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize_siblings/pydantic_required_then_optional/input.py
+---
+alphabetize-siblings@63..204

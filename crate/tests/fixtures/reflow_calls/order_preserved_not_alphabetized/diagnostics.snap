@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_calls/order_preserved_not_alphabetized/input.py
+---
+reflow-calls@95..105

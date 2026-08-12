@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = false
-title       = "A Link Past `max-args` Holds the Chain"
-
-description = '''
-An argument list past `max-args` never closes, so its link keeps a break the chain measure reads and the spine stays where the source put it. The list does not explode either, since its callee resolves no parameters and the width trigger misses.
-'''

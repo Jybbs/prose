@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Sole Multi-Line Argument Explodes the Call Around It"
-
-description = '''
-A call carrying one argument that spans rows explodes around that argument rather than opening it on the calling row and closing both brackets together, so the `(` and the `)` each hold a row of their own.
-'''

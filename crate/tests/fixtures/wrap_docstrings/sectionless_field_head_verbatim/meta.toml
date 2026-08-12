@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Field Header Outside Any Section Passes Through Verbatim"
+
+description = '''
+The `handlers` line sits under no section heading, but its parenthesized `Callable` type marks it as a field header rather than prose, so the over-budget line **stays on one line**. A wrap would split the type at one of its interior commas and land the remainder at the column a new field name would occupy, so the header passes through verbatim.
+'''

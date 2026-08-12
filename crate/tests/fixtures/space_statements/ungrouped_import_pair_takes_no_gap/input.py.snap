@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/space_statements/ungrouped_import_pair_takes_no_gap/input.py
+---
+from sys import argv
+import os

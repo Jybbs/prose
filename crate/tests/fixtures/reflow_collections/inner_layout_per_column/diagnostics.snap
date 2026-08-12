@@ -1,0 +1,11 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/reflow_collections/inner_layout_per_column/input.py
+---
+reflow-collections@11..166
+reflow-collections@183..324
+reflow-collections@350..435
+reflow-collections@465..559
+reflow-collections@612..620
+reflow-collections@767..786

@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Backslash Continuation Joins Its Paragraph"
-
-description = '''
-A backslash ending a line inside a non-raw docstring suppresses the newline after it, so the two source lines are already **one logical line of the docstring's value**. The wrap resolves the continuation into the join it performs anyway rather than carrying the backslash into the reflowed text, where it would land mid-line as the invalid escape `\ ` and change what `help()` renders.
-'''

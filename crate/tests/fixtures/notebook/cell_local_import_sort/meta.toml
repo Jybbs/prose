@@ -3,5 +3,5 @@ previewable = false
 title       = "Sort Imports Within a Cell, Never Across One"
 
 description = '''
-Each cell opens with two out-of-order imports, and the reordering rules sort each cell's imports in place, leaving the import runs separate because a cross-cell move would rewrite execution order.
+Each of the three cells opens with two out-of-order imports, `sys` above `os`, `json` above `abc`, and `re` above `io`. Every pair sorts in place inside its own cell, and the runs stay separate because moving an import across a cell boundary would rewrite the notebook's execution order.
 '''

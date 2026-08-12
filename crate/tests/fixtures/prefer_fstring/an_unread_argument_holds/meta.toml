@@ -3,5 +3,5 @@ previewable = false
 title       = "An Argument No Field Reads Holds"
 
 description = '''
-Dropping `spare` would drop its evaluation, which the call performs today.
+The single `{}` field reads `used`, leaving `spare` an argument no field consumes. The call still evaluates `spare` today, and a rewrite to `f"{used}"` would drop that evaluation, so the line holds.
 '''

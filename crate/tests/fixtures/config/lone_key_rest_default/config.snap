@@ -62,16 +62,16 @@ Config {
         simplify_comprehensions: ToggleOnly {
             enabled: true,
         },
-        docstring_frame: ToggleOnly {
+        frame_docstrings: ToggleOnly {
             enabled: true,
         },
-        docstring_expand: ToggleOnly {
+        expand_docstrings: ToggleOnly {
             enabled: true,
         },
         group_imports: ToggleOnly {
             enabled: true,
         },
-        chain_layout: ChainLayoutConfig {
+        stack_method_chains: StackMethodChainsConfig {
             enabled: true,
             max_links: InlineBudget(
                 Some(
@@ -82,7 +82,26 @@ Config {
                 16,
             ),
         },
-        collection_layout: CollectionLayoutConfig {
+        reflow_calls: ReflowCallsConfig {
+            enabled: true,
+            max_args: InlineBudget(
+                Some(
+                    3,
+                ),
+            ),
+        },
+        shed_super_args: ToggleOnly {
+            enabled: true,
+        },
+        reflow_signatures: ReflowSignaturesConfig {
+            enabled: true,
+            max_params: InlineBudget(
+                Some(
+                    4,
+                ),
+            ),
+        },
+        reflow_collections: ReflowCollectionsConfig {
             enabled: true,
             explode: true,
             keep_multiline_literals: true,
@@ -103,25 +122,6 @@ Config {
             rewrite_percent: true,
             rewrite_str_format: true,
         },
-        call_layout: CallLayoutConfig {
-            enabled: true,
-            max_args: InlineBudget(
-                Some(
-                    3,
-                ),
-            ),
-        },
-        shed_super_args: ToggleOnly {
-            enabled: true,
-        },
-        signature_layout: SignatureLayoutConfig {
-            enabled: true,
-            max_params: InlineBudget(
-                Some(
-                    4,
-                ),
-            ),
-        },
         stack_adjacent_strings: ToggleOnly {
             enabled: true,
         },
@@ -131,18 +131,10 @@ Config {
                 16,
             ),
         },
-        import_layout: ImportLayoutConfig {
+        reflow_imports: ReflowImportsConfig {
             enabled: true,
             merge_members: true,
             split_multi_module: true,
-        },
-        alphabetize: AlphabetizeConfig {
-            enabled: true,
-            group_methods: true,
-            sort_definitions: true,
-            sort_dict_keys: true,
-            sort_docstring_entries: true,
-            sort_dunder_lists: true,
         },
         band_constants: BandConstantsConfig {
             enabled: true,
@@ -153,7 +145,15 @@ Config {
                 ),
             ),
         },
-        blank_lines: ToggleOnly {
+        alphabetize_siblings: AlphabetizeSiblingsConfig {
+            enabled: true,
+            group_methods: true,
+            sort_definitions: true,
+            sort_dict_keys: true,
+            sort_docstring_entries: true,
+            sort_dunder_lists: true,
+        },
+        space_statements: ToggleOnly {
             enabled: true,
         },
         align_imports: AlignmentConfig {
@@ -168,7 +168,7 @@ Config {
                 16,
             ),
         },
-        docstring_wrap: ToggleOnly {
+        wrap_docstrings: ToggleOnly {
             enabled: true,
         },
         align_equals: AlignmentConfig {
@@ -183,10 +183,10 @@ Config {
                 16,
             ),
         },
-        strip_align_padding: ToggleOnly {
+        strip_stranded_padding: ToggleOnly {
             enabled: true,
         },
-        comment_spacing: ToggleOnly {
+        normalize_comment_spacing: ToggleOnly {
             enabled: true,
         },
         align_comments: AlignmentConfig {

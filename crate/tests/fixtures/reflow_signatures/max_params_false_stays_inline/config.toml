@@ -1,0 +1,2 @@
+[rules]
+reflow-signatures = { max-params = false }

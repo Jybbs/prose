@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Methods Follow the Dunders → Properties → Private → Public Rhythm"
+
+description = '''
+`C`'s statements live inside `if FLAG:` and `else:` arms, and **each arm sorts under class scope** just as the class's top level would. The methods in the `if` arm reorder to `__init__`, `alpha`, `beta` with the dunder first, and the fields in the `else` arm put the default-less `z` ahead of `x` and `y`, required before optional.
+'''

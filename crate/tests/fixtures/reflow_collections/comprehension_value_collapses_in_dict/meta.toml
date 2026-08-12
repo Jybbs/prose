@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comprehension Dict Value Joins While Its Dict Expands"
+
+description = '''
+The multi-line comprehension under `"kappa"` fits once joined, so it collapses to `[item for item in kappa_source]` on its entry's line. The enclosing `buckets` dict holds its one-entry-per-line shape at the same time, the inner collapse and the outer spread settling in one pass.
+'''

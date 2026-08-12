@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "`Raises:` Entries Sort by Exception Name"
+
+description = '''
+`load`'s `Raises:` section lists `ValueError`, `OSError`, and `KeyError` in no particular order, and no signature exists to dictate one. The entries **reorder alphabetically by exception name**, settling into `KeyError`, `OSError`, `ValueError`.
+'''

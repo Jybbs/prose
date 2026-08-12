@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "The Post-`:` Gap Settles to One Space across Every Colon Context"
+
+description = '''
+A `:` that aligns with nothing **keeps exactly one space after it**, wherever it appears. The one-key dict collapses `"only":   1`, the signature collapses `payload:   dict`, and the annotation `result:int` gains its missing space, each landing on plain `name: value`.
+'''

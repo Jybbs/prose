@@ -1,6 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/comment_spacing/tab_before_a_trailing_comment_widens/input.py
----
-comment-spacing@9..10

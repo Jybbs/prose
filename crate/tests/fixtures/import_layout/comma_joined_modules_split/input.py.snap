@@ -1,7 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/import_layout/comma_joined_modules_split/input.py
----
-import os
-import sys

@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Collection Inside a Replacement Field Holds Its Shape"
-
-description = '''
-The list sits inside an f-string replacement field on a line running past the budget, and it still holds its source shape, since an f-string literal is opaque to layout and expanding the list would splice a line break into the string.
-'''

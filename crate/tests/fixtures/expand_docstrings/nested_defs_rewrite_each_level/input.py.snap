@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/expand_docstrings/nested_defs_rewrite_each_level/input.py
+---
+def outer():
+    """
+    Outer docstring.
+    """
+
+    def inner():
+        """
+        Inner docstring.
+        """
+        return 1
+
+    return inner()

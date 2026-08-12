@@ -4,6 +4,5 @@ previewable = true
 title       = "A Tuple Fills Each Spec in Order"
 
 description = '''
-Each `%s` reads the tuple member at its position, so every value moves
-inline where it renders.
+Each `%s` reads the tuple member at its own position, the first taking `key` and the second `value`. The rewrite moves each expression inline where it renders, so the template and its tuple collapse to `f"{key}={value}"`.
 '''

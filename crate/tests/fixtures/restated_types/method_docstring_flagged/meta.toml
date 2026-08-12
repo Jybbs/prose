@@ -3,5 +3,5 @@ previewable = false
 title       = "A Method Resolves Against Its Own Signature"
 
 description = '''
-The walk reaches a definition nested inside a class body, so a method's `Args:` entry resolves against that method's parameters.
+`dial` is a method nested inside `Remote`'s class body, and its `Args:` entry `host (str)` restates the type `host: str` already annotates. **The entry is flagged**, the walk resolving a method's docstring against that method's own parameters even though it sits inside a class.
 '''

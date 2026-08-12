@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "The `__main__` Guard Carries One Blank above Its Sibling"
+
+description = '''
+`trailing = True` follows the `if __name__ == "__main__":` block after three blank lines. **The gap after a main guard normalizes to one blank line**, narrower than the two a `def` or class would take, so the run above `trailing` collapses from three to one.
+'''

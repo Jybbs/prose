@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Subscripted Receiver Travels Onto the Head Row"
-
-description = '''
-A subscript ahead of the first call belongs to the receiver rather than to a link, so it sits on the head row and the links hang beneath the dot that follows it.
-'''

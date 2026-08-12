@@ -3,5 +3,5 @@ previewable = true
 title       = "Names on the Configured Allow List Stay Quiet"
 
 description = '''
-A name listed in `[tool.prose.rules.reassigned-constants].allow` **passes through silently even when reassigned**, so a blessed `LOG_LEVEL` publishes at the module root where an unlisted `CACHE_DIR` reassignment still draws the diagnostic.
+`reassigned-constants.allow` lists `LOG_LEVEL`, so its two module-level assignments pass through silently even though the name is reassigned. **`CACHE_DIR` is not listed, so both of its assignments are still flagged**, one diagnostic per occurrence.
 '''

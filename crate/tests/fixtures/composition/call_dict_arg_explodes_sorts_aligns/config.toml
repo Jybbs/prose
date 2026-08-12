@@ -1,2 +1,2 @@
 [harness]
-rules = ["collection-layout", "call-layout", "alphabetize", "align-equals", "align-colons"]
+rules = ["reflow-collections", "reflow-calls", "alphabetize-siblings", "align-equals", "align-colons"]

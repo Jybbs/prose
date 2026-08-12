@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Positional Call to an Unresolved Callee Stays Inline"
+
+description = '''
+`compute` does not resolve to a function defined in this module, so the rule has no signature to name `alpha` through `delta` against. Without names to bind, the four-positional call stays inline exactly as written.
+'''

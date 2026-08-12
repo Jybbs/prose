@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Each Aliased Module Keeps Its `as` Clause Across the Split"
+
+description = '''
+`import json as parser, re as regex` splits into one statement per module, with **each `as` clause landing on its own module's statement**. `json as parser` and `re as regex` come out intact, leaving [[align-imports]] a run of single-aliased statements to line up.
+'''

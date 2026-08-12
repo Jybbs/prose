@@ -3,6 +3,5 @@ previewable = false
 title       = "A Template Mixing Automatic and Indexed Fields Holds"
 
 description = '''
-`str.format` rejects the mix outright, so the rewrite leaves the raising
-call as written.
+Each template mixes an automatic `{}` with an indexed `{0}`, a combination `str.format` rejects with `ValueError` no matter which comes first. Both calls raise at runtime as written, so neither converts and both lines hold.
 '''

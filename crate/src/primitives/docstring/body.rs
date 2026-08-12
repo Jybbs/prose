@@ -51,8 +51,8 @@ pub(crate) fn indent_prefix<'a>(source: &'a Source, lit: &StringLiteral) -> &'a 
 }
 
 /// Returns the body slice of a triple-quoted `lit`, the `"""` or `'''`
-/// form `docstring-expand` and `docstring-wrap` act on once
-/// `docstring-frame` has canonicalized every docstring to `"""`.
+/// form `expand-docstrings` and `wrap-docstrings` act on once
+/// `frame-docstrings` has canonicalized every docstring to `"""`.
 /// Returns `None` for a non-triple-quoted or inline literal.
 pub(crate) fn triple_quoted_body<'a>(
     source: &'a Source,

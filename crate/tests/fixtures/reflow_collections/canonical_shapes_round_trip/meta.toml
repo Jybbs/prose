@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Already-Expanded Source Is Left Alone"
+
+description = '''
+`canonical_inline` fits on its line, and `canonical_multi_line` already sits one entry per line with an inline form that would overflow, so both **round-trip with no edit**. `canonical_hung_entry` already hangs its over-long entry's value on the line after the `:`, the same shape the rule would produce, so it passes through unchanged as well.
+'''

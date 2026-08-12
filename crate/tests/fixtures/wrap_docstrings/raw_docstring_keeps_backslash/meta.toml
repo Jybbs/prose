@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Raw Docstring Keeps Its Trailing Backslash"
+
+description = '''
+The `pattern` docstring carries an `r` prefix, so its trailing backslash continues nothing and is instead **a literal character of the docstring's value**. The wrap reflows the `\` as an ordinary word, landing it mid-line in the output, whereas the same backslash in a non-raw docstring would be a line continuation to resolve away.
+'''

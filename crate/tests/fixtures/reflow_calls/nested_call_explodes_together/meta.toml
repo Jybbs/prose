@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Nested Call Explodes in the Same Pass"
+
+description = '''
+The `outer` call overflows the line, so it explodes to one argument per line, and the `inner` call passed as `beta=` explodes alongside it in the same pass even though its own span would fit. The recursion resolves both levels before the rule returns, leaving the layout stable after a single run.
+'''

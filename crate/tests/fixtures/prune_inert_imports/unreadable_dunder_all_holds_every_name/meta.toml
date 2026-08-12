@@ -3,5 +3,5 @@ previewable = false
 title       = "An `__all__` No Static Pass Reads Holds Every Name"
 
 description = '''
-`__all__` is built by a call rather than written as a list of literals, so the public surface cannot be settled. **Every import holds** and none is reported.
+`__all__ = build_exports()` builds the list from a function call rather than a literal list or tuple of strings, so the rule cannot settle what the public surface holds. **Every import holds and none is reported**, since `dumps` and `loads` might both be part of an export list the rule cannot read statically.
 '''

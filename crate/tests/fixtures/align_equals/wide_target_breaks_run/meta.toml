@@ -3,5 +3,5 @@ previewable = true
 title       = "A Wide Target Breaks the Assignment Run"
 
 description = '''
-A wide assignment target overshoots `max-shift` against the rows that read before it, so it **breaks the run** and keeps its one-space gap. The rows on each side align their `=` in their own column.
+`really_really_long_target` is so much wider than `short` and `medium_size` that padding them to meet it would shift their `=` past `max-shift`, so **the wide row breaks the run** and keeps its own single-space gap. The rows on each side align in their own columns, `short` with `medium_size` above and `longer` with `tiny` below.
 '''

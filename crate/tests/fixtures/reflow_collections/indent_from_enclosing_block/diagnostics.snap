@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_collections/indent_from_enclosing_block/input.py
+---
+reflow-collections@266..344
+reflow-collections@80..160

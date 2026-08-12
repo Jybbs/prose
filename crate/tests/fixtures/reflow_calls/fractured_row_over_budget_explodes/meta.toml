@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Rejoin Landing One Column Over Budget Explodes"
+
+description = '''
+Whether the fractured `helper(alpha, beta)` may rejoin depends on the full row a join would produce, counting the `+` and the long operand trailing the closing `)`. That joined row would land exactly one column past the limit, so the call explodes rather than joining, and the operand follows the `)` on the closing line.
+'''

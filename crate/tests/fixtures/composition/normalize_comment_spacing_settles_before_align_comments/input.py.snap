@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/normalize_comment_spacing_settles_before_align_comments/input.py
+---
+warm()  # a padded opener
+a_name_that_is_far_longer_here()  # another padded opener

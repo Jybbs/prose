@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Broken Chain Is Never Rejoined"
-
-description = '''
-The rule only ever breaks, so a chain already hung across lines holds that shape even where its joined form would fit, because a count trigger opposed by a fit test would alternate forever.
-'''

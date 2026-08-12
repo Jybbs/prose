@@ -1,8 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/alphabetize/dunder_comment_past_bracket_stays/input.py
----
-__all__ = [
-    "Ant",
-    "Zebra"]  # noqa

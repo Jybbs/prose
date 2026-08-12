@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Broken Chain Is Never Rejoined"
+
+description = '''
+`obj.first(a).second(b)` would fit joined on one line, yet the hung shape holds, because this rule only ever breaks. Rejoining on a fit test while breaking on a link count would flip the same chain back and forth forever, so a chain already hung across lines keeps that shape.
+'''

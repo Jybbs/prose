@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Classes With No Cross-Reference Still Sort"
+
+description = '''
+Neither `Beta` nor `Alpha` names the other, so no dependency holds the order. The pair sorts by name alone, `class Alpha` moving ahead of `class Beta`.
+'''

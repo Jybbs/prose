@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Function Header Cushions a Compound-Body Opener"
+
+description = '''
+Every function here opens its body with a compound statement written flush against the header, and **one blank line is inserted between the header and that opener** in each. The gap applies uniformly to `match`, `if`, `for`, `while`, `with`, and `try`, and `with_async_for` and `with_async_with` receive it too, because the `async` forms share the sync statement's shape in the AST.
+'''

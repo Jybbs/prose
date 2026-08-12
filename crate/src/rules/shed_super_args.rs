@@ -12,7 +12,7 @@
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Expr, ExprCall, Stmt, StmtClassDef,
-    visitor::{Visitor, walk_expr, walk_stmt},
+    visitor::{Visitor, walk_expr},
 };
 use ruff_source_file::UniversalNewlines;
 use ruff_text_size::TextRange;
@@ -21,7 +21,7 @@ use crate::{
     config::Config,
     primitives::{
         binding::BindingAnalysis, decorator::is_slots_dataclass, edit::singleton_groups,
-        inline::indent_width, params::first_positional,
+        inline::indent_width, params::first_positional, walk::walk_stmt,
     },
     rule::{Rule, RuleId},
     source::Source,

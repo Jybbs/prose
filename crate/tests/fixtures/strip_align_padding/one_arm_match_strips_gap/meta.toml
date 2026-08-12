@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A One-Arm `match` Drops the Pre-`:` Padding"
-
-description = '''
-A pre-collapsed one-arm `match` carries one space before its colon. The rule **strips the gap, leaving the `:` flush against the pattern**.
-'''

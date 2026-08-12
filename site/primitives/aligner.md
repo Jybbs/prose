@@ -45,7 +45,7 @@ A consuming rule rarely hand-builds the walker from raw AST traversal, since the
 4. `line_anchored_member(source, anchor)` builds a `Member` whose `gap` starts at `anchor` and whose `width` measures the leading display column on the line.
 5. `line_anchored_member_at_kind(source, lhs_start, search, kind)` finds the first token of `kind` in `search` and anchors a `Member` at its end.
 6. `range_anchored_member_single_line(source, target, search, predicate, extra_width)` builds a `Member` whose `width` is the display-column width of `target`'s slice plus `extra_width`, for left-hand sides that are sub-ranges of one line.
-7. `line_gap_before(source, anchor)` returns the whitespace run ending at `anchor`, opening no earlier than that line's start. The member builders locate a row's `gap` through it, and `comment-spacing` reaches it directly to find the run ahead of a trailing comment.
+7. `line_gap_before(source, anchor)` returns the whitespace run ending at `anchor`, opening no earlier than that line's start. The member builders locate a row's `gap` through it, and `normalize-comment-spacing` reaches it directly to find the run ahead of a trailing comment.
 8. `space_padding_edit(source, range, n)` produces a `Some(Edit)` replacing `range` with `n` spaces, or `None` when the current contents already match.
 9. `is_alignment_candidate(source, members)` returns `true` when the group has at least two members, each on a distinct line and opening at a shared column baseline, so the padding lands on a column every row can reach.
 
@@ -98,7 +98,7 @@ impl Visitor<'_> {
 
 When the alignment context is `:`-shaped *(dict items, annotated assignments, annotated parameters, docstring sections, match arms)*, the grouping logic lives in [[colon-targets]] instead. A new colon-shaped rule implements `ColonEmitter`'s required `rule` and `handle` methods plus the `docstring_entries` and `match_arms` overrides where the rule takes them, calls `walk(source)`, and forwards each yielded `&[aligner::Member]` slice to the walker for emission.
 
-When the context is `=`-shaped *(single-target assignments, exploded-call keyword arguments, annotated parameter defaults)*, the per-row member construction lives in `equal_targets`, which carries no walker because its consumers group differently. [[align-equals]] builds its runs with a multi-line break and calls `emit_group` to pad each `=`, whereas [[collection-layout]] treats a rejoining value as single-line and reads `operator_columns` to predict where each `=` shifts, testing that rejoin against the value's resulting column so the decision survives the alignment that runs later. A new `=`-shaped rule calls `equal_targets`'s `assignment` or `parameter` per row and groups the members to its own adjacency, or `keyword_groups` for an exploded call's pre-grouped keyword runs.
+When the context is `=`-shaped *(single-target assignments, exploded-call keyword arguments, annotated parameter defaults)*, the per-row member construction lives in `equal_targets`, which carries no walker because its consumers group differently. [[align-equals]] builds its runs with a multi-line break and calls `emit_group` to pad each `=`, whereas [[reflow-collections]] treats a rejoining value as single-line and reads `operator_columns` to predict where each `=` shifts, testing that rejoin against the value's resulting column so the decision survives the alignment that runs later. A new `=`-shaped rule calls `equal_targets`'s `assignment` or `parameter` per row and groups the members to its own adjacency, or `keyword_groups` for an exploded call's pre-grouped keyword runs.
 
 ## Re-Using This Primitive
 
@@ -107,7 +107,7 @@ Writing a new alignment rule comes down to wrapping an `AlignWalker` in a visito
 <template #related>
 
 - [[align-colons]], [[align-comments]], [[align-comparisons]], [[align-equals]], [[align-imports]], and [[align-match-case]] are the consumers.
-- [[colon-targets]] constructs `Member` lists from every `:` context, consumed by [[align-colons]] and [[strip-align-padding]].
+- [[colon-targets]] constructs `Member` lists from every `:` context, consumed by [[align-colons]] and [[strip-stranded-padding]].
 - [[edit]] is the shape `emit_group` pushes into the caller's accumulator.
 - [[orderer]] composes line-adjacency grouping differently *(by source-range block extents rather than `Member` widths)*, so a rule whose math is reorder-shaped rather than padding-shaped reaches for that primitive instead.
 

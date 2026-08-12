@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Comments inside the Parameter List Pin the Shape"
+
+description = '''
+`own_line_pin` carries `# comment between parameters` on its own line, and `trailing_line_pin` carries `# trailing on a parameter line` trailing one of its parameters, both comments sitting between `(` and `)`. Either placement **pins the signature's existing shape**, so `reflow-signatures` leaves both five-parameter signatures untouched despite exceeding `max-params`.
+'''

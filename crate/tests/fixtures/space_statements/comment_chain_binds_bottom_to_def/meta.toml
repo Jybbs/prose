@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment Chain Binds Its Bottom Line to the Def"
+
+description = '''
+The three consecutive comments between `first` and `second` form a **single leading block for `second`**. Two blank lines open above the topmost `# explains why`, the chain keeps its lines together, and the bottom `# second helper` stays tight against `def second():`.
+'''

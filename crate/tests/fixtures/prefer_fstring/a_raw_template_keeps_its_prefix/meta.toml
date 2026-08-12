@@ -3,6 +3,5 @@ previewable = true
 title       = "A Raw Template Comes Back as `rf`"
 
 description = '''
-The raw marker leads the `f`, leaving every backslash in the body unread as
-it was.
+`r"\d+%s" % (suffix,)` converts to `rf"\d+{suffix}"`, the `r` placed ahead of the `f` in the new prefix. The raw marker survives the rewrite, so `\d` stays literal text exactly as it was in the original template.
 '''

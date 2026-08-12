@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Comment Inside the Chain Pins Its Shape"
+
+description = '''
+The `# keep the shape` comment sits mid-chain on the `.order(` row. Breaking a chain relocates every link, which would move the comment away from the row it annotates, so a chain spanning a comment holds the shape the source gave it.
+'''

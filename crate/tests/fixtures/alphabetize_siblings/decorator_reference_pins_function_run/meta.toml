@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Decorator Pins the Decorated Function After It"
+
+description = '''
+`@register` runs the moment `def dispatch` executes, so `register` must already be defined at that point. Alphabetically `dispatch` would sort ahead of `register`, but swapping them would call the decorator before it exists, so the pair holds source order.
+'''

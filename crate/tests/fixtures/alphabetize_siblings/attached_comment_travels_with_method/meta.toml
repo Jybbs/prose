@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Prose Comments Move With Their Method"
+
+description = '''
+The methods reorder into `__init__` first as a dunder, then the private `_validate`, then the public `match`, and **each `#` comment above a method travels with it** to the method's new slot. Even `# describes the constructor`, separated from `def __init__` by a blank line, moves as part of that method, because a description binds to the member it heads rather than to the whitespace around it.
+'''

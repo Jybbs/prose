@@ -3,5 +3,5 @@ previewable = false
 title       = "A Parenthesized Operand Carries Its Parentheses Across the Flip"
 
 description = '''
-The grouping pair around an operand travels with it, leaving the flipped form parsing exactly as the authored one did.
+`42 == (a + b)` leads with the constant, so the operands flip, and the parentheses around `a + b` travel with the operand they wrap. The condition comes back as `(a + b) == 42`, parsing exactly as the authored form did.
 '''

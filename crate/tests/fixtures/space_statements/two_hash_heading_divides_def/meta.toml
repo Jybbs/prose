@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Two-Hash Heading Reads as a Divider"
+
+description = '''
+`## Helpers` opens with two `#`, the minimum that reads as a **section divider** rather than a note about the code below. The gap under the heading normalizes to one blank line instead of the comment attaching directly above `def helper`, and the two blanks above the heading stay.
+'''

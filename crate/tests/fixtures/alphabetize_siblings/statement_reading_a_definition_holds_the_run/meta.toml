@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Statement Reading a Definition Holds the Run"
+
+description = '''
+`print(Zeta)` sits between the two class definitions and reads `Zeta` when the module imports. Sorting `Apple` above `Zeta` would push `class Zeta` below the `print` that reads it and raise a `NameError`, so the run **holds its source order** rather than reorder into a module that cannot run.
+'''

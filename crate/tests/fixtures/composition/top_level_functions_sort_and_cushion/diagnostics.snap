@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/top_level_functions_sort_and_cushion/input.py
 ---
-alphabetize@4..77
-blank-lines@25..26
-blank-lines@51..52
+alphabetize-siblings@4..77
+space-statements@25..26
+space-statements@51..52

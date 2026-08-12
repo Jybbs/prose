@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Type-Bearing Args Entries Reorder to Signature Order"
+
+description = '''
+The `Args:` entries carry parenthesized types and sit out of signature order, `port (int)` listed before `host (str)` while `connect(host, port)` declares them the other way around. **The reorder keeps each parenthesized type with its entry and matches entries to parameters by their bare names**, so `host (str)` moves above `port (int)` to mirror the signature.
+'''

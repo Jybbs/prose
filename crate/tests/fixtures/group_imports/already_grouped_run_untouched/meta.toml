@@ -3,5 +3,5 @@ previewable = true
 title       = "An Already-Grouped Run Passes Through Untouched"
 
 description = '''
-A run already sitting in bare → external `from` → local-package order **emits no edit**, the rule firing only when the partition would relocate an import.
+With `myapp` named in `first-party`, the run already sits in bare → external `from` → first-party order, so the rule **emits no edit**. The partition rewrites only when it would relocate an import, and every statement here already sits in its group.
 '''

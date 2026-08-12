@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Wrapping Resumes After a Verbatim Block Closes"
+
+description = '''
+The `>>> run()` doctest and its `'ok'` output pass through verbatim, then the blank line closes the interactive region. The over-long description paragraph below it wraps to the docstring budget, confirming a verbatim block stops the wrap only for its own lines.
+'''

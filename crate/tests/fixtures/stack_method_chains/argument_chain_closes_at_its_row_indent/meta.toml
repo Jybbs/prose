@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Chain Opening Mid-Row Hangs From That Row's Indent"
+
+description = '''
+The chain bound to `value=` takes a grouping pair, its head `query.filter(alpha)` dropping one indent step past the row that carries the chain while `.order` and `.limit` stack beneath it. The closing parentheses return to that row's own indent rather than to the column the chain opened at, so the block hangs against the statement instead of against `emit`'s argument list.
+'''

@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A `kw_only` Base Sorts Its Fields"
-
-description = '''
-A `kw_only=True` keyword on the class header reaches the generated constructor the same way the decorator argument does, so a `msgspec.Struct` subclass declaring it **sorts its fields**. The escape reads the header's keywords rather than a decorator's argument list.
-'''

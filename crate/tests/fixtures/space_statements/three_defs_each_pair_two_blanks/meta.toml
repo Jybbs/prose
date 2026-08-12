@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Three Back-to-Back Defs Each Pair-Count Independently"
+
+description = '''
+`alpha`, `beta`, and `gamma` arrive with different gaps, in that `beta` sits flush against `alpha` while a single blank separates it from `gamma`. **Each adjacent pair is measured on its own and normalizes to two blank lines**, so the zero-blank gap and the one-blank gap both land on the same spacing.
+'''

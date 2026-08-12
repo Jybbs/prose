@@ -3,5 +3,5 @@ previewable = true
 title       = "A None Nested in a Larger Annotation Survives"
 
 description = '''
-A `-> int | None` and a `-> Callable[..., None]` keep their annotations untouched, because the rule strips only a return annotation that is a bare `None`.
+`lookup` declares `-> int | None` and `make_handler` declares `-> Callable[..., None]`, and `strip-none-return` leaves both untouched. The rule strips only a return annotation that is a bare `None`, not one where `None` sits nested inside a larger type.
 '''

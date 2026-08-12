@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Doctest Blocks Pass Through Verbatim"
+
+description = '''
+The doctest block in `add`'s docstring **passes through verbatim**. A `>>> ` prompt opens an interactive region running to the next blank line, so `>>> add(2, 3)` and its expected `5` never join under a reflow.
+'''

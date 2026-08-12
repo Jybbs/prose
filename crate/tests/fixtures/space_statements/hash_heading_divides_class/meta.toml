@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Multi-Hash Heading Keeps Its Blank Below"
+
+description = '''
+`### Codec APIs`, a Markdown-style heading comment opening with multiple `#`, reads as a **section divider rather than a description of the class below**. The canonical two-blank gap after `import codecs` sits above the heading and the single blank below it stays, while `Codec`'s body separately gains one blank between its header and `pass`.
+'''

@@ -1,11 +1,15 @@
-//! Module-scope blank-line policy and the gap text it renders to.
-//! [`module_blank_lines`] declares the canonical blank count for a
-//! module-scope `(prev, curr)` pair, and [`blank_gap`] turns a count
-//! into the separator an assembled body seats between two blocks.
+//! Module-scope blank-line policy, the gap text it renders to, and the
+//! walk back over a blank run. [`module_blank_lines`] declares the
+//! canonical blank count for a module-scope `(prev, curr)` pair,
+//! [`blank_gap`] turns a count into the separator an assembled body
+//! seats between two blocks, and [`whitespace_start_before`] reaches
+//! back over the run preceding an offset, stopping at the wall opening
+//! a notebook cell.
 
 use ruff_python_ast::{CmpOp, Expr, Stmt};
+use ruff_text_size::TextSize;
 
-use crate::primitives::imports::import_blank_lines;
+use crate::{primitives::imports::import_blank_lines, source::Source};
 
 /// Newline run the gap text slices, one newline longer than the widest
 /// count [`module_blank_lines`] returns.
@@ -52,6 +56,15 @@ pub(crate) fn module_blank_lines(
     }
 }
 
+/// Returns the start of the contiguous ASCII-whitespace run immediately
+/// preceding `offset`, held at the start of the notebook cell
+/// containing `offset` so the run never reaches into the cell above.
+pub(crate) fn whitespace_start_before(source: &Source, offset: TextSize) -> TextSize {
+    let text = source.text();
+    let trimmed = text[..offset.to_usize()].trim_end_matches(|c: char| c.is_ascii_whitespace());
+    TextSize::of(trimmed).max(source.cell_start(offset).unwrap_or_default())
+}
+
 /// True when `stmt` is `if __name__ == "__main__":`.
 fn is_main_guard(stmt: &Stmt) -> bool {
     let Some(if_stmt) = stmt.as_if_stmt() else {
@@ -75,9 +88,10 @@ fn is_main_guard(stmt: &Stmt) -> bool {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+    use ruff_text_size::Ranged;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{notebook, parse};
 
     const MAIN_GUARD: &str = "if __name__ == \"__main__\":\n    main()\n";
 
@@ -178,5 +192,32 @@ mod tests {
     #[case("from __future__ import annotations\nPORT = 8080\n")]
     fn module_blank_lines_pairs_an_import_boundary_to_one(#[case] src: &str) {
         assert_eq!(blanks_of(src, &[]), Some(1));
+    }
+
+    #[test]
+    fn whitespace_start_before_holds_at_a_notebook_cell_wall() {
+        let source = notebook(&["import os", "\n\nvalue = 1\n"]);
+        let start = source.ast().body[1].start();
+
+        assert_eq!(
+            whitespace_start_before(&source, start),
+            source.cell_start(start).expect("the cell holding it"),
+            "the run stops at the wall rather than reaching the cell above",
+        );
+    }
+
+    #[rstest]
+    #[case::crlf("a\r\n\r\nb", 5, 1)]
+    #[case::leading_whitespace("   \n\n\nx", 6, 0)]
+    #[case::stops_at_non_whitespace("ab\n\ncd", 4, 2)]
+    fn whitespace_start_before_walks_back_over_the_run(
+        #[case] text: &str,
+        #[case] offset: u32,
+        #[case] expected: u32,
+    ) {
+        assert_eq!(
+            whitespace_start_before(&parse(text), TextSize::new(offset)),
+            TextSize::new(expected),
+        );
     }
 }

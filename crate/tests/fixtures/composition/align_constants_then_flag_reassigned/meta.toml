@@ -1,7 +1,7 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Aligned Constants Carry the Reassigned-Constants Lint Past Padding"
 
 description = '''
-Untyped module constants of varied widths widen onto a shared `=` column under `align-equals`, while `reassigned-constants` flags `RATE_LIMIT` alone, the one name rebound after its first write, and leaves the write-once neighbors silent. **The diagnostic range tracks the source offsets** rather than the post-align statement positions.
+`DEFAULT_TIMEOUT`, `MAX_RETRIES`, `WINDOW_NAME_PREFIX`, and the two `RATE_LIMIT` writes widen onto a shared `=` column under `align-equals`. `reassigned-constants` flags `RATE_LIMIT` alone, because it is the one name rebound after its first write, leaving the write-once neighbors unreported. **The diagnostic range tracks the source offsets** rather than the post-align statement positions.
 '''

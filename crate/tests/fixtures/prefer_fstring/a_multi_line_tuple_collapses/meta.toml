@@ -3,6 +3,5 @@ previewable = true
 title       = "A Tuple Broken Across Lines Collapses Into the Fields"
 
 description = '''
-The members each sit on one line, so every one reads as a field and the
-call's own layout falls away with it.
+The argument tuple breaks across lines, yet `first` and `second` each sit whole on their own line, so both splice cleanly into fields. The rewrite lands on the one-line `f"{first} and {second}"`, and the tuple's layout falls away with the tuple itself.
 '''

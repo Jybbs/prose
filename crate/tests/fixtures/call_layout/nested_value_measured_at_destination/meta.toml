@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Nested Call Answers the Column It Lands At"
-
-description = '''
-The length trigger reads the column a nested call reaches inside the exploded row rather than the column it occupied in the source, so a short call that crossed the budget where it sat stays inline where it lands.
-'''

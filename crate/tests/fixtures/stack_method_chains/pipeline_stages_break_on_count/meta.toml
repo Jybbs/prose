@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Three-Stage Chain Breaks and Hangs Each Dot"
+
+description = '''
+`query.filter(a).order(b).limit(c)` fits on one line, yet its three calls exceed `max-links`, so the chain breaks anyway because a pipeline of that length reads better stacked. `query.filter(a)` stays on the head line, and `.order(b)` and `.limit(c)` hang beneath it with each `.` aligned under the head's own, giving the chain one column to scan down.
+'''

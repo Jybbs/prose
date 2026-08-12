@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Dict Entries Partition by Their Value's AST Kind"
-
-description = '''
-Dict literals **partition entries by the value's AST kind**, scalar-valued entries sorting ahead of collection-valued ones whatever line count either currently takes. A blank divider fences each entry that occupies a block only once two or more share the dict, so a lone multi-line entry reads as one block against its neighbors. `**unpacked` items pin in source position, as does any entry whose value runs code (*`load_metadata()` here*), and the partition fires recursively at every level of nesting.
-'''

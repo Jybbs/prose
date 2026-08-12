@@ -26,7 +26,7 @@ const fcEntry = fc.record({ aliases: fc.array(lowerArb, { maxLength: 2 }), slug:
 describe('filterEntries', () => {
   const entries = [
     entry('align-equals', { aliases: ['equals alignment'] }),
-    entry('alphabetize'),
+    entry('alphabetize-siblings'),
     entry('strip-trailing-commas')
   ]
 
@@ -35,7 +35,7 @@ describe('filterEntries', () => {
   })
 
   it('matches on the slug, case-insensitively', () => {
-    expect(folio.filterEntries(entries, 'ALPHA').map(e => e.slug)).toEqual(['alphabetize'])
+    expect(folio.filterEntries(entries, 'ALPHA').map(e => e.slug)).toEqual(['alphabetize-siblings'])
   })
 
   it('matches on an alias', () => {

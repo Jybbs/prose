@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = false
-title       = "A Link Spanning a Multi-Line String Holds the Chain"
-
-description = '''
-A multi-line string keeps its break through the settling measure, so its link still spans lines when the chain is read and the spine stays where the source put it.
-'''

@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "An Already-Parenthesized Value Takes No Second Pair"
-
-description = '''
-A generator expression and a named expression that carry their own parentheses in the source keep exactly one pair as each binds to its resolved parameter name, so the rewrite adds nothing around either.
-'''

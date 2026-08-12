@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Base-Class Expression Pins the Constant It Reads"
+
+description = '''
+The nested `class Store(BASE)` evaluates `BASE` while `Registry`'s body runs, so the base-class expression ties the constant to the class that reads it. Swapping the constants into alphabetical order would drop `BASE` into `APPLE`'s slot below that subclass, breaking the name lookup, so the constants **hold source order** and the body passes through unchanged.
+'''

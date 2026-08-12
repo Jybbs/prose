@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "Re-Indent an Exploded Dict Value to the Keyword Column"
+
+description = '''
+`configure` explodes to one keyword per line, and `settings=` already carries a dict spread one entry per line. The dict re-indents with the explode, so `"alpha": 1` through `"delta": 4` sit one step past `settings={` and the `}` lands at the keyword column, rather than the block splicing in at its original indentation.
+'''

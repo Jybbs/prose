@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Backslash Continuation Joins Its Paragraph"
+
+description = '''
+The `resolve` docstring ends its first line with a backslash, which in a non-raw string suppresses the newline after it, so the two source lines already form **one logical line of the docstring's value**. Wrapping joins and reflows that logical line, dropping the backslash in the process, because carrying it into the reflowed text would land it mid-line as the invalid escape `\ ` and change the string's value.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comma-Less Last Entry Keeps Its Separator"
+
+description = '''
+`"edge": "2.0"` closes the source dict with a trailing `# bleeding` comment but no `,`, and sorting moves it to the top, so a **real separator lands after its value** and ahead of the comment. `"stable"` becomes the new last entry and stays comma-less, matching the source dict's absent magic trailing comma.
+'''

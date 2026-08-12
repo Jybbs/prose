@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Comment Pins a Comprehension at Its Source Shape"
-
-description = '''
-A comprehension carrying a comment holds its source line breaks even when its single-line form would fit, since folding the soft-wraps would swallow the comment.
-'''

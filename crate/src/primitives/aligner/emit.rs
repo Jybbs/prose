@@ -9,7 +9,7 @@ use ruff_text_size::TextRange;
 use unicode_width::UnicodeWidthStr;
 
 use super::{
-    Member, Settings,
+    Member, Settings, Widenings,
     holds::is_alignment_candidate,
     members::{baseline, line_gap_before},
 };
@@ -30,10 +30,11 @@ pub(super) fn emit_group(
     source: &Source,
     members: &[Member],
     settings: Settings,
+    widenings: &Widenings,
     edits: &mut Vec<Edit>,
 ) {
     edits.extend(
-        group_paddings(source, members, settings)
+        group_paddings(source, members, settings, widenings)
             .filter_map(|(m, pad)| space_padding_edit(source, m.gap, pad)),
     );
 }
@@ -56,7 +57,7 @@ pub(crate) fn operator_columns(
             .map(|m| baseline(source, *m) + m.settled_width + settings.buffer)
             .collect();
     }
-    group_paddings(source, members, settings)
+    group_paddings(source, members, settings, &Widenings::default())
         .map(|(m, pad)| baseline(source, m) + m.settled_width + pad)
         .collect()
 }
@@ -71,11 +72,12 @@ pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) ->
     Some(repeat_edit(range, " ", n))
 }
 
-/// The columns the gap ahead of a trailing comment carries past
-/// [`TRAILING_GAP`] on `member`'s line, zero where that line carries no
-/// trailing comment and where the gap is the one `member` rewrites
-/// itself.
-fn comment_slack(source: &Source, member: Member) -> usize {
+/// The columns the gap ahead of a trailing comment carries away from
+/// [`TRAILING_GAP`] on `member`'s line, negative where the source
+/// writes a narrower gap than the floor, and zero where that line
+/// carries no trailing comment and where the gap is the one `member`
+/// rewrites itself.
+fn comment_slack(source: &Source, member: Member) -> isize {
     let Some(comment) = trailing_comment_start(source, member.line_start) else {
         return 0;
     };
@@ -83,7 +85,7 @@ fn comment_slack(source: &Source, member: Member) -> usize {
     if gap == member.gap {
         return 0;
     }
-    source.slice(gap).width().saturating_sub(TRAILING_GAP.len())
+    source.slice(gap).width().cast_signed() - TRAILING_GAP.len().cast_signed()
 }
 
 /// The width of `member`'s line as the aligner emits it, less the
@@ -93,7 +95,8 @@ fn comment_slack(source: &Source, member: Member) -> usize {
 /// rather than wherever the source leaves it.
 fn emitted_base_width(source: &Source, member: Member) -> usize {
     let line = source.text().line_str(member.line_start).width();
-    let base = line - source.slice(member.gap).width() - comment_slack(source, member);
+    let base = (line - source.slice(member.gap).width())
+        .saturating_add_signed(-comment_slack(source, member));
     member
         .rewritten_value_gap(source)
         .map_or(base, |gap| base + 1 - source.slice(gap).width())
@@ -101,29 +104,42 @@ fn emitted_base_width(source: &Source, member: Member) -> usize {
 
 /// True when no member of `group` aligned to `max_w` has its line
 /// pushed past the governing line-length cap by the padding, and for a
-/// rule carrying no cap at all. A member already over the cap at its
-/// buffer stays in the run only where the shared column costs it no
-/// further width, which holds for the widest member alone, so aligning
-/// never carries an over-cap line further out.
-fn fits_line_cap(source: &Source, group: &[Member], settings: Settings, max_w: usize) -> bool {
+/// rule carrying no cap at all. A member over the cap even at its
+/// singleton fallback gap stays in the run only where the shared column
+/// costs it no further width than the buffer, which holds for the
+/// widest member alone, so aligning never carries an over-cap line
+/// further out and never pushes a fitting line past the cap.
+fn fits_line_cap(
+    source: &Source,
+    group: &[Member],
+    settings: Settings,
+    widenings: &Widenings,
+    max_w: usize,
+) -> bool {
     let Some(cap) = settings.line_length else {
         return true;
     };
     let max_op = max_op_width(group);
     group.iter().all(|m| {
-        let base = emitted_base_width(source, *m);
+        let base = emitted_base_width(source, *m).saturating_add_signed(widenings.delta(*m));
         let padding = padding_width(*m, max_w, max_op, settings.buffer);
-        base + padding <= cap || padding == settings.buffer
+        base + padding <= cap || (padding == settings.buffer && base + settings.suffix_len(1) > cap)
     })
 }
 
 /// True when `group` may align as one column: its settled-width spread
 /// stays within `shift_cap` and, when a `line_length` cap governs,
 /// every member's aligned line stays within it.
-fn group_holds(source: &Source, group: &[Member], settings: Settings, shift_cap: usize) -> bool {
+fn group_holds(
+    source: &Source,
+    group: &[Member],
+    settings: Settings,
+    widenings: &Widenings,
+    shift_cap: usize,
+) -> bool {
     let max_w = group_max_width(group);
     let min_w = group.iter().map(|m| m.settled_width).min().unwrap_or(0);
-    max_w - min_w <= shift_cap && fits_line_cap(source, group, settings, max_w)
+    max_w - min_w <= shift_cap && fits_line_cap(source, group, settings, widenings, max_w)
 }
 
 /// The widest settled width in `group`, zero for an empty slice.
@@ -138,8 +154,9 @@ fn group_paddings<'m>(
     source: &Source,
     members: &'m [Member],
     settings: Settings,
+    widenings: &Widenings,
 ) -> impl Iterator<Item = (Member, usize)> + 'm {
-    reading_order_groups(source, members, settings)
+    reading_order_groups(source, members, settings, widenings)
         .into_iter()
         .flat_map(move |(group, max_w)| {
             let suffix = settings.suffix_len(group.len());
@@ -177,6 +194,7 @@ fn reading_order_groups<'m>(
     source: &Source,
     members: &'m [Member],
     settings: Settings,
+    widenings: &Widenings,
 ) -> Vec<(&'m [Member], usize)> {
     let shift_cap = match settings.max_shift {
         MaxShift::NoShift => {
@@ -194,7 +212,7 @@ fn reading_order_groups<'m>(
     let mut groups = Vec::new();
     let mut start = 0;
     for i in 1..members.len() {
-        if !group_holds(source, &members[start..=i], settings, shift_cap) {
+        if !group_holds(source, &members[start..=i], settings, widenings, shift_cap) {
             let prev = &members[start..i];
             groups.push((prev, group_max_width(prev)));
             start = i;
@@ -304,7 +322,13 @@ mod tests {
         let (source, members) = rows(&[(1, 1), (2, 1), (3, 1)]);
         let mut edits = Vec::new();
 
-        emit_group(&source, &members, Settings::aligned(cap(10)), &mut edits);
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(10)),
+            &Widenings::default(),
+            &mut edits,
+        );
 
         // max_w=3, paddings 2/1/0, suffix=1 → targets 3/2/1 spaces.
         // member[2] already has 1 space, so it is skipped.
@@ -319,7 +343,13 @@ mod tests {
         let (source, members) = rows(&[(3, 5)]);
         let mut edits = Vec::new();
 
-        emit_group(&source, &members, Settings::aligned(cap(8)), &mut edits);
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(8)),
+            &Widenings::default(),
+            &mut edits,
+        );
 
         // single member fits any cap. max_w=3, padding=0, suffix=1 →
         // target 1 space, currently 5.
@@ -331,7 +361,13 @@ mod tests {
         let source = parse("x = 0\n");
         let mut edits = Vec::new();
 
-        emit_group(&source, &[], Settings::aligned(cap(8)), &mut edits);
+        emit_group(
+            &source,
+            &[],
+            Settings::aligned(cap(8)),
+            &Widenings::default(),
+            &mut edits,
+        );
 
         assert!(edits.is_empty());
     }
@@ -345,6 +381,7 @@ mod tests {
             &source,
             &members,
             Settings::aligned(cap(8)).with_buffer(2),
+            &Widenings::default(),
             &mut edits,
         );
 
@@ -364,6 +401,7 @@ mod tests {
             &source,
             &members,
             Settings::aligned(cap(8)).with_singleton_strip(),
+            &Widenings::default(),
             &mut edits,
         );
 
@@ -381,6 +419,7 @@ mod tests {
             &source,
             &members,
             Settings::aligned(cap(16)).with_line_length(10),
+            &Widenings::default(),
             &mut edits,
         );
 
@@ -402,6 +441,7 @@ mod tests {
             &source,
             &members,
             Settings::aligned(cap(16)).with_line_length(10),
+            &Widenings::default(),
             &mut edits,
         );
 
@@ -423,6 +463,7 @@ mod tests {
             &source,
             &members,
             Settings::aligned(cap(16)).with_line_length(8),
+            &Widenings::default(),
             &mut edits,
         );
 
@@ -440,6 +481,7 @@ mod tests {
             &source,
             &members,
             Settings::aligned(cap(16)).with_line_length(8),
+            &Widenings::default(),
             &mut edits,
         );
 
@@ -458,6 +500,7 @@ mod tests {
             &source,
             &members,
             Settings::aligned(cap(16)).with_line_length(11),
+            &Widenings::default(),
             &mut edits,
         );
 
@@ -487,6 +530,7 @@ mod tests {
             &source,
             &members,
             Settings::aligned(cap(8)).with_line_length(28),
+            &Widenings::default(),
             &mut edits,
         );
 
@@ -502,6 +546,7 @@ mod tests {
             &source,
             &members,
             Settings::aligned(MaxShift::NoShift),
+            &Widenings::default(),
             &mut edits,
         );
 
@@ -526,6 +571,7 @@ mod tests {
             &source,
             &members,
             Settings::aligned(MaxShift::NoShift).with_singleton_strip(),
+            &Widenings::default(),
             &mut edits,
         );
 
@@ -606,6 +652,7 @@ mod tests {
             &source,
             &members,
             Settings::aligned(MaxShift::Unlimited),
+            &Widenings::default(),
             &mut edits,
         );
 
@@ -619,7 +666,13 @@ mod tests {
         let (source, members) = rows(&[(1, 1), (2, 1), (3, 1), (15, 1)]);
         let mut edits = Vec::new();
 
-        emit_group(&source, &members, Settings::aligned(cap(8)), &mut edits);
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(8)),
+            &Widenings::default(),
+            &mut edits,
+        );
 
         // Widths 1/2/3 grow one group (spread 2), then width 15 pushes
         // the spread to 14 and breaks off as a natural singleton. The
@@ -635,7 +688,13 @@ mod tests {
         let (source, members) = rows(&[(1, 1), (2, 1), (15, 1), (3, 1), (4, 1)]);
         let mut edits = Vec::new();
 
-        emit_group(&source, &members, Settings::aligned(cap(8)), &mut edits);
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(8)),
+            &Widenings::default(),
+            &mut edits,
+        );
 
         // The width-15 row sits mid-run, so it breaks [1, 2] from [3, 4]
         // and stands alone rather than dragging the narrow rows into one
@@ -651,7 +710,13 @@ mod tests {
         let (source, members) = rows(&[(1, 1), (9, 1)]);
         let mut edits = Vec::new();
 
-        emit_group(&source, &members, Settings::aligned(cap(8)), &mut edits);
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(8)),
+            &Widenings::default(),
+            &mut edits,
+        );
 
         // Spread 8 sits exactly at the cap, so the pair aligns at 9.
         assert_eq!(sorted_summaries(&edits), vec![fill(&members[0], 9)]);
@@ -662,7 +727,13 @@ mod tests {
         let (source, members) = rows(&[(20, 1), (4, 1)]);
         let mut edits = Vec::new();
 
-        emit_group(&source, &members, Settings::aligned(cap(8)), &mut edits);
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(8)),
+            &Widenings::default(),
+            &mut edits,
+        );
 
         // Each member is its own group. Without strip, both singleton
         // targets are the one-space gap each row already carries.
@@ -679,7 +750,13 @@ mod tests {
         ];
         let mut edits = Vec::new();
 
-        emit_group(&source, &members, Settings::aligned(cap(8)), &mut edits);
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(8)),
+            &Widenings::default(),
+            &mut edits,
+        );
 
         // Widths 12/11 group and right-align on their widest operator, so
         // member[1] targets 1+1+1=3 spaces while member[0] keeps its
@@ -697,6 +774,7 @@ mod tests {
             &source,
             &members,
             Settings::aligned(cap(8)).with_singleton_strip(),
+            &Widenings::default(),
             &mut edits,
         );
 

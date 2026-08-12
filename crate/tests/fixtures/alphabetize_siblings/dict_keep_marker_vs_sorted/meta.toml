@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`# prose: keep` on a Dict Preserves Source Order"
+
+description = '''
+The trailing `# prose: keep` on `marked`'s opening `{` line **preserves that one dict's source order**. `unmarked` holds identical entries and shows what the marker suppressed, its scalar entries `"name"` and `"version"` sorting ahead of the nested `"config"` dict, so the two outcomes sit side by side from the same scrambled input.
+'''

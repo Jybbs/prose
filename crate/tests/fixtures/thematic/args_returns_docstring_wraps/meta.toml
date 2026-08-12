@@ -3,5 +3,5 @@ previewable = false
 title       = "Args and Returns Docstring Wraps With Aligned Args Colons"
 
 description = '''
-A function carrying a long-form docstring with `Args:` and `Returns:` sections meets a typed parameter list of varying widths. **The full pipeline lifts the docstring opener and closer onto their own lines, wraps the prose paragraph at the budget, holds the parameters in source order, and aligns the docstring `Args:` entry `:` columns.**
+`render`'s docstring carries `Args:` and `Returns:` sections above a parameter list of varying widths: `template`, `context`, `encoding`. **The docstring's opening and closing `"""` lift onto their own lines, its prose paragraph wraps at the budget, the parameters hold their source order, and the `Args:` entries align their `:` column.**
 '''

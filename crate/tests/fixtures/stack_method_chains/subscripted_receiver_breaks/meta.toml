@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Subscripted Receiver Travels Onto the Head Row"
+
+description = '''
+In `frame.loc[key].mean().round(digits).item()`, the subscript `[key]` comes before the first call, so it belongs to the receiver rather than counting as a link. The head row is therefore `frame.loc[key].mean()`, and `.round(digits)` and `.item()` hang beneath the `.` that follows the subscript.
+'''

@@ -40,6 +40,7 @@ Each concrete rule lives under `prose::rules` (*a `pub(crate)` module today*). T
 - A `KNOWN_IDS: &[RuleId]` constant carrying every registered slug in canonical order.
 - The pipeline constructors (`for_rule`, `with_defaults`, `with_filters`) that dispatch on slug.
 - The slug-validity and uniqueness assertions, checked at compile time, so adding a malformed slug fails the build.
+- The per-rule dependency column naming the slugs each rule runs behind, asserted at compile time to reach only rules seated earlier and read back through `prose rules --output-format json`.
 - The per-rule message strings consumed by diagnostic emission.
 
 `Pipeline::known_ids() -> &'static [RuleId]` is the public entry point that exposes the canonical-order list to downstream consumers.

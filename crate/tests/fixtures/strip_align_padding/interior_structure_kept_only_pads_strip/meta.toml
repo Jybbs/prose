@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Only the Pad Strips, Interior Structure Stays"
-
-description = '''
-The rule clears the pad against each bracket and nothing else, so a subscript tightens, a slice keeps the spacing around its `:`, and a trailing comma stays for `strip-trailing-commas` to remove.
-'''

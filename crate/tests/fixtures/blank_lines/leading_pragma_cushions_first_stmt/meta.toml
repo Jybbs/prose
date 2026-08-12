@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Module's Leading Pragma Cushions the First Statement"
-
-description = '''
-A tool pragma opening a module **anchors in place** the way a banner does, taking one blank line beneath it rather than binding to the statement below.
-'''

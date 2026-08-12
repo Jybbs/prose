@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Body-Indent Prose After an Entry Ends the Section"
+
+description = '''
+Below the `foo` entry, the line beginning `Continued description prose` sits at the docstring body indent rather than the entry indent. **That indent ends the `Args:` section and the line wraps as description prose at the description budget**, even with no blank line separating it from the section body.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Expanded Signature That Fits Both Thresholds Collapses"
+
+description = '''
+`render`'s two parameters, `palette` and `target`, are written one per line even though both stay under `max-params` and the inline form fits `code-line-length`. `reflow-signatures` **collapses the signature back onto a single line**, the same rewrite running in reverse from expansion.
+'''

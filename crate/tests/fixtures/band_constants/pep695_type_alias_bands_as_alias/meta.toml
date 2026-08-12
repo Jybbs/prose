@@ -3,5 +3,5 @@ previewable = false
 title       = "A PEP 695 Type Alias Bands as an Alias"
 
 description = '''
-A PEP 695 `type` alias joins the band as an alias, clustering ahead of the `SCREAMING_CASE` constants.
+`type Seconds = float` is a PEP 695 type alias, and the band sorts it into the alias subcategory rather than treating it as one more constant. The alias cluster sits ahead of the plain constants, so `Seconds` moves above `COUNT` and `MAX` even though it started between them.
 '''

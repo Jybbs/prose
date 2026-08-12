@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Semicolon-Joined Pair Takes No Gap"
-
-description = '''
-Two imports packed onto one physical line with `;` leave no own-line gap above the second to normalize, so the pair **emits no edit** rather than anchoring the gap to the shared line's start.
-'''

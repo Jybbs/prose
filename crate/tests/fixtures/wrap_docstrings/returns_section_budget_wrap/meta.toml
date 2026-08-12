@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Structured `Returns:` Sections Wrap to the Wider Budget"
+
+description = '''
+The `Returns:` description under `total` runs past the budget, and a structured section body **wraps to the section budget** rather than the narrower description budget. The sentence reflows onto two lines at the section body indent, keeping the wider horizontal room a structured section is allowed.
+'''

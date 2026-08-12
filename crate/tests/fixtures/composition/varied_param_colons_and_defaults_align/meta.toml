@@ -3,5 +3,5 @@ previewable = true
 title       = "Param Colons and Defaults Align in Width Groups"
 
 description = '''
-An expanded signature with typed parameters of varying widths and defaults. The `:` and `=` columns align, but **the run splits into two adjacent groups** where the narrow `host`/`port` share one column and the wider `timeout_seconds`/`retries` share another.
+The `configure` signature arrives already expanded, its four typed parameters carrying defaults at widths from `host` to `timeout_seconds`. **`align-colons` pads every name to one shared `:` column set by `timeout_seconds`, and `align-equals` pads every annotation to one shared `=` column set by `float`**, so all four rows read as name, type, default.
 '''

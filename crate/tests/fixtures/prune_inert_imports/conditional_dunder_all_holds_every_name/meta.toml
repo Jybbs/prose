@@ -3,5 +3,5 @@ previewable = true
 title       = "An `__all__` Below Module Scope Holds Every Name"
 
 description = '''
-`__all__` is written inside an `if` rather than at module scope, so the public surface cannot be settled. **Every import holds**, the same as under an `__all__` built by a call.
+The `__all__` naming `dumps` sits inside an `if TYPE_CHECKING:` block rather than at module scope, so the rule cannot settle which names the module exports. **Every import holds**, leaving `from json import dumps` in place even though nothing else reads it.
 '''

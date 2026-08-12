@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Member Running Through a Multi-Line String Keeps Its Floor"
+
+description = '''
+The `helper` member of `holder` carries a triple-quoted string whose `line2` starts at column zero, and when the list explodes one member per line, every row outside that literal moves to the item indent. The row inside the string stays where the source wrote it, because indenting it would add spaces to the literal's own content.
+'''

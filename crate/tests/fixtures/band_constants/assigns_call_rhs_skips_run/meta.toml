@@ -3,5 +3,5 @@ previewable = true
 title       = "Module-Level Runs Skip When the RHS Could Have Side Effects"
 
 description = '''
-Any `Call` on a binding's right-hand side **skips the entire run**. The call could carry observable side effects, so reordering would risk running them out of source order. Source order survives intact.
+`zebra = compute_default()` puts a call on a right-hand side, and that one call **stops the whole run from sorting**, so `alpha = 1` and `beta = 2` stay beneath it in source order. `compute_default()` could carry observable side effects, and reordering the assignments would run them out of the order the author wrote.
 '''

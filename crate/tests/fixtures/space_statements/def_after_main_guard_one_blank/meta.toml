@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Def after the Main Guard Carries One Blank"
+
+description = '''
+`def cleanup():` follows the `if __name__ == "__main__":` block, and the three blank lines between them **narrow to one**. The main-guard pairing takes precedence over the two-blank gap a module-level `def` normally carries.
+'''

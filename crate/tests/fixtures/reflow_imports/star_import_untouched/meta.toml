@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Star Import Passes Through Untouched"
+
+description = '''
+`from collections import *` runs past the `import-line-length` budget of 20, yet it **passes through unchanged**. A star import carries no member list to split, so there is nothing to move onto a second line.
+'''

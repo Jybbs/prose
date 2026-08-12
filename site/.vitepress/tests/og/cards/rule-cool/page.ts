@@ -8,7 +8,7 @@ export const page: OgPage = {
   category   : 'auto-fix',
   family     : 'ordering',
   kind       : 'rules',
-  outputPath : 'og/rules/ordering/alphabetize.png',
+  outputPath : 'og/rules/ordering/alphabetize-siblings.png',
   pipeline   : { position: 3, total: 20 },
-  title      : 'Alphabetize'
+  title      : 'Alphabetize Siblings'
 }

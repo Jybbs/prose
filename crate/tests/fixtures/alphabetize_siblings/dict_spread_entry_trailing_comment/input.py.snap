@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/alphabetize_siblings/dict_spread_entry_trailing_comment/input.py
+---
+merged = {
+    "alpha": 2,  # first alpha
+    "zulu": 1,  # last alpha
+    **base,  # spread
+}

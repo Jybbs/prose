@@ -3,5 +3,5 @@ previewable = false
 title       = "A Call Already in the Bare Form Draws No Edit"
 
 description = '''
-A module whose methods already call `super()` passes through untouched, since the rule reads only the two-argument form.
+`Button.render` already calls `super().render()` in the bare form. Only the two-argument `super(Class, self)` form is read, so the module passes through untouched.
 '''

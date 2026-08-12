@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Blank Run Below a Module's Leading Comment Collapses to One"
-
-description = '''
-A module opening on a comment block keeps **one blank line** below it wherever the author left any, whatever the run's original length. The run above the block still clears entirely.
-'''

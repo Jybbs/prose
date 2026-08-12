@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/space_statements/field_gaps_skipped_methods_normalize/input.py
+---
+space-statements@14..15
+space-statements@53..57
+space-statements@91..95

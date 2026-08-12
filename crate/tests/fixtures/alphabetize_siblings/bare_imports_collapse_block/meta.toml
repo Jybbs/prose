@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Bare Imports Sort Alphabetically Too"
+
+description = '''
+The blank line the author left between the stdlib trio and the aliased `numpy` and `pandas` pair is removed, because **every bare `import` at a body's top level collapses into a single alphabetized block**. The five statements interleave into `argparse`, `numpy`, `os`, `pandas`, `zlib`, reading as one paragraph regardless of how the source grouped them.
+'''

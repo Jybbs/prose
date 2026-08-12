@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Assignment after a Module-Level `class` Carries Two Blanks"
+
+description = '''
+`PORT = 8080` sits directly against the end of `class Posting:`, and the gap **widens to two blank lines**, the canonical count after a module-level class whatever the source wrote. The class header also gains its one blank before the `title` field.
+'''

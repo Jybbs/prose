@@ -3,5 +3,5 @@ previewable = true
 title       = "An Interior Comment Splits the Keyword Run"
 
 description = '''
-A comment between two keywords **closes the active run**, so the keywords on each side of it align as **two independent columns**.
+The `# tuning` comment sits between `port` and `timeout` inside the `connect` call, and **it closes the keyword run, so the keywords on each side align as two independent columns**. `host` and `port` share one `=` column above the comment, while `timeout` and `retries` share a different one below it.
 '''

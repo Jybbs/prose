@@ -3,8 +3,8 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/sandwiched_stub_reaches_fixed_point/input.py
 ---
-alphabetize@6..59
-blank-lines@12..13
-blank-lines@21..22
-blank-lines@34..35
-blank-lines@43..44
+alphabetize-siblings@6..59
+space-statements@12..13
+space-statements@21..22
+space-statements@34..35
+space-statements@43..44

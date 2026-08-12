@@ -3,5 +3,5 @@ previewable = false
 title       = "Walrus in a Comprehension Lifts to Module Scope"
 
 description = '''
-A `:=` target inside a comprehension **lifts to the nearest non-comprehension scope**. The comprehension's own target stays scope-local while the walrus target becomes a module-level binding.
+Inside the comprehension behind `vals`, the walrus `(y := x * 2)` **lifts `y` past the comprehension scope into the module table**, where it sits next to `xs` and `vals`. The loop target `x` stays behind in the `Comprehension` scope, so the two targets written in the same expression land in different scopes.
 '''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Async Methods Sort Beside Their Sync Siblings"
+
+description = '''
+Import pairs sit out of order inside an `async def` body, an `async for` body, and an `async with` body, and **the async forms recurse exactly like their synchronous counterparts**. Each block's pair sorts in place, `alpha` before `zeta`, `beta` before `gamma`, and `delta` before `omega`, so the `async` keyword changes nothing about how a body sorts.
+'''

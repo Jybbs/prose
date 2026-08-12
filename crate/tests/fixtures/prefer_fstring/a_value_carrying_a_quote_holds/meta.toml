@@ -3,5 +3,5 @@ previewable = true
 title       = "A Value Carrying a Quote Holds"
 
 description = '''
-The inner quote would close the delimiter the f-string opened with.
+Moving `table["key"]` into the template would put its `"` quotes inside an f-string delimited by the same character, where the first inner quote would close the string early. The value stays outside the template, so the line holds.
 '''

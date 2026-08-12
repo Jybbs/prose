@@ -3,5 +3,5 @@ previewable = true
 title       = "Turning Off `unify-numerics` Leaves the Other Facets Running"
 
 description = '''
-With `unify-numerics = false` the hex marker stands as written, while the no-op `u` still drops and the quote still settles on `"`. Each facet gates one spelling axis on its own.
+With `unify-numerics = false` the hex `0XABC` stands as written, whereas the other facets keep running, in that `U"y"` drops its no-op prefix, `R"a\d"` lowercases to `r"a\d"`, and `'ada'` settles on double quotes. Each facet gates one spelling axis on its own.
 '''

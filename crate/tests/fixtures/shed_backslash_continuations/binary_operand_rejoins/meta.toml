@@ -4,5 +4,5 @@ previewable = true
 title       = "A Split Operand Rejoins Its Line"
 
 description = '''
-A binary expression broken across a trailing backslash rejoins onto one line, so `x = 1 + \` and its continuation read as `x = 1 + 2`.
+Both `x = 1 + \` and `flag = ready and \` split a binary expression across a trailing backslash, one around the arithmetic `+` and one around the boolean `and`. `shed-backslash-continuations` removes each backslash and closes the break, producing `x = 1 + 2` and `flag = ready and loaded`.
 '''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Gap Already Past Two Columns Is Left Where It Sits"
+
+description = '''
+Two columns is the floor rather than the target, so the wide gaps between `value = 1` and `other = 22` and their trailing comments survive untouched. Those comments already share a column, and leaving the gaps alone keeps that column reachable by an alignment rule rather than flattened before one can read it.
+'''

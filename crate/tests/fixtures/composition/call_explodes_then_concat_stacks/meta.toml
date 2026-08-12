@@ -1,7 +1,7 @@
 [docs]
-previewable = true
+previewable = false
 title       = "A Call Explodes before Its String Run Breaks"
 
 description = '''
-`call-layout` settles the argument list one entry per line first, so `stack-adjacent-strings` measures the run against the column it lands at and breaks only the argument that still overruns the budget.
+The `emit` call overruns the budget, so `reflow-calls` settles its argument list one entry per line first. `stack-adjacent-strings` then measures the two adjacent literals against the column they land at and breaks only that argument, stacking the opening clause over the trailing one while `alpha` keeps its single line.
 '''

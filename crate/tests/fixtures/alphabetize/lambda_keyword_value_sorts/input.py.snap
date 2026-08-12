@@ -1,6 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/lambda_keyword_value_sorts/input.py
----
-foo(a=1, b=2, z=lambda row: row.compute())

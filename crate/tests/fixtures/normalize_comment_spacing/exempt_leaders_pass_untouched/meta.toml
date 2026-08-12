@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "The Shebang and the Structured Markers Pass Through"
+
+description = '''
+A `#` followed by `!`, `:`, `'`, or `|` carries meaning to a tool downstream, so each opener here passes through with no space inserted. That covers the `#!/usr/bin/env python` shebang, the `#:sphinx` attribute doc, and the `#'quoted` and `#|piped` forms, each a full-line comment here and so carrying no gap before the hash to settle either.
+'''

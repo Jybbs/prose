@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Constants Sort Around a Pinned Field Run"
-
-description = '''
-A constant is not a constructor parameter, so the pin covers the data fields alone. Inside a `@dataclass` the bare and `ClassVar` constants **still sort** while the annotated fields below them **hold their positional order**.
-'''

@@ -1,2 +1,2 @@
 [harness]
-rules = ["align-colons", "strip-align-padding"]
+rules = ["align-colons", "strip-stranded-padding"]

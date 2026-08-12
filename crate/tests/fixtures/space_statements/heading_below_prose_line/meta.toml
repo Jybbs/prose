@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Heading Below a Prose Comment Still Divides"
+
+description = '''
+The comment block above `reference` opens with the prose line `# See the module docs` and ends on the heading `### API Reference`. A heading anywhere in the block marks it as a **section divider**, so one blank line opens between the heading and `def reference():` instead of the block binding tight as a leading comment.
+'''

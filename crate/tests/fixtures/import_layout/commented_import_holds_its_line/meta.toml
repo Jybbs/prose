@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Comment Anywhere in the Span Holds the Merge Back"
-
-description = '''
-A comment describes the statement it sits beside, and folding two statements into one leaves it describing nothing, so a commented member **keeps every statement of its module in place**.
-'''

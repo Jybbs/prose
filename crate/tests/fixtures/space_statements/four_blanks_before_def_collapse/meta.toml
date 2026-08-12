@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Four Blanks Before a Def Collapse to Two"
+
+description = '''
+Four blank lines separate `first` from `def second():`, twice the canonical count for a module-level `def`, so they **collapse to two**. The rule replaces the whole whitespace run between the statements in one edit rather than trimming a line at a time.
+'''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Set Literal Inside `set()` Stands On Its Own"
 
 description = '''
-A set literal handed to `set()` is already the set, leaving the outer call nothing to build.
+`set({1, 2})` wraps a set literal that is already the set it would build, so the call is dropped and `unique` becomes `{1, 2}`.
 '''

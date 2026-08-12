@@ -5,6 +5,7 @@ use ruff_notebook::CellOffsets;
 use ruff_python_ast::{PySourceType, PythonVersion};
 use ruff_python_parser::{ParseError, ParseOptions, parse, semantic_errors::SemanticSyntaxError};
 use ruff_source_file::OneIndexed;
+use ruff_text_size::TextLen;
 use thiserror::Error;
 
 use super::validity::first_semantic_error;
@@ -45,8 +46,9 @@ pub(super) fn reparse_or_reject(
     map: Option<SourceMap>,
     gate: Option<PythonVersion>,
 ) -> Result<Source, PipelineError> {
+    let limit = new_text.text_len();
     let cell_offsets = map.map_or_else(CellOffsets::default, |m| {
-        forward_offsets(source.cell_offsets(), &m)
+        forward_offsets(source.cell_offsets(), &m, limit)
     });
     let next = source
         .reparse_carrying(new_text, cell_offsets)

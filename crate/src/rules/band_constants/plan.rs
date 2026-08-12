@@ -19,8 +19,10 @@ use crate::primitives::{
 
 /// The applied banding: a band rank per banded statement, the rendered
 /// tier each banded constant sits in, the member count per rendered
-/// tier, and the comment each member carries onto another member's line.
+/// tier, the comment run still heading each member, and the comment each
+/// member carries onto another member's line.
 pub(super) struct Banding {
+    pub(super) attached: HashMap<usize, TextRange>,
     pub(super) carries: Vec<Carry>,
     ranks: HashMap<usize, BandRank>,
     tier_sizes: HashMap<(BandRank, usize), usize>,
@@ -130,10 +132,11 @@ impl BandPlan<'_> {
     }
 
     /// Moves each comment heading a band's source-order head onto the
-    /// member the sort seated first.
+    /// member the sort seated first, dropping it from the run heading
+    /// its own member.
     fn relocate_heads(&mut self, shifts: &[(usize, usize)]) {
         for &(from, to) in shifts {
-            if let Some(&comment) = self.attached.get(&from) {
+            if let Some(comment) = self.attached.remove(&from) {
                 self.carries.push(Carry {
                     absorbs: from,
                     carrier: to,
@@ -198,6 +201,7 @@ impl BandPlan<'_> {
             .iter()
             .counts_by(|(&idx, &tier)| (self.ranks[&idx], tier));
         let banding = Banding {
+            attached: self.attached,
             carries: self.carries,
             ranks: self.ranks,
             tier_sizes,

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Raw String Holding a Bare Double Quote Stands"
 
 description = '''
-`r'"\d+"'` carries two unescaped `"` characters and a raw string cannot gain a backslash, so the delimiters stay where they are.
+`pattern` is the raw string `r'"\d+"'`, whose body carries two bare `"` characters. Swapping to double quotes would need an escape on each one, and a raw string cannot gain a backslash, so the delimiters stay where they are.
 '''

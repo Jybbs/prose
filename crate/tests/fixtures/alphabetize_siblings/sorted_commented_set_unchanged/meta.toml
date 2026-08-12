@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Already-Sorted Commented Set Is Left Alone"
+
+description = '''
+The set `x` holds `ant`, `bee`, and `cat` already in alphabetical order, each with a trailing comment. The whole group **comes back unchanged**, because a collection already in order is not rewritten, leaving every comment where it was.
+'''

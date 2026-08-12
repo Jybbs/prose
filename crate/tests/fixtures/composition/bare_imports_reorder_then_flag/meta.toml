@@ -3,5 +3,5 @@ previewable = true
 title       = "Bare Imports Reorder, Then Draw the Narrow-Use Lint"
 
 description = '''
-Three bare imports arrive out of order, each reached through a single attribute. `alphabetize` reorders the statements, and **`bare-imports` flags every one, each diagnostic anchored to the import as written** rather than to its post-reorder position.
+`import sys`, `import os`, and `import json` arrive out of order, and each module is used through a single attribute access below, `os.getcwd()`, `sys.argv`, and `json.loads`. `alphabetize-siblings` reorders the statements so `json` leads, and **`bare-imports` flags all three, each diagnostic anchored to the import as written** rather than to its post-reorder position.
 '''

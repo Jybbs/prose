@@ -46,11 +46,11 @@ The conflict table:
 | `E221` | Lint flags multiple spaces before `=` | [[align-equals]] produces it across consecutive assignments at the same indentation |
 | `E272` | Lint flags multiple spaces before `import` / `as` | [[align-imports]] produces it across `from ... import ...` and `import ... as ...` groups |
 | `E501` | Lint flags lines past `line-length` | A long member in an alignment group pads shorter lines rightward, occasionally past the configured limit |
-| `skip-magic-trailing-comma` | Formatter re-expands collections by trailing-comma presence | `prose format` controls collection layout independently of comma signaling, via [[collection-layout]] |
+| `skip-magic-trailing-comma` | Formatter re-expands collections by trailing-comma presence | `prose format` controls collection layout independently of comma signaling, via [[reflow-collections]] |
 
 ## Import Sorting
 
-Ruff's import-sorting rules (*the isort `I` category, surfaced through `ruff check` rather than `ruff format`*) are a different kind of overlap from the formatter codes above. *Prose*'s [[alphabetize]] owns import ordering, grouping each block into bare, then external `from`, then local-package, with one blank line between groups, which does not match Ruff's isort layout. A project that runs `ruff check` should leave the `I` rules unselected so the two tools don't rewrite the same import block against competing conventions.
+Ruff's import-sorting rules (*the isort `I` category, surfaced through `ruff check` rather than `ruff format`*) are a different kind of overlap from the formatter codes above. *Prose*'s [[alphabetize-siblings]] owns import ordering, grouping each block into bare, then external `from`, then local-package, with one blank line between groups, which does not match Ruff's isort layout. A project that runs `ruff check` should leave the `I` rules unselected so the two tools don't rewrite the same import block against competing conventions.
 
 ## In CI
 
@@ -77,4 +77,4 @@ The [**Editor**](/integrations/editor) integration page covers the per-editor wi
 
 ## Other Token-Level Formatters
 
-Black and autopep8 pair with *Prose* through the same shape, with Black requiring `--skip-magic-trailing-comma` so it doesn't re-expand collections that [[collection-layout]] is responsible for. The conflict table above transfers directly, because Black, autopep8, and Ruff all consume `pycodestyle`'s codes.
+Black and autopep8 pair with *Prose* through the same shape, with Black requiring `--skip-magic-trailing-comma` so it doesn't re-expand collections that [[reflow-collections]] is responsible for. The conflict table above transfers directly, because Black, autopep8, and Ruff all consume `pycodestyle`'s codes.

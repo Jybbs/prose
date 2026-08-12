@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Held Literal Explodes the Argument List Around It"
-
-description = '''
-An argument the author left laid out across rows explodes the list around it, so every sibling takes its own row rather than packing against the block's closing brace. The count and width triggers both stay clear here, leaving the row break itself as what fires.
-'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Continuation Below the Hanging Column Rejoins Its Description"
+
+description = '''
+In the `Args:` section, `name`'s continuation line sits at a narrower indent than the hanging column its `:` sets, and every line past the section body indent that opens no sibling entry reads as a continuation. **The stranded line rejoins the description and reflows at the current hanging column**, so the text refills under the entry's first word rather than passing through verbatim.
+'''

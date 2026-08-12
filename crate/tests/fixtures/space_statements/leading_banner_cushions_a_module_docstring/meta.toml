@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Leading Banner Cushions a Module Docstring"
+
+description = '''
+The `# Copyright and license notice` banner opens the file above a module docstring rather than above code. **The docstring takes the divider blank exactly as a first import would**, the head reading the statement below the block without inspecting its kind.
+'''

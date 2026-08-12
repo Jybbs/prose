@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Trailing Opener Settles Even Where It Shares a Column"
-
-description = '''
-The own-line block keeps every indent inside it, because those three comments open at a column the author chose and nothing downstream moves. The two trailing comments share a column with each other and still settle to one space, since a trailing hash sits where its code happens to end and [[align-comments]] moves it afterward.
-'''

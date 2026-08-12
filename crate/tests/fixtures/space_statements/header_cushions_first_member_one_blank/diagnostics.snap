@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/space_statements/header_cushions_first_member_one_blank/input.py
+---
+space-statements@17..18
+space-statements@175..176
+space-statements@220..221
+space-statements@265..266
+space-statements@282..283
+space-statements@87..88

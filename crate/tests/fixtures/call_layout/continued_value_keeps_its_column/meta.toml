@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Continued Value Measures Where It Actually Sits"
-
-description = '''
-A value that opens on a line after its `=` keeps the column the source gave it, because `align-equals` sits out a continued row rather than shifting it. The length trigger reads that real column, so a call well inside the budget stays inline instead of answering to a shift the alignment never makes.
-'''

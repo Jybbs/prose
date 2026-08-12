@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Async Filtered Comprehension Joins onto One Line"
+
+description = '''
+The broken comprehension returned by `collect` fits on one line, so it joins into `[item.value async for item in source if item.ready]`. The `async for` keyword and the `if item.ready` filter both survive the join intact.
+'''

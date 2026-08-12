@@ -3,6 +3,5 @@ previewable = true
 title       = "A Conversion and a Format Spec Pass Through"
 
 description = '''
-Both trail the value unchanged, in that an f-string field reads the same
-grammar the template did.
+The `.format` call carries a `!r` conversion and a `:>8` format spec, and an f-string field reads the same grammar the template did. Both trail their values unchanged, so `shown` lands on `f"{record!r} in {column:>8}"`.
 '''

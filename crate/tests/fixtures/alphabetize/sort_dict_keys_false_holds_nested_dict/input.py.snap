@@ -1,6 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/sort_dict_keys_false_holds_nested_dict/input.py
----
-outer = {"zulu": {"yankee": 1, "alpha": 2}, "bravo": 3}

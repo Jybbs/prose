@@ -1,2 +1,2 @@
 [harness]
-rules = ["prune-inert-imports", "blank-lines"]
+rules = ["prune-inert-imports", "space-statements"]

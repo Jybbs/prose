@@ -3,5 +3,5 @@ previewable = true
 title       = "A Metaclass Keyword Holds the Parentheses Open"
 
 description = '''
-A `metaclass=` keyword is a surviving member of the base list, so the `object` ahead of it goes with its comma while the parentheses stay to carry the keyword.
+`class Plugin(object, metaclass=PluginMeta):` carries `metaclass=PluginMeta` as a surviving member of the base list. `object` and the comma that followed it drop, leaving the parentheses in place to carry the keyword, `class Plugin(metaclass=PluginMeta):`.
 '''

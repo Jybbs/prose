@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Continuation Below the Hanging Column Rejoins Its Description"
-
-description = '''
-An entry whose continuation sits between the section body indent and the hanging column **rejoins the description and reflows at the current column**. Every line from the section body indent onward that opens no sibling entry reads as a continuation, so one stranded by a colon that has since moved is refilled rather than emitted verbatim.
-'''

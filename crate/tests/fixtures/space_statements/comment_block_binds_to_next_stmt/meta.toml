@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Own-Line Comment Binds to the Statement Below"
+
+description = '''
+The comment `# describes the second helper` sits between `first` and `second`, and it **becomes `second`'s leading block**. The canonical two-blank gap between module defs opens above the comment, while the comment itself stays tight against `def second():` with no blank between them.
+'''

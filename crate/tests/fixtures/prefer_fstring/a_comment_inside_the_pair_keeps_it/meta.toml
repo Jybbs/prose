@@ -3,6 +3,5 @@ previewable = false
 title       = "A Comment Inside the Pair Keeps It"
 
 description = '''
-The comment sits between the parentheses and the template rather than
-inside it, so the conversion lands and the pair stays.
+The `# the note stays` comment hangs on the parentheses wrapping the template rather than sitting inside the `%` construct itself, so nothing blocks the conversion. `"%s" % (value,)` becomes `f"{value}"`, and the wrapping pair stays with its comment in place.
 '''

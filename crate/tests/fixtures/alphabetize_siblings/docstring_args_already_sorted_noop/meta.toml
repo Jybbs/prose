@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Already-Sorted `Args:` Section Passes Through"
+
+description = '''
+`render`'s `Args:` entries for `context`, `encoding`, and `template` already sit in alphabetical order, so the section **passes through untouched** and the docstring takes no edit.
+'''

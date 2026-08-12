@@ -3,5 +3,5 @@ previewable = true
 title       = "A Run inside a Still-Inline Bracket Takes Its Own Parentheses"
 
 description = '''
-A subscript never expands, so its bracket leaves the run on the statement's own row. The run **wraps in parentheses rather than breaking in place**, since a continuation at the statement's indent would read as the next statement.
+The subscript in `value = registry[...]` never expands onto its own lines, so the run inside it would otherwise sit on the statement's own row. `stack-adjacent-strings` **wraps the run in its own parentheses rather than breaking it in place**, because a continuation at the statement's indent would read as the next statement.
 '''

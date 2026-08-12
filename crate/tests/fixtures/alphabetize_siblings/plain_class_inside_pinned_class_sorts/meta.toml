@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Nested Plain Class Sorts Inside a Pinned One"
+
+description = '''
+`Outer`'s field order is held because `@dataclass` turns those fields into its constructor's signature, and reordering them would change every call site. `Inner` carries no such decorator, so `bravo` and `yankee` sort even though the class sits inside a pinned one.
+'''

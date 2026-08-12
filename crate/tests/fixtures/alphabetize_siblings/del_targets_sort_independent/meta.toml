@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "`del` Targets Sort Independently"
+
+description = '''
+`del registry, cache, buffer` removes each name independently, so the statement means the same thing in any order. The targets therefore **alphabetize**, landing as `del buffer, cache, registry`, the same source-text sort set-literal elements take.
+'''

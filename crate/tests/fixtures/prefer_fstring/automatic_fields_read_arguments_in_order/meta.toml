@@ -3,6 +3,5 @@ previewable = true
 title       = "Automatic Fields Read the Arguments in Order"
 
 description = '''
-An empty field takes the next positional argument, the same numbering
-`str.format` applies.
+Each empty `{}` reads the next positional argument in order, the first taking `key` and the second `value`, the same numbering `str.format` applies at runtime. The rewrite inlines them in that order, landing on `f"{key}={value}"`.
 '''

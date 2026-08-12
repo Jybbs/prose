@@ -4,4 +4,4 @@ expression: render(&diagnostics)
 input_file: crate/tests/fixtures/composition/sorted_entries_then_align_comments/input.py
 ---
 align-comments@25..92
-alphabetize@16..100
+alphabetize-siblings@16..100

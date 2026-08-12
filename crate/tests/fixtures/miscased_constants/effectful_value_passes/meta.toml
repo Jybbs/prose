@@ -3,5 +3,5 @@ previewable = true
 title       = "Call-Produced Globals Are Not Constants"
 
 description = '''
-`logger` and `app` bind the result of a call, so evaluating them runs code rather than reading a fixed value. The shared inert-value classifier keeps the lint quiet on these effectful globals, exactly the split that spares pylint's noise.
+`logger` and `app` each bind the result of a call, so evaluating either one runs code rather than reading a fixed value. A constant is an inert value, and a call-produced global is not one, so the lint reports neither name despite the lowercase.
 '''

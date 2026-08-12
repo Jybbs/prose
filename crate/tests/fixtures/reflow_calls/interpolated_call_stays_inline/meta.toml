@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Inside a Replacement Field Stays Inline"
+
+description = '''
+The over-wide `ValueError` call explodes so its f-string argument lands on a line of its own, while `len(image_mean)` inside the replacement field keeps its source shape. An f-string literal is opaque to layout however wide it runs, because splicing a line break into a single-quoted replacement field parses only on Python 3.12 and later, so the still-long interior is left for `line-overflow` to report.
+'''

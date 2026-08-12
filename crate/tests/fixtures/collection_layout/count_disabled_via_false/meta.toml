@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A False Count Cap Leaves Width as the Only Dict Gate"
-
-description = '''
-Setting `max-dict-entries` to `false` disables the count trigger, so a dict that fits the line budget stays inline however many entries it carries.
-'''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Header Carrying Anything Real Is Left Alone"
 
 description = '''
-A starred base list, a bare `metaclass=` keyword, a double-starred namespace, and a header with no parentheses at all each carry something the rule does not act on, so every one is left as written.
+`class Configured(metaclass=ConfiguredMeta):`, `class Dynamic(*RESOLVED_BASES):`, `class Forwarded(**NAMESPACE):`, and `class Plain:` each carry a header shape with nothing to shed: a bare keyword, a starred base list, a double-starred namespace, or no parentheses at all. Every one stays exactly as written.
 '''

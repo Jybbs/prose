@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Held Call Member Hangs From the Item Column"
-
-description = '''
-A member the expansion holds rather than lays out itself moves with the row it lands on, its block hanging from the item column instead of staying at the column the source wrote it at.
-'''

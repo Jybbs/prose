@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "F-String Replacement Fields Keep Their Spaces"
+
+description = '''
+`f"{ value }"` and `f"{ total = }"` place their braces around an f-string replacement field, not the bracket delimiters `strip-stranded-padding` targets, so both keep their interior spaces untouched, `total = ` included. `padded = { 1, 2 }` is a real set literal, so the rule still strips its padding down to `{1, 2}`.
+'''

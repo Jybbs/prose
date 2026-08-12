@@ -3,5 +3,5 @@ previewable = false
 title       = "File-Top Off Opts the Whole Source Out"
 
 description = '''
-A `# fmt: off` at the top of the source, with no closing `# fmt: on`, **suppresses every subsequent line** from every rule. Assignments, the unsorted dict, and the unsorted parameter list all stay untouched, matching a file-level `# prose: off`.
+`# fmt: off` opens the file with no closing `# fmt: on`, so `x = 1`, `foo = 2`, and `bar_baz = 3` stay unaligned, `config = {"z": 1, "a": 2,}` stays unsorted with its trailing `,`, and `helper`'s `b, a` parameters stay in their written order. **Every subsequent line is suppressed from every rule**, matching what a file-level `# prose: off` would do.
 '''

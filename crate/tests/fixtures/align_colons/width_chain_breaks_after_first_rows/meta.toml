@@ -3,5 +3,5 @@ previewable = true
 title       = "A Width Chain Breaks After the Rows That Read First"
 
 description = '''
-Field widths climb in source order. The walk grows one column through the narrow rows that read first, then **breaks when the next field clears `max-shift`** of the group, gathering the wide tail into its own column.
+Field widths climb in source order from `cpu` to `persistent_storage_quota`. The narrow rows `cpu`, `disk`, and `memory` grow one shared `:` column, which **breaks at `network_throughput_gauge` because aligning the narrow rows out that far would exceed `max-shift`**, leaving the two wide fields to align in a column of their own.
 '''

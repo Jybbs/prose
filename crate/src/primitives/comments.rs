@@ -14,7 +14,7 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
-    primitives::offsets::whitespace_start_before, source::Source, suppression::is_directive_comment,
+    primitives::blanks::whitespace_start_before, source::Source, suppression::is_directive_comment,
 };
 
 /// The gap PEP 8 seats between code and a trailing comment.
@@ -60,9 +60,8 @@ pub(super) fn bound_block_start(
 pub(super) fn comment_leads(source: &Source, item_start: TextSize) -> bool {
     let text = source.text();
     let line_start = text.line_start(item_start);
-    let above = whitespace_start_before(text, line_start);
-    source.same_cell(above, line_start)
-        && leading_comment_block(source, text.line_start(above), line_start).is_some()
+    let above = whitespace_start_before(source, line_start);
+    leading_comment_block(source, text.line_start(above), line_start).is_some()
 }
 
 /// True when the line containing the dict's opening `{` carries a
@@ -107,7 +106,7 @@ pub(crate) fn leading_comment_block(
 
 /// The start of the trailing comment on `offset`'s line, `None` where
 /// that line carries no comment or carries an own-line one alone.
-pub(super) fn trailing_comment_start(source: &Source, offset: TextSize) -> Option<TextSize> {
+pub(crate) fn trailing_comment_start(source: &Source, offset: TextSize) -> Option<TextSize> {
     let line = source.text().full_line_range(offset);
     source
         .comment_ranges()
@@ -134,20 +133,28 @@ fn is_rule_char(c: char) -> bool {
     matches!(c, '-' | '=' | '~' | '*' | '_' | '#' | '─' | '━' | '═')
 }
 
-/// True when `line` reads as a decorative rule, either a pure run of five
-/// or more identical rule characters or a run of three or more flanking a
-/// label. Box-drawing dashes count as rule characters.
+/// True when `line` reads as a decorative rule, one repeated rule
+/// character standing alone at five or more or flanking a label at three
+/// or more, on whichever side of the label the author drew it. A closing
+/// `#` caps a trailing run without breaking it, the box shape
+/// `# Label ****#` takes. Box-drawing dashes count as rule characters.
 fn is_rule_line(line: &str) -> bool {
     let body = line.trim_start().strip_prefix('#').map_or("", str::trim);
-    let mut chars = body.chars();
-    let Some(first) = chars.next() else {
-        return false;
-    };
-    if !is_rule_char(first) {
-        return false;
-    }
-    let run = 1 + chars.take_while(|&c| c == first).count();
+    let capped = body.strip_suffix('#').unwrap_or_default();
+    let run = rule_run(body.chars())
+        .max(rule_run(body.chars().rev()))
+        .max(rule_run(capped.chars().rev()));
     run >= 5 || (run >= 3 && body.chars().count() > run)
+}
+
+/// The opening run of one repeated rule character in `chars`, zero when
+/// it opens on anything else. Reversing the iterator measures the run
+/// closing the same text.
+fn rule_run(mut chars: impl Iterator<Item = char>) -> usize {
+    match chars.next() {
+        Some(first) if is_rule_char(first) => 1 + chars.take_while(|&c| c == first).count(),
+        _ => 0,
+    }
 }
 
 #[cfg(test)]
@@ -300,6 +307,19 @@ mod tests {
     }
 
     #[rstest]
+    fn is_rule_line_accepts_trailing_rule(
+        #[values(
+            "# Sequence Operations *********#",
+            "# Loaders ######################",
+            "# -- Public interface ---------",
+            "# ─── Box ───────────────"
+        )]
+        line: &str,
+    ) {
+        assert!(is_rule_line(line));
+    }
+
+    #[rstest]
     fn is_rule_line_rejects_alpha_prose(
         #[values("# describes f", "# Section: helpers", "# x")] line: &str,
     ) {
@@ -308,7 +328,7 @@ mod tests {
 
     #[rstest]
     fn is_rule_line_rejects_mixed_characters(
-        #[values("# = = = =", "# -=-=-=", "# - - -")] line: &str,
+        #[values("# = = = =", "# -=-=-=", "# - - -", "# -*- coding: utf-8 -*-")] line: &str,
     ) {
         assert!(!is_rule_line(line));
     }

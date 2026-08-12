@@ -3,5 +3,5 @@ previewable = true
 title       = "An Explicit `__class__` First Argument Shortens"
 
 description = '''
-A `super(__class__, self)` call shortens the same way the class-name form does, because `__class__` already names the cell the bare form reads.
+`Leaf.clone` calls `super(__class__, self).clone()`, naming the closure cell `__class__` directly rather than the class by name. It shortens to `super().clone()` the same way the named form would, because `__class__` already names the cell the bare call reads.
 '''

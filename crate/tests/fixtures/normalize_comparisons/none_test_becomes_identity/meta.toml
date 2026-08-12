@@ -4,5 +4,5 @@ previewable = true
 title       = "A Test Against None Reads as an Identity Check"
 
 description = '''
-`== None` becomes `is None` and `!= None` becomes `is not None`, the identity form PEP 8 prescribes for a comparison against a singleton.
+`value == None` becomes `value is None`, and `fallback != None` becomes `fallback is not None`. `None` is a singleton, so PEP 8 prescribes the identity form for any comparison against it, and the rule rewrites both operators to match.
 '''

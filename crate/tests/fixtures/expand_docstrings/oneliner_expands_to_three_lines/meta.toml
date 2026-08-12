@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "The Body Content Is Preserved Verbatim Across the Expansion"
+
+description = '''
+`greet`'s docstring `"""Hello, world."""` becomes the canonical three-line shape, opener, body, and closer each on their own line. The **body text passes through unchanged**, trimmed of surrounding whitespace and re-laid at the def's body indent.
+'''

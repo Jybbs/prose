@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Parenthesized Children Keep Their Explicit Parens"
+
+description = '''
+The over-wide `precedence` list expands one entry per line, and the already-broken `short_precedence` holds its multi-line shape, and through both rewrites every child **retains its explicit parens**. Slicing each child's raw range would drop them and turn `(-a) ** 2` into `-a ** 2`, which Python reparses as `-(a ** 2)` and flips the sign.
+'''

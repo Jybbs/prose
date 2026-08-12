@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Module Holding Only Blank Lines Empties"
+
+description = '''
+The file carries three blank lines and no statement, so every byte in it belongs to the run opening the module. **Clearing that run clears the file**, leaving nothing behind but the newline closing it.
+'''

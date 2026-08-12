@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Link Past `max-args` Holds the Chain"
+
+description = '''
+`first` takes four arguments, past `max-args`, so its hand-wrapped argument list never closes back onto one row, and it cannot explode to keyword form either, because `base.first` resolves to no signature and the line fits under the width cap. The fracture stands, so the link still spans lines when the chain is measured and the chain stays where the source put it.
+'''

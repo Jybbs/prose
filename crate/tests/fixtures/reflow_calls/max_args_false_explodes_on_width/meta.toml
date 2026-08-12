@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "max-args = false Still Yields to the Width Trigger"
+
+description = '''
+`max-args = false` switches off the argument-count trigger, so the four keywords of `fetch` alone would not explode the call. The width trigger stays live, and the line crosses `code-line-length = 40`, so the call still explodes, in that no configuration leaves an over-wide call inline.
+'''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A `max-shift = 0` Cap Collapses Every Row to Flush"
 
 description = '''
-Setting `max-shift` to `0` forbids any shift, so every row stands alone and its `:` collapses flush against the key. **Even equal-width neighbors stay flush** rather than sharing a column.
+Setting `max-shift = 0` forbids any shift of a `:` off its key, so the padded `"alpha" : 1`, `"gamma" : 2`, and `"beta"  : 3` rows each collapse to plain `"key": value`. **Even the equal-width `"alpha"` and `"gamma"` rows get no shared-column padding**, every `:` landing flush against its own key.
 '''

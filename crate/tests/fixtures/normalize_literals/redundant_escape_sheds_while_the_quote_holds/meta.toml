@@ -3,5 +3,5 @@ previewable = true
 title       = "A Redundant Escape Sheds Even When the Quote Holds"
 
 description = '''
-A body spelling `\"` inside single quotes needs no backslash there, so the backslash goes while the delimiter stays put. **A quote character counts once wherever it appears, escaped or not**, which is what keeps the choice stable rather than flipping the delimiter on every run.
+A `\"` inside single quotes needs no backslash, so `traced` and `spare` shed those escapes while their `'` delimiters stay put, and `mirror` sheds its needless `\'` the same way inside double quotes. **A quote character counts once wherever it appears, escaped or not**, which is what keeps the delimiter choice stable rather than flipping it on every run.
 '''

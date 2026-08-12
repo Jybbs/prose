@@ -1,6 +1,6 @@
 ---
 caption : "Collapses a collection constructor wrapped around a form that already builds that collection, and a comprehension that copies its input unchanged."
-related : [collection-layout, shed-parentheses]
+related : [reflow-collections, shed-parentheses]
 layout  : doc
 ---
 

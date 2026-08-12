@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Multi-Line Default Expands a Signature Past the Count Cap"
-
-description = '''
-A signature carrying more parameters than `max-params` around a multi-line default expands one parameter per line, the default's block re-indented so its entries and its closing brace hang from the parameter column rather than staying at their source indent.
-'''

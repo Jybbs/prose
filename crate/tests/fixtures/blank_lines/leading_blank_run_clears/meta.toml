@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Blank Run Opening a Module Clears"
-
-description = '''
-Blank lines opening a module **clear entirely**, so the file starts on its first statement. The gap between the remaining statements stays as the source wrote it.
-'''

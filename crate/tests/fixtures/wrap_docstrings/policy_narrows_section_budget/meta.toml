@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "The `docstring-line-length` Policy Overrides the Structured Budget"
+
+description = '''
+The case's config sets `docstring-structured-policy = "docstring-line-length"`, so **prose section bodies wrap at the narrower docstring budget instead of the default structured budget**. The long paragraph under `Note:` exceeds that width, so it reflows across three lines at the docstring budget.
+'''

@@ -1,6 +1,6 @@
 # Pipeline Order
 
-*Prose* runs each enabled rule in a deterministic order, reparsing the source between rules so every downstream rule reads a settled AST. The reparse is the discipline that makes the rule set composable, wherein no rule observes the half-applied state of another, leaving every pass free of cross-rule edit conflict by construction. The order itself is canonical, source-of-truth in `crate/src/rule.rs` *(the `register_rules!` macro block)*, and pedagogically valuable. A rule that depends on a settled token surface sits downstream of every rule that touches that surface, in that *(for example)* [[align-colons]] runs before [[docstring-wrap]] because the docstring wrap budget depends on the post-colon column the alignment rule sets.
+*Prose* runs each enabled rule in a deterministic order, reparsing the source between rules so every downstream rule reads a settled AST. The reparse is the discipline that makes the rule set composable, wherein no rule observes the half-applied state of another, leaving every pass free of cross-rule edit conflict by construction. The order itself is canonical, source-of-truth in `crate/src/rule.rs` *(the `register_rules!` macro block)*, and pedagogically valuable. A rule that depends on a settled token surface sits downstream of every rule that touches that surface, in that *(for example)* [[align-colons]] runs before [[wrap-docstrings]] because the docstring wrap budget depends on the post-colon column the alignment rule sets.
 
 ## Canonical Order
 
@@ -12,17 +12,25 @@ Each rule's edits shape the source the next rule reads. Three kinds of dependenc
 
 ### Layout Before Alignment
 
-[[collection-layout]] runs near the top because rules below it *(alignment, alphabetization)* operate on the per-line shape collection-layout commits to. Aligning before laying out would pad lines that re-collapse in the next pass.
+[[reflow-collections]] runs near the top because rules below it *(alignment, alphabetization)* operate on the per-line shape it commits to. Aligning before laying out would pad lines that re-collapse in the next pass.
 
 ### Reorder Before Align
 
-[[alphabetize]] runs before the alignment rules wherein the columns the aligners compute against reflect the final order of the entries rather than the source order.
+[[alphabetize-siblings]] runs before the alignment rules wherein the columns the aligners compute against reflect the final order of the entries rather than the source order.
 
 ### Strip Before Pad
 
 [[strip-trailing-commas]] runs before alignment so the trailing-comma decision is settled when alignment math measures member widths. Padding a line that's about to lose its trailing comma would land at the wrong column.
 
 The pipeline reparses between rules, so a rule that depends on a token surface earlier in the order sees that surface in the AST it walks. The cost is one parse per rule transition, paid against the marginal benefit of a clean borrow-stable input to each rule.
+
+## Every Subset Settles
+
+The order carries more than the default set settling a file in one pass. Any subset a project enables settles too, `--select`, `--ignore`, and a rule disabled under `[tool.prose.rules]` each producing one, because a subset needing a second pass would be a defect for whoever configured it rather than a curiosity. A corpus sweep in CI holds the promise, so a rule leaning on a later rule to finish its work is caught where the fault lives rather than through a default pipeline that hides it.
+
+Holding the guarantee needs no exhaustive sweep, in that a rule that settles alone and never un-settles an earlier one leaves every larger subset holding it settled, so each rule alone and each ordered rule pair carry it between them.
+
+Each ordering the guarantee rests on is recorded in the registry's dependency column, which `prose rules --output-format json` renders as the `after` list per rule, rather than left to a seating that happens to work.
 
 ## Lint Rules
 

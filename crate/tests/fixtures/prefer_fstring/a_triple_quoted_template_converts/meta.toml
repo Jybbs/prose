@@ -3,7 +3,5 @@ previewable = true
 title       = "A Triple-Quoted Template Keeps Its Delimiters"
 
 description = '''
-The rewrite reuses the quotes the source wrote, so a multi-line body
-carries across unchanged and each of its lines answers to the budget on
-its own.
+The rewrite reuses the `"""` delimiters the source wrote, so the two-line body converts in place with `%s` becoming `{name}` on its first line. Nothing else moves, and each physical line of the triple-quoted body is measured against the line budget on its own.
 '''

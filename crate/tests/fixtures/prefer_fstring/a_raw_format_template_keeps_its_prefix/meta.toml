@@ -3,6 +3,5 @@ previewable = true
 title       = "A Raw `str.format()` Template Comes Back as `rf`"
 
 description = '''
-The template parses under its raw reading, so no backslash in the body is
-taken for an escape.
+`r"{}\d+".format(head)` converts to `rf"{head}\d+"`, the `r` prefix carried over so `\d` stays a literal backslash and a `d` rather than an escape. The rewrite adds only the `f` that moves `head` into the template.
 '''

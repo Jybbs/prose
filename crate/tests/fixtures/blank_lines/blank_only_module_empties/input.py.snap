@@ -1,6 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/blank_lines/blank_only_module_empties/input.py
----
-

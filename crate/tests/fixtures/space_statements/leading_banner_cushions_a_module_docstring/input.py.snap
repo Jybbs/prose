@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/space_statements/leading_banner_cushions_a_module_docstring/input.py
+---
+# ============================================================
+# Copyright and license notice
+# ============================================================
+
+"""
+Read from and write to archives.
+"""
+
+version = "0.9.0"

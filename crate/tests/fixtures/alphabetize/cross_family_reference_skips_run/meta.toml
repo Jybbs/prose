@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Reader Wedged Between Its Fields Holds Its Slot"
-
-description = '''
-`HALF` reads `width`, the annotated field directly above it, while `height` sits below. Both families tier through one graph, where `HALF` holds its slot between the fields. Alphabetizing the fields would seat `width` below the `HALF` reading it, so the field family **keeps source order** around the wedged reader rather than stranding the reference.
-'''

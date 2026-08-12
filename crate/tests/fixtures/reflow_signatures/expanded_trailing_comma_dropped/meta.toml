@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Expansion Drops the Trailing Comma"
+
+description = '''
+`render`'s five parameters are already written one per line, and the last, `verbose: bool,`, carries a trailing comma. `reflow-signatures`'s canonical expansion **ends the final parameter bare**, leaving nothing for `strip-trailing-commas` to remove.
+'''

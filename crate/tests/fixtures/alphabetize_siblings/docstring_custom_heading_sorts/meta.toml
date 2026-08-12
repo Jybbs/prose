@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Custom Title-Case Headings Reorder by Content Shape"
+
+description = '''
+`Steps:` is not one of the canonical Google headings, but its body carries `name: description` entries, and that content shape is what qualifies a section for sorting rather than the heading's name. The entries **reorder alphabetically by name**, `emit` rising to the top and `validate` dropping to the bottom.
+'''

@@ -109,22 +109,27 @@ impl Shedder<'_> {
     /// Emits the deletions for every candidate, folding a wrapped pair
     /// whose joined line fits the budget. A candidate inside an open fold
     /// drops its parentheses alone, leaving that fold's own edits to
-    /// close the break.
+    /// close the break. A wrapped pair whose joined line overflows sheds
+    /// in place when an enclosing bracket holds its breaks, and holds
+    /// otherwise.
     fn shed(&mut self, candidates: &[Candidate]) {
         for candidate in candidates {
             let Candidate { inner, pair, .. } = *candidate;
             self.folds.retain(|fold| fold.contains_range(pair));
             let collapsing = !self.folds.is_empty();
-            let folding = !collapsing && self.source.contains_line_break(pair);
-            if folding && !self.fits(candidate, candidates) {
-                continue;
-            }
+            let mut folding = !collapsing && self.source.contains_line_break(pair);
             let (open, close) = if collapsing {
                 let paren = TextSize::new(1);
                 (
                     TextRange::at(pair.start(), paren),
                     TextRange::at(pair.end() - paren, paren),
                 )
+            } else if folding && !self.fits(candidate, candidates) {
+                let Some(spans) = self.shed_in_place_spans(candidate) else {
+                    continue;
+                };
+                folding = false;
+                spans
             } else {
                 (
                     TextRange::new(pair.start(), inner.start()),
@@ -138,6 +143,43 @@ impl Shedder<'_> {
                 self.folds.push(pair);
             }
         }
+    }
+
+    /// The deletion spans shedding `candidate` in place, leaving its
+    /// breaks where the source wrote them: the opening paren with the
+    /// horizontal whitespace around it up to a break on either side, and
+    /// the span from the interior's end through the closing paren. `None`
+    /// where the splice does not preserve the statement tree, the shape a
+    /// pair outside any enclosing bracket takes once its boundary break
+    /// loses the paren that licensed it.
+    fn shed_in_place_spans(&self, candidate: &Candidate) -> Option<(TextRange, TextRange)> {
+        let Candidate { inner, pair, .. } = *candidate;
+        let is_hspace = |b: &u8| matches!(b, b' ' | b'\t');
+        let text = self.source.text();
+        let trailing = text[pair.start().to_usize() + 1..]
+            .bytes()
+            .take_while(is_hspace)
+            .count();
+        let mut open = TextRange::at(
+            pair.start(),
+            TextSize::of('(') + TextSize::try_from(trailing).expect("whitespace run fits u32"),
+        );
+        // The paren gone, whitespace ahead of it would trail its row, so
+        // a break directly past the span pulls that run into the span.
+        if text[open.end().to_usize()..].starts_with(['\r', '\n']) {
+            let leading = text[..pair.start().to_usize()]
+                .bytes()
+                .rev()
+                .take_while(is_hspace)
+                .count();
+            open = TextRange::new(
+                open.start() - TextSize::try_from(leading).expect("whitespace run fits u32"),
+                open.end(),
+            );
+        }
+        let close = TextRange::new(inner.end(), pair.end());
+        let bare = self.source.slice(TextRange::new(open.end(), close.start()));
+        splice_preserves_tree(self.source, pair, bare).then_some((open, close))
     }
 
     /// The column `offset` reaches once the edits emitted so far apply.
@@ -160,7 +202,7 @@ fn candidate<'src>(
     let pair = parenthesized_range(expr.into(), parent, source.tokens())?;
     // A walrus binding keeps its pair whatever the context, since the
     // grammar needs it almost everywhere, and a multi-line return
-    // annotation is signature-layout's to reshape, so neither sheds here.
+    // annotation belongs to `reflow-signatures`, so neither sheds here.
     if expr.is_named_expr()
         || (is_return_annotation(expr, parent) && source.contains_line_break(pair))
         || source.intersects_comment(pair)

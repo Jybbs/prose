@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Module Holding Only Comments Clears Its Leading Run"
+
+description = '''
+The two blank lines above `# Placeholder until the loader lands.` clear the way they would above a first statement. **A module holding no statement still clears the run opening it**, with nothing below the comment to seat a gap against.
+'''

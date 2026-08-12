@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Comments Attached to a `def` Keep Their Blank-Above"
+
+description = '''
+`# describes second` reads as `second`'s leading block, so the four blank lines that drifted in below it **collapse to none**, binding the comment tight against `def second():`. The two blanks above the comment already match the module-def canonical and stay.
+'''

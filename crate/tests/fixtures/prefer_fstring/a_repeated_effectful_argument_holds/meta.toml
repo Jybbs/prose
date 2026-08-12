@@ -3,5 +3,5 @@ previewable = true
 title       = "A Repeated Effectful Argument Holds"
 
 description = '''
-The call evaluates `build()` once where the two fields would call it twice.
+The template reads `x` twice, and `x` is bound to a call. `"{x} {x}".format(x=build())` evaluates `build()` once, whereas the f-string `f"{build()} {build()}"` would call it twice, so the rewrite would change behavior and the line holds.
 '''

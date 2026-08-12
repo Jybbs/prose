@@ -3,5 +3,5 @@ previewable = true
 title       = "A Body Carrying Double Quotes Keeps Its Single Ones"
 
 description = '''
-Swapping either body would add more backslashes than it drops, so both keep the quotes they were written with. **The preference for `"` yields wherever honoring it would cost the reader an escape**, which is what keeps `say "hi"` readable.
+`shout` holds two bare `"` characters a swap would have to escape, and `mixed` would trade its one `\'` for two new `\"` escapes, so both keep the quotes they were written with. **The preference for `"` yields wherever honoring it would cost the reader an escape**, which is what keeps `say "hi"` readable.
 '''

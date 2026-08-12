@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Literal Holds Its Break While Fractures Repair"
-
-description = '''
-A literal the author laid out as a flush bracketed column holds that shape and re-expands to the canonical layout, whereas a multi-line subscript and a multi-line collection key rejoin onto one line whatever `keep-multiline-literals` holds. Neither the subscript nor the key carries an entry boundary for a break to sit on, so each reads as a fracture rather than as an authored column.
-'''

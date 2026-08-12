@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_collections/count_reaches_dict_in_singleton_list/input.py
+---
+reflow-collections@12..42

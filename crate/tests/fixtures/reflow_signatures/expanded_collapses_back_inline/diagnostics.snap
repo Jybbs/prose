@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_signatures/expanded_collapses_back_inline/input.py
+---
+reflow-signatures@11..47

@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "Body Sharing the Opener Line Drops to Its Own Line"
+
+description = '''
+The opening `"""` of `greet`'s multi-line docstring shares its line with `Summary line starts inline with the opener.` That first sentence drops to a new line beneath the opener, leaving every line between the delimiters untouched.
+'''

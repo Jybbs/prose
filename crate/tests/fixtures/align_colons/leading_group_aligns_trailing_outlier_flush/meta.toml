@@ -3,5 +3,5 @@ previewable = true
 title       = "A Leading Group Aligns While the Trailing Outlier Stays Flush"
 
 description = '''
-The first three keys sit within `max-shift` of each other and **align as one column**. The trailing key overshoots the cap against them, so it breaks off with its `:` flush against the name.
+The keys `"name"`, `"host"`, and `"port"` sit within `max-shift` of each other and **align as one column**. Reaching the width of `"deeply_nested_fallback_descriptor"` would overshoot the cap, so that trailing key breaks off into its own group of one and keeps its `:` flush against the name.
 '''

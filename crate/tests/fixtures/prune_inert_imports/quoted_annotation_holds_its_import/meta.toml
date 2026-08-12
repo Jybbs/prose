@@ -3,5 +3,5 @@ previewable = true
 title       = "A Quoted Annotation Holds the Import It Names"
 
 description = '''
-`List` is read only inside a string-literal annotation, where the binding table cannot see it. **The import holds**, the rule parsing each quoted annotation for the names it reads.
+`List` is read nowhere in the module except inside the quoted annotation `"List[int]"`, which is a plain string literal that the ordinary reference count passes over. **The import holds** because `prune-inert-imports` parses every quoted annotation for the names it names, so `List` counts as read.
 '''

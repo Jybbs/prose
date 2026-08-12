@@ -1,4 +1,4 @@
 import-line-length = 20
 
 [rules]
-import-layout = false
+reflow-imports = false

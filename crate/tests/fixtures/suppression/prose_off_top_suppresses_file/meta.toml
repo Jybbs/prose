@@ -3,5 +3,5 @@ previewable = false
 title       = "File-Top Prose Off Opts the Whole Source Out"
 
 description = '''
-A `# prose: off` at the top of the source **opts every subsequent line out of every rule**. The assignments, the unsorted dict, and the unsorted parameter list all survive untouched across passes regardless of how many rules would otherwise fire.
+`# prose: off` at the top of the source **opts every line below it out of every rule**, so `x`, `foo`, and `bar_baz` stay unsorted and unaligned, `config`'s unsorted keys and trailing comma stay as written, and `helper`'s `b, a` parameter order stays in place. Nothing here changes on a second pass, regardless of how many rules would otherwise fire.
 '''

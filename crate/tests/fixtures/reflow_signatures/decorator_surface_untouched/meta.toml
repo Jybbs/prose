@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Decorators Sit Above the Reshaped Signature"
+
+description = '''
+`render` carries a `@cache` decorator and five parameters, one past `max-params`, so `reflow-signatures` expands the parameter list. The rewrite's replacement range starts at the `(`, so **the `@cache` line above `def render` is left untouched**.
+'''

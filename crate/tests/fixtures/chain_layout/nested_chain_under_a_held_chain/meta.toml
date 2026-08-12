@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = false
-title       = "A Chain Inside a Held Chain's Argument Still Breaks"
-
-description = '''
-A chain neither trigger reaches leaves its own shape alone and still walks each link's arguments, so a chain nested in one of them breaks on its own reading.
-'''

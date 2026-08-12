@@ -3,5 +3,5 @@ previewable = true
 title       = "A Name `__all__` Lists Survives Its Repeat"
 
 description = '''
-`drop-duplicates` reads the same re-export guard as `drop-unreferenced`, so a repeated import of a name `__all__` publishes **stays rather than dropping as a repeat**.
+`from json import loads` appears twice, and `__all__ = ["loads"]` marks the name as a re-export. `drop-duplicates` applies the same re-export exemption as `drop-unreferenced`, so **the repeated import stays rather than dropping as a repeat**.
 '''

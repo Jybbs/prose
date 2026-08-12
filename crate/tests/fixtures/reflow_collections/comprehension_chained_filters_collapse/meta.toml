@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comprehension With Chained Filters Joins onto One Line"
+
+description = '''
+The `eligible` comprehension carries two `if` clauses, and its one-line form fits, so it joins with `if person.is_active` and `if person.has_quorum` concatenated in source order after the `for` clause.
+'''

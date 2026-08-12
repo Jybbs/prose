@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Inside a Collection Value Explodes Too"
+
+description = '''
+With `code-line-length = 30`, `emit` explodes to one keyword per line and the `beta=[` list re-indents to the new keyword column. The `helper(aaaaaa, bbbbbb, cccccc)` call inside the list overflows from its deeper row, so it explodes in the same run, each construct measured at the row it lands on rather than the one it held in the source.
+'''

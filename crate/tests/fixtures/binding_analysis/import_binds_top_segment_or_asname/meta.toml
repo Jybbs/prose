@@ -3,5 +3,5 @@ previewable = false
 title       = "Import Binds the Top Segment or the Asname"
 
 description = '''
-Plain `import` **binds the top-level module segment**, or the explicit asname when present. `from ... import` binds each imported name or its asname directly, skipping the dotted-path step.
+`import b.c.d` **binds only the top segment `b`**, whereas `import e.f as g` binds its asname `g`. The `from` forms bind each imported name directly, so `i`, the asname `l`, and even `annotations` from `__future__` all land in the module table with the `Import` kind.
 '''

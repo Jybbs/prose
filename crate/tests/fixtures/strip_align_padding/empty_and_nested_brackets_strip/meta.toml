@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Empty and Nested Brackets Strip"
-
-description = '''
-An empty bracket pair collapses its lone space to nothing, and nested calls strip the padding at every level.
-'''

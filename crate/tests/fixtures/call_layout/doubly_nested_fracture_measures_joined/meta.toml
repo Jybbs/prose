@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = false
-title       = "A Doubly Nested Fracture Measures Joined Throughout"
-
-description = '''
-A fracture nested two deep is reached both on its own and inside the join its parent renders, so the measure keeps the outermost reading of each span and drops the ranges that one already covers, leaving every level the width it settles on rather than the one its source wrote.
-'''

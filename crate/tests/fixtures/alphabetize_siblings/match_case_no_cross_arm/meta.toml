@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "`match` Case Arms Sort Without Crossing"
+
+description = '''
+Each `case` arm of the `match` **sorts its body independently**. `case 1` moves `from alpha import b` ahead of `from zeta import a` and `case 2` swaps `beta` and `gamma` the same way, while no import crosses a case boundary even though `from beta import d` would sort between `alpha` and `zeta` in a shared list.
+'''

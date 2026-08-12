@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Already-Expanded Source Is Left Alone"
-
-description = '''
-An inline literal that already fits and a multi-line literal whose inline form would overflow both **round-trip with no edit**. A dict already hanging an oversized entry's value at the post-`:` column also passes through unchanged.
-'''

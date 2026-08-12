@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Columnar Block Keeps Its Indents, a Scattered Comment Does Not"
+
+description = '''
+The three option comments listing `--fast` and `--slow` open at one column on consecutive lines, the shape of a block the author laid out, so every indent inside them survives. The comment trailing `value = 1` shares a column with nothing, so its padded `#   already` opener settles to the single space a scattered comment carries.
+'''

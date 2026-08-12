@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Stacked String Run Explodes the Argument List"
-
-description = '''
-An implicitly concatenated run stacked across rows explodes the list around it, and its continuation moves to the item column with the rest of the argument. Left inline the run's second row reads as another argument and splits the call's keywords across two spacings.
-'''

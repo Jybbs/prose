@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Import within Budget Stays on One Line"
+
+description = '''
+`from pkg import alpha, beta` measures 27 characters against the `import-line-length` budget of 40, so it **keeps its single line**. The split applies only to imports that overflow, and this one fits with room to spare.
+'''

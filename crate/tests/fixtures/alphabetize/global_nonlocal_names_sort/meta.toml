@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "`global` and `nonlocal` Name Lists Sort"
-
-description = '''
-`global` and `nonlocal` name lists **alphabetize**. Order is semantically meaningless because both declarations affect every listed name uniformly within the enclosing scope.
-'''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Bare Hash Joins the Column Like Any Other Comment"
 
 description = '''
-A comment carrying no text after its hash is still a trailing comment, so it travels to the shared column rather than sitting out. The rule measures the code ahead of the `#` and never reads what follows it.
+The `#` after `foo()` carries no text, yet it is still a trailing comment, so it shifts into the same column as the `# note` after `barbaz()`. The rule measures only the code ahead of each `#` and never reads what follows the hash, so a bare `#` joins the run like any other comment.
 '''

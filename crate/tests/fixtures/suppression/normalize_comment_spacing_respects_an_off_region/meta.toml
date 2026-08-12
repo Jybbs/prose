@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Off Region Holds Comment Spacing, Its Closer Included"
+
+description = '''
+Comment spacing rewrites the comment itself, so a directive here is both the region marker and a candidate for the edit. `#prose: off` keeps its tight spelling because it sits inside the region it opens, whereas the closing directive is rewritten to `# prose: on` because the region ends where that line begins. Below it, `y = 2` gains the standard two spaces before its `#` and one after.
+'''

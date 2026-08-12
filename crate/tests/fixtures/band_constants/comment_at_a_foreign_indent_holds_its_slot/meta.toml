@@ -3,5 +3,5 @@ previewable = false
 title       = "A Comment at a Foreign Indent Holds Its Slot"
 
 description = '''
-The comment stands at the continuation indent of the list above it rather than at either neighbour's, so it attaches to neither and keeps the slot the source gave it. Binding it would carry that indent under a member the indent does not belong to.
+The comment `# disk_usage is added later, if available on the platform` stands at the continuation indent of the `__all__` list above it, matching neither `__all__`'s own indent nor `ALPHA_CAP`'s, so it attaches to neither statement and keeps the slot the source gave it, leaving the module unchanged. Binding it to either neighbour would carry that indent under a member it does not belong to.
 '''

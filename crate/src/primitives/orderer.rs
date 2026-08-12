@@ -8,9 +8,10 @@
 use std::{borrow::Cow, ops::Range};
 
 use ruff_diagnostics::Edit;
-use ruff_python_trivia::CommentRanges;
+use ruff_python_trivia::{CommentRanges, PythonWhitespace};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
+use unicode_width::UnicodeWidthStr;
 
 use crate::{
     primitives::{
@@ -164,27 +165,6 @@ pub(crate) fn assembled_cell_edits<'src>(
     edits
 }
 
-/// Returns the source-level extent of `items[i]`: its own range, any
-/// comment-only lines directly above it (no intervening blank line), and its
-/// trailing comma and inline comment. Bounded below by the later of the
-/// previous item's end (`outer.start()` for the first) and the item's own
-/// notebook cell start, and forward by the next item's start, or [`tail_end`]
-/// for the last item.
-pub(crate) fn block_range<T: Ranged>(
-    source: &Source,
-    items: &[T],
-    i: usize,
-    outer: TextRange,
-) -> TextRange {
-    let item = items[i].range();
-    let lower = block_lower(source, items, i, outer, outer.start());
-    let forward = match items.get(i + 1) {
-        Some(next) => source.text().line_end(item.end()).min(next.start()),
-        None => tail_end(source, item.end()),
-    };
-    TextRange::new(leading_attached_start(source, item.start(), lower), forward)
-}
-
 /// [`block_range`] for every slot of `items`, the marker-free counterpart
 /// to [`member_blocks`] for a body with no section markers to floor against.
 pub(crate) fn block_ranges<T: Ranged>(
@@ -207,6 +187,15 @@ pub(crate) fn member_blocks<T: Ranged>(
     (0..items.len())
         .map(|i| member_block(source, items, i, outer))
         .collect()
+}
+
+/// True when only whitespace sits between `offset` and the start of its
+/// physical line.
+pub(crate) fn opens_its_line(source: &Source, offset: TextSize) -> bool {
+    source
+        .slice(TextRange::new(source.text().line_start(offset), offset))
+        .trim_whitespace_start()
+        .is_empty()
 }
 
 /// Convenience wrapper for `permute_in_place` over the full `items`
@@ -375,6 +364,56 @@ where
     assemble_or_borrow(source, &blocks, &rendered, &order, false, |_| None)
 }
 
+/// True when every line of `span` rewritten to `assembled` fits inside
+/// `budget` display columns or keeps the width its source line held,
+/// the head and tail of the boundary lines counted in.
+pub(crate) fn reordered_lines_fit(
+    source: &Source,
+    span: TextRange,
+    assembled: &str,
+    budget: usize,
+) -> bool {
+    let text = source.text();
+    let outer = TextRange::new(text.line_start(span.start()), text.line_end(span.end()));
+    let head = source.slice(TextRange::new(outer.start(), span.start()));
+    let tail = source.slice(TextRange::new(span.end(), outer.end()));
+    let source_widths: Vec<usize> = source
+        .slice(outer)
+        .lines()
+        .map(UnicodeWidthStr::width)
+        .collect();
+    format!("{head}{assembled}{tail}")
+        .lines()
+        .enumerate()
+        .all(|(i, line)| {
+            let width = line.width();
+            width <= budget || source_widths.get(i) == Some(&width)
+        })
+}
+
+/// True when `order` moves a member whose range spans lines, the
+/// relocation an in-place swap cannot make because the member's
+/// interior rows keep their source columns.
+pub(crate) fn swap_relocates_spanning(
+    source: &Source,
+    order: &[usize],
+    range_of: impl Fn(usize) -> TextRange,
+) -> bool {
+    order
+        .iter()
+        .enumerate()
+        .any(|(slot, &idx)| slot != idx && source.contains_line_break(range_of(idx)))
+}
+
+/// True when a comment sits inside the swap span of `items`, from the
+/// first member's start through the last member's tail.
+pub(crate) fn swap_span_commented<T: Ranged>(source: &Source, items: &[T]) -> bool {
+    let (Some(first), Some(last)) = (items.first(), items.last()) else {
+        return false;
+    };
+    source.intersects_comment(TextRange::new(first.start(), tail_end(source, last.end())))
+}
+
 /// Lower bound of the backward comment scan for `items[i]`, the latest
 /// of the previous item's end, `first` when the item has no predecessor,
 /// and the start of the notebook cell holding the item. Flooring at the
@@ -390,6 +429,22 @@ fn block_lower<T: Ranged>(
         .last()
         .map_or(first, Ranged::end)
         .max(source.cell_start(items[i].start()).unwrap_or(outer.start()))
+}
+
+/// Returns the source-level extent of `items[i]`: its own range, any
+/// comment-only lines directly above it (no intervening blank line), and its
+/// trailing comma and inline comment. Bounded below by the later of the
+/// previous item's end (`outer.start()` for the first) and the item's own
+/// notebook cell start, and forward by the next item's start, or [`tail_end`]
+/// for the last item.
+fn block_range<T: Ranged>(source: &Source, items: &[T], i: usize, outer: TextRange) -> TextRange {
+    let item = items[i].range();
+    let lower = block_lower(source, items, i, outer, outer.start());
+    let forward = match items.get(i + 1) {
+        Some(next) => source.text().line_end(item.end()).min(next.start()),
+        None => tail_end(source, item.end()),
+    };
+    TextRange::new(leading_attached_start(source, item.start(), lower), forward)
 }
 
 /// True when `order` is the identity permutation `0..order.len()`, the
@@ -439,7 +494,7 @@ fn leading_attached_start(source: &Source, item_start: TextSize, lower: TextSize
 /// directive stays in the gap rather than traveling through a reorder.
 /// That gap is what [`Sections`](crate::primitives::sections::Sections)
 /// reads to divide the body. Binding never reads the blank run, so a
-/// block spans the same text either side of `blank-lines`.
+/// block spans the same text either side of `space-statements`.
 fn member_block<T: Ranged>(source: &Source, items: &[T], i: usize, outer: TextRange) -> TextRange {
     let raw = block_range(source, items, i, outer);
     // The first member has no predecessor to bound the gap, so its own

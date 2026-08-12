@@ -3,5 +3,5 @@ previewable = false
 title       = "An Entry Naming No Parameter and an Entry Carrying No Type Group"
 
 description = '''
-`host` carries no parenthesized type to report and `retries` matches no parameter, so neither draws a diagnostic.
+`host`'s `Args:` entry carries no parenthesized type to restate, and `retries (int)` names no parameter `dial` actually declares. **Neither entry is flagged**, one having nothing to report and the other resolving against no member of the signature.
 '''

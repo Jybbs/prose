@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Module's Leading Banner Cushions the First Statement"
+
+description = '''
+The `# Section: Configuration` banner opens the file tight against `import os`. A banner reads as a **section divider rather than a description of the statement below it**, so one blank line seats beneath it even where the author wrote none, matching how the same banner is treated between two statements.
+'''

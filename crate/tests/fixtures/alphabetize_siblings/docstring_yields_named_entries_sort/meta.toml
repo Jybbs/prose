@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "`Yields:` Entries Sort When Named"
+
+description = '''
+`stream`'s `Yields:` entries each carry the `name: description` shape, so the section **reorders alphabetically**, `token`, `offset`, and `record` settling into `offset`, `record`, `token`.
+'''

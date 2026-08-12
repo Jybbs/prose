@@ -3,5 +3,5 @@ previewable = false
 title       = "An Unlimited Cap Folds the Type Column Together"
 
 description = '''
-`max-shift = false` lifts the spread budget, so the outlier `wide_name_partitions_the_type_group_column` breaks out under the default folds back in and every type group seats on one column however far the widest name reaches.
+Under the default `max-shift` cap, the wide `deadline_after_first_handshake_attempt` would partition out of the type-group column. Setting `max-shift = false` lifts the spread budget, so `(str)`, `(int)`, and `(float)` seat on one column however far the widest name reaches, and the `:` column settles just past them.
 '''

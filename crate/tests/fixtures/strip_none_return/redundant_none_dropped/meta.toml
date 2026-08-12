@@ -4,5 +4,5 @@ previewable = true
 title       = "A Redundant Return Annotation Is Dropped"
 
 description = '''
-An explicit `-> None` return annotation strips away, since an omitted return annotation already reads as a function that returns nothing.
+`configure` and `reset` each declare an explicit `-> None`, and `strip-none-return` strips both away, landing on `def configure():` and `def reset(state):`. An omitted return annotation already reads as a function that returns nothing, so the explicit form carries no information the rule needs to keep.
 '''

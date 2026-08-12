@@ -1,6 +1,6 @@
 ---
 caption : "Sheds a grouping parenthesis pair that binds nothing, reflowing the expression onto the line it now fits."
-related : [shed-backslash-continuations, collection-layout, signature-layout]
+related : [shed-backslash-continuations, reflow-collections, reflow-signatures]
 layout  : doc
 ---
 
@@ -8,11 +8,11 @@ layout  : doc
 
 <RuleLayout rule="shed_parentheses">
 
-A parenthesis pair wrapped around an expression only to span lines, or out of habit, is visual weight the expression does not carry meaning through. [[collection-layout]] joins a wrapped construct back onto the line it fits, yet it leaves the surrounding parentheses in place, because removing syntax belongs to no layout rule. `shed-parentheses` closes that gap, dropping a grouping pair that binds nothing and reflowing the expression onto the line it now fits.
+A parenthesis pair wrapped around an expression only to span lines, or out of habit, is visual weight the expression does not carry meaning through. [[reflow-collections]] joins a wrapped construct back onto the line it fits, yet it leaves the surrounding parentheses in place, because removing syntax belongs to no layout rule. `shed-parentheses` closes that gap, dropping a grouping pair that binds nothing and reflowing the expression onto the line it now fits.
 
 The decision is structural rather than textual, so a pair sheds only where removing it leaves the parse unchanged. A precedence-bearing pair such as `(a + b) * c` stays because dropping it would rebind the multiplication, a generator and a walrus binding keep the parentheses the grammar requires of them, and the parentheses that form a one-element tuple stay part of the tuple rather than wrapping it. A pair whose interior carries a comment stays too, since folding the break would strand the comment off the line it describes.
 
-A wrapped multi-line grouping folds onto one line when the bare form fits the budget and stays wrapped when it would overflow, so a short boolean condition reads as one clean line whereas a long one keeps its parentheses across the lines it needs. A pair nested inside another redundant pair sheds in the same pass, and each pair weighs its own fold against the text the pass's earlier sheds produce, so two sibling pairs on one statement answer the budget the joined line actually reaches rather than the width the source opened with.
+A wrapped multi-line grouping folds onto one line when the bare form fits the budget. One whose joined line would overflow sheds in place when an enclosing bracket already holds its breaks, leaving the layout rules to seat the rows, and stays wrapped only where no enclosing bracket exists, so a long boolean condition at a statement head keeps its parentheses across the lines it needs. A pair nested inside another redundant pair sheds in the same pass, and each pair weighs its own fold against the text the pass's earlier sheds produce, so two sibling pairs on one statement answer the budget the joined line actually reaches rather than the width the source opened with.
 
 <template #configuration>
 

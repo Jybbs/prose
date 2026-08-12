@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Class Header Binds Its Docstring with Zero Blanks"
+
+description = '''
+`Bound`'s docstring sits flush against the class header, and one blank line separates it from `def follow_up(self):`. Both gaps already match the canonical counts, **zero blanks binding a docstring to its header** and one blank between the docstring and the next member, so the source round-trips unchanged.
+'''

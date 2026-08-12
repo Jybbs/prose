@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Set Literals Sort"
+
+description = '''
+Set-literal elements **alphabetize** because a Python set is unordered, so reordering the literal changes nothing at runtime. The sort key is each element's source text, `{3, 1, 2}` settling as `{1, 2, 3}`, and the `*defaults` unpack pins in its source slot while `"a"`, `"m"`, and `"z"` sort around it without crossing it.
+'''

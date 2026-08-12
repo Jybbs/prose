@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Raw Prefix Survives the Requote"
-
-description = '''
-A raw-prefixed docstring **keeps its `r` prefix through the requote**, landing as `r"""..."""`. PEP 257 sanctions the raw prefix for a docstring carrying a backslash, so the prefix stays verbatim on the opener.
-'''

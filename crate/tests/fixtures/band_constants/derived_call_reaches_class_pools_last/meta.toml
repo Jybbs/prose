@@ -3,5 +3,5 @@ previewable = true
 title       = "A Derived Constant Reaching a Class Pools Last"
 
 description = '''
-A constant naming a function that reaches a class through a default argument **pools beneath both the function and the class**, since the eval-time surface threads `CONFIG` past `build` and the `Widget` its default names.
+`CONFIG = build` names the function, and `build`'s default argument `factory=Widget` names the class, so definition-time reads link all three. **`CONFIG` lands in the trailing band beneath both**, with `Widget` first so its name exists when `def build(factory=Widget)` evaluates its default, and `CONFIG` last so `build` exists when the constant binds.
 '''

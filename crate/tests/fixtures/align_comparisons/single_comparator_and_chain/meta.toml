@@ -4,5 +4,5 @@ previewable = true
 title       = "Single-Comparator Operands Share One Operator Column"
 
 description = '''
-Three single-comparator `==` operands in a multi-line `and`-chain share an alignment column. The operator at each row sits one space past the widest operand's left side.
+The multi-line `and` chain compares `foo`, `bar_baz`, and `quux` with one `==` apiece, and the three rows share an alignment column. Each `==` sits one space past the widest left side, the `and bar_baz` row.
 '''

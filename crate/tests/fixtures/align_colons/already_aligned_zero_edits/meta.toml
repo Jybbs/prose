@@ -3,5 +3,5 @@ previewable = false
 title       = "Already-Aligned Input Emits Zero Edits"
 
 description = '''
-A dict, class body, and signature whose `:` columns already carry their target widths are **idempotent** under the rule. No gap needs adjusting, so the output text matches the input byte-for-byte and the pipeline reports no change.
+The `CAPITALS` dict, the `User` class body, and the `register` signature with its `Args` docstring section each already hold their `:` column at its target width. **Already-aligned input is idempotent under the rule**, so no gap changes and the output matches the input byte-for-byte.
 '''

@@ -1,6 +1,6 @@
 ---
 caption : "Stacks an implicitly concatenated string run one literal per line once its joined line overruns the budget."
-related : [call-layout, collection-layout, line-overflow, shed-parentheses, signature-layout]
+related : [reflow-calls, reflow-collections, line-overflow, shed-parentheses, reflow-signatures]
 layout  : doc
 ---
 

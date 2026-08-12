@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Consecutive Free Functions Sort within Their Slice"
-
-description = '''
-Top-level free functions **alphabetize within their tight slice**. Class bodies route their members through four-group method ordering instead.
-'''

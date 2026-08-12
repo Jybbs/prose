@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Members Scattered Across an Import Run Still Gather"
+
+description = '''
+`from pkg import alpha` and `from pkg import beta` gather onto one line even though `from other import thing` stands between them, because the merge covers **the whole block of imports** rather than only adjacent statements. The gathered line lands where `alpha` first appeared, leaving `other` on the line below.
+'''

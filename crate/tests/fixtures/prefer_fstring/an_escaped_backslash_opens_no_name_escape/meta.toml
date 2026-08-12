@@ -3,6 +3,5 @@ previewable = false
 title       = "An Escaped Backslash Opens No Name Escape"
 
 description = '''
-The second backslash of an escaped pair is data rather than an escape
-introducer, so the braces after it double.
+In `"\\N{token} %s"` the `\\` pair renders one literal backslash, so the `N{token}` after it is plain text rather than a `\N{...}` name escape. Those braces would open a replacement field in an f-string, so the rewrite doubles them to `{{token}}` while `%s` becomes `{name}`.
 '''

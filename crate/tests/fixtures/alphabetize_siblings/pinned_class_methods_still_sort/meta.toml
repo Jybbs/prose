@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Methods Sort Inside a Pinned Class"
+
+description = '''
+The pin on the `@dataclass` covers the annotated field run alone, so `title` and `company` **hold their positional order** while the methods **still sort**, `render` moving above `summary`. A method never becomes a constructor parameter, so its slot binds no call site the way the fields do.
+'''

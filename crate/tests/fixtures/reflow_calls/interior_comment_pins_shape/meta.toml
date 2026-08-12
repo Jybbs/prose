@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "An Interior Comment Pins the Existing Shape"
+
+description = '''
+The exploded `build` call carries `# keep this note anchored` on its `alpha=1` row. A comment inside the argument list pins the shape as written, because reshaping the arguments could separate the comment from the line it annotates, so the pass leaves the call untouched.
+'''

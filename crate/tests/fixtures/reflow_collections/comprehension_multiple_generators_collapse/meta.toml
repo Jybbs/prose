@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Nested-Loop Comprehension Joins onto One Line"
+
+description = '''
+The `flattened` comprehension carries two `for` clauses, and its one-line form fits, so it joins into `[cell for row in grid for cell in row]` with the clauses concatenated in source order.
+'''

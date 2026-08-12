@@ -3,5 +3,5 @@ previewable = false
 title       = "A Comma-Joined Import Stays Quiet"
 
 description = '''
-The over-cap line joins two modules with a comma, the form `import-layout` splits into one statement per module, so `line-overflow` leaves it for that rule and emits nothing even with the splitting facet off.
+`import collections, itertools` runs to 29 columns against the 20-column import budget, yet `line-overflow` emits nothing. The comma join is a form `reflow-imports` can split into one statement per module, and the shape still counts as reshapeable even here, where `reflow-imports = false` turns that rule off entirely.
 '''

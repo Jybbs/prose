@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Class-Body Assignments Sort Within Each Banner Section"
+
+description = '''
+The `# --- Network ---` and `# --- Storage ---` banners divide `Config`'s body into sections that sort independently while the dividers themselves hold their places. In the first section `PORT` and `TIMEOUT` alphabetize, but `CACHE_TTL` computes `TIMEOUT * 2`, so it stays below the constant it reads rather than sorting first. The second section swaps `root` and `backend` into alphabetical order.
+'''

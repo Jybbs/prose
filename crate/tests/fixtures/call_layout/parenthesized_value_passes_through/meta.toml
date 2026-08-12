@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Parenthesized Value Passes Through Whole"
-
-description = '''
-An argument value wrapped in its own grouping parentheses keeps that pair, the rewrite splitting the rendered keyword at the value inside it so the pair sits outside whatever reshape the value takes. The full pipeline sheds a redundant pair before this rule runs, leaving the wrapped form visible in isolation alone.
-'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "`if TYPE_CHECKING` Inside a Function Sorts Its Imports"
+
+description = '''
+The `if TYPE_CHECKING:` block inside `use_types` holds three imports out of order, and they **sort through the same compound-statement recursion that fires at module level**, `from alpha import b` climbing to the top. A function body skips class, method, and field reorders, whereas an import run sorts in every scope.
+'''

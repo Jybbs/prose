@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "Explode a Call Above the Argument Threshold"
+
+description = '''
+`connect(h, p, t, u)` passes four positionals, past the threshold, and `connect` is defined in the same module. The call explodes to one argument per line, each positional gaining its name from the resolved signature to read `host=h` through `user=u`, and the closing `)` drops to the indent of the line the call starts on.
+'''

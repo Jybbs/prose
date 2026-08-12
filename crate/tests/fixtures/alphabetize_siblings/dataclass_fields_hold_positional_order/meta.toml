@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Dataclass Fields Hold Their Positional Order"
+
+description = '''
+`@dataclass` generates an `__init__` for `Posting` whose positional parameters follow the field run in order, so every field from `title` down to `date_posted` **holds its source slot**. Sorting `company` above `title` would reorder those parameters and silently break every positional call site, call sites a single-file rewrite cannot reach, so nothing moves.
+'''

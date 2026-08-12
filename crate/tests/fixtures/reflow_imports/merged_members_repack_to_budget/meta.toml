@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Gathered Roster Repacks to the Import Budget"
+
+description = '''
+The three `from pkg.sub import` statements gather into one roster, and the merge and the width split settle together. The roster **repacks to the `import-line-length` budget of `40`**, coming out as `alpha, beta, delta` then `epsilon, gamma` rather than a single over-long line.
+'''

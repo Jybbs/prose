@@ -3,10 +3,10 @@ source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/composition/overflow_dict_constants_modernize_unions/input.py
 ---
-alphabetize@97..150
-collection-layout@47..151
+alphabetize-siblings@97..150
 modernize-annotations@0..35
 modernize-annotations@105..118
 modernize-annotations@134..151
 modernize-annotations@56..69
 modernize-annotations@79..94
+reflow-collections@47..151

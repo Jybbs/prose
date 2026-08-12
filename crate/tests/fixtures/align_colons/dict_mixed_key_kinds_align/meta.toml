@@ -3,5 +3,5 @@ previewable = true
 title       = "Mixed Key Shapes Still Find the Widest Key"
 
 description = '''
-A dict mixes string literals, an integer literal, and a bare name reference as keys. The math runs on each key's **display width**, so the `:` lines up identically regardless of the key expression's kind.
+The keys of `mapping` mix string literals, the integer `42`, and the bare name `HEADER`. The column math runs on each key's **display width** rather than its expression kind, so all four colons land on the column set by `HEADER`, the widest key as printed.
 '''

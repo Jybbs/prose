@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Reference Cycle Skips the Whole Run"
+
+description = '''
+`class Alpha(Beta)` inherits from `Beta` while `class Beta(Alpha)` inherits from `Alpha`, so each class needs the other defined first and no ordering satisfies both. With the references circular, **the whole run skips** and the two classes keep their source order.
+'''

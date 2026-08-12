@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "`merge-members = false` Leaves Each Statement Its Own Line"
-
-description = '''
-Clearing one facet leaves the others running, so the two `from pkg` statements **stay apart** while `split-multi-module` still breaks `import os, sys` into one statement per module.
-'''

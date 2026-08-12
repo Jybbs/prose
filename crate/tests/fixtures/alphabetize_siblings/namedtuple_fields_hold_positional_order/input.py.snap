@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/namedtuple_fields_hold_positional_order/input.py
+---
+from typing import NamedTuple
+
+
+class Point(NamedTuple):
+    y: int
+    x: int
+    color: str = "black"

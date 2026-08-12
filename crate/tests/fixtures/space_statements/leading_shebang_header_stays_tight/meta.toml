@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Shebang Header Stays Tight Against the First Statement"
+
+description = '''
+`#!/usr/bin/env python` and `# -*- coding: utf-8 -*-` carry no rule line, heading, directive, or pragma between them, so the pair reads as a description of `import os`. **A header binding to the statement below it keeps the tight spacing the author wrote**, the cap holding only a run the author already opened.
+'''

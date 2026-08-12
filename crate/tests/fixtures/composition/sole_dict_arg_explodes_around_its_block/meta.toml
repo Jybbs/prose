@@ -3,5 +3,5 @@ previewable = true
 title       = "A Sole Dict Argument Explodes the Call Around It"
 
 description = '''
-A dict handed to a call as its only argument spans rows once expanded, so the call explodes around it rather than opening the dict on the calling row and closing both brackets together. The span trigger reads the row break whatever the argument count and whatever the joined width would have been.
+`reflow-collections` lays the dict passed to `foo` out one entry per row, and an argument that spans rows makes `reflow-calls` explode the call around it rather than opening the `{` on the calling row and closing `})` as a pair. The row break alone is the trigger, whatever the argument count and however short the one-line form would have measured. Inside the block `alphabetize-siblings` sorts the keys, moving `"delta"` ahead of `"gamma"`, and `align-colons` pads each `:` into a shared column.
 '''

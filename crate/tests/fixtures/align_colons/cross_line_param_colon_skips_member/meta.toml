@@ -3,5 +3,5 @@ previewable = false
 title       = "A Cross-Line Parameter Colon Skips the Member"
 
 description = '''
-An annotated parameter whose `:` opens the line after the name leaves the colon off the name's line. **The cross-line annotation disqualifies the parameter**, leaving it untouched while the flat-annotated parameters align.
+The parameter `a` puts its `:` at the start of the line after its name, so no colon sits on the name's own line. **The cross-line annotation drops `a` from the alignment group**, leaving both of its lines untouched while `bb` and `cccc` below it align on one column.
 '''

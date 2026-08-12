@@ -3,7 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/bare_imports_reorder_then_flag/input.py
 ---
-alphabetize@7..32
+alphabetize-siblings@7..32
 bare-imports@18..20
 bare-imports@28..32
 bare-imports@7..10

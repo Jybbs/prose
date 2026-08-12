@@ -3,5 +3,5 @@ previewable = false
 title       = "A Parenthesized Augmented Value Keeps Its Parentheses"
 
 description = '''
-An augmented assignment whose value is wrapped in parentheses keeps them, since the value-side gap stops before the `(` while the trailing `=` of `+=` stays intact.
+`x`'s value arrives as `(1 + 2)`, written flush against its `+=`. The rewrite opens the gaps around each `+=` and aligns `x` with `yy`, then stops before the `(`, so the parentheses pass through intact and the value reads `+= (1 + 2)`.
 '''

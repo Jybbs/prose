@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Without a Validator, Fields and Methods Both Sort"
+
+description = '''
+`Posting` extends `BaseModel` yet carries no validator decorators, so **both its fields and its methods sort**, the fields settling into `company`, `name`, `title` and `__init__` rising above `display` and `reset` in the method grouping. The method-skip fires only when at least one method carries a positional-binding decorator, the shape validator methods take, and none here does.
+'''

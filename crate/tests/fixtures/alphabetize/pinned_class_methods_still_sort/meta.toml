@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Methods Sort Inside a Pinned Class"
-
-description = '''
-The pin covers the annotated field run alone, so the methods of a `@dataclass` **still sort** while its fields **hold their positional order**. A method is never a constructor parameter, so its slot carries no call-site binding to protect.
-'''

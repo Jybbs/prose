@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Annotated Fields Sort With No Decorator or Base Class"
+
+description = '''
+`Posting` carries no decorator and no base class, and its annotated fields **still alphabetize**, `company: str` climbing above `title: str = "Untitled"`. The structural shape, an `AnnAssign` with a `Name` target, is the signal rather than any framework around the class.
+'''

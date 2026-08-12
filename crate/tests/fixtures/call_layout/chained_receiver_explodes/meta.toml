@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Chained Call Settles Every Link in One Pass"
-
-description = '''
-A method chain settles its receiver before the link that carries it, so each link answers the budget from the column it lands at rather than the one it occupied in the source. The receiver that already fits stays inline, and so does the trailing link the explode drops back to the margin.
-'''

@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/frame_docstrings/triple_single_quoted_canonicalizes/input.py
+---
+def summarize():
+    """
+    Summary line.
+    More detail here.
+    """
+    return 1

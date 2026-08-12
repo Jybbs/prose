@@ -3,5 +3,5 @@ previewable = false
 title       = "BoolOp in a Comprehension `if` Filter Aligns"
 
 description = '''
-A multi-line `BoolOp` inside a list comprehension's `if` filter **aligns like any other multi-line `BoolOp`**. The `==` of the two filter operands settle onto a shared column.
+The `if` filter of the `filtered` comprehension holds a multi-line `and` chain, and it **aligns like any other multi-line `BoolOp`**. The `==` after `x.kind` and `x.weight` settle onto one shared column inside the filter's parentheses.
 '''

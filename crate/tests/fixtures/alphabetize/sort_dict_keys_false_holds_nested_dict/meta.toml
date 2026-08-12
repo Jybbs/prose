@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Nested Dict Holds Its Order Too"
-
-description = '''
-With `sort-dict-keys = false`, an inner dict holds its authored key order alongside the outer one, because the facet gates the reorder at every nesting depth rather than only the outermost literal.
-'''

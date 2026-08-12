@@ -3,5 +3,5 @@ previewable = true
 title       = "`or`-Chains Align with the Same Column Math as `and`-Chains"
 
 description = '''
-Operands across an `or` chain align with the **same column math** the rule applies to `and` chains. The `==` of each row settles one space past the widest operand's left side.
+The `or` chain over `foo`, `bar_baz`, and `quux` aligns with the **same column math** the rule applies to `and` chains. Each row's `==` settles one space past the widest left side, the `or bar_baz` row.
 '''

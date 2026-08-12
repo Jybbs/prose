@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Entry-Shaped Continuation Past the Section Body Stays Joined"
-
-description = '''
-A continuation line reading as a `name: description` pair **stays part of the description it continues** because it sits deeper than the section body indent, where no sibling entry can open. Only a line at the section body indent itself opens the next entry.
-'''

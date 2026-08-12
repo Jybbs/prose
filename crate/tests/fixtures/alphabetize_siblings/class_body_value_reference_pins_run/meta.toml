@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Class-Body Value Pins the Named Class After It"
+
+description = '''
+`Config`'s body binds `settings = Defaults`, and a class body runs while the class is being built, so `Defaults` must already be defined when `Config` evaluates. Alphabetizing would lift `Config` above `Defaults` and the assignment would raise `NameError`, so the reference holds the two classes in source order.
+'''

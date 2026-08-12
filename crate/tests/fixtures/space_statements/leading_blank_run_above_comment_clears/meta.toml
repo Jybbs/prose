@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Blank Run Above a Module's Leading Comment Clears"
+
+description = '''
+The file opens with two blank lines above `# Configure the sink.`, and the module's leading run is **measured above the comment block that leads `import os`** rather than above the import itself. Both blanks clear away, while the comment stays tight against the import below it.
+'''

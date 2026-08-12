@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Hung Block Drops Its Closing Bracket to the Landing Indent"
+
+description = '''
+The call's one argument is the `%` format expression, whose first row ends by leaving a `(` hanging open while the `", ".join(...)` line already sits one step inside it. Exploding the call moves the argument onto its own row and leaves that interior line where it sits, dropping only the hung group's closing `)` down to the indent the argument lands at.
+'''

@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/wrap_docstrings/bracketed_literal_below_entry_verbatim/input.py
+---
+wrap-docstrings@101..101

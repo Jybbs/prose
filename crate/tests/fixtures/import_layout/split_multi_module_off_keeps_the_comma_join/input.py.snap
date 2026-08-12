@@ -1,9 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/import_layout/split_multi_module_off_keeps_the_comma_join/input.py
----
-import os, sys
-from pkg import alpha, beta
-
-value = alpha + beta + os.sep + sys.path[0]

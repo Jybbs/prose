@@ -3,5 +3,5 @@ previewable = false
 title       = "A Backslash Inside an Indent Is Left Alone"
 
 description = '''
-A backslash the lexer folds into a block's indentation declares that indent, so no rejoin preserves it and the rule leaves the source unchanged.
+The backslash on its own line beneath `if ready:` sets the indentation that `started = True` takes, an indent no rejoin could preserve. The source is left exactly as written.
 '''

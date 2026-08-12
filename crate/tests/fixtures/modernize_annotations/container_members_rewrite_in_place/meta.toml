@@ -3,5 +3,5 @@ previewable = false
 title       = "A Legacy Spelling Inside a Container Rewrites Where It Sits"
 
 description = '''
-A bracketed parameter list, a PEP 646 unpack, and an already-modern union each carry a legacy member, and each member rewrites while the container around it keeps its own text. The imports from outside `typing` stay untouched.
+Each annotation here holds a legacy spelling inside a container, and each rewrites where it sits. The `Optional[int]` and `List[str]` inside `Callable`'s brackets become `int | None` and `list[str]` while `Callable` itself keeps its text, `Tuple[List[int], *Ts]` becomes `tuple[list[int], *Ts]` around the PEP 646 unpack, and `Optional[List[int] | str]` unwraps into `list[int] | str | None`. The `typing` import shrinks to the surviving `Callable`, whereas `import os` and `from collections import deque` stay untouched.
 '''

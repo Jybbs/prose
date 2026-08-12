@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/inline_opener_overlong_prose_wraps/input.py
 ---
-docstring-frame@29..29
+frame-docstrings@29..29

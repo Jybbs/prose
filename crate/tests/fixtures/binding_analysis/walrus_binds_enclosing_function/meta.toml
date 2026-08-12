@@ -3,5 +3,5 @@ previewable = false
 title       = "Walrus Binds the Enclosing Function Scope"
 
 description = '''
-A `:=` inside a function-body conditional **binds its target in the enclosing function scope**, kept distinct from the parameter it reads from.
+The walrus in `if (n := len(items)) == 1:` **binds `n` in `first_one`'s function scope** with the `Walrus` kind, landing in the same table as the `items` parameter. The `return n` counts as `n`'s read, and `len(items)` counts as the parameter's.
 '''

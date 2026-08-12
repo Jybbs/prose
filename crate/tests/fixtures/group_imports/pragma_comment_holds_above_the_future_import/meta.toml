@@ -3,5 +3,5 @@ previewable = false
 title       = "A Pragma Comment Holds Above the `__future__` Import"
 
 description = '''
-A comment attached directly above the directive travels with its statement through a reorder, so pinning the import at the front **keeps the comment at the top of the file** rather than carrying it down among the partitioned imports.
+The `# type: ignore` pragma sits directly above `from __future__ import annotations`, and a comment attached to a statement travels with it through a reorder. The directive is pinned at the front, so **the pragma stays at the top of the file** while `import os` and `from collections import Counter` partition below it.
 '''

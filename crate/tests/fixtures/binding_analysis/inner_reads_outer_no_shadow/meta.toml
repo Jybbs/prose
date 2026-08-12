@@ -3,5 +3,5 @@ previewable = false
 title       = "Inner Function Reads Outer Without Shadowing"
 
 description = '''
-A nested function reading an outer-scope name **attributes the usage to the outer binding**, leaving the inner scope with no shadowing entry of its own.
+`inner` reads `x` without ever assigning it, so the `return x` **counts as a read of the `x` bound in `outer`**. Only `outer`'s scope carries bindings, for `x` and `inner` itself, leaving the nested function's scope table empty with no shadowing entry.
 '''

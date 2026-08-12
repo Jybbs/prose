@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A `false` `max-links` Leaves Only the Width Budget"
+
+description = '''
+With `max-links = false`, the three-link `short` chain stays inline whatever its link count. The `wide` chain still crosses `code-line-length` and breaks, so the width cap survives as the only reason a chain breaks once the count trigger is cleared.
+'''

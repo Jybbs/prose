@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Control-Flow Block after a Def Carries Two Blanks"
+
+description = '''
+The `for item in queue` loop opens on the line directly after `load`'s body ends. **A control-flow block after a module-level `def` takes two blank lines**, so the loop moves down to the standard after-definition spacing even though the source held no gap at all.
+'''

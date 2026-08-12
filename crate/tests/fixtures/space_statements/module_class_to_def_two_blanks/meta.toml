@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Def after a Module-Level Class Carries Two Blanks"
+
+description = '''
+`def helper` opens on the very next line after `Posting`'s body ends, with no blank between the class and the function. **The gap between a module-level class and the `def` after it normalizes to two blank lines**, whatever count the source held.
+'''

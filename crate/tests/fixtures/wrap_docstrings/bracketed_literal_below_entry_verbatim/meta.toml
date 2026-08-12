@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Bracketed Literal Below an Entry Stays Verbatim"
+
+description = '''
+The `{"retries": 3, "timeout": 30}` line under the `config` entry opens on `{`, and a line opening on `{` or `[` reads as a literal rather than as prose. **It passes through verbatim** even with no blank line separating it from the entry above, while the description on the head line still wraps to its hanging column.
+'''

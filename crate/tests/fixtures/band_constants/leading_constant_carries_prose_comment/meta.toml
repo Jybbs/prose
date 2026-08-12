@@ -3,5 +3,5 @@ previewable = true
 title       = "A Leading Constant Carries Its Prose Comment Up"
 
 description = '''
-Banding binds the own-line prose comment to `TTL_SECONDS` and hoists the pair into the leading band above `render`, the blank line the author wrote between them preserved so the comment reaches the top with the constant it describes.
+The own-line comment `# the upstream cache time-to-live` binds to `TTL_SECONDS` even across the blank line the author left between them, so the pair hoists into the leading band above `render` together. The hoist closes that blank, leaving the comment directly on top of the constant it describes.
 '''

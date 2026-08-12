@@ -3,5 +3,5 @@ previewable = true
 title       = "`rewrite-unions = false` Leaves the Legacy Union"
 
 description = '''
-The generic facet runs while the union facet is off, so `Optional` keeps both its spelling and its import.
+With `rewrite-unions = false`, the union facet stops applying while the generic facet still runs. `names: List[str]` becomes `list[str]` and the now-unread `List` import is dropped, whereas `limit: Optional[int]` keeps both its spelling and its `Optional` import.
 '''

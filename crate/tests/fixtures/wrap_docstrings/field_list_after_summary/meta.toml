@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Field List Opening After a Summary Passes Through"
+
+description = '''
+The `:param source:` and `:param amount:` field list opens its own block after the summary paragraph, and it **passes through unwrapped** while the over-long summary above it reflows. The blank line marks the block boundary, so the `:param` markers read as structure rather than as continuation prose.
+'''

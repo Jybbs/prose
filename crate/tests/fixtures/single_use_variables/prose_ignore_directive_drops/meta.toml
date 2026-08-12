@@ -3,5 +3,5 @@ previewable = false
 title       = "A `# prose: ignore` Directive Drops the Diagnostic"
 
 description = '''
-A trailing `# prose: ignore[single-use-variables]` comment **drops the diagnostic** the rule would otherwise emit on that line. Per-line suppression runs as a post-loop filter against the `Severity::Lint` output of `Rule::lint`.
+`x = expensive(arg)` carries a trailing `# prose: ignore[single-use-variables]` comment, **so the diagnostic that line would otherwise report is dropped**. The suppression is applied after the rule runs, filtering its lint output by line rather than changing what the rule itself detects.
 '''

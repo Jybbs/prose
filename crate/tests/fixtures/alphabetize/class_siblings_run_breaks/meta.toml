@@ -1,8 +1,0 @@
-[docs]
-canonical   = true
-previewable = true
-title       = "Consecutive Class Siblings Sort, Pinned Statements Break the Run"
-
-description = '''
-Classes inside a module sort alphabetically, giving every reader the same first-pass landmarks.
-'''

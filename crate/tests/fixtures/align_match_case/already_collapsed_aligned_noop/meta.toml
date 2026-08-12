@@ -3,5 +3,5 @@ previewable = false
 title       = "Already Collapsed and Aligned Passes Through Untouched"
 
 description = '''
-Input whose arms are already on one line with their `:` sharing a column. **The rule emits zero edits** and the output equals the input byte-for-byte, pinning idempotence.
+Each arm of the `match` on `credential.kind` already sits on one line, its assignment beside its pattern and every `:` on the column `"apprenticeship"` sets as the widest pattern. Nothing is left to collapse or pad, so **the rule emits zero edits** and the output equals the input byte-for-byte.
 '''

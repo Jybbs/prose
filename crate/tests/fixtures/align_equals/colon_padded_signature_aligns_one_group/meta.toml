@@ -3,5 +3,5 @@ previewable = false
 title       = "A Colon-Padded Signature Aligns the `=` in One Group"
 
 description = '''
-A typed signature already carrying colon padding aligns its `=` in **one group**, because the parameter widths span within `max-shift`. The reading-order walk holds all four parameters together rather than splitting them.
+The `configure` signature arrives with `:` padding that already aligns `retries` with `timeout_seconds`, and the four parameter widths span within `max-shift`. The `=` therefore aligns in **one group**, the reading-order walk keeping `host`, `port`, `timeout_seconds`, and `retries` together rather than splitting them.
 '''
