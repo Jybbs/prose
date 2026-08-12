@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment Across the Wall Loses Its Import"
+
+description = '''
+The first cell closes on `# Sampling knobs` and the second opens on the unreferenced `import statistics`. **A cell wall breaks the hold a leading comment block puts on the statement below it**, so the import prunes rather than reading a comment from the cell above as its lead.
+'''

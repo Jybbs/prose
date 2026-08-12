@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Module's Leading Suppression Directive Cushions the First Statement"
+
+description = '''
+The `# prose: skip[align-equals]` directive opens the file tight against `import os`. **A suppression directive anchors in place the way a banner does**, so it takes the divider blank below it rather than binding to the statement it precedes.
+'''

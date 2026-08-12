@@ -3,15 +3,19 @@
 //! multi-hash heading, and where the block binding to the member below
 //! it starts. A run anchors in place on a section marker, a suppression
 //! directive, or a tool pragma, and binds to the member otherwise,
-//! whatever blank line sits between the two. The trailing-comment gap
-//! the banding and spacing rules both seat lives here as well.
+//! whatever blank line sits between the two. A whole-line deletion of a
+//! member strands the run leading it, which the import prune reads
+//! before it deletes. The trailing-comment gap the banding and spacing
+//! rules both seat lives here as well.
 
 use ruff_python_ast::ExprDict;
 use ruff_python_trivia::{CommentRanges, is_pragma_comment};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::{source::Source, suppression::is_directive_comment};
+use crate::{
+    primitives::blanks::whitespace_start_before, source::Source, suppression::is_directive_comment,
+};
 
 /// The gap PEP 8 seats between code and a trailing comment.
 pub(crate) const TRAILING_GAP: &str = "  ";
@@ -31,9 +35,8 @@ pub(crate) fn anchors_in_place(source: &Source, block: TextRange) -> bool {
 /// own-line comment run in `[lower, item_start)` when that run binds,
 /// or `item_start`'s line start when the run anchors in place, opens at
 /// another indent, or no comment sits there. A blank line above the
-/// member leaves the run bound, matching the gap `space-statements` settles
-/// beneath a description.
-pub(crate) fn bound_block_start(
+/// member leaves the run bound.
+pub(super) fn bound_block_start(
     source: &Source,
     lower: TextSize,
     item_start: TextSize,
@@ -50,6 +53,17 @@ pub(crate) fn bound_block_start(
         .map_or(line_start, TextRange::start)
 }
 
+/// True when an own-line comment block leads the item at `item_start`,
+/// reached across the blank run between the two and stopped at a
+/// notebook cell wall. A whole-line deletion of that item strands the
+/// block.
+pub(super) fn comment_leads(source: &Source, item_start: TextSize) -> bool {
+    let text = source.text();
+    let line_start = text.line_start(item_start);
+    let above = whitespace_start_before(source, line_start);
+    leading_comment_block(source, text.line_start(above), line_start).is_some()
+}
+
 /// True when the line containing the dict's opening `{` carries a
 /// trailing `# prose: keep` comment, the marker that pins a dict against
 /// both entry reordering and module-constant banding.
@@ -64,13 +78,15 @@ pub(crate) fn has_keep_marker(source: &Source, dict: &ExprDict) -> bool {
 
 /// True when any line in the comment block reads as a section marker,
 /// either a decorative rule line or a multi-hash heading.
-pub(crate) fn is_banner_block(source: &Source, block: TextRange) -> bool {
+pub(super) fn is_banner_block(source: &Source, block: TextRange) -> bool {
     source.slice(block).lines().any(is_marker_line)
 }
 
-/// Returns the contiguous range of own-line comments lying between
-/// `lower` and `upper`. `None` when no own-line comment sits in that
-/// gap. End-of-line comments on the predecessor's line are excluded.
+/// Returns the range spanning every own-line comment between `lower`
+/// and `upper`, from the first comment's line start to the last
+/// comment's end, so a blank run dividing two comment runs falls
+/// inside it. `None` when no own-line comment sits in that gap.
+/// End-of-line comments on the predecessor's line are excluded.
 pub(crate) fn leading_comment_block(
     source: &Source,
     lower: TextSize,
@@ -144,44 +160,109 @@ fn rule_run(mut chars: impl Iterator<Item = char>) -> usize {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-    use ruff_text_size::Ranged;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{notebook, parse};
 
     fn gap_block(s: &Source) -> Option<TextRange> {
         let body = &s.ast().body;
         leading_comment_block(s, body[0].end(), body[1].start())
     }
 
-    #[test]
-    fn is_banner_block_detects_block_with_any_rule_line() {
-        let s = parse(
-            "x = 1\n# ========================\n# Section: helpers\n# ========================\ndef f(): pass\n",
+    #[rstest]
+    #[case("x = 1\n# describes a\ndef a(): pass\n", false)]
+    #[case("x = 1\n# --- Section ---\ndef a(): pass\n", true)]
+    #[case("x = 1\n# prose: off\ndef a(): pass\n", true)]
+    #[case("x = 1\n### Heading\ndef a(): pass\n", true)]
+    #[case("x = 1\n# noqa: E501\ndef a(): pass\n", true)]
+    #[case("if x:\n    pass\n    # type: ignore\ndef a(): pass\n", true)]
+    fn anchors_in_place_spots_a_marker_a_directive_or_a_pragma(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let s = parse(src);
+        let block = gap_block(&s).expect("block");
+        assert_eq!(anchors_in_place(&s, block), expected);
+    }
+
+    #[rstest]
+    #[case("x = 1\n# describes a\ndef a(): pass\n", "# describes a")]
+    #[case("x = 1\n# describes a\n\ndef a(): pass\n", "# describes a")]
+    #[case("x = 1\n# one\n# two\n\ndef a(): pass\n", "# one\n# two")]
+    #[case("x = 1\n# --- Section ---\ndef a(): pass\n", "")]
+    #[case("x = 1\n# --- Section ---\n# describes a\ndef a(): pass\n", "")]
+    #[case("x = 1\n# fmt: on\n\ndef a(): pass\n", "")]
+    #[case("x = 1\n# type: ignore\n\ndef a(): pass\n", "")]
+    #[case("if x:\n    pass\n    # describes a\ndef a(): pass\n", "")]
+    #[case("x = 1\n\ndef a(): pass\n", "")]
+    fn bound_block_start_binds_a_run_that_holds_no_anchor(#[case] src: &str, #[case] bound: &str) {
+        let s = parse(src);
+        let body = &s.ast().body;
+        let item_start = body[1].start();
+        let start = bound_block_start(&s, body[0].end(), item_start);
+        assert_eq!(
+            s.slice(TextRange::new(start, s.text().line_start(item_start)))
+                .trim_end(),
+            bound,
         );
-        let block = gap_block(&s).expect("block");
-        assert!(is_banner_block(&s, block));
     }
 
     #[test]
-    fn is_banner_block_detects_block_with_hash_heading() {
-        let s = parse("x = 1\n### Codec APIs\ndef f(): pass\n");
-        let block = gap_block(&s).expect("block");
-        assert!(is_banner_block(&s, block));
+    fn bound_block_start_holds_at_a_member_sharing_its_line() {
+        let s = parse("x = 1; y = 2\n");
+        let body = &s.ast().body;
+        let item_start = body[1].start();
+        assert_eq!(
+            bound_block_start(&s, body[0].end(), item_start),
+            item_start,
+            "a second statement on one line reaches back over nothing",
+        );
     }
 
-    #[test]
-    fn is_banner_block_detects_heading_on_non_leading_line() {
-        let s = parse("x = 1\n# see the module docs\n### API Reference\ndef f(): pass\n");
-        let block = gap_block(&s).expect("block");
-        assert!(is_banner_block(&s, block));
+    #[rstest]
+    #[case("# describes it\nimport os\n", true)]
+    #[case("# describes it\n\nimport os\n", true)]
+    #[case("# one\n# two\n\n\nimport os\n", true)]
+    #[case("import os\n", false)]
+    #[case("x = 1\n\nimport os\n", false)]
+    #[case("x = 1  # trail\n\nimport os\n", false)]
+    #[case("# far above\nx = 1\n\nimport os\n", false)]
+    fn comment_leads_reaches_a_block_across_the_blank_run(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let s = parse(src);
+        let item = s.ast().body.last().expect("a statement");
+        assert_eq!(comment_leads(&s, item.start()), expected);
     }
 
-    #[test]
-    fn is_banner_block_returns_false_for_all_prose_block() {
-        let s = parse("x = 1\n# describes f\n# helper\ndef f(): pass\n");
+    #[rstest]
+    #[case::across_a_blank_run(&["# describes it\n", "import os"])]
+    #[case::written_tight(&["# describes it", "import os"])]
+    fn comment_leads_stops_at_a_notebook_cell_wall(#[case] cells: &[&str]) {
+        let s = notebook(cells);
+        let item = s.ast().body.last().expect("a statement");
+        assert!(!comment_leads(&s, item.start()));
+    }
+
+    #[rstest]
+    #[case::rule_line(
+        "x = 1\n# ========================\n# Section: helpers\n# ========================\ndef f(): pass\n",
+        true
+    )]
+    #[case::hash_heading("x = 1\n### Codec APIs\ndef f(): pass\n", true)]
+    #[case::heading_below_prose(
+        "x = 1\n# see the module docs\n### API Reference\ndef f(): pass\n",
+        true
+    )]
+    #[case::all_prose("x = 1\n# describes f\n# helper\ndef f(): pass\n", false)]
+    fn is_banner_block_reads_a_rule_line_or_a_hash_heading(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let s = parse(src);
         let block = gap_block(&s).expect("block");
-        assert!(!is_banner_block(&s, block));
+        assert_eq!(is_banner_block(&s, block), expected);
     }
 
     #[rstest]
@@ -266,65 +347,10 @@ mod tests {
         assert_eq!(block.end(), comments[1].end());
     }
 
-    #[test]
-    fn leading_comment_block_returns_none_when_no_own_line_comments_between() {
-        let s = parse("x = 1\ndef f(): pass\n");
-        assert!(gap_block(&s).is_none());
-    }
-
-    #[test]
-    fn leading_comment_block_skips_trailing_end_of_line_comments() {
-        let s = parse("x = 1  # trail\ndef f(): pass\n");
-        assert!(gap_block(&s).is_none());
-    }
-
     #[rstest]
-    #[case("x = 1\n# describes a\ndef a(): pass\n", "# describes a")]
-    #[case("x = 1\n# describes a\n\ndef a(): pass\n", "# describes a")]
-    #[case("x = 1\n# one\n# two\n\ndef a(): pass\n", "# one\n# two")]
-    #[case("x = 1\n# --- Section ---\ndef a(): pass\n", "")]
-    #[case("x = 1\n# --- Section ---\n# describes a\ndef a(): pass\n", "")]
-    #[case("x = 1\n# fmt: on\n\ndef a(): pass\n", "")]
-    #[case("x = 1\n# type: ignore\n\ndef a(): pass\n", "")]
-    #[case("if x:\n    pass\n    # describes a\ndef a(): pass\n", "")]
-    #[case("x = 1\n\ndef a(): pass\n", "")]
-    fn bound_block_start_binds_a_run_that_holds_no_anchor(#[case] src: &str, #[case] bound: &str) {
-        let s = parse(src);
-        let body = &s.ast().body;
-        let item_start = body[1].start();
-        let start = bound_block_start(&s, body[0].end(), item_start);
-        assert_eq!(
-            s.slice(TextRange::new(start, s.text().line_start(item_start)))
-                .trim_end(),
-            bound,
-        );
-    }
-
-    #[test]
-    fn bound_block_start_holds_at_a_member_sharing_its_line() {
-        let s = parse("x = 1; y = 2\n");
-        let body = &s.ast().body;
-        let item_start = body[1].start();
-        assert_eq!(
-            bound_block_start(&s, body[0].end(), item_start),
-            item_start,
-            "a second statement on one line reaches back over nothing",
-        );
-    }
-
-    #[rstest]
-    #[case("x = 1\n# describes a\ndef a(): pass\n", false)]
-    #[case("x = 1\n# --- Section ---\ndef a(): pass\n", true)]
-    #[case("x = 1\n# prose: off\ndef a(): pass\n", true)]
-    #[case("x = 1\n### Heading\ndef a(): pass\n", true)]
-    #[case("x = 1\n# noqa: E501\ndef a(): pass\n", true)]
-    #[case("if x:\n    pass\n    # type: ignore\ndef a(): pass\n", true)]
-    fn anchors_in_place_spots_a_marker_a_directive_or_a_pragma(
-        #[case] src: &str,
-        #[case] expected: bool,
-    ) {
-        let s = parse(src);
-        let block = gap_block(&s).expect("block");
-        assert_eq!(anchors_in_place(&s, block), expected);
+    #[case::no_own_line_comment("x = 1\ndef f(): pass\n")]
+    #[case::trailing_comment_only("x = 1  # trail\ndef f(): pass\n")]
+    fn leading_comment_block_returns_none_without_an_own_line_comment(#[case] src: &str) {
+        assert!(gap_block(&parse(src)).is_none());
     }
 }

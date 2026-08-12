@@ -11,9 +11,9 @@
 //! analysis in `future`. Every other `__future__` feature stays, and so
 //! does a `from … import *`, a name `__all__` lists, an import binding
 //! `__all__` itself, a name a second import rebinds, and an `x as x`
-//! alias marking a re-export. An own-line comment directly above an
-//! import holds the whole statement, since the deletion would strand
-//! the comment on the statement below it.
+//! alias marking a re-export. An own-line comment block leading an
+//! import holds the whole statement across a blank run between the
+//! two, up to the wall closing a notebook cell.
 
 use std::{ffi::OsStr, path::Path};
 
@@ -108,10 +108,32 @@ mod tests {
     }
 
     #[test]
+    fn a_main_module_prunes_like_any_other_file() {
+        let source = Source::build_module(
+            "import numpy as np\n\nvalue = 1\n".to_owned(),
+            "pkg/__main__.py",
+            PySourceType::Python,
+        )
+        .expect("test source parses");
+
+        assert_eq!(rule().apply(&source).len(), 1);
+        assert!(rule().lint(&source).is_empty());
+    }
+
+    #[test]
     fn a_module_with_no_import_plans_nothing() {
         let source = parse("value = 1\n");
         assert!(rule().apply(&source).is_empty());
         assert!(rule().lint(&source).is_empty());
+    }
+
+    #[test]
+    fn a_name_a_second_import_rebinds_holds_its_first_binding() {
+        let source = parse(
+            "from _pyimpl import filters\n\ntry:\n    from _cext import filters\nexcept ImportError:\n    pass\n",
+        );
+
+        assert!(rule().apply(&source).is_empty());
     }
 
     #[test]
@@ -128,28 +150,6 @@ mod tests {
     }
 
     #[test]
-    fn a_main_module_prunes_like_any_other_file() {
-        let source = Source::build_module(
-            "import numpy as np\n\nvalue = 1\n".to_owned(),
-            "pkg/__main__.py",
-            PySourceType::Python,
-        )
-        .expect("test source parses");
-
-        assert_eq!(rule().apply(&source).len(), 1);
-        assert!(rule().lint(&source).is_empty());
-    }
-
-    #[test]
-    fn a_name_a_second_import_rebinds_holds_its_first_binding() {
-        let source = parse(
-            "from _pyimpl import filters\n\ntry:\n    from _cext import filters\nexcept ImportError:\n    pass\n",
-        );
-
-        assert!(rule().apply(&source).is_empty());
-    }
-
-    #[test]
     fn a_repeat_drops_inside_a_package_init() {
         let source = parse_init("import os\nimport os\n\nvalue = os.getcwd()\n");
         let groups = rule().apply(&source);
@@ -157,17 +157,6 @@ mod tests {
         assert_eq!(
             applied_text(&source, groups.concat()),
             "import os\n\nvalue = os.getcwd()\n",
-        );
-    }
-
-    #[test]
-    fn an_imported_dunder_all_holds_the_export_surface() {
-        let source = parse("from io import SEEK_CUR, __all__\n\nvalue = SEEK_CUR\n");
-        let groups = rule().apply(&source);
-
-        assert_eq!(
-            applied_text(&source, groups.concat()),
-            "from io import SEEK_CUR, __all__\n\nvalue = SEEK_CUR\n",
         );
     }
 
@@ -180,6 +169,17 @@ mod tests {
         let (_, diagnostics) = pipeline.run(source).expect("pipeline runs");
 
         assert!(diagnostics.is_empty());
+    }
+
+    #[test]
+    fn an_imported_dunder_all_holds_the_export_surface() {
+        let source = parse("from io import SEEK_CUR, __all__\n\nvalue = SEEK_CUR\n");
+        let groups = rule().apply(&source);
+
+        assert_eq!(
+            applied_text(&source, groups.concat()),
+            "from io import SEEK_CUR, __all__\n\nvalue = SEEK_CUR\n",
+        );
     }
 
     #[test]

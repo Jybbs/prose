@@ -1,0 +1,10 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/thematic/leading_header_settles_above_a_sorted_import_block/input.py
+---
+alphabetize-siblings@75..111
+band-constants@75..145
+signature-annotations@150..156
+signature-annotations@157..161
+space-statements@145..146
