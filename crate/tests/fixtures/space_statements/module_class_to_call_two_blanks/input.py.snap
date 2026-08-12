@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/space_statements/module_class_to_call_two_blanks/input.py
+---
+class Registry:
+
+    entries = []
+
+
+register(Registry)

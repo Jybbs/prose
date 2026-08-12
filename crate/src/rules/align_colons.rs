@@ -1,7 +1,7 @@
 //! Aligns `:` vertically in dict/mapping literals, annotated
 //! assignments, annotated function parameters, and docstring entry
 //! runs. Single-line groups, single-item groups, and groups whose rows
-//! open at differing baselines pass through to `strip_align_padding`.
+//! open at differing baselines pass through to `strip_stranded_padding`.
 //! Each aligned `:` keeps a one-space buffer before it, and the dict,
 //! annotation, and parameter contexts collapse the gap after it to one
 //! space and resolve within `code_line_length`, whereas a docstring run

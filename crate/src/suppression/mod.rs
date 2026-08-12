@@ -220,17 +220,12 @@ mod tests {
     use ruff_text_size::TextRange;
 
     use super::is_directive_comment;
-    use crate::rule::RuleId;
-    use crate::source::Source;
-    use crate::testing::{notebook, parse, range};
-
-    fn align_equals() -> RuleId {
-        "align-equals".parse().expect("align-equals is registered")
-    }
-
-    fn alphabetize() -> RuleId {
-        "alphabetize".parse().expect("alphabetize is registered")
-    }
+    use crate::{
+        rule::RuleId,
+        rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
+        source::Source,
+        testing::{notebook, parse, range},
+    };
 
     fn at(source: &Source, needle: &str) -> TextRange {
         let start = source.text().find(needle).expect("needle is present") as u32;
@@ -245,8 +240,8 @@ mod tests {
     fn bare_ignore_suppresses_every_rule_on_the_line() {
         let source = parse("x = 1  # prose: ignore\n");
         let map = source.suppression_map();
-        assert!(map.is_lint_suppressed_at(line(0), align_equals()));
-        assert!(map.is_lint_suppressed_at(line(0), alphabetize()));
+        assert!(map.is_lint_suppressed_at(line(0), AlignEquals::SLUG));
+        assert!(map.is_lint_suppressed_at(line(0), AlphabetizeSiblings::SLUG));
     }
 
     #[test]
@@ -254,7 +249,7 @@ mod tests {
         let source = parse("x = 1  # prose: skip\n");
         let map = source.suppression_map();
         assert!(map.has_format_suppression());
-        assert!(map.suppresses(range(0, 6), align_equals()));
+        assert!(map.suppresses(range(0, 6), AlignEquals::SLUG));
         // A bare skip opens no off region, so a lint on the line survives.
         assert!(!map.intersects(range(0, 6)));
     }
@@ -263,8 +258,8 @@ mod tests {
     fn bare_then_specific_keeps_all_suppression() {
         let source = parse("x = 1  # prose: ignore  # prose: ignore[align-equals]\n");
         let map = source.suppression_map();
-        assert!(map.is_lint_suppressed_at(line(0), align_equals()));
-        assert!(map.is_lint_suppressed_at(line(0), alphabetize()));
+        assert!(map.is_lint_suppressed_at(line(0), AlignEquals::SLUG));
+        assert!(map.is_lint_suppressed_at(line(0), AlphabetizeSiblings::SLUG));
     }
 
     #[test]
@@ -322,9 +317,9 @@ mod tests {
         let map = source.suppression_map();
         assert!(!map.has_lint_suppression());
         assert!(!map.has_format_suppression());
-        assert!(!map.is_lint_suppressed_at(line(0), align_equals()));
-        assert!(!map.is_lint_suppressed_at(line(1), align_equals()));
-        assert!(!map.is_lint_suppressed_at(line(2), align_equals()));
+        assert!(!map.is_lint_suppressed_at(line(0), AlignEquals::SLUG));
+        assert!(!map.is_lint_suppressed_at(line(1), AlignEquals::SLUG));
+        assert!(!map.is_lint_suppressed_at(line(2), AlignEquals::SLUG));
     }
 
     #[test]
@@ -372,30 +367,31 @@ mod tests {
     fn mismatched_id_does_not_suppress_the_queried_rule() {
         let source = parse("x = 1  # prose: ignore[align-equals]\n");
         let map = source.suppression_map();
-        assert!(!map.is_lint_suppressed_at(line(0), alphabetize()));
+        assert!(!map.is_lint_suppressed_at(line(0), AlphabetizeSiblings::SLUG));
     }
 
     #[test]
     fn multi_id_suppresses_each_listed_rule() {
-        let source = parse("x = 1  # prose: ignore[align-equals, alphabetize]\n");
+        let source = parse("x = 1  # prose: ignore[align-equals, alphabetize-siblings]\n");
         let map = source.suppression_map();
-        assert!(map.is_lint_suppressed_at(line(0), align_equals()));
-        assert!(map.is_lint_suppressed_at(line(0), alphabetize()));
+        assert!(map.is_lint_suppressed_at(line(0), AlignEquals::SLUG));
+        assert!(map.is_lint_suppressed_at(line(0), AlphabetizeSiblings::SLUG));
     }
 
     #[test]
     fn multiple_skip_directives_on_one_comment_union_their_rules() {
-        let source = parse("x = 1  # prose: skip[align-equals]  # prose: skip[alphabetize]\n");
+        let source =
+            parse("x = 1  # prose: skip[align-equals]  # prose: skip[alphabetize-siblings]\n");
         let map = source.suppression_map();
-        assert!(map.suppresses(range(0, 5), align_equals()));
-        assert!(map.suppresses(range(0, 5), alphabetize()));
+        assert!(map.suppresses(range(0, 5), AlignEquals::SLUG));
+        assert!(map.suppresses(range(0, 5), AlphabetizeSiblings::SLUG));
     }
 
     #[test]
     fn nested_directive_after_non_pragma_hash_is_recognized() {
         let source = parse("x = 1  # my note # prose: ignore\n");
         let map = source.suppression_map();
-        assert!(map.is_lint_suppressed_at(line(0), align_equals()));
+        assert!(map.is_lint_suppressed_at(line(0), AlignEquals::SLUG));
     }
 
     #[test]
@@ -440,34 +436,34 @@ mod tests {
 
     #[test]
     fn rule_skip_on_a_wrapped_statement_reaches_its_opening_line() {
-        let source = parse("z = (\n    x\n)  # prose: skip[alphabetize]\n");
+        let source = parse("z = (\n    x\n)  # prose: skip[alphabetize-siblings]\n");
         let map = source.suppression_map();
-        assert!(map.suppresses(range(0, 1), alphabetize()));
-        assert!(!map.suppresses(range(0, 1), align_equals()));
+        assert!(map.suppresses(range(0, 1), AlphabetizeSiblings::SLUG));
+        assert!(!map.suppresses(range(0, 1), AlignEquals::SLUG));
     }
 
     #[test]
     fn second_bare_directive_widens_first_specific_to_all() {
         let source = parse("x = 1  # prose: ignore[align-equals]  # prose: ignore\n");
         let map = source.suppression_map();
-        assert!(map.is_lint_suppressed_at(line(0), align_equals()));
-        assert!(map.is_lint_suppressed_at(line(0), alphabetize()));
+        assert!(map.is_lint_suppressed_at(line(0), AlignEquals::SLUG));
+        assert!(map.is_lint_suppressed_at(line(0), AlphabetizeSiblings::SLUG));
     }
 
     #[test]
     fn single_id_suppresses_exactly_the_listed_rule() {
         let source = parse("x = 1  # prose: ignore[align-equals]\n");
         let map = source.suppression_map();
-        assert!(map.is_lint_suppressed_at(line(0), align_equals()));
-        assert!(!map.is_lint_suppressed_at(line(0), alphabetize()));
+        assert!(map.is_lint_suppressed_at(line(0), AlignEquals::SLUG));
+        assert!(!map.is_lint_suppressed_at(line(0), AlphabetizeSiblings::SLUG));
     }
 
     #[test]
     fn skip_after_a_backslash_continuation_reaches_the_opening_line() {
         let source = parse("x = 1 + \\\n    2  # fmt: skip\ny = 3\n");
         let map = source.suppression_map();
-        assert!(map.suppresses(range(0, 1), align_equals()));
-        assert!(!map.suppresses(at(&source, "y = 3"), align_equals()));
+        assert!(map.suppresses(range(0, 1), AlignEquals::SLUG));
+        assert!(!map.suppresses(at(&source, "y = 3"), AlignEquals::SLUG));
     }
 
     #[test]
@@ -475,40 +471,40 @@ mod tests {
         let source = parse("x = 1  # prose: skip[align-equals]\n");
         let map = source.suppression_map();
         assert!(map.has_format_suppression());
-        assert!(map.suppresses(range(0, 5), align_equals()));
-        assert!(!map.suppresses(range(0, 5), alphabetize()));
+        assert!(map.suppresses(range(0, 5), AlignEquals::SLUG));
+        assert!(!map.suppresses(range(0, 5), AlphabetizeSiblings::SLUG));
     }
 
     #[test]
     fn skip_in_a_notebook_cell_spans_its_logical_line() {
         let source = notebook(&["z = (\n    x\n)  # fmt: skip", "y = 2"]);
         let map = source.suppression_map();
-        assert!(map.suppresses(range(0, 1), align_equals()));
-        assert!(!map.suppresses(at(&source, "y = 2"), align_equals()));
+        assert!(map.suppresses(range(0, 1), AlignEquals::SLUG));
+        assert!(!map.suppresses(at(&source, "y = 2"), AlignEquals::SLUG));
     }
 
     #[test]
     fn skip_inside_a_bracketed_construct_stays_on_its_own_line() {
         let source = parse("config = {\n    \"a\": 1,  # fmt: skip\n    \"b\": 2,\n}\n");
         let map = source.suppression_map();
-        assert!(map.suppresses(at(&source, "\"a\""), align_equals()));
-        assert!(!map.suppresses(range(0, 6), align_equals()));
+        assert!(map.suppresses(at(&source, "\"a\""), AlignEquals::SLUG));
+        assert!(!map.suppresses(range(0, 6), AlignEquals::SLUG));
     }
 
     #[test]
     fn skip_multi_id_suppresses_each_listed_rule() {
-        let source = parse("x = 1  # prose: skip[align-equals, alphabetize]\n");
+        let source = parse("x = 1  # prose: skip[align-equals, alphabetize-siblings]\n");
         let map = source.suppression_map();
-        assert!(map.suppresses(range(0, 5), align_equals()));
-        assert!(map.suppresses(range(0, 5), alphabetize()));
+        assert!(map.suppresses(range(0, 5), AlignEquals::SLUG));
+        assert!(map.suppresses(range(0, 5), AlphabetizeSiblings::SLUG));
     }
 
     #[test]
     fn skip_on_a_compound_header_stops_at_the_body() {
         let source = parse("if (\n    ready\n):  # fmt: skip\n    pass\n");
         let map = source.suppression_map();
-        assert!(map.suppresses(range(0, 2), align_equals()));
-        assert!(!map.suppresses(at(&source, "pass"), align_equals()));
+        assert!(map.suppresses(range(0, 2), AlignEquals::SLUG));
+        assert!(!map.suppresses(at(&source, "pass"), AlignEquals::SLUG));
     }
 
     #[test]
@@ -517,7 +513,7 @@ mod tests {
         assert!(
             source
                 .suppression_map()
-                .suppresses(range(0, 1), align_equals())
+                .suppresses(range(0, 1), AlignEquals::SLUG)
         );
     }
 
@@ -525,33 +521,33 @@ mod tests {
     fn skip_span_opens_at_the_statement_below_a_comment_gap() {
         let source = parse("a = 1\n\n# note\nz = (\n    x\n)  # fmt: skip\n");
         let map = source.suppression_map();
-        assert!(map.suppresses(at(&source, "z"), align_equals()));
-        assert!(!map.suppresses(range(0, 5), align_equals()));
-        assert!(!map.suppresses(at(&source, "# note"), align_equals()));
+        assert!(map.suppresses(at(&source, "z"), AlignEquals::SLUG));
+        assert!(!map.suppresses(range(0, 5), AlignEquals::SLUG));
+        assert!(!map.suppresses(at(&source, "# note"), AlignEquals::SLUG));
     }
 
     #[test]
     fn skip_span_survives_crlf_line_endings() {
         let source = parse("z = (\r\n    x\r\n)  # fmt: skip\r\ny = 2\r\n");
         let map = source.suppression_map();
-        assert!(map.suppresses(range(0, 1), align_equals()));
-        assert!(!map.suppresses(at(&source, "y = 2"), align_equals()));
+        assert!(map.suppresses(range(0, 1), AlignEquals::SLUG));
+        assert!(!map.suppresses(at(&source, "y = 2"), AlignEquals::SLUG));
     }
 
     #[test]
     fn skip_unknown_id_is_dropped_silently() {
         let source = parse("x = 1  # prose: skip[align-equals, not-a-rule]\n");
         let map = source.suppression_map();
-        assert!(map.suppresses(range(0, 5), align_equals()));
-        assert!(!map.suppresses(range(0, 5), alphabetize()));
+        assert!(map.suppresses(range(0, 5), AlignEquals::SLUG));
+        assert!(!map.suppresses(range(0, 5), AlphabetizeSiblings::SLUG));
     }
 
     #[rstest]
-    #[case(align_equals())]
-    #[case(alphabetize())]
+    #[case(AlignEquals::SLUG)]
+    #[case(AlphabetizeSiblings::SLUG)]
     fn skip_whitespace_tolerant_inside_brackets(#[case] rule: RuleId) {
-        let canonical = parse("x = 1  # prose: skip[align-equals, alphabetize]\n");
-        let compact = parse("x = 1  # prose:skip[ align-equals ,alphabetize ]\n");
+        let canonical = parse("x = 1  # prose: skip[align-equals, alphabetize-siblings]\n");
+        let compact = parse("x = 1  # prose:skip[ align-equals ,alphabetize-siblings ]\n");
         let canonical_map = canonical.suppression_map();
         let compact_map = compact.suppression_map();
         assert_eq!(
@@ -566,7 +562,7 @@ mod tests {
         let source = parse("x = 1  # prose: ignore\n");
         let map = source.suppression_map();
         assert!(map.has_lint_suppression());
-        assert!(map.is_lint_suppressed_at(line(0), align_equals()));
+        assert!(map.is_lint_suppressed_at(line(0), AlignEquals::SLUG));
     }
 
     #[test]
@@ -579,18 +575,19 @@ mod tests {
 
     #[test]
     fn two_specifics_on_same_line_union_their_ids() {
-        let source = parse("x = 1  # prose: ignore[align-equals]  # prose: ignore[alphabetize]\n");
+        let source =
+            parse("x = 1  # prose: ignore[align-equals]  # prose: ignore[alphabetize-siblings]\n");
         let map = source.suppression_map();
-        assert!(map.is_lint_suppressed_at(line(0), align_equals()));
-        assert!(map.is_lint_suppressed_at(line(0), alphabetize()));
+        assert!(map.is_lint_suppressed_at(line(0), AlignEquals::SLUG));
+        assert!(map.is_lint_suppressed_at(line(0), AlphabetizeSiblings::SLUG));
     }
 
     #[test]
     fn unknown_id_is_dropped_silently() {
         let source = parse("x = 1  # prose: ignore[align-equals, not-a-rule]\n");
         let map = source.suppression_map();
-        assert!(map.is_lint_suppressed_at(line(0), align_equals()));
-        assert!(!map.is_lint_suppressed_at(line(0), alphabetize()));
+        assert!(map.is_lint_suppressed_at(line(0), AlignEquals::SLUG));
+        assert!(!map.is_lint_suppressed_at(line(0), AlphabetizeSiblings::SLUG));
     }
 
     #[test]
@@ -605,11 +602,11 @@ mod tests {
     }
 
     #[rstest]
-    #[case(align_equals())]
-    #[case(alphabetize())]
+    #[case(AlignEquals::SLUG)]
+    #[case(AlphabetizeSiblings::SLUG)]
     fn whitespace_tolerant_canonical_and_compact_forms_parse_identically(#[case] rule: RuleId) {
-        let canonical = parse("x = 1  # prose: ignore[align-equals, alphabetize]\n");
-        let compact = parse("x = 1  # prose:ignore[ align-equals ,alphabetize ]\n");
+        let canonical = parse("x = 1  # prose: ignore[align-equals, alphabetize-siblings]\n");
+        let compact = parse("x = 1  # prose:ignore[ align-equals ,alphabetize-siblings ]\n");
         let canonical_map = canonical.suppression_map();
         let compact_map = compact.suppression_map();
         assert_eq!(

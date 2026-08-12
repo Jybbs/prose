@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Closer on Its Own Line Keeps Its Indent"
-
-description = '''
-`kept`'s closing `]` sits on its own line, carrying ordinary indentation rather than the same-line space beside a bracket that `strip-align-padding` targets, so the rule leaves it untouched. `stripped = [ 1, 2 ]` carries that same-line padding around its values, and the rule strips it down to `[1, 2]`.
-'''

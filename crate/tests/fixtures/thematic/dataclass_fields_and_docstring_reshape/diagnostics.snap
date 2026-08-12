@@ -5,8 +5,8 @@ input_file: crate/tests/fixtures/thematic/dataclass_fields_and_docstring_reshape
 ---
 align-colons@74..186
 align-equals@79..192
-blank-lines@196..197
-blank-lines@64..65
-docstring-expand@231..261
+expand-docstrings@231..261
 signature-annotations@205..212
+space-statements@196..197
+space-statements@64..65
 unsorted-positionals@69..196

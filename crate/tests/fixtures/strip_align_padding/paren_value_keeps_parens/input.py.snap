@@ -1,6 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/strip_align_padding/paren_value_keeps_parens/input.py
----
-mapping = {"key": (1, 2)}

@@ -3,5 +3,5 @@ previewable = true
 title       = "Mixed Method Docstrings Expand While Methods Sort"
 
 description = '''
-`zeta`, `alpha`, and `beta` arrive out of order, `alpha` carrying a two-line docstring and the other two single-line ones. **`alphabetize` reorders the methods, `docstring-expand` converts the single-line docstrings of `beta` and `zeta` to multi-line form, and `docstring-frame` puts every `"""` on its own line**, with `blank-lines` inserting a blank line between the methods.
+`zeta`, `alpha`, and `beta` arrive out of order, `alpha` carrying a two-line docstring and the other two single-line ones. **`alphabetize-siblings` reorders the methods, `expand-docstrings` converts the single-line docstrings of `beta` and `zeta` to multi-line form, and `frame-docstrings` puts every `"""` on its own line**, with `space-statements` inserting a blank line between the methods.
 '''

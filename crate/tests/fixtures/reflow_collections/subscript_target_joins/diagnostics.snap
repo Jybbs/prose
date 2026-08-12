@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_collections/subscript_target_joins/input.py
+---
+reflow-collections@129..177
+reflow-collections@29..46
+reflow-collections@300..338
+reflow-collections@373..420
+reflow-collections@5..14
+reflow-collections@60..76

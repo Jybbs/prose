@@ -3,5 +3,5 @@ previewable = false
 title       = "Aliased Imports Sort Then Align Their `as` Column"
 
 description = '''
-Four aliased module imports arrive out of alphabetical order, `import numpy as np` sitting first. **`alphabetize` reorders the statements so `collections` leads, then `align-imports` settles the `as` keyword onto a shared column** across the sorted run.
+Four aliased module imports arrive out of alphabetical order, `import numpy as np` sitting first. **`alphabetize-siblings` reorders the statements so `collections` leads, then `align-imports` settles the `as` keyword onto a shared column** across the sorted run.
 '''

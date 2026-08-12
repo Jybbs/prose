@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/docstring_expand/two_step_method_indent/input.py
----
-docstring-expand@43..75

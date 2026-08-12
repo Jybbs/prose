@@ -3,5 +3,5 @@ source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/thematic/deep_nested_dict_per_level/input.py
 ---
-alphabetize@11..685
-collection-layout@10..688
+alphabetize-siblings@11..685
+reflow-collections@10..688

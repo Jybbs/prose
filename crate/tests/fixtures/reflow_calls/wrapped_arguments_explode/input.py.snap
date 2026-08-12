@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_calls/wrapped_arguments_explode/input.py
+---
+render(
+    first_value,
+    second_value,
+    third_value,
+    fourth_value
+)

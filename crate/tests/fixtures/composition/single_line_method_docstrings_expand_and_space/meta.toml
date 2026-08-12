@@ -3,5 +3,5 @@ previewable = false
 title       = "Method Docstrings Expand and Methods Gain Blank Lines"
 
 description = '''
-`Service` holds two methods, `primary` and `secondary`, each opening with a single-line docstring and packed with no blank line between them. **`docstring-expand` rewrites each docstring to the three-line form and `blank-lines` inserts a single blank line** after the class header and between the methods.
+`Service` holds two methods, `primary` and `secondary`, each opening with a single-line docstring and packed with no blank line between them. **`expand-docstrings` rewrites each docstring to the three-line form and `space-statements` inserts a single blank line** after the class header and between the methods.
 '''

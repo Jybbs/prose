@@ -1,2 +1,2 @@
 [harness]
-rules = ["call-layout", "chain-layout"]
+rules = ["reflow-calls", "stack-method-chains"]

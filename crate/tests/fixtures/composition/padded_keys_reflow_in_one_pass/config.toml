@@ -1,2 +1,2 @@
 [harness]
-rules = ["align-colons", "docstring-wrap"]
+rules = ["align-colons", "wrap-docstrings"]

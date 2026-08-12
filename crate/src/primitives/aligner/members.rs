@@ -121,7 +121,7 @@ where
 }
 
 /// The display width of the bracket-delimiter padding inside `range`,
-/// the columns `strip-align-padding` deletes once it runs. A settled
+/// the columns `strip-stranded-padding` deletes once it runs. A settled
 /// width reads past them, so an alignment measures the row the pipeline
 /// lands on rather than the one the source wrote.
 fn delimiter_padding_width(source: &Source, range: TextRange) -> usize {

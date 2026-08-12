@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/signature_layout/expanded_params_collapse_under_multiline_return/input.py
----
-signature-layout@12..40

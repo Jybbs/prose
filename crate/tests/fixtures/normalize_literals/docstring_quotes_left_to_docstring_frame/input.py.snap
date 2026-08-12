@@ -1,8 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/normalize_literals/docstring_quotes_left_to_docstring_frame/input.py
----
-def render():
-    'Summary.'
-    return "body"

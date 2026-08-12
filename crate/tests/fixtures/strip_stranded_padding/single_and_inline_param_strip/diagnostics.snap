@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_stranded_padding/single_and_inline_param_strip/input.py
+---
+strip-stranded-padding@141..142
+strip-stranded-padding@156..157
+strip-stranded-padding@17..18
+strip-stranded-padding@174..175
+strip-stranded-padding@70..71
+strip-stranded-padding@87..88

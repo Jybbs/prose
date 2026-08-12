@@ -1,6 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/collection_layout/concat_valued_entry_holds_its_line/input.py
----
-collection-layout@152..153

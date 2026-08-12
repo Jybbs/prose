@@ -1,6 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/call_layout/two_row_genexp_argument_rejoins_whole/input.py
----
-call-layout@15..45

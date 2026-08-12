@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_method_chains/wide_receiver_takes_the_full_split/input.py
+---
+result = (
+    an_extremely_long_receiver_name
+    .filter(alpha)
+    .order(beta)
+    .limit(gamma)
+)

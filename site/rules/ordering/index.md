@@ -4,4 +4,4 @@ The ordering rules reorder sibling AST nodes by a deterministic key while preser
 
 <RuleCardList family="ordering" />
 
-For the comment-attachment semantics and the `gap_override` machinery, see the [[orderer]] primitive page. The `# prose: keep` directive *(documented in [**Suppression Directives**](/reference/suppression-directives))* opts a dict literal out of [[alphabetize]] when the entry order carries meaning the rule can't infer, and the rule's `sort-dict-keys` facet declines the reorder across a whole project.
+For the comment-attachment semantics and the `gap_override` machinery, see the [[orderer]] primitive page. The `# prose: keep` directive *(documented in [**Suppression Directives**](/reference/suppression-directives))* opts a dict literal out of [[alphabetize-siblings]] when the entry order carries meaning the rule can't infer, and the rule's `sort-dict-keys` facet declines the reorder across a whole project.

@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize_siblings/undecorated_annotated_fields_sort/input.py
+---
+alphabetize-siblings@19..115

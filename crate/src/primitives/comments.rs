@@ -31,7 +31,7 @@ pub(crate) fn anchors_in_place(source: &Source, block: TextRange) -> bool {
 /// own-line comment run in `[lower, item_start)` when that run binds,
 /// or `item_start`'s line start when the run anchors in place, opens at
 /// another indent, or no comment sits there. A blank line above the
-/// member leaves the run bound, matching the gap `blank-lines` settles
+/// member leaves the run bound, matching the gap `space-statements` settles
 /// beneath a description.
 pub(crate) fn bound_block_start(
     source: &Source,

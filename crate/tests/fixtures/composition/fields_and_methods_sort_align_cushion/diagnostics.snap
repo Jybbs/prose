@@ -5,8 +5,8 @@ input_file: tests/fixtures/composition/fields_and_methods_sort_align_cushion/inp
 ---
 align-colons@26..84
 align-equals@33..55
-alphabetize@19..246
-blank-lines@14..15
-blank-lines@148..149
-blank-lines@202..203
-blank-lines@93..94
+alphabetize-siblings@19..246
+space-statements@14..15
+space-statements@148..149
+space-statements@202..203
+space-statements@93..94

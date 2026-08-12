@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "Parameter Count Alone Triggers Expansion"
+
+description = '''
+`render`'s five parameters, `width`, `height`, `depth`, `scale`, and `fast`, fit comfortably within `code-line-length` on one line. Because their count exceeds the `max-params` cap of `4`, `reflow-signatures` expands the signature to one parameter per line regardless of how well it would have fit inline.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`split-multi-module = false` Keeps the Comma-Joined Form"
+
+description = '''
+With `split-multi-module = false`, the comma-joined `import os, sys` **stays exactly as written**. Turning off that one facet leaves the rest of `reflow-imports` applying, so `merge-members` still gathers `from pkg import alpha` and `from pkg import beta` onto one line.
+'''

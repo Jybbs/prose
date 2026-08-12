@@ -22,7 +22,7 @@ describe('enumeratePages', () => {
   })
 
   it('attaches the pipeline position for a rule in the pipeline', () => {
-    const [page] = enumeratePages(srcDir, ['rules/alignment/alphabetize.md'])
+    const [page] = enumeratePages(srcDir, ['rules/alignment/alphabetize-siblings.md'])
     expect(page.pipeline).toMatchObject({ position: expect.any(Number), total: expect.any(Number) })
   })
 

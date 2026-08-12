@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/space_statements/decorated_method_cushion_above_stack/input.py
+---
+space-statements@14..15
+space-statements@36..37

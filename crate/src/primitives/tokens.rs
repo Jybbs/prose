@@ -10,7 +10,7 @@ pub(crate) fn is_closer(kind: TokenKind) -> bool {
 
 /// Returns `true` when the gap between a token of `kind` and one of
 /// `next` is padding sitting directly inside a bracket delimiter, the
-/// run `strip-align-padding` deletes. A trivia neighbor on either side
+/// run `strip-stranded-padding` deletes. A trivia neighbor on either side
 /// leaves the gap alone.
 pub(crate) fn is_delimiter_padding(kind: TokenKind, next: TokenKind) -> bool {
     (is_opener(kind) && !next.is_trivia()) || (is_closer(next) && !kind.is_trivia())

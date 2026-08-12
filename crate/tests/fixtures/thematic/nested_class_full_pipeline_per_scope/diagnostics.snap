@@ -1,19 +1,19 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/thematic/nested_class_full_pipeline_per_scope/input.py
+input_file: crate/tests/fixtures/thematic/nested_class_full_pipeline_per_scope/input.py
 ---
 align-colons@118..172
 align-colons@22..75
 align-equals@123..150
 align-equals@29..81
-alphabetize@17..398
-blank-lines@106..107
-blank-lines@12..13
-blank-lines@181..182
-blank-lines@255..256
-blank-lines@330..331
+alphabetize-siblings@17..398
 signature-annotations@194..202
 signature-annotations@264..278
 signature-annotations@285..289
 signature-annotations@339..347
+space-statements@106..107
+space-statements@12..13
+space-statements@181..182
+space-statements@255..256
+space-statements@330..331

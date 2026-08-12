@@ -3,5 +3,5 @@ previewable = false
 title       = "Short Dict Keys Sort In Place Without Expanding"
 
 description = '''
-A short inline dict holds `zeta`, `alpha`, `mango`, and `beta` out of order while already fitting on one line. **`alphabetize` reorders the keys in place and the dict stays inline**, because reordering leaves the total width unchanged, so `collection-layout` still finds nothing to expand.
+A short inline dict holds `zeta`, `alpha`, `mango`, and `beta` out of order while already fitting on one line. **`alphabetize-siblings` reorders the keys in place and the dict stays inline**, because reordering leaves the total width unchanged, so `reflow-collections` still finds nothing to expand.
 '''

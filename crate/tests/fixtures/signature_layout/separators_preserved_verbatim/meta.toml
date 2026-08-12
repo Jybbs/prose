@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Parameter Separators Are Preserved Verbatim"
-
-description = '''
-`render` mixes a positional-only `/` separator, a bare `*` separator opening the keyword-only section, a `verbose: bool = False` default, and a `-> tuple[int, str]` return annotation across five parameters, one past `max-params`. `signature-layout` expands the signature with **every separator and default preserved verbatim from source** rather than synthesized into a different shape.
-'''

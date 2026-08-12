@@ -1,8 +1,0 @@
-[docs]
-canonical   = true
-previewable = true
-title       = "Single-Entry Dict Strips, Two-Entry Dict Keeps"
-
-description = '''
-`single = {"only_key"  : compute_value()}` holds one key, so `strip-align-padding` drops its pre-`:` padding, reading as a plain key-value pair rather than a one-row table. `paired`'s two entries spread across separate lines and keep their padding for `align-colons`, whereas `nested`'s single `"outer"` entry strips along with the single-entry `{"inner" : "value"}` it holds.
-'''

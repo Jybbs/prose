@@ -3,5 +3,5 @@ previewable = false
 title       = "A Resolvable Call Explodes, Then Its Keywords Sort"
 
 description = '''
-`call-layout` runs ahead of `alphabetize`, so **the crowded `draw(w, h, d, c)` call explodes to keyword form and its keywords alphabetize in the same pass**, landing `color=c` first. The `def draw(width, height, depth, color)` signature holds its source order, since positional parameters never reorder.
+`reflow-calls` runs ahead of `alphabetize-siblings`, so **the crowded `draw(w, h, d, c)` call explodes to keyword form and its keywords alphabetize in the same pass**, landing `color=c` first. The `def draw(width, height, depth, color)` signature holds its source order, since positional parameters never reorder.
 '''

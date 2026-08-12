@@ -1,2 +1,2 @@
 [harness]
-rules = ["group-imports", "blank-lines"]
+rules = ["group-imports", "space-statements"]

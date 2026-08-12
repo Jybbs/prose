@@ -34,12 +34,12 @@ mod tests {
 
     #[test]
     fn nested_tables_merge_field_by_field() {
-        let mut base = table("[rules]\nalign-equals = true\nalphabetize = true\n");
-        merge_tables(&mut base, &table("[rules]\nalphabetize = false\n"));
+        let mut base = table("[rules]\nalign-equals = true\nalphabetize-siblings = true\n");
+        merge_tables(&mut base, &table("[rules]\nalphabetize-siblings = false\n"));
 
         assert_eq!(
             base,
-            table("[rules]\nalign-equals = true\nalphabetize = false\n")
+            table("[rules]\nalign-equals = true\nalphabetize-siblings = false\n")
         );
     }
 
@@ -54,8 +54,8 @@ mod tests {
     #[test]
     fn overlay_table_replaces_base_scalar() {
         let mut base = table("rules = false\n");
-        merge_tables(&mut base, &table("[rules]\nalphabetize = false\n"));
+        merge_tables(&mut base, &table("[rules]\nalphabetize-siblings = false\n"));
 
-        assert_eq!(base, table("[rules]\nalphabetize = false\n"));
+        assert_eq!(base, table("[rules]\nalphabetize-siblings = false\n"));
     }
 }

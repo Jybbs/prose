@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reflow_calls/three_args_stay_inline/input.py
+---
+def place(depth, height, width):
+    return (depth, height, width)
+
+
+box = place(d, h, w)

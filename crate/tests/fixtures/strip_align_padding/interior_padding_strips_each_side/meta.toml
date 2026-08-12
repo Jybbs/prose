@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Padding Just Inside a Bracket Strips on Either Side"
-
-description = '''
-`int(count )` pads only before its closing `)`, `wrap( 1)` pads only after its opening `(`, and `items = [ 1, 2 ]` and `mapping = { "key": 1 }` pad on both sides. `strip-align-padding` pulls each delimiter tight against its content wherever the pad sits, landing on `int(count)`, `wrap(1)`, `[1, 2]`, and `{"key": 1}`.
-'''

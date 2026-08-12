@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/space_statements/zero_blanks_between_defs_inserts_two/input.py
+---
+space-statements@25..26

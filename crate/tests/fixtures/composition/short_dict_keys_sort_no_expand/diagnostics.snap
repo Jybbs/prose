@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/short_dict_keys_sort_no_expand/input.py
 ---
-alphabetize@11..54
+alphabetize-siblings@11..54

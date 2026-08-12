@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = false
-title       = "A Link Still Spanning Lines Holds Its Shape"
-
-description = '''
-The `.filter(` link carries a flush bracketed column that [[call-layout]] never closes, so the link still spans lines when the chain is measured. Laying out a chain reads each link as one row, and a link that cannot reach one row blocks the restack, leaving the shape where the source put it.
-'''

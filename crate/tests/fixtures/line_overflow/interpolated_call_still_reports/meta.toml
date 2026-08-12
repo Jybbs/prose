@@ -3,5 +3,5 @@ previewable = false
 title       = "A Call Inside a Replacement Field Still Reports"
 
 description = '''
-The 52-column line overflows the 40-column budget, and the call it carries, `compute(alpha, beta)`, sits inside an f-string replacement field where no layout rule reaches it. The line therefore has no legal reshape, and `line-overflow` reports it rather than deferring to `call-layout`.
+The 52-column line overflows the 40-column budget, and the call it carries, `compute(alpha, beta)`, sits inside an f-string replacement field where no layout rule reaches it. The line therefore has no legal reshape, and `line-overflow` reports it rather than deferring to `reflow-calls`.
 '''

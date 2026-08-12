@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_method_chains/hung_chain_is_not_rejoined/input.py
+---
+result = (
+    obj.first(a)
+       .second(b)
+)

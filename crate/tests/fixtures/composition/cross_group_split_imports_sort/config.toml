@@ -1,2 +1,2 @@
 [harness]
-rules = ["group-imports", "band-constants", "alphabetize"]
+rules = ["group-imports", "band-constants", "alphabetize-siblings"]

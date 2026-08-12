@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/reflow_calls/hung_block_drops_its_closer_to_the_landing/input.py
+---
+reflow-calls@33..168

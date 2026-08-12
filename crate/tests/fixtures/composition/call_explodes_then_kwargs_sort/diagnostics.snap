@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/call_explodes_then_kwargs_sort/input.py
 ---
-call-layout@71..81
+reflow-calls@71..81

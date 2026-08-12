@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_imports/relative_level_separates_modules/input.py
+---
+from .pkg import beta, gamma
+from ..pkg import alpha

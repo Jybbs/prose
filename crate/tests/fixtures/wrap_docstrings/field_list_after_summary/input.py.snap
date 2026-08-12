@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/wrap_docstrings/field_list_after_summary/input.py
+---
+"""
+Summary paragraph that runs on long enough to need a wrap somewhere along
+its length here.
+
+:param source: the account identifier to debit from, described at length
+:param amount: quantity in the account's base currency
+"""

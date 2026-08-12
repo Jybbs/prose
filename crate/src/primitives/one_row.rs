@@ -35,7 +35,7 @@ use crate::{
 };
 
 /// The terms a one-row form exists under, resolved from configuration.
-/// `rejoin` carries both the argument cap and whether `call-layout`
+/// `rejoin` carries both the argument cap and whether `reflow-calls`
 /// closes a fracture at all, and `max_dict_entries` is `None` where the
 /// `explode` facet leaves the entry cap inert.
 #[derive(Clone, Copy)]
@@ -93,7 +93,7 @@ impl<'a> Settings<'a> {
     /// These settings resolving a call against `targets`, the map
     /// [`module_call_params`](crate::primitives::call_keywords::module_call_params)
     /// builds for one source. A rule reads the count trigger the same
-    /// way `call-layout` does once it carries the map.
+    /// way `reflow-calls` does once it carries the map.
     pub(crate) fn against<'t>(self, targets: &'t CallTargets<'t>) -> Settings<'t> {
         Settings {
             code_line_length: self.code_line_length,
@@ -103,7 +103,7 @@ impl<'a> Settings<'a> {
         }
     }
 
-    /// True where `call-layout`'s count trigger explodes `call`, read
+    /// True where `reflow-calls`'s count trigger explodes `call`, read
     /// off the rejoin terms these settings carry.
     pub(crate) fn count_explodes(&self, source: &Source, call: &ExprCall) -> bool {
         self.rejoin.explodes(source, call)
@@ -233,7 +233,7 @@ impl<'a> Settings<'a> {
 
 impl From<&Config> for Settings<'_> {
     fn from(config: &Config) -> Self {
-        let collection = &config.rules.collection_layout;
+        let collection = &config.rules.reflow_collections;
         Self {
             code_line_length: config.code_width(),
             keep_multiline_literals: collection.keep_multiline_literals,
@@ -372,7 +372,7 @@ impl<'a> Writer<'a> {
     /// True where a later rule reopens `expr` whatever its current
     /// shape. A dict past `max_dict_entries` explodes on its own count
     /// trigger, and so does an argument list past `max_args` that
-    /// `call-layout` can name, so no one-row form written around either
+    /// `reflow-calls` can name, so no one-row form written around either
     /// survives the pipeline. A call the count trigger claims but cannot
     /// rewrite into keyword form stays inline, leaving its one-row form
     /// standing.
@@ -579,15 +579,15 @@ mod tests {
     #[test]
     fn form_declines_a_dict_past_the_entry_cap() {
         let mut config = Config::default();
-        config.rules.collection_layout.max_dict_entries.0 = NonZeroUsize::new(2);
+        config.rules.reflow_collections.max_dict_entries.0 = NonZeroUsize::new(2);
         assert_eq!(form_under(&config, "{'a': 1, 'b': 2, 'c': 3}"), None);
     }
 
     #[test]
     fn form_joins_a_dict_the_cleared_explode_facet_leaves_inert() {
         let mut config = Config::default();
-        config.rules.collection_layout.explode = false;
-        config.rules.collection_layout.max_dict_entries.0 = NonZeroUsize::new(2);
+        config.rules.reflow_collections.explode = false;
+        config.rules.reflow_collections.max_dict_entries.0 = NonZeroUsize::new(2);
         assert_eq!(
             form_under(&config, "{'a': 1,\n 'b': 2, 'c': 3}").as_deref(),
             Some("{'a': 1, 'b': 2, 'c': 3}"),

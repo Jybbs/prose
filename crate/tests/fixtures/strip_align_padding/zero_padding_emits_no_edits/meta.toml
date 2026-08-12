@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Already-Conforming Source Is Left Alone"
-
-description = '''
-`fetch`'s `timeout`, `single`'s one entry, `Solo.only_field`, and `render`'s docstring `template` entry are each a singleton context that already carries zero pre-`:` padding. `strip-align-padding` finds every gap already empty and **emits no edits**, so the output equals the input byte-for-byte and the pipeline reports no change.
-'''

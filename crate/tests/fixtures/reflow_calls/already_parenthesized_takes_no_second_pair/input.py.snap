@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_calls/already_parenthesized_takes_no_second_pair/input.py
+---
+def bundle(entries, marker, offset, source):
+    return (entries, marker, offset, source)
+
+
+bundle(
+    entries=(row for row in rows),
+    marker=(seen := 1),
+    offset=start,
+    source=rows
+)

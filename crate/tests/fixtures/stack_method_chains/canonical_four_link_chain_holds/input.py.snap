@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_method_chains/canonical_four_link_chain_holds/input.py
+---
+result = (
+    pstats.Stats(profile)
+          .strip_dirs()
+          .sort_stats(order)
+          .print_stats()
+)

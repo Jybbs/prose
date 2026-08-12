@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/list_atomics_flow_pack/input.py
+---
+short_list = [2, 3, 5, 7, 11, 13]
+long_list = [
+    "San Francisco", "Los Angeles", "New York", "Chicago", "Boston", "Seattle", "Miami"
+]
+held_list = [
+    2, 3, 5, 7, 11
+]

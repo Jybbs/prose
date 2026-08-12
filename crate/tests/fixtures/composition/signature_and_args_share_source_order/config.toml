@@ -1,2 +1,2 @@
 [harness]
-rules = ["alphabetize", "align-colons", "docstring-wrap"]
+rules = ["alphabetize-siblings", "align-colons", "wrap-docstrings"]

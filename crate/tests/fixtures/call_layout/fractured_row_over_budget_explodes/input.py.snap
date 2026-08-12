@@ -1,9 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/call_layout/fractured_row_over_budget_explodes/input.py
----
-value = helper(
-    alpha,
-    beta
-) + ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt

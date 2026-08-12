@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/space_statements/class_docstring_to_first_method/input.py
+---
+space-statements@114..118
+space-statements@79..80

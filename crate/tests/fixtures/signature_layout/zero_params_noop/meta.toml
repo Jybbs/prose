@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Zero-Parameter Signatures Are a No-Op"
-
-description = '''
-`render` takes no parameters and its `def` line runs well short of the budget, so neither the `max-params` count nor the `code-line-length` measure can trigger an expansion. `signature-layout` **leaves the `def` exactly as written**.
-'''

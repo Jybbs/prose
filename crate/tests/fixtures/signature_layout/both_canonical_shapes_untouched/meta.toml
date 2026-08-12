@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Signature Already in Canonical Form Is Left Alone"
-
-description = '''
-`already_inline`'s two parameters, `palette` and `target`, fit within both `max-params` and `code-line-length`, so the inline form stays as written. `already_expanded`'s five parameters exceed `max-params`, yet its one-per-line layout already matches what `signature-layout` would produce, so **neither signature is edited**.
-'''

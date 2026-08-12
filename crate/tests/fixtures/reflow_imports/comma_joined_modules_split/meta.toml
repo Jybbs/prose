@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comma-Joined Import Splits One Module per Line"
+
+description = '''
+`split-multi-module` breaks `import os, sys` into **one `import` statement per module**, the shape [[group-imports]] and [[alphabetize-siblings]] then order. The comma separates two distinct modules, so nothing ties `os` and `sys` to a shared line.
+'''

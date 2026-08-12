@@ -3,5 +3,5 @@ previewable = false
 title       = "Sandwiched Single-Line Stub Reorders and Keeps Two-Blank Cushions"
 
 description = '''
-`Beta` is a single-line class stub sandwiched between the block-bodied `Alpha` and `Gamma`. `alphabetize` reorders the three classes into `Alpha`, `Beta`, `Gamma`, and **`blank-lines` settles two blank lines on both sides of `Beta`** in the same pass, rather than the two rules repeatedly re-adjusting that gap across separate passes.
+`Beta` is a single-line class stub sandwiched between the block-bodied `Alpha` and `Gamma`. `alphabetize-siblings` reorders the three classes into `Alpha`, `Beta`, `Gamma`, and **`space-statements` settles two blank lines on both sides of `Beta`** in the same pass, rather than the two rules repeatedly re-adjusting that gap across separate passes.
 '''

@@ -1,2 +1,2 @@
 [harness]
-rules = ["alphabetize", "docstring-expand", "docstring-frame", "blank-lines"]
+rules = ["alphabetize-siblings", "expand-docstrings", "frame-docstrings", "space-statements"]

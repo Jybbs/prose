@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reflow_signatures/zero_params_noop/input.py
+---
+def render():
+    return 1

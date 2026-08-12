@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize_siblings/set_own_line_comment_travels/input.py
+---
+alphabetize-siblings@16..57

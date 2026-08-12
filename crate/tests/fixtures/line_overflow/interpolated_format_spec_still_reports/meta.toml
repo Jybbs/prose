@@ -3,5 +3,5 @@ previewable = false
 title       = "A Computed Format Spec Still Reports"
 
 description = '''
-The format spec after the `:` in `f"{amount:{compute(width, pad)}}"` is itself a replacement field, and the `compute(width, pad)` call inside it sits as far out of layout's reach as one in the outer field. The 62-column line therefore has no legal reshape, and `line-overflow` reports it rather than leaving it for `call-layout`.
+The format spec after the `:` in `f"{amount:{compute(width, pad)}}"` is itself a replacement field, and the `compute(width, pad)` call inside it sits as far out of layout's reach as one in the outer field. The 62-column line therefore has no legal reshape, and `line-overflow` reports it rather than leaving it for `reflow-calls`.
 '''

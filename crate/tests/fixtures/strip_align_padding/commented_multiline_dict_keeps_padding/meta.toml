@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Commented Multi-Line Dict Keeps Its Padding"
-
-description = '''
-`multiline` holds two entries, `"first"  : 1` and `"second" : 2`, each followed on the same line by a trailing comment, so the pair still forms one multi-row group for `align-colons` to align. `strip-align-padding` **keeps that pre-`:` padding**, because it clears a column only when no alignment group claims it.
-'''

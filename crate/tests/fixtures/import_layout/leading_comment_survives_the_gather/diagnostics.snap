@@ -1,6 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/import_layout/leading_comment_survives_the_gather/input.py
----
-import-layout@56..78

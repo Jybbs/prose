@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Method Breaks the Line-Adjacent Field Group"
+
+description = '''
+`Solo.only_field` is the lone annotated field in its class, and `strip-stranded-padding` **strips its pre-`:` padding**, while `Pair`'s `first` and `second` sit line-adjacent and keep their padding for `align-colons`. `WithMethod.sole_field` sits alone too, because the `serialize` method that follows breaks the line-adjacent group rather than joining it, so the rule strips its padding the same way.
+'''

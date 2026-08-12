@@ -1,2 +1,2 @@
 [harness]
-rules = ["call-layout", "shed-super-args"]
+rules = ["reflow-calls", "shed-super-args"]

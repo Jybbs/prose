@@ -1,6 +1,6 @@
 ---
 caption : "Aligns the post-pattern `:` across single-expression case bodies inside a `match` statement."
-related : [align-colons, align-equals, align-imports, strip-align-padding]
+related : [align-colons, align-equals, align-imports, strip-stranded-padding]
 layout  : doc
 ---
 
@@ -10,7 +10,7 @@ layout  : doc
 
 A `match` whose case bodies all collapse to a single expression reads naturally as a dispatch table, with patterns on the left and results on the right. `align-match-case` gathers consecutive single-expression cases into a shared column for the post-pattern `:` separator, so the pattern column flushes left and the body column flushes right, and the reader reads the table by scanning rows rather than tracing each case body.
 
-The rule fires only on runs of single-expression cases at the same indentation. A multi-statement case body, a comment between cases, or a nested `match` breaks the run and leaves the surrounding cases aligned in isolation. Pair with [[strip-align-padding]] to skip padding on one-arm matches and with [[align-colons]] to align separators inside dict-returning case bodies.
+The rule fires only on runs of single-expression cases at the same indentation. A multi-statement case body, a comment between cases, or a nested `match` breaks the run and leaves the surrounding cases aligned in isolation. Pair with [[strip-stranded-padding]] to skip padding on one-arm matches and with [[align-colons]] to align separators inside dict-returning case bodies.
 
 <template #configuration>
 

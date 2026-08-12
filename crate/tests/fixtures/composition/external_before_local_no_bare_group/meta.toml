@@ -3,5 +3,5 @@ previewable = false
 title       = "External Froms Lead Local Froms With No Bare Group"
 
 description = '''
-Every import here is a `from` form, so the output opens with no bare-import group. **`group-imports` puts the external `collections` and `typing` ahead of `myapp` and `.`, because `first-party` names `myapp` as local**, `blank-lines` separates the two groups with a single blank line, and `align-imports` pads `import` into a column within each group.
+Every import here is a `from` form, so the output opens with no bare-import group. **`group-imports` puts the external `collections` and `typing` ahead of `myapp` and `.`, because `first-party` names `myapp` as local**, `space-statements` separates the two groups with a single blank line, and `align-imports` pads `import` into a column within each group.
 '''

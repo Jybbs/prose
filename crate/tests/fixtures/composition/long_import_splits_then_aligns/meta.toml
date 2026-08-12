@@ -3,5 +3,5 @@ previewable = false
 title       = "A Split Run Needs No Realignment"
 
 description = '''
-The five-name import overruns the `import-line-length` cap, so `import-layout` splits it into two `from package import` lines, packing `alpha, beta, delta` onto the first and `epsilon, gamma` onto the second. `align-imports` then **changes nothing**, because both lines open with the identical prefix and their `import` keywords already share a column.
+The five-name import overruns the `import-line-length` cap, so `reflow-imports` splits it into two `from package import` lines, packing `alpha, beta, delta` onto the first and `epsilon, gamma` onto the second. `align-imports` then **changes nothing**, because both lines open with the identical prefix and their `import` keywords already share a column.
 '''

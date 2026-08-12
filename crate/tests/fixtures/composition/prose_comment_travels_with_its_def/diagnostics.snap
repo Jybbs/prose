@@ -3,5 +3,5 @@ source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/composition/prose_comment_travels_with_its_def/input.py
 ---
-alphabetize@45..180
+alphabetize-siblings@45..180
 band-constants@4..114

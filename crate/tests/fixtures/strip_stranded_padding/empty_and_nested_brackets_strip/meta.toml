@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Empty and Nested Brackets Strip"
+
+description = '''
+`empty = call( )` holds a single space between its parentheses with nothing inside them, and `strip-stranded-padding` collapses that space to `call()`. `nested = outer( inner( x ) )` pads both the outer and inner calls, and the rule strips the padding at each level, landing on `outer(inner(x))`.
+'''

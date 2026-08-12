@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Zero-Parameter Signature With a Multi-Line Return Annotation Is Left Alone"
-
-description = '''
-`render` takes no parameters, and its return annotation, `PrimaryEnvelope | SecondaryEnvelope | DeferredEnvelope`, spans three parenthesized lines. `signature-layout` **leaves the signature untouched**, its empty parameter list never split across its own lines and the return annotation's grouping parentheses surviving intact.
-'''

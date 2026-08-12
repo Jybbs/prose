@@ -3,5 +3,5 @@ previewable = false
 title       = "Union-Valued Dict Expands, Sorts, and Aligns Colons"
 
 description = '''
-The one-line `ALIASES` dict overflows the budget, and its values are `Optional` and `Union` expressions. **`collection-layout` explodes it to one entry per row, `alphabetize` sorts the keys so `"extended_label"` leads, and `align-colons` pads every key to a shared `:` column**, while the legacy union values on the right pass through unchanged.
+The one-line `ALIASES` dict overflows the budget, and its values are `Optional` and `Union` expressions. **`reflow-collections` explodes it to one entry per row, `alphabetize-siblings` sorts the keys so `"extended_label"` leads, and `align-colons` pads every key to a shared `:` column**, while the legacy union values on the right pass through unchanged.
 '''

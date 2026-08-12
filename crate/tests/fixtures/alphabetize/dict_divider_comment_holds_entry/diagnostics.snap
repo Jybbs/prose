@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/dict_divider_comment_holds_entry/input.py
----
-alphabetize@10..48

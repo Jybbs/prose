@@ -3,5 +3,5 @@ previewable = false
 title       = "Grouping Off Leaves One Flat, Aligned Import Block"
 
 description = '''
-With `group-imports = false`, the four imports sort as **one flat block with no blank lines between them**. `alphabetize` puts the bare `import os` and `import sys` ahead of the `from` lines, and `align-imports` still pads `import` into a shared column across `from collections` and `from typing`.
+With `group-imports = false`, the four imports sort as **one flat block with no blank lines between them**. `alphabetize-siblings` puts the bare `import os` and `import sys` ahead of the `from` lines, and `align-imports` still pads `import` into a shared column across `from collections` and `from typing`.
 '''

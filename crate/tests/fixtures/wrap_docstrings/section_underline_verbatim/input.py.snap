@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/wrap_docstrings/section_underline_verbatim/input.py
+---
+def f(x):
+    """
+    Parameters
+    ----------
+    x : array_like
+        First input array.
+    """
+    return x

@@ -1,6 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/call_layout/tail_opener_bounds_the_rejoin_measure/input.py
----
-value = helper(alpha, beta) + [gamma_value, delta_value, epsilon_value, zeta_value, eta_value]

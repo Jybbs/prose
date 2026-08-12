@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/strip_stranded_padding/empty_and_nested_brackets_strip/input.py
+---
+empty = call()
+nested = outer(inner(x))

@@ -4,8 +4,8 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/method_holds_match_returns_then_sort/input.py
 ---
 align-match-case@151..267
-alphabetize@33..340
-blank-lines@111..112
-blank-lines@17..18
-blank-lines@281..282
-blank-lines@76..77
+alphabetize-siblings@33..340
+space-statements@111..112
+space-statements@17..18
+space-statements@281..282
+space-statements@76..77

@@ -3,5 +3,5 @@ previewable = true
 title       = "Top-Level Functions Sort and Gain Two-Blank Cushions"
 
 description = '''
-`zebra`, `alpha`, and `mango` sit out of alphabetical order at module level with no spacing between them. **`alphabetize` reorders the definitions and `blank-lines` inserts the canonical two blank lines** between each pair of top-level functions.
+`zebra`, `alpha`, and `mango` sit out of alphabetical order at module level with no spacing between them. **`alphabetize-siblings` reorders the definitions and `space-statements` inserts the canonical two blank lines** between each pair of top-level functions.
 '''

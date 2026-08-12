@@ -3,5 +3,5 @@ previewable = false
 title       = "A Prose Comment Travels With the Def It Heads"
 
 description = '''
-A comment written directly above `rgb_to_yiq` sits between the module constants and three function definitions that `alphabetize` reorders. **The comment moves with `rgb_to_yiq`** to its new position between `hls_to_rgb` and `yiq_to_rgb`, rather than staying above whichever definition lands in the original slot.
+A comment written directly above `rgb_to_yiq` sits between the module constants and three function definitions that `alphabetize-siblings` reorders. **The comment moves with `rgb_to_yiq`** to its new position between `hls_to_rgb` and `yiq_to_rgb`, rather than staying above whichever definition lands in the original slot.
 '''

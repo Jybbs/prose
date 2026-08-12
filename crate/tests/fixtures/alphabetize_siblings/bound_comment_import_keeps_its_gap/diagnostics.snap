@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/bound_comment_import_keeps_its_gap/input.py
+---
+alphabetize-siblings@7..21

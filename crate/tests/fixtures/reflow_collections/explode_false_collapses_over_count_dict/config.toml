@@ -1,0 +1,2 @@
+[rules]
+reflow-collections = { explode = false, keep-multiline-literals = false }

@@ -125,7 +125,7 @@ pub(crate) fn resolve_call_params<'src>(
         .copied()
 }
 
-/// True where `call-layout`'s count trigger explodes `call`, meaning
+/// True where `reflow-calls`'s count trigger explodes `call`, meaning
 /// every argument takes keyword form against the module function the
 /// callee binds and no positional-only prefix pins the order. A call the
 /// cap claims but cannot name stays inline, so a join or a one-row form

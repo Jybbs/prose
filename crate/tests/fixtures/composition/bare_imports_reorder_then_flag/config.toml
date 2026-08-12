@@ -1,2 +1,2 @@
 [harness]
-rules = ["alphabetize", "bare-imports"]
+rules = ["alphabetize-siblings", "bare-imports"]

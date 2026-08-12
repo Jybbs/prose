@@ -3,5 +3,5 @@ previewable = false
 title       = "Old Args Continuations Reflow at the Post-Align Column"
 
 description = '''
-The `host` entry's description continues on a second line indented to the section body indent rather than under the description text. `align-colons` pads both `:` one space past `encoding`, the longest name, and **`docstring-wrap` reflows `host`'s continuation lines to hang at the post-align description column**, so every wrapped line starts directly under `A descriptive parameter`.
+The `host` entry's description continues on a second line indented to the section body indent rather than under the description text. `align-colons` pads both `:` one space past `encoding`, the longest name, and **`wrap-docstrings` reflows `host`'s continuation lines to hang at the post-align description column**, so every wrapped line starts directly under `A descriptive parameter`.
 '''

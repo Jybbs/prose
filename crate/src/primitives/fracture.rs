@@ -14,7 +14,7 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
-    config::CallLayoutConfig,
+    config::ReflowCallsConfig,
     primitives::{
         call_keywords::{CallTargets, takes_keyword_form},
         edit::apply_inline_edits,
@@ -36,7 +36,7 @@ impl Joins {
 
 /// The terms a fracture closes under, resolved from configuration.
 /// `cap` is the argument count past which a list keeps its break, and
-/// `closes` is clear where `call_layout` is off and no fracture shuts
+/// `closes` is clear where `reflow_calls` is off and no fracture shuts
 /// at all.
 #[derive(Clone, Copy)]
 pub(crate) struct Settings<'a> {
@@ -48,7 +48,7 @@ pub(crate) struct Settings<'a> {
 impl Settings<'_> {
     /// These settings resolving a call against `targets`, the map
     /// [`module_call_params`] builds for one source, so the join reads
-    /// the count trigger the way `call-layout` explodes it.
+    /// the count trigger the way `reflow-calls` explodes it.
     pub(crate) fn against<'t>(self, targets: &'t CallTargets<'t>) -> Settings<'t> {
         Settings {
             cap: self.cap,
@@ -57,7 +57,7 @@ impl Settings<'_> {
         }
     }
 
-    /// True where `call-layout`'s count trigger explodes `call`, its
+    /// True where `reflow-calls`'s count trigger explodes `call`, its
     /// arguments past the cap and every one taking keyword form.
     pub(crate) fn explodes(self, source: &Source, call: &ExprCall) -> bool {
         self.over_cap(call.arguments.len()) && takes_keyword_form(source, call, self.targets)
@@ -72,15 +72,15 @@ impl Settings<'_> {
     }
 
     /// True where a list of `count` arguments sits past the cap a
-    /// closing fracture holds to, the list `call-layout` explodes on its
-    /// count trigger. False throughout where `call-layout` is off.
+    /// closing fracture holds to, the list `reflow-calls` explodes on its
+    /// count trigger. False throughout where `reflow-calls` is off.
     fn over_cap(self, count: usize) -> bool {
         self.closes && self.cap.is_some_and(|cap| count > cap)
     }
 }
 
-impl From<&CallLayoutConfig> for Settings<'_> {
-    fn from(rules: &CallLayoutConfig) -> Self {
+impl From<&ReflowCallsConfig> for Settings<'_> {
+    fn from(rules: &ReflowCallsConfig) -> Self {
         Self {
             cap: rules.max_args.cap(),
             closes: rules.enabled,

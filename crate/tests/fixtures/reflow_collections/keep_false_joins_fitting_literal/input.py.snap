@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/keep_false_joins_fitting_literal/input.py
+---
+fitting_joins = [10, 20, 30]
+overflowing_explodes = [
+    1111111, 2222222, 3333333, 4444444, 5555555,
+    6666666, 7777777, 8888888, 9999999
+]

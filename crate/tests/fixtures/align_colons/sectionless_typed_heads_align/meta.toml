@@ -3,5 +3,5 @@ previewable = true
 title       = "Type-Bearing Heads Outside Any Section Align Too"
 
 description = '''
-The heads `handler`, `timeout`, and `codec` sit at the docstring body indent of `Frame` under no Title-case section heading. A `name (type):` head there passes through `docstring-wrap` verbatim, so the contiguous run settles its type column and its `:` column exactly the way a section's entries do.
+The heads `handler`, `timeout`, and `codec` sit at the docstring body indent of `Frame` under no Title-case section heading. A `name (type):` head there passes through `wrap-docstrings` verbatim, so the contiguous run settles its type column and its `:` column exactly the way a section's entries do.
 '''

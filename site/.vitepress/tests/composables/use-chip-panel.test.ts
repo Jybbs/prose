@@ -20,7 +20,7 @@ const ALIGN: RuleControl = {
 
 const BLANK: RuleControl = {
   family : 'formatting',
-  slug   : 'blank-lines',
+  slug   : 'space-statements',
   facets : [{ default: 2, hintHtml: '', key: 'gap', kind: 'int', label: 'Gap' }]
 }
 
@@ -59,9 +59,9 @@ describe('useChipPanel', () => {
   it('filters the visible rules to the eligible set and falls back to all', () => {
     const { eligible, sandbox } = fakeSandbox()
     const api = mountSetup(() => useChipPanel(sandbox, CARDS))
-    expect(api.visible.value.map(rule => rule.slug)).toEqual(['align-equals', 'blank-lines'])
-    eligible.value = ['blank-lines']
-    expect(api.visible.value.map(rule => rule.slug)).toEqual(['blank-lines'])
+    expect(api.visible.value.map(rule => rule.slug)).toEqual(['align-equals', 'space-statements'])
+    eligible.value = ['space-statements']
+    expect(api.visible.value.map(rule => rule.slug)).toEqual(['space-statements'])
     eligible.value = null
     expect(api.visible.value).toEqual([])
   })
@@ -123,7 +123,7 @@ describe('useChipPanel', () => {
     const { sandbox } = fakeSandbox()
     const api = mountSetup(() => useChipPanel(sandbox, CARDS))
     expect(api.ruleData('align-equals')?.href).toBe('/rules/alignment/align-equals')
-    expect(api.ruleData('blank-lines')).toBeNull()
+    expect(api.ruleData('space-statements')).toBeNull()
   })
 
   it('closes on an outside click but leaves a gear click to its own handler', async () => {

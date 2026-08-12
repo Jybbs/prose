@@ -1,4 +1,4 @@
 import-line-length = 52
 
 [harness]
-rules = ["import-layout", "align-imports"]
+rules = ["reflow-imports", "align-imports"]

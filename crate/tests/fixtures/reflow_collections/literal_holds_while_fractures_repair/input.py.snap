@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/literal_holds_while_fractures_repair/input.py
+---
+held_list = [
+    1, 2, 3
+]
+repaired_subscript = registry["primary"]
+repaired_collection_key = {
+    ("x", "y"): "value",
+    "second": 2
+}

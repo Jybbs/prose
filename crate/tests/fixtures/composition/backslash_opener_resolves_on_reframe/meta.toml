@@ -3,5 +3,5 @@ previewable = false
 title       = "A Backslash Opener Resolves as the Frame Moves It"
 
 description = '''
-The module docstring opens `"""\` so its first word starts flush against the quotes, the backslash suppressing the newline that would otherwise lead the value. **`docstring-frame` moves the text onto its own line and `docstring-wrap` drops the now-stranded continuation backslash** rather than reflowing it into the paragraph as a word, where it would read as the invalid escape `\ `.
+The module docstring opens `"""\` so its first word starts flush against the quotes, the backslash suppressing the newline that would otherwise lead the value. **`frame-docstrings` moves the text onto its own line and `wrap-docstrings` drops the now-stranded continuation backslash** rather than reflowing it into the paragraph as a word, where it would read as the invalid escape `\ `.
 '''

@@ -28,12 +28,12 @@ export const RULES = [
   'align-equals',
   'align-colons',
   'align-imports',
-  'signature-layout',
-  'alphabetize',
-  'docstring-expand',
-  'docstring-wrap',
-  'blank-lines',
-  'collection-layout'
+  'reflow-signatures',
+  'alphabetize-siblings',
+  'expand-docstrings',
+  'wrap-docstrings',
+  'space-statements',
+  'reflow-collections'
 ] as const
 
 const RULE_COLUMN = Math.max(...RULES.map(rule => rule.length))

@@ -1,2 +1,2 @@
 [harness]
-rules = ["call-layout", "alphabetize"]
+rules = ["reflow-calls", "alphabetize-siblings"]

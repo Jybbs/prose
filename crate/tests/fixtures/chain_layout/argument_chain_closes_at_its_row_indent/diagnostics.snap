@@ -1,6 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/chain_layout/argument_chain_closes_at_its_row_indent/input.py
----
-chain-layout@20..63

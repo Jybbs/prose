@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_signatures/return_string_concat_survives_expand/input.py
+---
+reflow-signatures@20..92

@@ -1,6 +1,6 @@
 ---
 caption : "Sheds a grouping parenthesis pair that binds nothing, reflowing the expression onto the line it now fits."
-related : [shed-backslash-continuations, collection-layout, signature-layout]
+related : [shed-backslash-continuations, reflow-collections, reflow-signatures]
 layout  : doc
 ---
 
@@ -8,7 +8,7 @@ layout  : doc
 
 <RuleLayout rule="shed_parentheses">
 
-A parenthesis pair wrapped around an expression only to span lines, or out of habit, is visual weight the expression does not carry meaning through. [[collection-layout]] joins a wrapped construct back onto the line it fits, yet it leaves the surrounding parentheses in place, because removing syntax belongs to no layout rule. `shed-parentheses` closes that gap, dropping a grouping pair that binds nothing and reflowing the expression onto the line it now fits.
+A parenthesis pair wrapped around an expression only to span lines, or out of habit, is visual weight the expression does not carry meaning through. [[reflow-collections]] joins a wrapped construct back onto the line it fits, yet it leaves the surrounding parentheses in place, because removing syntax belongs to no layout rule. `shed-parentheses` closes that gap, dropping a grouping pair that binds nothing and reflowing the expression onto the line it now fits.
 
 The decision is structural rather than textual, so a pair sheds only where removing it leaves the parse unchanged. A precedence-bearing pair such as `(a + b) * c` stays because dropping it would rebind the multiplication, a generator and a walrus binding keep the parentheses the grammar requires of them, and the parentheses that form a one-element tuple stay part of the tuple rather than wrapping it. A pair whose interior carries a comment stays too, since folding the break would strand the comment off the line it describes.
 

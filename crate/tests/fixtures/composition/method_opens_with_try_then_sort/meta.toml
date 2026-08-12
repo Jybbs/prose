@@ -3,5 +3,5 @@ previewable = false
 title       = "Methods Sort Around One Opening With `try`/`except`"
 
 description = '''
-`Validator`'s three methods arrive out of order, and `validate_alpha` opens its body with a `try`/`except` block. **`alphabetize` reorders the methods and `blank-lines` separates them with single blank lines**, also inserting one between the `def validate_alpha` line and its opening `try`. The `try`/`except` body itself moves whole, its statements untouched.
+`Validator`'s three methods arrive out of order, and `validate_alpha` opens its body with a `try`/`except` block. **`alphabetize-siblings` reorders the methods and `space-statements` separates them with single blank lines**, also inserting one between the `def validate_alpha` line and its opening `try`. The `try`/`except` body itself moves whole, its statements untouched.
 '''

@@ -14,7 +14,7 @@ code-line-length = 88
 [rules]
 align-colons      = { max-shift = false }
 align-equals      = false
-collection-layout = { max-atomics = 3 }
+reflow-collections = { max-atomics = 3 }
 ```
 
 A bare `false` disables a rule, an inline table sets its facets while leaving the rule enabled, and a rule you do not name stays on at its default. Under `pyproject.toml` the table reads `[tool.prose.rules]`, and a rule with several facets may prefer the expanded `[rules.<rule>]` sub-table *(`[tool.prose.rules.<rule>]` in the manifest)*, which carries the same settings as the inline form.
@@ -41,11 +41,11 @@ With no value set, every version-dependent arm skips rather than assume a defaul
 
 The `*-line-length` caps are hard constraints, and every shaping rule resolves within them rather than reading the budget as a hint. `code-line-length` governs code lines and `import-line-length` governs import lines, with the count knobs *(`max-args`, `max-params`, `max-dict-entries`, `max-links`)* choosing shapes only for the lines that already fit beneath a cap.
 
-A construct with a legal multi-line reshape takes it once its line crosses the cap, whatever a count threshold says, so a call over `code-line-length` explodes to one argument per line even at or under `max-args`, and a signature, collection, or `from` import does the same against its budget. An alignment run whose padding would carry a member past its cap reshapes that member first *(an import splits per [[import-layout]], a call or collection value explodes per its layout rule)* and then aligns within the cap, a member partitioning out of the run unpadded the way an over-`max-shift` outlier does only when no reshape can bring its aligned width under.
+A construct with a legal multi-line reshape takes it once its line crosses the cap, whatever a count threshold says, so a call over `code-line-length` explodes to one argument per line even at or under `max-args`, and a signature, collection, or `from` import does the same against its budget. An alignment run whose padding would carry a member past its cap reshapes that member first *(an import splits per [[reflow-imports]], a call or collection value explodes per its layout rule)* and then aligns within the cap, a member partitioning out of the run unpadded the way an over-`max-shift` outlier does only when no reshape can bring its aligned width under.
 
 Several alignment rules reach the same row, wherein [[align-colons]], [[align-equals]], and [[align-comments]] each seat a column on a line carrying an annotation, a value, and a note. Each answers the cap against the line it will emit rather than the one the buffer holds, measuring a trailing comment at its two-column floor and the gap after an operator at the single space an aligned row carries, both of which a later rule settles. That keeps every rule's fit decision invariant to the ones that run after it, so the columns resolve in one pass rather than trading places across repeated runs.
 
-A trailing comment counts toward the cap the way any other span on the line does, since *Prose* places it through [[comment-spacing]] and [[align-comments]] rather than leaving it as text it never touches. A row already past its cap before any padding therefore holds its own buffer and joins a shared column only where that column costs it no further width, which the widest member of a run alone satisfies. Alignment never carries an over-budget line further out, leaving [[line-overflow]] to name the remainder at the narrowest width the row can reach.
+A trailing comment counts toward the cap the way any other span on the line does, since *Prose* places it through [[normalize-comment-spacing]] and [[align-comments]] rather than leaving it as text it never touches. A row already past its cap before any padding therefore holds its own buffer and joins a shared column only where that column costs it no further width, which the widest member of a run alone satisfies. Alignment never carries an over-budget line further out, leaving [[line-overflow]] to name the remainder at the narrowest width the row can reach.
 
 A cap no legal form can satisfy *(a deep indent, a long identifier, a cap set below what a statement needs)* leaves the narrowest legal form standing, and [[line-overflow]] names that remainder, so an unsatisfiable cap reads as a finding in `prose check` and a flagged line in the sandbox rather than as a knob that did nothing.
 
@@ -76,7 +76,7 @@ A list entry names a root package, so `myapp` matches `import myapp.db` and `fro
 
 ## Per-Rule Facets
 
-The `[rules]` table holds one entry per rule you change. A bare bool is the shorthand for `enabled` (*`alphabetize = false`*), an inline table sets a rule's facets (*`align-equals = { max-shift = 4 }`*), and a rule you do not name stays enabled at its defaults. The facets below group by rule family and nest under the rule that reads each one, so the two `allow` facets stay distinct because they belong to different rules and read different inputs. The Generic group gathers the facets that cut across families, wherein `enabled` reaches every rule and `max-shift` every alignment rule.
+The `[rules]` table holds one entry per rule you change. A bare bool is the shorthand for `enabled` (*`alphabetize-siblings = false`*), an inline table sets a rule's facets (*`align-equals = { max-shift = 4 }`*), and a rule you do not name stays enabled at its defaults. The facets below group by rule family and nest under the rule that reads each one, so the two `allow` facets stay distinct because they belong to different rules and read different inputs. The Generic group gathers the facets that cut across families, wherein `enabled` reaches every rule and `max-shift` every alignment rule.
 
 <PerRuleFacets />
 
@@ -90,7 +90,7 @@ Every key follows one shape so its name predicts its kind. A boolean key reads a
 
 ## Docstring Budgets
 
-Docstrings carry two readings inside one triple-quoted region. Description prose between the opening `"""` and the first section heading reads as paragraphs, where 76 characters is the comfortable line for sustained reading. Every Title-case-headed section that follows reads as a code-shaped table whose prose lines reuse `code-line-length` (*88 by default*) to match surrounding indentation, whereas its `name: description` entries wrap to `docstring-line-length` with a hanging indent at the description's start column. `docstring-structured-policy` switches the prose lines to `docstring-line-length` if a project prefers a single narrower budget across the whole docstring. The [[docstring-wrap]] rule consumes both budgets.
+Docstrings carry two readings inside one triple-quoted region. Description prose between the opening `"""` and the first section heading reads as paragraphs, where 76 characters is the comfortable line for sustained reading. Every Title-case-headed section that follows reads as a code-shaped table whose prose lines reuse `code-line-length` (*88 by default*) to match surrounding indentation, whereas its `name: description` entries wrap to `docstring-line-length` with a hanging indent at the description's start column. `docstring-structured-policy` switches the prose lines to `docstring-line-length` if a project prefers a single narrower budget across the whole docstring. The [[wrap-docstrings]] rule consumes both budgets.
 
 ## Per-Pattern Overrides
 

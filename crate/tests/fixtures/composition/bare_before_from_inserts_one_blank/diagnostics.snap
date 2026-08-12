@@ -3,4 +3,4 @@ source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/composition/bare_before_from_inserts_one_blank/input.py
 ---
-blank-lines@9..10
+space-statements@9..10

@@ -4,4 +4,4 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/inline_opener_args_align_prose_wrap/input.py
 ---
 align-colons@193..286
-docstring-frame@55..55
+frame-docstrings@55..55

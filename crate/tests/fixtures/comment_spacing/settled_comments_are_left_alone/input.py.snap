@@ -1,7 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/comment_spacing/settled_comments_are_left_alone/input.py
----
-# a settled block comment
-value = 1  # a settled trailing comment

@@ -4,5 +4,5 @@ expression: render(&diagnostics)
 input_file: crate/tests/fixtures/composition/condense_tuple_key_then_align_colons/input.py
 ---
 align-colons@78..125
-alphabetize@69..131
-collection-layout@23..155
+alphabetize-siblings@69..131
+reflow-collections@23..155

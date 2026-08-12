@@ -1,4 +1,0 @@
-import-line-length = 30
-
-[rules]
-alphabetize = false

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Over-Long Roster Holds Its Authored Order Under `alphabetize = false`"
+
+description = '''
+`from pkg import gamma, alpha, beta, delta, epsilon` overflows the 30-column import budget and splits across three lines, with the members still reading `gamma, alpha, beta, delta, epsilon` in **authored order**. Sorting belongs to [[alphabetize-siblings]] rather than to the split, so `alphabetize = false` leaves the roster exactly as written.
+'''

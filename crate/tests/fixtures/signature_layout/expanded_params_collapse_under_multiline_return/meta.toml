@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Expanded Parameters Collapse While the Multi-Line Return Annotation Stays Put"
-
-description = '''
-`resolve`'s two parameters, `payload` and `fallback`, were written one per line but fit inline, so `signature-layout` **collapses them onto a single row**. The return annotation `PrimaryEnvelope | SecondaryEnvelope | DeferredEnvelope` keeps its own multi-line layout and parentheses, sliced verbatim rather than reflowed into the new line.
-'''

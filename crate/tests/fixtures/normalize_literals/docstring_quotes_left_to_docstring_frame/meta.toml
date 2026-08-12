@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Docstring's Quotes Are Left to `docstring-frame`"
-
-description = '''
-`render`'s docstring `'Summary.'` keeps its single quotes, whereas `'body'` in the return below it swaps to `"body"`. **The quotes facet skips the docstring position entirely**, because reframing a docstring is `docstring-frame`'s job rather than this rule's.
-'''

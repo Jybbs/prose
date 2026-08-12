@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/dataclass_fields_hold_positional_order/input.py
+---
+from dataclasses import dataclass
+
+
+@dataclass
+class Posting:
+    title: str
+    company: str
+    description: str | None = None
+    date_posted: str = ""

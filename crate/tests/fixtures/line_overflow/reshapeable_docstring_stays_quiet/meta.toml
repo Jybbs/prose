@@ -3,5 +3,5 @@ previewable = false
 title       = "A Reshapeable Docstring Stays Quiet"
 
 description = '''
-Both prose lines of the module docstring run past the 40-column budget, yet `line-overflow` emits nothing. Lines inside a docstring are text `docstring-wrap` can reflow to the budget, so the overflow is left to that rule.
+Both prose lines of the module docstring run past the 40-column budget, yet `line-overflow` emits nothing. Lines inside a docstring are text `wrap-docstrings` can reflow to the budget, so the overflow is left to that rule.
 '''

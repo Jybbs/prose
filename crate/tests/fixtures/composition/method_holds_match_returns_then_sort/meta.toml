@@ -3,5 +3,5 @@ previewable = true
 title       = "Methods Sort Around One Holding a Collapsing Match"
 
 description = '''
-Three methods sit out of order, and `handle_alpha` holds a `match` whose arms each return a single value. **The methods sort alphabetically, `align-match-case` folds each return onto its `case` line and aligns the `:` column**, and `blank-lines` inserts a blank line between the methods.
+Three methods sit out of order, and `handle_alpha` holds a `match` whose arms each return a single value. **The methods sort alphabetically, `align-match-case` folds each return onto its `case` line and aligns the `:` column**, and `space-statements` inserts a blank line between the methods.
 '''

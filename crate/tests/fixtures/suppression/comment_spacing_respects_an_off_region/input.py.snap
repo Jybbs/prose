@@ -1,9 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/suppression/comment_spacing_respects_an_off_region/input.py
----
-#prose: off
-x = 1 #kept exactly as written
-# prose: on
-y = 2  # settled by the rule

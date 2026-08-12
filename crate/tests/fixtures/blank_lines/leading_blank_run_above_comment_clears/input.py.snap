@@ -1,9 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/blank_lines/leading_blank_run_above_comment_clears/input.py
----
-# Configure the sink.
-import os
-
-x = 1

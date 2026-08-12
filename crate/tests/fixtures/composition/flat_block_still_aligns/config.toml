@@ -2,4 +2,4 @@
 group-imports = false
 
 [harness]
-rules = ["alphabetize", "align-imports", "blank-lines"]
+rules = ["alphabetize-siblings", "align-imports", "space-statements"]

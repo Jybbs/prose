@@ -1,9 +1,9 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/composition/single_line_method_docstrings_expand_and_space/input.py
+input_file: crate/tests/fixtures/composition/single_line_method_docstrings_expand_and_space/input.py
 ---
-blank-lines@14..15
-blank-lines@93..94
-docstring-expand@130..156
-docstring-expand@49..73
+expand-docstrings@130..156
+expand-docstrings@49..73
+space-statements@14..15
+space-statements@93..94

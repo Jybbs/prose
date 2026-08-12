@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Assignment Runs Keep Their Source Gaps"
-
-description = '''
-`PORT`, `HOST`, and `TIMEOUT` form a run of module-level assignments written with no blank lines between them, and the output **keeps each gap exactly as the source wrote it**. `blank-lines` defines no canonical count for an assignment-after-assignment pair, so the whitespace between the three lines is left untouched.
-'''

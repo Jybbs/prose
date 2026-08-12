@@ -3,5 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/dict_expand_sort_align/input.py
 ---
-alphabetize@11..91
-collection-layout@10..92
+alphabetize-siblings@11..91
+reflow-collections@10..92

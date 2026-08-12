@@ -4,4 +4,4 @@ expression: render(&diagnostics)
 input_file: crate/tests/fixtures/composition/aligned_keyword_value_measures_its_column/input.py
 ---
 align-equals@15..53
-call-layout@60..130
+reflow-calls@60..130

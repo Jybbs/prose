@@ -14,7 +14,7 @@ const ALIGNS: &str = include_str!("fixtures/notebook/code_cell_aligns/input.ipyn
 const EMPTY: &str = include_str!("fixtures/notebook/empty/input.ipynb");
 const INTERLEAVED: &str = include_str!("fixtures/notebook/markdown_interleaved/input.ipynb");
 
-/// A two-entry dict literal `collection-layout` collapses, the shape
+/// A two-entry dict literal `reflow-collections` collapses, the shape
 /// that net-shrinks the rewritten buffer.
 const COLLAPSING_DICT: &str = "d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n";
 
@@ -398,9 +398,9 @@ fn cache_keys_each_file_against_its_governing_config() {
 }
 
 #[rstest]
-#[case::narrow_select_after_full_set(&[], &["--select", "alphabetize"])]
+#[case::narrow_select_after_full_set(&[], &["--select", "alphabetize-siblings"])]
 #[case::ignore_after_full_set(&[], &["--ignore", "align-equals"])]
-#[case::full_set_after_narrow_select(&["--select", "alphabetize"], &[])]
+#[case::full_set_after_narrow_select(&["--select", "alphabetize-siblings"], &[])]
 fn cache_misses_when_selection_changes_between_runs(
     #[case] seed_filter: &[&str],
     #[case] query_filter: &[&str],
@@ -727,7 +727,7 @@ fn cwd_config_error_exits_four(#[values("check", "format")] subcommand: &str) {
         .code(4);
 }
 
-/// Each input drives a rule that net-shrinks the buffer (`collection-layout`
+/// Each input drives a rule that net-shrinks the buffer (`reflow-collections`
 /// collapsing or re-laying-out a literal), the shape that overran the
 /// rewritten buffer before reporting anchored to the source as written. A
 /// panic in the binary would surface as exit code 101, not the format-change 1.
@@ -855,7 +855,7 @@ fn format_json_renders_collapsing_literal_without_aborting() {
     )
     .success();
 
-    assert_stdout_has(&assert, "collection-layout");
+    assert_stdout_has(&assert, "reflow-collections");
 }
 
 #[test]
@@ -1220,6 +1220,18 @@ fn quiet_check_reduces_summary_to_a_bare_count() {
     assert_eq!(err.trim(), "1 diagnostic in 1 file.");
     assert!(!err.contains('🔖'), "quiet kept the anchor: {err:?}");
     assert!(!err.contains('\u{1b}'), "quiet kept color: {err:?}");
+}
+
+#[test]
+fn rules_json_lists_every_registered_rule_in_pipeline_order() {
+    let assert = prose()
+        .args(["rules", "--output-format", "json"])
+        .assert()
+        .success();
+
+    let rules = json(&stdout_utf8(&assert));
+
+    insta::assert_snapshot!(serde_json::to_string_pretty(&rules).expect("renders"));
 }
 
 #[test]

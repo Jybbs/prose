@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Tail Bracket Bounds the Rejoin Measure"
-
-description = '''
-Deciding whether `helper(alpha, beta)` fits back on one line means measuring the text that follows it, and that measure runs only to the `[` of the list after `+`, because exploding the list would end the row there anyway. The full tail would overflow the line, yet the call still rejoins, leaving the list's layout to `collection-layout`.
-'''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Rule Toggles Accept Bool Shorthand and Inline Tables"
 
 description = '''
-The `[rules]` table exercises each override shape, in that a bare `false` disables `alphabetize` outright, the inline table `{ max-shift = 4 }` tightens `align-equals`'s cap while leaving the rule enabled, and `max-params = false` switches off `signature-layout`'s parameter budget without disabling the rule. Every rule the table does not name resolves to its default.
+The `[rules]` table exercises each override shape, in that a bare `false` disables `alphabetize-siblings` outright, the inline table `{ max-shift = 4 }` tightens `align-equals`'s cap while leaving the rule enabled, and `max-params = false` switches off `reflow-signatures`'s parameter budget without disabling the rule. Every rule the table does not name resolves to its default.
 '''

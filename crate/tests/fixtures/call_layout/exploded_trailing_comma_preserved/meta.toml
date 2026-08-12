@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = false
-title       = "An Exploded Call Keeps Its Trailing Comma"
-
-description = '''
-The `fetch` call arrives already exploded, with a trailing comma after `url=u`. `call-layout` leaves that comma exactly where it is, because comma policy belongs to `strip-trailing-commas` and this rule rewrites only the layout.
-'''

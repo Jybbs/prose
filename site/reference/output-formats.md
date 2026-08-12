@@ -126,7 +126,7 @@ A final record closes every `json` run, carrying run-wide rollup so a consumer r
   "files_changed"     : 3,
   "files_visited"     : 47,
   "prose_version"     : "{{ $frontmatter.proseVersion }}",
-  "rules_fired"       : { "align-equals": 8, "alphabetize": 4 },
+  "rules_fired"       : { "align-equals": 8, "alphabetize-siblings": 4 },
   "schema_version"    : 1
 }
 ```

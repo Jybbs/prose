@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Async and Nested Definitions Reshape Independently"
-
-description = '''
-`outer`, an `async def` at module level, and the `inner` sync `def` nested inside its body each carry five parameters, past `max-params`. `signature-layout`'s walker descends into `outer`'s body to reach `inner`, so **both expand at their own indent**, `outer`'s parameters at the module's four-space indent and `inner`'s at the nested eight-space indent.
-'''

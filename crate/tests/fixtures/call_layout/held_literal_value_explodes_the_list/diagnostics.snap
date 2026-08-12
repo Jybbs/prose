@@ -1,6 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/call_layout/held_literal_value_explodes_the_list/input.py
----
-call-layout@9..84

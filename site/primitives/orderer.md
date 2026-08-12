@@ -1,5 +1,5 @@
 ---
-consumedBy: [alphabetize]
+consumedBy: [alphabetize-siblings]
 consumes: [edit, source]
 layer: orchestration
 stability: internal
@@ -11,12 +11,12 @@ tagline: sibling reorder helper
 
 <PrimitiveLayout primitive="orderer">
 
-*Orderer* reorders sibling AST nodes by a classifier closure while preserving attached comments and the interstitial text between adjacent items. [[alphabetize]] is the canonical consumer, but the primitive is shape-agnostic. Any rule that wants to permute siblings *(class-body members, dict items, `import` lines)* by some key reaches for the same machinery rather than re-implementing comment-attachment and gap-handling.
+*Orderer* reorders sibling AST nodes by a classifier closure while preserving attached comments and the interstitial text between adjacent items. [[alphabetize-siblings]] is the canonical consumer, but the primitive is shape-agnostic. Any rule permuting siblings *(class-body members, dict items, `import` lines)* by some key reaches for the same machinery rather than re-implementing comment-attachment and gap-handling.
 
 
 ## Public Surface
 
-*Orderer* lives at `crate/src/primitives/orderer.rs` and is `pub(crate)`. The downstream-visible consequence is the rewrite [[alphabetize]] emits, with the reordered text landing in the `Edit` the rule produces.
+*Orderer* lives at `crate/src/primitives/orderer.rs` and is `pub(crate)`. The downstream-visible consequence is the rewrite [[alphabetize-siblings]] emits, with the reordered text landing in the `Edit` the rule produces.
 
 The shape settles at `1.0`, where a downstream can register its own ordering rule against the same entry points.
 
@@ -46,15 +46,15 @@ Splices the reordered children into a final string the rule can emit as a single
 
 ### `assemble_separated(value_ends, blocks, block_texts, order, divider_slots, source_last_has_comma)`
 
-The comma-aware counterpart to `assemble_blocks` for one-member-per-line groups. It splits each block into code, separator comma, and trailing comment at `value_ends`, then re-emits the comma after the value and before the comment per slot, so the comment stays with its member. Non-last slots always carry a comma, the new-last slot matches `source_last_has_comma`, and a blank line follows every slot in `divider_slots`. [[alphabetize]]'s dict and leaf reorders share it.
+The comma-aware counterpart to `assemble_blocks` for one-member-per-line groups. It splits each block into code, separator comma, and trailing comment at `value_ends`, then re-emits the comma after the value and before the comment per slot, so the comment stays with its member. Non-last slots always carry a comma, the new-last slot matches `source_last_has_comma`, and a blank line follows every slot in `divider_slots`. [[alphabetize-siblings]]'s dict and leaf reorders share it.
 
 ### `assemble_or_borrow(source, blocks, rendered, order, forced, gap)`
 
-The borrow-aware finalizer over `assemble_blocks`, returning the assembled text alongside the block-extent span it covers. It short-circuits to `Cow::Borrowed(source.slice(span))` when no child rewrote and `order` is the identity permutation, so a no-op reorder pays no allocation, and assembles owned otherwise. `forced` overrides the short-circuit for a caller whose `gap` reshapes spacing without reordering, the case of an import run collapsing its blank lines in place. `reorder_text` and the recursive body rewriters in [[alphabetize]] and [[band-constants]] all finalize through it.
+The borrow-aware finalizer over `assemble_blocks`, returning the assembled text alongside the block-extent span it covers. It short-circuits to `Cow::Borrowed(source.slice(span))` when no child rewrote and `order` is the identity permutation, so a no-op reorder pays no allocation, and assembles owned otherwise. `forced` overrides the short-circuit for a caller whose `gap` reshapes spacing without reordering, the case of an import run collapsing its blank lines in place. `reorder_text` and the recursive body rewriters in [[alphabetize-siblings]] and [[band-constants]] all finalize through it.
 
 ### Block-Geometry Helpers
 
-`block_range(source, items, i, outer)` covers the *"what slice does item `i` occupy"* question for arbitrary `Ranged` types, including the leading comment-only lines directly above the item and the rest of its last line. `outer` bounds the leading-comment scan's lower edge to a parent extent *(the previous item's end, or `outer.start()` for the first item)*, raised inside a notebook to the item's own cell start whenever that sits later, so an attached comment never reaches back across a cell boundary, while the forward scan reaches the next item's start or, for the last item, its own line end. At module scope a caller passes `TextRange::up_to(source.text().text_len())`, and at nested scope the caller computes the enclosing scope's extent. `blocks_span(blocks)` returns the union of every item's block range, used to size the outer `Edit` that replaces the reordered region. That one is generic over `Ranged` and lives beside the parenthesis-aware ranges in `crate/src/primitives/range.rs`, since [[group-imports]], [[alphabetize]], [[unsorted-positionals]], and [[shed-backslash-continuations]] all cover a run of items the same way.
+`block_range(source, items, i, outer)` covers the *"what slice does item `i` occupy"* question for arbitrary `Ranged` types, including the leading comment-only lines directly above the item and the rest of its last line. `outer` bounds the leading-comment scan's lower edge to a parent extent *(the previous item's end, or `outer.start()` for the first item)*, raised inside a notebook to the item's own cell start whenever that sits later, so an attached comment never reaches back across a cell boundary, while the forward scan reaches the next item's start or, for the last item, its own line end. At module scope a caller passes `TextRange::up_to(source.text().text_len())`, and at nested scope the caller computes the enclosing scope's extent. `blocks_span(blocks)` returns the union of every item's block range, used to size the outer `Edit` that replaces the reordered region. That one is generic over `Ranged` and lives beside the parenthesis-aware ranges in `crate/src/primitives/range.rs`, since [[group-imports]], [[alphabetize-siblings]], [[unsorted-positionals]], and [[shed-backslash-continuations]] all cover a run of items the same way.
 
 ## How Comment Attachment Works
 
@@ -79,11 +79,11 @@ The pattern handles partial reorders cleanly, with items returning `classify -> 
 
 ## Re-Using This Primitive
 
-Three decisions define an ordering rule: what counts as a sibling, how `classify` keys each sibling, and which items pin. [[alphabetize]] is the canonical case where `classify` returns the entry's name, every item participates, and `gap_override` substitutes `\n` or `\n\n` based on the per-context blank-line discipline.
+Three decisions define an ordering rule: what counts as a sibling, how `classify` keys each sibling, and which items pin. [[alphabetize-siblings]] is the canonical case where `classify` returns the entry's name, every item participates, and `gap_override` substitutes `\n` or `\n\n` based on the per-context blank-line discipline.
 
 <template #related>
 
-- [[alphabetize]] is the canonical consumer.
+- [[alphabetize-siblings]] is the canonical consumer.
 - [[aligner]] composes line-adjacency grouping differently *(by `Member` widths rather than source-range block extents)*, so a rule whose math is padding-shaped rather than reorder-shaped reaches for that primitive instead.
 - [[edit]] is the output shape the assembled string folds into.
 

@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A One-Arm `match` Drops the Pre-`:` Padding"
-
-description = '''
-`case "only" : icon = "wrench"` is the only arm in its `match`, already collapsed onto one line with one space before its `:`. `strip-align-padding` **strips that gap, leaving the `:` flush against `"only"`**.
-'''

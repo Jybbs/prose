@@ -1,2 +1,2 @@
 [harness]
-rules = ["call-layout", "align-equals"]
+rules = ["reflow-calls", "align-equals"]

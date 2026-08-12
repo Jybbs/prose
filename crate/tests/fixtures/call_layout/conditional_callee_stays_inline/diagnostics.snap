@@ -1,8 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/call_layout/conditional_callee_stays_inline/input.py
----
-call-layout@10..30
-call-layout@44..65
-call-layout@80..103

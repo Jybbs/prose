@@ -1,6 +1,6 @@
 ---
 caption : "Names any line still over its governing cap once no reshape can shorten it."
-related : [call-layout, signature-layout, import-layout]
+related : [reflow-calls, reflow-signatures, reflow-imports]
 layout  : doc
 ---
 

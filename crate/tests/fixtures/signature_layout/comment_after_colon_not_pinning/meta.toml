@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Trailing Comment After the Colon Does Not Pin"
-
-description = '''
-`render`'s trailing `# entry point` comment sits after the `:`, outside the `(...)` parameter list. Because a comment only pins the signature when it falls between `(` and `)`, `signature-layout` still expands `render`'s five parameters past `max-params`, and the comment stays put on the `):` line.
-'''

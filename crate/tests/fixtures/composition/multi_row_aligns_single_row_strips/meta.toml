@@ -3,5 +3,5 @@ previewable = true
 title       = "Multi-Row Dict Aligns While Single-Row Dict Strips"
 
 description = '''
-`paired` holds three entries with ragged spacing before their `:`, and `single` holds one entry padded as `"only_key" : 1`. **`align-colons` pads `paired`'s `:` into a column one space past `"second"`, while `strip-align-padding` removes the stray space in `single`** because a lone entry forms no alignment group, leaving plain `"only_key": 1`.
+`paired` holds three entries with ragged spacing before their `:`, and `single` holds one entry padded as `"only_key" : 1`. **`align-colons` pads `paired`'s `:` into a column one space past `"second"`, while `strip-stranded-padding` removes the stray space in `single`** because a lone entry forms no alignment group, leaving plain `"only_key": 1`.
 '''

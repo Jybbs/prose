@@ -3,5 +3,5 @@ previewable = false
 title       = "A Reshapeable Line Stays Quiet"
 
 description = '''
-`result = compute(alpha, beta, gamma, delta)` runs to 43 columns, over the 40-column budget, yet `line-overflow` emits nothing. The line carries a call `call-layout` can still explode, so the overflow is that rule's to resolve, and only a line no reshape can shorten becomes a finding.
+`result = compute(alpha, beta, gamma, delta)` runs to 43 columns, over the 40-column budget, yet `line-overflow` emits nothing. The line carries a call `reflow-calls` can still explode, so the overflow is that rule's to resolve, and only a line no reshape can shorten becomes a finding.
 '''

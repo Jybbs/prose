@@ -4,6 +4,6 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/arm_dicts_sort_expand_align/input.py
 ---
 align-match-case@280..293
-alphabetize@79..263
-collection-layout@191..263
-collection-layout@78..148
+alphabetize-siblings@79..263
+reflow-collections@191..263
+reflow-collections@78..148

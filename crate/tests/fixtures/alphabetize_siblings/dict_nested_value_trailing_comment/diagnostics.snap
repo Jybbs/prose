@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/dict_nested_value_trailing_comment/input.py
+---
+alphabetize-siblings@60..81

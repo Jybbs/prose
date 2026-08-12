@@ -1,9 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/comment_spacing/exempt_leaders_pass_untouched/input.py
----
-#!/usr/bin/env python
-#:sphinx attribute doc
-#'quoted form
-#|piped form

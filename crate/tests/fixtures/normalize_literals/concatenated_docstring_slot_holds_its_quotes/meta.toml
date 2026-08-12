@@ -3,5 +3,5 @@ previewable = true
 title       = "A Concatenated Docstring Slot Holds Its Quotes"
 
 description = '''
-The first statement in `render` is `'Summary ' 'continued.'`, an implicit concatenation sitting where a docstring would, and a concatenation is not a docstring `docstring-frame` can reframe. **Both parts keep their single quotes**, whereas `'body'` in the return beside them swaps to `"body"`.
+The first statement in `render` is `'Summary ' 'continued.'`, an implicit concatenation sitting where a docstring would, and a concatenation is not a docstring `frame-docstrings` can reframe. **Both parts keep their single quotes**, whereas `'body'` in the return beside them swaps to `"body"`.
 '''

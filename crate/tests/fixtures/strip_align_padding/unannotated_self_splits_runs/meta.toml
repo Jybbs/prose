@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "The `self` Receiver Doesn't Count Toward the Group Size"
-
-description = '''
-`self` carries no annotation in `fetch`, `store`, or `render`, so it never joins the run of annotated parameters that `strip-align-padding` groups by `:`. `fetch`'s `timeout` and `store`'s keyword-only `ttl` each form a singleton run on their own, and the rule **strips their pre-`:` padding**. `render`'s `template` and `context` land as a two-member run on the same line, and the rule strips their padding too, because a same-line `:` has no column to align against.
-'''

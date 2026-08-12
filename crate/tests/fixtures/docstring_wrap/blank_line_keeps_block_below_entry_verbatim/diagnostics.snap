@@ -1,6 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/docstring_wrap/blank_line_keeps_block_below_entry_verbatim/input.py
----
-docstring-wrap@101..101

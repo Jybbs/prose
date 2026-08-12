@@ -225,6 +225,23 @@ fn load_reads_pure_prose_toml() {
 }
 
 #[test]
+fn load_retired_rule_key_warns_rather_than_binding_its_successor() {
+    let tmp = TempDir::new().expect("tempdir");
+    write_pyproject(tmp.path(), "[tool.prose.rules]\nalphabetize = false\n");
+
+    let mut captured = Vec::new();
+    let config = Config::load_with_notices(tmp.path(), |notice| {
+        if let ConfigNotice::UnknownKey(key) = notice {
+            captured.push(key.to_owned());
+        }
+    })
+    .expect("loads");
+
+    assert_eq!(captured, ["rules.alphabetize"]);
+    assert!(config.rules.space_statements.enabled);
+}
+
+#[test]
 fn load_shadows_both_lower_forms_when_all_present() {
     let tmp = TempDir::new().expect("tempdir");
     write_prose_toml(tmp.path(), "code-line-length = 120\n");

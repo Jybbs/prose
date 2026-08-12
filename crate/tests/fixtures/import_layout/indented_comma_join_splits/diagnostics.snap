@@ -1,6 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/import_layout/indented_comma_join_splits/input.py
----
-import-layout@25..26

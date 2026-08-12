@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/space_statements/method_in_doubly_nested_class_one_blank/input.py
+---
+space-statements@12..13
+space-statements@29..30
+space-statements@75..79

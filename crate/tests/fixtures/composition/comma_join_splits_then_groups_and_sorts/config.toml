@@ -2,4 +2,4 @@
 first-party = ["myapp"]
 
 [harness]
-rules = ["import-layout", "group-imports", "alphabetize", "blank-lines"]
+rules = ["reflow-imports", "group-imports", "alphabetize-siblings", "space-statements"]

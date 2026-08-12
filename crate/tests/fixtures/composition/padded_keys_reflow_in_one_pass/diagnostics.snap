@@ -4,4 +4,4 @@ expression: render(&diagnostics)
 input_file: crate/tests/fixtures/composition/padded_keys_reflow_in_one_pass/input.py
 ---
 align-colons@54..144
-docstring-wrap@111..196
+wrap-docstrings@111..196

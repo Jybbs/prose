@@ -1,18 +1,18 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/thematic/member_groups_reordered_and_aligned/input.py
+input_file: crate/tests/fixtures/thematic/member_groups_reordered_and_aligned/input.py
 ---
 align-colons@32..86
 align-equals@37..63
-alphabetize@24..354
-blank-lines@102..103
-blank-lines@170..171
-blank-lines@19..20
-blank-lines@230..231
-blank-lines@296..297
+alphabetize-siblings@24..354
 signature-annotations@111..116
 signature-annotations@123..126
 signature-annotations@179..182
 signature-annotations@189..192
 signature-annotations@253..257
+space-statements@102..103
+space-statements@170..171
+space-statements@19..20
+space-statements@230..231
+space-statements@296..297

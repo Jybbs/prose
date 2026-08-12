@@ -1,5 +1,5 @@
 ---
-consumedBy: [align-colons, strip-align-padding]
+consumedBy: [align-colons, strip-stranded-padding]
 consumes: [aligner, docstring, source]
 layer: analysis
 stability: internal
@@ -16,7 +16,7 @@ tagline: five-context colon walker
 
 ## Public Surface
 
-*ColonTargets* lives at `crate/src/primitives/colon_targets/` and is `pub(crate)`. Two consumers use it today: [[align-colons]] *(which aligns multi-item groups in every context)* and [[strip-align-padding]] *(which strips pre-colon padding from groups that have no column to align to)*. The downstream-visible consequence is the rewrites both rules emit through the diagnostic stream.
+*ColonTargets* lives at `crate/src/primitives/colon_targets/` and is `pub(crate)`. Two consumers use it today: [[align-colons]] *(which aligns multi-item groups in every context)* and [[strip-stranded-padding]] *(which strips pre-colon padding from groups that have no column to align to)*. The downstream-visible consequence is the rewrites both rules emit through the diagnostic stream.
 
 At `1.0` the trait promotes to `pub`, so a downstream can implement a `:`-context rule of its own.
 
@@ -82,7 +82,7 @@ A new `:`-context rule implements `ColonEmitter`, overrides the handlers for the
 
 - [[aligner]] is the math the produced `Member` lists feed into.
 - [[align-colons]] aligns multi-item groups across every context.
-- [[strip-align-padding]] strips padding from singleton groups.
+- [[strip-stranded-padding]] strips padding from singleton groups.
 - [[align-match-case]] owns the match-arm context exclusively.
 - The `=`-context sibling builds its members in `equal_targets`, described under [[aligner]].
 

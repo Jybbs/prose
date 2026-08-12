@@ -4,5 +4,5 @@ previewable = true
 title       = "Imports Partition into Bare → External `from` → Local-Package Sections"
 
 description = '''
-A scrambled run of bare, external `from`, and local imports **partitions into the three canonical sections**, `myapp` reading as first-party from the config. Within a section the names keep their source order, so `sys` stays ahead of `os`, because the sort is left to `alphabetize` and the blank line between sections to `blank-lines`.
+A scrambled run of bare, external `from`, and local imports **partitions into the three canonical sections**, `myapp` reading as first-party from the config. Within a section the names keep their source order, so `sys` stays ahead of `os`, because the sort is left to `alphabetize-siblings` and the blank line between sections to `space-statements`.
 '''

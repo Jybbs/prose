@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/pinned_class_methods_still_sort/input.py
+---
+from dataclasses import dataclass
+
+
+@dataclass
+class Posting:
+    title: str
+    company: str
+
+    def render(self):
+        return self.company
+
+    def summary(self):
+        return self.title

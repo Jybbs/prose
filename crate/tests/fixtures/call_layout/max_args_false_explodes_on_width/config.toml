@@ -1,4 +1,0 @@
-code-line-length = 40
-
-[rules]
-call-layout = { max-args = false }

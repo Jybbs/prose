@@ -1,7 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/effectful_keyword_only_defaults_hold/input.py
----
-def build(*, alpha=2, sink=register(), gate=acquire(), zeta=1):
-    pass

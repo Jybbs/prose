@@ -202,7 +202,7 @@ fn candidate<'src>(
     let pair = parenthesized_range(expr.into(), parent, source.tokens())?;
     // A walrus binding keeps its pair whatever the context, since the
     // grammar needs it almost everywhere, and a multi-line return
-    // annotation is signature-layout's to reshape, so neither sheds here.
+    // annotation belongs to `reflow-signatures`, so neither sheds here.
     if expr.is_named_expr()
         || (is_return_annotation(expr, parent) && source.contains_line_break(pair))
         || source.intersects_comment(pair)

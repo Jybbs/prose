@@ -5,4 +5,4 @@ input_file: tests/fixtures/composition/annotated_fields_sort_align_both/input.py
 ---
 align-colons@27..106
 align-equals@34..112
-alphabetize@20..123
+alphabetize-siblings@20..123

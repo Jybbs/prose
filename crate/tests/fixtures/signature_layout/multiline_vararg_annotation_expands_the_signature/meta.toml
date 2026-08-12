@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = false
-title       = "A Multi-Line Variadic Annotation Expands and Hangs From Its Row"
-
-description = '''
-`render`'s six parameters, including `*args`, exceed `max-params`, and `*args`'s annotation `Sequence[int]` was written across two rows in the source. `signature-layout` expands the signature and moves `*args`'s annotation with it, so `int` and the closing `]` land indented under `*args`'s new column rather than the column the source left them at.
-'''

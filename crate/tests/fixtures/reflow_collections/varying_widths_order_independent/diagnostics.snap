@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_collections/varying_widths_order_independent/input.py
+---
+reflow-collections@11..129

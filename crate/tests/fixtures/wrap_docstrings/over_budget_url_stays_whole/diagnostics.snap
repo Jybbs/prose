@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/wrap_docstrings/over_budget_url_stays_whole/input.py
+---
+wrap-docstrings@95..95

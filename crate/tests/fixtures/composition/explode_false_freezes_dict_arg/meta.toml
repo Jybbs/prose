@@ -3,5 +3,5 @@ previewable = false
 title       = "A Cleared `explode` Knob Freezes a Dict Argument"
 
 description = '''
-With `collection-layout`'s `explode` knob set to `false`, the `settings` dict stays inline even though the `configure` call overflows. `call-layout` still explodes the call so `more`, `name`, `other`, and `settings` each take a row, `alphabetize` sorts the keywords along with the dict keys, and `align-equals` pads the `=` column. The cleared knob freezes only the dict's shape, leaving `{"alpha": 1, "beta": 2, "delta": 4, "gamma": 3}` whole on its keyword line rather than expanded to one entry per row.
+With `reflow-collections`'s `explode` knob set to `false`, the `settings` dict stays inline even though the `configure` call overflows. `reflow-calls` still explodes the call so `more`, `name`, `other`, and `settings` each take a row, `alphabetize-siblings` sorts the keywords along with the dict keys, and `align-equals` pads the `=` column. The cleared knob freezes only the dict's shape, leaving `{"alpha": 1, "beta": 2, "delta": 4, "gamma": 3}` whole on its keyword line rather than expanded to one entry per row.
 '''

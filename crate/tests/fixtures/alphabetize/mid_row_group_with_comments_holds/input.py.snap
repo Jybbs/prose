@@ -1,8 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/mid_row_group_with_comments_holds/input.py
----
-__all__ = ["delta", "charlie",
-           # section
-           "bravo", "alpha"]

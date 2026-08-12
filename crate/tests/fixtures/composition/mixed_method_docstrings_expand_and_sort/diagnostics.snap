@@ -1,12 +1,12 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/composition/mixed_method_docstrings_expand_and_sort/input.py
+input_file: crate/tests/fixtures/composition/mixed_method_docstrings_expand_and_sort/input.py
 ---
-alphabetize@23..277
-blank-lines@14..15
-blank-lines@202..203
-blank-lines@89..90
-docstring-expand@234..257
-docstring-expand@46..69
-docstring-frame@122..182
+alphabetize-siblings@23..277
+expand-docstrings@234..257
+expand-docstrings@46..69
+frame-docstrings@122..182
+space-statements@14..15
+space-statements@202..203
+space-statements@89..90

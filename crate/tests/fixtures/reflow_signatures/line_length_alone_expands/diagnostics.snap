@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_signatures/line_length_alone_expands/input.py
+---
+reflow-signatures@11..103

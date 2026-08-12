@@ -3,8 +3,8 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/method_opens_with_try_then_sort/input.py
 ---
-alphabetize@34..296
-blank-lines@114..115
-blank-lines@16..17
-blank-lines@222..223
-blank-lines@77..78
+alphabetize-siblings@34..296
+space-statements@114..115
+space-statements@16..17
+space-statements@222..223
+space-statements@77..78
