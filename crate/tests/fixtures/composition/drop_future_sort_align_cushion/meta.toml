@@ -3,5 +3,5 @@ previewable = true
 title       = "Drop Future, Sort Aliases, Align `as`, Settle Cushion"
 
 description = '''
-A module top carries `from __future__ import annotations`, out-of-order aliased imports, and irregular spacing. **The subset removes the unused future, sorts the imports, aligns the `as` column, and normalizes the blank-line cushion** before the first function.
+The module top carries `from __future__ import annotations`, three aliased imports out of order, and three blank lines before `def add`. **The future import is removed, `collections`, `numpy`, and `requests` sort alphabetically, their `as` keywords pad into one column, and the gap collapses to two blank lines** before the function.
 '''

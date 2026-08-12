@@ -3,5 +3,5 @@ previewable = true
 title       = "String Prefixes Lowercase and the No-Op `u` Drops"
 
 description = '''
-`U` disappears because every Python 3 string is already unicode, while `R`, `B`, and the combined `BR` each fall to lowercase and settle raw-first as `rb`. The delimiters move alongside them in the same edit.
+The `U` on `U"unicode"` disappears outright, because every Python 3 string is already unicode. `R"a\d"` and `B"bytes"` fall to lowercase `r` and `b`, and the combined `BR"z\d"` settles raw-first as `rb"z\d"`.
 '''

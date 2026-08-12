@@ -1,6 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/reflow_collections/hanging_member_keeps_its_columns/input.py
----
-reflow-collections@11..128

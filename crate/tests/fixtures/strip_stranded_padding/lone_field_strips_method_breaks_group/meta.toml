@@ -3,5 +3,5 @@ previewable = false
 title       = "A Method Breaks the Line-Adjacent Field Group"
 
 description = '''
-A class with a single annotated field **strips that field's pre-`:` padding**, while a class of line-adjacent annotated fields keeps its padding for `align_colons`. Mixing a single field with method definitions still treats the field as a singleton, because the method breaks the line-adjacent group rather than joining it.
+`Solo.only_field` is the lone annotated field in its class, and `strip-stranded-padding` **strips its pre-`:` padding**, while `Pair`'s `first` and `second` sit line-adjacent and keep their padding for `align-colons`. `WithMethod.sole_field` sits alone too, because the `serialize` method that follows breaks the line-adjacent group rather than joining it, so the rule strips its padding the same way.
 '''

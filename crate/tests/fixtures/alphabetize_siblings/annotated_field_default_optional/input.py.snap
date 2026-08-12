@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/annotated_field_default_optional/input.py
+input_file: tests/fixtures/alphabetize_siblings/annotated_field_default_optional/input.py
 ---
 from pydantic import BaseModel, Field
 from typing import Annotated

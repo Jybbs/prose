@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Fractured Link Settles Before the Chain Is Measured"
+
+description = '''
+The author hand-wrapped `base.first(alpha,` mid-call, and [[reflow-calls]] rejoins `first(alpha, beta)` onto one row. That settles the chain's width before `stack-method-chains` counts its links, so the link-count trigger breaks the chain on the first pass rather than the second, wrapping the expression in parentheses and stacking `.second(gamma)` and `.third(delta)` under `.first(alpha, beta)`.
+'''

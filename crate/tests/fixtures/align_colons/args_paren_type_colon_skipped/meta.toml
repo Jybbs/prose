@@ -3,5 +3,5 @@ previewable = false
 title       = "Parenthesized Type Hints Hide Their Inner Colons"
 
 description = '''
-Google-style `Args:` entries carry parenthesized type hints like `(float)` and `(str)`. The detector skips past the `(...)` group, so **alignment anchors on the `:` after the closing paren**, never a colon sitting inside the parens.
+The `Args:` entries of `schedule` carry Google-style parenthesized type hints, `(float)`, `(str)`, and `(int)`. The detector skips past each `(...)` group, so **alignment anchors on the `:` after the closing paren**, and the names, the types, and the colons settle into three shared columns.
 '''

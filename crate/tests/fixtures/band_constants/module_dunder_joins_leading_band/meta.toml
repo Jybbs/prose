@@ -3,5 +3,5 @@ previewable = false
 title       = "A Module Dunder Joins the Leading Band"
 
 description = '''
-A module dunder such as `__all__` **joins the leading band as a plain dependency-clean entry**, since its string-literal value names no definition and reaches only the front of the module.
+`__all__ = ["helper"]` mentions `helper` only inside a string literal, so its value reads no definition and the dunder counts as dependency-clean. It **joins the leading band as an ordinary entry**, hoisting above `def helper` and sorting alongside `VERSION` with no special placement.
 '''

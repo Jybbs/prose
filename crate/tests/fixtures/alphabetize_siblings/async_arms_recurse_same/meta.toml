@@ -3,5 +3,5 @@ previewable = true
 title       = "Async Methods Sort Beside Their Sync Siblings"
 
 description = '''
-Async compound shapes (`async def`, `async for`, `async with`) **recurse identically to their synchronous counterparts**. Each arm's imports flow through the same compound-statement recursion, so the `is_async` flag changes nothing about how the body sorts.
+Import pairs sit out of order inside an `async def` body, an `async for` body, and an `async with` body, and **the async forms recurse exactly like their synchronous counterparts**. Each block's pair sorts in place, `alpha` before `zeta`, `beta` before `gamma`, and `delta` before `omega`, so the `async` keyword changes nothing about how a body sorts.
 '''

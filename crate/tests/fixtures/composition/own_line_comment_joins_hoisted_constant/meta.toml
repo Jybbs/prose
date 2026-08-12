@@ -1,7 +1,7 @@
 [docs]
-previewable = true
+previewable = false
 title       = "An Own-Line Comment Rides Its Constant Into the Leading Band"
 
 description = '''
-A prose comment binds to the member below it whatever blank line separates the two, so `band-constants` and `space-statements` read one answer rather than each settling a different half. The comment moves above `configure` with `MAX_WORKERS` **on the first pass**, leaving nothing for a second format to relocate.
+The comment `# the request ceiling shared across workers` sits a blank line above `MAX_WORKERS = 8`, and it binds to that constant rather than to the surrounding file. When `band-constants` hoists `MAX_WORKERS` above `configure`, the comment moves with it **on the first pass**, landing tight against its constant with two blanks before the `def`, so nothing remains for a second format to relocate.
 '''

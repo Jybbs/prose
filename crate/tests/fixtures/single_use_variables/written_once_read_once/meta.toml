@@ -4,5 +4,5 @@ previewable = true
 title       = "Written Once and Read Once Draws the Diagnostic"
 
 description = '''
-A binding assigned and read exactly once surfaces the lint, recommending inlining the right-hand side.
+`x` in `basic` is assigned once, from `expensive(arg)`, and read once, in `return x + 1`. `single-use-variables` flags the binding and suggests inlining `expensive(arg)` in place of `x`, without rewriting the source itself.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "An Exploded Keyword's Parenthesized Value Keeps Its Parentheses"
 
 description = '''
-A keyword argument whose value is wrapped in parentheses keeps them through the value-side normalization, since the gap rewrite stops before the `(`.
+`host`'s value arrives wrapped as `(1 + 2)`, and the parentheses survive the alignment untouched. The rewrite normalizes only the spacing around each `=`, stopping before the `(`, so `host` and `port` land on a shared column with each value's own text intact.
 '''

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_parentheses/over_budget_wrapped_pair_sheds_in_place/input.py
+---
+report_invalid_enum_member_names("invalid enum member name(s) %s" %
+        ", ".join(repr(name) for name in invalid_names))

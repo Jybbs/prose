@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/docstring_raises_sort_by_exception/input.py
+input_file: tests/fixtures/alphabetize_siblings/docstring_raises_sort_by_exception/input.py
 ---
 def load(path):
     """Load configuration.

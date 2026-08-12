@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "An Over-Cap Member the Rule Cannot Name Rejoins Inside Its Literal"
+
+description = '''
+The fractured `helper(one, two, three, four)` call runs past `max-args`, but `helper` resolves to no definition the rule can read, so `reflow-calls` rejoins the fracture rather than exploding the call. `reflow-collections` then reads a list whose members all sit on one row and leaves `hanging` on its single line.
+'''

@@ -3,5 +3,5 @@ previewable = false
 title       = "An `async` Function Reads the Same as a Plain One"
 
 description = '''
-An `async def` carries the same positional-or-keyword parameters a plain `def` does, so an out-of-order run **draws the same diagnostic**. Nothing about the coroutine changes how a caller binds by slot.
+`fetch`'s `async def` carries the same positional-or-keyword parameters a plain `def` does, so its out-of-order `target, source` run **is flagged with the same diagnostic** `unsorted-positionals` reports for a plain function. Nothing about the coroutine changes how a caller binds `fetch`'s arguments by slot.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Imports in `if` and `else` Branches Align per Branch"
 
 description = '''
-Imports inside `if` and `else` branch bodies align **within their own branch only**. Each branch is a separate body slice the visitor descends into, so cross-branch alignment never happens and the two compatibility blocks reach independent columns.
+The `if` branch imports from `tomllib` and `contextlib` while the `else` branch imports from `tomli` and `contextlib2`, a compatibility split on `sys.version_info`. **Each branch aligns within its own body only**, so the first block's `import` column is set by `contextlib` and the second's by the wider `contextlib2`, with no row padding toward the other branch.
 '''

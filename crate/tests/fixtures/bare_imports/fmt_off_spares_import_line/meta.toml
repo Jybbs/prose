@@ -3,5 +3,5 @@ previewable = true
 title       = "A `# fmt: off` Block Suppresses the Lint"
 
 description = '''
-`os` is reached through one attribute and would draw the lint, but its `import` sits inside a `# fmt: off` block, so the diagnostic is suppressed at the import line.
+`os` is reached only through `os.getcwd`, the single-attribute shape this lint reports. The `import os` line sits between `# fmt: off` and `# fmt: on`, though, and a suppressed region covers lints as well as formatting, so the diagnostic at the import line is dropped.
 '''

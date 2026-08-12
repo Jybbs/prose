@@ -3,5 +3,5 @@ previewable = false
 title       = "The `drop-duplicates` Facet Off Keeps Every Repeat"
 
 description = '''
-With `drop-duplicates = false` the repeated `import os` **stays as written** while the rest of the rule runs on.
+The config sets `drop-duplicates = false`, so the second `import os` **stays as written** even though it repeats the line above it. The rest of the rule still applies, though with `os` read through `os.getcwd()` there is nothing left to prune.
 '''

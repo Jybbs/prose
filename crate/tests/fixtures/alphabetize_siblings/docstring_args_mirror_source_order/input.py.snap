@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/docstring_args_mirror_source_order/input.py
+input_file: tests/fixtures/alphabetize_siblings/docstring_args_mirror_source_order/input.py
 ---
 def merge(target, source, retries=3):
     """Apply ``source`` onto ``target``.

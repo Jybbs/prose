@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/from_imports_collapse_block/input.py
+input_file: tests/fixtures/alphabetize_siblings/from_imports_collapse_block/input.py
 ---
 from collections import Counter
 from enum import StrEnum

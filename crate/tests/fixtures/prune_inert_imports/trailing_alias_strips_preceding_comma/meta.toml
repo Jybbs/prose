@@ -3,5 +3,5 @@ previewable = true
 title       = "A Trailing Alias Strips Its Preceding Comma"
 
 description = '''
-The `annotations` alias sits last in a multi-name `from __future__ import division, annotations`. **The surgical deletion strips the preceding comma alongside the alias**, leaving the earlier `division` entry's formatting intact.
+`annotations` is the second name in `from __future__ import division, annotations`, and nothing in the module needs deferred evaluation. **Removing `annotations` also strips the comma that preceded it**, leaving `division` on its own line with its original formatting intact.
 '''

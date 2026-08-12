@@ -3,5 +3,5 @@ previewable = true
 title       = "`from` Imports Sort Alphabetically inside Their Block"
 
 description = '''
-Every `from`-import statement at a body's top level **collapses into a single alphabetized block**. Blank lines the user wrote between imports are removed, so the form reads as one paragraph regardless of source arrangement.
+The five `from` imports **collapse into a single alphabetized block**, sorting by module from `collections` up through `pydantic`. The blank line the source held between `extract_fields` and `BaseModel` is removed, so the imports read as one paragraph whatever arrangement they arrived in.
 '''

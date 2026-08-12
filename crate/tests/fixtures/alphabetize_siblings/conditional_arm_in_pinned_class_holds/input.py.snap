@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/conditional_arm_in_pinned_class_holds/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/conditional_arm_in_pinned_class_holds/input.py
 ---
 from dataclasses import dataclass
 from typing import TYPE_CHECKING

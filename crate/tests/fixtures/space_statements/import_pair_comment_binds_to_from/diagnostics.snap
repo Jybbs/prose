@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/space_statements/import_pair_comment_binds_to_from/input.py
----
-space-statements@9..10

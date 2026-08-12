@@ -3,5 +3,5 @@ previewable = false
 title       = "Import Block Drops Future, Sorts, and Aligns Aliases"
 
 description = '''
-A module top mixing `__future__`, bare, and from-imports out of order leads an unannotated function. **The pipeline removes the unused future import, sorts each kind, aligns the `as` aliases of the aliased run**, and settles the blank-line cushion before the definition.
+The module top mixes an unused `from __future__ import annotations`, bare imports `requests`, `numpy as np`, `os`, `functools as ft`, and from-imports `collections.Counter` and `typing.Any`, all out of order, ahead of an unannotated `render` function. **The pipeline drops the unused future import, sorts each import kind alphabetically, and aligns the `as` column of `functools as ft` and `numpy as np`**, and settles the blank-line cushion before `render`'s definition.
 '''

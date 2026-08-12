@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/over_budget_swap_holds_the_group/input.py
+---
+window.configure(zebra=1, yak=2, xylophone=4,
+                 aardvark_padding_width=('courier-new-bold-typeface', 12, ''), bee=3)

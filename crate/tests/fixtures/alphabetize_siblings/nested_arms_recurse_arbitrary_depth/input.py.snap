@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/nested_arms_recurse_arbitrary_depth/input.py
+input_file: tests/fixtures/alphabetize_siblings/nested_arms_recurse_arbitrary_depth/input.py
 ---
 if outer:
     if inner:

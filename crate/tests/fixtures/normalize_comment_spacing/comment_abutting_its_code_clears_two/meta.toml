@@ -3,5 +3,5 @@ previewable = true
 title       = "A Comment Fused onto Its Code Is Pushed Two Columns Clear"
 
 description = '''
-With no whitespace at all between the value and the hash, the two-column floor arrives as an insertion rather than as a rewrite of an existing gap. The opener already reads right, so that is the only edit the comment takes.
+The comment on `value = 1` opens with no whitespace at all between the `1` and the `#`, so the two-column floor before a trailing comment arrives as an insertion rather than a rewrite of an existing gap. The `# right` opener already carries its single space, leaving that insertion as the only edit the comment takes.
 '''

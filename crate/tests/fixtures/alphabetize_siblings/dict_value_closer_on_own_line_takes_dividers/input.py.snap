@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/dict_value_closer_on_own_line_takes_dividers/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/dict_value_closer_on_own_line_takes_dividers/input.py
 ---
 ROUTES = {
     "alpha": ("the second destination string that also runs past the width budget ok"

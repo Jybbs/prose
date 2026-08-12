@@ -3,5 +3,5 @@ previewable = true
 title       = "A Divider Carrying No Text Keeps Its Bare Run"
 
 description = '''
-No space is inserted where nothing follows the hash run, so a decorative rule drawn from hashes alone survives verbatim. A rule drawn from another character does carry text, so its opener settles like any other comment's.
+The `#####` and `##########` dividers hold nothing after their hash runs, so no space is inserted and each survives verbatim. The `#---- Section ----` line draws its rule from dashes rather than hashes, meaning text does follow the `#`, so it gains the standard space like any other comment.
 '''

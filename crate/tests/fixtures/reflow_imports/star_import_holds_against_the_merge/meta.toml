@@ -3,5 +3,5 @@ previewable = false
 title       = "A Star Import Holds Its Own Line Against the Merge"
 
 description = '''
-`from pkg import *` admits no sibling member on its line, so the merge leaves it and its named counterpart **as two statements**.
+A `*` cannot share a line with a named member, in that `from pkg import *, alpha` is not valid Python, so the merge leaves `from pkg import *` and `from pkg import alpha` **as two statements**.
 '''

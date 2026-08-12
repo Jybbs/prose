@@ -25,10 +25,12 @@ mod tests {
 
     use super::key::CACHE_FORMAT_VERSION;
     use super::*;
-    use crate::diagnostics::Diagnostic;
-    use crate::rule::RuleId;
-    use crate::rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings};
-    use crate::testing::{format_diagnostic, range};
+    use crate::{
+        diagnostics::Diagnostic,
+        rule::RuleId,
+        rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
+        testing::{format_diagnostic, range},
+    };
 
     const CONFIG_A: &str = "code-line-length = 88\n";
     const CONFIG_B: &str = "code-line-length = 100\n";

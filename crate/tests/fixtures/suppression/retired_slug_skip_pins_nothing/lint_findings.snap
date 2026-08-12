@@ -5,24 +5,29 @@ input_file: crate/tests/fixtures/suppression/retired_slug_skip_pins_nothing/inpu
 ---
 [
   {
-    "code": "miscased-constants",
+    "code": "signature-annotations",
     "end_location": {
-      "column": 6,
+      "column": 17,
       "row": 1
     },
-    "fix": {
-      "applicability": "displayonly",
-      "edits": [
-        {
-          "before": "items",
-          "content": "ITEMS"
-        }
-      ]
-    },
+    "fix": null,
     "location": {
-      "column": 1,
+      "column": 12,
       "row": 1
     },
-    "message": "Module constant `items` is not SCREAMING_CASE"
+    "message": "Parameter `width` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 11,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 1
+    },
+    "message": "`render` returns a value but has no return type annotation"
   }
 ]

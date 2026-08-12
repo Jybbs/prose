@@ -3,5 +3,5 @@ previewable = false
 title       = "An Indented Hash Heading Divides Methods"
 
 description = '''
-A Markdown-style heading indented inside a class body divides the methods around it, carrying one blank line above and below so the **section divider** holds at class scope.
+The indented `### Lifecycle` heading between `open` and `close` reads as a **section divider that holds at class scope**. One blank line lands above it and one below, separating the two methods around it rather than binding the heading to `close` as a leading comment.
 '''

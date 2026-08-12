@@ -3,5 +3,5 @@ previewable = true
 title       = "An Indented From-Import Splits at Its Block Indent"
 
 description = '''
-A from-import nested in a block **splits with every continuation line carrying the block indent**, and the budget counts the indent column so each packed line still fits.
+The `from pkg.sub import` roster inside `load` overflows the `import-line-length` budget of `44`, so it **splits into repeated-prefix statements that each carry the block indent**. The budget counts the indent columns too, so each packed line still fits within the measure.
 '''

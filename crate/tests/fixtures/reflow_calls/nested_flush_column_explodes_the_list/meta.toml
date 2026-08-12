@@ -4,5 +4,5 @@ previewable = true
 title       = "A Nested Flush Column Explodes the List Around It"
 
 description = '''
-An argument carrying a flush bracketed column of its own still spans rows once every closable fracture shuts, so the span trigger explodes the enclosing list and the held block re-indents to the item column.
+The `helper` argument arrives as a held block whose closer sits flush with `wrap`'s own, and it still spans rows after every fracture that can close has closed. An argument spanning rows explodes the enclosing argument list, so `alpha` and the `helper` block each take their own row, the held block re-indenting to the item column.
 '''

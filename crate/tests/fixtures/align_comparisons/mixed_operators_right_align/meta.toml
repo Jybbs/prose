@@ -3,5 +3,5 @@ previewable = true
 title       = "Mixed-Width Operators Right-Align on the Shared Column"
 
 description = '''
-`==` operands and `<` operands share one aligned group. The variable-width operators **right-align**, so the second `=` of `==` and the `<` land in the same column.
+The `==` rows for `foo` and `bar_baz` and the `<` rows for `qux` and `quux` share one aligned group. The mixed-width operators **right-align**, so the second `=` of each `==` and each single-character `<` land in the same column.
 '''

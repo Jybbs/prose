@@ -3,5 +3,5 @@ previewable = false
 title       = "An Unannotated Parameter Splits the Run"
 
 description = '''
-An unannotated parameter like `unannotated=2` **splits the parameter run**. The surrounding annotated parameters have widths that would align if grouped, yet they stay unpadded as singletons.
+`unannotated=2` carries no annotation, so its `=` stays tight per PEP 8, and **it splits the parameter run**. `x` and `verbose` are left as singletons on either side, which is why `x: int = 1` never pads out to align with `verbose: bool = True`.
 '''

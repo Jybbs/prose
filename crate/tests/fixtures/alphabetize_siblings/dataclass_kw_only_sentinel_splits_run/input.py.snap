@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/dataclass_kw_only_sentinel_splits_run/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/dataclass_kw_only_sentinel_splits_run/input.py
 ---
 from dataclasses import KW_ONLY, dataclass
 

@@ -4,4 +4,5 @@ expression: render(&diagnostics)
 input_file: crate/tests/fixtures/composition/sole_dict_arg_explodes_around_its_block/input.py
 ---
 alphabetize-siblings@29..50
+reflow-calls@4..51
 reflow-collections@5..50

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Spread Past `max-shift` Collapses to the Two-Space Floor"
 
 description = '''
-The two rows differ by more than `max-shift` allows, so neither can reach the other's column and each stands alone. A row standing alone takes the two-space floor, which strips the hand-set gap on the narrow row down to the width it would carry with nothing beside it.
+`seed()` and `reconcile_every_pending_shipment_record()` differ in width by more than `max-shift` allows, so neither row can reach the other's column and each stands alone. A row standing alone takes the two-space floor, which strips the hand-set gap after `seed()` down to the width it would carry with nothing beside it.
 '''

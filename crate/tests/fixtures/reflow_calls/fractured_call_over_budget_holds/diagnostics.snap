@@ -1,6 +1,0 @@
----
-source: crate/tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/reflow_calls/fractured_call_over_budget_holds/input.py
----
-

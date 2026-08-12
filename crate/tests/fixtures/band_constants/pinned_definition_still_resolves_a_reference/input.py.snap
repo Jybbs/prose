@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/pinned_definition_still_resolves_a_reference/input.py
+---
+def build(spec):
+    return spec
+
+
+# Filters *********************************************************************#
+
+class FilterError(Exception):
+    code = 1
+
+
+def apply_filter(member):
+    return member
+
+
+FILTER_ERRORS = (FilterError, OSError)

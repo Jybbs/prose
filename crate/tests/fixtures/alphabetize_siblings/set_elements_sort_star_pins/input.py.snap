@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/set_elements_sort_star_pins/input.py
+input_file: tests/fixtures/alphabetize_siblings/set_elements_sort_star_pins/input.py
 ---
 allowed = {"html", "markdown", "text"}
 

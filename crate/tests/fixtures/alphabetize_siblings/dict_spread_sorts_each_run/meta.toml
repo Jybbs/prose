@@ -3,5 +3,5 @@ previewable = true
 title       = "Each Keyed Run Sorts on Its Own Side of a `**` Spread"
 
 description = '''
-Keyed entries sort only within their run, so `"d"` and `"c"` order ahead of `**defaults` and `"b"` and `"a"` order after it, neither crossing the spread.
+`**defaults` splits the dict into two keyed runs, and each run sorts on its own side because moving a key across the spread could change which value wins the merge. `"c"` and `"d"` order above the spread, `"a"` and `"b"` order below it, and no entry crosses.
 '''

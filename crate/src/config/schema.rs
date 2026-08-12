@@ -17,7 +17,7 @@ use super::{
 
 /// Alignment-rule config shared by every rule that aligns a token
 /// across consecutive lines.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlignmentConfig {
     pub enabled: bool,
@@ -40,7 +40,7 @@ impl Default for AlignmentConfig {
 
 /// Configuration for the `alphabetize-siblings` rule, each facet gating one
 /// sort pass and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlphabetizeSiblingsConfig {
     pub enabled: bool,
@@ -83,7 +83,7 @@ impl Default for AlphabetizeSiblingsConfig {
 }
 
 /// Configuration for the `band-constants` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct BandConstantsConfig {
     pub enabled: bool,
@@ -109,7 +109,7 @@ impl Default for BandConstantsConfig {
 }
 
 /// Configuration for the `bare-imports` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct BareImportsConfig {
     /// Modules whose bare-import form is preserved whatever their
@@ -166,7 +166,7 @@ pub enum DocstringStructuredPolicy {
 }
 
 /// Settings parsed from `[tool.prose.imports]`.
-#[derive(Debug, Default, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ImportsConfig {
     /// Root package names whose imports lift into the local-package
@@ -179,7 +179,7 @@ pub struct ImportsConfig {
 /// holds inline, and `None` lifts the cap so width alone gates the
 /// shape.
 #[derive(Clone, Copy, Debug)]
-pub struct InlineBudget(Option<NonZeroUsize>);
+pub struct InlineBudget(pub(crate) Option<NonZeroUsize>);
 
 impl InlineBudget {
     /// The cap as a plain count, `None` when the budget is uncapped.
@@ -211,7 +211,7 @@ impl Serialize for InlineBudget {
 }
 
 /// Configuration for the `line-overflow` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct LineOverflowConfig {
     pub enabled: bool,
@@ -282,7 +282,7 @@ impl Serialize for MaxShift {
 }
 
 /// Configuration for the `miscased-constants` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct MiscasedConstantsConfig {
     /// Constant names exempted from the lint, such as old-style bare
@@ -310,7 +310,7 @@ impl Default for MiscasedConstantsConfig {
 
 /// Configuration for the `modernize-annotations` rule, each facet
 /// gating one rewrite and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ModernizeAnnotationsConfig {
     pub enabled: bool,
@@ -336,7 +336,7 @@ impl Default for ModernizeAnnotationsConfig {
 
 /// Configuration for the `normalize-comparisons` rule, each facet
 /// gating one rewrite and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct NormalizeComparisonsConfig {
     pub enabled: bool,
@@ -365,7 +365,7 @@ impl Default for NormalizeComparisonsConfig {
 
 /// Configuration for the `normalize-literals` rule, each facet gating
 /// one spelling axis and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct NormalizeLiteralsConfig {
     pub enabled: bool,
@@ -395,7 +395,7 @@ impl Default for NormalizeLiteralsConfig {
 
 /// Configuration for the `prefer-fstring` rule, each facet gating one
 /// rewrite and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct PreferFstringConfig {
     pub enabled: bool,
@@ -421,7 +421,7 @@ impl Default for PreferFstringConfig {
 
 /// Configuration for the `prune-inert-imports` rule, each facet gating
 /// one prune and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct PruneInertImportsConfig {
     /// Drops an import rebinding a name an earlier import already bound
@@ -447,7 +447,7 @@ impl Default for PruneInertImportsConfig {
 }
 
 /// Configuration for the `reassigned-constants` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReassignedConstantsConfig {
     /// Module-level names exempted from the lint.
@@ -465,7 +465,7 @@ impl Default for ReassignedConstantsConfig {
 }
 
 /// Configuration for the `reflow-calls` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReflowCallsConfig {
     pub enabled: bool,
@@ -486,7 +486,7 @@ impl Default for ReflowCallsConfig {
 
 /// Configuration for the `reflow-collections` rule, each facet gating
 /// one shape decision and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReflowCollectionsConfig {
     pub enabled: bool,
@@ -525,7 +525,7 @@ impl Default for ReflowCollectionsConfig {
 
 /// Configuration for the `reflow-imports` rule, each facet gating one
 /// statement move and defaulting `true`.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReflowImportsConfig {
     pub enabled: bool,
@@ -549,7 +549,7 @@ impl Default for ReflowImportsConfig {
 }
 
 /// Configuration for the `reflow-signatures` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReflowSignaturesConfig {
     pub enabled: bool,
@@ -576,7 +576,7 @@ pub(crate) trait RuleToggle: Default {
 }
 
 /// Configuration for the `single-use-variables` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct SingleUseVariablesConfig {
     /// Binding names exempted from the lint.
@@ -602,7 +602,7 @@ impl Default for SingleUseVariablesConfig {
 }
 
 /// Configuration for the `stack-method-chains` rule.
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct StackMethodChainsConfig {
     pub enabled: bool,

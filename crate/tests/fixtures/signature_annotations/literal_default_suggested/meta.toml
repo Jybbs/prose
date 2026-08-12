@@ -4,5 +4,5 @@ previewable = true
 title       = "A Literal Default Suggests the Parameter's Type"
 
 description = '''
-An unannotated parameter draws the report, and a literal default carries a display-only type suggestion the formatter records but never applies.
+`scale`'s only parameter, `factor`, defaults to the float literal `2.0` and carries no annotation. `signature-annotations` reports the gap and attaches a display-only suggestion, `factor: float`, that the formatter records but never auto-applies.
 '''

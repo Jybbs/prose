@@ -3,5 +3,5 @@ previewable = true
 title       = "Each Part Keeps the Prefix and Quote the Source Wrote"
 
 description = '''
-The opener and closer are sliced out of the source rather than rebuilt, so an `r` prefix and a single quote ride onto every part. Rebuilding them from the quote style alone would drop the prefix and leave a suggestion that does not parse.
+The suggested split slices each part's opener and closer out of the source rather than rebuilding them, so the `r` prefix and single quote of `PATTERN`'s literal open and close both parts. Rebuilding the delimiters from the quote style alone would drop the `r`, silently changing what a pattern's backslashes mean.
 '''

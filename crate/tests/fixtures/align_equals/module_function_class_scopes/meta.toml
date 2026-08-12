@@ -3,5 +3,5 @@ previewable = false
 title       = "Each Scope Aligns Its Own Group"
 
 description = '''
-Assignments at module, function-body, and class-body scope form **independent groups**, each settling on its own `=` column without aligning across the scope boundaries.
+`outer` and `answer` sit at module level, `x` and `quux` inside `foo`, and `a`, `bb`, and `ccc` in the body of `Bar`. **Each scope forms its own independent group**, so the three settle on three separate `=` columns, and no column reaches across a scope boundary.
 '''

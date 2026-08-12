@@ -3,5 +3,5 @@ previewable = false
 title       = "The Operand-Order Facet Off Leaves the Other Rewrites Running"
 
 description = '''
-`rewrite-operand-order = false` leaves the constant-led comparison where its author put it, while the `None` test still becomes an identity check and the leading `not` still folds.
+With `rewrite-operand-order = false`, the constant-led `0 == len(table)` stays exactly where its author put it. The other facets keep running, so `value == None` still becomes `value is None`, `not key in table` still folds into `key not in table`, and `flag == True` is still flagged as a boolean-literal comparison.
 '''

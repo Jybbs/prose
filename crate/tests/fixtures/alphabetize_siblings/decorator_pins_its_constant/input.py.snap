@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/decorator_pins_its_constant/input.py
+input_file: tests/fixtures/alphabetize_siblings/decorator_pins_its_constant/input.py
 ---
 class Handlers:
     WRAP = staticmethod

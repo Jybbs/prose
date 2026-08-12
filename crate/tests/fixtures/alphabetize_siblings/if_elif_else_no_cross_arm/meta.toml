@@ -3,5 +3,5 @@ previewable = false
 title       = "`if` / `elif` / `else` Arms Sort Without Crossing"
 
 description = '''
-Each `if` / `elif` / `else` arm **sorts its body independently**. The arms share no sort key space, so an import named `zeta` in one arm and `alpha` in another never migrate across the arm boundary.
+Each arm of the `if` / `elif` / `else` chain **sorts its body independently**. The `if` arm moves `from alpha import b` ahead of `from zeta import a`, the `elif` and `else` arms reorder their own pairs the same way, and no import crosses an arm boundary even though `from delta import f` would sort ahead of `from gamma import c` in a shared list.
 '''

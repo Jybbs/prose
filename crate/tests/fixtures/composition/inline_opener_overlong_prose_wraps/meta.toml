@@ -1,7 +1,7 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Inline-Opener Docstring Splits and Rewraps Overlong Prose"
 
 description = '''
-A multi-line docstring opens on the triple-quote line and carries a single overlong prose line. **`frame-docstrings` moves the opener to its own line and `wrap-docstrings` reflows the prose** to fit the docstring budget.
+`render`'s docstring starts its prose on the `"""` line, and its second source line runs past the docstring budget. **`frame-docstrings` moves the prose off the opener line and `wrap-docstrings` reflows the paragraph**, so the overlong line breaks after `omit` and `per-call overrides.` lands on its own line within the budget.
 '''

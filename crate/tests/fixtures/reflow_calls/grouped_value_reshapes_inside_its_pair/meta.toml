@@ -3,5 +3,5 @@ previewable = false
 title       = "A Grouped Value Reshapes Inside Its Pair"
 
 description = '''
-A bare generator expression takes a grouping pair as it binds to its resolved parameter name, and the nested call inside it explodes in the same pass, so the pair sits outside the reshape rather than holding it off.
+The bare generator passed to `collect` gains its parameter's name, `entries=`, and a named generator argument must sit in parentheses. The `transform` call inside it explodes in the same pass, so the new parentheses wrap the exploded form rather than preserving the one-line shape they enclosed.
 '''

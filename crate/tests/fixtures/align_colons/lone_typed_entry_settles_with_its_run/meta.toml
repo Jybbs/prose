@@ -3,5 +3,5 @@ previewable = false
 title       = "A Lone Type Group Settles Beside Untyped Siblings"
 
 description = '''
-One type group among untyped entries reaches no shared type-group column, so it collapses to its one-space buffer inside the same pass that seats the `:` column, leaving both columns settled on the first run.
+Only `beta` in this `Args:` block carries a parenthesized type, so no shared type column forms and the padded gap in `beta  (int)` collapses to a single space. The same pass seats the `:` column across `alpha`, `beta`, and `gamma`, with `beta (int)` as the widest head, so both gaps settle in one run.
 '''

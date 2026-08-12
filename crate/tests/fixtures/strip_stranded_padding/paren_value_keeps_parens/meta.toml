@@ -3,5 +3,5 @@ previewable = true
 title       = "Normalizing the Colon Gap Leaves a Parenthesized Value Intact"
 
 description = '''
-The run after the colon **settles to one space** by measuring against the value's parenthesis-aware start, so the wrapping `(` stays where it is. A `{"key":   (1, 2)}` reads as `{"key": (1, 2)}` with the tuple's parentheses untouched.
+`{"key":   (1, 2)}` pads its `:` with three spaces before the tuple `(1, 2)`. `strip-stranded-padding` **settles the gap to one space**, measuring from the tuple's own opening `(` so the parentheses stay exactly where they are, landing on `{"key": (1, 2)}`.
 '''

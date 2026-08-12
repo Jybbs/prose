@@ -3,5 +3,5 @@ previewable = true
 title       = "A Hanging Indent Holds Its Depth"
 
 description = '''
-A `super(...)` call whose sibling arguments hang one step under the statement rather than aligning to the open parenthesis loses its own arguments and leaves every hanging line where it stands.
+`super(SecureConnection, self).__init__(` opens a call whose `host`, `port`, and `timeout` arguments hang one step under the statement rather than aligning to the open parenthesis. `SecureConnection, self` drops from the `super(...)` call, and every hanging argument line stays at the indentation it already had.
 '''

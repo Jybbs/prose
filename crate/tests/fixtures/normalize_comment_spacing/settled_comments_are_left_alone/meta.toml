@@ -3,5 +3,5 @@ previewable = false
 title       = "Comments Already Reading Right Emit Nothing"
 
 description = '''
-A block comment opening on `# ` and a trailing comment two columns clear of its code are both already settled, so the rule emits no edit and the file passes through byte-identical.
+The full-line comment already opens on `# `, and the comment trailing `value = 1` already sits two columns clear of its code, so both are settled as written. The rule emits no edit and the file passes through byte-identical.
 '''

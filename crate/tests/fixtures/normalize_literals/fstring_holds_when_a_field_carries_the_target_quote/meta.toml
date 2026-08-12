@@ -3,5 +3,5 @@ previewable = false
 title       = "An F-String Holds When the Target Quote Appears Inside"
 
 description = '''
-The first line carries `"` inside a replacement field, where a swap would collide with the enclosing quote before Python 3.12, and the second carries it in a literal run that would need two new escapes. Both stand.
+Swapping `row` to double quotes would set its outer quote against the `"key"` inside its replacement field, a nesting Python only accepts from 3.12. `shout` carries `"hi"` in its literal text, where the swap would add two escapes instead, so both f-strings hold their single quotes.
 '''

@@ -1,6 +1,6 @@
 ---
 source: tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/method_docstring_args_keep_order/input.py
+input_file: tests/fixtures/alphabetize_siblings/method_docstring_args_keep_order/input.py
 ---
 alphabetize-siblings@242..326

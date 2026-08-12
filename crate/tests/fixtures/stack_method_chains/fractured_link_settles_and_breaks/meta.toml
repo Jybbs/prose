@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Fractured Link Settles Before the Chain Is Measured"
-
-description = '''
-A link the author hand-wrapped closes onto one row under [[reflow-calls]], so the chain reads at its settled width and the count trigger claims it on the first pass rather than the second.
-'''

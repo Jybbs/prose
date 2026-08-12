@@ -3,6 +3,5 @@ previewable = true
 title       = "A Lambda Value Holds"
 
 description = '''
-The field would read the lambda's colon as the start of its format
-spec, so the template is left as written.
+Splicing `lambda: 1` into an f-string field would put the lambda's `:` where the field grammar reads the start of a format spec. The template `"%s" % (lambda: 1,)` is left as written rather than converted into a field that parses differently.
 '''

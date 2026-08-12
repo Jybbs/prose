@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/fields_sort_below_a_derived_constant/input.py
+input_file: tests/fixtures/alphabetize_siblings/fields_sort_below_a_derived_constant/input.py
 ---
 class Box:
     height: int = 20

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Condensed Tuple Key Sorts and Aligns With Its Run"
 
 description = '''
-A multi-line tuple key condenses onto one line under `reflow-collections`, then joins its single-line siblings so `alphabetize-siblings` orders the keys and `align-colons` settles the `:` one space past the widest. The condensed key reads as the single clean member the later rules fold into their run rather than one stranded across a break.
+The tuple key `(alpha, beta)` arrives split across two lines, and `reflow-collections` condenses it onto one. With every key of `mapping` on a single row, `alphabetize-siblings` sorts `(alpha, beta)`, `delta_entry`, and `gamma_key`, and `align-colons` pads each `:` one space past the widest key. Condensing first turns the split key into an ordinary member the later rules can sort and align rather than one broken across lines.
 '''

@@ -97,10 +97,38 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
+      "shed-backslash-continuations",
       "stack-method-chains"
     ],
-    "imperative": "lay out collection literal against the line budget",
+    "imperative": "reflow call arguments against the line budget",
     "position": 15,
+    "slug": "reflow-calls"
+  },
+  {
+    "after": [
+      "reflow-calls"
+    ],
+    "imperative": "shed the arguments a parameterized `super()` call restates",
+    "position": 16,
+    "slug": "shed-super-args"
+  },
+  {
+    "after": [
+      "strip-none-return"
+    ],
+    "imperative": "normalize function signature to one-line or one-per-line shape",
+    "position": 17,
+    "slug": "reflow-signatures"
+  },
+  {
+    "after": [
+      "simplify-comprehensions",
+      "stack-method-chains",
+      "reflow-calls",
+      "reflow-signatures"
+    ],
+    "imperative": "lay out collection literal against the line budget",
+    "position": 18,
     "slug": "reflow-collections"
   },
   {
@@ -109,31 +137,8 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
       "reflow-collections"
     ],
     "imperative": "convert `%` or `str.format()` interpolation to an f-string",
-    "position": 16,
-    "slug": "prefer-fstring"
-  },
-  {
-    "after": [
-      "stack-method-chains",
-      "reflow-collections"
-    ],
-    "imperative": "reflow call arguments against the line budget",
-    "position": 17,
-    "slug": "reflow-calls"
-  },
-  {
-    "after": [
-      "reflow-calls"
-    ],
-    "imperative": "shed the arguments a parameterized `super()` call restates",
-    "position": 18,
-    "slug": "shed-super-args"
-  },
-  {
-    "after": [],
-    "imperative": "normalize function signature to one-line or one-per-line shape",
     "position": 19,
-    "slug": "reflow-signatures"
+    "slug": "prefer-fstring"
   },
   {
     "after": [
@@ -147,13 +152,17 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "slug": "stack-adjacent-strings"
   },
   {
-    "after": [],
+    "after": [
+      "shed-parentheses"
+    ],
     "imperative": "align match-case colons",
     "position": 21,
     "slug": "align-match-case"
   },
   {
     "after": [
+      "shed-backslash-continuations",
+      "prune-inert-imports",
       "group-imports"
     ],
     "imperative": "lay out an import block one module per line",
@@ -162,28 +171,34 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
-      "stack-method-chains",
-      "reflow-collections",
-      "reflow-calls",
-      "reflow-signatures",
+      "simplify-comprehensions",
       "reflow-imports"
     ],
-    "imperative": "alphabetize this group",
-    "position": 23,
-    "slug": "alphabetize-siblings"
-  },
-  {
-    "after": [
-      "alphabetize-siblings"
-    ],
     "imperative": "band module constants into leading and trailing bands",
-    "position": 24,
+    "position": 23,
     "slug": "band-constants"
   },
   {
     "after": [
+      "normalize-literals",
+      "shed-parentheses",
+      "stack-method-chains",
+      "reflow-collections",
+      "reflow-calls",
+      "reflow-signatures",
+      "reflow-imports",
+      "band-constants"
+    ],
+    "imperative": "alphabetize this group",
+    "position": 24,
+    "slug": "alphabetize-siblings"
+  },
+  {
+    "after": [
+      "prune-inert-imports",
       "group-imports",
-      "alphabetize-siblings"
+      "alphabetize-siblings",
+      "band-constants"
     ],
     "imperative": "normalize the gap between adjacent statements",
     "position": 25,
@@ -191,16 +206,25 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
+      "reflow-imports",
       "alphabetize-siblings",
-      "space-statements",
-      "reflow-imports"
+      "band-constants",
+      "space-statements"
     ],
     "imperative": "align consecutive `import`s",
     "position": 26,
     "slug": "align-imports"
   },
   {
-    "after": [],
+    "after": [
+      "strip-trailing-commas",
+      "shed-parentheses",
+      "reflow-collections",
+      "reflow-signatures",
+      "stack-adjacent-strings",
+      "alphabetize-siblings",
+      "band-constants"
+    ],
     "imperative": "align consecutive `:` separators",
     "position": 27,
     "slug": "align-colons"
@@ -217,8 +241,11 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
+      "strip-trailing-commas",
+      "shed-parentheses",
       "reflow-collections",
       "alphabetize-siblings",
+      "band-constants",
       "align-colons"
     ],
     "imperative": "align consecutive `=` operators",
@@ -226,13 +253,18 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "slug": "align-equals"
   },
   {
-    "after": [],
+    "after": [
+      "shed-parentheses",
+      "normalize-comparisons",
+      "reflow-calls"
+    ],
     "imperative": "align consecutive comparison operators",
     "position": 30,
     "slug": "align-comparisons"
   },
   {
     "after": [
+      "shed-parentheses",
       "align-match-case",
       "align-imports",
       "align-colons",
@@ -251,6 +283,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
+      "strip-trailing-commas",
       "strip-stranded-padding",
       "normalize-comment-spacing"
     ],

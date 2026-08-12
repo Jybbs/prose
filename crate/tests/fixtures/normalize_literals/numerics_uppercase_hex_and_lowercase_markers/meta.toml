@@ -3,5 +3,5 @@ previewable = true
 title       = "Hex Digits Uppercase While Every Marker Lowercases"
 
 description = '''
-The `0x`, `0o`, and `0b` radix markers, the `e` exponent, and the `j` suffix all read lowercase while hex digits read uppercase. **The marker and the payload take opposite cases**, so the digits stand clear of the notation that introduces them.
+`0XdeadBEEF` settles as `0xDEADBEEF`, wherein the radix marker lowercases and the hex digits uppercase, and the same lowering reaches `0O755`, `0B1011`, the `E` exponent in `1.5E10`, and the `J` suffix in `2.5J`. **The marker and the payload take opposite cases**, so the digits stand clear of the notation that introduces them.
 '''

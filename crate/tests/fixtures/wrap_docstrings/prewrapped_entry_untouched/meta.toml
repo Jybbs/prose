@@ -3,5 +3,5 @@ previewable = false
 title       = "Already Hanging-Wrapped Entry Passes Through Unchanged"
 
 description = '''
-An `Args:` entry already wrapped with the hanging-column shape **passes through unchanged**. The rule fires only when re-wrapping would alter the output, so a correctly shaped entry and its short sibling are left exactly as written.
+The `first` entry under `Args:` is already wrapped at the docstring budget, with its continuation lines sitting at the hanging-column indent, so the entry **passes through unchanged**. The rule rewrites only when re-wrapping would alter the output, leaving `first` and its short sibling `second` exactly as written.
 '''

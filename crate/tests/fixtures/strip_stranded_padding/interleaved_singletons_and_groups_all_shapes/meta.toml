@@ -3,5 +3,5 @@ previewable = true
 title       = "Singleton and Multi-Member Groups Compose inside One File"
 
 description = '''
-Class fields, dict literals, and function parameters interleave singleton contexts with multi-item groups. **Singletons strip their pre-`:` padding while multi-line multi-item groups stay padded** for `align_colons`. A multi-item group squashed onto one line strips too, because same-line `:` have no column to align against.
+`Solo.only_field`, `single_dict`'s one entry, and `lone_param`'s `x` are each the lone member in their group, and **`strip-stranded-padding` strips their pre-`:` padding while `Pair`'s `first` and `second` and `paired_dict`'s two entries stay padded across separate lines for `align-colons`**. `two_params`'s `first` and `second` squash two members onto the same line, and the rule strips their padding too, because a same-line `:` has no column to align against.
 '''

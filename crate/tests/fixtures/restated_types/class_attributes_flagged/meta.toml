@@ -3,5 +3,5 @@ previewable = true
 title       = "An `Attributes:` Entry Resolves Against the Class Body"
 
 description = '''
-`host` is annotated in the class body and draws a report. `port` is bound by a plain assignment carrying no annotation and `proxy` is declared nowhere, so both stay silent.
+`host: str` is annotated in the class body, and its docstring entry `host (str)` restates that type. **`host` is flagged**, while `port`, bound by the unannotated `port = 8080`, and `proxy`, declared nowhere in the body, both stay silent.
 '''

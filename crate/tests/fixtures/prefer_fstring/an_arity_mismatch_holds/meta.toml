@@ -3,6 +3,5 @@ previewable = false
 title       = "A Spec Count Past the Tuple Length Holds"
 
 description = '''
-Two specs against one member would raise at runtime, so the template is left
-as written.
+The template holds two `%s` specs while the tuple supplies only `only`, a mismatch that raises `TypeError` at runtime. The second spec has no expression to inline, so the template is left as written.
 '''

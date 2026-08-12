@@ -3,5 +3,5 @@ previewable = true
 title       = "A Generic Whose Target Needs an Import Holds"
 
 description = '''
-`Deque` maps to `collections.deque` rather than to a builtin, and the rewrite adds no import, so the annotation stays as written.
+`Deque` modernizes to `collections.deque` rather than to a builtin, so the rewrite would need an import this file does not have. The rule never adds imports, so `queue: Deque[int]` holds as written.
 '''

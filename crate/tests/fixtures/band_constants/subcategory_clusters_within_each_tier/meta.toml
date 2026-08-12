@@ -3,5 +3,5 @@ previewable = true
 title       = "Subcategory Clustering Holds within Each Evaluation Tier"
 
 description = '''
-`Handler` names `Seconds`, so it **climbs into the derived tier**, and the subcategory clustering holds within each tier, the aliases `Seconds` and `Handler` leading their tiers ahead of the constants `MAX` and `TIMEOUT` across the blank line the tier split opens.
+`Handler = Callable[[Seconds], None]` reads the `Seconds` alias and `TIMEOUT = MAX + 1` reads `MAX`, so both **climb into the derived tier** below the blank line the tier split opens. Subcategory clustering still holds inside each tier, the alias leading the constant in both, `Seconds` ahead of `MAX` above the blank and `Handler` ahead of `TIMEOUT` beneath it.
 '''

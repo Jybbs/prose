@@ -3,5 +3,5 @@ previewable = true
 title       = "Class Fields and Methods Sort, Align, and Gain Cushions"
 
 description = '''
-A class with both annotated fields and methods declared out of order. **The fields sort and align both `:` and `=` as one group, the methods sort separately, and `space-statements` settles a one-blank cushion** between every member.
+`Service` declares the fields `timeout`, `host`, and `retry_count` out of order, followed by three methods in no order either. **The fields sort alphabetically and align both their `:` and `=` columns as one group, the methods sort separately so `_cleanup` leads `restart` and `shutdown`, and `space-statements` inserts a single blank line between every member**, including one after the `class Service:` header.
 '''

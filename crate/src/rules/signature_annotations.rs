@@ -22,6 +22,7 @@ use crate::{
     primitives::{
         call_keywords::{keyword_args, module_call_params, resolve_call_params},
         params::first_positional,
+        walk,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -77,6 +78,10 @@ impl<'a> AstVisitor<'a> for LiteralCollector<'a> {
             }
         }
         walk_expr(self, expr);
+    }
+
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        walk::walk_stmt(self, stmt);
     }
 }
 

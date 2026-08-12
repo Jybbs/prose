@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/sort_dict_keys_false_holds_only_dicts/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/sort_dict_keys_false_holds_only_dicts/input.py
 ---
 import alpha
 import zulu

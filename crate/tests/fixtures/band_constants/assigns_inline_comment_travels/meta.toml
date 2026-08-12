@@ -3,5 +3,5 @@ previewable = false
 title       = "An Inline Comment Travels with Its Hoisted Constant"
 
 description = '''
-A trailing comment on a constant's line **travels with the constant as the band sorts**, since the comment attaches to the statement's block rather than pinning the run the way a detached comment between statements would.
+`zebra = 1` carries the trailing comment `# explanatory note`, and as the sort moves `alpha = 2` and `beta = 3` above it, **the comment travels with its statement** to the bottom. A trailing comment attaches to the line it ends, whereas a detached comment standing between statements would pin the run in place.
 '''

@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/method_positional_params_keep_order/input.py
+input_file: tests/fixtures/alphabetize_siblings/method_positional_params_keep_order/input.py
 ---
 class Decoder:
     def forward(self, input, hidden):

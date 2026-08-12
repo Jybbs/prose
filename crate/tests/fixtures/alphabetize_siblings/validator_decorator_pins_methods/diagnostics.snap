@@ -1,6 +1,6 @@
 ---
 source: tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/validator_decorator_pins_methods/input.py
+input_file: tests/fixtures/alphabetize_siblings/validator_decorator_pins_methods/input.py
 ---
 alphabetize-siblings@80..98

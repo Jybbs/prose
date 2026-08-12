@@ -3,5 +3,5 @@ previewable = true
 title       = "An Over-Budget Split With No Expression Rejoins Regardless"
 
 description = '''
-An `import` list carries no expression across the break, so no parenthesized form is available and the statement rejoins even though the joined line runs past the budget, leaving [[line-overflow]] to flag what no reshape reaches.
+The `import` statement splitting `collections_module_alpha` from `collections_module_beta_with_a_much_longer_name_that_overflows_here` carries no expression across the break, so no parenthesized form exists to hold the split. The two names rejoin onto one line anyway, even though it runs past the budget, leaving [[line-overflow]] to flag what no reshape can reach.
 '''

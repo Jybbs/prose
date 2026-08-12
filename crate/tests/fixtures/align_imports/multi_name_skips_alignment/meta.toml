@@ -3,5 +3,5 @@ previewable = false
 title       = "Multi-Name Imports Skip Alignment"
 
 description = '''
-A comma-separated `import a, b` carries no single `as` anchor, so it **skips alignment entirely**. The rule aligns only the lone `as` of a single-aliased import, leaving multi-name shapes untouched.
+`import os, sys` and `import re as regex, json as parser` each name more than one module, leaving no single `as` to align, so **a multi-name import skips alignment entirely** and breaks the run it sits in. That leaves `import collections as c` and `import datetime as dt` each alone in a run of one, wherein no padding is added and the file passes through unchanged.
 '''

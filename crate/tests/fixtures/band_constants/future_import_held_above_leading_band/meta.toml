@@ -3,5 +3,5 @@ previewable = false
 title       = "A Future Import Holds the Front"
 
 description = '''
-A `from __future__ import annotations` **holds the front above the leading band**, and the deferred annotation it enables frees the `int` return hint from constraining the constant the function reads.
+`from __future__ import annotations` **stays on the file's first line, above the leading band**, because Python requires a `__future__` import before any other statement. `TIMEOUT = 30` still hoists into the band beneath it, a safe move in that `fetch` reads `TIMEOUT` only when called rather than while the module loads.
 '''

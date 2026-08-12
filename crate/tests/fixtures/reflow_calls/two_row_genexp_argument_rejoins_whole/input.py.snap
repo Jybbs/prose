@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_calls/two_row_genexp_argument_rejoins_whole/input.py
+---
+finished = set(f for f in fs if f._state in [CANCELLED_AND_NOTIFIED, FINISHED])

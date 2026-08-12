@@ -3,5 +3,5 @@ previewable = false
 title       = "A Lambda-Valued Keyword Sorts With Its Run"
 
 description = '''
-Binding a `lambda` runs none of its body, so the keyword holding one sorts alongside the literals beside it rather than pinning the way a call-valued keyword does.
+The keyword `z=lambda row: row.compute()` sorts with its run, landing after `a=1` and `b=2`. Binding a `lambda` runs none of its body, so the `row.compute()` inside it cannot run during argument evaluation, and the keyword sorts like the literals beside it instead of pinning the way a call-valued keyword does.
 '''

@@ -4,5 +4,5 @@ previewable = false
 title       = "The Explode Preserves Argument Order"
 
 description = '''
-The rule emits arguments in the order it receives them, leaving alphabetization to the `alphabetize-siblings` rule that runs after it.
+The four positionals passed to `draw` bind to their parameter names and explode to one per line in signature order, `width` then `height` then `depth` then `color`. The rule emits arguments in the order it receives them rather than sorting, leaving alphabetization to the `alphabetize-siblings` rule that runs after it.
 '''

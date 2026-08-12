@@ -3,5 +3,5 @@ previewable = false
 title       = "A Deferred Annotation Does Not Pin the Order"
 
 description = '''
-Under `from __future__ import annotations` the `Helper` return annotation no longer evaluates at definition time, so it stops constraining the run and `Builder` sorts ahead of `Helper`.
+`Builder.make` names `Helper` in its return annotation, and under `from __future__ import annotations` every annotation is stored as a string rather than evaluated at definition time. The reference therefore never runs when the classes are defined, so it pins nothing and `Builder` sorts ahead of `Helper`.
 '''

@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/parameter_annotation_reference_pins_run/input.py
+input_file: tests/fixtures/alphabetize_siblings/parameter_annotation_reference_pins_run/input.py
 ---
 class Record:
     pass

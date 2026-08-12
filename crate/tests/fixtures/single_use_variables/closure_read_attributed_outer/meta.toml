@@ -3,5 +3,5 @@ previewable = true
 title       = "A Closure-Captured Single-Use Binding Is Flagged"
 
 description = '''
-A binding captured by a nested closure is **flagged** because the analyzer attributes the closure's read to the outer scope, leaving it single-use. Inlining shifts evaluation timing when the right-hand side carries side effects, so the diagnostic invites review rather than a blind rewrite.
+`helper` in `factory` is read once, inside the `lambda x: x * helper` closure, and the analyzer attributes that read to `factory`'s own scope rather than the lambda's, **so `helper` is flagged as single-use**. Inlining `helper` would shift when `compute()` runs if it carries a side effect, so the diagnostic surfaces for review rather than triggering a rewrite.
 '''

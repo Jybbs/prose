@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "One Blank Inserts between `from` and a Following Bare Import"
-
-description = '''
-A `from` import butted directly against a bare `import` with zero blanks **expands to one blank line**, separating the two import kinds.
-'''

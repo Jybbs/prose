@@ -3,5 +3,5 @@ previewable = true
 title       = "A Split Too Long to Rejoin Takes Parentheses"
 
 description = '''
-Where the rejoined line would overflow the budget, the outermost expression spanning the break is parenthesized instead, so the bracketed form carries the split the backslash used to.
+The addition chain assigned to `total` would overflow the budget if folded onto a single line, so the outermost expression spanning the break is wrapped in parentheses instead of rejoined. The parentheses carry the same split the backslash used to, keeping the six operands across two lines.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "An Import Run Sorts When Constant-Banding Consolidates It"
 
 description = '''
-Two out-of-order imports split by a bandable constant **sort into canonical order in the same pass that banding drains the constant out from between them**, so the consolidated run lands sorted on the first pass rather than a pass behind its consolidation.
+`y = 1` splits the two imports, and banding moves it below them, joining the pair into one run. **That consolidated run sorts in the same pass**, `from a import x` landing above `from b import x` immediately rather than one pass behind the move that joined them.
 '''

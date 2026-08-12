@@ -3,5 +3,5 @@ previewable = false
 title       = "A Hash Followed by Whitespace Alone Sheds It"
 
 description = '''
-A comment carrying whitespace and no text has nothing to put a space ahead of, so the whitespace goes and a bare `#` remains. That keeps a spacer line reading identically to the `#` an author types deliberately.
+The comment between `value = 1` and `other = 2` carries three spaces after its hash and no text, so there is nothing to put a space ahead of and the whitespace is removed, leaving a bare `#`. That keeps a spacer line reading identically to the `#` an author types deliberately.
 '''

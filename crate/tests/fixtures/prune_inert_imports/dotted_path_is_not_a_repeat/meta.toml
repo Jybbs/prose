@@ -3,5 +3,5 @@ previewable = false
 title       = "A Dotted Import Is Not a Repeat of Its Root"
 
 description = '''
-`import os` and `import os.path` both bind `os` while importing different modules. **Neither counts as a repeat of the other** and both lines stand.
+`import os` and `import os.path` both bind the name `os`, yet they import different modules, so a duplicate check on the bound name alone would misfire. **Neither line counts as a repeat of the other**, and both stay for the `os.path.join` call that follows.
 '''

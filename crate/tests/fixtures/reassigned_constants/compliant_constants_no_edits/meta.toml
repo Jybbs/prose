@@ -3,5 +3,5 @@ previewable = true
 title       = "Already-Conforming Source Surfaces Nothing"
 
 description = '''
-A clean file with only an allowed `__version__` dunder **passes through unchanged on every pass**, pinning the lint-only shape where the rule emits no edits and no diagnostic.
+`__version__` is assigned once, and `main`'s body defines no module-level constant of its own. **The file passes through unchanged with no diagnostic emitted**, pinning that `reassigned-constants` is lint-only and never edits source, whether or not it finds anything to flag.
 '''

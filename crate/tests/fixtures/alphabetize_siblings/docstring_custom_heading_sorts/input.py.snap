@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/docstring_custom_heading_sorts/input.py
+input_file: tests/fixtures/alphabetize_siblings/docstring_custom_heading_sorts/input.py
 ---
 def run_pipeline(payload):
     """Run the data pipeline.

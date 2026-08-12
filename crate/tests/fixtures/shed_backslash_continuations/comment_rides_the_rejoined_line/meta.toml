@@ -3,5 +3,5 @@ previewable = true
 title       = "A Trailing Comment Rides the Rejoined Line"
 
 description = '''
-A comment closing the continuation line joins onto the merged line with the code it annotates, and its width counts toward the budget that decides between rejoining and parenthesizing.
+`x = 1 + \` continues onto a line ending in `# note`, and the two fold into `x = 1 + 2  # note`. The comment's width still counts toward the budget that decides whether the split rejoins onto one line or takes parentheses instead.
 '''

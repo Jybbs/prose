@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/docstring_yields_named_entries_sort/input.py
+input_file: tests/fixtures/alphabetize_siblings/docstring_yields_named_entries_sort/input.py
 ---
 def stream(source):
     """Yield each record from `source`.

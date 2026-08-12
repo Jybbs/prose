@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/concat_valued_entry_holds_its_line/input.py
+---
+notice = {
+    "alpha": "first fragment of a long notice " "second fragment that runs past the budget",
+    "bravo": 1,
+    "charlie": 2,
+    "delta": 3
+}

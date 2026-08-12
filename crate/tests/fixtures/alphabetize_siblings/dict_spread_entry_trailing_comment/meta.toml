@@ -3,5 +3,5 @@ previewable = false
 title       = "A Spread Entry Keeps Its Trailing Comment"
 
 description = '''
-A `**`-unpacked entry pins in source position yet still carries its trailing `#` comment cleanly, with the separator `,` resolved against the value span even though the entry has no key.
+Sorting swaps `"zulu"` and `"alpha"` while `**base` pins in source position at the tail, every entry keeping its trailing `#` comment. The spread has no key, yet its separator `,` still lands after the `base` value span and ahead of `# spread`, the same placement a keyed entry gets.
 '''

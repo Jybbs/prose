@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/methods_four_subgroup_order/input.py
+input_file: tests/fixtures/alphabetize_siblings/methods_four_subgroup_order/input.py
 ---
 class Matcher:
     def __init__(self, clusters):

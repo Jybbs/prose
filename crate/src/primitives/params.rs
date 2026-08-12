@@ -6,14 +6,17 @@
 
 use ruff_python_ast::{ParameterWithDefault, Parameters, StmtFunctionDef};
 
-use crate::primitives::decorator::decorator_arguments;
+use crate::primitives::{decorator::decorator_arguments, effect::value_is_effectful};
 
 /// Composite parameter sort key. Required parameters (no default)
 /// sort before optional parameters (has default), each sub-group by
-/// name. `self` and `cls` pin in place.
+/// name. `self` and `cls` pin in place, as does a parameter whose
+/// default binds an effectful value, since defaults evaluate in
+/// signature order at `def` time and a reorder would swap their side
+/// effects.
 pub(crate) fn classify_param(p: &ParameterWithDefault) -> Option<(u8, &str)> {
     let name = p.name().as_str();
-    if matches!(name, "cls" | "self") {
+    if matches!(name, "cls" | "self") || p.default.as_deref().is_some_and(value_is_effectful) {
         return None;
     }
     Some((u8::from(p.default.is_some()), name))

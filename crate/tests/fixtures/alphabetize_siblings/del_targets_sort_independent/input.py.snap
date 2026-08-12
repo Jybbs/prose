@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/del_targets_sort_independent/input.py
+input_file: tests/fixtures/alphabetize_siblings/del_targets_sort_independent/input.py
 ---
 def cleanup():
     cache = {}

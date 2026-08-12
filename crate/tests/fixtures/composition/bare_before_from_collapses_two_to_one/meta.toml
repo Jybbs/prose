@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Excess Blanks Collapse to the Canonical Single Blank"
+
+description = '''
+Two blank lines separate `import os` from `from sys import argv`, one more than the boundary needs. **The gap collapses to a single blank**, the canonical separation between adjacent import groups.
+'''

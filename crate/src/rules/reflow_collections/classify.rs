@@ -6,7 +6,7 @@ use std::ops::Range;
 
 use ruff_python_ast::{Expr, helpers::is_dotted_name};
 
-use crate::primitives::{layout::is_layoutable, slots::slot_runs};
+use crate::primitives::slots::slot_runs;
 
 /// Describes how a contiguous slice of items should lay out.
 #[derive(Debug, PartialEq)]
@@ -25,41 +25,17 @@ pub(super) fn is_align_colons_gap(gap: &str) -> bool {
 
 /// True for expressions that render as a single compact token and
 /// therefore do not benefit from a dedicated line. Covers literals,
-/// dotted names, and unary operations over atomic operands. Starred
-/// expressions are non-atomic so a spread splits surrounding atomics
-/// into independent runs.
+/// dotted names, unary operations over atomic operands, and an
+/// attribute reached off any of them, so `None.__new__` reads the way
+/// `object.__new__` does. Starred expressions are non-atomic so a
+/// spread takes its run to one item per line.
 pub(super) fn is_atomic(expr: &Expr) -> bool {
-    std::iter::successors(Some(expr), |e| {
-        e.as_unary_op_expr().map(|u| u.operand.as_ref())
+    std::iter::successors(Some(expr), |e: &&Expr| match e {
+        Expr::Attribute(a) => Some(a.value.as_ref()),
+        Expr::UnaryOp(u) => Some(u.operand.as_ref()),
+        _ => None,
     })
     .any(|e| e.is_literal_expr() || is_dotted_name(e))
-}
-
-/// True for the collapse-only forms, a subscript whose `[index]` joins
-/// onto one line whatever the index shape and the four comprehensions,
-/// each joining when it fits and never expanding the way a literal does.
-pub(super) fn is_collapse_only(expr: &Expr) -> bool {
-    matches!(
-        expr,
-        Expr::DictComp(_)
-            | Expr::Generator(_)
-            | Expr::ListComp(_)
-            | Expr::SetComp(_)
-            | Expr::Subscript(_)
-    )
-}
-
-/// True for the bracketed expressions the visitor measures for a
-/// single-line collapse: the four collection literals plus the
-/// collapse-only forms, a subscript and the four comprehensions.
-pub(super) fn is_collapsible(expr: &Expr) -> bool {
-    is_layoutable(expr) || is_collapse_only(expr)
-}
-
-/// True for a literal carrying more than one entry, `requires_expand`
-/// apart from the one-entry `Dict`.
-pub(super) fn is_multi_entry(expr: &Expr) -> bool {
-    requires_expand(expr) && expr.as_dict_expr().is_none_or(|dict| dict.len() > 1)
 }
 
 /// The ASCII-space run `gap` opens with when those spaces sit directly
@@ -69,26 +45,25 @@ pub(super) fn pre_colon_padding(gap: &str) -> &str {
     split_colon_gap(gap).map_or("", |(padding, _)| padding)
 }
 
-/// True for a `Dict`, `List`, `Set`, or parenthesized `Tuple` shape
-/// the expand path canonicalizes. Multi-item `List`, `Set`, and
-/// parenthesized `Tuple` qualify, as does any non-empty `Dict`. A bare
-/// tuple carries no bracket pair to hang broken lines on, and an empty
-/// or single-item collection has nothing to flow.
-pub(super) fn requires_expand(expr: &Expr) -> bool {
-    match expr {
-        Expr::Dict(d) => !d.is_empty(),
-        Expr::List(l) => l.len() > 1,
-        Expr::Set(s) => s.len() > 1,
-        Expr::Tuple(t) => t.parenthesized && t.len() > 1,
-        _ => false,
-    }
-}
-
 /// Partitions `atomics` into segments. Each contiguous run of atomic
 /// items becomes one `Flow` segment and each contiguous run of
 /// non-atomic items one `OnePerLine` segment, so a non-atomic item
 /// breaks the atomic run around it.
-pub(super) fn segments(atomics: &[bool]) -> Vec<Segment> {
+///
+/// A `reordered` run answers one segment for the whole of itself
+/// instead, flowing only while every item is atomic. `alphabetize`
+/// permutes a set's members, so a partition read off their arrival
+/// order repartitions on the pass after the sort and never settles,
+/// whereas a list or tuple keeps the order the author wrote.
+pub(super) fn segments(atomics: &[bool], reordered: bool) -> Vec<Segment> {
+    if reordered && !atomics.is_empty() {
+        let run = 0..atomics.len();
+        return if atomics.iter().all(|atomic| *atomic) {
+            vec![Segment::Flow(run)]
+        } else {
+            vec![Segment::OnePerLine(run)]
+        };
+    }
     slot_runs(atomics, |a, b| a == b)
         .map(|run| {
             if atomics[run.start] {
@@ -117,7 +92,6 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{first_expr, parse};
 
     #[test]
     fn align_colons_gap_accepts_canonical_and_padded_forms() {
@@ -136,41 +110,6 @@ mod tests {
     }
 
     #[rstest]
-    #[case("[a]", true)]
-    #[case("{b}", true)]
-    #[case("(c, d)", true)]
-    #[case("{e: f}", true)]
-    #[case("g[h]", true)]
-    #[case("[x for x in y]", true)]
-    #[case("{x for x in y}", true)]
-    #[case("{k: v for k, v in y}", true)]
-    #[case("(x for x in y)", true)]
-    #[case("plain", false)]
-    #[case("a + b", false)]
-    fn is_collapsible_covers_literals_subscripts_and_comprehensions(
-        #[case] src: &str,
-        #[case] expected: bool,
-    ) {
-        let source = parse(src);
-        let expr = first_expr(&source);
-        assert_eq!(is_collapsible(expr), expected);
-    }
-
-    #[rstest]
-    #[case("[a, b]", true)]
-    #[case("{a: 1, b: 2}", true)]
-    #[case("(a, b)", true)]
-    #[case("{a: 1}", false)]
-    #[case("[a]", false)]
-    #[case("()", false)]
-    #[case("a, b", false)]
-    fn is_multi_entry_requires_two_bracketed_entries(#[case] src: &str, #[case] expected: bool) {
-        let source = parse(src);
-        let expr = first_expr(&source);
-        assert_eq!(is_multi_entry(expr), expected);
-    }
-
-    #[rstest]
     #[case(": ", "")]
     #[case(" : ", " ")]
     #[case("    : ", "    ")]
@@ -183,25 +122,9 @@ mod tests {
         assert_eq!(pre_colon_padding(gap), expected);
     }
 
-    #[rstest]
-    #[case("(a, b)", true)]
-    #[case("(a,)", false)]
-    #[case("()", false)]
-    #[case("a, b, c", false)]
-    #[case("(a + b)", false)]
-    #[case("[a, b]", true)]
-    fn requires_expand_gates_parenthesized_multi_item_tuples(
-        #[case] src: &str,
-        #[case] expected: bool,
-    ) {
-        let source = parse(src);
-        let expr = first_expr(&source);
-        assert_eq!(requires_expand(expr), expected);
-    }
-
     #[test]
     fn segments_partitions_alternating_atomic_runs() {
-        let result = segments(&[true, true, false, true, false, false]);
+        let result = segments(&[true, true, false, true, false, false], false);
         assert_eq!(
             result,
             vec![
@@ -213,8 +136,18 @@ mod tests {
         );
     }
 
+    #[rstest]
+    #[case::every_item_atomic(&[true, true], Segment::Flow(0..2))]
+    #[case::any_item_non_atomic(&[true, false, true], Segment::OnePerLine(0..3))]
+    fn segments_answers_one_segment_for_a_reordered_run(
+        #[case] atomics: &[bool],
+        #[case] expected: Segment,
+    ) {
+        assert_eq!(segments(atomics, true), vec![expected]);
+    }
+
     #[test]
     fn segments_returns_empty_for_empty_input() {
-        assert!(segments(&[]).is_empty());
+        assert!(segments(&[], false).is_empty());
     }
 }

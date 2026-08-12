@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Excess Blanks Collapse to the Canonical Single Blank"
-
-description = '''
-A bare `import` followed by a `from` import with two blank lines between them **collapses to one**, the canonical separation between adjacent import groups.
-'''

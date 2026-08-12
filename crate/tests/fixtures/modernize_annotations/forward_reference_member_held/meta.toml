@@ -3,5 +3,5 @@ previewable = true
 title       = "A Forward-Reference Member Holds the Union"
 
 description = '''
-The rewritten `"Node" | None` raises at evaluation time, in that a `str` carries no `|`, so the whole annotation stays legacy.
+`Optional["Node"]` wraps the forward-reference string `"Node"`, and the modern spelling `"Node" | None` raises when the annotation is evaluated, because `str` defines no `|` operator. The whole annotation therefore holds in its legacy form.
 '''

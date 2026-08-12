@@ -3,5 +3,5 @@ previewable = true
 title       = "Function Calls Drop the Trailing Comma on the Final Arg"
 
 description = '''
-A multi-line call whose argument list covers `(...)` loses the `,` after its last argument. **The backward scan from before the closing `)` finds that comma and deletes it**, so the call reads without a dangling separator.
+`Posting(...)`'s last argument, `title="Electrician",`, carries a `,` right before the call's closing `)`. **`strip-trailing-commas` scans backward from that `)`, finds the comma, and deletes it**, so the call reads without a dangling separator.
 '''

@@ -4,5 +4,5 @@ previewable = false
 title       = "A Dotted Name Ahead of One Call Is Not a Chain"
 
 description = '''
-A long dotted prefix carrying a single call at its end holds one link, leaving it below the two-link floor a chain needs before either trigger can reach it.
+`settings.rules.stack_method_chains.max_links.cap()` is a long dotted name carrying a single call at its end, so only `.cap()` counts as a link. One link sits below the two-link floor a chain needs before either trigger can reach it, leaving the statement as written.
 '''

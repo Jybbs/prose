@@ -3,5 +3,5 @@ previewable = true
 title       = "A One-Arg Docstring `Args:` Block Drops the Colon Padding"
 
 description = '''
-A docstring `Args:` section with one entry **strips the pre-`:` padding** on that entry. A section with two or more entries keeps its padding for `align_colons` to align in a separate pass.
+`fetch`'s docstring `Args:` section holds one entry, `timeout : Maximum seconds to wait before giving up.`, and `strip-stranded-padding` **strips its pre-`:` padding** down to `timeout:`. `render`'s `Args:` section holds two entries, `template` and `context`, so their padding stays for `align-colons` to align in a separate pass.
 '''

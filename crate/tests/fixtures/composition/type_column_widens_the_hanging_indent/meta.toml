@@ -3,5 +3,5 @@ previewable = false
 title       = "A Widened Head Carries Its Continuation Column With It"
 
 description = '''
-`align-colons` seats the type-group column and the `:` column, then `wrap-docstrings` reflows the overflowing description from the head the padding leaves, so the continuation hangs under the description rather than under the column the source wrote.
+`align-colons` pads `host` and `(str)` so the two `Args:` entries share a type column and a `:` column, which pushes the start of `host`'s description to the right. `wrap-docstrings` then reflows the overflowing description from that padded position, so the continuation line hangs under `The remote hostname` rather than under the narrower column the source wrote.
 '''

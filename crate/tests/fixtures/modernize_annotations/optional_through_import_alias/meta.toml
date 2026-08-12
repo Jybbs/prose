@@ -3,5 +3,5 @@ previewable = false
 title       = "An Aliased Import Resolves to the Name It Binds"
 
 description = '''
-`from typing import Optional as Opt` binds `Opt` to `typing.Optional`, so `Opt[int]` rewrites and the aliased import drops.
+`from typing import Optional as Opt` binds the local name `Opt` to `typing.Optional`, so the rule resolves `Opt[int]` through the alias and rewrites it to `int | None` all the same. Nothing reads `Opt` afterward, so the aliased import line is removed.
 '''

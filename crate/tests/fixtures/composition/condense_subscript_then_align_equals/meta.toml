@@ -3,5 +3,5 @@ previewable = false
 title       = "A Condensed Subscript Target Aligns Its Run's Equals"
 
 description = '''
-A multi-line subscript assignment target condenses onto one line under `reflow-collections`, then aligns its `=` with the single-line assignments around it under `align-equals`. Condensing first lets the target join the alignment run rather than sitting outside it with an operator stranded across a break.
+The assignment into `config[primary_key]` arrives with its subscript target split across three lines, and `reflow-collections` condenses it back onto one. That gives the statement a single row, so `align-equals` pads its `=` into one column with `shorter` and `the_longest_label_here`. Condensing first is what lets the subscript line join the alignment run rather than sit outside it with its `=` on a continuation line.
 '''

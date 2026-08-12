@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/docstring_args_already_sorted_noop/input.py
+input_file: tests/fixtures/alphabetize_siblings/docstring_args_already_sorted_noop/input.py
 ---
 def render(context, encoding, template):
     """Render the template.

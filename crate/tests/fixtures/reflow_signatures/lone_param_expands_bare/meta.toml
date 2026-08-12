@@ -3,5 +3,5 @@ previewable = false
 title       = "A Lone Parameter Expands Bare"
 
 description = '''
-A single parameter that overflows `code-line-length` **expands to one bare line**. With the only parameter also the last, the canonical emission carries no comma at all.
+`render`'s single parameter `palette_descriptor_inventories` pushes the inline signature past `code-line-length`, so **it expands onto one bare line of its own**. Because the only parameter is also the last, the expanded form carries no trailing comma.
 '''

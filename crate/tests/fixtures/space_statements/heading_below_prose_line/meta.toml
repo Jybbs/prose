@@ -3,5 +3,5 @@ previewable = false
 title       = "A Heading Below a Prose Comment Still Divides"
 
 description = '''
-A multi-line comment block whose body opens with a prose line and then a Markdown-style heading still reads as a **section divider**, since the heading anywhere in the block carries one blank line below it.
+The comment block above `reference` opens with the prose line `# See the module docs` and ends on the heading `### API Reference`. A heading anywhere in the block marks it as a **section divider**, so one blank line opens between the heading and `def reference():` instead of the block binding tight as a leading comment.
 '''

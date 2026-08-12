@@ -1,6 +1,6 @@
 ---
 source: tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/if_elif_else_no_cross_arm/input.py
+input_file: tests/fixtures/alphabetize_siblings/if_elif_else_no_cross_arm/input.py
 ---
 alphabetize-siblings@18..168

@@ -85,6 +85,23 @@ Config {
                 8,
             ),
         },
+        reflow_calls: ReflowCallsConfig {
+            enabled: false,
+            max_args: InlineBudget(
+                Some(
+                    6,
+                ),
+            ),
+        },
+        shed_super_args: ToggleOnly {
+            enabled: false,
+        },
+        reflow_signatures: ReflowSignaturesConfig {
+            enabled: false,
+            max_params: InlineBudget(
+                None,
+            ),
+        },
         reflow_collections: ReflowCollectionsConfig {
             enabled: false,
             explode: false,
@@ -106,23 +123,6 @@ Config {
             rewrite_percent: false,
             rewrite_str_format: false,
         },
-        reflow_calls: ReflowCallsConfig {
-            enabled: false,
-            max_args: InlineBudget(
-                Some(
-                    6,
-                ),
-            ),
-        },
-        shed_super_args: ToggleOnly {
-            enabled: false,
-        },
-        reflow_signatures: ReflowSignaturesConfig {
-            enabled: false,
-            max_params: InlineBudget(
-                None,
-            ),
-        },
         stack_adjacent_strings: ToggleOnly {
             enabled: false,
         },
@@ -137,14 +137,6 @@ Config {
             merge_members: false,
             split_multi_module: false,
         },
-        alphabetize_siblings: AlphabetizeSiblingsConfig {
-            enabled: false,
-            group_methods: false,
-            sort_definitions: false,
-            sort_dict_keys: false,
-            sort_docstring_entries: false,
-            sort_dunder_lists: false,
-        },
         band_constants: BandConstantsConfig {
             enabled: false,
             group_subcategories: false,
@@ -153,6 +145,14 @@ Config {
                     4,
                 ),
             ),
+        },
+        alphabetize_siblings: AlphabetizeSiblingsConfig {
+            enabled: false,
+            group_methods: false,
+            sort_definitions: false,
+            sort_dict_keys: false,
+            sort_docstring_entries: false,
+            sort_dunder_lists: false,
         },
         space_statements: ToggleOnly {
             enabled: false,

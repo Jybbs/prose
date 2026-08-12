@@ -3,5 +3,5 @@ previewable = false
 title       = "Relative Imports Align Beside Absolute Ones"
 
 description = '''
-Relative `from`-imports with leading dots join the same alignment as absolute ones. The `import` keyword **lines up across the whole run** whether a module path leads with dots, named segments, or both.
+Four relative imports lead with one, two, or three dots, from the bare `from .` down to `from ...common`. **The `import` keyword lines up across the whole run**, with the widest path, `...common`, setting the column, so a dotted path aligns the same as any named one.
 '''

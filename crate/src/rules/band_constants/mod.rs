@@ -35,7 +35,7 @@ mod plan;
 
 use self::{
     analysis::module_band_plan,
-    plan::{Banding, Carry, banded_gap},
+    plan::{Banding, banded_gap},
 };
 
 pub(crate) struct BandConstants {
@@ -149,7 +149,7 @@ impl<'a> Bander<'a> {
             })
             .flatten();
         if let Some(b) = &band {
-            apply_band_carries(self.source, body, &b.carries, &mut rendered);
+            apply_band_comments(self.source, body, b, &mut rendered);
         }
         BandLayout {
             band,
@@ -222,17 +222,31 @@ impl BandLayout<'_> {
     }
 }
 
-/// Moves each carried comment onto the member it binds to. A first pass
-/// drops the comment and the blank run beneath it from the text of the
-/// member whose block folded them in, that block opening on the comment
-/// itself, and a second prepends or trails it on the carrier's text.
-fn apply_band_carries<'src>(
+/// Settles every comment the band moves or re-seats. The first pass
+/// closes the blank run under a comment run still heading its own
+/// member, so a banded block re-reads with the attachment it was
+/// assembled from rather than binding backward onto whichever member
+/// the band seats above it. The second drops the comment and the blank
+/// run beneath it from the text of the member whose block folded them
+/// in, that block opening on the comment itself, and the third prepends
+/// or trails it on the carrier's text.
+fn apply_band_comments<'src>(
     source: &'src Source,
     body: &[Stmt],
-    carries: &[Carry],
+    band: &Banding,
     rendered: &mut [Cow<'src, str>],
 ) {
-    for carry in carries {
+    for (&idx, comment) in &band.attached {
+        let newline = source.newline_str();
+        let head = usize::from(comment.end() - comment.start());
+        let own_line = usize::from(source.text().line_start(body[idx].start()) - comment.start());
+        if own_line <= head + newline.len() {
+            continue;
+        }
+        let text = std::mem::take(&mut rendered[idx]);
+        rendered[idx] = Cow::Owned(format!("{}{newline}{}", &text[..head], &text[own_line..]));
+    }
+    for carry in &band.carries {
         let own_line = source.text().line_start(body[carry.absorbs].start());
         let held = usize::from(own_line - carry.comment.start());
         rendered[carry.absorbs] = match std::mem::take(&mut rendered[carry.absorbs]) {
@@ -240,7 +254,7 @@ fn apply_band_carries<'src>(
             Cow::Owned(mut text) => Cow::Owned(text.split_off(held)),
         };
     }
-    for carry in carries {
+    for carry in &band.carries {
         let comment = source.slice(carry.comment);
         let carried = &rendered[carry.carrier];
         rendered[carry.carrier] = Cow::Owned(if carry.trails {

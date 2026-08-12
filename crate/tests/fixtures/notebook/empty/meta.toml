@@ -3,5 +3,5 @@ previewable = false
 title       = "Format a Notebook With No Code Cells"
 
 description = '''
-A notebook carrying only markdown, or no cells at all, is **a clean no-op**.
+This notebook's `cells` array is empty, so no code reaches the pipeline at all. Formatting it is **a clean no-op**.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Disabling `max-params` Leaves the Count Trigger Off"
 
 description = '''
-A five-parameter signature whose inline form fits the line budget **stays inline** when `max-params = false` disables the count trigger entirely. Line length becomes the sole expansion gate.
+`render` takes five parameters, one over the default `max-params` cap of 4, yet its inline form fits the line budget. With `max-params = false` the count trigger is disabled entirely, so **the signature stays inline**, leaving line length as the sole expansion gate.
 '''

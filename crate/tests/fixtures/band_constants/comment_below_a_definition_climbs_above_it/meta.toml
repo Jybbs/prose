@@ -3,5 +3,5 @@ previewable = false
 title       = "A Comment Below a Definition Climbs Above It"
 
 description = '''
-A definition spans lines, so a comment bound backward to it has nowhere to trail without landing after a statement inside the body. The comment takes the line above the definition instead, keeping it bound to the member it documents.
+`# documents render` sits directly below `render`'s body and binds backward to the definition. A definition spans lines, so trailing it would land the comment after a statement inside the body, and the comment takes the line above `def render(template):` instead, staying with the member it documents while `ALPHA_DECAY = 1` hoists into the leading band.
 '''

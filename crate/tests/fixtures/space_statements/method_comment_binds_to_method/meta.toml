@@ -3,5 +3,5 @@ previewable = false
 title       = "A Method's Leading Comment Cushions Above, Binds Below"
 
 description = '''
-A class-body method preceded by an own-line comment normalizes to **one blank line above the comment** and binds the comment tight against the method that follows.
+`# describes the second helper` leads `second` inside `Posting`'s body, so the three blank lines after `first` **collapse to one blank above the comment**, and the comment stays tight against the `def second(self):` it describes. The class header also gains its one blank before `first`.
 '''

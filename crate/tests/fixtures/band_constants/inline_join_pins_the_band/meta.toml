@@ -3,5 +3,5 @@ previewable = false
 title       = "Line-Packed Statements Pin the Band"
 
 description = '''
-Two statements sharing a physical line through `;` pin module-scope banding, since a block-based reorder cannot decompose a line carrying two statements. The constants stay among their neighbors even though one names a literal and would lead while the other names the definition and would trail.
+`TRAIL = make; LEAD = 1` packs two statements onto one physical line with a `;`, and banding reorders whole statements, so it cannot pull the pair apart. `LEAD = 1` names a literal and would hoist into the leading band while `TRAIL = make` reads the `make` definition and would trail, yet the shared line pins both in place and the file is left unchanged.
 '''

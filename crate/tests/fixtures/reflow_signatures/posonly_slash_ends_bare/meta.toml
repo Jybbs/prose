@@ -3,5 +3,5 @@ previewable = false
 title       = "A Trailing Positional-Only Slash Ends Bare"
 
 description = '''
-A signature whose parameter list ends on the positional-only `/` separator **leaves the separator bare** as the final exploded line, so the emission re-parses cleanly.
+`render`'s five parameters are all positional-only, ending the parameter list on a bare `/` separator. `reflow-signatures` expands the signature past `max-params`, and **the exploded form ends on the bare `/` line** with no trailing comma, so the output re-parses cleanly.
 '''

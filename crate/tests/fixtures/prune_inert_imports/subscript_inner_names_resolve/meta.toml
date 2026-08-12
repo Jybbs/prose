@@ -3,5 +3,5 @@ previewable = false
 title       = "Subscripted Generic Inner Names Resolve"
 
 description = '''
-A subscripted generic annotation walks the `Subscript` into each inner `Name`. With both `Container` and `Item` defined above the annotation, **trigger 3 fires and the directive is removed**.
+`x: Container[Item]` is a subscripted annotation, so `prune-inert-imports` reads both names inside it, `Container` and `Item`, rather than the outer one alone. **Each is defined by a `class` written above the annotation, so evaluating it eagerly would resolve, and the `from __future__ import annotations` directive is removed** as carrying nothing the module needs.
 '''

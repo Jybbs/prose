@@ -3,5 +3,5 @@ previewable = false
 title       = "An Annotated Field Reading an Earlier Field Keeps Producer Order"
 
 description = '''
-`total` reads `width` in its default, so the field run **keeps the producer ahead of the consumer** rather than alphabetizing `total` above `width`. The tiering preserves the definition order a class body evaluates top to bottom, where a tier-blind sort would raise `NameError`.
+`total`'s default is `width * 2`, a read of the field defined above it, so **the run keeps the producer `width` ahead of its reader `total`** rather than alphabetizing `total` first. A class body evaluates top to bottom, and moving `total` above `width` would raise `NameError`, so the file passes through unchanged.
 '''

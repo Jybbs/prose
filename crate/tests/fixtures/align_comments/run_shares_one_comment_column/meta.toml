@@ -4,5 +4,5 @@ previewable = true
 title       = "A Run of Trailing Comments Settles on One Column"
 
 description = '''
-Three consecutive lines each carry a trailing comment, and each comment starts wherever its own code happened to end. The rule seats every `#` in the run two columns past the widest line, so the annotations read down one edge the way the assignments beside them already do.
+`attempts`, `threshold`, and `window` each carry a trailing comment, and each comment starts wherever its own code happened to end. The rule places every `#` in the run two columns past the widest line, `threshold = 200`, so the annotations read down one edge the way the assignments beside them already do.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Builtin-Call Constant Anchors in Place"
 
 description = '''
-A constant whose value calls a builtin names no module definition, so the name-resolution guard clears it for a hoist. The side-effect guard **holds it in source position** anyway, since evaluating the call runs code that a lift above the definition below would reorder.
+`TABLE = dict(timeout=30)` names no module definition, in that `dict` is a builtin, so name resolution alone would let the constant hoist above `build`. The side-effect guard **anchors it in source position** anyway, because evaluating a call runs code, and lifting the line above the definition would run it earlier than the author wrote.
 '''

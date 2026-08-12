@@ -3,5 +3,5 @@ previewable = false
 title       = "Global and Nonlocal Declarations Are Ignored"
 
 description = '''
-`global` and `nonlocal` declarations are **ignored by the analyzer**, so later writes to the declared names bind in the local function scope rather than rewriting an outer binding.
+`global x` inside `globalized` and `nonlocal y` inside `inner` are **ignored by the analyzer**, so each later write binds in its own function scope. `x = 1` lands in `globalized`'s scope rather than the module table, and `inner`'s `y = 1` becomes a second `y` binding separate from the one in `nested`.
 '''

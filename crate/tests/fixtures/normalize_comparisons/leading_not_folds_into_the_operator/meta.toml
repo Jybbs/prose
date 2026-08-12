@@ -3,5 +3,5 @@ previewable = true
 title       = "A Leading Not Folds Into the Operator It Negates"
 
 description = '''
-`not a in b` becomes `a not in b` and `not a is b` becomes `a is not b`, folds the language grammar defines rather than approximates.
+`not key in table` folds into `key not in table`, and `not key is sentinel` folds into `key is not sentinel`. Both `not in` and `is not` are operators the language grammar defines, so each fold restates the test exactly rather than approximating it.
 '''

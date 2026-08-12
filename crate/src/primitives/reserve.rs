@@ -8,29 +8,43 @@
 //! the alignment runs, and a wider sibling then joins the run the
 //! collapse closes.
 
-use std::collections::HashMap;
-
 use ruff_python_ast::{
     Expr, InterpolatedStringElement, Stmt,
     visitor::{Visitor, walk_body, walk_expr},
 };
-use ruff_text_size::TextSize;
+use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
-    primitives::{aligner, equal_targets},
+    primitives::{aligner, equal_targets, walk},
     rule::RuleId,
     source::Source,
 };
 
-/// The column each aligned value lands at once the alignment settles,
-/// keyed by the value's start offset.
-pub(crate) struct Columns(HashMap<TextSize, usize>);
+/// The columns each aligned value shifts by once the alignment
+/// settles, one entry per reservation ascending by start, each carrying
+/// the span from the value's own start to the end of its physical row.
+/// Reading a shift over a span rather than a column at one offset lets
+/// a construct nested inside an aligned value move with it, and lets
+/// the shift compose with a caller's own placement rather than
+/// replacing it.
+pub(crate) struct Columns(Vec<(TextRange, isize)>);
 
 impl Columns {
-    /// The column `offset` lands at, the column reserved for it where
-    /// the alignment moves it and `fallback` otherwise.
+    /// The column `offset` lands at, `fallback` moved by the shift the
+    /// alignment applies to the row `offset` sits on.
     pub(crate) fn column(&self, offset: TextSize, fallback: impl FnOnce() -> usize) -> usize {
-        self.0.get(&offset).copied().unwrap_or_else(fallback)
+        fallback().saturating_add_signed(self.shift(offset))
+    }
+
+    /// The columns the alignment moves `offset` by, zero where no
+    /// reservation covers it. A reservation never spans a row, so the
+    /// nearest one starting at or before `offset` is the only candidate.
+    fn shift(&self, offset: TextSize) -> isize {
+        let slot = self.0.partition_point(|(range, _)| range.start() <= offset);
+        slot.checked_sub(1)
+            .map(|i| self.0[i])
+            .filter(|(range, _)| range.contains(offset))
+            .map_or(0, |(_, shift)| shift)
     }
 
     /// The column `offset` lands at, falling back to the column its own
@@ -61,37 +75,44 @@ impl Reservations {
     /// the alignment does not move.
     pub(crate) fn columns(self, source: &Source) -> Columns {
         let Some(settings) = self.settings else {
-            return Columns(HashMap::new());
+            return Columns(Vec::new());
         };
         let mut visitor = ReserveVisitor {
-            columns: HashMap::new(),
+            columns: Vec::new(),
             rule: self.rule,
             settings,
             source,
         };
         visitor.visit_body(&source.ast().body);
+        visitor
+            .columns
+            .sort_unstable_by_key(|(range, _)| range.start());
         Columns(visitor.columns)
     }
 }
 
 struct ReserveVisitor<'a> {
-    columns: HashMap<TextSize, usize>,
+    columns: Vec<(TextRange, isize)>,
     rule: RuleId,
     settings: aligner::Settings,
     source: &'a Source,
 }
 
 impl ReserveVisitor<'_> {
-    /// Records each member's aligned value column. The value follows the
-    /// operator's column by the operator's final character and the
-    /// one-space value gap. A member whose value opens on a later line
-    /// records nothing.
+    /// Records the columns each member's aligned value shifts by, over
+    /// the span from that value's start to the end of its physical row.
+    /// The value follows the operator's column by the operator's final
+    /// character and the one-space value gap. A member whose value opens
+    /// on a later line records nothing.
     fn record(&mut self, groups: Vec<Vec<aligner::Member>>) {
         for group in groups {
             let columns = aligner::operator_columns(self.source, &group, self.settings);
             self.columns
                 .extend(group.iter().zip(columns).filter_map(|(member, column)| {
-                    Some((member.rewritten_value_gap(self.source)?.end(), column + 2))
+                    let start = member.rewritten_value_gap(self.source)?.end();
+                    let shift =
+                        (column + 2).cast_signed() - self.source.column_of(start).cast_signed();
+                    Some((self.source.row_tail(start), shift))
                 }));
         }
     }
@@ -123,4 +144,8 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
 
     /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
+
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        walk::walk_stmt(self, stmt);
+    }
 }

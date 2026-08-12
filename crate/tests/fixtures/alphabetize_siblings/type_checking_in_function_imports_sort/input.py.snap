@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/type_checking_in_function_imports_sort/input.py
+input_file: tests/fixtures/alphabetize_siblings/type_checking_in_function_imports_sort/input.py
 ---
 from typing import TYPE_CHECKING
 

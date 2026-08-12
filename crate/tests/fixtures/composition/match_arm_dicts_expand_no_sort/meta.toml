@@ -1,7 +1,7 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Arm Dicts Expand and Align Colons, Keys Unsorted"
 
 description = '''
-Single-statement `match` arms return long inline dicts that overflow once on their arm line. **Each dict expands and aligns its `:` column, but the keys keep source order** because the rule set excludes `alphabetize-siblings`.
+The `"alpha"` and `"beta"` arms of `dispatch` each return an inline dict too long for its line. **Each dict expands to one entry per row and aligns its `:` column, but `"name"`, `"weight"`, `"extra_field"`, and `"comment_text"` keep source order** because this case runs without `alphabetize-siblings`. The bare `case _` arm carries only `return None`, so `align-match-case` folds that return onto its `case` line.
 '''

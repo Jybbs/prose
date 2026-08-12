@@ -3,5 +3,5 @@ previewable = false
 title       = "Opaque Subscript Roots Skip the Run"
 
 description = '''
-A run reaching a non-module-local root through a `Subscript` chain **skips entirely**. The root `sys` is neither a run target nor a module-local binding written above the run, so safety cannot be proved.
+`zebra = sys.argv[0]` subscripts a value whose root `sys` is neither a target in the run nor a module-local binding written above it, so nothing proves the read is safe to move. **The whole run skips**, leaving `alpha = 1` and `beta = 2` in source order below it.
 '''

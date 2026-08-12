@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/for_body_orelse_sort_separately/input.py
+input_file: tests/fixtures/alphabetize_siblings/for_body_orelse_sort_separately/input.py
 ---
 for i in items:
     from alpha import b

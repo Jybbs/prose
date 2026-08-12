@@ -3,6 +3,5 @@ previewable = true
 title       = "A Literal Brace Doubles so the Field Boundary Holds"
 
 description = '''
-The brace the template wrote literally becomes `{{`, so the f-string renders
-it rather than opening a field on it.
+In the `%` template, `{outer}` is plain text, because only `%s` marks a substitution there. An f-string reads a bare `{` as opening a field, so the rewrite doubles the literal braces to `{{outer}}` while `%s` becomes `{inner}`, keeping the rendered text identical.
 '''

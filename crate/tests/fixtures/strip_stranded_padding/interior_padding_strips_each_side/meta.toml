@@ -3,5 +3,5 @@ previewable = true
 title       = "Padding Just Inside a Bracket Strips on Either Side"
 
 description = '''
-A space run directly after an opening `(`, `[`, or `{` or directly before its closer lines up with nothing, so the rule pulls the delimiter tight against its content wherever the pad appears.
+`int(count )` pads only before its closing `)`, `wrap( 1)` pads only after its opening `(`, and `items = [ 1, 2 ]` and `mapping = { "key": 1 }` pad on both sides. `strip-stranded-padding` pulls each delimiter tight against its content wherever the pad sits, landing on `int(count)`, `wrap(1)`, `[1, 2]`, and `{"key": 1}`.
 '''

@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/dict_divider_comment_holds_entry/input.py
+input_file: tests/fixtures/alphabetize_siblings/dict_divider_comment_holds_entry/input.py
 ---
 y = {
     # --- group ---

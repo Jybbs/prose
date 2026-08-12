@@ -3,5 +3,5 @@ previewable = false
 title       = "A Generator Argument Joins onto Its Call Line"
 
 description = '''
-A generator expression handed to a call as its sole argument joins back onto the call line when it fits, the surrounding call parentheses standing in for the generator's own.
+The generator handed to `sum` as its sole argument is broken across two lines, and its one-line form fits, so it joins back into `sum(value for value in amounts)`. The call's own parentheses stand in for the generator's, so no extra pair is added.
 '''

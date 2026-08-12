@@ -11,5 +11,4 @@ def build_default():
 
 
 # the lazily-built registry
-
 REGISTRY = build_default

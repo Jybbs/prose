@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment between Imports Binds to the `from` Below"
+
+description = '''
+The comment `# boundary` sits between `import os` and `from sys import argv`, two imports that fall into separate groups. **The blank line separating the groups lands above the comment**, keeping `# boundary` tight against the `from sys import argv` line below it.
+'''

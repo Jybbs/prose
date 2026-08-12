@@ -3,5 +3,5 @@ previewable = true
 title       = "A `false` Cap Folds a Wide Spread into One Column"
 
 description = '''
-Setting `max-shift` to `false` lifts the spread budget, so a run the default cap would split **folds into one column** measured at its widest row. The narrow row reaches all the way across rather than falling back to the two-space floor.
+Setting `max-shift = false` removes the shift cap entirely, so a run the default cap would split **folds into one column** measured at the widest row. The `#` after `seed()` shifts all the way out to the column `reconcile_every_pending_shipment_record()` sets, rather than falling back to the two-space floor.
 '''

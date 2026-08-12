@@ -3,6 +3,5 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/suppression/retired_slug_skip_pins_nothing/input.py
 ---
-items = [
-    1, 2
-]  # prose: skip[collection-layout]
+def render(width):  # prose: skip[signature-layout]
+    return width

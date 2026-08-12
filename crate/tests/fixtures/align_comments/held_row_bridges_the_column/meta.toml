@@ -3,5 +3,5 @@ previewable = true
 title       = "A Skipped Row Bridges the Rows Around It"
 
 description = '''
-The middle row carries a `# prose: skip` directive naming this rule, so it neither moves nor ends the run. The rows above and below reach across it and settle on one column measured from their own widths alone.
+`compact_the_index()` carries a `# prose: skip[align-comments]` directive, so its comment neither moves nor ends the run. `seed()` and `flush()` bridge across the held row and settle on one column measured from their own widths alone.
 '''

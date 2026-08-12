@@ -3,5 +3,5 @@ previewable = false
 title       = "A Lone Arm Collapses with Its Colon Hugging the Pattern"
 
 description = '''
-A one-arm match collapses its body onto the `case` line. With no neighbor to align against, **the aligner skips and the `:` hugs the pattern** with a single trailing space.
+The `match` on `value` holds a single arm, so `result = "lone"` folds onto its `case` line. With no neighboring arm to share a column with, **alignment is skipped and the `:` stays tight against `"only"`** with a single space after it.
 '''

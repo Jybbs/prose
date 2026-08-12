@@ -3,5 +3,5 @@ previewable = false
 title       = "The Sole Directive Is Removed, Leaving Its Blank Line"
 
 description = '''
-No function or assignment in the file carries an annotation, so the directive is unused regardless of target version. **The sole import line is removed**, leaving the blank line that followed it as a leading blank.
+Neither `x = 1` nor `main` carries any type annotation anywhere in the module, so `from __future__ import annotations` has nothing to defer. **The sole import line is removed**, leaving the blank line that followed it as the file's new leading blank.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Tuple Call Argument Explodes and Re-Indents in One Pass"
 
 description = '''
-A one-line call carrying an over-wide tuple argument settles in one forward pass, where `reflow-collections` explodes the tuple, `reflow-calls` re-indents it to the keyword column, and `alphabetize-siblings` orders the keywords it can move with `align-equals` aligning their `=`, the tuple-valued `coords` holding its source slot since evaluating its calls runs code. **The tuple elements land at the keyword's item-indent plus a step and the `)` at the keyword column**, the same seating a `list` or `dict` argument takes.
+The one-line `configure` call carries a tuple too wide to keep, so `reflow-collections` explodes it and `reflow-calls` re-indents the pieces under the `coords` keyword. `alphabetize-siblings` sorts `more`, `name`, and `other` while `coords` keeps its source position, because its tuple runs calls like `compute_alpha_coordinate()` and an entry whose value runs code never moves, and `align-equals` pads each `=` into one column. **The tuple elements land one indent step deeper than the keyword rows and the tuple's `)` closes at the keyword column**, the same shape a `list` or `dict` argument takes.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Trailing-Band Constant Carries Its Comment Down"
 
 description = '''
-`REGISTRY` reaches the `build_default` definition, so it pools into the trailing band beneath the definitions, carrying the own-line prose comment bound to it down as well.
+`REGISTRY = build_default` names a definition that appears later in the file, so the constant pools into the trailing band beneath `build_default`. The comment `# the lazily-built registry` binds to `REGISTRY` across the blank line between them, so it travels down with the constant and lands directly above it.
 '''

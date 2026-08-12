@@ -1,7 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/reflow_calls/fractured_row_one_over_budget_holds/input.py
----
-value = helper(alpha,
-               beta) + ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt

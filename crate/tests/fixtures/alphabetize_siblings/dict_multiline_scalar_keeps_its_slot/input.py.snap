@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/dict_multiline_scalar_keeps_its_slot/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/dict_multiline_scalar_keeps_its_slot/input.py
 ---
 notice = {
     "alpha": (

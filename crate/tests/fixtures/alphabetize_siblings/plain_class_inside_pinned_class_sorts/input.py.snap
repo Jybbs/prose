@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/plain_class_inside_pinned_class_sorts/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/plain_class_inside_pinned_class_sorts/input.py
 ---
 from dataclasses import dataclass
 

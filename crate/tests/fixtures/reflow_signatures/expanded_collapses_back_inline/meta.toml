@@ -3,5 +3,5 @@ previewable = true
 title       = "An Expanded Signature That Fits Both Thresholds Collapses"
 
 description = '''
-A two-parameter signature already in expanded shape, whose inline form fits under both thresholds, **collapses back to a single line**. The reverse direction of the rewrite is symmetric with expansion.
+`render`'s two parameters, `palette` and `target`, are written one per line even though both stay under `max-params` and the inline form fits `code-line-length`. `reflow-signatures` **collapses the signature back onto a single line**, the same rewrite running in reverse from expansion.
 '''

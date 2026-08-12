@@ -4,5 +4,5 @@ previewable = false
 title       = "A Zero `max-shift` Takes the Full Split Always"
 
 description = '''
-`max-shift = 0` forbids any hang, so even a short receiver stands alone on its line and every link runs flush beneath it.
+`max-shift = 0` forbids any hang, so even the short receiver `query` stands alone on its line rather than carrying `.filter(a)` beside it. Every link runs flush beneath the head at the same indent, the full split applying to every chain the rule breaks.
 '''

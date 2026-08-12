@@ -12,7 +12,7 @@ use crate::{
         aligner,
         colon_targets::ColonEmitter,
         edit::singleton_groups,
-        tokens::{is_closer, is_interpolated_string_start, is_opener},
+        tokens::{is_delimiter_padding, is_interpolated_string_start},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -104,9 +104,7 @@ fn delimiter_padding_edits(source: &Source) -> Vec<Edit> {
         if gap.is_empty() || source.contains_line_break(gap) {
             continue;
         }
-        if (is_opener(kind) && !next.kind().is_trivia())
-            || (is_closer(next.kind()) && !kind.is_trivia())
-        {
+        if is_delimiter_padding(kind, next.kind()) {
             edits.push(Edit::range_deletion(gap));
         }
     }

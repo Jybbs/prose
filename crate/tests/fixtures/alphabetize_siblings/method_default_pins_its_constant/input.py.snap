@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/method_default_pins_its_constant/input.py
+input_file: tests/fixtures/alphabetize_siblings/method_default_pins_its_constant/input.py
 ---
 class Renderer:
     SCALE = 2

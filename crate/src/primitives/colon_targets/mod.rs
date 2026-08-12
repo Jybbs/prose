@@ -6,10 +6,14 @@
 
 use ruff_python_ast::{
     Expr, Parameters, Stmt,
-    visitor::{Visitor as AstVisitor, walk_body, walk_expr, walk_parameters, walk_stmt},
+    visitor::{Visitor as AstVisitor, walk_body, walk_expr, walk_parameters},
 };
 
-use crate::{primitives::aligner, rule::RuleId, source::Source};
+use crate::{
+    primitives::{aligner, walk::walk_stmt},
+    rule::RuleId,
+    source::Source,
+};
 
 mod columns;
 mod contexts;

@@ -3,5 +3,5 @@ previewable = true
 title       = "Multi-Line Collection Keys Join So Their Colons Align"
 
 description = '''
-A multi-line collection key joins onto one line so it reads as the single clean member the alignment and ordering rules fold into their run rather than one stranded across a break. A key that would overflow once joined keeps its source break.
+The tuple key `(alpha, beta)` in `mapping` and the subscript key `registry[lookup_index]` in `keyed` each join onto one line, so each key reads as one clean member the alignment and ordering rules can fold into their run rather than one stranded across a break. The tuple key in `overflow` would cross the budget once joined, so it stays multi-line as a canonical expansion with one element per line.
 '''

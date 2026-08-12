@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/class_body_value_reference_pins_run/input.py
+input_file: tests/fixtures/alphabetize_siblings/class_body_value_reference_pins_run/input.py
 ---
 class Defaults:
     pass

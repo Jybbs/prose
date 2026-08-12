@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/positional_binding_decorators_pin_params/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/positional_binding_decorators_pin_params/input.py
 ---
 import click
 import hypothesis.strategies as st

@@ -3,5 +3,5 @@ previewable = true
 title       = "A TYPE_CHECKING Block Stays Quiet"
 
 description = '''
-Bindings under `if TYPE_CHECKING:` carry type-only semantics distinct from runtime configuration, so `json_type` never flags.
+`json_type = dict` is bound inside an `if TYPE_CHECKING:` block, a region that never executes at runtime and exists only for the type checker. A binding there is type-only scaffolding rather than runtime configuration, so the lint never flags `json_type`.
 '''

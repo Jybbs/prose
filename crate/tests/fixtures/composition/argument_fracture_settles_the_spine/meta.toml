@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Fracture Inside an Argument Settles the Spine"
+
+description = '''
+The chain on `registry` arrives with a fracture inside `compute(alpha, beta)`, the break sitting mid-argument rather than between links. A chain segment runs from one dot to the next and so covers the whole argument list, meaning the nested break counts as a break in the link itself and the chain settles onto its spine. `.filter(flag)` and `.render()` stack beneath `.lookup` on an aligned `.` column, while the fractured `compute` call rejoins onto one line.
+'''

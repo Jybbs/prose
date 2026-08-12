@@ -1,34 +1,32 @@
 //! The `reflow-collections` walker. Visits each literal and subscript
 //! outside an f-string or t-string replacement field, decides between
 //! the rejoin and the expansion, and emits the edit that fits the
-//! budget. The one-line rendering the decision measures against lives
-//! in the sibling `inline` module.
+//! budget. The one-row rendering the decision measures against comes
+//! from `primitives::one_row`.
 
 use std::borrow::Cow;
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    AnyNodeRef, DictItem, Expr, InterpolatedStringElement,
+    AnyNodeRef, DictItem, Expr, InterpolatedStringElement, Stmt,
     visitor::{Visitor, walk_expr},
 };
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::{
-    classify::{
-        Segment, is_align_colons_gap, is_atomic, is_collapse_only, is_collapsible, is_multi_entry,
-        pre_colon_padding, requires_expand, segments,
-    },
+    classify::{Segment, is_align_colons_gap, is_atomic, pre_colon_padding, segments},
     flow::flow_lines,
 };
 use crate::{
     primitives::{
         INDENT_STEP,
         edit::narrowed_replacement,
-        fracture,
-        layout::{is_column_shaped, is_layoutable, item_indent, placed_block},
-        reserve,
+        layout::{is_collapse_only, is_collapsible, is_layoutable, item_indent, requires_expand},
+        one_row, reserve,
+        travel::{Landing, placed_block},
+        walk::walk_stmt,
     },
     rules::stack_adjacent_strings::concatenated_run,
     source::Source,
@@ -38,10 +36,9 @@ pub(super) struct Layouter<'a> {
     pub(super) code_line_length: usize,
     pub(super) edits: Vec<Edit>,
     pub(super) explode: bool,
-    pub(super) keep_multiline_literals: bool,
     pub(super) max_atomics: usize,
     pub(super) newline: &'static str,
-    pub(super) rejoin: fracture::Settings,
+    pub(super) one_row: one_row::Settings<'a>,
     pub(super) reservations: reserve::Columns,
     pub(super) source: &'a Source,
     pub(super) tripping_dicts: Vec<TextRange>,
@@ -69,7 +66,7 @@ impl<'a> Layouter<'a> {
         let mut out = String::new();
         out.push(open);
         out.push_str(self.newline);
-        for segment in segments(&atomics) {
+        for segment in segments(&atomics, expr.is_set_expr()) {
             match segment {
                 Segment::Flow(range) => {
                     let run_start = range.start;
@@ -181,7 +178,8 @@ impl<'a> Layouter<'a> {
             return None;
         }
         let key_text = self.repaired_key(key, parent, item_indent);
-        let padding = pre_colon_padding(self.key_value_gap(key, &item.value));
+        let value_start = self.range_with_parens(&item.value, parent).start();
+        let padding = pre_colon_padding(self.key_value_gap(key.end(), value_start));
         let hang_column = item_indent + INDENT_STEP;
         let value_text = self.serialize_expr(&item.value, parent, hang_column, hang_column);
         let hang_prefix = " ".repeat(hang_column);
@@ -201,20 +199,16 @@ impl<'a> Layouter<'a> {
             .any(|dict| range.contains_range(*dict))
     }
 
-    /// The source text between a keyed dict entry's `key` and its
-    /// `value`, the span carrying the `:` and the padding around it.
-    fn key_value_gap(&self, key: &Expr, value: &Expr) -> &'a str {
-        self.source.slice(TextRange::new(key.end(), value.start()))
+    /// The source text between a keyed dict entry's `key` and the
+    /// `value_start` its parens are recovered against, the span carrying
+    /// the `:` and the padding around it.
+    fn key_value_gap(&self, key_end: TextSize, value_start: TextSize) -> &'a str {
+        self.source.slice(TextRange::new(key_end, value_start))
     }
 
-    /// `expr`'s paren-recovered source range placed at `indent`.
-    fn placed_slice(&self, expr: &Expr, parent: AnyNodeRef, indent: usize) -> Cow<'a, str> {
-        placed_block(
-            self.source,
-            self.range_with_parens(expr, parent),
-            Some(expr),
-            indent,
-        )
+    /// `expr`'s paren-recovered source range placed per `landing`.
+    fn placed_slice(&self, expr: &Expr, parent: AnyNodeRef, landing: Landing) -> Cow<'a, str> {
+        placed_block(self.source, self.range_with_parens(expr, parent), landing)
     }
 
     /// The one-line form of a fractured `expr`, or `None` when it holds
@@ -222,18 +216,22 @@ impl<'a> Layouter<'a> {
     /// whatever `keep_multiline_literals` holds, covering a subscript, a
     /// comprehension, and a dict key, whose breaks fall outside the entry
     /// boundaries the expand path lays a literal out on.
-    fn repaired(&self, expr: &Expr, column: usize) -> Option<String> {
+    fn repaired(&self, expr: &Expr, column: usize, tail: usize) -> Option<String> {
         self.source
             .contains_line_break(expr.range())
-            .then(|| self.joined_if_fits(expr, column))
+            .then(|| {
+                self.one_row
+                    .repaired(self.source, expr, expr.into(), column, tail)
+            })
             .flatten()
+            .map(Cow::into_owned)
     }
 
     /// Serializes a dict key, rejoining one written across lines so its
     /// `:` sits beside it and falling through to `serialize_expr`
     /// otherwise.
     fn repaired_key(&self, key: &Expr, parent: AnyNodeRef, indent: usize) -> Cow<'a, str> {
-        self.repaired(key, indent).map_or_else(
+        self.repaired(key, indent, 0).map_or_else(
             || self.serialize_expr(key, parent, indent, indent),
             Cow::Owned,
         )
@@ -248,13 +246,19 @@ impl<'a> Layouter<'a> {
     /// comprehension only ever rejoin. The `explode` facet gates every
     /// expansion, and a set `keep_multiline_literals` suppresses the
     /// literal rejoin, a cleared `explode` returning `None`.
-    fn replacement_for(&self, expr: &Expr, column: usize, indent: usize) -> Option<String> {
+    fn replacement_for(
+        &self,
+        expr: &Expr,
+        column: usize,
+        indent: usize,
+        tail: usize,
+    ) -> Option<String> {
         let range = expr.range();
         if self.source.intersects_comment(range) {
             return None;
         }
         if is_collapse_only(expr) {
-            return self.repaired(expr, column);
+            return self.repaired(expr, column, tail);
         }
         if !is_layoutable(expr) {
             return None;
@@ -262,18 +266,15 @@ impl<'a> Layouter<'a> {
         let expandable = requires_expand(expr);
         let over_count = self.has_over_count_dict(expr);
         if self.source.contains_line_break(range) {
-            let held = self.holds_its_column(expr);
-            if !held
-                && !over_count
-                && let Some(inline) = self.joined_if_fits(expr, column)
-            {
+            if let Some(inline) = self.joined_if_fits(expr, column, tail) {
                 return Some(inline);
             }
             return (self.explode && expandable).then(|| self.expand(expr, indent));
         }
         (self.explode
             && expandable
-            && (over_count || column + self.source.slice(range).width() > self.code_line_length))
+            && (over_count
+                || column + self.source.slice(range).width() + tail > self.code_line_length))
             .then(|| self.expand(expr, indent))
     }
 
@@ -281,9 +282,9 @@ impl<'a> Layouter<'a> {
     /// its display width at the canonical `": "` separator. The key
     /// routes through `repaired_key` so one written across lines rejoins
     /// beside its `:`, and the value's fit column sits past the key text
-    /// and `": "`. A borrowed key and value over an `align-colons`-padded
-    /// gap return the source slice whole so the padding round-trips, the
-    /// width counting the canonical `": "`.
+    /// and the separator that lands ahead of it. A borrowed key and value
+    /// over an `align-colons`-padded gap return the source slice whole so
+    /// the padding round-trips, the width counting the canonical `": "`.
     fn serialize_dict_item(
         &self,
         item: &DictItem,
@@ -296,18 +297,32 @@ impl<'a> Layouter<'a> {
             return (Cow::Owned(format!("**{value_text}")), width);
         };
         let key_text = self.repaired_key(key, parent, indent);
-        let value_column = indent + key_text.width() + 2;
-        let value_text = self.serialize_expr(&item.value, parent, value_column, indent);
-        let width = key_text.width() + 2 + value_text.width();
-        let gap = self.key_value_gap(key, &item.value);
+        let value_range = self.range_with_parens(&item.value, parent);
+        let gap = self.key_value_gap(key.end(), value_range.start());
         // A rewritten key drops the source slice's alignment padding, so
         // the padded separator and the borrowed round-trip both hold only
         // while the key passes through unchanged.
         let padded = is_align_colons_gap(gap) && matches!(key_text, Cow::Borrowed(_));
+        let separator = if padded { gap } else { ": " };
+        let value_column = indent + key_text.width() + separator.width();
+        let landing = Landing {
+            column: value_column,
+            indent,
+            item: key.start(),
+        };
+        let value_text = self
+            .replacement_for(&item.value, value_column, indent, 0)
+            .map_or_else(
+                || self.placed_slice(&item.value, parent, landing),
+                Cow::Owned,
+            );
+        let width = key_text.width() + 2 + value_text.width();
         let text = if padded && matches!(value_text, Cow::Borrowed(_)) {
-            Cow::Borrowed(self.source.slice(item))
+            Cow::Borrowed(
+                self.source
+                    .slice(TextRange::new(key.start(), value_range.end())),
+            )
         } else {
-            let separator = if padded { gap } else { ": " };
             Cow::Owned(format!("{key_text}{separator}{value_text}"))
         };
         (text, width)
@@ -325,16 +340,37 @@ impl<'a> Layouter<'a> {
         column: usize,
         indent: usize,
     ) -> Cow<'a, str> {
-        self.replacement_for(expr, column, indent)
-            .map_or_else(|| self.placed_slice(expr, parent, indent), Cow::Owned)
+        let landing = Landing {
+            column,
+            indent,
+            item: expr.start(),
+        };
+        self.replacement_for(expr, column, indent, 0)
+            .map_or_else(|| self.placed_slice(expr, parent, landing), Cow::Owned)
     }
 
-    /// True for a multi-entry literal the author laid out as a flush
-    /// column while `keep_multiline_literals` holds it.
-    pub(super) fn holds_its_column(&self, expr: &Expr) -> bool {
-        self.keep_multiline_literals
-            && is_multi_entry(expr)
-            && is_column_shaped(self.source.slice(expr.range()))
+    /// `expr`'s one-row form when it joins without a residual break and
+    /// fits the budget from `column` across `tail` trailing columns,
+    /// else `None`. A held column and a leaf reaching no single row each
+    /// leave the enclosing construct to the expand path.
+    fn joined_if_fits(&self, expr: &Expr, column: usize, tail: usize) -> Option<String> {
+        self.one_row
+            .fitted(self.source, expr, expr.into(), column, tail)
+            .map(Cow::into_owned)
+    }
+
+    /// The display width of the text trailing `expr` on its own physical
+    /// row, the columns a form joined in place lands beside. A construct
+    /// the expand path relocates lands on a row of its own instead, so
+    /// only the walk's own entry reads this.
+    fn row_tail(&self, expr: &Expr) -> usize {
+        self.source.row_tail_width(expr.range().end())
+    }
+
+    /// The range covering `expr` with explicit parens recovered against
+    /// `parent`.
+    fn range_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> TextRange {
+        self.source.paren_aware_range(expr.into(), parent)
     }
 }
 
@@ -351,7 +387,7 @@ impl<'a> Visitor<'a> for Layouter<'a> {
         // at, so a fit that survives the shift is what the rule collapses.
         let column = self.reservations.column_in(self.source, start);
         let indent = self.source.line_indent_width(start);
-        let Some(text) = self.replacement_for(expr, column, indent) else {
+        let Some(text) = self.replacement_for(expr, column, indent, self.row_tail(expr)) else {
             walk_expr(self, expr);
             return;
         };
@@ -361,6 +397,10 @@ impl<'a> Visitor<'a> for Layouter<'a> {
 
     /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
+
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        walk_stmt(self, stmt);
+    }
 }
 
 /// Per-item state for a dict, list, set, or tuple literal: serialized

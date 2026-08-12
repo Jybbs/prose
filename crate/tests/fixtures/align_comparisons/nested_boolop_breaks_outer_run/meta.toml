@@ -3,5 +3,5 @@ previewable = false
 title       = "A Nested BoolOp Breaks the Outer Run"
 
 description = '''
-A nested parenthesized `BoolOp` **breaks the outer run**, since its multi-line range separates the operands around it. The inner `BoolOp`'s own operands still align when its range spans multiple source lines.
+The parenthesized `or` chain nested inside the `and` chain **breaks the outer run**, since its multi-line range separates `foo == 1` from `qux == 4` and neither takes padding. The inner chain still aligns on its own, so `bar` pads out to meet `baz_long`'s `==`.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "Grid Tables Pass Through Verbatim"
 
 description = '''
-A reStructuredText grid table **keeps its rows and its column widths**. A `+---+` corner rule and a `|`-delimited row each open a passthrough line, so the grid survives instead of filling into a paragraph that no renderer reads as a table.
+The `Encoder` docstring holds a reStructuredText grid table mapping Python types to their JSON equivalents, and the table **keeps its rows and column widths untouched**. A line opening with a `+` border or a `|` cell delimiter is passed through verbatim, so the grid is never reflowed into a paragraph that no renderer would display as a table.
 '''

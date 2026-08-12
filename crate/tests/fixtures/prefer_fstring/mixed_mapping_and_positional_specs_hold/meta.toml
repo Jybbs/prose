@@ -3,6 +3,5 @@ previewable = false
 title       = "A Template Mixing Mapping Keys and Positional Specs Holds"
 
 description = '''
-One right-hand side cannot bind both by name and by position, so
-neither reading proves which value each spec reads.
+The template mixes the mapping spec `%(named)s` with the positional `%s`, whereas the right-hand side of `%` binds either by name from a dict or by position from a tuple, never both at once. Neither reading proves which of `table` and `extra` fills which spec, so the line holds.
 '''

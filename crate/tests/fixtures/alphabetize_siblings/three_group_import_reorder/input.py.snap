@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/three_group_import_reorder/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/three_group_import_reorder/input.py
 ---
 import os
 import sys

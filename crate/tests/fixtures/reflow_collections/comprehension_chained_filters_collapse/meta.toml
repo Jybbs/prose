@@ -3,5 +3,5 @@ previewable = false
 title       = "A Comprehension With Chained Filters Joins onto One Line"
 
 description = '''
-A comprehension carrying more than one `if` clause joins onto one line when it fits, every filter concatenated in source order after the `for` clause.
+The `eligible` comprehension carries two `if` clauses, and its one-line form fits, so it joins with `if person.is_active` and `if person.has_quorum` concatenated in source order after the `for` clause.
 '''

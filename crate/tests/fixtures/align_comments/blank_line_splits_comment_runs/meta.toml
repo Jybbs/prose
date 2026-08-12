@@ -3,5 +3,5 @@ previewable = true
 title       = "A Blank Line Starts a Fresh Comment Column"
 
 description = '''
-The blank line ends the first run, so the pair above it and the pair below it each settle on their own column rather than reaching across the gap for one shared offset. Each column measures only the lines it actually spans.
+The blank line ends the run above it, so `warm_the_cache()` and `seed()` settle one comment column while `flush()` and `compact_the_index()` settle another. Each column is measured from only the lines it spans, which is why the wider second pair pushes only its own `#` further right.
 '''

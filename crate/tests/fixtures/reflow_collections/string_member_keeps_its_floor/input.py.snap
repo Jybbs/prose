@@ -6,8 +6,8 @@ input_file: crate/tests/fixtures/reflow_collections/string_member_keeps_its_floo
 holder = [
     alpha,
     helper(
-    """line1
+        """line1
 line2"""
-),
+    ),
     zeta
 ]

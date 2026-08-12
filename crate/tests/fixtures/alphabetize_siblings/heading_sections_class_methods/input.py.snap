@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/heading_sections_class_methods/input.py
+input_file: tests/fixtures/alphabetize_siblings/heading_sections_class_methods/input.py
 ---
 class Codec:
     ## Encoding

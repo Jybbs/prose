@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/decorated_def_in_arm_holds_its_slot/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/decorated_def_in_arm_holds_its_slot/input.py
 ---
 if TYPE_CHECKING:
     @dec

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Reference Cycle Skips the Whole Run"
 
 description = '''
-When the intra-run reference graph carries a cycle, **the run skips entirely**. `Alpha` names `Beta` as a base class and `Beta` names `Alpha`, so no topological tier exists and source order survives.
+`class Alpha(Beta)` inherits from `Beta` while `class Beta(Alpha)` inherits from `Alpha`, so each class needs the other defined first and no ordering satisfies both. With the references circular, **the whole run skips** and the two classes keep their source order.
 '''

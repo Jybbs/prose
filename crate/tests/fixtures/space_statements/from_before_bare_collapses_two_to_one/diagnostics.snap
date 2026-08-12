@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/space_statements/from_before_bare_collapses_two_to_one/input.py
----
-space-statements@20..23

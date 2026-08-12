@@ -3,5 +3,5 @@ previewable = true
 title       = "A Numeric Inside a Replacement Field Still Respells"
 
 description = '''
-Both numerics respell inside the field that holds them, the second nested one level deeper inside a format spec. **The numeric and prefix facets reach into a replacement field where the quote facet stops**, since only the quote is constrained by the string enclosing it.
+`0XABC` respells as `0xABC` inside `mask`'s replacement field, and `scaled` respells both `1E5` and the `0O7` sitting a level deeper inside its format spec. **The numerics and prefixes facets reach into a replacement field where the quotes facet stops**, since only the quote choice is constrained by the string enclosing it.
 '''

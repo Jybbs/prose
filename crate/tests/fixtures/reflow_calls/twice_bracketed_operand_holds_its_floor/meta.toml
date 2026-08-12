@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Operand Closing and Reopening a Bracket Holds Its Floor"
+
+description = '''
+The operand `compute(first,) + compute(second,)` spans rows, and its `) + compute(` row closes one bracket and opens the next, changing depth mid-block in a way no per-row re-indent can follow. Exploding `emit` moves the block as a unit instead, its shallowest row landing on the item column and every other row keeping the offset the source gave it above that floor.
+'''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Step Word With a Dot Separator Is Flagged"
 
 description = '''
-A `# Step 1. text` comment matches the **step-word shape carrying a `.` separator** and earns a diagnostic. The `Step` keyword and number trigger the lint whether the separator is `.` or `:`.
+The comment `# Step 1. validate input` inside `process` matches the **step-word shape with a `.` separator**, because the word `Step` and a number trigger the lint whether the separator is `.` or `:`. One diagnostic is reported and the source is left unchanged.
 '''

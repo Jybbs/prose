@@ -4,5 +4,5 @@ previewable = true
 title       = "Module Docstring Rewrites at Column Zero"
 
 description = '''
-A module-level single-line docstring *(opener, body, and closer all on one line)* expands into the multi-line block shape, lifting the body onto its own line at column zero.
+The module docstring holds its opener, body, and closer on one physical line. It expands into the multi-line block shape, lifting `Module summary on a single line.` onto its own line at column zero, the indent a module-level statement takes.
 '''

@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/enum_members_single_group/input.py
+input_file: tests/fixtures/alphabetize_siblings/enum_members_single_group/input.py
 ---
 from enum import StrEnum
 

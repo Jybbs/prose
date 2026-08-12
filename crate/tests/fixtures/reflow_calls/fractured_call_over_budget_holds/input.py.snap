@@ -1,8 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/reflow_calls/fractured_call_over_budget_holds/input.py
----
-def emit(alpha_value_argument, beta_value_argument):
-    raise ValueError(alpha_value_argument,
-                     beta_value_argument) from underlying_cause_error

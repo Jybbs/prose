@@ -3,5 +3,5 @@ previewable = true
 title       = "An Unpacked or Mixed Argument List Holds the `dict()` Call"
 
 description = '''
-A `**` unpacking names no key at all and a positional argument beside a keyword builds from two sources, so neither shape reaches a literal.
+`dict(**defaults)` unpacks a mapping without spelling out any key, and `dict(defaults, extra=1)` builds its result from a positional argument plus a keyword. Rewriting either as a `{...}` literal would need keys the call never names, so both `dict()` calls hold.
 '''

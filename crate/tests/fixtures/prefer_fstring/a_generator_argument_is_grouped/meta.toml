@@ -3,6 +3,5 @@ previewable = true
 title       = "A Bare Generator Argument Is Grouped"
 
 description = '''
-A generator standing as the call's only argument carries no parentheses of
-its own, so the field supplies them.
+The generator `x for x in xs` stands as the call's only argument, the one position Python lets it go unparenthesized. Splicing it into an f-string field needs the parentheses back, so the rewrite lands on `f"{(x for x in xs)}"`.
 '''

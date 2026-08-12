@@ -1,6 +1,6 @@
 ---
 source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: crate/tests/fixtures/alphabetize/dict_scalars_then_collections/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/dict_scalars_then_collections/input.py
 ---
 alphabetize-siblings@15..1144

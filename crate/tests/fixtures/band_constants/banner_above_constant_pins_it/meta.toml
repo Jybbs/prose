@@ -3,5 +3,5 @@ previewable = false
 title       = "A Banner Above a Constant Pins It In Place"
 
 description = '''
-A decorative rule-line comment reads as a section divider, so banding leaves `CACHE_SIZE` beneath it rather than hoisting the constant across the banner into the leading band.
+The `# =========================` line reads as a section divider rather than a note on any one statement. `CACHE_SIZE = 256` would otherwise hoist above `render` into the leading band, whereas moving it would tear the constant out of the section the banner opens, so it stays pinned beneath the divider.
 '''

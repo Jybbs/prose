@@ -3,5 +3,5 @@ previewable = true
 title       = "A Positional-Binding Decorator Silences the Lint"
 
 description = '''
-A function under a decorator that binds arguments by position (*`click.argument` here*) draws **no diagnostic**. The decorator may hand values to the parameters by slot, so the lint treats the order as load-bearing and stays silent.
+`run(target, source)` lists its parameters out of alphabetical order, yet the case produces **no diagnostic** because `click.argument` is a decorator that binds arguments by position. Reordering the parameters would change which value lands in each one, so the lint skips any function under such a decorator.
 '''

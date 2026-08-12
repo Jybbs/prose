@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/async_arms_recurse_same/input.py
+input_file: tests/fixtures/alphabetize_siblings/async_arms_recurse_same/input.py
 ---
 async def example():
     from alpha import b

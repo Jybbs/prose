@@ -3,5 +3,5 @@ previewable = true
 title       = "A Starred Argument Holds"
 
 description = '''
-The expansion names no value a field could read in its place.
+`*pair` expands at runtime into however many arguments `pair` holds, so neither `{}` field maps to an expression visible in the source. With no per-field value to inline, the call holds.
 '''

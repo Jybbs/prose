@@ -4,5 +4,5 @@ previewable = false
 title       = "A Multi-Line Variadic Annotation Expands and Hangs From Its Row"
 
 description = '''
-A `*args` annotation the author wrote across rows expands the signature and moves with its parameter, its continuation landing under the parameter column rather than at the column the source left it.
+`render`'s six parameters, including `*args`, exceed `max-params`, and `*args`'s annotation `Sequence[int]` was written across two rows in the source. `reflow-signatures` expands the signature and moves `*args`'s annotation with it, so `int` and the closing `]` land indented under `*args`'s new column rather than the column the source left them at.
 '''

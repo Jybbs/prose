@@ -3,5 +3,5 @@ previewable = true
 title       = "A Line Whose Every Member Is Unread Goes Whole"
 
 description = '''
-Neither `Any` nor `Final` is referenced, so every alias on the `typing` line is pruned and **the line goes rather than surviving empty**.
+Neither `Any` nor `Final` is referenced anywhere in the file, so every name on the `from typing import` line is pruned. **The whole line is removed rather than surviving empty**, leaving `value = 1` as the only statement.
 '''

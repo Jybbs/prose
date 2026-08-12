@@ -3,5 +3,5 @@ previewable = true
 title       = "A Star Import Keeps a Resolvable Call Positional"
 
 description = '''
-A `from x import *` can rebind the callee at runtime, so the rule declines to name the positional arguments against the source-visible `def` and leaves the call as written.
+`from _bisect import *` can rebind `bisect_left` at runtime, so the `def` visible above the import is not a signature the rule can safely name arguments against. The keyword rewrite is skipped, leaving the four positionals exactly as written.
 '''

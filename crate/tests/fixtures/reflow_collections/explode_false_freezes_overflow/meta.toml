@@ -3,5 +3,5 @@ previewable = true
 title       = "A False Explode Facet Freezes Every Collection Shape"
 
 description = '''
-Setting `explode` to `false` suppresses every expansion. An overflowing literal keeps its single line, an over-count dict that fits stays inline because the count cap goes inert, and a literal already spread across lines is left untouched.
+Setting `explode` to `false` suppresses every expansion, so all three literals pass through untouched. The over-wide `overflowing_list` keeps its single line, the five-entry `over_count_dict` stays inline because the count cap stops applying, and `already_multiline`, already spread across lines, is left as written.
 '''

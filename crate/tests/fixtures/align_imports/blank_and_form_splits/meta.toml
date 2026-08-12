@@ -3,5 +3,5 @@ previewable = false
 title       = "Blank Lines and Form Changes Split Groups"
 
 description = '''
-A blank line between imports starts a fresh alignment group, and a switch between `from`-import and `import`-as form **also splits the run**. Each cluster aligns at its own target column, so the trailing `from`-imports align among themselves rather than against the top block.
+Blank lines cut these imports into three clusters, and the middle one also switches form, from `from` imports to aliased `import ... as` lines. **Each cluster aligns at its own column**, so `collections` and `typing` share one `import` column, `re` and `json` share an `as` column, and the trailing `sys` and `os.path` pair aligns by itself at a narrower column than the top block's.
 '''

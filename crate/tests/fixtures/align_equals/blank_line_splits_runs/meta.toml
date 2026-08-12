@@ -3,5 +3,5 @@ previewable = true
 title       = "Blank Lines Reset the Group"
 
 description = '''
-A blank line between two runs **splits them into independent groups**, so each side settles on its own `=` column rather than aligning across the gap.
+The blank line **splits the bindings into independent groups**, so `alpha` and `beta` settle a narrow `=` column above the gap while `long_name` and `short` settle a wider one below it. Neither side's width reaches across the blank line.
 '''

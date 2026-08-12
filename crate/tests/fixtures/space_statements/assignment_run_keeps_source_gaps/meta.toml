@@ -3,5 +3,5 @@ previewable = false
 title       = "Assignment Runs Keep Their Source Gaps"
 
 description = '''
-A run of module-level assignments **keeps each gap at the source's actual count**, because module-scope dispatch returns no canonical for an assignment-after-assignment pair and leaves the whitespace untouched.
+`PORT`, `HOST`, and `TIMEOUT` form a run of module-level assignments written with no blank lines between them, and the output **keeps each gap exactly as the source wrote it**. `space-statements` defines no canonical count for an assignment-after-assignment pair, so the whitespace between the three lines is left untouched.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Lone Import Is Left Untouched"
 
 description = '''
-Alignment requires **at least two members per group**, so any singleton is left untouched. The lone `from`-import and the lone `import`-as below, each isolated by a blank line, are their own one-member groups and receive no edit.
+The blank line splits `from collections import OrderedDict` and `import json as j` into two groups of one, and alignment requires **at least two members per group**, because a lone line has no neighbor to share a column with. Neither singleton receives an edit, so the file passes through unchanged.
 '''

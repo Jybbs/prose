@@ -3,5 +3,5 @@ previewable = false
 title       = "Old-Style Body-Indent Continuations Re-Wrap to the Hanging Shape"
 
 description = '''
-An entry whose continuation lines sit at the section-body indent rather than the hanging column **re-wraps into the hanging shape**. One pass normalizes both never-wrapped and old-style-wrapped docstrings onto the same column.
+The `foo` entry arrives already split across two source lines, its second line sitting at the section-body indent rather than under the description. **The entry re-wraps into the hanging shape**, so the same pass normalizes never-wrapped and old-style-wrapped docstrings onto the same column.
 '''

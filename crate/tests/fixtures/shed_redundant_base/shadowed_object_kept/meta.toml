@@ -3,5 +3,5 @@ previewable = true
 title       = "A Rebound `object` Names a Real Base"
 
 description = '''
-Where the module rebinds `object` ahead of the class, the base names that binding rather than the builtin, so the header is left as written.
+`object = LegacyBase` rebinds the name `object` at module level before `class Consumer(object):` is reached. The base in `Consumer`'s header names that local binding rather than the `object` builtin, so the header stays exactly as written.
 '''

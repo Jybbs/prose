@@ -3,5 +3,5 @@ previewable = false
 title       = "Blank Line Keeps an Indented Block Below an Entry Verbatim"
 
 description = '''
-A blank line closes the entry above it, so the indented block that follows **passes through verbatim** rather than folding into the description. The block keeps that reading with the blank line removed too, since the shape of its opening line is what marks it as a literal.
+The blank line under the `config` entry closes it, so the deeper-indented `{"retries": 3, "timeout": 30}` block below **passes through verbatim** rather than folding into the wrapped description. The block would keep that reading even without the blank line, because the shape of its opening line is what marks it as a literal.
 '''

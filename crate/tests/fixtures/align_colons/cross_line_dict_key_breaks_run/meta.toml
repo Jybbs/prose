@@ -3,5 +3,5 @@ previewable = false
 title       = "A Cross-Line Dict Key Breaks the Run"
 
 description = '''
-One entry's key spans two lines, so its `:` lands on a different line from where the key opens. **The cross-line key breaks the run** rather than letting its neighbors reach across it, leaving the flat keys above it aligned and the key below it flush instead of stranded inside a shared column.
+The tuple key `(multi, line)` spans two lines, so its `:` lands on a different line from the one where the key opens. **The cross-line key breaks the run**, so `aa` and `bbbb` align against each other above it whereas `cc` below it is left as a group of one and keeps its tight `cc: 4` form.
 '''

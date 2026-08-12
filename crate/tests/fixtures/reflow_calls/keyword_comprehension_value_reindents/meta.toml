@@ -4,5 +4,5 @@ previewable = false
 title       = "An Exploded Comprehension Value Re-Indents to the Keyword Column"
 
 description = '''
-A call explodes to one keyword per line while one keyword carries a multi-line list comprehension. `reflow-calls` re-indents that block to the keyword column the same way it re-indents a dict or list value, its body one step past the keyword and its `]` at the keyword column, rather than splicing it at the source indentation.
+`configure` explodes to one keyword per line, and `picks=` carries a multi-line list comprehension. `reflow-calls` re-indents that block to the keyword column just as it would a dict or list value, so the `for value in source` and `if value` rows land one step past `picks=[` and the `]` lands at the keyword column, rather than the block being spliced in at its source indentation.
 '''

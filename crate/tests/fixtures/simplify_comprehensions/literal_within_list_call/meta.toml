@@ -3,5 +3,5 @@ previewable = true
 title       = "A Literal Inside `list()` Becomes a List Literal"
 
 description = '''
-Both a list and a tuple literal handed to `list()` reach the bracket form, so the outer call disappears and the members stay as written.
+`list([1, 2, 3])` passes a list literal, and `list(("a", "b"))` passes a tuple literal, both handed to `list()` as its sole argument. `simplify-comprehensions` drops the outer call for each, so `items` becomes `[1, 2, 3]` and `names` becomes `["a", "b"]` with their members unchanged.
 '''

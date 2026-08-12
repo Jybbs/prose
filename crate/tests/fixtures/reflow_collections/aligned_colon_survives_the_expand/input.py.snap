@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/aligned_colon_survives_the_expand/input.py
+---
+notice = {
+    "mike"  : [
+        "alpha", "bravo", "charlie", "delta", "echo",
+        "foxtrot", "golf", "hotel", "india"
+    ],
+    "zulu"  : "z",
+    "alpha" : (
+        "first part "
+        "second part"
+    )
+}

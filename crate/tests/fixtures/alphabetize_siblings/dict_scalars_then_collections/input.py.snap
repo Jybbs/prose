@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/dict_scalars_then_collections/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/dict_scalars_then_collections/input.py
 ---
 mixed = {
     "author"   : "jibbs",

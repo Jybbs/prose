@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/method_trailing_comments_travel/input.py
+input_file: tests/fixtures/alphabetize_siblings/method_trailing_comments_travel/input.py
 ---
 class Palette:
     def cool(self): ...  # blues and greens

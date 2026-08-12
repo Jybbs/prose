@@ -3,5 +3,5 @@ previewable = true
 title       = "A `**` Spread Bounds the Entry Sort"
 
 description = '''
-A `**` merge lets a later key override an earlier one, so the keyed entries sort only within the run between two spreads. Here `"b"` and `"a"` keep their places on either side of `**defaults` rather than crossing it.
+A later dict entry overrides an earlier one that carries the same key, so `"a": 2` cannot cross `**defaults` without possibly changing which value wins. The spread bounds the sort to the run on each side of it, and with `"b"` alone above and `"a"` alone below, nothing moves.
 '''

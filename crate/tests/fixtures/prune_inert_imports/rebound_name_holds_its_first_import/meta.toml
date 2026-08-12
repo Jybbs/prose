@@ -3,5 +3,5 @@ previewable = true
 title       = "A Rebound Name Holds Its First Import"
 
 description = '''
-The extension shim rebinds `loads` inside the `try`, so the module-scope binding carries two writes. **The first import holds**, since the `ImportError` branch falls back to it.
+The module imports `loads` from `_pyjson`, then a `try` block attempts to rebind it from `_speedups`, so the module-scope binding for `loads` carries two writes. **The first import holds** because the `except ImportError: pass` branch leaves the original binding in place when the second import fails.
 '''

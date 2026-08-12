@@ -3,5 +3,5 @@ previewable = false
 title       = "Reorder Within a Cell, Never Across One"
 
 description = '''
-Two cells each open with an import, and **the sibling-reordering rules run cell-aware so neither cell's import migrates across the boundary**. The second cell's `a = b + 1` reads `b` from the first, and the per-cell reorder keeps that reference after its referent.
+Two cells each open with an import, and **the sibling-reordering rules run cell-aware, so neither `import os` nor `import abc` migrates across the boundary**. The second cell's `a = (b, abc)` reads `b` from the first cell, and the per-cell reorder keeps that reference after its referent.
 '''

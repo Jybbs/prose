@@ -3,5 +3,5 @@ previewable = false
 title       = "Sandwiched Single-Line Stub Reorders and Keeps Two-Blank Cushions"
 
 description = '''
-An out-of-order single-line class stub sandwiched between block-bodied classes reorders into place, and `space-statements` settles the canonical **two-blank-line** cushion on both sides of the stub, so `alphabetize-siblings` and `space-statements` reach a fixed point in one pass rather than trading the gap back and forth.
+`Beta` is a single-line class stub sandwiched between the block-bodied `Alpha` and `Gamma`. `alphabetize-siblings` reorders the three classes into `Alpha`, `Beta`, `Gamma`, and **`space-statements` settles two blank lines on both sides of `Beta`** in the same pass, rather than the two rules repeatedly re-adjusting that gap across separate passes.
 '''

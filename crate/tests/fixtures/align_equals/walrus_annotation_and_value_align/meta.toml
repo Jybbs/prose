@@ -3,5 +3,5 @@ previewable = false
 title       = "A Walrus Annotation and Value Align Together"
 
 description = '''
-An assignment whose annotation and value each parenthesize an assignment expression aligns without disturbing either `:=`, confirming the paren-aware measurement leaves both parenthesized forms intact.
+`D`'s annotation and value are each a parenthesized assignment expression, `(E := 4)` and `(F := 5)`. The row aligns like any other, with `zz: int` padding out to share the `=` column, and both `:=` forms pass through intact because the rewrite measures through the annotation's `)` and stops before the value's `(`.
 '''

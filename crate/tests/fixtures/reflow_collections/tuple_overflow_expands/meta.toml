@@ -3,5 +3,5 @@ previewable = true
 title       = "An Over-Wide Parenthesized Tuple Expands Like a List"
 
 description = '''
-A parenthesized tuple that overflows the budget breaks across lines through the same flow layout `reflow-collections` already gives a `list`. **Atomic elements flow across as few balanced lines as fit** under `code-line-length` and the `max-atomics` cap, while a run of non-atomic elements lands one per line.
+Both `atomics` and `nonatomics` overflow the line, so each parenthesized tuple breaks across lines through the same flow layout `reflow-collections` gives a `list`. **The numbers in `atomics` flow across as few balanced lines as fit** under `code-line-length` and the `max-atomics` cap, whereas the calls in `nonatomics`, each non-atomic, land one per line.
 '''

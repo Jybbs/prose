@@ -3,5 +3,5 @@ previewable = true
 title       = "`is` and `is not` Participate in the Same Column"
 
 description = '''
-Identity and membership operators join the same aligned group as `==` and `<`. The wider `is not` and `not in` **widen the operator column**, and every other operator's last character lands at the shared right edge.
+The identity operators `is` and `is not` and the membership operators `in` and `not in` join the same aligned group as `==` and `<`. The wider `is not` and `not in` **widen the operator column**, and every operator's last character lands at the shared right edge.
 '''

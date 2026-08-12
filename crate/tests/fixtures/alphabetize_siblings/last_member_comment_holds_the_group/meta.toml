@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment on the Last Member Holds the Group"
+
+description = '''
+The `__slots__` tuple opens mid-row, `"name"` trailing the `(`, so a sort here would swap the string texts in place while each row's trailing text stayed where it is. The `# private to the descriptor` comment on `"_field_type"` would end up attached to whichever member landed on that row, so the group holds its source order, a comment on the last member blocking the sort as surely as one mid-group.
+'''

@@ -1,6 +1,6 @@
 ---
 source: tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/dunder_comment_past_bracket_stays/input.py
+input_file: tests/fixtures/alphabetize_siblings/dunder_comment_past_bracket_stays/input.py
 ---
 alphabetize-siblings@17..33

@@ -1,4 +1,4 @@
-items = [
-    1,
-    2,
-]  # prose: skip[collection-layout]
+def render(
+    width,
+):  # prose: skip[signature-layout]
+    return width

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Call Nested in Its Own Scope Stays Written"
 
 description = '''
-A `super(...)` call inside a comprehension, a parameterless lambda, or a closure taking no arguments keeps its written form, because none of those frames carries the leading positional argument the bare call reads.
+`deferred`'s `lambda: super(Child, self).items()`, `gathered`'s list comprehension, and `wrapped`'s `inner()` closure each call `super(Child, self).items()` from a frame with no parameters of its own. None of those frames carries the leading positional argument the bare call would read, so every call stays exactly as written.
 '''

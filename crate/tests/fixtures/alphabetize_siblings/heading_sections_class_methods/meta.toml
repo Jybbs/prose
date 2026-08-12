@@ -3,5 +3,5 @@ previewable = true
 title       = "A Hash Heading Sections a Class Body"
 
 description = '''
-A `##` hash heading divides a class body into sections, so the methods sort within each while the headings stay above the cluster they label.
+The `## Encoding` and `## Decoding` hash headings divide `Codec`'s body into two sections, and the methods sort within each section rather than across the whole class. `configure` and `encode` swap under the first heading, `assemble` and `decode` under the second, and each heading stays above the methods it labels.
 '''

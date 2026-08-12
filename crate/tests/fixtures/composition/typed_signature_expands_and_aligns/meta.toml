@@ -3,5 +3,5 @@ previewable = true
 title       = "A Typed Signature Expands and Aligns Its Columns"
 
 description = '''
-A five-parameter typed signature holds its source order, since the parameters never reorder. **It expands to one per line, aligns the annotation `:` column, and aligns the default `=` column** across the optional run.
+`configure`'s five typed parameters keep their source order even with `alphabetize-siblings` in the run, because reordering parameters would change every positional call. **`reflow-signatures` expands the signature to one parameter per line, `align-colons` pads each name to a shared annotation `:` column, and `align-equals` aligns the `=` across `mango` and `delta`**, the two parameters carrying defaults.
 '''

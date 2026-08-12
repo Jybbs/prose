@@ -3,5 +3,5 @@ previewable = false
 title       = "A Sole Generator Argument Takes a Grouping Pair"
 
 description = '''
-A bare generator expression is legal as a call's only positional argument and illegal after a `name=` prefix, so binding it to the resolved parameter wraps it in parentheses rather than emitting source that Python rejects.
+The line overflows the cap, so the call explodes and its sole argument binds to `entries=`. Python accepts a bare generator only as a call's lone positional and not after a `name=` prefix, so the bound value gains parentheses rather than landing as source that fails to parse.
 '''

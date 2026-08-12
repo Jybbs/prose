@@ -3,5 +3,5 @@ previewable = false
 title       = "A Nested Class Named by Its Bare Name Stays Written"
 
 description = '''
-A method of a class nested inside another keeps `super(Inner, self)`, because the bare name binds on the outer class rather than in the scope the method reads.
+`Inner.visit`, defined inside `class Inner(Base):` which itself nests inside `class Outer:`, calls `super(Inner, self).visit()`. The call stays written because the bare name `Inner` would bind on `Outer`'s enclosing scope rather than the scope the method actually reads.
 '''

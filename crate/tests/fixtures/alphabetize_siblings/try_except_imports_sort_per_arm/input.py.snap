@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/try_except_imports_sort_per_arm/input.py
+input_file: tests/fixtures/alphabetize_siblings/try_except_imports_sort_per_arm/input.py
 ---
 try:
     from alpha import b

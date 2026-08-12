@@ -3,5 +3,5 @@ previewable = false
 title       = "Zero-Parameter Signatures Are a No-Op"
 
 description = '''
-A zero-parameter signature trips neither threshold, **leaving the def untouched**. The rewrite gates close cleanly on the degenerate shape, where there is nothing to count or measure.
+`render` takes no parameters and its `def` line runs well short of the budget, so neither the `max-params` count nor the `code-line-length` measure can trigger an expansion. `reflow-signatures` **leaves the `def` exactly as written**.
 '''

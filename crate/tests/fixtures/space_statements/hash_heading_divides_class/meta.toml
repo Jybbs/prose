@@ -3,5 +3,5 @@ previewable = true
 title       = "A Multi-Hash Heading Keeps Its Blank Below"
 
 description = '''
-A Markdown-style heading comment whose body opens with two or more `#` reads as a **section divider**, not a description of the definition below. The canonical gap lands above the heading, with one blank line between the heading and the definition it leads.
+`### Codec APIs`, a Markdown-style heading comment opening with multiple `#`, reads as a **section divider rather than a description of the class below**. The canonical two-blank gap after `import codecs` sits above the heading and the single blank below it stays, while `Codec`'s body separately gains one blank between its header and `pass`.
 '''

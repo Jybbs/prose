@@ -3,5 +3,5 @@ previewable = true
 title       = "An Aliased Import Is Read Under the Name It Binds"
 
 description = '''
-`import numpy as np` binds `np` rather than `numpy`, and it is `np` the reference count reads. **Nothing references it, so the line goes.**
+`import numpy as np` binds the name `np` rather than `numpy`, and it is `np` the reference scan reads. The body below holds only `value = 1`, which mentions neither name. **Nothing references the binding, so the line goes.**
 '''

@@ -1,6 +1,6 @@
 ---
 source: tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/same_line_method_body_no_panic/input.py
+input_file: tests/fixtures/alphabetize_siblings/same_line_method_body_no_panic/input.py
 ---
 alphabetize-siblings@17..90

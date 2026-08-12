@@ -3,5 +3,5 @@ previewable = true
 title       = "A Dict Key Breaks the Way a Dict Value Does"
 
 description = '''
-A run standing as a dict key **breaks at the entry's own indent**, and the entry keeps its `key: value` line rather than hanging at the `:`, since the break is what brings the row inside the budget whichever half of the entry carries the run.
+`table`'s single entry has a run standing as its key rather than its value, and `stack-adjacent-strings` **breaks that run at the entry's own indent** instead of hanging it at the `:`. The entry keeps its `key: value` line whole, the break landing wherever inside the entry brings the row inside budget.
 '''

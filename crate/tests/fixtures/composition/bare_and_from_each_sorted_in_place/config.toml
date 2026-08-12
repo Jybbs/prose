@@ -1,2 +1,2 @@
 [harness]
-rules = ["alphabetize-siblings", "align-imports", "space-statements"]
+rules = ["group-imports", "alphabetize-siblings", "align-imports", "space-statements"]

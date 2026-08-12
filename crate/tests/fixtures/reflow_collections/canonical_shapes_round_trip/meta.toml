@@ -3,5 +3,5 @@ previewable = true
 title       = "Already-Expanded Source Is Left Alone"
 
 description = '''
-An inline literal that already fits and a multi-line literal whose inline form would overflow both **round-trip with no edit**. A dict already hanging an oversized entry's value at the post-`:` column also passes through unchanged.
+`canonical_inline` fits on its line, and `canonical_multi_line` already sits one entry per line with an inline form that would overflow, so both **round-trip with no edit**. `canonical_hung_entry` already hangs its over-long entry's value on the line after the `:`, the same shape the rule would produce, so it passes through unchanged as well.
 '''

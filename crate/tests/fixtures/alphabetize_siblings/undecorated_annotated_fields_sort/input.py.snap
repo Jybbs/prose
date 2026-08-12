@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/undecorated_annotated_fields_sort/input.py
+input_file: tests/fixtures/alphabetize_siblings/undecorated_annotated_fields_sort/input.py
 ---
 class Posting:
     company: str

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Nested-Loop Comprehension Joins onto One Line"
 
 description = '''
-A comprehension carrying more than one `for` clause joins onto one line when it fits, every clause concatenated in source order.
+The `flattened` comprehension carries two `for` clauses, and its one-line form fits, so it joins into `[cell for row in grid for cell in row]` with the clauses concatenated in source order.
 '''

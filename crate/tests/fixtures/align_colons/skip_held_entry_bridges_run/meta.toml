@@ -3,5 +3,5 @@ previewable = false
 title       = "A Skip-Held Entry Bridges the Alignment Run"
 
 description = '''
-An entry carrying `# prose: skip[align-colons]` drops out of the alignment group while its neighbors bridge across it and align on a shared `:` column. The held entry keeps its own spacing untouched.
+The `"port"` entry carries a `# prose: skip[align-colons]` suppression, so it drops out of the alignment group and keeps its tight spacing untouched. `"host"` and `"timeout"` bridge across the held line and align on the shared `:` column the two of them set.
 '''

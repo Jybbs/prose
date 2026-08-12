@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/nested_targets_settle_together/input.py
+input_file: tests/fixtures/alphabetize_siblings/nested_targets_settle_together/input.py
 ---
 from collections import Counter
 from loguru import logger

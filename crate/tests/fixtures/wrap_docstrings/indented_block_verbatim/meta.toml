@@ -3,5 +3,5 @@ previewable = true
 title       = "Indented Code Blocks Are Preserved Too"
 
 description = '''
-A four-space-indented block under a description paragraph **passes through verbatim** because indented blocks read as code samples. Re-flowing them would damage their semantics, so the rule leaves the over-budget lines in place.
+Under `Summary line.`, two assignments sit indented an extra four spaces, and the block **passes through verbatim** because indented blocks read as code samples. The first assignment runs past the budget, but reflowing code would damage it, so the rule leaves the over-budget line as written.
 '''

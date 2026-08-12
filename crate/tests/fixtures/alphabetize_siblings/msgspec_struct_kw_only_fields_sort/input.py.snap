@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/msgspec_struct_kw_only_fields_sort/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/msgspec_struct_kw_only_fields_sort/input.py
 ---
 import msgspec
 

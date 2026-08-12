@@ -3,5 +3,5 @@ previewable = true
 title       = "Augmented Assignments Join the Run"
 
 description = '''
-An augmented assignment like `beta += 2` aligns its `=` on the shared column, so the `+` **sits one column before** the equals shared by the neighboring plain bindings.
+The augmented assignment `beta += 2` joins the run with the plain bindings `alpha` and `gamma_long`, aligning its `=` on the shared column. The `+` of `+=` therefore **sits one column before** the stacked equals signs.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Blank Run Opening a Module Clears"
 
 description = '''
-Blank lines opening a module **clear entirely**, so the file starts on its first statement. The gap between the remaining statements stays as the source wrote it.
+Two blank lines sit above `import os` at the top of the file, and they **clear entirely**, so the module starts on its first statement. The single blank between the import and `x = 1` stays as the source wrote it.
 '''

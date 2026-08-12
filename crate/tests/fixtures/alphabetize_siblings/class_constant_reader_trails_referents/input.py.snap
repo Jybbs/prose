@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/class_constant_reader_trails_referents/input.py
+input_file: tests/fixtures/alphabetize_siblings/class_constant_reader_trails_referents/input.py
 ---
 class Client:
     GOLD = "G"

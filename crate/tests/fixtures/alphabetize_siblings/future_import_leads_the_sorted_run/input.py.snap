@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/future_import_leads_the_sorted_run/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/future_import_leads_the_sorted_run/input.py
 ---
 from __future__ import annotations
 import os

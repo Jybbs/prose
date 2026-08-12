@@ -3,5 +3,5 @@ previewable = false
 title       = "The Parameter-Documenting Heading Synonyms"
 
 description = '''
-`Parameters:` and `Keyword Arguments:` document parameters the way `Args:` does, so an entry under either resolves against the signature.
+`width`, `depth`, and `height` are documented under `Parameters:` and `Keyword Arguments:` instead of `Args:`, each restating the `int` type its signature already annotates. **All three entries are flagged**, because `Parameters:` and `Keyword Arguments:` are heading synonyms that document parameters the same way `Args:` does.
 '''

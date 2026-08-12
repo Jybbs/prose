@@ -3,5 +3,5 @@ previewable = false
 title       = "An Import Holds While Any Read Survives"
 
 description = '''
-One annotation rewrites and one holds, so `Optional` is still read once and its import stays.
+`first`'s `Optional[int]` rewrites to `int | None`, whereas `parent`'s `Optional["Node"]` holds because its member is the forward-reference string `"Node"`. That surviving annotation still reads `Optional` once, so the `from typing import Optional` line stays.
 '''

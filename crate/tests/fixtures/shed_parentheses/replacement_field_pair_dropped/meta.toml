@@ -3,5 +3,5 @@ previewable = false
 title       = "A Redundant Pair Inside a Replacement Field Sheds"
 
 description = '''
-A grouping pair that binds nothing sheds wherever it sits, an f-string replacement field included, so the interpolated expression reads the same as one written outside a string.
+The parentheses around `a + b` sit inside an f-string replacement field, whereas the pair around `c + d` sits in a plain assignment. Both shed the same way, leaving `f"{a + b}"` and `value = c + d`, because an interpolated expression follows the same rules as one written outside a string.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Copy Over a Constructor Call Stands"
 
 description = '''
-Collapsing here would spell `list(list(rows))`, which reads no better than the comprehension it would replace, so the source stays as written.
+`[row for row in list(rows)]` copies its target the same way a collapsible comprehension does, but its iterable is itself a call to `list`. Collapsing would spell `list(list(rows))`, no clearer than the comprehension it would replace, so `simplify-comprehensions` leaves both `values` and `unique` written as comprehensions.
 '''

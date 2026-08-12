@@ -3,5 +3,5 @@ previewable = true
 title       = "Docstring Entries Mirror the Signature's Source Order"
 
 description = '''
-A signature holds its parameter order, so its `Args:` entries **reorder to mirror that source order** rather than the bare alphabet. The scrambled entries settle into `target`, `source`, `retries`, matching the signature the reader sees.
+`merge(target, source, retries=3)` holds its parameter order because the parameters bind by position, so the `Args:` entries **reorder to mirror the signature** rather than the bare alphabet. The scrambled entries settle into `target`, `source`, `retries`, the same order the reader sees one line up.
 '''

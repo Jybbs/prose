@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/cross_family_reference_skips_run/input.py
+input_file: tests/fixtures/alphabetize_siblings/cross_family_reference_skips_run/input.py
 ---
 class Box:
     width: int = 10

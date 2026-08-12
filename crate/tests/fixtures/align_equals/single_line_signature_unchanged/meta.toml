@@ -3,5 +3,5 @@ previewable = false
 title       = "Single-Line Signatures Pass Through Untouched"
 
 description = '''
-A single-line typed signature with parameter defaults **passes through unchanged**, since the rule aligns `=` only across multi-line signatures.
+`f` declares `a: int = 1` and `bee: int = 2` on a single line, and **the signature passes through unchanged**. Defaults align only across a signature exploded onto multiple lines, so a one-line signature keeps each `=` at its natural spacing.
 '''

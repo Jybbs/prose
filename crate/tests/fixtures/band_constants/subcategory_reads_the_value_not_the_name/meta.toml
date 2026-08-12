@@ -3,5 +3,5 @@ previewable = true
 title       = "The Sub-Band Reads the Value, Not the Name"
 
 description = '''
-The lowercase `opener` names an object that already exists, so it bands as an alias, while the PascalCase `Config` builds a dict and bands as module state. The value settles the sub-band, leaving the target's casing out of it.
+`opener = TarFile.open` points at an attribute that already exists, so it bands as an alias despite its lowercase name, whereas `Config = {"debug": True}` constructs a fresh dict and bands as module state despite its PascalCase. The value settles the sub-band, so `opener` leads, `MAX` follows as a constant, and `Config` trails, the name's casing playing no part.
 '''

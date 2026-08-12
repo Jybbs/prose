@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/kwargs_splat_partition/input.py
+input_file: tests/fixtures/alphabetize_siblings/kwargs_splat_partition/input.py
 ---
 posting = Posting(
     company="Cianbro",

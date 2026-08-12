@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/docstring_args_typed_entries_sorted/input.py
+input_file: tests/fixtures/alphabetize_siblings/docstring_args_typed_entries_sorted/input.py
 ---
 def connect(host, port):
     """Connect to a server.

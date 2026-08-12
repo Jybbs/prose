@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/set_elements_trailing_comments_travel/input.py
+input_file: tests/fixtures/alphabetize_siblings/set_elements_trailing_comments_travel/input.py
 ---
 flavors = {
     chocolate,  # the rich one

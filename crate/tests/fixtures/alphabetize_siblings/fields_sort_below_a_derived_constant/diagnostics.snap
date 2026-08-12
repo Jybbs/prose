@@ -1,6 +1,6 @@
 ---
 source: tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/fields_sort_below_a_derived_constant/input.py
+input_file: tests/fixtures/alphabetize_siblings/fields_sort_below_a_derived_constant/input.py
 ---
 alphabetize-siblings@15..50

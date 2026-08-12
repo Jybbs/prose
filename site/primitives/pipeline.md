@@ -3,7 +3,7 @@ consumedBy: [cli, wasm]
 consumes: [edit, rule-id, source, suppression-map]
 layer: orchestration
 stability: public
-summary: "Runs registered rules in deterministic order, reparses between rules, returns the final source."
+summary: "Runs registered rules in deterministic order, reparses between rules, returns the final source, and answers which rules a buffer still leaves unsettled."
 tagline: deterministic rule runner
 ---
 
@@ -11,7 +11,7 @@ tagline: deterministic rule runner
 
 <PrimitiveLayout primitive="pipeline">
 
-*Pipeline* is the value `prose format` and `prose check` resolve into. It carries the registered rules in their canonical order and exposes two ways to run them. `run` applies each rule's edits to a fresh buffer, reparses between rules so every downstream pass reads a settled AST, and emits the final [[source]] plus a diagnostic list, while `diagnose` collects every rule's findings against the source as written for reporting.
+*Pipeline* is the value `prose format` and `prose check` resolve into. It carries the registered rules in their canonical order and exposes three ways to read them. `run` applies each rule's edits to a fresh buffer, reparses between rules so every downstream pass reads a settled AST, and emits the final [[source]] plus a diagnostic list, `diagnose` collects every rule's findings against the source as written for reporting, and `unsettled` answers which of the carried rules would still rewrite a buffer a run has already produced.
 
 ## Public Surface
 
@@ -33,6 +33,8 @@ tagline: deterministic rule runner
 `run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError>` walks the registered rules in their canonical order. Each rule applies its edits, the pipeline reparses, and the new *Source* feeds the next rule, with the final text and every emitted diagnostic returned to the caller. Suppression is applied transparently inside `run`, with every `# fmt: off` block, `# fmt: skip` marker, and `# prose: ignore[<rule>]` directive consulted at the edit-emission boundary so suppressed fix groups and lint diagnostics never reach the returned vector. A fix group drops whole as soon as one of its edits falls under a directive, leaving a rule's co-dependent edits either all applied or all withheld.
 
 `diagnose(&self, source: &Source) -> Vec<Diagnostic>` collects every enabled rule's findings against the unmodified source, applying no edits and never reparsing, so each range stays anchored to the source as written rather than to an intermediate rewrite. `prose check` and `prose server` report through `diagnose`, where a rendered diagnostic points at the file the author wrote, while `run` feeds the rewritten text behind `prose format`'s diff, on-disk rewrite, and would-reformat summary. Both consult the same [[suppression-map]] and rule set, diverging only in that `diagnose` reads every rule against the original where `run` reads each against the prior rule's reparsed output.
+
+`unsettled(&self, source: &Source) -> Vec<RuleId>` names every rule this pipeline carries whose edits would still rewrite `source`, and answers empty for a buffer that has settled. It reads the subset the pipeline was built with rather than the default set, so a `--select` run answers for that selection alone, and a file carrying a file-level `# prose: off` answers empty because no rule reaches it. A corpus sweep over each rule alone and each ordered rule pair reads it, which is where a rule leaning on a later rule to finish its work surfaces.
 
 `Diagnostic` carries the per-finding payload returned in the `Vec`:
 

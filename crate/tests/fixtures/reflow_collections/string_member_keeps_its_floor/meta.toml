@@ -4,5 +4,5 @@ previewable = false
 title       = "A Member Running Through a Multi-Line String Keeps Its Floor"
 
 description = '''
-A member carrying a string literal that itself spans rows stays at its source columns while the expansion moves the row around it, since re-indenting the block would pad the literal's own interior.
+The `helper` member of `holder` carries a triple-quoted string whose `line2` starts at column zero, and when the list explodes one member per line, every row outside that literal moves to the item indent. The row inside the string stays where the source wrote it, because indenting it would add spaces to the literal's own content.
 '''

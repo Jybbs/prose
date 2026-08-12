@@ -1,6 +1,6 @@
 ---
 source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: crate/tests/fixtures/alphabetize/plain_class_inside_pinned_class_sorts/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/plain_class_inside_pinned_class_sorts/input.py
 ---
 alphabetize-siblings@115..140

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Walrus in an If Test Is Exempt"
 
 description = '''
-A walrus bound in the test of an `if` or `elif` is **not flagged**. The branch decision already consumes the value, so the single later read is the second use, and inlining would recompute the guarded expression in both the test and the body.
+`n := len(items)` binds inside the `if` test in `first`, and `n` is read again in `return n`. **`single-use-variables` does not flag `n`**, because the `if` comparison already consumes the walrus value as its first use, so the later read is a second use, and inlining would recompute `len(items)` in both the test and the body.
 '''

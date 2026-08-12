@@ -3,5 +3,5 @@ previewable = false
 title       = "One Blank between `from` and Bare Import Stays"
 
 description = '''
-A `from` import and a following bare `import` already separated by one blank line **stay at one**, passing through unchanged.
+`from sys import argv` sits one blank line above the bare `import os`, the reverse ordering of the sibling case. The single blank is already the canonical gap between the two import forms, so the source **passes through unchanged**.
 '''

@@ -1,6 +1,6 @@
 ---
 source: tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/banner_sections_module_defs/input.py
+input_file: tests/fixtures/alphabetize_siblings/banner_sections_module_defs/input.py
 ---
 alphabetize-siblings@26..122

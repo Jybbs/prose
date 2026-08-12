@@ -3,5 +3,5 @@ previewable = true
 title       = "Decorators Travel with Their `def`, Not above the Blank Run"
 
 description = '''
-A module-level `def` with a leading decorator has its **leading edge counted from the decorator line**. The blank-line count normalizes above the decorator, so the decorator travels with the def below it.
+`def second` carries `@decorator`, so the blank lines separating it from `first` are counted above the decorator line rather than between the decorator and the `def`. **The single blank grows to two above `@decorator`**, and the decorator stays directly attached to the `def` it modifies.
 '''

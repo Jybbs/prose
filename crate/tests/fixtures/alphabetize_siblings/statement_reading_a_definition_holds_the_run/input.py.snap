@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/statement_reading_a_definition_holds_the_run/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/statement_reading_a_definition_holds_the_run/input.py
 ---
 class Zeta:
     pass

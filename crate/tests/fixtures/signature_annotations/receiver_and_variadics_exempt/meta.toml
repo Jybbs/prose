@@ -3,5 +3,5 @@ previewable = true
 title       = "Receivers and Variadics Stay Outside the Report"
 
 description = '''
-A method's `self`, a classmethod's `cls`, and the `*args` and `**kwargs` variadics sit outside the parameter report, leaving only the genuinely annotatable parameters flagged.
+`Registry.register`'s `self` and `Registry.empty`'s `cls` are each the first positional parameter of their method, so `signature-annotations` exempts both regardless of the `@classmethod` decorator, and `forward`'s `*args` and `**kwargs` are skipped as variadics. That leaves `register`'s `name` as **the only parameter reported**, whereas `empty` and `forward` each still draw the separate finding for a missing return type.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "Methods Sort Inside a Pinned Class"
 
 description = '''
-The pin covers the annotated field run alone, so the methods of a `@dataclass` **still sort** while its fields **hold their positional order**. A method is never a constructor parameter, so its slot carries no call-site binding to protect.
+The pin on the `@dataclass` covers the annotated field run alone, so `title` and `company` **hold their positional order** while the methods **still sort**, `render` moving above `summary`. A method never becomes a constructor parameter, so its slot binds no call site the way the fields do.
 '''

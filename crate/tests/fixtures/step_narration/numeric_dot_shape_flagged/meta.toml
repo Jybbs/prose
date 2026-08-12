@@ -3,5 +3,5 @@ previewable = true
 title       = "Numeric-Dot Shape (`# 1.`) Is Recognized"
 
 description = '''
-A leading `# 1. text` comment matches the **numeric-dot shape** and earns a diagnostic recommending the step move into a named function. The digit followed by `.` and whitespace is the trigger.
+The comment `# 1. normalize whitespace` inside `process` matches the **numeric-dot shape**, a digit followed by `.` and whitespace, so the lint reports it and recommends extracting the step as a named function. The source itself is left unchanged, because the rule is lint-only.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Literal Past the Cap Is Not What Overflowed the Line"
 
 description = '''
-The assignment target alone crosses `code-line-length`, so the literal opens past the cap rather than straddling it and no split of that literal brings the line within budget. The finding stays a bare report ending *"with no legal reshape"*.
+`metrics.rolling.window.average.trailing` and its `=` cross the 40-column cap on their own, so `"a short tail"` opens past the cap rather than straddling it, and no split of that literal can bring the line within budget. The finding stays a bare report ending `with no legal reshape`.
 '''

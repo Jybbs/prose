@@ -3,5 +3,5 @@ previewable = true
 title       = "Sphinx Directives Pass Through Verbatim"
 
 description = '''
-A Sphinx directive **passes through verbatim**. A `.. name::` line opens a directive block, so consecutive directives stay one per line instead of merging into a paragraph a renderer would read as a single directive.
+`.. versionadded:: 0.10` and `.. deprecated:: 1.0` sit on consecutive lines, and a line opening with `..` starts a directive block, so both **pass through verbatim**. Reflowed into one paragraph they would render as a single directive, so the wrap keeps them one per line.
 '''

@@ -4,5 +4,5 @@ previewable = true
 title       = "Explode an All-Keyword Call to an External Function"
 
 description = '''
-A four-argument all-keyword call explodes regardless of where its callee is defined, because every argument already names its parameter and needs no signature resolution.
+`fetch` takes four keyword arguments and is defined nowhere in this module, so no signature is available to resolve against. The call explodes to one argument per line anyway, because `headers=h` through `url=u` each already name their parameter and need no signature lookup.
 '''

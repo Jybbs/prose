@@ -3,5 +3,5 @@ previewable = true
 title       = "Decorators Sit Above the Reshaped Signature"
 
 description = '''
-A `@cache`-decorated function with five parameters trips the count trigger and expands. **The decorator surface stays untouched**, because the replacement range starts at `(`, leaving everything above the `def` keyword out of scope.
+`render` carries a `@cache` decorator and five parameters, one past `max-params`, so `reflow-signatures` expands the parameter list. The rewrite's replacement range starts at the `(`, so **the `@cache` line above `def render` is left untouched**.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Trailing Comment Holds the Column In"
 
 description = '''
-The row carrying the long comment sits past the line budget before any padding, so the column may not carry it further out. It keeps the buffer it already holds and the widest key partitions off rather than dragging every colon right, leaving the run's cost at what the comment alone already spends.
+The `"low"` row's long trailing comment already runs past the line budget before any padding, so the column cannot push that row further right than the one-space buffer alignment itself inserts. `"low"` and `"mid"` align at that minimal column while the widest key `"high"` partitions off and stays flush, leaving the line over budget by no more than the comment alone already made it.
 '''

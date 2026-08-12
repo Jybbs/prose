@@ -4,11 +4,16 @@
 use std::io::{self, Write};
 
 use annotate_snippets::{AnnotationKind, Level, Patch, Renderer, Snippet};
+use ruff_diagnostics::Fix;
 use ruff_notebook::NotebookIndex;
 use ruff_source_file::{OneIndexed, SourceFile};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use super::{Emitter, EmitterSummary, Run, diagnostics};
+use crate::diagnostics::Diagnostic;
+
+/// Rows of context the renderer draws either side of a diagnostic.
+const CONTEXT_LINES: usize = 2;
 
 pub(crate) struct Text {
     renderer: Renderer,
@@ -30,14 +35,14 @@ impl Emitter for Text {
         _summary: &EmitterSummary,
     ) -> io::Result<()> {
         for (file, index, diag) in diagnostics(runs) {
-            let (base, header, text) = view(file, index, diag.range);
+            let (base, header, text, line_start) = view(file, index, annotated(diag));
             if let Some(header) = header {
                 writeln!(writer, "{header}")?;
             }
             let shift = |range: TextRange| (range - base).to_std_range();
             let warning = Level::WARNING.primary_title(diag.message.as_str()).element(
                 Snippet::source(text)
-                    .line_start(1)
+                    .line_start(line_start)
                     .path(file.name())
                     .annotation(
                         AnnotationKind::Primary
@@ -48,7 +53,7 @@ impl Emitter for Text {
             let mut groups = vec![warning];
             if let Some(fix) = &diag.fix {
                 let snippet = Snippet::source(text)
-                    .line_start(1)
+                    .line_start(line_start)
                     .path(file.name())
                     .patches(fix.edits().iter().map(|edit| {
                         Patch::new(shift(edit.range()), edit.content().unwrap_or_default())
@@ -59,6 +64,16 @@ impl Emitter for Text {
         }
         Ok(())
     }
+}
+
+/// The source span a diagnostic renders against, its own range widened
+/// to every edit its fix would apply, so the snippet holds each patch
+/// the renderer draws.
+fn annotated(diag: &Diagnostic) -> TextRange {
+    diag.fix
+        .iter()
+        .flat_map(Fix::edits)
+        .fold(diag.range, |span, edit| span.cover(edit.range()))
 }
 
 /// The notebook cell holding `range`, paired with the byte range it
@@ -86,21 +101,47 @@ fn cell_slice(
     start.map(|start| (cell, TextRange::new(start, end)))
 }
 
-/// The snippet view for a diagnostic at `range`: the byte offset its
-/// rendered text begins at, a cell header for a notebook, and that text.
-/// A module renders the whole source from offset zero with no header, so
-/// the caret stays absolute, where a notebook renders its own cell with a
-/// cell-relative caret under a `cell N` header.
+/// The snippet view for a diagnostic spanning `range`: the byte offset
+/// its rendered text begins at, a cell header for a notebook, that text,
+/// and the one-based line its first row carries. A module renders the
+/// lines around `range` with no header and their own numbering, where a
+/// notebook renders its own cell from line one under a `cell N` header.
 fn view<'a>(
     file: &'a SourceFile,
     index: Option<&NotebookIndex>,
     range: TextRange,
-) -> (TextSize, Option<String>, &'a str) {
+) -> (TextSize, Option<String>, &'a str, usize) {
     let source = file.source_text();
     match index.and_then(|index| cell_slice(file, index, range)) {
-        Some((cell, span)) => (span.start(), Some(format!("cell {cell}")), &source[span]),
-        None => (TextSize::default(), None, source),
+        Some((cell, span)) => (span.start(), Some(format!("cell {cell}")), &source[span], 1),
+        None => {
+            let (span, first) = window(file, range);
+            (span.start(), None, &source[span], first)
+        }
     }
+}
+
+/// The line-bounded slice of `file` covering `range` with `CONTEXT_LINES`
+/// rows either side, paired with the one-based number of its first row.
+/// Handing the renderer this window rather than the whole file keeps a
+/// file's rendering cost off its diagnostic count.
+fn window(file: &SourceFile, range: TextRange) -> (TextRange, usize) {
+    let code = file.to_source_code();
+    let first = code
+        .line_index(range.start())
+        .get()
+        .saturating_sub(CONTEXT_LINES)
+        .max(1);
+    let last = code
+        .line_index(range.end())
+        .get()
+        .saturating_add(CONTEXT_LINES)
+        .min(code.line_count().max(1));
+    let line = |n: usize| OneIndexed::new(n).expect("a one-based line number");
+    (
+        TextRange::new(code.line_start(line(first)), code.line_end(line(last))),
+        first,
+    )
 }
 
 #[cfg(test)]

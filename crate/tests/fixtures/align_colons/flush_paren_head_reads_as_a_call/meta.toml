@@ -3,5 +3,5 @@ previewable = false
 title       = "A Flush Paren Keeps Its Call Shape"
 
 description = '''
-A head whose `(` sits flush against its name documents a call rather than a type, so no type-group column opens and the call keeps the shape its author wrote. The `:` column still settles across the run, since padding after the `)` leaves the call untouched.
+The docstring heads `divmod(self, other)` and `trunc(self)` press the `(` flush against the name, the shape of a call signature rather than a `name (type)` entry. No type column opens, so each call keeps the shape its author wrote, and the `:` column still settles across the run because the padding lands after the `)`.
 '''

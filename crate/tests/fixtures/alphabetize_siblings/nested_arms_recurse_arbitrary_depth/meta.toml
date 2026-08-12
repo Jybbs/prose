@@ -3,5 +3,5 @@ previewable = false
 title       = "Nested Compound Arms Recurse to Any Depth"
 
 description = '''
-Nested compound statements **recurse to arbitrary depth**. The outer arm's body and the inner arm's body each sort independently, and the inner compound stays in its source slot within the outer arm while its own contents reorder.
+Sorting **recurses into nested compounds at any depth**. The `if inner:` body reorders `from alpha import b` ahead of `from zeta import a`, the outer body reorders `beta` and `gamma` below it, and the nested `if` itself stays in its source slot within the outer arm while its contents sort.
 '''

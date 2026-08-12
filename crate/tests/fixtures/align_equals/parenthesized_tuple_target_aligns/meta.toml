@@ -3,5 +3,5 @@ previewable = false
 title       = "A Parenthesized Tuple Target Aligns"
 
 description = '''
-A tuple-unpacking assignment whose target wears parentheses aligns like any other, because the tuple's parentheses already fall inside its node range and the paren-aware measurement leaves that range unchanged.
+The tuple target `(a, b)` keeps its parentheses and its unpacking assignment aligns like any other. `(a, b)` measures six characters, parentheses included, so `cc` pads out to meet that width and both `=` land on one column.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Augmented Assignment Counts One Read and One Write"
 
 description = '''
-An augmented assignment like `x += 1` is **one read plus one write**, so the target's `assignment_count` climbs and its kind list carries `AugAssign` next to the original `Assignment`.
+`x` is bound by `x = 0` and then augmented twice with `+=`. **An augmented assignment counts as one read plus one write**, so `write_offsets` lists all three statements whereas `read_offsets` lists only the two `+=` sites, and `kinds` carries `AugAssign` next to the original `Assignment`.
 '''

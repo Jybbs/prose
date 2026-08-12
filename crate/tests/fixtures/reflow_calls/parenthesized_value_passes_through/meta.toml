@@ -3,5 +3,5 @@ previewable = false
 title       = "A Parenthesized Value Passes Through Whole"
 
 description = '''
-An argument value wrapped in its own grouping parentheses keeps that pair, the rewrite splitting the rendered keyword at the value inside it so the pair sits outside whatever reshape the value takes. The full pipeline sheds a redundant pair before this rule runs, leaving the wrapped form visible in isolation alone.
+The `emit` call overflows the cap and explodes to one keyword per line, and `gamma`'s value keeps the grouping parentheses it arrived in, the pair passing through outside whatever reshape the value takes. The full pipeline sheds a redundant pair like this one before this rule runs, so the wrapped form is only visible when the rule runs in isolation.
 '''

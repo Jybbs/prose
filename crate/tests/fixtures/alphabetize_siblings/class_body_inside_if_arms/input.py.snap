@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/class_body_inside_if_arms/input.py
+input_file: tests/fixtures/alphabetize_siblings/class_body_inside_if_arms/input.py
 ---
 class C:
     if FLAG:

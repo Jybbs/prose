@@ -3,5 +3,5 @@ previewable = true
 title       = "A Call Right-Hand Side Flags Without a Suggestion"
 
 description = '''
-A subscript rewrite is named only when the right-hand side is a plain name or attribute. Subscripting a call as `lookup()[0]` and `lookup()[1]` would evaluate it twice, so the lint flags each target without naming a rewrite.
+`name, value = lookup()` unpacks a call result, and each target is read exactly once in `render(name, value)`. Rewriting the reads as `lookup()[0]` and `lookup()[1]` would run the call twice, so the lint flags both targets without naming a subscript rewrite, which it reserves for a plain-name or attribute right-hand side.
 '''

@@ -4,5 +4,5 @@ previewable = true
 title       = "A Hand-Wrapped `super()` Call Rejoins Before It Sheds"
 
 description = '''
-[[reflow-calls]] closes the fractured argument list onto one row, and [[shed-super-args]] then sheds the class and instance from the call it left behind. The order is what makes the shed reachable, since the continuation lines the author aligned under the open parenthesis are gone by the time the deletion is measured.
+The author wrapped the `__init__` call's arguments under its open parenthesis, one per line. [[reflow-calls]] rejoins `host`, `port`, and `timeout` onto one row, and [[shed-super-args]] then sheds `SecureConnection` and `self` from the call, leaving `super().__init__(host, port, timeout)`. Rejoining first is what makes the shed reachable, because the hand-aligned continuation lines are gone by the time the shortened call is measured.
 '''

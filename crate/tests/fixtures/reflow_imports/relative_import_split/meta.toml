@@ -3,5 +3,5 @@ previewable = true
 title       = "A Relative Import Repeats Its Leading Dots"
 
 description = '''
-A relative import folds its **leading dots into the repeated prefix**, so every split line opens with the same `from ..pkg import` anchor.
+`from ..pkg import alpha, beta, delta, gamma` overflows the `import-line-length` budget of 35, forcing the members across two statements. **Each split line repeats the two leading dots in its prefix**, so both open with the same `from ..pkg import`.
 '''

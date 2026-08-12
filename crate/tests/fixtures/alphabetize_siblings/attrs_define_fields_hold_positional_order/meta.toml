@@ -3,5 +3,5 @@ previewable = false
 title       = "An `attrs` Class Holds Its Field Order"
 
 description = '''
-`attrs` generates the same field-ordered constructor the stdlib decorator does, so `@attrs.define` **pins the run** exactly as `@dataclass` would. The `@attr.s`, `@attrs.frozen`, and `@attrs.mutable` entry points all read the same way.
+`Posting`'s fields stay in their written order, `title`, `company`, `date_posted`, because `@attrs.define` generates a constructor whose positional parameters follow field order, the same shape the stdlib dataclass decorator produces. Sorting the fields would change every positional call site, so **the decorator pins the run** and the class body passes through unchanged.
 '''

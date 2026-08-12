@@ -3,5 +3,5 @@ previewable = false
 title       = "A Zero Cap Collapses the Type Column Too"
 
 description = '''
-`max-shift = 0` forbids any shift on the type-group column the way it does on the `:` column, so every `(` sits one space past its own name and every `:` sits flush.
+In the `Attributes:` docstring section, `max-shift = 0` collapses the type-group column along with the `:` column. The padded `host      (str)  :` row shrinks to `host (str):`, wherein each `(` sits one space past its own name and each `:` lands flush against the closing parenthesis.
 '''

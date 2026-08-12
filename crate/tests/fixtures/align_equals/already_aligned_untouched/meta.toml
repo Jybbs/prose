@@ -3,5 +3,5 @@ previewable = true
 title       = "Already-Aligned Source Is Left Alone"
 
 description = '''
-A run whose `=` already share a column is **idempotent** under the rule, so no edit fires and the group passes through unchanged.
+The `=` of `a`, `bb`, and `ccc` already share the column one space past `ccc`, so the run is **idempotent** under the rule. No edit fires and the group passes through unchanged.
 '''

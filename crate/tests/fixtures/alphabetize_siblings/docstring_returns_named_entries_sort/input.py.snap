@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/docstring_returns_named_entries_sort/input.py
+input_file: tests/fixtures/alphabetize_siblings/docstring_returns_named_entries_sort/input.py
 ---
 def parse(text):
     """Split into components.

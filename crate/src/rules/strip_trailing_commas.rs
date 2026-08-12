@@ -8,13 +8,13 @@
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Arguments, Expr, Stmt, TypeParams,
-    visitor::{Visitor, walk_arguments, walk_expr, walk_stmt, walk_type_params},
+    visitor::{Visitor, walk_arguments, walk_expr, walk_type_params},
 };
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
-    primitives::edit::singleton_groups,
+    primitives::{edit::singleton_groups, walk::walk_stmt},
     rule::{Rule, RuleId},
     source::Source,
 };

@@ -20,17 +20,19 @@ mod grouping;
 mod holds;
 mod members;
 mod walker;
+mod widen;
 
 pub(crate) use emit::{operator_columns, space_padding_edit};
 pub(crate) use grouping::{
     Slot, adjacent_member_groups, keyed_line_adjacent_groups, line_adjacent_groups,
 };
-pub(crate) use holds::{is_alignment_candidate, is_held, retain_unheld};
+pub(crate) use holds::{is_alignment_candidate, is_held, retain_unheld, shares_column};
 pub(crate) use members::{
     line_anchored_member, line_anchored_member_at_kind, line_anchored_member_between,
     line_gap_before, parameter_split_groups, range_anchored_member_single_line,
 };
 pub(crate) use walker::AlignWalker;
+pub(crate) use widen::Widenings;
 
 /// One row in an alignment group.
 ///

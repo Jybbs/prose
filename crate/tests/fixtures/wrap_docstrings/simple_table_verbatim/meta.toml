@@ -3,5 +3,5 @@ previewable = true
 title       = "Simple Tables Pass Through Verbatim"
 
 description = '''
-A reStructuredText simple table **keeps its columns**, even though its body rows carry no leading punctuation at all. The spaced adornment rule above them opens a passthrough block that runs to the next blank line, so the rows stay under the headings they belong to.
+The reStructuredText simple table under `Summary line.` **keeps its columns**, even though its `dict` and `list` rows open with no leading punctuation at all. The spaced `=====` adornment above them opens a passthrough block that runs to the next blank line, so the rows stay under the `Name` and `Meaning` headings.
 '''

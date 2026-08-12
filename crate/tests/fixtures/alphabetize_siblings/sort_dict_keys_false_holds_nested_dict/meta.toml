@@ -3,5 +3,5 @@ previewable = false
 title       = "A Nested Dict Holds Its Order Too"
 
 description = '''
-With `sort-dict-keys = false`, an inner dict holds its authored key order alongside the outer one, because the facet gates the reorder at every nesting depth rather than only the outermost literal.
+`outer` keeps `"zulu"` before `"bravo"`, and the inner dict under `"zulu"` keeps `"yankee"` before `"alpha"`. With `sort-dict-keys = false` both levels hold their authored order, because the setting stops the key sort at every nesting depth rather than only in the outermost literal.
 '''

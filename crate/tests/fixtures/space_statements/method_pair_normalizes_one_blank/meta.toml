@@ -3,5 +3,5 @@ previewable = true
 title       = "Methods inside a Class Body Carry One Blank between Them"
 
 description = '''
-Two methods inside a class body normalize to **one blank line** between them, collapsing extra blanks and expanding missing ones to the same canonical count.
+Three blank lines separate `first` from `second` inside `Posting`, and the gap **normalizes to one blank line**, the canonical count between class-body methods. `Posting`'s header also gains its one blank before `first`, and a pair written with no gap at all would widen to the same single blank.
 '''

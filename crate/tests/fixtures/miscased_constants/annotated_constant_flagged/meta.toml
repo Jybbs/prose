@@ -3,5 +3,5 @@ previewable = true
 title       = "An Annotated Module Constant Is Flagged Too"
 
 description = '''
-An annotated assignment carrying a value reads the same as a bare one, so `timeout: int = 30` draws the `TIMEOUT` rename. A bare annotation with no value binds nothing and stays silent.
+`timeout: int = 30` binds a module constant just as an unannotated assignment would, so the annotation changes nothing and the lint flags it with the suggested `TIMEOUT` rename. Only a bare annotation with no value binds nothing and goes unflagged.
 '''

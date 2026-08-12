@@ -3,5 +3,5 @@ previewable = true
 title       = "Raising max-attributes Flags a Wider Import"
 
 description = '''
-`max-attributes = 6` widens the lint to imports reached through up to six attributes. `os` here touches five, past the default budget of 4 but within the raised one, so it draws the lint where the default would spare it.
+`os` is reached through five distinct attributes, `os.getcwd` through `os.path`, one past the default `max-attributes` budget of 4 and so ordinarily unflagged. Raising the budget to `max-attributes = 6` widens the lint's reach, so the same five-attribute fan-out now falls inside it and the import is reported.
 '''

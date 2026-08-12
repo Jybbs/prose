@@ -3,5 +3,5 @@ previewable = true
 title       = "A Bare Namespace Reference Passes"
 
 description = '''
-`os` is passed as the module object to `register`, not reached through an attribute, so no `from os import ...` rewrite could replace it. A bare use of the namespace itself spares the import whatever else it touches.
+`register(os)` passes the module object itself, a use no `from os import ...` rewrite could express, because the caller needs the namespace rather than a symbol from it. That bare reference exempts the import from this lint, so `import os` passes even though `os.getcwd` is its only attribute use.
 '''

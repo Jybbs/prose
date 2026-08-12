@@ -3,5 +3,5 @@ previewable = false
 title       = "A Multi-Line Default Keeps the Signature One Per Line"
 
 description = '''
-A signature the author already laid out one parameter per line around a multi-line default re-emits at that shape, its default's block hanging from the parameter column. The trailing comma goes to `strip-trailing-commas` rather than surviving the reshape.
+The `opts` default keeps the multi-line dict layout the author gave it, so `configure` reaches no one-row form and stays one parameter per line whatever its width would have been. The trailing comma after `mode: str = "auto"` is removed by `strip-trailing-commas` rather than surviving the reshape.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "F-String Replacement Fields Keep Their Spaces"
 
 description = '''
-The braces of an f-string or t-string replacement field are not the delimiters this rule touches, so a debug `f"{ total = }"` keeps the spaces it echoes into its output, whereas a real set literal beside it still strips.
+`f"{ value }"` and `f"{ total = }"` place their braces around an f-string replacement field, not the bracket delimiters `strip-stranded-padding` targets, so both keep their interior spaces untouched, `total = ` included. `padded = { 1, 2 }` is a real set literal, so the rule still strips its padding down to `{1, 2}`.
 '''

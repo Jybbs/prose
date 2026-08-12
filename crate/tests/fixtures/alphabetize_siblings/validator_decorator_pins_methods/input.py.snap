@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/validator_decorator_pins_methods/input.py
+input_file: tests/fixtures/alphabetize_siblings/validator_decorator_pins_methods/input.py
 ---
 from pydantic import BaseModel, field_validator
 

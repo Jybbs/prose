@@ -3,5 +3,5 @@ previewable = true
 title       = "Comments Reset the Group, like Blank Lines"
 
 description = '''
-A comment line between two runs **splits them into independent groups**, mirroring the blank-line boundary, so each side lands on its own `=` column.
+`alpha` and `beta` sit above the `# break` comment, with `long_name` and `short` below it. **The comment splits the assignments into two independent groups**, exactly as a blank line would, so `beta` aligns against `alpha` on one `=` column while `short` pads out to the wider `long_name` on another.
 '''

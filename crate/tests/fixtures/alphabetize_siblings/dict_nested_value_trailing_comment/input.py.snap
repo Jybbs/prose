@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: output
-input_file: crate/tests/fixtures/alphabetize/dict_nested_value_trailing_comment/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/dict_nested_value_trailing_comment/input.py
 ---
 data = {
     "scalar": 1,  # plain

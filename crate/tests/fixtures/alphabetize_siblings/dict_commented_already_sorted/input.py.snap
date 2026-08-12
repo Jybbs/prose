@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/dict_commented_already_sorted/input.py
+input_file: tests/fixtures/alphabetize_siblings/dict_commented_already_sorted/input.py
 ---
 palette = {
     "amber": "warm",  # sunset

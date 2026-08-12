@@ -3,6 +3,5 @@ previewable = true
 title       = "An Indexed Field Binds by Position"
 
 description = '''
-Explicit indices read the arguments in whatever order the template states
-them.
+The template names its arguments out of order, `{1}` reading the second argument, `first`, and `{0}` the first, `second`. The rewrite resolves each index to the expression it binds, so the f-string reads `f"{first} before {second}"` with the template's own ordering preserved.
 '''

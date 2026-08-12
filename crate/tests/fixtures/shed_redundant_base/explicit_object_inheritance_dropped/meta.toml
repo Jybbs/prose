@@ -4,5 +4,5 @@ previewable = true
 title       = "An Explicit `object` Base Is Dropped"
 
 description = '''
-A class written as `class C(object):` sheds the base and the parentheses that held it, leaving `class C:`. Every class inherits from `object` on Python 3, so the written base states what the bare header already says.
+`class Cache(object):` and `class Registry(object):` each shed the `object` base along with the parentheses that held it, leaving `class Cache:` and `class Registry:`. Every class inherits from `object` on Python 3, so the written base states what the bare header already says.
 '''

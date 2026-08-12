@@ -3,5 +3,5 @@ previewable = true
 title       = "A Multi-Line Pattern Holds Its Indent"
 
 description = '''
-One arm's `case` pattern spans several lines, so its `:` lands on a different line from where the pattern opens. **The multi-line pattern disqualifies the arm**, leaving it untouched, while the lone single-line sibling collapses without padding.
+The first arm's tuple pattern spreads `1` and `2` over parenthesized lines, so its `:` sits on a different line from the `case` that opens it. **The multi-line pattern disqualifies that arm**, which passes through untouched, whereas `case other` still folds `handle2()` onto its line, its `:` hugging the pattern because no other collapsed arm remains to align with.
 '''

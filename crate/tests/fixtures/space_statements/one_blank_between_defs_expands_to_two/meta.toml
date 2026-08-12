@@ -3,5 +3,5 @@ previewable = false
 title       = "One Blank between Module Defs Expands to Two"
 
 description = '''
-Two module-level defs separated by a single blank line **expand to the canonical two**. The rule replaces the inter-statement whitespace run in place.
+`first` and `second` are separated by a single blank line, one short of the module-level standard. **The gap between two module-level defs expands to two blank lines**, in that the rule rewrites the whitespace between the statements rather than moving either `def`.
 '''

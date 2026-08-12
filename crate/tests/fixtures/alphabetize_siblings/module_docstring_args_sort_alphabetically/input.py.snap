@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize/module_docstring_args_sort_alphabetically/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/module_docstring_args_sort_alphabetically/input.py
 ---
 """
 Dial helpers.

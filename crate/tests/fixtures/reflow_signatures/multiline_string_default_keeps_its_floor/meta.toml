@@ -4,5 +4,5 @@ previewable = true
 title       = "A Multi-Line String Default Expands the Signature and Keeps Its Floor"
 
 description = '''
-A default whose break falls inside one string literal expands the signature the same way any other row-spanning parameter does, while the literal stays at its source column, since moving it would pad the string's own interior.
+`note`'s default is a triple-quoted string whose line break falls inside the literal's own text. `reflow-signatures` still expands `render`'s three parameters one per line, but the string's second line **stays at its source column** rather than shifting under `note`, since moving it would pad the literal's own interior.
 '''

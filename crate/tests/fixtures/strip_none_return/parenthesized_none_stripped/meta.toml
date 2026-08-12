@@ -3,5 +3,5 @@ previewable = true
 title       = "A Parenthesized None Return Drops Its Wrapping Parens"
 
 description = '''
-A `-> (None)` return annotation drops its wrapping parentheses along with the arrow, since the strip reaches the parenthesized form as readily as the bare one.
+`configure`'s `-> (None)` return annotation wraps `None` in parentheses, and `strip-none-return` drops the parentheses along with the arrow, landing on `def configure():`. The rule reaches this parenthesized form as readily as a bare `-> None`.
 '''

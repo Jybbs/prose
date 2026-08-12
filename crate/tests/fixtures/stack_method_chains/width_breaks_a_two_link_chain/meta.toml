@@ -4,5 +4,5 @@ previewable = true
 title       = "An Over-Wide Chain Breaks Under the Link Cap"
 
 description = '''
-The length trigger is independent of the count, so a chain holding only two links still breaks once its single-line form crosses `code-line-length` from the column it lands at.
+This chain holds only two links, under the count that forces a break on its own, yet its single-line form crosses `code-line-length` from the column it starts at, so width alone breaks it. `obj.first(alpha_value_here, beta_value_here)` keeps the head row, and `.second(gamma_value_here, delta_value_here)` hangs beneath the dot after `obj`.
 '''

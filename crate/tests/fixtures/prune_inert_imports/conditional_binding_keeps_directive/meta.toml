@@ -3,5 +3,5 @@ previewable = false
 title       = "A Conditionally Bound Name Keeps the Directive"
 
 description = '''
-`Bar` is imported only under `if TYPE_CHECKING:` and `Alias` is bound only inside a version guard, leaving neither name guaranteed at runtime. Eager evaluation on Python 3.13 would raise `NameError`, so **the directive stays** to keep both annotations deferred.
+`Bar` is imported only under `if TYPE_CHECKING:`, and `Alias` is assigned only inside a `sys.version_info` guard, so neither name is guaranteed to exist at runtime. Evaluating the annotations on `use` eagerly would raise `NameError` on Python 3.13, so **the `from __future__ import annotations` directive stays** and both annotations remain deferred.
 '''

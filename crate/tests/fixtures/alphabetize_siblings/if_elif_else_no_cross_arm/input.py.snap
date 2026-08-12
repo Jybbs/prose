@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/if_elif_else_no_cross_arm/input.py
+input_file: tests/fixtures/alphabetize_siblings/if_elif_else_no_cross_arm/input.py
 ---
 if cond:
     from alpha import b

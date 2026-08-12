@@ -3,5 +3,5 @@ previewable = false
 title       = "Bindings Inside Class Methods Are Flagged"
 
 description = '''
-A single-use binding inside a class method is **flagged** like any function-local binding. The rule walks into class bodies and processes each method's scope independently, so methods carry no blanket exemption.
+`normalized` inside `Service.consume` **is flagged** the same as any single-use binding in a plain function, because `single-use-variables` walks into class bodies and evaluates each method's scope on its own. Methods carry no blanket exemption from the rule.
 '''

@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/same_line_method_body_no_panic/input.py
+input_file: tests/fixtures/alphabetize_siblings/same_line_method_body_no_panic/input.py
 ---
 class C:
     def alpha(self): return 2

@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: output
-input_file: crate/tests/fixtures/alphabetize/group_methods_false_sorts_by_name/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/group_methods_false_sorts_by_name/input.py
 ---
 class Report:
     def __len__(self):

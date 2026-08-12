@@ -3,5 +3,5 @@ previewable = false
 title       = "An Already-Sorted Commented Set Is Left Alone"
 
 description = '''
-An already-sorted set whose elements carry trailing comments **comes back unchanged**, the reorder declining to rewrite a group already in order.
+The set `x` holds `ant`, `bee`, and `cat` already in alphabetical order, each with a trailing comment. The whole group **comes back unchanged**, because a collection already in order is not rewritten, leaving every comment where it was.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Filtered or Chained Comprehension Stands"
 
 description = '''
-A guard drops members and a second generator flattens two levels, so neither shape is the plain copy a constructor call would spell.
+`active`'s comprehension carries an `if row.live` guard, and `nested`'s carries two `for` clauses chaining over two levels. Neither reads as a plain copy of a single iterable, so `simplify-comprehensions` leaves both comprehensions exactly as written.
 '''

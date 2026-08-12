@@ -3,5 +3,5 @@ previewable = false
 title       = "Import Runs Sort Inside Function Bodies"
 
 description = '''
-`from`-import and bare `import` runs **alphabetize inside function bodies** just as at module scope. Function bodies otherwise skip class, method, and field reorders, but imports are idempotent and order-independent, so import-run sorts apply uniformly.
+Import runs **alphabetize inside function bodies** just as at module scope, the `from` pair in `f` reordering by module and the bare `import` pair in `g` putting `argparse` before `zlib`. Function bodies otherwise skip the class, method, and field reorders, but importing a module is idempotent and order-independent, so the import-run sort applies everywhere.
 '''

@@ -220,10 +220,12 @@ mod tests {
     use ruff_text_size::TextRange;
 
     use super::is_directive_comment;
-    use crate::rule::RuleId;
-    use crate::rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings};
-    use crate::source::Source;
-    use crate::testing::{notebook, parse, range};
+    use crate::{
+        rule::RuleId,
+        rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
+        source::Source,
+        testing::{notebook, parse, range},
+    };
 
     fn at(source: &Source, needle: &str) -> TextRange {
         let start = source.text().find(needle).expect("needle is present") as u32;

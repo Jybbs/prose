@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/typeddict_fields_sort_by_shape/input.py
+input_file: tests/fixtures/alphabetize_siblings/typeddict_fields_sort_by_shape/input.py
 ---
 from typing import TypedDict
 

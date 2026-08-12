@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/sorted_commented_set_unchanged/input.py
+input_file: tests/fixtures/alphabetize_siblings/sorted_commented_set_unchanged/input.py
 ---
 x = {
     ant,  # the ant

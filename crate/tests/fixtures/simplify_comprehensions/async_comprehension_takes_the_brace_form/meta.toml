@@ -3,5 +3,5 @@ previewable = true
 title       = "An Async Comprehension Takes the Brace Form"
 
 description = '''
-An async generator is never the plain copy a constructor call spells, so the comprehension keeps its body and the wrapping `set()` gives way to braces.
+`[row async for row in rows]` inside `set(...)` is an async comprehension, and `simplify-comprehensions` never reads an async generator as a plain copy of its input. The rule still rewraps it, trading the list brackets and the enclosing `set(` and `)` for one pair of braces, so the comprehension keeps its body and becomes `{row async for row in rows}`.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Private Class Attribute Stays Scoped to the Class"
 
 description = '''
-A class-body `__name` assignment **lives in the class scope and stays invisible to nested methods**, while the sibling method records its own function-scope binding for `self`.
+The private attribute `__secret = 1` **binds in `C`'s class scope** next to `get`, reaching no other scope table. The method's `self` parameter binds in `get`'s own function scope, where the `return self` counts as its one read.
 '''

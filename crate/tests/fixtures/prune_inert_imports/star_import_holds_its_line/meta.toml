@@ -3,5 +3,5 @@ previewable = true
 title       = "A Star Import Holds, Binding a Set No Count Enumerates"
 
 description = '''
-`from os.path import *` binds a name set the reference count cannot enumerate. **The line holds** and draws neither a prune nor a report.
+`from os.path import *` binds an unenumerable set of names that the reference count cannot resolve. **The import line holds and produces neither a prune nor a report**, since the rule cannot single out any one name to act on.
 '''

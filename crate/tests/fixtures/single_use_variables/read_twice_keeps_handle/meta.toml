@@ -3,5 +3,5 @@ previewable = false
 title       = "A Binding Read Twice Keeps Its Handle"
 
 description = '''
-A function-local binding read more than once, as in `return x + x`, is **not flagged**, because the reader benefits from the named handle at every use site. Inlining would force the right-hand side to repeat.
+`x` in `doubled` is read twice, in `return x + x`, so `single-use-variables` **does not flag it**. Inlining would force `compute()` to run twice or the expression to repeat, so the named binding stays.
 '''

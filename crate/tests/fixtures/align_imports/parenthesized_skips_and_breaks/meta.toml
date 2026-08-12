@@ -3,5 +3,5 @@ previewable = false
 title       = "Parenthesized Imports Skip and Break the Run"
 
 description = '''
-A multi-line `from`-import with a parenthesized continuation **skips alignment**, since shifting `import` would leave its continuation indent visually disconnected. It also acts as a group breaker, so the single-line neighbors above and below align only among themselves, never crossing the multi-line stretch.
+`from sys import (` spreads `path` and `platform` over parenthesized continuation lines, and such a multi-line import **skips alignment and breaks the run**, because shifting its `import` keyword would visually disconnect it from the indented names below it. The single-line neighbors regroup on either side, `typing` padding to match `collections` above and `re` padding to match `os.path` below, with neither run reaching across the parenthesized stretch.
 '''

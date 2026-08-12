@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Over-Budget Swap Holds the Group"
+
+description = '''
+Sorting this packed group would swap the member texts in place, landing the long `aardvark_padding_width=('courier-new-bold-typeface', 12, '')` on the first row beside `bee=3` and `xylophone=4`. That row would run past the code budget while no longer matching its source width either, so the swap is abandoned and the group holds its source order.
+'''

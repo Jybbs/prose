@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Standing Comment Survives the Import Sort"
+
+description = '''
+The comment `# migration note pinned between the runs` sits on its own line at a two-space indent that matches neither import, so it attaches to no member. The sort swaps `import zlib` and `import os` around it, leaving the comment standing in place between them rather than traveling with either name.
+'''

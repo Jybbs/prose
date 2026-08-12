@@ -3,5 +3,5 @@ previewable = true
 title       = "Annotated Collection Entries Share a Column"
 
 description = '''
-A one-entry-per-line collection is the shape trailing comments crowd most, since each entry ends at a different width and every note starts somewhere new. The entries sit at one indent on consecutive lines, so the run settles on a single column and the notes read as a second column beside the values.
+The `RETRY_DELAYS` list holds one entry per line, and because `1`, `30`, and `3600` differ in width, each trailing comment starts somewhere new. The entries sit at one indent on consecutive lines, so their comments form one run and settle on a single column, the notes reading as a second column beside the values.
 '''

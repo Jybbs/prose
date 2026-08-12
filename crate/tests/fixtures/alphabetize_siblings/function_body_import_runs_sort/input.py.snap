@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/function_body_import_runs_sort/input.py
+input_file: tests/fixtures/alphabetize_siblings/function_body_import_runs_sort/input.py
 ---
 def f():
     from alpha import b

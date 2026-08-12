@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/match_case_no_cross_arm/input.py
+input_file: tests/fixtures/alphabetize_siblings/match_case_no_cross_arm/input.py
 ---
 match value:
     case 1:

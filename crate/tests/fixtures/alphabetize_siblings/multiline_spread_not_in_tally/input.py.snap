@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: output
-input_file: crate/tests/fixtures/alphabetize/multiline_spread_not_in_tally/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/multiline_spread_not_in_tally/input.py
 ---
 config = {
     "limits": {

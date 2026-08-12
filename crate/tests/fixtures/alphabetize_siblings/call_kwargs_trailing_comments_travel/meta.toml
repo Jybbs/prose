@@ -3,5 +3,5 @@ previewable = false
 title       = "Trailing Comments Travel With Their Keyword Argument"
 
 description = '''
-Each keyword argument's trailing inline comment **moves with the argument as the call sorts its keywords**, so a comment documenting one keyword's value never drifts onto the keyword that takes its place.
+The `configure` call sorts its keywords so `retries` moves above `timeout`, and **each trailing inline comment moves with its argument**. `# attempts on failure` stays on the `retries=3` line and `# seconds before giving up` stays on `timeout=30`, so neither comment drifts onto the keyword that takes its old slot.
 '''

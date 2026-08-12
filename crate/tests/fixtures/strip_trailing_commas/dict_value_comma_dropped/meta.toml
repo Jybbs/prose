@@ -4,5 +4,5 @@ previewable = true
 title       = "Multi-Line Dict Drops the Trailing Comma"
 
 description = '''
-A multi-line dict literal loses its trailing comma after the strip.
+`config`'s last entry, `"threshold": 0.7,`, carries a trailing `,` before the dict's closing `}`. `strip-trailing-commas` strips it, landing on `"threshold": 0.7`.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Packed-Line Dict Inside a Call Keeps Source Order"
 
 description = '''
-A multiline dict embedded in a call that packs several entries onto one physical line stays in source order, the same decline as a top-level packed dict, here exercised with a closing brace that trails into the call's argument list.
+The dict passed to `build` packs `"wp": 1` and `"lt": 2` onto one physical line, so the reorder is declined for the same reason a top-level packed dict declines, in that entries sharing a line leave no clean per-entry block to move. The closing `}` runs straight into the call's `)`, and that trailing shape survives untouched.
 '''

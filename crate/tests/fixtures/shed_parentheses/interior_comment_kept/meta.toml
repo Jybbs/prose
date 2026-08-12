@@ -3,5 +3,5 @@ previewable = true
 title       = "A Pair Holding a Comment Stays"
 
 description = '''
-A grouping whose interior carries a comment keeps its parentheses, since folding the break would strand the comment off the line it describes.
+`total = (  # running sum` opens a parenthesized expression whose first line carries a comment. Folding the break would strand `# running sum` off the line it describes, so the parentheses and the multi-line form stay exactly as written.
 '''

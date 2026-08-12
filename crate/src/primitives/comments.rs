@@ -47,19 +47,7 @@ pub(crate) fn bound_block_start(
             !anchors_in_place(source, *block)
                 && source.line_indent_width(block.start()) == source.line_indent_width(item_start)
         })
-        .map_or(line_start, |block| block.start())
-}
-
-/// The start of the trailing comment on `offset`'s line, `None` where
-/// that line carries no comment or carries an own-line one alone.
-pub(crate) fn trailing_comment_start(source: &Source, offset: TextSize) -> Option<TextSize> {
-    let line = source.text().full_line_range(offset);
-    source
-        .comment_ranges()
-        .comments_in_range(line)
-        .iter()
-        .map(Ranged::start)
-        .find(|start| !CommentRanges::is_own_line(*start, source.text()))
+        .map_or(line_start, TextRange::start)
 }
 
 /// True when the line containing the dict's opening `{` carries a
@@ -78,12 +66,6 @@ pub(crate) fn has_keep_marker(source: &Source, dict: &ExprDict) -> bool {
 /// either a decorative rule line or a multi-hash heading.
 pub(crate) fn is_banner_block(source: &Source, block: TextRange) -> bool {
     source.slice(block).lines().any(is_marker_line)
-}
-
-/// True when `line` reads as a section marker, a decorative rule line or
-/// a multi-hash heading.
-fn is_marker_line(line: &str) -> bool {
-    is_rule_line(line) || is_heading_line(line)
 }
 
 /// Returns the contiguous range of own-line comments lying between
@@ -106,10 +88,28 @@ pub(crate) fn leading_comment_block(
     Some(TextRange::new(text.line_start(first.start()), last.end()))
 }
 
+/// The start of the trailing comment on `offset`'s line, `None` where
+/// that line carries no comment or carries an own-line one alone.
+pub(crate) fn trailing_comment_start(source: &Source, offset: TextSize) -> Option<TextSize> {
+    let line = source.text().full_line_range(offset);
+    source
+        .comment_ranges()
+        .comments_in_range(line)
+        .iter()
+        .map(Ranged::start)
+        .find(|start| !CommentRanges::is_own_line(*start, source.text()))
+}
+
 /// True when `line` opens with two or more `#`, the Markdown-style
 /// heading shape that reads as a section divider.
 fn is_heading_line(line: &str) -> bool {
     line.trim_start().starts_with("##")
+}
+
+/// True when `line` reads as a section marker, a decorative rule line or
+/// a multi-hash heading.
+fn is_marker_line(line: &str) -> bool {
+    is_rule_line(line) || is_heading_line(line)
 }
 
 /// True for a character authors repeat to draw a divider rule.
@@ -117,20 +117,28 @@ fn is_rule_char(c: char) -> bool {
     matches!(c, '-' | '=' | '~' | '*' | '_' | '#' | '─' | '━' | '═')
 }
 
-/// True when `line` reads as a decorative rule, either a pure run of five
-/// or more identical rule characters or a run of three or more flanking a
-/// label. Box-drawing dashes count as rule characters.
+/// True when `line` reads as a decorative rule, one repeated rule
+/// character standing alone at five or more or flanking a label at three
+/// or more, on whichever side of the label the author drew it. A closing
+/// `#` caps a trailing run without breaking it, the box shape
+/// `# Label ****#` takes. Box-drawing dashes count as rule characters.
 fn is_rule_line(line: &str) -> bool {
     let body = line.trim_start().strip_prefix('#').map_or("", str::trim);
-    let mut chars = body.chars();
-    let Some(first) = chars.next() else {
-        return false;
-    };
-    if !is_rule_char(first) {
-        return false;
-    }
-    let run = 1 + chars.take_while(|&c| c == first).count();
+    let capped = body.strip_suffix('#').unwrap_or_default();
+    let run = rule_run(body.chars())
+        .max(rule_run(body.chars().rev()))
+        .max(rule_run(capped.chars().rev()));
     run >= 5 || (run >= 3 && body.chars().count() > run)
+}
+
+/// The opening run of one repeated rule character in `chars`, zero when
+/// it opens on anything else. Reversing the iterator measures the run
+/// closing the same text.
+fn rule_run(mut chars: impl Iterator<Item = char>) -> usize {
+    match chars.next() {
+        Some(first) if is_rule_char(first) => 1 + chars.take_while(|&c| c == first).count(),
+        _ => 0,
+    }
 }
 
 #[cfg(test)]
@@ -218,6 +226,19 @@ mod tests {
     }
 
     #[rstest]
+    fn is_rule_line_accepts_trailing_rule(
+        #[values(
+            "# Sequence Operations *********#",
+            "# Loaders ######################",
+            "# -- Public interface ---------",
+            "# ─── Box ───────────────"
+        )]
+        line: &str,
+    ) {
+        assert!(is_rule_line(line));
+    }
+
+    #[rstest]
     fn is_rule_line_rejects_alpha_prose(
         #[values("# describes f", "# Section: helpers", "# x")] line: &str,
     ) {
@@ -226,7 +247,7 @@ mod tests {
 
     #[rstest]
     fn is_rule_line_rejects_mixed_characters(
-        #[values("# = = = =", "# -=-=-=", "# - - -")] line: &str,
+        #[values("# = = = =", "# -=-=-=", "# - - -", "# -*- coding: utf-8 -*-")] line: &str,
     ) {
         assert!(!is_rule_line(line));
     }

@@ -3,5 +3,5 @@ previewable = false
 title       = "Underscore-Prefixed Names Are Exempt by Default"
 
 description = '''
-A name matching the default `^_` allow pattern is **exempt**, so conventional placeholders like `_hidden` pass through silently. The leading underscore already signals deliberate disuse, which the rule honors out of the box.
+`_hidden` in `explainer` is bound once and read once, the same shape `single-use-variables` normally flags, but its name matches the default `allow-pattern`, `^_`, **so it is exempt without any configuration**. A leading underscore is the project's default signal for a deliberately single-use name.
 '''

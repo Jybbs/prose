@@ -4,5 +4,5 @@ previewable = true
 title       = "Explode a Keyword Method Call"
 
 description = '''
-An all-keyword method call explodes the same as a free function, the attribute callee carrying its arguments without any signature resolution.
+`client.request` is a method call, so no signature in this module resolves for it. Its four arguments already name their parameters, `headers=h` through `url=u`, so the call explodes to one keyword per line exactly as a free function's would, with no signature lookup needed.
 '''

@@ -4,5 +4,5 @@ previewable = false
 title       = "An Inline Trailing Comma Carries Through the Explode"
 
 description = '''
-A call carrying a trailing comma keeps it across the explode, since adding or dropping the comma belongs to `strip-trailing-commas`.
+The inline `render` call ends with a trailing comma after `delta=4`, and its four keywords push it past the threshold. The explode lays out one argument per line and keeps the comma unchanged, because adding or dropping trailing commas belongs to `strip-trailing-commas`.
 '''

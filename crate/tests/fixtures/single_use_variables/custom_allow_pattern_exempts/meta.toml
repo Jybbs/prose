@@ -3,5 +3,5 @@ previewable = true
 title       = "A Custom `allow-pattern` Exempts Matching Names"
 
 description = '''
-A user-supplied `allow-pattern` **replaces** the default `^_`, so names matching a project's local convention pass through unflagged. Here the `tmp_` prefix is the configured exemption, sparing `tmp_value` from the diagnostic.
+Setting `allow-pattern = "^tmp_"` **replaces** the default `^_` pattern, so `single-use-variables` exempts any name starting with `tmp_` instead of an underscore. `tmp_value` in `consume` matches the configured pattern and is bound once and read once without being reported.
 '''

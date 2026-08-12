@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/class_reference_cycle_skips_run/input.py
+input_file: tests/fixtures/alphabetize_siblings/class_reference_cycle_skips_run/input.py
 ---
 class Alpha(Beta):
     pass

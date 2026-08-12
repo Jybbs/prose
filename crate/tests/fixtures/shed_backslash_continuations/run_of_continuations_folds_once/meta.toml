@@ -3,5 +3,5 @@ previewable = true
 title       = "Several Continuations on One Statement Fold Together"
 
 description = '''
-Consecutive backslashes across one logical line are weighed as a single rejoin, so the run answers the budget with the line it actually produces rather than one break at a time.
+`x = 1 + \` continues across two consecutive backslashes before reaching `2`, and `y = alpha + \` continues across two more before `gamma`. The whole run folds as a single rejoin, measured against the line it actually produces, `x = 1 + 2` and `y = alpha + beta + gamma`, rather than one break at a time.
 '''

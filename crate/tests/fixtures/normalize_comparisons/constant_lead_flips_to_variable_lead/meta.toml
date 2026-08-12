@@ -3,5 +3,5 @@ previewable = true
 title       = "A Constant-Led Test Flips So the Variable Leads"
 
 description = '''
-A literal on the left trades places with the variable on the right, and an ordered operator reverses as it crosses so the check reads the same.
+Each test here leads with the literal, so the operands trade places until the variable leads, `"__main__" == name` coming back as `name == "__main__"` and `42 == count` as `count == 42`. The ordered `0 < count` also reverses its operator as it flips, landing on `count > 0` so the check still means the same thing.
 '''

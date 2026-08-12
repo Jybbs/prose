@@ -3,5 +3,5 @@ previewable = true
 title       = "A Bare Annotation Binds No Value"
 
 description = '''
-`max_retries: int` declares a type without a value, so there is no constant to classify and the lint stays silent.
+`max_retries: int` declares a type without binding a value, so no constant exists for the lint to classify. The rule reports only assignments that bind one, leaving this line unflagged.
 '''

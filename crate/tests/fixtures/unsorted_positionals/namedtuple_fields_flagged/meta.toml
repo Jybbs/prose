@@ -3,5 +3,5 @@ previewable = true
 title       = "A `NamedTuple` Base Carries the Same Run"
 
 description = '''
-A `NamedTuple` base generates the positional constructor a `@dataclass` decorator does, so its out-of-order field run **draws the same report**. Sorting `display` ahead of `build` here would leave `ModelSpec("Baseline", BaselineAE)` binding the type where the label belongs.
+`ModelSpec`'s `NamedTuple` base generates the same positional constructor a `@dataclass` decorator would, so its out-of-order `display`, `build` field run **triggers the same report**. Alphabetizing it would move `build` ahead of `display`, and that reorder would leave a call site like `ModelSpec("Baseline", BaselineAE)` binding the type where the label belongs.
 '''

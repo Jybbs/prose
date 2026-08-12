@@ -1,7 +1,7 @@
 [docs]
-previewable = true
+previewable = false
 title       = "Bare and From Imports Each Sort Within Their Group"
 
 description = '''
-A mixed run of bare imports and `from` imports, each kind out of order. **`alphabetize-siblings` sorts each kind in place, `align-imports` aligns the `as` and `import` keywords, and `space-statements` inserts one blank at the bare-to-from boundary**.
+Three aliased bare imports and three `from` imports arrive with each kind out of order. **`alphabetize-siblings` sorts each kind in place so `collections` leads both, `align-imports` aligns the `as` and `import` keywords into their columns, and `space-statements` inserts one blank at the bare-to-from boundary**.
 '''
