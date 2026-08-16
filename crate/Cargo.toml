@@ -14,6 +14,9 @@ version                = "0.8.3"
 name              = "prose"
 required-features = ["native"]
 
+[lib]
+doctest = false
+
 [features]
 default = ["native"]
 native  = [

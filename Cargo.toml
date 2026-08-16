@@ -12,13 +12,22 @@ license      = "MIT"
 repository   = "https://github.com/Jybbs/prose"
 rust-version = "1.97.1"
 
+[profile.dev]
+debug = "line-tables-only"
+
 [profile.dev.package]
 insta              = { opt-level = 2 }
+prose              = { codegen-units = 16 }
 ruff_python_ast    = { opt-level = 2 }
 ruff_python_parser = { opt-level = 2 }
 ruff_python_trivia = { opt-level = 2 }
 ruff_source_file   = { opt-level = 2 }
 similar            = { opt-level = 2 }
+
+[profile.profiling]
+debug    = "full"
+inherits = "release"
+strip    = "none"
 
 [profile.release]
 panic = "abort"

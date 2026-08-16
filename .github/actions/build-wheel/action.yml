@@ -38,9 +38,10 @@ runs:
       if   : ${{ inputs.command != 'sdist' }}
       uses : ./.github/actions/provision-cargo
       with:
-        save       : ${{ inputs.save }}
-        shared-key : prose-dist-${{ inputs.name }}
-        tools      : rust
+        cache-targets : ${{ !contains(inputs.args, '--zig') }}
+        save          : ${{ inputs.save }}
+        shared-key    : prose-dist-${{ inputs.name }}
+        tools         : rust
 
     - name : Run maturin
       env  : { PIP_BREAK_SYSTEM_PACKAGES: '1' }

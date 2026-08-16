@@ -53,13 +53,10 @@ where
     )
 }
 
-pub(super) fn deserialize_prose<F>(
+pub(super) fn deserialize_prose(
     table: toml::Table,
-    on_notice: &mut F,
-) -> Result<Config, ConfigError>
-where
-    F: FnMut(ConfigNotice<'_>),
-{
+    on_notice: &mut dyn FnMut(ConfigNotice<'_>),
+) -> Result<Config, ConfigError> {
     Ok(serde_ignored::deserialize(
         toml::Value::Table(table).into_deserializer(),
         |path| {

@@ -184,11 +184,12 @@ impl Shedder<'_> {
     }
 
     /// The column `offset` reaches once the edits emitted so far apply.
+    /// Measuring from the enclosing logical line rather than the file
+    /// start reads the same row, since a fold never joins across the
+    /// `Newline` token that opens the line.
     fn shifted_column(&self, offset: TextSize) -> usize {
-        end_column(
-            &apply_inline_edits(self.source, TextRange::up_to(offset), &self.edits),
-            0,
-        )
+        let head = self.source.logical_line_start(offset);
+        end_column(&apply_inline_edits(self.source, head, &self.edits), 0)
     }
 }
 
