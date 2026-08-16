@@ -19,7 +19,11 @@ function jsonLd(head: HeadConfig[]): unknown {
 
 describe('pageHead', () => {
   it('emits the article shape for a content page', () => {
-    const data = page({ description: 'd', relativePath: 'usage/quick-start.md', title: 'Quick Start' })
+    const data = page({
+      description  : 'd',
+      relativePath : 'usage/quick-start.md',
+      title        : 'Quick Start'
+    })
     const head = pageHead(data, '0.1.0')
     expect(content(head, 'og:title')).toBe('Quick Start · Prose')
     expect(content(head, 'og:type')).toBe('article')
@@ -29,7 +33,8 @@ describe('pageHead', () => {
   })
 
   it('emits the website graph for the landing', () => {
-    const head = pageHead(page({ description: 'd', relativePath: 'index.md', title: 'Home' }), '0.1.0')
+    const data = page({ description: 'd', relativePath: 'index.md', title: 'Home' })
+    const head = pageHead(data, '0.1.0')
     expect(content(head, 'og:title')).toBe('Prose')
     expect(content(head, 'og:type')).toBe('website')
     expect(content(head, 'og:image')).toBe(`${SITE_HOSTNAME}/og.png`)
@@ -40,7 +45,12 @@ describe('pageHead', () => {
   })
 
   it('falls back to the landing card and drops og:url and JSON-LD on the 404', () => {
-    const data = page({ description: 'Not Found', isNotFound: true, relativePath: '404.md', title: '404' })
+    const data = page({
+      description  : 'Not Found',
+      isNotFound   : true,
+      relativePath : '404.md',
+      title        : '404'
+    })
     const head = pageHead(data, '0.1.0')
     expect(content(head, 'og:type')).toBe('website')
     expect(content(head, 'og:image')).toBe(`${SITE_HOSTNAME}/og.png`)

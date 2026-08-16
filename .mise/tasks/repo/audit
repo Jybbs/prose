@@ -114,11 +114,21 @@ def manifests() -> int:
     return failed
 
 
-def package_json() -> dict:
+def override_pins(package: dict) -> list[tuple[str, str, str]]:
     """
-    Return the parsed `site/package.json` mapping.
+    Return one parity pair per `overrides` entry the manifest also pins as a
+    `devDependencies` entry, leaving an override of an undeclared transitive
+    alone.
     """
-    return json_loads(Path("site/package.json").read_text(encoding="utf-8"))
+    return [
+        (
+            f"site/package.json {name} override ↔ its devDependency pin",
+            version,
+            package["devDependencies"][name]
+        )
+        for name, version in package.get("overrides", {}).items()
+        if name in package["devDependencies"]
+    ]
 
 
 def parity() -> int:
@@ -127,6 +137,7 @@ def parity() -> int:
     """
     cargo   = toml("Cargo.toml")
     mise    = toml(".mise/config.toml")
+    package = json_loads(Path("site/package.json").read_text(encoding="utf-8"))
     project = toml("crate/pyproject.toml")
     rust    = cargo["workspace"]["package"]["rust-version"]
 
@@ -165,7 +176,8 @@ def parity() -> int:
             mise["tools"]["github:rustwasm/wasm-bindgen"],
             cargo_lock_version("wasm-bindgen")
         ),
-        *patch_pins()
+        *override_pins(package),
+        *patch_pins(package)
     ]
 
     failed = 0
@@ -176,13 +188,12 @@ def parity() -> int:
     return failed
 
 
-def patch_pins() -> list[tuple[str, str, str]]:
+def patch_pins(package: dict) -> list[tuple[str, str, str]]:
     """
     Return one parity pair per `patchedDependencies` key, matching the version
     the key targets against the version the manifest pins for that package.
     """
-    package = package_json()
-    pairs   = []
+    pairs = []
     for key in package.get("patchedDependencies", {}):
         name, _, version = key.rpartition("@")
         if (pinned := package["devDependencies"].get(name)) is None:

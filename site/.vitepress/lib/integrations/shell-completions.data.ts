@@ -18,17 +18,8 @@ interface ShellCompletion {
 declare const data: readonly ShellCompletion[]
 export { data }
 
-interface ShellCompletionSource {
-  caption  : string
-  code     : string
-  command  : string
-  language : string
-  mono     : string
-  name     : string
-  note     : string
-  slug     : string
-  target   : string
-}
+type ShellCompletionSource =
+  Omit<ShellCompletion, 'codeHtml' | 'noteNodes'> & { code: string, note: string }
 
 const SOURCES: readonly ShellCompletionSource[] = [
   {

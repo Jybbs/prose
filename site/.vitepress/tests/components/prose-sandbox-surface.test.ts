@@ -46,22 +46,27 @@ interface MountOptions {
   source      ?: string
 }
 
-const mounted = async (options: MountOptions, reducedMotion: (matches: boolean) => void) => {
-  const { diagnostics, formatted, motion = false, source = formatted } = options
-  reducedMotion(motion)
-  const sandbox = fakeSandbox(formatted, source)
-  if (diagnostics) sandbox.diagnostics.value = diagnostics
-  const wrapper = mount(ProseSandboxSurface, {
-    props  : { sandbox },
-    global : { stubs: { LintFlagPopper: LintFlagPopperStub } }
-  })
-  await flushPromises()
-  return { sandbox, wrapper }
-}
+const surfaceMount = (reducedMotion: (matches: boolean) => void) =>
+  async (options: MountOptions) => {
+    const { diagnostics, formatted, motion = false, source = formatted } = options
+    reducedMotion(motion)
+    const sandbox = fakeSandbox(formatted, source)
+    if (diagnostics) sandbox.diagnostics.value = diagnostics
+    const wrapper = mount(ProseSandboxSurface, {
+      props  : { sandbox },
+      global : { stubs: { LintFlagPopper: LintFlagPopperStub } }
+    })
+    await flushPromises()
+    return { sandbox, wrapper }
+  }
+
+const surfaceTest = domTest.extend<{ mounted: ReturnType<typeof surfaceMount> }>({
+  mounted: async ({ reducedMotion }, use) => { await use(surfaceMount(reducedMotion)) }
+})
 
 describe('ProseSandboxSurface', () => {
-  domTest('opens the editor on the source rather than the formatted output', async ({ reducedMotion }) => {
-    const { wrapper } = await mounted({ formatted: 'x = 1', source: 'x=1' }, reducedMotion)
+  surfaceTest('opens the editor on the source rather than the formatted output', async ({ mounted }) => {
+    const { wrapper } = await mounted({ formatted: 'x = 1', source: 'x=1' })
 
     const display = wrapper.get('.sandbox-surface-display')
     expect(display.html()).toContain('x = 1')
@@ -73,8 +78,8 @@ describe('ProseSandboxSurface', () => {
     expect(wrapper.get('textarea').element.value).toBe('x=1')
   })
 
-  domTest('leaves the source alone until the reader applies the edit', async ({ reducedMotion }) => {
-    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1', source: 'x=1' }, reducedMotion)
+  surfaceTest('leaves the source alone until the reader applies the edit', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1', source: 'x=1' })
 
     await wrapper.get('.sandbox-surface-display').trigger('click')
     await flushPromises()
@@ -87,8 +92,8 @@ describe('ProseSandboxSurface', () => {
     expect(isHidden(wrapper.get('.code-editor'))).toBe(true)
   })
 
-  domTest('discards the edit and keeps the source', async ({ reducedMotion }) => {
-    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1', source: 'x=1' }, reducedMotion)
+  surfaceTest('discards the edit and keeps the source', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1', source: 'x=1' })
 
     await wrapper.get('.sandbox-surface-display').trigger('click')
     await flushPromises()
@@ -99,8 +104,8 @@ describe('ProseSandboxSurface', () => {
     expect(isHidden(wrapper.get('.code-editor'))).toBe(true)
   })
 
-  domTest('drives the apply-pane from the keyboard', async ({ reducedMotion }) => {
-    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1', source: 'x=1' }, reducedMotion)
+  surfaceTest('drives the apply-pane from the keyboard', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1', source: 'x=1' })
 
     // Enter on the display opens the editor on the source.
     await wrapper.get('.sandbox-surface-display').trigger('keydown.enter')
@@ -122,8 +127,8 @@ describe('ProseSandboxSurface', () => {
     expect(isHidden(wrapper.get('.code-editor'))).toBe(true)
   })
 
-  domTest('keeps reacting after a config-driven reformat', async ({ reducedMotion }) => {
-    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' }, reducedMotion)
+  surfaceTest('keeps reacting after a config-driven reformat', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
 
     sandbox.formatted.value = 'x      = 1'
     await flushPromises()
@@ -137,8 +142,8 @@ describe('ProseSandboxSurface', () => {
     expect(wrapper.get('.sandbox-surface-display').html()).toContain('x = 2')
   })
 
-  domTest('holds the outgoing height until the morph flips its step', async ({ reducedMotion }) => {
-    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' }, reducedMotion)
+  surfaceTest('holds the outgoing height until the morph flips its step', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
     stubRect(wrapper.element, { height: 320.4 })
 
     sandbox.formatted.value = 'x = 2'
@@ -151,8 +156,8 @@ describe('ProseSandboxSurface', () => {
     expect(wrapper.attributes('style')).toBeUndefined()
   })
 
-  domTest('clears the morph when a reverting render supersedes it', async ({ reducedMotion }) => {
-    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' }, reducedMotion)
+  surfaceTest('clears the morph when a reverting render supersedes it', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
 
     sandbox.formatted.value = 'x = 2'
     await flushPromises()
@@ -165,8 +170,8 @@ describe('ProseSandboxSurface', () => {
     expect(wrapper.attributes('style')).toBeUndefined()
   })
 
-  domTest('skips the morph and its hold under reduced motion', async ({ reducedMotion }) => {
-    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1', motion: true }, reducedMotion)
+  surfaceTest('skips the morph and its hold under reduced motion', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1', motion: true })
 
     sandbox.formatted.value = 'x = 2'
     await flushPromises()
@@ -175,8 +180,8 @@ describe('ProseSandboxSurface', () => {
     expect(wrapper.get('.sandbox-surface-display').html()).toContain('x = 2')
   })
 
-  domTest('releases the hold when the reader opens the editor mid-morph', async ({ reducedMotion }) => {
-    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' }, reducedMotion)
+  surfaceTest('releases the hold when the reader opens the editor mid-morph', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
     stubRect(wrapper.element, { height: 260 })
 
     sandbox.formatted.value = 'x = 2'
@@ -189,8 +194,23 @@ describe('ProseSandboxSurface', () => {
     expect(wrapper.find('.mm').exists()).toBe(false)
   })
 
-  domTest('re-measures the outgoing height on every morph', async ({ reducedMotion }) => {
-    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' }, reducedMotion)
+  surfaceTest('clears a running morph when the parent opens the editor', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
+
+    sandbox.formatted.value = 'x = 2'
+    await flushPromises()
+    expect(wrapper.find('.mm').exists()).toBe(true)
+
+    // The parent owns `editing`, so it opens the editor without the click path
+    // that clears the morph on its way in.
+    await wrapper.setProps({ editing: true })
+    sandbox.formatted.value = 'x = 3'
+    await flushPromises()
+    expect(wrapper.find('.mm').exists()).toBe(false)
+  })
+
+  surfaceTest('re-measures the outgoing height on every morph', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
     stubRect(wrapper.element, { height: 200 })
 
     sandbox.formatted.value = 'x = 2'
@@ -205,11 +225,11 @@ describe('ProseSandboxSurface', () => {
     expect(wrapper.attributes('style')).toContain('min-height: 480px')
   })
 
-  domTest('drops a disabled rule\'s squiggle while keeping the code', async ({ reducedMotion }) => {
+  surfaceTest('drops a disabled rule\'s squiggle while keeping the code', async ({ mounted }) => {
     const { sandbox, wrapper } = await mounted({
       diagnostics : [FINDING],
       formatted   : 'x = 1'
-    }, reducedMotion)
+    })
     expect(wrapper.get('.sandbox-surface-display').html()).toContain('data-rule="r1"')
 
     sandbox.diagnostics.value = []
@@ -225,8 +245,8 @@ describe('ProseSandboxSurface', () => {
     expect(display.html()).toContain('x = 1')
   })
 
-  domTest('draws a newly enabled rule\'s squiggle onto unchanged code', async ({ reducedMotion }) => {
-    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' }, reducedMotion)
+  surfaceTest('draws a newly enabled rule\'s squiggle onto unchanged code', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
     expect(wrapper.get('.sandbox-surface-display').html()).not.toContain('data-rule="r1"')
 
     sandbox.diagnostics.value = [FINDING]
@@ -238,12 +258,12 @@ describe('ProseSandboxSurface', () => {
     expect(wrapper.get('.lint-flag[data-rule="r1"]').classes()).not.toContain('lint-undrawn')
   })
 
-  domTest('washes a whole-row finding rather than underlining it', async ({ reducedMotion }) => {
+  surfaceTest('washes a whole-row finding rather than underlining it', async ({ mounted }) => {
     const { wrapper } = await mounted({
       diagnostics : [{ ...FINDING, end_location: { column: 6, row: 1 } }],
       formatted   : 'x = 1',
       motion      : true
-    }, reducedMotion)
+    })
 
     expect(wrapper.get('.lint-flag[data-rule="r1"]').classes()).toContain('lint-flag-line')
   })

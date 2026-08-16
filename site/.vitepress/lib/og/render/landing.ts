@@ -11,10 +11,10 @@ const TITLE_WIDTH   = 889
 const TRACK         = '0.28em'
 
 export function landingSvg(brand: BrandAssets, version: string): Promise<string> {
-  return parts.toSvg(buildLandingCard(version, brand.titleWithTagline), brand.fonts)
+  return parts.toSvg(buildLandingCard(brand.titleWithTagline, version), brand.fonts)
 }
 
-function buildLandingCard(version: string, titleWithTagline: BrandImage): JSXNode {
+function buildLandingCard(titleWithTagline: BrandImage, version: string): JSXNode {
   return parts.cardShell(
     parts.leftRail(PALETTE.ube),
     glyphBlock(),
@@ -61,8 +61,8 @@ function glyphBlock(): JSXNode {
 
 function pilcrowMark(): JSXNode {
   return parts.el('div', {
-    children: '¶',
-    style: {
+    children : '¶',
+    style    : {
       alignItems     : 'center',
       color          : PALETTE.ube,
       display        : 'flex',

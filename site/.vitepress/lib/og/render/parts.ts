@@ -1,6 +1,6 @@
+import satori, { type Font }        from 'satori'
 import { createElement as h }       from 'satori/jsx'
 import type { JSXElement, JSXNode } from 'satori/jsx'
-import satori, { type Font }        from 'satori'
 
 import { PALETTE } from '../../shared/palette'
 

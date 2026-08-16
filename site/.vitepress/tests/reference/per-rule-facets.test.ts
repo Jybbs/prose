@@ -29,8 +29,22 @@ vi.mock('../../lib/reference/facets.data', () => ({
           { default: '3', key: 'max-args', meaningNodes: [{ kind: 'text', text: 'Explode a call.' }], type: 'positive int | false' }
         ] },
         { rule: 'reflow-collections', facets: [
-          { default: 'true', key: 'keep-multiline-literals', meaningNodes: [{ kind: 'text', text: 'Join with ' }, { kind: 'code', text: 'false' }, { kind: 'text', text: '.' }], type: 'bool' },
-          { default: '8', key: 'max-atomics', meaningNodes: [{ kind: 'text', text: 'Keep short.' }], type: 'positive int | false' }
+          {
+            default      : 'true',
+            key          : 'keep-multiline-literals',
+            meaningNodes : [
+              { kind: 'text', text: 'Join with ' },
+              { kind: 'code', text: 'false' },
+              { kind: 'text', text: '.' }
+            ],
+            type         : 'bool'
+          },
+          {
+            default      : '8',
+            key          : 'max-atomics',
+            meaningNodes : [{ kind: 'text', text: 'Keep short.' }],
+            type         : 'positive int | false'
+          }
         ] }
       ]
     }

@@ -11,18 +11,11 @@ import type { InlineNode } from '../../../lib/markdown/inline-nodes'
 import { data as composition }  from '../../../lib/rules/composition.data'
 import { data as fixturesData } from '../../../lib/fixtures/fixtures.data'
 import { data as rules }        from '../../../lib/rules/rules.data'
-import type { RenderedRule }    from '../../../lib/rules/rules.data'
+import type { RuleSegment }     from '../../../lib/rules/rules.data'
 import { railPaint }            from '../../../lib/shared/family-rail'
 import type { FixtureTab }      from '../../../lib/shared/fixture-tab'
 import { formatFolio }          from '../../../lib/shared/numerals'
 import InlineProse              from '../base/InlineProse.vue'
-
-interface RuleSegment {
-  family : string | null
-  index  : number
-  rule   : RenderedRule | null
-  slug   : string
-}
 
 interface CardRow {
   case             : string
@@ -54,13 +47,12 @@ const cards = computed<readonly CardRow[]>(() =>
       num              : formatFolio(i + 1, 3),
       outputHtml       : fixture?.outputHtml ?? '',
       railPaint        : railPaint(families),
-      segments: entry.rules.map((slug, idx) => ({
+      title            : entry.title,
+      segments         : entry.rules.map((slug, idx) => ({
         family : families[idx] ?? null,
-        index  : idx + 1,
         rule   : rules.bySlug[slug] ?? null,
         slug
-      })),
-      title           : entry.title
+      }))
     }
   })
 )

@@ -1,5 +1,6 @@
 import { inlineNodes }                   from '../markdown/inline-nodes'
 import type { InlineNode, InlineParser } from '../markdown/inline-nodes'
+import { runProse }                      from './paths'
 
 export const NESTED_TABLES = new Set(['cache', 'imports', 'rules'])
 
@@ -10,8 +11,17 @@ export interface ConfigRow {
   typeNodes    : InlineNode[]
 }
 
+// A rule's schema entry, the `anyOf` naming its sub-table and `default`
+// carrying the facet keys the rule ships with.
+export interface RuleDef {
+  anyOf   ?: readonly { $ref?: string }[]
+  default  : Record<string, unknown>
+}
+
+export type SchemaDefs = Record<string, { properties: SchemaProps }>
+
 export interface SchemaDocument {
-  $defs      : Record<string, { properties: SchemaProps }>
+  $defs      : SchemaDefs
   properties : SchemaProps
 }
 
@@ -47,8 +57,7 @@ export function configRow(
 // Every key `[tool.prose]` accepts, grouped by the section it sits under, with
 // the rule facets deduplicated across the rules that share them.
 export function declaredKeys(schema: SchemaDocument): Record<Section, string[]> {
-  const rules  = schema.$defs.RuleConfigs.properties as
-    Record<string, { anyOf?: readonly { $ref?: string }[] }>
+  const rules  = schema.$defs.RuleConfigs.properties as Record<string, RuleDef>
   const facets = Object.values(rules).flatMap(def => Object.keys(rulePropsOf(schema.$defs, def)))
 
   return {
@@ -59,12 +68,21 @@ export function declaredKeys(schema: SchemaDocument): Record<Section, string[]> 
   }
 }
 
+// A rule's facet keys in table order, `enabled` leading and the rest sorting
+// by name.
+export function facetKeys(defaults: Record<string, unknown>): string[] {
+  return Object.keys(defaults).toSorted((a, b) =>
+    a === 'enabled' ? -1 : b === 'enabled' ? 1 : a.localeCompare(b))
+}
+
+// The configuration schema the `prose schema` subcommand prints.
+export function proseSchema(root: string): SchemaDocument {
+  return JSON.parse(runProse(root, ['schema'])) as SchemaDocument
+}
+
 // A rule's entry is `anyOf [bool, $ref]`, the ref naming the sub-table whose
 // properties carry each facet's type and description.
-export function rulePropsOf(
-  defs : Record<string, { properties: SchemaProps }>,
-  def  : { anyOf?: readonly { $ref?: string }[] }
-): SchemaProps {
+export function rulePropsOf(defs: SchemaDefs, def: RuleDef): SchemaProps {
   const ref = def.anyOf?.map(entry => entry.$ref).find(Boolean)?.split('/').pop()
   return ref ? defs[ref].properties : {}
 }

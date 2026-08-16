@@ -4,6 +4,7 @@ import { getRenderer, renderPlainInlineHtml } from '../markdown/renderer'
 import { discoverRuleIndex }                  from '../rules/discovery'
 import * as paths                             from '../shared/paths'
 import type { RuleFamily }                    from '../shared/registries'
+import * as ruleSchema                        from '../shared/rule-schema'
 import { toTitleCase }                        from '../shared/title-case'
 
 type FacetKind = 'bool' | 'int' | 'string' | 'stringList'
@@ -36,8 +37,6 @@ export interface SandboxSchema {
   rules          : readonly RuleControl[]
 }
 
-type SchemaProps = Record<string, { description?: string }>
-
 declare const data: SandboxSchema
 export { data }
 
@@ -53,10 +52,9 @@ function facetKind(value: unknown): FacetKind {
 function facetsOf(
   defaults : Record<string, unknown>,
   md       : MarkdownRenderer,
-  props    : SchemaProps
+  props    : ruleSchema.SchemaProps
 ): Facet[] {
-  const keys = Object.keys(defaults).sort((a, b) =>
-    a === 'enabled' ? -1 : b === 'enabled' ? 1 : a.localeCompare(b))
+  const keys = ruleSchema.facetKeys(defaults)
   return keys.map(key => ({
     default  : defaults[key] as Facet['default'],
     hintHtml : renderPlainInlineHtml(md, props[key]?.description ?? ''),
@@ -70,20 +68,16 @@ export default defineLoader({
   watch : [paths.proseBinaryPath(root)],
   load  : async (): Promise<SandboxSchema> => {
     const md       = await getRenderer()
-    const schema   = JSON.parse(paths.runProse(root, ['schema']))
+    const schema   = ruleSchema.proseSchema(root)
+    const defs     = schema.$defs
     const index    = discoverRuleIndex(paths.rulesDir(import.meta.url))
-    const ruleDefs = schema.$defs.RuleConfigs.properties as
-      Record<string, { anyOf?: { $ref?: string }[], default: Record<string, unknown> }>
-    const rules = Object.entries(ruleDefs).map(([slug, def]): RuleControl => {
-      const ref   = def.anyOf?.map(entry => entry.$ref).find(Boolean)?.split('/').pop()
-      const props = (ref ? schema.$defs[ref].properties : {}) as SchemaProps
-      return {
-        facets : facetsOf(def.default, md, props),
-        family : (index.get(slug)?.family ?? '') as RuleFamily | '',
-        slug
-      }
-    })
-    const props   = schema.properties as Record<string, { default?: unknown }>
+    const ruleDefs = defs.RuleConfigs.properties as Record<string, ruleSchema.RuleDef>
+    const rules    = Object.entries(ruleDefs).map(([slug, def]): RuleControl => ({
+      facets : facetsOf(def.default, md, ruleSchema.rulePropsOf(defs, def)),
+      family : (index.get(slug)?.family ?? '') as RuleFamily | '',
+      slug
+    }))
+    const props   = schema.properties
     const lengths = Object.entries(props)
       .filter(([key, def]) => key.endsWith('-line-length') && typeof def.default === 'number')
       .map(([key, def]): LengthKnob => ({

@@ -6,8 +6,6 @@ import * as registries                            from '../shared/registries'
 import { toTitleCase }                            from '../shared/title-case'
 import { discoverRuleSlugs, type DiscoveredRule } from './discovery'
 
-export type { DiscoveredRule }
-
 export interface RenderedRule extends DiscoveredRule {
   captionHtml   : string
   categoryBadge : string
@@ -15,6 +13,12 @@ export interface RenderedRule extends DiscoveredRule {
   familyBadge   : string
   familyLabel   : string
   name          : string
+}
+
+export interface RuleSegment {
+  family : string | null
+  rule   : RenderedRule | null
+  slug   : string
 }
 
 interface RuleFamilyGroup {

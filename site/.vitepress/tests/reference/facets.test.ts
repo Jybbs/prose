@@ -1,10 +1,11 @@
-import loader                 from '../../lib/reference/facets.data'
-import { repoRoot, runProse } from '../../lib/shared/paths'
+import loader                        from '../../lib/reference/facets.data'
+import { repoRoot }                  from '../../lib/shared/paths'
+import { proseSchema, type RuleDef } from '../../lib/shared/rule-schema'
 
 const families = await loader.load([])
 
-const ruleDefs = JSON.parse(runProse(repoRoot(import.meta.url), ['schema']))
-  .$defs.RuleConfigs.properties as Record<string, { default: Record<string, unknown> }>
+const ruleDefs = proseSchema(repoRoot(import.meta.url))
+  .$defs.RuleConfigs.properties as Record<string, RuleDef>
 
 const derived = families
   .filter(family => family.family !== 'generic')

@@ -14,6 +14,8 @@ import { highlight }             from '../../../lib/shared/highlight'
 import { latestRun }             from '../../../lib/shared/latest-run'
 import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
+const WATCHDOG_GRACE_MS = 250
+
 const props   = defineProps<{ guide?: number | null, guideHue?: string, sandbox: ProseSandbox }>()
 const editing = defineModel<boolean>('editing', { default: false })
 const { diagnostics, error, formatted, source } = props.sandbox
@@ -47,7 +49,7 @@ const ruleCodes = computed(() => new Set(diagnostics.value.map(finding => findin
 
 const watchdog = useTimeoutFn(
   () => { if (morphing.value) endMorph() },
-  () => duration.value + 250,
+  () => duration.value + WATCHDOG_GRACE_MS,
   { immediate: false }
 )
 
@@ -73,7 +75,11 @@ async function render(next: string): Promise<void> {
   const html       = await highlight(next, 'python', lintDecorations(diagnostics.value, next))
   if (superseded()) return
   // Mid-edit the display sits behind the editor, so stage the html silently.
-  if (editing.value) { commit(html, next); return }
+  if (editing.value) {
+    morphing.value = false
+    commit(html, next)
+    return
+  }
   // Same code with a changed finding set is a lint toggle, so retract the
   // dropped rule's underlines and draw any freshly enabled ones in place,
   // leaving the surviving underlines adhered rather than re-drawing them.

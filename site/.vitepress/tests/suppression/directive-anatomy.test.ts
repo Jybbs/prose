@@ -12,7 +12,7 @@ vi.mock('../../lib/suppression/directives.data', () => ({
       example     : '# prose: off',
       form        : '# prose: off',
       id          : 'prose-off',
-      parts: [
+      parts       : [
         { role : 'comment',   text : '#'      },
         { role : 'namespace', text : 'prose:' },
         { role : 'action',    text : 'off'    }
@@ -26,7 +26,7 @@ vi.mock('../../lib/suppression/directives.data', () => ({
       id          : 'fmt-off',
       pairId      : 'fmt-on',
       pairRole    : 'opens',
-      parts: [
+      parts       : [
         { role : 'comment',   text : '#'    },
         { role : 'namespace', text : 'fmt:' },
         { role : 'action',    text : 'off'  }
@@ -38,7 +38,7 @@ vi.mock('../../lib/suppression/directives.data', () => ({
       example     : 'x = 1  # prose: ignore[<rule>]',
       form        : '# prose: ignore[<rule>, ...]',
       id          : 'prose-ignore-rules',
-      parts: [
+      parts       : [
         { role : 'comment',   text : '#'             },
         { role : 'namespace', text : 'prose:'        },
         { role : 'action',    text : 'ignore'        },
@@ -51,7 +51,7 @@ vi.mock('../../lib/suppression/directives.data', () => ({
       example     : 'config = {}  # prose: keep',
       form        : '# prose: keep',
       id          : 'prose-keep',
-      parts: [
+      parts       : [
         { role : 'comment',   text : '#'      },
         { role : 'namespace', text : 'prose:' },
         { role : 'action',    text : 'keep'   }

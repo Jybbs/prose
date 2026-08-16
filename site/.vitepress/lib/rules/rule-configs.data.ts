@@ -2,11 +2,9 @@ import { defineLoader } from 'vitepress'
 
 import { getRenderer } from '../markdown/renderer'
 import * as paths      from '../shared/paths'
+import * as ruleSchema from '../shared/rule-schema'
 
-import { configRow, rulePropsOf }      from '../shared/rule-schema'
-import type { ConfigRow, SchemaProps } from '../shared/rule-schema'
-
-type RuleConfigData = Record<string, readonly ConfigRow[]>
+type RuleConfigData = Record<string, readonly ruleSchema.ConfigRow[]>
 
 const root = paths.repoRoot(import.meta.url)
 
@@ -17,21 +15,19 @@ export default defineLoader({
   watch : [paths.proseBinaryPath(root)],
   async load(): Promise<RuleConfigData> {
     const md     = await getRenderer()
-    const schema = JSON.parse(paths.runProse(root, ['schema']))
-    const defs   = schema.$defs as Record<string, { properties: SchemaProps }>
-    const rules  = schema.$defs.RuleConfigs.properties as
-      Record<string, { anyOf?: readonly { $ref?: string }[], default: Record<string, unknown> }>
+    const schema = ruleSchema.proseSchema(root)
+    const defs   = schema.$defs
+    const rules  = defs.RuleConfigs.properties as Record<string, ruleSchema.RuleDef>
 
     // `enabled` is documented once, on `ToggleOnly`, whatever sub-table a
     // rule resolves through.
     const enabled = defs.ToggleOnly.properties.enabled
 
     return Object.fromEntries(Object.entries(rules).map(([slug, def]) => {
-      const props = rulePropsOf(defs, def)
-      const keys  = Object.keys(def.default).toSorted((a, b) =>
-        a === 'enabled' ? -1 : b === 'enabled' ? 1 : a.localeCompare(b))
+      const props = ruleSchema.rulePropsOf(defs, def)
+      const keys  = ruleSchema.facetKeys(def.default)
       return [slug, keys.map(key =>
-        configRow(md, key, key === 'enabled' ? enabled : props[key], def.default[key]))]
+        ruleSchema.configRow(md, key, key === 'enabled' ? enabled : props[key], def.default[key]))]
     }))
   }
 })

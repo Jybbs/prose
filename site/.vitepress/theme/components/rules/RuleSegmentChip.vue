@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { RenderedRule } from '../../../lib/rules/rules.data'
+import type { RuleSegment } from '../../../lib/rules/rules.data'
 
 defineProps<{
-  segment     : { family: string | null, rule: RenderedRule | null, slug: string }
+  segment     : RuleSegment
   withTooltip : boolean
 }>()
 </script>

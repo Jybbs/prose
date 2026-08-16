@@ -8,7 +8,7 @@ const LINE: TokenLine = [
   { content: '<c>', style: '' }
 ]
 
-describe('typewriter.lineHtml', () => {
+describe('lineHtml', () => {
   it.each([
     [0, ''],
     [1, '<span style="color:red">a</span>'],
@@ -20,7 +20,7 @@ describe('typewriter.lineHtml', () => {
   })
 })
 
-describe('typewriter.tokenLines', () => {
+describe('tokenLines', () => {
   it('maps each line to styled tokens through the shared highlighter', async () => {
     expect(await typewriter.tokenLines('a = 1\n')).toEqual([
       [{ content: 'a = 1', style: 'color:red' }],
@@ -33,7 +33,7 @@ describe('typewriter.tokenLines', () => {
   })
 })
 
-describe('typewriter.typingFrame', () => {
+describe('typingFrame', () => {
   const SIDE: TypingSide    = { lines: ['a = 1', 'b = 2', 'c = 3'], max: 5, midEnd: 2 }
   const TOKENS: TokenLine[] = SIDE.lines.map(line => [{ content: line, style: 'color:red' }])
 
@@ -55,7 +55,7 @@ describe('typewriter.typingFrame', () => {
   })
 })
 
-describe('typewriter.typingPlan', () => {
+describe('typingPlan', () => {
   it.each([
     ['a\nb\nc', 'a\nx\nc', { cur: { max: 1, midEnd: 2 }, floor: 0, next: { max: 1, midEnd: 2 }, prefix: 1 }],
     ['a\nbb',   'a\nbc',   { cur: { max: 2, midEnd: 2 }, floor: 1, next: { max: 2, midEnd: 2 }, prefix: 1 }],

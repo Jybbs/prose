@@ -1,8 +1,8 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer }                  from '../markdown/renderer'
+import { getRenderer } from '../markdown/renderer'
 import { inlineNodes } from '../markdown/inline-nodes'
-import * as sources                      from './sources'
+import * as sources    from './sources'
 
 declare const data: readonly sources.Token[]
 export { data }

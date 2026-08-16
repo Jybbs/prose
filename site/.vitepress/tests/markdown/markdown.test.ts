@@ -150,7 +150,7 @@ describe('lintDecorationTransformer', () => {
     ['demo-rule/basic', [{ code: 'a', end_location: { column: 4, row: 1 }, location: { column: 1, row: 1 }, message: 'm' }]]
   ])
   const preprocess = decorations.lintDecorationTransformer(findings).preprocess as unknown as
-    (code: string, options: { decorations?: unknown[]; meta?: { __raw?: string } }) => void
+    (code: string, options: { decorations?: unknown[], meta?: { __raw?: string } }) => void
 
   it('computes decorations for the fixture the lint token names', () => {
     const options: { decorations?: unknown[], meta?: { __raw?: string } } =

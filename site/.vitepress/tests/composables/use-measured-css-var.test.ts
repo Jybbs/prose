@@ -2,7 +2,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { ref }           from 'vue'
 
-import { useMeasuredCssVar }             from '../../lib/composables/use-measured-css-var'
+import { useMeasuredCssVar }              from '../../lib/composables/use-measured-css-var'
 import { domTest, mountSetup, nextFrame } from '../dom'
 
 describe('useMeasuredCssVar', () => {

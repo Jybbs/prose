@@ -1,13 +1,11 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer }                  from '../markdown/renderer'
 import { inlineNodes, type InlineNode } from '../markdown/inline-nodes'
+import { getRenderer }                  from '../markdown/renderer'
 import { discoverRuleIndex }            from '../rules/discovery'
 import * as paths                       from '../shared/paths'
 import { FAMILY_META, type RuleFamily } from '../shared/registries'
-
-import { rulePropsOf, typeOf }          from '../shared/rule-schema'
-import type { SchemaProp, SchemaProps } from '../shared/rule-schema'
+import * as ruleSchema                  from '../shared/rule-schema'
 
 interface Facet {
   default      : string
@@ -28,14 +26,8 @@ interface FacetFamily {
   rules  : readonly RuleGroup[]
 }
 
-interface RuleDef {
-  anyOf   ?: readonly { $ref?: string }[]
-  default  : Record<string, unknown>
-}
-
 const ALIGNMENT_SCOPE = 'alignment rules'
 const EVERY_RULE      = 'every rule'
-const HOISTED         = new Set(['enabled', 'max-shift'])
 
 const root = paths.repoRoot(import.meta.url)
 
@@ -46,20 +38,25 @@ export default defineLoader({
   watch : [paths.proseBinaryPath(root)],
   async load(): Promise<readonly FacetFamily[]> {
     const md     = await getRenderer()
-    const schema = JSON.parse(paths.runProse(root, ['schema']))
+    const schema = ruleSchema.proseSchema(root)
     const index  = discoverRuleIndex(paths.rulesDir(import.meta.url))
-    const defs   = schema.$defs as Record<string, { properties: SchemaProps }>
-    const rules  = schema.$defs.RuleConfigs.properties as Record<string, RuleDef>
+    const defs   = schema.$defs
+    const rules  = defs.RuleConfigs.properties as Record<string, ruleSchema.RuleDef>
 
-    const facet = (key: string, prop: SchemaProp, value: unknown, meaning: string): Facet => ({
+    const facet = (
+      key     : string,
+      prop    : ruleSchema.SchemaProp,
+      value   : unknown,
+      meaning : string
+    ): Facet => ({
       default      : JSON.stringify(value),
       key          : key,
       meaningNodes : inlineNodes(md, meaning),
-      type         : typeOf(prop).replaceAll('`', '')
+      type         : ruleSchema.typeOf(prop).replaceAll('`', '')
     })
 
-    const describe = (props: SchemaProps, key: string): string =>
-      (props[key] as { description?: string }).description ?? ''
+    const describe = (props: ruleSchema.SchemaProps, key: string): string =>
+      props[key].description ?? ''
 
     // `enabled` and `max-shift` repeat across every rule and every alignment
     // rule, so they read once as a scope rather than per rule.
@@ -90,11 +87,15 @@ export default defineLoader({
       ]
     }
 
+    // The generic group carries each hoisted facet once, so its keys are what
+    // the per-rule lists drop.
+    const hoisted = new Set(generic.rules.flatMap(group => group.facets.map(one => one.key)))
+
     const groups = new Map<RuleFamily, RuleGroup[]>()
     for (const [slug, def] of Object.entries(rules).toSorted(([a], [b]) => a.localeCompare(b))) {
-      const props  = rulePropsOf(defs, def)
+      const props  = ruleSchema.rulePropsOf(defs, def)
       const facets = Object.keys(def.default)
-        .filter(key => !HOISTED.has(key))
+        .filter(key => !hoisted.has(key))
         .toSorted((a, b) => a.localeCompare(b))
         .map(key => facet(key, props[key], def.default[key], describe(props, key)))
 

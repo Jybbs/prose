@@ -1,9 +1,9 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, inlineNodeField }          from '../markdown/renderer'
-import { inlineNodes, type InlineNode }          from '../markdown/inline-nodes'
-import { discoverPrimitives }                    from './discovery'
-import { primitivesDir }                         from '../shared/paths'
+import { getRenderer, inlineNodeField }           from '../markdown/renderer'
+import { inlineNodes, type InlineNode }           from '../markdown/inline-nodes'
+import { discoverPrimitives }                     from './discovery'
+import { primitivesDir }                          from '../shared/paths'
 import type { PrimitiveSlug, PrimitiveStability } from '../shared/registries'
 
 export interface PrimitiveSurfaceRow {

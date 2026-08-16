@@ -9,7 +9,7 @@ const page    = fs.readFileSync(
 const anchors = [...page.matchAll(/^## (.+)$/gm)].map(([, heading]) =>
   heading.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-').replaceAll(/^-|-$/g, ''))
 
-describe('scopes.directiveHref', () => {
+describe('directiveHref', () => {
   it.each(scopes.SCOPE_ORDER)('anchors the %s scope to a heading on the reference page', scope => {
     const [route, anchor] = scopes.directiveHref(scope).split('#')
     expect(route).toBe('/reference/suppression-directives')
@@ -17,7 +17,7 @@ describe('scopes.directiveHref', () => {
   })
 })
 
-describe('scopes.scopeBands', () => {
+describe('scopeBands', () => {
   it('groups scope-keyed items into the shared band order', () => {
     const bands = scopes.scopeBands([
       { id : 'a', scope : 'line' },

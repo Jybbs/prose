@@ -19,7 +19,7 @@ function mountProviding<T>(source: HiddenSource, read: () => T): T {
   return injected
 }
 
-describe('ariaHidden.useAriaHidden', () => {
+describe('useAriaHidden', () => {
   it('reads false where no ancestor provides a value', () => {
     expect(mountSetup(ariaHidden.useAriaHidden).value).toBe(false)
   })
@@ -37,7 +37,7 @@ describe('ariaHidden.useAriaHidden', () => {
   })
 })
 
-describe('ariaHidden.useHiddenTabindex', () => {
+describe('useHiddenTabindex', () => {
   it('leaves a node in the tab order outside a hidden subtree', () => {
     expect(mountSetup(ariaHidden.useHiddenTabindex).value).toBeUndefined()
   })
