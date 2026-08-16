@@ -31,20 +31,15 @@ pub(super) fn extract_prose_table(bytes: &[u8]) -> Result<Option<toml::Table>, C
 fn script_metadata(text: &str) -> Option<String> {
     let mut lines = text.lines().skip_while(|line| *line != OPEN);
     lines.next()?;
-    let mut body = Vec::new();
-    for line in lines {
-        let Some(rest) = line.strip_prefix('#') else {
-            break;
-        };
-        if rest.is_empty() {
-            body.push("");
-            continue;
-        }
-        let Some(rest) = rest.strip_prefix(' ') else {
-            break;
-        };
-        body.push(rest);
-    }
+    let mut body: Vec<&str> = lines
+        .map_while(|line| {
+            let rest = line.strip_prefix('#')?;
+            if rest.is_empty() {
+                return Some("");
+            }
+            rest.strip_prefix(' ')
+        })
+        .collect();
     body.truncate(body.iter().rposition(|line| *line == "///")?);
     Some(body.join("\n") + "\n")
 }

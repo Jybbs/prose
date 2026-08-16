@@ -4,9 +4,10 @@
 use std::{
     io::{self, Read, Write},
     path::{Path, PathBuf},
+    string::FromUtf8Error,
 };
 
-use rayon::iter::{ParallelBridge, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use ruff_notebook::NotebookIndex;
 use ruff_python_ast::PySourceType;
 use ruff_source_file::{SourceFile, SourceFileBuilder};
@@ -14,7 +15,7 @@ use tempfile::NamedTempFile;
 
 use super::{FileOutcome, Pass, RunSetup, has_format_change, notebook};
 use crate::{
-    cache::{CacheEntry, CacheKey, Rewrite},
+    cache::{CacheEntry, CacheEntryRef, Rewrite},
     cli::exit_status::ExitStatus,
     pipeline::Pipeline,
     source::Source,
@@ -70,19 +71,19 @@ pub(super) fn process_path(
         return FileOutcome::Failed(ExitStatus::ConfigError);
     };
     let needs_rewrite = matches!(pass, Pass::Both);
-    let keyed = setup.cache_for(pass).map(|c| {
-        (
-            c,
-            CacheKey::compute(&bytes, &resolved.config_toml, resolved.pipeline.rule_ids()),
-        )
-    });
-    if let Some(outcome) = keyed
-        .as_ref()
-        .and_then(|(c, k)| c.lookup(k))
-        .and_then(|entry| rehydrate(path, source_type, &bytes, entry, needs_rewrite))
-    {
-        return outcome;
-    }
+    let keyed = setup
+        .cache_for(pass)
+        .map(|c| (c, resolved.key_prefix.key_for(&bytes)));
+    let hit = keyed.as_ref().and_then(|(c, k)| c.lookup(k));
+    let bytes = match hit {
+        Some(entry) => match rehydrate(path, source_type, bytes, entry, needs_rewrite) {
+            Ok(outcome) => return outcome,
+            // A `check` entry cannot serve a mode needing the rewrite,
+            // so the miss branch runs against the bytes it hands back.
+            Err(bytes) => bytes,
+        },
+        None => bytes,
+    };
     let text = match String::from_utf8(bytes) {
         Ok(t) => t,
         Err(e) => {
@@ -110,9 +111,9 @@ pub(super) fn process_path(
     {
         c.insert(
             k,
-            &CacheEntry {
-                diagnostics: diagnostics.clone(),
-                rewrite: rewrite.clone(),
+            &CacheEntryRef {
+                diagnostics,
+                rewrite,
             },
         );
     }
@@ -123,8 +124,12 @@ pub(super) fn process_paths<F>(paths: &[PathBuf], handle: F) -> Vec<FileOutcome>
 where
     F: Fn(&Path, PySourceType) -> FileOutcome + Send + Sync,
 {
+    // Collecting the walk before the fan-out keeps the outcomes in the
+    // order the walker yielded, which `par_bridge` does not, so a
+    // structured report is byte-comparable between two runs.
     walker::walk(paths)
-        .par_bridge()
+        .collect::<Vec<_>>()
+        .into_par_iter()
         .filter_map(|entry| match entry {
             Ok(Found::Formattable(path, source_type)) => Some(handle(&path, source_type)),
             Ok(Found::PassedLink(path)) => {
@@ -152,31 +157,42 @@ pub(super) fn read_stdin<R: Read>(stdin: R) -> Result<String, FileOutcome> {
         .map_err(|e| failed(ExitStatus::ConfigError, format_args!("reading stdin: {e}")))
 }
 
+/// Rebuilds the outcome `entry` records against the file's own
+/// `bytes`, which an ordinary module hands straight to the
+/// `SourceFile` rather than copying.
+///
+/// # Errors
+///
+/// Returns the bytes back where the entry cannot serve this mode,
+/// where they are not UTF-8, or where a notebook fails to re-read, so
+/// the caller runs the pipeline against them without a second read.
 pub(super) fn rehydrate(
     path: &Path,
     source_type: PySourceType,
-    original_bytes: &[u8],
+    bytes: Vec<u8>,
     entry: CacheEntry,
     needs_rewrite: bool,
-) -> Option<FileOutcome> {
+) -> Result<FileOutcome, Vec<u8>> {
     let rewrite = if needs_rewrite {
         match entry.rewrite {
             // A `check` entry skipped the rewrite this mode needs.
-            Rewrite::Skipped => return None,
+            Rewrite::Skipped => return Err(bytes),
             rewrite => rewrite,
         }
     } else {
         Rewrite::Skipped
     };
-    let text = std::str::from_utf8(original_bytes).ok()?;
+    let text = String::from_utf8(bytes).map_err(FromUtf8Error::into_bytes)?;
     let (source_text, notebook_index) = if source_type.is_ipynb() {
-        let (code, index) = notebook::rehydrated(text)?;
-        (code, Some(index))
+        match notebook::rehydrated(&text) {
+            Some((code, index)) => (code, Some(index)),
+            None => return Err(text.into_bytes()),
+        }
     } else {
-        (text.to_owned(), None)
+        (text, None)
     };
     let file = SourceFileBuilder::new(path.display().to_string(), source_text).finish();
-    Some(FileOutcome::Done {
+    Ok(FileOutcome::Done {
         cached: true,
         diagnostics: entry.diagnostics,
         file,
@@ -392,13 +408,13 @@ mod tests {
         let outcome = rehydrate(
             Path::new("a.py"),
             PySourceType::Python,
-            b"x = 1\n",
+            b"x = 1\n".to_vec(),
             entry,
             false,
         );
         assert_matches!(
             outcome,
-            Some(FileOutcome::Done {
+            Ok(FileOutcome::Done {
                 rewrite: Rewrite::Skipped,
                 ..
             })
@@ -406,20 +422,20 @@ mod tests {
     }
 
     #[test]
-    fn rehydrate_returns_none_for_a_skipped_entry() {
+    fn rehydrate_hands_the_bytes_back_for_a_skipped_entry() {
         let entry = CacheEntry {
             diagnostics: Vec::new(),
             rewrite: Rewrite::Skipped,
         };
-        assert!(
+        assert_matches!(
             rehydrate(
                 Path::new("a.py"),
                 PySourceType::Python,
-                b"x = 1\n",
+                b"x = 1\n".to_vec(),
                 entry,
                 true
-            )
-            .is_none()
+            ),
+            Err(bytes) if bytes == b"x = 1\n"
         );
     }
 
@@ -432,13 +448,13 @@ mod tests {
         let outcome = rehydrate(
             Path::new("a.py"),
             PySourceType::Python,
-            b"x = 1\n",
+            b"x = 1\n".to_vec(),
             entry,
             true,
         );
         assert_matches!(
             outcome,
-            Some(FileOutcome::Done { rewrite: Rewrite::Changed(RewriteKind::Text(text)), .. })
+            Ok(FileOutcome::Done { rewrite: Rewrite::Changed(RewriteKind::Text(text)), .. })
                 if text == "y = 1\n"
         );
     }
@@ -452,13 +468,13 @@ mod tests {
         let outcome = rehydrate(
             Path::new("a.py"),
             PySourceType::Python,
-            b"x = 1\n",
+            b"x = 1\n".to_vec(),
             entry,
             true,
         );
         assert_matches!(
             outcome,
-            Some(FileOutcome::Done {
+            Ok(FileOutcome::Done {
                 rewrite: Rewrite::Unchanged,
                 ..
             })

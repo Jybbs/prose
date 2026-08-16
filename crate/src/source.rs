@@ -1,6 +1,6 @@
 //! Source-text wrapper bundling parsed AST, token stream, and line index.
 
-use std::{path::Path, str::FromStr};
+use std::{path::Path, str::FromStr, sync::OnceLock};
 
 use itertools::Itertools;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
@@ -41,7 +41,7 @@ use crate::{
 /// last two empty for an ordinary module.
 #[derive(Debug)]
 pub struct Source {
-    binding_analysis: Box<BindingAnalysis>,
+    binding_analysis: OnceLock<Box<BindingAnalysis>>,
     cell_numbers: Box<[OneIndexed]>,
     cell_offsets: CellOffsets,
     comment_ranges: CommentRanges,
@@ -117,9 +117,8 @@ impl Source {
             first_code_offset,
             &cell_offsets,
         ));
-        let binding_analysis = Box::new(BindingAnalysis::new(parsed.syntax()));
         Self {
-            binding_analysis,
+            binding_analysis: OnceLock::new(),
             cell_numbers: Box::default(),
             cell_offsets,
             comment_ranges,
@@ -175,9 +174,12 @@ impl Source {
         self.parsed.syntax()
     }
 
-    /// Returns the binding-analysis table built during parsing.
+    /// Returns the binding-analysis table, building it on the first
+    /// read. Only a minority of rules consult it, so a run that never
+    /// asks never pays the walk.
     pub fn binding_analysis(&self) -> &BindingAnalysis {
-        &self.binding_analysis
+        self.binding_analysis
+            .get_or_init(|| Box::new(BindingAnalysis::new(self.ast())))
     }
 
     /// Returns the absolute notebook position of the code cell at

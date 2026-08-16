@@ -5,17 +5,18 @@ use std::{
     fs::Metadata,
     io::{self, BufWriter, Read, Write},
     path::{Path, PathBuf},
-    time::SystemTime,
+    time::{Duration, SystemTime},
 };
 
 use fs_err::DirEntry;
 use tempfile::NamedTempFile;
 
-use super::{CacheEntry, CacheInfo, CacheKey, CleanReport};
+use super::{CacheEntry, CacheEntryRef, CacheInfo, CacheKey, CleanReport};
 
 /// User-level on-disk cache.
 #[derive(Debug)]
 pub struct Cache {
+    pub(super) max_entries: usize,
     pub(super) max_size_bytes: u64,
     pub(super) root: PathBuf,
 }
@@ -40,9 +41,17 @@ impl Cache {
         })?;
         fs_err::create_dir_all(&root)?;
         Ok(Self {
+            max_entries: usize::MAX,
             max_size_bytes: u64::MAX,
             root,
         })
+    }
+
+    /// Sets the LRU eviction cap on the directory's entry count.
+    #[must_use]
+    pub fn with_max_entries(mut self, entries: u32) -> Self {
+        self.max_entries = entries as usize;
+        self
     }
 
     /// Sets the LRU eviction cap in MiB.
@@ -65,7 +74,7 @@ impl Cache {
         self.root.join(key.0.to_hex().as_str())
     }
 
-    fn try_insert(&self, key: &CacheKey, value: &CacheEntry) -> io::Result<()> {
+    fn try_insert(&self, key: &CacheKey, value: &CacheEntryRef<'_>) -> io::Result<()> {
         let mut tmp = NamedTempFile::with_suffix_in(".tmp", &self.root)?;
         {
             let mut buf = BufWriter::new(tmp.as_file_mut());
@@ -96,32 +105,48 @@ impl Cache {
         Ok(report)
     }
 
-    /// Runs the LRU eviction pass to honor the configured size cap and
-    /// returns what it removed.
+    /// Runs the LRU eviction pass to honor the configured size and
+    /// entry-count caps, and returns what it removed. Each entry counts
+    /// the space the filesystem allocated to it rather than its own
+    /// length, so the total tracks what the directory costs on disk.
     pub fn compact(&self) -> CleanReport {
         let mut report = CleanReport::default();
         let mut files: Vec<(SystemTime, u64, DirEntry)> = self
             .entries()
-            .map(|(e, m)| (m.modified().unwrap_or(SystemTime::UNIX_EPOCH), m.len(), e))
+            .map(|(e, m)| {
+                (
+                    m.modified().unwrap_or(SystemTime::UNIX_EPOCH),
+                    on_disk(&m),
+                    e,
+                )
+            })
             .collect();
         let mut total: u64 = files.iter().map(|(_, bytes, _)| *bytes).sum();
-        if total <= self.max_size_bytes {
+        let mut count = files.len();
+        if self.within_caps(total, count) {
             return report;
         }
         files.sort_by_key(|(mtime, _, _)| *mtime);
         for (_, bytes, entry) in files {
-            if total <= self.max_size_bytes {
+            if self.within_caps(total, count) {
                 break;
             }
             match fs_err::remove_file(entry.path()) {
                 Ok(()) => {
                     total = total.saturating_sub(bytes);
+                    count -= 1;
                     report.record(bytes);
                 }
                 Err(e) => eprintln!("warning: cache eviction: {e}"),
             }
         }
         report
+    }
+
+    /// True where a directory of `count` entries occupying `total` bytes
+    /// sits inside both configured caps.
+    fn within_caps(&self, total: u64, count: usize) -> bool {
+        total <= self.max_size_bytes && count <= self.max_entries
     }
 
     /// Reports the cache directory's path, entry count, and byte total,
@@ -148,21 +173,32 @@ impl Cache {
     /// `rename`. Any encode, write, or rename failure drops the insert
     /// silently and lets the tempfile clean itself up on drop. The size
     /// cap is honored by [`compact`](Self::compact).
-    pub fn insert(&self, key: &CacheKey, value: &CacheEntry) {
+    pub fn insert(&self, key: &CacheKey, value: &CacheEntryRef<'_>) {
         let _ = self.try_insert(key, value);
     }
 
     /// Returns the entry stored at `key` if present and well-formed,
-    /// bumping the entry's mtime.
+    /// bumping the entry's mtime where the recorded one has aged past
+    /// [`MTIME_GRANULARITY`]. Eviction orders by mtime at day
+    /// granularity at most, so a bump per hit would write an inode on
+    /// every read of an edit loop to sharpen an order nothing reads
+    /// that finely.
     pub fn lookup(&self, key: &CacheKey) -> Option<CacheEntry> {
         let mut file = fs_err::File::open(self.path_for(key)).ok()?;
         let mut bytes = Vec::new();
         file.read_to_end(&mut bytes).ok()?;
         let entry: CacheEntry = postcard::from_bytes(&bytes).ok()?;
-        let _ = file.set_modified(SystemTime::now());
+        let now = SystemTime::now();
+        if stale(&file, now) {
+            let _ = file.set_modified(now);
+        }
         Some(entry)
     }
 }
+
+/// How far an entry's recorded mtime may lag the clock before a hit
+/// rewrites it.
+const MTIME_GRANULARITY: Duration = Duration::from_secs(60 * 60);
 
 fn cache_root() -> Option<PathBuf> {
     std::env::var_os("PROSE_CACHE_DIR")
@@ -170,6 +206,32 @@ fn cache_root() -> Option<PathBuf> {
         .or_else(|| dirs::cache_dir().map(|d| d.join("prose")))
 }
 
+/// The space one entry occupies, which a filesystem allocates in whole
+/// blocks rather than in the entry's own length.
+#[cfg(unix)]
+fn on_disk(metadata: &Metadata) -> u64 {
+    use std::os::unix::fs::MetadataExt;
+
+    metadata.blocks() * 512
+}
+
+#[cfg(not(unix))]
+fn on_disk(metadata: &Metadata) -> u64 {
+    metadata.len().next_multiple_of(4096)
+}
+
 fn is_entry_file(path: &Path) -> bool {
     path.extension().is_none()
+}
+
+/// True where `file`'s recorded mtime is older than
+/// [`MTIME_GRANULARITY`], or where the metadata read fails, since a
+/// file whose age cannot be read is bumped rather than left to sort
+/// as the oldest entry in the directory.
+fn stale(file: &fs_err::File, now: SystemTime) -> bool {
+    file.metadata()
+        .ok()
+        .and_then(|m| m.modified().ok())
+        .and_then(|m| now.duration_since(m).ok())
+        .is_none_or(|age| age >= MTIME_GRANULARITY)
 }

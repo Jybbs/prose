@@ -11,6 +11,7 @@ use anstream::{
     stream::{AsLockedWrite, RawStream},
 };
 use anyhow::Context;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use ruff_notebook::NotebookIndex;
 use ruff_python_ast::PySourceType;
 use ruff_source_file::SourceFile;
@@ -35,7 +36,7 @@ mod resolve;
 
 use diff::{Heading, write_rewrite_diff};
 use process::{apply_rewrite, process_path, process_paths, process_stdin, read_stdin};
-use report::{emit_outcomes, emitter_summary, finish, render_summary, status_from_outcomes};
+use report::{emit_to_stdout, emitter_summary, finish, render_summary, status_from_outcomes};
 use resolve::{ConfigResolver, Resolved};
 
 /// One file's contribution to the run.
@@ -100,7 +101,11 @@ impl RunSetup {
     }
 
     /// Walks `paths` under `pass`, writing each rewrite back to disk
-    /// when `write_back`, then enforces the cache's size cap.
+    /// when `write_back`, then enforces the cache's size cap where the
+    /// run inserted at least one entry. A run that hit on every file
+    /// left the directory the size it already was, so the cap cannot
+    /// newly be crossed and the sweep would stat every entry for
+    /// nothing.
     fn walked(&self, paths: &[PathBuf], pass: Pass, write_back: bool) -> Vec<FileOutcome> {
         let outcomes = process_paths(paths, |path, source_type| {
             let outcome = process_path(path, source_type, self, pass);
@@ -110,19 +115,22 @@ impl RunSetup {
                 outcome
             }
         });
-        if let Some(cache) = self.cache_for(pass) {
+        let inserted = outcomes
+            .iter()
+            .any(|o| matches!(o, FileOutcome::Done { cached: false, .. }));
+        if let Some(cache) = self.cache_for(pass).filter(|_| inserted) {
             cache.compact();
         }
         outcomes
     }
 }
 
-pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
+pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
     args: CheckArgs,
     verbose: bool,
     present: &Presentation,
     stdin: R,
-    mut stdout: O,
+    stdout: AutoStream<O>,
     mut stderr: E,
 ) -> anyhow::Result<ExitStatus> {
     let setup = match build_run(args.common.rules, args.common.no_cache) {
@@ -143,11 +151,11 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
         setup.walked(&args.paths, pass, false)
     };
     let summary = emitter_summary(&outcomes);
-    emit_outcomes(
+    emit_to_stdout(
         &outcomes,
         args.common.output_format,
         present,
-        &mut stdout,
+        stdout,
         &summary,
     )?;
     let status = finish(&outcomes, setup.cache.is_some(), verbose, false);
@@ -169,7 +177,7 @@ pub(crate) fn format_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
     verbose: bool,
     present: &Presentation,
     stdin: R,
-    mut stdout: AutoStream<O>,
+    stdout: AutoStream<O>,
     mut stderr: E,
 ) -> anyhow::Result<ExitStatus> {
     let setup = match build_run(args.common.rules, args.common.no_cache) {
@@ -204,7 +212,7 @@ pub(crate) fn format_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
             &setup,
             verbose,
             present,
-            &mut stdout,
+            stdout,
             &mut stderr,
         )
     }
@@ -259,24 +267,36 @@ fn format_paths_diff<O: Write, E: Write>(
 ) -> anyhow::Result<ExitStatus> {
     let outcomes = setup.walked(paths, Pass::Rewrite, false);
     let heading = diff_heading(present);
-    let mut writer = BufWriter::new(stdout);
-    for outcome in &outcomes {
-        if let FileOutcome::Done {
-            file,
-            notebook_index,
-            rewrite: Rewrite::Changed(kind),
-            ..
-        } = outcome
-        {
+    // Each diff renders into its own buffer on the pool, the shape
+    // `Text::emit` uses, and rayon's indexed collect hands the buffers
+    // back in walk order for the serial write.
+    let blocks: Vec<Vec<u8>> = outcomes
+        .par_iter()
+        .filter_map(|outcome| match outcome {
+            FileOutcome::Done {
+                file,
+                notebook_index,
+                rewrite: Rewrite::Changed(kind),
+                ..
+            } => Some((file, notebook_index, kind)),
+            _ => None,
+        })
+        .map(|(file, notebook_index, kind)| {
+            let mut block = Vec::new();
             write_rewrite_diff(
-                &mut writer,
+                &mut block,
                 file.name(),
                 file.source_text(),
                 kind,
                 notebook_index.as_deref(),
                 heading,
             )?;
-        }
+            Ok(block)
+        })
+        .collect::<anyhow::Result<_>>()?;
+    let mut writer = BufWriter::new(stdout);
+    for block in &blocks {
+        writer.write_all(block).context("writing stdout")?;
     }
     writer.flush().context("flushing stdout")?;
     let summary = emitter_summary(&outcomes);
@@ -285,20 +305,20 @@ fn format_paths_diff<O: Write, E: Write>(
     Ok(status)
 }
 
-fn format_paths_rewrite<O: Write, E: Write>(
+fn format_paths_rewrite<O: RawStream + AsLockedWrite, E: Write>(
     paths: &[PathBuf],
     format: OutputFormat,
     setup: &RunSetup,
     verbose: bool,
     present: &Presentation,
-    stdout: &mut O,
+    stdout: AutoStream<O>,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
     let pass = format_pass(false, format);
     let outcomes = setup.walked(paths, pass, true);
     let summary = emitter_summary(&outcomes);
     if !format.is_text() {
-        emit_outcomes(&outcomes, format, present, stdout, &summary)?;
+        emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
     }
     let status = finish(&outcomes, setup.cache.is_some(), verbose, true);
     render_summary(
@@ -318,7 +338,7 @@ fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
     format: OutputFormat,
     present: &Presentation,
     pipeline: &Pipeline,
-    mut writer: AutoStream<O>,
+    writer: AutoStream<O>,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
     let (outcome, original) = match input {
@@ -364,7 +384,7 @@ fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
                 .write_all(to_write)
                 .context("writing stdout")?;
         } else {
-            emit_outcomes(outcomes, format, present, &mut writer, &summary)?;
+            emit_to_stdout(outcomes, format, present, writer, &summary)?;
         }
     }
     let mode = if diff { Mode::Preview } else { Mode::Reformat };
@@ -389,7 +409,10 @@ fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
         return None;
     }
     Cache::open()
-        .map(|c| c.with_max_size_mib(config.cache.max_size_mib))
+        .map(|c| {
+            c.with_max_entries(config.cache.max_entries)
+                .with_max_size_mib(config.cache.max_size_mib)
+        })
         .inspect_err(|e| eprintln!("warning: cache disabled: {e}"))
         .ok()
 }
@@ -471,7 +494,7 @@ mod tests {
             false,
             &Presentation::windowed(),
             stdin,
-            &mut stdout,
+            AutoStream::never(&mut stdout),
             io::sink(),
         )
         .expect("runs without anyhow");

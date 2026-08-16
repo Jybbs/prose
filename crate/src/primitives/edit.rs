@@ -69,10 +69,8 @@ pub(crate) fn apply_inline_edits<'src>(
     if inside.peek().is_none() {
         return Cow::Borrowed(source.slice(range));
     }
-    match weave(source.text(), range, inside, None) {
-        Some(out) => Cow::Owned(out),
-        None => Cow::Borrowed(source.slice(range)),
-    }
+    weave(source.text(), range, inside, None)
+        .map_or_else(|| Cow::Borrowed(source.slice(range)), Cow::Owned)
 }
 
 /// Forwards each cell boundary in `offsets` through `map`, shifting it

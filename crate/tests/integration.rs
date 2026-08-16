@@ -2,6 +2,8 @@
 
 mod common;
 
+use std::fmt::Write;
+
 use prose::{pipeline::Pipeline, source::Source};
 use ruff_python_formatter::{PyFormatOptions, format_module_source};
 
@@ -77,7 +79,7 @@ fn cell_delimited(source: &Source) -> String {
     let mut out = String::new();
     for (i, text) in cells.iter().enumerate() {
         if i > 0 {
-            out.push_str(&format!("\n\n# --- cell {} ---\n\n", i + 1));
+            let _ = write!(out, "\n\n# --- cell {} ---\n\n", i + 1);
         }
         out.push_str(text.trim_end_matches('\n'));
     }

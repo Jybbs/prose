@@ -58,6 +58,7 @@ The `[cache]` table tunes the user-level [**cache**](/reference/cache) that *Pro
 ```toml
 [cache]
 enabled      = true
+max-entries  = 25000
 max-size-mib = 250
 ```
 

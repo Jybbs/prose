@@ -15,8 +15,13 @@ use crate::source::Source;
 /// module-body statement covering it or the whole module where none
 /// does.
 pub(super) fn reparse_window(source: &Source, range: TextRange) -> TextRange {
-    covering_statement(&source.ast().body, range)
-        .map_or_else(|| source.module_range(), Ranged::range)
+    window_of(source, covering_statement(&source.ast().body, range))
+}
+
+/// The window `covering` reparses within, its own range or the whole
+/// module where no statement covers the splice.
+fn window_of(source: &Source, covering: Option<&Stmt>) -> TextRange {
+    covering.map_or_else(|| source.module_range(), Ranged::range)
 }
 
 /// Reports whether splicing `replacement` into `outer` at `inner`
@@ -40,7 +45,7 @@ pub(crate) fn splice_parses<T, E>(
 pub(crate) fn splice_preserves_tree(source: &Source, range: TextRange, replacement: &str) -> bool {
     let body = &source.ast().body;
     let covering = covering_statement(body, range);
-    let window = covering.map_or_else(|| source.module_range(), Ranged::range);
+    let window = window_of(source, covering);
     let before = covering.map_or(body.as_slice(), std::slice::from_ref);
     let Ok(reparsed) = splice_reparse(source, window, range, replacement, parse_module) else {
         return false;

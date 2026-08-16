@@ -1,8 +1,12 @@
 //! Outcome aggregation: summaries, exit-status derivation, and
 //! diagnostic emission.
 
-use std::io::{self, Write};
+use std::io::{self, BufWriter, Write};
 
+use anstream::{
+    AutoStream,
+    stream::{AsLockedWrite, RawStream},
+};
 use anyhow::Context;
 
 use super::{FileOutcome, Mode, has_format_change};
@@ -16,6 +20,29 @@ use crate::{
     },
     diagnostics::Diagnostic,
 };
+
+/// Emits `outcomes` to the process stdout `stdout` wraps.
+///
+/// A structured format writes to the raw stream through a `BufWriter`,
+/// since json, sarif and github hold no escape sequence for the
+/// `AutoStream` to strip and each emits many small writes. Text keeps
+/// the `AutoStream`, which `--color always` needs, and writes blocks
+/// large enough that a second buffer buys nothing.
+pub(super) fn emit_to_stdout<O: RawStream + AsLockedWrite>(
+    outcomes: &[FileOutcome],
+    format: OutputFormat,
+    present: &Presentation,
+    stdout: AutoStream<O>,
+    summary: &EmitterSummary,
+) -> anyhow::Result<()> {
+    if format.is_text() {
+        let mut stdout = stdout;
+        emit_outcomes(outcomes, format, present, &mut stdout, summary)
+    } else {
+        let mut buffered = BufWriter::new(stdout.into_inner());
+        emit_outcomes(outcomes, format, present, &mut buffered, summary)
+    }
+}
 
 pub(super) fn emit_outcomes<W: Write>(
     outcomes: &[FileOutcome],

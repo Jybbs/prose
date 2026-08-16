@@ -43,11 +43,13 @@ The facets under the `[cache]` table *(`[tool.prose.cache]` in a `pyproject.toml
 | Key | Type | Default | Meaning |
 |---|---|---|---|
 | `enabled` | bool | `true` | Toggle the cache globally |
+| `max-entries` | positive int | `10000` | LRU eviction cap on the cache directory's entry count |
 | `max-size-mib` | positive int | `100` | LRU eviction cap on the cache directory |
 
 ```toml
 [cache]
 enabled      = true
+max-entries  = 25000
 max-size-mib = 250
 ```
 
@@ -73,7 +75,7 @@ Returns exit code 0 on success, with the IO-error exit code applying on permissi
 
 ## `prose cache compact`
 
-The `prose cache compact` subcommand runs the LRU eviction pass against the cache, reducing it to the configured `[cache] max-size-mib` cap. Eviction otherwise runs once at the end of a path run, so a project that lowered its cap will not see the new ceiling enforced until the next `prose check` or `prose format` completes. `compact` triggers eviction immediately and reports the bytes and entry count it removed.
+The `prose cache compact` subcommand runs the LRU eviction pass against the cache, reducing it to the configured `[cache] max-size-mib` and `max-entries` caps. Eviction otherwise runs once at the end of a path run, so a project that lowered its cap will not see the new ceiling enforced until the next `prose check` or `prose format` completes. `compact` triggers eviction immediately and reports the bytes and entry count it removed.
 
 ```bash
 $ prose cache compact

@@ -3,24 +3,27 @@
 
 use crate::rule::RuleId;
 
-pub(super) const CACHE_FORMAT_VERSION: &str = "4";
+pub(super) const CACHE_FORMAT_VERSION: &str = "5";
 
 /// BLAKE3 digest of
-/// `source_bytes ++ config_toml ++ rule_ids ++ prose_version ++ cache_format_version`.
+/// `config_toml ++ rule_ids ++ prose_version ++ cache_format_version ++ source_bytes`,
+/// each variable-length input length-framed so no pair of inputs can
+/// concatenate into another pair's bytes.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct CacheKey(pub(super) blake3::Hash);
 
-impl CacheKey {
-    /// Computes the key for a source file under the pre-serialized config
-    /// TOML and the resolved rule selection that governs it, so two runs
-    /// differing only in `--select` / `--ignore` key separately.
-    pub fn compute(
-        source_bytes: &[u8],
-        config_toml: &str,
-        rule_ids: impl IntoIterator<Item = RuleId>,
-    ) -> Self {
-        Self::compute_with_versions(
-            source_bytes,
+/// A hasher holding every input a run shares across its files, cloned
+/// per file so the config, rule selection and version tail are absorbed
+/// once for the run rather than once for each file.
+#[derive(Clone, Debug)]
+pub struct CacheKeyPrefix(blake3::Hasher);
+
+impl CacheKeyPrefix {
+    /// Loads the run-invariant inputs, so that two runs differing only
+    /// in `--select` / `--ignore` key separately.
+    #[must_use]
+    pub fn new(config_toml: &str, rule_ids: impl IntoIterator<Item = RuleId>) -> Self {
+        Self::with_versions(
             config_toml,
             rule_ids,
             env!("CARGO_PKG_VERSION"),
@@ -28,22 +31,35 @@ impl CacheKey {
         )
     }
 
-    pub(super) fn compute_with_versions(
-        source_bytes: &[u8],
+    pub(super) fn with_versions(
         config_toml: &str,
         rule_ids: impl IntoIterator<Item = RuleId>,
         prose_version: &str,
         format_version: &str,
     ) -> Self {
         let mut hasher = blake3::Hasher::new();
-        hasher.update(source_bytes);
-        hasher.update(config_toml.as_bytes());
+        framed(&mut hasher, config_toml.as_bytes());
         for id in rule_ids {
             hasher.update(id.as_str().as_bytes());
             hasher.update(b"\n");
         }
         hasher.update(prose_version.as_bytes());
         hasher.update(format_version.as_bytes());
-        Self(hasher.finalize())
+        Self(hasher)
     }
+
+    /// Completes the digest with one file's own source bytes.
+    #[must_use]
+    pub fn key_for(&self, source_bytes: &[u8]) -> CacheKey {
+        let mut hasher = self.0.clone();
+        framed(&mut hasher, source_bytes);
+        CacheKey(hasher.finalize())
+    }
+}
+
+/// Absorbs `bytes` behind its own length, so a boundary between two
+/// variable-length inputs cannot be forged by moving bytes across it.
+fn framed(hasher: &mut blake3::Hasher, bytes: &[u8]) {
+    hasher.update(&(bytes.len() as u64).to_le_bytes());
+    hasher.update(bytes);
 }

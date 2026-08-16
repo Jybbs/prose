@@ -10,6 +10,7 @@ use std::{
 };
 
 use crate::{
+    cache::CacheKeyPrefix,
     config::{Config, ConfigSource, NoticeDedup},
     pipeline::Pipeline,
     rule::RuleId,
@@ -124,9 +125,12 @@ impl ConfigResolver {
 }
 
 /// One file's resolved configuration: the pipeline its enabled rules
-/// build and the serialized TOML that keys the cache.
+/// build, the serialized TOML that keys the cache, and the hasher
+/// already holding that TOML and rule selection, which every file
+/// under this config clones rather than re-absorbing.
 pub(super) struct Resolved {
     pub(super) config_toml: String,
+    pub(super) key_prefix: CacheKeyPrefix,
     pub(super) pipeline: Pipeline,
 }
 
@@ -142,9 +146,12 @@ enum DirResolution {
 }
 
 fn build_resolved(config: &Config, select: &[RuleId], ignore: &[RuleId]) -> Resolved {
+    let config_toml = config.to_toml();
+    let pipeline = Pipeline::with_filters(config, select, ignore);
     Resolved {
-        config_toml: config.to_toml(),
-        pipeline: Pipeline::with_filters(config, select, ignore),
+        key_prefix: CacheKeyPrefix::new(&config_toml, pipeline.rule_ids()),
+        config_toml,
+        pipeline,
     }
 }
 

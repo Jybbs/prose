@@ -206,7 +206,7 @@ fn stripped_gap(source: &Source, gap: TextRange) -> String {
 fn wrap_edits(source: &Source, span: TextRange, run: &[Gap]) -> Option<Vec<Edit>> {
     let root = AnyNodeRef::from(source.ast());
     let wrapped = covering_node(root, span)
-        .find_last(|node| node.is_expression())
+        .find_last(AnyNodeRef::is_expression)
         .ok()?
         .node()
         .range();
