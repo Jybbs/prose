@@ -180,10 +180,10 @@ impl Pipeline {
     }
 
     /// Replays the editing rules to surface a rule whose output fails to
-    /// re-parse or to compile, discarding the rewritten text and the
-    /// diagnostics [`run`](Self::run) would build. `check` calls this
-    /// when [`diagnose`](Self::diagnose) flags format work, in place of
-    /// the full `run`.
+    /// re-parse or to compile, returning the rewritten source and
+    /// discarding the diagnostics [`run`](Self::run) would build.
+    /// `check` calls this when [`diagnose`](Self::diagnose) flags format
+    /// work, in place of the full `run`.
     ///
     /// # Errors
     ///
@@ -192,8 +192,8 @@ impl Pipeline {
     /// when it parses but no longer compiles, and `PipelineError::Cell`
     /// when a notebook cell that parsed on its own before the rule ran no
     /// longer does.
-    pub(crate) fn validate(&self, source: Source) -> Result<(), PipelineError> {
-        self.fold_rules(source, None).map(|_| ())
+    pub(crate) fn validate(&self, source: Source) -> Result<Source, PipelineError> {
+        self.fold_rules(source, None)
     }
 }
 

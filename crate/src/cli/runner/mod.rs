@@ -24,7 +24,7 @@ use crate::{
     cache::{Cache, Rewrite},
     config::Config,
     diagnostics::Diagnostic,
-    pipeline::Pipeline,
+    unstable::UnstableRewrite,
 };
 
 mod diff;
@@ -32,11 +32,18 @@ mod notebook;
 mod process;
 mod report;
 mod resolve;
+mod unstable;
 
 use diff::{Heading, write_rewrite_diff};
 use process::{apply_rewrite, process_path, process_paths, process_stdin, read_stdin};
-use report::{emit_outcomes, emitter_summary, finish, render_summary, status_from_outcomes};
+use report::{
+    emit_outcomes, emitter_summary, finish, render_summary, status_from_outcomes, unstable_status,
+};
 use resolve::{ConfigResolver, Resolved};
+
+/// The diagnostic name a stdin run carries, rendered back as the `-`
+/// positional wherever a report names an invocation.
+pub(super) const STDIN_NAME: &str = "<stdin>";
 
 /// One file's contribution to the run.
 #[derive(Debug)]
@@ -47,8 +54,20 @@ enum FileOutcome {
         file: SourceFile,
         notebook_index: Option<Box<NotebookIndex>>,
         rewrite: Rewrite,
+        unstable: Option<Box<UnstableRewrite>>,
     },
     Failed(ExitStatus),
+}
+
+impl FileOutcome {
+    /// The source file and settle report this outcome carries, `None`
+    /// for a settled rewrite and for a file that failed.
+    fn unstable(&self) -> Option<(&SourceFile, &UnstableRewrite)> {
+        match self {
+            Self::Done { file, unstable, .. } => unstable.as_deref().map(|rewrite| (file, rewrite)),
+            Self::Failed(_) => None,
+        }
+    }
 }
 
 /// Which closing summary an outcome set resolves into.
@@ -98,7 +117,7 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
     let outcomes = if args.common.stdin {
         let source_type = stdin_source_type(args.common.stdin_filename.as_deref());
         let outcome = match read_stdin(stdin) {
-            Ok(text) => process_stdin(text, source_type, &setup.cwd.pipeline, pass),
+            Ok(text) => process_stdin(text, source_type, &setup.cwd, pass),
             Err(outcome) => outcome,
         };
         vec![outcome]
@@ -109,7 +128,8 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
     };
     let summary = emitter_summary(&outcomes);
     emit_outcomes(&outcomes, args.common.output_format, &mut stdout, &summary)?;
-    let status = finish(&outcomes, setup.cache.is_some(), verbose, false);
+    let status =
+        finish(&outcomes, setup.cache.is_some(), verbose, false).max(unstable_status(&outcomes));
     render_summary(
         &mut stderr,
         present,
@@ -142,7 +162,7 @@ pub(crate) fn format_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
             args.diff,
             args.common.output_format,
             present,
-            &setup.cwd.pipeline,
+            &setup.cwd,
             stdout,
             &mut stderr,
         );
@@ -272,7 +292,7 @@ fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
     diff: bool,
     format: OutputFormat,
     present: &Presentation,
-    pipeline: &Pipeline,
+    resolved: &Resolved,
     mut writer: AutoStream<O>,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
@@ -281,7 +301,7 @@ fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
             process_stdin(
                 text.clone(),
                 source_type,
-                pipeline,
+                resolved,
                 format_pass(diff, format),
             ),
             text,
@@ -301,7 +321,7 @@ fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
                 let heading = diff_heading(present, &writer);
                 write_rewrite_diff(
                     &mut writer.into_inner(),
-                    "<stdin>",
+                    STDIN_NAME,
                     &original,
                     kind,
                     notebook_index.as_deref(),
@@ -366,7 +386,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        cli::args::RunArgs,
+        cli::{args::RunArgs, output::windowed},
         rule::RuleId,
         testing::{FailingWriter, write_pyproject},
     };
@@ -461,13 +481,6 @@ mod tests {
         )
         .expect("runs without anyhow");
         (status, stdout)
-    }
-
-    fn windowed() -> Presentation {
-        Presentation {
-            quiet: false,
-            stdout_tty: false,
-        }
     }
 
     #[test]

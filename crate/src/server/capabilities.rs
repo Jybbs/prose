@@ -31,6 +31,16 @@ pub(super) fn server_capabilities(encoding: PositionEncoding) -> ServerCapabilit
     }
 }
 
+/// True when the client advertises the show-document request, the
+/// surface a bug notice offers its report form through.
+pub(super) fn shows_documents(client: &ClientCapabilities) -> bool {
+    client
+        .window
+        .as_ref()
+        .and_then(|window| window.show_document.as_ref())
+        .is_some_and(|show| show.support)
+}
+
 /// Maps the internal encoding onto the protocol's encoding token.
 fn encoding_kind(encoding: PositionEncoding) -> PositionEncodingKind {
     match encoding {
@@ -44,7 +54,9 @@ fn encoding_kind(encoding: PositionEncoding) -> PositionEncodingKind {
 mod tests {
     use std::assert_matches;
 
-    use lsp_types::GeneralClientCapabilities;
+    use lsp_types::{
+        GeneralClientCapabilities, ShowDocumentClientCapabilities, WindowClientCapabilities,
+    };
     use rstest::rstest;
 
     use super::*;
@@ -96,6 +108,25 @@ mod tests {
     fn negotiate_defaults_to_utf16_without_utf8_advertised() {
         let encoding = negotiate_encoding(&client_with(Some(vec![PositionEncodingKind::UTF16])));
         assert_matches!(encoding, PositionEncoding::Utf16);
+    }
+
+    #[rstest]
+    #[case::advertised(Some(true), true)]
+    #[case::declined(Some(false), false)]
+    #[case::absent(None, false)]
+    fn shows_documents_reads_the_window_capability(
+        #[case] support: Option<bool>,
+        #[case] expected: bool,
+    ) {
+        let client = ClientCapabilities {
+            window: Some(WindowClientCapabilities {
+                show_document: support.map(|support| ShowDocumentClientCapabilities { support }),
+                ..WindowClientCapabilities::default()
+            }),
+            ..ClientCapabilities::default()
+        };
+
+        assert_eq!(shows_documents(&client), expected);
     }
 
     #[test]

@@ -8,13 +8,21 @@ use lsp_types::{
 use ruff_source_file::PositionEncoding;
 
 use super::send;
-use crate::server::{analysis, config_cache::ConfigCache, documents::DocumentStore};
+use crate::server::{
+    analysis::{self, Formatted},
+    config_cache::ConfigCache,
+    documents::DocumentStore,
+    notices::Notices,
+};
 /// Routes one request, answering formatting and rejecting any other
-/// method so the client never blocks waiting for a response.
+/// method so the client never blocks waiting for a response. A rewrite
+/// whose settle check names rules draws its bug notice once the edits
+/// have reached the client.
 pub(super) fn handle_request(
     connection: &Connection,
     documents: &DocumentStore,
     configs: &mut ConfigCache,
+    notices: &mut Notices,
     request: Request,
     encoding: PositionEncoding,
 ) -> anyhow::Result<()> {
@@ -25,11 +33,15 @@ pub(super) fn handle_request(
             // because prose formats to its own `[tool.prose]` config, not
             // editor settings.
             let uri = &params.text_document.uri;
-            let edits = documents.get(uri).and_then(|doc| {
+            let doc = documents.get(uri);
+            let Formatted { edits, unstable } = doc.map_or_else(Formatted::default, |doc| {
                 let config = configs.resolve(uri, &doc.text);
-                analysis::format_edits(&doc.text, encoding, &config)
+                analysis::format_buffer(&doc.text, encoding, &config)
             });
-            send(connection, Message::Response(Response::new_ok(id, edits)))
+            send(connection, Message::Response(Response::new_ok(id, edits)))?;
+            doc.zip(unstable).map_or(Ok(()), |(doc, rewrite)| {
+                notices.offer(connection, uri, &doc.text, &rewrite)
+            })
         }
         Err(ExtractError::MethodMismatch(request)) => send(
             connection,

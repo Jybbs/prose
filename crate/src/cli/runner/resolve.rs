@@ -123,11 +123,26 @@ impl ConfigResolver {
     }
 }
 
-/// One file's resolved configuration: the pipeline its enabled rules
-/// build and the serialized TOML that keys the cache.
+/// One file's resolved configuration: the config itself, the pipeline
+/// its enabled rules build, and the serialized TOML that keys the cache
+/// and fills a bug report's configuration field.
 pub(super) struct Resolved {
+    pub(super) config: Config,
     pub(super) config_toml: String,
     pub(super) pipeline: Pipeline,
+}
+
+#[cfg(test)]
+impl Resolved {
+    /// A default-config resolution over `pipeline`, the seam a runner
+    /// test drives sentinel rules through.
+    pub(super) fn over(pipeline: Pipeline) -> Self {
+        Self {
+            config: Config::default(),
+            config_toml: Config::default().to_toml(),
+            pipeline,
+        }
+    }
 }
 
 /// The outcome of walking one directory's ancestors for a project config.
@@ -143,6 +158,7 @@ enum DirResolution {
 
 fn build_resolved(config: &Config, select: &[RuleId], ignore: &[RuleId]) -> Resolved {
     Resolved {
+        config: config.clone(),
         config_toml: config.to_toml(),
         pipeline: Pipeline::with_filters(config, select, ignore),
     }

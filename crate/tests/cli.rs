@@ -900,6 +900,15 @@ fn format_keeps_escape_bytes_in_the_rewritten_file() {
 }
 
 #[test]
+fn format_leaves_no_bug_notice_on_a_settling_rewrite() {
+    let assert = run_fixture("unaligned.py", UNALIGNED, &["format"]).success();
+
+    let err = stderr_utf8(&assert);
+    assert!(!err.contains('🐞'), "stderr was {err:?}");
+    assert!(err.contains("🗞️ Reformatted 1 file."), "stderr was {err:?}");
+}
+
+#[test]
 fn format_no_cache_flag_rewrites_when_needed() {
     let (assert, after) = rewrite_fixture("unaligned.py", UNALIGNED, &["format", "--no-cache"]);
     assert.success();

@@ -1100,7 +1100,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The resolved `prose` configuration, read from a `prose.toml` or\n`.config/prose.toml` document root, or a `pyproject.toml`\n`[tool.prose]` table.\n\n`code_line_length` defaults to `Some(88)`. `docstring_line_length`\ndefaults to `Some(76)`. `import_line_length` defaults to `Some(120)`,\nfalling back to `code_line_length` when `false`.\n`docstring_structured_policy` defaults to `CodeLineLength`.\n`imports.first_party` defaults to empty. `target_version` defaults\nto `None`. Per-rule settings live under `rules`.",
+  "description": "The resolved `prose` configuration, read from a `prose.toml` or\n`.config/prose.toml` document root, or a `pyproject.toml`\n`[tool.prose]` table.\n\n`code_line_length` defaults to `Some(88)`. `docstring_line_length`\ndefaults to `Some(76)`. `import_line_length` defaults to `Some(120)`,\nfalling back to `code_line_length` when `false`.\n`docstring_structured_policy` defaults to `CodeLineLength`.\n`imports.first_party` defaults to empty. `report_unstable_output`\ndefaults to `true`. `target_version` defaults to `None`. Per-rule\nsettings live under `rules`.",
   "properties": {
     "cache": {
       "$ref": "#/$defs/CacheConfig",
@@ -1153,6 +1153,11 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "default": {
         "first-party": []
       }
+    },
+    "report-unstable-output": {
+      "default": true,
+      "description": "Reports a rewrite whose settle check names rules as a defect in\nProse, naming the reproducing subset and the invocation that\nreplays it. `false` lands the rewrite with no notice.",
+      "type": "boolean"
     },
     "rules": {
       "$ref": "#/$defs/RuleConfigs",

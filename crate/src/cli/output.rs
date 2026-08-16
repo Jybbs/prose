@@ -10,6 +10,8 @@ use std::io::{self, Write};
 
 use anstyle::{AnsiColor, Color, Reset, RgbColor};
 
+use crate::unstable;
+
 const APRICOT: (RgbColor, AnsiColor) = (RgbColor(0xe8, 0x87, 0x6f), AnsiColor::Red);
 const CELADON: (RgbColor, AnsiColor) = (RgbColor(0x8c, 0xc5, 0xa3), AnsiColor::Green);
 const UBE: (RgbColor, AnsiColor) = (RgbColor(0x8a, 0x80, 0xcb), AnsiColor::Magenta);
@@ -37,6 +39,8 @@ pub(super) enum Summary {
     Diagnostics { files: usize, total: usize },
     LintRemainder { total: usize },
     Reformatted { files: usize },
+    Unstable { files: usize },
+    UnstableRewrite { subject: String },
     WouldReformat { files: usize },
 }
 
@@ -46,6 +50,7 @@ impl Summary {
             Self::Clean => "🪻",
             Self::Diagnostics { .. } | Self::LintRemainder { .. } => "🔖",
             Self::Reformatted { .. } | Self::WouldReformat { .. } => "🗞️",
+            Self::Unstable { .. } | Self::UnstableRewrite { .. } => "🐞",
         }
     }
 
@@ -65,6 +70,11 @@ impl Summary {
                 if *total == 1 { "it" } else { "them" },
             ),
             Self::Reformatted { files } => format!("Reformatted {}.", pluralize(*files, "file")),
+            Self::Unstable { files } => format!(
+                "{} would change on a second run.",
+                pluralize(*files, "file"),
+            ),
+            Self::UnstableRewrite { subject } => format!("{}.", unstable::headline(subject)),
             Self::WouldReformat { files } => {
                 format!("{} would be reformatted.", pluralize(*files, "file"))
             }
@@ -94,6 +104,16 @@ pub(super) fn report(
 
 pub(super) fn ube(text: &str) -> String {
     paint(text, UBE)
+}
+
+/// The non-quiet, non-TTY presentation the renderer tests measure
+/// against.
+#[cfg(test)]
+pub(super) fn windowed() -> Presentation {
+    Presentation {
+        quiet: false,
+        stdout_tty: false,
+    }
 }
 
 fn apricot(text: &str) -> String {
@@ -145,13 +165,6 @@ mod tests {
         }
     }
 
-    fn windowed() -> Presentation {
-        Presentation {
-            quiet: false,
-            stdout_tty: false,
-        }
-    }
-
     #[rstest]
     #[case(true, false, true)]
     #[case(true, true, false)]
@@ -178,6 +191,22 @@ mod tests {
         "🔖 3 lint diagnostics not shown. Run `prose check` to see them in full.\n"
     )]
     #[case(Summary::Reformatted { files: 4 }, "🗞️ Reformatted 4 files.\n")]
+    #[case(
+        Summary::Unstable { files: 1 },
+        "🐞 1 file would change on a second run.\n"
+    )]
+    #[case(
+        Summary::Unstable { files: 3 },
+        "🐞 3 files would change on a second run.\n"
+    )]
+    #[case(
+        Summary::UnstableRewrite { subject: "src/a.py".to_owned() },
+        "🐞 prose rewrote src/a.py to output a second run would change.\n"
+    )]
+    #[case(
+        Summary::UnstableRewrite { subject: "4 files".to_owned() },
+        "🐞 prose rewrote 4 files to output a second run would change.\n"
+    )]
     #[case(Summary::Reformatted { files: 1 }, "🗞️ Reformatted 1 file.\n")]
     #[case(Summary::WouldReformat { files: 3 }, "🗞️ 3 files would be reformatted.\n")]
     fn each_outcome_renders_its_anchored_line(#[case] summary: Summary, #[case] expected: &str) {

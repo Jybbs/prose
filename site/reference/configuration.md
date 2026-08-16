@@ -37,6 +37,8 @@ The top-level keys carry settings that span multiple rules. They sit at the docu
 With no value set, every version-dependent arm skips rather than assume a default, leaving every version-gated rule quiet on a project that has not opted into a target.
 :::
 
+`report-unstable-output` governs what a `format` run does when the file it just rewrote is one a second run would change again. On, the run prints an [**unstable-output notice**](/reference/cli#unstable-output) naming the rules that disagree and the invocation that reproduces the defect, while still landing the rewrite and still returning `0`, since a layout defect belongs to *Prose* rather than to the source beneath it. Off, the rewrite lands silently. The notice reaches an editor through [`prose server`](/reference/cli#prose-server) as well, once per document per session rather than on every save.
+
 ## Lengths
 
 The `*-line-length` caps are hard constraints, and every shaping rule resolves within them rather than reading the budget as a hint. `code-line-length` governs code lines and `import-line-length` governs import lines, with the count knobs *(`max-args`, `max-params`, `max-dict-entries`, `max-links`)* choosing shapes only for the lines that already fit beneath a cap.

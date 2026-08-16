@@ -30,6 +30,7 @@ mod tests {
         rule::RuleId,
         rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
         testing::{format_diagnostic, range},
+        unstable::UnstableRewrite,
     };
 
     const CONFIG_A: &str = "code-line-length = 88\n";
@@ -54,6 +55,7 @@ mod tests {
                 ..format_diagnostic(range(0, 1))
             }],
             rewrite: Rewrite::text(formatted.to_owned()),
+            unstable: None,
         }
     }
 
@@ -279,6 +281,25 @@ mod tests {
     }
 
     #[test]
+    fn insert_then_lookup_round_trips_a_settle_report() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        let key = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
+        let original = CacheEntry {
+            unstable: Some(Box::new(UnstableRewrite {
+                config_toml: CONFIG_A.to_owned(),
+                first: "yy = 1\n".to_owned(),
+                rules: vec![AlignEquals::SLUG],
+                second: "yyy = 1\n".to_owned(),
+            })),
+            ..entry("yy = 1\n")
+        };
+        cache.insert(&key, &original);
+
+        assert_eq!(cache.lookup(&key).expect("hit"), original);
+    }
+
+    #[test]
     fn insert_then_lookup_round_trips_a_skipped_rewrite() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
@@ -286,6 +307,7 @@ mod tests {
         let original = CacheEntry {
             diagnostics: Vec::new(),
             rewrite: Rewrite::Skipped,
+            unstable: None,
         };
         cache.insert(&key, &original);
         assert_eq!(cache.lookup(&key).expect("hit"), original);
@@ -303,6 +325,7 @@ mod tests {
                 vec!["x  = 1\n".to_owned()],
                 "{}\n".to_owned(),
             ),
+            unstable: None,
         };
         cache.insert(&key, &original);
         assert_eq!(cache.lookup(&key).expect("hit"), original);

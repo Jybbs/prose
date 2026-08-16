@@ -30,6 +30,8 @@ vim.lsp.start({
 })
 ```
 
+A format-on-save session is where a rewrite *Prose* would change again on a second run surfaces most often, and the terminal notice covering that case never reaches an editor. The server therefore sends it as a warning message instead, once per document per session rather than on every save, naming the rules that disagree and the invocation that reproduces them. Where the client advertises `window/showDocument`, the message carries a **File a report** action that opens the pre-filled bug-report form, and where it does not, the same URL rides inline in the message text. `report-unstable-output = false` turns it off alongside the terminal notice, which the [**Configuration**](/reference/configuration#top-level-keys) reference covers.
+
 The server leans on whole-document runs for now. Range and on-type formatting, code-action quick-fixes, and a bundled editor extension wait for a later pass.
 
 ## Run on Save

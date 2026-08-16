@@ -5,7 +5,7 @@ use std::io::{self, Write};
 
 use anyhow::Context;
 
-use super::{FileOutcome, Mode, has_format_change};
+use super::{FileOutcome, Mode, has_format_change, unstable::render_reports};
 use crate::{
     cache::Rewrite,
     cli::{
@@ -99,10 +99,11 @@ pub(super) fn finish(
     status_from_outcomes(outcomes, demote_format_change)
 }
 
-/// Writes a run's closing summary: the rewrite or diagnostics outcome,
-/// then in a format mode whose diagnostics never reached stdout the
-/// surviving-lint disclosure. `text_output` is true for a text-format
-/// `format` run, whose lint the structured emitters never printed.
+/// Writes a run's stderr tail: one bug notice per unsettled rewrite,
+/// then the rewrite or diagnostics outcome, then in a format mode whose
+/// diagnostics never reached stdout the surviving-lint disclosure.
+/// `text_output` is true for a text-format `format` run, whose lint the
+/// structured emitters never printed.
 pub(super) fn render_summary<E: Write>(
     stderr: &mut E,
     present: &Presentation,
@@ -111,9 +112,11 @@ pub(super) fn render_summary<E: Write>(
     mode: Mode,
     text_output: bool,
 ) {
+    render_reports(stderr, present, outcomes);
     let lines = summarize(outcomes, summary, mode)
         .into_iter()
-        .chain(lint_remainder(summary, mode, text_output));
+        .chain(lint_remainder(summary, mode, text_output))
+        .chain(unstable_remainder(outcomes));
     for line in lines {
         let _ = output::report(stderr, present, &line);
     }
@@ -173,6 +176,17 @@ pub(super) fn status_from_outcomes(
         .unwrap_or_default()
 }
 
+/// `ConfigError` for a run carrying a settle report, `Clean` otherwise.
+/// Only `check --validate` builds a report on the check path, and a
+/// `format` run never calls this.
+pub(super) fn unstable_status(outcomes: &[FileOutcome]) -> ExitStatus {
+    if outcomes.iter().any(|o| o.unstable().is_some()) {
+        ExitStatus::ConfigError
+    } else {
+        ExitStatus::Clean
+    }
+}
+
 /// The surviving-lint disclosure a text-format `format` run appends
 /// after its outcome line, `None` for a check run, a structured output
 /// whose emitters already printed the lint, or a run leaving none.
@@ -211,6 +225,14 @@ fn summarize(outcomes: &[FileOutcome], summary: &EmitterSummary, mode: Mode) -> 
     }
 }
 
+/// The count line an unsettled run closes with, `None` for a run whose
+/// every rewrite settled. A defect notice survives `--quiet`, which
+/// strips its anchor and color the way it strips every other line's.
+fn unstable_remainder(outcomes: &[FileOutcome]) -> Option<Summary> {
+    let files = outcomes.iter().filter_map(FileOutcome::unstable).count();
+    (files > 0).then_some(Summary::Unstable { files })
+}
+
 #[cfg(test)]
 mod tests {
     use std::assert_matches;
@@ -224,6 +246,7 @@ mod tests {
     use crate::rule::RuleId;
     use crate::source::Source;
     use crate::testing::{FailingWriter, parse, range};
+    use crate::unstable::UnstableRewrite;
 
     fn diagnostic(severity: Severity, range: TextRange, slug: &'static str) -> Diagnostic {
         Diagnostic {
@@ -237,6 +260,15 @@ mod tests {
         }
     }
 
+    /// An outcome whose rewrite the settle check named a rule on.
+    fn unsettled_outcome() -> FileOutcome {
+        let mut outcome = outcome_with(parse("x = 1\n"), Vec::new());
+        if let FileOutcome::Done { unstable, .. } = &mut outcome {
+            *unstable = Some(Box::new(UnstableRewrite::sample("widener")));
+        }
+        outcome
+    }
+
     fn outcome_with(source: Source, diagnostics: Vec<Diagnostic>) -> FileOutcome {
         FileOutcome::Done {
             cached: false,
@@ -244,6 +276,7 @@ mod tests {
             file: source.source_file().clone(),
             notebook_index: None,
             rewrite: Rewrite::Skipped,
+            unstable: None,
         }
     }
 
@@ -480,6 +513,40 @@ mod tests {
         assert_eq!(
             status_from_outcomes(&outcomes, false),
             ExitStatus::FormatChange,
+        );
+    }
+
+    #[test]
+    fn unstable_status_fails_a_run_carrying_a_report() {
+        let outcomes = [unsettled_outcome()];
+
+        assert_eq!(unstable_status(&outcomes), ExitStatus::ConfigError);
+    }
+
+    #[test]
+    fn unstable_status_stays_clean_for_a_settled_run() {
+        let outcomes = [outcome_with(parse("x = 1\n"), Vec::new())];
+
+        assert_eq!(unstable_status(&outcomes), ExitStatus::Clean);
+    }
+
+    #[test]
+    fn unstable_remainder_is_none_for_a_settled_run() {
+        let outcomes = [outcome_with(parse("x = 1\n"), Vec::new())];
+
+        assert_matches!(unstable_remainder(&outcomes), None);
+    }
+
+    #[test]
+    fn unstable_remainder_counts_the_files_a_second_run_would_change() {
+        let outcomes = [
+            unsettled_outcome(),
+            outcome_with(parse("x = 1\n"), Vec::new()),
+        ];
+
+        assert_matches!(
+            unstable_remainder(&outcomes),
+            Some(Summary::Unstable { files: 1 })
         );
     }
 

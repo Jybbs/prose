@@ -10,9 +10,10 @@
 //! `capabilities` advertises the server's surface and negotiates
 //! position encoding, `documents` holds the live buffers, `config_cache`
 //! resolves and memoizes each document's config, `analysis` runs the
-//! pipeline over a buffer, and `conversion` maps between Prose's byte
-//! offsets and the protocol's positions and between document URIs and
-//! filesystem paths. This module holds only the stdio glue, the one
+//! pipeline over a buffer, `notices` carries the bug notice a rewrite a
+//! second run would change draws, and `conversion` maps between Prose's
+//! byte offsets and the protocol's positions and between document URIs
+//! and filesystem paths. This module holds only the stdio glue, the one
 //! piece that resists unit testing.
 
 use anyhow::Context;
@@ -29,6 +30,7 @@ mod config_cache;
 mod conversion;
 mod dispatch;
 mod documents;
+mod notices;
 
 /// Serves the protocol over the requested transport until the client
 /// disconnects or completes the shutdown handshake.

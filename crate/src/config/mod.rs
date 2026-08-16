@@ -60,8 +60,9 @@ pub(crate) use source::ConfigSource;
 /// defaults to `Some(76)`. `import_line_length` defaults to `Some(120)`,
 /// falling back to `code_line_length` when `false`.
 /// `docstring_structured_policy` defaults to `CodeLineLength`.
-/// `imports.first_party` defaults to empty. `target_version` defaults
-/// to `None`. Per-rule settings live under `rules`.
+/// `imports.first_party` defaults to empty. `report_unstable_output`
+/// defaults to `true`. `target_version` defaults to `None`. Per-rule
+/// settings live under `rules`.
 #[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
@@ -81,6 +82,10 @@ pub struct Config {
     )]
     pub import_line_length: Option<NonZeroUsize>,
     pub imports: ImportsConfig,
+    /// Reports a rewrite whose settle check names rules as a defect in
+    /// Prose, naming the reproducing subset and the invocation that
+    /// replays it. `false` lands the rewrite with no notice.
+    pub report_unstable_output: bool,
     pub rules: RuleConfigs,
     /// The Python runtime the project ships to, read by the
     /// version-gated rules.
@@ -251,6 +256,7 @@ impl Default for Config {
             docstring_structured_policy: DocstringStructuredPolicy::default(),
             import_line_length: NonZeroUsize::new(120),
             imports: ImportsConfig::default(),
+            report_unstable_output: true,
             rules: RuleConfigs::default(),
             target_version: None,
         }

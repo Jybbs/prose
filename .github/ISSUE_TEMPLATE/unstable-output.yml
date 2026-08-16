@@ -1,0 +1,89 @@
+name        : Unstable output
+description : A rewrite Prose would change again on a second run, which is a defect in the formatter.
+labels      : ["🐞 bug"]
+
+body:
+  - type : markdown
+    attributes:
+      value: |
+        ### What This Reports
+
+        *Prose* settles a file in one pass, so a second run over what the first one wrote should find nothing left to do. Where that breaks, the formatter says so at the moment it writes the file, and the defect belongs to *Prose* rather than to the Python beneath it. Nothing is wrong with your source, and the rewrite that landed is safe to keep.
+
+        Arriving here from that notice means every field below already carries what a maintainer needs, leaving nothing to do but submit. A field that arrived blank overflowed what a URL can carry, so paste it in from the run.
+
+        Arriving by hand means running the reproduction twice and pasting each pass:
+
+        ```console
+        $ prose format --select <slugs> --stdin < module.py > first.py
+        $ prose format --select <slugs> --stdin < first.py  > second.py
+        ```
+
+        Searching the open issues for the same rule slug is worth the minute, since one unstable rule usually reaches many files at once.
+
+  - type : input
+    id   : version
+    attributes:
+      description : The release this run came from, as `prose --version` prints it.
+      label       : Version
+      placeholder : 0.8.3
+    validations:
+      required: true
+
+  - type : input
+    id   : rules
+    attributes:
+      description : The `--select` value the notice named, being the smallest subset that still reproduces.
+      label       : Reproducing rules
+      placeholder : align-equals
+    validations:
+      required: true
+
+  - type : textarea
+    id   : config
+    attributes:
+      description : The `[tool.prose]` table the file resolved to, which is empty for a project running on the defaults.
+      label       : Resolved configuration
+      render      : toml
+
+  - type : textarea
+    id   : source
+    attributes:
+      description : The Python the run read, reduced to the smallest snippet that still reproduces where that is easy. A notebook reports the concatenated code cells rather than its `.ipynb` JSON.
+      label       : Source
+      render      : python
+    validations:
+      required: true
+
+  - type : textarea
+    id   : first-pass
+    attributes:
+      description : What the run wrote, the output now on disk.
+      label       : First pass
+      render      : python
+    validations:
+      required: true
+
+  - type : textarea
+    id   : second-pass
+    attributes:
+      description : What the same invocation produces when it reads the first pass back.
+      label       : Second pass
+      render      : python
+    validations:
+      required: true
+
+  - type : textarea
+    id   : notes
+    attributes:
+      description : What the file is, whether the snippet is reduced, and anything the two passes do not show on their own.
+      label       : Anything else
+
+  - type : markdown
+    attributes:
+      value: |
+        ### What Happens Next
+
+        A maintainer reproduces from the fields above, turns the snippet into a fixture case pinning the output the rule should settle on, and fixes the rule the subset names. That fixture is what stops the shape coming back, so a report carrying a small reproduction usually turns into a fix quickly.
+
+        Going further is welcome. `CONTRIBUTING.md` at the repository root walks from this form to the `input.py` and `meta.toml` pair a maintainer drops straight into the fixture tree, which is the shortest path from a report to a regression test.

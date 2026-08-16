@@ -2,6 +2,7 @@ code-line-length            = 100
 docstring-line-length       = 60
 docstring-structured-policy = "docstring-line-length"
 import-line-length          = 99
+report-unstable-output      = false
 target-version              = "3.14"
 
 [cache]

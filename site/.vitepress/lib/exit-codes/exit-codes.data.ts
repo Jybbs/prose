@@ -34,6 +34,9 @@ const SOURCES: readonly ExitCodeSource[] = [
     code   : 0,
     detail : [
       'Returned by both `prose check` and `prose format` when the input is already conforming.',
+      '`prose format` also returns this once a rewrite lands, including one a second run '
+      + 'would change again, because that defect belongs to the formatter rather than to '
+      + 'the file and the notice on stderr is what surfaces it.',
       'CI gates pass without further work.'
     ],
     label  : 'Clean',
@@ -75,7 +78,9 @@ const SOURCES: readonly ExitCodeSource[] = [
       'A malformed flag pre-empts the whole run, whereas a broken ancestor '
       + 'config fails only the files it governs while the rest proceed.',
       'A rewrite that fails to re-parse or to compile lands here too, its '
-      + 'file left unwritten.'
+      + 'file left unwritten.',
+      '`prose check --validate` adds a rewrite a second run would change, the opt-in gate '
+      + 'for a project that would rather fail CI than read the notice.'
     ],
     label  : 'Config error',
     summary: 'Config file or argument validation failed.'

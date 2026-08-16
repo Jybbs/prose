@@ -25,6 +25,8 @@ mod file_uri;
 #[cfg(feature = "native")]
 mod server;
 #[cfg(feature = "native")]
+mod unstable;
+#[cfg(feature = "native")]
 mod walker;
 
 pub use primitives::binding::BindingAnalysis;

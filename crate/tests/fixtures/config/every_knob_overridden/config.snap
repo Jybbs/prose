@@ -24,6 +24,7 @@ Config {
             "internal",
         ],
     },
+    report_unstable_output: false,
     rules: RuleConfigs {
         shed_backslash_continuations: ToggleOnly {
             enabled: false,

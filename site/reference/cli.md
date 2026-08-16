@@ -19,14 +19,14 @@ Rewrites Python files to conform to the *Prose* style. Returns exit code 0 once 
 | `--diff` | bool | off | Show a unified diff on stdout instead of writing changes |
 | `--no-cache` | bool | off | Bypass the user-level [**cache**](/reference/cache) for this invocation |
 | `--output-format` | `text` \| `json` \| `github` \| `sarif` | `text` | Diagnostic shape. `--diff` requires `text` |
-| `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count line, dropping the anchor, color, and the `--diff` heading |
+| `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count line, dropping the anchor, color, and the `--diff` heading. An [**unstable-output notice**](#unstable-output) survives it |
 | `--stdin` | bool | off | Read source from stdin and write the rewritten source to stdout |
 | `--stdin-filename` | path | unset | Treat stdin as this path, its extension selecting the source type. A `.ipynb` name reads stdin as a notebook |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules, replacing the configured-enabled set |
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules, subtracting from whichever set would otherwise have run |
 | `PATH...` | one or more paths, or `-` | required when not `--stdin` | Files or directories to format, or `-` to read source from stdin |
 
-Exit codes: `0` clean / rewrites applied, `1` pending `--diff` rewrite, `2` lint diagnostics surfaced, `3` parse error, `4` config error *(see [**Exit Codes**](/reference/exit-codes))*.
+Exit codes: `0` clean / rewrites applied, `1` pending `--diff` rewrite, `2` lint diagnostics surfaced, `3` parse error, `4` config error *(see [**Exit Codes**](/reference/exit-codes))*. A rewrite the settle check names rules on still lands and still returns `0`, drawing the [**notice**](#unstable-output) on stderr rather than a status of its own.
 
 ```bash
 prose format src/
@@ -59,10 +59,10 @@ Reports violations without modifying source, returning the canonical [**Exit Cod
 |---|---|---|---|
 | `--no-cache` | bool | off | Bypass the user-level [**cache**](/reference/cache) for this invocation |
 | `--output-format` | `text` \| `json` \| `github` \| `sarif` | `text` | Diagnostic shape. See [**Output Formats**](/reference/output-formats) for the per-format record layout |
-| `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count line, dropping the anchor and color |
+| `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count line, dropping the anchor and color. An [**unstable-output notice**](#unstable-output) survives it |
 | `--stdin` | bool | off | Read source from stdin instead of the filesystem |
 | `--stdin-filename` | path | unset | Treat stdin as this path, its extension selecting the source type. A `.ipynb` name reads stdin as a notebook |
-| `--validate` | bool | off | Confirm each file's would-be rewrite re-parses, surfacing an unparseable rule output as a config error |
+| `--validate` | bool | off | Confirm each file's would-be rewrite re-parses and settles, surfacing an unparseable rule output or an [**unstable one**](#unstable-output) as a config error |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules |
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules |
 | `PATH...` | one or more paths, or `-` | required when not `--stdin` | Files or directories to check, or `-` to read source from stdin |
@@ -168,13 +168,53 @@ prose server
 
 The [**Editor**](/integrations/editor) integration page covers pointing an editor's language-server client at the binary. Range and on-type formatting, code-action quick-fixes, and a bundled editor extension wait for a later pass, the first cut leaning on whole-document runs.
 
+## Unstable Output
+
+Running *Prose* twice leaves the second run nothing to do, for whichever subset of rules a project enables rather than for the default set alone. A `format` run that rewrites a file therefore re-applies its enabled rules to the output it just wrote, and where any of them still edits, the run prints a notice on **stderr** naming the defect as *Prose*'s own:
+
+```console
+$ prose format src/module.py
+🐞 prose rewrote src/module.py to output a second run would change.
+
+The defect lies in prose rather than in the file, so reproduce it now and confirm
+it gone after an upgrade with:
+
+    prose format --select align-equals src/module.py
+
+Filing is one click, the form already carrying the version, the reproducing slugs, the
+resolved configuration, the source, and both passes:
+
+    https://github.com/Jybbs/prose/issues/new?template=unstable-output.yml&…
+
+--- src/module.py (first pass)
++++ src/module.py (second pass)
+@@ -1,3 +1,3 @@
+-alpha     = 1
+-beta      = 2
+-long_name = 3
++alpha      = 1
++beta       = 2
++long_name  = 3
+
+🗞️ Reformatted 1 file.
+🐞 1 file would change on a second run.
+```
+
+The `--select` list is the smallest subset that still reproduces rather than every rule that ran, narrowed to one rule where one rule suffices and to a rule pair where two only disagree together. That same invocation confirms the fix after an upgrade, so nobody waits on a release note to find out.
+
+The rewrite lands and the run's exit code resolves from that rewrite alone, because the defect belongs to the formatter rather than to the source beneath it. A project that would rather gate CI on the promise opts in through [`prose check --validate`](#prose-check), which prints the same notice and takes the `4` its other validation failures take.
+
+A run over a tree folds its notices so the output stays readable. Files reproducing under one subset collapse into a single block naming how many and pointing its invocation at the first of them, the second-pass diff renders only where a block covers one file, and the closing summary gains a 🐞 line counting the files whose output a second run would change. `--quiet` reduces routine output rather than a defect notice, so the block survives it with the anchor and color stripped the way every other line's are.
+
+`report-unstable-output = false` in `[tool.prose]` turns the whole notice off, which the [**Configuration**](/reference/configuration#top-level-keys) reference covers alongside every other key.
+
 ## Run Summary
 
 Every interactive `check` or `format` run closes with a one-line summary on **stderr**, leaving stdout free for diagnostics, rewritten source, unified diffs, and the machine formats. Build an invocation to watch the line each outcome resolves to, across the run outcome, `--quiet`, and the stream's color state:
 
 <RunSummaryExplorer />
 
-A clean run anchors on 🪻, `check` violations or a `format` run's unfixed lint on 🔖, and `format`'s applied or pending rewrites on 🗞️.
+A clean run anchors on 🪻, `check` violations or a `format` run's unfixed lint on 🔖, `format`'s applied or pending rewrites on 🗞️, and a rewrite the settle check named rules on 🐞.
 
 ANSI color draws on the project palette, with **Ube** on the anchor, **Celadon** on a clean count, and **Apricot** on a violation or change count. Each span renders as 24-bit color when the terminal advertises truecolor *(via `COLORTERM`)* and falls back to ANSI 8-color otherwise.
 

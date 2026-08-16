@@ -4,16 +4,19 @@ use std::{path::PathBuf, time::SystemTime};
 
 use serde::{Deserialize, Serialize};
 
-use crate::diagnostics::Diagnostic;
+use crate::{diagnostics::Diagnostic, unstable::UnstableRewrite};
 
 /// Post-pipeline state cached per `(source, config, rules, version)`
 /// key. The diagnostics are always anchored to the source as written,
 /// leaving any mode free to render them. The rewrite is `Skipped` unless
-/// the writing mode ran [`Pipeline::run`](crate::pipeline::Pipeline::run).
+/// the writing mode ran [`Pipeline::run`](crate::pipeline::Pipeline::run),
+/// and `unstable` carries the settle check's report where that run left
+/// a rule still editing its own output.
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct CacheEntry {
     pub diagnostics: Vec<Diagnostic>,
     pub rewrite: Rewrite,
+    pub unstable: Option<Box<UnstableRewrite>>,
 }
 
 /// Snapshot of the cache directory's contents at one point in time.

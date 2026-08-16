@@ -641,6 +641,19 @@ export const glossary: Record<string, GlossaryEntry> = {
     href       : 'https://docs.python.org/3/library/typing.html#typing.TypedDict'
   },
 
+  'unstable output': {
+    aliases    : ['unstable rewrite', 'unsettled rewrite'],
+    definition : 'Unstable output is a rewrite a second run would change again, which is a '
+               + 'defect in *Prose* rather than in the source beneath it. A `prose format` '
+               + 'run re-applies its enabled rules to each file it rewrote and reports one '
+               + 'where any still edits, naming the smallest rule subset that reproduces and '
+               + 'the invocation that replays it. The rewrite still lands and the exit code '
+               + 'reads off it alone, whereas `prose check --validate` takes the same report '
+               + 'and fails. `report-unstable-output` turns the notice off.',
+    families   : ['engine'],
+    href       : '/reference/cli#unstable-output'
+  },
+
   'walrus operator': {
     aliases    : ['walrus', 'walrus assignment'],
     definition : 'The walrus operator is Python\'s assignment expression `:=` (PEP 572). '
