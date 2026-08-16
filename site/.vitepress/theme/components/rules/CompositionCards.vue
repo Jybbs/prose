@@ -9,12 +9,14 @@ import RuleSegmentChip from './RuleSegmentChip.vue'
 import { useHashOpen }                      from '../../../lib/composables/use-hash-open'
 import { data as fixturesData }             from '../../../lib/fixtures/fixtures.data'
 import type { InlineNode }                  from '../../../lib/markdown/inline-nodes'
+import type { CompositionCase }             from '../../../lib/rules/composition'
 import { data as composition }              from '../../../lib/rules/composition.data'
 import { casesForRule }                     from '../../../lib/rules/rule-view'
 import { data as rules, type RenderedRule } from '../../../lib/rules/rules.data'
 import type { SavedSession }                from '../../../lib/sandbox/session'
 import { railPaint }                        from '../../../lib/shared/family-rail'
 import type { FixtureTab }                  from '../../../lib/shared/fixture-tab'
+import { inlineCode }                       from '../../../lib/shared/inline-code'
 import { lookup }                           from '../../../lib/shared/lookup'
 import { formatFolio }                      from '../../../lib/shared/numerals'
 import InlineProse                          from '../base/InlineProse.vue'
@@ -39,44 +41,44 @@ interface CardRow {
   railPaint        : string
   sandboxSeed      : SavedSession
   segments         : readonly RuleSegment[]
-  title            : string
+  titleHtml        : string
 }
 
 const props = defineProps<{ rule?: string }>()
 
-const allCards = computed<readonly CardRow[]>(() =>
-  composition.cases.map((entry, i) => {
-    const families = entry.rules.map(slug => rules.bySlug[slug]?.family ?? null)
-    const fixture  = lookup(fixturesData.composition, entry.case, 'CompositionCards case')
-    return {
-      case             : entry.case,
-      changesSource    : fixture.changesSource,
-      descriptionNodes : fixture.descriptionNodes,
-      dominantFamily   : families[0] ?? null,
-      hasToggle        : fixture.hasToggle,
-      headlinePaint    : railPaint(families, 'to right'),
-      inputHtml        : fixture.inputHtml,
-      num              : formatFolio(i + 1, 3),
-      outputHtml       : fixture.outputHtml,
-      railPaint        : railPaint(families),
-      sandboxSeed      : { configToml: entry.configToml, source: entry.source },
-      segments         : entry.rules.map((slug, idx) => ({
-        family : families[idx] ?? null,
-        index  : idx + 1,
-        rule   : rules.bySlug[slug] ?? null,
-        slug
-      })),
-      title            : entry.title
-    }
-  })
-)
+function toCardRow(entry: CompositionCase, num: string): CardRow {
+  const families = entry.rules.map(slug => rules.bySlug[slug]?.family ?? null)
+  const fixture  = lookup(fixturesData.composition, entry.case, 'CompositionCards case')
+  return {
+    case             : entry.case,
+    changesSource    : fixture.changesSource,
+    descriptionNodes : fixture.descriptionNodes,
+    dominantFamily   : families[0] ?? null,
+    hasToggle        : fixture.hasToggle,
+    headlinePaint    : railPaint(families, 'to right'),
+    inputHtml        : fixture.inputHtml,
+    num,
+    outputHtml       : fixture.outputHtml,
+    railPaint        : railPaint(families),
+    sandboxSeed      : { configToml: entry.configToml, source: entry.source },
+    segments         : entry.rules.map((slug, idx) => ({
+      family : families[idx] ?? null,
+      index  : idx + 1,
+      rule   : rules.bySlug[slug] ?? null,
+      slug
+    })),
+    titleHtml        : inlineCode(entry.title)
+  }
+}
 
 // A rule page renders the subset the rule participates in, keeping each card's
 // folio number from the full run so it still names the composition-page entry.
 const cards = computed<readonly CardRow[]>(() => {
-  if (props.rule === undefined) return allCards.value
-  const participating = new Set(casesForRule(props.rule))
-  return allCards.value.filter(row => participating.has(row.case))
+  const participating = props.rule === undefined ? null : new Set(casesForRule(props.rule))
+  return composition.cases
+    .map((entry, i) => ({ entry, num: formatFolio(i + 1) }))
+    .filter(({ entry }) => participating === null || participating.has(entry.case))
+    .map(({ entry, num }) => toCardRow(entry, num))
 })
 
 const activeCase = ref<string | null>(null)
@@ -112,7 +114,7 @@ useHashOpen(fragment => {
           :aria-controls="`composition-body-${row.case}`"
         >
           <span class="fixture-card-num">{{ row.num }}</span>
-          <span class="fixture-card-title">{{ row.title }}</span>
+          <span class="fixture-card-title" v-html="row.titleHtml" />
         </button>
         <div class="composition-cards-tick-cell">
           <ol

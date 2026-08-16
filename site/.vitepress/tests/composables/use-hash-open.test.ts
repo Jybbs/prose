@@ -21,8 +21,8 @@ describe('useHashOpen', () => {
   it('reports again on every later hash change', () => {
     const seen = vi.fn<(fragment: string) => void>()
     mountSetup(() => useHashOpen(seen))
-    window.location.hash = '#string_keys_sort_strip_align'
+    window.location.hash = '#arm_dicts_sort_expand_align'
     window.dispatchEvent(new Event('hashchange'))
-    expect(seen).toHaveBeenLastCalledWith('string_keys_sort_strip_align')
+    expect(seen).toHaveBeenLastCalledWith('arm_dicts_sort_expand_align')
   })
 })

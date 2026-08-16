@@ -11,13 +11,9 @@ describe('readCompositionCases', () => {
     expect(cases().map(entry => entry.case)).toEqual(['alpha_case', 'bare_title_case', 'beta_case'])
   })
 
-  it('titles each case from the meta.toml its sidecar carries', () => {
+  it('titles each case from its meta.toml, falling back to the directory name', () => {
     expect(cases().map(entry => entry.title))
       .toEqual(['Alpha Runs Ahead of Beta', 'Bare Title Case', 'Beta Settles Alone'])
-  })
-
-  it('falls back to the directory name where the meta.toml titles nothing', () => {
-    expect(cases()[1].title).toBe('Bare Title Case')
   })
 
   it('carries each case source verbatim', () => {
@@ -36,7 +32,7 @@ describe('readCompositionCases', () => {
     expect(cases()[0].rules).toEqual(['align-equals', 'space-statements'])
   })
 
-  it('rejects a case whose sidecar declares no harness rules', () => {
+  it('rejects a case declaring no harness rules even where it never renders', () => {
     expect(() => cases('composition-no-rules')).toThrow(/missing \[harness\]\.rules/)
   })
 })

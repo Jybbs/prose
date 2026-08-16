@@ -17,7 +17,7 @@ vi.mock('../../lib/rules/composition.data', () => ({
       { case: 'beta_case', configToml: '', rules: ['align-equals'],
         source: 'b = 2\n', title: 'Beta Case' },
       { case: 'gamma_case', configToml: '', rules: ['wrap-docstrings'],
-        source: 'c = 3\n', title: 'Gamma Case' }
+        source: 'c = 3\n', title: 'Gamma `c = 3` Case' }
     ]
   }
 }))
@@ -55,7 +55,11 @@ describe('CompositionCards', () => {
   afterEach(() => { window.location.hash = '' })
 
   it('renders every previewable case where no rule narrows the set', () => {
-    expect(titles()).toEqual(['Alpha Case', 'Beta Case', 'Gamma Case'])
+    expect(titles()).toEqual(['Alpha Case', 'Beta Case', 'Gamma c = 3 Case'])
+  })
+
+  it('renders a backticked title as a code span', () => {
+    expect(render().get('#gamma_case .fixture-card-title').html()).toContain('<code>c = 3</code>')
   })
 
   it('renders only the cases the named rule takes part in', () => {
@@ -64,7 +68,7 @@ describe('CompositionCards', () => {
 
   it('numbers a narrowed card from the full run rather than renumbering it', () => {
     const nums = render('wrap_docstrings').findAll('.fixture-card-num').map(node => node.text())
-    expect(nums).toEqual(['003'])
+    expect(nums).toEqual(['03'])
   })
 
   it('renders an empty list for a rule no previewable case activates', () => {

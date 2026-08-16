@@ -5,7 +5,9 @@ import { fixturesDirFrom } from '../shared/paths'
 import { parseToml }       from '../shared/toml'
 import * as lintFindings   from './lint-findings'
 
-const INPUT_FILE    = 'input.py'
+export const CONFIG_FILE = 'config.toml'
+export const INPUT_FILE  = 'input.py'
+
 const META_FILE     = 'meta.toml'
 const SNAPSHOT_FILE = snapshotPath(INPUT_FILE)
 
@@ -44,6 +46,7 @@ export function fixtureWatchGlobs(crateDir: string): string[] {
   return [
     `${fixturesRoot}/**/${INPUT_FILE}`,
     `${fixturesRoot}/**/${SNAPSHOT_FILE}`,
+    `${fixturesRoot}/*/*/${CONFIG_FILE}`,
     `${fixturesRoot}/*/*/${lintFindings.LINT_FINDINGS_FILE}`,
     `${fixturesRoot}/*/*/${META_FILE}`
   ]

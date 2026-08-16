@@ -27,20 +27,22 @@ export function byRule(cases: readonly CompositionCase[]): Record<string, readon
   return index
 }
 
-// Reads the cases a `meta.toml` marks previewable.
+// Validates every case's harness rules and reads the ones a `meta.toml` marks
+// previewable.
 export function readCompositionCases(compositionDir: string): CompositionCase[] {
   const cases: CompositionCase[] = []
   for (const caseName of walker.subdirNames(compositionDir)) {
-    const caseDir   = path.join(compositionDir, caseName)
-    const inputPath = path.join(caseDir, 'input.py')
+    const caseDir = path.join(compositionDir, caseName)
+    const config  = parseToml(path.join(caseDir, walker.CONFIG_FILE)) as CaseConfig
+    const rules   = config.harness?.rules
+    if (rules === undefined) {
+      throw new Error(`composition: ${caseName}/${walker.CONFIG_FILE} missing [harness].rules`)
+    }
+
+    const inputPath = path.join(caseDir, walker.INPUT_FILE)
     const docs      = walker.readFixtureDocs(inputPath)
     if (docs?.previewable !== true) continue
 
-    const config = parseToml(path.join(caseDir, 'config.toml')) as CaseConfig
-    const rules  = config.harness?.rules
-    if (rules === undefined) {
-      throw new Error(`composition: ${caseName}/config.toml missing [harness].rules`)
-    }
     cases.push({
       case       : caseName,
       configToml : seedToml(config),
@@ -54,8 +56,7 @@ export function readCompositionCases(compositionDir: string): CompositionCase[] 
 
 // Everything outside `[harness]` is the prose config the case formats under.
 export function seedToml(config: Record<string, unknown>): string {
-  const overrides = { ...config }
-  delete overrides.harness
+  const { harness: _, ...overrides } = config
   const text = stringify(overrides)
   return text.trim() ? text : ''
 }

@@ -28,7 +28,6 @@ export function seedUrl(configToml: string, source: string): Promise<string | nu
 // compact payload back to its pool case.
 export async function sharedSeed(cases: readonly SandboxCase[]): Promise<SavedSession | null> {
   const hash = typeof window === 'undefined' ? '' : window.location.hash
-  if (!hash.startsWith(shareLink.HASH_PREFIX)) return null
   const shared = await shareLink.decodeShare(hash)
   if (!shared) return null
   const source = shared.source ?? cases.find(entry => entry.id === shared.case)?.source

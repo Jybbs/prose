@@ -11,5 +11,5 @@ export function casesForRule(fixtureRule: string): readonly string[] {
 
 // The canonical case and further examples registered for a rule.
 export function fixturesForRule(fixtureRule: string): RuleFixtureSet {
-  return lookup(ruleFixtures, fixtureRule, 'rule')
+  return lookup(ruleFixtures, fixtureRule, 'Rule')
 }

@@ -29,6 +29,6 @@ describe('fixturesForRule', () => {
   })
 
   it('names the unregistered rule when the lookup misses', () => {
-    expect(() => fixturesForRule('align-equals')).toThrow(/rule "align-equals" not registered/)
+    expect(() => fixturesForRule('align-equals')).toThrow(/Rule "align-equals" not registered/)
   })
 })

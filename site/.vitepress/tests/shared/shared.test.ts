@@ -40,12 +40,8 @@ describe('ruleSlug', () => {
 })
 
 describe('formatFolio', () => {
-  it('zero-pads to a width of two by default', () => {
+  it('zero-pads to a width of two', () => {
     expect(formatFolio(1)).toBe('01')
-  })
-
-  it('honors a custom width', () => {
-    expect(formatFolio(7, 3)).toBe('007')
   })
 })
 

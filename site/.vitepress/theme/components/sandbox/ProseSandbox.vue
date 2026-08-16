@@ -198,7 +198,6 @@ onMounted(sandbox.start)
   right : 72px;
 }
 
-.sandbox-py:hover > .panel-corner,
 .sandbox-refresh[data-armed] {
   opacity : 1;
 }

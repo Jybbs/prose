@@ -31,11 +31,29 @@ describe('corpusLintFindings', () => {
   })
 })
 
+describe('fixtureTitle', () => {
+  it.each([
+    [{ title: 'A Case' },     'A Case'],
+    [{ title: '  A Case  ' }, 'A Case'],
+    [{ title: '   ' },        undefined],
+    [{ title: '' },           undefined],
+    [{},                      undefined],
+    [undefined,               undefined]
+  ])('resolves %o to %o', (docs, expected) => {
+    expect(walker.fixtureTitle(docs)).toBe(expected)
+  })
+})
+
 describe('fixtureWatchGlobs', () => {
-  it('builds four globs rooted at the fixture tree', () => {
-    const globs = walker.fixtureWatchGlobs(crate)
-    expect(globs).toHaveLength(4)
+  it('covers every watched sidecar, rooted at the fixture tree', () => {
+    const globs   = walker.fixtureWatchGlobs(crate)
+    const watched = [
+      'input.py', 'input.py.snap', 'config.toml', 'lint_findings.snap', 'meta.toml'
+    ]
     expect(globs.every(g => g.includes('tests/fixtures'))).toBe(true)
+    for (const file of watched) {
+      expect(globs.some(g => g.endsWith(`/${file}`))).toBe(true)
+    }
   })
 })
 
