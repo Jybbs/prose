@@ -200,6 +200,17 @@ fn assert_warm_run_matches_cold(paths: &[&Path]) -> String {
     stdout_utf8(&warm)
 }
 
+/// The byte total of every file in `dir`, the measure the cache's size
+/// cap governs.
+fn cache_bytes(dir: &Path) -> u64 {
+    std::fs::read_dir(dir)
+        .expect("read_dir")
+        .flatten()
+        .filter_map(|entry| entry.metadata().ok())
+        .map(|meta| meta.len())
+        .sum()
+}
+
 /// Runs `check` with the JSON emitter over a fresh fixture holding
 /// `source`, returning the summary line the run closed with.
 fn check_json_summary(name: &str, source: &str, code: i32) -> serde_json::Value {
@@ -323,6 +334,27 @@ fn cache_compact_subcommand_exits_zero_and_reports_count() {
     let assert = cmd.args(["cache", "compact"]).assert().success();
     let out = stdout_utf8(&assert);
     assert!(out.starts_with("removed "), "stdout was {out:?}");
+}
+
+#[test]
+fn cache_evicts_back_under_its_cap_once_a_run_ends() {
+    let dir = tempdir().expect("tempdir");
+    write_pyproject(dir.path(), "[tool.prose.cache]\nmax-size-mib = 1\n");
+    let path = dir.path().join("a.py");
+    std::fs::write(&path, UNALIGNED).expect("writes");
+    let (mut cmd, cache_dir) = prose_isolated();
+    let filler = vec![b'x'; 512 * 1024];
+    for slot in 0..4_u32 {
+        std::fs::write(cache_dir.path().join(format!("{slot:064x}")), &filler).expect("writes");
+    }
+
+    cmd.current_dir(dir.path())
+        .arg("check")
+        .arg(&path)
+        .assert()
+        .code(1);
+
+    assert!(cache_bytes(cache_dir.path()) <= 1024 * 1024);
 }
 
 #[test]
@@ -683,6 +715,16 @@ fn color_always_summary_falls_back_to_ansi_without_colorterm() {
     let err = stderr_utf8(&assert);
     assert!(err.contains("\u{1b}[35m"), "stderr was {err:?}");
     assert!(!err.contains("38;2;"), "stderr was {err:?}");
+}
+
+#[rstest]
+#[case::always("always", true)]
+#[case::never("never", false)]
+fn color_arm_paints_the_diagnostic_body(#[case] arm: &str, #[case] painted: bool) {
+    let assert = run_fixture("unaligned.py", UNALIGNED, &["--color", arm, "check"]).code(1);
+
+    let out = stdout_utf8(&assert);
+    assert_eq!(out.contains('\u{1b}'), painted, "stdout was {out:?}");
 }
 
 #[rstest]

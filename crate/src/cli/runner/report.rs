@@ -20,6 +20,7 @@ use crate::{
 pub(super) fn emit_outcomes<W: Write>(
     outcomes: &[FileOutcome],
     format: OutputFormat,
+    present: &Presentation,
     writer: &mut W,
     summary: &EmitterSummary,
 ) -> anyhow::Result<()> {
@@ -43,7 +44,7 @@ pub(super) fn emit_outcomes<W: Write>(
         OutputFormat::Github => Github.emit(writer, &view, summary),
         OutputFormat::Json => Json.emit(writer, &view, summary),
         OutputFormat::Sarif => Sarif.emit(writer, &view, summary),
-        OutputFormat::Text => Text::new().emit(writer, &view, summary),
+        OutputFormat::Text => Text::new(present.color).emit(writer, &view, summary),
     }?;
     writer.flush().context("flushing stdout")?;
     Ok(())
@@ -302,6 +303,7 @@ mod tests {
         let result = emit_outcomes(
             &outcomes,
             OutputFormat::Json,
+            &Presentation::windowed(),
             &mut FailingWriter(io::ErrorKind::BrokenPipe),
             &EmitterSummary::default(),
         );
@@ -325,7 +327,14 @@ mod tests {
         let source = parse("x = 1\n");
         let outcomes = vec![outcome_with(source, Vec::new())];
         let mut buf = Vec::new();
-        emit_outcomes(&outcomes, format, &mut buf, &EmitterSummary::default()).expect("emits");
+        emit_outcomes(
+            &outcomes,
+            format,
+            &Presentation::windowed(),
+            &mut buf,
+            &EmitterSummary::default(),
+        )
+        .expect("emits");
     }
 
     #[test]

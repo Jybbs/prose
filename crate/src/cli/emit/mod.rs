@@ -68,8 +68,8 @@ impl<'a> Run<'a> {
 }
 
 /// Flattens every run into its `(file, notebook index, diagnostic)`
-/// triples in file-major order, the traversal each emitter walks. The
-/// notebook index is `None` for an ordinary module.
+/// triples in file-major order, the traversal the structured emitters
+/// walk. The notebook index is `None` for an ordinary module.
 fn diagnostics<'a>(
     runs: &'a [Run<'a>],
 ) -> impl Iterator<Item = (&'a SourceFile, Option<&'a NotebookIndex>, &'a Diagnostic)> {
@@ -92,9 +92,12 @@ fn emitted(
     diagnostics: &[Diagnostic],
     summary: &EmitterSummary,
 ) -> Vec<u8> {
+    emitted_runs(emitter, &[Run::new(file, diagnostics, None)], summary)
+}
+
+#[cfg(test)]
+fn emitted_runs(emitter: &dyn Emitter, runs: &[Run<'_>], summary: &EmitterSummary) -> Vec<u8> {
     let mut buf = Vec::new();
-    emitter
-        .emit(&mut buf, &[Run::new(file, diagnostics, None)], summary)
-        .expect("emits");
+    emitter.emit(&mut buf, runs, summary).expect("emits");
     buf
 }

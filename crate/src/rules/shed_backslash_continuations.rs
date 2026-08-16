@@ -18,8 +18,9 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::Config,
     primitives::{
-        edit::{apply_inline_edits, narrowed_replacement, splice_preserves_tree},
+        edit::{apply_inline_edits, narrowed_replacement},
         range::blocks_span,
+        splice::splice_preserves_tree,
         tokens::{is_closer, is_opener},
     },
     rule::{Rule, RuleId},

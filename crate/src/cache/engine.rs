@@ -145,12 +145,11 @@ impl Cache {
     }
 
     /// Atomically writes `value` for `key` via a temporary sidecar and
-    /// `rename`, then runs best-effort LRU eviction. Any encode, write,
-    /// or rename failure drops the insert silently and lets the
-    /// tempfile clean itself up on drop.
+    /// `rename`. Any encode, write, or rename failure drops the insert
+    /// silently and lets the tempfile clean itself up on drop. The size
+    /// cap is honored by [`compact`](Self::compact).
     pub fn insert(&self, key: &CacheKey, value: &CacheEntry) {
         let _ = self.try_insert(key, value);
-        self.compact();
     }
 
     /// Returns the entry stored at `key` if present and well-formed,

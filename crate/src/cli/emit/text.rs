@@ -4,12 +4,13 @@
 use std::io::{self, Write};
 
 use annotate_snippets::{AnnotationKind, Level, Patch, Renderer, Snippet};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use ruff_diagnostics::Fix;
 use ruff_notebook::NotebookIndex;
 use ruff_source_file::{OneIndexed, SourceFile};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
-use super::{Emitter, EmitterSummary, Run, diagnostics};
+use super::{Emitter, EmitterSummary, Run};
 use crate::diagnostics::Diagnostic;
 
 /// Rows of context the renderer draws either side of a diagnostic.
@@ -20,49 +21,64 @@ pub(crate) struct Text {
 }
 
 impl Text {
-    pub(crate) fn new() -> Self {
+    /// Builds the emitter, styling its renderer only where the stream
+    /// carries escapes through.
+    pub(crate) fn new(color: bool) -> Self {
         Self {
-            renderer: Renderer::styled(),
+            renderer: if color {
+                Renderer::styled()
+            } else {
+                Renderer::plain()
+            },
         }
+    }
+
+    /// Renders one file's diagnostics into an owned buffer.
+    fn render_run(&self, run: &Run<'_>) -> io::Result<Vec<u8>> {
+        let path = run.file.name();
+        let mut out = Vec::new();
+        for diag in run.diagnostics {
+            let (base, header, text, line_start) =
+                view(run.file, run.notebook_index, annotated(diag));
+            if let Some(header) = header {
+                writeln!(out, "{header}")?;
+            }
+            let shift = |range: TextRange| (range - base).to_std_range();
+            let warning = Level::WARNING.primary_title(diag.message.as_str()).element(
+                framed(text, line_start, path).annotation(
+                    AnnotationKind::Primary
+                        .span(shift(diag.range))
+                        .label(diag.rule.as_str()),
+                ),
+            );
+            let mut groups = vec![warning];
+            if let Some(fix) = &diag.fix {
+                let snippet =
+                    framed(text, line_start, path).patches(fix.edits().iter().map(|edit| {
+                        Patch::new(shift(edit.range()), edit.content().unwrap_or_default())
+                    }));
+                groups.push(Level::HELP.secondary_title("replace with").element(snippet));
+            }
+            writeln!(out, "{}", self.renderer.render(&groups))?;
+        }
+        Ok(out)
     }
 }
 
 impl Emitter for Text {
+    /// Renders each run on the rayon pool, then writes the buffers back
+    /// in source order, which rayon's indexed `collect` preserves.
     fn emit(
         &self,
         writer: &mut dyn Write,
         runs: &[Run<'_>],
         _summary: &EmitterSummary,
     ) -> io::Result<()> {
-        for (file, index, diag) in diagnostics(runs) {
-            let (base, header, text, line_start) = view(file, index, annotated(diag));
-            if let Some(header) = header {
-                writeln!(writer, "{header}")?;
-            }
-            let shift = |range: TextRange| (range - base).to_std_range();
-            let warning = Level::WARNING.primary_title(diag.message.as_str()).element(
-                Snippet::source(text)
-                    .line_start(line_start)
-                    .path(file.name())
-                    .annotation(
-                        AnnotationKind::Primary
-                            .span(shift(diag.range))
-                            .label(diag.rule.as_str()),
-                    ),
-            );
-            let mut groups = vec![warning];
-            if let Some(fix) = &diag.fix {
-                let snippet = Snippet::source(text)
-                    .line_start(line_start)
-                    .path(file.name())
-                    .patches(fix.edits().iter().map(|edit| {
-                        Patch::new(shift(edit.range()), edit.content().unwrap_or_default())
-                    }));
-                groups.push(Level::HELP.secondary_title("replace with").element(snippet));
-            }
-            writeln!(writer, "{}", self.renderer.render(&groups))?;
-        }
-        Ok(())
+        let blocks: Vec<Vec<u8>> = runs
+            .par_iter()
+            .map(|run| self.render_run(run))
+            .collect::<io::Result<_>>()?;
+        blocks.iter().try_for_each(|block| writer.write_all(block))
     }
 }
 
@@ -99,6 +115,12 @@ fn cell_slice(
         }
     }
     start.map(|start| (cell, TextRange::new(start, end)))
+}
+
+/// The snippet frame both the warning and the fix suggestion draw on,
+/// `text` numbered from `line_start` under `path`.
+fn framed<'a, T: Clone>(text: &'a str, line_start: usize, path: &'a str) -> Snippet<'a, T> {
+    Snippet::source(text).line_start(line_start).path(path)
 }
 
 /// The snippet view for a diagnostic spanning `range`: the byte offset
@@ -146,29 +168,36 @@ fn window(file: &SourceFile, range: TextRange) -> (TextRange, usize) {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
     use ruff_diagnostics::{Edit, Fix};
 
     use super::*;
-    use crate::diagnostics::Diagnostic;
-    use crate::source::Source;
-    use crate::testing::{format_diagnostic, parse, range};
+    use crate::{
+        cli::emit::{emitted, emitted_runs},
+        diagnostics::Diagnostic,
+        source::Source,
+        testing::{format_diagnostic, parse, range},
+    };
+
+    /// Emits `sources` as one run apiece, each carrying a diagnostic
+    /// over its first three bytes, and returns the rendered stream.
+    fn emit_runs(sources: &[Source], color: bool) -> String {
+        let diag = format_diagnostic(range(0, 3));
+        let runs: Vec<Run<'_>> = sources
+            .iter()
+            .map(|s| Run::new(s.source_file(), std::slice::from_ref(&diag), None))
+            .collect();
+        let buf = emitted_runs(&Text::new(color), &runs, &EmitterSummary::default());
+        String::from_utf8(buf).expect("utf-8")
+    }
 
     fn render_to_string(source: &Source, diag: &Diagnostic) -> String {
-        let mut buf = Vec::<u8>::new();
-        {
-            let mut writer = anstream::AutoStream::never(&mut buf);
-            Text::new()
-                .emit(
-                    &mut writer,
-                    &[Run::new(
-                        source.source_file(),
-                        std::slice::from_ref(diag),
-                        None,
-                    )],
-                    &EmitterSummary::default(),
-                )
-                .expect("emits");
-        }
+        let buf = emitted(
+            &Text::new(false),
+            source.source_file(),
+            std::slice::from_ref(diag),
+            &EmitterSummary::default(),
+        );
         String::from_utf8(buf).expect("utf-8")
     }
 
@@ -179,6 +208,19 @@ mod tests {
         assert!(rendered.contains("warning: rewrite x to y"));
         assert!(rendered.contains("help: replace with"));
         assert!(rendered.contains('y'));
+    }
+
+    #[test]
+    fn emit_writes_each_runs_block_in_source_order() {
+        let sources = [parse("aaa = 1\n"), parse("bbb = 2\n"), parse("ccc = 3\n")];
+
+        let rendered = emit_runs(&sources, false);
+
+        let seats: Vec<usize> = ["aaa", "bbb", "ccc"]
+            .iter()
+            .map(|name| rendered.find(name).expect("every run renders"))
+            .collect();
+        assert!(seats.windows(2).all(|pair| pair[0] < pair[1]));
     }
 
     #[test]
@@ -197,6 +239,15 @@ mod tests {
         assert!(rendered.contains("help: replace with"));
         assert!(rendered.contains("aaa"));
         assert!(rendered.contains("bbb"));
+    }
+
+    #[rstest]
+    #[case::styled(true, true)]
+    #[case::plain(false, false)]
+    fn renderer_paints_the_snippet_only_under_color(#[case] color: bool, #[case] painted: bool) {
+        let rendered = emit_runs(std::slice::from_ref(&parse("aaa = 1\n")), color);
+
+        assert_eq!(rendered.contains('\u{1b}'), painted);
     }
 
     #[test]

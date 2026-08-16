@@ -9,7 +9,8 @@
 //! `PROSE_CACHE_DIR` → `dirs::cache_dir()`. Inserts write to a
 //! temporary sibling then `rename` onto the final path, so a
 //! concurrent reader never observes a partial entry. LRU eviction by
-//! mtime caps the directory at the configured size on every insert.
+//! mtime caps the directory at the configured size, swept once a run's
+//! inserts have landed rather than once per insert.
 
 mod engine;
 mod key;
@@ -253,15 +254,16 @@ mod tests {
     }
 
     #[test]
-    fn insert_evicts_oldest_when_above_cap() {
+    fn insert_holds_an_over_cap_entry_until_compact_runs() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 0);
-        let key_old = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
-        let key_new = CacheKey::compute(b"y = 2\n", CONFIG_A, rules());
-        cache.insert(&key_old, &entry("a = 1\n"));
-        std::thread::sleep(std::time::Duration::from_millis(20));
-        cache.insert(&key_new, &entry("b = 2\n"));
-        assert!(cache.lookup(&key_old).is_none());
+        let key = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
+
+        cache.insert(&key, &entry("y = 1\n"));
+
+        assert!(cache.lookup(&key).is_some());
+        cache.compact();
+        assert!(cache.lookup(&key).is_none());
     }
 
     #[test]
@@ -279,19 +281,6 @@ mod tests {
     }
 
     #[test]
-    fn insert_then_lookup_round_trips_a_skipped_rewrite() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
-        let key = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
-        let original = CacheEntry {
-            diagnostics: Vec::new(),
-            rewrite: Rewrite::Skipped,
-        };
-        cache.insert(&key, &original);
-        assert_eq!(cache.lookup(&key).expect("hit"), original);
-    }
-
-    #[test]
     fn insert_then_lookup_round_trips_a_notebook_rewrite() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
@@ -303,6 +292,19 @@ mod tests {
                 vec!["x  = 1\n".to_owned()],
                 "{}\n".to_owned(),
             ),
+        };
+        cache.insert(&key, &original);
+        assert_eq!(cache.lookup(&key).expect("hit"), original);
+    }
+
+    #[test]
+    fn insert_then_lookup_round_trips_a_skipped_rewrite() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        let key = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
+        let original = CacheEntry {
+            diagnostics: Vec::new(),
+            rewrite: Rewrite::Skipped,
         };
         cache.insert(&key, &original);
         assert_eq!(cache.lookup(&key).expect("hit"), original);

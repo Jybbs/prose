@@ -1,13 +1,13 @@
 //! Pipeline orchestration: load source, run, emit diagnostics, classify outcome.
 
 use std::{
-    io::{Read, Write},
+    io::{BufWriter, Read, Write},
     path::{Path, PathBuf},
     sync::Arc,
 };
 
 use anstream::{
-    AutoStream, ColorChoice,
+    AutoStream,
     stream::{AsLockedWrite, RawStream},
 };
 use anyhow::Context;
@@ -73,11 +73,48 @@ enum Pass {
     Rewrite,
 }
 
+impl Pass {
+    /// True where the pass reads and writes the run's cache.
+    fn caches(self) -> bool {
+        // Plain `format` would persist only `run`'s post-edit diagnostics, and
+        // a `--validate` check must re-confirm the rewrite parses rather than
+        // trust an entry an earlier unvalidated run wrote, so both bypass the
+        // cache. Every entry that remains carries `diagnose`'s as-written
+        // diagnostics, so a `check` hit never replays a `run`'s.
+        !matches!(self, Self::Rewrite | Self::Diagnose { validate: true })
+    }
+}
+
 /// Per-run setup shared across every path the walker yields.
 struct RunSetup {
     cache: Option<Cache>,
     cwd: Arc<Resolved>,
     resolver: ConfigResolver,
+}
+
+impl RunSetup {
+    /// The cache a `pass` run reads and writes, `None` where the pass
+    /// bypasses it.
+    fn cache_for(&self, pass: Pass) -> Option<&Cache> {
+        self.cache.as_ref().filter(|_| pass.caches())
+    }
+
+    /// Walks `paths` under `pass`, writing each rewrite back to disk
+    /// when `write_back`, then enforces the cache's size cap.
+    fn walked(&self, paths: &[PathBuf], pass: Pass, write_back: bool) -> Vec<FileOutcome> {
+        let outcomes = process_paths(paths, |path, source_type| {
+            let outcome = process_path(path, source_type, self, pass);
+            if write_back {
+                apply_rewrite(path, outcome)
+            } else {
+                outcome
+            }
+        });
+        if let Some(cache) = self.cache_for(pass) {
+            cache.compact();
+        }
+        outcomes
+    }
 }
 
 pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
@@ -103,12 +140,16 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
         };
         vec![outcome]
     } else {
-        process_paths(&args.paths, |path, source_type| {
-            process_path(path, source_type, &setup, pass)
-        })
+        setup.walked(&args.paths, pass, false)
     };
     let summary = emitter_summary(&outcomes);
-    emit_outcomes(&outcomes, args.common.output_format, &mut stdout, &summary)?;
+    emit_outcomes(
+        &outcomes,
+        args.common.output_format,
+        present,
+        &mut stdout,
+        &summary,
+    )?;
     let status = finish(&outcomes, setup.cache.is_some(), verbose, false);
     render_summary(
         &mut stderr,
@@ -148,7 +189,14 @@ pub(crate) fn format_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
         );
     }
     if args.diff {
-        format_paths_diff(&args.paths, &setup, verbose, present, stdout, &mut stderr)
+        format_paths_diff(
+            &args.paths,
+            &setup,
+            verbose,
+            present,
+            stdout.into_inner(),
+            &mut stderr,
+        )
     } else {
         format_paths_rewrite(
             &args.paths,
@@ -178,11 +226,11 @@ fn build_run(rules: RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus> 
 }
 
 /// Resolves how the diff heads each file, painting the `🧵` line only
-/// where `stdout` carries color through.
-fn diff_heading<O: RawStream>(present: &Presentation, stdout: &AutoStream<O>) -> Heading {
+/// where stdout carries color through.
+fn diff_heading(present: &Presentation) -> Heading {
     if present.decorate_diff() {
         Heading::Thread {
-            color: stdout.current_choice() != ColorChoice::Never,
+            color: present.color,
         }
     } else {
         Heading::Patch
@@ -201,19 +249,17 @@ fn format_pass(diff: bool, format: OutputFormat) -> Pass {
     }
 }
 
-fn format_paths_diff<O: RawStream, E: Write>(
+fn format_paths_diff<O: Write, E: Write>(
     paths: &[PathBuf],
     setup: &RunSetup,
     verbose: bool,
     present: &Presentation,
-    stdout: AutoStream<O>,
+    stdout: O,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
-    let outcomes = process_paths(paths, |path, source_type| {
-        process_path(path, source_type, setup, Pass::Rewrite)
-    });
-    let heading = diff_heading(present, &stdout);
-    let mut writer = stdout.into_inner();
+    let outcomes = setup.walked(paths, Pass::Rewrite, false);
+    let heading = diff_heading(present);
+    let mut writer = BufWriter::new(stdout);
     for outcome in &outcomes {
         if let FileOutcome::Done {
             file,
@@ -232,6 +278,7 @@ fn format_paths_diff<O: RawStream, E: Write>(
             )?;
         }
     }
+    writer.flush().context("flushing stdout")?;
     let summary = emitter_summary(&outcomes);
     let status = finish(&outcomes, setup.cache.is_some(), verbose, false);
     render_summary(stderr, present, &outcomes, &summary, Mode::Preview, true);
@@ -248,12 +295,10 @@ fn format_paths_rewrite<O: Write, E: Write>(
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
     let pass = format_pass(false, format);
-    let outcomes = process_paths(paths, |path, source_type| {
-        apply_rewrite(path, process_path(path, source_type, setup, pass))
-    });
+    let outcomes = setup.walked(paths, pass, true);
     let summary = emitter_summary(&outcomes);
     if !format.is_text() {
-        emit_outcomes(&outcomes, format, stdout, &summary)?;
+        emit_outcomes(&outcomes, format, present, stdout, &summary)?;
     }
     let status = finish(&outcomes, setup.cache.is_some(), verbose, true);
     render_summary(
@@ -298,7 +343,7 @@ fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
     {
         if diff {
             if let Rewrite::Changed(kind) = rewrite {
-                let heading = diff_heading(present, &writer);
+                let heading = diff_heading(present);
                 write_rewrite_diff(
                     &mut writer.into_inner(),
                     "<stdin>",
@@ -319,7 +364,7 @@ fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
                 .write_all(to_write)
                 .context("writing stdout")?;
         } else {
-            emit_outcomes(outcomes, format, &mut writer, &summary)?;
+            emit_outcomes(outcomes, format, present, &mut writer, &summary)?;
         }
     }
     let mode = if diff { Mode::Preview } else { Mode::Reformat };
@@ -421,8 +466,15 @@ mod tests {
 
     fn run_check_io<R: Read>(args: CheckArgs, stdin: R) -> (ExitStatus, Vec<u8>) {
         let mut stdout = Vec::new();
-        let status = check_with_io(args, false, &windowed(), stdin, &mut stdout, io::sink())
-            .expect("runs without anyhow");
+        let status = check_with_io(
+            args,
+            false,
+            &Presentation::windowed(),
+            stdin,
+            &mut stdout,
+            io::sink(),
+        )
+        .expect("runs without anyhow");
         (status, stdout)
     }
 
@@ -438,7 +490,7 @@ mod tests {
         format_with_io(
             args,
             false,
-            &windowed(),
+            &Presentation::windowed(),
             stdin,
             AutoStream::never(writer),
             io::sink(),
@@ -454,20 +506,13 @@ mod tests {
         let status = format_with_io(
             args,
             false,
-            &windowed(),
+            &Presentation::windowed(),
             stdin,
             AutoStream::never(&mut stdout),
             io::sink(),
         )
         .expect("runs without anyhow");
         (status, stdout)
-    }
-
-    fn windowed() -> Presentation {
-        Presentation {
-            quiet: false,
-            stdout_tty: false,
-        }
     }
 
     #[test]
@@ -572,15 +617,7 @@ mod tests {
 
     #[test]
     fn diff_heading_falls_back_to_the_patch_header_off_a_tty() {
-        let present = Presentation {
-            quiet: false,
-            stdout_tty: false,
-        };
-
-        assert_matches!(
-            diff_heading(&present, &AutoStream::always_ansi(Vec::new())),
-            Heading::Patch
-        );
+        assert_matches!(diff_heading(&Presentation::windowed()), Heading::Patch);
     }
 
     #[rstest]
@@ -590,18 +627,14 @@ mod tests {
         #[case] color: bool,
         #[case] painted: bool,
     ) {
-        let stdout = if color {
-            AutoStream::always_ansi(Vec::new())
-        } else {
-            AutoStream::never(Vec::new())
-        };
         let present = Presentation {
+            color,
             quiet: false,
             stdout_tty: true,
         };
 
         assert_matches!(
-            diff_heading(&present, &stdout),
+            diff_heading(&present),
             Heading::Thread { color } if color == painted
         );
     }
@@ -794,6 +827,18 @@ mod tests {
         assert_eq!(status, ExitStatus::Clean);
         let after = std::fs::read_to_string(&file).expect("reads");
         assert_ne!(after, UNALIGNED);
+    }
+
+    #[rstest]
+    #[case(Pass::Both, true)]
+    #[case(Pass::Diagnose { validate: false }, true)]
+    #[case(Pass::Diagnose { validate: true }, false)]
+    #[case(Pass::Rewrite, false)]
+    fn pass_caches_every_shape_but_a_rewrite_or_a_validated_check(
+        #[case] pass: Pass,
+        #[case] caches: bool,
+    ) {
+        assert_eq!(pass.caches(), caches);
     }
 
     #[test]

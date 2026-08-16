@@ -33,9 +33,9 @@ The canonical TOML serialization runs through `toml::to_string`, so a semantical
 
 ## LRU Eviction
 
-`Cache::insert` runs a best-effort LRU pass after every successful write. The pass collects every entry's last-access mtime, sorts ascending, and removes entries until the directory total falls back under the configured cap *(default 100 MiB)*. Permission failures and concurrent-eviction races log to stderr as warnings and never block the insert.
+A best-effort LRU pass runs once a path run's inserts have landed, called from `cli::runner`'s `RunSetup::walked` rather than from `Cache::insert`. The pass collects every entry's last-access mtime, sorts ascending, and removes entries until the directory total falls back under the configured cap *(default 100 MiB)*. Permission failures and concurrent-eviction races log to stderr as warnings and never block an insert.
 
-`Cache::lookup` bumps the entry's mtime on hit, so the LRU sweep keeps recently-accessed entries even when they sit older in absolute terms. `Cache::compact` exposes the same eviction pass as an on-demand operation, useful after lowering `max-size-mib` so the new ceiling lands without waiting for the next insert.
+`Cache::lookup` bumps the entry's mtime on hit, so the LRU sweep keeps recently-accessed entries even when they sit older in absolute terms. `Cache::compact` is that pass, which `prose cache compact` also exposes as an on-demand operation, useful after lowering `max-size-mib` so the new ceiling lands without waiting for the next run.
 
 ## Atomic Writes
 

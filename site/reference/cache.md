@@ -32,7 +32,7 @@ Two workspaces editing identical files under matching configuration share a cach
 
 ## Eviction
 
-LRU eviction runs on every insert, the pass collecting every entry's last-access mtime, sorting ascending, and removing entries until the directory total falls back under the configured cap *(default 100 MiB)*. The pass is best-effort and never blocks the insert, with permission failures and concurrent-eviction races logged to stderr as warnings.
+LRU eviction runs once a run's inserts have landed, the pass collecting every entry's last-access mtime, sorting ascending, and removing entries until the directory total falls back under the configured cap *(default 100 MiB)*. Sweeping once per run rather than once per entry keeps a run's syscall count from scaling with the size of the cache it writes into. The pass is best-effort and never blocks an insert, with permission failures and concurrent-eviction races logged to stderr as warnings.
 
 Inserts write to a `.tmp`-suffixed sibling then `rename` onto the final path, so the rename's POSIX atomicity guarantees a concurrent reader never observes a partial entry. The sibling is cleaned up on drop when the rename fails, and `prose cache clean` sweeps any orphaned `.tmp` files alongside cache entries.
 
@@ -73,7 +73,7 @@ Returns exit code 0 on success, with the IO-error exit code applying on permissi
 
 ## `prose cache compact`
 
-The `prose cache compact` subcommand runs the LRU eviction pass against the cache, reducing it to the configured `[cache] max-size-mib` cap. Eviction normally runs only on insert, so a project that lowered its cap will not see the new ceiling enforced until the next `prose check` or `prose format` writes a fresh entry. `compact` triggers eviction immediately and reports the bytes and entry count it removed.
+The `prose cache compact` subcommand runs the LRU eviction pass against the cache, reducing it to the configured `[cache] max-size-mib` cap. Eviction otherwise runs once at the end of a path run, so a project that lowered its cap will not see the new ceiling enforced until the next `prose check` or `prose format` completes. `compact` triggers eviction immediately and reports the bytes and entry count it removed.
 
 ```bash
 $ prose cache compact

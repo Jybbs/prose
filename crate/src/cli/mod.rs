@@ -68,12 +68,13 @@ pub fn run() -> ExitCode {
     if let Command::Server(args) = cli.command {
         return finalize(crate::server::run(args)).into();
     }
+    let stdout = with_color(io::stdout().lock(), cli.color);
+    let stderr = with_color(io::stderr(), cli.color);
     let present = Presentation {
+        color: stdout.current_choice() != anstream::ColorChoice::Never,
         quiet: command_quiet(&cli.command),
         stdout_tty: io::stdout().is_terminal(),
     };
-    let stdout = with_color(io::stdout().lock(), cli.color);
-    let stderr = with_color(io::stderr(), cli.color);
     let verbose = cli.verbose;
     let result = match cli.command {
         Command::Cache { action } => match action {

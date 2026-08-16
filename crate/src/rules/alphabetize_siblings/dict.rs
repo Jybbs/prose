@@ -12,7 +12,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::{
     primitives::{
         comments::has_keep_marker,
-        edit::{any_owned, apply_inline_edits, splice_parses},
+        edit::{any_owned, apply_inline_edits},
         effect::value_is_effectful,
         layout::is_layoutable,
         orderer::{
@@ -22,6 +22,7 @@ use crate::{
         },
         range::blocks_span,
         slots::runs_where,
+        splice::splice_parses,
     },
     source::Source,
 };

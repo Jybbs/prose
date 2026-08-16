@@ -69,22 +69,13 @@ pub(super) fn process_path(
     let Some(resolved) = setup.resolver.resolve(path, &bytes) else {
         return FileOutcome::Failed(ExitStatus::ConfigError);
     };
-    // Plain `format` would persist only `run`'s post-edit diagnostics, and
-    // a `--validate` check must re-confirm the rewrite parses rather than
-    // trust an entry an earlier unvalidated run wrote, so both bypass the
-    // cache. Every entry that remains carries `diagnose`'s as-written
-    // diagnostics, so a `check` hit never replays a `run`'s.
     let needs_rewrite = matches!(pass, Pass::Both);
-    let keyed = setup
-        .cache
-        .as_ref()
-        .filter(|_| !matches!(pass, Pass::Rewrite | Pass::Diagnose { validate: true }))
-        .map(|c| {
-            (
-                c,
-                CacheKey::compute(&bytes, &resolved.config_toml, resolved.pipeline.rule_ids()),
-            )
-        });
+    let keyed = setup.cache_for(pass).map(|c| {
+        (
+            c,
+            CacheKey::compute(&bytes, &resolved.config_toml, resolved.pipeline.rule_ids()),
+        )
+    });
     if let Some(outcome) = keyed
         .as_ref()
         .and_then(|(c, k)| c.lookup(k))

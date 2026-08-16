@@ -105,10 +105,24 @@ fn corpus() -> Vec<PathBuf> {
 
 /// Runs `first` then `second` over `text`, chaining a single-rule
 /// pipeline apiece so the seating is the caller's rather than the
-/// registry's. `None` when a stage declines the source.
-fn in_order(probes: &Probes, [first, second]: [RuleId; 2], text: &str) -> Option<Source> {
-    let once = settled(&probes.solo[&first], text)?.ok()?;
-    settled(&probes.solo[&second], once.text())?.ok()
+/// registry's. A rule outside `active` leaves `text` alone, so its
+/// stage is skipped. `None` when a stage declines the source.
+fn in_order(
+    probes: &Probes,
+    active: &BTreeSet<RuleId>,
+    [first, second]: [RuleId; 2],
+    text: &str,
+) -> Option<Source> {
+    let once = if active.contains(&first) {
+        Some(settled(&probes.solo[&first], text)?.ok()?)
+    } else {
+        None
+    };
+    settled(
+        &probes.solo[&second],
+        once.as_ref().map_or(text, Source::text),
+    )?
+    .ok()
 }
 
 /// Folds `other` into `into`, keeping the earlier file for a defect
@@ -128,7 +142,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         return findings;
     };
     let text = source.text();
-    let active = probes.all.unsettled(&source);
+    let active: BTreeSet<RuleId> = probes.all.unsettled(&source).into_iter().collect();
     if active.is_empty() {
         return findings;
     }
@@ -159,7 +173,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         if reports_left(pair, &forward, &label, &mut findings.unsettled, path) {
             continue;
         }
-        let Some(reversed) = in_order(probes, [later, earlier], text) else {
+        let Some(reversed) = in_order(probes, &active, [later, earlier], text) else {
             continue;
         };
         if pair.unsettled(&reversed).is_empty() || runs_behind(later.as_str(), earlier.as_str()) {

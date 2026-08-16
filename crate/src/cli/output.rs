@@ -14,17 +14,31 @@ const APRICOT: (RgbColor, AnsiColor) = (RgbColor(0xe8, 0x87, 0x6f), AnsiColor::R
 const CELADON: (RgbColor, AnsiColor) = (RgbColor(0x8c, 0xc5, 0xa3), AnsiColor::Green);
 const UBE: (RgbColor, AnsiColor) = (RgbColor(0x8a, 0x80, 0xcb), AnsiColor::Magenta);
 
-/// Stream-capability signals that gate framing independently of color.
+/// Stream-capability signals that gate framing and the diagnostic
+/// renderer.
 ///
-/// `quiet` strips the anchor emoji and color down to a bare count
-/// line, and a non-TTY stdout leaves `--diff` headers plain so the
-/// output stays a valid patch.
+/// `color` is the choice stdout's `AutoStream` resolved to, `quiet`
+/// strips the anchor emoji and color down to a bare count line, and a
+/// non-TTY stdout leaves `--diff` headers plain so the output stays a
+/// valid patch.
 pub(super) struct Presentation {
+    pub(super) color: bool,
     pub(super) quiet: bool,
     pub(super) stdout_tty: bool,
 }
 
 impl Presentation {
+    /// The uncolored, non-quiet, non-TTY shape the runner and emitter
+    /// tests write through.
+    #[cfg(test)]
+    pub(super) fn windowed() -> Self {
+        Self {
+            color: false,
+            quiet: false,
+            stdout_tty: false,
+        }
+    }
+
     pub(super) fn decorate_diff(&self) -> bool {
         self.stdout_tty && !self.quiet
     }
@@ -140,15 +154,9 @@ mod tests {
 
     fn quiet() -> Presentation {
         Presentation {
+            color: true,
             quiet: true,
             stdout_tty: true,
-        }
-    }
-
-    fn windowed() -> Presentation {
-        Presentation {
-            quiet: false,
-            stdout_tty: false,
         }
     }
 
@@ -162,7 +170,13 @@ mod tests {
         #[case] quiet: bool,
         #[case] expected: bool,
     ) {
-        assert_eq!(Presentation { quiet, stdout_tty }.decorate_diff(), expected);
+        let present = Presentation {
+            color: true,
+            quiet,
+            stdout_tty,
+        };
+
+        assert_eq!(present.decorate_diff(), expected);
     }
 
     #[rstest]
@@ -181,7 +195,7 @@ mod tests {
     #[case(Summary::Reformatted { files: 1 }, "🗞️ Reformatted 1 file.\n")]
     #[case(Summary::WouldReformat { files: 3 }, "🗞️ 3 files would be reformatted.\n")]
     fn each_outcome_renders_its_anchored_line(#[case] summary: Summary, #[case] expected: &str) {
-        assert_eq!(plain(&windowed(), &summary), expected);
+        assert_eq!(plain(&Presentation::windowed(), &summary), expected);
     }
 
     #[test]
