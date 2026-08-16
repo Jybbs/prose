@@ -441,6 +441,28 @@ fn target_version_every_variant_round_trips_through_serde() {
 }
 
 #[test]
+fn to_changed_toml_is_empty_for_a_config_on_the_defaults() {
+    assert_eq!(Config::default().to_changed_toml(), "");
+}
+
+#[test]
+fn to_changed_toml_keeps_a_nested_key_set_away_from_its_default() {
+    let config = Config::from_prose_toml_str("[rules]\nalign-equals = false\n").expect("parses");
+
+    assert_eq!(
+        config.to_changed_toml(),
+        "[rules.align-equals]\nenabled = false\n",
+    );
+}
+
+#[test]
+fn to_changed_toml_keeps_a_top_level_key_set_away_from_its_default() {
+    let config = Config::from_prose_toml_str("code-line-length = 100\n").expect("parses");
+
+    assert_eq!(config.to_changed_toml(), "code-line-length = 100\n");
+}
+
+#[test]
 fn uncapped_import_line_length_serializes_as_false() {
     let config =
         Config::from_pyproject_str("[tool.prose]\nimport-line-length = false\n").expect("parses");

@@ -8,6 +8,7 @@
 
 use std::{collections::BTreeMap, io::Write};
 
+use itertools::Itertools;
 use ruff_source_file::SourceFile;
 
 use super::{
@@ -15,19 +16,16 @@ use super::{
     diff::{Heading, write_diff},
 };
 use crate::{
-    cli::output::{Presentation, Summary, report},
-    unstable::{UnstableRewrite, blame, report_url},
+    cli::output::{Presentation, Summary, pluralize, report},
+    unstable::{UnstableRewrite, blame, terminal_report_url},
 };
 
-/// The sentence pointing at the pre-filled report form.
-const FILING: &str = "Filing is one click, the form already carrying the version, the reproducing slugs, the resolved configuration, the source, and both passes:";
+const FILING: &str = "Filing is one click, the form already carrying the version, the reproducing slugs, and the resolved configuration, with anything too long for a link left to paste:";
 
-/// The column the prose paragraphs wrap to.
 const WRAP: usize = 88;
 
-/// Writes one block per reproducing subset, each naming the defect as
-/// Prose's own, the invocation that replays it, and the pre-filled
-/// bug-report URL.
+/// One block per reproducing subset, each naming the defect as Prose's
+/// own, the invocation that replays it, and the pre-filled report URL.
 pub(super) fn render_reports<E: Write>(
     stderr: &mut E,
     present: &Presentation,
@@ -38,21 +36,20 @@ pub(super) fn render_reports<E: Write>(
         let name = file.name();
         let subject = match files.len() {
             1 => name.to_owned(),
-            several => format!("{several} files"),
+            several => pluralize(several, "file"),
         };
         let _ = report(stderr, present, &Summary::UnstableRewrite { subject });
-        let _ = writeln!(
+        let _ = writeln!(stderr);
+        paragraph(
             stderr,
-            "\n{}\n",
-            textwrap::fill(&reproduce(files.len()), WRAP)
+            &reproduce(files.len()),
+            &rewrite.invocation((name != STDIN_NAME).then_some(name)),
         );
-        let _ = writeln!(
+        paragraph(
             stderr,
-            "    {}\n",
-            rewrite.invocation((name != STDIN_NAME).then_some(name)),
+            FILING,
+            &terminal_report_url(rewrite, file.source_text()),
         );
-        let _ = writeln!(stderr, "{}\n", textwrap::fill(FILING, WRAP));
-        let _ = writeln!(stderr, "    {}\n", report_url(rewrite, file.source_text()));
         if files.len() == 1 {
             let _ = write_diff(
                 stderr,
@@ -66,24 +63,24 @@ pub(super) fn render_reports<E: Write>(
     }
 }
 
-/// Every unsettled outcome keyed by its reproducing subset, each
-/// group's files sorted by name so one run renders the same way twice.
+/// Each group's files sort by name so one run renders the same way
+/// twice.
 fn grouped(outcomes: &[FileOutcome]) -> BTreeMap<String, Vec<(&SourceFile, &UnstableRewrite)>> {
-    let mut groups: BTreeMap<String, Vec<_>> = BTreeMap::new();
-    for (file, rewrite) in outcomes.iter().filter_map(FileOutcome::unstable) {
-        groups
-            .entry(rewrite.slugs())
-            .or_default()
-            .push((file, rewrite));
-    }
-    for files in groups.values_mut() {
-        files.sort_by_key(|(file, _)| file.name());
-    }
-    groups
+    outcomes
+        .iter()
+        .filter_map(FileOutcome::unstable)
+        .sorted_by_key(|(file, _)| file.name())
+        .into_group_map_by(|(_, rewrite)| rewrite.slugs())
+        .into_iter()
+        .collect()
 }
 
-/// The sentence placing the defect in Prose and introducing the
-/// invocation that replays it.
+/// A paragraph wrapped to `WRAP`, then its own indented line.
+fn paragraph<E: Write>(stderr: &mut E, prose: &str, indented: &str) {
+    let _ = writeln!(stderr, "{}\n", textwrap::fill(prose, WRAP));
+    let _ = writeln!(stderr, "    {indented}\n");
+}
+
 fn reproduce(files: usize) -> String {
     format!(
         "{}, so reproduce it now and confirm it gone after an upgrade with:",
@@ -193,14 +190,14 @@ mod tests {
     #[case::reproduce_one(reproduce(1))]
     #[case::reproduce_several(reproduce(4))]
     #[case::filing(FILING.to_owned())]
-    fn render_reports_wraps_each_paragraph_inside_the_column(#[case] paragraph: String) {
-        let widest = textwrap::fill(&paragraph, WRAP)
+    fn render_reports_wraps_each_paragraph_inside_the_column(#[case] prose: String) {
+        let widest = textwrap::fill(&prose, WRAP)
             .lines()
             .map(str::len)
             .max()
             .unwrap_or_default();
 
-        assert!(widest <= WRAP, "{paragraph}");
+        assert!(widest <= WRAP, "{prose}");
     }
 
     #[test]

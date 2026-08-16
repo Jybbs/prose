@@ -26,7 +26,7 @@ Rewrites Python files to conform to the *Prose* style. Returns exit code 0 once 
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules, subtracting from whichever set would otherwise have run |
 | `PATH...` | one or more paths, or `-` | required when not `--stdin` | Files or directories to format, or `-` to read source from stdin |
 
-Exit codes: `0` clean / rewrites applied, `1` pending `--diff` rewrite, `2` lint diagnostics surfaced, `3` parse error, `4` config error *(see [**Exit Codes**](/reference/exit-codes))*. A rewrite the settle check names rules on still lands and still returns `0`, drawing the [**notice**](#unstable-output) on stderr rather than a status of its own.
+Exit codes: `0` clean / rewrites applied, `1` pending `--diff` rewrite, `2` lint diagnostics surfaced, `3` parse error, `4` config error *(see [**Exit Codes**](/reference/exit-codes))*. A rewrite the settle check names rules on still lands and the status still resolves from that rewrite alone, drawing the [**notice**](#unstable-output) on stderr rather than a status of its own.
 
 ```bash
 prose format src/
@@ -176,13 +176,13 @@ Running *Prose* twice leaves the second run nothing to do, for whichever subset 
 $ prose format src/module.py
 🐞 prose rewrote src/module.py to output a second run would change.
 
-The defect lies in prose rather than in the file, so reproduce it now and confirm
-it gone after an upgrade with:
+The defect lies in prose rather than in the file, so reproduce it now and confirm it
+gone after an upgrade with:
 
     prose format --select align-equals src/module.py
 
-Filing is one click, the form already carrying the version, the reproducing slugs, the
-resolved configuration, the source, and both passes:
+Filing is one click, the form already carrying the version, the reproducing slugs, and
+the resolved configuration, with anything too long for a link left to paste:
 
     https://github.com/Jybbs/prose/issues/new?template=unstable-output.yml&…
 
@@ -200,7 +200,7 @@ resolved configuration, the source, and both passes:
 🐞 1 file would change on a second run.
 ```
 
-The `--select` list is the smallest subset that still reproduces rather than every rule that ran, narrowed to one rule where one rule suffices and to a rule pair where two only disagree together. That same invocation confirms the fix after an upgrade, so nobody waits on a release note to find out.
+The `--select` list is the smallest subset that still reproduces rather than every rule that ran, narrowed to one rule where one rule suffices and to a rule pair where two only disagree together. That same invocation confirms the fix after an upgrade, so nobody waits on a release note to find out. Each run rewrites the file again, so capturing the two passes a report wants goes through the `--stdin` form the [**issue form**](https://github.com/Jybbs/prose/issues/new?template=unstable-output.yml) itself shows.
 
 The rewrite lands and the run's exit code resolves from that rewrite alone, because the defect belongs to the formatter rather than to the source beneath it. A project that would rather gate CI on the promise opts in through [`prose check --validate`](#prose-check), which prints the same notice and takes the `4` its other validation failures take.
 

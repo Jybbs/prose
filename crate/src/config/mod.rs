@@ -224,12 +224,6 @@ impl Config {
         fracture::Settings::from(&self.rules.reflow_calls)
     }
 
-    /// The terms a construct reaches one row under, read by every rule
-    /// deciding where that construct lands.
-    pub(crate) fn one_row_settings(&self) -> one_row::Settings<'static> {
-        one_row::Settings::from(self)
-    }
-
     pub(crate) fn group_imports_enabled(&self) -> bool {
         self.rules.group_imports.enabled
     }
@@ -239,6 +233,21 @@ impl Config {
     pub(crate) fn import_width(&self) -> usize {
         self.import_line_length
             .map_or_else(|| self.code_width(), NonZeroUsize::get)
+    }
+
+    /// The terms a construct reaches one row under, read by every rule
+    /// deciding where that construct lands.
+    pub(crate) fn one_row_settings(&self) -> one_row::Settings<'static> {
+        one_row::Settings::from(self)
+    }
+
+    /// The keys this config sets away from the default, serialized to
+    /// TOML. Empty for a config running on the defaults.
+    pub(crate) fn to_changed_toml(&self) -> String {
+        let mut set = toml::Table::try_from(self).expect("Config serializes");
+        let defaults = toml::Table::try_from(Self::default()).expect("Config serializes");
+        merge::without_defaults(&mut set, &defaults);
+        toml::to_string(&set).expect("Config serializes")
     }
 
     /// The config serialized to TOML.

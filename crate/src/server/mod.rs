@@ -10,8 +10,8 @@
 //! `capabilities` advertises the server's surface and negotiates
 //! position encoding, `documents` holds the live buffers, `config_cache`
 //! resolves and memoizes each document's config, `analysis` runs the
-//! pipeline over a buffer, `notices` carries the bug notice a rewrite a
-//! second run would change draws, and `conversion` maps between Prose's
+//! pipeline over a buffer, `notices` sends the bug notice for a rewrite
+//! a second run would change, and `conversion` maps between Prose's
 //! byte offsets and the protocol's positions and between document URIs
 //! and filesystem paths. This module holds only the stdio glue, the one
 //! piece that resists unit testing.

@@ -649,7 +649,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'where any still edits, naming the smallest rule subset that reproduces and '
                + 'the invocation that replays it. The rewrite still lands and the exit code '
                + 'reads off it alone, whereas `prose check --validate` takes the same report '
-               + 'and fails. `report-unstable-output` turns the notice off.',
+               + 'and fails, leaving `report-unstable-output` to turn the notice off.',
     families   : ['engine'],
     href       : '/reference/cli#unstable-output'
   },

@@ -62,6 +62,37 @@ impl Rule for GroupSentinelRule {
     }
 }
 
+/// A rule editing only a buffer whose text opens with `reads`,
+/// replacing that buffer's first byte with `writes`. A `writes` that
+/// keeps the opening matching `reads` edits its own output forever,
+/// and one that breaks the match settles after a single edit.
+pub(crate) struct PrefixRule {
+    pub(crate) id: RuleId,
+    pub(crate) reads: &'static str,
+    pub(crate) writes: &'static str,
+}
+
+impl Rule for PrefixRule {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        if source.text().starts_with(self.reads) {
+            vec![vec![Edit::range_replacement(
+                self.writes.to_owned(),
+                range(0, 1),
+            )]]
+        } else {
+            Vec::new()
+        }
+    }
+
+    fn id(&self) -> RuleId {
+        self.id
+    }
+
+    fn message(&self) -> &'static str {
+        "prefix test rule"
+    }
+}
+
 /// Builds an alignment `Member` whose pre-operator whitespace is `gap`,
 /// carrying no operator width and no post-operator gap. Layer
 /// `with_op_width`, `with_settled_width`, or `with_value_gap` on top

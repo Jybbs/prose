@@ -89,6 +89,13 @@ impl Summary {
     }
 }
 
+/// `count` prefixed to `noun`, the noun taking an `s` for any count
+/// other than one.
+pub(super) fn pluralize(count: usize, noun: &str) -> String {
+    let suffix = if count == 1 { "" } else { "s" };
+    format!("{count} {noun}{suffix}")
+}
+
 /// Writes the closing summary line. Color escapes are stripped
 /// downstream when `writer` is a non-color `AutoStream`.
 pub(super) fn report(
@@ -135,11 +142,6 @@ fn paint_with(text: &str, truecolor: bool, (rgb, fallback): (RgbColor, AnsiColor
         Color::Ansi(fallback)
     };
     format!("{}{text}{}", color.render_fg(), Reset.render())
-}
-
-fn pluralize(count: usize, noun: &str) -> String {
-    let suffix = if count == 1 { "" } else { "s" };
-    format!("{count} {noun}{suffix}")
 }
 
 #[cfg(test)]

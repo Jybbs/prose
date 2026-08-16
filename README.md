@@ -74,6 +74,6 @@ mise install
 mise x -- uv venv crate/.venv
 ```
 
-`mise tasks` lists every available task, and `mise ci` runs the full local sweep that mirrors GitHub Actions.
+`mise tasks` lists every available task, and `mise ci` runs the full local sweep that mirrors GitHub Actions. `CONTRIBUTING.md` at the repository root walks from a bug report to the fixture case a fix is reviewed against, and covers the branch and pull-request flow.
 
 For the architecture, the [**primitive surface**](https://prose.fyi/primitives/) walks every public type (*`Source`, `Pipeline`, `BindingAnalysis`, `SuppressionMap`, `RuleId`, `Edit`*), and the [**pipeline order**](https://prose.fyi/reference/pipeline-order) explains how each rule reads a settled AST between reparses.

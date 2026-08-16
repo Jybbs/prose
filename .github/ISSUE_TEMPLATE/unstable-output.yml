@@ -10,7 +10,7 @@ body:
 
         *Prose* settles a file in one pass, so a second run over what the first one wrote should find nothing left to do. Where that breaks, the formatter says so at the moment it writes the file, and the defect belongs to *Prose* rather than to the Python beneath it. Nothing is wrong with your source, and the rewrite that landed is safe to keep.
 
-        Arriving here from that notice means every field below already carries what a maintainer needs, leaving nothing to do but submit. A field that arrived blank overflowed what a URL can carry, so paste it in from the run.
+        Arriving here from that notice means the fields below already carry what fit in the link. A field that arrived blank was too long to travel that way, so paste it in from the run, and the editor's own link carries more than the terminal's.
 
         Arriving by hand means running the reproduction twice and pasting each pass:
 

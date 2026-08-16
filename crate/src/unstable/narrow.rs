@@ -10,10 +10,8 @@ use itertools::Itertools;
 
 use crate::{pipeline::Pipeline, rule::RuleId, source::Source};
 
-/// The smallest subset of `candidates` whose run over `text` leaves a
-/// rule still editing its own output, with `build` assembling the
-/// pipeline for one subset. `None` once neither a single rule nor a
-/// pair reproduces on this source.
+/// `build` assembles the pipeline for one subset. `None` once neither a
+/// single rule nor a pair reproduces on this source.
 pub(super) fn reproducing_subset(
     candidates: &[RuleId],
     text: &str,
@@ -29,9 +27,8 @@ pub(super) fn reproducing_subset(
         .find(|subset| leaves_an_edit(&build(subset), text))
 }
 
-/// True when `pipeline`'s own output over `text` still draws an edit
-/// from one of its rules. A `text` that does not parse and a run a
-/// rule's output is rejected on both answer false.
+/// A `text` that does not parse and a run a rule's output is rejected
+/// on both answer false.
 fn leaves_an_edit(pipeline: &Pipeline, text: &str) -> bool {
     let Ok(source) = text.parse::<Source>() else {
         return false;
@@ -47,7 +44,7 @@ mod tests {
     use super::*;
     use crate::{
         rule::Rule,
-        testing::{GroupSentinelRule, never_settles},
+        testing::{GroupSentinelRule, breaks_parse, never_settles},
     };
 
     const SOURCE: &str = "x = 1\n";
@@ -117,6 +114,17 @@ mod tests {
             reproducing_subset(&candidates, SOURCE, |subset| sentinels(subset, &["calm-a"]));
 
         assert_eq!(found, Some(vec![RuleId::from("widener")]));
+    }
+
+    #[test]
+    fn reproducing_subset_passes_over_a_subset_whose_run_is_rejected() {
+        let candidates = [RuleId::from("breaks-parse")];
+
+        let found = reproducing_subset(&candidates, SOURCE, |_| {
+            Pipeline::from_rules(vec![Box::new(breaks_parse())])
+        });
+
+        assert_eq!(found, None);
     }
 
     #[test]

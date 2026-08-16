@@ -13,40 +13,21 @@ Running *Prose* twice should leave the second run nothing to do, and that promis
 ```console
 $ prose format src/module.py
 🐞 prose rewrote src/module.py to output a second run would change.
-
-The defect lies in prose rather than in the file, so reproduce it now and confirm
-it gone after an upgrade with:
-
+...
     prose format --select align-equals src/module.py
-
-Filing is one click, the form already carrying the version, the reproducing slugs, the
-resolved configuration, the source, and both passes:
-
-    https://github.com/Jybbs/prose/issues/new?template=unstable-output.yml&…
-
---- src/module.py (first pass)
-+++ src/module.py (second pass)
-@@ -1,3 +1,3 @@
--alpha     = 1
--beta      = 2
--long_name = 3
-+alpha      = 1
-+beta       = 2
-+long_name  = 3
-
-🗞️ Reformatted 1 file.
-🐞 1 file would change on a second run.
 ```
+
+The [**CLI reference**](https://prose.fyi/reference/cli#unstable-output) carries the whole notice, including the pre-filled form link, the diff between the two passes, and how a run over a tree folds several files into one block.
 
 The `--select` list is not every rule that ran, but the smallest subset that still reproduces, narrowed to one rule where one rule suffices and to a rule pair where two only disagree together. That narrowing is what turns a whole-pipeline symptom into a located defect, and it is the same search the repository's own corpus probe runs.
 
 The rewrite still landed, and the run's exit code reads off that rewrite alone. The defect belongs to the formatter rather than to the source beneath it, so refusing to write would punish the file for the tool's fault. A project that would rather gate CI on the promise opts in through `prose check --validate`, which prints the same notice and takes the failing status that flag already carries.
 
-The invocation is the same one that confirms the fix. Running it again after upgrading either reproduces the defect or prints nothing, so nobody has to wait on a release note to find out.
+The invocation is the same one that confirms the fix. Running it again after upgrading either reproduces the defect or prints nothing, so nobody has to wait on a release note to find out. Each run rewrites the file again, so capturing the two passes the form asks for goes through the `--stdin` shape the form itself shows rather than through the in-place invocation.
 
 Opening the link lands the form with the version, the reproducing slugs, the resolved `[tool.prose]` table, the source, and both passes already filled. A large file overflows what a URL carries, so a field that arrives blank is one to paste in from the run.
 
-Editors see the same notice. `prose server` sends it once per document per session rather than on every save, and where the client advertises `window/showDocument` it offers the pre-filled form as an action beside the message.
+Editors see the same notice, with `prose server` sending it once per document per session rather than on every save, and offering the pre-filled form as an action beside the message where the client advertises `window/showDocument`.
 
 Turning the notice off entirely is one key:
 

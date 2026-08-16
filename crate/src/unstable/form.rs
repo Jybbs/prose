@@ -1,11 +1,9 @@
 //! The bug-report URL an unstable rewrite pre-fills.
 //!
 //! Each query parameter is keyed by the matching field `id` in
-//! `.github/ISSUE_TEMPLATE/unstable-output.yml`, so opening the URL
-//! lands a form already carrying the version, the reproducing slugs,
-//! the resolved configuration, the source, and both passes. A field
-//! whose value would carry the URL past [`URL_BUDGET`] is left out and
-//! the reporter pastes it.
+//! `.github/ISSUE_TEMPLATE/unstable-output.yml`. A field whose value
+//! would carry the URL past its budget is left out and the reporter
+//! pastes it.
 
 use fluent_uri::pct_enc::{
     EString,
@@ -15,18 +13,28 @@ use fluent_uri::pct_enc::{
 use super::UnstableRewrite;
 use crate::rule::render_slugs;
 
-/// The issue form the URL selects.
 const TEMPLATE: &str = "unstable-output.yml";
 
-/// The length the whole URL stays inside, under what a browser and
+/// The budget a terminal notice prints under, short enough that the
+/// line reads. A field too long for it drops, which on a real module
+/// is the source and both passes.
+const TERMINAL_BUDGET: usize = 1200;
+
+/// The budget a client-opened URL stays under, below what a browser and
 /// GitHub both accept in a request line.
 const URL_BUDGET: usize = 6000;
 
-/// The pre-filled bug-report URL for `rewrite`, carrying the `original`
-/// source the run read alongside what the record already holds. The
-/// fields run smallest-first, so an oversized one drops while every
-/// field after it still lands.
 pub(crate) fn report_url(rewrite: &UnstableRewrite, original: &str) -> String {
+    build(rewrite, original, URL_BUDGET)
+}
+
+pub(crate) fn terminal_report_url(rewrite: &UnstableRewrite, original: &str) -> String {
+    build(rewrite, original, TERMINAL_BUDGET)
+}
+
+/// The fields run smallest-first, so an oversized one drops while every
+/// field after it still lands.
+fn build(rewrite: &UnstableRewrite, original: &str, budget: usize) -> String {
     let slugs = rewrite.slugs();
     let title = format!("Unstable output from {}", render_slugs(&rewrite.rules));
     let fields = [
@@ -45,7 +53,7 @@ pub(crate) fn report_url(rewrite: &UnstableRewrite, original: &str) -> String {
         ),
         |url, (id, value)| {
             let field = format!("&{id}={}", encoded(value));
-            if url.len() + field.len() <= URL_BUDGET {
+            if url.len() + field.len() <= budget {
                 url + &field
             } else {
                 url
@@ -146,5 +154,28 @@ mod tests {
             "&title=Unstable%20output%20from%20%60align-equals%60%2C%20%60align-colons%60"
         ));
         assert!(url.contains("&rules=align-equals%2Calign-colons"));
+    }
+
+    #[test]
+    fn terminal_report_url_sheds_the_bulky_fields_the_whole_url_keeps() {
+        let bulky = "x".repeat(2000);
+        let rewrite = rewrite(&bulky, &bulky, "code-line-length = 100\n");
+
+        let terminal = terminal_report_url(&rewrite, &bulky);
+        let whole = report_url(&rewrite, &bulky);
+
+        assert!(
+            terminal.len() <= TERMINAL_BUDGET,
+            "budget overrun: {}",
+            terminal.len(),
+        );
+        assert!(terminal.contains("&rules=align-equals"));
+        assert!(terminal.contains("&config=code-line-length%20%3D%20100%0A"));
+        assert!(!terminal.contains("&source="), "{terminal}");
+        assert!(!terminal.contains("&first-pass="), "{terminal}");
+        assert!(
+            whole.contains("&source="),
+            "the whole URL dropped the source"
+        );
     }
 }

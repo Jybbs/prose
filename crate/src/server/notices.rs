@@ -21,7 +21,6 @@ use super::{
 };
 use crate::unstable::{UnstableRewrite, blame, headline, report_url};
 
-/// The action title offered beside a notice.
 const FILE_IT: &str = "File a report";
 
 /// Which documents this session has already notified, and the document
@@ -33,8 +32,6 @@ pub(super) struct Notices {
 }
 
 impl Notices {
-    /// Builds the tracker, with `show_document` set from whether the
-    /// client advertised the show-document request.
     pub(super) fn new(show_document: bool) -> Self {
         Self {
             pending: HashMap::new(),
@@ -151,16 +148,13 @@ impl Notices {
     }
 }
 
-/// The one-line notice a client renders, naming Prose as the defect's
-/// source and the invocation that reproduces it. A buffer naming no
-/// local file keeps its URI in the sentence and takes the `-` stdin
-/// positional in the invocation.
+/// A buffer naming no local file keeps its URI in the sentence and
+/// takes the `-` stdin positional in the invocation.
 fn notice(uri: &Uri, rewrite: &UnstableRewrite) -> String {
     let path = conversion::to_path(uri).map(|path| path.display().to_string());
-    let name = path.clone().unwrap_or_else(|| uri.as_str().to_owned());
     format!(
         "{}. {}. Reproduce it with `{}`.",
-        headline(&name),
+        headline(path.as_deref().unwrap_or(uri.as_str())),
         blame(1),
         rewrite.invocation(path.as_deref()),
     )

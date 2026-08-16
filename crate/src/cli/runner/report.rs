@@ -76,17 +76,6 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
         )
 }
 
-/// A file counts as changed when `run` produced text differing from the
-/// original. A mode that skipped the rewrite falls back to whether
-/// `diagnose` emitted a format diagnostic.
-pub(super) fn file_changed(diagnostics: &[Diagnostic], rewrite: &Rewrite) -> bool {
-    match rewrite {
-        Rewrite::Changed(_) => true,
-        Rewrite::Skipped => has_format_change(diagnostics),
-        Rewrite::Unchanged => false,
-    }
-}
-
 pub(super) fn finish(
     outcomes: &[FileOutcome],
     cache_enabled: bool,
@@ -120,32 +109,6 @@ pub(super) fn render_summary<E: Write>(
     for line in lines {
         let _ = output::report(stderr, present, &line);
     }
-}
-
-pub(super) fn report_verbose<W: Write>(
-    outcomes: &[FileOutcome],
-    cache_enabled: bool,
-    writer: &mut W,
-) {
-    if !cache_enabled {
-        let _ = writeln!(writer, "cache: bypassed");
-        return;
-    }
-    let (hits, misses) = outcomes
-        .iter()
-        .filter_map(|o| match o {
-            FileOutcome::Done { cached, .. } => Some(*cached),
-            FileOutcome::Failed(_) => None,
-        })
-        .fold(
-            (0_usize, 0_usize),
-            |(h, m), c| if c { (h + 1, m) } else { (h, m + 1) },
-        );
-    let _ = writeln!(
-        writer,
-        "cache: {hits} hits, {misses} misses, {total} files",
-        total = hits + misses,
-    );
 }
 
 pub(super) fn status_from_outcomes(
@@ -187,6 +150,17 @@ pub(super) fn unstable_status(outcomes: &[FileOutcome]) -> ExitStatus {
     }
 }
 
+/// A file counts as changed when `run` produced text differing from the
+/// original. A mode that skipped the rewrite falls back to whether
+/// `diagnose` emitted a format diagnostic.
+fn file_changed(diagnostics: &[Diagnostic], rewrite: &Rewrite) -> bool {
+    match rewrite {
+        Rewrite::Changed(_) => true,
+        Rewrite::Skipped => has_format_change(diagnostics),
+        Rewrite::Unchanged => false,
+    }
+}
+
 /// The surviving-lint disclosure a text-format `format` run appends
 /// after its outcome line, `None` for a check run, a structured output
 /// whose emitters already printed the lint, or a run leaving none.
@@ -194,6 +168,30 @@ fn lint_remainder(summary: &EmitterSummary, mode: Mode, text_output: bool) -> Op
     let total = summary.lint_total;
     let discloses = !matches!(mode, Mode::Check) && text_output && total > 0;
     discloses.then_some(Summary::LintRemainder { total })
+}
+
+/// Writes the cache hit and miss counts a verbose run closes with, or
+/// the bypass line where the run carried no cache.
+fn report_verbose<W: Write>(outcomes: &[FileOutcome], cache_enabled: bool, writer: &mut W) {
+    if !cache_enabled {
+        let _ = writeln!(writer, "cache: bypassed");
+        return;
+    }
+    let (hits, misses) = outcomes
+        .iter()
+        .filter_map(|o| match o {
+            FileOutcome::Done { cached, .. } => Some(*cached),
+            FileOutcome::Failed(_) => None,
+        })
+        .fold(
+            (0_usize, 0_usize),
+            |(h, m), c| if c { (h + 1, m) } else { (h, m + 1) },
+        );
+    let _ = writeln!(
+        writer,
+        "cache: {hits} hits, {misses} misses, {total} files",
+        total = hits + misses,
+    );
 }
 
 /// Resolves an outcome set into its closing [`Summary`], or `None` when
@@ -226,8 +224,7 @@ fn summarize(outcomes: &[FileOutcome], summary: &EmitterSummary, mode: Mode) -> 
 }
 
 /// The count line an unsettled run closes with, `None` for a run whose
-/// every rewrite settled. A defect notice survives `--quiet`, which
-/// strips its anchor and color the way it strips every other line's.
+/// every rewrite settled.
 fn unstable_remainder(outcomes: &[FileOutcome]) -> Option<Summary> {
     let files = outcomes.iter().filter_map(FileOutcome::unstable).count();
     (files > 0).then_some(Summary::Unstable { files })
