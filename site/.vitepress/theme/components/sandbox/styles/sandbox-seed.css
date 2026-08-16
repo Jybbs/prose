@@ -1,0 +1,7 @@
+.sandbox-seed {
+  right : 40px;
+}
+
+.copy-host:hover > .sandbox-seed {
+  opacity : 1;
+}

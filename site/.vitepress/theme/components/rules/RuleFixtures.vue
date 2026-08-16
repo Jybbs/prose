@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import Fixture from '../fixtures/Fixture.vue'
 
-import { data as ruleFixtures } from '../../../lib/rules/rule-fixtures.data'
-import { lookup }               from '../../../lib/shared/lookup'
+import { fixturesForRule } from '../../../lib/rules/rule-view'
 
 const props = defineProps<{ rule: string }>()
 
-const examples = lookup(ruleFixtures, props.rule, 'RuleFixtures rule').examples
+const examples = fixturesForRule(props.rule).examples
 </script>
 
 <template>

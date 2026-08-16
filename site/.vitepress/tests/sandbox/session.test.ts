@@ -1,8 +1,13 @@
+// @vitest-environment happy-dom
 import { fc, test } from '@fast-check/vitest'
 
-import { randomOther } from '../../lib/sandbox/session'
+import { decodeShare }          from '../../lib/sandbox/share-link'
+import { randomOther, seedUrl } from '../../lib/sandbox/session'
 
-afterEach(() => { vi.restoreAllMocks() })
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
 
 describe('randomOther', () => {
   it('stays on the only case the pool holds', () => {
@@ -24,4 +29,19 @@ describe('randomOther', () => {
       expect(randomOther(count, seed % count)).not.toBe(seed % count)
     }
   )
+})
+
+describe('seedUrl', () => {
+  it('opens the sandbox on a payload restoring the seeded source and config', async () => {
+    const url = await seedUrl('code-line-length = 40\n', 'x = 1\n') ?? ''
+    expect(url).toMatch(/^\/sandbox\/#1\./)
+    expect(await decodeShare(url.slice('/sandbox/'.length)))
+      .toEqual({ configToml: 'code-line-length = 40\n', source: 'x = 1\n' })
+  })
+
+  it('yields no link where the platform lacks the compression codec', async () => {
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- `null` clears the typeof guard
+    vi.stubGlobal('CompressionStream', undefined)
+    expect(await seedUrl('', 'x = 1\n')).toBeNull()
+  })
 })

@@ -6,16 +6,18 @@ import FixturePairDoc  from '../fixtures/FixturePairDoc.vue'
 import FixtureToggle   from '../fixtures/FixtureToggle.vue'
 import RuleSegmentChip from './RuleSegmentChip.vue'
 
-import type { InlineNode } from '../../../lib/markdown/inline-nodes'
-
-import { data as composition }  from '../../../lib/rules/composition.data'
-import { data as fixturesData } from '../../../lib/fixtures/fixtures.data'
-import { data as rules }        from '../../../lib/rules/rules.data'
-import type { RenderedRule }    from '../../../lib/rules/rules.data'
-import { railPaint }            from '../../../lib/shared/family-rail'
-import type { FixtureTab }      from '../../../lib/shared/fixture-tab'
-import { formatFolio }          from '../../../lib/shared/numerals'
-import InlineProse              from '../base/InlineProse.vue'
+import { useHashOpen }                      from '../../../lib/composables/use-hash-open'
+import { data as fixturesData }             from '../../../lib/fixtures/fixtures.data'
+import type { InlineNode }                  from '../../../lib/markdown/inline-nodes'
+import { data as composition }              from '../../../lib/rules/composition.data'
+import { casesForRule }                     from '../../../lib/rules/rule-view'
+import { data as rules, type RenderedRule } from '../../../lib/rules/rules.data'
+import type { SavedSession }                from '../../../lib/sandbox/session'
+import { railPaint }                        from '../../../lib/shared/family-rail'
+import type { FixtureTab }                  from '../../../lib/shared/fixture-tab'
+import { lookup }                           from '../../../lib/shared/lookup'
+import { formatFolio }                      from '../../../lib/shared/numerals'
+import InlineProse                          from '../base/InlineProse.vue'
 
 interface RuleSegment {
   family : string | null
@@ -25,45 +27,57 @@ interface RuleSegment {
 }
 
 interface CardRow {
-  case            : string
-  changesSource   : boolean
+  case             : string
+  changesSource    : boolean
   descriptionNodes : InlineNode[] | undefined
-  dominantFamily  : string | null
-  hasToggle       : boolean
-  headlinePaint   : string
-  inputHtml       : string
-  num             : string
-  outputHtml      : string
-  railPaint       : string
-  segments: readonly RuleSegment[]
-  title           : string
+  dominantFamily   : string | null
+  hasToggle        : boolean
+  headlinePaint    : string
+  inputHtml        : string
+  num              : string
+  outputHtml       : string
+  railPaint        : string
+  sandboxSeed      : SavedSession
+  segments         : readonly RuleSegment[]
+  title            : string
 }
 
-const cards = computed<readonly CardRow[]>(() =>
+const props = defineProps<{ rule?: string }>()
+
+const allCards = computed<readonly CardRow[]>(() =>
   composition.cases.map((entry, i) => {
     const families = entry.rules.map(slug => rules.bySlug[slug]?.family ?? null)
-    const fixture  = fixturesData.composition?.[entry.case]
+    const fixture  = lookup(fixturesData.composition, entry.case, 'CompositionCards case')
     return {
-      case            : entry.case,
-      changesSource   : fixture?.changesSource ?? false,
-      descriptionNodes : fixture?.descriptionNodes,
-      dominantFamily  : families[0] ?? null,
-      hasToggle       : fixture?.hasToggle ?? false,
-      headlinePaint   : railPaint(families, 'to right'),
-      inputHtml       : fixture?.inputHtml ?? '',
-      num             : formatFolio(i + 1, 3),
-      outputHtml      : fixture?.outputHtml ?? '',
-      railPaint       : railPaint(families),
-      segments: entry.rules.map((slug, idx) => ({
+      case             : entry.case,
+      changesSource    : fixture.changesSource,
+      descriptionNodes : fixture.descriptionNodes,
+      dominantFamily   : families[0] ?? null,
+      hasToggle        : fixture.hasToggle,
+      headlinePaint    : railPaint(families, 'to right'),
+      inputHtml        : fixture.inputHtml,
+      num              : formatFolio(i + 1, 3),
+      outputHtml       : fixture.outputHtml,
+      railPaint        : railPaint(families),
+      sandboxSeed      : { configToml: entry.configToml, source: entry.source },
+      segments         : entry.rules.map((slug, idx) => ({
         family : families[idx] ?? null,
         index  : idx + 1,
         rule   : rules.bySlug[slug] ?? null,
         slug
       })),
-      title           : entry.title
+      title            : entry.title
     }
   })
 )
+
+// A rule page renders the subset the rule participates in, keeping each card's
+// folio number from the full run so it still names the composition-page entry.
+const cards = computed<readonly CardRow[]>(() => {
+  if (props.rule === undefined) return allCards.value
+  const participating = new Set(casesForRule(props.rule))
+  return allCards.value.filter(row => participating.has(row.case))
+})
 
 const activeCase = ref<string | null>(null)
 const activeTab  = ref<FixtureTab>('after')
@@ -71,6 +85,10 @@ const activeTab  = ref<FixtureTab>('after')
 function toggle(row: CardRow): void {
   activeCase.value = activeCase.value === row.case ? null : row.case
 }
+
+useHashOpen(fragment => {
+  if (cards.value.some(row => row.case === fragment)) activeCase.value = fragment
+})
 </script>
 
 <template>
@@ -135,6 +153,7 @@ function toggle(row: CardRow): void {
                 :active-tab="activeTab"
                 :input-html="row.inputHtml"
                 :output-html="row.outputHtml"
+                :sandbox-seed="row.sandboxSeed"
               />
             </div>
             <ol

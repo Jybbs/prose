@@ -33,6 +33,12 @@ export function corpusLintFindings(crateDir: string): Map<string, lintFindings.L
   return map
 }
 
+// The authored title a `meta.toml` carries, blank and whitespace-only alike
+// resolving to nothing so each caller applies its own fallback.
+export function fixtureTitle(docs: FixtureDocs | undefined): string | undefined {
+  return docs?.title?.trim() || undefined
+}
+
 export function fixtureWatchGlobs(crateDir: string): string[] {
   const fixturesRoot = fixturesDirFrom(crateDir)
   return [
