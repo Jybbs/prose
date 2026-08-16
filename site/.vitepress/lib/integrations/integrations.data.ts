@@ -2,12 +2,12 @@ import path from 'node:path'
 
 import { defineLoader } from 'vitepress'
 
-import { markdownH1 }                    from '../markdown/h1'
-import { inlineNodes, type InlineNode }  from '../markdown/inline-nodes'
-import { getRenderer }                   from '../markdown/renderer'
-import { matterPages }                   from '../shared/content-page'
-import { siteDir }                       from '../shared/paths'
-import { requireString }                 from '../shared/require-string'
+import { markdownH1 }                   from '../markdown/h1'
+import { inlineNodes, type InlineNode } from '../markdown/inline-nodes'
+import { getRenderer }                  from '../markdown/renderer'
+import { matterPages }                  from '../shared/content-page'
+import { siteDir }                      from '../shared/paths'
+import { requireString }                from '../shared/require-string'
 
 interface IntegrationCard {
   href         : string

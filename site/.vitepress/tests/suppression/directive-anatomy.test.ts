@@ -9,9 +9,9 @@ vi.mock('../../lib/suppression/directives.data', () => ({
   data: [
     {
       effectNodes : [{ kind: 'text', text: 'Suppresses every rewrite for the file.' }],
-      example    : '# prose: off',
-      form       : '# prose: off',
-      id         : 'prose-off',
+      example     : '# prose: off',
+      form        : '# prose: off',
+      id          : 'prose-off',
       parts: [
         { role : 'comment',   text : '#'      },
         { role : 'namespace', text : 'prose:' },
@@ -21,11 +21,11 @@ vi.mock('../../lib/suppression/directives.data', () => ({
     },
     {
       effectNodes : [{ kind: 'text', text: 'Opens a suppressed region.' }],
-      example    : '# fmt: off',
-      form       : '# fmt: off',
-      id         : 'fmt-off',
-      pairId     : 'fmt-on',
-      pairRole   : 'opens',
+      example     : '# fmt: off',
+      form        : '# fmt: off',
+      id          : 'fmt-off',
+      pairId      : 'fmt-on',
+      pairRole    : 'opens',
       parts: [
         { role : 'comment',   text : '#'    },
         { role : 'namespace', text : 'fmt:' },
@@ -35,9 +35,9 @@ vi.mock('../../lib/suppression/directives.data', () => ({
     },
     {
       effectNodes : [{ kind: 'text', text: 'Only the listed lint rules skip the line.' }],
-      example    : 'x = 1  # prose: ignore[<rule>]',
-      form       : '# prose: ignore[<rule>, ...]',
-      id         : 'prose-ignore-rules',
+      example     : 'x = 1  # prose: ignore[<rule>]',
+      form        : '# prose: ignore[<rule>, ...]',
+      id          : 'prose-ignore-rules',
       parts: [
         { role : 'comment',   text : '#'             },
         { role : 'namespace', text : 'prose:'        },
@@ -48,9 +48,9 @@ vi.mock('../../lib/suppression/directives.data', () => ({
     },
     {
       effectNodes : [{ kind: 'text', text: 'Keeps the dict entries in authored order.' }],
-      example    : 'config = {}  # prose: keep',
-      form       : '# prose: keep',
-      id         : 'prose-keep',
+      example     : 'config = {}  # prose: keep',
+      form        : '# prose: keep',
+      id          : 'prose-keep',
       parts: [
         { role : 'comment',   text : '#'      },
         { role : 'namespace', text : 'prose:' },

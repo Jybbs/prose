@@ -1,4 +1,5 @@
-import { inlineNodes, type InlineNode, type InlineParser } from '../markdown/inline-nodes'
+import { inlineNodes }                   from '../markdown/inline-nodes'
+import type { InlineNode, InlineParser } from '../markdown/inline-nodes'
 
 export const NESTED_TABLES = new Set(['cache', 'imports', 'rules'])
 

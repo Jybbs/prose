@@ -1,4 +1,4 @@
-export function walkBodyInlines<T extends { children: T[] | null; type: string }>(
+export function walkBodyInlines<T extends { children: T[] | null, type: string }>(
   state : { tokens: T[] },
   visit : (block: T, children: T[]) => void
 ): void {

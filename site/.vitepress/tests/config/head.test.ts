@@ -33,7 +33,10 @@ describe('pageHead', () => {
     expect(content(head, 'og:title')).toBe('Prose')
     expect(content(head, 'og:type')).toBe('website')
     expect(content(head, 'og:image')).toBe(`${SITE_HOSTNAME}/og.png`)
-    expect(jsonLd(head)).toMatchObject({ '@graph': [{ '@type': 'WebSite' }, { '@type': 'SoftwareApplication', softwareVersion: '0.1.0' }] })
+    expect(jsonLd(head)).toMatchObject({ '@graph': [
+      { '@type': 'WebSite' },
+      { '@type': 'SoftwareApplication', softwareVersion: '0.1.0' }
+    ] })
   })
 
   it('falls back to the landing card and drops og:url and JSON-LD on the 404', () => {
@@ -47,7 +50,11 @@ describe('pageHead', () => {
   })
 
   it('prefers the frontmatter name over the page title', () => {
-    const data = page({ frontmatter: { name: 'Align Equals' }, relativePath: 'rules/alignment/align-equals.md', title: 'align-equals' })
+    const data = page({
+      frontmatter  : { name: 'Align Equals' },
+      relativePath : 'rules/alignment/align-equals.md',
+      title        : 'align-equals'
+    })
     expect(content(pageHead(data, '0.1.0'), 'og:title')).toBe('Align Equals · Prose')
   })
 })

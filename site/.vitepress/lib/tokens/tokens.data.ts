@@ -14,10 +14,10 @@ export default defineLoader({
     return Object.entries(sources.SOURCES).flatMap(([domain, domainSources]) =>
       domainSources.map(s => ({
         blurbNodes : inlineNodes(md, s.blurb),
-        domain    : domain as sources.Domain,
-        href      : s.href,
-        key       : s.key,
-        sort      : sources.stripPrefix(s.key)
+        domain     : domain as sources.Domain,
+        href       : s.href,
+        key        : s.key,
+        sort       : sources.stripPrefix(s.key)
       })))
   }
 })

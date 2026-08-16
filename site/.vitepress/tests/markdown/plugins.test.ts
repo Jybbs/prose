@@ -53,7 +53,8 @@ describe('glossaryPlugin', () => {
 
   it('emits an inert glossary anchor under the inertHtml env', () => {
     expect(render(md => md.use(plugin), 'an atom here', { inertHtml: true }))
-      .toContain('<a class="glossary-anchor underline-draw" data-term="atomic" href="/reference/glossary#atomic">atom</a>')
+      .toContain('<a class="glossary-anchor underline-draw" data-term="atomic" '
+               + 'href="/reference/glossary#atomic">atom</a>')
   })
 
   it('emits an inert glossary span when the entry has no href', () => {

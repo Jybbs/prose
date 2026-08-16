@@ -4,10 +4,10 @@
 // pair, a `remove`, an `insert` against an empty before, and a `block`
 // whose replacement spans several lines.
 
-interface BlockShorthand   { after  : string; before   : string; kind : 'block'   }
-interface InsertShorthand  { anchor : string; inserted : string; kind : 'insert'  }
-interface RemoveShorthand  { kind   : 'remove'; text   : string                   }
-interface ReplaceShorthand { after  : string; before   : string; kind : 'replace' }
+interface BlockShorthand   { after  : string, before   : string, kind : 'block'   }
+interface InsertShorthand  { anchor : string, inserted : string, kind : 'insert'  }
+interface RemoveShorthand  { kind   : 'remove', text   : string                   }
+interface ReplaceShorthand { after  : string, before   : string, kind : 'replace' }
 
 export type Shorthand = BlockShorthand | InsertShorthand | RemoveShorthand | ReplaceShorthand
 

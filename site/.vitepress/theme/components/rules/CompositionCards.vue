@@ -25,18 +25,18 @@ interface RuleSegment {
 }
 
 interface CardRow {
-  case            : string
-  changesSource   : boolean
+  case             : string
+  changesSource    : boolean
   descriptionNodes : InlineNode[] | undefined
-  dominantFamily  : string | null
-  hasToggle       : boolean
-  headlinePaint   : string
-  inputHtml       : string
-  num             : string
-  outputHtml      : string
-  railPaint       : string
-  segments: readonly RuleSegment[]
-  title           : string
+  dominantFamily   : string | null
+  hasToggle        : boolean
+  headlinePaint    : string
+  inputHtml        : string
+  num              : string
+  outputHtml       : string
+  railPaint        : string
+  segments         : readonly RuleSegment[]
+  title            : string
 }
 
 const cards = computed<readonly CardRow[]>(() =>
@@ -44,16 +44,16 @@ const cards = computed<readonly CardRow[]>(() =>
     const families = entry.rules.map(slug => rules.bySlug[slug]?.family ?? null)
     const fixture  = fixturesData.composition?.[entry.case]
     return {
-      case            : entry.case,
-      changesSource   : fixture?.changesSource ?? false,
+      case             : entry.case,
+      changesSource    : fixture?.changesSource ?? false,
       descriptionNodes : fixture?.descriptionNodes,
-      dominantFamily  : families[0] ?? null,
-      hasToggle       : fixture?.hasToggle ?? false,
-      headlinePaint   : railPaint(families, 'to right'),
-      inputHtml       : fixture?.inputHtml ?? '',
-      num             : formatFolio(i + 1, 3),
-      outputHtml      : fixture?.outputHtml ?? '',
-      railPaint       : railPaint(families),
+      dominantFamily   : families[0] ?? null,
+      hasToggle        : fixture?.hasToggle ?? false,
+      headlinePaint    : railPaint(families, 'to right'),
+      inputHtml        : fixture?.inputHtml ?? '',
+      num              : formatFolio(i + 1, 3),
+      outputHtml       : fixture?.outputHtml ?? '',
+      railPaint        : railPaint(families),
       segments: entry.rules.map((slug, idx) => ({
         family : families[idx] ?? null,
         index  : idx + 1,

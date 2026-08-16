@@ -2,18 +2,18 @@ import path from 'node:path'
 
 import type { DefaultTheme } from 'vitepress'
 
-import { markdownH1 }                  from '../markdown/h1'
-import { type DiscoveredPrimitive }    from '../primitives/discovery'
-import { type DiscoveredRule }         from '../rules/discovery'
-import { matterPages }                 from '../shared/content-page'
-import * as registries                 from '../shared/registries'
-import { requireString }               from '../shared/require-string'
-import { familyRoute, primitiveRoute, sectionRoute } from '../shared/routes'
+import { markdownH1 }               from '../markdown/h1'
+import { type DiscoveredPrimitive } from '../primitives/discovery'
+import { type DiscoveredRule }      from '../rules/discovery'
+import { matterPages }              from '../shared/content-page'
+import * as registries              from '../shared/registries'
+import { requireString }            from '../shared/require-string'
+import * as routes                  from '../shared/routes'
 
 type SidebarPrimitive = Pick<DiscoveredPrimitive, 'name' | 'slug' | 'stability'>
 
 const primLink = (slug: string, text: string): DefaultTheme.SidebarItem =>
-  ({ link: primitiveRoute(slug), text })
+  ({ link: routes.primitiveRoute(slug), text })
 
 const ruleLink = (rule: DiscoveredRule): DefaultTheme.SidebarItem =>
   ({ link: rule.href, text: rule.slug })
@@ -24,7 +24,7 @@ export function buildSidebar(
   srcDir     : string
 ): DefaultTheme.Sidebar {
   return Object.fromEntries(registries.SECTIONS.map(({ label, slug }) =>
-    [sectionRoute(slug), sectionGroups(label, primitives, rules, slug, srcDir)]))
+    [routes.sectionRoute(slug), sectionGroups(label, primitives, rules, slug, srcDir)]))
 }
 
 function primitiveGroups(
@@ -51,7 +51,7 @@ function ruleGroups(label: string, rules: readonly DiscoveredRule[]): DefaultThe
     items : rules
       .filter(r => r.family === family)
       .map(ruleLink),
-    link  : familyRoute(family),
+    link  : routes.familyRoute(family),
     text  : registries.FAMILY_META[family].label
   }))
   return [
@@ -79,7 +79,7 @@ function sectionGroups(
     case 'sandbox'    : return []
     default           : return [{
       items : [
-        { link: sectionRoute(slug), text: 'Overview' },
+        { link: routes.sectionRoute(slug), text: 'Overview' },
         ...sectionPages(path.join(srcDir, slug), slug)
       ],
       text  : label
@@ -93,6 +93,6 @@ function sectionPages(directory: string, slug: registries.SectionSlug): DefaultT
       markdownH1(page.content),
       `${slug}/${page.file} has no H1 for its sidebar entry`
     )
-    return { link: `${sectionRoute(slug)}${page.slug}`, text: title }
+    return { link: `${routes.sectionRoute(slug)}${page.slug}`, text: title }
   })
 }

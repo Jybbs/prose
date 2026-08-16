@@ -14,6 +14,7 @@ Audit CI invariants no other gate covers, exiting nonzero if either fails.
 Findings surface as `::error::` annotations naming the divergence or file.
 """
 
+from json    import loads as json_loads
 from pathlib import Path
 from re      import MULTILINE, finditer, search
 from tomllib import loads
@@ -113,6 +114,13 @@ def manifests() -> int:
     return failed
 
 
+def package_json() -> dict:
+    """
+    Return the parsed `site/package.json` mapping.
+    """
+    return json_loads(Path("site/package.json").read_text(encoding="utf-8"))
+
+
 def parity() -> int:
     """
     Report every cross-config version pin that has drifted from its pair.
@@ -156,7 +164,8 @@ def parity() -> int:
             ".mise/config.toml wasm-bindgen pin ↔ Cargo.lock wasm-bindgen",
             mise["tools"]["github:rustwasm/wasm-bindgen"],
             cargo_lock_version("wasm-bindgen")
-        )
+        ),
+        *patch_pins()
     ]
 
     failed = 0
@@ -165,6 +174,26 @@ def parity() -> int:
             annotate(f"parity mismatch in {label}: {left!r} vs {right!r}")
             failed = 1
     return failed
+
+
+def patch_pins() -> list[tuple[str, str, str]]:
+    """
+    Return one parity pair per `patchedDependencies` key, matching the version
+    the key targets against the version the manifest pins for that package.
+    """
+    package = package_json()
+    pairs   = []
+    for key in package.get("patchedDependencies", {}):
+        name, _, version = key.rpartition("@")
+        if (pinned := package["devDependencies"].get(name)) is None:
+            annotate(f"no site/package.json devDependency named {name!r}")
+            raise SystemExit(1)
+        pairs.append((
+            f"site/package.json {name} patch key ↔ its devDependency pin",
+            version,
+            pinned
+        ))
+    return pairs
 
 
 def toml(path: str) -> dict:

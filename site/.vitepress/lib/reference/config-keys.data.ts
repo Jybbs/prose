@@ -3,7 +3,8 @@ import { defineLoader } from 'vitepress'
 import { getRenderer } from '../markdown/renderer'
 import * as paths      from '../shared/paths'
 
-import { configRow, NESTED_TABLES, type ConfigRow, type SchemaProps } from '../shared/rule-schema'
+import { configRow, NESTED_TABLES }    from '../shared/rule-schema'
+import type { ConfigRow, SchemaProps } from '../shared/rule-schema'
 
 export interface ConfigKeys {
   cache   : readonly ConfigRow[]

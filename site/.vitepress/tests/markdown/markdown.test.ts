@@ -153,7 +153,7 @@ describe('lintDecorationTransformer', () => {
     (code: string, options: { decorations?: unknown[]; meta?: { __raw?: string } }) => void
 
   it('computes decorations for the fixture the lint token names', () => {
-    const options: { decorations?: unknown[]; meta?: { __raw?: string } } =
+    const options: { decorations?: unknown[], meta?: { __raw?: string } } =
       { meta: { __raw: `python ${decorations.lintFenceMeta('demo-rule/basic')}` } }
     preprocess('', options)
     expect(options.decorations).toEqual([{
@@ -164,7 +164,7 @@ describe('lintDecorationTransformer', () => {
   })
 
   it('measures the row treatment against the fence it preprocesses', () => {
-    const options: { decorations?: unknown[]; meta?: { __raw?: string } } =
+    const options: { decorations?: unknown[], meta?: { __raw?: string } } =
       { meta: { __raw: `python ${decorations.lintFenceMeta('demo-rule/basic')}` } }
     preprocess('x =', options)
     expect(options.decorations).toEqual([{
@@ -175,7 +175,7 @@ describe('lintDecorationTransformer', () => {
   })
 
   it('leaves decorations untouched when no lint token is present', () => {
-    const options: { decorations?: unknown[]; meta?: { __raw?: string } } = { meta: { __raw: 'python' } }
+    const options: { decorations?: unknown[], meta?: { __raw?: string } } = { meta: { __raw: 'python' } }
     preprocess('', options)
     expect(options.decorations).toBeUndefined()
   })

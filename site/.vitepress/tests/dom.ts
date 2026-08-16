@@ -78,8 +78,10 @@ export const mountSetup = <T>(run: () => T): T => {
 export const nextFrame = (): Promise<void> =>
   new Promise(resolve => { requestAnimationFrame(() => resolve()) })
 
-export const rectElement = (rect: Partial<DOMRect>): HTMLElement => {
-  const el = document.createElement('div')
-  el.getBoundingClientRect = () => rect as DOMRect
-  return el
+export const rectElement = (rect: Partial<DOMRect>): HTMLElement =>
+  stubRect(document.createElement('div'), rect)
+
+export const stubRect = <T extends Element>(element: T, rect: Partial<DOMRect>): T => {
+  element.getBoundingClientRect = () => rect as DOMRect
+  return element
 }

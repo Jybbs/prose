@@ -6,7 +6,8 @@ import { discoverRuleIndex }            from '../rules/discovery'
 import * as paths                       from '../shared/paths'
 import { FAMILY_META, type RuleFamily } from '../shared/registries'
 
-import { rulePropsOf, typeOf, type SchemaProp, type SchemaProps } from '../shared/rule-schema'
+import { rulePropsOf, typeOf }          from '../shared/rule-schema'
+import type { SchemaProp, SchemaProps } from '../shared/rule-schema'
 
 interface Facet {
   default      : string

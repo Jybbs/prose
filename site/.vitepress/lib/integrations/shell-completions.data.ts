@@ -4,15 +4,15 @@ import type { InlineNode } from '../markdown/inline-nodes'
 import * as renderer       from '../markdown/renderer'
 
 interface ShellCompletion {
-  caption  : string
-  codeHtml : string
-  command  : string
-  language : string
-  mono     : string
-  name     : string
+  caption   : string
+  codeHtml  : string
+  command   : string
+  language  : string
+  mono      : string
+  name      : string
   noteNodes : InlineNode[]
-  slug     : string
-  target   : string
+  slug      : string
+  target    : string
 }
 
 declare const data: readonly ShellCompletion[]

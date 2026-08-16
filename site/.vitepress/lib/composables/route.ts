@@ -1,5 +1,5 @@
-import { useData }                                                         from 'vitepress'
-import { computed, inject, provide, type ComputedRef, type InjectionKey }  from 'vue'
+import { useData } from 'vitepress'
+import { computed, inject, provide, type ComputedRef, type InjectionKey } from 'vue'
 
 import { data as rules, type RenderedRule } from '../rules/rules.data'
 import { FAMILY_META, type RuleFamily }     from '../shared/registries'

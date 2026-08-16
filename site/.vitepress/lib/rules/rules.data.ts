@@ -1,10 +1,10 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderPlainInlineHtml }      from '../markdown/renderer'
-import { rulesDir }                                from '../shared/paths'
-import * as registries                             from '../shared/registries'
-import { toTitleCase }                             from '../shared/title-case'
-import { discoverRuleSlugs, type DiscoveredRule }  from './discovery'
+import { getRenderer, renderPlainInlineHtml }     from '../markdown/renderer'
+import { rulesDir }                               from '../shared/paths'
+import * as registries                            from '../shared/registries'
+import { toTitleCase }                            from '../shared/title-case'
+import { discoverRuleSlugs, type DiscoveredRule } from './discovery'
 
 export type { DiscoveredRule }
 

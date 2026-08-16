@@ -2,10 +2,10 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick }             from 'vue'
 
-import type { RenderedRule }   from '../../lib/rules/rules.data'
-import SurfaceRail             from '../../theme/components/landing/surfaces/SurfaceRail.vue'
-import { domTest, nextFrame }  from '../dom'
-import { popperStubMount }     from '../popper-stub'
+import type { RenderedRule }  from '../../lib/rules/rules.data'
+import SurfaceRail            from '../../theme/components/landing/surfaces/SurfaceRail.vue'
+import { domTest, nextFrame } from '../dom'
+import { popperStubMount }    from '../popper-stub'
 
 // The mock keys each measurement off the element it observes rather than off
 // call order, and drives the pointer the edge glide reads.

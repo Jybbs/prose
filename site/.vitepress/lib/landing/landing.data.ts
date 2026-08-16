@@ -9,15 +9,15 @@ import { FAMILY_ORDER, type RuleFamily } from '../shared/registries'
 export interface Step {
   bodyNodes : InlineNode[]
   codeHtml  : string
-  language : string
-  number   : string
-  title    : string
+  language  : string
+  number    : string
+  title     : string
 }
 
 export interface Surface {
   bodyNodes : InlineNode[]
-  family   : RuleFamily
-  number   : string
+  family    : RuleFamily
+  number    : string
 }
 
 interface LandingData {
@@ -49,7 +49,7 @@ const SURFACE_BODIES: Record<RuleFamily, string> = {
              + 'already knows where it sits.'
 }
 
-type StepSource = Omit<Step, 'bodyNodes' | 'codeHtml'> & { body: string; code: string }
+type StepSource = Omit<Step, 'bodyNodes' | 'codeHtml'> & { body: string, code: string }
 
 const STEP_SOURCES: readonly StepSource[] = [
   {

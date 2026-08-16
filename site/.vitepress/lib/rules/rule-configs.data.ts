@@ -3,7 +3,8 @@ import { defineLoader } from 'vitepress'
 import { getRenderer } from '../markdown/renderer'
 import * as paths      from '../shared/paths'
 
-import { configRow, rulePropsOf, type ConfigRow, type SchemaProps } from '../shared/rule-schema'
+import { configRow, rulePropsOf }      from '../shared/rule-schema'
+import type { ConfigRow, SchemaProps } from '../shared/rule-schema'
 
 type RuleConfigData = Record<string, readonly ConfigRow[]>
 

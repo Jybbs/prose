@@ -8,18 +8,18 @@ import { expectAccessible } from '../axe'
 vi.mock('../../lib/integrations/shell-completions.data', () => ({
   data: [
     {
-      caption  : 'completions bash',
-      codeHtml : '<pre>prose completions bash</pre>',
-      name     : 'Bash',
+      caption   : 'completions bash',
+      codeHtml  : '<pre>prose completions bash</pre>',
+      name      : 'Bash',
       noteNodes : [{ kind: 'text', text: 'Reload the shell.' }],
-      slug     : 'bash'
+      slug      : 'bash'
     },
     {
-      caption  : 'completions fish',
-      codeHtml : '<pre>prose completions fish</pre>',
-      name     : 'fish',
+      caption   : 'completions fish',
+      codeHtml  : '<pre>prose completions fish</pre>',
+      name      : 'fish',
       noteNodes : [{ kind: 'text', text: 'Completions load lazily.' }],
-      slug     : 'fish'
+      slug      : 'fish'
     }
   ]
 }))

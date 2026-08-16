@@ -2,7 +2,7 @@
 import type { RenderedRule } from '../../../lib/rules/rules.data'
 
 defineProps<{
-  segment     : { family: string | null; rule: RenderedRule | null; slug: string }
+  segment     : { family: string | null, rule: RenderedRule | null, slug: string }
   withTooltip : boolean
 }>()
 </script>
