@@ -1,6 +1,6 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE description="Run the Rust suites, rejecting any orphaned `insta` snapshot"
-#MISE sources=[".mise/config.toml", "Cargo.lock", "Cargo.toml", "crate/**/*", "wasm/**/*"]
+#MISE sources=[".mise/config.toml", "Cargo.lock", "Cargo.toml", "crate/**/*", "site/**/*.md", "wasm/**/*"]
 
 cargo insta test --unreferenced=reject --workspace --exclude prose_wasm
 cargo test --package prose_wasm --locked
