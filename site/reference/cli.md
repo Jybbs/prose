@@ -62,7 +62,7 @@ Reports violations without modifying source, returning the canonical [**Exit Cod
 | `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count line, dropping the anchor and color. An [**unstable-output notice**](#unstable-output) survives it |
 | `--stdin` | bool | off | Read source from stdin instead of the filesystem |
 | `--stdin-filename` | path | unset | Treat stdin as this path, its extension selecting the source type. A `.ipynb` name reads stdin as a notebook |
-| `--validate` | bool | off | Confirm each file's would-be rewrite re-parses, and that it settles wherever `report-unstable-output` is left on, surfacing an unparseable rule output or an [**unstable one**](#unstable-output) as a config error |
+| `--validate` | bool | off | Confirm each file's would-be rewrite re-parses and settles, surfacing an unparseable rule output or an [**unstable one**](#unstable-output) as a config error |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules |
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules |
 | `PATH...` | one or more paths, or `-` | required when not `--stdin` | Files or directories to check, or `-` to read source from stdin |
@@ -200,15 +200,17 @@ the resolved configuration, with anything too long for a link left to paste:
 🐞 1 file would change on a second run.
 ```
 
-The `--select` list is the smallest subset that still reproduces rather than every rule that ran, narrowed to one rule where one rule suffices and to a rule pair where two only disagree together. That same invocation confirms the fix after an upgrade, so nobody waits on a release note to find out. Each run rewrites the file again, so capturing the two passes a report wants goes through the `--stdin` form the [**issue form**](https://github.com/Jybbs/prose/issues/new?template=unstable-output.yml) itself shows.
+The `--select` list is the smallest subset that still reproduces rather than every rule that ran, narrowed to one rule where one rule suffices and to a rule pair where two only disagree together. The search runs under a fixed probe budget and falls back to naming every rule that ran where no single or pair reproduces inside it, and a notebook's report names the whole selection today, since its cells do not replay through the narrowing path. That same invocation confirms the fix after an upgrade, so nobody waits on a release note to find out. Each run rewrites the file again, so capturing the two passes a report wants goes through the `--stdin` form the [**issue form**](https://github.com/Jybbs/prose/issues/new?template=unstable-output.yml) itself shows.
 
 The rewrite lands and the run's exit code resolves from that rewrite alone, because the defect belongs to the formatter rather than to the source beneath it. A project that would rather gate CI on the promise opts in through [`prose check --validate`](#prose-check), which prints the same notice and takes the `4` its other validation failures take.
+
+When the [**cache**](/reference/cache) is live, a rewriting `format` skips the settle walk and marks the bytes it lands as its own output instead, so the run that next reads those bytes and finds them changing again is the one that names the defect, arriving exactly when the symptom first shows and holding the minimal reproducing source in hand. A `--diff` preview, a `check --validate`, and any `--no-cache` run keep the same-run walk, so a workflow that wants the notice before anything reaches disk has one.
 
 A notice survives the [**cache**](/reference/cache), because the entry a run stores carries the report beside the diagnostics and the rewrite, so a hit re-prints the block rather than losing it to the skipped pipeline. Reaching for `--no-cache` to trust the notice is therefore unnecessary.
 
 A run over a tree folds its notices so the output stays readable. Files reproducing under one subset collapse into a single block naming how many and pointing its invocation at the first of them, the second-pass diff renders only where a block covers one file, and the closing summary gains a 🐞 line counting the files whose output a second run would change. `--quiet` reduces routine output rather than a defect notice, so the block survives it with the anchor and color stripped the way every other line's are.
 
-`report-unstable-output = false` in `[tool.prose]` turns the whole notice off, which the [**Configuration**](/reference/configuration#top-level-keys) reference covers alongside every other key.
+`report-unstable-output = false` in `[tool.prose]` turns the notice off on every `format` surface, which the [**Configuration**](/reference/configuration#top-level-keys) reference covers alongside every other key. The key governs the notice alone, so a `check --validate` run still performs the settle check the flag asks for.
 
 ## Run Summary
 
