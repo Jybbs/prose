@@ -2,10 +2,14 @@
 //! LRU eviction.
 
 use std::{
+    collections::HashSet,
     fs::Metadata,
     io::{self, BufWriter, Read, Write},
     path::{Path, PathBuf},
-    sync::atomic::{AtomicBool, Ordering},
+    sync::{
+        OnceLock,
+        atomic::{AtomicBool, Ordering},
+    },
     time::{Duration, SystemTime},
 };
 
@@ -23,6 +27,12 @@ pub struct Cache {
     pub(super) inserted: AtomicBool,
     pub(super) max_entries: usize,
     pub(super) max_size_bytes: u64,
+    /// The own-output marker keys, loaded from the generation's ledger
+    /// on first probe. A marked key names bytes a write-back run
+    /// landed, so a later run rewriting them again holds a proven
+    /// settle defect. Advisory only, in that a lost marker loses a
+    /// detection and never corrupts a run.
+    pub(super) own_output: OnceLock<HashSet<[u8; 32]>>,
     /// This build's generation directory, where every entry lands.
     pub(super) root: PathBuf,
     /// The directory holding every generation, swept for dead ones.
@@ -30,6 +40,45 @@ pub struct Cache {
 }
 
 impl Cache {
+    /// True where `key` names bytes a write-back run of this generation
+    /// landed as its own output, read from the ledger on first probe.
+    pub fn owns_output(&self, key: &CacheKey) -> bool {
+        self.own_output
+            .get_or_init(|| {
+                let Ok(bytes) = std::fs::read(self.own_output_path()) else {
+                    return HashSet::new();
+                };
+                bytes
+                    .chunks_exact(32)
+                    .map(|chunk| chunk.try_into().expect("a 32-byte chunk"))
+                    .collect()
+            })
+            .contains(key.0.as_bytes())
+    }
+
+    /// Marks `key`'s bytes as this run's own output, appended to the
+    /// generation's ledger. An oversized ledger truncates first, which
+    /// forgets old markers rather than growing without bound, a loss
+    /// the advisory contract absorbs.
+    pub fn record_own_output(&self, key: &CacheKey) {
+        let path = self.own_output_path();
+        let oversized = std::fs::metadata(&path).is_ok_and(|meta| meta.len() > 1 << 20);
+        let mut open = std::fs::OpenOptions::new();
+        open.create(true);
+        if oversized {
+            open.write(true).truncate(true);
+        } else {
+            open.append(true);
+        }
+        if let Ok(mut file) = open.open(&path) {
+            let _ = file.write_all(key.0.as_bytes());
+        }
+    }
+
+    fn own_output_path(&self) -> PathBuf {
+        self.root.join("own-output")
+    }
+
     /// Opens or creates the cache directory with an unbounded size cap.
     ///
     /// Resolves the path through `PROSE_CACHE_DIR` →
@@ -53,6 +102,7 @@ impl Cache {
             inserted: AtomicBool::new(false),
             max_entries: usize::MAX,
             max_size_bytes: u64::MAX,
+            own_output: OnceLock::new(),
             root,
             store,
         })
@@ -325,7 +375,7 @@ fn on_disk(metadata: &Metadata) -> u64 {
 }
 
 fn is_entry_file(path: &Path) -> bool {
-    path.extension().is_none()
+    path.extension().is_none() && path.file_name().is_none_or(|name| name != "own-output")
 }
 
 /// The entry files directly under `dir`, paired with their metadata.

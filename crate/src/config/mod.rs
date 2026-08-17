@@ -84,7 +84,9 @@ pub struct Config {
     pub imports: ImportsConfig,
     /// Reports a rewrite whose settle check names rules as a defect in
     /// Prose, naming the reproducing subset and the invocation that
-    /// replays it. `false` lands the rewrite with no notice.
+    /// replays it. `false` lands the rewrite with no notice, governing
+    /// the notice surfaces alone, so `check --validate` still runs the
+    /// settle check it was passed to run.
     pub report_unstable_output: bool,
     pub rules: RuleConfigs,
     /// The Python runtime the project ships to, read by the

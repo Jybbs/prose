@@ -64,6 +64,7 @@ mod tests {
             inserted: std::sync::atomic::AtomicBool::new(false),
             max_entries: usize::MAX,
             max_size_bytes: u64::from(max_mib) * 1024 * 1024,
+            own_output: std::sync::OnceLock::new(),
             root,
             store,
         }
@@ -432,6 +433,34 @@ mod tests {
         let info = cache.info();
         assert_eq!(info.entries, 0);
         assert_eq!(info.bytes, 0);
+    }
+
+    #[test]
+    fn info_and_compact_leave_the_own_output_ledger_alone() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        cache.record_own_output(&key(b"x = 1\n", CONFIG_A, rules()));
+
+        assert_eq!(cache.info().entries, 0);
+        assert_eq!(cache.compact(), CleanReport::default());
+        assert!(cache.owns_output(&key(b"x = 1\n", CONFIG_A, rules())));
+    }
+
+    #[test]
+    fn own_output_marker_round_trips_across_instances() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        let marked = key(b"y = 1\n", CONFIG_A, rules());
+        let unmarked = key(b"z = 2\n", CONFIG_A, rules());
+        cache.record_own_output(&marked);
+
+        let reopened = Cache {
+            inserted: std::sync::atomic::AtomicBool::new(false),
+            ..cache_in(&tmp, 100)
+        };
+
+        assert!(reopened.owns_output(&marked));
+        assert!(!reopened.owns_output(&unmarked));
     }
 
     #[test]

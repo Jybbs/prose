@@ -15,7 +15,7 @@ use crate::{config::Config, pipeline::Pipeline, rule::RuleId, source::Source};
 mod form;
 mod narrow;
 
-pub(crate) use form::{report_url, terminal_report_url};
+pub(crate) use form::report_url;
 use narrow::reproducing_subset;
 
 /// One file's rewrite that a second pass would change.
@@ -44,9 +44,6 @@ impl UnstableRewrite {
         original: &str,
         formatted: &Source,
     ) -> Option<Self> {
-        if !config.report_unstable_output {
-            return None;
-        }
         let editing = pipeline.unsettled(formatted);
         if editing.is_empty() {
             return None;
@@ -105,17 +102,52 @@ pub(crate) fn headline(subject: &str) -> String {
     format!("prose rewrote {subject} to output a second run would change")
 }
 
+/// The report for a probe hit on the own-output ledger, where
+/// `original` is a prior run's own output that this run rewrote. The
+/// proof already happened, so the walk the eager path runs is skipped
+/// and the editing set reads straight off the marked bytes, narrowed
+/// to the smallest subset still editing them.
+pub(crate) fn detect_marked(
+    pipeline: &Pipeline,
+    config: &Config,
+    original: &str,
+    formatted: &Source,
+) -> Option<UnstableRewrite> {
+    let source = original.parse::<Source>().ok()?;
+    let editing = pipeline.unsettled(&source);
+    if editing.is_empty() {
+        return None;
+    }
+    let rules = (!formatted.is_notebook())
+        .then(|| {
+            narrow::editing_subset(&editing, &source, |subset| {
+                Pipeline::with_filters(config, subset, &[])
+            })
+        })
+        .flatten()
+        .unwrap_or_else(|| pipeline.rule_ids().collect());
+    Some(UnstableRewrite {
+        config_toml: config.to_changed_toml(),
+        first: formatted.text().to_owned(),
+        rules,
+        second: second_pass(pipeline, formatted),
+    })
+}
+
 /// The rules editing `original` together with the `editing` rules still
-/// editing the output, in registration order.
+/// editing the output, the `editing` rules leading so the pairs the
+/// probe budget reaches first are the ones anchored on a rule the
+/// settle walk already named. Each block keeps registration order.
 fn candidates(pipeline: &Pipeline, original: &str, editing: &[RuleId]) -> Vec<RuleId> {
     let touched = original
         .parse::<Source>()
         .map(|source| pipeline.unsettled(&source))
         .unwrap_or_default();
-    pipeline
+    let (named, rest): (Vec<_>, Vec<_>) = pipeline
         .rule_ids()
         .filter(|rule| touched.contains(rule) || editing.contains(rule))
-        .collect()
+        .partition(|rule| editing.contains(rule));
+    named.into_iter().chain(rest).collect()
 }
 
 /// `None` where neither a rule alone nor a rule pair reproduces on this
@@ -181,7 +213,7 @@ mod tests {
     }
 
     #[test]
-    fn candidates_reach_a_rule_that_edits_only_the_output() {
+    fn candidates_reach_a_rule_that_edits_only_the_output_and_lead_with_it() {
         let pipeline = downstream();
         let (formatted, _) = pipeline.run(parse(SOURCE)).expect("runs");
         let editing = pipeline.unsettled(&formatted);
@@ -189,9 +221,10 @@ mod tests {
         assert_eq!(
             candidates(&pipeline, SOURCE, &editing),
             vec![
-                RuleId::from("settles-once"),
                 RuleId::from("widens-downstream"),
+                RuleId::from("settles-once"),
             ],
+            "the rule still editing the output leads, so its pairs sit inside the probe budget",
         );
     }
 
@@ -224,7 +257,10 @@ mod tests {
     }
 
     #[test]
-    fn detect_holds_quiet_where_the_config_turns_the_report_off() {
+    fn detect_reports_regardless_of_the_config_key() {
+        // The key gates the notice surfaces, not the detector, so a
+        // caller that wants the check despite the key, as `check
+        // --validate` does, reads a real answer here.
         let pipeline = widening();
         let (formatted, _) = pipeline.run(parse(SOURCE)).expect("runs");
         let config = Config {
@@ -232,7 +268,7 @@ mod tests {
             ..Config::default()
         };
 
-        assert!(UnstableRewrite::detect(&pipeline, &config, SOURCE, &formatted).is_none());
+        assert!(UnstableRewrite::detect(&pipeline, &config, SOURCE, &formatted).is_some());
     }
 
     #[test]

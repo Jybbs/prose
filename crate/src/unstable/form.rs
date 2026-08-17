@@ -15,21 +15,15 @@ use crate::rule::render_slugs;
 
 const TEMPLATE: &str = "unstable-output.yml";
 
-/// The budget a terminal notice prints under, short enough that the
-/// line reads. A field too long for it drops, which on a real module
-/// is the source and both passes.
-const TERMINAL_BUDGET: usize = 1200;
-
-/// The budget a client-opened URL stays under, below what a browser and
-/// GitHub both accept in a request line.
-const URL_BUDGET: usize = 6000;
+/// The budget every report URL stays under, terminal-printed and
+/// client-opened alike, so what travels toward a public tracker is the
+/// same bounded content the notice prints. A field too long for it
+/// drops, which on a real module is the source and both passes, and
+/// the form asks the reporter for the file instead.
+const BUDGET: usize = 1200;
 
 pub(crate) fn report_url(rewrite: &UnstableRewrite, original: &str) -> String {
-    build(rewrite, original, URL_BUDGET)
-}
-
-pub(crate) fn terminal_report_url(rewrite: &UnstableRewrite, original: &str) -> String {
-    build(rewrite, original, TERMINAL_BUDGET)
+    build(rewrite, original, BUDGET)
 }
 
 /// The fields run smallest-first, so an oversized one drops while every
@@ -86,11 +80,11 @@ mod tests {
 
     #[test]
     fn report_url_drops_a_field_that_would_overflow_the_budget() {
-        let huge = "x".repeat(URL_BUDGET);
+        let huge = "x".repeat(BUDGET);
 
         let url = report_url(&rewrite(&huge, "b = 2\n", ""), "a = 1\n");
 
-        assert!(url.len() <= URL_BUDGET, "budget overrun: {}", url.len());
+        assert!(url.len() <= BUDGET, "budget overrun: {}", url.len());
         assert!(!url.contains("&first-pass="), "oversized field survived");
         assert!(url.contains("&second-pass=b%20%3D%202%0A"));
     }
@@ -157,25 +151,16 @@ mod tests {
     }
 
     #[test]
-    fn terminal_report_url_sheds_the_bulky_fields_the_whole_url_keeps() {
+    fn report_url_sheds_the_bulky_fields_under_its_budget() {
         let bulky = "x".repeat(2000);
         let rewrite = rewrite(&bulky, &bulky, "code-line-length = 100\n");
 
-        let terminal = terminal_report_url(&rewrite, &bulky);
-        let whole = report_url(&rewrite, &bulky);
+        let url = report_url(&rewrite, &bulky);
 
-        assert!(
-            terminal.len() <= TERMINAL_BUDGET,
-            "budget overrun: {}",
-            terminal.len(),
-        );
-        assert!(terminal.contains("&rules=align-equals"));
-        assert!(terminal.contains("&config=code-line-length%20%3D%20100%0A"));
-        assert!(!terminal.contains("&source="), "{terminal}");
-        assert!(!terminal.contains("&first-pass="), "{terminal}");
-        assert!(
-            whole.contains("&source="),
-            "the whole URL dropped the source"
-        );
+        assert!(url.len() <= BUDGET, "budget overrun: {}", url.len());
+        assert!(url.contains("&rules=align-equals"));
+        assert!(url.contains("&config=code-line-length%20%3D%20100%0A"));
+        assert!(!url.contains("&source="), "{url}");
+        assert!(!url.contains("&first-pass="), "{url}");
     }
 }

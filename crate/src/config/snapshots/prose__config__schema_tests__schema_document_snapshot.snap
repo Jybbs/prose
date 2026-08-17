@@ -1164,7 +1164,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
     },
     "report-unstable-output": {
       "default": true,
-      "description": "Reports a rewrite whose settle check names rules as a defect in\nProse, naming the reproducing subset and the invocation that\nreplays it. `false` lands the rewrite with no notice.",
+      "description": "Reports a rewrite whose settle check names rules as a defect in\nProse, naming the reproducing subset and the invocation that\nreplays it. `false` lands the rewrite with no notice, governing\nthe notice surfaces alone, so `check --validate` still runs the\nsettle check it was passed to run.",
       "type": "boolean"
     },
     "rules": {

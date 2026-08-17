@@ -43,17 +43,30 @@ pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
 /// Dispatches `source` by `pass`, collecting the as-written diagnostics on
 /// a check pass and building the rewrite through `rewrite` on a format
 /// pass. A notebook threads its `index`, a module passes `None`.
+/// How a run answers the settle question for one file. `Eager` walks
+/// the rules over the output as it lands. The ledger variants apply
+/// where a live cache lets a write-back run mark its output instead,
+/// wherein the walk is skipped and `LedgerHit` proves the input bytes
+/// are a prior run's own output that failed to settle.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum Marker {
+    Eager,
+    LedgerHit,
+    LedgerMiss,
+}
+
 pub(super) fn drive(
     source: Source,
     resolved: &Resolved,
     pass: Pass,
     index: Option<NotebookIndex>,
+    marker: Marker,
     rewrite: impl FnOnce(&Source, &SourceFile) -> Rewrite,
 ) -> FileOutcome {
     if let Pass::Diagnose { validate } = pass {
         return diagnose_only(source, resolved, validate, index);
     }
-    run_and_assemble(source, resolved, pass.anchor(), index, rewrite)
+    run_and_assemble(source, resolved, pass, index, marker, rewrite)
 }
 
 pub(super) fn failed(status: ExitStatus, e: impl std::fmt::Display) -> FileOutcome {
@@ -96,12 +109,20 @@ pub(super) fn process_path(
             );
         }
     };
+    let marker = keyed.as_ref().map_or(Marker::Eager, |(c, k)| {
+        if c.owns_output(k) {
+            Marker::LedgerHit
+        } else {
+            Marker::LedgerMiss
+        }
+    });
     let outcome = process_source(
         text,
         path.display().to_string(),
         source_type,
         &resolved,
         pass,
+        marker,
     );
     if let (
         Some((c, k)),
@@ -128,6 +149,21 @@ pub(super) fn process_path(
                 unstable: unstable.as_deref(),
             },
         );
+    }
+    // A write-back module run marks the bytes it is about to land, so
+    // the next run holding them re-keys to this entry and a rewrite of
+    // marked bytes reads as a proven settle defect.
+    if let (
+        Some((c, _)),
+        FileOutcome::Done {
+            rewrite: Rewrite::Changed(kind),
+            ..
+        },
+    ) = (&keyed, &outcome)
+        && pass.write_back()
+        && !source_type.is_ipynb()
+    {
+        c.record_own_output(&resolved.key_prefix.key_for(kind.written().as_bytes()));
     }
     outcome
 }
@@ -246,7 +282,14 @@ pub(super) fn process_stdin(
     resolved: &Resolved,
     pass: Pass,
 ) -> FileOutcome {
-    process_source(text, STDIN_NAME.to_owned(), source_type, resolved, pass)
+    process_source(
+        text,
+        STDIN_NAME.to_owned(),
+        source_type,
+        resolved,
+        pass,
+        Marker::Eager,
+    )
 }
 
 /// Reads stdin to a string, mapping a read failure to a config-error
@@ -349,12 +392,13 @@ fn process_source(
     source_type: PySourceType,
     resolved: &Resolved,
     pass: Pass,
+    marker: Marker,
 ) -> FileOutcome {
     if source_type.is_ipynb() {
         return notebook::process(text, name, resolved, pass);
     }
     match Source::build_module(text, name.as_str(), source_type) {
-        Ok(source) => run_pipeline(source, resolved, pass),
+        Ok(source) => run_pipeline(source, resolved, pass, marker),
         Err(e) => failed(
             ExitStatus::ParseError,
             format_args!("parse error in `{name}`: {e}"),
@@ -371,12 +415,13 @@ fn process_source(
 fn run_and_assemble(
     source: Source,
     resolved: &Resolved,
-    anchor: Anchor,
+    pass: Pass,
     notebook_index: Option<NotebookIndex>,
+    marker: Marker,
     rewrite: impl FnOnce(&Source, &SourceFile) -> Rewrite,
 ) -> FileOutcome {
     let file = source.source_file().clone();
-    let run = match anchor {
+    let run = match pass.anchor() {
         Anchor::AsWritten => resolved.pipeline.run_as_written(source),
         Anchor::Rewritten => resolved.pipeline.run(source),
     };
@@ -392,9 +437,28 @@ fn run_and_assemble(
                     format_args!("{} did not re-read as a notebook", file.name()),
                 );
             }
-            let unstable = matches!(rewrite, Rewrite::Changed(_))
-                .then(|| settle_report(resolved, file.source_text(), &formatted))
-                .flatten();
+            // Under a live ledger a write-back module run skips the
+            // settle walk, because its output is marked instead and a
+            // probe hit on the input bytes is already the proof the
+            // prior run's output failed to settle, arriving with the
+            // minimal reproducing source in hand.
+            let checks = match marker {
+                Marker::Eager => true,
+                Marker::LedgerHit => true,
+                Marker::LedgerMiss => !pass.write_back() || formatted.is_notebook(),
+            };
+            let proven = marker == Marker::LedgerHit && pass.write_back();
+            let unstable = (resolved.config.report_unstable_output
+                && checks
+                && (proven || matches!(rewrite, Rewrite::Changed(_))))
+            .then(|| {
+                if proven {
+                    marked_report(resolved, file.source_text(), &formatted)
+                } else {
+                    settle_report(resolved, file.source_text(), &formatted)
+                }
+            })
+            .flatten();
             FileOutcome::Done {
                 cached: false,
                 diagnostics,
@@ -411,8 +475,8 @@ fn run_and_assemble(
 /// Runs a text source through the pipeline via [`drive`], building the
 /// text rewrite from the formatted output against the original. A module
 /// carries no notebook index.
-fn run_pipeline(source: Source, resolved: &Resolved, pass: Pass) -> FileOutcome {
-    drive(source, resolved, pass, None, |formatted, file| {
+fn run_pipeline(source: Source, resolved: &Resolved, pass: Pass, marker: Marker) -> FileOutcome {
+    drive(source, resolved, pass, None, marker, |formatted, file| {
         formatted
             .changed_from(file.source_text())
             .map_or(Rewrite::Unchanged, |text| Rewrite::text(text.to_owned()))
@@ -426,6 +490,17 @@ fn settle_report(
     formatted: &Source,
 ) -> Option<Box<UnstableRewrite>> {
     UnstableRewrite::detect(&resolved.pipeline, &resolved.config, original, formatted).map(Box::new)
+}
+
+/// The report a ledger probe hit mints, reading the editing set off the
+/// marked input rather than walking the fresh output.
+fn marked_report(
+    resolved: &Resolved,
+    original: &str,
+    formatted: &Source,
+) -> Option<Box<UnstableRewrite>> {
+    crate::unstable::detect_marked(&resolved.pipeline, &resolved.config, original, formatted)
+        .map(Box::new)
 }
 
 fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
@@ -478,7 +553,12 @@ mod tests {
         let resolved = Resolved::over(Pipeline::from_rules(vec![Box::new(breaks_parse())]));
         let source = parse("x = 1\n");
 
-        let outcome = run_pipeline(source, &resolved, Pass::Diagnose { validate: true });
+        let outcome = run_pipeline(
+            source,
+            &resolved,
+            Pass::Diagnose { validate: true },
+            Marker::Eager,
+        );
 
         assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
     }
@@ -493,6 +573,7 @@ mod tests {
             parse("x = 1\n"),
             &resolved,
             Pass::Diagnose { validate: false },
+            Marker::Eager,
         );
 
         assert_matches!(outcome, FileOutcome::Done { unstable: None, .. });
@@ -503,7 +584,12 @@ mod tests {
         let resolved = Resolved::over(Pipeline::from_rules(vec![Box::new(breaks_parse())]));
         let source = parse("x = 1\n");
 
-        let outcome = run_pipeline(source, &resolved, Pass::Diagnose { validate: false });
+        let outcome = run_pipeline(
+            source,
+            &resolved,
+            Pass::Diagnose { validate: false },
+            Marker::Eager,
+        );
 
         assert_matches!(
             outcome,
@@ -524,7 +610,7 @@ mod tests {
         ))]));
         let source = parse("x = 1\n");
 
-        let outcome = run_pipeline(source, &resolved, pass);
+        let outcome = run_pipeline(source, &resolved, pass, Marker::Eager);
 
         assert_matches!(
             &outcome,
@@ -538,17 +624,40 @@ mod tests {
     }
 
     #[rstest]
-    fn no_pass_reports_a_rewrite_the_config_holds_quiet(
-        #[values(Pass::Both, Pass::Rewrite, Pass::Diagnose { validate: true })] pass: Pass,
+    fn no_format_pass_reports_a_rewrite_the_config_holds_quiet(
+        #[values(Pass::Both, Pass::Rewrite)] pass: Pass,
     ) {
         let mut resolved = Resolved::over(Pipeline::from_rules(vec![Box::new(never_settles(
             "widener",
         ))]));
         resolved.config.report_unstable_output = false;
 
-        let outcome = run_pipeline(parse("x = 1\n"), &resolved, pass);
+        let outcome = run_pipeline(parse("x = 1\n"), &resolved, pass, Marker::Eager);
 
         assert_matches!(outcome, FileOutcome::Done { unstable: None, .. });
+    }
+
+    #[test]
+    fn validate_reports_a_rewrite_despite_the_config_key() {
+        let mut resolved = Resolved::over(Pipeline::from_rules(vec![Box::new(never_settles(
+            "widener",
+        ))]));
+        resolved.config.report_unstable_output = false;
+
+        let outcome = run_pipeline(
+            parse("x = 1\n"),
+            &resolved,
+            Pass::Diagnose { validate: true },
+            Marker::Eager,
+        );
+
+        assert_matches!(
+            outcome,
+            FileOutcome::Done {
+                unstable: Some(_),
+                ..
+            }
+        );
     }
 
     #[test]
@@ -716,7 +825,12 @@ mod tests {
     fn a_settled_rewrite_carries_no_report() {
         let resolved = Resolved::over(Pipeline::with_defaults(&Config::default()));
 
-        let outcome = run_pipeline(parse("alpha = 1\nb = 22\n"), &resolved, Pass::Rewrite);
+        let outcome = run_pipeline(
+            parse("alpha = 1\nb = 22\n"),
+            &resolved,
+            Pass::Rewrite,
+            Marker::Eager,
+        );
 
         assert_matches!(
             &outcome,
@@ -733,7 +847,7 @@ mod tests {
         let resolved = Resolved::over(Pipeline::from_rules(vec![Box::new(breaks_parse())]));
         let source = parse("x = 1\n");
 
-        let outcome = run_pipeline(source, &resolved, Pass::Rewrite);
+        let outcome = run_pipeline(source, &resolved, Pass::Rewrite, Marker::Eager);
 
         assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
     }
@@ -755,7 +869,7 @@ mod tests {
         ]));
         let source = parse("x = 1\n");
 
-        let outcome = run_pipeline(source, &resolved, Pass::Rewrite);
+        let outcome = run_pipeline(source, &resolved, Pass::Rewrite, Marker::Eager);
 
         assert_matches!(
             &outcome,

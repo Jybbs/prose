@@ -104,6 +104,24 @@ impl Source {
         Ok(source)
     }
 
+    /// Parses `text` as a plain module, handing back the tree a probe
+    /// rebuild clones rather than re-parsing per subset.
+    pub(crate) fn parsed_module(text: &str) -> Result<Parsed<ModModule>, ParseError> {
+        parse_typed_module(text, PySourceType::default())
+    }
+
+    /// Builds a plain module source around an already-parsed tree, the
+    /// probe-side counterpart to [`parsed_module`](Self::parsed_module).
+    pub(crate) fn from_parsed_module(text: String, parsed: Parsed<ModModule>) -> Self {
+        Self::from_parsed(
+            text,
+            "<source>",
+            PySourceType::default(),
+            CellOffsets::default(),
+            parsed,
+        )
+    }
+
     /// Wraps an already-parsed module in its indexes, the shared tail of
     /// every constructor.
     fn from_parsed(

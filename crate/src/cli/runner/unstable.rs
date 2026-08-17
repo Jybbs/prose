@@ -17,7 +17,7 @@ use super::{
 };
 use crate::{
     cli::output::{Presentation, Summary, pluralize, report},
-    unstable::{UnstableRewrite, blame, terminal_report_url},
+    unstable::{UnstableRewrite, blame, report_url},
 };
 
 const FILING: &str = "Filing is one click, the form already carrying the version, the reproducing slugs, and the resolved configuration, with anything too long for a link left to paste:";
@@ -45,11 +45,7 @@ pub(super) fn render_reports<E: Write>(
             &reproduce(files.len()),
             &rewrite.invocation((name != STDIN_NAME).then_some(name)),
         );
-        paragraph(
-            stderr,
-            FILING,
-            &terminal_report_url(rewrite, file.source_text()),
-        );
+        paragraph(stderr, FILING, &report_url(rewrite, file.source_text()));
         if files.len() == 1 {
             let _ = write_diff(
                 stderr,
