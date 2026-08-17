@@ -34,7 +34,7 @@ impl Text {
     }
 
     /// Renders one file's diagnostics into an owned buffer.
-    fn render_run(&self, run: &Run<'_>) -> io::Result<Vec<u8>> {
+    pub(in crate::cli) fn render_run(&self, run: &Run<'_>) -> io::Result<Vec<u8>> {
         let path = run.file.name();
         let mut out = Vec::new();
         for diag in run.diagnostics {

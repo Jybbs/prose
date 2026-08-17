@@ -11,7 +11,6 @@ use anstream::{
     stream::{AsLockedWrite, RawStream},
 };
 use anyhow::Context;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use ruff_notebook::NotebookIndex;
 use ruff_python_ast::PySourceType;
 use ruff_source_file::SourceFile;
@@ -23,6 +22,7 @@ use super::{
 };
 use crate::{
     cache::{Anchor, Cache, Rewrite},
+    cli::emit::Text,
     config::Config,
     diagnostics::Diagnostic,
     pipeline::Pipeline,
@@ -35,8 +35,13 @@ mod report;
 mod resolve;
 
 use diff::{Heading, write_rewrite_diff};
-use process::{apply_rewrite, process_path, process_paths, process_stdin, read_stdin};
-use report::{emit_to_stdout, emitter_summary, finish, render_summary, status_from_outcomes};
+use process::{
+    apply_rewrite, process_path, process_paths, process_stdin, read_stdin, stream_paths,
+};
+use report::{
+    emit_to_stdout, emitter_summary, finish, render_summary, render_text_block,
+    status_from_outcomes,
+};
 use resolve::{ConfigResolver, Resolved};
 
 /// One file's contribution to the run.
@@ -136,13 +141,48 @@ impl RunSetup {
         self.cache.as_ref().filter(|_| pass.caches())
     }
 
+    /// Enforces the cache's caps where the run inserted at least one
+    /// entry. A run that hit on every file left the directory the size
+    /// it already was, and so did a write-back run whose every miss
+    /// produced a rewrite it commits rather than stores. Neither can
+    /// newly cross a cap, leaving the sweep to stat every entry for
+    /// nothing.
+    fn compact_after(&self, pass: Pass) {
+        if let Some(cache) = self.cache_for(pass).filter(|c| c.inserted()) {
+            cache.compact();
+        }
+    }
+
+    /// Walks `paths` under `pass`, rendering each file's block through
+    /// `render` in the worker that produced its outcome and handing it
+    /// to `write` in walker order as it lands. Neither caller writes
+    /// back, so no rewrite reaches disk here.
+    fn streamed<R, W>(
+        &self,
+        paths: &[PathBuf],
+        pass: Pass,
+        render: R,
+        write: W,
+    ) -> anyhow::Result<Vec<FileOutcome>>
+    where
+        R: Fn(&FileOutcome) -> anyhow::Result<Vec<u8>> + Send + Sync,
+        W: FnMut(&[u8]) -> anyhow::Result<()>,
+    {
+        let outcomes = stream_paths(
+            paths,
+            |path, source_type| {
+                let outcome = process_path(path, source_type, self, pass);
+                let block = render(&outcome)?;
+                Ok((outcome, block))
+            },
+            write,
+        )?;
+        self.compact_after(pass);
+        Ok(outcomes)
+    }
+
     /// Walks `paths` under `pass`, committing each rewrite to disk where
-    /// the pass writes back, then enforces the cache's caps where the run
-    /// inserted at least one entry. A run that hit on every file left the
-    /// directory the size it already was, and so did a write-back run
-    /// whose every miss produced a rewrite it commits rather than stores.
-    /// Neither can newly cross a cap, leaving the sweep to stat every
-    /// entry for nothing.
+    /// the pass writes back, then enforcing the cache's caps.
     fn walked(&self, paths: &[PathBuf], pass: Pass) -> Vec<FileOutcome> {
         let outcomes = process_paths(paths, |path, source_type| {
             let outcome = process_path(path, source_type, self, pass);
@@ -152,9 +192,7 @@ impl RunSetup {
                 outcome
             }
         });
-        if let Some(cache) = self.cache_for(pass).filter(|c| c.inserted()) {
-            cache.compact();
-        }
+        self.compact_after(pass);
         outcomes
     }
 }
@@ -179,24 +217,38 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
         Ok(s) => s,
         Err(s) => return Ok(s),
     };
+    let format = args.common.output_format;
     let outcomes = if args.common.stdin {
         let source_type = stdin_source_type(args.common.stdin_filename.as_deref());
         let outcome = match read_stdin(stdin) {
             Ok(text) => process_stdin(text, source_type, &setup.cwd.pipeline, pass),
             Err(outcome) => outcome,
         };
-        vec![outcome]
+        let outcomes = vec![outcome];
+        let summary = emitter_summary(&outcomes);
+        emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
+        outcomes
+    } else if format.is_text() {
+        // Text carries no envelope around its per-file blocks, so each
+        // one reaches the terminal as it lands rather than after the
+        // whole walk. Every other format closes over the run.
+        let text = Text::new(present.color);
+        let mut stdout = stdout;
+        let outcomes = setup.streamed(
+            &args.paths,
+            pass,
+            |outcome| render_text_block(&text, outcome),
+            |block| stdout.write_all(block).context("writing stdout"),
+        )?;
+        stdout.flush().context("flushing stdout")?;
+        outcomes
     } else {
-        setup.walked(&args.paths, pass)
+        let outcomes = setup.walked(&args.paths, pass);
+        let summary = emitter_summary(&outcomes);
+        emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
+        outcomes
     };
     let summary = emitter_summary(&outcomes);
-    emit_to_stdout(
-        &outcomes,
-        args.common.output_format,
-        present,
-        stdout,
-        &summary,
-    )?;
     let status = finish(&outcomes, setup.cache.is_some(), setup.verbose, pass);
     render_summary(&mut stderr, present, &outcomes, &summary, pass);
     Ok(status)
@@ -310,39 +362,17 @@ fn format_paths_diff<O: Write, E: Write>(
     stdout: O,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
-    let outcomes = setup.walked(paths, Pass::Preview);
     let heading = diff_heading(present);
-    // Each diff renders into its own buffer on the pool, the shape
-    // `Text::emit` uses, and rayon's indexed collect hands the buffers
-    // back in walk order for the serial write.
-    let blocks: Vec<Vec<u8>> = outcomes
-        .par_iter()
-        .filter_map(|outcome| match outcome {
-            FileOutcome::Done {
-                file,
-                notebook_index,
-                rewrite: Rewrite::Changed(kind),
-                ..
-            } => Some((file, notebook_index, kind)),
-            _ => None,
-        })
-        .map(|(file, notebook_index, kind)| {
-            let mut block = Vec::new();
-            write_rewrite_diff(
-                &mut block,
-                file.name(),
-                file.source_text(),
-                kind,
-                notebook_index.as_deref(),
-                heading,
-            )?;
-            Ok(block)
-        })
-        .collect::<anyhow::Result<_>>()?;
     let mut writer = BufWriter::new(stdout);
-    for block in &blocks {
-        writer.write_all(block).context("writing stdout")?;
-    }
+    // Each diff renders in the worker that produced its outcome and
+    // reaches the buffer in walk order as it lands, so the serial half
+    // is the write alone.
+    let outcomes = setup.streamed(
+        paths,
+        Pass::Preview,
+        |outcome| render_diff_block(outcome, heading),
+        |block| writer.write_all(block).context("writing stdout"),
+    )?;
     writer.flush().context("flushing stdout")?;
     let summary = emitter_summary(&outcomes);
     let status = finish(
@@ -353,6 +383,30 @@ fn format_paths_diff<O: Write, E: Write>(
     );
     render_summary(stderr, present, &outcomes, &summary, Pass::Preview);
     Ok(status)
+}
+
+/// The unified diff `outcome` renders to under `heading`, empty where
+/// the rewrite left the file as written.
+fn render_diff_block(outcome: &FileOutcome, heading: Heading) -> anyhow::Result<Vec<u8>> {
+    let FileOutcome::Done {
+        file,
+        notebook_index,
+        rewrite: Rewrite::Changed(kind),
+        ..
+    } = outcome
+    else {
+        return Ok(Vec::new());
+    };
+    let mut block = Vec::new();
+    write_rewrite_diff(
+        &mut block,
+        file.name(),
+        file.source_text(),
+        kind,
+        notebook_index.as_deref(),
+        heading,
+    )?;
+    Ok(block)
 }
 
 fn format_paths_rewrite<O: RawStream + AsLockedWrite, E: Write>(

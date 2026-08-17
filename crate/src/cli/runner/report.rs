@@ -77,6 +77,23 @@ pub(super) fn emit_outcomes<W: Write>(
     Ok(())
 }
 
+/// The text block `outcome` renders to, empty for an outcome the
+/// report leaves out, which is the same set
+/// [`emit_outcomes`](self::emit_outcomes) filters away.
+pub(super) fn render_text_block(text: &Text, outcome: &FileOutcome) -> anyhow::Result<Vec<u8>> {
+    let FileOutcome::Done {
+        diagnostics,
+        file,
+        notebook_index,
+        ..
+    } = outcome
+    else {
+        return Ok(Vec::new());
+    };
+    text.render_run(&Run::new(file, diagnostics, notebook_index.as_deref()))
+        .context("rendering diagnostics")
+}
+
 pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
     outcomes
         .iter()

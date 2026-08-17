@@ -2,12 +2,14 @@
 //! pipeline, and classify the outcome.
 
 use std::{
+    collections::HashMap,
     io::{self, Read, Write},
     path::{Path, PathBuf},
     string::FromUtf8Error,
+    sync::mpsc,
 };
 
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 use ruff_notebook::NotebookIndex;
 use ruff_python_ast::PySourceType;
 use ruff_source_file::{SourceFile, SourceFileBuilder};
@@ -139,6 +141,93 @@ where
             Err(e) => Some(walk_error(e)),
         })
         .collect()
+}
+
+/// One walk entry's outcome paired with the block its own worker
+/// rendered, `None` for an entry that yields neither.
+type Landed = anyhow::Result<Option<(FileOutcome, Vec<u8>)>>;
+
+/// Runs `handle` over the walk on the rayon pool and hands each file's
+/// rendered block to `write` in walker order, releasing a block as soon
+/// as every entry ahead of it has landed rather than once the whole
+/// walk has. Rendering happens in the worker that produced the outcome,
+/// so the only serial work left is the write itself. Returns the
+/// outcomes in walker order, the same order [`process_paths`] returns.
+pub(super) fn stream_paths<F, W>(
+    paths: &[PathBuf],
+    handle: F,
+    mut write: W,
+) -> anyhow::Result<Vec<FileOutcome>>
+where
+    F: Fn(&Path, PySourceType) -> anyhow::Result<(FileOutcome, Vec<u8>)> + Send + Sync,
+    W: FnMut(&[u8]) -> anyhow::Result<()>,
+{
+    let entries: Vec<_> = walker::walk(paths).collect();
+    let total = entries.len();
+    let (sender, receiver) = mpsc::channel();
+    let mut outcomes = Vec::with_capacity(total);
+    let mut drained = Ok(());
+    // The producer takes a thread of its own rather than a rayon scope,
+    // because a scope holds its closure to `Send` and `write` borrows
+    // the caller's stream. It fans out across the pool from there, so
+    // the draining thread stays free to write what has already landed.
+    std::thread::scope(|scope| {
+        scope.spawn(|| {
+            entries
+                .into_par_iter()
+                .enumerate()
+                .for_each_with(sender, |sender, (slot, entry)| {
+                    sender.send((slot, landed(&handle, entry))).ok();
+                });
+        });
+        drained = drain_in_order(&receiver, total, &mut outcomes, &mut write);
+    });
+    drained.map(|()| outcomes)
+}
+
+/// Runs `handle` over one walk entry, reporting a passed-over symlink
+/// on stderr and turning a walk failure into its own outcome.
+fn landed<F>(handle: &F, entry: Result<Found, ignore::Error>) -> Landed
+where
+    F: Fn(&Path, PySourceType) -> anyhow::Result<(FileOutcome, Vec<u8>)>,
+{
+    match entry {
+        Ok(Found::Formattable(path, source_type)) => handle(&path, source_type).map(Some),
+        Ok(Found::PassedLink(path)) => {
+            eprintln!("note: passed over the symlink {}", path.display());
+            Ok(None)
+        }
+        Err(e) => Ok(Some((walk_error(e), Vec::new()))),
+    }
+}
+
+/// Writes each landed block through `write` in slot order, holding a
+/// block that arrives ahead of its predecessors until they land.
+fn drain_in_order<W>(
+    receiver: &mpsc::Receiver<(usize, Landed)>,
+    total: usize,
+    outcomes: &mut Vec<FileOutcome>,
+    write: &mut W,
+) -> anyhow::Result<()>
+where
+    W: FnMut(&[u8]) -> anyhow::Result<()>,
+{
+    let mut held: HashMap<usize, Landed> = HashMap::new();
+    let mut next = 0;
+    while next < total {
+        let Ok((slot, landed)) = receiver.recv() else {
+            break;
+        };
+        held.insert(slot, landed);
+        while let Some(landed) = held.remove(&next) {
+            next += 1;
+            if let Some((outcome, block)) = landed? {
+                write(&block)?;
+                outcomes.push(outcome);
+            }
+        }
+    }
+    Ok(())
 }
 
 pub(super) fn process_stdin(
@@ -579,6 +668,94 @@ mod tests {
         #[case] stores: bool,
     ) {
         assert_eq!(worth_storing(&rewrite, pass), stores);
+    }
+
+    /// Seeds `dir` with one module per name and returns the walk order
+    /// the driver hands them back in.
+    fn seeded(dir: &TempDir, names: &[&str]) -> Vec<PathBuf> {
+        for name in names {
+            fs_err::write(dir.path().join(name), "x = 1\n").expect("seeds the module");
+        }
+        let root = vec![dir.path().to_path_buf()];
+        walker::walk(&root)
+            .filter_map(|entry| match entry {
+                Ok(Found::Formattable(path, _)) => Some(path),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn stream_paths_writes_each_block_in_walker_order() {
+        let dir = TempDir::new().expect("a temporary directory");
+        let order = seeded(&dir, &["a.py", "b.py", "c.py", "d.py"]);
+        let first = order.first().expect("the walk found a module").clone();
+        let mut written = Vec::new();
+
+        let outcomes = stream_paths(
+            &[dir.path().to_path_buf()],
+            |path, _| {
+                // Holding the block the walk yields first behind every
+                // other one forces the driver to reorder rather than
+                // write in completion order.
+                if path == first {
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                }
+                Ok((
+                    FileOutcome::Failed(ExitStatus::Clean),
+                    path.display().to_string().into_bytes(),
+                ))
+            },
+            |block| {
+                written.push(String::from_utf8(block.to_vec()).expect("the block is UTF-8"));
+                Ok(())
+            },
+        )
+        .expect("the walk streams");
+
+        let expected: Vec<String> = order.iter().map(|p| p.display().to_string()).collect();
+        assert_eq!(written, expected);
+        assert_eq!(outcomes.len(), expected.len());
+    }
+
+    #[test]
+    fn stream_paths_returns_the_writers_failure() {
+        let dir = TempDir::new().expect("a temporary directory");
+        seeded(&dir, &["a.py"]);
+
+        let result = stream_paths(
+            &[dir.path().to_path_buf()],
+            |_, _| Ok((FileOutcome::Failed(ExitStatus::Clean), b"block".to_vec())),
+            |_| Err(anyhow::anyhow!("the writer declined")),
+        );
+
+        assert_eq!(
+            result.expect_err("the writer failure surfaces").to_string(),
+            "the writer declined",
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn stream_paths_passes_over_a_symlink_without_a_block() {
+        let dir = TempDir::new().expect("a temporary directory");
+        seeded(&dir, &["a.py"]);
+        std::os::unix::fs::symlink(dir.path().join("a.py"), dir.path().join("link.py"))
+            .expect("links to the module");
+        let mut blocks = 0;
+
+        let outcomes = stream_paths(
+            &[dir.path().to_path_buf()],
+            |_, _| Ok((FileOutcome::Failed(ExitStatus::Clean), Vec::new())),
+            |_| {
+                blocks += 1;
+                Ok(())
+            },
+        )
+        .expect("the walk streams");
+
+        assert_eq!(blocks, 1);
+        assert_eq!(outcomes.len(), 1);
     }
 
     #[test]
