@@ -7,7 +7,6 @@ import DocHeading       from '../base/DocHeading.vue'
 import Fixture          from '../fixtures/Fixture.vue'
 
 import { casesForRule, fixturesForRule } from '../../../lib/rules/rule-view'
-import { compositionRoute }              from '../../../lib/shared/routes'
 
 const props = defineProps<{ rule: string }>()
 
@@ -28,17 +27,7 @@ const composes  = casesForRule(props.rule).length > 0
 
   <DocHeading id="more-examples" title="More Examples" />
   <RuleFixtures :rule="rule" />
-
-  <template v-if="composes">
-    <DocHeading id="in-composition" title="In Composition" />
-    <p>
-      Each case below runs this rule alongside others, so the result reflects every rule in
-      play rather than this rule acting alone. The
-      <a :href="compositionRoute()">Rule Composition</a> page gathers these cases with the
-      shapes their interactions take.
-    </p>
-    <CompositionCards :rule="rule" />
-  </template>
+  <CompositionCards v-if="composes" :rule="rule" />
 
   <DocHeading id="related" title="Related" />
   <RuleCardList related />

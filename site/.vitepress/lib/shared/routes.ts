@@ -1,9 +1,5 @@
 import type { RuleFamily, SectionSlug } from './registries'
 
-export function compositionRoute(): string {
-  return `${sectionRoute('rules')}composition/`
-}
-
 export function familyRoute(family: RuleFamily): string {
   return `${sectionRoute('rules')}${family}/`
 }
