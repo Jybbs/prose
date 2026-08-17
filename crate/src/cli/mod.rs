@@ -68,11 +68,16 @@ pub fn run() -> ExitCode {
     if let Command::Server(args) = cli.command {
         return finalize(crate::server::run(args)).into();
     }
-    let stdout = with_color(io::stdout().lock(), cli.color);
-    let stderr = with_color(io::stderr(), cli.color);
+    let raw_stdout = io::stdout().lock();
+    let color = color_for(cli.color, &raw_stdout);
+    let stdout = with_color(raw_stdout, color);
+    let raw_stderr = io::stderr();
+    let stderr_color = color_for(cli.color, &raw_stderr);
+    let stderr = with_color(raw_stderr, stderr_color);
     let present = Presentation {
-        color: stdout.current_choice() != anstream::ColorChoice::Never,
+        color,
         quiet: command_quiet(&cli.command),
+        stderr_color,
         stdout_tty: io::stdout().is_terminal(),
     };
     let verbose = cli.verbose;
@@ -151,11 +156,25 @@ fn log_error_chain(err: &anyhow::Error) {
     }
 }
 
-fn with_color<S: RawStream>(raw: S, choice: ColorChoice) -> AutoStream<S> {
+/// The color decision `choice` resolves to for `raw`, taken before the
+/// stream is wrapped so every writer reads one answer.
+fn color_for<S: RawStream>(choice: ColorChoice, raw: &S) -> bool {
     match choice {
-        ColorChoice::Always => AutoStream::always(raw),
-        ColorChoice::Auto => AutoStream::auto(raw),
-        ColorChoice::Never => AutoStream::never(raw),
+        ColorChoice::Always => true,
+        ColorChoice::Auto => AutoStream::choice(raw) != anstream::ColorChoice::Never,
+        ColorChoice::Never => false,
+    }
+}
+
+/// Wraps `raw` for the run's color decision. A color run keeps the
+/// translation a legacy Windows console needs, and a plain run passes
+/// its bytes through, because every writer branches on the same
+/// decision and emits no escape for the stream to scan for.
+fn with_color<S: RawStream>(raw: S, color: bool) -> AutoStream<S> {
+    if color {
+        AutoStream::always(raw)
+    } else {
+        AutoStream::always_ansi(raw)
     }
 }
 

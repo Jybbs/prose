@@ -1,10 +1,9 @@
 //! Human-readable run summary: section anchors and the Ube palette.
 //!
-//! Color is emitted unconditionally and stripped downstream by the
-//! `anstream::AutoStream` the summary writes through, so `--color
-//! never` and non-TTY runs fall back to plain text without a branch
-//! here. The 24-bit-versus-8-color choice is the one decision this
-//! module owns, keyed on `anstyle_query::truecolor`.
+//! A plain run writes the anchor and message untinted, matching the
+//! emitters and the diff, so nothing downstream has to scan the stream
+//! for escapes to remove. The 24-bit-versus-8-color choice is the one
+//! this module owns, keyed on `anstyle_query::truecolor`.
 
 use std::io::{self, Write};
 
@@ -17,13 +16,16 @@ const UBE: (RgbColor, AnsiColor) = (RgbColor(0x8a, 0x80, 0xcb), AnsiColor::Magen
 /// Stream-capability signals that gate framing and the diagnostic
 /// renderer.
 ///
-/// `color` is the choice stdout's `AutoStream` resolved to, `quiet`
-/// strips the anchor emoji and color down to a bare count line, and a
-/// non-TTY stdout leaves `--diff` headers plain so the output stays a
-/// valid patch.
+/// `color` is the choice stdout resolved to and gates the diagnostics
+/// and diffs written there, whereas `stderr_color` is stderr's own and
+/// gates the summary line, which is the one thing written to that
+/// stream. `quiet` reduces the anchor emoji and color to a bare count
+/// line, and a non-TTY stdout leaves `--diff` headers plain so the
+/// output stays a valid patch.
 pub(super) struct Presentation {
     pub(super) color: bool,
     pub(super) quiet: bool,
+    pub(super) stderr_color: bool,
     pub(super) stdout_tty: bool,
 }
 
@@ -35,6 +37,7 @@ impl Presentation {
         Self {
             color: false,
             quiet: false,
+            stderr_color: false,
             stdout_tty: false,
         }
     }
@@ -93,8 +96,8 @@ impl Summary {
     }
 }
 
-/// Writes the closing summary line. Color escapes are stripped
-/// downstream when `writer` is a non-color `AutoStream`.
+/// Writes the closing summary line, tinted only where the run resolved
+/// to color.
 pub(super) fn report(
     writer: &mut dyn Write,
     present: &Presentation,
@@ -102,6 +105,9 @@ pub(super) fn report(
 ) -> io::Result<()> {
     if present.quiet {
         return writeln!(writer, "{}", summary.message());
+    }
+    if !present.stderr_color {
+        return writeln!(writer, "{} {}", summary.anchor(), summary.message());
     }
     writeln!(writer, "{} {}", ube(summary.anchor()), summary.tinted())
 }
@@ -138,24 +144,32 @@ fn pluralize(count: usize, noun: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use anstream::AutoStream;
     use rstest::rstest;
 
     use super::*;
 
-    fn plain(present: &Presentation, summary: &Summary) -> String {
+    /// The summary line as it reaches the stream, which strips nothing,
+    /// so an escape here is one the caller would see.
+    fn rendered(present: &Presentation, summary: &Summary) -> String {
         let mut buf = Vec::new();
-        {
-            let mut writer = AutoStream::never(&mut buf);
-            report(&mut writer, present, summary).expect("reports");
-        }
+        report(&mut buf, present, summary).expect("reports");
         String::from_utf8(buf).expect("utf-8")
+    }
+
+    fn colored() -> Presentation {
+        Presentation {
+            color: true,
+            quiet: false,
+            stderr_color: true,
+            stdout_tty: true,
+        }
     }
 
     fn quiet() -> Presentation {
         Presentation {
             color: true,
             quiet: true,
+            stderr_color: true,
             stdout_tty: true,
         }
     }
@@ -173,6 +187,7 @@ mod tests {
         let present = Presentation {
             color: true,
             quiet,
+            stderr_color: true,
             stdout_tty,
         };
 
@@ -195,7 +210,7 @@ mod tests {
     #[case(Summary::Reformatted { files: 1 }, "🗞️ Reformatted 1 file.\n")]
     #[case(Summary::WouldReformat { files: 3 }, "🗞️ 3 files would be reformatted.\n")]
     fn each_outcome_renders_its_anchored_line(#[case] summary: Summary, #[case] expected: &str) {
-        assert_eq!(plain(&Presentation::windowed(), &summary), expected);
+        assert_eq!(rendered(&Presentation::windowed(), &summary), expected);
     }
 
     #[test]
@@ -213,8 +228,43 @@ mod tests {
     }
 
     #[test]
+    fn a_color_run_tints_the_anchor_and_the_message() {
+        let line = rendered(&colored(), &Summary::Clean);
+
+        assert!(line.contains("\u{1b}["), "line was {line:?}");
+        assert!(line.contains("All clean."));
+    }
+
+    #[test]
+    fn a_plain_run_writes_no_escape_for_the_stream_to_carry() {
+        let line = rendered(&Presentation::windowed(), &Summary::Clean);
+
+        assert!(!line.contains('\u{1b}'), "line was {line:?}");
+    }
+
+    #[rstest]
+    #[case::stderr_carries_the_color(false, true, true)]
+    #[case::stdout_carries_it_alone(true, false, false)]
+    fn the_summary_follows_the_stream_it_is_written_to(
+        #[case] color: bool,
+        #[case] stderr_color: bool,
+        #[case] tinted: bool,
+    ) {
+        let present = Presentation {
+            color,
+            quiet: false,
+            stderr_color,
+            stdout_tty: true,
+        };
+
+        let line = rendered(&present, &Summary::Clean);
+
+        assert_eq!(line.contains('\u{1b}'), tinted, "line was {line:?}");
+    }
+
+    #[test]
     fn quiet_strips_emoji_and_color() {
-        let out = plain(&quiet(), &Summary::Diagnostics { files: 2, total: 5 });
+        let out = rendered(&quiet(), &Summary::Diagnostics { files: 2, total: 5 });
         assert_eq!(out, "5 diagnostics in 2 files.\n");
     }
 }

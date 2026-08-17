@@ -737,6 +737,7 @@ mod tests {
         let present = Presentation {
             color,
             quiet: false,
+            stderr_color: color,
             stdout_tty: true,
         };
 
