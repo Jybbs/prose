@@ -7,13 +7,15 @@
 """
 Audit CI invariants no other gate covers, exiting nonzero if either fails.
 
-    parity     Every cross-config version pin agrees across its homes.
+    parity     Every cross-config pin and shared declaration agrees across
+               its homes.
     manifests  No composite action manifest carries a YAML anchor, which
                the runner rejects before any step runs.
 
 Findings surface as `::error::` annotations naming the divergence or file.
 """
 
+from json    import loads as json_loads
 from pathlib import Path
 from re      import MULTILINE, finditer, search
 from tomllib import loads
@@ -113,12 +115,31 @@ def manifests() -> int:
     return failed
 
 
+def override_pins(package: dict) -> list[tuple[str, str, str]]:
+    """
+    Return one parity pair per `overrides` entry the manifest also pins as a
+    `devDependencies` entry, leaving an override of an undeclared transitive
+    alone.
+    """
+    return [
+        (
+            f"site/package.json {name} override ↔ its devDependency pin",
+            version,
+            package["devDependencies"][name]
+        )
+        for name, version in package.get("overrides", {}).items()
+        if name in package["devDependencies"]
+    ]
+
+
 def parity() -> int:
     """
-    Report every cross-config version pin that has drifted from its pair.
+    Report every cross-config pin or shared declaration that has drifted
+    from its pair.
     """
     cargo   = toml("Cargo.toml")
     mise    = toml(".mise/config.toml")
+    package = json_loads(Path("site/package.json").read_text(encoding="utf-8"))
     project = toml("crate/pyproject.toml")
     rust    = cargo["workspace"]["package"]["rust-version"]
 
@@ -156,7 +177,14 @@ def parity() -> int:
             ".mise/config.toml wasm-bindgen pin ↔ Cargo.lock wasm-bindgen",
             mise["tools"]["github:rustwasm/wasm-bindgen"],
             cargo_lock_version("wasm-bindgen")
-        )
+        ),
+        (
+            ".mise/tasks/site/test sources ↔ .mise/tasks/site/press sources",
+            task_sources("site/test"),
+            task_sources("site/press")
+        ),
+        *override_pins(package),
+        *patch_pins(package)
     ]
 
     failed = 0
@@ -165,6 +193,36 @@ def parity() -> int:
             annotate(f"parity mismatch in {label}: {left!r} vs {right!r}")
             failed = 1
     return failed
+
+
+def patch_pins(package: dict) -> list[tuple[str, str, str]]:
+    """
+    Return one parity pair per `patchedDependencies` key, matching the version
+    the key targets against the version the manifest pins for that package.
+    """
+    pairs = []
+    for key in package.get("patchedDependencies", {}):
+        name, _, version = key.rpartition("@")
+        if (pinned := package["devDependencies"].get(name)) is None:
+            annotate(f"no site/package.json devDependency named {name!r}")
+            raise SystemExit(1)
+        pairs.append((
+            f"site/package.json {name} patch key ↔ its devDependency pin",
+            version,
+            pinned
+        ))
+    return pairs
+
+
+def task_sources(task: str) -> str:
+    """
+    Return the `sources` frontmatter array the `task` file task declares.
+    """
+    return extract(
+        f"no sources declaration in .mise/tasks/{task}",
+        r"#MISE sources=(.*)",
+        Path(f".mise/tasks/{task}").read_text(encoding="utf-8")
+    )
 
 
 def toml(path: str) -> dict:

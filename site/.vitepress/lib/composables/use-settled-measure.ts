@@ -1,6 +1,6 @@
-import { useResizeObserver }             from '@vueuse/core'
-import type { MaybeComputedElementRef }  from '@vueuse/core'
-import { onMounted }                     from 'vue'
+import { useResizeObserver }            from '@vueuse/core'
+import type { MaybeComputedElementRef } from '@vueuse/core'
+import { onMounted }                    from 'vue'
 
 // Waits for the font swap as well as observing the box, because the swap
 // changes glyph widths without resizing the observed container, so an

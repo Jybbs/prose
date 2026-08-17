@@ -12,32 +12,48 @@ import { useSquiggleDraw }       from '../../../lib/composables/use-squiggle-dra
 import { lintDecorations }       from '../../../lib/markdown/lint-decorations'
 import { highlight }             from '../../../lib/shared/highlight'
 import { latestRun }             from '../../../lib/shared/latest-run'
+import { REPO_URL }              from '../../../lib/shared/constants'
+import { externalAttrs }         from '../../../lib/shared/links'
 import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
+
+const WATCHDOG_GRACE_MS = 250
 
 const props   = defineProps<{ guide?: number | null, guideHue?: string, sandbox: ProseSandbox }>()
 const editing = defineModel<boolean>('editing', { default: false })
 const { diagnostics, error, formatted, source, unstable } = props.sandbox
 
+const reportUrl = `${REPO_URL}/issues/new?template=unstable-output.yml`
+
 const reducedMotion = useReducedMotion()
 const display       = useTemplateRef<HTMLElement>('display')
 const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('editor')
 const popper        = useTemplateRef<InstanceType<typeof LintFlagPopper>>('popper')
+const surface       = useTemplateRef<HTMLElement>('surface')
 
 const displayHtml = ref('')
 const draft       = ref('')
 const morphKey    = ref(0)
 const morphing    = ref(false)
+const restHeight  = ref(0)
 const step        = ref(0)
 
 const { drawSquiggles, undrawn } = useSquiggleDraw()
 
 const { duration, morphOptions, morphSteps, panel, precompile, steps } = useMagicMove(0)
 
+// The morph's renderer empties its container and measures the box before
+// painting the first step, so the panel would fall to the surfaces grid's
+// `min-height` for that layout and shrink the document with it. The outgoing
+// height floors the panel until the step flips, from where the container's
+// own height animation drives it.
+const heldHeight = computed(() =>
+  morphing.value && step.value === 0 ? `${restHeight.value}px` : undefined)
+
 const ruleCodes = computed(() => new Set(diagnostics.value.map(finding => finding.code)))
 
 const watchdog = useTimeoutFn(
   () => { if (morphing.value) endMorph() },
-  () => duration.value + 250,
+  () => duration.value + WATCHDOG_GRACE_MS,
   { immediate: false }
 )
 
@@ -53,24 +69,31 @@ let shownRules = new Set<string>()
 // step flip animates it, matching the fixture morph. The settled html
 // lands on the static display only under the morph's cover, so the pane
 // never flashes the end state before the tokens slide. A newer change
-// supersedes the render in flight, so it abandons rather than racing on
-// the shared morph state, and a watchdog restores the static display if
-// the `@end` event is ever missed.
+// supersedes the render in flight, which abandons rather than racing on
+// the shared morph state, and a path that publishes to the static display
+// clears `morphing` rather than leaving a stale morph mounted. A watchdog
+// restores the static display if the `@end` event is ever missed.
 async function render(next: string): Promise<void> {
   const superseded = run.begin()
   const from       = previous
   const html       = await highlight(next, 'python', lintDecorations(diagnostics.value, next))
   if (superseded()) return
   // Mid-edit the display sits behind the editor, so stage the html silently.
-  if (editing.value) { commit(html, next); return }
+  if (editing.value) {
+    morphing.value = false
+    commit(html, next)
+    return
+  }
   // Same code with a changed finding set is a lint toggle, so retract the
   // dropped rule's underlines and draw any freshly enabled ones in place,
   // leaving the surviving underlines adhered rather than re-drawing them.
   if (from !== '' && from === next && !reducedMotion.value) {
+    morphing.value = false
     await reflow(html, next, superseded)
     return
   }
   if (from === '' || reducedMotion.value) {
+    morphing.value = false
     commit(html, next)
     drawSquiggles()
     return
@@ -79,10 +102,11 @@ async function render(next: string): Promise<void> {
   // display does not carry, so the states trim to the real last line.
   const committed = await precompile(from.trimEnd(), next.trimEnd())
   if (superseded()) return
-  steps.value     = committed
-  step.value      = 0
-  morphKey.value += 1
-  morphing.value  = true
+  restHeight.value = Math.ceil(surface.value?.getBoundingClientRect().height ?? 0)
+  steps.value      = committed
+  step.value       = 0
+  morphKey.value  += 1
+  morphing.value   = true
   // The FLIP morph measures the rest state against the painted DOM, so the
   // fresh instance needs a real frame to lay the "from" tokens out before
   // the step flip. A microtask alone leaves both measurements in one frame
@@ -178,7 +202,12 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
 </script>
 
 <template>
-  <section class="code-panel sandbox-surface panel panel-clip" aria-label="Formatted Python">
+  <section
+    ref="surface"
+    class="code-panel sandbox-surface panel panel-clip"
+    aria-label="Formatted Python"
+    :style="{ minHeight: heldHeight }"
+  >
     <span
       v-if="guide != null"
       class="sandbox-surface-guide"
@@ -250,8 +279,7 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
     <p v-if="unstable.length" class="code-panel-unstable">
       A second run would change this output ({{ unstable.join(', ') }}), which is a defect in
       Prose itself.
-      <a href="https://github.com/Jybbs/prose/issues/new?template=unstable-output.yml" target="_blank" rel="noopener">
-        Report it</a>
+      <a :href="reportUrl" v-bind="externalAttrs(reportUrl)">Report it</a>
       with the source above.
     </p>
     <LintFlagPopper ref="popper" />

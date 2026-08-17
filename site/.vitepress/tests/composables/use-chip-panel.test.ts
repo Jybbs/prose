@@ -2,11 +2,11 @@
 import { promiseTimeout } from '@vueuse/core'
 import { ref }            from 'vue'
 
-import { useChipPanel }              from '../../lib/composables/use-chip-panel'
-import type { Facet, RuleControl }   from '../../lib/composables/use-chip-panel'
-import type { ProseSandbox }         from '../../lib/composables/use-prose-sandbox'
-import type { RenderedRule }         from '../../lib/rules/rules.data'
-import { mountSetup }                from '../dom'
+import { useChipPanel }            from '../../lib/composables/use-chip-panel'
+import type { Facet, RuleControl } from '../../lib/composables/use-chip-panel'
+import type { ProseSandbox }       from '../../lib/composables/use-prose-sandbox'
+import type { RenderedRule }       from '../../lib/rules/rules.data'
+import { mountSetup }              from '../dom'
 
 const ALIGN: RuleControl = {
   family : 'alignment',

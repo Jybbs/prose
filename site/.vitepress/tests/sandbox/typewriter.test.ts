@@ -1,5 +1,5 @@
-import { lineHtml, tokenLines, typingFrame, typingPlan } from '../../lib/sandbox/typewriter'
-import type { TokenLine, TypingSide }                    from '../../lib/sandbox/typewriter'
+import * as typewriter                from '../../lib/sandbox/typewriter'
+import type { TokenLine, TypingSide } from '../../lib/sandbox/typewriter'
 
 vi.mock('../../lib/markdown/highlighter', () => import('../highlighter-stub'))
 
@@ -16,20 +16,20 @@ describe('lineHtml', () => {
     [3, '<span style="color:red">ab</span><span style="">&lt;</span>'],
     [Number.POSITIVE_INFINITY, '<span style="color:red">ab</span><span style="">&lt;c&gt;</span>']
   ])('renders the first %s characters as styled spans', (chars, expected) => {
-    expect(lineHtml(LINE, chars)).toBe(expected)
+    expect(typewriter.lineHtml(LINE, chars)).toBe(expected)
   })
 })
 
 describe('tokenLines', () => {
   it('maps each line to styled tokens through the shared highlighter', async () => {
-    expect(await tokenLines('a = 1\n')).toEqual([
+    expect(await typewriter.tokenLines('a = 1\n')).toEqual([
       [{ content: 'a = 1', style: 'color:red' }],
       []
     ])
   })
 
   it('leaves a token no theme rule matches as an empty style string', async () => {
-    expect(await tokenLines('  ')).toEqual([[{ content: '  ', style: '' }]])
+    expect(await typewriter.tokenLines('  ')).toEqual([[{ content: '  ', style: '' }]])
   })
 })
 
@@ -38,7 +38,7 @@ describe('typingFrame', () => {
   const TOKENS: TokenLine[] = SIDE.lines.map(line => [{ content: line, style: 'color:red' }])
 
   it('holds the lines outside the changed middle and truncates the one inside it', () => {
-    const { html, text } = typingFrame(TOKENS, SIDE, 1, 2)
+    const { html, text } = typewriter.typingFrame(TOKENS, SIDE, 1, 2)
     const lines = html.split('\n')
     expect(text).toBe('a = 1\nb \nc = 3')
     expect(lines[0]).toBe('<span style="color:red">a = 1</span>')
@@ -49,7 +49,7 @@ describe('typingFrame', () => {
   })
 
   it('renders an empty line when the tokens run short of the lines', () => {
-    const { html, text } = typingFrame([], SIDE, 1, 2)
+    const { html, text } = typewriter.typingFrame([], SIDE, 1, 2)
     expect(text).toBe('a = 1\nb \nc = 3')
     expect(html.split('\n')[0]).toBe('')
   })
@@ -63,7 +63,7 @@ describe('typingPlan', () => {
     ['same',    'same',    { cur: { max: 0, midEnd: 1 }, floor: 0, next: { max: 0, midEnd: 1 }, prefix: 1 }],
     ['a',       'a\nb',    { cur: { max: 0, midEnd: 1 }, floor: 0, next: { max: 1, midEnd: 2 }, prefix: 1 }]
   ])('plans the run from %j to %j', (current, next, expected) => {
-    expect(typingPlan(current, next)).toEqual({
+    expect(typewriter.typingPlan(current, next)).toEqual({
       ...expected,
       cur  : { ...expected.cur,  lines: current.split('\n') },
       next : { ...expected.next, lines: next.split('\n') }
@@ -71,7 +71,7 @@ describe('typingPlan', () => {
   })
 
   it('sweeps a bulk change from column zero rather than a shared floor', () => {
-    const plan = typingPlan('aa\nbb', 'ax\nbx')
+    const plan = typewriter.typingPlan('aa\nbb', 'ax\nbx')
     expect(plan.prefix).toBe(0)
     expect(plan.floor).toBe(0)
     expect(plan.cur.max).toBe(2)

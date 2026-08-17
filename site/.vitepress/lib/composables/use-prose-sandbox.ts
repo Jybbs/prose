@@ -60,8 +60,9 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   let eagerQueued = false
   let reinit      = 0
 
-  let loading: Promise<ProseWasm> | null = null
-  let module: ProseWasm | null           = null
+  let loading: Promise<ProseWasm> | null     = null
+  let module: ProseWasm | null               = null
+  let published: session.SavedSession | null = null
 
   const config = useSandboxConfig(schema, debounceMs, eagerFormat)
   const probe  = useSandboxProbe(schema, current => module === current)
@@ -95,19 +96,27 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
     return loading
   }
 
-  // The display already succeeded by the time the probe syncs, so a fault in
-  // the probe runs must not reset the module or surface an error over a good
-  // format.
+  // A toggle formats eagerly and then again off the debounced watcher, so a
+  // run over the pair already published returns early rather than re-parsing
+  // `diagnostics` into a fresh array identity that would fire the surface's
+  // watch mid-morph. The display already succeeded by the time the probe
+  // syncs, so a fault in the probe runs must not reset the module or surface
+  // an error over a good format.
   async function format(): Promise<void> {
     try {
       module ??= await moduleReady()
-      const result = module.format(config.configToml.value, source.value)
+      const configToml = config.configToml.value
+      const text       = source.value
+      if (published?.configToml === configToml && published.source === text) return
+      const result = module.format(configToml, text)
       formatted.value   = result.formatted
       diagnostics.value = result.diagnostics ? JSON.parse(result.diagnostics) : []
       unstable.value    = result.unstable_rules ?? []
       error.value       = ''
-      probe.sync(module, source.value)
+      published         = { configToml, source: text }
+      probe.sync(module, text)
     } catch (thrown) {
+      published = null
       if (thrown instanceof WebAssembly.RuntimeError) {
         // A panic poisons the instance, so drop it and bump the counter,
         // leaving the next format to instantiate a fresh module.

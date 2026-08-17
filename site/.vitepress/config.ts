@@ -51,9 +51,9 @@ const themeColor           = PALETTE.ube
 assertCorpusIntegrity(ruleDiscovery, discoveredPrimitives)
 
 function injectSectionName(
-  pageData: PageData,
-  prefix: string,
-  resolve: (slug: string) => string | undefined
+  pageData : PageData,
+  prefix   : string,
+  resolve  : (slug: string) => string | undefined
 ): void {
   const { relativePath } = pageData
   if (!relativePath.startsWith(prefix) || relativePath.endsWith('index.md')) return

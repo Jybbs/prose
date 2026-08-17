@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import { data as configs } from '../../../lib/rules/rule-configs.data'
 import { useCurrentRule }  from '../../../lib/composables/route'
-import InlineProse         from '../base/InlineProse.vue'
+import ConfigRowTable      from '../base/ConfigRowTable.vue'
 
 const current = useCurrentRule()
 
@@ -11,22 +11,5 @@ const rows = computed(() => configs[current.value?.slug ?? ''] ?? [])
 </script>
 
 <template>
-  <table>
-    <thead>
-      <tr>
-        <th>Key</th>
-        <th>Type</th>
-        <th>Default</th>
-        <th>Meaning</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="row in rows" :key="row.key">
-        <td><code>{{ row.key }}</code></td>
-        <td><InlineProse :nodes="row.typeNodes" /></td>
-        <td><code>{{ row.default }}</code></td>
-        <td><InlineProse :nodes="row.meaningNodes" /></td>
-      </tr>
-    </tbody>
-  </table>
+  <ConfigRowTable :rows="rows" />
 </template>

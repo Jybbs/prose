@@ -385,6 +385,24 @@ describe('useProseSandbox', () => {
     expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('space-statements = false'), 'seed a')
   })
 
+  it('skips the debounced re-format over the pair the toggle already published', async () => {
+    vi.useFakeTimers()
+    const format = vi.fn<Formatter>(formatting('OUT', '[{"code":"x"}]'))
+    const api    = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 250 })
+    api.setFacet('align-equals', ENABLED, false)
+    await flushPromises()
+    const displayRuns = () => format.mock.calls
+      .filter(call => call[0].includes('align-equals = false')).length
+    expect(displayRuns()).toBe(1)
+    const findings = api.diagnostics.value
+    await vi.advanceTimersByTimeAsync(250)
+    await flushPromises()
+    // The debounced watcher lands on inputs the eager run already published,
+    // so no second wasm run and no fresh `diagnostics` identity.
+    expect(displayRuns()).toBe(1)
+    expect(api.diagnostics.value).toBe(findings)
+  })
+
   it('reads and writes a length knob and clears it back to default', () => {
     const api = sandbox(okLoader)
     expect(api.lengths).toEqual(SCHEMA.lengths)

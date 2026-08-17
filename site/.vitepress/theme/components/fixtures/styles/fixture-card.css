@@ -1,10 +1,10 @@
 /* Shared chrome for fixture cards. Two variants share the same shell:
-   single-rule cards drawn by Fixture.vue carry an auto-counted folio
-   number and a solid family-color rail, and multi-rule cards drawn by
-   CompositionCards.vue carry a script-supplied folio number and a
-   top-to-bottom gradient rail through each rule's family color in
-   pipeline order. The rail stays painted whether the card is open or
-   closed, and no-edit cards mute it via `data-edits="false"`. */
+   single-rule cards drawn by Fixture.vue carry a solid family-color rail,
+   and multi-rule cards drawn by CompositionCards.vue carry a top-to-bottom
+   gradient rail through each rule's family color in pipeline order. Both
+   leave the folio to the counter below, so one run numbers every card a
+   page shows. The rail stays painted whether the card is open or closed,
+   and no-edit cards mute it via `data-edits="false"`. */
 
 @counter-style prose-fixture-folio {
   system : extends decimal;
@@ -85,7 +85,7 @@
   color                : var(--vp-c-text-3);
 }
 
-.fixture-card-num:empty::before {
+.fixture-card-num::before {
   counter-increment : prose-fixture-folio;
   content           : counter(prose-fixture-folio, prose-fixture-folio);
 }

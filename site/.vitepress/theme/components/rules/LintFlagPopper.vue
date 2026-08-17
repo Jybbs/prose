@@ -4,11 +4,11 @@ import { computed, ref, shallowRef, watch } from 'vue'
 
 import RuleCard from './RuleCard.vue'
 
-import { lintShorthand, type Shorthand }     from '../../../lib/fixtures/lint-shorthand'
-import { data as rules, type RenderedRule }  from '../../../lib/rules/rules.data'
-import { highlight }                         from '../../../lib/shared/highlight'
-import { inlineCode }                        from '../../../lib/shared/inline-code'
-import { latestRun }                         from '../../../lib/shared/latest-run'
+import { lintShorthand, type Shorthand }    from '../../../lib/fixtures/lint-shorthand'
+import { data as rules, type RenderedRule } from '../../../lib/rules/rules.data'
+import { highlight }                        from '../../../lib/shared/highlight'
+import { inlineCode }                       from '../../../lib/shared/inline-code'
+import { latestRun }                        from '../../../lib/shared/latest-run'
 
 interface ActiveFinding {
   message   : string

@@ -58,6 +58,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "@shikijs/magic-move@4.4.2": "patches/magic-move-batch-get-animations.patch",
+  },
   "overrides": {
     "postcss": "8.5.26",
     "shiki": "4.4.2",

@@ -37,9 +37,8 @@
 
 .vp-doc .composition-cards-list > li,
 .composition-cards-list > li {
-  margin               : 0;
-  padding-inline-start : 0;
-  list-style           : none;
+  margin     : 0;
+  list-style : none;
 }
 
 .vp-doc .composition-cards-list > li + li {

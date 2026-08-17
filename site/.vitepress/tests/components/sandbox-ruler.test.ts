@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import SandboxRuler         from '../../theme/components/sandbox/SandboxRuler.vue'
-import type { LengthKnob }  from '../../lib/sandbox/config-schema.data'
+import SandboxRuler        from '../../theme/components/sandbox/SandboxRuler.vue'
+import type { LengthKnob } from '../../lib/sandbox/config-schema.data'
 
 const KNOBS: readonly LengthKnob[] = [
   { default: 88, key: 'code-line-length',      label: 'Code' },

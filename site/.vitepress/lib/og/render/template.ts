@@ -29,16 +29,16 @@ export function pageSvg(
   brand   : BrandAssets,
   version : string
 ): Promise<string> {
-  return parts.toSvg(buildCard(page, version, brand.wordmark, brand.glyph), brand.fonts)
+  return parts.toSvg(buildCard(brand.glyph, page, version, brand.wordmark), brand.fonts)
 }
 
-function buildCard(page: OgPage, version: string, wordmark: BrandImage, glyph: string): JSXNode {
+function buildCard(glyph: string, page: OgPage, version: string, wordmark: BrandImage): JSXNode {
   const accent = page.accent ?? PALETTE.ube
   return parts.cardShell(
     watermarkLayer(glyph),
     parts.leftRail(accent),
     wordmarkBlock(wordmark),
-    dataPanel(page, version, accent),
+    dataPanel(accent, page, version),
     titleBlock(page, accent)
   )
 }
@@ -52,7 +52,7 @@ function buildKicker(page: OgPage): string {
   return `— ${segments.join(' · ')} —`
 }
 
-function dataPanel(page: OgPage, version: string, accent: string): JSXNode {
+function dataPanel(accent: string, page: OgPage, version: string): JSXNode {
   const rows = panelRows(page)
   const warm = page.family !== undefined && FAMILY_META[page.family].warmth === 'warm'
   return parts.panelShell(accent, warm ? '99' : '66',
@@ -112,7 +112,7 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
     }),
     parts.el('div', {
       children : page.title,
-      style: {
+      style    : {
         color         : accent,
         display       : 'flex',
         fontFamily    : parts.FONT.display,
@@ -183,7 +183,7 @@ function wordmarkBlock(wordmark: BrandImage): JSXNode {
     }),
     parts.el('div', {
       children : 'DOCS',
-      style: {
+      style    : {
         ...parts.monoLabel(PALETTE.champagne, 15),
         backgroundColor : `${PALETTE.ube}2e`,
         border          : `1px solid ${PALETTE.champagne}52`,

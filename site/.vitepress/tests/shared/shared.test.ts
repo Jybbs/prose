@@ -6,7 +6,6 @@ import { externalAttrs }    from '../../lib/shared/links'
 import { lookup }           from '../../lib/shared/lookup'
 import { formatFolio }      from '../../lib/shared/numerals'
 import { requireString }    from '../../lib/shared/require-string'
-import { compositionRoute } from '../../lib/shared/routes'
 import { ruleSlug }         from '../../lib/shared/rule-slug'
 import { stripSuffix }      from '../../lib/shared/strip-suffix'
 import { parseSvg }         from '../../lib/shared/svg'
@@ -21,12 +20,6 @@ describe('toTitleCase', () => {
     ['one-two-the-end', '-', 'One Two the End']
   ])('title-cases %s across its %s separator', (slug, separator, expected) => {
     expect(toTitleCase(slug, separator)).toBe(expected)
-  })
-})
-
-describe('compositionRoute', () => {
-  it('builds the composition page route under the rules section', () => {
-    expect(compositionRoute()).toBe('/rules/composition/')
   })
 })
 

@@ -66,9 +66,9 @@ describe('CompositionCards', () => {
     expect(titles('space_statements')).toEqual(['Alpha Case'])
   })
 
-  it('numbers a narrowed card from the full run rather than renumbering it', () => {
+  it('leaves each folio empty so the fixture counter numbers it in place', () => {
     const nums = render('wrap_docstrings').findAll('.fixture-card-num').map(node => node.text())
-    expect(nums).toEqual(['03'])
+    expect(nums).toEqual([''])
   })
 
   it('renders an empty list for a rule no previewable case activates', () => {
