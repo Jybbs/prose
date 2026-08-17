@@ -1,11 +1,10 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { stringify } from 'smol-toml'
-
 import * as walker     from '../fixtures/walker'
-import { parseToml }   from '../shared/toml'
 import { toTitleCase } from '../shared/title-case'
+import { parseToml }   from '../shared/toml'
+import { tomlText }    from '../shared/toml-text'
 
 type CaseConfig = Record<string, unknown> & { harness?: { rules?: readonly string[] } }
 
@@ -57,6 +56,5 @@ export function readCompositionCases(compositionDir: string): CompositionCase[] 
 // Everything outside `[harness]` is the prose config the case formats under.
 export function seedToml(config: Record<string, unknown>): string {
   const { harness: _, ...overrides } = config
-  const text = stringify(overrides)
-  return text.trim() ? text : ''
+  return tomlText(overrides)
 }
