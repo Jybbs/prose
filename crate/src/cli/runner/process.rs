@@ -436,7 +436,6 @@ mod tests {
 
     use rstest::rstest;
     use ruff_diagnostics::Edit;
-    use ruff_notebook::Notebook;
     use tempfile::TempDir;
 
     use super::super::{report::status_from_outcomes, resolve::ConfigResolver};
@@ -445,21 +444,8 @@ mod tests {
         cache::RewriteKind,
         config::Config,
         rule::RuleId,
-        testing::{GroupSentinelRule, breaks_parse, never_settles, parse, range},
+        testing::{GroupSentinelRule, breaks_parse, never_settles, notebook_index, parse, range},
     };
-
-    /// The cell index of a one-cell notebook, the translator a notebook
-    /// entry stores beside its code.
-    fn cell_index() -> NotebookIndex {
-        Notebook::from_source_code(
-            r#"{"cells": [{"cell_type": "code", "execution_count": null,
-                "metadata": {}, "outputs": [], "source": ["x = 1\n"]}],
-                "metadata": {"language_info": {"name": "python"}},
-                "nbformat": 4, "nbformat_minor": 5}"#,
-        )
-        .expect("notebook parses")
-        .into_index()
-    }
 
     #[test]
     fn check_validate_fails_on_unparseable_rule_output() {
@@ -560,7 +546,7 @@ mod tests {
             diagnostics: Vec::new(),
             notebook: Some(NotebookCells {
                 code: "x = 1\n".to_owned(),
-                index: Some(cell_index()),
+                index: Some(notebook_index(&["x = 1\n"])),
             }),
             rewrite: Rewrite::Skipped,
         };
@@ -577,7 +563,7 @@ mod tests {
         assert_matches!(
             outcome,
             Ok(FileOutcome::Done { file, notebook_index: Some(index), .. })
-                if file.source_text() == "x = 1\n" && *index == cell_index()
+                if file.source_text() == "x = 1\n" && *index == notebook_index(&["x = 1\n"])
         );
     }
 

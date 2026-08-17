@@ -18,6 +18,39 @@ const INTERLEAVED: &str = include_str!("fixtures/notebook/markdown_interleaved/i
 /// that net-shrinks the rewritten buffer.
 const COLLAPSING_DICT: &str = "d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n";
 
+/// A Python notebook whose code cells each carry one assignment and a
+/// trailing comment, so the rules covering them span a cell boundary.
+const COMMENTED_CELLS: &str = r#"{
+  "cells": [
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": ["x = 1  # a"]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": ["yy = 2  # bb"]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": ["zzz = 3  # ccc"]
+    }
+  ],
+  "metadata": {
+    "language_info": {"name": "python"}
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}"#;
+
 /// A Python notebook whose sole code cell uses CRLF line endings. The
 /// rewrite aligns the assignment while preserving each `\r\n`.
 const CRLF_CELLS: &str = r#"{
@@ -1238,6 +1271,13 @@ fn notebook_check_text_renders_a_cell_header_off_a_hit() {
     let assert = warm.arg("check").arg(&path).assert().code(1);
 
     assert_stdout_has(&assert, "cell 2");
+}
+
+#[test]
+fn notebook_check_text_renders_a_diagnostic_spanning_two_cells() {
+    let assert = run_fixture("nb.ipynb", COMMENTED_CELLS, &["check", "--no-cache"]).code(1);
+
+    assert_stdout_has(&assert, "cells 1 to 2");
 }
 
 #[test]

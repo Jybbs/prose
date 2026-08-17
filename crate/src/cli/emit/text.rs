@@ -92,29 +92,33 @@ fn annotated(diag: &Diagnostic) -> TextRange {
         .fold(diag.range, |span, edit| span.cover(edit.range()))
 }
 
-/// The notebook cell holding `range`, paired with the byte range it
-/// spans, derived from the index by walking from the cell's first row to
-/// the next cell's. `None` for an offset outside every cell.
+/// The notebook cells `range` runs across, paired with the byte range
+/// they span, derived from the index by walking from the first cell's
+/// row to the row opening the cell past the last. A rule reads the
+/// cells concatenated, so a range covering an aligned group spans
+/// every cell that group reaches. `None` for an offset outside every
+/// cell.
 fn cell_slice(
     file: &SourceFile,
     index: &NotebookIndex,
     range: TextRange,
-) -> Option<(OneIndexed, TextRange)> {
+) -> Option<(OneIndexed, OneIndexed, TextRange)> {
     let code = file.to_source_code();
-    let cell = index.cell(code.line_column(range.start()).line)?;
+    let first = index.cell(code.line_column(range.start()).line)?;
+    let last = index.cell(code.line_column(range.end()).line)?;
     let mut start = None;
     let mut end = file.source_text().text_len();
     for cell_start in index.iter() {
         let byte = code.line_start(cell_start.start_row());
-        if start.is_some() {
+        if cell_start.cell_index() > last {
             end = byte;
             break;
         }
-        if cell_start.cell_index() == cell {
+        if cell_start.cell_index() == first {
             start = Some(byte);
         }
     }
-    start.map(|start| (cell, TextRange::new(start, end)))
+    start.map(|start| (first, last, TextRange::new(start, end)))
 }
 
 /// The snippet frame both the warning and the fix suggestion draw on,
@@ -127,7 +131,8 @@ fn framed<'a, T: Clone>(text: &'a str, line_start: usize, path: &'a str) -> Snip
 /// its rendered text begins at, a cell header for a notebook, that text,
 /// and the one-based line its first row carries. A module renders the
 /// lines around `range` with no header and their own numbering, where a
-/// notebook renders its own cell from line one under a `cell N` header.
+/// notebook renders the cells the range reaches, from line one, under a
+/// header naming them.
 fn view<'a>(
     file: &'a SourceFile,
     index: Option<&NotebookIndex>,
@@ -135,11 +140,21 @@ fn view<'a>(
 ) -> (TextSize, Option<String>, &'a str, usize) {
     let source = file.source_text();
     match index.and_then(|index| cell_slice(file, index, range)) {
-        Some((cell, span)) => (span.start(), Some(format!("cell {cell}")), &source[span], 1),
+        Some((first, last, span)) => (span.start(), Some(header(first, last)), &source[span], 1),
         None => {
             let (span, first) = window(file, range);
             (span.start(), None, &source[span], first)
         }
+    }
+}
+
+/// The header a notebook snippet draws above its cells, reading as
+/// `cell 3` for one and `cells 3 to 5` for a range.
+fn header(first: OneIndexed, last: OneIndexed) -> String {
+    if first == last {
+        format!("cell {first}")
+    } else {
+        format!("cells {first} to {last}")
     }
 }
 
@@ -176,8 +191,13 @@ mod tests {
         cli::emit::{emitted, emitted_runs},
         diagnostics::Diagnostic,
         source::Source,
-        testing::{format_diagnostic, parse, range},
+        testing::{format_diagnostic, notebook, notebook_index, parse, range},
     };
+
+    /// A two-cell notebook whose comment column aligns across the cell
+    /// boundary, the shape a rule reading the concatenated source
+    /// produces.
+    const COMMENTED_CELLS: [&str; 2] = ["x = 1  # a\n", "yy = 2  # bb\n"];
 
     /// Emits `sources` as one run apiece, each carrying a diagnostic
     /// over its first three bytes, and returns the rendered stream.
@@ -239,6 +259,31 @@ mod tests {
         assert!(rendered.contains("help: replace with"));
         assert!(rendered.contains("aaa"));
         assert!(rendered.contains("bbb"));
+    }
+
+    #[rstest]
+    #[case::inside_one_cell(range(13, 15), "cell 2")]
+    #[case::across_two_cells(range(7, 20), "cells 1 to 2")]
+    fn notebook_snippet_names_every_cell_its_range_reaches(
+        #[case] span: TextRange,
+        #[case] expected: &str,
+    ) {
+        let source = notebook(&COMMENTED_CELLS);
+        let index = notebook_index(&COMMENTED_CELLS);
+        let diag = format_diagnostic(span);
+
+        let buf = emitted_runs(
+            &Text::new(false),
+            &[Run::new(
+                source.source_file(),
+                std::slice::from_ref(&diag),
+                Some(&index),
+            )],
+            &EmitterSummary::default(),
+        );
+
+        let rendered = String::from_utf8(buf).expect("utf-8");
+        assert!(rendered.contains(expected), "rendered {rendered:?}");
     }
 
     #[rstest]
