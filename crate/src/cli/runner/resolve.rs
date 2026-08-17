@@ -10,6 +10,7 @@ use std::{
 };
 
 use crate::{
+    cache::{Anchor, CacheKeyPrefix},
     config::{Config, ConfigSource, NoticeDedup},
     pipeline::Pipeline,
     rule::RuleId,
@@ -21,6 +22,7 @@ use crate::{
 /// and each distinct effective config's pipeline are memoized, while a
 /// directory whose config fails to load reports once and fails its files.
 pub(super) struct ConfigResolver {
+    anchor: Anchor,
     built: Mutex<HashMap<String, Arc<Resolved>>>,
     default: Arc<Resolved>,
     ignore: Vec<RuleId>,
@@ -30,9 +32,10 @@ pub(super) struct ConfigResolver {
 }
 
 impl ConfigResolver {
-    pub(super) fn new(select: Vec<RuleId>, ignore: Vec<RuleId>) -> Self {
-        let default = Arc::new(build_resolved(&Config::default(), &select, &ignore));
+    pub(super) fn new(select: Vec<RuleId>, ignore: Vec<RuleId>, anchor: Anchor) -> Self {
+        let default = Arc::new(build_resolved(&Config::default(), &select, &ignore, anchor));
         Self {
+            anchor,
             built: Mutex::new(HashMap::from([(
                 default.config_toml.clone(),
                 Arc::clone(&default),
@@ -48,7 +51,12 @@ impl ConfigResolver {
     /// Returns the resolution for an effective `config`, building its
     /// pipeline once and memoizing it under its serialized TOML.
     fn built_for(&self, config: &Config) -> Arc<Resolved> {
-        let resolved = Arc::new(build_resolved(config, &self.select, &self.ignore));
+        let resolved = Arc::new(build_resolved(
+            config,
+            &self.select,
+            &self.ignore,
+            self.anchor,
+        ));
         Arc::clone(
             self.built
                 .lock()
@@ -124,24 +132,35 @@ impl ConfigResolver {
 }
 
 /// One file's resolved configuration: the config itself, the pipeline
-/// its enabled rules build, and the serialized TOML that keys the cache
-/// and fills a bug report's configuration field.
+/// its enabled rules build, the serialized TOML that keys the cache and
+/// fills a bug report's configuration field, and the hasher already
+/// holding that TOML and rule selection, which every file under this
+/// config clones rather than re-absorbing.
 pub(super) struct Resolved {
     pub(super) config: Config,
     pub(super) config_toml: String,
+    pub(super) key_prefix: CacheKeyPrefix,
     pub(super) pipeline: Pipeline,
 }
 
-#[cfg(test)]
 impl Resolved {
-    /// A default-config resolution over `pipeline`, the seam a runner
-    /// test drives sentinel rules through.
-    pub(super) fn over(pipeline: Pipeline) -> Self {
+    /// Serializes `config` and loads the key prefix its TOML and
+    /// `pipeline`'s selection draw under `anchor`.
+    fn new(config: Config, pipeline: Pipeline, anchor: Anchor) -> Self {
+        let config_toml = config.to_toml();
         Self {
-            config: Config::default(),
-            config_toml: Config::default().to_toml(),
+            key_prefix: CacheKeyPrefix::new(&config_toml, pipeline.rule_ids(), anchor),
+            config,
+            config_toml,
             pipeline,
         }
+    }
+
+    /// A default-config resolution over `pipeline`, the seam a runner
+    /// test drives sentinel rules through.
+    #[cfg(test)]
+    pub(super) fn over(pipeline: Pipeline) -> Self {
+        Self::new(Config::default(), pipeline, Anchor::AsWritten)
     }
 }
 
@@ -156,12 +175,17 @@ enum DirResolution {
     Project(Arc<ConfigSource>),
 }
 
-fn build_resolved(config: &Config, select: &[RuleId], ignore: &[RuleId]) -> Resolved {
-    Resolved {
-        config: config.clone(),
-        config_toml: config.to_toml(),
-        pipeline: Pipeline::with_filters(config, select, ignore),
-    }
+fn build_resolved(
+    config: &Config,
+    select: &[RuleId],
+    ignore: &[RuleId],
+    anchor: Anchor,
+) -> Resolved {
+    Resolved::new(
+        config.clone(),
+        Pipeline::with_filters(config, select, ignore),
+        anchor,
+    )
 }
 
 #[cfg(test)]
@@ -174,7 +198,7 @@ mod tests {
     const SCRIPT: &[u8] = b"# /// script\n# [tool.prose]\n# code-line-length = 200\n# ///\nx = 1\n";
 
     fn resolver() -> ConfigResolver {
-        ConfigResolver::new(Vec::new(), Vec::new())
+        ConfigResolver::new(Vec::new(), Vec::new(), Anchor::AsWritten)
     }
 
     #[test]

@@ -18,6 +18,39 @@ const INTERLEAVED: &str = include_str!("fixtures/notebook/markdown_interleaved/i
 /// that net-shrinks the rewritten buffer.
 const COLLAPSING_DICT: &str = "d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n";
 
+/// A Python notebook whose code cells each carry one assignment and a
+/// trailing comment, so the rules covering them span a cell boundary.
+const COMMENTED_CELLS: &str = r#"{
+  "cells": [
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": ["x = 1  # a"]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": ["yy = 2  # bb"]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": ["zzz = 3  # ccc"]
+    }
+  ],
+  "metadata": {
+    "language_info": {"name": "python"}
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}"#;
+
 /// A Python notebook whose sole code cell uses CRLF line endings. The
 /// rewrite aligns the assignment while preserving each `\r\n`.
 const CRLF_CELLS: &str = r#"{
@@ -180,6 +213,32 @@ fn assert_stdout_has(assert: &Assert, needle: &str) {
     assert!(out.contains(needle), "stdout was {out:?}");
 }
 
+/// Seeds an isolated cache with one `format --diff` over a fresh fixture
+/// holding `source`, then asserts the warm run reproduces the cold patch
+/// byte for byte and reports the hit.
+fn assert_warm_diff_matches_cold(name: &str, source: &str) {
+    let (_dir, path) = fixture(name, source);
+    let (mut warm, _cache) = warmed_by(&path, &["format", "--diff"], 1);
+
+    let hit = warm
+        .args(["--verbose", "format", "--diff"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let cold = prose()
+        .args(["format", "--diff", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(1);
+
+    assert_eq!(
+        hit.get_output().stdout,
+        cold.get_output().stdout,
+        "a warm diff must reproduce the cold patch byte for byte",
+    );
+    assert_stderr_has(&hit, "1 hits, 0 misses");
+}
+
 /// Runs `check` twice against one isolated cache, asserts the warm
 /// run reproduces the cold stdout byte for byte, and returns it.
 fn assert_warm_run_matches_cold(paths: &[&Path]) -> String {
@@ -198,6 +257,17 @@ fn assert_warm_run_matches_cold(paths: &[&Path]) -> String {
 
     assert_eq!(cold.get_output().stdout, warm.get_output().stdout);
     stdout_utf8(&warm)
+}
+
+/// The byte total of every file in `dir`, the measure the cache's size
+/// cap governs.
+fn cache_bytes(dir: &Path) -> u64 {
+    std::fs::read_dir(dir)
+        .expect("read_dir")
+        .flatten()
+        .filter_map(|entry| entry.metadata().ok())
+        .map(|meta| meta.len())
+        .sum()
 }
 
 /// Runs `check` with the JSON emitter over a fresh fixture holding
@@ -255,6 +325,14 @@ fn run_fixture(name: &str, source: &str, args: &[&str]) -> Assert {
     let (_dir, path) = fixture(name, source);
     let (mut cmd, _cache_dir) = prose_isolated();
     cmd.args(args).arg(&path).assert()
+}
+
+/// Runs `args` with `source` on stdin. The run reads a cache directory
+/// of its own, so a case never reaches the user-level cache a developer
+/// shares across projects.
+fn run_stdin(source: &str, args: &[&str]) -> Assert {
+    let (mut cmd, _cache_dir) = prose_isolated();
+    cmd.args(args).write_stdin(source).assert()
 }
 
 /// Two sibling projects holding identical `source`: `suppressed/x.py`
@@ -326,6 +404,27 @@ fn cache_compact_subcommand_exits_zero_and_reports_count() {
 }
 
 #[test]
+fn cache_evicts_back_under_its_cap_once_a_run_ends() {
+    let dir = tempdir().expect("tempdir");
+    write_pyproject(dir.path(), "[tool.prose.cache]\nmax-size-mib = 1\n");
+    let path = dir.path().join("a.py");
+    std::fs::write(&path, UNALIGNED).expect("writes");
+    let (mut cmd, cache_dir) = prose_isolated();
+    let filler = vec![b'x'; 512 * 1024];
+    for slot in 0..4_u32 {
+        std::fs::write(cache_dir.path().join(format!("{slot:064x}")), &filler).expect("writes");
+    }
+
+    cmd.current_dir(dir.path())
+        .arg("check")
+        .arg(&path)
+        .assert()
+        .code(1);
+
+    assert!(cache_bytes(cache_dir.path()) <= 1024 * 1024);
+}
+
+#[test]
 fn cache_hit_produces_identical_diagnostics_to_miss() {
     assert_cache_hit_matches_miss("ab.py", UNALIGNED);
 }
@@ -386,6 +485,21 @@ fn cache_invalidates_on_config_change() {
 }
 
 #[test]
+fn cache_keys_a_diff_apart_from_a_check() {
+    let (_dir, path) = fixture("misaligned.py", UNALIGNED);
+    let (mut warm, cache) = warmed_by(&path, &["check"], 1);
+    warm.args(["format", "--diff"]).arg(&path).assert().code(1);
+
+    let assert = prose()
+        .args(["cache", "info"])
+        .env("PROSE_CACHE_DIR", cache.path())
+        .assert()
+        .success();
+
+    assert_stdout_has(&assert, "entries: 2");
+}
+
+#[test]
 fn cache_keys_each_file_against_its_governing_config() {
     let parent = tempdir().expect("tempdir");
     let (suppressed, flagged) = sibling_projects(&parent, UNALIGNED);
@@ -397,6 +511,20 @@ fn cache_keys_each_file_against_its_governing_config() {
     assert_eq!(summary["files_changed"], 1);
 }
 
+#[test]
+fn cache_misses_a_diff_run_landing_on_a_check_entry() {
+    let (_dir, path) = fixture("misaligned.py", UNALIGNED);
+    let (mut warm, _cache) = warmed_by(&path, &["check"], 1);
+
+    let assert = warm
+        .args(["--verbose", "format", "--diff"])
+        .arg(&path)
+        .assert()
+        .code(1);
+
+    assert_stderr_has(&assert, "0 hits, 1 misses");
+    assert_stdout_has(&assert, "@@");
+}
 #[rstest]
 #[case::narrow_select_after_full_set(&[], &["--select", "alphabetize-siblings"])]
 #[case::ignore_after_full_set(&[], &["--ignore", "align-equals"])]
@@ -407,6 +535,121 @@ fn cache_misses_when_selection_changes_between_runs(
 ) {
     let (_dir, path) = fixture("reselect.py", UNALIGNED);
     assert_reselect_misses(seed_filter, query_filter, &path);
+}
+
+#[test]
+fn cache_serves_a_warm_diff_from_its_own_entry() {
+    assert_warm_diff_matches_cold("misaligned.py", UNALIGNED);
+}
+
+#[test]
+fn cache_serves_a_warm_diff_of_surviving_lint() {
+    let (_dir, path) = fixture("lint_only.py", LINT_ONLY);
+    let (mut warm, _cache) = warmed_by(&path, &["format", "--diff"], 2);
+
+    let hit = warm
+        .args(["--verbose", "format", "--diff"])
+        .arg(&path)
+        .assert()
+        .code(2);
+
+    assert_stderr_has(&hit, "1 hits, 0 misses");
+    assert_stderr_has(&hit, "lint diagnostic not shown");
+}
+
+#[test]
+fn cache_stores_only_the_entry_a_write_back_leaves_reachable() {
+    let dir = tempdir().expect("tempdir");
+    std::fs::write(dir.path().join("changed.py"), UNALIGNED).expect("writes");
+    std::fs::write(dir.path().join("settled.py"), "x = 1\n").expect("writes");
+    let (mut cmd, cache_dir) = prose_isolated();
+    cmd.arg("format").arg(dir.path()).assert().success();
+
+    let assert = prose()
+        .args(["cache", "info"])
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .success();
+
+    assert_stdout_has(&assert, "entries: 1");
+}
+
+#[test]
+fn cache_write_back_storing_nothing_leaves_an_over_cap_directory_alone() {
+    let dir = tempdir().expect("tempdir");
+    write_pyproject(dir.path(), "[tool.prose.cache]\nmax-size-mib = 1\n");
+    let path = dir.path().join("a.py");
+    std::fs::write(&path, UNALIGNED).expect("writes");
+    let (mut seed, cache_dir) = prose_isolated();
+    seed.current_dir(dir.path())
+        .arg("check")
+        .arg(&path)
+        .assert()
+        .code(1);
+    let generation = std::fs::read_dir(cache_dir.path())
+        .expect("read_dir")
+        .flatten()
+        .find(|entry| entry.path().is_dir())
+        .expect("a generation directory")
+        .path();
+    let filler = vec![b'x'; 512 * 1024];
+    for slot in 0..4_u32 {
+        std::fs::write(generation.join(format!("{slot:064x}")), &filler).expect("writes");
+    }
+    let padded = cache_bytes(&generation);
+    std::fs::write(&path, UNALIGNED).expect("restores the unformatted bytes");
+
+    prose()
+        .current_dir(dir.path())
+        .arg("format")
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .success();
+
+    assert_eq!(
+        cache_bytes(&generation),
+        padded,
+        "a write-back run whose every rewrite went unstored must not sweep",
+    );
+}
+
+#[test]
+fn cache_writes_a_warm_rewrite_a_diff_run_recorded() {
+    let (_dir, path) = fixture("misaligned.py", UNALIGNED);
+    let (mut warm, _cache) = warmed_by(&path, &["format", "--diff"], 1);
+
+    let assert = warm
+        .args(["--verbose", "format"])
+        .arg(&path)
+        .assert()
+        .success();
+
+    assert_stderr_has(&assert, "1 hits, 0 misses");
+    let (_cold_dir, cold) = fixture("misaligned.py", UNALIGNED);
+    prose()
+        .args(["format", "--no-cache"])
+        .arg(&cold)
+        .assert()
+        .success();
+    assert_eq!(
+        std::fs::read_to_string(&path).expect("reads the warm rewrite"),
+        std::fs::read_to_string(&cold).expect("reads the cold rewrite"),
+    );
+}
+
+#[test]
+fn cache_writes_back_a_settled_file_from_its_own_entry() {
+    let (_dir, path) = fixture("settled.py", "x = 1\n");
+    let (mut warm, _cache) = warmed_by(&path, &["format"], 0);
+
+    let assert = warm
+        .args(["--verbose", "format"])
+        .arg(&path)
+        .assert()
+        .success();
+
+    assert_stderr_has(&assert, "1 hits, 0 misses");
 }
 
 #[test]
@@ -423,20 +666,12 @@ fn check_clean_summary_anchors_with_hyacinth() {
 
 #[test]
 fn check_dash_clean_exits_zero() {
-    prose()
-        .args(["check", "-"])
-        .write_stdin("x = 1\n")
-        .assert()
-        .success();
+    run_stdin("x = 1\n", &["check", "-"]).success();
 }
 
 #[test]
 fn check_dash_unaligned_exits_format_change() {
-    prose()
-        .args(["check", "-"])
-        .write_stdin(UNALIGNED)
-        .assert()
-        .code(1);
+    run_stdin(UNALIGNED, &["check", "-"]).code(1);
 }
 
 #[test]
@@ -567,19 +802,15 @@ fn check_respects_cache_disabled_in_pyproject() {
 
 #[test]
 fn check_stdin_clean_exits_zero() {
-    prose()
-        .args(["check", "--stdin"])
-        .write_stdin("x = 1\n")
-        .assert()
-        .success();
+    run_stdin("x = 1\n", &["check", "--stdin"]).success();
 }
 
 #[test]
 fn check_stdin_resolves_config_from_the_cwd() {
     let project = suppressed_project();
+    let (mut cmd, _cache_dir) = prose_isolated();
 
-    prose()
-        .args(["check", "--stdin"])
+    cmd.args(["check", "--stdin"])
         .write_stdin(UNALIGNED)
         .current_dir(project.path())
         .assert()
@@ -588,11 +819,7 @@ fn check_stdin_resolves_config_from_the_cwd() {
 
 #[test]
 fn check_stdin_unaligned_exits_format_change() {
-    prose()
-        .args(["check", "--stdin"])
-        .write_stdin(UNALIGNED)
-        .assert()
-        .code(1);
+    run_stdin(UNALIGNED, &["check", "--stdin"]).code(1);
 }
 
 #[test]
@@ -686,6 +913,16 @@ fn color_always_summary_falls_back_to_ansi_without_colorterm() {
 }
 
 #[rstest]
+#[case::always("always", true)]
+#[case::never("never", false)]
+fn color_arm_paints_the_diagnostic_body(#[case] arm: &str, #[case] painted: bool) {
+    let assert = run_fixture("unaligned.py", UNALIGNED, &["--color", arm, "check"]).code(1);
+
+    let out = stdout_utf8(&assert);
+    assert_eq!(out.contains('\u{1b}'), painted, "stdout was {out:?}");
+}
+
+#[rstest]
 fn color_arms_exit_zero(#[values("always", "never")] arm: &str) {
     run_fixture("clean.py", "x = 1\n", &["--color", arm, "check"]).success();
 }
@@ -746,30 +983,21 @@ fn emitters_render_shrinking_literals_without_aborting(
 
 #[test]
 fn format_dash_keeps_escape_bytes_in_piped_stdout() {
-    prose()
-        .args(["format", "-"])
-        .write_stdin(ESCAPE_IN_LITERAL)
-        .assert()
+    run_stdin(ESCAPE_IN_LITERAL, &["format", "-"])
         .success()
         .stdout(ESCAPE_ALIGNED);
 }
 
 #[test]
 fn format_dash_prints_canonical_source_verbatim() {
-    prose()
-        .args(["format", "-"])
-        .write_stdin("x = 1\n")
-        .assert()
+    run_stdin("x = 1\n", &["format", "-"])
         .success()
         .stdout("x = 1\n");
 }
 
 #[test]
 fn format_dash_rewrites_unaligned_stdin_to_stdout() {
-    prose()
-        .args(["format", "-"])
-        .write_stdin(UNALIGNED)
-        .assert()
+    run_stdin(UNALIGNED, &["format", "-"])
         .success()
         .stdout("AB = 1\nx  = 2\n");
 }
@@ -936,11 +1164,7 @@ fn format_rewrites_after_check_populated_the_cache() {
 
 #[test]
 fn format_stdin_diff_keeps_escape_bytes_in_a_plain_patch() {
-    let assert = prose()
-        .args(["format", "--stdin", "--diff"])
-        .write_stdin(ESCAPE_IN_LITERAL)
-        .assert()
-        .code(1);
+    let assert = run_stdin(ESCAPE_IN_LITERAL, &["format", "--stdin", "--diff"]).code(1);
 
     assert_patch_keeps_escape(&assert);
 }
@@ -948,9 +1172,9 @@ fn format_stdin_diff_keeps_escape_bytes_in_a_plain_patch() {
 #[test]
 fn format_stdin_resolves_config_from_the_cwd() {
     let project = suppressed_project();
+    let (mut cmd, _cache_dir) = prose_isolated();
 
-    prose()
-        .args(["format", "--stdin"])
+    cmd.args(["format", "--stdin"])
         .write_stdin(UNALIGNED)
         .current_dir(project.path())
         .assert()
@@ -999,6 +1223,11 @@ fn no_args_prints_help_and_exits_clean() {
 }
 
 #[test]
+fn notebook_check_hit_renders_like_a_cold_run() {
+    assert_cache_hit_matches_miss("nb.ipynb", TWO_CODE_CELLS);
+}
+
+#[test]
 fn notebook_check_json_renders_cell_relative_with_cell_number() {
     let assert = run_fixture(
         "nb.ipynb",
@@ -1041,6 +1270,23 @@ fn notebook_check_survives_a_cache_round_trip() {
         stderr_utf8(&assert).contains("1 hits"),
         "the second run should rehydrate from the cache",
     );
+}
+
+#[test]
+fn notebook_check_text_renders_a_cell_header_off_a_hit() {
+    let (_dir, path) = fixture("nb.ipynb", TWO_CODE_CELLS);
+    let (mut warm, _cache) = warmed_by(&path, &["check"], 1);
+
+    let assert = warm.arg("check").arg(&path).assert().code(1);
+
+    assert_stdout_has(&assert, "cell 2");
+}
+
+#[test]
+fn notebook_check_text_renders_a_diagnostic_spanning_two_cells() {
+    let assert = run_fixture("nb.ipynb", COMMENTED_CELLS, &["check", "--no-cache"]).code(1);
+
+    assert_stdout_has(&assert, "cells 1 to 2");
 }
 
 #[test]
@@ -1107,6 +1353,11 @@ fn notebook_diff_renders_per_cell_hunks() {
 }
 
 #[test]
+fn notebook_diff_renders_per_cell_hunks_from_a_warm_entry() {
+    assert_warm_diff_matches_cold("nb.ipynb", ALIGNS);
+}
+
+#[test]
 fn notebook_discovered_in_a_directory_walk() {
     let dir = tempdir().expect("tempdir");
     std::fs::write(dir.path().join("nb.ipynb"), ALIGNS).expect("writes");
@@ -1168,39 +1419,39 @@ fn notebook_non_python_is_passed_over() {
 
 #[test]
 fn notebook_non_python_through_stdin_is_echoed_verbatim() {
-    let assert = prose()
-        .args(["format", "--stdin", "--stdin-filename", "x.ipynb"])
-        .write_stdin(NON_PYTHON)
-        .assert()
-        .success();
+    let assert = run_stdin(
+        NON_PYTHON,
+        &["format", "--stdin", "--stdin-filename", "x.ipynb"],
+    )
+    .success();
 
     assert_eq!(stdout_utf8(&assert), NON_PYTHON);
 }
 
 #[test]
 fn notebook_stdin_diff_numbers_by_absolute_cell() {
-    let assert = prose()
-        .args([
+    let assert = run_stdin(
+        ALIGNS,
+        &[
             "format",
             "--diff",
             "--stdin",
             "--stdin-filename",
             "nb.ipynb",
-        ])
-        .write_stdin(ALIGNS)
-        .assert()
-        .code(1);
+        ],
+    )
+    .code(1);
 
     assert_stdout_has(&assert, "cell 2");
 }
 
 #[test]
 fn notebook_stdin_filename_selects_the_notebook_type() {
-    let assert = prose()
-        .args(["format", "--stdin", "--stdin-filename", "x.ipynb"])
-        .write_stdin(ALIGNS)
-        .assert()
-        .success();
+    let assert = run_stdin(
+        ALIGNS,
+        &["format", "--stdin", "--stdin-filename", "x.ipynb"],
+    )
+    .success();
 
     assert_eq!(
         json(&stdout_utf8(&assert))["cells"][1]["source"][0],

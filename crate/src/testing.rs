@@ -6,7 +6,7 @@ use std::{
 };
 
 use ruff_diagnostics::Edit;
-use ruff_notebook::Notebook;
+use ruff_notebook::{Notebook, NotebookIndex};
 use ruff_python_ast::{Expr, StmtClassDef, StmtFunctionDef};
 use ruff_text_size::{TextLen, TextRange, TextSize};
 use serde_json::{Value, json};
@@ -188,6 +188,11 @@ pub(crate) fn never_settles(id: &'static str) -> GroupSentinelRule {
 /// synthetic separator `ruff_notebook` inserts, so the returned source
 /// carries real cell boundaries.
 pub(crate) fn notebook(cells: &[&str]) -> Source {
+    Source::from_notebook(&notebook_document(cells), "<nb>").expect("notebook source builds")
+}
+
+/// The parsed notebook `cells` describes, one code cell per source.
+fn notebook_document(cells: &[&str]) -> Notebook {
     let cells: Vec<Value> = cells
         .iter()
         .map(|source| {
@@ -207,8 +212,13 @@ pub(crate) fn notebook(cells: &[&str]) -> Source {
         "nbformat_minor": 5,
     });
     let json = serde_json::to_string(&document).expect("notebook json serializes");
-    let parsed = Notebook::from_source_code(&json).expect("notebook parses");
-    Source::from_notebook(&parsed, "<nb>").expect("notebook source builds")
+    Notebook::from_source_code(&json).expect("notebook parses")
+}
+
+/// The cell index of a notebook built from `cells`, the translator a
+/// report renders each concatenated position through.
+pub(crate) fn notebook_index(cells: &[&str]) -> NotebookIndex {
+    notebook_document(cells).into_index()
 }
 
 pub(crate) fn parse(src: &str) -> Source {

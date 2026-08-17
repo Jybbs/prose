@@ -10,6 +10,7 @@
 //! where the block anchors in place or where the author left any and
 //! dropped to none otherwise.
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Stmt,
@@ -148,7 +149,7 @@ impl Walker<'_> {
     }
 
     fn pair_siblings(&mut self, body: &[Stmt], scope: BodyScope) {
-        for (prev, curr) in body.iter().zip(body.iter().skip(1)) {
+        for (prev, curr) in body.iter().tuple_windows() {
             self.pair_with_end(prev, prev.end(), curr, scope);
         }
     }

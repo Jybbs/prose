@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/alphabetize_siblings/statement_reading_a_definition_holds_the_run/input.py
 ---

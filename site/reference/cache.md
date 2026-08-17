@@ -1,8 +1,12 @@
 # Cache
 
-*Prose* caches per-file pipeline output keyed on the source bytes, the configuration governing the file, the rules the run selects, and the *Prose* version. A repeat `prose check` or `prose format` against an unchanged file collapses to a stat, a hash, and a deserialize, since the cache hit re-emits diagnostics from the cached entry without entering the pipeline.
+*Prose* caches per-file pipeline output keyed on the source bytes, the configuration governing the file, the rules the run selects, the *Prose* version, and which buffer the entry's diagnostics resolve against. A repeat `prose check` or `prose format` against an unchanged file collapses to a stat, a hash, and a deserialize, since the cache hit re-emits diagnostics from the cached entry without entering the pipeline.
 
 The cache is enabled by default, with the `[cache]` table tuning it, `--no-cache` bypassing it for one invocation, and `prose cache clean` clearing it.
+
+A `prose format` that rewrites a file stores no entry for it, because committing the rewrite replaces the bytes the key was drawn from, leaving that file's next run to key elsewhere. A file the run leaves alone does get an entry, which is what makes a second `prose format` over an already-formatted tree collapse to hits.
+
+An entry carries the [**unstable-output**](/reference/cli#unstable-output) report alongside its diagnostics and rewrite wherever the run that wrote it built one, so a hit re-prints that notice rather than dropping it with the pipeline it skipped.
 
 ## Location
 
@@ -14,25 +18,26 @@ The cache lives at the user level, with the path resolving per platform:
 | macOS | `~/Library/Caches/prose` |
 | Windows | `%LOCALAPPDATA%\prose\cache` |
 
-Each cache entry is one file under that directory, named by the 64-character lowercase hex form of the entry's key. The layout is flat and inspectable with `ls`, and the on-disk format is bincode for compact size and fast deserialize.
+Each cache entry is one file named by the 64-character lowercase hex form of the entry's key, sitting under a generation subdirectory whose name is a digest of the *Prose* version and the private entry-format version. The layout stays inspectable with `ls` one level down, and the on-disk format is `postcard` for compact size and fast deserialize. Scoping by generation lets a version bump reclaim its predecessor's entries whole rather than aging them out one eviction at a time, holding the older directory for an hour first in case a run of the older build is still reading it.
 
 Resolution chains through `PROSE_CACHE_DIR` → the platform default. `PROSE_CACHE_DIR` is taken as-is with no subdirectory appended, so a CI runner or test harness pins the cache to a known path independent of the runner's HOME layout. The platform default flows through the [`dirs`](https://docs.rs/dirs) crate, which already honors `XDG_CACHE_HOME` on Linux.
 
 ## Key Shape
 
-The cache key is the **BLAKE3** digest of `(source_bytes ++ config_toml ++ rule_ids ++ prose_version ++ cache_format_version)`. The inputs:
+The cache key is the **BLAKE3** digest of `(config_toml ++ rule_ids ++ prose_version ++ cache_format_version ++ source_bytes)`, taken under a key-derivation context that separates the two diagnostic anchorings. The inputs:
 
-- the source bytes of the file under formatting
 - the canonical TOML serialization of the `Config` governing the file, so a semantically-equivalent re-shuffling of the user's config file produces the same key
 - the resolved rule selection the run enables after config toggles and the `--select` / `--ignore` filters, so a run narrowing the rule set keys separately from a full run
 - the *Prose* version from `CARGO_PKG_VERSION`, so a version bump invalidates the cache wholesale
 - a private `CACHE_FORMAT_VERSION` constant that bumps independently when the on-disk entry shape changes, leaving the user-facing version free to ship semver-meaningful bumps without unrelated cache turnover
+- the source bytes of the file under formatting
+- the anchor naming which buffer the entry's diagnostics resolve against, which enters as the digest's derivation context rather than as another input, so a `prose check` and a text `prose format` each read the entry their own mode wrote rather than one replaying the other's list
 
 Two workspaces editing identical files under matching configuration share a cache hit, because the key already disambiguates source content across projects.
 
 ## Eviction
 
-LRU eviction runs on every insert, the pass collecting every entry's last-access mtime, sorting ascending, and removing entries until the directory total falls back under the configured cap *(default 100 MiB)*. The pass is best-effort and never blocks the insert, with permission failures and concurrent-eviction races logged to stderr as warnings.
+LRU eviction runs once a run's inserts have landed, the pass first reclaiming any generation directory an older build left behind and then, where the live generation still sits over either configured cap, collecting every entry's last-access mtime, sorting ascending, and removing entries until both the byte total and the entry count sit at four fifths of their cap. Evicting past a cap rather than exactly onto it leaves the next run's inserts landing inside the ceiling instead of paying for another sort, and sweeping once per run rather than once per entry keeps a run's syscall count from scaling with the size of the cache it writes into. A run that only read entries skips the sweep outright, since it left the directory the size it already was. The pass is best-effort and never blocks an insert, with permission failures and concurrent-eviction races logged to stderr as warnings.
 
 Inserts write to a `.tmp`-suffixed sibling then `rename` onto the final path, so the rename's POSIX atomicity guarantees a concurrent reader never observes a partial entry. The sibling is cleaned up on drop when the rename fails, and `prose cache clean` sweeps any orphaned `.tmp` files alongside cache entries.
 
@@ -43,11 +48,13 @@ The facets under the `[cache]` table *(`[tool.prose.cache]` in a `pyproject.toml
 | Key | Type | Default | Meaning |
 |---|---|---|---|
 | `enabled` | bool | `true` | Toggle the cache globally |
+| `max-entries` | positive int | `10000` | LRU eviction cap on the cache directory's entry count |
 | `max-size-mib` | positive int | `100` | LRU eviction cap on the cache directory |
 
 ```toml
 [cache]
 enabled      = true
+max-entries  = 25000
 max-size-mib = 250
 ```
 
@@ -73,7 +80,7 @@ Returns exit code 0 on success, with the IO-error exit code applying on permissi
 
 ## `prose cache compact`
 
-The `prose cache compact` subcommand runs the LRU eviction pass against the cache, reducing it to the configured `[cache] max-size-mib` cap. Eviction normally runs only on insert, so a project that lowered its cap will not see the new ceiling enforced until the next `prose check` or `prose format` writes a fresh entry. `compact` triggers eviction immediately and reports the bytes and entry count it removed.
+The `prose cache compact` subcommand runs the LRU eviction pass against the cache, reducing it to the configured `[cache] max-size-mib` and `max-entries` caps. Eviction otherwise runs once at the end of a path run, so a project that lowered its cap will not see the new ceiling enforced until the next `prose check` or `prose format` completes. `compact` triggers eviction immediately and reports the bytes and entry count it removed.
 
 ```bash
 $ prose cache compact

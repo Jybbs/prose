@@ -51,6 +51,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'allow',                       href: '/reference/configuration#per-rule-facets',       blurb: 'Per-rule exemption list, modules for `bare-imports` and names for `reassigned-constants`.' },
     { key: 'allow-pattern',               href: '/reference/configuration#per-rule-facets',       blurb: 'Per-rule regex exempting matching names from a lint.' },
     { key: 'cache.enabled',               href: '/reference/cache#configuration',                 blurb: 'Toggle the user-level cache globally.' },
+    { key: 'cache.max-entries',           href: '/reference/cache#configuration',                 blurb: "LRU eviction cap on the cache directory's entry count." },
     { key: 'cache.max-size-mib',          href: '/reference/cache#configuration',                 blurb: 'LRU eviction cap on the cache directory.' },
     { key: 'code-line-length',            href: '/reference/configuration#top-level-keys',        blurb: 'Maximum column budget for code lines.' },
     { key: 'docstring-line-length',       href: '/reference/configuration#docstring-budgets',     blurb: 'Maximum column budget for docstring prose.' },

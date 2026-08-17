@@ -55,9 +55,15 @@ impl Pipeline {
         self
     }
 
-    /// Folds each rule's edits into `source` in registration order,
-    /// reparsing between rules and extending `diagnostics` with each
-    /// rule's format findings when the caller supplies one.
+    /// Folds each rule's edits into `source` in registration order from
+    /// the `first` seat onward, reparsing between rules and extending
+    /// `diagnostics` with each rule's format findings when the caller
+    /// supplies one.
+    ///
+    /// `first` is the seat a [`diagnosed`](Self::diagnosed) pass over
+    /// this same buffer found editing before any other, leaving every
+    /// rule ahead of it with no fix group for this fold to re-derive. A
+    /// caller with the whole roster to fold passes zero.
     ///
     /// # Errors
     ///
@@ -67,9 +73,10 @@ impl Pipeline {
         &self,
         source: Source,
         mut diagnostics: Option<&mut Vec<Diagnostic>>,
+        first: usize,
     ) -> Result<Source, PipelineError> {
         let gate = compile_gate(&source, self.target_version);
-        self.rules.iter().try_fold(source, |source, rule| {
+        self.rules[first..].iter().try_fold(source, |source, rule| {
             let rule_id = rule.id();
             let Some((groups, new_text, map)) = woven_groups(&**rule, &source) else {
                 return Ok(source);
@@ -102,16 +109,30 @@ impl Pipeline {
     /// diagnostics, both filtered through the suppression map exactly as
     /// [`run`](Self::run) filters them.
     pub fn diagnose(&self, source: &Source) -> Vec<Diagnostic> {
+        self.diagnosed(source).0
+    }
+
+    /// The diagnostics [`diagnose`](Self::diagnose) collects, paired
+    /// with the seat of the first rule holding a fix group against
+    /// `source`, or `None` where no rule holds one. A fold over this
+    /// same buffer reaches its first edit at that seat, so every rule
+    /// ahead of it re-derives a result this pass already has, and a
+    /// `None` leaves that fold nothing to apply.
+    fn diagnosed(&self, source: &Source) -> (Vec<Diagnostic>, Option<usize>) {
         if source.suppression_map().file_is_suppressed() {
-            return Vec::new();
+            return (Vec::new(), None);
         }
         let mut diagnostics = Vec::new();
-        for rule in &self.rules {
+        let mut edits_at = None;
+        for (seat, rule) in self.rules.iter().enumerate() {
             let groups = prepared_groups(&**rule, source);
+            if !groups.is_empty() {
+                edits_at.get_or_insert(seat);
+            }
             diagnostics.extend(format_diagnostics(&**rule, groups));
         }
         diagnostics.extend(settled_lints(&self.rules, source));
-        diagnostics
+        (diagnostics, edits_at)
     }
 
     /// Returns every registered rule's id in a stable order.
@@ -155,9 +176,41 @@ impl Pipeline {
             return Ok((source, Vec::new()));
         }
         let mut diagnostics = Vec::new();
-        let source = self.fold_rules(source, Some(&mut diagnostics))?;
+        let source = self.fold_rules(source, Some(&mut diagnostics), 0)?;
         diagnostics.extend(settled_lints(&self.rules, &source));
         Ok((source, diagnostics))
+    }
+
+    /// Rewrites `source` and returns it beside the diagnostics
+    /// [`diagnose`](Self::diagnose) collects against the buffer as
+    /// written, the pair a structured `format` reports.
+    ///
+    /// One walk over the rules serves both halves, in that the fold
+    /// opens at the first rule the diagnose pass found editing and
+    /// leaves every rule ahead of it to that pass, where a buffer no
+    /// rule edits skips the fold outright. No lint pass runs against the
+    /// rewritten buffer, because the reported diagnostics resolve
+    /// against the source as written. Replaying the editing rules is
+    /// also what surfaces one whose output fails to re-parse or to
+    /// compile, so `check --validate` reads this in place of the full
+    /// [`run`](Self::run) and keeps the rewrite for its settle check.
+    ///
+    /// # Errors
+    ///
+    /// Returns `PipelineError::Reparse` when a rule's edit list produces
+    /// text that does not re-parse as Python, `PipelineError::Compile`
+    /// when it parses but no longer compiles, and `PipelineError::Cell`
+    /// when a notebook cell that parsed on its own before the rule ran no
+    /// longer does.
+    pub(crate) fn run_as_written(
+        &self,
+        source: Source,
+    ) -> Result<(Source, Vec<Diagnostic>), PipelineError> {
+        let (diagnostics, edits_at) = self.diagnosed(&source);
+        let Some(first) = edits_at else {
+            return Ok((source, diagnostics));
+        };
+        Ok((self.fold_rules(source, None, first)?, diagnostics))
     }
 
     /// The enabled rules whose edits would still rewrite `source`,
@@ -177,23 +230,6 @@ impl Pipeline {
                 (text != source.text()).then(|| rule.id())
             })
             .collect()
-    }
-
-    /// Replays the editing rules to surface a rule whose output fails to
-    /// re-parse or to compile, returning the rewritten source and
-    /// discarding the diagnostics [`run`](Self::run) would build.
-    /// `check` calls this when [`diagnose`](Self::diagnose) flags format
-    /// work, in place of the full `run`.
-    ///
-    /// # Errors
-    ///
-    /// Returns `PipelineError::Reparse` when a rule's edit list produces
-    /// text that does not re-parse as Python, `PipelineError::Compile`
-    /// when it parses but no longer compiles, and `PipelineError::Cell`
-    /// when a notebook cell that parsed on its own before the rule ran no
-    /// longer does.
-    pub(crate) fn validate(&self, source: Source) -> Result<Source, PipelineError> {
-        self.fold_rules(source, None)
     }
 }
 
@@ -472,6 +508,47 @@ mod tests {
     }
 
     #[test]
+    fn diagnosed_names_no_seat_where_no_rule_edits() {
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(LintSentinelRule {
+                id: RuleId::from("flag-x"),
+                ranges: vec![range(0, 1)],
+            }),
+            Box::new(GroupSentinelRule {
+                groups: vec![Vec::new()],
+                id: RuleId::from("emits-empty-group"),
+            }),
+        ]);
+
+        let (diagnostics, edits_at) = pipeline.diagnosed(&parse("x = 1\n"));
+
+        assert_eq!(edits_at, None);
+        assert_eq!(diagnostics.len(), 1);
+    }
+
+    #[test]
+    fn diagnosed_stops_at_the_first_rule_holding_a_fix_group() {
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(GroupSentinelRule {
+                groups: vec![Vec::new()],
+                id: RuleId::from("emits-empty-group"),
+            }),
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
+                id: RuleId::from("rewrite-x-to-y"),
+            }),
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("2".to_owned(), range(4, 5))]],
+                id: RuleId::from("rewrite-1-to-2"),
+            }),
+        ]);
+
+        let (_, edits_at) = pipeline.diagnosed(&parse("x = 1\n"));
+
+        assert_eq!(edits_at, Some(1));
+    }
+
+    #[test]
     fn downstream_rule_apply_sees_upstream_rewritten_text() {
         let seen = Arc::new(Mutex::new(Vec::<String>::new()));
         let pipeline = Pipeline::from_rules(vec![
@@ -573,6 +650,156 @@ mod tests {
 
         assert_eq!(result.text(), "y = 1\n");
         assert_eq!(diagnostics.len(), 1);
+    }
+
+    #[test]
+    fn run_as_written_leaves_the_unedited_prefix_to_the_diagnose_pass() {
+        // The first rule reads the buffer and edits nothing, so the
+        // diagnose pass has already answered for it and the fold opens
+        // at the second. Its capture log holds the one read.
+        let seen = Arc::new(Mutex::new(Vec::new()));
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(TextCapturingRule {
+                edits: Vec::new(),
+                id: RuleId::from("reads-only"),
+                seen: Arc::clone(&seen),
+            }),
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
+                id: RuleId::from("rewrite-x-to-y"),
+            }),
+        ]);
+
+        let (formatted, _) = pipeline
+            .run_as_written(parse("x = 1\n"))
+            .expect("the run succeeds");
+
+        assert_eq!(formatted.text(), "y = 1\n");
+        assert_eq!(*seen.lock().expect("seen mutex"), ["x = 1\n"]);
+    }
+
+    #[test]
+    fn run_as_written_passes_a_clean_rewrite() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
+            id: RuleId::from("rewrite-x-to-y"),
+        })]);
+        let source = parse("x = 1\n");
+
+        assert!(pipeline.run_as_written(source).is_ok());
+    }
+
+    #[test]
+    fn run_as_written_passes_an_overlapping_group_as_a_no_op() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(self_overlapping())]);
+        let source = parse("x = 1\n");
+
+        assert!(pipeline.run_as_written(source).is_ok());
+    }
+
+    #[test]
+    fn run_as_written_passes_when_no_rule_edits() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![Vec::new()],
+            id: RuleId::from("emits-empty-group"),
+        })]);
+        let source = parse("x = 1\n");
+
+        assert!(pipeline.run_as_written(source).is_ok());
+    }
+
+    #[test]
+    fn run_as_written_resolves_a_lint_range_against_the_original_buffer() {
+        // `widen-x` moves the `1` one byte right, so the lint range the
+        // rewritten buffer carries is 5..6 and the as-written one 4..5.
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("yy".to_owned(), range(0, 1))]],
+                id: RuleId::from("widen-x"),
+            }),
+            Box::new(NeedleLintRule {
+                id: RuleId::from("flag-one"),
+                needle: "1",
+            }),
+        ]);
+
+        let (formatted, diagnostics) = pipeline
+            .run_as_written(parse("x = 1\n"))
+            .expect("the run succeeds");
+
+        assert_eq!(formatted.text(), "yy = 1\n");
+        let lint = diagnostics
+            .iter()
+            .find(|d| d.severity.is_lint())
+            .expect("lint finding");
+        assert_eq!(lint.range, range(4, 5));
+    }
+
+    #[test]
+    fn run_as_written_returns_the_diagnostics_it_replayed() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
+            id: RuleId::from("rewrite-x-to-y"),
+        })]);
+
+        let (_, diagnostics) = pipeline
+            .run_as_written(parse("x = 1\n"))
+            .expect("the run succeeds");
+
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].rule.as_str(), "rewrite-x-to-y");
+    }
+
+    #[test]
+    fn run_as_written_short_circuits_when_file_is_suppressed() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![Edit::range_replacement("y".to_owned(), range(11, 12))]],
+            id: RuleId::from("rewrite-x-to-y"),
+        })]);
+        let source = parse("# prose: off\nx = 1\n");
+
+        let (formatted, diagnostics) = pipeline.run_as_written(source).expect("the run succeeds");
+
+        assert_eq!(formatted.text(), "# prose: off\nx = 1\n");
+        assert!(diagnostics.is_empty());
+    }
+
+    #[test]
+    fn run_as_written_skips_the_replay_where_no_rule_edits() {
+        let seen = Arc::new(Mutex::new(Vec::new()));
+        let pipeline = Pipeline::from_rules(vec![Box::new(TextCapturingRule {
+            edits: Vec::new(),
+            id: RuleId::from("reads-only"),
+            seen: Arc::clone(&seen),
+        })]);
+
+        pipeline
+            .run_as_written(parse("x = 1\n"))
+            .expect("the run succeeds");
+
+        assert_eq!(*seen.lock().expect("seen mutex"), ["x = 1\n"]);
+    }
+
+    #[test]
+    fn run_as_written_surfaces_uncompilable_rule_output() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_compile())]);
+        let source = parse(FUTURE_LEAD);
+
+        assert_matches!(
+            pipeline.run_as_written(source),
+            Err(PipelineError::Compile { rule, .. }) if rule.as_str() == "breaks-compile"
+        );
+    }
+
+    #[test]
+    fn run_as_written_surfaces_unparseable_rule_output() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
+        let source = parse("x = 1\n");
+
+        assert_matches!(
+            pipeline.run_as_written(source),
+            Err(PipelineError::Reparse { rule, .. }) if rule.as_str() == "breaks-parse"
+        );
     }
 
     #[test]
@@ -862,58 +1089,6 @@ mod tests {
         let source = parse("x = 1\n");
 
         assert!(pipeline.unsettled(&source).is_empty());
-    }
-
-    #[test]
-    fn validate_passes_a_clean_rewrite() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-            groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
-            id: RuleId::from("rewrite-x-to-y"),
-        })]);
-        let source = parse("x = 1\n");
-
-        assert!(pipeline.validate(source).is_ok());
-    }
-
-    #[test]
-    fn validate_passes_an_overlapping_group_as_a_no_op() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(self_overlapping())]);
-        let source = parse("x = 1\n");
-
-        assert!(pipeline.validate(source).is_ok());
-    }
-
-    #[test]
-    fn validate_passes_when_no_rule_edits() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-            groups: vec![Vec::new()],
-            id: RuleId::from("emits-empty-group"),
-        })]);
-        let source = parse("x = 1\n");
-
-        assert!(pipeline.validate(source).is_ok());
-    }
-
-    #[test]
-    fn validate_surfaces_uncompilable_rule_output() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_compile())]);
-        let source = parse(FUTURE_LEAD);
-
-        assert_matches!(
-            pipeline.validate(source),
-            Err(PipelineError::Compile { rule, .. }) if rule.as_str() == "breaks-compile"
-        );
-    }
-
-    #[test]
-    fn validate_surfaces_unparseable_rule_output() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
-        let source = parse("x = 1\n");
-
-        assert_matches!(
-            pipeline.validate(source),
-            Err(PipelineError::Reparse { rule, .. }) if rule.as_str() == "breaks-parse"
-        );
     }
 
     #[test]

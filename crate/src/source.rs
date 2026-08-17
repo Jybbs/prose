@@ -1,6 +1,6 @@
 //! Source-text wrapper bundling parsed AST, token stream, and line index.
 
-use std::{path::Path, str::FromStr};
+use std::{borrow::Cow, path::Path, str::FromStr, sync::OnceLock};
 
 use itertools::Itertools;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
@@ -22,8 +22,11 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{
     primitives::{
-        binding::BindingAnalysis, comments::trailing_comment_start, inline::indent_width,
+        binding::BindingAnalysis,
+        comments::trailing_comment_start,
+        inline::indent_width,
         range::paren_aware_range,
+        reserve::{Columns, Reservations},
     },
     suppression::SuppressionMap,
 };
@@ -38,12 +41,15 @@ use crate::{
 /// `BindingAnalysis` table of every name's writes and reads.
 /// `source_type` is the parse mode, `cell_offsets` the notebook cell
 /// boundaries, and `cell_numbers` each cell's notebook position, the
-/// last two empty for an ordinary module.
+/// last two empty for an ordinary module. The alignment columns join
+/// the binding table as a walk built on first read and reused by every
+/// later reader.
 #[derive(Debug)]
 pub struct Source {
-    binding_analysis: Box<BindingAnalysis>,
+    binding_analysis: OnceLock<Box<BindingAnalysis>>,
     cell_numbers: Box<[OneIndexed]>,
     cell_offsets: CellOffsets,
+    columns: OnceLock<Box<(Reservations, Columns)>>,
     comment_ranges: CommentRanges,
     file: SourceFile,
     parsed: Parsed<ModModule>,
@@ -117,11 +123,11 @@ impl Source {
             first_code_offset,
             &cell_offsets,
         ));
-        let binding_analysis = Box::new(BindingAnalysis::new(parsed.syntax()));
         Self {
-            binding_analysis,
+            binding_analysis: OnceLock::new(),
             cell_numbers: Box::default(),
             cell_offsets,
+            columns: OnceLock::new(),
             comment_ranges,
             file,
             parsed,
@@ -175,9 +181,12 @@ impl Source {
         self.parsed.syntax()
     }
 
-    /// Returns the binding-analysis table built during parsing.
+    /// Returns the binding-analysis table, building it on the first
+    /// read. Only a minority of rules consult it, so a run that never
+    /// asks never pays the walk.
     pub fn binding_analysis(&self) -> &BindingAnalysis {
-        &self.binding_analysis
+        self.binding_analysis
+            .get_or_init(|| Box::new(BindingAnalysis::new(self.ast())))
     }
 
     /// Returns the absolute notebook position of the code cell at
@@ -194,6 +203,21 @@ impl Source {
     /// empty for an ordinary module.
     pub(crate) fn cell_offsets(&self) -> &CellOffsets {
         &self.cell_offsets
+    }
+
+    /// Returns the columns `reservations` shifts each aligned value to,
+    /// walking the tree on the first read. Every rule of a run measures
+    /// against the same reservation and reads the walk back, whereas a
+    /// read carrying a different one walks for itself.
+    pub(crate) fn columns(&self, reservations: Reservations) -> Cow<'_, Columns> {
+        let held = self
+            .columns
+            .get_or_init(|| Box::new((reservations, reservations.columns(self))));
+        if held.0 == reservations {
+            Cow::Borrowed(&held.1)
+        } else {
+            Cow::Owned(reservations.columns(self))
+        }
     }
 
     /// Returns `true` when the cell boundary at `index` sits on a
@@ -603,9 +627,26 @@ mod tests {
 
     use super::*;
     use crate::{
+        config::Config,
         primitives::scope::sub_bodies,
         testing::{assert_send_sync, notebook, parse, range},
     };
+
+    #[test]
+    fn columns_holds_the_first_reservation_and_walks_for_any_other() {
+        let source = parse("x = 1\nlonger = 2\n");
+        let mut disabled = Config::default();
+        disabled.rules.align_equals.enabled = false;
+        let aligned = Config::default().equals_reservations();
+        let unaligned = disabled.equals_reservations();
+        let value = TextSize::new(4);
+        let written = source.column_of(value);
+
+        let held = source.columns(aligned).column_in(&source, value);
+        assert!(held > written);
+        assert_eq!(source.columns(aligned).column_in(&source, value), held);
+        assert_eq!(source.columns(unaligned).column_in(&source, value), written);
+    }
 
     /// Replaces `before`'s interior boundaries with `drifts` in order and
     /// its closing offset with `after`'s length, the shape a rule's edits

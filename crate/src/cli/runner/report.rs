@@ -1,11 +1,15 @@
 //! Outcome aggregation: summaries, exit-status derivation, and
 //! diagnostic emission.
 
-use std::io::{self, Write};
+use std::io::{self, BufWriter, Write};
 
+use anstream::{
+    AutoStream,
+    stream::{AsLockedWrite, RawStream},
+};
 use anyhow::Context;
 
-use super::{FileOutcome, Mode, has_format_change, unstable::render_reports};
+use super::{FileOutcome, Mode, Pass, has_format_change, unstable::render_reports};
 use crate::{
     cache::Rewrite,
     cli::{
@@ -17,9 +21,33 @@ use crate::{
     diagnostics::Diagnostic,
 };
 
+/// Emits `outcomes` to the process stdout `stdout` wraps.
+///
+/// A structured format writes to the raw stream through a `BufWriter`,
+/// since json, sarif and github hold no escape sequence for the
+/// `AutoStream` to strip and each emits many small writes. Text keeps
+/// the `AutoStream`, which `--color always` needs, and writes blocks
+/// large enough that a second buffer buys nothing.
+pub(super) fn emit_to_stdout<O: RawStream + AsLockedWrite>(
+    outcomes: &[FileOutcome],
+    format: OutputFormat,
+    present: &Presentation,
+    stdout: AutoStream<O>,
+    summary: &EmitterSummary,
+) -> anyhow::Result<()> {
+    if format.is_text() {
+        let mut stdout = stdout;
+        emit_outcomes(outcomes, format, present, &mut stdout, summary)
+    } else {
+        let mut buffered = BufWriter::new(stdout.into_inner());
+        emit_outcomes(outcomes, format, present, &mut buffered, summary)
+    }
+}
+
 pub(super) fn emit_outcomes<W: Write>(
     outcomes: &[FileOutcome],
     format: OutputFormat,
+    present: &Presentation,
     writer: &mut W,
     summary: &EmitterSummary,
 ) -> anyhow::Result<()> {
@@ -43,10 +71,27 @@ pub(super) fn emit_outcomes<W: Write>(
         OutputFormat::Github => Github.emit(writer, &view, summary),
         OutputFormat::Json => Json.emit(writer, &view, summary),
         OutputFormat::Sarif => Sarif.emit(writer, &view, summary),
-        OutputFormat::Text => Text::new().emit(writer, &view, summary),
+        OutputFormat::Text => Text::new(present.color).emit(writer, &view, summary),
     }?;
     writer.flush().context("flushing stdout")?;
     Ok(())
+}
+
+/// The text block `outcome` renders to, empty for an outcome the
+/// report leaves out, which is the same set
+/// [`emit_outcomes`](self::emit_outcomes) filters away.
+pub(super) fn render_text_block(text: &Text, outcome: &FileOutcome) -> anyhow::Result<Vec<u8>> {
+    let FileOutcome::Done {
+        diagnostics,
+        file,
+        notebook_index,
+        ..
+    } = outcome
+    else {
+        return Ok(Vec::new());
+    };
+    text.render_run(&Run::new(file, diagnostics, notebook_index.as_deref()))
+        .context("rendering diagnostics")
 }
 
 pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
@@ -80,31 +125,28 @@ pub(super) fn finish(
     outcomes: &[FileOutcome],
     cache_enabled: bool,
     verbose: bool,
-    demote_format_change: bool,
+    pass: Pass,
 ) -> ExitStatus {
     if verbose {
         report_verbose(outcomes, cache_enabled, &mut io::stderr());
     }
-    status_from_outcomes(outcomes, demote_format_change)
+    status_from_outcomes(outcomes, pass.write_back())
 }
 
 /// Writes a run's stderr tail: one bug notice per unsettled rewrite,
 /// then the rewrite or diagnostics outcome, then in a format mode whose
 /// diagnostics never reached stdout the surviving-lint disclosure.
-/// `text_output` is true for a text-format `format` run, whose lint the
-/// structured emitters never printed.
 pub(super) fn render_summary<E: Write>(
     stderr: &mut E,
     present: &Presentation,
     outcomes: &[FileOutcome],
     summary: &EmitterSummary,
-    mode: Mode,
-    text_output: bool,
+    pass: Pass,
 ) {
     render_reports(stderr, present, outcomes);
-    let lines = summarize(outcomes, summary, mode)
+    let lines = summarize(outcomes, summary, pass.mode())
         .into_iter()
-        .chain(lint_remainder(summary, mode, text_output))
+        .chain(lint_remainder(summary, pass))
         .chain(unstable_remainder(outcomes));
     for line in lines {
         let _ = output::report(stderr, present, &line);
@@ -124,8 +166,10 @@ pub(super) fn status_from_outcomes(
                 ..
             } => {
                 // A rewrite that settled back to the input byte-for-byte
-                // reports clean, its cancelling edits notwithstanding.
-                let demote = demote_format_change || matches!(rewrite, Rewrite::Unchanged);
+                // reports clean, its cancelling edits notwithstanding, as
+                // does a file carrying no rewrite to make.
+                let demote = demote_format_change
+                    || matches!(rewrite, Rewrite::PassedOver | Rewrite::Unchanged);
                 diagnostics
                     .iter()
                     .map(|d| ExitStatus::from(d.severity))
@@ -152,22 +196,22 @@ pub(super) fn unstable_status(outcomes: &[FileOutcome]) -> ExitStatus {
 
 /// A file counts as changed when `run` produced text differing from the
 /// original. A mode that skipped the rewrite falls back to whether
-/// `diagnose` emitted a format diagnostic.
+/// `diagnose` emitted a format diagnostic, whereas a file passed over
+/// carries no change either way.
 fn file_changed(diagnostics: &[Diagnostic], rewrite: &Rewrite) -> bool {
     match rewrite {
         Rewrite::Changed(_) => true,
+        Rewrite::PassedOver | Rewrite::Unchanged => false,
         Rewrite::Skipped => has_format_change(diagnostics),
-        Rewrite::Unchanged => false,
     }
 }
 
 /// The surviving-lint disclosure a text-format `format` run appends
 /// after its outcome line, `None` for a check run, a structured output
 /// whose emitters already printed the lint, or a run leaving none.
-fn lint_remainder(summary: &EmitterSummary, mode: Mode, text_output: bool) -> Option<Summary> {
+fn lint_remainder(summary: &EmitterSummary, pass: Pass) -> Option<Summary> {
     let total = summary.lint_total;
-    let discloses = !matches!(mode, Mode::Check) && text_output && total > 0;
-    discloses.then_some(Summary::LintRemainder { total })
+    (pass.discloses_lint() && total > 0).then_some(Summary::LintRemainder { total })
 }
 
 /// Writes the cache hit and miss counts a verbose run closes with, or
@@ -332,6 +376,7 @@ mod tests {
         let result = emit_outcomes(
             &outcomes,
             OutputFormat::Json,
+            &Presentation::windowed(),
             &mut FailingWriter(io::ErrorKind::BrokenPipe),
             &EmitterSummary::default(),
         );
@@ -355,7 +400,14 @@ mod tests {
         let source = parse("x = 1\n");
         let outcomes = vec![outcome_with(source, Vec::new())];
         let mut buf = Vec::new();
-        emit_outcomes(&outcomes, format, &mut buf, &EmitterSummary::default()).expect("emits");
+        emit_outcomes(
+            &outcomes,
+            format,
+            &Presentation::windowed(),
+            &mut buf,
+            &EmitterSummary::default(),
+        )
+        .expect("emits");
     }
 
     #[test]
@@ -418,14 +470,13 @@ mod tests {
     }
 
     #[rstest]
-    #[case(Mode::Check, true, 2, None)]
-    #[case(Mode::Reformat, true, 0, None)]
-    #[case(Mode::Reformat, false, 2, None)]
-    #[case(Mode::Preview, true, 3, Some(3))]
-    #[case(Mode::Reformat, true, 1, Some(1))]
+    #[case::check_never_discloses(Pass::Diagnose { validate: false }, 2, None)]
+    #[case::structured_format_already_printed_it(Pass::Both, 2, None)]
+    #[case::text_format_with_no_lint(Pass::Rewrite, 0, None)]
+    #[case::diff_discloses(Pass::Preview, 3, Some(3))]
+    #[case::text_format_discloses(Pass::Rewrite, 1, Some(1))]
     fn lint_remainder_discloses_only_text_format_lint(
-        #[case] mode: Mode,
-        #[case] text_output: bool,
+        #[case] pass: Pass,
         #[case] lint_total: usize,
         #[case] expected: Option<usize>,
     ) {
@@ -433,7 +484,7 @@ mod tests {
             lint_total,
             ..EmitterSummary::default()
         };
-        let got = lint_remainder(&summary, mode, text_output);
+        let got = lint_remainder(&summary, pass);
         match expected {
             None => assert_matches!(got, None),
             Some(total) => {

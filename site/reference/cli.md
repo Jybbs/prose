@@ -100,7 +100,7 @@ Returns exit code 0 on success, with the IO-error exit code applying on permissi
 
 ## `prose cache compact`
 
-Runs the LRU eviction pass against the cache, reducing it to the configured `[cache] max-size-mib` cap and reporting the bytes and entry count it removed. Useful after lowering the cap, since eviction otherwise runs only on insert.
+Runs the LRU eviction pass against the cache, reducing it to the configured `[cache] max-size-mib` and `max-entries` caps and reporting the bytes and entry count it removed. Useful after lowering either cap, since eviction otherwise runs once at the end of a path run.
 
 ```bash
 prose cache compact
@@ -203,6 +203,8 @@ the resolved configuration, with anything too long for a link left to paste:
 The `--select` list is the smallest subset that still reproduces rather than every rule that ran, narrowed to one rule where one rule suffices and to a rule pair where two only disagree together. That same invocation confirms the fix after an upgrade, so nobody waits on a release note to find out. Each run rewrites the file again, so capturing the two passes a report wants goes through the `--stdin` form the [**issue form**](https://github.com/Jybbs/prose/issues/new?template=unstable-output.yml) itself shows.
 
 The rewrite lands and the run's exit code resolves from that rewrite alone, because the defect belongs to the formatter rather than to the source beneath it. A project that would rather gate CI on the promise opts in through [`prose check --validate`](#prose-check), which prints the same notice and takes the `4` its other validation failures take.
+
+A notice survives the [**cache**](/reference/cache), because the entry a run stores carries the report beside the diagnostics and the rewrite, so a hit re-prints the block rather than losing it to the skipped pipeline. Reaching for `--no-cache` to trust the notice is therefore unnecessary.
 
 A run over a tree folds its notices so the output stays readable. Files reproducing under one subset collapse into a single block naming how many and pointing its invocation at the first of them, the second-pass diff renders only where a block covers one file, and the closing summary gains a 🐞 line counting the files whose output a second run would change. `--quiet` reduces routine output rather than a defect notice, so the block survives it with the anchor and color stripped the way every other line's are.
 

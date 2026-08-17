@@ -13,8 +13,6 @@ use std::{borrow::Cow, cmp::Ordering};
 
 use ruff_diagnostics::{Edit, SourceMap, SourceMarker};
 use ruff_notebook::CellOffsets;
-use ruff_python_ast::comparable::ComparableStmt;
-use ruff_python_parser::parse_module;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::{primitives::insert_sorted_by_key, source::Source};
@@ -71,10 +69,8 @@ pub(crate) fn apply_inline_edits<'src>(
     if inside.peek().is_none() {
         return Cow::Borrowed(source.slice(range));
     }
-    match weave(source.text(), range, inside, None) {
-        Some(out) => Cow::Owned(out),
-        None => Cow::Borrowed(source.slice(range)),
-    }
+    weave(source.text(), range, inside, None)
+        .map_or_else(|| Cow::Borrowed(source.slice(range)), Cow::Owned)
 }
 
 /// Forwards each cell boundary in `offsets` through `map`, shifting it
@@ -166,40 +162,6 @@ where
         leaf_edits,
     ));
     concat_or_borrow(&parts, source, block)
-}
-
-/// Reports whether splicing `replacement` into `outer` at `inner`
-/// yields source that `parse` accepts, the round-trip a rule runs
-/// before committing a rewrite it cannot otherwise validate.
-pub(crate) fn splice_parses<T, E>(
-    source: &Source,
-    outer: TextRange,
-    inner: TextRange,
-    replacement: &str,
-    parse: impl Fn(&str) -> Result<T, E>,
-) -> bool {
-    splice_reparse(source, outer, inner, replacement, parse).is_ok()
-}
-
-/// Reports whether splicing `replacement` over `range` reparses the
-/// whole module to the same statement tree, the round-trip a rule runs
-/// before committing a rewrite it means to leave semantics-free.
-pub(crate) fn splice_preserves_tree(source: &Source, range: TextRange, replacement: &str) -> bool {
-    let Ok(reparsed) = splice_reparse(
-        source,
-        source.module_range(),
-        range,
-        replacement,
-        parse_module,
-    ) else {
-        return false;
-    };
-    source
-        .ast()
-        .body
-        .iter()
-        .map(ComparableStmt::from)
-        .eq(reparsed.syntax().body.iter().map(ComparableStmt::from))
 }
 
 /// The edit clearing every full line `range` sits on, its final line
@@ -307,24 +269,6 @@ fn shifted(offset: TextSize, marker: &SourceMarker) -> TextSize {
         Ordering::Greater => offset - (marker.source() - marker.dest()),
         Ordering::Equal => offset,
     }
-}
-
-/// Splices `replacement` into `outer` at `inner` and returns the parsed
-/// result, the shared body under [`splice_parses`] and
-/// [`splice_preserves_tree`].
-fn splice_reparse<T, E>(
-    source: &Source,
-    outer: TextRange,
-    inner: TextRange,
-    replacement: &str,
-    parse: impl Fn(&str) -> Result<T, E>,
-) -> Result<T, E> {
-    let candidate = format!(
-        "{}{replacement}{}",
-        source.slice(TextRange::new(outer.start(), inner.start())),
-        source.slice(TextRange::new(inner.end(), outer.end())),
-    );
-    parse(&candidate)
 }
 
 /// Weaves `edits` into the `span` slice of `text` and returns the
@@ -550,20 +494,6 @@ mod tests {
     }
 
     #[test]
-    fn forward_offsets_holds_every_boundary_inside_the_shortened_text() {
-        let source = notebook(&["x = 1\n", "y = 2\n"]);
-        let (text, map) =
-            apply_edits_mapped(source.text(), vec![Edit::range_deletion(range(1, 11))])
-                .expect("woven");
-        let limit = text.text_len();
-
-        let forwarded = forward_offsets(source.cell_offsets(), &map, limit);
-
-        assert!(forwarded.iter().all(|offset| *offset <= limit));
-        assert!(forwarded.windows(2).all(|pair| pair[0] <= pair[1]));
-    }
-
-    #[test]
     fn forward_offset_slides_a_boundary_back_over_a_deletion() {
         let (text, map) =
             apply_edits_mapped("abcdef", vec![Edit::range_deletion(range(1, 3))]).expect("woven");
@@ -613,6 +543,20 @@ mod tests {
             forward_offset(TextSize::new(3), &map, false),
             TextSize::new(3)
         );
+    }
+
+    #[test]
+    fn forward_offsets_holds_every_boundary_inside_the_shortened_text() {
+        let source = notebook(&["x = 1\n", "y = 2\n"]);
+        let (text, map) =
+            apply_edits_mapped(source.text(), vec![Edit::range_deletion(range(1, 11))])
+                .expect("woven");
+        let limit = text.text_len();
+
+        let forwarded = forward_offsets(source.cell_offsets(), &map, limit);
+
+        assert!(forwarded.iter().all(|offset| *offset <= limit));
+        assert!(forwarded.windows(2).all(|pair| pair[0] <= pair[1]));
     }
 
     #[test]

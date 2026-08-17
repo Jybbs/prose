@@ -12,7 +12,9 @@ on:
       - .github/actions/**
       - .github/scripts/**
       - .github/workflows/release.yml
-      - .mise/**
+      - .mise/config.toml
+      - .mise/lib/**
+      - .mise/tasks/gha/**
       - crate/Cargo.toml
       - crate/pyproject.toml
 

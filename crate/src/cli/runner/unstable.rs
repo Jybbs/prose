@@ -63,8 +63,8 @@ pub(super) fn render_reports<E: Write>(
     }
 }
 
-/// Each group's files sort by name so one run renders the same way
-/// twice.
+/// Each group's files sort by name, so the block a tree-wide run heads
+/// with names the same file whichever directory the walk reached first.
 fn grouped(outcomes: &[FileOutcome]) -> BTreeMap<String, Vec<(&SourceFile, &UnstableRewrite)>> {
     outcomes
         .iter()
@@ -94,16 +94,9 @@ mod tests {
     use ruff_source_file::SourceFileBuilder;
 
     use super::*;
-    use crate::{cache::Rewrite, cli::output::windowed};
+    use crate::cache::Rewrite;
 
     const FIRST: &str = "yy = 1\n";
-
-    fn quiet() -> Presentation {
-        Presentation {
-            quiet: true,
-            stdout_tty: false,
-        }
-    }
 
     fn rendered(present: &Presentation, outcomes: &[FileOutcome]) -> String {
         let mut buf = Vec::new();
@@ -129,7 +122,7 @@ mod tests {
             unsettled("src/a.py", "align-equals"),
         ];
 
-        let out = rendered(&windowed(), &outcomes);
+        let out = rendered(&Presentation::windowed(), &outcomes);
 
         assert!(out.contains("prose rewrote 2 files"), "{out}");
         assert!(out.contains("rather than in the files"), "{out}");
@@ -142,7 +135,10 @@ mod tests {
 
     #[test]
     fn render_reports_holds_the_notice_under_quiet() {
-        let out = rendered(&quiet(), &[unsettled("src/a.py", "align-equals")]);
+        let out = rendered(
+            &Presentation::quieted(),
+            &[unsettled("src/a.py", "align-equals")],
+        );
 
         assert!(out.contains("prose rewrote src/a.py"), "{out}");
         assert!(out.contains("issues/new"), "{out}");
@@ -152,7 +148,10 @@ mod tests {
 
     #[test]
     fn render_reports_names_the_stdin_positional_in_its_invocation() {
-        let out = rendered(&quiet(), &[unsettled(STDIN_NAME, "align-equals")]);
+        let out = rendered(
+            &Presentation::quieted(),
+            &[unsettled(STDIN_NAME, "align-equals")],
+        );
 
         assert!(out.contains("prose rewrote <stdin>"), "{out}");
         assert!(
@@ -168,14 +167,17 @@ mod tests {
             unsettled("src/b.py", "align-colons"),
         ];
 
-        let out = rendered(&windowed(), &outcomes);
+        let out = rendered(&Presentation::windowed(), &outcomes);
 
         assert_eq!(out.matches("prose rewrote").count(), 2, "{out}");
     }
 
     #[test]
     fn render_reports_sets_the_invocation_and_the_form_apart() {
-        let out = rendered(&quiet(), &[unsettled("src/a.py", "align-equals")]);
+        let out = rendered(
+            &Presentation::quieted(),
+            &[unsettled("src/a.py", "align-equals")],
+        );
         let indented: Vec<&str> = out
             .lines()
             .filter_map(|line| line.strip_prefix("    "))
@@ -202,12 +204,15 @@ mod tests {
 
     #[test]
     fn render_reports_writes_nothing_for_a_settled_run() {
-        assert!(rendered(&windowed(), &[]).is_empty());
+        assert!(rendered(&Presentation::windowed(), &[]).is_empty());
     }
 
     #[test]
     fn render_reports_writes_the_second_pass_diff_for_one_file() {
-        let out = rendered(&windowed(), &[unsettled("src/a.py", "align-equals")]);
+        let out = rendered(
+            &Presentation::windowed(),
+            &[unsettled("src/a.py", "align-equals")],
+        );
 
         assert!(out.contains("--- src/a.py (first pass)"), "{out}");
         assert!(out.contains("+++ src/a.py (second pass)"), "{out}");

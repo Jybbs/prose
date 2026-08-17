@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/reflow_collections/atomics_cap_disabled_packs_by_width/input.py
 ---

@@ -112,6 +112,13 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "description": "Toggles the cache globally.",
           "type": "boolean"
         },
+        "max-entries": {
+          "default": 10000,
+          "description": "The LRU eviction cap on the cache directory's entry count.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
         "max-size-mib": {
           "default": 100,
           "description": "The LRU eviction cap on the cache directory.",
@@ -1106,6 +1113,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "$ref": "#/$defs/CacheConfig",
       "default": {
         "enabled": true,
+        "max-entries": 10000,
         "max-size-mib": 100
       }
     },

@@ -1,8 +1,17 @@
 //! Integration tests exercising each rule against golden-file fixtures.
+//!
+//! A `.py` case pins its diagnostics alongside its formatted output.
+//! `diagnostics.snap` is the `rule@start..end` list `diagnose` collects
+//! against the unrewritten source, anchored to the source as written.
+//! `lint_findings.snap` renders the lint records against the rewritten
+//! output, the buffer the docs site decorates onto its formatted view.
 
 mod common;
 
-use prose::{pipeline::Pipeline, source::Source};
+use std::fmt::Write;
+
+use itertools::Itertools;
+use prose::{diagnostics::Diagnostic, pipeline::Pipeline, source::Source};
 use ruff_python_formatter::{PyFormatOptions, format_module_source};
 
 #[test]
@@ -10,9 +19,6 @@ fn fixtures() {
     insta::glob!("fixtures/**/input.{py,ipynb}", |path| {
         let domain = common::domain_name(path);
         let case = common::case_name(path);
-        if domain == "binding_analysis" {
-            return;
-        }
         let input_name = path
             .file_name()
             .and_then(|name| name.to_str())
@@ -22,19 +28,41 @@ fn fixtures() {
         let pipeline = common::build_pipeline(domain, &config, &harness);
         let source = Source::from_path(path).expect("fixture input reads and parses");
 
-        let (formatted, _) = pipeline
+        // `diagnose` reads the source as written, so it runs before the
+        // rewrite consumes it. A notebook pins its diagnostics through
+        // the CLI tests.
+        let module = path.extension().is_some_and(|ext| ext == "py");
+        let diagnostics = module.then(|| pipeline.diagnose(&source));
+
+        let (formatted, records) = pipeline
             .run(source)
             .expect("first pass succeeds on fixture input");
         let output = formatted.text();
-        let snapshot = if domain == "notebook" {
-            cell_delimited(&formatted)
-        } else {
-            output.to_owned()
-        };
 
         common::in_snapshot_dir(path, || {
-            insta::assert_snapshot!(input_name, snapshot);
+            if let Some(diagnostics) = &diagnostics {
+                insta::assert_snapshot!("diagnostics", render(diagnostics));
+                if let Some(json) =
+                    prose::findings::lint_records_json(formatted.source_file(), &records)
+                {
+                    insta::assert_snapshot!("lint_findings", json);
+                }
+            }
+            // `binding_analysis` pins its `input.py` snapshot as the
+            // binding table, so its formatted text is not snapshotted.
+            if domain != "binding_analysis" {
+                let snapshot = if domain == "notebook" {
+                    cell_delimited(&formatted)
+                } else {
+                    output.to_owned()
+                };
+                insta::assert_snapshot!(input_name, snapshot);
+            }
         });
+
+        if domain == "binding_analysis" {
+            return;
+        }
 
         // A module reparses from its own formatted text. A notebook's
         // cell boundaries do not survive a bare reparse of that
@@ -65,6 +93,23 @@ fn fixtures() {
     });
 }
 
+/// Renders each diagnostic as `rule@start..end`, sorted so the snapshot
+/// holds one order across runs.
+fn render(diagnostics: &[Diagnostic]) -> String {
+    diagnostics
+        .iter()
+        .map(|d| {
+            format!(
+                "{rule}@{start}..{end}",
+                rule = d.rule,
+                start = u32::from(d.range.start()),
+                end = u32::from(d.range.end()),
+            )
+        })
+        .sorted()
+        .join("\n")
+}
+
 /// Renders a formatted notebook as its per-cell source joined by a
 /// `# --- cell N ---` banner, so a snapshot shows the cell structure the
 /// concatenated buffer hides. The banner numbers each cell after the
@@ -77,7 +122,7 @@ fn cell_delimited(source: &Source) -> String {
     let mut out = String::new();
     for (i, text) in cells.iter().enumerate() {
         if i > 0 {
-            out.push_str(&format!("\n\n# --- cell {} ---\n\n", i + 1));
+            let _ = write!(out, "\n\n# --- cell {} ---\n\n", i + 1);
         }
         out.push_str(text.trim_end_matches('\n'));
     }
