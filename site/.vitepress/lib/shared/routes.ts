@@ -1,7 +1,11 @@
 import type { RuleFamily, SectionSlug } from './registries'
 
+export function compositionRoute(): string {
+  return `${sectionRoute('rules')}composition/`
+}
+
 export function familyRoute(family: RuleFamily): string {
-  return `/rules/${family}/`
+  return `${sectionRoute('rules')}${family}/`
 }
 
 export function primitiveRoute(slug: string): string {
@@ -9,7 +13,7 @@ export function primitiveRoute(slug: string): string {
 }
 
 export function ruleRoute(family: RuleFamily, slug: string): string {
-  return `/rules/${family}/${slug}`
+  return `${familyRoute(family)}${slug}`
 }
 
 export function sectionRoute(slug: SectionSlug): string {

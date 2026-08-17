@@ -1,46 +1,26 @@
-import fs   from 'node:fs/promises'
 import path from 'node:path'
 
-import { parse }        from 'smol-toml'
 import { defineLoader } from 'vitepress'
 
-import { subdirNames } from '../fixtures/walker'
-import { fixturesDir } from '../shared/paths'
-import { toTitleCase } from '../shared/title-case'
-
-interface CompositionCase {
-  case  : string
-  rules : readonly string[]
-  title : string
-}
+import * as composition              from './composition'
+import { fixtureWatchGlobs }         from '../fixtures/walker'
+import { crateDir, fixturesDirFrom } from '../shared/paths'
 
 interface CompositionData {
-  cases : readonly CompositionCase[]
+  byRule : Record<string, readonly string[]>
+  cases  : readonly composition.CompositionCase[]
 }
 
-const compositionDir = path.join(fixturesDir(import.meta.url), 'composition')
+const crate          = crateDir(import.meta.url)
+const compositionDir = path.join(fixturesDirFrom(crate), 'composition')
 
 declare const data: CompositionData
 export { data }
 
 export default defineLoader({
-  watch: [`${compositionDir}/*/config.toml`],
-  async load(): Promise<CompositionData> {
-    const caseDirs = subdirNames(compositionDir)
-    const cases = await Promise.all(caseDirs.map(async caseName => {
-      type Parsed  = { harness?: { rules?: readonly string[] } }
-      const config = path.join(compositionDir, caseName, 'config.toml')
-      const parsed = parse(await fs.readFile(config, 'utf8')) as Parsed
-      const rules  = parsed.harness?.rules
-      if (rules === undefined) {
-        throw new Error(`composition.data: ${caseName}/config.toml missing [harness].rules`)
-      }
-      return {
-        case  : caseName,
-        rules,
-        title : toTitleCase(caseName)
-      }
-    }))
-    return { cases }
+  watch: fixtureWatchGlobs(crate),
+  load(): CompositionData {
+    const cases = composition.readCompositionCases(compositionDir)
+    return { byRule: composition.byRule(cases), cases }
   }
 })

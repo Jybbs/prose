@@ -1,10 +1,9 @@
-import fs   from 'node:fs'
 import path from 'node:path'
 
-import { parse }          from 'smol-toml'
 import type { Component } from 'vue'
 
 import { subdirNames } from '../lib/fixtures/walker'
+import { parseToml }   from '../lib/shared/toml'
 
 const COMPONENT_MODULES = import.meta.glob<{ default: Component }>('../theme/components/**/*.vue')
 const FIXTURES_ROOT     = path.join(import.meta.dirname, 'components')
@@ -30,8 +29,7 @@ export function componentFixtures(): ComponentFixture[] {
     subdirNames(path.join(FIXTURES_ROOT, domain)).flatMap(component =>
       subdirNames(path.join(FIXTURES_ROOT, domain, component)).map(caseName => {
         const dir  = path.join(FIXTURES_ROOT, domain, component, caseName)
-        const raw  = fs.readFileSync(path.join(dir, 'meta.toml'), 'utf8')
-        const meta = parse(raw) as unknown as FixtureMeta
+        const meta = parseToml(path.join(dir, 'meta.toml')) as unknown as FixtureMeta
         return {
           axeIgnore : meta.axe?.ignore ?? [],
           component : meta.component,

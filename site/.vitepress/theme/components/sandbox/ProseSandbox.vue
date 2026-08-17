@@ -105,7 +105,7 @@ onMounted(sandbox.start)
         <button
           v-show="!editing"
           type="button"
-          class="panel-seat sandbox-corner sandbox-refresh"
+          class="panel-seat panel-corner sandbox-refresh"
           :data-armed="refreshArmed || null"
           :title="refreshArmed ? 'Click again to proceed with a new example' : 'New example'"
           :aria-label="refreshArmed ? 'Click again to proceed with a new example' : 'New example'"
@@ -121,7 +121,7 @@ onMounted(sandbox.start)
         <button
           v-show="!editing"
           type="button"
-          class="panel-seat sandbox-corner sandbox-share"
+          class="panel-seat panel-corner sandbox-share"
           :title="linkCopied ? 'Link copied' : 'Copy a link to this sandbox'"
           :aria-label="linkCopied ? 'Link copied' : 'Copy a link to this sandbox'"
           @click="shareLink"
@@ -190,16 +190,6 @@ onMounted(sandbox.start)
   border-color : var(--vp-c-brand-1);
 }
 
-/* The seat itself comes from `.panel-seat`, leaving the corner to place it and
-   hold it hidden until the panel is hovered. */
-.sandbox-corner {
-  position   : absolute;
-  top        : 8px;
-  z-index    : 3;
-  opacity    : 0;
-  transition : opacity var(--prose-transition-slow), color var(--prose-transition);
-}
-
 .sandbox-refresh {
   right : 40px;
 }
@@ -208,8 +198,6 @@ onMounted(sandbox.start)
   right : 72px;
 }
 
-.sandbox-py:hover > .sandbox-corner,
-.sandbox-corner:focus-visible,
 .sandbox-refresh[data-armed] {
   opacity : 1;
 }
@@ -238,11 +226,6 @@ onMounted(sandbox.start)
 .sandbox-refresh[data-armed] {
   border-color : var(--prose-role-warning);
   color        : var(--prose-role-warning);
-}
-
-.sandbox-corner:focus-visible {
-  outline        : var(--prose-focus-ring);
-  outline-offset : 1px;
 }
 
 .sandbox-announce {
@@ -339,12 +322,6 @@ onMounted(sandbox.start)
 
   .sandbox-surfaces {
     grid-template-columns : 1fr;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sandbox-corner {
-    transition : none;
   }
 }
 </style>

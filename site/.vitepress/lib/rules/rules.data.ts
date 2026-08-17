@@ -15,12 +15,6 @@ export interface RenderedRule extends DiscoveredRule {
   name          : string
 }
 
-export interface RuleSegment {
-  family : string | null
-  rule   : RenderedRule | null
-  slug   : string
-}
-
 interface RuleFamilyGroup {
   family : registries.RuleFamily
   label  : string

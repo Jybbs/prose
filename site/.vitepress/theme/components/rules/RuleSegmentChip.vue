@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RuleSegment } from '../../../lib/rules/rules.data'
+import type { RuleSegment } from '../../../lib/rules/rule-view'
 
 defineProps<{
   segment     : RuleSegment

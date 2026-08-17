@@ -5,7 +5,9 @@ import { fixturesDirFrom } from '../shared/paths'
 import { parseToml }       from '../shared/toml'
 import * as lintFindings   from './lint-findings'
 
-const INPUT_FILE    = 'input.py'
+export const CONFIG_FILE = 'config.toml'
+export const INPUT_FILE  = 'input.py'
+
 const META_FILE     = 'meta.toml'
 const SNAPSHOT_FILE = snapshotPath(INPUT_FILE)
 
@@ -33,11 +35,18 @@ export function corpusLintFindings(crateDir: string): Map<string, lintFindings.L
   return map
 }
 
+// The authored title a `meta.toml` carries, blank and whitespace-only alike
+// resolving to nothing so each caller applies its own fallback.
+export function fixtureTitle(docs: FixtureDocs | undefined): string | undefined {
+  return docs?.title?.trim() || undefined
+}
+
 export function fixtureWatchGlobs(crateDir: string): string[] {
   const fixturesRoot = fixturesDirFrom(crateDir)
   return [
     `${fixturesRoot}/**/${INPUT_FILE}`,
     `${fixturesRoot}/**/${SNAPSHOT_FILE}`,
+    `${fixturesRoot}/*/*/${CONFIG_FILE}`,
     `${fixturesRoot}/*/*/${lintFindings.LINT_FINDINGS_FILE}`,
     `${fixturesRoot}/*/*/${META_FILE}`
   ]
