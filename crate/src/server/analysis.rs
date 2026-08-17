@@ -15,9 +15,23 @@ pub(super) struct Formatted {
     /// The whole-document edit, `None` where the buffer is already
     /// formatted or does not parse.
     pub(super) edits: Option<Vec<TextEdit>>,
-    /// The settle report, `None` where the rewrite settles or the
-    /// config turns the report off.
-    pub(super) unstable: Option<UnstableRewrite>,
+    /// The rewritten buffer held for a settle check the caller runs
+    /// after the edits response is sent, `None` where nothing changed.
+    pub(super) settled: Option<Settled>,
+}
+
+/// A rewrite held beside the pipeline that produced it, so the settle
+/// check runs off the formatting response's critical path.
+pub(super) struct Settled {
+    pipeline: Pipeline,
+    source: Source,
+}
+
+impl Settled {
+    /// Runs the settle check over the held rewrite.
+    pub(super) fn detect(&self, config: &Config, original: &str) -> Option<UnstableRewrite> {
+        UnstableRewrite::detect(&self.pipeline, config, original, &self.source)
+    }
 }
 
 /// Lints and format-checks the buffer against `config`, mapping each
@@ -39,8 +53,8 @@ pub(super) fn diagnostics(
 }
 
 /// Formats the buffer against `config`, returning one whole-document
-/// edit alongside the settle check over the output it produced. A
-/// buffer that is already formatted or does not parse yields neither.
+/// edit alongside the rewrite held for a later settle check. A buffer
+/// that is already formatted or does not parse yields neither.
 pub(super) fn format_buffer(
     original: &str,
     encoding: PositionEncoding,
@@ -49,7 +63,7 @@ pub(super) fn format_buffer(
     formatted(original, encoding, config).unwrap_or_default()
 }
 
-/// The edit and settle report for a buffer the pipeline rewrote,
+/// The edit and held rewrite for a buffer the pipeline rewrote,
 /// `None` where it does not parse, a rule's output is rejected, or the
 /// run leaves the text unchanged.
 fn formatted(original: &str, encoding: PositionEncoding, config: &Config) -> Option<Formatted> {
@@ -60,7 +74,10 @@ fn formatted(original: &str, encoding: PositionEncoding, config: &Config) -> Opt
     let new_text = settled.changed_from(original)?.to_owned();
     Some(Formatted {
         edits: Some(vec![TextEdit { new_text, range }]),
-        unstable: UnstableRewrite::detect(&pipeline, config, original, &settled),
+        settled: Some(Settled {
+            pipeline,
+            source: settled,
+        }),
     })
 }
 
@@ -119,7 +136,12 @@ mod tests {
             &Config::default(),
         );
 
-        assert!(formatted.unstable.is_none());
+        let settled = formatted.settled.expect("a rewrite is held");
+        assert!(
+            settled
+                .detect(&Config::default(), "alpha = 1\nb = 22\n")
+                .is_none()
+        );
     }
 
     #[test]

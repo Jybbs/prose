@@ -15,9 +15,10 @@ use crate::server::{
     notices::Notices,
 };
 /// Routes one request, answering formatting and rejecting any other
-/// method so the client never blocks waiting for a response. A rewrite
-/// whose settle check names rules draws its bug notice once the edits
-/// have reached the client.
+/// method so the client never blocks waiting for a response. The settle
+/// check itself runs only after the edits response is on the wire, and
+/// only for a document not yet holding its once-per-session notice, so
+/// neither detection nor narrowing sits on the formatting latency.
 pub(super) fn handle_request(
     connection: &Connection,
     documents: &DocumentStore,
@@ -34,14 +35,26 @@ pub(super) fn handle_request(
             // editor settings.
             let uri = &params.text_document.uri;
             let doc = documents.get(uri);
-            let Formatted { edits, unstable } = doc.map_or_else(Formatted::default, |doc| {
+            let Formatted { edits, settled } = doc.map_or_else(Formatted::default, |doc| {
                 let config = configs.resolve(uri, &doc.text);
                 analysis::format_buffer(&doc.text, encoding, &config)
             });
             send(connection, Message::Response(Response::new_ok(id, edits)))?;
-            doc.zip(unstable).map_or(Ok(()), |(doc, rewrite)| {
-                notices.offer(connection, uri, &doc.text, &rewrite)
-            })
+            let Some((doc, settled)) = doc.zip(settled) else {
+                return Ok(());
+            };
+            if notices.reported(uri) {
+                return Ok(());
+            }
+            let config = configs.resolve(uri, &doc.text);
+            if !config.report_unstable_output {
+                return Ok(());
+            }
+            settled
+                .detect(&config, &doc.text)
+                .map_or(Ok(()), |rewrite| {
+                    notices.offer(connection, uri, &doc.text, &rewrite)
+                })
         }
         Err(ExtractError::MethodMismatch(request)) => send(
             connection,

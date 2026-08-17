@@ -103,6 +103,12 @@ impl Notices {
     ///
     /// Returns whatever `send` returns when the channel to the client
     /// has closed.
+    /// True where `uri` already drew its once-per-session notice, so a
+    /// caller skips the settle check whose result could never render.
+    pub(super) fn reported(&self, uri: &Uri) -> bool {
+        self.reported.contains(uri)
+    }
+
     pub(super) fn offer(
         &mut self,
         connection: &Connection,
