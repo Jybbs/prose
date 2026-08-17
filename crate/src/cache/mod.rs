@@ -2,9 +2,10 @@
 //!
 //! Keys are BLAKE3 digests over the source bytes, the canonical TOML
 //! serialization of the active `Config`, the resolved rule selection
-//! the pipeline runs, the Prose version, and a private
+//! the pipeline runs, the Prose version, a private
 //! `CACHE_FORMAT_VERSION` that bumps independently when the on-disk
-//! entry shape changes. Entries live one file per key under
+//! entry shape changes, and the `Anchor` naming which buffer the
+//! entry's diagnostics resolve against. Entries live one file per key under
 //! the platform's cache directory, with the path resolving through
 //! `PROSE_CACHE_DIR` → `dirs::cache_dir()`. Inserts write to a
 //! temporary sibling then `rename` onto the final path, so a
@@ -17,7 +18,7 @@ mod key;
 mod records;
 
 pub use engine::Cache;
-pub use key::{CacheKey, CacheKeyPrefix};
+pub use key::{Anchor, CacheKey, CacheKeyPrefix};
 pub use records::{
     CacheEntry, CacheEntryRef, CacheInfo, CleanReport, NotebookRewrite, Rewrite, RewriteKind,
 };
@@ -43,18 +44,6 @@ mod tests {
     const CONFIG_A: &str = "code-line-length = 88\n";
     const CONFIG_B: &str = "code-line-length = 100\n";
 
-    fn cache_in(tmp: &TempDir, max_mib: u32) -> Cache {
-        let store = tmp.path().join("cache");
-        let root = store.join("generation");
-        std::fs::create_dir_all(&root).expect("creates");
-        Cache {
-            max_entries: usize::MAX,
-            max_size_bytes: u64::from(max_mib) * 1024 * 1024,
-            root,
-            store,
-        }
-    }
-
     /// Backdates `dir` past the sweep's grace window.
     fn age(dir: &Path) {
         let stale = SystemTime::now() - Duration::from_secs(60 * 60 * 24);
@@ -63,14 +52,17 @@ mod tests {
             .set_modified(stale)
             .expect("backdates the directory");
     }
-
-    /// A generation directory beside the cache's own, holding one
-    /// entry-shaped file.
-    fn generation_beside(cache: &Cache, name: &str) -> std::path::PathBuf {
-        let dir = cache.store.join(name);
-        std::fs::create_dir_all(&dir).expect("creates");
-        std::fs::write(dir.join("cafebabe"), b"an earlier build's entry").expect("writes");
-        dir
+    fn cache_in(tmp: &TempDir, max_mib: u32) -> Cache {
+        let store = tmp.path().join("cache");
+        let root = store.join("generation");
+        std::fs::create_dir_all(&root).expect("creates");
+        Cache {
+            inserted: std::sync::atomic::AtomicBool::new(false),
+            max_entries: usize::MAX,
+            max_size_bytes: u64::from(max_mib) * 1024 * 1024,
+            root,
+            store,
+        }
     }
 
     fn entry(formatted: &str) -> CacheEntry {
@@ -84,6 +76,14 @@ mod tests {
             }],
             rewrite: Rewrite::text(formatted.to_owned()),
         }
+    }
+    /// A generation directory beside the cache's own, holding one
+    /// entry-shaped file.
+    fn generation_beside(cache: &Cache, name: &str) -> std::path::PathBuf {
+        let dir = cache.store.join(name);
+        std::fs::create_dir_all(&dir).expect("creates");
+        std::fs::write(dir.join("cafebabe"), b"an earlier build's entry").expect("writes");
+        dir
     }
 
     /// Writes `entry` under `key` the way the run path does, borrowing
@@ -106,7 +106,7 @@ mod tests {
         config_toml: &str,
         selection: impl IntoIterator<Item = RuleId>,
     ) -> CacheKey {
-        CacheKeyPrefix::new(config_toml, selection).key_for(source_bytes)
+        CacheKeyPrefix::new(config_toml, selection, Anchor::AsWritten).key_for(source_bytes)
     }
 
     fn rules() -> [RuleId; 2] {
@@ -115,12 +115,22 @@ mod tests {
 
     #[test]
     fn cache_key_differs_when_cache_format_version_changes() {
-        let key_a =
-            CacheKeyPrefix::with_versions(CONFIG_A, rules(), env!("CARGO_PKG_VERSION"), "1")
-                .key_for(b"x = 1\n");
-        let key_b =
-            CacheKeyPrefix::with_versions(CONFIG_A, rules(), env!("CARGO_PKG_VERSION"), "2")
-                .key_for(b"x = 1\n");
+        let key_a = CacheKeyPrefix::with_versions(
+            CONFIG_A,
+            rules(),
+            Anchor::AsWritten,
+            env!("CARGO_PKG_VERSION"),
+            "1",
+        )
+        .key_for(b"x = 1\n");
+        let key_b = CacheKeyPrefix::with_versions(
+            CONFIG_A,
+            rules(),
+            Anchor::AsWritten,
+            env!("CARGO_PKG_VERSION"),
+            "2",
+        )
+        .key_for(b"x = 1\n");
         assert_ne!(key_a, key_b);
     }
 
@@ -135,10 +145,22 @@ mod tests {
 
     #[test]
     fn cache_key_differs_when_prose_version_changes() {
-        let key_a = CacheKeyPrefix::with_versions(CONFIG_A, rules(), "0.2.3", CACHE_FORMAT_VERSION)
-            .key_for(b"x = 1\n");
-        let key_b = CacheKeyPrefix::with_versions(CONFIG_A, rules(), "0.3.0", CACHE_FORMAT_VERSION)
-            .key_for(b"x = 1\n");
+        let key_a = CacheKeyPrefix::with_versions(
+            CONFIG_A,
+            rules(),
+            Anchor::AsWritten,
+            "0.2.3",
+            CACHE_FORMAT_VERSION,
+        )
+        .key_for(b"x = 1\n");
+        let key_b = CacheKeyPrefix::with_versions(
+            CONFIG_A,
+            rules(),
+            Anchor::AsWritten,
+            "0.3.0",
+            CACHE_FORMAT_VERSION,
+        )
+        .key_for(b"x = 1\n");
         assert_ne!(key_a, key_b);
     }
 
@@ -156,6 +178,20 @@ mod tests {
         let key_a = key(b"x = 1\n", CONFIG_A, rules());
         let key_b = key(b"x = 2\n", CONFIG_A, rules());
         assert_ne!(key_a, key_b);
+    }
+
+    #[test]
+    fn cache_key_differs_when_the_anchor_changes() {
+        let as_written = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten);
+        let rewritten = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::Rewritten);
+        assert_ne!(
+            as_written.key_for(b"x = 1\n"),
+            rewritten.key_for(b"x = 1\n")
+        );
+        assert_eq!(
+            as_written.key_for(b"x = 1\n"),
+            CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten).key_for(b"x = 1\n"),
+        );
     }
 
     #[test]
@@ -216,26 +252,6 @@ mod tests {
     }
 
     #[test]
-    fn compact_evicts_until_under_cap() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
-        let key_old = key(b"x = 1\n", CONFIG_A, rules());
-        let key_new = key(b"y = 2\n", CONFIG_A, rules());
-        insert(&cache, &key_old, &entry("a = 1\n"));
-        std::thread::sleep(std::time::Duration::from_millis(20));
-        insert(&cache, &key_new, &entry("b = 2\n"));
-
-        let tightened = Cache {
-            max_size_bytes: 0,
-            ..cache
-        };
-        let report = tightened.compact();
-
-        assert!(report.entries >= 1);
-        assert!(report.bytes > 0);
-    }
-
-    #[test]
     fn compact_evicts_below_the_low_water_mark() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
@@ -257,6 +273,25 @@ mod tests {
         // next insert back over it.
         assert_eq!(capped.info().entries, 4);
     }
+    #[test]
+    fn compact_evicts_until_under_cap() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        let key_old = key(b"x = 1\n", CONFIG_A, rules());
+        let key_new = key(b"y = 2\n", CONFIG_A, rules());
+        insert(&cache, &key_old, &entry("a = 1\n"));
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        insert(&cache, &key_new, &entry("b = 2\n"));
+
+        let tightened = Cache {
+            max_size_bytes: 0,
+            ..cache
+        };
+        let report = tightened.compact();
+
+        assert!(report.entries >= 1);
+        assert!(report.bytes > 0);
+    }
 
     #[test]
     fn compact_holds_a_generation_touched_inside_the_grace_window() {
@@ -268,32 +303,6 @@ mod tests {
 
         assert_eq!(report.entries, 0);
         assert!(live.exists());
-    }
-
-    #[test]
-    fn compact_prunes_a_generation_past_the_grace_window() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
-        let dead = generation_beside(&cache, "dead");
-        age(&dead);
-
-        let report = cache.compact();
-
-        assert_eq!(report.entries, 1);
-        assert!(!dead.exists());
-    }
-
-    #[test]
-    fn compact_removes_an_entry_left_directly_in_the_store() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
-        let flat = cache.store.join("deadbeef");
-        std::fs::write(&flat, b"a pre-generation entry").expect("writes");
-
-        let report = cache.compact();
-
-        assert_eq!(report.entries, 1);
-        assert!(!flat.exists());
     }
 
     #[test]
@@ -320,6 +329,31 @@ mod tests {
 
         assert_eq!(report.entries, 1);
         assert_eq!(capped.info().entries, 1);
+    }
+    #[test]
+    fn compact_prunes_a_generation_past_the_grace_window() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        let dead = generation_beside(&cache, "dead");
+        age(&dead);
+
+        let report = cache.compact();
+
+        assert_eq!(report.entries, 1);
+        assert!(!dead.exists());
+    }
+
+    #[test]
+    fn compact_removes_an_entry_left_directly_in_the_store() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        let flat = cache.store.join("deadbeef");
+        std::fs::write(&flat, b"a pre-generation entry").expect("writes");
+
+        let report = cache.compact();
+
+        assert_eq!(report.entries, 1);
+        assert!(!flat.exists());
     }
 
     #[test]

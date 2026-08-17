@@ -1,9 +1,10 @@
 //! The cache key: a BLAKE3 digest over the source, config, resolved
-//! rule selection, and version inputs.
+//! rule selection, and version inputs, domain-separated by the anchor
+//! naming which buffer the entry's diagnostics resolve against.
 
 use crate::rule::RuleId;
 
-pub(super) const CACHE_FORMAT_VERSION: &str = "5";
+pub(super) const CACHE_FORMAT_VERSION: &str = "6";
 
 /// How many hex characters of the generation digest name the directory.
 const GENERATION_LEN: usize = 16;
@@ -24,27 +25,63 @@ fn generation_for(prose_version: &str, format_version: &str) -> String {
     hasher.finalize().to_hex()[..GENERATION_LEN].to_owned()
 }
 
+/// Which buffer an entry's diagnostics resolve against. A `check` and a
+/// structured `format` record `diagnose`'s list against the source as
+/// written, whereas a text `format` and a `--diff` run record `run`'s
+/// list against the output it rewrote.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Anchor {
+    AsWritten,
+    Rewritten,
+}
+
+impl Anchor {
+    /// The BLAKE3 key-derivation context separating this anchor's keys
+    /// from the other's. Each string is hardcoded and unique to Prose,
+    /// which is what `Hasher::new_derive_key` documents as the
+    /// requirement, and it sets a distinct initial value rather than
+    /// mixing a marker into the message, so no arrangement of the
+    /// remaining inputs can carry one anchor's key into the other's
+    /// space.
+    fn context(self) -> &'static str {
+        match self {
+            Self::AsWritten => "prose cache entry, diagnostics as written",
+            Self::Rewritten => "prose cache entry, diagnostics against the rewrite",
+        }
+    }
+}
+
 /// BLAKE3 digest of
 /// `config_toml ++ rule_ids ++ prose_version ++ cache_format_version ++ source_bytes`,
-/// each variable-length input length-framed so no pair of inputs can
-/// concatenate into another pair's bytes.
+/// taken under the anchor's key-derivation context. The config TOML and
+/// the source bytes are length-framed so neither can absorb a boundary,
+/// the rule slugs are newline-delimited and hold no newline of their
+/// own, and the two version strings are fixed by the build rather than
+/// by any input.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct CacheKey(pub(super) blake3::Hash);
 
-/// A hasher holding every input a run shares across its files, cloned
-/// per file so the config, rule selection and version tail are absorbed
-/// once for the run rather than once for each file.
+/// A hasher holding every input a run shares across its files, the
+/// anchor's derivation context included, cloned per file so the config,
+/// rule selection and version tail are absorbed once for the run rather
+/// than once for each file.
 #[derive(Clone, Debug)]
 pub struct CacheKeyPrefix(blake3::Hasher);
 
 impl CacheKeyPrefix {
     /// Loads the run-invariant inputs, so that two runs differing only
-    /// in `--select` / `--ignore` key separately.
+    /// in `--select` / `--ignore`, or only in which buffer their
+    /// diagnostics resolve against, key separately.
     #[must_use]
-    pub fn new(config_toml: &str, rule_ids: impl IntoIterator<Item = RuleId>) -> Self {
+    pub fn new(
+        config_toml: &str,
+        rule_ids: impl IntoIterator<Item = RuleId>,
+        anchor: Anchor,
+    ) -> Self {
         Self::with_versions(
             config_toml,
             rule_ids,
+            anchor,
             env!("CARGO_PKG_VERSION"),
             CACHE_FORMAT_VERSION,
         )
@@ -53,10 +90,11 @@ impl CacheKeyPrefix {
     pub(super) fn with_versions(
         config_toml: &str,
         rule_ids: impl IntoIterator<Item = RuleId>,
+        anchor: Anchor,
         prose_version: &str,
         format_version: &str,
     ) -> Self {
-        let mut hasher = blake3::Hasher::new();
+        let mut hasher = blake3::Hasher::new_derive_key(anchor.context());
         framed(&mut hasher, config_toml.as_bytes());
         for id in rule_ids {
             hasher.update(id.as_str().as_bytes());

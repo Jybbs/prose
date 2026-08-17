@@ -9,7 +9,7 @@ use anstream::{
 };
 use anyhow::Context;
 
-use super::{FileOutcome, Mode, has_format_change};
+use super::{FileOutcome, Mode, Pass, has_format_change};
 use crate::{
     cache::Rewrite,
     cli::{
@@ -106,12 +106,13 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
 
 /// A file counts as changed when `run` produced text differing from the
 /// original. A mode that skipped the rewrite falls back to whether
-/// `diagnose` emitted a format diagnostic.
+/// `diagnose` emitted a format diagnostic, whereas a file passed over
+/// carries no change either way.
 pub(super) fn file_changed(diagnostics: &[Diagnostic], rewrite: &Rewrite) -> bool {
     match rewrite {
         Rewrite::Changed(_) => true,
+        Rewrite::PassedOver | Rewrite::Unchanged => false,
         Rewrite::Skipped => has_format_change(diagnostics),
-        Rewrite::Unchanged => false,
     }
 }
 
@@ -119,29 +120,27 @@ pub(super) fn finish(
     outcomes: &[FileOutcome],
     cache_enabled: bool,
     verbose: bool,
-    demote_format_change: bool,
+    pass: Pass,
 ) -> ExitStatus {
     if verbose {
         report_verbose(outcomes, cache_enabled, &mut io::stderr());
     }
-    status_from_outcomes(outcomes, demote_format_change)
+    status_from_outcomes(outcomes, pass.write_back())
 }
 
 /// Writes a run's closing summary: the rewrite or diagnostics outcome,
 /// then in a format mode whose diagnostics never reached stdout the
-/// surviving-lint disclosure. `text_output` is true for a text-format
-/// `format` run, whose lint the structured emitters never printed.
+/// surviving-lint disclosure.
 pub(super) fn render_summary<E: Write>(
     stderr: &mut E,
     present: &Presentation,
     outcomes: &[FileOutcome],
     summary: &EmitterSummary,
-    mode: Mode,
-    text_output: bool,
+    pass: Pass,
 ) {
-    let lines = summarize(outcomes, summary, mode)
+    let lines = summarize(outcomes, summary, pass.mode())
         .into_iter()
-        .chain(lint_remainder(summary, mode, text_output));
+        .chain(lint_remainder(summary, pass));
     for line in lines {
         let _ = output::report(stderr, present, &line);
     }
@@ -186,8 +185,10 @@ pub(super) fn status_from_outcomes(
                 ..
             } => {
                 // A rewrite that settled back to the input byte-for-byte
-                // reports clean, its cancelling edits notwithstanding.
-                let demote = demote_format_change || matches!(rewrite, Rewrite::Unchanged);
+                // reports clean, its cancelling edits notwithstanding, as
+                // does a file carrying no rewrite to make.
+                let demote = demote_format_change
+                    || matches!(rewrite, Rewrite::PassedOver | Rewrite::Unchanged);
                 diagnostics
                     .iter()
                     .map(|d| ExitStatus::from(d.severity))
@@ -204,10 +205,9 @@ pub(super) fn status_from_outcomes(
 /// The surviving-lint disclosure a text-format `format` run appends
 /// after its outcome line, `None` for a check run, a structured output
 /// whose emitters already printed the lint, or a run leaving none.
-fn lint_remainder(summary: &EmitterSummary, mode: Mode, text_output: bool) -> Option<Summary> {
+fn lint_remainder(summary: &EmitterSummary, pass: Pass) -> Option<Summary> {
     let total = summary.lint_total;
-    let discloses = !matches!(mode, Mode::Check) && text_output && total > 0;
-    discloses.then_some(Summary::LintRemainder { total })
+    (pass.discloses_lint() && total > 0).then_some(Summary::LintRemainder { total })
 }
 
 /// Resolves an outcome set into its closing [`Summary`], or `None` when
@@ -424,14 +424,13 @@ mod tests {
     }
 
     #[rstest]
-    #[case(Mode::Check, true, 2, None)]
-    #[case(Mode::Reformat, true, 0, None)]
-    #[case(Mode::Reformat, false, 2, None)]
-    #[case(Mode::Preview, true, 3, Some(3))]
-    #[case(Mode::Reformat, true, 1, Some(1))]
+    #[case::check_never_discloses(Pass::Diagnose { validate: false }, 2, None)]
+    #[case::structured_format_already_printed_it(Pass::Both, 2, None)]
+    #[case::text_format_with_no_lint(Pass::Rewrite, 0, None)]
+    #[case::diff_discloses(Pass::Preview, 3, Some(3))]
+    #[case::text_format_discloses(Pass::Rewrite, 1, Some(1))]
     fn lint_remainder_discloses_only_text_format_lint(
-        #[case] mode: Mode,
-        #[case] text_output: bool,
+        #[case] pass: Pass,
         #[case] lint_total: usize,
         #[case] expected: Option<usize>,
     ) {
@@ -439,7 +438,7 @@ mod tests {
             lint_total,
             ..EmitterSummary::default()
         };
-        let got = lint_remainder(&summary, mode, text_output);
+        let got = lint_remainder(&summary, pass);
         match expected {
             None => assert_matches!(got, None),
             Some(total) => {

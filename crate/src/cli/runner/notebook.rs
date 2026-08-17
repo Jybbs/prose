@@ -43,7 +43,7 @@ pub(super) fn process(text: String, name: String, pipeline: &Pipeline, pass: Pas
             diagnostics: Vec::new(),
             file,
             notebook_index: None,
-            rewrite: Rewrite::Skipped,
+            rewrite: Rewrite::PassedOver,
         };
     }
     match Source::from_notebook(&notebook, name.as_str()) {

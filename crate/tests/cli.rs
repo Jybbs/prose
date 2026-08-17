@@ -180,6 +180,32 @@ fn assert_stdout_has(assert: &Assert, needle: &str) {
     assert!(out.contains(needle), "stdout was {out:?}");
 }
 
+/// Seeds an isolated cache with one `format --diff` over a fresh fixture
+/// holding `source`, then asserts the warm run reproduces the cold patch
+/// byte for byte and reports the hit.
+fn assert_warm_diff_matches_cold(name: &str, source: &str) {
+    let (_dir, path) = fixture(name, source);
+    let (mut warm, _cache) = warmed_by(&path, &["format", "--diff"], 1);
+
+    let hit = warm
+        .args(["--verbose", "format", "--diff"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let cold = prose()
+        .args(["format", "--diff", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(1);
+
+    assert_eq!(
+        hit.get_output().stdout,
+        cold.get_output().stdout,
+        "a warm diff must reproduce the cold patch byte for byte",
+    );
+    assert_stderr_has(&hit, "1 hits, 0 misses");
+}
+
 /// Runs `check` twice against one isolated cache, asserts the warm
 /// run reproduces the cold stdout byte for byte, and returns it.
 fn assert_warm_run_matches_cold(paths: &[&Path]) -> String {
@@ -426,6 +452,21 @@ fn cache_invalidates_on_config_change() {
 }
 
 #[test]
+fn cache_keys_a_diff_apart_from_a_check() {
+    let (_dir, path) = fixture("misaligned.py", UNALIGNED);
+    let (mut warm, cache) = warmed_by(&path, &["check"], 1);
+    warm.args(["format", "--diff"]).arg(&path).assert().code(1);
+
+    let assert = prose()
+        .args(["cache", "info"])
+        .env("PROSE_CACHE_DIR", cache.path())
+        .assert()
+        .success();
+
+    assert_stdout_has(&assert, "entries: 2");
+}
+
+#[test]
 fn cache_keys_each_file_against_its_governing_config() {
     let parent = tempdir().expect("tempdir");
     let (suppressed, flagged) = sibling_projects(&parent, UNALIGNED);
@@ -437,6 +478,20 @@ fn cache_keys_each_file_against_its_governing_config() {
     assert_eq!(summary["files_changed"], 1);
 }
 
+#[test]
+fn cache_misses_a_diff_run_landing_on_a_check_entry() {
+    let (_dir, path) = fixture("misaligned.py", UNALIGNED);
+    let (mut warm, _cache) = warmed_by(&path, &["check"], 1);
+
+    let assert = warm
+        .args(["--verbose", "format", "--diff"])
+        .arg(&path)
+        .assert()
+        .code(1);
+
+    assert_stderr_has(&assert, "0 hits, 1 misses");
+    assert_stdout_has(&assert, "@@");
+}
 #[rstest]
 #[case::narrow_select_after_full_set(&[], &["--select", "alphabetize-siblings"])]
 #[case::ignore_after_full_set(&[], &["--ignore", "align-equals"])]
@@ -447,6 +502,121 @@ fn cache_misses_when_selection_changes_between_runs(
 ) {
     let (_dir, path) = fixture("reselect.py", UNALIGNED);
     assert_reselect_misses(seed_filter, query_filter, &path);
+}
+
+#[test]
+fn cache_serves_a_warm_diff_from_its_own_entry() {
+    assert_warm_diff_matches_cold("misaligned.py", UNALIGNED);
+}
+
+#[test]
+fn cache_serves_a_warm_diff_of_surviving_lint() {
+    let (_dir, path) = fixture("lint_only.py", LINT_ONLY);
+    let (mut warm, _cache) = warmed_by(&path, &["format", "--diff"], 2);
+
+    let hit = warm
+        .args(["--verbose", "format", "--diff"])
+        .arg(&path)
+        .assert()
+        .code(2);
+
+    assert_stderr_has(&hit, "1 hits, 0 misses");
+    assert_stderr_has(&hit, "lint diagnostic not shown");
+}
+
+#[test]
+fn cache_stores_only_the_entry_a_write_back_leaves_reachable() {
+    let dir = tempdir().expect("tempdir");
+    std::fs::write(dir.path().join("changed.py"), UNALIGNED).expect("writes");
+    std::fs::write(dir.path().join("settled.py"), "x = 1\n").expect("writes");
+    let (mut cmd, cache_dir) = prose_isolated();
+    cmd.arg("format").arg(dir.path()).assert().success();
+
+    let assert = prose()
+        .args(["cache", "info"])
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .success();
+
+    assert_stdout_has(&assert, "entries: 1");
+}
+
+#[test]
+fn cache_write_back_storing_nothing_leaves_an_over_cap_directory_alone() {
+    let dir = tempdir().expect("tempdir");
+    write_pyproject(dir.path(), "[tool.prose.cache]\nmax-size-mib = 1\n");
+    let path = dir.path().join("a.py");
+    std::fs::write(&path, UNALIGNED).expect("writes");
+    let (mut seed, cache_dir) = prose_isolated();
+    seed.current_dir(dir.path())
+        .arg("check")
+        .arg(&path)
+        .assert()
+        .code(1);
+    let generation = std::fs::read_dir(cache_dir.path())
+        .expect("read_dir")
+        .flatten()
+        .find(|entry| entry.path().is_dir())
+        .expect("a generation directory")
+        .path();
+    let filler = vec![b'x'; 512 * 1024];
+    for slot in 0..4_u32 {
+        std::fs::write(generation.join(format!("{slot:064x}")), &filler).expect("writes");
+    }
+    let padded = cache_bytes(&generation);
+    std::fs::write(&path, UNALIGNED).expect("restores the unformatted bytes");
+
+    prose()
+        .current_dir(dir.path())
+        .arg("format")
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .success();
+
+    assert_eq!(
+        cache_bytes(&generation),
+        padded,
+        "a write-back run whose every rewrite went unstored must not sweep",
+    );
+}
+
+#[test]
+fn cache_writes_a_warm_rewrite_a_diff_run_recorded() {
+    let (_dir, path) = fixture("misaligned.py", UNALIGNED);
+    let (mut warm, _cache) = warmed_by(&path, &["format", "--diff"], 1);
+
+    let assert = warm
+        .args(["--verbose", "format"])
+        .arg(&path)
+        .assert()
+        .success();
+
+    assert_stderr_has(&assert, "1 hits, 0 misses");
+    let (_cold_dir, cold) = fixture("misaligned.py", UNALIGNED);
+    prose()
+        .args(["format", "--no-cache"])
+        .arg(&cold)
+        .assert()
+        .success();
+    assert_eq!(
+        std::fs::read_to_string(&path).expect("reads the warm rewrite"),
+        std::fs::read_to_string(&cold).expect("reads the cold rewrite"),
+    );
+}
+
+#[test]
+fn cache_writes_back_a_settled_file_from_its_own_entry() {
+    let (_dir, path) = fixture("settled.py", "x = 1\n");
+    let (mut warm, _cache) = warmed_by(&path, &["format"], 0);
+
+    let assert = warm
+        .args(["--verbose", "format"])
+        .arg(&path)
+        .assert()
+        .success();
+
+    assert_stderr_has(&assert, "1 hits, 0 misses");
 }
 
 #[test]
@@ -1116,6 +1286,11 @@ fn notebook_diff_renders_per_cell_hunks() {
     );
     assert!(stdout.contains("-x = 1"), "before line missing: {stdout:?}");
     assert!(stdout.contains("+x  = 1"), "after line missing: {stdout:?}");
+}
+
+#[test]
+fn notebook_diff_renders_per_cell_hunks_from_a_warm_entry() {
+    assert_warm_diff_matches_cold("nb.ipynb", ALIGNS);
 }
 
 #[test]

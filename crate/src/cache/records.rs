@@ -11,10 +11,13 @@ use crate::{
     rule::{RuleId, message_for_id},
 };
 
-/// Post-pipeline state cached per `(source, config, rules, version)`
-/// key. The diagnostics are always anchored to the source as written,
-/// leaving any mode free to render them. The rewrite is `Skipped` unless
-/// the writing mode ran [`Pipeline::run`](crate::pipeline::Pipeline::run).
+/// Post-pipeline state cached per `(source, config, rules, version)` key
+/// under the reading mode's [`Anchor`](crate::cache::Anchor), which
+/// names which buffer the diagnostics resolve against, so a `check`
+/// entry and a text `format` entry describing one file sit under
+/// separate keys rather than overwriting each other. The rewrite is
+/// `Skipped` where the reading mode ran no
+/// [`Pipeline::run`](crate::pipeline::Pipeline::run).
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct CacheEntry {
     #[serde(with = "elided_messages")]
@@ -121,13 +124,16 @@ impl CleanReport {
 }
 
 /// What a mode records about the file's rewrite. `Skipped` marks a mode
-/// that never computed the rewrite, whereas the other two record a
-/// completed `run`.
+/// that never computed one, `PassedOver` a file that carries none to
+/// make, and the other two a completed `run`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Rewrite {
-    /// `run` produced output differing from the original, carried as a
-    /// kind that knows how to write and diff itself.
+    /// `run` produced output differing from the original, carried as the
+    /// kind that writes and diffs itself.
     Changed(RewriteKind),
+    /// The file was passed over with no rewrite to make, the shape a
+    /// non-Python notebook takes.
+    PassedOver,
     /// No rewrite was computed.
     Skipped,
     /// `run` produced output identical to the original.

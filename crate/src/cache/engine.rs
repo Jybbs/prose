@@ -5,6 +5,7 @@ use std::{
     fs::Metadata,
     io::{self, BufWriter, Read, Write},
     path::{Path, PathBuf},
+    sync::atomic::{AtomicBool, Ordering},
     time::{Duration, SystemTime},
 };
 
@@ -16,6 +17,10 @@ use super::{CacheEntry, CacheEntryRef, CacheInfo, CacheKey, CleanReport, key::ge
 /// User-level on-disk cache.
 #[derive(Debug)]
 pub struct Cache {
+    /// Set by the first [`insert`](Self::insert) to land, so the run's
+    /// closing sweep can tell a run that grew the directory from one
+    /// that only read it.
+    pub(super) inserted: AtomicBool,
     pub(super) max_entries: usize,
     pub(super) max_size_bytes: u64,
     /// This build's generation directory, where every entry lands.
@@ -45,6 +50,7 @@ impl Cache {
         let root = store.join(generation());
         fs_err::create_dir_all(&root)?;
         Ok(Self {
+            inserted: AtomicBool::new(false),
             max_entries: usize::MAX,
             max_size_bytes: u64::MAX,
             root,
@@ -244,9 +250,20 @@ impl Cache {
     /// Atomically writes `value` for `key` via a temporary sidecar and
     /// `rename`. Any encode, write, or rename failure drops the insert
     /// silently and lets the tempfile clean itself up on drop. The size
-    /// cap is honored by [`compact`](Self::compact).
+    /// cap is honored by [`compact`](Self::compact). A landed write
+    /// records itself, which [`inserted`](Self::inserted) reads.
     pub fn insert(&self, key: &CacheKey, value: &CacheEntryRef<'_>) {
-        let _ = self.try_insert(key, value);
+        if self.try_insert(key, value).is_ok() {
+            self.inserted.store(true, Ordering::Relaxed);
+        }
+    }
+
+    /// True once a write has landed in this run. A run that only read
+    /// entries left the directory the size it already was, so its
+    /// closing sweep would stat every entry to find nothing over a cap.
+    #[must_use]
+    pub fn inserted(&self) -> bool {
+        self.inserted.load(Ordering::Relaxed)
     }
 
     /// Returns the entry stored at `key` if present and well-formed,

@@ -10,7 +10,7 @@ use std::{
 };
 
 use crate::{
-    cache::CacheKeyPrefix,
+    cache::{Anchor, CacheKeyPrefix},
     config::{Config, ConfigSource, NoticeDedup},
     pipeline::Pipeline,
     rule::RuleId,
@@ -22,6 +22,7 @@ use crate::{
 /// and each distinct effective config's pipeline are memoized, while a
 /// directory whose config fails to load reports once and fails its files.
 pub(super) struct ConfigResolver {
+    anchor: Anchor,
     built: Mutex<HashMap<String, Arc<Resolved>>>,
     default: Arc<Resolved>,
     ignore: Vec<RuleId>,
@@ -31,9 +32,10 @@ pub(super) struct ConfigResolver {
 }
 
 impl ConfigResolver {
-    pub(super) fn new(select: Vec<RuleId>, ignore: Vec<RuleId>) -> Self {
-        let default = Arc::new(build_resolved(&Config::default(), &select, &ignore));
+    pub(super) fn new(select: Vec<RuleId>, ignore: Vec<RuleId>, anchor: Anchor) -> Self {
+        let default = Arc::new(build_resolved(&Config::default(), &select, &ignore, anchor));
         Self {
+            anchor,
             built: Mutex::new(HashMap::from([(
                 default.config_toml.clone(),
                 Arc::clone(&default),
@@ -49,7 +51,12 @@ impl ConfigResolver {
     /// Returns the resolution for an effective `config`, building its
     /// pipeline once and memoizing it under its serialized TOML.
     fn built_for(&self, config: &Config) -> Arc<Resolved> {
-        let resolved = Arc::new(build_resolved(config, &self.select, &self.ignore));
+        let resolved = Arc::new(build_resolved(
+            config,
+            &self.select,
+            &self.ignore,
+            self.anchor,
+        ));
         Arc::clone(
             self.built
                 .lock()
@@ -145,11 +152,16 @@ enum DirResolution {
     Project(Arc<ConfigSource>),
 }
 
-fn build_resolved(config: &Config, select: &[RuleId], ignore: &[RuleId]) -> Resolved {
+fn build_resolved(
+    config: &Config,
+    select: &[RuleId],
+    ignore: &[RuleId],
+    anchor: Anchor,
+) -> Resolved {
     let config_toml = config.to_toml();
     let pipeline = Pipeline::with_filters(config, select, ignore);
     Resolved {
-        key_prefix: CacheKeyPrefix::new(&config_toml, pipeline.rule_ids()),
+        key_prefix: CacheKeyPrefix::new(&config_toml, pipeline.rule_ids(), anchor),
         config_toml,
         pipeline,
     }
@@ -165,7 +177,7 @@ mod tests {
     const SCRIPT: &[u8] = b"# /// script\n# [tool.prose]\n# code-line-length = 200\n# ///\nx = 1\n";
 
     fn resolver() -> ConfigResolver {
-        ConfigResolver::new(Vec::new(), Vec::new())
+        ConfigResolver::new(Vec::new(), Vec::new(), Anchor::AsWritten)
     }
 
     #[test]

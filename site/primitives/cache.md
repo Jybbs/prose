@@ -3,7 +3,7 @@ consumedBy: [cli]
 consumes: [source]
 layer: analysis
 stability: internal
-summary: "User-level on-disk cache keyed on `(source ++ config ++ rules ++ version)`, collapsing repeat runs to a stat plus a hash plus a deserialize."
+summary: "User-level on-disk cache keyed on `(source ++ config ++ rules ++ version)` under a per-anchor derivation context, collapsing repeat runs to a stat plus a hash plus a deserialize."
 tagline: content-addressed result cache
 ---
 
@@ -11,21 +11,21 @@ tagline: content-addressed result cache
 
 <PrimitiveLayout primitive="cache">
 
-*Cache* is the user-level content-addressed cache that lets `prose check` and `prose format` skip the pipeline for unchanged source. Each entry is a bincode-serialized payload carrying the post-pipeline diagnostics and optional rewrite, keyed on the **BLAKE3** digest of `(source_bytes ++ config_toml ++ rule_ids ++ prose_version ++ cache_format_version)`. A repeat run against an unchanged file collapses to a stat plus a hash plus a deserialize, with no AST construction, no rule pipeline, and no rewrite computation.
+*Cache* is the user-level content-addressed cache that lets `prose check` and `prose format` skip the pipeline for unchanged source. Each entry is a `postcard`-serialized payload carrying the post-pipeline diagnostics and optional rewrite, keyed on the **BLAKE3** digest of `(config_toml ++ rule_ids ++ prose_version ++ cache_format_version ++ source_bytes)` taken under a per-anchor derivation context. A repeat run against an unchanged file collapses to a stat plus a hash plus a deserialize, with no AST construction, no rule pipeline, and no rewrite computation.
 
 ## Consumer-Visible Surface
 
 *Cache* lives at `crate/src/cache/` and is `pub(crate)`, so the type is documented here for the consumer-visible CLI behavior it shapes rather than as a directly-callable type. The downstream-visible consequences are the `prose cache` subcommands *(`clean`, `compact`, `info`)*, the `--no-cache` flag on `prose check` and `prose format`, the `--verbose` flag's hit/miss telemetry, and the `[cache]` configuration table. The [**Cache**](/reference/cache) reference covers each surface from a user's perspective.
 
-A downstream consumer reaches the cache indirectly through `cli::runner::process_path`. Each file's bytes feed `CacheKey::compute`, the resulting key drives a lookup, and on hit the runner rehydrates the cached diagnostics and rewrite into a `SourceFile` without entering the pipeline. On miss, the runner runs the pipeline as normal and inserts the resulting entry before emitting.
+A downstream consumer reaches the cache indirectly through `cli::runner::process_path`. Each file's bytes complete the run's shared `CacheKeyPrefix` through `key_for`, the resulting key drives a lookup, and on hit the runner rehydrates the cached diagnostics and rewrite into a `SourceFile` without entering the pipeline. On miss, the runner runs the pipeline as normal and inserts the resulting entry where a later run could still reach it.
 
-What an entry carries tracks the mode that wrote it. A `check` run stores its as-written diagnostics with the rewrite marked skipped, since `check` reads no rewritten text, so a later `format` reading a `check`-populated entry recomputes the rewrite it needs rather than trusting an absent one. Plain `format` and `check --validate` bypass the cache outright, the first because the only diagnostics it could store are the post-edit ones `run` produces, which a `check` must not replay, the second because it re-confirms each rewrite parses rather than trust an entry an earlier run left unvalidated.
+What an entry carries tracks the mode that wrote it, and the key's anchor input keeps the two kinds apart. A `check` and a structured `format` record `diagnose`'s diagnostics against the source as written, whereas plain `format` and `format --diff` record `run`'s diagnostics against the output it rewrote, so neither mode is ever served an entry holding the other's list. Within the as-written anchor a `check` marks the rewrite skipped, since it reads no rewritten text, leaving a later structured `format` on that entry to recompute the rewrite it needs rather than trust an absent one. `check --validate` bypasses the cache outright, because it re-confirms each rewrite parses rather than trust an entry an earlier run left unvalidated. A write-back `format` stores nothing for a file it rewrites, the commit replacing the bytes the key was drawn from so that file never reads the entry back.
 
 At `1.0` the cache surface stabilizes for downstream consumers integrating the pipeline directly.
 
 ## Key Shape
 
-The cache key is the **BLAKE3** digest of inputs concatenated in order: the source bytes, the canonical TOML serialization of the active `Config`, the resolved rule selection the pipeline runs, the *Prose* version from `CARGO_PKG_VERSION`, and a private `CACHE_FORMAT_VERSION` constant.
+The cache key is the **BLAKE3** digest of inputs concatenated in order: the canonical TOML serialization of the active `Config`, the resolved rule selection the pipeline runs, the *Prose* version from `CARGO_PKG_VERSION`, a private `CACHE_FORMAT_VERSION` constant, and the file's own source bytes. The anchor naming which buffer the entry's diagnostics resolve against enters ahead of all of them, as the `Hasher::new_derive_key` context the digest opens under, so no arrangement of the remaining inputs can carry one anchor's key into the other's space.
 
 A change to any one input produces a different key, so a config tweak invalidates only the entries it semantically affects, a `--select` or `--ignore` run keys apart from a full one, and a *Prose* release invalidates the entire cache. The `CACHE_FORMAT_VERSION` input lets the on-disk entry shape bump independently of the user-facing version, leaving a release that does not change the entry shape free to carry its existing cache forward.
 
@@ -33,13 +33,13 @@ The canonical TOML serialization runs through `toml::to_string`, so a semantical
 
 ## LRU Eviction
 
-A best-effort LRU pass runs once a path run's inserts have landed, called from `cli::runner`'s `RunSetup::walked` rather than from `Cache::insert`. The pass collects every entry's last-access mtime, sorts ascending, and removes entries until the directory total falls back under the configured cap *(default 100 MiB)*. Permission failures and concurrent-eviction races log to stderr as warnings and never block an insert.
+A best-effort LRU pass runs once a path run's inserts have landed, called from `cli::runner`'s `RunSetup::walked` rather than from `Cache::insert`. The pass reclaims any generation directory an older build left behind, then where the live generation still sits over either configured cap *(defaulting to 100 MiB and 10,000 entries)* it collects every entry's last-access mtime, sorts ascending, and removes entries until both totals sit at four fifths of their cap, so the next run's inserts land inside the ceiling instead of paying for another sort. `Cache::insert` records that a write landed, and a run that only read entries skips the sweep on that flag. Permission failures and concurrent-eviction races log to stderr as warnings and never block an insert.
 
 `Cache::lookup` bumps the entry's mtime on hit, so the LRU sweep keeps recently-accessed entries even when they sit older in absolute terms. `Cache::compact` is that pass, which `prose cache compact` also exposes as an on-demand operation, useful after lowering `max-size-mib` so the new ceiling lands without waiting for the next run.
 
 ## Atomic Writes
 
-`Cache::insert` writes the bincode payload to a `tempfile`-managed sibling with a `.tmp` suffix and renames it onto the final `<key>` path, so the rename's POSIX atomicity guarantees a concurrent reader never observes a partial entry. The sibling is cleaned up on drop when the rename fails, and `Cache::info` filters `.tmp` files out of its directory walk via `path.extension().is_none()`.
+`Cache::insert` writes the `postcard` payload to a `tempfile`-managed sibling with a `.tmp` suffix and renames it onto the final `<key>` path, so the rename's POSIX atomicity guarantees a concurrent reader never observes a partial entry. The sibling is cleaned up on drop when the rename fails, and `Cache::info` filters `.tmp` files out of its directory walk via `path.extension().is_none()`.
 
 ## Path Resolution
 

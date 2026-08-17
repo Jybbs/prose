@@ -15,7 +15,7 @@ use tempfile::NamedTempFile;
 
 use super::{FileOutcome, Pass, RunSetup, has_format_change, notebook};
 use crate::{
-    cache::{CacheEntry, CacheEntryRef, Rewrite},
+    cache::{Anchor, CacheEntry, CacheEntryRef, Rewrite},
     cli::exit_status::ExitStatus,
     pipeline::Pipeline,
     source::Source,
@@ -49,7 +49,7 @@ pub(super) fn drive(
     if let Pass::Diagnose { validate } = pass {
         return diagnose_only(source, pipeline, validate, index);
     }
-    run_and_assemble(source, pipeline, matches!(pass, Pass::Both), index, rewrite)
+    run_and_assemble(source, pipeline, pass.anchor(), index, rewrite)
 }
 
 pub(super) fn failed(status: ExitStatus, e: impl std::fmt::Display) -> FileOutcome {
@@ -70,13 +70,12 @@ pub(super) fn process_path(
     let Some(resolved) = setup.resolver.resolve(path, &bytes) else {
         return FileOutcome::Failed(ExitStatus::ConfigError);
     };
-    let needs_rewrite = matches!(pass, Pass::Both);
     let keyed = setup
         .cache_for(pass)
         .map(|c| (c, resolved.key_prefix.key_for(&bytes)));
     let hit = keyed.as_ref().and_then(|(c, k)| c.lookup(k));
     let bytes = match hit {
-        Some(entry) => match rehydrate(path, source_type, bytes, entry, needs_rewrite) {
+        Some(entry) => match rehydrate(path, source_type, bytes, entry, pass) {
             Ok(outcome) => return outcome,
             // A `check` entry cannot serve a mode needing the rewrite,
             // so the miss branch runs against the bytes it hands back.
@@ -108,6 +107,7 @@ pub(super) fn process_path(
             ..
         },
     ) = (&keyed, &outcome)
+        && worth_storing(rewrite, pass)
     {
         c.insert(
             k,
@@ -171,16 +171,15 @@ pub(super) fn rehydrate(
     source_type: PySourceType,
     bytes: Vec<u8>,
     entry: CacheEntry,
-    needs_rewrite: bool,
+    pass: Pass,
 ) -> Result<FileOutcome, Vec<u8>> {
-    let rewrite = if needs_rewrite {
-        match entry.rewrite {
-            // A `check` entry skipped the rewrite this mode needs.
-            Rewrite::Skipped => return Err(bytes),
-            rewrite => rewrite,
-        }
-    } else {
-        Rewrite::Skipped
+    let rewrite = match (pass, entry.rewrite) {
+        // A `check` renders the diagnostics alone.
+        (Pass::Diagnose { .. }, _) => Rewrite::Skipped,
+        // Any other mode needs the rewrite, which an entry a `check`
+        // wrote under the shared as-written anchor never computed.
+        (_, Rewrite::Skipped) => return Err(bytes),
+        (_, rewrite) => rewrite,
     };
     let text = String::from_utf8(bytes).map_err(FromUtf8Error::into_bytes)?;
     let (source_text, notebook_index) = if source_type.is_ipynb() {
@@ -199,6 +198,15 @@ pub(super) fn rehydrate(
         notebook_index: notebook_index.map(Box::new),
         rewrite,
     })
+}
+
+/// True where an entry recording `rewrite` is worth writing. A
+/// write-back pass commits the rewrite over the bytes its key was drawn
+/// from, so the file it just wrote never reads that entry back, and a
+/// `Changed` rewrite goes unwritten under such a pass. Every other
+/// pairing stores.
+pub(super) fn worth_storing(rewrite: &Rewrite, pass: Pass) -> bool {
+    !(pass.write_back() && matches!(rewrite, Rewrite::Changed(_)))
 }
 
 /// Collects the as-written diagnostics, and with `validate` guards the
@@ -249,20 +257,20 @@ fn process_source(
 }
 
 /// Runs the pipeline and assembles the outcome, deferring the rewrite
-/// to `rewrite`. The caller handles the diagnose-only pass, while the
-/// `diagnose_as_written` flag adds the as-written diagnostics an output
-/// format renders beside the rewrite. A rewritten notebook re-reads from
-/// the bytes that reached disk, so a write that lost its cell boundaries
+/// to `rewrite`. The caller handles the diagnose-only pass, while an
+/// `AsWritten` anchor adds the as-written diagnostics an output format
+/// renders beside the rewrite. A rewritten notebook re-reads from the
+/// bytes that reached disk, so a write that lost its cell boundaries
 /// fails rather than being reported clean.
 fn run_and_assemble(
     source: Source,
     pipeline: &Pipeline,
-    diagnose_as_written: bool,
+    anchor: Anchor,
     notebook_index: Option<NotebookIndex>,
     rewrite: impl FnOnce(&Source, &SourceFile) -> Rewrite,
 ) -> FileOutcome {
     let file = source.source_file().clone();
-    let diagnosed = diagnose_as_written.then(|| pipeline.diagnose(&source));
+    let diagnosed = matches!(anchor, Anchor::AsWritten).then(|| pipeline.diagnose(&source));
     match pipeline.run(source) {
         Ok((formatted, run_diagnostics)) => {
             let rewrite = rewrite(&formatted, &file);
@@ -370,7 +378,8 @@ mod tests {
 
     #[rstest]
     fn every_pass_lands_a_rewrite_a_rule_still_edits(
-        #[values(Pass::Both, Pass::Rewrite, Pass::Diagnose { validate: true })] pass: Pass,
+        #[values(Pass::Both, Pass::Preview, Pass::Rewrite, Pass::Diagnose { validate: true })]
+        pass: Pass,
     ) {
         let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
         let source = parse("x = 1\n");
@@ -383,12 +392,13 @@ mod tests {
     #[test]
     fn process_path_returns_config_error_on_missing_file() {
         let tmp = TempDir::new().expect("tempdir");
-        let resolver = ConfigResolver::new(Vec::new(), Vec::new());
+        let resolver = ConfigResolver::new(Vec::new(), Vec::new(), Anchor::AsWritten);
         let cwd = resolver.seed(&Config::default());
         let setup = RunSetup {
             cache: None,
             cwd,
             resolver,
+            verbose: false,
         };
         let outcome = process_path(
             &tmp.path().join("does_not_exist.py"),
@@ -397,28 +407,6 @@ mod tests {
             Pass::Diagnose { validate: false },
         );
         assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
-    }
-
-    #[test]
-    fn rehydrate_marks_a_check_mode_outcome_skipped() {
-        let entry = CacheEntry {
-            diagnostics: Vec::new(),
-            rewrite: Rewrite::text("y = 1\n".to_owned()),
-        };
-        let outcome = rehydrate(
-            Path::new("a.py"),
-            PySourceType::Python,
-            b"x = 1\n".to_vec(),
-            entry,
-            false,
-        );
-        assert_matches!(
-            outcome,
-            Ok(FileOutcome::Done {
-                rewrite: Rewrite::Skipped,
-                ..
-            })
-        );
     }
 
     #[test]
@@ -433,9 +421,30 @@ mod tests {
                 PySourceType::Python,
                 b"x = 1\n".to_vec(),
                 entry,
-                true
+                Pass::Both
             ),
             Err(bytes) if bytes == b"x = 1\n"
+        );
+    }
+    #[test]
+    fn rehydrate_marks_a_check_mode_outcome_skipped() {
+        let entry = CacheEntry {
+            diagnostics: Vec::new(),
+            rewrite: Rewrite::text("y = 1\n".to_owned()),
+        };
+        let outcome = rehydrate(
+            Path::new("a.py"),
+            PySourceType::Python,
+            b"x = 1\n".to_vec(),
+            entry,
+            Pass::Diagnose { validate: false },
+        );
+        assert_matches!(
+            outcome,
+            Ok(FileOutcome::Done {
+                rewrite: Rewrite::Skipped,
+                ..
+            })
         );
     }
 
@@ -450,12 +459,34 @@ mod tests {
             PySourceType::Python,
             b"x = 1\n".to_vec(),
             entry,
-            true,
+            Pass::Both,
         );
         assert_matches!(
             outcome,
             Ok(FileOutcome::Done { rewrite: Rewrite::Changed(RewriteKind::Text(text)), .. })
                 if text == "y = 1\n"
+        );
+    }
+
+    #[test]
+    fn rehydrate_serves_a_passed_over_rewrite_to_a_text_format() {
+        let entry = CacheEntry {
+            diagnostics: Vec::new(),
+            rewrite: Rewrite::PassedOver,
+        };
+        let outcome = rehydrate(
+            Path::new("a.py"),
+            PySourceType::Python,
+            b"x = 1\n".to_vec(),
+            entry,
+            Pass::Rewrite,
+        );
+        assert_matches!(
+            outcome,
+            Ok(FileOutcome::Done {
+                rewrite: Rewrite::PassedOver,
+                ..
+            })
         );
     }
 
@@ -470,7 +501,7 @@ mod tests {
             PySourceType::Python,
             b"x = 1\n".to_vec(),
             entry,
-            true,
+            Pass::Both,
         );
         assert_matches!(
             outcome,
@@ -531,6 +562,21 @@ mod tests {
     }
 
     #[cfg(unix)]
+    #[rstest]
+    #[case::changed_under_a_commit(Rewrite::text("y = 1\n".to_owned()), Pass::Rewrite, false)]
+    #[case::changed_under_a_structured_commit(Rewrite::text("y = 1\n".to_owned()), Pass::Both, false)]
+    #[case::changed_under_a_preview(Rewrite::text("y = 1\n".to_owned()), Pass::Preview, true)]
+    #[case::unchanged_under_a_commit(Rewrite::Unchanged, Pass::Rewrite, true)]
+    #[case::passed_over_under_a_commit(Rewrite::PassedOver, Pass::Rewrite, true)]
+    #[case::skipped_under_a_check(Rewrite::Skipped, Pass::Diagnose { validate: false }, true)]
+    fn worth_storing_drops_only_a_rewrite_a_committing_pass_lands(
+        #[case] rewrite: Rewrite,
+        #[case] pass: Pass,
+        #[case] stores: bool,
+    ) {
+        assert_eq!(worth_storing(&rewrite, pass), stores);
+    }
+
     #[test]
     fn write_atomic_holds_the_original_where_no_temporary_can_land() {
         use std::{fs::Permissions, os::unix::fs::PermissionsExt};
