@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: json
 input_file: tests/fixtures/suppression/two_blocks_stay_separate/input.py
 ---

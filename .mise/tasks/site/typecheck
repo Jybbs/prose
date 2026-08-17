@@ -3,5 +3,6 @@
 #MISE description="Type-check the docs-site TypeScript with `vue-tsc`"
 #MISE depends=["site:bake"]
 #MISE dir="site"
+#MISE sources=["../.mise/config.toml", "**/*", "!.vitepress/.temp/**/*", "!.vitepress/dist/**/*", "!.vitepress/tests/wasm/pkg/**/*", "!coverage/**/*", "!node_modules/**/*"]
 
 bunx vue-tsc --noEmit

@@ -1,15 +1,14 @@
 name        : Restore wasm cache
-description : Restore `site/public/wasm` under an exact key derived from the wasm sources, so a site build reuses the cached module instead of running `wasm-pack`.
-
-inputs:
-  save:
-    default     : true
-    description : When `false` the cache restores but never saves.
+description : Restore `site/public/wasm` under an exact key derived from the wasm sources, stamping a hit forward so `wasm:pack` reads its outputs as current and skips the `wasm-pack` run. Saving is left to the caller, `warm.yml` being the only workflow that writes cache entries.
 
 outputs:
   cache-hit:
     description : Whether the module restored under an exact key match.
     value       : ${{ steps.entry.outputs.cache-hit }}
+
+  key:
+    description : The key the restore attempted, which a later `actions/cache/save` writes under.
+    value       : ${{ steps.entry.outputs.cache-primary-key }}
 
 runs:
   using: composite
@@ -17,9 +16,12 @@ runs:
   steps:
     - name : Restore the wasm module
       id   : entry
-      uses : ./.github/actions/restore
+      uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
-        key   : wasm-module-${{ runner.os }}-${{ hashFiles('.mise/config.toml', 'Cargo.lock', 'Cargo.toml', 'crate/Cargo.toml', 'crate/src/**', 'wasm/**') }}
-        path  : site/public/wasm
-        save  : ${{ inputs.save }}
-        touch : true
+        key  : wasm-module-${{ runner.os }}-${{ hashFiles('.mise/config.toml', '.mise/tasks/wasm/pack', 'Cargo.lock', 'Cargo.toml', 'crate/Cargo.toml', 'crate/src/**', 'wasm/**') }}
+        path : site/public/wasm
+
+    - name  : Stamp the restored module forward
+      if    : ${{ steps.entry.outputs.cache-hit == 'true' }}
+      shell : bash
+      run   : find site/public/wasm -type f -exec touch {} +

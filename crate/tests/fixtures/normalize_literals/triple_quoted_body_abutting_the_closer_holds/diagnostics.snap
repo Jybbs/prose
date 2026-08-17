@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/normalize_literals/triple_quoted_body_abutting_the_closer_holds/input.py
 ---

@@ -7,7 +7,8 @@
 """
 Audit CI invariants no other gate covers, exiting nonzero if either fails.
 
-    parity     Every cross-config version pin agrees across its homes.
+    parity     Every cross-config pin and shared declaration agrees across
+               its homes.
     manifests  No composite action manifest carries a YAML anchor, which
                the runner rejects before any step runs.
 
@@ -133,7 +134,8 @@ def override_pins(package: dict) -> list[tuple[str, str, str]]:
 
 def parity() -> int:
     """
-    Report every cross-config version pin that has drifted from its pair.
+    Report every cross-config pin or shared declaration that has drifted
+    from its pair.
     """
     cargo   = toml("Cargo.toml")
     mise    = toml(".mise/config.toml")
@@ -176,6 +178,11 @@ def parity() -> int:
             mise["tools"]["github:rustwasm/wasm-bindgen"],
             cargo_lock_version("wasm-bindgen")
         ),
+        (
+            ".mise/tasks/site/test sources ↔ .mise/tasks/site/press sources",
+            task_sources("site/test"),
+            task_sources("site/press")
+        ),
         *override_pins(package),
         *patch_pins(package)
     ]
@@ -205,6 +212,17 @@ def patch_pins(package: dict) -> list[tuple[str, str, str]]:
             pinned
         ))
     return pairs
+
+
+def task_sources(task: str) -> str:
+    """
+    Return the `sources` frontmatter array the `task` file task declares.
+    """
+    return extract(
+        f"no sources declaration in .mise/tasks/{task}",
+        r"#MISE sources=(.*)",
+        Path(f".mise/tasks/{task}").read_text(encoding="utf-8")
+    )
 
 
 def toml(path: str) -> dict:

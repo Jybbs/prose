@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: json
 input_file: tests/fixtures/signature_annotations/annotated_members_pass/input.py
 ---

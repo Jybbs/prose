@@ -9,6 +9,8 @@
 //! span holds a comment, and a run carrying a part with its own line
 //! break each stay as written.
 
+use std::borrow::Cow;
+
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr, StringLike};
 use ruff_text_size::{Ranged, TextRange};
@@ -53,7 +55,7 @@ impl Rule for StackAdjacentStrings {
             docstrings: docstring_slots(&source.ast().body),
             edits: Vec::new(),
             newline: source.newline_str(),
-            reservations: self.reservations.columns(source),
+            reservations: source.columns(self.reservations),
             source,
         };
         walk_parented_exprs(source.ast(), &mut layout);
@@ -75,7 +77,7 @@ struct Layout<'a> {
     docstrings: Vec<TextRange>,
     edits: Vec<Edit>,
     newline: &'static str,
-    reservations: reserve::Columns,
+    reservations: Cow<'a, reserve::Columns>,
     source: &'a Source,
 }
 

@@ -18,7 +18,7 @@ use ruff_python_ast::{
     visitor::{Visitor, walk_expr},
 };
 use ruff_source_file::UniversalNewlines;
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
@@ -62,27 +62,28 @@ impl Rule for LineOverflow {
         let mut spans = Spans {
             docstrings: docstring_slots(&source.ast().body),
             imports: Vec::new(),
+            reach: Vec::new(),
             reshapeable: Vec::new(),
             source,
             strings: Vec::new(),
         };
         spans.note_docstring(&source.ast().body);
         spans.visit_body(&source.ast().body);
+        spans.index();
+        let floor = self.code_line_length.min(self.import_line_length);
         let mut diagnostics = Vec::new();
         for line in source.text().universal_newlines() {
             let range = line.range();
-            let cap = if spans.imports.iter().any(|r| r.contains_range(range)) {
+            let width = line.as_str().width();
+            if width <= floor {
+                continue;
+            }
+            let cap = if spans.in_import(range) {
                 self.import_line_length
             } else {
                 self.code_line_length
             };
-            let width = line.as_str().width();
-            if width <= cap
-                || spans
-                    .reshapeable
-                    .iter()
-                    .any(|r| r.intersect(range).is_some())
-            {
+            if width <= cap || spans.reshapes(range) {
                 continue;
             }
             let report = format!("Line is {width} columns, over the {cap}-column budget");
@@ -119,12 +120,48 @@ impl Rule for LineOverflow {
 struct Spans<'a> {
     docstrings: Vec<TextRange>,
     imports: Vec<TextRange>,
+    /// The furthest end any `reshapeable` range up to each index
+    /// covers, which turns the intersection test into one binary search
+    /// over the ascending starts and one running-maximum read.
+    reach: Vec<TextSize>,
     reshapeable: Vec<TextRange>,
     source: &'a Source,
     strings: Vec<&'a StringLiteral>,
 }
 
 impl<'a> Spans<'a> {
+    /// Orders both collected range lists by start and fills [`Self::reach`],
+    /// so the per-line lookups below binary search rather than scan.
+    fn index(&mut self) {
+        self.imports.sort_unstable_by_key(Ranged::start);
+        self.reshapeable.sort_unstable_by_key(Ranged::start);
+        self.reach = self
+            .reshapeable
+            .iter()
+            .scan(TextSize::new(0), |far, r| {
+                *far = (*far).max(r.end());
+                Some(*far)
+            })
+            .collect();
+    }
+
+    /// True when `line` sits inside an import statement, which answers
+    /// to the import budget. Import statements never nest, so the last
+    /// range opening at or before `line` is the only candidate.
+    fn in_import(&self, line: TextRange) -> bool {
+        let after = self.imports.partition_point(|r| r.start() <= line.start());
+        after > 0 && self.imports[after - 1].contains_range(line)
+    }
+
+    /// True when a still-collapsible construct meets `line`, which
+    /// leaves the line to the layout rule that shortens it.
+    fn reshapes(&self, line: TextRange) -> bool {
+        let after = self
+            .reshapeable
+            .partition_point(|r| r.start() <= line.end());
+        after > 0 && self.reach[after - 1] >= line.start()
+    }
+
     /// True for an implicitly concatenated run `stack-adjacent-strings`
     /// still breaks, which leaves out a run filling a docstring slot.
     fn breakable_run(&self, expr: &Expr) -> bool {

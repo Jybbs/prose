@@ -27,6 +27,7 @@ use crate::{
 /// a construct nested inside an aligned value move with it, and lets
 /// the shift compose with a caller's own placement rather than
 /// replacing it.
+#[derive(Clone, Debug)]
 pub(crate) struct Columns(Vec<(TextRange, isize)>);
 
 impl Columns {
@@ -57,7 +58,7 @@ impl Columns {
 /// The alignment a layout rule measures against, resolved from
 /// configuration once and carried as a value. `settings` is `None`
 /// where the alignment rule is off, leaving every column unreserved.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Reservations {
     rule: RuleId,
     settings: Option<aligner::Settings>,

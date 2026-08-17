@@ -6,6 +6,7 @@ target-version              = "3.14"
 
 [cache]
 enabled      = false
+max-entries  = 25000
 max-size-mib = 250
 
 [imports]

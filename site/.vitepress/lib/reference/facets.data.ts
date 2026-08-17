@@ -41,7 +41,7 @@ export default defineLoader({
     const schema = ruleSchema.proseSchema(root)
     const index  = discoverRuleIndex(paths.rulesDir(import.meta.url))
     const defs   = schema.$defs
-    const rules  = defs.RuleConfigs.properties as Record<string, ruleSchema.RuleDef>
+    const rules  = ruleSchema.ruleDefsOf(schema)
 
     const facet = (
       key     : string,

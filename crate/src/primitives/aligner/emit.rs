@@ -102,26 +102,38 @@ fn emitted_base_width(source: &Source, member: Member) -> usize {
         .map_or(base, |gap| base + 1 - source.slice(gap).width())
 }
 
+/// Each member's emitted line width, measured once per run rather than
+/// once per group-growth step. Empty where no line-length cap governs,
+/// since [`fits_line_cap`] then reads none of them.
+fn emitted_bases(
+    source: &Source,
+    members: &[Member],
+    settings: Settings,
+    widenings: &Widenings,
+) -> Vec<usize> {
+    if settings.line_length.is_none() {
+        return Vec::new();
+    }
+    members
+        .iter()
+        .map(|m| emitted_base_width(source, *m).saturating_add_signed(widenings.delta(*m)))
+        .collect()
+}
+
 /// True when no member of `group` aligned to `max_w` has its line
 /// pushed past the governing line-length cap by the padding, and for a
-/// rule carrying no cap at all. A member over the cap even at its
+/// rule carrying no cap at all. `bases` carries each member's emitted
+/// width in step with `group`. A member over the cap even at its
 /// singleton fallback gap stays in the run only where the shared column
 /// costs it no further width than the buffer, which holds for the
 /// widest member alone, so aligning never carries an over-cap line
 /// further out and never pushes a fitting line past the cap.
-fn fits_line_cap(
-    source: &Source,
-    group: &[Member],
-    settings: Settings,
-    widenings: &Widenings,
-    max_w: usize,
-) -> bool {
+fn fits_line_cap(group: &[Member], bases: &[usize], settings: Settings, max_w: usize) -> bool {
     let Some(cap) = settings.line_length else {
         return true;
     };
     let max_op = max_op_width(group);
-    group.iter().all(|m| {
-        let base = emitted_base_width(source, *m).saturating_add_signed(widenings.delta(*m));
+    group.iter().zip(bases).all(|(m, base)| {
         let padding = padding_width(*m, max_w, max_op, settings.buffer);
         base + padding <= cap || (padding == settings.buffer && base + settings.suffix_len(1) > cap)
     })
@@ -130,16 +142,10 @@ fn fits_line_cap(
 /// True when `group` may align as one column: its settled-width spread
 /// stays within `shift_cap` and, when a `line_length` cap governs,
 /// every member's aligned line stays within it.
-fn group_holds(
-    source: &Source,
-    group: &[Member],
-    settings: Settings,
-    widenings: &Widenings,
-    shift_cap: usize,
-) -> bool {
+fn group_holds(group: &[Member], bases: &[usize], settings: Settings, shift_cap: usize) -> bool {
     let max_w = group_max_width(group);
     let min_w = group.iter().map(|m| m.settled_width).min().unwrap_or(0);
-    max_w - min_w <= shift_cap && fits_line_cap(source, group, settings, widenings, max_w)
+    max_w - min_w <= shift_cap && fits_line_cap(group, bases, settings, max_w)
 }
 
 /// The widest settled width in `group`, zero for an empty slice.
@@ -209,10 +215,16 @@ fn reading_order_groups<'m>(
     if members.is_empty() {
         return Vec::new();
     }
+    let bases = emitted_bases(source, members, settings, widenings);
     let mut groups = Vec::new();
     let mut start = 0;
     for i in 1..members.len() {
-        if !group_holds(source, &members[start..=i], settings, widenings, shift_cap) {
+        if !group_holds(
+            &members[start..=i],
+            bases.get(start..=i).unwrap_or_default(),
+            settings,
+            shift_cap,
+        ) {
             let prev = &members[start..i];
             groups.push((prev, group_max_width(prev)));
             start = i;

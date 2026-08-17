@@ -69,7 +69,7 @@ impl ReflowCalls {
 impl Rule for ReflowCalls {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
-        let reservations = self.reservations.columns(source);
+        let reservations = source.columns(self.reservations);
         let mut exploder = Exploder {
             edits: Vec::new(),
             indent: None,

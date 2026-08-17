@@ -106,7 +106,7 @@ impl Member {
 /// `line_length` carries the governing cap when the rule resolves
 /// within it, so a member whose aligned line would cross the cap
 /// partitions out of the run the way an over-`max_shift` outlier does.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Settings {
     buffer: usize,
     line_length: Option<usize>,

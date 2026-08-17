@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: json
 input_file: crate/tests/fixtures/unsorted_positionals/field_run_and_method_both_flagged/input.py
 ---

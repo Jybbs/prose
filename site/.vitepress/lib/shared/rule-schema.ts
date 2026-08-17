@@ -2,7 +2,7 @@ import { inlineNodes }                   from '../markdown/inline-nodes'
 import type { InlineNode, InlineParser } from '../markdown/inline-nodes'
 import { runProse }                      from './paths'
 
-export const NESTED_TABLES = new Set(['cache', 'imports', 'rules'])
+const NESTED_TABLES = new Set(['cache', 'imports', 'rules'])
 
 export interface ConfigRow {
   default      : string
@@ -10,6 +10,10 @@ export interface ConfigRow {
   meaningNodes : InlineNode[]
   typeNodes    : InlineNode[]
 }
+
+// The sections whose keys the configuration reference renders as tables,
+// leaving `rules` to the per-rule facet tables.
+export type ConfigSection = Exclude<Section, 'rules'>
 
 // A rule's schema entry, the `anyOf` naming its sub-table and `default`
 // carrying the facet keys the rule ships with.
@@ -57,14 +61,15 @@ export function configRow(
 // Every key `[tool.prose]` accepts, grouped by the section it sits under, with
 // the rule facets deduplicated across the rules that share them.
 export function declaredKeys(schema: SchemaDocument): Record<Section, string[]> {
-  const rules  = schema.$defs.RuleConfigs.properties as Record<string, RuleDef>
-  const facets = Object.values(rules).flatMap(def => Object.keys(rulePropsOf(schema.$defs, def)))
+  const sections = sectionProps(schema)
+  const facets   = Object.values(ruleDefsOf(schema))
+    .flatMap(def => Object.keys(rulePropsOf(schema.$defs, def)))
 
   return {
-    cache   : Object.keys(schema.$defs.CacheConfig.properties),
-    imports : Object.keys(schema.$defs.ImportsConfig.properties),
+    cache   : Object.keys(sections.cache),
+    imports : Object.keys(sections.imports),
     rules   : [...new Set(facets)],
-    top     : Object.keys(schema.properties).filter(key => !NESTED_TABLES.has(key))
+    top     : Object.keys(sections.top)
   }
 }
 
@@ -80,11 +85,27 @@ export function proseSchema(root: string): SchemaDocument {
   return JSON.parse(runProse(root, ['schema'])) as SchemaDocument
 }
 
+// Each rule's schema entry, keyed by slug.
+export function ruleDefsOf(schema: SchemaDocument): Record<string, RuleDef> {
+  return schema.$defs.RuleConfigs.properties as Record<string, RuleDef>
+}
+
 // A rule's entry is `anyOf [bool, $ref]`, the ref naming the sub-table whose
 // properties carry each facet's type and description.
 export function rulePropsOf(defs: SchemaDefs, def: RuleDef): SchemaProps {
   const ref = def.anyOf?.map(entry => entry.$ref).find(Boolean)?.split('/').pop()
   return ref ? defs[ref].properties : {}
+}
+
+// The property table behind each rendered section, the top-level one dropping
+// the keys that open a nested table of their own.
+export function sectionProps(schema: SchemaDocument): Record<ConfigSection, SchemaProps> {
+  return {
+    cache   : schema.$defs.CacheConfig.properties,
+    imports : schema.$defs.ImportsConfig.properties,
+    top     : Object.fromEntries(
+      Object.entries(schema.properties).filter(([key]) => !NESTED_TABLES.has(key)))
+  }
 }
 
 // The budget newtypes carry no `type`, so their `$ref` name is what names the

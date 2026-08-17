@@ -17,7 +17,7 @@ export default defineLoader({
     const md     = await getRenderer()
     const schema = ruleSchema.proseSchema(root)
     const defs   = schema.$defs
-    const rules  = defs.RuleConfigs.properties as Record<string, ruleSchema.RuleDef>
+    const rules  = ruleSchema.ruleDefsOf(schema)
 
     // `enabled` is documented once, on `ToggleOnly`, whatever sub-table a
     // rule resolves through.

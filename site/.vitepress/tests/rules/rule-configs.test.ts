@@ -1,11 +1,10 @@
-import loader                        from '../../lib/rules/rule-configs.data'
-import { repoRoot }                  from '../../lib/shared/paths'
-import { proseSchema, type RuleDef } from '../../lib/shared/rule-schema'
+import loader                      from '../../lib/rules/rule-configs.data'
+import { repoRoot }                from '../../lib/shared/paths'
+import { proseSchema, ruleDefsOf } from '../../lib/shared/rule-schema'
 
 const configs = await loader.load([])
 
-const ruleDefs = proseSchema(repoRoot(import.meta.url))
-  .$defs.RuleConfigs.properties as Record<string, RuleDef>
+const ruleDefs = ruleDefsOf(proseSchema(repoRoot(import.meta.url)))
 
 describe('derived rule configs', () => {
   it('carries a row set for every rule in the schema', () => {

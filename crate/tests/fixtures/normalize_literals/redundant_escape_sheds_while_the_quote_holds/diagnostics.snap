@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/normalize_literals/redundant_escape_sheds_while_the_quote_holds/input.py
 ---

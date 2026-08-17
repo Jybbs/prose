@@ -71,7 +71,7 @@ export default defineLoader({
     const schema   = ruleSchema.proseSchema(root)
     const defs     = schema.$defs
     const index    = discoverRuleIndex(paths.rulesDir(import.meta.url))
-    const ruleDefs = defs.RuleConfigs.properties as Record<string, ruleSchema.RuleDef>
+    const ruleDefs = ruleSchema.ruleDefsOf(schema)
     const rules    = Object.entries(ruleDefs).map(([slug, def]): RuleControl => ({
       facets : facetsOf(def.default, md, ruleSchema.rulePropsOf(defs, def)),
       family : (index.get(slug)?.family ?? '') as RuleFamily | '',
