@@ -13,7 +13,7 @@ use ruff_python_ast::PySourceType;
 use ruff_source_file::{SourceFile, SourceFileBuilder};
 use tempfile::NamedTempFile;
 
-use super::{FileOutcome, Pass, RunSetup, has_format_change, notebook};
+use super::{FileOutcome, Pass, RunSetup, notebook};
 use crate::{
     cache::{Anchor, CacheEntry, CacheEntryRef, Rewrite},
     cli::exit_status::ExitStatus,
@@ -219,13 +219,14 @@ fn diagnose_only(
     notebook_index: Option<NotebookIndex>,
 ) -> FileOutcome {
     let file = source.source_file().clone();
-    let diagnostics = pipeline.diagnose(&source);
-    if validate
-        && has_format_change(&diagnostics)
-        && let Err(e) = pipeline.validate(source)
-    {
-        return failed(ExitStatus::ConfigError, e);
-    }
+    let diagnostics = if validate {
+        match pipeline.validated(source) {
+            Ok(diagnostics) => diagnostics,
+            Err(e) => return failed(ExitStatus::ConfigError, e),
+        }
+    } else {
+        pipeline.diagnose(&source)
+    };
     FileOutcome::Done {
         cached: false,
         diagnostics,
@@ -258,10 +259,10 @@ fn process_source(
 
 /// Runs the pipeline and assembles the outcome, deferring the rewrite
 /// to `rewrite`. The caller handles the diagnose-only pass, while an
-/// `AsWritten` anchor adds the as-written diagnostics an output format
-/// renders beside the rewrite. A rewritten notebook re-reads from the
-/// bytes that reached disk, so a write that lost its cell boundaries
-/// fails rather than being reported clean.
+/// `AsWritten` anchor takes the rewrite beside the as-written
+/// diagnostics an output format renders with it. A rewritten notebook
+/// re-reads from the bytes that reached disk, so a write that lost its
+/// cell boundaries fails rather than being reported clean.
 fn run_and_assemble(
     source: Source,
     pipeline: &Pipeline,
@@ -270,9 +271,12 @@ fn run_and_assemble(
     rewrite: impl FnOnce(&Source, &SourceFile) -> Rewrite,
 ) -> FileOutcome {
     let file = source.source_file().clone();
-    let diagnosed = matches!(anchor, Anchor::AsWritten).then(|| pipeline.diagnose(&source));
-    match pipeline.run(source) {
-        Ok((formatted, run_diagnostics)) => {
+    let run = match anchor {
+        Anchor::AsWritten => pipeline.run_as_written(source),
+        Anchor::Rewritten => pipeline.run(source),
+    };
+    match run {
+        Ok((formatted, diagnostics)) => {
             let rewrite = rewrite(&formatted, &file);
             if let Rewrite::Changed(kind) = &rewrite
                 && formatted.is_notebook()
@@ -285,7 +289,7 @@ fn run_and_assemble(
             }
             FileOutcome::Done {
                 cached: false,
-                diagnostics: diagnosed.unwrap_or(run_diagnostics),
+                diagnostics,
                 file,
                 notebook_index: notebook_index.map(Box::new),
                 rewrite,
