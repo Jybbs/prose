@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { useEventListener, useToggle } from '@vueuse/core'
-import { computed, onMounted, ref }    from 'vue'
+import { useToggle }     from '@vueuse/core'
+import { computed, ref } from 'vue'
 
 import FixtureNoChange    from './FixtureNoChange.vue'
 import FixturePairDoc     from './FixturePairDoc.vue'
 import FixturePairLanding from './FixturePairLanding.vue'
 import FixtureToggle      from './FixtureToggle.vue'
 
+import { useHashOpen }     from '../../../lib/composables/use-hash-open'
 import { fixtureEntry }    from '../../../lib/fixtures/entry'
 import { data as rules }   from '../../../lib/rules/rules.data'
 import type { FixtureTab } from '../../../lib/shared/fixture-tab'
 import { inlineCode }      from '../../../lib/shared/inline-code'
+import { ruleSlug }        from '../../../lib/shared/rule-slug'
 import InlineProse         from '../base/InlineProse.vue'
 
 const props = defineProps<{
@@ -27,19 +29,11 @@ const activeTab  = ref<FixtureTab>('after')
 const showToggle = computed(() => props.variant !== 'landing' && entry.hasToggle)
 const titleHtml  = computed(() => props.title ? inlineCode(props.title) : '')
 
-const ruleData = computed(() => rules.bySlug[props.rule.replaceAll('_', '-')] ?? null)
-const family   = computed(() => ruleData.value?.family ?? null)
+const family = computed(() => rules.bySlug[ruleSlug(props.rule)]?.family ?? null)
 
 const [isOpen, toggle] = useToggle(props.open === true)
 
-function syncWithHash(): void {
-  if (window.location.hash === `#${id.value}`) {
-    isOpen.value = true
-  }
-}
-
-onMounted(syncWithHash)
-useEventListener('hashchange', syncWithHash)
+useHashOpen(fragment => { if (fragment === id.value) isOpen.value = true })
 </script>
 
 <template>

@@ -1,9 +1,10 @@
-import { watchDebounced }   from '@vueuse/core'
-import { parse, stringify } from 'smol-toml'
-import { ref, toRaw }       from 'vue'
+import { watchDebounced } from '@vueuse/core'
+import { parse }          from 'smol-toml'
+import { ref, toRaw }     from 'vue'
 
 import type * as configSchema from '../sandbox/config-schema.data'
 import { errorMessage }       from '../shared/error-message'
+import { tomlText }           from '../shared/toml-text'
 
 type FacetValue = configSchema.FacetValue
 type ParsedRule = boolean | Record<string, FacetValue>
@@ -35,9 +36,8 @@ export function useSandboxConfig(
 
   function commit(next: ParsedConfig): void {
     if (next.rules && Object.keys(next.rules).length === 0) delete next.rules
-    const text        = stringify(next)
     parsed.value      = next
-    configToml.value  = text.trim() ? text : ''
+    configToml.value  = tomlText(next)
     configError.value = ''
   }
 

@@ -30,10 +30,4 @@ A three-link chain breaks at the default cap of `2` even where it fits the line.
 
 </template>
 
-<template #related-after>
-
-Every case above runs `stack-method-chains` on its own, so a link the author hand-wrapped, settling against [[reflow-calls]] before the chain is measured, reads on the [**Rule Composition**](/rules/composition/) page instead.
-
-</template>
-
 </RuleLayout>

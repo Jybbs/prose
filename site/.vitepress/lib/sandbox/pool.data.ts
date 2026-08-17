@@ -27,7 +27,8 @@ export default defineLoader({
     for (const { id, inputPath } of walker.walkFixtures(crate)) {
       const docs = walker.readFixtureDocs(inputPath)
       if (!docs?.sandbox) continue
-      cases.push({ id, source: fs.readFileSync(inputPath, 'utf8'), title: docs.title ?? id })
+      const title = walker.fixtureTitle(docs) ?? id
+      cases.push({ id, source: fs.readFileSync(inputPath, 'utf8'), title })
     }
     if (cases.length === 0) throw new Error('sandbox pool is empty: no fixture carries sandbox = true')
     return { cases }

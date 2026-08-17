@@ -9,7 +9,7 @@ interface RuleExample {
   title : string
 }
 
-interface RuleFixtureSet {
+export interface RuleFixtureSet {
   canonical : string
   examples  : readonly RuleExample[]
 }
@@ -34,7 +34,7 @@ export default defineLoader({
       const docs = walker.readFixtureDocs(inputPath)
       if (docs === undefined) continue
       const set   = (byRule[rule] ??= { canonical: null, examples: [] })
-      const title = docs.title?.trim()
+      const title = walker.fixtureTitle(docs)
       if (docs.canonical === true) {
         set.canonical = caseName
       } else if (docs.previewable === true && title) {
