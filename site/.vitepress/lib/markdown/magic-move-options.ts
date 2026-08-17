@@ -6,15 +6,13 @@ export type MagicMovePanel = typeof import('@shikijs/magic-move/vue').ShikiMagic
 // `ShikiMagicMovePrecompiled` re-syncs token keys at display time with
 // these same options, so the differ pair sits beside the render knobs
 // and boundary-straddling tokens slide rather than cross-fading. The
-// zero container delay resizes the panel concurrently with the moves, and
-// the easing carries each token's momentum without delaying its start.
-export function magicMoveOptions(duration: number, easing: string, stagger = 3) {
+// zero container delay resizes the panel concurrently with the moves.
+export function magicMoveOptions(duration: number, stagger = 3) {
   return {
     containerStyle  : false,
     delayContainer  : 0,
     delayMove       : 0,
     duration,
-    easing,
     enhanceMatching : true,
     splitTokens     : true,
     stagger
