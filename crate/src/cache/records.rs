@@ -107,6 +107,12 @@ pub struct CleanReport {
 }
 
 impl CleanReport {
+    /// Folds another pass's removals into this report.
+    pub(super) fn absorb(&mut self, other: Self) {
+        self.bytes += other.bytes;
+        self.entries += other.entries;
+    }
+
     /// Records one removed file of `bytes`.
     pub(super) fn record(&mut self, bytes: u64) {
         self.bytes += bytes;

@@ -24,6 +24,11 @@ pub use records::{
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        path::Path,
+        time::{Duration, SystemTime},
+    };
+
     use tempfile::TempDir;
 
     use super::key::CACHE_FORMAT_VERSION;
@@ -39,13 +44,33 @@ mod tests {
     const CONFIG_B: &str = "code-line-length = 100\n";
 
     fn cache_in(tmp: &TempDir, max_mib: u32) -> Cache {
-        let root = tmp.path().join("cache");
+        let store = tmp.path().join("cache");
+        let root = store.join("generation");
         std::fs::create_dir_all(&root).expect("creates");
         Cache {
             max_entries: usize::MAX,
             max_size_bytes: u64::from(max_mib) * 1024 * 1024,
             root,
+            store,
         }
+    }
+
+    /// Backdates `dir` past the sweep's grace window.
+    fn age(dir: &Path) {
+        let stale = SystemTime::now() - Duration::from_secs(60 * 60 * 24);
+        fs_err::File::open(dir)
+            .expect("opens the directory")
+            .set_modified(stale)
+            .expect("backdates the directory");
+    }
+
+    /// A generation directory beside the cache's own, holding one
+    /// entry-shaped file.
+    fn generation_beside(cache: &Cache, name: &str) -> std::path::PathBuf {
+        let dir = cache.store.join(name);
+        std::fs::create_dir_all(&dir).expect("creates");
+        std::fs::write(dir.join("cafebabe"), b"an earlier build's entry").expect("writes");
+        dir
     }
 
     fn entry(formatted: &str) -> CacheEntry {
@@ -201,9 +226,8 @@ mod tests {
         insert(&cache, &key_new, &entry("b = 2\n"));
 
         let tightened = Cache {
-            max_entries: usize::MAX,
             max_size_bytes: 0,
-            root: cache.root,
+            ..cache
         };
         let report = tightened.compact();
 
@@ -212,7 +236,68 @@ mod tests {
     }
 
     #[test]
-    fn compact_evicts_down_to_the_entry_cap() {
+    fn compact_evicts_below_the_low_water_mark() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        for i in 0..10 {
+            insert(
+                &cache,
+                &key(format!("x = {i}\n").as_bytes(), CONFIG_A, rules()),
+                &entry("a = 1\n"),
+            );
+        }
+
+        let capped = Cache {
+            max_entries: 5,
+            ..cache
+        };
+        capped.compact();
+
+        // A pass that stopped at the cap would leave five, putting the
+        // next insert back over it.
+        assert_eq!(capped.info().entries, 4);
+    }
+
+    #[test]
+    fn compact_holds_a_generation_touched_inside_the_grace_window() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        let live = generation_beside(&cache, "live");
+
+        let report = cache.compact();
+
+        assert_eq!(report.entries, 0);
+        assert!(live.exists());
+    }
+
+    #[test]
+    fn compact_prunes_a_generation_past_the_grace_window() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        let dead = generation_beside(&cache, "dead");
+        age(&dead);
+
+        let report = cache.compact();
+
+        assert_eq!(report.entries, 1);
+        assert!(!dead.exists());
+    }
+
+    #[test]
+    fn compact_removes_an_entry_left_directly_in_the_store() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        let flat = cache.store.join("deadbeef");
+        std::fs::write(&flat, b"a pre-generation entry").expect("writes");
+
+        let report = cache.compact();
+
+        assert_eq!(report.entries, 1);
+        assert!(!flat.exists());
+    }
+
+    #[test]
+    fn compact_holds_one_entry_at_the_smallest_cap() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
         insert(
@@ -246,6 +331,20 @@ mod tests {
         let report = cache.compact();
         assert_eq!(report.entries, 0);
         assert_eq!(report.bytes, 0);
+    }
+
+    #[test]
+    fn info_counts_entries_across_generations() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        insert(
+            &cache,
+            &key(b"x = 1\n", CONFIG_A, rules()),
+            &entry("a = 1\n"),
+        );
+        generation_beside(&cache, "older");
+
+        assert_eq!(cache.info().entries, 2);
     }
 
     #[test]

@@ -105,24 +105,23 @@ fn corpus() -> Vec<PathBuf> {
 
 /// Runs `first` then `second` over `text`, chaining a single-rule
 /// pipeline apiece so the seating is the caller's rather than the
-/// registry's. A rule outside `active` leaves `text` alone, so its
-/// stage is skipped. `None` when a stage declines the source.
+/// registry's. The first stage reads `alone`, which already holds every
+/// active rule's own run over `text`. A rule outside `active` leaves
+/// `text` alone, so its stage is skipped. `None` when a stage declines
+/// the source.
 fn in_order(
     probes: &Probes,
+    alone: &BTreeMap<RuleId, Source>,
     active: &BTreeSet<RuleId>,
     [first, second]: [RuleId; 2],
     text: &str,
 ) -> Option<Source> {
     let once = if active.contains(&first) {
-        Some(settled(&probes.solo[&first], text)?.ok()?)
+        Some(alone.get(&first)?)
     } else {
         None
     };
-    settled(
-        &probes.solo[&second],
-        once.as_ref().map_or(text, Source::text),
-    )?
-    .ok()
+    settled(&probes.solo[&second], once.map_or(text, Source::text))?.ok()
 }
 
 /// Folds `other` into `into`, keeping the earlier file for a defect
@@ -147,6 +146,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         return findings;
     }
 
+    let mut alone: BTreeMap<RuleId, Source> = BTreeMap::new();
     for &rule in &active {
         let solo = &probes.solo[&rule];
         let label = format!("`{rule}` alone");
@@ -154,6 +154,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
             continue;
         };
         reports_left(solo, &once, &label, &mut findings.unsettled, path);
+        alone.insert(rule, once);
     }
 
     let reachable: BTreeSet<usize> = active
@@ -173,7 +174,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         if reports_left(pair, &forward, &label, &mut findings.unsettled, path) {
             continue;
         }
-        let Some(reversed) = in_order(probes, &active, [later, earlier], text) else {
+        let Some(reversed) = in_order(probes, &alone, &active, [later, earlier], text) else {
             continue;
         };
         if pair.unsettled(&reversed).is_empty() || runs_behind(later.as_str(), earlier.as_str()) {

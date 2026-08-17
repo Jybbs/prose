@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: json
 input_file: tests/fixtures/bare_imports/exempt_aliased_false_flags_alias/input.py
 ---

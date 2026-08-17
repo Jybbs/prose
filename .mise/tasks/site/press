@@ -3,5 +3,6 @@
 #MISE description="Produce the static docs bundle at `site/.vitepress/dist`"
 #MISE depends=["rust:build", "site:bake", "wasm:pack"]
 #MISE dir="site"
+#MISE sources=["../.mise/config.toml", "../Cargo.lock", "../Cargo.toml", "../crate/Cargo.toml", "../crate/pyproject.toml", "../crate/src/**/*.rs", "../crate/tests/fixtures/**/*", "**/*", "!.vitepress/.temp/**/*", "!.vitepress/dist/**/*", "!.vitepress/tests/wasm/pkg/**/*", "!coverage/**/*", "!node_modules/**/*"]
 
 bunx vitepress build

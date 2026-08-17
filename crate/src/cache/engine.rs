@@ -11,14 +11,17 @@ use std::{
 use fs_err::DirEntry;
 use tempfile::NamedTempFile;
 
-use super::{CacheEntry, CacheEntryRef, CacheInfo, CacheKey, CleanReport};
+use super::{CacheEntry, CacheEntryRef, CacheInfo, CacheKey, CleanReport, key::generation};
 
 /// User-level on-disk cache.
 #[derive(Debug)]
 pub struct Cache {
     pub(super) max_entries: usize,
     pub(super) max_size_bytes: u64,
+    /// This build's generation directory, where every entry lands.
     pub(super) root: PathBuf,
+    /// The directory holding every generation, swept for dead ones.
+    pub(super) store: PathBuf,
 }
 
 impl Cache {
@@ -33,17 +36,19 @@ impl Cache {
     /// the platform exposes no cache directory, or any underlying IO
     /// error encountered while creating the directory.
     pub fn open() -> io::Result<Self> {
-        let root = cache_root().ok_or_else(|| {
+        let store = cache_root().ok_or_else(|| {
             io::Error::new(
                 io::ErrorKind::NotFound,
                 "no platform cache directory is available",
             )
         })?;
+        let root = store.join(generation());
         fs_err::create_dir_all(&root)?;
         Ok(Self {
             max_entries: usize::MAX,
             max_size_bytes: u64::MAX,
             root,
+            store,
         })
     }
 
@@ -62,12 +67,20 @@ impl Cache {
     }
 
     fn entries(&self) -> impl Iterator<Item = (DirEntry, Metadata)> + use<> {
-        fs_err::read_dir(&self.root)
+        entries_in(&self.root)
+    }
+
+    /// Every entry the store holds, across this build's generation and
+    /// any older one a sweep has not yet reclaimed.
+    fn stored(&self) -> impl Iterator<Item = (DirEntry, Metadata)> + use<> {
+        let generations: Vec<PathBuf> = fs_err::read_dir(&self.store)
             .into_iter()
             .flatten()
             .filter_map(Result::ok)
-            .filter(|e| is_entry_file(&e.path()))
-            .filter_map(|e| e.metadata().ok().map(|m| (e, m)))
+            .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
+            .map(|e| e.path())
+            .collect();
+        entries_in(&self.store).chain(generations.into_iter().flat_map(|d| entries_in(&d)))
     }
 
     pub(super) fn path_for(&self, key: &CacheKey) -> PathBuf {
@@ -95,13 +108,20 @@ impl Cache {
     /// be read.
     pub fn clean(&self) -> io::Result<CleanReport> {
         let mut report = CleanReport::default();
-        for entry in fs_err::read_dir(&self.root)? {
+        for entry in fs_err::read_dir(&self.store)? {
             let entry = entry?;
+            let path = entry.path();
+            if entry.file_type().is_ok_and(|t| t.is_dir()) {
+                report.absorb(sweep(&path));
+                let _ = fs_err::remove_dir(&path);
+                continue;
+            }
             let bytes = entry.metadata().map_or(0, |m| m.len());
-            if fs_err::remove_file(entry.path()).is_ok() {
+            if fs_err::remove_file(&path).is_ok() {
                 report.record(bytes);
             }
         }
+        fs_err::create_dir_all(&self.root)?;
         Ok(report)
     }
 
@@ -110,7 +130,7 @@ impl Cache {
     /// the space the filesystem allocated to it rather than its own
     /// length, so the total tracks what the directory costs on disk.
     pub fn compact(&self) -> CleanReport {
-        let mut report = CleanReport::default();
+        let mut report = self.prune_dead_generations();
         let mut files: Vec<(SystemTime, u64, DirEntry)> = self
             .entries()
             .map(|(e, m)| {
@@ -128,7 +148,7 @@ impl Cache {
         }
         files.sort_by_key(|(mtime, _, _)| *mtime);
         for (_, bytes, entry) in files {
-            if self.within_caps(total, count) {
+            if self.below_low_water(total, count) {
                 break;
             }
             match fs_err::remove_file(entry.path()) {
@@ -149,12 +169,64 @@ impl Cache {
         total <= self.max_size_bytes && count <= self.max_entries
     }
 
+    /// True where an eviction pass has driven the directory far enough
+    /// below its caps to stop. Stopping at the cap itself leaves the
+    /// next insert over it again, so every run pays a full walk and a
+    /// removal, whereas stopping below buys many runs of headroom for
+    /// one pass. The entry floor holds at one, so a cap of one still
+    /// keeps an entry.
+    fn below_low_water(&self, total: u64, count: usize) -> bool {
+        let count = u64::try_from(count).unwrap_or(u64::MAX);
+        let entries = u64::try_from(self.max_entries).unwrap_or(u64::MAX);
+        total <= low_water(self.max_size_bytes) && count <= low_water(entries).max(1)
+    }
+
+    /// Removes every generation directory but this build's, plus any
+    /// entry file left directly in the store by a build that predates
+    /// the generation layout. A directory touched within
+    /// [`GENERATION_GRACE`] is left alone, so a concurrently running
+    /// build of another version keeps its own entries.
+    fn prune_dead_generations(&self) -> CleanReport {
+        let mut report = CleanReport::default();
+        let now = SystemTime::now();
+        for entry in fs_err::read_dir(&self.store)
+            .into_iter()
+            .flatten()
+            .filter_map(Result::ok)
+        {
+            let path = entry.path();
+            if path == self.root {
+                continue;
+            }
+            let Ok(metadata) = entry.metadata() else {
+                continue;
+            };
+            if !metadata.is_dir() {
+                if is_entry_file(&path) && fs_err::remove_file(&path).is_ok() {
+                    report.record(on_disk(&metadata));
+                }
+                continue;
+            }
+            if metadata
+                .modified()
+                .ok()
+                .and_then(|m| now.duration_since(m).ok())
+                .is_none_or(|age| age < GENERATION_GRACE)
+            {
+                continue;
+            }
+            report.absorb(sweep(&path));
+            let _ = fs_err::remove_dir(&path);
+        }
+        report
+    }
+
     /// Reports the cache directory's path, entry count, and byte total,
     /// plus the oldest and newest entry mtimes when any entry exists.
     pub fn info(&self) -> CacheInfo {
-        self.entries().fold(
+        self.stored().fold(
             CacheInfo {
-                path: self.root.clone(),
+                path: self.store.clone(),
                 ..Default::default()
             },
             |mut acc, (_, m)| {
@@ -200,6 +272,21 @@ impl Cache {
 /// rewrites it.
 const MTIME_GRANULARITY: Duration = Duration::from_secs(60 * 60);
 
+/// How long a generation directory must sit untouched before a sweep
+/// reclaims it, leaving a concurrently running build of another
+/// version its own entries.
+const GENERATION_GRACE: Duration = Duration::from_secs(60 * 60);
+
+/// The fraction of each cap an eviction pass drives down to, as a
+/// multiplier over a divisor so the arithmetic stays in integers.
+const LOW_WATER_DIVISOR: u64 = 5;
+const LOW_WATER_MULTIPLIER: u64 = 4;
+
+/// The level `cap` is driven down to once an eviction pass starts.
+fn low_water(cap: u64) -> u64 {
+    cap / LOW_WATER_DIVISOR * LOW_WATER_MULTIPLIER
+}
+
 fn cache_root() -> Option<PathBuf> {
     std::env::var_os("PROSE_CACHE_DIR")
         .map(PathBuf::from)
@@ -222,6 +309,32 @@ fn on_disk(metadata: &Metadata) -> u64 {
 
 fn is_entry_file(path: &Path) -> bool {
     path.extension().is_none()
+}
+
+/// The entry files directly under `dir`, paired with their metadata.
+fn entries_in(dir: &Path) -> impl Iterator<Item = (DirEntry, Metadata)> + use<> {
+    fs_err::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .filter_map(Result::ok)
+        .filter(|e| is_entry_file(&e.path()))
+        .filter_map(|e| e.metadata().ok().filter(Metadata::is_file).map(|m| (e, m)))
+}
+
+/// Removes every file directly under `dir`, reporting what went.
+fn sweep(dir: &Path) -> CleanReport {
+    let mut report = CleanReport::default();
+    for entry in fs_err::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .filter_map(Result::ok)
+    {
+        let bytes = entry.metadata().map_or(0, |m| m.len());
+        if fs_err::remove_file(entry.path()).is_ok() {
+            report.record(bytes);
+        }
+    }
+    report
 }
 
 /// True where `file`'s recorded mtime is older than

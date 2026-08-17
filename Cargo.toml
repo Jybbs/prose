@@ -30,12 +30,20 @@ similar            = { opt-level = 2 }
 [profile.profiling]
 debug    = "full"
 inherits = "release"
+lto      = false
 strip    = "none"
 
 [profile.release]
-panic = "abort"
-strip = "symbols"
+codegen-units = 16
+lto           = "fat"
+panic         = "abort"
+strip         = "symbols"
+
+[profile.release.package]
+ruff_python_ast    = { codegen-units = 1 }
+ruff_python_parser = { codegen-units = 1 }
 
 [profile.wasm-release]
 inherits = "release"
+lto      = false
 strip    = "debuginfo"

@@ -2,6 +2,7 @@
 #MISE description="Run the docs-site `vitest` suite"
 #MISE depends=["rust:build"]
 #MISE dir="site"
+#MISE sources=["../.mise/config.toml", "../Cargo.lock", "../Cargo.toml", "../crate/Cargo.toml", "../crate/pyproject.toml", "../crate/src/**/*.rs", "../crate/tests/fixtures/**/*", "**/*", "!.vitepress/.temp/**/*", "!.vitepress/dist/**/*", "!.vitepress/tests/wasm/pkg/**/*", "!coverage/**/*", "!node_modules/**/*"]
 #MISE wait_for=["site:bake"]
 
 bunx vitest run --project docs "$@"

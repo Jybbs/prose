@@ -5,6 +5,25 @@ use crate::rule::RuleId;
 
 pub(super) const CACHE_FORMAT_VERSION: &str = "5";
 
+/// How many hex characters of the generation digest name the directory.
+const GENERATION_LEN: usize = 16;
+
+/// The directory segment this build's entries live under. A version
+/// bump lands on a fresh segment, so an earlier build's entries stay
+/// out of this build's walk and are reclaimed whole rather than aged
+/// out one eviction at a time.
+#[must_use]
+pub(super) fn generation() -> String {
+    generation_for(env!("CARGO_PKG_VERSION"), CACHE_FORMAT_VERSION)
+}
+
+fn generation_for(prose_version: &str, format_version: &str) -> String {
+    let mut hasher = blake3::Hasher::new();
+    framed(&mut hasher, prose_version.as_bytes());
+    framed(&mut hasher, format_version.as_bytes());
+    hasher.finalize().to_hex()[..GENERATION_LEN].to_owned()
+}
+
 /// BLAKE3 digest of
 /// `config_toml ++ rule_ids ++ prose_version ++ cache_format_version ++ source_bytes`,
 /// each variable-length input length-framed so no pair of inputs can

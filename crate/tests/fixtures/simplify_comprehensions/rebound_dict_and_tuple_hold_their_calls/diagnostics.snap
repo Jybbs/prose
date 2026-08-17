@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/simplify_comprehensions/rebound_dict_and_tuple_hold_their_calls/input.py
 ---
