@@ -1,13 +1,13 @@
 import MarkdownIt                from 'markdown-it'
 import type { MarkdownRenderer } from 'vitepress'
 
-import { glossaryPlugin }      from '../../lib/glossary/plugin'
-import { bodyLinkPlugin }      from '../../lib/markdown/body-link-plugin'
-import { plainTermsEnv }       from '../../lib/markdown/inert-env'
-import { proseMarkPlugin }     from '../../lib/markdown/prose-mark-plugin'
+import { glossaryPlugin }                          from '../../lib/glossary/plugin'
+import { bodyLinkPlugin }                          from '../../lib/markdown/body-link-plugin'
+import { plainTermsEnv }                           from '../../lib/markdown/inert-env'
+import { proseMarkPlugin }                         from '../../lib/markdown/prose-mark-plugin'
 import { renderInlineHtml, renderPlainInlineHtml } from '../../lib/markdown/renderer'
-import type { DiscoveredRule } from '../../lib/rules/discovery'
-import { ruleLinkPlugin }      from '../../lib/rules/link-plugin'
+import type { DiscoveredRule }                     from '../../lib/rules/discovery'
+import { ruleLinkPlugin }                          from '../../lib/rules/link-plugin'
 
 const render = (configure: (md: MarkdownIt) => void, src: string, env: object = {}): string => {
   const md = new MarkdownIt()
@@ -53,7 +53,8 @@ describe('glossaryPlugin', () => {
 
   it('emits an inert glossary anchor under the inertHtml env', () => {
     expect(render(md => md.use(plugin), 'an atom here', { inertHtml: true }))
-      .toContain('<a class="glossary-anchor underline-draw" data-term="atomic" href="/reference/glossary#atomic">atom</a>')
+      .toContain('<a class="glossary-anchor underline-draw" data-term="atomic" '
+               + 'href="/reference/glossary#atomic">atom</a>')
   })
 
   it('emits an inert glossary span when the entry has no href', () => {

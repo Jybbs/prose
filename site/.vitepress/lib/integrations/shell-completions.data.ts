@@ -4,31 +4,22 @@ import type { InlineNode } from '../markdown/inline-nodes'
 import * as renderer       from '../markdown/renderer'
 
 interface ShellCompletion {
-  caption  : string
-  codeHtml : string
-  command  : string
-  language : string
-  mono     : string
-  name     : string
+  caption   : string
+  codeHtml  : string
+  command   : string
+  language  : string
+  mono      : string
+  name      : string
   noteNodes : InlineNode[]
-  slug     : string
-  target   : string
+  slug      : string
+  target    : string
 }
 
 declare const data: readonly ShellCompletion[]
 export { data }
 
-interface ShellCompletionSource {
-  caption  : string
-  code     : string
-  command  : string
-  language : string
-  mono     : string
-  name     : string
-  note     : string
-  slug     : string
-  target   : string
-}
+type ShellCompletionSource =
+  Omit<ShellCompletion, 'codeHtml' | 'noteNodes'> & { code: string, note: string }
 
 const SOURCES: readonly ShellCompletionSource[] = [
   {

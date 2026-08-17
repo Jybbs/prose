@@ -40,6 +40,10 @@ jobs:
 
       matrix:
         include:
+          - command    : mise run lock:check
+            name       : 🪵 Lockfile
+          - command    : mise run repo:audit
+            name       : 🪷 Audit
           - command    : mise run site:typecheck
             name       : 🪡 Typecheck
           - command    : mise run site:lint

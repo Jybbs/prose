@@ -2,7 +2,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { ref }           from 'vue'
 
-import { useRuleCardNameSync }           from '../../lib/composables/use-rule-card-name-sync'
+import { useRuleCardNameSync }            from '../../lib/composables/use-rule-card-name-sync'
 import { domTest, mountSetup, nextFrame } from '../dom'
 
 const cardName = (scrollWidth: number): HTMLElement => {

@@ -1,8 +1,8 @@
-import { repoRoot, runProse } from '../../lib/shared/paths'
-import { declaredKeys }       from '../../lib/shared/rule-schema'
-import * as sources           from '../../lib/tokens/sources'
+import { repoRoot }                  from '../../lib/shared/paths'
+import { declaredKeys, proseSchema } from '../../lib/shared/rule-schema'
+import * as sources                  from '../../lib/tokens/sources'
 
-const token = (key: string, domain: sources.Domain): sources.Token =>
+const token = (domain: sources.Domain, key: string): sources.Token =>
   ({ blurbNodes: [], domain, href: '', key, sort: key })
 
 describe('stripPrefix', () => {
@@ -20,23 +20,23 @@ describe('stripPrefix', () => {
 describe('groupByDomain', () => {
   it('buckets by domain, both the buckets and their tokens sorted', () => {
     const tokens = [
-      token('z', 'config-key'), token('a', 'cli-flag'), token('y', 'config-key'), token('b', 'cli-flag')
+      token('config-key', 'z'), token('cli-flag', 'a'), token('config-key', 'y'), token('cli-flag', 'b')
     ]
     expect(sources.groupByDomain(tokens)).toEqual([
-      ['cli-flag',   [token('a', 'cli-flag'), token('b', 'cli-flag')]],
-      ['config-key', [token('y', 'config-key'), token('z', 'config-key')]]
+      ['cli-flag',   [token('cli-flag', 'a'), token('cli-flag', 'b')]],
+      ['config-key', [token('config-key', 'y'), token('config-key', 'z')]]
     ])
   })
 
   it('does not mutate its input', () => {
-    const input = [token('b', 'cli-flag'), token('a', 'cli-flag')]
+    const input = [token('cli-flag', 'b'), token('cli-flag', 'a')]
     sources.groupByDomain(input)
     expect(input.map(t => t.key)).toEqual(['b', 'a'])
   })
 })
 
 describe('config-key sources', () => {
-  const keys     = declaredKeys(JSON.parse(runProse(repoRoot(import.meta.url), ['schema'])))
+  const keys     = declaredKeys(proseSchema(repoRoot(import.meta.url)))
   const declared = new Set([
     ...keys.top,
     ...keys.rules,

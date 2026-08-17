@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { data as directives }     from '../../../lib/suppression/directives.data'
 import { useTabSelect }           from '../../../lib/composables/use-tab-select'
-import { type PartRole }          from '../../../lib/suppression/directive-parts'
+import type { PartRole }          from '../../../lib/suppression/directive-parts'
 import { SCOPE_META, scopeBands } from '../../../lib/suppression/scopes'
 import InlineProse                from '../base/InlineProse.vue'
 

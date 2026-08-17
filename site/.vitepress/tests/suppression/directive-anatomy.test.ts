@@ -9,10 +9,10 @@ vi.mock('../../lib/suppression/directives.data', () => ({
   data: [
     {
       effectNodes : [{ kind: 'text', text: 'Suppresses every rewrite for the file.' }],
-      example    : '# prose: off',
-      form       : '# prose: off',
-      id         : 'prose-off',
-      parts: [
+      example     : '# prose: off',
+      form        : '# prose: off',
+      id          : 'prose-off',
+      parts       : [
         { role : 'comment',   text : '#'      },
         { role : 'namespace', text : 'prose:' },
         { role : 'action',    text : 'off'    }
@@ -21,12 +21,12 @@ vi.mock('../../lib/suppression/directives.data', () => ({
     },
     {
       effectNodes : [{ kind: 'text', text: 'Opens a suppressed region.' }],
-      example    : '# fmt: off',
-      form       : '# fmt: off',
-      id         : 'fmt-off',
-      pairId     : 'fmt-on',
-      pairRole   : 'opens',
-      parts: [
+      example     : '# fmt: off',
+      form        : '# fmt: off',
+      id          : 'fmt-off',
+      pairId      : 'fmt-on',
+      pairRole    : 'opens',
+      parts       : [
         { role : 'comment',   text : '#'    },
         { role : 'namespace', text : 'fmt:' },
         { role : 'action',    text : 'off'  }
@@ -35,10 +35,10 @@ vi.mock('../../lib/suppression/directives.data', () => ({
     },
     {
       effectNodes : [{ kind: 'text', text: 'Only the listed lint rules skip the line.' }],
-      example    : 'x = 1  # prose: ignore[<rule>]',
-      form       : '# prose: ignore[<rule>, ...]',
-      id         : 'prose-ignore-rules',
-      parts: [
+      example     : 'x = 1  # prose: ignore[<rule>]',
+      form        : '# prose: ignore[<rule>, ...]',
+      id          : 'prose-ignore-rules',
+      parts       : [
         { role : 'comment',   text : '#'             },
         { role : 'namespace', text : 'prose:'        },
         { role : 'action',    text : 'ignore'        },
@@ -48,10 +48,10 @@ vi.mock('../../lib/suppression/directives.data', () => ({
     },
     {
       effectNodes : [{ kind: 'text', text: 'Keeps the dict entries in authored order.' }],
-      example    : 'config = {}  # prose: keep',
-      form       : '# prose: keep',
-      id         : 'prose-keep',
-      parts: [
+      example     : 'config = {}  # prose: keep',
+      form        : '# prose: keep',
+      id          : 'prose-keep',
+      parts       : [
         { role : 'comment',   text : '#'      },
         { role : 'namespace', text : 'prose:' },
         { role : 'action',    text : 'keep'   }

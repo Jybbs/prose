@@ -1,9 +1,9 @@
 import MarkdownIt from 'markdown-it'
 
-import { glossaryPlugin }         from '../../lib/glossary/plugin'
+import { glossaryPlugin }          from '../../lib/glossary/plugin'
 import { blockNodes, inlineNodes } from '../../lib/markdown/inline-nodes'
-import { proseMarkPlugin }        from '../../lib/markdown/prose-mark-plugin'
-import { ruleLinkPlugin }         from '../../lib/rules/link-plugin'
+import { proseMarkPlugin }         from '../../lib/markdown/prose-mark-plugin'
+import { ruleLinkPlugin }          from '../../lib/rules/link-plugin'
 
 const rules = new Map([
   ['align-equals', { family: 'alignment', href: '/rules/alignment/align-equals' }]

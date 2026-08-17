@@ -1,12 +1,12 @@
 import { defineLoader } from 'vitepress'
 
-import { glossary, type GlossaryEntry }   from './entries'
-import { entryHref }                      from './hrefs'
+import { glossary, type GlossaryEntry }       from './entries'
+import { entryHref }                          from './hrefs'
 import { getRenderer, renderPlainInlineHtml } from '../markdown/renderer'
-import { inlineNodes, type InlineNode }   from '../markdown/inline-nodes'
-import { discoverRuleIndex }              from '../rules/discovery'
-import { rulesDir }                       from '../shared/paths'
-import type { GlossaryFamily }            from '../shared/registries'
+import { inlineNodes, type InlineNode }       from '../markdown/inline-nodes'
+import { discoverRuleIndex }                  from '../rules/discovery'
+import { rulesDir }                           from '../shared/paths'
+import type { GlossaryFamily }                from '../shared/registries'
 
 const ruleIndex = discoverRuleIndex(rulesDir(import.meta.url))
 
@@ -35,7 +35,7 @@ export default defineLoader({
     const entries : Record<string, RenderedGlossaryEntry> = {}
 
     for (const [slug, entry] of Object.entries(glossary)) {
-      const families = entryFamilies(slug, entry)
+      const families = entryFamilies(entry, slug)
       entries[slug] = {
         aliases         : entry.aliases ?? [],
         definitionHtml  : renderPlainInlineHtml(md, entry.definition),
@@ -52,7 +52,7 @@ export default defineLoader({
   }
 })
 
-function entryFamilies(slug: string, entry: GlossaryEntry): readonly GlossaryFamily[] {
+function entryFamilies(entry: GlossaryEntry, slug: string): readonly GlossaryFamily[] {
   const declared = entry.families ?? []
   if (!entry.rule) {
     if (declared.length === 0) throw new Error(`Glossary entry "${slug}" declares no family`)

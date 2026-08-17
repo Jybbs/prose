@@ -1,11 +1,11 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { contentPages, isContentPage, matterPages } from '../shared/content-page'
-import { memoizeByPath }                            from '../shared/memoize-by-path'
-import * as registries                              from '../shared/registries'
-import { requireString }                            from '../shared/require-string'
-import { ruleRoute }                                from '../shared/routes'
+import * as contentPage  from '../shared/content-page'
+import { memoizeByPath } from '../shared/memoize-by-path'
+import * as registries   from '../shared/registries'
+import { requireString } from '../shared/require-string'
+import { ruleRoute }     from '../shared/routes'
 
 export interface DiscoveredRule {
   caption  : string
@@ -33,16 +33,16 @@ export const discoverRules = memoizeByPath((rulesDirectory): RuleDiscovery => {
   const strayPages : string[] = []
   for (const entry of fs.readdirSync(rulesDirectory, { withFileTypes: true })) {
     if (entry.isFile()) {
-      if (isContentPage(entry.name)) strayPages.push(entry.name)
+      if (contentPage.isContentPage(entry.name)) strayPages.push(entry.name)
       continue
     }
     const directory = path.join(rulesDirectory, entry.name)
     if (!families.has(entry.name)) {
-      strayPages.push(...contentPages(directory).map(f => `${entry.name}/${f}`))
+      strayPages.push(...contentPage.contentPages(directory).map(f => `${entry.name}/${f}`))
       continue
     }
     const family = entry.name as registries.RuleFamily
-    for (const { data: fm, slug } of matterPages(directory)) {
+    for (const { data: fm, slug } of contentPage.matterPages(directory)) {
       const caption = requireString(
         fm.caption,
         `Rule "${slug}" has invalid or missing caption: ${JSON.stringify(fm.caption)}`

@@ -20,9 +20,12 @@ const href = computedAsync(
     aria-label="Open this case in the sandbox"
   >
     <svg class="glyph" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M14 4h6v6" />
-      <path d="M20 4l-8 8" />
-      <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" />
+      <path d="M4 9h5" />
+      <path d="M14 9h6" />
+      <circle cx="11.5" cy="9" r="2.2" />
+      <path d="M4 15h9" />
+      <path d="M18 15h2" />
+      <circle cx="15.5" cy="15" r="2.2" />
     </svg>
   </a>
 </template>
