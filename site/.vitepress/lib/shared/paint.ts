@@ -8,10 +8,20 @@ export function nextPaint(): Promise<void> {
 }
 
 const DRAW_MS_FALLBACK = 450
+const EASING_FALLBACK  = 'cubic-bezier(0.32, 0.72, 0, 1)'
 
 // The squiggle-draw duration declared in `tokens.css`, read off the root
 // element, falling back when the custom property is absent.
 export function ruleDrawMs(): number {
   const declared = getComputedStyle(document.documentElement).getPropertyValue('--prose-rule-draw-ms')
   return Number(declared) || DRAW_MS_FALLBACK
+}
+
+// The morph easing declared in `tokens.css`, read off the root element,
+// falling back when the custom property is absent. The curve leaves rest
+// immediately and settles long, so a morph carries momentum without
+// holding the first frame back.
+export function ruleEasing(): string {
+  const declared = getComputedStyle(document.documentElement).getPropertyValue('--prose-ease-decelerate')
+  return declared.trim() || EASING_FALLBACK
 }
