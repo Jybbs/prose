@@ -40,6 +40,16 @@ pub(super) struct EmitterSummary {
     pub(super) files_with_diagnostics: usize,
     pub(super) lint_total: usize,
     pub(super) rules_fired: BTreeMap<RuleId, usize>,
+    pub(super) unstable: Vec<UnstableEntry>,
+}
+
+/// One file whose rewrite a second run would change, carried into the
+/// structured summaries so the surface a CI pipeline reads explains an
+/// escalated exit rather than leaving the cause on stderr alone.
+#[derive(serde::Serialize)]
+pub(super) struct UnstableEntry {
+    pub(super) file: String,
+    pub(super) rules: Vec<RuleId>,
 }
 
 /// One file's diagnostics paired with the `SourceFile` they range into

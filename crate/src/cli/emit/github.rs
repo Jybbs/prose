@@ -5,7 +5,7 @@ use std::io::{self, Write};
 use ruff_source_file::SourceFile;
 
 use super::{Emitter, EmitterSummary, Run, diagnostics};
-use crate::{diagnostics::Diagnostic, findings::line_columns};
+use crate::{diagnostics::Diagnostic, findings::line_columns, rule::render_slugs};
 
 pub(crate) struct Github;
 
@@ -14,10 +14,18 @@ impl Emitter for Github {
         &self,
         writer: &mut dyn Write,
         runs: &[Run<'_>],
-        _summary: &EmitterSummary,
+        summary: &EmitterSummary,
     ) -> io::Result<()> {
         for (file, _index, diag) in diagnostics(runs) {
             emit_one(writer, file, diag)?;
+        }
+        for entry in &summary.unstable {
+            writeln!(
+                writer,
+                "::warning file={}::prose produced output a second run would change ({})",
+                entry.file,
+                render_slugs(&entry.rules),
+            )?;
         }
         Ok(())
     }

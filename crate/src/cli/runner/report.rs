@@ -14,7 +14,7 @@ use crate::{
     cache::Rewrite,
     cli::{
         args::OutputFormat,
-        emit::{Emitter, EmitterSummary, Github, Json, Run, Sarif, Text},
+        emit::{Emitter, EmitterSummary, Github, Json, Run, Sarif, Text, UnstableEntry},
         exit_status::ExitStatus,
         output::{self, Presentation, Summary},
     },
@@ -100,14 +100,16 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
         .filter_map(|o| match o {
             FileOutcome::Done {
                 diagnostics,
+                file,
                 rewrite,
+                unstable,
                 ..
-            } => Some((diagnostics, rewrite)),
+            } => Some((diagnostics, file, rewrite, unstable)),
             FileOutcome::Failed(_) => None,
         })
         .fold(
             EmitterSummary::default(),
-            |mut summary, (diagnostics, rewrite)| {
+            |mut summary, (diagnostics, file, rewrite, unstable)| {
                 summary.files_visited += 1;
                 summary.files_changed += usize::from(file_changed(diagnostics, rewrite));
                 summary.files_with_diagnostics += usize::from(!diagnostics.is_empty());
@@ -115,6 +117,12 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
                 for diag in diagnostics {
                     summary.lint_total += usize::from(diag.severity.is_lint());
                     *summary.rules_fired.entry(diag.rule).or_default() += 1;
+                }
+                if let Some(rewrite) = unstable {
+                    summary.unstable.push(UnstableEntry {
+                        file: file.name().to_owned(),
+                        rules: rewrite.rules.clone(),
+                    });
                 }
                 summary
             },
