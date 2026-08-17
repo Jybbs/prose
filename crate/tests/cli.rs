@@ -1181,6 +1181,11 @@ fn no_args_prints_help_and_exits_clean() {
 }
 
 #[test]
+fn notebook_check_hit_renders_like_a_cold_run() {
+    assert_cache_hit_matches_miss("nb.ipynb", TWO_CODE_CELLS);
+}
+
+#[test]
 fn notebook_check_json_renders_cell_relative_with_cell_number() {
     let assert = run_fixture(
         "nb.ipynb",
@@ -1223,6 +1228,16 @@ fn notebook_check_survives_a_cache_round_trip() {
         stderr_utf8(&assert).contains("1 hits"),
         "the second run should rehydrate from the cache",
     );
+}
+
+#[test]
+fn notebook_check_text_renders_a_cell_header_off_a_hit() {
+    let (_dir, path) = fixture("nb.ipynb", TWO_CODE_CELLS);
+    let (mut warm, _cache) = warmed_by(&path, &["check"], 1);
+
+    let assert = warm.arg("check").arg(&path).assert().code(1);
+
+    assert_stdout_has(&assert, "cell 2");
 }
 
 #[test]

@@ -4,7 +4,7 @@
 
 use itertools::Itertools;
 use ruff_diagnostics::SourceMap;
-use ruff_notebook::{CellOffsets, Notebook, NotebookIndex};
+use ruff_notebook::{CellOffsets, Notebook};
 use ruff_source_file::SourceFileBuilder;
 
 use super::{
@@ -53,16 +53,6 @@ pub(super) fn process(text: String, name: String, pipeline: &Pipeline, pass: Pas
             format_args!("parse error in `{name}`: {e}"),
         ),
     }
-}
-
-/// Returns the concatenated code-cell source of a notebook paired with
-/// its cell index, the text a cache hit rebuilds its diagnostics file
-/// from and the translator it renders cell-relative positions through.
-pub(super) fn rehydrated(text: &str) -> Option<(String, NotebookIndex)> {
-    Notebook::from_source_code(text).ok().map(|notebook| {
-        let source = notebook.source_code().to_owned();
-        (source, notebook.into_index())
-    })
 }
 
 /// Builds the notebook rewrite, sliding the cell offsets against the
@@ -128,11 +118,6 @@ fn slice_cells(code: &str, offsets: &CellOffsets) -> Vec<String> {
 mod tests {
     use super::*;
     use crate::testing::notebook;
-
-    #[test]
-    fn rehydrated_returns_none_for_malformed_json() {
-        assert!(rehydrated("{not json").is_none());
-    }
 
     #[test]
     fn slice_cells_splits_each_cell_at_its_boundary() {

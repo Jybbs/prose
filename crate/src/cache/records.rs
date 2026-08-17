@@ -3,6 +3,7 @@
 use std::{path::PathBuf, time::SystemTime};
 
 use ruff_diagnostics::Fix;
+use ruff_notebook::NotebookIndex;
 use ruff_text_size::TextRange;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -22,6 +23,7 @@ use crate::{
 pub struct CacheEntry {
     #[serde(with = "elided_messages")]
     pub diagnostics: Vec<Diagnostic>,
+    pub notebook: Option<NotebookCells>,
     pub rewrite: Rewrite,
 }
 
@@ -32,6 +34,7 @@ pub struct CacheEntry {
 pub struct CacheEntryRef<'a> {
     #[serde(with = "elided_messages")]
     pub diagnostics: &'a [Diagnostic],
+    pub notebook: Option<NotebookCellsRef<'a>>,
     pub rewrite: &'a Rewrite,
 }
 
@@ -121,6 +124,27 @@ impl CleanReport {
         self.bytes += bytes;
         self.entries += 1;
     }
+}
+
+/// What a notebook entry carries beyond a module's: the concatenated
+/// code its diagnostics resolve against, and the cell index a report
+/// renders each position through. A hit reads both back rather than
+/// parsing the `.ipynb` JSON a second time. A notebook holding no
+/// Python cell carries its own JSON as `code` and no index, which is
+/// what the run itself produces for one.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct NotebookCells {
+    pub code: String,
+    pub index: Option<NotebookIndex>,
+}
+
+/// What an insert writes for a notebook, borrowing the code and index
+/// the run holds. Postcard encodes it byte for byte as
+/// [`NotebookCells`], so the two share one on-disk shape.
+#[derive(Debug, Serialize)]
+pub struct NotebookCellsRef<'a> {
+    pub code: &'a str,
+    pub index: Option<&'a NotebookIndex>,
 }
 
 /// What a mode records about the file's rewrite. `Skipped` marks a mode

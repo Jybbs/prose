@@ -5,7 +5,9 @@
 //! the pipeline runs, the Prose version, a private
 //! `CACHE_FORMAT_VERSION` that bumps independently when the on-disk
 //! entry shape changes, and the `Anchor` naming which buffer the
-//! entry's diagnostics resolve against. Entries live one file per key under
+//! entry's diagnostics resolve against. A notebook's entry also holds
+//! the code cells the run read, so a hit reports against them rather
+//! than parsing the `.ipynb` JSON again. Entries live one file per key under
 //! the platform's cache directory, with the path resolving through
 //! `PROSE_CACHE_DIR` → `dirs::cache_dir()`. Inserts write to a
 //! temporary sibling then `rename` onto the final path, so a
@@ -20,7 +22,8 @@ mod records;
 pub use engine::Cache;
 pub use key::{Anchor, CacheKey, CacheKeyPrefix};
 pub use records::{
-    CacheEntry, CacheEntryRef, CacheInfo, CleanReport, NotebookRewrite, Rewrite, RewriteKind,
+    CacheEntry, CacheEntryRef, CacheInfo, CleanReport, NotebookCells, NotebookCellsRef,
+    NotebookRewrite, Rewrite, RewriteKind,
 };
 
 #[cfg(test)]
@@ -74,6 +77,7 @@ mod tests {
                 rule: AlignEquals::SLUG,
                 ..format_diagnostic(range(0, 1))
             }],
+            notebook: None,
             rewrite: Rewrite::text(formatted.to_owned()),
         }
     }
@@ -94,6 +98,10 @@ mod tests {
             key,
             &CacheEntryRef {
                 diagnostics: &entry.diagnostics,
+                notebook: entry.notebook.as_ref().map(|cells| NotebookCellsRef {
+                    code: &cells.code,
+                    index: cells.index.as_ref(),
+                }),
                 rewrite: &entry.rewrite,
             },
         );
@@ -457,6 +465,10 @@ mod tests {
         let key = key(b"nb", CONFIG_A, rules());
         let original = CacheEntry {
             diagnostics: Vec::new(),
+            notebook: Some(NotebookCells {
+                code: "x = 1\n".to_owned(),
+                index: None,
+            }),
             rewrite: Rewrite::notebook(
                 vec!["x = 1\n".to_owned()],
                 vec!["x  = 1\n".to_owned()],
@@ -474,6 +486,7 @@ mod tests {
         let key = key(b"x = 1\n", CONFIG_A, rules());
         let original = CacheEntry {
             diagnostics: Vec::new(),
+            notebook: None,
             rewrite: Rewrite::Skipped,
         };
         insert(&cache, &key, &original);

@@ -17,7 +17,7 @@ use tempfile::NamedTempFile;
 
 use super::{FileOutcome, Pass, RunSetup, notebook};
 use crate::{
-    cache::{Anchor, CacheEntry, CacheEntryRef, Rewrite},
+    cache::{Anchor, CacheEntry, CacheEntryRef, NotebookCells, NotebookCellsRef, Rewrite},
     cli::exit_status::ExitStatus,
     pipeline::Pipeline,
     source::Source,
@@ -77,7 +77,7 @@ pub(super) fn process_path(
         .map(|c| (c, resolved.key_prefix.key_for(&bytes)));
     let hit = keyed.as_ref().and_then(|(c, k)| c.lookup(k));
     let bytes = match hit {
-        Some(entry) => match rehydrate(path, source_type, bytes, entry, pass) {
+        Some(entry) => match rehydrate(path, bytes, entry, pass) {
             Ok(outcome) => return outcome,
             // A `check` entry cannot serve a mode needing the rewrite,
             // so the miss branch runs against the bytes it hands back.
@@ -105,6 +105,8 @@ pub(super) fn process_path(
         Some((c, k)),
         FileOutcome::Done {
             diagnostics,
+            file,
+            notebook_index,
             rewrite,
             ..
         },
@@ -115,6 +117,10 @@ pub(super) fn process_path(
             k,
             &CacheEntryRef {
                 diagnostics,
+                notebook: source_type.is_ipynb().then(|| NotebookCellsRef {
+                    code: file.source_text(),
+                    index: notebook_index.as_deref(),
+                }),
                 rewrite,
             },
         );
@@ -248,16 +254,16 @@ pub(super) fn read_stdin<R: Read>(stdin: R) -> Result<String, FileOutcome> {
 
 /// Rebuilds the outcome `entry` records against the file's own
 /// `bytes`, which an ordinary module hands straight to the
-/// `SourceFile` rather than copying.
+/// `SourceFile` rather than copying. A notebook reads the cells the
+/// entry carries instead, leaving the JSON those bytes hold unparsed.
 ///
 /// # Errors
 ///
-/// Returns the bytes back where the entry cannot serve this mode,
-/// where they are not UTF-8, or where a notebook fails to re-read, so
-/// the caller runs the pipeline against them without a second read.
+/// Returns the bytes back where the entry cannot serve this mode or
+/// where they are not UTF-8, so the caller runs the pipeline against
+/// them without a second read.
 pub(super) fn rehydrate(
     path: &Path,
-    source_type: PySourceType,
     bytes: Vec<u8>,
     entry: CacheEntry,
     pass: Pass,
@@ -270,14 +276,12 @@ pub(super) fn rehydrate(
         (_, Rewrite::Skipped) => return Err(bytes),
         (_, rewrite) => rewrite,
     };
-    let text = String::from_utf8(bytes).map_err(FromUtf8Error::into_bytes)?;
-    let (source_text, notebook_index) = if source_type.is_ipynb() {
-        match notebook::rehydrated(&text) {
-            Some((code, index)) => (code, Some(index)),
-            None => return Err(text.into_bytes()),
-        }
-    } else {
-        (text, None)
+    let (source_text, notebook_index) = match entry.notebook {
+        Some(NotebookCells { code, index }) => (code, index),
+        None => (
+            String::from_utf8(bytes).map_err(FromUtf8Error::into_bytes)?,
+            None,
+        ),
     };
     let file = SourceFileBuilder::new(path.display().to_string(), source_text).finish();
     Ok(FileOutcome::Done {
@@ -432,6 +436,7 @@ mod tests {
 
     use rstest::rstest;
     use ruff_diagnostics::Edit;
+    use ruff_notebook::Notebook;
     use tempfile::TempDir;
 
     use super::super::{report::status_from_outcomes, resolve::ConfigResolver};
@@ -442,6 +447,19 @@ mod tests {
         rule::RuleId,
         testing::{GroupSentinelRule, breaks_parse, never_settles, parse, range},
     };
+
+    /// The cell index of a one-cell notebook, the translator a notebook
+    /// entry stores beside its code.
+    fn cell_index() -> NotebookIndex {
+        Notebook::from_source_code(
+            r#"{"cells": [{"cell_type": "code", "execution_count": null,
+                "metadata": {}, "outputs": [], "source": ["x = 1\n"]}],
+                "metadata": {"language_info": {"name": "python"}},
+                "nbformat": 4, "nbformat_minor": 5}"#,
+        )
+        .expect("notebook parses")
+        .into_index()
+    }
 
     #[test]
     fn check_validate_fails_on_unparseable_rule_output() {
@@ -506,16 +524,11 @@ mod tests {
     fn rehydrate_hands_the_bytes_back_for_a_skipped_entry() {
         let entry = CacheEntry {
             diagnostics: Vec::new(),
+            notebook: None,
             rewrite: Rewrite::Skipped,
         };
         assert_matches!(
-            rehydrate(
-                Path::new("a.py"),
-                PySourceType::Python,
-                b"x = 1\n".to_vec(),
-                entry,
-                Pass::Both
-            ),
+            rehydrate(Path::new("a.py"), b"x = 1\n".to_vec(), entry, Pass::Both),
             Err(bytes) if bytes == b"x = 1\n"
         );
     }
@@ -523,11 +536,11 @@ mod tests {
     fn rehydrate_marks_a_check_mode_outcome_skipped() {
         let entry = CacheEntry {
             diagnostics: Vec::new(),
+            notebook: None,
             rewrite: Rewrite::text("y = 1\n".to_owned()),
         };
         let outcome = rehydrate(
             Path::new("a.py"),
-            PySourceType::Python,
             b"x = 1\n".to_vec(),
             entry,
             Pass::Diagnose { validate: false },
@@ -542,18 +555,40 @@ mod tests {
     }
 
     #[test]
+    fn rehydrate_reads_a_notebook_entry_off_its_stored_cells() {
+        let entry = CacheEntry {
+            diagnostics: Vec::new(),
+            notebook: Some(NotebookCells {
+                code: "x = 1\n".to_owned(),
+                index: Some(cell_index()),
+            }),
+            rewrite: Rewrite::Skipped,
+        };
+
+        // The bytes are no notebook at all, so an outcome carrying the
+        // cells proves the hit never read them back as JSON.
+        let outcome = rehydrate(
+            Path::new("nb.ipynb"),
+            b"not a notebook".to_vec(),
+            entry,
+            Pass::Diagnose { validate: false },
+        );
+
+        assert_matches!(
+            outcome,
+            Ok(FileOutcome::Done { file, notebook_index: Some(index), .. })
+                if file.source_text() == "x = 1\n" && *index == cell_index()
+        );
+    }
+
+    #[test]
     fn rehydrate_serves_a_changed_rewrite_to_a_format_mode() {
         let entry = CacheEntry {
             diagnostics: Vec::new(),
+            notebook: None,
             rewrite: Rewrite::text("y = 1\n".to_owned()),
         };
-        let outcome = rehydrate(
-            Path::new("a.py"),
-            PySourceType::Python,
-            b"x = 1\n".to_vec(),
-            entry,
-            Pass::Both,
-        );
+        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n".to_vec(), entry, Pass::Both);
         assert_matches!(
             outcome,
             Ok(FileOutcome::Done { rewrite: Rewrite::Changed(RewriteKind::Text(text)), .. })
@@ -565,15 +600,10 @@ mod tests {
     fn rehydrate_serves_a_passed_over_rewrite_to_a_text_format() {
         let entry = CacheEntry {
             diagnostics: Vec::new(),
+            notebook: None,
             rewrite: Rewrite::PassedOver,
         };
-        let outcome = rehydrate(
-            Path::new("a.py"),
-            PySourceType::Python,
-            b"x = 1\n".to_vec(),
-            entry,
-            Pass::Rewrite,
-        );
+        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n".to_vec(), entry, Pass::Rewrite);
         assert_matches!(
             outcome,
             Ok(FileOutcome::Done {
@@ -587,15 +617,10 @@ mod tests {
     fn rehydrate_serves_an_unchanged_rewrite_as_no_edit() {
         let entry = CacheEntry {
             diagnostics: Vec::new(),
+            notebook: None,
             rewrite: Rewrite::Unchanged,
         };
-        let outcome = rehydrate(
-            Path::new("a.py"),
-            PySourceType::Python,
-            b"x = 1\n".to_vec(),
-            entry,
-            Pass::Both,
-        );
+        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n".to_vec(), entry, Pass::Both);
         assert_matches!(
             outcome,
             Ok(FileOutcome::Done {
