@@ -1,6 +1,6 @@
 # Rule Composition
 
-Where a per-rule page walks one rule's canonical case in isolation, each case here pairs a small Python source with the rule set it activates and shows the combined effect of those rules running together in [**Pipeline Order**](/reference/pipeline-order). They are the same `crate/tests/fixtures/composition/` set the binary's integration tests run against.
+Each case here pairs a small Python source with the rule set it activates and shows the combined effect of those rules running together in [**Pipeline Order**](/reference/pipeline-order). A rule page carries the cases its own rule takes part in, leaving this page as the one run through the whole set. The cards below render the previewable cases from `crate/tests/fixtures/composition/`, whereas the binary's integration tests run every case that directory holds.
 
 ## The Canonical Case
 
@@ -16,7 +16,7 @@ The rules fire against the same block, reparsing between each so every rule down
 
 <Fixture rule="composition" case="overflow_dict_constants_modernize_unions" />
 
-## All Cases
+## The Cases
 
 <CompositionCards />
 

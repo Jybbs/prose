@@ -19,10 +19,6 @@ export function fetchCacheDir(metaUrl: string): string {
   return cacheDirFrom(repoRoot(metaUrl), 'fetch')
 }
 
-export function fixturesDir(metaUrl: string): string {
-  return fixturesDirFrom(crateDir(metaUrl))
-}
-
 export function fixturesDirFrom(crate: string): string {
   return path.join(crate, 'tests', 'fixtures')
 }

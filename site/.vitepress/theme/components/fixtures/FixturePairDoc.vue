@@ -2,18 +2,21 @@
 import { useIntersectionObserver }                                   from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
-import CopyButton     from '../base/CopyButton.vue'
-import LintFlagPopper from '../rules/LintFlagPopper.vue'
+import CopyButton        from '../base/CopyButton.vue'
+import LintFlagPopper    from '../rules/LintFlagPopper.vue'
+import SandboxSeedButton from '../sandbox/SandboxSeedButton.vue'
 
-import { useMagicMove }     from '../../../lib/composables/use-magic-move'
-import { useReducedMotion } from '../../../lib/composables/use-reduced-motion'
-import { useSquiggleDraw }  from '../../../lib/composables/use-squiggle-draw'
-import type { FixtureTab }  from '../../../lib/shared/fixture-tab'
+import { useMagicMove }      from '../../../lib/composables/use-magic-move'
+import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
+import { useSquiggleDraw }   from '../../../lib/composables/use-squiggle-draw'
+import type { SavedSession } from '../../../lib/sandbox/session'
+import type { FixtureTab }   from '../../../lib/shared/fixture-tab'
 
 const props = defineProps<{
-  activeTab  : FixtureTab
-  inputHtml  : string
-  outputHtml : string
+  activeTab    : FixtureTab
+  inputHtml    : string
+  outputHtml   : string
+  sandboxSeed ?: SavedSession
 }>()
 
 const reducedMotion = useReducedMotion()
@@ -117,6 +120,7 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
       v-html="strippedHtml"
     />
     <CopyButton :source="activeCode" label="Copy code" />
+    <SandboxSeedButton v-if="sandboxSeed" :seed="sandboxSeed" />
     <span class="lang">python</span>
     <LintFlagPopper ref="popper" />
   </div>
