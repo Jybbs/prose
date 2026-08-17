@@ -8,6 +8,7 @@ export interface ProseWasm {
     config      : string
     diagnostics : string
     fired_rules : readonly string[]
+    unstable_rules : readonly string[]
     formatted   : string
   }
 }

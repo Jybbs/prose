@@ -16,7 +16,7 @@ import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
 const props   = defineProps<{ guide?: number | null, guideHue?: string, sandbox: ProseSandbox }>()
 const editing = defineModel<boolean>('editing', { default: false })
-const { diagnostics, error, formatted, source } = props.sandbox
+const { diagnostics, error, formatted, source, unstable } = props.sandbox
 
 const reducedMotion = useReducedMotion()
 const display       = useTemplateRef<HTMLElement>('display')
@@ -247,6 +247,13 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
       v-html="displayHtml"
     />
     <p v-if="error" class="code-panel-error">{{ error }}</p>
+    <p v-if="unstable.length" class="code-panel-unstable">
+      A second run would change this output ({{ unstable.join(', ') }}), which is a defect in
+      Prose itself.
+      <a href="https://github.com/Jybbs/prose/issues/new?template=unstable-output.yml" target="_blank" rel="noopener">
+        Report it</a>
+      with the source above.
+    </p>
     <LintFlagPopper ref="popper" />
   </section>
 </template>

@@ -101,6 +101,16 @@
   white-space : pre-wrap;
 }
 
+.code-panel-unstable {
+  margin      : 0;
+  padding     : 10px 18px;
+  border-top  : 1px solid var(--vp-c-divider);
+  color       : var(--vp-c-warning-1);
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--prose-text-sm);
+  white-space : pre-wrap;
+}
+
 .code-typewriter {
   color       : var(--vp-c-text-1);
   white-space : pre;
