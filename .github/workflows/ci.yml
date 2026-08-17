@@ -47,11 +47,13 @@ jobs:
           - command    : mise run rust:build
             name       : 🗜️ Build
             shared-key : prose-debug
+          - command    : mise run rust:test
+            name       : 🪚 Suite
+            shared-key : prose-debug
           - command    : mise run wasm:build
             name       : 🛶 Wasm
             shared-key : prose-wasm
-          - bun-lock   : site/bun.lock
-            command    : mise run wasm:smoke
+          - command    : mise run wasm:smoke
             name       : 🪃 Browser
             shared-key : prose-wasm
           - command    : mise run rust:upload
@@ -69,12 +71,6 @@ jobs:
           cache      : ${{ matrix.shared-key != '' }}
           save       : &no-save 'false'
           shared-key : ${{ matrix.shared-key }}
-
-      - name : Provision bun
-        uses : ./.github/actions/provision-bun
-        with:
-          cache-dependency-glob : ${{ matrix.bun-lock }}
-          save                  : *no-save
 
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}

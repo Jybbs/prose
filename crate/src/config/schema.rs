@@ -140,6 +140,8 @@ impl Default for BareImportsConfig {
 pub struct CacheConfig {
     /// Toggles the cache globally.
     pub enabled: bool,
+    /// The LRU eviction cap on the cache directory's entry count.
+    pub max_entries: u32,
     /// The LRU eviction cap on the cache directory.
     pub max_size_mib: u32,
 }
@@ -148,6 +150,7 @@ impl Default for CacheConfig {
     fn default() -> Self {
         Self {
             enabled: true,
+            max_entries: 10_000,
             max_size_mib: 100,
         }
     }

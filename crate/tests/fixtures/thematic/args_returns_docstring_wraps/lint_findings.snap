@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: json
 input_file: crate/tests/fixtures/thematic/args_returns_docstring_wraps/input.py
 ---

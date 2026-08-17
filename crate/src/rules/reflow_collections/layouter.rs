@@ -39,7 +39,7 @@ pub(super) struct Layouter<'a> {
     pub(super) max_atomics: usize,
     pub(super) newline: &'static str,
     pub(super) one_row: one_row::Settings<'a>,
-    pub(super) reservations: reserve::Columns,
+    pub(super) reservations: &'a reserve::Columns,
     pub(super) source: &'a Source,
     pub(super) tripping_dicts: Vec<TextRange>,
     pub(super) wrap_dict_entries: bool,

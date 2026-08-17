@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: json
 input_file: crate/tests/fixtures/normalize_comparisons/boolean_test_flagged_not_rewritten/input.py
 ---

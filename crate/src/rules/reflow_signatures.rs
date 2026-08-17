@@ -18,11 +18,12 @@ use crate::{
     config::Config,
     primitives::{
         call_keywords::module_call_params,
-        edit::{narrowed_replacement, singleton_groups, splice_parses},
+        edit::{narrowed_replacement, singleton_groups},
         inline::opening_width,
         layout::{Separator, explode_parens, item_indent},
         one_row,
         range::return_annotation_range,
+        splice::splice_parses,
         travel::{Landing, placed_block},
     },
     rule::{Rule, RuleId},

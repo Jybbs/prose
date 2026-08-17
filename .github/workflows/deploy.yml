@@ -62,11 +62,6 @@ jobs:
           save       : &no-save 'false'
           shared-key : ${{ matrix.shared-key }}
 
-      - &provision-bun
-        name : Provision bun
-        uses : ./.github/actions/provision-bun
-        with : { save: &save "${{ github.event_name != 'pull_request' }}" }
-
       - name : Install dependencies
         run  : mise run site:bake
 
@@ -88,7 +83,6 @@ jobs:
       - name : Restore the wasm module
         id   : wasm-module
         uses : ./.github/actions/restore-wasm
-        with : { save: *save }
 
       - name : Restore the wasm build cache
         if   : ${{ steps.wasm-module.outputs.cache-hit != 'true' }}
@@ -97,18 +91,23 @@ jobs:
           save-if    : 'false'
           shared-key : prose-wasm
 
-      - *provision-bun
-
       - name : Restore the OG card cache
-        uses : ./.github/actions/restore
+        id   : og-cards
+        uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          key          : og-cards-${{ runner.os }}-${{ github.sha }}
-          path         : .cache/og
+          key          : &og-key og-cards-${{ runner.os }}-${{ github.sha }}
+          path         : &og-path .cache/og
           restore-keys : og-cards-${{ runner.os }}-
-          save         : *save
 
       - name : Build the site and check internal links
         run  : mise run site:links
+
+      - name : Save the OG card cache
+        if   : ${{ github.event_name != 'pull_request' && steps.og-cards.outputs.cache-hit != 'true' }}
+        uses : actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          key  : *og-key
+          path : *og-path
 
       - name : Upload the site bundle
         uses : actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -169,7 +168,7 @@ jobs:
 
       - name : Provision uv
         uses : ./.github/actions/provision-uv
-        with : { save: *save }
+        with : { save: "${{ github.event_name != 'pull_request' }}" }
 
       - name : Summarize and gate
         env:

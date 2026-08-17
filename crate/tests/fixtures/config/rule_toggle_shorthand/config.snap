@@ -6,6 +6,7 @@ input_file: crate/tests/fixtures/config/rule_toggle_shorthand/input.toml
 Config {
     cache: CacheConfig {
         enabled: true,
+        max_entries: 10000,
         max_size_mib: 100,
     },
     code_line_length: Some(

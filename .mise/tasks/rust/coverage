@@ -2,6 +2,6 @@
 #MISE description="Generate the merged Rust LCOV report"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
-cargo llvm-cov clean --workspace
+cargo llvm-cov clean --profraw-only
 split_workspace cargo llvm-cov --no-report
 cargo llvm-cov report --lcov --output-path target/lcov.info

@@ -7,8 +7,8 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::{
-    Member, Settings, Widenings, emit::emit_group, is_held, members::baseline, retain_unheld,
-    shares_column, space_padding_edit,
+    Member, Settings, Widenings, emit::emit_group, is_held, retain_unheld, shares_column,
+    space_padding_edit,
 };
 use crate::{primitives::edit::apply_inline_edits, rule::RuleId, source::Source};
 
@@ -19,6 +19,9 @@ use crate::{primitives::edit::apply_inline_edits, rule::RuleId, source::Source};
 /// its group.
 pub(crate) struct AlignWalker<'a> {
     pub groups: Vec<Vec<Edit>>,
+    /// Every edit in `groups` again, ordered by start, so a prefix
+    /// lookup binary searches one slice rather than scanning each group.
+    placed: Vec<Edit>,
     pub rule: RuleId,
     settings: Settings,
     pub source: &'a Source,
@@ -30,6 +33,7 @@ impl<'a> AlignWalker<'a> {
     pub(crate) fn new(source: &'a Source, settings: Settings, rule: RuleId) -> Self {
         Self {
             groups: Vec::new(),
+            placed: Vec::new(),
             rule,
             settings,
             source,
@@ -62,21 +66,11 @@ impl<'a> AlignWalker<'a> {
 
     /// The display column where `member`'s left-hand side begins once
     /// the edits this walker has already recorded land on its line ahead
-    /// of the gap, falling back to the source baseline where none do.
+    /// of the gap. `apply_inline_edits` bounds `placed` to that prefix
+    /// itself, so a row no recorded edit touches reads its source width.
     fn placed_baseline(&self, member: Member) -> usize {
         let prefix = TextRange::new(member.line_start, member.gap.start());
-        let mut edits: Vec<Edit> = self
-            .groups
-            .iter()
-            .flatten()
-            .filter(|edit| prefix.contains_range(edit.range()))
-            .cloned()
-            .collect();
-        if edits.is_empty() {
-            return baseline(self.source, member);
-        }
-        edits.sort_by_key(Ranged::start);
-        apply_inline_edits(self.source, prefix, &edits)
+        apply_inline_edits(self.source, prefix, &self.placed)
             .width()
             .saturating_sub(member.width)
     }
@@ -188,6 +182,10 @@ impl<'a> AlignWalker<'a> {
     /// no-op pass emits no diagnostic.
     pub(crate) fn push_group(&mut self, edits: Vec<Edit>) {
         if !edits.is_empty() {
+            for edit in &edits {
+                let at = self.placed.partition_point(|e| e.start() <= edit.start());
+                self.placed.insert(at, edit.clone());
+            }
             self.groups.push(edits);
         }
     }

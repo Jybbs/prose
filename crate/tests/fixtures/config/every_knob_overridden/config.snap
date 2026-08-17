@@ -6,6 +6,7 @@ input_file: crate/tests/fixtures/config/every_knob_overridden/input.toml
 Config {
     cache: CacheConfig {
         enabled: false,
+        max_entries: 25000,
         max_size_mib: 250,
     },
     code_line_length: Some(
