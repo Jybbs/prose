@@ -6,6 +6,9 @@ resolver = "3"
 nonminimal_bool          = "warn"
 overly_complex_bool_expr = "warn"
 
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(coverage)"] }
+
 [workspace.package]
 edition      = "2024"
 license      = "MIT"

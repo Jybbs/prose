@@ -268,6 +268,14 @@ fn run_fixture(name: &str, source: &str, args: &[&str]) -> Assert {
     cmd.args(args).arg(&path).assert()
 }
 
+/// Runs `args` with `source` on stdin. The run reads a cache directory
+/// of its own, so a case never reaches the user-level cache a developer
+/// shares across projects.
+fn run_stdin(source: &str, args: &[&str]) -> Assert {
+    let (mut cmd, _cache_dir) = prose_isolated();
+    cmd.args(args).write_stdin(source).assert()
+}
+
 /// Two sibling projects holding identical `source`: `suppressed/x.py`
 /// under a config disabling `align-equals`, `flagged/y.py` under none.
 fn sibling_projects(parent: &TempDir, source: &str) -> (PathBuf, PathBuf) {
@@ -455,20 +463,12 @@ fn check_clean_summary_anchors_with_hyacinth() {
 
 #[test]
 fn check_dash_clean_exits_zero() {
-    prose()
-        .args(["check", "-"])
-        .write_stdin("x = 1\n")
-        .assert()
-        .success();
+    run_stdin("x = 1\n", &["check", "-"]).success();
 }
 
 #[test]
 fn check_dash_unaligned_exits_format_change() {
-    prose()
-        .args(["check", "-"])
-        .write_stdin(UNALIGNED)
-        .assert()
-        .code(1);
+    run_stdin(UNALIGNED, &["check", "-"]).code(1);
 }
 
 #[test]
@@ -599,19 +599,15 @@ fn check_respects_cache_disabled_in_pyproject() {
 
 #[test]
 fn check_stdin_clean_exits_zero() {
-    prose()
-        .args(["check", "--stdin"])
-        .write_stdin("x = 1\n")
-        .assert()
-        .success();
+    run_stdin("x = 1\n", &["check", "--stdin"]).success();
 }
 
 #[test]
 fn check_stdin_resolves_config_from_the_cwd() {
     let project = suppressed_project();
+    let (mut cmd, _cache_dir) = prose_isolated();
 
-    prose()
-        .args(["check", "--stdin"])
+    cmd.args(["check", "--stdin"])
         .write_stdin(UNALIGNED)
         .current_dir(project.path())
         .assert()
@@ -620,11 +616,7 @@ fn check_stdin_resolves_config_from_the_cwd() {
 
 #[test]
 fn check_stdin_unaligned_exits_format_change() {
-    prose()
-        .args(["check", "--stdin"])
-        .write_stdin(UNALIGNED)
-        .assert()
-        .code(1);
+    run_stdin(UNALIGNED, &["check", "--stdin"]).code(1);
 }
 
 #[test]
@@ -788,30 +780,21 @@ fn emitters_render_shrinking_literals_without_aborting(
 
 #[test]
 fn format_dash_keeps_escape_bytes_in_piped_stdout() {
-    prose()
-        .args(["format", "-"])
-        .write_stdin(ESCAPE_IN_LITERAL)
-        .assert()
+    run_stdin(ESCAPE_IN_LITERAL, &["format", "-"])
         .success()
         .stdout(ESCAPE_ALIGNED);
 }
 
 #[test]
 fn format_dash_prints_canonical_source_verbatim() {
-    prose()
-        .args(["format", "-"])
-        .write_stdin("x = 1\n")
-        .assert()
+    run_stdin("x = 1\n", &["format", "-"])
         .success()
         .stdout("x = 1\n");
 }
 
 #[test]
 fn format_dash_rewrites_unaligned_stdin_to_stdout() {
-    prose()
-        .args(["format", "-"])
-        .write_stdin(UNALIGNED)
-        .assert()
+    run_stdin(UNALIGNED, &["format", "-"])
         .success()
         .stdout("AB = 1\nx  = 2\n");
 }
@@ -969,11 +952,7 @@ fn format_rewrites_after_check_populated_the_cache() {
 
 #[test]
 fn format_stdin_diff_keeps_escape_bytes_in_a_plain_patch() {
-    let assert = prose()
-        .args(["format", "--stdin", "--diff"])
-        .write_stdin(ESCAPE_IN_LITERAL)
-        .assert()
-        .code(1);
+    let assert = run_stdin(ESCAPE_IN_LITERAL, &["format", "--stdin", "--diff"]).code(1);
 
     assert_patch_keeps_escape(&assert);
 }
@@ -981,9 +960,9 @@ fn format_stdin_diff_keeps_escape_bytes_in_a_plain_patch() {
 #[test]
 fn format_stdin_resolves_config_from_the_cwd() {
     let project = suppressed_project();
+    let (mut cmd, _cache_dir) = prose_isolated();
 
-    prose()
-        .args(["format", "--stdin"])
+    cmd.args(["format", "--stdin"])
         .write_stdin(UNALIGNED)
         .current_dir(project.path())
         .assert()
@@ -1201,39 +1180,39 @@ fn notebook_non_python_is_passed_over() {
 
 #[test]
 fn notebook_non_python_through_stdin_is_echoed_verbatim() {
-    let assert = prose()
-        .args(["format", "--stdin", "--stdin-filename", "x.ipynb"])
-        .write_stdin(NON_PYTHON)
-        .assert()
-        .success();
+    let assert = run_stdin(
+        NON_PYTHON,
+        &["format", "--stdin", "--stdin-filename", "x.ipynb"],
+    )
+    .success();
 
     assert_eq!(stdout_utf8(&assert), NON_PYTHON);
 }
 
 #[test]
 fn notebook_stdin_diff_numbers_by_absolute_cell() {
-    let assert = prose()
-        .args([
+    let assert = run_stdin(
+        ALIGNS,
+        &[
             "format",
             "--diff",
             "--stdin",
             "--stdin-filename",
             "nb.ipynb",
-        ])
-        .write_stdin(ALIGNS)
-        .assert()
-        .code(1);
+        ],
+    )
+    .code(1);
 
     assert_stdout_has(&assert, "cell 2");
 }
 
 #[test]
 fn notebook_stdin_filename_selects_the_notebook_type() {
-    let assert = prose()
-        .args(["format", "--stdin", "--stdin-filename", "x.ipynb"])
-        .write_stdin(ALIGNS)
-        .assert()
-        .success();
+    let assert = run_stdin(
+        ALIGNS,
+        &["format", "--stdin", "--stdin-filename", "x.ipynb"],
+    )
+    .success();
 
     assert_eq!(
         json(&stdout_utf8(&assert))["cells"][1]["source"][0],

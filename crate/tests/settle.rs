@@ -274,6 +274,7 @@ fn subset(config: &Config, rules: &[RuleId]) -> Pipeline {
 }
 
 #[test]
+#[cfg_attr(coverage, ignore = "the sweep runs uninstrumented in its own row")]
 fn every_rule_subset_settles_and_declares_its_seating() {
     let files = corpus();
     assert!(!files.is_empty(), "the corpus holds no `.py` files");
