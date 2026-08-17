@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: json
 input_file: tests/fixtures/reassigned_constants/allowlisted_name_passes/input.py
 ---

@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/reflow_imports/commented_import_holds_its_line/input.py
 ---

@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/banner_keeps_band_within_section/input.py
 ---

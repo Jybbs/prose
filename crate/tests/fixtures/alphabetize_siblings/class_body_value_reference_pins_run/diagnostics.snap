@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize_siblings/class_body_value_reference_pins_run/input.py
 ---

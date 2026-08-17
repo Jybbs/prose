@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/reassigned_constants/write_once_constant_passes/input.py
 ---

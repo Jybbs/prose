@@ -27,6 +27,7 @@ pub(crate) mod reserve;
 pub(crate) mod scope;
 pub(crate) mod sections;
 pub(crate) mod slots;
+pub(crate) mod splice;
 pub(crate) mod tiering;
 pub(crate) mod tokens;
 pub(crate) mod travel;

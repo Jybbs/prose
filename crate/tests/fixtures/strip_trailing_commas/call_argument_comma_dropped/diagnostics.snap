@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/strip_trailing_commas/call_argument_comma_dropped/input.py
 ---

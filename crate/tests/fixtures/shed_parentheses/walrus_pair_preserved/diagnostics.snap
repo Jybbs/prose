@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/shed_parentheses/walrus_pair_preserved/input.py
 ---

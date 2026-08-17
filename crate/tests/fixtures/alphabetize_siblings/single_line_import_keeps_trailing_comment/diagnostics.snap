@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize_siblings/single_line_import_keeps_trailing_comment/input.py
 ---

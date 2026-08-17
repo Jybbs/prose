@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/miscased_constants/read_context_splits_type_from_data/input.py
 ---

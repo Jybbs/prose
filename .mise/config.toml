@@ -7,7 +7,6 @@ WASM_ARTIFACT = "target/wasm32-unknown-unknown/wasm-release/prose_wasm.wasm"
 auto_install                        = false
 idiomatic_version_file_enable_tools = ["node"]
 python.uv_venv_auto                 = "create|source"
-task.source_freshness_hash_contents = true
 
 [tools]
 "aqua:lycheeverse/lychee"      = "0.24.2"

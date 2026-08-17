@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/band_constants/comment_at_a_foreign_indent_holds_its_slot/input.py
 ---

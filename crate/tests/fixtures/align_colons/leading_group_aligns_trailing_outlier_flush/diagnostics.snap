@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/leading_group_aligns_trailing_outlier_flush/input.py
 ---

@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/wrap_docstrings/comment_led_example_verbatim/input.py
 ---

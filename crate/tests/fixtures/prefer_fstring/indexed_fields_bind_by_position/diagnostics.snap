@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/prefer_fstring/indexed_fields_bind_by_position/input.py
 ---

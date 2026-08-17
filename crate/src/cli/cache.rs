@@ -29,7 +29,9 @@ pub(crate) fn compact<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {
         Err(s) => return Ok(s),
     };
     let cache = match open_or_status() {
-        Ok(c) => c.with_max_size_mib(config.cache.max_size_mib),
+        Ok(c) => c
+            .with_max_entries(config.cache.max_entries)
+            .with_max_size_mib(config.cache.max_size_mib),
         Err(s) => return Ok(s),
     };
     write_report(stdout, cache.compact())?;

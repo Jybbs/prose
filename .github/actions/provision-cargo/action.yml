@@ -10,6 +10,10 @@ inputs:
     default     : true
     description : When `false` the Swatinem cache step is skipped and the mise archive is not written back.
 
+  cache-targets:
+    default     : true
+    description : When `false` only the Cargo home is cached. The `--zig` wheel rows build in a container whose fingerprints never match a host-built `target/`.
+
   save:
     default     : true
     description : When `false` the caches restore but never save. `warm.yml` is the only caller that saves.
@@ -26,7 +30,6 @@ runs:
       shell : bash
       run   : |
         {
-          echo "CARGO_PROFILE_DEV_DEBUG=line-tables-only"
           echo "CARGO_TERM_COLOR=always"
           echo "MISE_RUSTUP_HOME=$HOME/.local/share/mise/rustup"
         } >> "$GITHUB_ENV"
@@ -41,5 +44,7 @@ runs:
       if   : ${{ inputs.cache != 'false' }}
       uses : Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
       with:
-        save-if    : ${{ inputs.save != 'false' }}
-        shared-key : ${{ inputs.shared-key }}
+        cache-targets : ${{ inputs.cache-targets }}
+        key           : ${{ hashFiles('Cargo.toml') }}
+        save-if       : ${{ inputs.save != 'false' }}
+        shared-key    : ${{ inputs.shared-key }}

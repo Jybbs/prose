@@ -256,10 +256,9 @@ pub(super) fn collect_leaf_edits(
 /// parameter takes that parameter's position, and any other entry
 /// sinks below the signature's, alphabetized by name.
 fn entry_key<'e>(name: &'e str, signature: Option<&[&str]>) -> (usize, &'e str) {
-    match signature.and_then(|names| names.iter().position(|&n| n == name)) {
-        Some(i) => (i, ""),
-        None => (usize::MAX, name),
-    }
+    signature
+        .and_then(|names| names.iter().position(|&n| n == name))
+        .map_or((usize::MAX, name), |i| (i, ""))
 }
 
 /// Returns the parameter names in the order the rule leaves the

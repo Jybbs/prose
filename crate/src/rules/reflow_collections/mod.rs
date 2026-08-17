@@ -86,7 +86,7 @@ impl Rule for ReflowCollections {
             })
         });
         let targets = module_call_params(source);
-        let reservations = self.reservations.columns(source);
+        let reservations = source.columns(self.reservations);
         let mut visitor = Layouter {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
@@ -94,7 +94,7 @@ impl Rule for ReflowCollections {
             max_atomics: self.max_atomics,
             newline: source.newline_str(),
             one_row: self.one_row.against(&targets),
-            reservations,
+            reservations: &reservations,
             source,
             tripping_dicts,
             wrap_dict_entries: self.wrap_dict_entries,

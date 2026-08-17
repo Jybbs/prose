@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/alphabetize_siblings/multi_line_member_holds_the_packed_swap/input.py
 ---

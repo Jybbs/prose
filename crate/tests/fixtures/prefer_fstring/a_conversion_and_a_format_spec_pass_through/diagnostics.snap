@@ -1,5 +1,5 @@
 ---
-source: crate/tests/diagnostics.rs
+source: crate/tests/integration.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/prefer_fstring/a_conversion_and_a_format_spec_pass_through/input.py
 ---

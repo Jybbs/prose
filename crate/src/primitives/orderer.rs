@@ -8,6 +8,7 @@
 use std::{borrow::Cow, ops::Range};
 
 use ruff_diagnostics::Edit;
+use ruff_python_parser::parse_module;
 use ruff_python_trivia::{CommentRanges, PythonWhitespace};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -16,9 +17,10 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     primitives::{
         comments::bound_block_start,
-        edit::{any_owned, narrowed_replacement, splice_parses},
+        edit::{any_owned, narrowed_replacement},
         range::blocks_span,
         slots::slot_runs,
+        splice::{reparse_window, splice_parses},
     },
     source::Source,
 };
@@ -323,9 +325,14 @@ where
         &[],
         last_member_has_comma(source, items),
     );
-    let module = source.module_range();
     if assembled == source.slice(span)
-        || !splice_parses(source, module, span, &assembled, str::parse::<Source>)
+        || !splice_parses(
+            source,
+            reparse_window(source, span),
+            span,
+            &assembled,
+            parse_module,
+        )
     {
         return (Cow::Borrowed(source.slice(span)), span);
     }

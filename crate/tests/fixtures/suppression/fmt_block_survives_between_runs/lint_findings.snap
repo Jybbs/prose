@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: json
 input_file: tests/fixtures/suppression/fmt_block_survives_between_runs/input.py
 ---

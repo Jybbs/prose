@@ -1,0 +1,6 @@
+[tools]
+"aqua:sharkdp/hyperfine" = "1.20.0"
+"cargo:cargo-bloat"      = "0.12.1"
+"cargo:cargo-llvm-lines" = "0.4.46"
+"cargo:samply"           = "0.13.1"
+"cargo:twiggy"           = "0.8.0"

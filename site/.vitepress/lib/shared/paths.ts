@@ -48,7 +48,7 @@ export function rulesDir(metaUrl: string): string {
 function resolveProseBinary(root: string): string {
   const binary = proseBinaryPath(root)
   if (fs.existsSync(binary)) return binary
-  throw new Error(`prose binary not found at ${binary}. Run \`mise run bin\` first.`)
+  throw new Error(`prose binary not found at ${binary}. Run \`mise run rust:build\` first.`)
 }
 
 export function runProse(

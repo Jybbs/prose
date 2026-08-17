@@ -1,5 +1,5 @@
 ---
-source: tests/diagnostics.rs
+source: tests/integration.rs
 expression: json
 input_file: tests/fixtures/bare_imports/raising_max_attributes_flags_wide/input.py
 ---
