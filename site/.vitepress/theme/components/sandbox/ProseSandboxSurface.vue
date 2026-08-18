@@ -10,9 +10,9 @@ import type { ProseSandbox }     from '../../../lib/composables/use-prose-sandbo
 import { useReducedMotion }      from '../../../lib/composables/use-reduced-motion'
 import { useSquiggleDraw }       from '../../../lib/composables/use-squiggle-draw'
 import { lintDecorations }       from '../../../lib/markdown/lint-decorations'
+import { REPO_URL }              from '../../../lib/shared/constants'
 import { highlight }             from '../../../lib/shared/highlight'
 import { latestRun }             from '../../../lib/shared/latest-run'
-import { REPO_URL }              from '../../../lib/shared/constants'
 import { externalAttrs }         from '../../../lib/shared/links'
 import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
@@ -30,9 +30,9 @@ const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('ed
 const popper        = useTemplateRef<InstanceType<typeof LintFlagPopper>>('popper')
 const surface       = useTemplateRef<HTMLElement>('surface')
 
+const animate     = ref(false)
 const displayHtml = ref('')
 const draft       = ref('')
-const morphKey    = ref(0)
 const morphing    = ref(false)
 const restHeight  = ref(0)
 const step        = ref(0)
@@ -41,10 +41,10 @@ const { drawSquiggles, undrawn } = useSquiggleDraw()
 
 const { duration, morphOptions, morphSteps, panel, precompile, steps } = useMagicMove(0)
 
-// The morph's renderer empties its container and measures the box before
-// painting the first step, so the panel would fall to the surfaces grid's
-// `min-height` for that layout and shrink the document with it. The outgoing
-// height floors the panel until the step flips, from where the container's
+// The renderer clears its container at mount and measures the box before
+// painting the first step, so on the first morph the panel would fall to the
+// surfaces grid's `min-height` and shrink the document with it. The outgoing
+// height floors the section until the step flips, from where the container's
 // own height animation drives it.
 const heldHeight = computed(() =>
   morphing.value && step.value === 0 ? `${restHeight.value}px` : undefined)
@@ -52,27 +52,25 @@ const heldHeight = computed(() =>
 const ruleCodes = computed(() => new Set(diagnostics.value.map(finding => finding.code)))
 
 const watchdog = useTimeoutFn(
-  () => { if (morphing.value) endMorph() },
+  () => {
+    if (!morphing.value || step.value === 0) return
+    pendingEnds = 0
+    settleMorph()
+  },
   () => duration.value + WATCHDOG_GRACE_MS,
   { immediate: false }
 )
 
 const run = latestRun()
 
-let previous   = ''
-let shownRules = new Set<string>()
+let pendingEnds = 0
+let previous    = ''
+let shownRules  = new Set<string>()
 
 // Renders the settled output as highlighted HTML carrying the lint
 // squiggles, then morphs from the prior output when motion is allowed and
-// the surface is not mid-edit. Each transition mounts a fresh magic-move
-// instance keyed by `morphKey`, so it measures its rest state before the
-// step flip animates it, matching the fixture morph. The settled html
-// lands on the static display only under the morph's cover, so the pane
-// never flashes the end state before the tokens slide. A newer change
-// supersedes the render in flight, which abandons rather than racing on
-// the shared morph state, and a path that publishes to the static display
-// clears `morphing` rather than leaving a stale morph mounted. A watchdog
-// restores the static display if the `@end` event is ever missed.
+// the surface is not mid-edit. One magic-move panel serves every
+// transition, swapped to the incoming rest state before the step flips.
 async function render(next: string): Promise<void> {
   const superseded = run.begin()
   const from       = previous
@@ -103,32 +101,38 @@ async function render(next: string): Promise<void> {
   const committed = await precompile(from.trimEnd(), next.trimEnd())
   if (superseded()) return
   restHeight.value = Math.ceil(surface.value?.getBoundingClientRect().height ?? 0)
+  animate.value    = false
   steps.value      = committed
   step.value       = 0
-  morphKey.value  += 1
   morphing.value   = true
   // The FLIP morph measures the rest state against the painted DOM, so the
-  // fresh instance needs a real frame to lay the "from" tokens out before
+  // revealed panel needs a real frame to lay the "from" tokens out before
   // the step flip. A microtask alone leaves both measurements in one frame
-  // and the morph degrades to a jump cut. Mounting with `animate` on runs
-  // the rest state through a real render, so the flip is no longer the
-  // renderer's first and its container-height transition engages.
+  // and the morph degrades to a jump cut.
   await nextTick()
   await nextPaint()
   if (superseded()) return
   commit(html, next)
-  step.value = 1
+  pendingEnds  += 1
+  animate.value = true
+  step.value    = 1
   watchdog.start()
 }
 
 // The morph settles onto the static display, so the squiggles draw back in
-// the way the fixture cards do rather than snapping to full length. The
-// mount's rest-state render emits its own `end` before the flip, which the
-// step guard drops.
-function endMorph(): void {
-  if (step.value === 0) return
+// the way the fixture cards do rather than snapping to full length.
+function settleMorph(): void {
   morphing.value = false
   drawSquiggles()
+}
+
+// A morph superseded mid-flight still emits `end` when the successor's
+// render force-resolves its pending animations, and on a persistent panel
+// that stale `end` lands on the live component, so only the last expected
+// `end` settles the surface.
+function endMorph(): void {
+  pendingEnds = Math.max(0, pendingEnds - 1)
+  if (pendingEnds === 0 && morphing.value) settleMorph()
 }
 
 // Publishes the highlighted output and records the text and the rules it
@@ -250,13 +254,12 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
     </div>
     <component
       :is="panel"
-      v-if="panel && morphing"
-      :key="morphKey"
-      v-show="!editing"
+      v-if="panel && morphSteps.length"
+      v-show="morphing && !editing"
       class="code-panel-code"
       :steps="morphSteps"
       :step="step"
-      :animate="!reducedMotion"
+      :animate="animate && !reducedMotion"
       :options="morphOptions"
       @end="endMorph"
     />

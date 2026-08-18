@@ -23,9 +23,9 @@ vi.mock('@shikijs/magic-move/vue', () => ({
 const fakeSandbox = (formatted: string, source = formatted): ProseSandbox => ({
   diagnostics : ref([]),
   error       : ref(''),
-  unstable    : ref([]),
   formatted   : ref(formatted),
-  source      : ref(source)
+  source      : ref(source),
+  unstable    : ref([])
 } as unknown as ProseSandbox)
 
 const FINDING = {
@@ -166,7 +166,7 @@ describe('ProseSandboxSurface', () => {
 
     sandbox.formatted.value = 'x = 1'
     await flushPromises()
-    expect(wrapper.find('.mm').exists()).toBe(false)
+    expect(isHidden(wrapper.get('.mm'))).toBe(true)
     expect(isHidden(wrapper.get('.sandbox-surface-display'))).toBe(false)
     expect(wrapper.attributes('style')).toBeUndefined()
   })
@@ -192,7 +192,7 @@ describe('ProseSandboxSurface', () => {
     await wrapper.get('.sandbox-surface-display').trigger('click')
     await flushPromises()
     expect(wrapper.attributes('style')).toBeUndefined()
-    expect(wrapper.find('.mm').exists()).toBe(false)
+    expect(isHidden(wrapper.get('.mm'))).toBe(true)
   })
 
   surfaceTest('clears a running morph when the parent opens the editor', async ({ mounted }) => {
@@ -207,7 +207,91 @@ describe('ProseSandboxSurface', () => {
     await wrapper.setProps({ editing: true })
     sandbox.formatted.value = 'x = 3'
     await flushPromises()
-    expect(wrapper.find('.mm').exists()).toBe(false)
+    expect(isHidden(wrapper.get('.mm'))).toBe(true)
+  })
+
+  surfaceTest('keeps one panel mounted across consecutive morphs', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
+
+    sandbox.formatted.value = 'x = 2'
+    await flushPromises()
+    const element = wrapper.get('.mm').element
+    await nextPaint()
+    await flushPromises()
+
+    // The second morph reuses the same panel DOM rather than remounting.
+    sandbox.formatted.value = 'x = 3'
+    await flushPromises()
+    expect(wrapper.get('.mm').element).toBe(element)
+    expect(isHidden(wrapper.get('.mm'))).toBe(false)
+  })
+
+  surfaceTest('ignores a superseded morph\'s stale end and settles last', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
+
+    sandbox.formatted.value = 'x = 2'
+    await flushPromises()
+    await nextPaint()
+    await flushPromises()
+
+    sandbox.formatted.value = 'x = 3'
+    await flushPromises()
+    await nextPaint()
+    await flushPromises()
+
+    // The first morph's force-resolved end lands on the live panel, so the
+    // successor keeps animating until its own end arrives.
+    const panel = wrapper.findComponent({ name: 'ShikiMagicMovePrecompiled' })
+    panel.vm.$emit('end')
+    await flushPromises()
+    expect(isHidden(wrapper.get('.mm'))).toBe(false)
+
+    panel.vm.$emit('end')
+    await flushPromises()
+    expect(isHidden(wrapper.get('.mm'))).toBe(true)
+    expect(isHidden(wrapper.get('.sandbox-surface-display'))).toBe(false)
+  })
+
+  surfaceTest('absorbs a stray end and still settles the next morph', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
+    const panel = () => wrapper.findComponent({ name: 'ShikiMagicMovePrecompiled' })
+
+    sandbox.formatted.value = 'x = 2'
+    await flushPromises()
+    await nextPaint()
+    await flushPromises()
+    panel().vm.$emit('end')
+    await flushPromises()
+    expect(isHidden(wrapper.get('.mm'))).toBe(true)
+
+    // A settled surface still taking an `end` must not drive the count
+    // negative, which would leave the next morph unable to reach zero.
+    panel().vm.$emit('end')
+    await flushPromises()
+
+    sandbox.formatted.value = 'x = 3'
+    await flushPromises()
+    await nextPaint()
+    await flushPromises()
+    panel().vm.$emit('end')
+    await flushPromises()
+    expect(isHidden(wrapper.get('.mm'))).toBe(true)
+  })
+
+  surfaceTest('settles the surface when no end ever arrives', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
+
+    sandbox.formatted.value = 'x = 2'
+    await flushPromises()
+    await nextPaint()
+    await flushPromises()
+    expect(isHidden(wrapper.get('.mm'))).toBe(false)
+
+    // The stub panel never emits `end`, so only the watchdog can settle this.
+    await promiseTimeout(800)
+    await flushPromises()
+    expect(isHidden(wrapper.get('.mm'))).toBe(true)
+    expect(isHidden(wrapper.get('.sandbox-surface-display'))).toBe(false)
   })
 
   surfaceTest('re-measures the outgoing height on every morph', async ({ mounted }) => {
