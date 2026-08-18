@@ -38,6 +38,7 @@ const fakeSandbox = (formatted: string, source = formatted): ProseSandbox => ({
   diagnostics : ref([]),
   drawn       : ref(0),
   error       : ref(''),
+  formatNow   : vi.fn<() => void>(),
   formatted   : ref(formatted),
   source      : ref(source),
   unstable    : ref([])
@@ -106,6 +107,28 @@ describe('ProseSandboxSurface', () => {
     await wrapper.get('.sandbox-surface-apply').trigger('click')
     expect(sandbox.source.value).toBe('y=2')
     expect(isHidden(wrapper.get('.code-editor'))).toBe(true)
+  })
+
+  surfaceTest('formats an applied edit without waiting out the typing debounce', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1', source: 'x=1' })
+
+    await wrapper.get('.sandbox-surface-display').trigger('click')
+    await flushPromises()
+    await wrapper.get('textarea').setValue('y=2')
+    await wrapper.get('.sandbox-surface-apply').trigger('click')
+    expect(sandbox.source.value).toBe('y=2')
+    expect(sandbox.formatNow).toHaveBeenCalledTimes(1)
+
+    // Applying an unchanged draft and discarding an edit both leave the count.
+    await wrapper.get('.sandbox-surface-display').trigger('click')
+    await flushPromises()
+    await wrapper.get('.sandbox-surface-apply').trigger('click')
+    expect(sandbox.formatNow).toHaveBeenCalledTimes(1)
+    await wrapper.get('.sandbox-surface-display').trigger('click')
+    await flushPromises()
+    await wrapper.get('textarea').setValue('z=3')
+    await wrapper.get('.sandbox-surface-discard').trigger('click')
+    expect(sandbox.formatNow).toHaveBeenCalledTimes(1)
   })
 
   surfaceTest('discards the edit and keeps the source', async ({ mounted }) => {

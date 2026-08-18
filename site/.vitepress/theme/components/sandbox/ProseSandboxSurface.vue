@@ -21,7 +21,7 @@ const NO_PAIR = { churn: 0, lines: [0, 0] as const, shifts: 0 }
 
 const props   = defineProps<{ guide?: number | null, guideHue?: string, sandbox: ProseSandbox }>()
 const editing = defineModel<boolean>('editing', { default: false })
-const { diagnostics, drawn, error, formatted, source, unstable } = props.sandbox
+const { diagnostics, drawn, error, formatNow, formatted, source, unstable } = props.sandbox
 
 const reportUrl = `${REPO_URL}/issues/new?template=unstable-output.yml`
 
@@ -249,7 +249,10 @@ function startEditing(): void {
 // Blur leaves the box open, so a reformat only ever runs on the reader asking
 // for one and never as a side effect of clicking away.
 function applyEdit(): void {
-  if (draft.value !== source.value) source.value = draft.value
+  if (draft.value !== source.value) {
+    source.value = draft.value
+    formatNow()
+  }
   editing.value = false
 }
 

@@ -389,6 +389,16 @@ describe('useProseSandbox', () => {
     expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('space-statements = false'), 'seed a')
   })
 
+  it('formats a drawn example without waiting out the typing debounce', async () => {
+    vi.useFakeTimers()
+    const format = vi.fn<Formatter>(formatting('OUT'))
+    const api    = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 250 })
+    api.refresh()
+    await flushPromises()
+    expect(format).toHaveBeenCalledTimes(1)
+    expect(api.formatted.value).toBe('OUT')
+  })
+
   it('skips the debounced re-format over the pair the toggle already published', async () => {
     vi.useFakeTimers()
     const format = vi.fn<Formatter>(formatting('OUT', '[{"code":"x"}]'))

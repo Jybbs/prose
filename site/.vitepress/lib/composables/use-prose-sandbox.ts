@@ -24,6 +24,7 @@ export interface ProseSandbox {
   error        : Ref<string>
   facetImpact  : Ref<Record<string, readonly string[]>>
   facetValue   : (slug: string, facet: configSchema.Facet) => FacetValue
+  formatNow    : () => void
   formatted    : Ref<string>
   lengthImpact : Ref<readonly string[] | null>
   unstable     : Ref<readonly string[]>
@@ -66,13 +67,13 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   let module: ProseWasm | null               = null
   let published: session.SavedSession | null = null
 
-  const config = useSandboxConfig(schema, debounceMs, eagerFormat)
+  const config = useSandboxConfig(schema, debounceMs, formatNow)
   const probe  = useSandboxProbe(schema, current => module === current)
 
-  // A rule or switch toggle is a discrete action, so its format runs on the
-  // next microtask instead of waiting out the typing debounce, with a
-  // toggle-all burst coalescing into one run.
-  function eagerFormat(): void {
+  // A rule toggle, a draw, and an applied edit are discrete actions, so their
+  // formats run on the next microtask instead of waiting out the typing
+  // debounce, with a toggle-all burst coalescing into one run.
+  function formatNow(): void {
     if (eagerQueued) return
     eagerQueued = true
     queueMicrotask(() => {
@@ -143,6 +144,7 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
     seedCase()
     config.reset()
     drawn.value += 1
+    formatNow()
   }
 
   function share(): Promise<string | null> {
@@ -185,6 +187,7 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
     error        : error,
     facetImpact  : probe.facetImpact,
     facetValue   : config.facetValue,
+    formatNow    : formatNow,
     formatted    : formatted,
     lengthImpact : probe.lengthImpact,
     lengthValue  : config.lengthValue,
