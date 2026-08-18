@@ -21,7 +21,7 @@ const NO_PAIR = { churn: 0, lines: [0, 0] as const, shifts: 0 }
 
 const props   = defineProps<{ guide?: number | null, guideHue?: string, sandbox: ProseSandbox }>()
 const editing = defineModel<boolean>('editing', { default: false })
-const { diagnostics, error, formatted, source, unstable } = props.sandbox
+const { diagnostics, drawn, error, formatted, source, unstable } = props.sandbox
 
 const reportUrl = `${REPO_URL}/issues/new?template=unstable-output.yml`
 
@@ -65,6 +65,7 @@ const run = latestRun()
 
 let pendingEnds = 0
 let previous    = ''
+let seenDraw    = drawn.value
 let shownRules  = new Set<string>()
 
 // Renders the settled output as highlighted HTML carrying the lint
@@ -74,6 +75,10 @@ let shownRules  = new Set<string>()
 async function render(next: string): Promise<void> {
   const superseded = run.begin()
   const from       = previous
+  // A drawn example is a different document rather than an edit to this one,
+  // so it publishes whatever its churn reads.
+  const drew       = drawn.value !== seenDraw
+  seenDraw         = drawn.value
   const html       = await highlight(next, 'python', lintDecorations(diagnostics.value, next))
   if (superseded()) return
   // Mid-edit the display sits behind the editor, so stage the html silently.
@@ -107,7 +112,7 @@ async function render(next: string): Promise<void> {
   // Past the cap the renderer has real work for most of the panel, which costs
   // more frame time than a reader can follow, so the settled output publishes
   // the way the reduced-motion path publishes it.
-  if (pair.churn > MORPH_LINE_CHURN_CAP) {
+  if (drew || pair.churn > MORPH_LINE_CHURN_CAP) {
     morphing.value = false
     commit(html, next)
     drawSquiggles()

@@ -19,6 +19,7 @@ export interface ProseSandbox {
   configError  : Ref<string>
   configToml   : Ref<string>
   diagnostics  : Ref<readonly LintFinding[]>
+  drawn        : Ref<number>
   eligible     : Ref<readonly string[] | null>
   error        : Ref<string>
   facetImpact  : Ref<Record<string, readonly string[]>>
@@ -51,6 +52,7 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   const { cases, schema, debounceMs = 250, load = loadModule, pick = session.randomOther } = options
 
   const diagnostics = ref<readonly LintFinding[]>([])
+  const drawn       = ref(0)
   const error       = ref('')
   const formatted   = ref('')
   const source      = ref(cases[0].source)
@@ -140,6 +142,7 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   function refresh(): void {
     seedCase()
     config.reset()
+    drawn.value += 1
   }
 
   function share(): Promise<string | null> {
@@ -177,6 +180,7 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
     configError  : config.configError,
     configToml   : config.configToml,
     diagnostics  : diagnostics,
+    drawn        : drawn,
     eligible     : probe.eligible,
     error        : error,
     facetImpact  : probe.facetImpact,

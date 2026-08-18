@@ -36,6 +36,7 @@ vi.mock('@shikijs/magic-move/vue', () => ({
 
 const fakeSandbox = (formatted: string, source = formatted): ProseSandbox => ({
   diagnostics : ref([]),
+  drawn       : ref(0),
   error       : ref(''),
   formatted   : ref(formatted),
   source      : ref(source),
@@ -204,6 +205,21 @@ describe('ProseSandboxSurface', () => {
     // Declining to morph still advances the panel, so the next morph starts
     // from what the reader sees rather than from a state two toggles old.
     expect(panel().props('step')).toBe(1)
+  })
+
+  surfaceTest('publishes a drawn example rather than morphing to it', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
+    await nextPaint()
+    await flushPromises()
+
+    // A draw is a different document, so it publishes however small its churn
+    // reads, where the same edit arriving on its own would morph.
+    sandbox.drawn.value += 1
+    sandbox.formatted.value = 'x = 2'
+    await flushPromises()
+    expect(isHidden(wrapper.get('.mm'))).toBe(true)
+    expect(window.proseMorphProbe).toMatchObject({ churn: 1, morphed: false })
+    expect(wrapper.get('.sandbox-surface-display').html()).toContain('x = 2')
   })
 
   surfaceTest('records each morph decision for the frame probe', async ({ mounted }) => {
