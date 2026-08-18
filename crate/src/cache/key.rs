@@ -4,7 +4,7 @@
 
 use crate::rule::RuleId;
 
-pub(super) const CACHE_FORMAT_VERSION: &str = "7";
+pub(super) const CACHE_FORMAT_VERSION: &str = "8";
 
 /// How many hex characters of the generation digest name the directory.
 const GENERATION_LEN: usize = 16;

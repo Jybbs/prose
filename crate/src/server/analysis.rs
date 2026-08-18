@@ -7,7 +7,32 @@ use lsp_types::{Diagnostic as LspDiagnostic, TextEdit};
 use ruff_source_file::PositionEncoding;
 
 use super::conversion::{full_document_range, to_lsp};
-use crate::{config::Config, pipeline::Pipeline, source::Source};
+use crate::{config::Config, pipeline::Pipeline, source::Source, unstable::UnstableRewrite};
+
+/// One formatting pass over a buffer.
+#[derive(Default)]
+pub(super) struct Formatted {
+    /// The whole-document edit, `None` where the buffer is already
+    /// formatted or does not parse.
+    pub(super) edits: Option<Vec<TextEdit>>,
+    /// The rewritten buffer held for a settle check the caller runs
+    /// after the edits response is sent, `None` where nothing changed.
+    pub(super) settled: Option<Settled>,
+}
+
+/// A rewrite held beside the pipeline that produced it, so the settle
+/// check runs off the formatting response's critical path.
+pub(super) struct Settled {
+    pipeline: Pipeline,
+    source: Source,
+}
+
+impl Settled {
+    /// Runs the settle check over the held rewrite.
+    pub(super) fn detect(&self, config: &Config, original: &str) -> Option<UnstableRewrite> {
+        UnstableRewrite::detect(&self.pipeline, config, original, &self.source)
+    }
+}
 
 /// Lints and format-checks the buffer against `config`, mapping each
 /// finding to a protocol diagnostic in the buffer's own coordinates. An
@@ -27,23 +52,32 @@ pub(super) fn diagnostics(
         .collect()
 }
 
-/// Formats the buffer against `config` and returns one whole-document
-/// edit, or `None` when the buffer is already formatted or does not
-/// parse.
-pub(super) fn format_edits(
+/// Formats the buffer against `config`, returning one whole-document
+/// edit alongside the rewrite held for a later settle check. A buffer
+/// that is already formatted or does not parse yields neither.
+pub(super) fn format_buffer(
     original: &str,
     encoding: PositionEncoding,
     config: &Config,
-) -> Option<Vec<TextEdit>> {
+) -> Formatted {
+    formatted(original, encoding, config).unwrap_or_default()
+}
+
+/// The edit and held rewrite for a buffer the pipeline rewrote,
+/// `None` where it does not parse, a rule's output is rejected, or the
+/// run leaves the text unchanged.
+fn formatted(original: &str, encoding: PositionEncoding, config: &Config) -> Option<Formatted> {
     let source = Source::from_str(original).ok()?;
     let range = full_document_range(&source, encoding);
     let pipeline = Pipeline::with_defaults(config);
-    let (formatted, _) = pipeline.run(source).ok()?;
-    formatted.changed_from(original).map(|new_text| {
-        vec![TextEdit {
-            new_text: new_text.to_owned(),
-            range,
-        }]
+    let (settled, _) = pipeline.run(source).ok()?;
+    let new_text = settled.changed_from(original)?.to_owned();
+    Some(Formatted {
+        edits: Some(vec![TextEdit { new_text, range }]),
+        settled: Some(Settled {
+            pipeline,
+            source: settled,
+        }),
     })
 }
 
@@ -95,22 +129,43 @@ mod tests {
     }
 
     #[test]
-    fn format_edits_are_none_for_formatted_source() {
-        assert!(format_edits("x = 1\n", PositionEncoding::Utf16, &Config::default()).is_none());
+    fn format_buffer_holds_the_settle_report_for_a_settled_rewrite() {
+        let formatted = format_buffer(
+            "alpha = 1\nb = 22\n",
+            PositionEncoding::Utf16,
+            &Config::default(),
+        );
+
+        let settled = formatted.settled.expect("a rewrite is held");
+        assert!(
+            settled
+                .detect(&Config::default(), "alpha = 1\nb = 22\n")
+                .is_none()
+        );
     }
 
     #[test]
-    fn format_edits_are_none_for_unparseable_source() {
-        assert!(format_edits("def foo(", PositionEncoding::Utf16, &Config::default()).is_none());
+    fn format_buffer_yields_no_edits_for_formatted_source() {
+        let formatted = format_buffer("x = 1\n", PositionEncoding::Utf16, &Config::default());
+
+        assert!(formatted.edits.is_none());
     }
 
     #[test]
-    fn format_edits_replace_the_whole_document() {
-        let edits = format_edits(
+    fn format_buffer_yields_no_edits_for_unparseable_source() {
+        let formatted = format_buffer("def foo(", PositionEncoding::Utf16, &Config::default());
+
+        assert!(formatted.edits.is_none());
+    }
+
+    #[test]
+    fn format_buffer_replaces_the_whole_document() {
+        let edits = format_buffer(
             "alpha = 1\nb = 22\n",
             PositionEncoding::Utf16,
             &Config::default(),
         )
+        .edits
         .expect("formatting changes the buffer");
         let edit = edits.first().expect("one edit");
 

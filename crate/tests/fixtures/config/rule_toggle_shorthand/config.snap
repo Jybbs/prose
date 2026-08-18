@@ -22,6 +22,7 @@ Config {
     imports: ImportsConfig {
         first_party: [],
     },
+    report_unstable_output: true,
     rules: RuleConfigs {
         shed_backslash_continuations: ToggleOnly {
             enabled: true,

@@ -62,7 +62,7 @@ const ENABLED   = SCHEMA.rules[0].facets[0]
 const MAX_SHIFT = SCHEMA.rules[0].facets[1]
 
 const formatting = (formatted: string, diagnostics = '', firedRules: readonly string[] = []): Formatter =>
-  () => ({ config: '', diagnostics, fired_rules: firedRules, formatted })
+  () => ({ config: '', diagnostics, fired_rules: firedRules, unstable_rules: [], formatted })
 
 const moduleWith = (format: Formatter): ProseWasm => ({ default: () => Promise.resolve(), format })
 
@@ -129,6 +129,7 @@ describe('useProseSandbox', () => {
       config      : '',
       diagnostics : '',
       fired_rules : ['align-equals', 'space-statements'],
+    unstable_rules : [],
       formatted   : config.includes('max-shift = 1') ? 'SHIFTED' : 'OUT'
     })
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
@@ -144,6 +145,7 @@ describe('useProseSandbox', () => {
       config      : '',
       diagnostics : config.includes('condense = false') ? '[{"code":"x"}]' : '',
       fired_rules : ['align-equals'],
+    unstable_rules : [],
       formatted   : 'OUT'
     })
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
@@ -157,7 +159,8 @@ describe('useProseSandbox', () => {
   it('fails a facet probe open when its run throws', async () => {
     const format: Formatter = config => {
       if (config.includes('max-shift')) throw new Error('bad config')
-      return { config: '', diagnostics: '', fired_rules: ['align-equals'], formatted: 'OUT' }
+      return { config: '', diagnostics: '', fired_rules: ['align-equals'],
+    unstable_rules: [], formatted: 'OUT' }
     }
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
     await api.start()
@@ -173,7 +176,8 @@ describe('useProseSandbox', () => {
     )
     const format: Formatter = config => {
       if (config === '') throw new WebAssembly.RuntimeError('unreachable')
-      return { config: '', diagnostics: '', fired_rules: [], formatted: 'OUT' }
+      return { config: '', diagnostics: '', fired_rules: [],
+    unstable_rules: [], formatted: 'OUT' }
     }
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
     await api.start()
@@ -187,6 +191,7 @@ describe('useProseSandbox', () => {
       config      : '',
       diagnostics : '',
       fired_rules : [],
+    unstable_rules : [],
       formatted   : config.includes('code-line-length = 30') ? 'NARROW' : 'OUT'
     })
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
@@ -198,7 +203,8 @@ describe('useProseSandbox', () => {
     const format = vi.fn<Formatter>((config, src) => ({
       config      : '',
       diagnostics : '',
-      fired_rules : src === 'seed a' ? ['align-equals'] : ['space-statements'],
+      fired_rules    : src === 'seed a' ? ['align-equals'] : ['space-statements'],
+      unstable_rules : [],
       formatted   : 'OUT'
     }))
     const api = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 5 })

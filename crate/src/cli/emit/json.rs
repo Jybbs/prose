@@ -8,7 +8,7 @@ use std::{
 
 use serde::Serialize;
 
-use super::{Emitter, EmitterSummary, Run, diagnostics, write_json_line};
+use super::{Emitter, EmitterSummary, Run, UnstableEntry, diagnostics, write_json_line};
 use crate::{findings::JsonDiagnostic, rule::RuleId};
 
 /// Bumps on any breaking change to existing field shapes, leaving
@@ -50,6 +50,8 @@ struct JsonSummary<'a> {
     prose_version: &'a str,
     rules_fired: &'a BTreeMap<RuleId, usize>,
     schema_version: u32,
+    #[serde(skip_serializing_if = "<[_]>::is_empty")]
+    unstable: &'a [UnstableEntry],
 }
 
 impl<'a> JsonSummary<'a> {
@@ -61,6 +63,7 @@ impl<'a> JsonSummary<'a> {
             prose_version: env!("CARGO_PKG_VERSION"),
             rules_fired: &summary.rules_fired,
             schema_version: SCHEMA_VERSION,
+            unstable: &summary.unstable,
         }
     }
 }
@@ -212,6 +215,7 @@ mod tests {
             files_with_diagnostics: 1,
             lint_total: 1,
             rules_fired,
+            unstable: Vec::new(),
         };
 
         let text = emit_text(&source, &diagnostics, &summary);

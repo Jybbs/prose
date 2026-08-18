@@ -9,9 +9,10 @@ use ruff_source_file::SourceFileBuilder;
 
 use super::{
     FileOutcome, Pass,
-    process::{drive, failed},
+    process::{Marker, drive, failed},
+    resolve::Resolved,
 };
-use crate::{cache::Rewrite, cli::exit_status::ExitStatus, pipeline::Pipeline, source::Source};
+use crate::{cache::Rewrite, cli::exit_status::ExitStatus, source::Source};
 
 /// Reparses `written`, the JSON a notebook rewrite lands on disk, back
 /// into a `Source`, so a caller reads the cells that file will carry
@@ -26,7 +27,7 @@ pub(super) fn as_written(written: &str, name: &str) -> Option<Source> {
 /// Parses `text` as a notebook and runs `pass` over its code cells. A
 /// non-Python notebook is passed over clean, and a read or parse
 /// failure surfaces at the parse-error status.
-pub(super) fn process(text: String, name: String, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
+pub(super) fn process(text: String, name: String, resolved: &Resolved, pass: Pass) -> FileOutcome {
     let notebook = match Notebook::from_source_code(&text) {
         Ok(notebook) => notebook,
         Err(e) => {
@@ -44,10 +45,11 @@ pub(super) fn process(text: String, name: String, pipeline: &Pipeline, pass: Pas
             file,
             notebook_index: None,
             rewrite: Rewrite::PassedOver,
+            unstable: None,
         };
     }
     match Source::from_notebook(&notebook, name.as_str()) {
-        Ok(source) => run(source, notebook, pipeline, pass),
+        Ok(source) => run(source, notebook, resolved, pass),
         Err(e) => failed(
             ExitStatus::ParseError,
             format_args!("parse error in `{name}`: {e}"),
@@ -91,15 +93,16 @@ fn emit(notebook: &Notebook) -> String {
 /// building the notebook rewrite from the formatted result. The cell
 /// index built off the original cells threads through to the reporter so
 /// it renders each diagnostic against its own cell.
-fn run(source: Source, mut notebook: Notebook, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
+fn run(source: Source, mut notebook: Notebook, resolved: &Resolved, pass: Pass) -> FileOutcome {
     let index = notebook.index().clone();
     let original_offsets = source.cell_offsets().clone();
     let original_code = source.text().to_owned();
     drive(
         source,
-        pipeline,
+        resolved,
         pass,
         Some(index),
+        Marker::Eager,
         move |formatted, _file| {
             build_rewrite(&mut notebook, &original_offsets, &original_code, formatted)
         },

@@ -42,6 +42,7 @@ mod tests {
         rule::RuleId,
         rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
         testing::{format_diagnostic, range},
+        unstable::UnstableRewrite,
     };
 
     const CONFIG_A: &str = "code-line-length = 88\n";
@@ -63,6 +64,7 @@ mod tests {
             inserted: std::sync::atomic::AtomicBool::new(false),
             max_entries: usize::MAX,
             max_size_bytes: u64::from(max_mib) * 1024 * 1024,
+            own_output: std::sync::OnceLock::new(),
             root,
             store,
         }
@@ -79,6 +81,7 @@ mod tests {
             }],
             notebook: None,
             rewrite: Rewrite::text(formatted.to_owned()),
+            unstable: None,
         }
     }
     /// A generation directory beside the cache's own, holding one
@@ -103,6 +106,7 @@ mod tests {
                     index: cells.index.as_ref(),
                 }),
                 rewrite: &entry.rewrite,
+                unstable: entry.unstable.as_deref(),
             },
         );
     }
@@ -432,6 +436,34 @@ mod tests {
     }
 
     #[test]
+    fn info_and_compact_leave_the_own_output_ledger_alone() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        cache.record_own_output(&key(b"x = 1\n", CONFIG_A, rules()));
+
+        assert_eq!(cache.info().entries, 0);
+        assert_eq!(cache.compact(), CleanReport::default());
+        assert!(cache.owns_output(&key(b"x = 1\n", CONFIG_A, rules())));
+    }
+
+    #[test]
+    fn own_output_marker_round_trips_across_instances() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        let marked = key(b"y = 1\n", CONFIG_A, rules());
+        let unmarked = key(b"z = 2\n", CONFIG_A, rules());
+        cache.record_own_output(&marked);
+
+        let reopened = Cache {
+            inserted: std::sync::atomic::AtomicBool::new(false),
+            ..cache_in(&tmp, 100)
+        };
+
+        assert!(reopened.owns_output(&marked));
+        assert!(!reopened.owns_output(&unmarked));
+    }
+
+    #[test]
     fn insert_holds_an_over_cap_entry_until_compact_runs() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 0);
@@ -474,8 +506,28 @@ mod tests {
                 vec!["x  = 1\n".to_owned()],
                 "{}\n".to_owned(),
             ),
+            unstable: None,
         };
         insert(&cache, &key, &original);
+        assert_eq!(cache.lookup(&key).expect("hit"), original);
+    }
+
+    #[test]
+    fn insert_then_lookup_round_trips_a_settle_report() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        let key = key(b"x = 1\n", CONFIG_A, rules());
+        let original = CacheEntry {
+            unstable: Some(Box::new(UnstableRewrite {
+                config_toml: CONFIG_A.to_owned(),
+                first: "yy = 1\n".to_owned(),
+                rules: vec![AlignEquals::SLUG],
+                second: "yyy = 1\n".to_owned(),
+            })),
+            ..entry("yy = 1\n")
+        };
+        insert(&cache, &key, &original);
+
         assert_eq!(cache.lookup(&key).expect("hit"), original);
     }
 
@@ -488,6 +540,7 @@ mod tests {
             diagnostics: Vec::new(),
             notebook: None,
             rewrite: Rewrite::Skipped,
+            unstable: None,
         };
         insert(&cache, &key, &original);
         assert_eq!(cache.lookup(&key).expect("hit"), original);

@@ -44,7 +44,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: '--select <slug>',  href: '/reference/cli#precedence',           blurb: 'Restrict the run to the listed rule.' },
     { key: '--stdin',          href: '/reference/cli#prose-format',         blurb: 'Read source from stdin, write the rewrite to stdout.' },
     { key: '--stdin-filename', href: '/reference/cli#prose-format',         blurb: 'Treat stdin as this filename, its extension selecting Python or a notebook.' },
-    { key: '--validate',       href: '/reference/cli#prose-check',          blurb: 'Confirm the would-be rewrite re-parses, naming an unparseable rule output.' },
+    { key: '--validate',       href: '/reference/cli#prose-check',          blurb: 'Confirm the would-be rewrite re-parses and settles, failing the run on either.' },
     { key: '--verbose',        href: '/reference/cache#hit-miss-telemetry', blurb: 'Print a one-line cache summary to stderr at the end of the run.' }
   ],
   'config-key': [
@@ -76,6 +76,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'max-tiers',                   href: '/reference/configuration#per-rule-facets',       blurb: 'Cap the evaluation tiers that open their own sub-band.' },
     { key: 'merge-members',               href: '/reference/configuration#per-rule-facets',       blurb: 'Gather every from-import of one module onto a single statement.' },
     { key: 'overrides.paths',             href: '/reference/configuration#per-pattern-overrides', blurb: 'Glob list selecting the files an override entry applies its partial config to.' },
+    { key: 'report-unstable-output',      href: '/reference/configuration#top-level-keys',        blurb: 'Report a rewrite a second run would change as a defect in *Prose*.' },
     { key: 'rewrite-generics',            href: '/reference/configuration#per-rule-facets',       blurb: 'Convert a `typing` generic to the builtin PEP 585 gave it.' },
     { key: 'rewrite-identity',            href: '/reference/configuration#per-rule-facets',       blurb: 'Rewrite a `None` test to `is`, and flag a test against `True` or `False`.' },
     { key: 'rewrite-negation',            href: '/reference/configuration#per-rule-facets',       blurb: 'Fold a leading `not` into the `in` or `is` it negates.' },

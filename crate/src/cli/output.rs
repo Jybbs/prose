@@ -9,6 +9,8 @@ use std::io::{self, Write};
 
 use anstyle::{AnsiColor, Color, Reset, RgbColor};
 
+use crate::unstable;
+
 const APRICOT: (RgbColor, AnsiColor) = (RgbColor(0xe8, 0x87, 0x6f), AnsiColor::Red);
 const CELADON: (RgbColor, AnsiColor) = (RgbColor(0x8c, 0xc5, 0xa3), AnsiColor::Green);
 const UBE: (RgbColor, AnsiColor) = (RgbColor(0x8a, 0x80, 0xcb), AnsiColor::Magenta);
@@ -30,6 +32,16 @@ pub(super) struct Presentation {
 }
 
 impl Presentation {
+    /// The bare-count shape a `--quiet` run resolves to, which the
+    /// summary and notice tests write through.
+    #[cfg(test)]
+    pub(super) fn quieted() -> Self {
+        Self {
+            quiet: true,
+            ..Self::windowed()
+        }
+    }
+
     /// The uncolored, non-quiet, non-TTY shape the runner and emitter
     /// tests write through.
     #[cfg(test)]
@@ -54,6 +66,8 @@ pub(super) enum Summary {
     Diagnostics { files: usize, total: usize },
     LintRemainder { total: usize },
     Reformatted { files: usize },
+    Unstable { files: usize },
+    UnstableRewrite { subject: String },
     WouldReformat { files: usize },
 }
 
@@ -63,6 +77,7 @@ impl Summary {
             Self::Clean => "🪻",
             Self::Diagnostics { .. } | Self::LintRemainder { .. } => "🔖",
             Self::Reformatted { .. } | Self::WouldReformat { .. } => "🗞️",
+            Self::Unstable { .. } | Self::UnstableRewrite { .. } => "🐞",
         }
     }
 
@@ -82,6 +97,11 @@ impl Summary {
                 if *total == 1 { "it" } else { "them" },
             ),
             Self::Reformatted { files } => format!("Reformatted {}.", pluralize(*files, "file")),
+            Self::Unstable { files } => format!(
+                "{} would change on a second run.",
+                pluralize(*files, "file"),
+            ),
+            Self::UnstableRewrite { subject } => format!("{}.", unstable::headline(subject)),
             Self::WouldReformat { files } => {
                 format!("{} would be reformatted.", pluralize(*files, "file"))
             }
@@ -94,6 +114,13 @@ impl Summary {
             _ => apricot(&self.message()),
         }
     }
+}
+
+/// `count` prefixed to `noun`, the noun taking an `s` for any count
+/// other than one.
+pub(super) fn pluralize(count: usize, noun: &str) -> String {
+    let suffix = if count == 1 { "" } else { "s" };
+    format!("{count} {noun}{suffix}")
 }
 
 /// Writes the closing summary line, tinted only where the run resolved
@@ -137,11 +164,6 @@ fn paint_with(text: &str, truecolor: bool, (rgb, fallback): (RgbColor, AnsiColor
     format!("{}{text}{}", color.render_fg(), Reset.render())
 }
 
-fn pluralize(count: usize, noun: &str) -> String {
-    let suffix = if count == 1 { "" } else { "s" };
-    format!("{count} {noun}{suffix}")
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -160,15 +182,6 @@ mod tests {
         Presentation {
             color: true,
             quiet: false,
-            stderr_color: true,
-            stdout_tty: true,
-        }
-    }
-
-    fn quiet() -> Presentation {
-        Presentation {
-            color: true,
-            quiet: true,
             stderr_color: true,
             stdout_tty: true,
         }
@@ -207,6 +220,22 @@ mod tests {
         "🔖 3 lint diagnostics not shown. Run `prose check` to see them in full.\n"
     )]
     #[case(Summary::Reformatted { files: 4 }, "🗞️ Reformatted 4 files.\n")]
+    #[case(
+        Summary::Unstable { files: 1 },
+        "🐞 1 file would change on a second run.\n"
+    )]
+    #[case(
+        Summary::Unstable { files: 3 },
+        "🐞 3 files would change on a second run.\n"
+    )]
+    #[case(
+        Summary::UnstableRewrite { subject: "src/a.py".to_owned() },
+        "🐞 prose rewrote src/a.py to output a second run would change.\n"
+    )]
+    #[case(
+        Summary::UnstableRewrite { subject: "4 files".to_owned() },
+        "🐞 prose rewrote 4 files to output a second run would change.\n"
+    )]
     #[case(Summary::Reformatted { files: 1 }, "🗞️ Reformatted 1 file.\n")]
     #[case(Summary::WouldReformat { files: 3 }, "🗞️ 3 files would be reformatted.\n")]
     fn each_outcome_renders_its_anchored_line(#[case] summary: Summary, #[case] expected: &str) {
@@ -264,7 +293,10 @@ mod tests {
 
     #[test]
     fn quiet_strips_emoji_and_color() {
-        let out = rendered(&quiet(), &Summary::Diagnostics { files: 2, total: 5 });
+        let out = rendered(
+            &Presentation::quieted(),
+            &Summary::Diagnostics { files: 2, total: 5 },
+        );
         assert_eq!(out, "5 diagnostics in 2 files.\n");
     }
 }

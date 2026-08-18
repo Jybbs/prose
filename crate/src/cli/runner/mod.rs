@@ -25,7 +25,7 @@ use crate::{
     cli::emit::Text,
     config::Config,
     diagnostics::Diagnostic,
-    pipeline::Pipeline,
+    unstable::UnstableRewrite,
 };
 
 mod diff;
@@ -33,6 +33,7 @@ mod notebook;
 mod process;
 mod report;
 mod resolve;
+mod unstable;
 
 use diff::{Heading, write_rewrite_diff};
 use process::{
@@ -40,9 +41,13 @@ use process::{
 };
 use report::{
     emit_to_stdout, emitter_summary, finish, render_summary, render_text_block,
-    status_from_outcomes,
+    status_from_outcomes, unstable_status,
 };
 use resolve::{ConfigResolver, Resolved};
+
+/// The diagnostic name a stdin run carries, rendered back as the `-`
+/// positional wherever a report names an invocation.
+pub(super) const STDIN_NAME: &str = "<stdin>";
 
 /// One file's contribution to the run.
 #[derive(Debug)]
@@ -53,8 +58,20 @@ enum FileOutcome {
         file: SourceFile,
         notebook_index: Option<Box<NotebookIndex>>,
         rewrite: Rewrite,
+        unstable: Option<Box<UnstableRewrite>>,
     },
     Failed(ExitStatus),
+}
+
+impl FileOutcome {
+    /// The source file and settle report this outcome carries, `None`
+    /// for a settled rewrite and for a file that failed.
+    fn unstable(&self) -> Option<(&SourceFile, &UnstableRewrite)> {
+        match self {
+            Self::Done { file, unstable, .. } => unstable.as_deref().map(|rewrite| (file, rewrite)),
+            Self::Failed(_) => None,
+        }
+    }
 }
 
 /// Which closing summary an outcome set resolves into.
@@ -221,7 +238,7 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
     let outcomes = if args.common.stdin {
         let source_type = stdin_source_type(args.common.stdin_filename.as_deref());
         let outcome = match read_stdin(stdin) {
-            Ok(text) => process_stdin(text, source_type, &setup.cwd.pipeline, pass),
+            Ok(text) => process_stdin(text, source_type, &setup.cwd, pass),
             Err(outcome) => outcome,
         };
         let outcomes = vec![outcome];
@@ -249,7 +266,8 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
         outcomes
     };
     let summary = emitter_summary(&outcomes);
-    let status = finish(&outcomes, setup.cache.is_some(), setup.verbose, pass);
+    let status = finish(&outcomes, setup.cache.is_some(), setup.verbose, pass)
+        .max(unstable_status(&outcomes));
     render_summary(&mut stderr, present, &outcomes, &summary, pass);
     Ok(status)
 }
@@ -281,7 +299,7 @@ pub(crate) fn format_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
             pass,
             args.common.output_format,
             present,
-            &setup.cwd.pipeline,
+            &setup.cwd,
             stdout,
             &mut stderr,
         );
@@ -433,14 +451,14 @@ fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
     pass: Pass,
     format: OutputFormat,
     present: &Presentation,
-    pipeline: &Pipeline,
+    resolved: &Resolved,
     writer: AutoStream<O>,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
     let diff = matches!(pass, Pass::Preview);
     let (outcome, original) = match input {
         Ok((text, source_type)) => (
-            process_stdin(text.clone(), source_type, pipeline, pass),
+            process_stdin(text.clone(), source_type, resolved, pass),
             text,
         ),
         Err(outcome) => (outcome, String::new()),
@@ -458,7 +476,7 @@ fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
                 let heading = diff_heading(present);
                 write_rewrite_diff(
                     &mut writer.into_inner(),
-                    "<stdin>",
+                    STDIN_NAME,
                     &original,
                     kind,
                     notebook_index.as_deref(),

@@ -131,14 +131,37 @@ impl ConfigResolver {
     }
 }
 
-/// One file's resolved configuration: the pipeline its enabled rules
-/// build, the serialized TOML that keys the cache, and the hasher
-/// already holding that TOML and rule selection, which every file
-/// under this config clones rather than re-absorbing.
+/// One file's resolved configuration: the config itself, the pipeline
+/// its enabled rules build, the serialized TOML that keys the cache and
+/// fills a bug report's configuration field, and the hasher already
+/// holding that TOML and rule selection, which every file under this
+/// config clones rather than re-absorbing.
 pub(super) struct Resolved {
+    pub(super) config: Config,
     pub(super) config_toml: String,
     pub(super) key_prefix: CacheKeyPrefix,
     pub(super) pipeline: Pipeline,
+}
+
+impl Resolved {
+    /// Serializes `config` and loads the key prefix its TOML and
+    /// `pipeline`'s selection draw under `anchor`.
+    fn new(config: Config, pipeline: Pipeline, anchor: Anchor) -> Self {
+        let config_toml = config.to_toml();
+        Self {
+            key_prefix: CacheKeyPrefix::new(&config_toml, pipeline.rule_ids(), anchor),
+            config,
+            config_toml,
+            pipeline,
+        }
+    }
+
+    /// A default-config resolution over `pipeline`, the seam a runner
+    /// test drives sentinel rules through.
+    #[cfg(test)]
+    pub(super) fn over(pipeline: Pipeline) -> Self {
+        Self::new(Config::default(), pipeline, Anchor::AsWritten)
+    }
 }
 
 /// The outcome of walking one directory's ancestors for a project config.
@@ -158,13 +181,11 @@ fn build_resolved(
     ignore: &[RuleId],
     anchor: Anchor,
 ) -> Resolved {
-    let config_toml = config.to_toml();
-    let pipeline = Pipeline::with_filters(config, select, ignore);
-    Resolved {
-        key_prefix: CacheKeyPrefix::new(&config_toml, pipeline.rule_ids(), anchor),
-        config_toml,
-        pipeline,
-    }
+    Resolved::new(
+        config.clone(),
+        Pipeline::with_filters(config, select, ignore),
+        anchor,
+    )
 }
 
 #[cfg(test)]

@@ -12,13 +12,17 @@ import { useSquiggleDraw }       from '../../../lib/composables/use-squiggle-dra
 import { lintDecorations }       from '../../../lib/markdown/lint-decorations'
 import { highlight }             from '../../../lib/shared/highlight'
 import { latestRun }             from '../../../lib/shared/latest-run'
+import { REPO_URL }              from '../../../lib/shared/constants'
+import { externalAttrs }         from '../../../lib/shared/links'
 import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
 const WATCHDOG_GRACE_MS = 250
 
 const props   = defineProps<{ guide?: number | null, guideHue?: string, sandbox: ProseSandbox }>()
 const editing = defineModel<boolean>('editing', { default: false })
-const { diagnostics, error, formatted, source } = props.sandbox
+const { diagnostics, error, formatted, source, unstable } = props.sandbox
+
+const reportUrl = `${REPO_URL}/issues/new?template=unstable-output.yml`
 
 const reducedMotion = useReducedMotion()
 const display       = useTemplateRef<HTMLElement>('display')
@@ -272,6 +276,12 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
       v-html="displayHtml"
     />
     <p v-if="error" class="code-panel-error">{{ error }}</p>
+    <p v-if="unstable.length" class="code-panel-unstable">
+      A second run would change this output ({{ unstable.join(', ') }}), which is a defect in
+      Prose itself.
+      <a :href="reportUrl" v-bind="externalAttrs(reportUrl)">Report it</a>
+      with the source above.
+    </p>
     <LintFlagPopper ref="popper" />
   </section>
 </template>

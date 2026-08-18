@@ -23,6 +23,7 @@ vi.mock('@shikijs/magic-move/vue', () => ({
 const fakeSandbox = (formatted: string, source = formatted): ProseSandbox => ({
   diagnostics : ref([]),
   error       : ref(''),
+  unstable    : ref([]),
   formatted   : ref(formatted),
   source      : ref(source)
 } as unknown as ProseSandbox)

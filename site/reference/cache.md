@@ -6,6 +6,8 @@ The cache is enabled by default, with the `[cache]` table tuning it, `--no-cache
 
 A `prose format` that rewrites a file stores no entry for it, because committing the rewrite replaces the bytes the key was drawn from, leaving that file's next run to key elsewhere. A file the run leaves alone does get an entry, which is what makes a second `prose format` over an already-formatted tree collapse to hits.
 
+An entry carries the [**unstable-output**](/reference/cli#unstable-output) report alongside its diagnostics and rewrite wherever the run that wrote it built one, so a hit re-prints that notice rather than dropping it with the pipeline it skipped.
+
 ## Location
 
 The cache lives at the user level, with the path resolving per platform:

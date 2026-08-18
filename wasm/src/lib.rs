@@ -7,8 +7,9 @@ use wasm_bindgen::prelude::*;
 
 /// The output of [`format`]: the rewritten source, the effective
 /// configuration serialized to TOML, the lint-severity findings as the
-/// JSON records the docs site decorates, and the distinct slugs of
-/// every rule that fired on the source.
+/// JSON records the docs site decorates, the distinct slugs of every
+/// rule that fired on the source, and the slugs of any rule a second
+/// run would still edit, which names the output unstable.
 #[derive(Debug)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct FormatResult {
@@ -16,6 +17,7 @@ pub struct FormatResult {
     pub diagnostics: String,
     pub fired_rules: Vec<String>,
     pub formatted: String,
+    pub unstable_rules: Vec<String>,
 }
 
 /// Formats `source` under the `prose.toml` document in `config_toml`.
@@ -49,14 +51,19 @@ pub fn start() {
 /// Runs the pipeline behind [`format`], boxing whichever error arises.
 fn try_format(config_toml: &str, source: &str) -> Result<FormatResult, Box<dyn Error>> {
     let config = Config::from_prose_toml_str(config_toml)?;
-    let (formatted, diagnostics) =
-        Pipeline::with_defaults(&config).run(source.parse::<Source>()?)?;
+    let pipeline = Pipeline::with_defaults(&config);
+    let (formatted, diagnostics) = pipeline.run(source.parse::<Source>()?)?;
     let fired: BTreeSet<&str> = diagnostics.iter().map(|diag| diag.rule.as_str()).collect();
     Ok(FormatResult {
         config: config.to_toml(),
         diagnostics: lint_records_json(formatted.source_file(), &diagnostics).unwrap_or_default(),
         fired_rules: fired.into_iter().map(String::from).collect(),
         formatted: formatted.text().to_owned(),
+        unstable_rules: pipeline
+            .unsettled(&formatted)
+            .into_iter()
+            .map(|rule| rule.as_str().to_owned())
+            .collect(),
     })
 }
 

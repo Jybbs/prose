@@ -10,6 +10,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::{
     diagnostics::{Diagnostic, Severity},
     rule::{RuleId, message_for_id},
+    unstable::UnstableRewrite,
 };
 
 /// Post-pipeline state cached per `(source, config, rules, version)` key
@@ -18,13 +19,16 @@ use crate::{
 /// entry and a text `format` entry describing one file sit under
 /// separate keys rather than overwriting each other. The rewrite is
 /// `Skipped` where the reading mode ran no
-/// [`Pipeline::run`](crate::pipeline::Pipeline::run).
+/// [`Pipeline::run`](crate::pipeline::Pipeline::run), and `unstable`
+/// carries the settle check's report where that run left a rule still
+/// editing its own output.
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct CacheEntry {
     #[serde(with = "elided_messages")]
     pub diagnostics: Vec<Diagnostic>,
     pub notebook: Option<NotebookCells>,
     pub rewrite: Rewrite,
+    pub unstable: Option<Box<UnstableRewrite>>,
 }
 
 /// What [`Cache::insert`](crate::cache::Cache::insert) writes, borrowing
@@ -36,6 +40,7 @@ pub struct CacheEntryRef<'a> {
     pub diagnostics: &'a [Diagnostic],
     pub notebook: Option<NotebookCellsRef<'a>>,
     pub rewrite: &'a Rewrite,
+    pub unstable: Option<&'a UnstableRewrite>,
 }
 
 /// Reads and writes a diagnostic list with each message elided where it

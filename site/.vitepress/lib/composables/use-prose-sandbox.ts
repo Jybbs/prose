@@ -25,6 +25,7 @@ export interface ProseSandbox {
   facetValue   : (slug: string, facet: configSchema.Facet) => FacetValue
   formatted    : Ref<string>
   lengthImpact : Ref<readonly string[] | null>
+  unstable     : Ref<readonly string[]>
   lengthValue  : (key: string) => number
   lengths      : readonly configSchema.LengthKnob[]
   refresh      : () => void
@@ -53,6 +54,7 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   const error       = ref('')
   const formatted   = ref('')
   const source      = ref(cases[0].source)
+  const unstable    = ref<readonly string[]>([])
 
   let activeIndex = 0
   let eagerQueued = false
@@ -109,6 +111,7 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
       const result = module.format(configToml, text)
       formatted.value   = result.formatted
       diagnostics.value = result.diagnostics ? JSON.parse(result.diagnostics) : []
+      unstable.value    = result.unstable_rules ?? []
       error.value       = ''
       published         = { configToml, source: text }
       probe.sync(module, text)
@@ -188,6 +191,7 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
     setLength    : config.setLength,
     share        : share,
     source       : source,
-    start        : start
+    start        : start,
+    unstable     : unstable
   }
 }

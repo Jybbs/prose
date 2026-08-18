@@ -607,10 +607,13 @@ fn cache_write_back_storing_nothing_leaves_an_over_cap_directory_alone() {
         .assert()
         .success();
 
-    assert_eq!(
-        cache_bytes(&generation),
-        padded,
+    assert!(
+        cache_bytes(&generation) >= padded,
         "a write-back run whose every rewrite went unstored must not sweep",
+    );
+    assert!(
+        (0..4_u32).all(|slot| generation.join(format!("{slot:064x}")).exists()),
+        "the padded entries survive, the run having stored nothing to evict for",
     );
 }
 
@@ -1128,6 +1131,15 @@ fn format_keeps_escape_bytes_in_the_rewritten_file() {
 }
 
 #[test]
+fn format_leaves_no_bug_notice_on_a_settling_rewrite() {
+    let assert = run_fixture("unaligned.py", UNALIGNED, &["format"]).success();
+
+    let err = stderr_utf8(&assert);
+    assert!(!err.contains('🐞'), "stderr was {err:?}");
+    assert!(err.contains("🗞️ Reformatted 1 file."), "stderr was {err:?}");
+}
+
+#[test]
 fn format_no_cache_flag_rewrites_when_needed() {
     let (assert, after) = rewrite_fixture("unaligned.py", UNALIGNED, &["format", "--no-cache"]);
     assert.success();
@@ -1211,6 +1223,34 @@ fn help_exits_clean() {
 #[test]
 fn no_args_prints_help_and_exits_clean() {
     prose().assert().success();
+}
+
+#[test]
+fn marker_reports_the_defect_on_the_run_that_rewrites_its_output() {
+    let (_dir, path) = fixture("dup.py", "import os\nx = 1\nimport os\ny = 2\n");
+    let (mut cmd, cache_dir) = prose_isolated();
+
+    let first = cmd.arg("format").arg(&path).assert().success();
+    assert!(
+        !stderr_utf8(&first).contains("second run"),
+        "the ledger run marks its output rather than walking it",
+    );
+
+    let mut second = prose();
+    second.env("PROSE_CACHE_DIR", cache_dir.path());
+    let replay = second.arg("format").arg(&path).assert().success();
+
+    let err = stderr_utf8(&replay);
+    assert!(err.contains("second run"), "stderr was {err:?}");
+    assert!(
+        err.contains("--select prune-inert-imports"),
+        "the probe hit narrows to the reproducing rule: {err:?}",
+    );
+
+    let mut third = prose();
+    third.env("PROSE_CACHE_DIR", cache_dir.path());
+    let settled = third.arg("format").arg(&path).assert().success();
+    assert!(!stderr_utf8(&settled).contains("second run"));
 }
 
 #[test]

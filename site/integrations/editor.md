@@ -30,6 +30,8 @@ vim.lsp.start({
 })
 ```
 
+A format-on-save session is where a rewrite *Prose* would change again on a second run surfaces most often, and the terminal notice covering that case never reaches an editor. The server therefore sends it as a warning message instead, once per document per session rather than on every save, naming the rules that disagree and the invocation that reproduces them. Where the client advertises `window/showDocument`, the message carries a **File a report** action that opens the pre-filled bug-report form, and where it does not, the message text carries the same URL inline. `report-unstable-output = false` turns it off alongside the terminal notice, which the [**Configuration**](/reference/configuration#top-level-keys) reference covers.
+
 The server leans on whole-document runs for now. Range and on-type formatting, code-action quick-fixes, and a bundled editor extension wait for a later pass.
 
 ## Run on Save
@@ -38,7 +40,7 @@ Each editor wires the binary differently, wherein the shape is identical at ever
 
 <EditorRunOnSave />
 
-The widget renders the per-editor snippet for the six editors *Prose* documents directly *(VSCode, Neovim, JetBrains, Sublime Text, Emacs, Helix)*. The VSCode card relies on the [**`emeraldwalk.RunOnSave`**](https://marketplace.visualstudio.com/items?itemName=emeraldwalk.RunOnSave) extension, which watches for save events and invokes the command on every match. The Neovim snippet wraps the shell-out in `silent!`, suppressing both the command prompt and any non-zero exit from blocking subsequent autocommands. The JetBrains snippet uses the *File Watchers* plugin, which invokes the binary on every save and replaces the buffer's content with the formatted output. Any other editor with a "run this command on every save" hook accepts the same `prose format ${file}` shape. The save event is load-bearing across every snippet, because *Prose* reads from disk by default rather than from the editor's in-memory buffer.
+The widget renders the per-editor snippet for the six editors *Prose* documents directly *(VSCode, Neovim, JetBrains, Sublime Text, Emacs, Helix)*. The VSCode card relies on the [**`emeraldwalk.RunOnSave`**](https://marketplace.visualstudio.com/items?itemName=emeraldwalk.RunOnSave) extension, which watches for save events and invokes the command on every match. The Neovim snippet wraps the shell-out in `silent!`, suppressing both the command prompt and any non-zero exit from blocking subsequent autocommands. The JetBrains snippet uses the *File Watchers* plugin, which invokes the binary on every save and replaces the buffer's content with the formatted output. Any other editor with a "run this command on every save" hook accepts the same `prose format ${file}` shape. The save event is load-bearing across every snippet, because *Prose* reads from disk by default rather than from the editor's in-memory buffer. These hooks also swallow the [**unstable-output notice**](/reference/cli#unstable-output), whose block lands on stderr a `silent!` wrapper or a File Watcher never surfaces, so that notice reaches a run-on-save user only through a terminal run or through [`prose server`](/reference/cli#prose-server).
 
 ## Structured Diagnostics
 

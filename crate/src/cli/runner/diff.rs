@@ -14,10 +14,45 @@ use crate::{
 /// How each file's diff is headed.
 #[derive(Clone, Copy, Debug)]
 pub(super) enum Heading {
+    /// A `---` and `+++` pair naming the two passes a settle report
+    /// diffs.
+    Passes,
     /// The plain `---` and `+++` pair.
     Patch,
     /// A `🧵 <name>` line, painted Ube when `color`.
     Thread { color: bool },
+}
+
+/// Writes a unified diff between `before` and `after`.
+pub(super) fn write_diff<W: Write>(
+    writer: &mut W,
+    name: &str,
+    before: &str,
+    after: &str,
+    heading: Heading,
+) -> anyhow::Result<()> {
+    let diff = similar::TextDiff::configure()
+        .algorithm(similar::Algorithm::Histogram)
+        .diff_lines(before, after);
+    let mut unified = diff.unified_diff();
+    match heading {
+        Heading::Passes => {
+            unified.header(
+                &format!("{name} (first pass)"),
+                &format!("{name} (second pass)"),
+            );
+        }
+        Heading::Patch => {
+            unified.header(name, name);
+        }
+        Heading::Thread { color } => {
+            let line = format!("🧵 {name}");
+            let line = if color { output::ube(&line) } else { line };
+            writeln!(writer, "{line}").context("writing diff")?;
+        }
+    }
+    unified.to_writer(writer).context("writing diff")?;
+    Ok(())
 }
 
 /// Writes the diff for a `Changed` rewrite: per code cell for a
@@ -41,32 +76,6 @@ pub(super) fn write_rewrite_diff<W: Write>(
         ),
         RewriteKind::Text(code) => write_diff(writer, name, before, code, heading),
     }
-}
-
-/// Writes a unified diff between `before` and `after`.
-fn write_diff<W: Write>(
-    writer: &mut W,
-    name: &str,
-    before: &str,
-    after: &str,
-    heading: Heading,
-) -> anyhow::Result<()> {
-    let diff = similar::TextDiff::configure()
-        .algorithm(similar::Algorithm::Histogram)
-        .diff_lines(before, after);
-    let mut unified = diff.unified_diff();
-    match heading {
-        Heading::Patch => {
-            unified.header(name, name);
-        }
-        Heading::Thread { color } => {
-            let line = format!("🧵 {name}");
-            let line = if color { output::ube(&line) } else { line };
-            writeln!(writer, "{line}").context("writing diff")?;
-        }
-    }
-    unified.to_writer(writer).context("writing diff")?;
-    Ok(())
 }
 
 /// Writes a per-cell unified diff for a notebook, one cell header and

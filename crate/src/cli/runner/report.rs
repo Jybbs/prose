@@ -9,12 +9,12 @@ use anstream::{
 };
 use anyhow::Context;
 
-use super::{FileOutcome, Mode, Pass, has_format_change};
+use super::{FileOutcome, Mode, Pass, has_format_change, unstable::render_reports};
 use crate::{
     cache::Rewrite,
     cli::{
         args::OutputFormat,
-        emit::{Emitter, EmitterSummary, Github, Json, Run, Sarif, Text},
+        emit::{Emitter, EmitterSummary, Github, Json, Run, Sarif, Text, UnstableEntry},
         exit_status::ExitStatus,
         output::{self, Presentation, Summary},
     },
@@ -100,14 +100,16 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
         .filter_map(|o| match o {
             FileOutcome::Done {
                 diagnostics,
+                file,
                 rewrite,
+                unstable,
                 ..
-            } => Some((diagnostics, rewrite)),
+            } => Some((diagnostics, file, rewrite, unstable)),
             FileOutcome::Failed(_) => None,
         })
         .fold(
             EmitterSummary::default(),
-            |mut summary, (diagnostics, rewrite)| {
+            |mut summary, (diagnostics, file, rewrite, unstable)| {
                 summary.files_visited += 1;
                 summary.files_changed += usize::from(file_changed(diagnostics, rewrite));
                 summary.files_with_diagnostics += usize::from(!diagnostics.is_empty());
@@ -116,21 +118,15 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
                     summary.lint_total += usize::from(diag.severity.is_lint());
                     *summary.rules_fired.entry(diag.rule).or_default() += 1;
                 }
+                if let Some(rewrite) = unstable {
+                    summary.unstable.push(UnstableEntry {
+                        file: file.name().to_owned(),
+                        rules: rewrite.rules.clone(),
+                    });
+                }
                 summary
             },
         )
-}
-
-/// A file counts as changed when `run` produced text differing from the
-/// original. A mode that skipped the rewrite falls back to whether
-/// `diagnose` emitted a format diagnostic, whereas a file passed over
-/// carries no change either way.
-pub(super) fn file_changed(diagnostics: &[Diagnostic], rewrite: &Rewrite) -> bool {
-    match rewrite {
-        Rewrite::Changed(_) => true,
-        Rewrite::PassedOver | Rewrite::Unchanged => false,
-        Rewrite::Skipped => has_format_change(diagnostics),
-    }
 }
 
 pub(super) fn finish(
@@ -145,9 +141,9 @@ pub(super) fn finish(
     status_from_outcomes(outcomes, pass.write_back())
 }
 
-/// Writes a run's closing summary: the rewrite or diagnostics outcome,
-/// then in a format mode whose diagnostics never reached stdout the
-/// surviving-lint disclosure.
+/// Writes a run's stderr tail: one bug notice per unsettled rewrite,
+/// then the rewrite or diagnostics outcome, then in a format mode whose
+/// diagnostics never reached stdout the surviving-lint disclosure.
 pub(super) fn render_summary<E: Write>(
     stderr: &mut E,
     present: &Presentation,
@@ -155,38 +151,14 @@ pub(super) fn render_summary<E: Write>(
     summary: &EmitterSummary,
     pass: Pass,
 ) {
+    render_reports(stderr, present, outcomes);
     let lines = summarize(outcomes, summary, pass.mode())
         .into_iter()
-        .chain(lint_remainder(summary, pass));
+        .chain(lint_remainder(summary, pass))
+        .chain(unstable_remainder(outcomes));
     for line in lines {
         let _ = output::report(stderr, present, &line);
     }
-}
-
-pub(super) fn report_verbose<W: Write>(
-    outcomes: &[FileOutcome],
-    cache_enabled: bool,
-    writer: &mut W,
-) {
-    if !cache_enabled {
-        let _ = writeln!(writer, "cache: bypassed");
-        return;
-    }
-    let (hits, misses) = outcomes
-        .iter()
-        .filter_map(|o| match o {
-            FileOutcome::Done { cached, .. } => Some(*cached),
-            FileOutcome::Failed(_) => None,
-        })
-        .fold(
-            (0_usize, 0_usize),
-            |(h, m), c| if c { (h + 1, m) } else { (h, m + 1) },
-        );
-    let _ = writeln!(
-        writer,
-        "cache: {hits} hits, {misses} misses, {total} files",
-        total = hits + misses,
-    );
 }
 
 pub(super) fn status_from_outcomes(
@@ -219,12 +191,59 @@ pub(super) fn status_from_outcomes(
         .unwrap_or_default()
 }
 
+/// `ConfigError` for a run carrying a settle report, `Clean` otherwise.
+/// Only `check --validate` builds a report on the check path, and a
+/// `format` run never calls this.
+pub(super) fn unstable_status(outcomes: &[FileOutcome]) -> ExitStatus {
+    if outcomes.iter().any(|o| o.unstable().is_some()) {
+        ExitStatus::ConfigError
+    } else {
+        ExitStatus::Clean
+    }
+}
+
+/// A file counts as changed when `run` produced text differing from the
+/// original. A mode that skipped the rewrite falls back to whether
+/// `diagnose` emitted a format diagnostic, whereas a file passed over
+/// carries no change either way.
+fn file_changed(diagnostics: &[Diagnostic], rewrite: &Rewrite) -> bool {
+    match rewrite {
+        Rewrite::Changed(_) => true,
+        Rewrite::PassedOver | Rewrite::Unchanged => false,
+        Rewrite::Skipped => has_format_change(diagnostics),
+    }
+}
+
 /// The surviving-lint disclosure a text-format `format` run appends
 /// after its outcome line, `None` for a check run, a structured output
 /// whose emitters already printed the lint, or a run leaving none.
 fn lint_remainder(summary: &EmitterSummary, pass: Pass) -> Option<Summary> {
     let total = summary.lint_total;
     (pass.discloses_lint() && total > 0).then_some(Summary::LintRemainder { total })
+}
+
+/// Writes the cache hit and miss counts a verbose run closes with, or
+/// the bypass line where the run carried no cache.
+fn report_verbose<W: Write>(outcomes: &[FileOutcome], cache_enabled: bool, writer: &mut W) {
+    if !cache_enabled {
+        let _ = writeln!(writer, "cache: bypassed");
+        return;
+    }
+    let (hits, misses) = outcomes
+        .iter()
+        .filter_map(|o| match o {
+            FileOutcome::Done { cached, .. } => Some(*cached),
+            FileOutcome::Failed(_) => None,
+        })
+        .fold(
+            (0_usize, 0_usize),
+            |(h, m), c| if c { (h + 1, m) } else { (h, m + 1) },
+        );
+    let _ = writeln!(
+        writer,
+        "cache: {hits} hits, {misses} misses, {total} files",
+        total = hits + misses,
+    );
 }
 
 /// Resolves an outcome set into its closing [`Summary`], or `None` when
@@ -256,6 +275,13 @@ fn summarize(outcomes: &[FileOutcome], summary: &EmitterSummary, mode: Mode) -> 
     }
 }
 
+/// The count line an unsettled run closes with, `None` for a run whose
+/// every rewrite settled.
+fn unstable_remainder(outcomes: &[FileOutcome]) -> Option<Summary> {
+    let files = outcomes.iter().filter_map(FileOutcome::unstable).count();
+    (files > 0).then_some(Summary::Unstable { files })
+}
+
 #[cfg(test)]
 mod tests {
     use std::assert_matches;
@@ -269,6 +295,7 @@ mod tests {
     use crate::rule::RuleId;
     use crate::source::Source;
     use crate::testing::{FailingWriter, parse, range};
+    use crate::unstable::UnstableRewrite;
 
     fn diagnostic(severity: Severity, range: TextRange, slug: &'static str) -> Diagnostic {
         Diagnostic {
@@ -282,6 +309,15 @@ mod tests {
         }
     }
 
+    /// An outcome whose rewrite the settle check named a rule on.
+    fn unsettled_outcome() -> FileOutcome {
+        let mut outcome = outcome_with(parse("x = 1\n"), Vec::new());
+        if let FileOutcome::Done { unstable, .. } = &mut outcome {
+            *unstable = Some(Box::new(UnstableRewrite::sample("widener")));
+        }
+        outcome
+    }
+
     fn outcome_with(source: Source, diagnostics: Vec<Diagnostic>) -> FileOutcome {
         FileOutcome::Done {
             cached: false,
@@ -289,6 +325,7 @@ mod tests {
             file: source.source_file().clone(),
             notebook_index: None,
             rewrite: Rewrite::Skipped,
+            unstable: None,
         }
     }
 
@@ -532,6 +569,40 @@ mod tests {
         assert_eq!(
             status_from_outcomes(&outcomes, false),
             ExitStatus::FormatChange,
+        );
+    }
+
+    #[test]
+    fn unstable_status_fails_a_run_carrying_a_report() {
+        let outcomes = [unsettled_outcome()];
+
+        assert_eq!(unstable_status(&outcomes), ExitStatus::ConfigError);
+    }
+
+    #[test]
+    fn unstable_status_stays_clean_for_a_settled_run() {
+        let outcomes = [outcome_with(parse("x = 1\n"), Vec::new())];
+
+        assert_eq!(unstable_status(&outcomes), ExitStatus::Clean);
+    }
+
+    #[test]
+    fn unstable_remainder_is_none_for_a_settled_run() {
+        let outcomes = [outcome_with(parse("x = 1\n"), Vec::new())];
+
+        assert_matches!(unstable_remainder(&outcomes), None);
+    }
+
+    #[test]
+    fn unstable_remainder_counts_the_files_a_second_run_would_change() {
+        let outcomes = [
+            unsettled_outcome(),
+            outcome_with(parse("x = 1\n"), Vec::new()),
+        ];
+
+        assert_matches!(
+            unstable_remainder(&outcomes),
+            Some(Summary::Unstable { files: 1 })
         );
     }
 

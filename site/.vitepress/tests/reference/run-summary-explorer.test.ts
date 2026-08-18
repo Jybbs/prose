@@ -23,8 +23,14 @@ describe('RunSummaryExplorer', () => {
   })
 
   it('drops the anchor under --quiet', async () => {
-    const w = mountExplorer()
-    await w.findAll('.run-summary-opt')[6].trigger('click')
+    const w     = mountExplorer()
+    const quiet = w
+      .findAll('.run-summary-opt')
+      .find(opt => opt.get('.run-summary-opt-mono').text() === '--quiet')
+
+    expect(quiet).toBeDefined()
+    await quiet!.trigger('click')
+
     expect(w.find('.run-summary-anchor').exists()).toBe(false)
     expect(w.get('.run-summary-msg').text()).toBe('All clean.')
   })

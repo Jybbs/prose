@@ -11,7 +11,7 @@ use lsp_types::{
 };
 use ruff_source_file::PositionEncoding;
 
-use super::{capabilities, config_cache::ConfigCache, documents::DocumentStore};
+use super::{capabilities, config_cache::ConfigCache, documents::DocumentStore, notices::Notices};
 use crate::config::config_rel_paths;
 
 mod notifications;
@@ -26,6 +26,20 @@ pub(super) fn send(connection: &Connection, message: Message) -> anyhow::Result<
         .sender
         .send(message)
         .context("sending message to client")
+}
+
+/// Sends one request to the client under `id`, contextualizing a closed
+/// channel.
+pub(super) fn send_request<P: serde::Serialize>(
+    connection: &Connection,
+    id: RequestId,
+    method: &str,
+    params: P,
+) -> anyhow::Result<()> {
+    send(
+        connection,
+        Message::Request(Request::new(id, method.to_owned(), params)),
+    )
 }
 
 /// Completes the `initialize` handshake, negotiating position encoding
@@ -54,16 +68,25 @@ pub(super) fn serve(connection: Connection) -> anyhow::Result<()> {
         .initialize_finish(id, result)
         .context("finishing language-server handshake")?;
     let watching = register_config_watchers(&connection, &params.capabilities)?;
-    main_loop(&connection, encoding, watching);
+    main_loop(
+        &connection,
+        encoding,
+        ConfigCache::new(watching),
+        Notices::new(capabilities::shows_documents(&params.capabilities)),
+    );
     Ok(())
 }
 
 /// Reads each message until the client requests shutdown or sends a bare
 /// `exit`. A malformed message is logged and dropped rather than ending the
 /// session, so one bad payload never tears down a live editor.
-fn main_loop(connection: &Connection, encoding: PositionEncoding, watching: bool) {
+fn main_loop(
+    connection: &Connection,
+    encoding: PositionEncoding,
+    mut configs: ConfigCache,
+    mut notices: Notices,
+) {
     let mut documents = DocumentStore::default();
-    let mut configs = ConfigCache::new(watching);
     for message in &connection.receiver {
         match message {
             Message::Notification(notification) => {
@@ -83,9 +106,14 @@ fn main_loop(connection: &Connection, encoding: PositionEncoding, watching: bool
             Message::Request(request) => match connection.handle_shutdown(&request) {
                 Ok(true) => return,
                 Ok(false) => {
-                    if let Err(err) =
-                        handle_request(connection, &documents, &mut configs, request, encoding)
-                    {
+                    if let Err(err) = handle_request(
+                        connection,
+                        &documents,
+                        &mut configs,
+                        &mut notices,
+                        request,
+                        encoding,
+                    ) {
                         eprintln!("prose server: request failed: {err:#}");
                     }
                 }
@@ -94,7 +122,11 @@ fn main_loop(connection: &Connection, encoding: PositionEncoding, watching: bool
                     return;
                 }
             },
-            Message::Response(_) => {}
+            Message::Response(response) => {
+                if let Err(err) = notices.answered(connection, &response) {
+                    eprintln!("prose server: dropped response: {err:#}");
+                }
+            }
         }
     }
 }
@@ -134,13 +166,11 @@ fn register_config_watchers(
             ),
         }],
     };
-    send(
+    send_request(
         connection,
-        Message::Request(Request::new(
-            RequestId::from("prose/register-config-watch".to_owned()),
-            RegisterCapability::METHOD.to_owned(),
-            params,
-        )),
+        RequestId::from("prose/register-config-watch".to_owned()),
+        RegisterCapability::METHOD,
+        params,
     )?;
     Ok(true)
 }
