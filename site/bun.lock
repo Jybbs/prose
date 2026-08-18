@@ -59,7 +59,7 @@
     },
   },
   "patchedDependencies": {
-    "@shikijs/magic-move@4.4.2": "patches/magic-move-batch-get-animations.patch",
+    "@shikijs/magic-move@4.4.2": "patches/magic-move-frame-cost.patch",
   },
   "overrides": {
     "postcss": "8.5.26",

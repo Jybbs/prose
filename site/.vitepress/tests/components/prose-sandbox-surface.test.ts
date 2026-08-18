@@ -5,7 +5,9 @@ import { ref }                  from 'vue'
 
 import ProseSandboxSurface             from '../../theme/components/sandbox/ProseSandboxSurface.vue'
 import type { ProseSandbox }           from '../../lib/composables/use-prose-sandbox'
-import { nextPaint }                   from '../../lib/shared/paint'
+import { MORPH_LINE_CHURN_CAP }        from '../../lib/markdown/magic-move-delta'
+import { magicMoveWatchdogMs }         from '../../lib/markdown/magic-move-options'
+import { nextPaint, ruleDrawMs }       from '../../lib/shared/paint'
 import { domTest, isHidden, stubRect } from '../dom'
 
 const drawSettled = (): Promise<void> => promiseTimeout(550)
@@ -13,11 +15,23 @@ const drawSettled = (): Promise<void> => promiseTimeout(550)
 vi.mock('../../lib/shared/highlight', () => import('../highlight-stub'))
 
 vi.mock('../../lib/markdown/magic-move', () => ({
-  precompileMagicMove: () => Promise.resolve([{ tokens: [] }, { tokens: [] }])
+  magicMoveMachine: () => Promise.resolve({
+    commit: () => ({ current: { tokens: [] }, previous: { tokens: [] } }),
+    reset : () => {}
+  })
 }))
 
+// Two states sharing no line, so their churn clears the cap on real text
+// rather than on a stubbed count.
+const WIDE  = Array.from({ length: 80 }, (_, i) => `a${i} = ${i}`).join('\n')
+const WIDER = Array.from({ length: 80 }, (_, i) => `b${i} = ${i}`).join('\n')
+
 vi.mock('@shikijs/magic-move/vue', () => ({
-  ShikiMagicMovePrecompiled: { name: 'ShikiMagicMovePrecompiled', template: '<pre class="mm" />' }
+  ShikiMagicMovePrecompiled: {
+    name     : 'ShikiMagicMovePrecompiled',
+    props    : ['animate', 'options', 'step', 'steps'],
+    template : '<pre class="mm" />'
+  }
 }))
 
 const fakeSandbox = (formatted: string, source = formatted): ProseSandbox => ({
@@ -143,6 +157,73 @@ describe('ProseSandboxSurface', () => {
     expect(wrapper.get('.sandbox-surface-display').html()).toContain('x = 2')
   })
 
+  surfaceTest('warms the panel behind the display before any toggle', async ({ mounted }) => {
+    const { wrapper } = await mounted({ formatted: 'x = 1' })
+    expect(wrapper.find('.mm').exists()).toBe(false)
+
+    // The mount render publishes straight to the display, then warms the panel
+    // so the first toggle finds it mounted rather than paying for it.
+    await nextPaint()
+    await flushPromises()
+    expect(isHidden(wrapper.get('.mm'))).toBe(true)
+    expect(isHidden(wrapper.get('.sandbox-surface-display'))).toBe(false)
+  })
+
+  surfaceTest('leaves the panel cold under reduced motion', async ({ mounted }) => {
+    const { wrapper } = await mounted({ formatted: 'x = 1', motion: true })
+
+    await nextPaint()
+    await flushPromises()
+    expect(wrapper.find('.mm').exists()).toBe(false)
+  })
+
+  surfaceTest('publishes straight to the display when the morph is too large', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
+    await nextPaint()
+    await flushPromises()
+
+    // The panel is warm and waiting, and the toggle still declines to morph
+    // because the renderer would have real work for most of it.
+    sandbox.formatted.value = WIDE
+    await flushPromises()
+    expect(isHidden(wrapper.get('.mm'))).toBe(true)
+    expect(wrapper.attributes('style')).toBeUndefined()
+    expect(wrapper.get('.sandbox-surface-display').html()).toContain('a79 = 79')
+  })
+
+  surfaceTest('keeps the panel in step after declining a morph', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
+    await nextPaint()
+    await flushPromises()
+    const panel = () => wrapper.findComponent({ name: 'ShikiMagicMovePrecompiled' })
+    expect(panel().props('step')).toBe(0)
+
+    sandbox.formatted.value = WIDE
+    await flushPromises()
+
+    // Declining to morph still advances the panel, so the next morph starts
+    // from what the reader sees rather than from a state two toggles old.
+    expect(panel().props('step')).toBe(1)
+  })
+
+  surfaceTest('records each morph decision for the frame probe', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
+    await nextPaint()
+    await flushPromises()
+    expect(window.proseMorphProbe).toMatchObject({ morphed: false })
+
+    sandbox.formatted.value = 'x = 2'
+    await flushPromises()
+    await nextPaint()
+    await flushPromises()
+    expect(window.proseMorphProbe).toMatchObject({ cap: MORPH_LINE_CHURN_CAP, churn: 1, morphed: true })
+
+    sandbox.formatted.value = WIDER
+    await flushPromises()
+    expect(window.proseMorphProbe).toMatchObject({ lines: [1, 80], morphed: false })
+    expect(wrapper.get('.sandbox-surface-display').html()).toContain('b79 = 79')
+  })
+
   surfaceTest('holds the outgoing height until the morph flips its step', async ({ mounted }) => {
     const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
     stubRect(wrapper.element, { height: 320.4 })
@@ -252,6 +333,30 @@ describe('ProseSandboxSurface', () => {
     expect(isHidden(wrapper.get('.sandbox-surface-display'))).toBe(false)
   })
 
+  surfaceTest('holds the morph when a stale end lands before the flip', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
+    const panel = () => wrapper.findComponent({ name: 'ShikiMagicMovePrecompiled' })
+
+    sandbox.formatted.value = 'x = 2'
+    await flushPromises()
+    await nextPaint()
+    await flushPromises()
+
+    // The successor's swap cancels the running morph's transitions, so that
+    // morph's `end` lands while the successor still sits at its rest state.
+    sandbox.formatted.value = 'x = 3'
+    await flushPromises()
+    panel().vm.$emit('end')
+    await flushPromises()
+    expect(isHidden(wrapper.get('.mm'))).toBe(false)
+
+    await nextPaint()
+    await flushPromises()
+    panel().vm.$emit('end')
+    await flushPromises()
+    expect(isHidden(wrapper.get('.mm'))).toBe(true)
+  })
+
   surfaceTest('absorbs a stray end and still settles the next morph', async ({ mounted }) => {
     const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
     const panel = () => wrapper.findComponent({ name: 'ShikiMagicMovePrecompiled' })
@@ -288,7 +393,7 @@ describe('ProseSandboxSurface', () => {
     expect(isHidden(wrapper.get('.mm'))).toBe(false)
 
     // The stub panel never emits `end`, so only the watchdog can settle this.
-    await promiseTimeout(800)
+    await promiseTimeout(magicMoveWatchdogMs(ruleDrawMs()) + 100)
     await flushPromises()
     expect(isHidden(wrapper.get('.mm'))).toBe(true)
     expect(isHidden(wrapper.get('.sandbox-surface-display'))).toBe(false)

@@ -10,13 +10,14 @@ import type { ProseSandbox }     from '../../../lib/composables/use-prose-sandbo
 import { useReducedMotion }      from '../../../lib/composables/use-reduced-motion'
 import { useSquiggleDraw }       from '../../../lib/composables/use-squiggle-draw'
 import { lintDecorations }       from '../../../lib/markdown/lint-decorations'
+import { MORPH_LINE_CHURN_CAP, noteMorphDecision } from '../../../lib/markdown/magic-move-delta'
 import { REPO_URL }              from '../../../lib/shared/constants'
 import { highlight }             from '../../../lib/shared/highlight'
 import { latestRun }             from '../../../lib/shared/latest-run'
 import { externalAttrs }         from '../../../lib/shared/links'
 import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
-const WATCHDOG_GRACE_MS = 250
+const NO_PAIR = { churn: 0, lines: [0, 0] as const, shifts: 0 }
 
 const props   = defineProps<{ guide?: number | null, guideHue?: string, sandbox: ProseSandbox }>()
 const editing = defineModel<boolean>('editing', { default: false })
@@ -39,13 +40,12 @@ const step        = ref(0)
 
 const { drawSquiggles, undrawn } = useSquiggleDraw()
 
-const { duration, morphOptions, morphSteps, panel, precompile, steps } = useMagicMove(0)
+const { morphOptions, morphSteps, panel, precompile, steps, watchdogMs } = useMagicMove(0)
 
-// The renderer clears its container at mount and measures the box before
-// painting the first step, so on the first morph the panel would fall to the
-// surfaces grid's `min-height` and shrink the document with it. The outgoing
-// height floors the section until the step flips, from where the container's
-// own height animation drives it.
+// Revealing the panel trades a laid-out display for one that has to lay out
+// from `display: none`, so the section would drop to the surfaces grid's
+// `min-height` in between. The outgoing height floors the section until the
+// step flips, from where the container's own height animation drives it.
 const heldHeight = computed(() =>
   morphing.value && step.value === 0 ? `${restHeight.value}px` : undefined)
 
@@ -57,7 +57,7 @@ const watchdog = useTimeoutFn(
     pendingEnds = 0
     settleMorph()
   },
-  () => duration.value + WATCHDOG_GRACE_MS,
+  () => watchdogMs.value,
   { immediate: false }
 )
 
@@ -80,6 +80,7 @@ async function render(next: string): Promise<void> {
   if (editing.value) {
     morphing.value = false
     commit(html, next)
+    noteMorphDecision(NO_PAIR, false)
     return
   }
   // Same code with a changed finding set is a lint toggle, so retract the
@@ -88,21 +89,40 @@ async function render(next: string): Promise<void> {
   if (from !== '' && from === next && !reducedMotion.value) {
     morphing.value = false
     await reflow(html, next, superseded)
+    noteMorphDecision(NO_PAIR, false)
     return
   }
   if (from === '' || reducedMotion.value) {
     morphing.value = false
     commit(html, next)
     drawSquiggles()
+    noteMorphDecision(NO_PAIR, false)
+    if (from === '' && !reducedMotion.value) warmPanel(next, superseded)
     return
   }
   // The morph renders a trailing newline as an extra `<br>` line the static
   // display does not carry, so the states trim to the real last line.
-  const committed = await precompile(from.trimEnd(), next.trimEnd())
+  const pair = await precompile(from.trimEnd(), next.trimEnd())
   if (superseded()) return
+  // Past the cap the renderer has real work for most of the panel, which costs
+  // more frame time than a reader can follow, so the settled output publishes
+  // the way the reduced-motion path publishes it.
+  if (pair.churn > MORPH_LINE_CHURN_CAP) {
+    morphing.value = false
+    commit(html, next)
+    drawSquiggles()
+    // The panel stays in step with the display even though it never showed
+    // this transition, so the next morph starts from what the reader sees
+    // rather than rebuilding every token against a state two toggles old.
+    animate.value = false
+    steps.value   = pair.steps
+    step.value    = 1
+    noteMorphDecision(pair, false)
+    return
+  }
   restHeight.value = Math.ceil(surface.value?.getBoundingClientRect().height ?? 0)
   animate.value    = false
-  steps.value      = committed
+  steps.value      = pair.steps
   step.value       = 0
   morphing.value   = true
   // The FLIP morph measures the rest state against the painted DOM, so the
@@ -116,7 +136,28 @@ async function render(next: string): Promise<void> {
   pendingEnds  += 1
   animate.value = true
   step.value    = 1
+  noteMorphDecision(pair, true)
   watchdog.start()
+}
+
+// Mounts the panel behind the settled display and renders one step into it,
+// so the first toggle finds the chunks fetched, the token DOM built, and the
+// renderer's first-render flag spent. That flag gates the enter and container
+// animations, and only an animating render clears it, so the warm-up renders
+// with `animate` on. Nothing moves, because the same flag suppresses the
+// enters and the panel is hidden. The step-zero gate drops the `end` it emits.
+async function warmPanel(text: string, superseded: () => boolean): Promise<void> {
+  const rest = text.trimEnd()
+  if (rest === '') return
+  await nextPaint()
+  if (superseded() || steps.value.length > 0) return
+  const { steps: warmed } = await precompile(rest, rest)
+  if (superseded() || steps.value.length > 0) return
+  animate.value = true
+  steps.value   = warmed
+  step.value    = 0
+  await nextTick()
+  animate.value = false
 }
 
 // The morph settles onto the static display, so the squiggles draw back in
@@ -126,13 +167,13 @@ function settleMorph(): void {
   drawSquiggles()
 }
 
-// A morph superseded mid-flight still emits `end` when the successor's
-// render force-resolves its pending animations, and on a persistent panel
-// that stale `end` lands on the live component, so only the last expected
-// `end` settles the surface.
+// A superseded morph's `end` reaches the live panel, either when the
+// successor's swap cancels its transitions or when the successor's flip
+// force-resolves them, so the count absorbs it and the step gate keeps it
+// from settling a successor still sitting in its rest state.
 function endMorph(): void {
   pendingEnds = Math.max(0, pendingEnds - 1)
-  if (pendingEnds === 0 && morphing.value) settleMorph()
+  if (pendingEnds === 0 && morphing.value && step.value === 1) settleMorph()
 }
 
 // Publishes the highlighted output and records the text and the rules it
