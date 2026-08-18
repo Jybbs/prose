@@ -58,7 +58,7 @@ async function prepare(): Promise<void> {
   const before = codeFrom(props.inputHtml)
   const after  = codeFrom(props.outputHtml)
   if (before === after) return
-  steps.value = await precompile(before, after)
+  steps.value = (await precompile(before, after)).steps
   await nextTick()
   animate.value = true
 }

@@ -10,17 +10,18 @@ import type { ProseSandbox }     from '../../../lib/composables/use-prose-sandbo
 import { useReducedMotion }      from '../../../lib/composables/use-reduced-motion'
 import { useSquiggleDraw }       from '../../../lib/composables/use-squiggle-draw'
 import { lintDecorations }       from '../../../lib/markdown/lint-decorations'
+import * as magicMoveDelta       from '../../../lib/markdown/magic-move-delta'
+import { REPO_URL }              from '../../../lib/shared/constants'
 import { highlight }             from '../../../lib/shared/highlight'
 import { latestRun }             from '../../../lib/shared/latest-run'
-import { REPO_URL }              from '../../../lib/shared/constants'
 import { externalAttrs }         from '../../../lib/shared/links'
 import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
-const WATCHDOG_GRACE_MS = 250
+const NO_PAIR = { churn: 0, lines: [0, 0] as const, shifts: 0 }
 
 const props   = defineProps<{ guide?: number | null, guideHue?: string, sandbox: ProseSandbox }>()
 const editing = defineModel<boolean>('editing', { default: false })
-const { diagnostics, error, formatted, source, unstable } = props.sandbox
+const { diagnostics, drawn, error, formatNow, formatted, source, unstable } = props.sandbox
 
 const reportUrl = `${REPO_URL}/issues/new?template=unstable-output.yml`
 
@@ -30,58 +31,61 @@ const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('ed
 const popper        = useTemplateRef<InstanceType<typeof LintFlagPopper>>('popper')
 const surface       = useTemplateRef<HTMLElement>('surface')
 
+const animate     = ref(false)
 const displayHtml = ref('')
 const draft       = ref('')
-const morphKey    = ref(0)
 const morphing    = ref(false)
 const restHeight  = ref(0)
 const step        = ref(0)
 
 const { drawSquiggles, undrawn } = useSquiggleDraw()
 
-const { duration, morphOptions, morphSteps, panel, precompile, steps } = useMagicMove(0)
+const { morphOptions, morphSteps, panel, precompile, steps, watchdogMs } = useMagicMove(0)
 
-// The morph's renderer empties its container and measures the box before
-// painting the first step, so the panel would fall to the surfaces grid's
-// `min-height` for that layout and shrink the document with it. The outgoing
-// height floors the panel until the step flips, from where the container's
-// own height animation drives it.
+// Revealing the panel trades a laid-out display for one that has to lay out
+// from `display: none`, so the section would drop to the surfaces grid's
+// `min-height` in between. The outgoing height floors the section until the
+// step flips, from where the container's own height animation drives it.
 const heldHeight = computed(() =>
   morphing.value && step.value === 0 ? `${restHeight.value}px` : undefined)
 
 const ruleCodes = computed(() => new Set(diagnostics.value.map(finding => finding.code)))
 
 const watchdog = useTimeoutFn(
-  () => { if (morphing.value) endMorph() },
-  () => duration.value + WATCHDOG_GRACE_MS,
+  () => {
+    if (!morphing.value || step.value === 0) return
+    pendingEnds = 0
+    settleMorph()
+  },
+  () => watchdogMs.value,
   { immediate: false }
 )
 
 const run = latestRun()
 
-let previous   = ''
-let shownRules = new Set<string>()
+let pendingEnds = 0
+let previous    = ''
+let seenDraw    = drawn.value
+let shownRules  = new Set<string>()
 
 // Renders the settled output as highlighted HTML carrying the lint
 // squiggles, then morphs from the prior output when motion is allowed and
-// the surface is not mid-edit. Each transition mounts a fresh magic-move
-// instance keyed by `morphKey`, so it measures its rest state before the
-// step flip animates it, matching the fixture morph. The settled html
-// lands on the static display only under the morph's cover, so the pane
-// never flashes the end state before the tokens slide. A newer change
-// supersedes the render in flight, which abandons rather than racing on
-// the shared morph state, and a path that publishes to the static display
-// clears `morphing` rather than leaving a stale morph mounted. A watchdog
-// restores the static display if the `@end` event is ever missed.
+// the surface is not mid-edit. One magic-move panel serves every
+// transition, swapped to the incoming rest state before the step flips.
 async function render(next: string): Promise<void> {
   const superseded = run.begin()
   const from       = previous
+  // A drawn example is a different document rather than an edit to this one,
+  // so it publishes whatever its churn reads.
+  const drew       = drawn.value !== seenDraw
+  seenDraw         = drawn.value
   const html       = await highlight(next, 'python', lintDecorations(diagnostics.value, next))
   if (superseded()) return
   // Mid-edit the display sits behind the editor, so stage the html silently.
   if (editing.value) {
     morphing.value = false
     commit(html, next)
+    magicMoveDelta.noteMorphDecision(NO_PAIR, false)
     return
   }
   // Same code with a changed finding set is a lint toggle, so retract the
@@ -90,45 +94,104 @@ async function render(next: string): Promise<void> {
   if (from !== '' && from === next && !reducedMotion.value) {
     morphing.value = false
     await reflow(html, next, superseded)
+    magicMoveDelta.noteMorphDecision(NO_PAIR, false)
     return
   }
   if (from === '' || reducedMotion.value) {
     morphing.value = false
     commit(html, next)
     drawSquiggles()
+    magicMoveDelta.noteMorphDecision(NO_PAIR, false)
+    if (from === '' && !reducedMotion.value) warmPanel(next, superseded)
     return
   }
   // The morph renders a trailing newline as an extra `<br>` line the static
   // display does not carry, so the states trim to the real last line.
-  const committed = await precompile(from.trimEnd(), next.trimEnd())
+  const trimFrom = from.trimEnd()
+  const trimNext = next.trimEnd()
+  const measure  = magicMoveDelta.lineChurn(trimFrom, trimNext)
+  // Past the cap the renderer has real work for most of the panel, which costs
+  // more frame time than a reader can follow, so the settled output publishes
+  // the way the reduced-motion path publishes it.
+  if (drew || measure.churn > magicMoveDelta.MORPH_LINE_CHURN_CAP) {
+    morphing.value = false
+    commit(html, next)
+    drawSquiggles()
+    magicMoveDelta.noteMorphDecision(measure, false)
+    await advancePanel(trimNext, superseded)
+    return
+  }
+  const pair = await precompile(trimFrom, trimNext)
   if (superseded()) return
   restHeight.value = Math.ceil(surface.value?.getBoundingClientRect().height ?? 0)
-  steps.value      = committed
+  animate.value    = false
+  steps.value      = pair.steps
   step.value       = 0
-  morphKey.value  += 1
   morphing.value   = true
   // The FLIP morph measures the rest state against the painted DOM, so the
-  // fresh instance needs a real frame to lay the "from" tokens out before
+  // revealed panel needs a real frame to lay the "from" tokens out before
   // the step flip. A microtask alone leaves both measurements in one frame
-  // and the morph degrades to a jump cut. Mounting with `animate` on runs
-  // the rest state through a real render, so the flip is no longer the
-  // renderer's first and its container-height transition engages.
+  // and the morph degrades to a jump cut.
   await nextTick()
   await nextPaint()
   if (superseded()) return
   commit(html, next)
-  step.value = 1
+  pendingEnds  += 1
+  animate.value = true
+  step.value    = 1
+  magicMoveDelta.noteMorphDecision(pair, true)
   watchdog.start()
 }
 
+// Rebuilds the hidden panel at a published state, so the next morph starts
+// from what the reader sees rather than from a state two toggles old. The
+// leading paint keeps the rebuild off the publish frame, and priming the
+// machine from the empty state skips the cross-document token sync no morph
+// will ever show.
+async function advancePanel(rest: string, superseded: () => boolean): Promise<void> {
+  await nextPaint()
+  if (superseded()) return
+  const pair = await precompile('', rest)
+  if (superseded()) return
+  animate.value = false
+  steps.value   = pair.steps
+  step.value    = 1
+}
+
+// Mounts the panel behind the settled display and renders one step into it,
+// so the first toggle finds the chunks fetched, the token DOM built, and the
+// renderer's first-render flag spent. That flag gates the enter and container
+// animations, and only an animating render clears it, so the warm-up renders
+// with `animate` on. Nothing moves, because the same flag suppresses the
+// enters and the panel is hidden. The step-zero gate drops the `end` it emits.
+async function warmPanel(text: string, superseded: () => boolean): Promise<void> {
+  const rest = text.trimEnd()
+  if (rest === '') return
+  await nextPaint()
+  if (superseded() || steps.value.length > 0) return
+  const { steps: warmed } = await precompile(rest, rest)
+  if (superseded() || steps.value.length > 0) return
+  animate.value = true
+  steps.value   = warmed
+  step.value    = 0
+  await nextTick()
+  animate.value = false
+}
+
 // The morph settles onto the static display, so the squiggles draw back in
-// the way the fixture cards do rather than snapping to full length. The
-// mount's rest-state render emits its own `end` before the flip, which the
-// step guard drops.
-function endMorph(): void {
-  if (step.value === 0) return
+// the way the fixture cards do rather than snapping to full length.
+function settleMorph(): void {
   morphing.value = false
   drawSquiggles()
+}
+
+// A superseded morph's `end` reaches the live panel, either when the
+// successor's swap cancels its transitions or when the successor's flip
+// force-resolves them, so the count absorbs it and the step gate keeps it
+// from settling a successor still sitting in its rest state.
+function endMorph(): void {
+  pendingEnds = Math.max(0, pendingEnds - 1)
+  if (pendingEnds === 0 && morphing.value && step.value === 1) settleMorph()
 }
 
 // Publishes the highlighted output and records the text and the rules it
@@ -186,7 +249,10 @@ function startEditing(): void {
 // Blur leaves the box open, so a reformat only ever runs on the reader asking
 // for one and never as a side effect of clicking away.
 function applyEdit(): void {
-  if (draft.value !== source.value) source.value = draft.value
+  if (draft.value !== source.value) {
+    source.value = draft.value
+    formatNow()
+  }
   editing.value = false
 }
 
@@ -250,13 +316,12 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
     </div>
     <component
       :is="panel"
-      v-if="panel && morphing"
-      :key="morphKey"
-      v-show="!editing"
+      v-if="panel && morphSteps.length"
+      v-show="morphing && !editing"
       class="code-panel-code"
       :steps="morphSteps"
       :step="step"
-      :animate="!reducedMotion"
+      :animate="animate && !reducedMotion"
       :options="morphOptions"
       @end="endMorph"
     />

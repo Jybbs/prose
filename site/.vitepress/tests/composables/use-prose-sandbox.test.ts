@@ -118,7 +118,11 @@ describe('useProseSandbox', () => {
     const fired = ['align-equals', 'space-statements']
     const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT', '', fired))))
     await api.start()
-    expect(api.eligible.value).toEqual(['align-equals', 'space-statements'])
+    // The probe adoption defers past the publish paint, so the set lands a
+    // few frames after the format rather than in the same task.
+    await vi.waitFor(() => {
+      expect(api.eligible.value).toEqual(['align-equals', 'space-statements'])
+    })
   })
 
   it('probes each eligible rule for the facets that can affect the source', async () => {
@@ -365,9 +369,9 @@ describe('useProseSandbox', () => {
     api.source.value = 'abc'
     await vi.advanceTimersByTimeAsync(50)
     await flushPromises()
-    // One settled cycle: the display run plus the eligibility run for the
-    // new source, rather than a run per intermediate edit.
-    expect(format).toHaveBeenCalledTimes(2)
+    // One settled display run for the final edit, rather than a run per
+    // intermediate edit, with the eligibility runs deferred past the paint.
+    expect(format).toHaveBeenCalledTimes(1)
     expect(api.formatted.value).toBe('OUT')
   })
 
@@ -378,11 +382,21 @@ describe('useProseSandbox', () => {
     api.setFacet('align-equals', ENABLED, false)
     api.setFacet('space-statements', SCHEMA.rules[1].facets[0], false)
     await flushPromises()
-    // The two toggles coalesce into one immediate display run, trailed only
-    // by the first format's eligibility baseline, with no timer advance.
-    expect(format).toHaveBeenCalledTimes(2)
+    // The two toggles coalesce into one immediate display run with no timer
+    // advance, the eligibility runs deferred past the publish paint.
+    expect(format).toHaveBeenCalledTimes(1)
     expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('align-equals = false'), 'seed a')
     expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('space-statements = false'), 'seed a')
+  })
+
+  it('formats a drawn example without waiting out the typing debounce', async () => {
+    vi.useFakeTimers()
+    const format = vi.fn<Formatter>(formatting('OUT'))
+    const api    = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 250 })
+    api.refresh()
+    await flushPromises()
+    expect(format).toHaveBeenCalledTimes(1)
+    expect(api.formatted.value).toBe('OUT')
   })
 
   it('skips the debounced re-format over the pair the toggle already published', async () => {
