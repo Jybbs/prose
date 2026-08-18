@@ -4,6 +4,7 @@ import { ref }            from 'vue'
 import type * as configSchema from '../sandbox/config-schema.data'
 import type { ProseWasm }     from '../sandbox/load-module'
 import * as probe             from '../sandbox/probe'
+import { nextPaint }          from '../shared/paint'
 
 type SourceProbe = {
   eligible     : readonly string[]
@@ -79,14 +80,24 @@ export function useSandboxProbe(
     }
   }
 
+  // Adopts the target's cached probe or kicks a fresh run, two paints after
+  // the caller's publish, because the plate deck the adoption rebuilds would
+  // otherwise share the publish frame and stretch it.
+  async function adopt(current: ProseWasm, target: string): Promise<void> {
+    await nextPaint()
+    await nextPaint()
+    if (probedSource !== target) return
+    const cached = probed.get(target)
+    apply(cached ?? null)
+    if (!cached) void run(current, target)
+  }
+
   // Called after each successful format. A config toggle never changes what is
   // eligible, so only a new source adopts its cached probe or kicks a fresh run.
   function sync(current: ProseWasm, target: string): void {
     if (target === probedSource) return
     probedSource = target
-    const cached = probed.get(target)
-    apply(cached ?? null)
-    if (!cached) void run(current, target)
+    void adopt(current, target)
   }
 
   return { eligible, facetImpact, lengthImpact, sync }

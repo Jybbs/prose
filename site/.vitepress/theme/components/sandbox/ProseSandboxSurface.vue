@@ -10,7 +10,7 @@ import type { ProseSandbox }     from '../../../lib/composables/use-prose-sandbo
 import { useReducedMotion }      from '../../../lib/composables/use-reduced-motion'
 import { useSquiggleDraw }       from '../../../lib/composables/use-squiggle-draw'
 import { lintDecorations }       from '../../../lib/markdown/lint-decorations'
-import { MORPH_LINE_CHURN_CAP, noteMorphDecision } from '../../../lib/markdown/magic-move-delta'
+import * as magicMoveDelta       from '../../../lib/markdown/magic-move-delta'
 import { REPO_URL }              from '../../../lib/shared/constants'
 import { highlight }             from '../../../lib/shared/highlight'
 import { latestRun }             from '../../../lib/shared/latest-run'
@@ -85,7 +85,7 @@ async function render(next: string): Promise<void> {
   if (editing.value) {
     morphing.value = false
     commit(html, next)
-    noteMorphDecision(NO_PAIR, false)
+    magicMoveDelta.noteMorphDecision(NO_PAIR, false)
     return
   }
   // Same code with a changed finding set is a lint toggle, so retract the
@@ -94,37 +94,35 @@ async function render(next: string): Promise<void> {
   if (from !== '' && from === next && !reducedMotion.value) {
     morphing.value = false
     await reflow(html, next, superseded)
-    noteMorphDecision(NO_PAIR, false)
+    magicMoveDelta.noteMorphDecision(NO_PAIR, false)
     return
   }
   if (from === '' || reducedMotion.value) {
     morphing.value = false
     commit(html, next)
     drawSquiggles()
-    noteMorphDecision(NO_PAIR, false)
+    magicMoveDelta.noteMorphDecision(NO_PAIR, false)
     if (from === '' && !reducedMotion.value) warmPanel(next, superseded)
     return
   }
   // The morph renders a trailing newline as an extra `<br>` line the static
   // display does not carry, so the states trim to the real last line.
-  const pair = await precompile(from.trimEnd(), next.trimEnd())
-  if (superseded()) return
+  const trimFrom = from.trimEnd()
+  const trimNext = next.trimEnd()
+  const measure  = magicMoveDelta.lineChurn(trimFrom, trimNext)
   // Past the cap the renderer has real work for most of the panel, which costs
   // more frame time than a reader can follow, so the settled output publishes
   // the way the reduced-motion path publishes it.
-  if (drew || pair.churn > MORPH_LINE_CHURN_CAP) {
+  if (drew || measure.churn > magicMoveDelta.MORPH_LINE_CHURN_CAP) {
     morphing.value = false
     commit(html, next)
     drawSquiggles()
-    // The panel stays in step with the display even though it never showed
-    // this transition, so the next morph starts from what the reader sees
-    // rather than rebuilding every token against a state two toggles old.
-    animate.value = false
-    steps.value   = pair.steps
-    step.value    = 1
-    noteMorphDecision(pair, false)
+    magicMoveDelta.noteMorphDecision(measure, false)
+    await advancePanel(trimNext, superseded)
     return
   }
+  const pair = await precompile(trimFrom, trimNext)
+  if (superseded()) return
   restHeight.value = Math.ceil(surface.value?.getBoundingClientRect().height ?? 0)
   animate.value    = false
   steps.value      = pair.steps
@@ -141,8 +139,23 @@ async function render(next: string): Promise<void> {
   pendingEnds  += 1
   animate.value = true
   step.value    = 1
-  noteMorphDecision(pair, true)
+  magicMoveDelta.noteMorphDecision(pair, true)
   watchdog.start()
+}
+
+// Rebuilds the hidden panel at a published state, so the next morph starts
+// from what the reader sees rather than from a state two toggles old. The
+// leading paint keeps the rebuild off the publish frame, and priming the
+// machine from the empty state skips the cross-document token sync no morph
+// will ever show.
+async function advancePanel(rest: string, superseded: () => boolean): Promise<void> {
+  await nextPaint()
+  if (superseded()) return
+  const pair = await precompile('', rest)
+  if (superseded()) return
+  animate.value = false
+  steps.value   = pair.steps
+  step.value    = 1
 }
 
 // Mounts the panel behind the settled display and renders one step into it,

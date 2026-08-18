@@ -1,20 +1,5 @@
-diff --git a/node_modules/@shikijs/magic-move/.bun-tag-2e6b309f71479da3 b/.bun-tag-2e6b309f71479da3
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
-diff --git a/node_modules/@shikijs/magic-move/.bun-tag-5772a22b68d55695 b/.bun-tag-5772a22b68d55695
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
-diff --git a/node_modules/@shikijs/magic-move/.bun-tag-819bca25591d09c0 b/.bun-tag-819bca25591d09c0
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
-diff --git a/node_modules/@shikijs/magic-move/.bun-tag-c9525bd0ddbfdb5e b/.bun-tag-c9525bd0ddbfdb5e
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
-diff --git a/node_modules/@shikijs/magic-move/.bun-tag-f61a788553d6d532 b/.bun-tag-f61a788553d6d532
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/dist/renderer.mjs b/dist/renderer.mjs
-index 15179708ec4209b222f96f8f4e47e91499d628f6..a967412e812bcf17b1bcbe3b91cd106cc64de664 100644
+index 15179708ec4209b222f96f8f4e47e91499d628f6..a0fa5b608ce772f591ccfa8cec42a10e09041979 100644
 --- a/dist/renderer.mjs
 +++ b/dist/renderer.mjs
 @@ -24,6 +24,9 @@ class MagicMoveRenderer {
@@ -151,7 +136,20 @@ index 15179708ec4209b222f96f8f4e47e91499d628f6..a967412e812bcf17b1bcbe3b91cd106c
  
      // Update DOM
      this.container.replaceChildren(this.anchor, ...newChildren, ...leave);
-@@ -245,9 +296,12 @@ class MagicMoveRenderer {
+@@ -236,18 +287,24 @@ class MagicMoveRenderer {
+ 
+     // We recalculate the anchor position because the container might be moved
+     anchorRect = this.anchor.getBoundingClientRect();
++    // A geometry read after a style write re-resolves style per iteration, so
++    // the moved rects are all read before any transform is written.
++    const newRects = move.map(el => el.getBoundingClientRect());
+     // Set the position of the move elements to the old position
+     // Set the transition duration to 0ms to make it immediate
+     move.forEach((el, idx) => {
+-      const newRect = el.getBoundingClientRect();
++      const newRect = newRects[idx];
+       const newPos = {
+         x: newRect.x - anchorRect.x,
          y: newRect.y - anchorRect.y
        };
        const oldPos = position.get(el);
@@ -165,7 +163,7 @@ index 15179708ec4209b222f96f8f4e47e91499d628f6..a967412e812bcf17b1bcbe3b91cd106c
        el.style.transform = `translate(${dx}px, ${dy}px)`;
        if (this.options.stagger) el.style.setProperty('--smm-stagger', `${idx * this.options.stagger}ms`);else el.style.removeProperty('--smm-stagger');
        postReflow.unshift(() => {
-@@ -298,7 +352,17 @@ class MagicMoveRenderer {
+@@ -298,7 +355,17 @@ class MagicMoveRenderer {
      postReflow.forEach(cb => cb());
      // we need to call the functions that return the promises after the reflow
      // to to allow getAnimations to have the correct transitions

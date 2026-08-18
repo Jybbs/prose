@@ -203,7 +203,10 @@ describe('ProseSandboxSurface', () => {
     await flushPromises()
 
     // Declining to morph still advances the panel, so the next morph starts
-    // from what the reader sees rather than from a state two toggles old.
+    // from what the reader sees rather than from a state two toggles old. The
+    // advance lands after the publish paint, keeping it off the publish frame.
+    await nextPaint()
+    await flushPromises()
     expect(panel().props('step')).toBe(1)
   })
 
