@@ -30,14 +30,14 @@
     color      var(--prose-transition);
 }
 
-.exit-code-index-row:hover {
-  background : color-mix(in srgb, var(--exit-code-accent) 6%, transparent);
+.exit-code-index-row:hover,
+.exit-code-index-row.active {
+  background : color-mix(in srgb, var(--exit-code-accent) var(--exit-code-wash, 6%), transparent);
   color      : var(--vp-c-text-1);
 }
 
 .exit-code-index-row.active {
-  background : color-mix(in srgb, var(--exit-code-accent) 12%, transparent);
-  color      : var(--vp-c-text-1);
+  --exit-code-wash : 12%;
 }
 
 .exit-code-index-num {

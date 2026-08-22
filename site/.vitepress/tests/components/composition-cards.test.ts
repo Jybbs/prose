@@ -75,6 +75,13 @@ describe('CompositionCards', () => {
     expect(titles('align_colons')).toEqual([])
   })
 
+  it('renders the before-and-after pair only for the open card', async () => {
+    const wrapper = render()
+    expect(wrapper.findAll('.fixture-pair-doc')).toHaveLength(0)
+    await wrapper.get('#beta_case').trigger('click')
+    expect(wrapper.findAll('.fixture-pair-doc')).toHaveLength(1)
+  })
+
   it('opens the card the address-bar fragment names', async () => {
     window.location.hash = '#gamma_case'
     const wrapper = render()

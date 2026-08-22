@@ -14,35 +14,27 @@
   --card-ease-morph : cubic-bezier(0.32, 0.72, 0, 1);
   --card-reveal     : 0.28s;
   --card-grow       : 0.4s;
-  list-style      : none;
-  margin          : 0;
-  padding         : 0;
-  display         : flex;
-  flex-direction  : column;
-  gap             : 8px;
+  list-style : none;
+  margin     : 0;
+  padding    : 0;
 }
 
 .composition-cards-list .fixture-card:hover {
-  border-color : transparent;
-  background   :
-    linear-gradient(var(--vp-c-bg-soft), var(--vp-c-bg-soft)) padding-box,
+  --card-hover-ground : var(--vp-c-bg-soft);
+  border-color        : transparent;
+  background          :
+    linear-gradient(var(--card-hover-ground), var(--card-hover-ground)) padding-box,
     var(--rail-paint) border-box;
 }
 
 .composition-cards-list .fixture-card.is-open:hover {
-  background :
-    linear-gradient(var(--vp-c-bg), var(--vp-c-bg)) padding-box,
-    var(--rail-paint) border-box;
+  --card-hover-ground : var(--vp-c-bg);
 }
 
 .vp-doc .composition-cards-list > li,
 .composition-cards-list > li {
   margin     : 0;
   list-style : none;
-}
-
-.vp-doc .composition-cards-list > li + li {
-  margin-top : 0;
 }
 
 /* VitePress styles the nested `ol`/`li` inside the card with padding,
@@ -208,17 +200,10 @@
 
 .vp-doc .composition-cards-list .composition-cards-bar .composition-cards-chip-label {
   padding    : 0 10px;
-  opacity    : 0;
   transition : opacity 0.18s var(--card-ease-morph);
 }
 
 .vp-doc .composition-cards-list .composition-cards-bar.is-open .composition-cards-chip-label {
   opacity          : 1;
   transition-delay : calc(var(--card-grow) + 0.42s);
-}
-
-.composition-cards-detail {
-  display        : flex;
-  flex-direction : column;
-  gap            : 12px;
 }

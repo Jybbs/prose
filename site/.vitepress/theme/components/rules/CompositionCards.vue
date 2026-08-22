@@ -129,14 +129,13 @@ useHashOpen(fragment => {
               <div class="fixture-card-desc"><InlineProse :nodes="row.descriptionNodes" /></div>
               <div class="fixture-card-rule" aria-hidden="true" />
             </template>
-            <div v-if="activeCase === row.case" class="composition-cards-detail">
-              <FixturePairDoc
-                :active-tab="activeTab"
-                :input-html="row.inputHtml"
-                :output-html="row.outputHtml"
-                :sandbox-seed="row.sandboxSeed"
-              />
-            </div>
+            <FixturePairDoc
+              v-if="activeCase === row.case"
+              :active-tab="activeTab"
+              :input-html="row.inputHtml"
+              :output-html="row.outputHtml"
+              :sandbox-seed="row.sandboxSeed"
+            />
             <ol
               class="composition-cards-bar"
               :class="{ 'is-open': activeCase === row.case }"

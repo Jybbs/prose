@@ -12,12 +12,6 @@
   }
 }
 
-.vp-doc .glossary-folio-rows {
-  margin     : 0;
-  padding    : 0;
-  list-style : none;
-}
-
 .vp-doc .glossary-folio-rows li + li {
   margin-top : 0;
 }
@@ -157,6 +151,7 @@
   opacity        : 0.7;
 }
 
+.vp-doc .glossary-folio-rows,
 .glossary-folio-rows {
   margin     : 0;
   padding    : 0;
