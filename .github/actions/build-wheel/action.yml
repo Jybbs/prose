@@ -20,7 +20,7 @@ inputs:
 
   save:
     default     : true
-    description : When `false` the caches restore but never save. `warm.yml` is the only caller that saves.
+    description : When `false` the caches restore but never save.
 
   target:
     default     : ''

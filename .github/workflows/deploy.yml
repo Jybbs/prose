@@ -66,9 +66,6 @@ jobs:
           save       : &no-save 'false'
           shared-key : ${{ matrix.shared-key }}
 
-      - name : Install dependencies
-        run  : mise run site:bake
-
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}
 
