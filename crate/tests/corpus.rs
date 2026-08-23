@@ -13,11 +13,17 @@
 //! and a run the pipeline rejects is recorded the same way. A file
 //! passing `BUDGET` stops the sweep and names itself, because a rule
 //! that fails to terminate grows without bound.
-//! `PROSE_SETTLE_CORPUS` points the sweep at a directory other than the
-//! fixture tree.
+//! Each width in [`WIDTHS`] runs once per axis in [`AXES`], one budget
+//! varied and the rest at their defaults, the fallback axis clearing
+//! `import_line_length` so the import budget falls back to the varied
+//! code budget. `PROSE_SETTLE_CORPUS` points the sweep at a directory
+//! other than the fixture tree, `PROSE_SETTLE_WIDTHS` overrides the
+//! width set, and `PROSE_SETTLE_AXES` narrows the axes by name.
 
 use std::{
+    cell::RefCell,
     collections::BTreeMap,
+    env,
     io::Write,
     num::NonZeroUsize,
     panic::{self, AssertUnwindSafe},
@@ -44,15 +50,74 @@ use common::{Tally, corpus};
 
 mod common;
 
-/// The line lengths the sweep covers, the default flanked by the narrow
-/// and wide settings a project sets it to.
+/// The axes the sweep crosses with every width absent
+/// `PROSE_SETTLE_AXES`, each varying the budget it names.
+const AXES: [Axis; 4] = [Axis::Code, Axis::Docstring, Axis::Fallback, Axis::Import];
+
+/// The line lengths the sweep covers absent `PROSE_SETTLE_WIDTHS`, the
+/// default flanked by the narrow and wide settings a project sets it
+/// to.
 const WIDTHS: [usize; 6] = [40, 50, 60, 79, 88, 100];
+
+/// The budget an axis varies at each width, every other budget held at
+/// its default.
+#[derive(Clone, Copy)]
+enum Axis {
+    /// `code_line_length` varied.
+    Code,
+    /// `docstring_line_length` varied.
+    Docstring,
+    /// `code_line_length` varied with `import_line_length` unset, so
+    /// the import budget falls back to the varied code budget.
+    Fallback,
+    /// `import_line_length` varied.
+    Import,
+}
+
+impl Axis {
+    /// The phrase a finding and a `Slot` label name this axis and width
+    /// by.
+    fn clause(self, width: usize) -> String {
+        match self {
+            Self::Code => format!("code width {width}"),
+            Self::Docstring => format!("docstring width {width}"),
+            Self::Fallback => format!("code width {width} with import-line-length unset"),
+            Self::Import => format!("import width {width}"),
+        }
+    }
+
+    /// The default configuration with this axis's budget at `width`.
+    fn config(self, width: usize) -> Config {
+        let budget = NonZeroUsize::new(width);
+        match self {
+            Self::Code => Config {
+                code_line_length: budget,
+                ..Config::default()
+            },
+            Self::Docstring => Config {
+                docstring_line_length: budget,
+                ..Config::default()
+            },
+            Self::Fallback => Config {
+                code_line_length: budget,
+                import_line_length: None,
+                ..Config::default()
+            },
+            Self::Import => Config {
+                import_line_length: budget,
+                ..Config::default()
+            },
+        }
+    }
+}
 
 /// The defects one width's pass over the corpus found.
 #[derive(Default)]
 struct Findings {
     /// Runs that panicked, keyed by the message.
     panicked: Tally,
+    /// Files the corpus held that the sweep could not read.
+    skipped: usize,
     /// Runs the pipeline rejected.
     rejected: Tally,
     /// Outputs carrying a reported fix the run never applied.
@@ -64,6 +129,7 @@ struct Findings {
 impl Findings {
     fn absorb(&mut self, other: Self) {
         self.panicked.absorb(other.panicked);
+        self.skipped += other.skipped;
         self.rejected.absorb(other.rejected);
         self.unapplied.absorb(other.unapplied);
         self.unsettled.absorb(other.unsettled);
@@ -86,10 +152,10 @@ static IN_FLIGHT: Mutex<BTreeMap<usize, (Instant, String)>> = Mutex::new(BTreeMa
 struct Slot(usize);
 
 impl Slot {
-    fn open(width: usize, path: &Path) -> Self {
+    fn open(clause: &str, path: &Path) -> Self {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
         let id = NEXT.fetch_add(1, Ordering::Relaxed);
-        let label = format!("{} at width {width}", path.display());
+        let label = format!("{} at {clause}", path.display());
         registry().insert(id, (Instant::now(), label));
         Self(id)
     }
@@ -136,12 +202,49 @@ fn watch_for_a_runaway() {
     });
 }
 
-/// The default configuration at `width`.
-fn config_at(width: usize) -> Config {
-    Config {
-        code_line_length: NonZeroUsize::new(width),
-        ..Config::default()
-    }
+/// The axes this run sweeps, `PROSE_SETTLE_AXES` narrowing [`AXES`] as
+/// a space-separated list of `code`, `docstring`, `import`, and
+/// `fallback`.
+fn axes() -> Vec<Axis> {
+    env::var("PROSE_SETTLE_AXES").map_or_else(
+        |_| AXES.to_vec(),
+        |set| {
+            set.split_whitespace()
+                .map(|name| match name {
+                    "code" => Axis::Code,
+                    "docstring" => Axis::Docstring,
+                    "fallback" => Axis::Fallback,
+                    "import" => Axis::Import,
+                    other => panic!("PROSE_SETTLE_AXES names an unknown axis: {other}"),
+                })
+                .collect()
+        },
+    )
+}
+
+/// The line lengths this run sweeps, `PROSE_SETTLE_WIDTHS` overriding
+/// [`WIDTHS`] as a space-separated list.
+fn widths() -> Vec<usize> {
+    env::var("PROSE_SETTLE_WIDTHS").map_or_else(
+        |_| WIDTHS.to_vec(),
+        |set| {
+            set.split_whitespace()
+                .map(|width| {
+                    width
+                        .parse::<NonZeroUsize>()
+                        .expect("every `PROSE_SETTLE_WIDTHS` entry is a nonzero number")
+                        .get()
+                })
+                .collect()
+        },
+    )
+}
+
+thread_local! {
+    /// Where the silent hook last saw a panic raised, read back by the
+    /// probe that caught it so a finding names the line as well as the
+    /// message.
+    static PANIC_SITE: RefCell<Option<String>> = const { RefCell::new(None) };
 }
 
 /// The message a caught panic carried, `"panicked"` for a payload of
@@ -156,12 +259,13 @@ fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
 
 /// Formats `path` under `pipeline` and records what the output leaves
 /// behind, the run wrapped so a panic files against the file it read.
-fn probe(pipeline: &Pipeline, width: usize, path: &Path) -> Findings {
+fn probe(pipeline: &Pipeline, clause: &str, path: &Path) -> Findings {
     let mut findings = Findings::default();
     let Ok(source) = Source::from_path(path) else {
+        findings.skipped += 1;
         return findings;
     };
-    let slot = Slot::open(width, path);
+    let slot = Slot::open(clause, path);
     let ran = panic::catch_unwind(AssertUnwindSafe(|| {
         let (formatted, _) = pipeline.run(source)?;
         let editing = pipeline.unsettled(&formatted);
@@ -179,8 +283,13 @@ fn probe(pipeline: &Pipeline, width: usize, path: &Path) -> Findings {
     let outcome = match ran {
         Ok(outcome) => outcome,
         Err(payload) => {
+            let site = PANIC_SITE.with(|cell| cell.take());
+            let at = site.map_or_else(String::new, |site| format!(" at {site}"));
             findings.panicked.record(
-                format!("at {width}, the run panicked: {}", panic_message(&*payload)),
+                format!(
+                    "at {clause}, the run panicked{at}: {}",
+                    panic_message(&*payload)
+                ),
                 path,
             );
             return findings;
@@ -191,20 +300,23 @@ fn probe(pipeline: &Pipeline, width: usize, path: &Path) -> Findings {
         Err(error) => {
             findings
                 .rejected
-                .record(format!("at {width}, the run was rejected: {error}"), path);
+                .record(format!("at {clause}, the run was rejected: {error}"), path);
             return findings;
         }
     };
     if !editing.is_empty() {
         findings.unsettled.record(
-            format!("at {width}, {} rewrites the output", render_slugs(&editing)),
+            format!(
+                "at {clause}, {} rewrites the output",
+                render_slugs(&editing)
+            ),
             path,
         );
     }
     if !unlanded.is_empty() {
         findings.unapplied.record(
             format!(
-                "at {width}, {} reports a fix the output never took",
+                "at {clause}, {} reports a fix the output never took",
                 render_slugs(&unlanded)
             ),
             path,
@@ -220,21 +332,47 @@ fn every_width_settles_and_applies_what_it_reports() {
     assert!(!files.is_empty(), "the corpus holds no `.py` files");
     watch_for_a_runaway();
     let previous = panic::take_hook();
-    panic::set_hook(Box::new(|_| {}));
+    panic::set_hook(Box::new(|info| {
+        let site = info
+            .location()
+            .map(|at| format!("{}:{}", at.file(), at.line()));
+        PANIC_SITE.with(|cell| cell.replace(site));
+    }));
+    let axes = axes();
+    let widths = widths();
     let mut findings = Findings::default();
-    for width in WIDTHS {
-        let pipeline = Pipeline::with_defaults(&config_at(width));
-        findings.absorb(
-            files
-                .par_iter()
-                .map(|path| probe(&pipeline, width, path))
-                .reduce(Findings::default, |mut held, next| {
-                    held.absorb(next);
-                    held
-                }),
-        );
+    for &width in &widths {
+        for &axis in &axes {
+            let pipeline = Pipeline::with_defaults(&axis.config(width));
+            let clause = axis.clause(width);
+            findings.absorb(
+                files
+                    .par_iter()
+                    .map(|path| probe(&pipeline, &clause, path))
+                    .reduce(Findings::default, |mut held, next| {
+                        held.absorb(next);
+                        held
+                    }),
+            );
+        }
     }
     panic::set_hook(previous);
+    // Every configuration walks the same file list, so the skips divide
+    // back to the count of files no configuration could read.
+    let unreadable = findings.skipped / (widths.len() * axes.len());
+    let unread = match unreadable {
+        0 => String::new(),
+        n => {
+            let mut stderr = std::io::stderr();
+            let _ = writeln!(
+                stderr,
+                "the sweep could not read {n} of the {} files under the corpus root",
+                files.len()
+            );
+            let _ = stderr.flush();
+            format!(" and {n} the sweep could not read")
+        }
+    };
     let report = format!(
         "{}{}{}{}",
         findings.panicked.render("runs that panicked"),
@@ -246,9 +384,10 @@ fn every_width_settles_and_applies_what_it_reports() {
     );
     assert!(
         report.is_empty(),
-        "{} distinct defects across {} files at {} widths:{report}",
+        "{} distinct defects across {} files{unread} at {} widths on {} axes:{report}",
         findings.total(),
         files.len(),
-        WIDTHS.len(),
+        widths.len(),
+        axes.len(),
     );
 }
