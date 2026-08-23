@@ -43,6 +43,7 @@ use crate::{
         walk::{filter_map_over_exprs, walk_parented_exprs},
     },
     rule::{Rule, RuleId},
+    rules::alphabetize_siblings::Reorders,
     source::Source,
 };
 
@@ -57,6 +58,7 @@ pub(crate) struct ReflowCollections {
     explode: bool,
     max_atomics: usize,
     one_row: one_row::Settings<'static>,
+    reorders: Reorders,
     reservations: reserve::Reservations,
     stranding: Stranding,
     wrap_dict_entries: bool,
@@ -72,6 +74,7 @@ impl ReflowCollections {
             explode: rules.explode,
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
             one_row: config.one_row_settings(),
+            reorders: config.reorders(),
             reservations: config.equals_reservations(),
             stranding: config.stranded_padding(),
             wrap_dict_entries: rules.wrap_dict_entries,
@@ -104,6 +107,7 @@ impl Rule for ReflowCollections {
             newline: source.newline_str(),
             one_row: self.one_row.against(&targets),
             padding: &padding,
+            reorders: self.reorders,
             reservations: &reservations,
             source,
             targets: &targets,

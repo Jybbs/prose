@@ -310,6 +310,47 @@ fn mergeable(source: &Source, node: &StmtImportFrom) -> bool {
         && !node.names.iter().any(|alias| alias.name.as_str() == "*")
 }
 
+/// The same-module merges `reflow-imports` will make, forecast by a
+/// rule seated ahead of it whose drop then lands on the merged line
+/// rather than on a statement of its own.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct Merges {
+    enabled: bool,
+}
+
+impl Merges {
+    pub(crate) fn from_config(config: &Config) -> Self {
+        let rules = &config.rules.reflow_imports;
+        Self {
+            enabled: rules.enabled && rules.merge_members,
+        }
+    }
+
+    /// The slot groups of `body` the rule folds together, empty where it
+    /// merges nothing.
+    pub(crate) fn groups(self, source: &Source, body: &[Stmt]) -> Vec<Vec<usize>> {
+        if !self.enabled {
+            return Vec::new();
+        }
+        module_groups(source, body)
+    }
+
+    /// True when `groups` folds the statement at `slot` into a sibling
+    /// that `survives` the drops the caller makes, so the drop of its
+    /// own names lands on the merged line rather than on a statement
+    /// of its own.
+    pub(crate) fn folds(
+        groups: &[Vec<usize>],
+        slot: usize,
+        survives: impl Fn(usize) -> bool,
+    ) -> bool {
+        groups
+            .iter()
+            .filter(|group| group.contains(&slot))
+            .any(|group| group.iter().any(|&other| other != slot && survives(other)))
+    }
+}
+
 /// Slot groups of two or more mergeable `from`-imports sharing one
 /// module within a run of adjacent import statements, each group
 /// spanning one notebook cell and carrying no comment between its

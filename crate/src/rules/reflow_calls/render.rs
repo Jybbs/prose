@@ -13,7 +13,7 @@ use super::Exploder;
 use crate::primitives::{
     call_keywords::{CallKeywords, keyword_args, resolve_call_params},
     edit::apply_inline_edits,
-    inline::end_column,
+    inline::{end_column, opening_width},
     layout::{Separator, explode_parens, is_fractured, item_indent},
     tokens::is_opener,
     travel::{Landing, Travel, block_shift, shifted_block, spans_a_string_part},
@@ -34,22 +34,27 @@ impl<'a> Exploder<'a> {
     /// `render`, closing each row under the trailing-comma policy over
     /// `arguments`. `render` receives the row index, the item indent,
     /// and the separator width charged against the row, one column for
-    /// every row of a multi-argument list.
+    /// every row a comma closes and, where `moves` forecasts a later
+    /// sort, for the row the sort leaves anywhere but last.
     fn explode_items(
         &self,
         arguments: &Arguments,
         indent: usize,
         count: usize,
+        moves: impl Fn(usize) -> Option<bool>,
         render: impl Fn(&mut String, usize, usize, usize),
     ) -> String {
         let item_indent = item_indent(indent);
-        let separator = usize::from(count > 1);
+        let trailing = self.source.trailing_comma(arguments.range()).is_some();
         explode_parens(
             self.source.newline_str(),
             indent,
             count,
-            |out, i| render(out, i, item_indent, separator),
-            Separator::comma(self.source.trailing_comma(arguments.range()).is_some()),
+            |out, i| {
+                let closes = moves(i).unwrap_or(i + 1 < count);
+                render(out, i, item_indent, usize::from(trailing || closes));
+            },
+            Separator::comma(trailing),
         )
     }
 
@@ -65,10 +70,14 @@ impl<'a> Exploder<'a> {
         arguments: &Arguments,
         indent: usize,
     ) -> String {
+        let last = self
+            .reorders
+            .sorted_last_keyword(keywords.args.iter().map(|arg| (arg.name, arg.value)));
         self.explode_items(
             arguments,
             indent,
             keywords.args.len(),
+            |i| last.map(|last| last != i),
             |out, i, item_indent, tail| {
                 let arg = &keywords.args[i];
                 let slot = self.slot(Some(arg.name), item_indent, tail);
@@ -89,10 +98,14 @@ impl<'a> Exploder<'a> {
     /// `name=` head.
     fn explode_source_order(&self, call: &'a ExprCall, indent: usize) -> String {
         let args: Vec<ArgOrKeyword> = call.arguments.iter_source_order().collect();
+        let last = self
+            .reorders
+            .sorted_last(self.source, (&call.arguments).into(), call.into());
         self.explode_items(
             &call.arguments,
             indent,
             args.len(),
+            |i| last.map(|last| !last.contains_range(args[i].range())),
             |out, i, item_indent, tail| {
                 let value = args[i].value();
                 let range = if self.source.contains_line_break(value.range()) {
@@ -120,7 +133,7 @@ impl<'a> Exploder<'a> {
     /// there.
     fn row_tail(&self, end: TextSize) -> usize {
         let row_end = self.source.row_tail(end).end();
-        let clipped = self.region.end() < row_end;
+        let clipped = self.region.end() <= row_end;
         let tail = TextRange::new(end, row_end.min(self.region.end()));
         if let Some(offset) = self.first_opener(tail) {
             return self.source.width_between(end, offset + TextSize::from(1));
@@ -220,7 +233,13 @@ impl<'a> Exploder<'a> {
             || end_column(head, slot.indent),
             |column| column + usize::from(head.ends_with('(')),
         );
-        let appended = tail.width() + slot.tail;
+        // Only the tail's opening row closes the value's last row, a pair
+        // closing on a later row taking the row's comma with it.
+        let appended = if tail.contains('\n') {
+            opening_width(tail)
+        } else {
+            tail.width() + slot.tail
+        };
         let Some(travel) = self.argument_shift(value, rendered, head, start, slot.indent) else {
             let column = settled.saturating_add_signed(self.line_shift);
             out.push_str(head);

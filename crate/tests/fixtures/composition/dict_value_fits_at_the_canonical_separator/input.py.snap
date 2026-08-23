@@ -1,16 +1,13 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/composition/entry_separator_charged_on_the_join/input.py
+input_file: crate/tests/fixtures/composition/dict_value_fits_at_the_canonical_separator/input.py
 ---
 def f():
     tagdefs = {
         "stderr": {
             "foreground": "#007700"
         },
-
         # Should read the colors from the preferences
-        "stdout": {
-            "foreground": "blue"
-        }
+        "stdout": {"foreground": "blue"}
     }

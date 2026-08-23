@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/exploded_keyword_at_the_cap_keeps_its_tail/input.py
+---
+f(
+    aa = lambda: g(
+        111111,
+        2222,
+        333333
+    ),
+    bb = 1
+)

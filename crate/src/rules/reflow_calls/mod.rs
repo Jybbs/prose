@@ -43,6 +43,7 @@ use crate::{
         walk::walk_stmt,
     },
     rule::{Rule, RuleId},
+    rules::alphabetize_siblings::Reorders,
     source::Source,
 };
 
@@ -51,6 +52,7 @@ mod render;
 
 pub(crate) struct ReflowCalls {
     one_row: one_row::Settings<'static>,
+    reorders: Reorders,
     reservations: reserve::Reservations,
 }
 
@@ -60,6 +62,7 @@ impl ReflowCalls {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             one_row: config.one_row_settings(),
+            reorders: config.reorders(),
             reservations: config.equals_reservations(),
         }
     }
@@ -76,6 +79,7 @@ impl Rule for ReflowCalls {
             one_row: self.one_row.against(&targets),
             origin_column: 0,
             region: source.module_range(),
+            reorders: self.reorders,
             reservations: &reservations,
             source,
             tail: 0,
@@ -104,6 +108,7 @@ struct Exploder<'a> {
     one_row: one_row::Settings<'a>,
     origin_column: usize,
     region: TextRange,
+    reorders: Reorders,
     reservations: &'a reserve::Columns,
     source: &'a Source,
     tail: usize,
@@ -145,6 +150,7 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
 #[derive(Clone, Copy)]
 pub(crate) struct Reshaper<'a> {
     pub(crate) one_row: one_row::Settings<'a>,
+    pub(crate) reorders: Reorders,
     pub(crate) reservations: &'a reserve::Columns,
     pub(crate) source: &'a Source,
     pub(crate) targets: &'a CallTargets<'a>,
@@ -186,6 +192,7 @@ impl<'a> Reshaper<'a> {
             one_row: self.one_row,
             origin_column: landing.column,
             region: range,
+            reorders: self.reorders,
             reservations: self.reservations,
             source: self.source,
             tail,

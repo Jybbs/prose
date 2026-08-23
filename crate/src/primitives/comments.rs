@@ -69,15 +69,20 @@ pub(super) fn comment_leads(source: &Source, item_start: TextSize) -> bool {
     leading_comment_block(source, text.line_start(above), line_start).is_some()
 }
 
-/// True when the line containing the dict's opening `{` carries a
-/// trailing `# prose: keep` comment, the marker that pins a dict against
-/// both entry reordering and module-constant banding.
+/// True when the line containing the dict's opening `{` or the one
+/// containing its closing `}` carries a trailing `# prose: keep`
+/// comment, the marker that pins a dict against both entry reordering
+/// and module-constant banding, so an expansion that carries the
+/// comment from the one line to the other keeps the dict pinned.
 pub(crate) fn has_keep_marker(source: &Source, dict: &ExprDict) -> bool {
-    let line = source.text().full_line_range(dict.range().start());
-    source
-        .comment_ranges()
-        .comments_in_range(line)
-        .iter()
+    let text = source.text();
+    [dict.range().start(), dict.range().end()]
+        .into_iter()
+        .flat_map(|offset| {
+            source
+                .comment_ranges()
+                .comments_in_range(text.full_line_range(offset))
+        })
         .any(|c| source.slice(c).trim_start_matches('#').trim() == "prose: keep")
 }
 

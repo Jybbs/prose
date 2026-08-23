@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Commented Import Folds Across a Blank Line"
+
+description = '''
+[[reflow-imports]] merges across the blank line, so the unread lead is a statement the merge folds into its surviving sibling and [[prune-inert-imports]] drops it whole in the same pass, the comment, the blank line, and the sibling keeping the order the author wrote.
+'''

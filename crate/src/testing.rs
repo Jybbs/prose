@@ -107,7 +107,6 @@ pub(crate) fn align_member(gap: TextRange, line_start: u32, width: usize) -> ali
         line_start: TextSize::new(line_start),
         op_width: 0,
         settled_width: width,
-        tail: 0,
         value_gap: None,
         width,
     }

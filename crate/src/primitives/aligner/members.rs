@@ -35,7 +35,6 @@ pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member 
         line_start,
         op_width: 0,
         settled_width: width - padding,
-        tail: 0,
         value_gap: None,
         width,
     }
@@ -138,7 +137,6 @@ fn range_anchored_member(
         line_start,
         op_width: 0,
         settled_width: width,
-        tail: 0,
         value_gap: None,
         width,
     }

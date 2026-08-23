@@ -107,6 +107,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   {
     "after": [
       "shed-backslash-continuations",
+      "shed-parentheses",
       "shed-super-args",
       "stack-method-chains"
     ],

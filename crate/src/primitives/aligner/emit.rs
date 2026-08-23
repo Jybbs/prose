@@ -95,12 +95,11 @@ fn comment_slack(source: &Source, member: Member) -> isize {
 /// The width of `member`'s line as the aligner emits it: less the
 /// pre-operator gap the padding replaces, any rewritten post-operator
 /// gap collapsed to one space, a trailing comment at the gap and opener
-/// widths the comment rules settle it to, the padding `stranding`'s
-/// rule drops elsewhere on the line gone, and the member's `tail`
-/// charged.
-fn emitted_base_width(source: &Source, member: Member, stranding: Option<Stranding>) -> usize {
+/// widths the comment rules settle it to, and the padding `stranding`'s
+/// rule drops elsewhere on the line gone.
+fn emitted_base_width(source: &Source, member: Member, stranding: Stranding) -> usize {
     let line = source.text().line_range(member.line_start);
-    let base = (source.slice(line).width() + member.tail - source.slice(member.gap).width())
+    let base = (source.slice(line).width() - source.slice(member.gap).width())
         .saturating_add_signed(
             -comment_slack(source, member) - padding_slack(source, member, line, stranding),
         );
@@ -118,14 +117,13 @@ fn emitted_bases(
     settings: Settings,
     widenings: &Widenings,
 ) -> Vec<usize> {
-    if settings.line_length.is_none() {
+    let Some(cap) = settings.cap else {
         return Vec::new();
-    }
+    };
     members
         .iter()
         .map(|m| {
-            emitted_base_width(source, *m, settings.stranding)
-                .saturating_add_signed(widenings.delta(*m))
+            emitted_base_width(source, *m, cap.stranding).saturating_add_signed(widenings.delta(*m))
         })
         .collect()
 }
@@ -139,7 +137,7 @@ fn emitted_bases(
 /// widest member alone, so aligning never carries an over-cap line
 /// further out and never pushes a fitting line past the cap.
 fn fits_line_cap(group: &[Member], bases: &[usize], settings: Settings, max_w: usize) -> bool {
-    let Some(cap) = settings.line_length else {
+    let Some(cap) = settings.cap.map(|cap| cap.line_length) else {
         return true;
     };
     let max_op = max_op_width(group);
@@ -190,17 +188,8 @@ fn max_op_width(members: &[Member]) -> usize {
 }
 
 /// The columns the padding rule `stranding` names takes off `member`'s
-/// `line`, leaving aside the gaps the aligner rewrites itself, and zero
-/// where no padding rule is named.
-fn padding_slack(
-    source: &Source,
-    member: Member,
-    line: TextRange,
-    stranding: Option<Stranding>,
-) -> isize {
-    let Some(stranding) = stranding else {
-        return 0;
-    };
+/// `line`, leaving aside the gaps the aligner rewrites itself.
+fn padding_slack(source: &Source, member: Member, line: TextRange, stranding: Stranding) -> isize {
     let edits = source.stranded_padding(stranding);
     let own = member
         .rewritten_value_gap(source)

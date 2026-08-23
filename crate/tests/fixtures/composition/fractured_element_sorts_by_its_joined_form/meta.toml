@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Fractured Element Sorts by Its Joined Form"
+
+description = '''
+The sort keys a set element or dict key by the text its join writes onto one row, so the element [[reflow-collections]] joins in the same pass sorts where its joined form lands and the forecast charges the element the sort leaves first the comma it gains.
+'''

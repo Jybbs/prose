@@ -32,7 +32,10 @@ use thiserror::Error;
 pub use crate::rule::RuleConfigs;
 use crate::{
     primitives::{aligner, fracture, one_row, padding, reserve},
-    rules::{align_equals::AlignEquals, strip_stranded_padding::StripStrandedPadding},
+    rules::{
+        align_equals::AlignEquals, alphabetize_siblings::Reorders,
+        strip_stranded_padding::StripStrandedPadding,
+    },
 };
 
 mod de;
@@ -241,6 +244,12 @@ impl Config {
     /// deciding where that construct lands.
     pub(crate) fn one_row_settings(&self) -> one_row::Settings<'static> {
         one_row::Settings::from(self)
+    }
+
+    /// The leaf sorts a measuring rule forecasts, so an entry reads with
+    /// the separator `alphabetize-siblings` leaves after it.
+    pub(crate) fn reorders(&self) -> Reorders {
+        Reorders::from_config(self)
     }
 
     /// The padding rule a measuring rule predicts, so a row reads at the

@@ -9,6 +9,7 @@ use std::borrow::Cow;
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, DictItem, Expr};
+use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
@@ -22,17 +23,20 @@ use crate::{
         call_keywords::CallTargets,
         edit::narrowed_replacement,
         inline::end_column,
-        layout::{
-            is_collapse_only, is_collapsible, is_layoutable, is_multi_entry, item_indent,
-            requires_expand,
-        },
+        layout::{is_collapse_only, is_collapsible, is_layoutable, item_indent, requires_expand},
         one_row, padding, reserve,
         travel::{Landing, placed_block},
         walk::{Descent, ParentedProbe},
     },
-    rules::{reflow_calls::Reshaper, stack_adjacent_strings::concatenated_run},
+    rules::{
+        alphabetize_siblings::Reorders, reflow_calls::Reshaper,
+        stack_adjacent_strings::concatenated_run,
+    },
     source::Source,
 };
+
+/// The width of the canonical `": "` a dict entry's value follows.
+const CANONICAL_SEPARATOR: usize = 2;
 
 pub(super) struct Layouter<'a> {
     pub(super) code_line_length: usize,
@@ -42,6 +46,7 @@ pub(super) struct Layouter<'a> {
     pub(super) newline: &'static str,
     pub(super) one_row: one_row::Settings<'a>,
     pub(super) padding: &'a [Edit],
+    pub(super) reorders: Reorders,
     pub(super) reservations: &'a reserve::Columns,
     pub(super) source: &'a Source,
     pub(super) targets: &'a CallTargets<'a>,
@@ -50,14 +55,14 @@ pub(super) struct Layouter<'a> {
 }
 
 impl<'a> Layouter<'a> {
-    /// Builds the expanded form of `expr` as a string, recursively
-    /// laying out any qualifying child collections. Every row is charged
-    /// the separator closing it whatever its position, so the layout
-    /// holds under the order `alphabetize-siblings` later imposes.
-    fn expand(&self, expr: &Expr, indent: usize) -> String {
+    /// Builds the expanded form of `expr` under `parent` as a string,
+    /// recursively laying out any qualifying child collections. Every
+    /// row is charged the separator a later sort leaves closing it.
+    fn expand(&self, expr: &Expr, parent: AnyNodeRef, indent: usize) -> String {
         let item_indent = item_indent(indent);
         let dict_items = expr.as_dict_expr().map(|d| &d.items);
-        let parent = AnyNodeRef::from(expr);
+        let node = AnyNodeRef::from(expr);
+        let last = self.reorders.sorted_last(self.source, node, parent);
         let GatheredItems {
             atomics,
             close,
@@ -65,11 +70,10 @@ impl<'a> Layouter<'a> {
             ranges,
             texts,
             widths,
-        } = self.gather_items(expr, item_indent);
+        } = self.gather_items(expr, parent, item_indent);
         let total = texts.len();
         let item_prefix = " ".repeat(item_indent);
         let available = self.code_line_length.saturating_sub(item_indent);
-        let separator = usize::from(total > 1);
         let mut out = String::new();
         out.push(open);
         out.push_str(self.newline);
@@ -91,13 +95,14 @@ impl<'a> Layouter<'a> {
                 Segment::OnePerLine(range) => {
                     for idx in range {
                         let has_more = idx + 1 < total;
+                        let separator = entry_tail(last, ranges[idx], usize::from(has_more));
                         let inline = &texts[idx];
                         let row_overflows = !inline.contains('\n')
                             && item_indent + widths[idx] + separator > self.code_line_length;
                         let hung = dict_items
                             .filter(|_| row_overflows && self.wrap_dict_entries)
                             .and_then(|items| {
-                                self.hang_dict_value(&items[idx], parent, item_indent, separator)
+                                self.hang_dict_value(&items[idx], node, item_indent, separator)
                             });
                         out.push_str(&item_prefix);
                         out.push_str(hung.as_deref().unwrap_or(inline));
@@ -118,22 +123,26 @@ impl<'a> Layouter<'a> {
     }
 
     /// Collects the bracket pair and per-item text, atomicity, and source
-    /// range for the collection at `expr`, each child serialized through
-    /// `serialize_expr` / `serialize_dict_item` at `indent` so nested
-    /// collections arrive already laid out, every one charged the
-    /// separator closing its row. An item needing neither a rewrite nor
-    /// a move borrows its source slice.
-    fn gather_items(&self, expr: &Expr, indent: usize) -> GatheredItems<'a> {
-        let parent = AnyNodeRef::from(expr);
-        let separator = usize::from(is_multi_entry(expr.into()));
+    /// range for the collection at `expr` under `parent`, each child
+    /// serialized through `serialize_expr` / `serialize_dict_item` at
+    /// `indent` so nested collections arrive already laid out, every one
+    /// charged the separator a later sort leaves closing its row. An
+    /// item needing neither a rewrite nor a move borrows its source
+    /// slice.
+    fn gather_items(&self, expr: &Expr, parent: AnyNodeRef, indent: usize) -> GatheredItems<'a> {
+        let node = AnyNodeRef::from(expr);
+        let last = self.reorders.sorted_last(self.source, node, parent);
+        let tail = |i: usize, count: usize, entry: TextRange| {
+            entry_tail(last, entry, usize::from(i + 1 < count))
+        };
         let (open, close, elts) = match expr {
             Expr::Dict(d) => {
                 return GatheredItems::of(
                     '{',
                     '}',
-                    d.iter().map(|item| {
-                        let (text, width) =
-                            self.serialize_dict_item(item, parent, indent, separator);
+                    d.iter().enumerate().map(|(i, item)| {
+                        let tail = tail(i, d.len(), item.range());
+                        let (text, width) = self.serialize_dict_item(item, node, indent, tail);
                         (text, width, false, item.range())
                     }),
                 );
@@ -146,9 +155,10 @@ impl<'a> Layouter<'a> {
         GatheredItems::of(
             open,
             close,
-            elts.iter().map(|e| {
-                let text = self.serialize_expr(e, parent, indent, indent, separator);
-                let width = self.text_width(&text, self.range_with_parens(e, parent));
+            elts.iter().enumerate().map(|(i, e)| {
+                let tail = tail(i, elts.len(), e.range());
+                let text = self.serialize_expr(e, node, indent, indent, tail);
+                let width = self.text_width(&text, self.range_with_parens(e, node));
                 (text, width, is_atomic(e), e.range())
             }),
         )
@@ -250,14 +260,16 @@ impl<'a> Layouter<'a> {
     fn reshaper(&self) -> Reshaper<'a> {
         Reshaper {
             one_row: self.one_row,
+            reorders: self.reorders,
             reservations: self.reservations,
             source: self.source,
             targets: self.targets,
         }
     }
 
-    /// Returns the canonical rewrite for `expr`, or `None` to descend
-    /// into its children. `indent` is where the closing bracket lands on
+    /// Returns the canonical rewrite for `expr` under `parent`, or
+    /// `None` to descend into its children. `indent` is where the
+    /// closing bracket lands on
     /// expand. A multi-line subscript or comprehension that fits rejoins,
     /// while a multi-item `Dict`, `List`, `Set`, or parenthesized `Tuple`
     /// that overflows expands, as does a `Dict` over `max_dict_entries`
@@ -268,6 +280,7 @@ impl<'a> Layouter<'a> {
     fn replacement_for(
         &self,
         expr: &Expr,
+        parent: AnyNodeRef,
         column: usize,
         indent: usize,
         tail: usize,
@@ -288,12 +301,12 @@ impl<'a> Layouter<'a> {
             if let Some(inline) = self.joined_if_fits(expr, column, tail) {
                 return Some(inline);
             }
-            return (self.explode && expandable).then(|| self.expand(expr, indent));
+            return (self.explode && expandable).then(|| self.expand(expr, parent, indent));
         }
         (self.explode
             && expandable
             && (over_count || column + self.settled_width(range) + tail > self.code_line_length))
-            .then(|| self.expand(expr, indent))
+            .then(|| self.expand(expr, parent, indent))
     }
 
     /// Serializes a dict item as `key: value` or `**value`, paired with
@@ -324,14 +337,23 @@ impl<'a> Layouter<'a> {
         // while the key passes through unchanged.
         let padded = is_align_colons_gap(gap) && matches!(key_text, Cow::Borrowed(_));
         let separator = if padded { gap } else { ": " };
-        let value_column = end_column(&key_text, indent) + separator.width();
+        let key_end = end_column(&key_text, indent);
+        // The value lands past the separator the text keeps, whereas it
+        // fits against the canonical `": "`, the column the aligner pads
+        // only where the cap allows.
         let landing = Landing {
-            column: value_column,
+            column: key_end + separator.width(),
             indent,
             item: key.start(),
         };
         let value_text = self
-            .replacement_for(&item.value, value_column, indent, tail)
+            .replacement_for(
+                &item.value,
+                parent,
+                key_end + CANONICAL_SEPARATOR,
+                indent,
+                tail,
+            )
             .map_or_else(
                 || self.placed_slice(&item.value, parent, landing, tail),
                 Cow::Owned,
@@ -368,11 +390,20 @@ impl<'a> Layouter<'a> {
             indent,
             item: expr.start(),
         };
-        self.replacement_for(expr, column, indent, tail)
+        self.replacement_for(expr, parent, column, indent, tail)
             .map_or_else(
                 || self.placed_slice(expr, parent, landing, tail),
                 Cow::Owned,
             )
+    }
+
+    /// The column `offset` settles to once `align_equals` shifts its row
+    /// and the padding rule drops the padding ahead of it on that row.
+    fn settled_column(&self, offset: TextSize) -> usize {
+        let row = TextRange::new(self.source.text().line_start(offset), offset);
+        self.reservations
+            .column_in(self.source, offset)
+            .saturating_add_signed(-padding::slack(self.source, self.padding, row))
     }
 
     /// The display width `range` settles to once the padding rule drops
@@ -406,13 +437,29 @@ impl<'a> Layouter<'a> {
     }
 
     /// The display width of the text trailing `expr` on its own physical
-    /// row, at least the separator closing an entry of a multi-entry
-    /// `parent`. A construct the expand path relocates lands on a row of
-    /// its own instead, so only the walk's own entry reads this.
-    fn row_tail(&self, expr: &Expr, parent: AnyNodeRef) -> usize {
-        self.source
-            .row_tail_width(expr.range().end())
-            .max(usize::from(is_multi_entry(parent)))
+    /// row, read as the separator a sort pending over `parent`, itself
+    /// under `grandparent`, leaves closing the entry where that text is
+    /// at most the comma the entry carries now, and at least that
+    /// separator where more follows on the row or the sort leaves
+    /// `parent` as laid out. A construct the expand path
+    /// relocates lands on a row of its own instead, so only the walk's
+    /// own entry reads this.
+    fn row_tail(&self, expr: &Expr, parent: AnyNodeRef, grandparent: AnyNodeRef) -> usize {
+        let end = expr.range().end();
+        let current = self.source.row_tail_width(end);
+        let Some(last) = self.reorders.sorted_last(self.source, parent, grandparent) else {
+            return current;
+        };
+        let forecast = entry_tail(Some(last), expr.range(), 0);
+        let bare_comma = matches!(
+            self.source.slice(self.source.row_tail(end)).trim(),
+            "" | ","
+        );
+        if bare_comma && !self.reorders.holds_as_laid_out(self.source, parent) {
+            forecast
+        } else {
+            current.max(forecast)
+        }
     }
 
     /// The range covering `expr` with explicit parens recovered against
@@ -427,25 +474,63 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
 
     /// Descends past any expression the rule does not lay out or leaves
     /// as written.
-    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
+    fn probe(
+        &mut self,
+        expr: &'a Expr,
+        parent: AnyNodeRef<'a>,
+        ancestors: &[AnyNodeRef<'a>],
+    ) -> Descent {
         if !is_collapsible(expr) {
             return Descent::Into;
         }
         let range = expr.range();
         let start = range.start();
         // Test the collapse against the column `align_equals` shifts the
-        // value to, not the unaligned column the literal currently opens
-        // at, so a fit that survives the shift is what the rule collapses.
-        let column = self.reservations.column_in(self.source, start);
+        // value to and `strip-stranded-padding` settles the row ahead of
+        // it at, not the column the literal currently opens at, so a fit
+        // that survives both is what the rule collapses. A dict value
+        // measures from the canonical `": "` past its key, the column the
+        // aligner pads only where the cap allows.
+        let column = dict_key_of(parent, expr).map_or_else(
+            || self.settled_column(start),
+            |key| {
+                self.source.column_of(key.start())
+                    + self.source.slice(key).width()
+                    + CANONICAL_SEPARATOR
+            },
+        );
         let indent = self.source.line_indent_width(start);
-        let tail = self.row_tail(expr, parent);
-        let Some(text) = self.replacement_for(expr, column, indent, tail) else {
+        let grandparent = ancestors[ancestors.len().saturating_sub(2)];
+        let tail = self.row_tail(expr, parent, grandparent);
+        let Some(text) = self.replacement_for(expr, parent, column, indent, tail) else {
             return Descent::Into;
         };
         self.edits
             .extend(narrowed_replacement(self.source, range, text));
         Descent::Over
     }
+}
+
+/// The key of the entry of `parent` whose value is `expr`, `None` for
+/// any other expression.
+fn dict_key_of<'a>(parent: AnyNodeRef<'a>, expr: &Expr) -> Option<&'a Expr> {
+    let AnyNodeRef::ExprDict(dict) = parent else {
+        return None;
+    };
+    dict.items
+        .iter()
+        .find(|item| item.value.range() == expr.range())?
+        .key
+        .as_ref()
+}
+
+/// The columns closing the entry holding `entry`: `current`, the
+/// separator it carries now, where no sort leaves an entry `last`, and
+/// otherwise one for an entry the sort leaves anywhere but last. A
+/// keyword's value and a dict entry's key or value each read as the
+/// entry holding them.
+fn entry_tail(last: Option<TextRange>, entry: TextRange, current: usize) -> usize {
+    last.map_or(current, |last| usize::from(!last.contains_range(entry)))
 }
 
 /// Per-item state for a dict, list, set, or tuple literal: serialized

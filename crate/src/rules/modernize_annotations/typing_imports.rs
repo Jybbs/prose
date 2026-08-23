@@ -12,6 +12,7 @@ use crate::{
         binding::{bare_import_bound_name, from_import_bound_name, top_level_module},
         imports::prune_import_aliases,
     },
+    rules::reflow_imports::Merges,
     source::Source,
 };
 
@@ -30,7 +31,7 @@ impl<'a> TypingImports<'a> {
     pub(super) fn collect(body: &'a [Stmt]) -> Option<Self> {
         let mut aliases = HashMap::new();
         let mut statements = Vec::new();
-        for stmt in body {
+        for (slot, stmt) in body.iter().enumerate() {
             match stmt {
                 Stmt::Import(node) => {
                     let mut bound = node
@@ -53,6 +54,7 @@ impl<'a> TypingImports<'a> {
                         bare: true,
                         names: &node.names,
                         range: node.range,
+                        slot,
                     });
                 }
                 Stmt::ImportFrom(node) if node.level == 0 => {
@@ -74,6 +76,7 @@ impl<'a> TypingImports<'a> {
                         bare: false,
                         names: &node.names,
                         range: node.range,
+                        slot,
                     });
                 }
                 _ => {}
@@ -92,17 +95,37 @@ impl<'a> TypingImports<'a> {
     /// One fix group per import statement, dropping every alias whose
     /// bound name `consumed` read as many times as the module reads it
     /// at all and leaving an alias with a surviving reference in place.
-    pub(super) fn prune(&self, source: &Source, consumed: &HashMap<&str, usize>) -> Vec<Vec<Edit>> {
+    /// A statement `merges` folds into a surviving sibling drops whole
+    /// under a leading comment, the drop landing on the merged line.
+    pub(super) fn prune(
+        &self,
+        source: &Source,
+        consumed: &HashMap<&str, usize>,
+        merges: Merges,
+    ) -> Vec<Vec<Edit>> {
         let analysis = source.binding_analysis();
         let unread = |bound: &str| {
             consumed
                 .get(bound)
                 .is_some_and(|&rewritten| rewritten == analysis.module_usage_count(bound))
         };
+        let groups = merges.groups(source, &source.ast().body);
+        let whole: Vec<usize> = self
+            .statements
+            .iter()
+            .filter(|import| {
+                import
+                    .names
+                    .iter()
+                    .all(|alias| import.orphaned(alias, &unread))
+            })
+            .map(|import| import.slot)
+            .collect();
         self.statements
             .iter()
             .map(|import| {
-                prune_import_aliases(source, import.range, import.names, |index| {
+                let folded = Merges::folds(&groups, import.slot, |other| !whole.contains(&other));
+                prune_import_aliases(source, import.range, import.names, folded, |index| {
                     !import.orphaned(&import.names[index], &unread)
                 })
             })
@@ -117,6 +140,7 @@ struct TypingImport<'a> {
     bare: bool,
     names: &'a [Alias],
     range: TextRange,
+    slot: usize,
 }
 
 impl TypingImport<'_> {

@@ -1,12 +1,12 @@
 //! Predicts the column an alignment rule shifts each assignment and
 //! keyword value to, so a layout decision tests a construct against the
 //! position it lands at after alignment rather than its current one, and
-//! reads that prediction back per offset through [`Columns`]. No
+//! reads that prediction back per offset through [`Columns`]. The runs
+//! are built the way `align_equals` builds them, a statement or keyword
+//! whose value spans lines closing its run and a held statement staying
+//! transparent, so the prediction and the rule seat the same rows. No
 //! column is reserved for a value inside an f-string or t-string
-//! replacement field. A row whose value spans lines groups as if
-//! single-line, since a collapsing construct becomes single-line before
-//! the alignment runs, and a wider sibling then joins the run the
-//! collapse closes.
+//! replacement field.
 
 use ruff_python_ast::{
     Expr, InterpolatedStringElement, Stmt,
@@ -144,24 +144,29 @@ impl ReserveVisitor<'_> {
 }
 
 impl<'a> Visitor<'a> for ReserveVisitor<'a> {
+    /// Builds the statement runs the way `align_equals` builds them, so
+    /// a multi-line statement closes its run and a held one is
+    /// transparent.
     fn visit_body(&mut self, body: &'a [Stmt]) {
         let source = self.source;
-        let rule = self.rule;
-        let groups = aligner::adjacent_member_groups(source, body, false, |stmt| {
-            equal_targets::assignment(source, stmt)
-                .map_or(aligner::Slot::Break, |m| m.slot(source, rule))
-        });
-        self.record(groups);
+        self.record(aligner::line_adjacent_groups(
+            source,
+            body,
+            self.rule,
+            |stmt| equal_targets::assignment(source, stmt),
+        ));
         walk_body(self, body);
     }
 
+    /// Builds the keyword runs the way `align_equals` builds them, a
+    /// multi-line value closing the run after it.
     fn visit_expr(&mut self, expr: &'a Expr) {
         if let Expr::Call(call) = expr {
             self.record(equal_targets::keyword_groups(
                 self.source,
                 self.rule,
                 call,
-                false,
+                true,
             ));
         }
         walk_expr(self, expr);

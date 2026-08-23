@@ -17,7 +17,7 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use super::dict::rewrite_dict_text;
+use super::{dict::rewrite_dict_text, joined_key};
 use crate::{
     primitives::{
         binding::{sequence_elts, single_name_target},
@@ -100,7 +100,7 @@ impl<'a> LeafCollector<'a> {
 
     fn emit_set(&mut self, s: &'a ExprSet) {
         self.try_emit_inline_reorder(&s.elts, |e| {
-            (!e.is_starred_expr()).then_some(self.source.slice(e))
+            (!e.is_starred_expr()).then(|| joined_key(self.source, e))
         });
     }
 
@@ -124,28 +124,30 @@ impl<'a> LeafCollector<'a> {
             return;
         };
         let source = self.source;
-        // A group opening mid-row sits on a line whose head is not a
-        // member, so it swaps member slices through the lighter
-        // `reorder_text`, which keeps every gap verbatim. A comment
-        // inside such a group when it spans lines cannot travel with
-        // its member, so the group holds its order, whereas a
-        // single-line group's trailing comment reads against the whole
-        // line and rides out the swap in place.
+        // A single-line or atomics-packed group shares lines, a group
+        // opening mid-row sits on a line whose head is not a member, and
+        // a group whose gaps carry code of their own, a positional
+        // argument between two keywords, cannot rebuild its rows from
+        // its members alone, so each swaps member slices through the
+        // lighter `reorder_text`, which keeps every gap verbatim. A
+        // comment inside such a group
+        // when it spans lines cannot travel with its member, so the
+        // group holds its order, whereas a single-line group's trailing
+        // comment reads against the whole line and rides out the swap in
+        // place. A group laid out one member per line routes through
+        // `reorder_separated` so each trailing comment travels with its
+        // member. A swap whose rows widen past the budget and the widest
+        // source row holds the group.
         let head_shared = !opens_its_line(source, first.start());
-        if head_shared
+        let swapped =
+            any_sibling_shares_line(source, items) || head_shared || gaps_carry_code(source, items);
+        if swapped
             && source.contains_line_break(TextRange::new(first.start(), last.end()))
             && swap_span_commented(source, items)
         {
             return;
         }
         let render = |_: usize, block| apply_inline_edits(source, block, &self.edits);
-        // A single-line or atomics-packed group shares lines, so both it
-        // and a mid-row-opening group keep their verbatim gaps through
-        // `reorder_text`. A group laid out one member per line routes
-        // through `reorder_separated` so each trailing comment travels
-        // with its member. A swap whose rows neither fit the budget nor
-        // keep their source width holds the group.
-        let swapped = any_sibling_shares_line(source, items) || head_shared;
         if swapped {
             let mut order: Vec<usize> = (0..items.len()).collect();
             permute_full(&mut order, items, &mut classify);
@@ -228,6 +230,20 @@ pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
     .into_iter()
     .flatten()
     .collect()
+}
+
+/// True when a gap between two consecutive members of `items` carries
+/// code of its own past the separators and comments inside it, the
+/// shape a positional argument sitting between two keywords takes.
+fn gaps_carry_code<T: Ranged>(source: &Source, items: &[T]) -> bool {
+    items.windows(2).any(|pair| {
+        source
+            .slice(TextRange::new(pair[0].end(), pair[1].start()))
+            .lines()
+            .flat_map(|line| line.split(','))
+            .map(str::trim)
+            .any(|part| !part.is_empty() && !part.starts_with('#'))
+    })
 }
 
 /// Walks the AST collecting one non-overlapping leaf edit per outermost

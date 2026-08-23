@@ -144,13 +144,17 @@ pub(crate) fn is_import(stmt: &Stmt) -> bool {
 ///
 /// A statement losing all of its aliases goes whole, taking its full
 /// lines, unless an own-line comment block leads it, since the deletion
-/// would strand that block. One losing a subset keeps the survivors
+/// would strand that block, where `folded` marks a statement a later
+/// merge folds into a same-module sibling, whose drop lands on the
+/// merged line the block then leads. One losing a subset keeps the
+/// survivors
 /// byte-for-byte, each deletion covering one run of dropped aliases
 /// together with the separator binding it to the survivor beside it.
 pub(crate) fn prune_import_aliases(
     source: &Source,
     stmt: TextRange,
     names: &[Alias],
+    folded: bool,
     keep: impl Fn(usize) -> bool,
 ) -> Vec<Edit> {
     let kept = (0..names.len()).filter(|&index| keep(index)).count();
@@ -158,7 +162,7 @@ pub(crate) fn prune_import_aliases(
         return Vec::new();
     }
     if kept == 0 {
-        return if comment_leads(source, stmt.start()) {
+        return if comment_leads(source, stmt.start()) && !folded {
             Vec::new()
         } else {
             vec![whole_line_deletion(source, stmt)]
@@ -427,9 +431,21 @@ mod tests {
                 _ => None,
             })
             .expect("the source carries an import");
-        let edits = prune_import_aliases(&source, stmt.range(), names, |i| !dropped.contains(&i));
+        let edits = prune_import_aliases(&source, stmt.range(), names, false, |i| {
+            !dropped.contains(&i)
+        });
         let pruned = apply_edits(source.text(), edits).expect("the deletions do not overlap");
         assert_eq!(pruned, expected);
+    }
+
+    #[test]
+    fn prune_import_aliases_drops_a_commented_statement_a_merge_folds() {
+        let source = parse("# local imports\nfrom pkg import a\nfrom pkg import b\n");
+        let stmt = &source.ast().body[0];
+        let names = &stmt.as_import_from_stmt().expect("a from-import").names;
+        let edits = prune_import_aliases(&source, stmt.range(), names, true, |_| false);
+        let pruned = apply_edits(source.text(), edits).expect("the deletion stands alone");
+        assert_eq!(pruned, "# local imports\nfrom pkg import b\n");
     }
 
     #[test]

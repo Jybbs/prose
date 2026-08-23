@@ -65,13 +65,6 @@ pub(crate) fn explode_parens(
     out
 }
 
-/// The columns a reorder may seat after an entry of a bracketed
-/// construct over `range` holding `count` entries, one for the `last`
-/// entry where no comma trails it and zero otherwise.
-pub(crate) fn entry_tail(source: &Source, range: TextRange, count: usize, last: bool) -> usize {
-    usize::from(count > 1 && last && source.trailing_comma(range).is_none())
-}
-
 /// True for the collapse-only forms, a subscript whose `[index]` joins
 /// onto one line whatever the index shape and the four comprehensions,
 /// each joining when it fits and never expanding the way a literal does.

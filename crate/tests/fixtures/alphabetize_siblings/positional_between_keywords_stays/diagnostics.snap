@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/positional_between_keywords_stays/input.py
+---
+alphabetize-siblings@7..32

@@ -23,10 +23,12 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::Config,
     primitives::{
+        INDENT_STEP,
         edit::{apply_inline_edits, insert_edit, singleton_groups},
-        inline::{end_column, folded_line_form, soft_wrap_runs},
+        inline::{end_column, folded_line_form, indent_width, soft_wrap_runs},
         splice::splice_preserves_tree,
         tokens::{is_closer, is_opener},
+        travel::frozen_rows,
         walk::{Descent, filter_map_over_parented_exprs},
     },
     rule::{Rule, RuleId},
@@ -137,11 +139,12 @@ impl Shedder<'_> {
                     TextRange::at(pair.end() - paren, paren),
                 )
             } else if folding && !self.fits(candidate, candidates) {
-                let Some(spans) = self.shed_in_place_spans(candidate) else {
+                let Some((open, close)) = self.shed_in_place_spans(candidate) else {
                     continue;
                 };
                 folding = false;
-                spans
+                self.push_reseat_edits(pair, open, TextRange::new(open.end(), close.start()));
+                (open, close)
             } else {
                 (
                     TextRange::new(pair.start(), inner.start()),
@@ -154,6 +157,59 @@ impl Shedder<'_> {
                 self.push_fold_edits(inner);
                 self.folds.push(pair);
             }
+        }
+    }
+
+    /// Emits the edits re-seating the continuation rows of `interior`,
+    /// the text between the shed parens of `pair`, by the columns the
+    /// opener took where the interior opens on the opener's row: a row
+    /// indented to the column directly past the opener tracks that
+    /// delimiter and follows it leftward whatever else shares its
+    /// column, a row hanging one or two indent steps past the opener's
+    /// row otherwise keeps its column, and any other row indented to
+    /// the column of a token on the opening row follows the token
+    /// leftward. A row inside a row-spanning string keeps its column.
+    fn push_reseat_edits(&mut self, pair: TextRange, open: TextRange, interior: TextRange) {
+        let block = self.source.slice(interior);
+        // An opener ending its row leaves nothing on that row to align to,
+        // so the rows below it hang by construction.
+        if !self.source.same_line(pair.start(), interior.start()) || block.starts_with(['\r', '\n'])
+        {
+            return;
+        }
+        let shift = self.source.slice(open).width();
+        let row_indent = self.source.line_indent_width(pair.start());
+        let delimiter_aligned = self.source.column_of(interior.start());
+        let hangs = |indent: usize| {
+            indent == row_indent + INDENT_STEP || indent == row_indent + 2 * INDENT_STEP
+        };
+        let opening_row = TextRange::new(
+            interior.start(),
+            self.source.row_tail(interior.start()).end(),
+        );
+        let anchors: Vec<usize> = self
+            .source
+            .tokens_overlapping(opening_row)
+            .filter(|token| opening_row.contains(token.start()))
+            .map(|token| self.source.column_of(token.start()))
+            .collect();
+        let frozen = frozen_rows(self.source, interior);
+        let mut row_start = interior.start();
+        for (row, line) in block.split_inclusive('\n').enumerate() {
+            let indent = indent_width(line);
+            let follows =
+                indent == delimiter_aligned || (!hangs(indent) && anchors.contains(&indent));
+            if row > 0 && frozen.get(row) != Some(&true) && follows {
+                // An indent-only deletion at the row start composes with a
+                // shed nested inside the row, whose own deletions sit at its
+                // parens.
+                let taken = TextSize::try_from(shift.min(indent)).expect("indent fits u32");
+                insert_edit(
+                    &mut self.edits,
+                    Edit::range_deletion(TextRange::at(row_start, taken)),
+                );
+            }
+            row_start += line.text_len();
         }
     }
 

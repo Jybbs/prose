@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/packed_commented_dict_keeps_its_comma/input.py
+---
+d = {  # note
+    "zz": [
+        1, 2, 3, aaaaaaaaaaaaaaaaaaa
+    ],
+    "a": 1, "b": 2
+}

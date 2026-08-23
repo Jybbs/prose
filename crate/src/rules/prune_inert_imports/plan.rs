@@ -17,7 +17,7 @@ use super::{
 };
 use crate::{
     diagnostics::Diagnostic, primitives::imports::prune_import_aliases, rule::RuleId,
-    source::Source,
+    rules::reflow_imports::Merges, source::Source,
 };
 
 /// The alias drops the rule applies, one entry per pruned statement,
@@ -34,10 +34,15 @@ impl<'a> Plan<'a> {
     /// `__init__` re-exports.
     pub(super) fn of(rule: &PruneInertImports, source: &'a Source) -> Self {
         let body = &source.ast().body;
-        let nodes: Vec<ImportNode<'a>> = body.iter().filter_map(ImportNode::of).collect();
+        let nodes: Vec<(usize, ImportNode<'a>)> = body
+            .iter()
+            .enumerate()
+            .filter_map(|(slot, stmt)| ImportNode::of(stmt).map(|node| (slot, node)))
+            .collect();
         if nodes.is_empty() {
             return Self::default();
         }
+        let groups = rule.merges.groups(source, body);
         let analysis = source.binding_analysis();
         let reexports = Reexports::of(body);
         let package_init = is_package_init(source);
@@ -47,13 +52,15 @@ impl<'a> Plan<'a> {
             HashSet::new()
         };
         let directive_is_inert = rule.unreferenced
-            && nodes.iter().any(|node| node.future_annotations().is_some())
+            && nodes
+                .iter()
+                .any(|(_, node)| node.future_annotations().is_some())
             && annotations_are_inert(source, rule.target_version);
 
         let mut bound_sources = HashSet::new();
         let mut dropped: Vec<Vec<usize>> = vec![Vec::new(); nodes.len()];
         let mut reports = Vec::new();
-        for (statement, node) in nodes.iter().enumerate() {
+        for (statement, (_, node)) in nodes.iter().enumerate() {
             let directive = node.future_annotations();
             for (index, alias) in node.names().iter().enumerate() {
                 let bound = node.bound(alias);
@@ -84,13 +91,20 @@ impl<'a> Plan<'a> {
             }
         }
 
+        let whole: HashSet<usize> = nodes
+            .iter()
+            .zip(&dropped)
+            .filter(|((_, node), dropped)| dropped.len() == node.names().len())
+            .map(|((slot, _), _)| *slot)
+            .collect();
         Self {
             drops: nodes
                 .iter()
                 .zip(dropped)
                 .filter(|(_, dropped)| !dropped.is_empty())
-                .map(|(node, dropped)| Pruned {
+                .map(|((slot, node), dropped)| Pruned {
                     dropped,
+                    folded: Merges::folds(&groups, *slot, |other| !whole.contains(&other)),
                     names: node.names(),
                     range: node.range(),
                 })
@@ -120,7 +134,7 @@ impl<'a> Plan<'a> {
         self.drops
             .iter()
             .map(|pruned| {
-                prune_import_aliases(source, pruned.range, pruned.names, |index| {
+                prune_import_aliases(source, pruned.range, pruned.names, pruned.folded, |index| {
                     !pruned.dropped.contains(&index)
                 })
             })
@@ -139,9 +153,11 @@ enum Candidacy {
     Unreferenced,
 }
 
-/// The alias positions one import statement loses.
+/// The alias positions one import statement loses, `folded` where a
+/// later merge folds the statement into a same-module sibling.
 struct Pruned<'a> {
     dropped: Vec<usize>,
+    folded: bool,
     names: &'a [Alias],
     range: TextRange,
 }

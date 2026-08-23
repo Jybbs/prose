@@ -441,7 +441,7 @@ register_rules! {
     "group-imports":                group_imports:                ToggleOnly                 => GroupImports               => [],
     "shed-super-args":              shed_super_args:              ToggleOnly                 => ShedSuperArgs              => [],
     "stack-method-chains":          stack_method_chains:          StackMethodChainsConfig    => StackMethodChains          => [],
-    "reflow-calls":                 reflow_calls:                 ReflowCallsConfig          => ReflowCalls                => ["shed-backslash-continuations", "shed-super-args", "stack-method-chains"],
+    "reflow-calls":                 reflow_calls:                 ReflowCallsConfig          => ReflowCalls                => ["shed-backslash-continuations", "shed-parentheses", "shed-super-args", "stack-method-chains"],
     "reflow-signatures":            reflow_signatures:            ReflowSignaturesConfig     => ReflowSignatures           => ["strip-none-return"],
     "reflow-collections":           reflow_collections:           ReflowCollectionsConfig    => ReflowCollections          => ["simplify-comprehensions", "stack-method-chains", "reflow-calls", "reflow-signatures"],
     "prefer-fstring":               prefer_fstring:               PreferFstringConfig        => PreferFstring              => ["normalize-literals", "reflow-collections"],

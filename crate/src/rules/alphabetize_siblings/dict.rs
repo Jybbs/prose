@@ -4,11 +4,14 @@
 //! it, folding nested reorders into each item block and declining when the
 //! reassembled dict no longer parses.
 
+use std::borrow::Cow;
+
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{DictItem, ExprDict};
 use ruff_python_parser::parse_expression;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
+use super::joined_key;
 use crate::{
     primitives::{
         comments::has_keep_marker,
@@ -123,12 +126,15 @@ pub(super) fn rewrite_dict_text(
 /// before collection-valued and alphabetizing within each partition by the
 /// key's source slice. A keyless `**` spread returns `None`, as does an
 /// entry whose value runs code, pinning that entry in its source slot.
-fn dict_sort_key<'a>(source: &'a Source, item: &DictItem) -> Option<(bool, &'a str)> {
+pub(super) fn dict_sort_key<'a>(
+    source: &'a Source,
+    item: &DictItem,
+) -> Option<(bool, Cow<'a, str>)> {
     let key = item
         .key
         .as_ref()
         .filter(|_| !value_is_effectful(&item.value))?;
-    Some((is_layoutable(&item.value), source.slice(key)))
+    Some((is_layoutable(&item.value), joined_key(source, key)))
 }
 
 /// Returns the new-order slot indices after which a blank-line divider
@@ -170,7 +176,7 @@ mod tests {
         let dict = first_value(&source).as_dict_expr().expect("dict value");
         assert_eq!(
             dict_sort_key(&source, &dict.items[0]),
-            Some((collection, "\"a\"")),
+            Some((collection, Cow::Borrowed("\"a\""))),
         );
     }
 

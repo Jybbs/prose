@@ -21,26 +21,30 @@
 //! block past a `KW_ONLY` sentinel to sort. A decorated definition holds
 //! its source slot at module scope and sorts inside a class body.
 
-use std::borrow::Cow;
+use std::{borrow::Cow, ops::Range};
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{Stmt, helpers::is_compound_statement};
+use ruff_python_ast::{AnyNodeRef, ArgOrKeyword, Expr, Stmt, helpers::is_compound_statement};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     config::Config,
     primitives::{
+        binding::{sequence_elts, single_name_target},
+        comments::has_keep_marker,
         constructor::keyword_field_start,
         decorator::is_decorated,
         edit::{apply_inline_edits, singleton_groups, splice_bodies},
+        effect::value_is_effectful,
         imports::{defers_annotations, import_blank_lines, import_sort_key, sectioned_import_runs},
         orderer::{
             adjacent_slots, any_sibling_shares_line, assemble_or_borrow, assembled_cell_edits,
-            permute_runs, rendered_member_blocks,
+            opens_its_line, permute_runs, rendered_member_blocks, swap_span_commented,
         },
         scope::{BodyScope, compound_sub_bodies, scoped_body},
         sections::Sections,
+        slots::runs_where,
         tiering::permute_defs,
     },
     rule::{Rule, RuleId},
@@ -54,9 +58,203 @@ mod members;
 
 use self::{
     class_graph::permute_class_assigns,
+    dict::dict_sort_key,
     leaves::{collect_docstring_entry_edits, collect_leaf_edits},
     members::{class_pins_methods, method_group},
 };
+
+/// The leaf sorts `alphabetize-siblings` will make, forecast by a rule
+/// seated ahead of it that measures an entry with the separator the
+/// sort leaves after it rather than the one it carries now.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct Reorders {
+    enabled: bool,
+    sort_dict_keys: bool,
+    sort_dunder_lists: bool,
+}
+
+impl Reorders {
+    pub(crate) fn from_config(config: &Config) -> Self {
+        let rules = &config.rules.alphabetize_siblings;
+        Self {
+            enabled: rules.enabled,
+            sort_dict_keys: rules.sort_dict_keys,
+            sort_dunder_lists: rules.sort_dunder_lists,
+        }
+    }
+
+    /// The range of the entry of `node` the sort leaves last, `None`
+    /// where no entry of `node` sorts: the rule off, a node of another
+    /// kind, a list or tuple bound to nothing the rule sorts under
+    /// `parent`, a dict held by `# prose: keep` or the config, or fewer
+    /// than two entries. A pinned last
+    /// entry stays last, and otherwise the greatest key in the run
+    /// closing there lands last.
+    pub(crate) fn sorted_last(
+        self,
+        source: &Source,
+        node: AnyNodeRef,
+        parent: AnyNodeRef,
+    ) -> Option<TextRange> {
+        if !self.enabled {
+            return None;
+        }
+        match node {
+            AnyNodeRef::Arguments(arguments) => {
+                let items: Vec<ArgOrKeyword> = arguments.iter_source_order().collect();
+                // A `**` unpacking bounds each run the keywords sort within,
+                // whereas a positional argument pins in place inside one.
+                let inside =
+                    |arg: &ArgOrKeyword| arg.as_keyword().is_none_or(|kw| kw.arg.is_some());
+                last_entry(&items, runs_where(&items, inside), |arg| {
+                    arg.as_keyword()?
+                        .arg
+                        .as_deref()
+                        .filter(|_| !value_is_effectful(arg.value()))
+                })
+            }
+            AnyNodeRef::ExprDict(dict) if self.sort_dict_keys && !has_keep_marker(source, dict) => {
+                let keyed = runs_where(&dict.items, |item| item.key.is_some());
+                last_entry(&dict.items, keyed, |item| dict_sort_key(source, item))
+            }
+            AnyNodeRef::ExprSet(set) => last_entry(&set.elts, whole(&set.elts), |e| {
+                (!e.is_starred_expr()).then(|| joined_key(source, e))
+            }),
+            AnyNodeRef::ExprList(_) | AnyNodeRef::ExprTuple(_) if self.sort_dunder_lists => {
+                let AnyNodeRef::StmtAssign(assign) = parent else {
+                    return None;
+                };
+                let elts = sequence_elts(&assign.value)
+                    .filter(|_| matches!(single_name_target(assign), Some("__all__" | "__slots__")))
+                    .filter(|_| assign.value.range() == node.range())?;
+                last_entry(elts, whole(elts), |e| {
+                    Some(e.as_string_literal_expr()?.value.to_str())
+                })
+            }
+            _ => None,
+        }
+    }
+
+    /// True when the sort leaves `node` as laid out, the gates the rule
+    /// reads off the layout rather than the entries: a multi-line dict
+    /// packing entries onto a shared row, one whose first entry trails
+    /// the `{` on its row with a comment in the span, and a multi-line
+    /// set, list, or tuple packing entries or opening mid-row with a
+    /// comment in the span.
+    pub(crate) fn holds_as_laid_out(self, source: &Source, node: AnyNodeRef) -> bool {
+        fn packed<T: Ranged>(source: &Source, items: &[T]) -> (bool, bool, bool) {
+            let [first, .., last] = items else {
+                return (false, false, false);
+            };
+            let span = TextRange::new(first.start(), last.end());
+            (
+                source.contains_line_break(span),
+                any_sibling_shares_line(source, items),
+                !opens_its_line(source, first.start()) && swap_span_commented(source, items),
+            )
+        }
+        match node {
+            AnyNodeRef::ExprDict(dict) => {
+                let (multi_line, shares, mid_row_commented) = packed(source, &dict.items);
+                multi_line && (shares || mid_row_commented)
+            }
+            AnyNodeRef::ExprList(list) => held_leaves(source, &list.elts),
+            AnyNodeRef::ExprSet(set) => held_leaves(source, &set.elts),
+            AnyNodeRef::ExprTuple(tuple) => held_leaves(source, &tuple.elts),
+            _ => false,
+        }
+    }
+
+    /// The index of the row the sort leaves last among keyword `rows`,
+    /// each a name and its value, a row binding an effectful value
+    /// pinned in its slot and the rest sorted by name. `None` where the
+    /// rule is off.
+    pub(crate) fn sorted_last_keyword<'a>(
+        self,
+        rows: impl Iterator<Item = (&'a str, &'a Expr)>,
+    ) -> Option<usize> {
+        if !self.enabled {
+            return None;
+        }
+        let keys: Vec<Option<&str>> = rows
+            .map(|(name, value)| (!value_is_effectful(value)).then_some(name))
+            .collect();
+        last_slot(&keys, whole(&keys))
+    }
+}
+
+/// True when a leaf group over `items` holds its order as laid out: one
+/// packing members onto shared rows or opening mid-row, spanning lines,
+/// with a comment inside the swap span.
+fn held_leaves<T: Ranged>(source: &Source, items: &[T]) -> bool {
+    let [first, .., last] = items else {
+        return false;
+    };
+    (any_sibling_shares_line(source, items) || !opens_its_line(source, first.start()))
+        && source.contains_line_break(TextRange::new(first.start(), last.end()))
+        && swap_span_commented(source, items)
+}
+
+/// `ranged`'s source text read the way a later join writes it onto one
+/// row, every whitespace run one space, none directly inside a bracket,
+/// and no comma ahead of a closer, so a fractured element sorts where
+/// its joined form will. A single-line slice passes through borrowed.
+pub(super) fn joined_key<'a>(source: &'a Source, ranged: impl Ranged) -> Cow<'a, str> {
+    let slice = source.slice(ranged.range());
+    if !slice.contains('\n') {
+        return Cow::Borrowed(slice);
+    }
+    let mut out = String::with_capacity(slice.len());
+    for word in slice.split_whitespace() {
+        if word.starts_with([')', ']', '}']) {
+            while out.ends_with(',') {
+                out.pop();
+            }
+        } else if !out.is_empty() && !out.ends_with(['(', '[', '{']) {
+            out.push(' ');
+        }
+        out.push_str(word);
+    }
+    Cow::Owned(out)
+}
+
+/// The range of the item in `items` the sort leaves last under `key`
+/// over `runs`, `None` where fewer than two are present.
+fn last_entry<'a, T: Ranged, K: Ord>(
+    items: &'a [T],
+    runs: impl IntoIterator<Item = Range<usize>>,
+    key: impl FnMut(&'a T) -> Option<K>,
+) -> Option<TextRange> {
+    if items.len() < 2 {
+        return None;
+    }
+    let keys: Vec<Option<K>> = items.iter().map(key).collect();
+    last_slot(&keys, runs).map(|slot| items[slot].range())
+}
+
+/// The slot the sort leaves last: the last slot itself where it sits
+/// outside every run or holds a pinned item, and otherwise the greatest
+/// key in the run closing there, the later of equal keys.
+fn last_slot<K: Ord>(
+    keys: &[Option<K>],
+    runs: impl IntoIterator<Item = Range<usize>>,
+) -> Option<usize> {
+    let last = keys.len().checked_sub(1)?;
+    let Some(run) = runs.into_iter().find(|run| run.contains(&last)) else {
+        return Some(last);
+    };
+    if keys[last].is_none() {
+        return Some(last);
+    }
+    run.filter_map(|slot| keys[slot].as_ref().map(|key| (slot, key)))
+        .max_by(|a, b| a.1.cmp(b.1))
+        .map(|(slot, _)| slot)
+}
+
+/// One run covering every slot of `items`.
+fn whole<T>(items: &[T]) -> Option<Range<usize>> {
+    Some(0..items.len())
+}
 
 pub(crate) struct AlphabetizeSiblings {
     code_width: usize,
@@ -334,9 +532,27 @@ fn rewrite_stmt<'a>(
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
+    use rstest::rstest;
 
     use super::*;
-    use crate::testing::{applied_text, parse};
+    use crate::testing::{applied_text, first_value, parse};
+
+    #[rstest]
+    #[case::packed_commented_list("x = [b, a,  # c\n     d]\n", true)]
+    #[case::packed_commented_tuple("x = (b, a,  # c\n     d)\n", true)]
+    #[case::packed_commented_set("x = {b, a,  # c\n     d}\n", true)]
+    #[case::one_per_line_commented("x = [\n    b,  # c\n    a,\n]\n", false)]
+    #[case::single_element("x = [b]\n", false)]
+    #[case::packed_commented_dict("x = {\"b\": 1, \"a\": 2,  # c\n     \"d\": 3}\n", true)]
+    #[case::single_entry_dict("x = {\"b\": 1}\n", false)]
+    fn holds_as_laid_out_reads_the_layout_gates(#[case] src: &str, #[case] expected: bool) {
+        let source = parse(src);
+        let reorders = Reorders::from_config(&Config::default());
+        assert_eq!(
+            reorders.holds_as_laid_out(&source, first_value(&source).into()),
+            expected
+        );
+    }
 
     #[test]
     fn apply_skips_dict_key_reorder_when_config_disables_it() {
