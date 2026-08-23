@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Backslash Join Pins the Member It Opens"
+
+description = '''
+Relocating a member takes its whole physical rows, and a `\` explicit line join opening `y = 2`'s row puts the break the join rests on inside that span. **A joined member pins**, holding its slot and its leading comment where the source put them rather than travelling and leaving the backslash behind.
+'''

@@ -144,9 +144,10 @@ pub(crate) fn is_import(stmt: &Stmt) -> bool {
 ///
 /// A statement losing all of its aliases goes whole, taking its full
 /// lines, unless an own-line comment block leads it, since the deletion
-/// would strand that block. One losing a subset keeps the survivors
-/// byte-for-byte, each deletion covering one run of dropped aliases
-/// together with the separator binding it to the survivor beside it.
+/// would strand that block, or a `\` join opens its row. One losing a
+/// subset keeps the survivors byte-for-byte, each deletion covering one
+/// run of dropped aliases together with the separator binding it to the
+/// survivor beside it.
 pub(crate) fn prune_import_aliases(
     source: &Source,
     stmt: TextRange,
@@ -205,8 +206,13 @@ fn least_alias(names: &[Alias]) -> &str {
 }
 
 /// True when `stmt` holds its lines alone, carrying only whitespace
-/// ahead of it and only whitespace or a trailing comment behind it.
+/// ahead of it and only whitespace or a trailing comment behind it. A
+/// row a `\` join continues is held by the row above, so it stands with
+/// that row rather than alone.
 fn stands_alone(source: &Source, stmt: TextRange) -> bool {
+    if source.continues_a_logical_line(stmt.start()) {
+        return false;
+    }
     let lines = source.text().full_lines_range(stmt);
     let before = source.slice(TextRange::new(lines.start(), stmt.start()));
     let after = source

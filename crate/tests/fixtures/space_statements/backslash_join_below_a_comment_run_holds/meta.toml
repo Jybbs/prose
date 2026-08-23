@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Backslash Join Below a Comment Run Holds"
+
+description = '''
+A module's leading comment block ordinarily caps the blank run beneath it at one line. Here a `\` explicit line join opens the row that run closes on, so capping the run would take the break the join rests on. **The run keeps every blank the author wrote**, the cap standing down rather than reaching across a join.
+'''

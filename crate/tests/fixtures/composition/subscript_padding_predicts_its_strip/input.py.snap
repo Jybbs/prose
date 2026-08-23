@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/subscript_padding_predicts_its_strip/input.py
+---
+ab   = 1
+x[0] = 2

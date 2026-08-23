@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/space_statements/backslash_join_in_a_body_holds/input.py
+---
+def f():
+    x = 1
+    \
+    y = 2

@@ -1,21 +1,33 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description="Report every corpus file the formatter rewrites on a second pass"
+#MISE description="Report every corpus file, and every mutation of one, that the formatter rewrites on a second pass"
 
 corpus="${1:-$(python -c 'import sysconfig; print(sysconfig.get_paths()["stdlib"])')}"
+budget="${2:-60}"
 
 cargo build --release --bin prose --locked
 prose="$MISE_PROJECT_ROOT/target/release/prose"
 work=$(mktemp -d)
 once="$work/once"
 twice="$work/twice"
+mutations="$work/mutations"
 mkdir -p "$once"
 
 (cd "$corpus" && find . -name '*.py' -not -path '*/test/*' -not -path '*/tests/*' -not -path '*/site-packages/*' -print0 \
   | tar -cf - --null -T -) | tar -xf - -C "$once"
 
+count_py() {
+  find "$1" -name '*.py' | wc -l | tr -d ' '
+}
+
+run_prose() {
+  local status=0
+  "$prose" format --no-cache --quiet "$1" 2>"$2" || status=$?
+  return "$status"
+}
+
 format_pass() {
   local status=0
-  "$prose" format --no-cache --quiet "$1" || status=$?
+  run_prose "$1" /dev/stderr || status=$?
   ((status <= 2)) || exit "$status"
 }
 
@@ -23,7 +35,7 @@ format_pass "$once"
 cp -R "$once" "$twice"
 format_pass "$twice"
 
-formatted=$(find "$once" -name '*.py' | wc -l | tr -d ' ')
+formatted=$(count_py "$once")
 movers=$(diff -rq "$once" "$twice" | sed -n "s|^Files $once/\(.*\) and .* differ\$|\1|p")
 moved=0
 if [[ -n "$movers" ]]; then
@@ -32,3 +44,24 @@ if [[ -n "$movers" ]]; then
 fi
 
 printf '\n%d of %d files rewrite on a second pass\n' "$moved" "$formatted"
+
+mutation_pass() {
+  local variant="$1"
+  local name status=0 seen unsettled log
+  name=$(basename "$variant")
+  log="$work/$name.log"
+  run_prose "$variant" "$log" || status=$?
+  seen=$(count_py "$variant")
+  unsettled=$(grep -c 'to output a second run would change' "$log" || true)
+  printf '\n%s: %d of %d variants rewrite to output a second run would change\n' \
+    "$name" "$unsettled" "$seen"
+  ((unsettled == 0)) || cat "$log"
+  ((status <= 2)) || printf '%s: prose exited %d over its variants\n' "$name" "$status"
+}
+
+printf '\nMutating the settled corpus under a %ds budget\n' "$budget"
+"$MISE_PROJECT_ROOT/.mise/lib/mutate.py" "$once" "$mutations" "$budget"
+
+while IFS= read -r variant; do
+  mutation_pass "$variant"
+done < <(find "$mutations" -mindepth 1 -maxdepth 1 -type d | sort)

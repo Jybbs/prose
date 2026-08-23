@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Backslash Join Holds the Import It Leads"
+
+description = '''
+`import os` binds a name nothing reads, so the line would ordinarily go whole. A `\` explicit line join sits on the row above it, and taking the import's physical rows would strand that backslash against the line beneath. **A joined import stays**, leaving the unread binding in place rather than emitting source that no longer parses.
+'''

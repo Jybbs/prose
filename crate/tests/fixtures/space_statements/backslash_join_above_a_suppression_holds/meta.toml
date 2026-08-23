@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Backslash Join Above a Suppression Region Holds"
+
+description = '''
+A `# prose: off` region opening directly beneath a `\` explicit line join puts the directive's own row on the joined line. **The join holds ahead of the region**, so the gap above the directive keeps the shape the author wrote rather than one that would strand the backslash.
+'''

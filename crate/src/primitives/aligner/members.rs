@@ -154,7 +154,7 @@ fn range_anchored_member(
         gap: TextRange::new(target.end(), anchor),
         line_start: source.text().line_start(anchor),
         op_width: 0,
-        settled_width: width,
+        settled_width: width - delimiter_padding_width(source, target),
         value_gap: None,
         width,
     }
