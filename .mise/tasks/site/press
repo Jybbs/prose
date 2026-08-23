@@ -1,8 +1,22 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE alias="press"
-#MISE description="Produce the static docs bundle at `site/.vitepress/dist`"
-#MISE depends=["rust:build", "site:bake", "wasm:pack"]
-#MISE dir="site"
-#MISE sources=["../.mise/config.toml", "../Cargo.lock", "../Cargo.toml", "../crate/Cargo.toml", "../crate/pyproject.toml", "../crate/src/**/*.rs", "../crate/tests/fixtures/**/*", "**/*", "!.vitepress/.temp/**/*", "!.vitepress/dist/**/*", "!.vitepress/tests/wasm/pkg/**/*", "!coverage/**/*", "!node_modules/**/*"]
+#MISE alias       = "press"
+#MISE depends     = ["rust:build", "site:bake", "wasm:pack"]
+#MISE description = "Produce the static docs bundle at `site/.vitepress/dist`"
+#MISE dir         = "site"
+#MISE sources     = [
+#MISE   "../.mise/config.toml",
+#MISE   "../Cargo.lock",
+#MISE   "../Cargo.toml",
+#MISE   "../crate/Cargo.toml",
+#MISE   "../crate/pyproject.toml",
+#MISE   "../crate/src/**/*.rs",
+#MISE   "../crate/tests/fixtures/**/*",
+#MISE   "**/*",
+#MISE   "!.vitepress/.temp/**/*",
+#MISE   "!.vitepress/dist/**/*",
+#MISE   "!.vitepress/tests/wasm/pkg/**/*",
+#MISE   "!coverage/**/*",
+#MISE   "!node_modules/**/*"
+#MISE ]
 
 bunx vitepress build

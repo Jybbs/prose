@@ -1,7 +1,8 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE alias="subsets"
-#MISE description="Probe every rule alone and every ordered rule pair for one-pass settling over a corpus"
+#MISE alias       = "subsets"
+#MISE description = "Probe every rule alone and every ordered rule pair for one-pass settling over a corpus"
 
-corpus="${1:-$(python -c 'import sysconfig; print(sysconfig.get_paths()["stdlib"])')}"
+source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
 
-PROSE_SETTLE_CORPUS="$corpus" cargo test --release --locked --test settle
+corpus=$(corpus_root "${1:-}")
+PROSE_SETTLE_CORPUS="$corpus" cargo test --locked --release --test settle

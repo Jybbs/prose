@@ -127,8 +127,9 @@ mise review
 | `mise run rust:test` | The Rust suites, including every fixture snapshot |
 | `mise run rust:settle` | Formats a corpus twice and names every file the second run changes |
 | `mise run rust:subsets` | Probes each rule alone and each ordered rule pair over a corpus for one-pass settling |
+| `mise run rust:delta` | Formats a corpus with this tree and a baseline worktree at every line length and reports what differs, rule by rule and file by file |
 
-Both corpus tasks default to the interpreter's own standard library and take a directory argument to aim elsewhere. `rust:settle` answers whether a defect reproduces at all and over how many files, whereas `rust:subsets` locates it in the rule that carries it rather than in whichever pipeline happened to surface it. A fix answers to the second.
+Every corpus task defaults to the interpreter's own standard library and takes a directory argument to aim elsewhere, `rust:delta` taking it after the baseline worktree it compares against. `rust:settle` answers whether a defect reproduces at all and over how many files, whereas `rust:subsets` locates it in the rule that carries it rather than in whichever pipeline happened to surface it, and `rust:delta` shows what a fix changed across the corpus once it lands. A fix answers to the second.
 
 The fixture tree is itself a corpus, and the same probe sweeps it on every `cargo test`, failing the suite on any subset that needs a second pass. `rust:subsets` is that probe aimed at a wider corpus and built in release, which is why it stays a local tool rather than a per-pull-request check. Adding the reported case to the tree therefore turns the report into a permanent guard in the same stroke.
 

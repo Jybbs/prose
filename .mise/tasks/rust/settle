@@ -1,7 +1,8 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE alias="settle"
-#MISE description="Sweep a corpus at every line length for rewrites a second pass would change and fixes the output never took"
+#MISE alias       = "settle"
+#MISE description = "Sweep a corpus at every line length for rewrites a second pass would change and fixes the output never took"
 
-corpus="${1:-$(python -c 'import sysconfig; print(sysconfig.get_paths()["stdlib"])')}"
+source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
 
+corpus=$(corpus_root "${1:-}")
 PROSE_SETTLE_CORPUS="$corpus" cargo test --locked --test corpus

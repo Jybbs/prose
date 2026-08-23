@@ -1,63 +1,114 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE alias="delta"
-#MISE description="Compare this tree's formatting of a corpus against a baseline ref's, at every line length"
+#MISE alias       = "delta"
+#MISE description = "Compare this tree's formatting of a corpus against a baseline worktree's, at every line length"
 
-base="${1:-main}"
-corpus="${2:-$(python -c 'import sysconfig; print(sysconfig.get_paths()["stdlib"])')}"
+source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
+
+base_tree=$(cd "${1:-$MISE_PROJECT_ROOT/../main}" && pwd)
+corpus=$(corpus_root "${2:-}")
 widths="${PROSE_DELTA_WIDTHS:-40 50 60 79 88 100}"
+profile="${PROSE_DELTA_PROFILE:-release}"
 
-rule_deltas() {
-  python - "$1" "$2" <<'PY'
-import json, sys
-
-def fired(path):
-    with open(path, encoding="utf-8") as handle:
-        return json.load(handle)["rules_fired"]
-
-base, head = (fired(path) for path in sys.argv[1:3])
-rows = [
-    (slug, base.get(slug, 0), head.get(slug, 0))
-    for slug in sorted(set(base) | set(head))
-    if base.get(slug, 0) != head.get(slug, 0)
-]
-if not rows:
-    print("  every rule fired the same number of times")
-for slug, before, after in rows:
-    print(f"  {slug:34} {before:7} -> {after:<7} {after - before:+}")
-PY
+built_binary() {
+  cargo build \
+    --bin prose \
+    --locked \
+    --message-format json-render-diagnostics \
+    --profile "$profile" \
+    | jq -r '
+      select(
+        .executable != null
+        and .reason == "compiler-artifact"
+        and .target.name == "prose"
+      )
+      | .executable'
 }
 
-cargo build --release --bin prose --locked
-head_bin="$MISE_PROJECT_ROOT/target/release/prose"
+die() {
+  echo "$*" >&2
+  exit 1
+}
 
-base_sha=$(git rev-parse "$base")
-base_bin="${TMPDIR:-/tmp}/prose-baseline/$base_sha/prose"
-if [[ ! -x "$base_bin" ]]; then
-  source_tree=$(mktemp -d)
-  git worktree add --detach "$source_tree" "$base_sha" >/dev/null
-  (cd "$source_tree" && cargo build --release --bin prose --locked)
-  mkdir -p "$(dirname "$base_bin")"
-  cp "$source_tree/target/release/prose" "$base_bin"
-  git worktree remove --force "$source_tree"
-fi
+format_tagged() {
+  local side="$1" binary="$2" width="$3" status=0 unstable
+  local record="$stage/.git/$side-$width"
+  staged reset --hard -q pristine
+  printf 'code-line-length = %s\n' "$width" > "$stage/prose.toml"
+  (cd "$stage" && "$binary" format --no-cache --output-format json .) \
+    2> "$record.log" \
+    | jq -c 'select(.kind == "summary" and .schema_version == 1)' \
+    > "$record.json" || status=$?
+  (( status <= 4 )) \
+    || die "$binary exited $status at width $width, stderr at $record.log"
+  [[ -s "$record.json" ]] \
+    || die "$binary emitted no summary at width $width, stderr at $record.log"
+  staged commit --allow-empty -am "$side at width $width" -q
+  staged tag "$side-$width"
+  unstable=$(jq -r '.unstable // [] | length' "$record.json")
+  (( unstable == 0 )) \
+    || echo "  $side is unstable on $unstable of the files at this width, stderr at $record.log"
+}
 
-work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
-printf 'baseline %s (%s)\nhead     %s\ncorpus   %s\n\n' "$base" "${base_sha:0:8}" "$(git rev-parse --short HEAD)" "$corpus"
+report() {
+  local body="$1" empty="$2"
+  if [[ -n "$body" ]]; then
+    sed 's/^/  /' <<< "$body"
+  else
+    echo "  $empty"
+  fi
+}
+
+rule_delta() {
+  report "$(jq -rs '
+    . as [$was, $now]
+    | $was.rules_fired as $a
+    | $now.rules_fired as $b
+    | ($a + $b | keys[]) as $slug
+    | [($a[$slug] // 0), ($b[$slug] // 0)] as [$from, $to]
+    | select($from != $to)
+    | ($to - $from) as $delta
+    | (if $delta > 0 then "+\($delta)" else "\($delta)" end) as $signed
+    | [$slug, $from, "->", $to, $signed]
+    | @tsv' "$1" "$2" | column -t)" 'every rule fired the same number of times'
+}
+
+staged() {
+  git -C "$stage" \
+    -c commit.gpgsign=false \
+    -c tag.gpgsign=false \
+    -c user.email=delta@prose.fyi \
+    -c user.name=prose-delta \
+    "$@"
+}
+
+head_bin=$(built_binary)
+base_bin=$(cd "$base_tree" && built_binary)
+
+tmp="${TMPDIR:-/tmp}"
+stage=$(mktemp -d "${tmp%/}/prose-delta.XXXXXX")
+staged init -b delta -q
+staged --work-tree="$corpus" add -f -- '*.py'
+staged commit -m pristine -q
+staged tag pristine
+
+printf 'baseline %s (%s)\nhead     %s\ncorpus   %s (%d files)\nstage    %s\n\n' \
+  "$base_tree" \
+  "$(git -C "$base_tree" describe --always --dirty)" \
+  "$(git describe --always --dirty)" \
+  "$corpus" \
+  "$(staged ls-files | wc -l)" \
+  "$stage"
 
 for width in $widths; do
-  for side in base head; do
-    tree="$work/$width/$side"
-    mkdir -p "$tree"
-    (cd "$corpus" && find . -name '*.py' -print0 | tar -cf - --null -T -) | tar -xf - -C "$tree"
-    printf 'code-line-length = %s\n' "$width" > "$tree/prose.toml"
-  done
-  (cd "$work/$width/base" && "$base_bin" format --no-cache --output-format json . 2>/dev/null | grep '"kind":"summary"' > "$work/$width.base.json") || true
-  (cd "$work/$width/head" && "$head_bin" format --no-cache --output-format json . 2>/dev/null | grep '"kind":"summary"' > "$work/$width.head.json") || true
-  rm -f "$work/$width"/*/prose.toml
-  changed=$(git diff --no-index --name-only "$work/$width/base" "$work/$width/head" 2>/dev/null | wc -l | tr -d ' ') || true
-  printf 'width %s: %s of %s files differ\n' "$width" "$changed" "$(find "$work/$width/head" -name '*.py' | wc -l | tr -d ' ')"
-  rule_deltas "$work/$width.base.json" "$work/$width.head.json"
-  git diff --no-index --numstat "$work/$width/base" "$work/$width/head" 2>/dev/null | awk '{a+=$1; d+=$2} END {if (NR) printf "  %d rows added, %d removed across %d files\n", a, d, NR}' || true
+  printf 'width %s\n' "$width"
+  format_tagged base "$base_bin" "$width"
+  format_tagged head "$head_bin" "$width"
+  rule_delta "$stage/.git/base-$width.json" "$stage/.git/head-$width.json"
+  report \
+    "$(staged diff --stat --stat-count=5 "base-$width" "head-$width")" \
+    'no file differs'
   printf '\n'
 done
+
+printf 'each width survives as a tag pair in the stage, read one with\n'
+printf '  git -C %s diff base-<width> head-<width> [-- <path>]\n' "$stage"
