@@ -106,6 +106,38 @@ impl Reservations {
         }
     }
 
+    /// The widening the reserved rule seats on each line, empty where
+    /// that rule is off. A rule deciding a column ahead of the reserved
+    /// one reads this so its line-cap check measures a row at the width
+    /// the reserved rule leaves rather than the width the source
+    /// carries.
+    pub(crate) fn widenings(&self, source: &Source) -> aligner::Widenings {
+        let Some(settings) = self.settings else {
+            return aligner::Widenings::default();
+        };
+        let visitor = self.collected(source);
+        aligner::Widenings::of(
+            source,
+            settings,
+            visitor
+                .runs
+                .iter()
+                .flat_map(|run| run.members.iter().copied()),
+        )
+    }
+
+    /// Walks `source` collecting the runs the reserved rule builds.
+    fn collected<'a>(&self, source: &'a Source) -> ReserveVisitor<'a> {
+        let mut visitor = ReserveVisitor {
+            rule: self.rule,
+            runs: Vec::new(),
+            source,
+            values: HashMap::new(),
+        };
+        visitor.visit_body(&source.ast().body);
+        visitor
+    }
+
     /// Maps each aligned value's start offset to the display column it
     /// lands at once the run is aligned. A value the run leaves where it
     /// sits maps to that same column, so a lookup is a no-op for a value
@@ -117,13 +149,7 @@ impl Reservations {
                 shifts: Vec::new(),
             };
         };
-        let mut visitor = ReserveVisitor {
-            rule: self.rule,
-            runs: Vec::new(),
-            source,
-            values: HashMap::new(),
-        };
-        visitor.visit_body(&source.ast().body);
+        let visitor = self.collected(source);
         let targets = module_call_params(source);
         let one_row = self.one_row.against(&targets);
         let widenings = aligner::Widenings::of(

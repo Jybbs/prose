@@ -18,6 +18,7 @@ use crate::{
     primitives::{
         aligner,
         colon_targets::{ColonEmitter, EntryColumns},
+        reserve,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -25,6 +26,7 @@ use crate::{
 
 pub(crate) struct AlignColons {
     docstring_settings: aligner::Settings,
+    reservations: reserve::Reservations,
     settings: aligner::Settings,
     type_settings: aligner::Settings,
 }
@@ -37,6 +39,7 @@ impl AlignColons {
         let docstring_settings = type_settings.with_singleton_strip();
         Self {
             docstring_settings,
+            reservations: config.equals_reservations(),
             settings: docstring_settings.within(
                 config.code_width(),
                 config.stranded_padding(),
@@ -53,6 +56,9 @@ impl Rule for AlignColons {
             rule: self,
             walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
+        emitter
+            .walker
+            .set_widenings(self.reservations.widenings(source));
         emitter.walk(source);
         emitter.walker.groups
     }
