@@ -5,9 +5,13 @@
 //! from the implicit `__class__` cell and the frame. A comprehension, a
 //! callable taking no positional parameter, a `@dataclass(slots=True)`
 //! class, a comment inside the argument list, a scope binding the class
-//! name, a module binding `super` or `__class__`, and a continuation
-//! line the deletion would leave measured against a moved column each
-//! hold the arguments in place.
+//! name, a module binding `super` or `__class__`, and a row inside a
+//! row-spanning string the deletion would leave measured against a
+//! moved column each hold the arguments in place. Any other
+//! continuation row the deletion would strand re-seats by the columns
+//! the span took.
+
+use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -15,13 +19,17 @@ use ruff_python_ast::{
     visitor::{Visitor, walk_expr},
 };
 use ruff_source_file::UniversalNewlines;
-use ruff_text_size::TextRange;
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     config::Config,
     primitives::{
-        binding::BindingAnalysis, decorator::is_slots_dataclass, edit::singleton_groups,
-        inline::indent_width, params::first_positional, walk::walk_stmt,
+        binding::BindingAnalysis,
+        decorator::is_slots_dataclass,
+        inline::indent_width,
+        params::first_positional,
+        travel::{Landing, frozen_rows, placed_block},
+        walk::walk_stmt,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -47,12 +55,13 @@ impl Rule for ShedSuperArgs {
         let mut walker = Walker {
             analysis,
             classes: Vec::new(),
-            edits: Vec::new(),
             frames: Vec::new(),
+            groups: Vec::new(),
             source,
+            statement: TextSize::default(),
         };
         walker.visit_body(&source.ast().body);
-        singleton_groups(walker.edits)
+        walker.groups
     }
 
     fn id(&self) -> RuleId {
@@ -72,14 +81,16 @@ struct Frame<'a> {
     scope: Option<&'a Stmt>,
 }
 
-/// Collects one deletion per rewritable `super(...)` call, carrying the
-/// enclosing class stack and the callable frame stack the walk maintains.
+/// Collects one fix group per rewritable `super(...)` call, carrying the
+/// enclosing class stack, the callable frame stack the walk maintains,
+/// and the start of the statement under visit.
 struct Walker<'a> {
     analysis: &'a BindingAnalysis,
     classes: Vec<&'a StmtClassDef>,
-    edits: Vec<Edit>,
     frames: Vec<Frame<'a>>,
+    groups: Vec<Vec<Edit>>,
     source: &'a Source,
+    statement: TextSize,
 }
 
 impl<'a> Walker<'a> {
@@ -99,9 +110,12 @@ impl<'a> Walker<'a> {
         self.frames.pop();
     }
 
-    /// The edit deleting `call`'s arguments, `None` where the bare form
-    /// would resolve a different class or instance, or none at all.
-    fn rewrite(&self, call: &ExprCall) -> Option<Edit> {
+    /// The edits deleting `call`'s arguments and re-seating any later
+    /// row of the logical line the deletion leaves measured against a
+    /// moved column, `None` where the bare form would resolve a
+    /// different class or instance, or none at all, and `None` where
+    /// the stranded row sits inside a string no move re-seats.
+    fn rewrite(&self, call: &ExprCall) -> Option<Vec<Edit>> {
         if call.func.as_name_expr()?.id.as_str() != "super" || !call.arguments.keywords.is_empty() {
             return None;
         }
@@ -119,11 +133,24 @@ impl<'a> Walker<'a> {
             || self.shadows(name)
             || is_slots_dataclass(class)
             || self.source.intersects_comment(span)
-            || self.strands_a_continuation(span)
         {
             return None;
         }
-        Some(Edit::range_deletion(span))
+        let tail = self.source.logical_line_tail(span.end());
+        let column = self.source.column_of(span.start());
+        if self.strands_a_string_row(tail, column) {
+            return None;
+        }
+        let landing = Landing {
+            column,
+            indent: self.source.line_indent_width(span.start()),
+            item: self.statement,
+        };
+        let mut edits = vec![Edit::range_deletion(span)];
+        if let Cow::Owned(placed) = placed_block(self.source, tail, landing) {
+            edits.push(Edit::range_replacement(placed, tail));
+        }
+        Some(edits)
     }
 
     /// True when an enclosing `def` binds `name` in its own scope,
@@ -135,26 +162,14 @@ impl<'a> Walker<'a> {
             .any(|scope| self.analysis.scope_binds(scope, name))
     }
 
-    /// True when a later line of the call's logical line opens at
-    /// `span`'s column or past it. The deletion moves every column from
-    /// `span` rightward, leaving such a line measured against a position
-    /// that shifted, and a span of its own spanning lines strands the
-    /// same way. A line opening ahead of `span` hangs from the
-    /// statement's own indent and survives the deletion.
-    fn strands_a_continuation(&self, span: TextRange) -> bool {
-        let tail = self.source.logical_line_tail(span.end());
-        if !self.source.contains_line_break(tail) {
-            return false;
-        }
-        if self.source.contains_line_break(span) {
-            return true;
-        }
-        let opening = self.source.column_of(span.start());
+    /// True when a row of `tail` inside a row-spanning string opens at
+    /// `column` or past it, a row no move re-seats.
+    fn strands_a_string_row(&self, tail: TextRange, column: usize) -> bool {
         self.source
             .slice(tail)
             .universal_newlines()
-            .skip(1)
-            .any(|line| indent_width(&line) >= opening)
+            .zip(frozen_rows(self.source, tail))
+            .any(|(line, frozen)| frozen && indent_width(&line) >= column)
     }
 }
 
@@ -162,8 +177,8 @@ impl<'a> Visitor<'a> for Walker<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
         match expr {
             Expr::Call(call) => {
-                if let Some(edit) = self.rewrite(call) {
-                    self.edits.push(edit);
+                if let Some(edits) = self.rewrite(call) {
+                    self.groups.push(edits);
                 }
                 walk_expr(self, expr);
             }
@@ -183,6 +198,7 @@ impl<'a> Visitor<'a> for Walker<'a> {
     }
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        self.statement = stmt.start();
         match stmt {
             Stmt::ClassDef(class) => {
                 self.classes.push(class);
@@ -227,7 +243,9 @@ mod tests {
     fn deletes_only_the_span_between_the_parentheses() {
         let source = parse("class C:\n    def m(self):\n        return super(C, self).m()\n");
         let groups = ShedSuperArgs.apply(&source);
-        let edit = &groups[0][0];
+        let [edit] = groups[0].as_slice() else {
+            panic!("a call on one row deletes its span alone");
+        };
         assert!(edit.is_deletion());
         assert_eq!(&source.text()[edit.range()], "C, self");
     }
@@ -242,12 +260,22 @@ mod tests {
 
     #[rstest]
     #[case::aligned_continuation(
-        "class C:\n    def m(self, a, b):\n        return super(C, self).m(a,\n                        b)\n"
+        "class C:\n    def m(self, a, b):\n        return super(C, self).m(a,\n                        b)\n",
+        Some(").m(a,\n                 b)")
+    )]
+    #[case::hanging_continuation(
+        "class C:\n    def m(self, a, b):\n        return super(C, self).m(\n            a, b)\n",
+        None
     )]
     #[case::spread_span(
-        "class C:\n    def m(self, a, b):\n        return super(\n            C,\n            self\n        ).m(a,\n            b)\n"
+        "class C:\n    def m(self, a, b):\n        return super(\n            C,\n            self\n        ).m(a,\n            b)\n",
+        None
     )]
-    fn stranding_continuation_holds_the_call(#[case] src: &str) {
-        assert!(ShedSuperArgs.apply(&parse(src)).is_empty());
+    fn a_continuation_re_seats_by_the_columns_the_span_took(
+        #[case] src: &str,
+        #[case] re_seated: Option<&str>,
+    ) {
+        let groups = ShedSuperArgs.apply(&parse(src));
+        assert_eq!(groups[0].get(1).and_then(Edit::content), re_seated);
     }
 }

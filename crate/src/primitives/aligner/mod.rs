@@ -11,6 +11,7 @@ use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
     config::{AlignmentConfig, MaxShift},
+    primitives::padding::Stranding,
     rule::RuleId,
     source::Source,
 };
@@ -43,19 +44,23 @@ pub(crate) const VALUE_OFFSET: usize = 2;
 ///
 /// `gap` is the whitespace ending immediately before the aligned token
 /// the rule rewrites, on the source line opening at `line_start`.
-/// `width` measures the row's left-hand side as the source carries it
-/// and `settled_width` measures it once an earlier column has padded
-/// the content ahead of the gap, so the column math reads the second
-/// while the baseline reads the first. `op_width` right-aligns a
-/// variable-width operator and stays zero otherwise. `value_gap` runs
-/// from just past the operator to the value, `None` where the rule
-/// leaves that spacing alone.
+/// `baseline` is the display column where the row's left-hand side
+/// begins. `width` measures that left-hand side as the source carries
+/// it and `settled_width` measures it once an earlier column has
+/// padded the content ahead of the gap, so the column math reads the
+/// second. `op_width` right-aligns a variable-width operator and stays
+/// zero otherwise. `tail` is the columns a later pass may seat after
+/// the row, the separator an entry gains once a reorder moves it.
+/// `value_gap` runs from just past the operator to the value, `None`
+/// where the rule leaves that spacing alone.
 #[derive(Clone, Copy)]
 pub(crate) struct Member {
+    pub baseline: usize,
     pub gap: TextRange,
     pub line_start: TextSize,
     pub op_width: usize,
     pub settled_width: usize,
+    pub tail: usize,
     pub value_gap: Option<TextRange>,
     pub width: usize,
 }
@@ -94,6 +99,13 @@ impl Member {
         self
     }
 
+    /// Returns a copy of `self` charged `tail` columns a later pass may
+    /// seat after its row.
+    pub(crate) fn with_tail(mut self, tail: usize) -> Self {
+        self.tail = tail;
+        self
+    }
+
     /// Returns a copy of `self` carrying the post-operator span an
     /// aligned row rewrites to one space, running from just past the
     /// `op_len`-wide operator to `value_start`.
@@ -110,12 +122,15 @@ impl Member {
 /// `strip_singleton` collapses a size-one group's gap to zero width.
 /// `line_length` carries the governing cap when the rule resolves
 /// within it, so a member whose aligned line would cross the cap
-/// partitions out of the run the way an over-`max_shift` outlier does.
+/// partitions out of the run the way an over-`max_shift` outlier does,
+/// and `stranding` names the padding rule whose later edits that cap
+/// check reads each line at.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Settings {
     buffer: usize,
     line_length: Option<usize>,
     max_shift: MaxShift,
+    stranding: Option<Stranding>,
     strip_singleton: bool,
 }
 
@@ -128,6 +143,7 @@ impl Settings {
             buffer: 1,
             line_length: None,
             max_shift,
+            stranding: None,
             strip_singleton: false,
         }
     }
@@ -156,16 +172,18 @@ impl Settings {
         self
     }
 
-    /// Returns a copy of `self` carrying `cap` as the governing line
-    /// length the run resolves within.
-    pub(crate) fn with_line_length(mut self, cap: usize) -> Self {
-        self.line_length = Some(cap);
-        self
-    }
-
     /// Returns a copy of `self` with `strip_singleton` enabled.
     pub(crate) fn with_singleton_strip(mut self) -> Self {
         self.strip_singleton = true;
+        self
+    }
+
+    /// Returns a copy of `self` carrying `cap` as the governing line
+    /// length the run resolves within, each line read at the width
+    /// `stranding`'s padding rule settles it to.
+    pub(crate) fn within(mut self, cap: usize, stranding: Stranding) -> Self {
+        self.line_length = Some(cap);
+        self.stranding = Some(stranding);
         self
     }
 }

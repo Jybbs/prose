@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/hung_value_hangs_past_a_relaid_key/input.py
+---
+class DOMBuilder:
+    _settings = {
+        (
+            "external_parameter_entities",
+            0
+        ): [
+            ("external_parameter_entities", 0)],
+        ("validate_if_schema", 0): [
+            ("validate_if_schema", 0)]
+    }

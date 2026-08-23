@@ -5,13 +5,19 @@
 //! one-element tuple all survive. A wrapped pair folds onto one line
 //! when the bare form fits the budget, measured from the column the pair
 //! reaches once the pass's earlier edits apply and narrowed by the pairs
-//! nested inside it, which shed in the same pass.
+//! nested inside it, which shed in the same pass. A wrapped pair whose
+//! breaks a bracket inside it holds sheds in place, leaving the rows
+//! inside to the layout rules.
 
 use std::{borrow::Cow, cmp::Reverse};
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{AnyNodeRef, Expr, token::parenthesized_range};
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_python_ast::{
+    AnyNodeRef, Expr,
+    token::{TokenKind, parenthesized_range},
+};
+use ruff_python_trivia::PythonWhitespace;
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
@@ -20,6 +26,7 @@ use crate::{
         edit::{apply_inline_edits, insert_edit, singleton_groups},
         inline::{end_column, folded_line_form, soft_wrap_runs},
         splice::splice_preserves_tree,
+        tokens::{is_closer, is_opener},
         walk::{Descent, filter_map_over_parented_exprs},
     },
     rule::{Rule, RuleId},
@@ -63,9 +70,10 @@ impl Rule for ShedParentheses {
 }
 
 /// One grouping pair whose removal leaves the parse unchanged, carrying
-/// its interior range and that interior's single-line form.
+/// its interior range and that interior's single-line form, `None`
+/// where only a bracket inside the interior holds its breaks.
 struct Candidate<'src> {
-    bare: Cow<'src, str>,
+    bare: Option<Cow<'src, str>>,
     inner: TextRange,
     pair: TextRange,
 }
@@ -82,13 +90,16 @@ struct Shedder<'a> {
 impl Shedder<'_> {
     /// True when joining `candidate` leaves its line inside the budget,
     /// the interior narrowed by the two columns each nested candidate
-    /// sheds alongside it.
+    /// sheds alongside it, and false for an interior no fold joins.
     fn fits(&self, candidate: &Candidate, candidates: &[Candidate]) -> bool {
+        let Some(bare) = &candidate.bare else {
+            return false;
+        };
         let nested = candidates
             .iter()
             .filter(|other| candidate.inner.contains_range(other.pair))
             .count();
-        let width = candidate.bare.width() - 2 * nested;
+        let width = bare.width() - 2 * nested;
         self.shifted_column(candidate.pair.start()) + width <= self.code_line_length
     }
 
@@ -155,28 +166,16 @@ impl Shedder<'_> {
     /// loses the paren that licensed it.
     fn shed_in_place_spans(&self, candidate: &Candidate) -> Option<(TextRange, TextRange)> {
         let Candidate { inner, pair, .. } = *candidate;
-        let is_hspace = |b: &u8| matches!(b, b' ' | b'\t');
         let text = self.source.text();
-        let trailing = text[pair.start().to_usize() + 1..]
-            .bytes()
-            .take_while(is_hspace)
-            .count();
-        let mut open = TextRange::at(
-            pair.start(),
-            TextSize::of('(') + TextSize::try_from(trailing).expect("whitespace run fits u32"),
-        );
+        let after = &text[pair.start().to_usize() + 1..];
+        let trailing = after.text_len() - after.trim_whitespace_start().text_len();
+        let mut open = TextRange::at(pair.start(), TextSize::of('(') + trailing);
         // The paren gone, whitespace ahead of it would trail its row, so
         // a break directly past the span pulls that run into the span.
         if text[open.end().to_usize()..].starts_with(['\r', '\n']) {
-            let leading = text[..pair.start().to_usize()]
-                .bytes()
-                .rev()
-                .take_while(is_hspace)
-                .count();
-            open = TextRange::new(
-                open.start() - TextSize::try_from(leading).expect("whitespace run fits u32"),
-                open.end(),
-            );
+            let before = &text[..pair.start().to_usize()];
+            let leading = before.text_len() - before.trim_whitespace_end().text_len();
+            open = TextRange::new(open.start() - leading, open.end());
         }
         let close = TextRange::new(inner.end(), pair.end());
         let bare = self.source.slice(TextRange::new(open.end(), close.start()));
@@ -194,8 +193,9 @@ impl Shedder<'_> {
 }
 
 /// The candidate `expr` contributes, or `None` where no pair encloses
-/// it, the pair carries syntax, its interior has no single-line form, or
-/// stripping the pair shifts the parse.
+/// it, the pair carries syntax, or stripping the pair shifts the parse.
+/// An interior no fold joins still qualifies where the brackets inside
+/// it hold its breaks.
 fn candidate<'src>(
     source: &'src Source,
     expr: &'src Expr,
@@ -212,8 +212,29 @@ fn candidate<'src>(
         return None;
     }
     let inner = expr.range();
-    let bare = folded_line_form(expr, source.slice(inner))?;
-    splice_preserves_tree(source, pair, &bare).then_some(Candidate { bare, inner, pair })
+    let bare = folded_line_form(expr, source.slice(inner));
+    if bare.is_none() && !breaks_held_inside(source, inner) {
+        return None;
+    }
+    let probe = bare.as_deref().unwrap_or_else(|| source.slice(inner));
+    splice_preserves_tree(source, pair, probe).then_some(Candidate { bare, inner, pair })
+}
+
+/// True when every line break inside `inner` sits inside a bracket
+/// `inner` itself opens, so the pair around it holds none of them.
+fn breaks_held_inside(source: &Source, inner: TextRange) -> bool {
+    let mut depth = 0_usize;
+    source
+        .tokens_overlapping(inner)
+        .filter(|token| inner.contains(token.start()))
+        .all(|token| {
+            if is_opener(token.kind()) {
+                depth += 1;
+            } else if is_closer(token.kind()) {
+                depth -= 1;
+            }
+            depth > 0 || token.kind() != TokenKind::NonLogicalNewline
+        })
 }
 
 /// True when `expr` is the return annotation of the function `parent`.

@@ -4,7 +4,7 @@
 
 use std::ops::Range;
 
-use ruff_python_ast::Expr;
+use ruff_python_ast::{AnyNodeRef, Expr};
 use ruff_text_size::TextRange;
 
 use crate::{primitives::INDENT_STEP, source::Source};
@@ -65,6 +65,13 @@ pub(crate) fn explode_parens(
     out
 }
 
+/// The columns a reorder may seat after an entry of a bracketed
+/// construct over `range` holding `count` entries, one for the `last`
+/// entry where no comma trails it and zero otherwise.
+pub(crate) fn entry_tail(source: &Source, range: TextRange, count: usize, last: bool) -> usize {
+    usize::from(count > 1 && last && source.trailing_comma(range).is_none())
+}
+
 /// True for the collapse-only forms, a subscript whose `[index]` joins
 /// onto one line whatever the index shape and the four comprehensions,
 /// each joining when it fits and never expanding the way a literal does.
@@ -112,10 +119,17 @@ pub(crate) fn is_layoutable(expr: &Expr) -> bool {
     )
 }
 
-/// True for a literal carrying more than one entry, `requires_expand`
-/// apart from the one-entry `Dict`.
-pub(crate) fn is_multi_entry(expr: &Expr) -> bool {
-    requires_expand(expr) && expr.as_dict_expr().is_none_or(|dict| dict.len() > 1)
+/// True for a `Dict`, `List`, `Set`, or parenthesized `Tuple` node
+/// carrying more than one entry. A bare tuple carries no bracket pair
+/// to hang broken lines on.
+pub(crate) fn is_multi_entry(node: AnyNodeRef) -> bool {
+    match node {
+        AnyNodeRef::ExprDict(dict) => dict.len() > 1,
+        AnyNodeRef::ExprList(list) => list.len() > 1,
+        AnyNodeRef::ExprSet(set) => set.len() > 1,
+        AnyNodeRef::ExprTuple(tuple) => tuple.parenthesized && tuple.len() > 1,
+        _ => false,
+    }
 }
 
 /// The column an exploded construct opens its items at, one
@@ -153,18 +167,11 @@ pub(crate) fn pack(
 }
 
 /// True for a `Dict`, `List`, `Set`, or parenthesized `Tuple` shape
-/// the expand path canonicalizes. Multi-item `List`, `Set`, and
-/// parenthesized `Tuple` qualify, as does any non-empty `Dict`. A bare
-/// tuple carries no bracket pair to hang broken lines on, and an empty
-/// or single-item collection has nothing to flow.
+/// the expand path canonicalizes, the [`is_multi_entry`] shapes and
+/// the one-entry `Dict`. An empty or single-item collection otherwise
+/// has nothing to flow.
 pub(crate) fn requires_expand(expr: &Expr) -> bool {
-    match expr {
-        Expr::Dict(d) => !d.is_empty(),
-        Expr::List(l) => l.len() > 1,
-        Expr::Set(s) => s.len() > 1,
-        Expr::Tuple(t) => t.parenthesized && t.len() > 1,
-        _ => false,
-    }
+    is_multi_entry(expr.into()) || expr.as_dict_expr().is_some_and(|dict| dict.len() == 1)
 }
 
 /// Splits `block` at its first line break when that opening line holds
@@ -233,7 +240,7 @@ mod tests {
     fn is_multi_entry_requires_two_bracketed_entries(#[case] src: &str, #[case] expected: bool) {
         let source = parse(src);
         let expr = first_expr(&source);
-        assert_eq!(is_multi_entry(expr), expected);
+        assert_eq!(is_multi_entry(expr.into()), expected);
     }
 
     #[test]

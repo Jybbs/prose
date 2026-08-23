@@ -8,16 +8,13 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::TextRange;
 use unicode_width::UnicodeWidthStr;
 
-use super::{
-    Member, Settings, Widenings,
-    holds::is_alignment_candidate,
-    members::{baseline, line_gap_before},
-};
+use super::{Member, Settings, Widenings, holds::is_alignment_candidate, members::line_gap_before};
 use crate::{
     config::MaxShift,
     primitives::{
         comments::{TRAILING_GAP, settled_opener, trailing_comment},
         edit::repeat_edit,
+        padding::{self, Stranding},
     },
     source::Source,
 };
@@ -51,14 +48,14 @@ pub(crate) fn operator_columns(
     members: &[Member],
     settings: Settings,
 ) -> Vec<usize> {
-    if !is_alignment_candidate(source, members) {
+    if !is_alignment_candidate(members) {
         return members
             .iter()
-            .map(|m| baseline(source, *m) + m.settled_width + settings.buffer)
+            .map(|m| m.baseline + m.settled_width + settings.buffer)
             .collect();
     }
     group_paddings(source, members, settings, &Widenings::default())
-        .map(|(m, pad)| baseline(source, m) + m.settled_width + pad)
+        .map(|(m, pad)| m.baseline + m.settled_width + pad)
         .collect()
 }
 
@@ -95,16 +92,18 @@ fn comment_slack(source: &Source, member: Member) -> isize {
     gap_slack + opener_slack
 }
 
-/// The width of `member`'s line as the aligner emits it, less the
-/// pre-operator gap the padding replaces, with any rewritten
-/// post-operator gap collapsed to the one space an emitted row carries,
-/// and with a trailing comment measured at the gap and opener widths
-/// the comment rules settle it to rather than wherever the source
-/// leaves it.
-fn emitted_base_width(source: &Source, member: Member) -> usize {
-    let line = source.text().line_str(member.line_start).width();
-    let base = (line - source.slice(member.gap).width())
-        .saturating_add_signed(-comment_slack(source, member));
+/// The width of `member`'s line as the aligner emits it: less the
+/// pre-operator gap the padding replaces, any rewritten post-operator
+/// gap collapsed to one space, a trailing comment at the gap and opener
+/// widths the comment rules settle it to, the padding `stranding`'s
+/// rule drops elsewhere on the line gone, and the member's `tail`
+/// charged.
+fn emitted_base_width(source: &Source, member: Member, stranding: Option<Stranding>) -> usize {
+    let line = source.text().line_range(member.line_start);
+    let base = (source.slice(line).width() + member.tail - source.slice(member.gap).width())
+        .saturating_add_signed(
+            -comment_slack(source, member) - padding_slack(source, member, line, stranding),
+        );
     member
         .rewritten_value_gap(source)
         .map_or(base, |gap| base + 1 - source.slice(gap).width())
@@ -124,7 +123,10 @@ fn emitted_bases(
     }
     members
         .iter()
-        .map(|m| emitted_base_width(source, *m).saturating_add_signed(widenings.delta(*m)))
+        .map(|m| {
+            emitted_base_width(source, *m, settings.stranding)
+                .saturating_add_signed(widenings.delta(*m))
+        })
         .collect()
 }
 
@@ -185,6 +187,25 @@ fn group_paddings<'m>(
 /// is empty.
 fn max_op_width(members: &[Member]) -> usize {
     members.iter().map(|m| m.op_width).max().unwrap_or(0)
+}
+
+/// The columns the padding rule `stranding` names takes off `member`'s
+/// `line`, leaving aside the gaps the aligner rewrites itself, and zero
+/// where no padding rule is named.
+fn padding_slack(
+    source: &Source,
+    member: Member,
+    line: TextRange,
+    stranding: Option<Stranding>,
+) -> isize {
+    let Some(stranding) = stranding else {
+        return 0;
+    };
+    let edits = source.stranded_padding(stranding);
+    let own = member
+        .rewritten_value_gap(source)
+        .map_or(0, |gap| padding::slack(source, &edits, gap));
+    padding::slack(source, &edits, line) - padding::slack(source, &edits, member.gap) - own
 }
 
 /// The gap that lands `member`'s aligned token in its group's shared
@@ -257,7 +278,16 @@ mod tests {
     use ruff_text_size::{Ranged, TextSize};
 
     use super::*;
-    use crate::testing::{align_member, parse, range};
+    use crate::{
+        rule::RuleId,
+        testing::{align_member, parse, range},
+    };
+
+    /// The padding rule every capped setting here reads, over sources
+    /// carrying no padding.
+    fn strip() -> Stranding {
+        Stranding::new(RuleId::from("strip-stranded-padding"))
+    }
 
     /// Builds a `MaxShift::Cap` from a non-zero literal.
     fn cap(n: usize) -> MaxShift {
@@ -444,7 +474,7 @@ mod tests {
         emit_group(
             &source,
             &members,
-            Settings::aligned(cap(16)).with_line_length(10),
+            Settings::aligned(cap(16)).within(10, strip()),
             &Widenings::default(),
             &mut edits,
         );
@@ -466,7 +496,7 @@ mod tests {
         emit_group(
             &source,
             &members,
-            Settings::aligned(cap(16)).with_line_length(10),
+            Settings::aligned(cap(16)).within(10, strip()),
             &Widenings::default(),
             &mut edits,
         );
@@ -488,7 +518,7 @@ mod tests {
         emit_group(
             &source,
             &members,
-            Settings::aligned(cap(16)).with_line_length(8),
+            Settings::aligned(cap(16)).within(8, strip()),
             &Widenings::default(),
             &mut edits,
         );
@@ -506,7 +536,7 @@ mod tests {
         emit_group(
             &source,
             &members,
-            Settings::aligned(cap(16)).with_line_length(8),
+            Settings::aligned(cap(16)).within(8, strip()),
             &Widenings::default(),
             &mut edits,
         );
@@ -525,7 +555,7 @@ mod tests {
         emit_group(
             &source,
             &members,
-            Settings::aligned(cap(16)).with_line_length(11),
+            Settings::aligned(cap(16)).within(11, strip()),
             &Widenings::default(),
             &mut edits,
         );
@@ -555,7 +585,7 @@ mod tests {
         emit_group(
             &source,
             &members,
-            Settings::aligned(cap(8)).with_line_length(28),
+            Settings::aligned(cap(8)).within(28, strip()),
             &Widenings::default(),
             &mut edits,
         );

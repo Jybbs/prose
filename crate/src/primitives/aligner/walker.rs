@@ -66,13 +66,16 @@ impl<'a> AlignWalker<'a> {
 
     /// The display column where `member`'s left-hand side begins once
     /// the edits this walker has already recorded land on its line ahead
-    /// of the gap. `apply_inline_edits` bounds `placed` to that prefix
-    /// itself, so a row no recorded edit touches reads its source width.
+    /// of the gap, the source baseline moved by however much those edits
+    /// widen the prefix. `apply_inline_edits` bounds `placed` to that
+    /// prefix itself, so a row no recorded edit touches reads its source
+    /// baseline.
     fn placed_baseline(&self, member: Member) -> usize {
         let prefix = TextRange::new(member.line_start, member.gap.start());
-        apply_inline_edits(self.source, prefix, &self.placed)
-            .width()
-            .saturating_sub(member.width)
+        let placed = apply_inline_edits(self.source, prefix, &self.placed);
+        member.baseline.saturating_add_signed(
+            placed.width().cast_signed() - self.source.slice(prefix).width().cast_signed(),
+        )
     }
 
     /// Records `name_edits` together with a one-space rewrite of each gap

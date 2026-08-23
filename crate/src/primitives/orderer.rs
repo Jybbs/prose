@@ -372,8 +372,8 @@ where
 }
 
 /// True when every line of `span` rewritten to `assembled` fits inside
-/// `budget` display columns or keeps the width its source line held,
-/// the head and tail of the boundary lines counted in.
+/// `budget` display columns or runs no wider than the widest line the
+/// source span held, the head and tail of the boundary lines counted in.
 pub(crate) fn reordered_lines_fit(
     source: &Source,
     span: TextRange,
@@ -384,18 +384,14 @@ pub(crate) fn reordered_lines_fit(
     let outer = TextRange::new(text.line_start(span.start()), text.line_end(span.end()));
     let head = source.slice(TextRange::new(outer.start(), span.start()));
     let tail = source.slice(TextRange::new(span.end(), outer.end()));
-    let source_widths: Vec<usize> = source
+    let cap = source
         .slice(outer)
         .lines()
         .map(UnicodeWidthStr::width)
-        .collect();
+        .fold(budget, usize::max);
     format!("{head}{assembled}{tail}")
         .lines()
-        .enumerate()
-        .all(|(i, line)| {
-            let width = line.width();
-            width <= budget || source_widths.get(i) == Some(&width)
-        })
+        .all(|line| line.width() <= cap)
 }
 
 /// True when `order` moves a member whose range spans lines, the

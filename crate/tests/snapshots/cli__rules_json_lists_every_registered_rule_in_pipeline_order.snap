@@ -16,7 +16,10 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "slug": "normalize-literals"
   },
   {
-    "after": [],
+    "after": [
+      "shed-backslash-continuations",
+      "normalize-literals"
+    ],
     "imperative": "prune an import binding nothing references or a repeat of one already bound",
     "position": 3,
     "slug": "prune-inert-imports"
@@ -91,26 +94,25 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [],
-    "imperative": "break a long method chain to one link per line",
+    "imperative": "shed the arguments a parameterized `super()` call restates",
     "position": 14,
+    "slug": "shed-super-args"
+  },
+  {
+    "after": [],
+    "imperative": "break a long method chain to one link per line",
+    "position": 15,
     "slug": "stack-method-chains"
   },
   {
     "after": [
       "shed-backslash-continuations",
+      "shed-super-args",
       "stack-method-chains"
     ],
     "imperative": "reflow call arguments against the line budget",
-    "position": 15,
-    "slug": "reflow-calls"
-  },
-  {
-    "after": [
-      "reflow-calls"
-    ],
-    "imperative": "shed the arguments a parameterized `super()` call restates",
     "position": 16,
-    "slug": "shed-super-args"
+    "slug": "reflow-calls"
   },
   {
     "after": [
@@ -181,7 +183,10 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   {
     "after": [
       "normalize-literals",
+      "strip-trailing-commas",
       "shed-parentheses",
+      "frame-docstrings",
+      "expand-docstrings",
       "stack-method-chains",
       "reflow-collections",
       "reflow-calls",

@@ -31,7 +31,7 @@ use ruff_python_ast::{
     Expr, InterpolatedStringElement, Stmt,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
-use ruff_text_size::{Ranged, TextSize};
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
@@ -39,6 +39,7 @@ use crate::{
         call_keywords::{CallTargets, module_call_params},
         edit::{apply_inline_edits, insert_edit, narrowed_replacement, singleton_groups},
         one_row, reserve,
+        travel::{Landing, block_shift, shifted_block, spans_a_string_part},
         walk::walk_stmt,
     },
     rule::{Rule, RuleId},
@@ -73,10 +74,11 @@ impl Rule for ReflowCalls {
             indent: None,
             line_shift: 0,
             one_row: self.one_row.against(&targets),
-            origin: TextSize::new(0),
             origin_column: 0,
+            region: source.module_range(),
             reservations: &reservations,
             source,
+            tail: 0,
             targets: &targets,
         };
         exploder.visit_body(&source.ast().body);
@@ -88,20 +90,23 @@ impl Rule for ReflowCalls {
     }
 }
 
-/// Walks a module, or one relocated argument value, emitting the explode
-/// edits its calls need. `origin` and `origin_column` place the walked
-/// subtree's opening line, `line_shift` the columns every later line
-/// moves by, and `indent` is the indent an exploded closing `)` drops to,
-/// unset where each call answers to its own source line.
+/// Walks a module, or one relocated expression, emitting the explode
+/// edits its calls need. `region` is the span the walk answers for and
+/// `origin_column` the column its opening line lands at, `line_shift`
+/// the columns every later line moves by, `tail` the columns the text
+/// assembling the region writes after its last row, and `indent` is the
+/// indent an exploded closing `)` drops to, unset where each call
+/// answers to its own source line.
 struct Exploder<'a> {
     edits: Vec<Edit>,
     indent: Option<usize>,
     line_shift: isize,
     one_row: one_row::Settings<'a>,
-    origin: TextSize,
     origin_column: usize,
+    region: TextRange,
     reservations: &'a reserve::Columns,
     source: &'a Source,
+    tail: usize,
     targets: &'a CallTargets<'a>,
 }
 
@@ -114,12 +119,11 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
         // The callee settles first, so the argument list measures against
         // the row a reshaped receiver leaves it on.
         self.visit_expr(&call.func);
-        let indent = self.indent_for(call);
-        let column = self.open_paren_column(call, &self.callee_text(call));
+        let column = self.open_paren_column(call);
         // The rendered list already carries every nested reshape, so a
         // walk into the arguments would decide the same text twice, the
         // second reading measuring against columns the first one set.
-        if let Some(text) = self.explode_args(call, indent, column) {
+        if let Some(text) = self.explode_args(call, column) {
             if let Some(edit) = narrowed_replacement(self.source, call.arguments.range(), text) {
                 insert_edit(&mut self.edits, edit);
             }
@@ -136,38 +140,67 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
     }
 }
 
-/// `expr`'s text with every call inside it exploded from `column`, the
-/// column an enclosing layout relocates it to, an exploded closing `)`
-/// dropping to `indent`. `None` where nothing inside it reshapes, which
-/// leaves the caller its own placement of the source slice, and `None`
-/// for an `expr` the source wrote across rows, whose untouched rows
-/// answer to a source indent this reshape does not move.
-pub(crate) fn reshaped_calls<'src>(
-    source: &'src Source,
-    one_row: one_row::Settings<'src>,
-    reservations: &'src reserve::Columns,
-    targets: &'src CallTargets<'src>,
-    expr: &'src Expr,
-    column: usize,
-    indent: usize,
-) -> Option<String> {
-    if source.contains_line_break(expr.range()) {
-        return None;
+/// The terms one walk reshapes calls under, handed to a layout that
+/// relocates an expression and reshapes the calls inside it.
+#[derive(Clone, Copy)]
+pub(crate) struct Reshaper<'a> {
+    pub(crate) one_row: one_row::Settings<'a>,
+    pub(crate) reservations: &'a reserve::Columns,
+    pub(crate) source: &'a Source,
+    pub(crate) targets: &'a CallTargets<'a>,
+}
+
+impl<'a> Reshaper<'a> {
+    /// `expr`'s text with every call inside it exploded once it lands
+    /// per `landing`, its source `range` covering any grouping pair, an
+    /// exploded closing `)` dropping to the landing indent and `tail`
+    /// columns following the text on its last row. A block written
+    /// across rows measures each call where its rows travel to and
+    /// moves the rows with the result, one running through a
+    /// row-spanning string part reshapes nothing, and `None` leaves the
+    /// caller its own placement of the source slice.
+    pub(crate) fn reshaped(
+        self,
+        expr: &'a Expr,
+        range: TextRange,
+        landing: Landing,
+        tail: usize,
+    ) -> Option<String> {
+        let block = self.source.slice(range);
+        let travel = if block.contains('\n') {
+            if spans_a_string_part(self.source, expr) {
+                return None;
+            }
+            block_shift(self.source, block, &[], range.start(), landing)
+        } else {
+            None
+        };
+        // Rows render where the source wrote them, so a call on the
+        // opening row renders one move short of the landing indent and
+        // the shift below carries it there.
+        let rows = travel.map_or(0, |travel| travel.rows);
+        let mut exploder = Exploder {
+            edits: Vec::new(),
+            indent: Some(landing.indent.saturating_add_signed(-rows)),
+            line_shift: rows,
+            one_row: self.one_row,
+            origin_column: landing.column,
+            region: range,
+            reservations: self.reservations,
+            source: self.source,
+            tail,
+            targets: self.targets,
+        };
+        exploder.visit_expr(expr);
+        if exploder.edits.is_empty() {
+            return None;
+        }
+        let text = apply_inline_edits(self.source, range, &exploder.edits);
+        Some(match travel {
+            Some(travel) => shifted_block(&text, travel).into_owned(),
+            None => text.into_owned(),
+        })
     }
-    let mut exploder = Exploder {
-        edits: Vec::new(),
-        indent: Some(indent),
-        line_shift: 0,
-        one_row,
-        origin: expr.start(),
-        origin_column: column,
-        reservations,
-        source,
-        targets,
-    };
-    exploder.visit_expr(expr);
-    (!exploder.edits.is_empty())
-        .then(|| apply_inline_edits(source, expr.range(), &exploder.edits).into_owned())
 }
 
 #[cfg(test)]

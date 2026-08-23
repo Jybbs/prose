@@ -30,14 +30,17 @@
 //! it to.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::visitor::Visitor;
 use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
     primitives::{
-        call_keywords::module_call_params, edit::singleton_groups, one_row, reserve,
-        walk::filter_map_over_exprs,
+        call_keywords::module_call_params,
+        edit::singleton_groups,
+        one_row,
+        padding::Stranding,
+        reserve,
+        walk::{filter_map_over_exprs, walk_parented_exprs},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -55,6 +58,7 @@ pub(crate) struct ReflowCollections {
     max_atomics: usize,
     one_row: one_row::Settings<'static>,
     reservations: reserve::Reservations,
+    stranding: Stranding,
     wrap_dict_entries: bool,
 }
 
@@ -69,6 +73,7 @@ impl ReflowCollections {
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
             one_row: config.one_row_settings(),
             reservations: config.equals_reservations(),
+            stranding: config.stranded_padding(),
             wrap_dict_entries: rules.wrap_dict_entries,
         }
     }
@@ -90,21 +95,23 @@ impl Rule for ReflowCollections {
         });
         let targets = module_call_params(source);
         let reservations = source.columns(self.reservations);
-        let mut visitor = Layouter {
+        let padding = source.stranded_padding(self.stranding);
+        let mut layouter = Layouter {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             explode: self.explode,
             max_atomics: self.max_atomics,
             newline: source.newline_str(),
             one_row: self.one_row.against(&targets),
+            padding: &padding,
             reservations: &reservations,
             source,
             targets: &targets,
             tripping_dicts,
             wrap_dict_entries: self.wrap_dict_entries,
         };
-        visitor.visit_body(body);
-        singleton_groups(visitor.edits)
+        walk_parented_exprs(source.ast(), &mut layouter);
+        singleton_groups(layouter.edits)
     }
 
     fn id(&self) -> RuleId {

@@ -36,7 +36,7 @@ impl AlignImports {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             settings: aligner::Settings::from(&config.rules.align_imports)
-                .with_line_length(config.import_width()),
+                .within(config.import_width(), config.stranded_padding()),
         }
     }
 }

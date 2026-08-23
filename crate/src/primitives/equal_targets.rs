@@ -10,7 +10,11 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::{primitives::aligner, rule::RuleId, source::Source};
+use crate::{
+    primitives::{aligner, layout::entry_tail},
+    rule::RuleId,
+    source::Source,
+};
 
 /// Returns the alignment member for an annotated `x: int = 1`, plain
 /// `x = 1`, or augmented `x += 1` statement, measuring the left-hand
@@ -68,7 +72,9 @@ pub(crate) fn assignment(source: &Source, stmt: &Stmt) -> Option<aligner::Member
 /// condensed keyword keeps its tight `name=value`. A skip-held keyword
 /// bridges the run without joining. `break_after_multiline` closes a run
 /// after a keyword whose own value spans lines, so a wrapped value does
-/// not drag later keywords into its group.
+/// not drag later keywords into its group. The last argument of a
+/// multi-argument list is charged the separator a reorder may seat
+/// after it where none trails it.
 pub(crate) fn keyword_groups(
     source: &Source,
     rule: RuleId,
@@ -83,6 +89,7 @@ pub(crate) fn keyword_groups(
         .iter_source_order()
         .map(|a| source.line_index(a.start()))
         .collect();
+    let last = call.arguments.iter_source_order().last().map(|a| a.range());
     aligner::adjacent_member_groups(
         source,
         call.arguments.iter_source_order(),
@@ -95,7 +102,13 @@ pub(crate) fn keyword_groups(
             if arg_lines.iter().filter(|&&l| l == line).count() > 1 {
                 return aligner::Slot::Break;
             }
-            member.slot(source, rule)
+            let tail = entry_tail(
+                source,
+                call.arguments.range(),
+                call.arguments.len(),
+                last == Some(arg.range()),
+            );
+            member.with_tail(tail).slot(source, rule)
         },
     )
 }

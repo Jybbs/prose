@@ -14,22 +14,29 @@
 //!
 //! Both measures and the rendered rows read the settled form rather
 //! than the source, so a link the author hand-wrapped counts and
-//! renders at the width `reflow_calls` closes it to.
+//! renders at the width `reflow_calls` closes it to. A chain inside a
+//! broken chain's receiver or argument measures from the column the
+//! break lands it at and breaks in the same text where it trips there.
 //!
 //! `spine` divides a chain into its receiver and links, and `render`
 //! builds the text that replaces it.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr};
-use ruff_text_size::TextSize;
+use ruff_text_size::TextRange;
 
 use crate::{
     config::{Config, MaxShift},
     primitives::{
         call_keywords::module_call_params,
         edit::{insert_edit, narrowed_replacement, singleton_groups},
-        fracture, reserve,
-        walk::{Descent, ParentedProbe, is_interpolated_string, walk_parented_exprs},
+        fracture,
+        inline::end_column,
+        reserve,
+        walk::{
+            Descent, ParentedProbe, walk_parented_arguments, walk_parented_expr,
+            walk_parented_exprs,
+        },
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -97,23 +104,34 @@ struct Breaker<'a> {
     source: &'a Source,
 }
 
-impl Breaker<'_> {
-    /// The edit breaking `chain` across lines, or `None` where neither
-    /// trigger fires, a comment or a line-spanning segment holds the
-    /// shape, or the chain already reads as the break's own output.
-    /// `parent` resolves the grouping pair the source already carries.
-    fn break_chain(&self, expr: &Expr, chain: &Chain, parent: AnyNodeRef) -> Option<Edit> {
-        let range = self.source.paren_aware_range(expr.into(), parent);
+impl<'a> Breaker<'a> {
+    /// The text breaking `chain` across lines from `column` on a row
+    /// indented `indent`, `range` covering the grouping pair the source
+    /// already carries, or `None` where neither trigger fires or a
+    /// comment or a line-spanning segment holds the shape.
+    fn broken(
+        &self,
+        expr: &'a Expr,
+        chain: &Chain<'a>,
+        range: TextRange,
+        column: usize,
+        indent: usize,
+    ) -> Option<String> {
         if self.source.intersects_comment(range) {
             return None;
         }
         let joins = self.rejoin.joins(self.source, expr);
-        if chain.spans_lines(self.source, &joins) || !self.trips(chain, range.start(), &joins) {
+        if chain.spans_lines(self.source, &joins) || !self.trips(chain, column, &joins) {
             return None;
         }
-        let indent = self.source.line_indent_width(range.start());
-        let text = render::broken(self.source, chain, indent, self.hang(chain), &joins);
-        narrowed_replacement(self.source, range, text)
+        let text = render::broken(
+            self.source,
+            chain,
+            indent,
+            self.hang(chain),
+            |segment, column, indent| self.segment(chain, segment, column, indent, &joins),
+        );
+        Some(text)
     }
 
     /// The columns each link's dot hangs past the head's indent, `None`
@@ -128,23 +146,81 @@ impl Breaker<'_> {
         }
     }
 
+    /// The outermost chains inside `chain`'s receiver, or inside the
+    /// argument list of its link at `segment` less one, each with the
+    /// node enclosing it.
+    fn nested(
+        &self,
+        chain: &Chain<'a>,
+        segment: usize,
+    ) -> Vec<(&'a Expr, AnyNodeRef<'a>, Chain<'a>)> {
+        let mut nested = Nested {
+            found: Vec::new(),
+            source: self.source,
+        };
+        match segment.checked_sub(1) {
+            None => walk_parented_expr(
+                chain.receiver,
+                chain.calls[0].func.as_ref().into(),
+                &mut nested,
+            ),
+            Some(link) => walk_parented_arguments(chain.calls[link], &mut nested),
+        }
+        nested.found
+    }
+
+    /// `chain`'s segment at `segment` settled and written from `column`
+    /// on a row indented `indent`, the receiver at index zero and each
+    /// link past that, every chain inside it broken where it trips from
+    /// the column it lands at.
+    fn segment(
+        &self,
+        chain: &Chain<'a>,
+        segment: usize,
+        column: usize,
+        indent: usize,
+        joins: &fracture::Joins,
+    ) -> String {
+        let range = segment
+            .checked_sub(1)
+            .map_or(chain.receiver_range, |link| chain.links[link]);
+        let mut out = String::new();
+        let mut cursor = range.start();
+        for (expr, parent, nested) in self.nested(chain, segment) {
+            let nested_range = self.source.paren_aware_range(expr.into(), parent);
+            out.push_str(&joins.settled(self.source, TextRange::new(cursor, nested_range.start())));
+            let landing = end_column(&out, column);
+            match self.broken(expr, &nested, nested_range, landing, indent) {
+                Some(text) => out.push_str(&text),
+                None => out.push_str(&joins.settled(self.source, nested_range)),
+            }
+            cursor = nested_range.end();
+        }
+        out.push_str(&joins.settled(self.source, TextRange::new(cursor, range.end())));
+        out
+    }
+
     /// True when `chain` carries more links than the cap allows or reads
-    /// past `code_line_length` settled onto the row `start` lands on.
-    fn trips(&self, chain: &Chain, start: TextSize, joins: &fracture::Joins) -> bool {
-        let column = self.reservations.column_in(self.source, start);
+    /// past `code_line_length` settled onto a row from `column`.
+    fn trips(&self, chain: &Chain, column: usize, joins: &fracture::Joins) -> bool {
         self.cap.is_some_and(|cap| chain.links.len() > cap)
             || column + chain.width(self.source, joins) > self.code_line_length
     }
 }
 
 impl<'a> ParentedProbe<'a> for Breaker<'a> {
+    const INTERPOLATIONS: Descent = Descent::Over;
+
     fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
-        if is_interpolated_string(expr) {
-            return Descent::Over;
-        }
-        let Some(edit) = Chain::of(self.source, expr)
-            .filter(|_| !inside_a_chain(parent))
-            .and_then(|chain| self.break_chain(expr, &chain, parent))
+        let Some(chain) = outermost_chain(self.source, expr, parent) else {
+            return Descent::Into;
+        };
+        let range = self.source.paren_aware_range(expr.into(), parent);
+        let column = self.reservations.column_in(self.source, range.start());
+        let indent = self.source.line_indent_width(range.start());
+        let Some(edit) = self
+            .broken(expr, &chain, range, column, indent)
+            .and_then(|text| narrowed_replacement(self.source, range, text))
         else {
             return Descent::Into;
         };
@@ -153,12 +229,37 @@ impl<'a> ParentedProbe<'a> for Breaker<'a> {
     }
 }
 
-/// True where `parent` already places the expression under visit on the
-/// spine of a longer chain, an attribute's value or a call's callee, so
-/// the outermost chain is the one the break reshapes.
-fn inside_a_chain(parent: AnyNodeRef) -> bool {
-    matches!(
+/// Collects the outermost chains a parented walk reaches, each with the
+/// node enclosing it.
+struct Nested<'a> {
+    found: Vec<(&'a Expr, AnyNodeRef<'a>, Chain<'a>)>,
+    source: &'a Source,
+}
+
+impl<'a> ParentedProbe<'a> for Nested<'a> {
+    const INTERPOLATIONS: Descent = Descent::Over;
+
+    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
+        match outermost_chain(self.source, expr, parent) {
+            Some(chain) => {
+                self.found.push((expr, parent, chain));
+                Descent::Over
+            }
+            None => Descent::Into,
+        }
+    }
+}
+
+/// The chain `expr` opens, `None` where it opens none or where
+/// `parent` already places it on the spine of a longer chain, an
+/// attribute's value or a call's callee, so the outermost chain is the
+/// one a break reshapes.
+fn outermost_chain<'a>(source: &Source, expr: &'a Expr, parent: AnyNodeRef) -> Option<Chain<'a>> {
+    if matches!(
         parent,
         AnyNodeRef::ExprAttribute(_) | AnyNodeRef::ExprCall(_)
-    )
+    ) {
+        return None;
+    }
+    Chain::of(source, expr)
 }

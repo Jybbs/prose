@@ -1,8 +1,14 @@
 //! Source-text wrapper bundling parsed AST, token stream, and line index.
 
-use std::{borrow::Cow, path::Path, str::FromStr, sync::OnceLock};
+use std::{
+    borrow::{Borrow, Cow},
+    path::Path,
+    str::FromStr,
+    sync::OnceLock,
+};
 
 use itertools::Itertools;
+use ruff_diagnostics::Edit;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
 use ruff_python_ast::{
     AnyNodeRef, ExprRef, ModModule, PySourceType, Stmt,
@@ -25,6 +31,7 @@ use crate::{
         binding::BindingAnalysis,
         comments::trailing_comment,
         inline::indent_width,
+        padding::Stranding,
         range::paren_aware_range,
         reserve::{Columns, Reservations},
     },
@@ -54,6 +61,7 @@ pub struct Source {
     file: SourceFile,
     parsed: Parsed<ModModule>,
     source_type: PySourceType,
+    stranded_padding: OnceLock<Box<(Stranding, Vec<Edit>)>>,
     suppression: Box<SuppressionMap>,
 }
 
@@ -150,6 +158,7 @@ impl Source {
             file,
             parsed,
             source_type,
+            stranded_padding: OnceLock::new(),
             suppression,
         }
     }
@@ -228,14 +237,9 @@ impl Source {
     /// against the same reservation and reads the walk back, whereas a
     /// read carrying a different one walks for itself.
     pub(crate) fn columns(&self, reservations: Reservations) -> Cow<'_, Columns> {
-        let held = self
-            .columns
-            .get_or_init(|| Box::new((reservations, reservations.columns(self))));
-        if held.0 == reservations {
-            Cow::Borrowed(&held.1)
-        } else {
-            Cow::Owned(reservations.columns(self))
-        }
+        keyed(&self.columns, reservations, |reservations| {
+            reservations.columns(self)
+        })
     }
 
     /// Returns `true` when the cell boundary at `index` sits on a
@@ -537,6 +541,16 @@ impl Source {
         }
     }
 
+    /// Returns the edits `stranding` emits over this source, walking the
+    /// tree on the first read. Every rule of a run measures against the
+    /// same padding rule and reads the walk back, whereas a read
+    /// carrying a different one walks for itself.
+    pub(crate) fn stranded_padding(&self, stranding: Stranding) -> Cow<'_, [Edit]> {
+        keyed(&self.stranded_padding, stranding, |stranding| {
+            stranding.edits(self)
+        })
+    }
+
     /// Returns the suppression index built during parsing.
     pub(crate) fn suppression_map(&self) -> &SuppressionMap {
         &self.suppression
@@ -585,6 +599,22 @@ impl Source {
     /// Returns the display width of the source text between `a` and `b`.
     pub(crate) fn width_between(&self, a: TextSize, b: TextSize) -> usize {
         self.slice(TextRange::new(a, b)).width()
+    }
+}
+
+/// The value `build` derives for `key`, read back from `slot` where it
+/// already holds that key's value and built afresh otherwise, the
+/// first read filling the slot.
+fn keyed<K: Copy + PartialEq, B: ?Sized + ToOwned>(
+    slot: &OnceLock<Box<(K, B::Owned)>>,
+    key: K,
+    build: impl Fn(&K) -> B::Owned,
+) -> Cow<'_, B> {
+    let held = slot.get_or_init(|| Box::new((key, build(&key))));
+    if held.0 == key {
+        Cow::Borrowed(held.1.borrow())
+    } else {
+        Cow::Owned(build(&key))
     }
 }
 

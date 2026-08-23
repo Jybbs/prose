@@ -20,6 +20,7 @@ pub(crate) mod inline;
 pub(crate) mod layout;
 pub(crate) mod one_row;
 pub(crate) mod orderer;
+pub(crate) mod padding;
 pub(crate) mod params;
 pub(crate) mod quoting;
 pub(crate) mod range;

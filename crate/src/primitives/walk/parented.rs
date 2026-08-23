@@ -2,7 +2,7 @@
 //! node enclosing each expression.
 
 use ruff_python_ast::{
-    AnyNodeRef, Arguments, Expr, ModModule, Stmt,
+    AnyNodeRef, Arguments, Expr, ExprCall, ModModule, Stmt,
     visitor::{self, Visitor, walk_expr},
 };
 
@@ -18,6 +18,11 @@ pub(crate) enum Descent {
 /// Reads each expression of a module alongside the node enclosing it
 /// and the full ancestor chain, outermost first.
 pub(crate) trait ParentedProbe<'src> {
+    /// Whether the walk reads the interior of a replacement field, a
+    /// probe set to `Over` leaving every f-string and t-string it
+    /// reaches unwalked whatever it reports on the string itself.
+    const INTERPOLATIONS: Descent = Descent::Into;
+
     fn probe(
         &mut self,
         expr: &'src Expr,
@@ -63,7 +68,9 @@ impl<'src, P: ParentedProbe<'src>> Visitor<'src> for ParentedWalk<'src, '_, P> {
 
     fn visit_expr(&mut self, expr: &'src Expr) {
         let parent = *self.parents.last().expect("seeded with the module node");
-        if matches!(self.probe.probe(expr, parent, &self.parents), Descent::Over) {
+        if matches!(self.probe.probe(expr, parent, &self.parents), Descent::Over)
+            || (matches!(P::INTERPOLATIONS, Descent::Over) && is_interpolated_string(expr))
+        {
             return;
         }
         self.parents.push(expr.into());
@@ -95,10 +102,10 @@ pub(crate) fn filter_map_over_parented_exprs<'src, T>(
     collector.found
 }
 
-/// True for an f-string or t-string, the expression a probe reports
-/// `Descent::Over` on to leave every replacement field inside it the
-/// shape its author gave it.
-pub(crate) const fn is_interpolated_string(expr: &Expr) -> bool {
+/// True for an f-string or t-string, the expression a probe leaves
+/// unwalked to keep every replacement field inside it the shape its
+/// author gave it.
+const fn is_interpolated_string(expr: &Expr) -> bool {
     matches!(expr, Expr::FString(_) | Expr::TString(_))
 }
 
@@ -116,6 +123,35 @@ pub(crate) fn walk_parented_exprs<'src>(
         probe,
     }
     .visit_body(&module.body);
+}
+
+/// Walks every expression inside `call`'s argument list the way
+/// [`walk_parented_exprs`] walks a module, the list named as the node
+/// enclosing each top-level argument.
+pub(crate) fn walk_parented_arguments<'src>(
+    call: &'src ExprCall,
+    probe: &mut impl ParentedProbe<'src>,
+) {
+    ParentedWalk {
+        parents: vec![AnyNodeRef::from(call)],
+        probe,
+    }
+    .visit_arguments(&call.arguments);
+}
+
+/// Walks `expr` and every expression beneath it the way
+/// [`walk_parented_exprs`] walks a module, `parent` naming the node
+/// enclosing `expr`.
+pub(crate) fn walk_parented_expr<'src>(
+    expr: &'src Expr,
+    parent: AnyNodeRef<'src>,
+    probe: &mut impl ParentedProbe<'src>,
+) {
+    ParentedWalk {
+        parents: vec![parent],
+        probe,
+    }
+    .visit_expr(expr);
 }
 
 #[cfg(test)]

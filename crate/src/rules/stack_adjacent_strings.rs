@@ -25,7 +25,7 @@ use crate::{
         orderer::any_sibling_shares_line,
         reserve,
         tokens::{is_closer, is_opener},
-        walk::{Descent, ParentedProbe, is_interpolated_string, walk_parented_exprs},
+        walk::{Descent, ParentedProbe, walk_parented_exprs},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -158,8 +158,9 @@ impl<'a> Layout<'a> {
 }
 
 impl<'a> ParentedProbe<'a> for Layout<'a> {
-    /// Probes each expression for a run to break, leaving a replacement
-    /// field unwalked.
+    const INTERPOLATIONS: Descent = Descent::Over;
+
+    /// Probes each expression for a run to break.
     fn probe(
         &mut self,
         expr: &'a Expr,
@@ -168,9 +169,6 @@ impl<'a> ParentedProbe<'a> for Layout<'a> {
     ) -> Descent {
         if let Some(run) = concatenated_run(expr) {
             self.process_run(run, parent, ancestors);
-        }
-        if is_interpolated_string(expr) {
-            return Descent::Over;
         }
         Descent::Into
     }

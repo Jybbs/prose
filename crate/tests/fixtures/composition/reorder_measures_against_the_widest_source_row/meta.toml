@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Reorder Measures Against the Widest Source Row"
+
+description = '''
+The sorted rows run no wider than the widest row the source holds, so [[alphabetize-siblings]] lands the reorder in the first pass, and the buffer [[align-equals]] seats around the keyword left alone on its row afterward does not reopen that reading on a later pass.
+'''

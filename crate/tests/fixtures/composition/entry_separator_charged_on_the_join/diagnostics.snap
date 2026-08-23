@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/entry_separator_charged_on_the_join/input.py
+---
+alphabetize-siblings@33..164
+reflow-collections@142..165
+reflow-collections@99..119
+strip-trailing-commas@166..167

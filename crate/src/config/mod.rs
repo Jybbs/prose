@@ -31,8 +31,8 @@ use thiserror::Error;
 
 pub use crate::rule::RuleConfigs;
 use crate::{
-    primitives::{aligner, fracture, one_row, reserve},
-    rules::align_equals::AlignEquals,
+    primitives::{aligner, fracture, one_row, padding, reserve},
+    rules::{align_equals::AlignEquals, strip_stranded_padding::StripStrandedPadding},
 };
 
 mod de;
@@ -210,9 +210,9 @@ impl Config {
     /// against, reserving no column where that rule is off.
     pub(crate) fn equals_reservations(&self) -> reserve::Reservations {
         let rules = &self.rules.align_equals;
-        let settings = rules
-            .enabled
-            .then(|| aligner::Settings::from(rules).with_line_length(self.code_width()));
+        let settings = rules.enabled.then(|| {
+            aligner::Settings::from(rules).within(self.code_width(), self.stranded_padding())
+        });
         reserve::Reservations::new(AlignEquals::SLUG, settings)
     }
 
@@ -241,6 +241,12 @@ impl Config {
     /// deciding where that construct lands.
     pub(crate) fn one_row_settings(&self) -> one_row::Settings<'static> {
         one_row::Settings::from(self)
+    }
+
+    /// The padding rule a measuring rule predicts, so a row reads at the
+    /// width `strip-stranded-padding` settles it to.
+    pub(crate) fn stranded_padding(&self) -> padding::Stranding {
+        padding::Stranding::new(StripStrandedPadding::SLUG)
     }
 
     /// The keys this config sets away from the default, serialized to

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/stack_method_chains/nested_chain_fitting_its_landing_stays/input.py
+---
+stack-method-chains@9..82

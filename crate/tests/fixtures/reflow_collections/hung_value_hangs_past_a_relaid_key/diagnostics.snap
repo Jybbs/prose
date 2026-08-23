@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_collections/hung_value_hangs_past_a_relaid_key/input.py
+---
+reflow-collections@45..207

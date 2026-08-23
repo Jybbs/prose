@@ -226,7 +226,7 @@ impl<'a> Settings<'a> {
     /// column rather than joining.
     fn holds_its_column(&self, source: &Source, expr: &Expr) -> bool {
         self.keep_multiline_literals
-            && is_multi_entry(expr)
+            && is_multi_entry(expr.into())
             && is_column_shaped(source.slice(expr.range()))
     }
 }

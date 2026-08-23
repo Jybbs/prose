@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/entry_separator_charged_on_the_join/input.py
+---
+def f():
+    tagdefs = {
+        "stderr": {
+            "foreground": "#007700"
+        },
+
+        # Should read the colors from the preferences
+        "stdout": {
+            "foreground": "blue"
+        }
+    }

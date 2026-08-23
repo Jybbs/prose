@@ -2,44 +2,40 @@
 //! a row's aligned token and measure its display width, over the gap
 //! locator those builders and the comment rules share.
 
-use itertools::Itertools;
 use ruff_python_ast::{
     AnyParameterRef, Parameters,
     token::{Token, TokenKind},
 };
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
+use ruff_text_size::{TextLen, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::Member;
-use crate::{primitives::tokens::is_delimiter_padding, source::Source};
-
-/// The display column where `member`'s left-hand side begins, the width
-/// of its line up to the gap less the member's own width. An
-/// operator-widened row (a `+=` whose width counts the binary `+` that
-/// renders past the gap) can carry more width than the pre-gap span, so
-/// the subtraction saturates at the leftmost column rather than wrapping.
-pub(super) fn baseline(source: &Source, member: Member) -> usize {
-    source
-        .width_between(member.line_start, member.gap.start())
-        .saturating_sub(member.width)
-}
+use crate::{primitives::padding::delimiter_padding_gaps, source::Source};
 
 /// Builds a `Member` for a row whose aligned token sits at `anchor`.
 /// Width is the display width of the line's content from the first
 /// non-whitespace character to the last non-whitespace character
-/// before the gap, leaving the gap free for the rule to rewrite.
+/// before the gap, leaving the gap free for the rule to rewrite, the
+/// baseline is the indent ahead of that content, and the settled width
+/// reads past the delimiter padding `strip-stranded-padding` deletes.
 pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member {
     let line_start = source.text().line_start(anchor);
     let gap = line_gap_before(source, anchor);
     let head = TextRange::new(line_start, gap.start());
-    let width = source.slice(head).trim_whitespace_start().width();
+    let text = source.slice(head);
+    let width = text.trim_whitespace_start().width();
+    let padding: usize = delimiter_padding_gaps(source, head)
+        .map(|gap| source.slice(gap).width())
+        .sum();
     Member {
+        baseline: text.width() - width,
         gap,
         line_start,
         op_width: 0,
-        settled_width: width - delimiter_padding_width(source, head),
+        settled_width: width - padding,
+        tail: 0,
         value_gap: None,
         width,
     }
@@ -120,29 +116,14 @@ where
         .map(|anchor| range_anchored_member(source, target, anchor, extra_width))
 }
 
-/// The display width of the bracket-delimiter padding inside `range`,
-/// the columns `strip-stranded-padding` deletes once it runs. A settled
-/// width reads past them, so an alignment measures the row the pipeline
-/// lands on rather than the one the source wrote.
-fn delimiter_padding_width(source: &Source, range: TextRange) -> usize {
-    source
-        .tokens_overlapping(range)
-        .tuple_windows()
-        .filter_map(|(token, next)| {
-            let gap = TextRange::new(token.end(), next.start());
-            (range.contains_range(gap) && is_delimiter_padding(token.kind(), next.kind()))
-                .then(|| source.slice(gap).width())
-        })
-        .sum()
-}
-
 /// Builds a `Member` for a row whose aligned token sits at `anchor`,
 /// with width measured by the display width of `target` plus
-/// `extra_width`. Pass `extra_width = 0` when the LHS is exactly
-/// `target` (e.g. `x = 1`), and pass a non-zero value when the LHS
-/// visually extends past `target` by characters not covered by the
-/// slice (e.g. the `+` of `x += 1` widens the LHS by one column
-/// without being part of the target range).
+/// `extra_width` and the baseline at `target`'s own column. Pass
+/// `extra_width = 0` when the LHS is exactly `target` (e.g. `x = 1`),
+/// and pass a non-zero value when the LHS visually extends past
+/// `target` by characters not covered by the slice (e.g. the `+` of
+/// `x += 1` widens the LHS by one column without being part of the
+/// target range).
 fn range_anchored_member(
     source: &Source,
     target: TextRange,
@@ -150,11 +131,14 @@ fn range_anchored_member(
     extra_width: usize,
 ) -> Member {
     let width = source.slice(target).width() + extra_width;
+    let line_start = source.text().line_start(anchor);
     Member {
+        baseline: source.width_between(line_start, target.start()),
         gap: TextRange::new(target.end(), anchor),
-        line_start: source.text().line_start(anchor),
+        line_start,
         op_width: 0,
         settled_width: width,
+        tail: 0,
         value_gap: None,
         width,
     }

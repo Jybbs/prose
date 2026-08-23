@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/flat_literal_measured_at_its_settled_width/input.py
+---
+reflow-collections@104..134
+strip-stranded-padding@109..109
+strip-stranded-padding@117..117
+strip-stranded-padding@125..125
+strip-stranded-padding@133..133
+strip-stranded-padding@73..74
+strip-stranded-padding@81..82
+strip-stranded-padding@88..89

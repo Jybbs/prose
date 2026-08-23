@@ -29,7 +29,7 @@ impl AlignComments {
         Self {
             settings: aligner::Settings::from(&config.rules.align_comments)
                 .with_buffer(TRAILING_GAP.len())
-                .with_line_length(config.code_width()),
+                .within(config.code_width(), config.stranded_padding()),
         }
     }
 }

@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Rejoin Charges the Separator an Entry May Gain"
+
+description = '''
+The inner `stdout` dict fits its row only without a trailing comma, and [[reflow-collections]] charges that comma on the rejoin path as well as the expand path, so the entry stays expanded whatever position [[alphabetize-siblings]] settles it into.
+'''

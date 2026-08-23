@@ -10,7 +10,11 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::{primitives::aligner, rule::RuleId, source::Source};
+use crate::{
+    primitives::{aligner, layout::entry_tail},
+    rule::RuleId,
+    source::Source,
+};
 
 /// Walks `body`, qualifying each statement through `annotated_assignment`,
 /// and returns one group per run of contiguous line-adjacent
@@ -123,11 +127,17 @@ fn colon_member(
 }
 
 /// Builds an alignment member for a `key: value` dict entry, anchored
-/// on the `:` between key and value. Returns `None` for `**spread`
-/// entries that have no key.
+/// on the `:` between key and value, the last entry of a multi-entry
+/// dict charged the separator a reorder may seat after it where none
+/// trails it. Returns `None` for `**spread` entries that have no key.
 fn dict_item(source: &Source, dict: &ExprDict, item: &DictItem) -> Option<aligner::Member> {
     let key = item.key.as_ref()?;
-    colon_member(source, key.range(), (&item.value).into(), dict.into())
+    let member = colon_member(source, key.range(), (&item.value).into(), dict.into())?;
+    let last = dict
+        .items
+        .last()
+        .is_some_and(|last| last.range() == item.range());
+    Some(member.with_tail(entry_tail(source, dict.range(), dict.len(), last)))
 }
 
 /// Builds an alignment member for an annotated function parameter,

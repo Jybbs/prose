@@ -82,7 +82,9 @@ impl Travel {
 /// moved and the alignment survives. Reading the test against the
 /// item's column rather than the block's keeps the answer the same once
 /// an alignment pads the text ahead of the block, which moves the block
-/// alone.
+/// alone. Rows sitting exactly one indent step past the row the block
+/// opens on hang from that row whatever column the item opens at, and
+/// re-seat one step past the landing indent.
 pub(crate) fn block_shift(
     source: &Source,
     block: &str,
@@ -91,14 +93,20 @@ pub(crate) fn block_shift(
     landing: Landing,
 ) -> Option<Travel> {
     let floor = movable_floor(block, frozen)?;
-    if floor > source.column_of(landing.item) {
+    let past_item = floor > source.column_of(landing.item);
+    if past_item && floor != item_indent(source.line_indent_width(start)) {
         return Some(Travel::rigid(
             landing.column.cast_signed() - source.column_of(start).cast_signed(),
         ));
     }
+    let rebase = if past_item {
+        item_indent(landing.indent)
+    } else {
+        landing.indent
+    };
     Some(
         hanging_travel(block, frozen, landing)
-            .unwrap_or_else(|| Travel::rigid(landing.indent.cast_signed() - floor.cast_signed())),
+            .unwrap_or_else(|| Travel::rigid(rebase.cast_signed() - floor.cast_signed())),
     )
 }
 
@@ -139,7 +147,7 @@ pub(crate) fn spans_a_string_part(source: &Source, expr: &Expr) -> bool {
 /// One flag per row of the block at `range`, set for every row opening
 /// strictly inside a string token that itself spans rows. Shifting such
 /// a row would pad the string's own interior, so a move holds it.
-fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
+pub(crate) fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
     let rows = source.line_index(range.end()).get() - source.line_index(range.start()).get() + 1;
     let mut frozen = vec![false; rows];
     let head = source.line_index(range.start()).get();
@@ -172,7 +180,7 @@ fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
 /// move cannot follow.
 fn hanging_travel(block: &str, frozen: &[bool], landing: Landing) -> Option<Travel> {
     let head = block.universal_newlines().next()?;
-    if !head.trim_end().ends_with(['(', '[', '{']) || frozen.get(1).copied().unwrap_or(false) {
+    if !head.trim_end().ends_with(['(', '[', '{']) || frozen.get(1) == Some(&true) {
         return None;
     }
     let mut interior: Vec<(usize, bool)> = movable_rows(block, frozen)
@@ -214,41 +222,40 @@ fn movable_floor(block: &str, frozen: &[bool]) -> Option<usize> {
         .min()
 }
 
+/// True for a non-blank continuation row at `row` that `frozen` leaves
+/// free to move.
+fn is_movable(row: usize, line: &str, frozen: &[bool]) -> bool {
+    row > 0 && frozen.get(row) != Some(&true) && !line.trim().is_empty()
+}
+
 /// Yields each movable non-blank continuation row of `block`, skipping
 /// the rows `frozen` marks.
 fn movable_rows<'b>(block: &'b str, frozen: &'b [bool]) -> impl Iterator<Item = Line<'b>> {
     block
         .universal_newlines()
         .enumerate()
-        .skip(1)
-        .filter(|(row, line)| {
-            !frozen.get(*row).copied().unwrap_or(false) && !line.trim().is_empty()
-        })
+        .filter(|(row, line)| is_movable(*row, line, frozen))
         .map(|(_, line)| line)
 }
 
 /// `block`'s continuation rows moved per `travel`, each blank row and
 /// each row `frozen` marks passing through as written.
 fn shifted_rows(block: &str, travel: Travel, frozen: &[bool]) -> String {
-    let movable = |row: usize, line: &str| {
-        row > 0 && !frozen.get(row).copied().unwrap_or(false) && !line.trim().is_empty()
-    };
     let last = block
         .split_inclusive('\n')
         .enumerate()
-        .filter(|(row, line)| movable(*row, line))
+        .filter(|(row, line)| is_movable(*row, line, frozen))
         .map(|(row, _)| row)
         .last();
     let mut out = String::with_capacity(block.len());
     for (row, line) in block.split_inclusive('\n').enumerate() {
-        if !movable(row, line) {
+        if !is_movable(row, line, frozen) {
             out.push_str(line);
             continue;
         }
-        let lead = leading_indentation(line);
-        let placed = travel.placed(lead.chars().count(), Some(row) == last);
+        let placed = travel.placed(indent_width(line), Some(row) == last);
         out.push_str(&" ".repeat(placed));
-        out.push_str(&line[lead.len()..]);
+        out.push_str(&line[leading_indentation(line).len()..]);
     }
     out
 }
