@@ -1,4 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
+#MISE alias="subsets"
 #MISE description="Probe every rule alone and every ordered rule pair for one-pass settling over a corpus"
 
 corpus="${1:-$(python -c 'import sysconfig; print(sysconfig.get_paths()["stdlib"])')}"

@@ -50,6 +50,9 @@ jobs:
           - command    : mise run rust:test
             name       : 🪚 Suite
             shared-key : prose-debug
+          - command    : mise run rust:settle
+            name       : ⚓ Settle
+            shared-key : prose-debug
           - command    : mise run wasm:build
             name       : 🛶 Wasm
             shared-key : prose-wasm

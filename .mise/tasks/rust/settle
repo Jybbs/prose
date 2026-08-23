@@ -1,34 +1,7 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description="Report every corpus file the formatter rewrites on a second pass"
+#MISE alias="settle"
+#MISE description="Sweep a corpus at every line length for rewrites a second pass would change and fixes the output never took"
 
 corpus="${1:-$(python -c 'import sysconfig; print(sysconfig.get_paths()["stdlib"])')}"
 
-cargo build --release --bin prose --locked
-prose="$MISE_PROJECT_ROOT/target/release/prose"
-work=$(mktemp -d)
-once="$work/once"
-twice="$work/twice"
-mkdir -p "$once"
-
-(cd "$corpus" && find . -name '*.py' -not -path '*/test/*' -not -path '*/tests/*' -not -path '*/site-packages/*' -print0 \
-  | tar -cf - --null -T -) | tar -xf - -C "$once"
-
-format_pass() {
-  local status=0
-  "$prose" format --no-cache --quiet "$1" || status=$?
-  ((status <= 2)) || exit "$status"
-}
-
-format_pass "$once"
-cp -R "$once" "$twice"
-format_pass "$twice"
-
-formatted=$(find "$once" -name '*.py' | wc -l | tr -d ' ')
-movers=$(diff -rq "$once" "$twice" | sed -n "s|^Files $once/\(.*\) and .* differ\$|\1|p")
-moved=0
-if [[ -n "$movers" ]]; then
-  printf '%s\n' "$movers"
-  moved=$(printf '%s\n' "$movers" | wc -l | tr -d ' ')
-fi
-
-printf '\n%d of %d files rewrite on a second pass\n' "$moved" "$formatted"
+PROSE_SETTLE_CORPUS="$corpus" cargo test --locked --test corpus
