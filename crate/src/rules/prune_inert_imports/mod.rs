@@ -1,6 +1,8 @@
 //! Prunes an import binding that adds nothing, covering a name the
 //! module never references under `drop-unreferenced` and a repeat of a
 //! binding an earlier import already made under `drop-duplicates`.
+//! One walk decides both facets, so a repeat and the binding its drop
+//! leaves unreferenced go together rather than one per run.
 //!
 //! A package `__init__.py` or its stub re-exports what it imports, so
 //! an unreferenced binding there is reported rather than dropped. A
@@ -10,10 +12,10 @@
 //! `from __future__ import annotations` drops behind the annotation
 //! analysis in `future`. Every other `__future__` feature stays, and so
 //! does a `from … import *`, a name `__all__` lists, an import binding
-//! `__all__` itself, a name a second import rebinds, and an `x as x`
-//! alias marking a re-export. An own-line comment block leading an
-//! import holds the whole statement across a blank run between the
-//! two, up to the wall closing a notebook cell.
+//! `__all__` itself, a name a second import rebinds from another
+//! source, and an `x as x` alias marking a re-export. An own-line
+//! comment block leading an import holds the whole statement across a
+//! blank run between the two, up to the wall closing a notebook cell.
 
 use std::{ffi::OsStr, path::Path};
 
@@ -189,6 +191,17 @@ mod tests {
 
         assert_eq!(applied_text(&source, groups.concat()), "\nvalue = 1\n");
         assert!(rule().lint(&source).is_empty());
+    }
+
+    #[test]
+    fn an_unread_repeat_reports_its_survivor_inside_a_package_init() {
+        let source = parse_init("import os\nimport os\n");
+        let groups = rule().apply(&source);
+        let diagnostics = rule().lint(&source);
+
+        assert_eq!(applied_text(&source, groups.concat()), "import os\n");
+        assert_eq!(diagnostics.len(), 1);
+        assert!(diagnostics[0].message.starts_with("`os` is imported"));
     }
 
     #[test]

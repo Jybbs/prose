@@ -386,6 +386,24 @@ fn write_pyproject(dir: &Path, contents: &str) {
 }
 
 #[test]
+fn a_duplicated_unread_import_settles_before_the_ledger_probes_it() {
+    let (_dir, path) = fixture("dup.py", "import os\nx = 1\nimport os\ny = 2\n");
+    let (mut warm, _cache) = warmed_by(&path, &["format"], 0);
+
+    assert_eq!(
+        std::fs::read_to_string(&path).expect("reads the rewrite"),
+        "x = 1\ny = 2\n",
+        "one run drops the repeat and the binding its drop leaves unread",
+    );
+
+    let err = stderr_utf8(&warm.arg("format").arg(&path).assert().success());
+    assert!(
+        !err.contains("second run"),
+        "the run reading the marked bytes finds them settled, stderr was {err:?}",
+    );
+}
+
+#[test]
 fn cache_clean_subcommand_exits_zero_and_reports_count() {
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.args(["cache", "clean"]).assert().success();
@@ -1223,34 +1241,6 @@ fn help_exits_clean() {
 #[test]
 fn no_args_prints_help_and_exits_clean() {
     prose().assert().success();
-}
-
-#[test]
-fn marker_reports_the_defect_on_the_run_that_rewrites_its_output() {
-    let (_dir, path) = fixture("dup.py", "import os\nx = 1\nimport os\ny = 2\n");
-    let (mut cmd, cache_dir) = prose_isolated();
-
-    let first = cmd.arg("format").arg(&path).assert().success();
-    assert!(
-        !stderr_utf8(&first).contains("second run"),
-        "the ledger run marks its output rather than walking it",
-    );
-
-    let mut second = prose();
-    second.env("PROSE_CACHE_DIR", cache_dir.path());
-    let replay = second.arg("format").arg(&path).assert().success();
-
-    let err = stderr_utf8(&replay);
-    assert!(err.contains("second run"), "stderr was {err:?}");
-    assert!(
-        err.contains("--select prune-inert-imports"),
-        "the probe hit narrows to the reproducing rule: {err:?}",
-    );
-
-    let mut third = prose();
-    third.env("PROSE_CACHE_DIR", cache_dir.path());
-    let settled = third.arg("format").arg(&path).assert().success();
-    assert!(!stderr_utf8(&settled).contains("second run"));
 }
 
 #[test]

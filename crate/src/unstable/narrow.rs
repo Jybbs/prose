@@ -12,24 +12,12 @@ use ruff_python_parser::Parsed;
 
 use crate::{pipeline::Pipeline, rule::RuleId, source::Source};
 
-/// `build` assembles the pipeline for one subset. `None` once neither a
-/// single rule nor a pair reproduces on this source.
-pub(super) fn reproducing_subset(
-    candidates: &[RuleId],
-    text: &str,
-    build: impl Fn(&[RuleId]) -> Pipeline,
-) -> Option<Vec<RuleId>> {
-    let parsed = Source::parsed_module(text).ok()?;
-    let singles = candidates.iter().map(|&rule| vec![rule]);
-    let pairs = candidates
-        .iter()
-        .array_combinations()
-        .map(|[&earlier, &later]| vec![earlier, later]);
-    singles
-        .chain(pairs)
-        .take(PROBE_BUDGET)
-        .find(|subset| leaves_an_edit(&build(subset), text, &parsed))
-}
+/// How many subsets one search probes before it stops and the caller
+/// falls back to naming the whole selection. Singles and pairs cover
+/// twelve candidates in full under it, and each probe costs a full
+/// pipeline run over the file, so the budget bounds a search that
+/// would otherwise run every pair of a wide selection.
+const PROBE_BUDGET: usize = 96;
 
 /// The smallest subset still editing `parsed`, probed without running
 /// any pipeline, because the question here is only which rules edit
@@ -40,23 +28,23 @@ pub(super) fn editing_subset(
     parsed: &Source,
     build: impl Fn(&[RuleId]) -> Pipeline,
 ) -> Option<Vec<RuleId>> {
-    let singles = candidates.iter().map(|&rule| vec![rule]);
-    let pairs = candidates
-        .iter()
-        .array_combinations()
-        .map(|[&earlier, &later]| vec![earlier, later]);
-    singles
-        .chain(pairs)
-        .take(PROBE_BUDGET)
-        .find(|subset| !build(subset).unsettled(parsed).is_empty())
+    smallest_subset(candidates, |subset| {
+        !build(subset).unsettled(parsed).is_empty()
+    })
 }
 
-/// How many subsets one search probes before it stops and the caller
-/// falls back to naming the whole selection. Singles and pairs cover
-/// twelve candidates in full under it, and each probe costs a full
-/// pipeline run over the file, so the budget bounds a search that
-/// would otherwise run every pair of a wide selection.
-const PROBE_BUDGET: usize = 96;
+/// `build` assembles the pipeline for one subset. `None` once neither a
+/// single rule nor a pair reproduces on this source.
+pub(super) fn reproducing_subset(
+    candidates: &[RuleId],
+    text: &str,
+    build: impl Fn(&[RuleId]) -> Pipeline,
+) -> Option<Vec<RuleId>> {
+    let parsed = Source::parsed_module(text).ok()?;
+    smallest_subset(candidates, |subset| {
+        leaves_an_edit(&build(subset), text, &parsed)
+    })
+}
 
 /// A `text` that does not parse and a run a rule's output is rejected
 /// on both answer false. The probe rebuilds its source from `parsed`
@@ -69,12 +57,30 @@ fn leaves_an_edit(pipeline: &Pipeline, text: &str, parsed: &Parsed<ModModule>) -
     !pipeline.unsettled(&formatted).is_empty()
 }
 
+/// The smallest subset `probe` answers `true` for, each rule alone
+/// first and each rule pair after, capped at the probe budget. `None`
+/// once neither reaches it.
+fn smallest_subset(
+    candidates: &[RuleId],
+    probe: impl Fn(&[RuleId]) -> bool,
+) -> Option<Vec<RuleId>> {
+    let singles = candidates.iter().map(|&rule| vec![rule]);
+    let pairs = candidates
+        .iter()
+        .array_combinations()
+        .map(|[&earlier, &later]| vec![earlier, later]);
+    singles
+        .chain(pairs)
+        .take(PROBE_BUDGET)
+        .find(|subset| probe(subset))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
         rule::Rule,
-        testing::{GroupSentinelRule, breaks_parse, never_settles},
+        testing::{GroupSentinelRule, breaks_parse, never_settles, parse},
     };
 
     const SOURCE: &str = "x = 1\n";
@@ -99,23 +105,15 @@ mod tests {
     }
 
     #[test]
-    fn reproducing_subset_stops_probing_at_the_budget() {
-        let candidates: Vec<RuleId> = (0..20)
-            .map(|n| RuleId::from(format!("calm-{n}").leak() as &str))
-            .collect();
-        let probes = std::cell::Cell::new(0usize);
+    fn editing_subset_names_the_rule_still_editing_the_source() {
+        let candidates = [RuleId::from("calm-a"), RuleId::from("widener")];
+        let parsed = parse(SOURCE);
 
-        let found = reproducing_subset(&candidates, SOURCE, |_| {
-            probes.set(probes.get() + 1);
-            Pipeline::from_rules(Vec::new())
+        let found = editing_subset(&candidates, &parsed, |subset| {
+            sentinels(subset, &["calm-a"])
         });
 
-        assert_eq!(found, None);
-        assert_eq!(
-            probes.get(),
-            PROBE_BUDGET,
-            "20 candidates offer 210 subsets"
-        );
+        assert_eq!(found, Some(vec![RuleId::from("widener")]));
     }
 
     #[test]
@@ -167,6 +165,15 @@ mod tests {
     }
 
     #[test]
+    fn reproducing_subset_passes_over_a_source_that_does_not_parse() {
+        let candidates = [RuleId::from("widener")];
+
+        let found = reproducing_subset(&candidates, "def foo(", |subset| sentinels(subset, &[]));
+
+        assert_eq!(found, None);
+    }
+
+    #[test]
     fn reproducing_subset_passes_over_a_subset_whose_run_is_rejected() {
         let candidates = [RuleId::from("breaks-parse")];
 
@@ -178,11 +185,22 @@ mod tests {
     }
 
     #[test]
-    fn reproducing_subset_passes_over_a_source_that_does_not_parse() {
-        let candidates = [RuleId::from("widener")];
+    fn reproducing_subset_stops_probing_at_the_budget() {
+        let candidates: Vec<RuleId> = (0..20)
+            .map(|n| RuleId::from(format!("calm-{n}").leak() as &str))
+            .collect();
+        let probes = std::cell::Cell::new(0usize);
 
-        let found = reproducing_subset(&candidates, "def foo(", |subset| sentinels(subset, &[]));
+        let found = reproducing_subset(&candidates, SOURCE, |_| {
+            probes.set(probes.get() + 1);
+            Pipeline::from_rules(Vec::new())
+        });
 
         assert_eq!(found, None);
+        assert_eq!(
+            probes.get(),
+            PROBE_BUDGET,
+            "20 candidates offer 210 subsets"
+        );
     }
 }

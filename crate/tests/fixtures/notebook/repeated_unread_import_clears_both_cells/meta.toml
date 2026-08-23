@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Repeated Unread Import Clears Both Cells"
+
+description = '''
+Each cell opens with `import os` and neither reads the name. Cells concatenate into one module before the walk, so the second `import os` reads as a repeat of the first and **both lines go in a single run**, leaving each cell with its own assignment.
+'''

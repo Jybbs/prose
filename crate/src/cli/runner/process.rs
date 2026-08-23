@@ -342,15 +342,6 @@ pub(super) fn rehydrate(
     })
 }
 
-/// True where an entry recording `rewrite` is worth writing. A
-/// write-back pass commits the rewrite over the bytes its key was drawn
-/// from, so the file it just wrote never reads that entry back, and a
-/// `Changed` rewrite goes unwritten under such a pass. Every other
-/// pairing stores.
-pub(super) fn worth_storing(rewrite: &Rewrite, pass: Pass) -> bool {
-    !(pass.write_back() && matches!(rewrite, Rewrite::Changed(_)))
-}
-
 /// Collects the as-written diagnostics, and with `validate` guards the
 /// would-be rewrite against an output that fails to re-parse or to
 /// compile and against one a second pass would change.
@@ -499,12 +490,21 @@ fn marked_report(
     original: &str,
     formatted: &Source,
 ) -> Option<Box<UnstableRewrite>> {
-    crate::unstable::detect_marked(&resolved.pipeline, &resolved.config, original, formatted)
+    UnstableRewrite::detect_marked(&resolved.pipeline, &resolved.config, original, formatted)
         .map(Box::new)
 }
 
 fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
     failed(ExitStatus::ConfigError, format_args!("cannot walk: {err}"))
+}
+
+/// True where an entry recording `rewrite` is worth writing. A
+/// write-back pass commits the rewrite over the bytes its key was drawn
+/// from, so the file it just wrote never reads that entry back, and a
+/// `Changed` rewrite goes unwritten under such a pass. Every other
+/// pairing stores.
+fn worth_storing(rewrite: &Rewrite, pass: Pass) -> bool {
+    !(pass.write_back() && matches!(rewrite, Rewrite::Changed(_)))
 }
 
 /// Replaces `path`'s contents with `contents` through a temporary file

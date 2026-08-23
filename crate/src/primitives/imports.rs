@@ -15,8 +15,8 @@ use ruff_text_size::TextRange;
 
 use crate::{
     primitives::{
-        comments::comment_leads, edit::whole_line_deletion, range::dropped_member_spans,
-        sections::Sections, slots::runs_where,
+        binding::top_level_module, comments::comment_leads, edit::whole_line_deletion,
+        range::dropped_member_spans, sections::Sections, slots::runs_where,
     },
     source::Source,
 };
@@ -187,10 +187,9 @@ pub(crate) fn sectioned_import_runs(sections: &Sections, body: &[Stmt]) -> Vec<R
         .collect()
 }
 
-/// True when the root package of `name` (the substring up to the
-/// first `.`) appears in `first_party`.
+/// True when the root package of `name` appears in `first_party`.
 fn is_first_party(name: &str, first_party: &[String]) -> bool {
-    let root = name.split_once('.').map_or(name, |(root, _)| root);
+    let root = top_level_module(name);
     first_party.iter().any(|p| p == root)
 }
 
