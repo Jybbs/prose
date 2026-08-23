@@ -39,11 +39,11 @@ use crate::{
 /// the `# fmt:` and `# yapf:` aliases), `# prose: skip[<id>]` per-rule
 /// spans and `# prose: ignore[<id>]` per-line directives, plus a
 /// `BindingAnalysis` table of every name's writes and reads.
-/// `source_type` is the parse mode, `cell_offsets` the notebook cell
-/// boundaries, and `cell_numbers` each cell's notebook position, the
-/// last two empty for an ordinary module. The alignment columns join
-/// the binding table as a walk built on first read and reused by every
-/// later reader.
+/// `source_type` is the parse mode, `line_ending` the sequence the text
+/// breaks its lines with, `cell_offsets` the notebook cell boundaries,
+/// and `cell_numbers` each cell's notebook position, the last two empty
+/// for an ordinary module. The alignment columns join the binding table
+/// as a walk built on first read and reused by every later reader.
 #[derive(Debug)]
 pub struct Source {
     binding_analysis: OnceLock<Box<BindingAnalysis>>,
@@ -52,6 +52,7 @@ pub struct Source {
     columns: OnceLock<Box<(Reservations, Columns)>>,
     comment_ranges: CommentRanges,
     file: SourceFile,
+    line_ending: LineEnding,
     parsed: Parsed<ModModule>,
     source_type: PySourceType,
     suppression: Box<SuppressionMap>,
@@ -131,6 +132,7 @@ impl Source {
         cell_offsets: CellOffsets,
         parsed: Parsed<ModModule>,
     ) -> Self {
+        let line_ending = find_newline(&text).map_or(LineEnding::Lf, |(_, ending)| ending);
         let file = SourceFileBuilder::new(name, text).finish();
         let comment_ranges = CommentRanges::from(parsed.tokens());
         let first_code_offset = parsed.syntax().body.first().map(Ranged::start);
@@ -148,6 +150,7 @@ impl Source {
             columns: OnceLock::new(),
             comment_ranges,
             file,
+            line_ending,
             parsed,
             source_type,
             suppression,
@@ -361,6 +364,12 @@ impl Source {
         self.file.to_source_code().line_column(offset)
     }
 
+    /// Returns the line ending this source uses, the first one it
+    /// carries, or `LineEnding::Lf` when it carries none.
+    pub(crate) fn line_ending(&self) -> LineEnding {
+        self.line_ending
+    }
+
     /// Returns the character-width of the leading-whitespace prefix on
     /// the line containing `offset`. Tabs and form-feeds count as one
     /// character each.
@@ -436,10 +445,8 @@ impl Source {
 
     /// Returns the line-ending sequence used in this source, or
     /// `"\n"` when the source carries no line break.
-    pub fn newline_str(&self) -> &'static str {
-        find_newline(self.text())
-            .map_or(LineEnding::Lf, |(_, ending)| ending)
-            .as_str()
+    pub(crate) fn newline_str(&self) -> &'static str {
+        self.line_ending().as_str()
     }
 
     /// Returns `expr`'s range widened to the explicit parentheses
@@ -961,6 +968,21 @@ mod tests {
         assert_eq!(s.line_column(TextSize::new(0)), line_column(0, 0));
         assert_eq!(s.line_column(TextSize::new(3)), line_column(1, 0));
         assert_eq!(s.line_column(TextSize::new(6)), line_column(2, 0));
+    }
+
+    #[rstest]
+    #[case("a\nb\n", LineEnding::Lf)]
+    #[case("a\r\nb\r\n", LineEnding::CrLf)]
+    #[case("a\rb\r", LineEnding::Cr)]
+    #[case("a\nb\r\n", LineEnding::Lf)]
+    #[case("a\r\nb\n", LineEnding::CrLf)]
+    #[case("x = 1", LineEnding::Lf)]
+    fn line_ending_reads_the_first_break_and_falls_back_to_lf(
+        #[case] src: &str,
+        #[case] expected: LineEnding,
+    ) {
+        assert_eq!(parse(src).line_ending(), expected);
+        assert_eq!(parse(src).newline_str(), expected.as_str());
     }
 
     #[test]

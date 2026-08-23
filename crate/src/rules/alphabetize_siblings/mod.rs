@@ -120,7 +120,7 @@ impl Rule for AlphabetizeSiblings {
             &layout.rendered,
             &layout.order,
             !layout.import_run_slots.is_empty(),
-            |i| import_gap(&layout.import_run_slots, i),
+            |i| import_gap(&layout.import_run_slots, i, source.newline_str()),
         );
         singleton_groups(edits)
     }
@@ -259,9 +259,13 @@ fn body_layout<'a>(
 }
 
 /// The one-newline divider an import-run collapse inserts after new-order
-/// slot `i`, `None` where the neighbors do not collapse onto one line.
-fn import_gap(import_run_slots: &[usize], i: usize) -> Option<&'static str> {
-    import_run_slots.binary_search(&i).is_ok().then_some("\n")
+/// slot `i`, written in `newline`. `None` where the neighbors do not
+/// collapse onto one line.
+fn import_gap(import_run_slots: &[usize], i: usize, newline: &'static str) -> Option<&'static str> {
+    import_run_slots
+        .binary_search(&i)
+        .is_ok()
+        .then_some(newline)
 }
 
 /// Rewrites a non-empty body, returning the rewritten text alongside
@@ -283,7 +287,7 @@ fn rewrite_body<'a>(
         &layout.rendered,
         &layout.order,
         !layout.import_run_slots.is_empty(),
-        |i| import_gap(&layout.import_run_slots, i),
+        |i| import_gap(&layout.import_run_slots, i, ctx.source.newline_str()),
     )
 }
 

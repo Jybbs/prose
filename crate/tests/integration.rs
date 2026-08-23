@@ -13,6 +13,7 @@ use std::fmt::Write;
 use itertools::Itertools;
 use prose::{diagnostics::Diagnostic, pipeline::Pipeline, source::Source};
 use ruff_python_formatter::{PyFormatOptions, format_module_source};
+use ruff_source_file::{LineEnding, UniversalNewlines};
 
 #[test]
 fn fixtures() {
@@ -93,23 +94,6 @@ fn fixtures() {
     });
 }
 
-/// Renders each diagnostic as `rule@start..end`, sorted so the snapshot
-/// holds one order across runs.
-fn render(diagnostics: &[Diagnostic]) -> String {
-    diagnostics
-        .iter()
-        .map(|d| {
-            format!(
-                "{rule}@{start}..{end}",
-                rule = d.rule,
-                start = u32::from(d.range.start()),
-                end = u32::from(d.range.end()),
-            )
-        })
-        .sorted()
-        .join("\n")
-}
-
 /// Renders a formatted notebook as its per-cell source joined by a
 /// `# --- cell N ---` banner, so a snapshot shows the cell structure the
 /// concatenated buffer hides. The banner numbers each cell after the
@@ -128,6 +112,75 @@ fn cell_delimited(source: &Source) -> String {
     }
     out.push('\n');
     out
+}
+
+/// `text` with every line ending rewritten as CRLF.
+fn crlf(text: &str) -> String {
+    text.replace("\r\n", "\n")
+        .replace('\r', "\n")
+        .replace('\n', "\r\n")
+}
+
+/// The one-indexed line of the first ending in `text` that is not
+/// `expected`, the mixed ending a rule leaves behind when it writes its
+/// own newline into a source that breaks lines another way.
+fn foreign_ending_line(text: &str, expected: LineEnding) -> Option<usize> {
+    text.universal_newlines()
+        .position(|line| line.line_ending().is_some_and(|ending| ending != expected))
+        .map(|line| line + 1)
+}
+
+/// Renders each diagnostic as `rule@start..end`, sorted so the snapshot
+/// holds one order across runs.
+fn render(diagnostics: &[Diagnostic]) -> String {
+    diagnostics
+        .iter()
+        .map(|d| {
+            format!(
+                "{rule}@{start}..{end}",
+                rule = d.rule,
+                start = u32::from(d.range.start()),
+                end = u32::from(d.range.end()),
+            )
+        })
+        .sorted()
+        .join("\n")
+}
+
+/// Every fixture re-read with CRLF endings, proving each rule writes the
+/// ending its source carries. A rule writing an ending of its own leaves
+/// the output mixed, which the second pass then rewrites again.
+#[test]
+fn crlf_input_holds_its_endings_and_settles() {
+    insta::glob!("fixtures/**/input.py", |path| {
+        let domain = common::domain_name(path);
+        let case = common::case_name(path);
+        if domain == "identity" {
+            return;
+        }
+
+        let (config, _) = common::fixture_inputs(path);
+        let pipeline = Pipeline::with_defaults(&config);
+        let lf = fs_err::read_to_string(path).unwrap_or_else(|e| panic!("read fixture: {e}"));
+        let source = crlf(&lf);
+        let (first, _) = pipeline
+            .run(source.parse::<Source>().expect("CRLF input parses"))
+            .expect("first CRLF pass succeeds");
+        if let Some(line) = foreign_ending_line(first.text(), LineEnding::CrLf) {
+            panic!("fixture `{domain}/{case}` broke line {line} with an ending other than CRLF");
+        }
+
+        let reparsed = first
+            .text()
+            .parse::<Source>()
+            .expect("CRLF output reparses as Python");
+        let (second, _) = pipeline.run(reparsed).expect("second CRLF pass succeeds");
+        assert!(
+            second.text() == first.text(),
+            "fixture `{domain}/{case}` not idempotent on CRLF input:\n{}",
+            common::unified_diff(first.text(), second.text()),
+        );
+    });
 }
 
 #[test]

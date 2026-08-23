@@ -126,6 +126,7 @@ impl<'a> Bander<'a> {
                 body,
                 &self.rule.first_party,
                 self.rule.group_imports,
+                self.source.line_ending(),
                 layout.order[i],
                 layout.order[i + 1],
             )

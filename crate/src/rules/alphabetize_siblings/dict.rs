@@ -96,6 +96,7 @@ pub(super) fn rewrite_dict_text(
             &block_texts,
             &order,
             &divider_slots,
+            source.newline_str(),
             source_last_has_comma,
         )
     } else {
