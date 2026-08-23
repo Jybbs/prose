@@ -3,8 +3,9 @@ run-name    : 🪻 Warm · ${{ github.ref_name }}
 permissions : { contents: read }
 
 env:
-  REF : ${{ github.head_ref || github.ref_name }}
-  SHA : ${{ github.event.pull_request.head.sha || github.sha }}
+  PARENT : ${{ github.event.pull_request.base.sha || github.event.before }}
+  REF    : ${{ github.head_ref || github.ref_name }}
+  SHA    : ${{ github.event.pull_request.head.sha || github.sha }}
 
 on:
   push:
@@ -48,6 +49,7 @@ jobs:
 
   checks:
     name            : ${{ matrix.name }}
+    env             : { CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}" }
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 
@@ -66,6 +68,9 @@ jobs:
             name       : 🪃 Browser
             save       : 'false'
             shared-key : prose-wasm
+          - command    : mise run rust:upload
+            name       : ☂️ Coverage
+            shared-key : prose-coverage
 
     steps:
       - *checkout

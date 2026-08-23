@@ -10,8 +10,6 @@ Render a Prose step summary and gate the workflow's exit code.
 Subcommands:
     ci       Render the CI gate summary. Reads `CHECK` plus the
              GitHub-runner defaults. Exits 0 when `CHECK` is success.
-    cover    Render the Cover gate summary. Reads `CHECKS` plus the
-             GitHub-runner defaults. Exits 0 when `CHECKS` is success.
     deploy   Render the Deploy gate summary. Reads `CHECKS`, `PRESS`,
              `DEPLOY`, and `URL` plus the GitHub-runner defaults. Exits
              0 when every one of them is success.
@@ -100,12 +98,6 @@ class Summary:
         Render the CI gate summary and exit with the matrix verdict.
         """
         self._gate("ci", "CHECK")
-
-    def cover(self):
-        """
-        Render the Cover gate summary and exit with the upload verdict.
-        """
-        self._gate("cover", "CHECKS")
 
     def deploy(self):
         """
