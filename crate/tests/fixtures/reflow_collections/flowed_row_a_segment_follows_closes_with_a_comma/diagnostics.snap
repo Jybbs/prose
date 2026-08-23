@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 44
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_collections/flowed_row_a_segment_follows_closes_with_a_comma/input.py
+---
+reflow-collections@16..69

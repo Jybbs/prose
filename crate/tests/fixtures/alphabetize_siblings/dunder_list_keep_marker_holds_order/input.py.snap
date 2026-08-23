@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/dunder_list_keep_marker_holds_order/input.py
+---
+__all__ = ["zeta", "alpha", "mid"]  # prose: keep
+
+__slots__ = (
+    "zeta",
+    "alpha",
+)  # prose: keep
+
+sorted_anyway = ["zeta", "alpha"]
+__all__ = ["alpha", "zeta"]

@@ -11,7 +11,7 @@ use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
     config::{AlignmentConfig, MaxShift},
-    primitives::padding::Stranding,
+    primitives::{comments::Settling, padding::Stranding},
     rule::RuleId,
     source::Source,
 };
@@ -113,19 +113,27 @@ impl Member {
 /// `cap` carries the governing line length when the rule resolves
 /// within one, so a member whose aligned line would cross it
 /// partitions out of the run the way an over-`max_shift` outlier does.
+/// `release_heads` lets a group's head row stand down as a singleton
+/// where the cap would otherwise strand the row that cut the group,
+/// which a rule opts into only where its rows reach their settled width
+/// under it, since a later alignment widening the head afterward
+/// re-partitions the run.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Settings {
     buffer: usize,
     cap: Option<Cap>,
     max_shift: MaxShift,
+    release_heads: bool,
     strip_singleton: bool,
 }
 
-/// The line length a run resolves within and the padding rule whose
-/// later edits the cap check reads each line at.
+/// The line length a run resolves within, the padding rule whose later
+/// edits the cap check reads each line at, and the comment rules it
+/// reads a trailing comment at the width of.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct Cap {
     line_length: usize,
+    settling: Settling,
     stranding: Stranding,
 }
 
@@ -138,6 +146,7 @@ impl Settings {
             buffer: 1,
             cap: None,
             max_shift,
+            release_heads: false,
             strip_singleton: false,
         }
     }
@@ -166,6 +175,12 @@ impl Settings {
         self
     }
 
+    /// Returns a copy of `self` with `release_heads` enabled.
+    pub(crate) fn releasing_heads(mut self) -> Self {
+        self.release_heads = true;
+        self
+    }
+
     /// Returns a copy of `self` with `strip_singleton` enabled.
     pub(crate) fn with_singleton_strip(mut self) -> Self {
         self.strip_singleton = true;
@@ -174,10 +189,17 @@ impl Settings {
 
     /// Returns a copy of `self` carrying `cap` as the governing line
     /// length the run resolves within, each line read at the width
-    /// `stranding`'s padding rule settles it to.
-    pub(crate) fn within(mut self, line_length: usize, stranding: Stranding) -> Self {
+    /// `stranding`'s padding rule and `settling`'s comment rules leave
+    /// it at.
+    pub(crate) fn within(
+        mut self,
+        line_length: usize,
+        stranding: Stranding,
+        settling: Settling,
+    ) -> Self {
         self.cap = Some(Cap {
             line_length,
+            settling,
             stranding,
         });
         self

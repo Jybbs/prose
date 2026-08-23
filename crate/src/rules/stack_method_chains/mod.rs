@@ -24,6 +24,7 @@
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr};
 use ruff_text_size::TextRange;
+use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::{Config, MaxShift},
@@ -32,6 +33,7 @@ use crate::{
         edit::{insert_edit, narrowed_replacement, singleton_groups},
         fracture,
         inline::end_column,
+        layout::item_indent,
         reserve,
         walk::{
             Descent, ParentedProbe, walk_parented_arguments, walk_parented_expr,
@@ -172,7 +174,11 @@ impl<'a> Breaker<'a> {
     /// `chain`'s segment at `segment` settled and written from `column`
     /// on a row indented `indent`, the receiver at index zero and each
     /// link past that, every chain inside it broken where it trips from
-    /// the column it lands at.
+    /// the column it lands at. A segment whose settled row overflows
+    /// the budget has its argument list exploded by `reflow_calls`, so
+    /// a chain inside that list that fits one indent step past the row
+    /// stays joined for that explode to seat, and one that trips even
+    /// there breaks from the column the joined row reaches.
     fn segment(
         &self,
         chain: &Chain<'a>,
@@ -184,13 +190,19 @@ impl<'a> Breaker<'a> {
         let range = segment
             .checked_sub(1)
             .map_or(chain.receiver_range, |link| chain.links[link]);
+        let explodes = self.rejoin.closes()
+            && column + joins.settled(self.source, range).width() > self.code_line_length;
         let mut out = String::new();
         let mut cursor = range.start();
         for (expr, parent, nested) in self.nested(chain, segment) {
             let nested_range = self.source.paren_aware_range(expr.into(), parent);
             out.push_str(&joins.settled(self.source, TextRange::new(cursor, nested_range.start())));
             let landing = end_column(&out, column);
-            match self.broken(expr, &nested, nested_range, landing, indent) {
+            let seated = explodes && !self.trips(&nested, item_indent(indent), joins);
+            match self
+                .broken(expr, &nested, nested_range, landing, indent)
+                .filter(|_| !seated)
+            {
                 Some(text) => out.push_str(&text),
                 None => out.push_str(&joins.settled(self.source, nested_range)),
             }

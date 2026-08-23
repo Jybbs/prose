@@ -6,15 +6,20 @@
 //! whatever blank line sits between the two. A whole-line deletion of a
 //! member strands the run leading it, which the import prune reads
 //! before it deletes. The trailing-comment gap the banding and spacing
-//! rules both seat lives here as well.
+//! rules both seat lives here as well, beside the [`Settling`] a rule
+//! measuring a row ahead of the comment rules reads a trailing comment
+//! at the width of.
 
-use ruff_python_ast::ExprDict;
 use ruff_python_trivia::{CommentRanges, PythonWhitespace, is_pragma_comment};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
+use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    primitives::blanks::whitespace_start_before, source::Source, suppression::is_directive_comment,
+    primitives::{aligner::is_held, blanks::whitespace_start_before},
+    rule::RuleId,
+    source::Source,
+    suppression::is_directive_comment,
 };
 
 /// The characters whose appearance directly after a comment's hash run
@@ -24,6 +29,56 @@ const EXEMPT_LEADERS: [char; 4] = ['!', '\'', ':', '|'];
 
 /// The gap PEP 8 seats between code and a trailing comment.
 pub(crate) const TRAILING_GAP: &str = "  ";
+
+/// The two comment rules a measuring rule predicts over a trailing
+/// comment, the one seating the gap ahead of it and the one settling
+/// the opener between its hash run and its text, which also widens
+/// that gap to the [`TRAILING_GAP`] floor, each carried by rule id and
+/// `None` where the rule is off.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct Settling {
+    pub(crate) gap: Option<RuleId>,
+    pub(crate) opener: Option<RuleId>,
+}
+
+impl Settling {
+    /// The columns the trailing `comment` carries away from the width
+    /// the comment rules settle it to, negative where they widen the
+    /// line. The gap ahead of the comment measures against the
+    /// [`TRAILING_GAP`] where the gap rule runs on the line and `gap`
+    /// is not a span the caller rewrites itself, against that floor
+    /// alone where only the opener rule runs, and the opener measures
+    /// against the one space the opener rule leaves where that rule
+    /// runs on the line.
+    pub(crate) fn slack(
+        self,
+        source: &Source,
+        comment: TextRange,
+        gap: TextRange,
+        own: TextRange,
+    ) -> isize {
+        let settles =
+            |rule: Option<RuleId>| rule.is_some_and(|rule| !is_held(source, rule, comment.start()));
+        let width = |span: TextRange| source.slice(span).width().cast_signed();
+        let floored = width(gap) - TRAILING_GAP.len().cast_signed();
+        let gap_slack = if gap == own {
+            0
+        } else if settles(self.gap) {
+            floored
+        } else if settles(self.opener) {
+            floored.min(0)
+        } else {
+            0
+        };
+        let opener_slack = if settles(self.opener) {
+            settled_opener(source, comment, false)
+                .map_or(0, |(opener, settled)| width(opener) - settled.cast_signed())
+        } else {
+            0
+        };
+        gap_slack + opener_slack
+    }
+}
 
 /// True when `block` holds its position rather than binding to the
 /// member below it, carrying a section marker, a suppression directive,
@@ -69,14 +124,15 @@ pub(super) fn comment_leads(source: &Source, item_start: TextSize) -> bool {
     leading_comment_block(source, text.line_start(above), line_start).is_some()
 }
 
-/// True when the line containing the dict's opening `{` or the one
-/// containing its closing `}` carries a trailing `# prose: keep`
-/// comment, the marker that pins a dict against both entry reordering
-/// and module-constant banding, so an expansion that carries the
-/// comment from the one line to the other keeps the dict pinned.
-pub(crate) fn has_keep_marker(source: &Source, dict: &ExprDict) -> bool {
+/// True when the line containing `literal`'s opening bracket or the one
+/// containing its closing bracket carries a trailing `# prose: keep`
+/// comment, the marker that pins a dict or a dunder list against entry
+/// reordering and a dict against module-constant banding, so an
+/// expansion that carries the comment from the one line to the other
+/// keeps the literal pinned.
+pub(crate) fn has_keep_marker(source: &Source, literal: impl Ranged) -> bool {
     let text = source.text();
-    [dict.range().start(), dict.range().end()]
+    [literal.start(), literal.end()]
         .into_iter()
         .flat_map(|offset| {
             source
@@ -203,6 +259,39 @@ mod tests {
     fn gap_block(s: &Source) -> Option<TextRange> {
         let body = &s.ast().body;
         leading_comment_block(s, body[0].end(), body[1].start())
+    }
+
+    /// Both comment rules on, carried by slug.
+    fn settling() -> Settling {
+        Settling {
+            gap: Some(RuleId::from("align-comments")),
+            opener: Some(RuleId::from("normalize-comment-spacing")),
+        }
+    }
+
+    #[rstest]
+    #[case::wide_gap_and_opener("x = 1     #    note\n", settling(), 3 + 3)]
+    #[case::gap_rule_off("x = 1     #    note\n", Settling { gap: None, ..settling() }, 3)]
+    #[case::gap_floored("x = 1 #    note\n", Settling { gap: None, ..settling() }, -1 + 3)]
+    #[case::gap_unfloored("x = 1 #    note\n", Settling { gap: None, opener: None }, 0)]
+    #[case::opener_rule_off("x = 1     #    note\n", Settling { opener: None, ..settling() }, 3)]
+    #[case::opener_held(
+        "x = 1     #    prose: skip[normalize-comment-spacing]\n",
+        settling(),
+        3
+    )]
+    #[case::gap_held("x = 1     #    prose: skip[align-comments]\n", settling(), 3)]
+    #[case::settled("x = 1  # note\n", settling(), 0)]
+    fn settling_slack_reads_only_the_rules_running_on_the_line(
+        #[case] src: &str,
+        #[case] settling: Settling,
+        #[case] expected: isize,
+    ) {
+        let s = parse(src);
+        let comment = trailing_comment(&s, TextSize::new(0)).expect("a trailing comment");
+        let gap = TextRange::new(s.ast().body[0].end(), comment.start());
+        let own = TextRange::empty(TextSize::new(0));
+        assert_eq!(settling.slack(&s, comment, gap, own), expected);
     }
 
     #[rstest]

@@ -4,5 +4,5 @@ previewable = true
 title       = "A Commented Import a Merge Folds Prunes in One Pass"
 
 description = '''
-[[reflow-imports]] will fold the unread first line into its same-module sibling, so the comment heading the run leads the merged line once the first goes and [[prune-inert-imports]] drops it whole in the same pass rather than holding it until the merge has landed.
+[[reflow-imports]] will fold the unread first line into its same-module sibling, so the comment heading the run leads the merged line once the first goes and [[prune-inert-imports]] moves the sibling onto that line in the same pass rather than holding the first until the merge has landed.
 '''

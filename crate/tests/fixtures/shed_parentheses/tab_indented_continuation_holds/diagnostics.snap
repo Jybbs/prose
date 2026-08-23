@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/shed_parentheses/tab_indented_continuation_holds/input.py
+---
+shed-parentheses@103..104
+shed-parentheses@13..14

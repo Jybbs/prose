@@ -57,16 +57,9 @@ mod tests {
             .expect("backdates the directory");
     }
     fn cache_in(tmp: &TempDir, max_mib: u32) -> Cache {
-        let store = tmp.path().join("cache");
-        let root = store.join("generation");
-        std::fs::create_dir_all(&root).expect("creates");
         Cache {
-            inserted: std::sync::atomic::AtomicBool::new(false),
-            max_entries: usize::MAX,
             max_size_bytes: u64::from(max_mib) * 1024 * 1024,
-            own_output: std::sync::OnceLock::new(),
-            root,
-            store,
+            ..Cache::in_store(tmp.path().join("cache"))
         }
     }
 

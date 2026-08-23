@@ -3,5 +3,5 @@ source: crate/tests/integration.rs
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/commented_import_run_prunes_its_first_line/input.py
 ---
-prune-inert-imports@71..96
+prune-inert-imports@71..122
 reflow-imports@95..122

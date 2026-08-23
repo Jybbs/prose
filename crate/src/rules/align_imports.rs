@@ -35,8 +35,11 @@ impl AlignImports {
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            settings: aligner::Settings::from(&config.rules.align_imports)
-                .within(config.import_width(), config.stranded_padding()),
+            settings: aligner::Settings::from(&config.rules.align_imports).within(
+                config.import_width(),
+                config.stranded_padding(),
+                config.comment_settling(),
+            ),
         }
     }
 }
@@ -114,10 +117,13 @@ pub(crate) fn aligned_import_columns(
     let mut columns = HashMap::new();
     for group in groups {
         let members: Vec<aligner::Member> = group.iter().map(|(_, member)| *member).collect();
-        for ((start, _), column) in group
-            .iter()
-            .zip(aligner::operator_columns(source, &members, settings))
-        {
+        for ((start, _), column) in group.iter().zip(aligner::operator_columns(
+            source,
+            &members,
+            settings,
+            &aligner::Widenings::default(),
+            |_| None,
+        )) {
             columns.insert(*start, column);
         }
     }

@@ -426,12 +426,21 @@ impl Source {
     /// charging one against the code budget would let a comment reshape
     /// the code it annotates.
     pub fn row_tail_width(&self, offset: TextSize) -> usize {
-        let tail = self.row_tail(offset);
-        let end = trailing_comment(self, offset)
+        self.tail_width(self.row_tail(offset))
+    }
+
+    /// The display width of the code across `tail`, a span inside one
+    /// physical row, closed at a trailing comment the span reaches the
+    /// same way [`row_tail_width`](Self::row_tail_width) closes the
+    /// whole row.
+    pub(crate) fn tail_width(&self, tail: TextRange) -> usize {
+        let end = trailing_comment(self, tail.start())
             .map(TextRange::start)
             .filter(|start| tail.contains(*start))
             .unwrap_or(tail.end());
-        self.slice(TextRange::new(offset, end)).trim_end().width()
+        self.slice(TextRange::new(tail.start(), end))
+            .trim_end()
+            .width()
     }
 
     /// Returns the range spanning the entire source text.

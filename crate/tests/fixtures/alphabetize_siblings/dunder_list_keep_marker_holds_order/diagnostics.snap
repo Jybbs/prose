@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/dunder_list_keep_marker_holds_order/input.py
+---
+alphabetize-siblings@154..166

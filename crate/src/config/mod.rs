@@ -31,9 +31,10 @@ use thiserror::Error;
 
 pub use crate::rule::RuleConfigs;
 use crate::{
-    primitives::{aligner, fracture, one_row, padding, reserve},
+    primitives::{aligner, comments, fracture, one_row, padding, reserve},
     rules::{
-        align_equals::AlignEquals, alphabetize_siblings::Reorders,
+        align_comments::AlignComments, align_equals::AlignEquals, alphabetize_siblings::Reorders,
+        normalize_comment_spacing::NormalizeCommentSpacing,
         strip_stranded_padding::StripStrandedPadding,
     },
 };
@@ -212,11 +213,25 @@ impl Config {
     /// The `align-equals` reservation a rule measures a construct
     /// against, reserving no column where that rule is off.
     pub(crate) fn equals_reservations(&self) -> reserve::Reservations {
-        let rules = &self.rules.align_equals;
-        let settings = rules.enabled.then(|| {
-            aligner::Settings::from(rules).within(self.code_width(), self.stranded_padding())
-        });
-        reserve::Reservations::new(AlignEquals::SLUG, settings)
+        let settings = self
+            .rules
+            .align_equals
+            .enabled
+            .then(|| self.equals_settings());
+        reserve::Reservations::new(AlignEquals::SLUG, settings, self.one_row_settings())
+    }
+
+    /// The alignment settings `align-equals` runs under, resolving
+    /// within the code width and releasing a group's head, since its
+    /// rows reach their settled width under it.
+    pub(crate) fn equals_settings(&self) -> aligner::Settings {
+        aligner::Settings::from(&self.rules.align_equals)
+            .within(
+                self.code_width(),
+                self.stranded_padding(),
+                self.comment_settling(),
+            )
+            .releasing_heads()
     }
 
     pub(crate) fn first_party(&self) -> Vec<String> {
@@ -252,10 +267,31 @@ impl Config {
         Reorders::from_config(self)
     }
 
+    /// The two comment rules a measuring rule predicts, so a trailing
+    /// comment reads at the gap `align-comments` seats it at and the
+    /// opener `normalize-comment-spacing` settles it to.
+    pub(crate) fn comment_settling(&self) -> comments::Settling {
+        comments::Settling {
+            gap: self
+                .rules
+                .align_comments
+                .enabled
+                .then_some(AlignComments::SLUG),
+            opener: self
+                .rules
+                .normalize_comment_spacing
+                .enabled
+                .then_some(NormalizeCommentSpacing::SLUG),
+        }
+    }
+
     /// The padding rule a measuring rule predicts, so a row reads at the
     /// width `strip-stranded-padding` settles it to.
     pub(crate) fn stranded_padding(&self) -> padding::Stranding {
-        padding::Stranding::new(StripStrandedPadding::SLUG)
+        padding::Stranding::new(
+            StripStrandedPadding::SLUG,
+            self.rules.strip_stranded_padding.enabled,
+        )
     }
 
     /// The keys this config sets away from the default, serialized to

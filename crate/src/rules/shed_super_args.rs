@@ -11,25 +11,20 @@
 //! continuation row the deletion would strand re-seats by the columns
 //! the span took.
 
-use std::borrow::Cow;
-
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Expr, ExprCall, Stmt, StmtClassDef,
     visitor::{Visitor, walk_expr},
 };
-use ruff_source_file::UniversalNewlines;
+use ruff_source_file::{LineRanges, UniversalNewlines};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     config::Config,
     primitives::{
-        binding::BindingAnalysis,
-        decorator::is_slots_dataclass,
-        inline::indent_width,
-        params::first_positional,
-        travel::{Landing, frozen_rows, placed_block},
-        walk::walk_stmt,
+        binding::BindingAnalysis, decorator::is_slots_dataclass, edit::insert_edit,
+        inline::indent_width, params::first_positional, reseat::push_reseat_edits,
+        travel::frozen_rows, walk::walk_stmt,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -111,10 +106,11 @@ impl<'a> Walker<'a> {
     }
 
     /// The edits deleting `call`'s arguments and re-seating any later
-    /// row of the logical line the deletion leaves measured against a
-    /// moved column, `None` where the bare form would resolve a
-    /// different class or instance, or none at all, and `None` where
-    /// the stranded row sits inside a string no move re-seats.
+    /// row of the logical line aligned to text the deletion moves,
+    /// `None` where the bare form would resolve a different class or
+    /// instance, or none at all, and `None` where a stranded row sits
+    /// inside a string no move re-seats. A span written across rows
+    /// joins the rows it spans, so the rows below it hold.
     fn rewrite(&self, call: &ExprCall) -> Option<Vec<Edit>> {
         if call.func.as_name_expr()?.id.as_str() != "super" || !call.arguments.keywords.is_empty() {
             return None;
@@ -141,15 +137,18 @@ impl<'a> Walker<'a> {
         if self.strands_a_string_row(tail, column) {
             return None;
         }
-        let landing = Landing {
-            column,
-            indent: self.source.line_indent_width(span.start()),
-            item: self.statement,
-        };
-        let mut edits = vec![Edit::range_deletion(span)];
-        if let Cow::Owned(placed) = placed_block(self.source, tail, landing) {
-            edits.push(Edit::range_replacement(placed, tail));
+        let removal = Edit::range_deletion(span);
+        let mut edits = Vec::new();
+        if !self.source.contains_line_break(span) {
+            let line = TextRange::new(self.source.text().line_start(span.start()), tail.end());
+            push_reseat_edits(
+                self.source,
+                line,
+                std::slice::from_ref(&removal),
+                &mut edits,
+            );
         }
+        insert_edit(&mut edits, removal);
         Some(edits)
     }
 
@@ -260,12 +259,16 @@ mod tests {
 
     #[rstest]
     #[case::aligned_continuation(
-        "class C:\n    def m(self, a, b):\n        return super(C, self).m(a,\n                        b)\n",
-        Some(").m(a,\n                 b)")
+        "class C:\n    def m(self, a, b):\n        return super(C, self).m(a,\n                                b)\n",
+        Some(7)
     )]
     #[case::hanging_continuation(
         "class C:\n    def m(self, a, b):\n        return super(C, self).m(\n            a, b)\n",
         None
+    )]
+    #[case::enclosing_closer(
+        "class C:\n    def m(self, a, b):\n        return zz(\n            super(C, self).m(a,\n                             b)\n        )\n",
+        Some(7)
     )]
     #[case::spread_span(
         "class C:\n    def m(self, a, b):\n        return super(\n            C,\n            self\n        ).m(a,\n            b)\n",
@@ -273,9 +276,16 @@ mod tests {
     )]
     fn a_continuation_re_seats_by_the_columns_the_span_took(
         #[case] src: &str,
-        #[case] re_seated: Option<&str>,
+        #[case] re_seated: Option<u32>,
     ) {
-        let groups = ShedSuperArgs.apply(&parse(src));
-        assert_eq!(groups[0].get(1).and_then(Edit::content), re_seated);
+        let source = parse(src);
+        let groups = ShedSuperArgs.apply(&source);
+        let indents: Vec<u32> = groups[0]
+            .iter()
+            .filter(|edit| source.slice(edit.range()).trim().is_empty())
+            .map(|edit| edit.range().len().to_u32())
+            .collect();
+        assert_eq!(indents.first().copied(), re_seated);
+        assert_eq!(indents.len(), usize::from(re_seated.is_some()));
     }
 }

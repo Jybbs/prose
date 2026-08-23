@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Return Annotation Literal Expands Under the Signature"
+
+description = '''
+A list literal inside a return annotation that overflows the budget is what `reflow-collections` expands, so `reflow-signatures` reads the opening row as ending at that literal's bracket and keeps the parameters on one line rather than exploding them for a width the expansion removes.
+'''

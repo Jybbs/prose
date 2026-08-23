@@ -5,7 +5,8 @@
 //! outside every bracket rejoins onto a single line where the joined
 //! line fits the budget, and otherwise parenthesizes the outermost
 //! expression spanning the break so the bracketed form carries the
-//! split. A backslash the lexer folded into a continued indentation is
+//! split, two runs spanned by one expression taking one pair between
+//! them. A backslash the lexer folded into a continued indentation is
 //! left alone, since no join preserves the indent it declares.
 
 use itertools::Itertools;
@@ -43,30 +44,61 @@ impl ShedBackslashContinuations {
     /// The fix for one run of unbracketed gaps, the join where the
     /// merged line fits the budget, and otherwise the parenthesized
     /// break wherever an expression spans the run.
-    fn shed_run(&self, source: &Source, run: &[Gap]) -> Vec<Edit> {
+    fn shed_run(&self, source: &Source, run: &[Gap]) -> Shed {
         let span = blocks_span(run);
         let joined = join_edits(source, run);
         if joined_width(source, span, &joined) <= self.code_line_length {
-            return joined;
+            return Shed::Joined(joined);
         }
-        wrap_edits(source, span, run).unwrap_or(joined)
+        wrap_edits(source, span, run).map_or(Shed::Joined(joined), |(node, stripped)| {
+            Shed::Wrapped { node, stripped }
+        })
     }
 }
 
 impl Rule for ShedBackslashContinuations {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let gaps = continuation_gaps(source);
-        gaps.chunk_by(|earlier, later| shares_a_run(source, earlier, later))
-            .filter_map(|run| match run {
-                [gap] if gap.bracketed => stripped_edit(source, gap.range).map(|edit| vec![edit]),
-                _ => Some(self.shed_run(source, run)),
-            })
-            .collect()
+        let mut groups = Vec::new();
+        let mut wraps: Vec<(TextRange, Vec<Edit>)> = Vec::new();
+        for run in gaps.chunk_by(|earlier, later| shares_a_run(source, earlier, later)) {
+            match run {
+                [gap] if gap.bracketed => {
+                    groups.extend(stripped_edit(source, gap.range).map(|edit| vec![edit]));
+                }
+                _ => match self.shed_run(source, run) {
+                    Shed::Joined(edits) => groups.push(edits),
+                    Shed::Wrapped { node, stripped } => {
+                        match wraps.iter_mut().find(|(wrapped, _)| *wrapped == node) {
+                            Some((_, edits)) => edits.extend(stripped),
+                            None => wraps.push((node, stripped)),
+                        }
+                    }
+                },
+            }
+        }
+        for (node, mut edits) in wraps {
+            edits.insert(0, Edit::insertion("(".to_owned(), node.start()));
+            edits.push(Edit::insertion(")".to_owned(), node.end()));
+            groups.push(edits);
+        }
+        groups
     }
 
     fn id(&self) -> RuleId {
         Self::SLUG
     }
+}
+
+/// The fix one unbracketed run takes: its gaps joined onto one line, or
+/// its backslashes stripped inside a pair wrapping `node`, the
+/// outermost expression spanning the run.
+enum Shed {
+    Joined(Vec<Edit>),
+    Wrapped {
+        node: TextRange,
+        stripped: Vec<Edit>,
+    },
 }
 
 /// One inter-token gap carrying at least one backslash continuation.
@@ -199,27 +231,24 @@ fn stripped_gap(source: &Source, gap: TextRange) -> String {
         .join(source.newline_str())
 }
 
-/// Parenthesizes the outermost expression spanning `run` and drops the
-/// run's backslashes, keeping every break. Returns `None` where no
-/// expression spans the run or the wrapped form reparses to a different
-/// tree.
-fn wrap_edits(source: &Source, span: TextRange, run: &[Gap]) -> Option<Vec<Edit>> {
+/// The outermost expression spanning `run` and the edits dropping the
+/// run's backslashes inside it, keeping every break, the pair around
+/// that expression left to the caller so runs sharing it take one.
+/// Returns `None` where no expression spans the run or the wrapped form
+/// reparses to a different tree.
+fn wrap_edits(source: &Source, span: TextRange, run: &[Gap]) -> Option<(TextRange, Vec<Edit>)> {
     let root = AnyNodeRef::from(source.ast());
     let wrapped = covering_node(root, span)
         .find_last(AnyNodeRef::is_expression)
         .ok()?
         .node()
         .range();
-    let mut edits: Vec<Edit> = run
+    let edits: Vec<Edit> = run
         .iter()
         .filter_map(|gap| stripped_edit(source, gap.range))
         .collect();
     let candidate = format!("({})", apply_inline_edits(source, wrapped, &edits));
-    splice_preserves_tree(source, wrapped, &candidate).then(|| {
-        edits.insert(0, Edit::insertion("(".to_owned(), wrapped.start()));
-        edits.push(Edit::insertion(")".to_owned(), wrapped.end()));
-        edits
-    })
+    splice_preserves_tree(source, wrapped, &candidate).then_some((wrapped, edits))
 }
 
 #[cfg(test)]

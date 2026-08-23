@@ -1,0 +1,4 @@
+code-line-length = 88
+
+[harness]
+rules = ["prune-inert-imports", "reflow-imports", "band-constants", "space-statements"]

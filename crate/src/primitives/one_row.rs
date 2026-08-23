@@ -29,7 +29,9 @@ use crate::{
         edit::apply_inline_edits,
         fracture::{self, outermost},
         inline::folded_line_form,
-        layout::{is_collapsible, is_column_shaped, is_fractured, is_multi_entry},
+        layout::{
+            is_collapse_only, is_collapsible, is_column_shaped, is_fractured, is_multi_entry,
+        },
     },
     source::Source,
 };
@@ -38,7 +40,7 @@ use crate::{
 /// `rejoin` carries both the argument cap and whether `reflow-calls`
 /// closes a fracture at all, and `max_dict_entries` is `None` where the
 /// `explode` facet leaves the entry cap inert.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Settings<'a> {
     code_line_length: usize,
     keep_multiline_literals: bool,
@@ -186,6 +188,33 @@ impl<'a> Settings<'a> {
         tail: usize,
     ) -> Option<Cow<'a, str>> {
         self.measured(source, expr, parent, column, tail, Column::Joins)
+    }
+
+    /// `expr`'s one-row form where the layout rules rejoin it onto its
+    /// row, meaning a collection literal written across lines that fits
+    /// from `column` across `tail` trailing columns, or a subscript or
+    /// comprehension whose repair fits, each free of comments. `None`
+    /// for any other expression and wherever the form overflows.
+    pub(crate) fn rejoined(
+        &self,
+        source: &'a Source,
+        expr: &Expr,
+        parent: AnyNodeRef,
+        column: usize,
+        tail: usize,
+    ) -> Option<Cow<'a, str>> {
+        let range = expr.range();
+        if !is_collapsible(expr)
+            || source.intersects_comment(range)
+            || !source.contains_line_break(range)
+        {
+            return None;
+        }
+        if is_collapse_only(expr) {
+            self.repaired(source, expr, parent, column, tail)
+        } else {
+            self.fitted(source, expr, parent, column, tail)
+        }
     }
 
     /// `expr`'s one-row form when it fits from `column` across `tail`

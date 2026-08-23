@@ -15,7 +15,7 @@ use unicode_width::UnicodeWidthStr;
 
 use super::{
     classify::{Segment, is_align_colons_gap, is_atomic, pre_colon_padding, segments},
-    flow::flow_lines,
+    flow::{Packing, flow_lines},
 };
 use crate::{
     primitives::{
@@ -23,7 +23,7 @@ use crate::{
         call_keywords::CallTargets,
         edit::narrowed_replacement,
         inline::end_column,
-        layout::{is_collapse_only, is_collapsible, is_layoutable, item_indent, requires_expand},
+        layout::{is_collapsible, is_layoutable, item_indent, requires_expand},
         one_row, padding, reserve,
         travel::{Landing, placed_block},
         walk::{Descent, ParentedProbe},
@@ -57,12 +57,13 @@ pub(super) struct Layouter<'a> {
 impl<'a> Layouter<'a> {
     /// Builds the expanded form of `expr` under `parent` as a string,
     /// recursively laying out any qualifying child collections. Every
-    /// row is charged the separator a later sort leaves closing it.
+    /// row is charged the separator a later sort leaves closing it, and
+    /// a flowed row packs the entries that sort leaves in it.
     fn expand(&self, expr: &Expr, parent: AnyNodeRef, indent: usize) -> String {
         let item_indent = item_indent(indent);
         let dict_items = expr.as_dict_expr().map(|d| &d.items);
         let node = AnyNodeRef::from(expr);
-        let last = self.reorders.sorted_last(self.source, node, parent);
+        let order = self.reorders.sorted_slots(self.source, node, parent);
         let GatheredItems {
             atomics,
             close,
@@ -71,6 +72,10 @@ impl<'a> Layouter<'a> {
             texts,
             widths,
         } = self.gather_items(expr, parent, item_indent);
+        let last = order
+            .as_ref()
+            .and_then(|order| order.last())
+            .map(|&index| ranges[index]);
         let total = texts.len();
         let item_prefix = " ".repeat(item_indent);
         let available = self.code_line_length.saturating_sub(item_indent);
@@ -81,7 +86,18 @@ impl<'a> Layouter<'a> {
             match segment {
                 Segment::Flow(range) => {
                     let run_start = range.start;
-                    for line_range in flow_lines(&widths[range], available, self.max_atomics) {
+                    let packing = Packing {
+                        available,
+                        followed: range.end < total,
+                        max_atomics: self.max_atomics,
+                    };
+                    // The slots pack at the widths of the entries the sort
+                    // leaves in them.
+                    let slot_widths: Vec<usize> = match &order {
+                        Some(order) => order[range].iter().map(|&index| widths[index]).collect(),
+                        None => widths[range].to_vec(),
+                    };
+                    for line_range in flow_lines(&slot_widths, packing) {
                         let line_start = run_start + line_range.start;
                         let line_end = run_start + line_range.end;
                         out.push_str(&item_prefix);
@@ -259,7 +275,9 @@ impl<'a> Layouter<'a> {
     /// The terms the calls inside a relocated expression reshape under.
     fn reshaper(&self) -> Reshaper<'a> {
         Reshaper {
+            expands_literals: self.explode,
             one_row: self.one_row,
+            padding: self.padding,
             reorders: self.reorders,
             reservations: self.reservations,
             source: self.source,
@@ -286,21 +304,18 @@ impl<'a> Layouter<'a> {
         tail: usize,
     ) -> Option<String> {
         let range = expr.range();
-        if self.source.intersects_comment(range) {
-            return None;
+        if let Some(inline) = self
+            .one_row
+            .rejoined(self.source, expr, expr.into(), column, tail)
+        {
+            return Some(inline.into_owned());
         }
-        if is_collapse_only(expr) {
-            return self.repaired(expr, column, tail);
-        }
-        if !is_layoutable(expr) {
+        if !is_layoutable(expr) || self.source.intersects_comment(range) {
             return None;
         }
         let expandable = requires_expand(expr);
         let over_count = self.has_over_count_dict(expr);
         if self.source.contains_line_break(range) {
-            if let Some(inline) = self.joined_if_fits(expr, column, tail) {
-                return Some(inline);
-            }
             return (self.explode && expandable).then(|| self.expand(expr, parent, indent));
         }
         (self.explode
@@ -426,27 +441,24 @@ impl<'a> Layouter<'a> {
         }
     }
 
-    /// `expr`'s one-row form when it joins without a residual break and
-    /// fits the budget from `column` across `tail` trailing columns,
-    /// else `None`. A held column and a leaf reaching no single row each
-    /// leave the enclosing construct to the expand path.
-    fn joined_if_fits(&self, expr: &Expr, column: usize, tail: usize) -> Option<String> {
-        self.one_row
-            .fitted(self.source, expr, expr.into(), column, tail)
-            .map(Cow::into_owned)
-    }
-
     /// The display width of the text trailing `expr` on its own physical
-    /// row, read as the separator a sort pending over `parent`, itself
-    /// under `grandparent`, leaves closing the entry where that text is
-    /// at most the comma the entry carries now, and at least that
-    /// separator where more follows on the row or the sort leaves
-    /// `parent` as laid out. A construct the expand path
-    /// relocates lands on a row of its own instead, so only the walk's
-    /// own entry reads this.
+    /// row once the padding rule drops the padding inside it, read as
+    /// the separator a sort pending over `parent`, itself under
+    /// `grandparent`, leaves closing the entry where that text is at
+    /// most the comma the entry carries now, and at least that separator
+    /// where more follows on the row or the sort leaves `parent` as laid
+    /// out. A construct the expand path relocates lands on a row of its
+    /// own instead, so only the walk's own entry reads this.
     fn row_tail(&self, expr: &Expr, parent: AnyNodeRef, grandparent: AnyNodeRef) -> usize {
         let end = expr.range().end();
-        let current = self.source.row_tail_width(end);
+        let current = self
+            .source
+            .row_tail_width(end)
+            .saturating_add_signed(-padding::slack(
+                self.source,
+                self.padding,
+                self.source.row_tail(end),
+            ));
         let Some(last) = self.reorders.sorted_last(self.source, parent, grandparent) else {
             return current;
         };

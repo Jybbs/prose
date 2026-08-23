@@ -38,8 +38,7 @@ impl AlignEquals {
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            settings: aligner::Settings::from(&config.rules.align_equals)
-                .within(config.code_width(), config.stranded_padding()),
+            settings: config.equals_settings(),
         }
     }
 }

@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 44
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/call_joins_at_the_width_the_padding_leaves/input.py
+---
+strip-stranded-padding@29..30
+strip-stranded-padding@66..67

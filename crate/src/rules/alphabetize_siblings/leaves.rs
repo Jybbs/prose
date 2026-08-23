@@ -13,14 +13,16 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Alias, Expr, ExprCall, ExprDict, ExprLambda, ExprSet, Identifier, Parameters, Stmt, StmtAssign,
     StmtDelete,
+    token::TokenKind,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use super::{dict::rewrite_dict_text, joined_key};
+use super::{dict::rewrite_dict_text, joined_text};
 use crate::{
     primitives::{
         binding::{sequence_elts, single_name_target},
+        comments::has_keep_marker,
         docstring::{documented_definitions, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, insert_edit, narrowed_replacement},
         effect::value_is_effectful,
@@ -72,6 +74,7 @@ impl<'a> LeafCollector<'a> {
     fn emit_dunder_list(&mut self, assign: &'a StmtAssign) {
         if self.sort_dunder_lists
             && matches!(single_name_target(assign), Some("__all__" | "__slots__"))
+            && !has_keep_marker(self.source, &*assign.value)
             && let Some(elements) = sequence_elts(&assign.value)
         {
             self.try_emit_inline_reorder(elements, |e| {
@@ -98,10 +101,20 @@ impl<'a> LeafCollector<'a> {
         self.try_emit_inline_reorder(&params.kwonlyargs, classify_param);
     }
 
+    /// Sorts the set's elements, each keyed on its text as the edits
+    /// already collected inside it rewrite it, so an element whose own
+    /// entries sort lands where its sorted form will.
     fn emit_set(&mut self, s: &'a ExprSet) {
-        self.try_emit_inline_reorder(&s.elts, |e| {
-            (!e.is_starred_expr()).then(|| joined_key(self.source, e))
-        });
+        let keys: HashMap<TextSize, String> = s
+            .elts
+            .iter()
+            .filter(|e| !e.is_starred_expr())
+            .map(|e| {
+                let placed = apply_inline_edits(self.source, e.range(), &self.edits);
+                (e.start(), joined_text(&placed).into_owned())
+            })
+            .collect();
+        self.try_emit_inline_reorder(&s.elts, |e| keys.get(&e.start()).cloned());
     }
 
     /// Replaces the leaf edits nested inside `span` with a single edit
@@ -233,16 +246,16 @@ pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
 }
 
 /// True when a gap between two consecutive members of `items` carries
-/// code of its own past the separators and comments inside it, the
+/// a token of its own past the separators and comments inside it, the
 /// shape a positional argument sitting between two keywords takes.
 fn gaps_carry_code<T: Ranged>(source: &Source, items: &[T]) -> bool {
     items.windows(2).any(|pair| {
-        source
-            .slice(TextRange::new(pair[0].end(), pair[1].start()))
-            .lines()
-            .flat_map(|line| line.split(','))
-            .map(str::trim)
-            .any(|part| !part.is_empty() && !part.starts_with('#'))
+        let gap = TextRange::new(pair[0].end(), pair[1].start());
+        source.tokens_overlapping(gap).any(|token| {
+            gap.contains(token.start())
+                && !token.kind().is_trivia()
+                && token.kind() != TokenKind::Comma
+        })
     })
 }
 

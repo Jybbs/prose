@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Literal Tail Measures the Stripped Padding"
+
+description = '''
+`reflow-collections` measures the text trailing a literal on its row at the width it settles to once `strip-stranded-padding` drops the delimiter padding ahead of the closer, so a tuple argument whose padded row crosses the budget by exactly that padding stays on its row where the stripped row fits.
+'''

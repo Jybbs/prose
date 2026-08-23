@@ -5,9 +5,11 @@
 //! one-element tuple all survive. A wrapped pair folds onto one line
 //! when the bare form fits the budget, measured from the column the pair
 //! reaches once the pass's earlier edits apply and narrowed by the pairs
-//! nested inside it, which shed in the same pass. A wrapped pair whose
-//! breaks a bracket inside it holds sheds in place, leaving the rows
-//! inside to the layout rules.
+//! nested inside it, which shed in the same pass, and read from the
+//! column the pair lands on once `reflow-calls` explodes a call ahead
+//! of it on an overflowing row. A wrapped pair whose breaks a bracket
+//! inside it holds sheds in place, leaving the rows inside to the
+//! layout rules.
 
 use std::{borrow::Cow, cmp::Reverse};
 
@@ -17,19 +19,19 @@ use ruff_python_ast::{
     token::{TokenKind, parenthesized_range},
 };
 use ruff_python_trivia::PythonWhitespace;
+use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,
     primitives::{
-        INDENT_STEP,
         edit::{apply_inline_edits, insert_edit, singleton_groups},
-        inline::{end_column, folded_line_form, indent_width, soft_wrap_runs},
+        inline::{end_column, folded_line_form, soft_wrap_runs},
+        reseat::push_reseat_edits,
         splice::splice_preserves_tree,
         tokens::{is_closer, is_opener},
-        travel::frozen_rows,
-        walk::{Descent, filter_map_over_parented_exprs},
+        walk::{Descent, filter_map_over_exprs, filter_map_over_parented_exprs},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -37,6 +39,7 @@ use crate::{
 
 pub(crate) struct ShedParentheses {
     code_line_length: usize,
+    reflows_calls: bool,
 }
 
 impl ShedParentheses {
@@ -45,6 +48,7 @@ impl ShedParentheses {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),
+            reflows_calls: config.rules.reflow_calls.enabled,
         }
     }
 }
@@ -56,7 +60,13 @@ impl Rule for ShedParentheses {
                 candidate(source, expr, parent)
             });
         candidates.sort_unstable_by_key(|c| (c.pair.start(), Reverse(c.pair.end())));
+        let calls = if self.reflows_calls {
+            outermost_calls(source)
+        } else {
+            Vec::new()
+        };
         let mut shedder = Shedder {
+            calls,
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             folds: Vec::new(),
@@ -72,17 +82,70 @@ impl Rule for ShedParentheses {
 }
 
 /// One grouping pair whose removal leaves the parse unchanged, carrying
-/// its interior range and that interior's single-line form, `None`
-/// where only a bracket inside the interior holds its breaks.
+/// its interior range, that interior's single-line form, `None` where
+/// only a bracket inside the interior holds its breaks, and the sides on
+/// which the pair runs into an identifier character.
 struct Candidate<'src> {
     bare: Option<Cow<'src, str>>,
+    flush: Flush,
     inner: TextRange,
     pair: TextRange,
 }
 
+/// The sides of a pair that touch an identifier character, the keyword
+/// written flush against its paren, where the pair's removal leaves a
+/// single space rather than nothing.
+struct Flush {
+    after: bool,
+    before: bool,
+}
+
+impl Flush {
+    fn of(source: &Source, pair: TextRange) -> Self {
+        let text = source.text();
+        let touches = |c: Option<char>| c.is_some_and(|c| c.is_alphanumeric() || c == '_');
+        Self {
+            after: touches(text[pair.end().to_usize()..].chars().next()),
+            before: touches(text[..pair.start().to_usize()].chars().next_back()),
+        }
+    }
+
+    /// `text` with the space each flush side keeps, the form the splice
+    /// probe and the emitted edits share.
+    fn padded<'t>(&self, text: &'t str) -> Cow<'t, str> {
+        match (self.before, self.after) {
+            (false, false) => Cow::Borrowed(text),
+            (before, after) => {
+                let lead = if before { " " } else { "" };
+                let trail = if after { " " } else { "" };
+                Cow::Owned(format!("{lead}{text}{trail}"))
+            }
+        }
+    }
+
+    /// The edit removing `span`, one of the pair's parens with the
+    /// whitespace it takes along, leaving a space where `flush` says
+    /// the side touches an identifier character.
+    fn removal(flush: bool, span: TextRange) -> Edit {
+        if flush {
+            Edit::range_replacement(" ".to_owned(), span)
+        } else {
+            Edit::range_deletion(span)
+        }
+    }
+
+    /// How many columns the pair's removal keeps as spaces.
+    fn spaces(&self) -> usize {
+        usize::from(self.before) + usize::from(self.after)
+    }
+}
+
 /// Turns a candidate list into edits, walking it in source order so each
-/// budget test reads the columns the preceding edits produce.
+/// budget test reads the columns the preceding edits produce. `calls`
+/// holds the outermost call ranges `reflow-calls` explodes where their
+/// row overflows, empty where that rule is off.
 struct Shedder<'a> {
+    calls: Vec<TextRange>,
     code_line_length: usize,
     edits: Vec<Edit>,
     folds: Vec<TextRange>,
@@ -91,17 +154,19 @@ struct Shedder<'a> {
 
 impl Shedder<'_> {
     /// True when joining `candidate` leaves its line inside the budget,
-    /// the interior narrowed by the two columns each nested candidate
-    /// sheds alongside it, and false for an interior no fold joins.
+    /// the interior widened by the spaces its own flush sides keep and
+    /// narrowed by the columns each nested candidate sheds alongside it,
+    /// and false for an interior no fold joins.
     fn fits(&self, candidate: &Candidate, candidates: &[Candidate]) -> bool {
         let Some(bare) = &candidate.bare else {
             return false;
         };
-        let nested = candidates
+        let shed: usize = candidates
             .iter()
             .filter(|other| candidate.inner.contains_range(other.pair))
-            .count();
-        let width = bare.width() - 2 * nested;
+            .map(|other| 2 - other.flush.spaces())
+            .sum();
+        let width = bare.width() + candidate.flush.spaces() - shed;
         self.shifted_column(candidate.pair.start()) + width <= self.code_line_length
     }
 
@@ -124,8 +189,8 @@ impl Shedder<'_> {
     /// whose joined line fits the budget. A candidate inside an open fold
     /// drops its parentheses alone, leaving that fold's own edits to
     /// close the break. A wrapped pair whose joined line overflows sheds
-    /// in place when an enclosing bracket holds its breaks, and holds
-    /// otherwise.
+    /// in place when an enclosing bracket holds its breaks, re-seating
+    /// the rows its parens moved, and holds otherwise.
     fn shed(&mut self, candidates: &[Candidate]) {
         for candidate in candidates {
             let Candidate { inner, pair, .. } = *candidate;
@@ -143,7 +208,6 @@ impl Shedder<'_> {
                     continue;
                 };
                 folding = false;
-                self.push_reseat_edits(pair, open, TextRange::new(open.end(), close.start()));
                 (open, close)
             } else {
                 (
@@ -151,65 +215,24 @@ impl Shedder<'_> {
                     TextRange::new(inner.end(), pair.end()),
                 )
             };
-            insert_edit(&mut self.edits, Edit::range_deletion(open));
-            insert_edit(&mut self.edits, Edit::range_deletion(close));
+            let removals = [
+                Flush::removal(candidate.flush.before, open),
+                Flush::removal(candidate.flush.after, close),
+            ];
+            if !collapsing && !folding {
+                let line = TextRange::new(
+                    self.source.text().line_start(pair.start()),
+                    self.source.logical_line_tail(pair.end()).end(),
+                );
+                push_reseat_edits(self.source, line, &removals, &mut self.edits);
+            }
+            for removal in removals {
+                insert_edit(&mut self.edits, removal);
+            }
             if folding {
                 self.push_fold_edits(inner);
                 self.folds.push(pair);
             }
-        }
-    }
-
-    /// Emits the edits re-seating the continuation rows of `interior`,
-    /// the text between the shed parens of `pair`, by the columns the
-    /// opener took where the interior opens on the opener's row: a row
-    /// indented to the column directly past the opener tracks that
-    /// delimiter and follows it leftward whatever else shares its
-    /// column, a row hanging one or two indent steps past the opener's
-    /// row otherwise keeps its column, and any other row indented to
-    /// the column of a token on the opening row follows the token
-    /// leftward. A row inside a row-spanning string keeps its column.
-    fn push_reseat_edits(&mut self, pair: TextRange, open: TextRange, interior: TextRange) {
-        let block = self.source.slice(interior);
-        // An opener ending its row leaves nothing on that row to align to,
-        // so the rows below it hang by construction.
-        if !self.source.same_line(pair.start(), interior.start()) || block.starts_with(['\r', '\n'])
-        {
-            return;
-        }
-        let shift = self.source.slice(open).width();
-        let row_indent = self.source.line_indent_width(pair.start());
-        let delimiter_aligned = self.source.column_of(interior.start());
-        let hangs = |indent: usize| {
-            indent == row_indent + INDENT_STEP || indent == row_indent + 2 * INDENT_STEP
-        };
-        let opening_row = TextRange::new(
-            interior.start(),
-            self.source.row_tail(interior.start()).end(),
-        );
-        let anchors: Vec<usize> = self
-            .source
-            .tokens_overlapping(opening_row)
-            .filter(|token| opening_row.contains(token.start()))
-            .map(|token| self.source.column_of(token.start()))
-            .collect();
-        let frozen = frozen_rows(self.source, interior);
-        let mut row_start = interior.start();
-        for (row, line) in block.split_inclusive('\n').enumerate() {
-            let indent = indent_width(line);
-            let follows =
-                indent == delimiter_aligned || (!hangs(indent) && anchors.contains(&indent));
-            if row > 0 && frozen.get(row) != Some(&true) && follows {
-                // An indent-only deletion at the row start composes with a
-                // shed nested inside the row, whose own deletions sit at its
-                // parens.
-                let taken = TextSize::try_from(shift.min(indent)).expect("indent fits u32");
-                insert_edit(
-                    &mut self.edits,
-                    Edit::range_deletion(TextRange::at(row_start, taken)),
-                );
-            }
-            row_start += line.text_len();
         }
     }
 
@@ -235,17 +258,64 @@ impl Shedder<'_> {
         }
         let close = TextRange::new(inner.end(), pair.end());
         let bare = self.source.slice(TextRange::new(open.end(), close.start()));
-        splice_preserves_tree(self.source, pair, bare).then_some((open, close))
+        splice_preserves_tree(self.source, pair, &candidate.flush.padded(bare))
+            .then_some((open, close))
     }
 
-    /// The column `offset` reaches once the edits emitted so far apply.
+    /// The column `offset` reaches once the edits emitted so far apply
+    /// and `reflow-calls` takes its turn on the row: each outermost
+    /// call ending ahead of `offset` on that row explodes while the row
+    /// through `offset` still overflows the budget, dropping its closer
+    /// to the row's indent and the text after it along with it.
     /// Measuring from the enclosing logical line rather than the file
     /// start reads the same row, since a fold never joins across the
     /// `Newline` token that opens the line.
     fn shifted_column(&self, offset: TextSize) -> usize {
         let head = self.source.logical_line_start(offset);
-        end_column(&apply_inline_edits(self.source, head, &self.edits), 0)
+        let column = end_column(&apply_inline_edits(self.source, head, &self.edits), 0);
+        if column < self.code_line_length {
+            return column;
+        }
+        let row_start = self.source.text().line_start(offset);
+        let placed = |to: TextSize| {
+            end_column(
+                &apply_inline_edits(self.source, TextRange::new(row_start, to), &self.edits),
+                0,
+            )
+        };
+        let indent = self.source.line_indent_width(offset);
+        let mut shift = 0;
+        for call in self
+            .calls
+            .iter()
+            .filter(|call| row_start <= call.start() && call.end() <= offset)
+        {
+            if placed(offset) - shift < self.code_line_length {
+                break;
+            }
+            shift = placed(call.end()).saturating_sub(indent + 1);
+        }
+        column - shift
     }
+}
+
+/// The range of every call no other call encloses, ascending by start,
+/// the calls `reflow-calls` explodes first on an overflowing row.
+fn outermost_calls(source: &Source) -> Vec<TextRange> {
+    let mut calls: Vec<TextRange> = filter_map_over_exprs(&source.ast().body, |expr| {
+        expr.as_call_expr().map(Ranged::range)
+    });
+    calls.sort_unstable_by_key(|call| (call.start(), Reverse(call.end())));
+    let mut outermost: Vec<TextRange> = Vec::new();
+    for call in calls {
+        if outermost
+            .last()
+            .is_none_or(|outer| !outer.contains_range(call))
+        {
+            outermost.push(call);
+        }
+    }
+    outermost
 }
 
 /// The candidate `expr` contributes, or `None` where no pair encloses
@@ -272,8 +342,14 @@ fn candidate<'src>(
     if bare.is_none() && !breaks_held_inside(source, inner) {
         return None;
     }
-    let probe = bare.as_deref().unwrap_or_else(|| source.slice(inner));
-    splice_preserves_tree(source, pair, probe).then_some(Candidate { bare, inner, pair })
+    let flush = Flush::of(source, pair);
+    let probe = flush.padded(bare.as_deref().unwrap_or_else(|| source.slice(inner)));
+    splice_preserves_tree(source, pair, &probe).then_some(Candidate {
+        bare,
+        flush,
+        inner,
+        pair,
+    })
 }
 
 /// True when every line break inside `inner` sits inside a bracket

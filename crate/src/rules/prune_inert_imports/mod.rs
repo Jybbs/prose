@@ -24,7 +24,7 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     rule::{Rule, RuleId},
-    rules::reflow_imports::Merges,
+    rules::reflow_imports::Folds,
     source::Source,
 };
 
@@ -38,7 +38,7 @@ use plan::Plan;
 
 pub(crate) struct PruneInertImports {
     duplicates: bool,
-    merges: Merges,
+    folds: Folds,
     target_version: Option<PythonVersion>,
     unreferenced: bool,
 }
@@ -51,7 +51,7 @@ impl PruneInertImports {
         let facets = &config.rules.prune_inert_imports;
         Self {
             duplicates: facets.drop_duplicates,
-            merges: Merges::from_config(config),
+            folds: Folds::from_config(config),
             target_version: config.target_version,
             unreferenced: facets.drop_unreferenced,
         }

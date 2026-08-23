@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/set_element_sorts_by_its_sorted_entries/input.py
+---
+values = {
+    {"bb": [10, 1000, 1000], "dd": (10, 10)},
+    {"bb": fn(1000, 1000), "dd": 1},
+}

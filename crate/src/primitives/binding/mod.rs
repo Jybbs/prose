@@ -260,8 +260,15 @@ impl BindingAnalysis {
     /// more than one write or an augmented-assignment write, and
     /// `false` when `name` is write-once or unbound at module scope.
     pub(crate) fn module_reassigned(&self, name: &str) -> bool {
+        self.module_reassigned_beyond(name, 0)
+    }
+
+    /// [`Self::module_reassigned`] with `removed` of the binding's writes
+    /// discounted, the writes a caller drops in the same pass.
+    pub(crate) fn module_reassigned_beyond(&self, name: &str, removed: usize) -> bool {
         self.module_binding(name).is_some_and(|binding| {
-            binding.write_offsets.len() > 1 || binding.kinds.contains(&BindingKind::AugAssign)
+            binding.write_offsets.len() > removed + 1
+                || binding.kinds.contains(&BindingKind::AugAssign)
         })
     }
 

@@ -20,7 +20,7 @@ use crate::{
         edit::{singleton_groups, splice_bodies},
         imports::defers_annotations,
         orderer::{
-            any_sibling_shares_line, assemble_or_borrow, assembled_cell_edits,
+            any_sibling_shares_line, assemble_or_borrow, assembled_cell_edits, member_blocks,
             rendered_member_blocks,
         },
         scope::{compound_sub_bodies, scoped_body},
@@ -33,6 +33,7 @@ use crate::{
 mod analysis;
 mod plan;
 
+pub(crate) use self::plan::ImportBand;
 use self::{
     analysis::module_band_plan,
     plan::{Banding, banded_gap},
@@ -62,6 +63,42 @@ impl BandConstants {
             target_version: config.target_version,
         }
     }
+
+    /// The import bands the rule sorts over `body`, forecast for a rule
+    /// seated ahead of it. A band holds the imports of one region once
+    /// the hoist seats every constant between two of them below the
+    /// run. `None` when a sibling shares a line or the plan declines the
+    /// body.
+    pub(crate) fn import_bands(
+        &self,
+        source: &Source,
+        body: &[Stmt],
+        outer: TextRange,
+    ) -> Option<Bands> {
+        if any_sibling_shares_line(source, body) {
+            return None;
+        }
+        let blocks = member_blocks(source, body, outer);
+        let sections = Sections::of(source, &blocks);
+        let order: Vec<usize> = (0..body.len()).collect();
+        let imports = module_band_plan(
+            source,
+            body,
+            &blocks,
+            self.code_width,
+            defers_annotations(&source.ast().body),
+            self.group_subcategories,
+            self.target_version,
+        )?
+        .import_bands(
+            body,
+            &sections,
+            &self.first_party,
+            self.group_imports,
+            &order,
+        )?;
+        Some(Bands { blocks, imports })
+    }
 }
 
 impl Rule for BandConstants {
@@ -89,6 +126,13 @@ impl Rule for BandConstants {
     fn id(&self) -> RuleId {
         Self::SLUG
     }
+}
+
+/// The import bands forecast over one body beside the body's member
+/// blocks.
+pub(crate) struct Bands {
+    pub(crate) blocks: Vec<TextRange>,
+    pub(crate) imports: Vec<ImportBand>,
 }
 
 /// Invariant banding context threaded through the recursion.
@@ -269,8 +313,34 @@ fn apply_band_comments<'src>(
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
     use crate::{primitives::orderer::member_blocks, testing::parse};
+
+    #[rstest]
+    #[case::hoist_joins_the_runs("from p import a\nX = 1\nfrom q import b\n\nprint(a, b, X)\n", Some((vec![0, 2], 0)))]
+    #[case::sort_reseats_the_head("from .p import a\nfrom ..q import b\n", Some((vec![0, 1], 1)))]
+    #[case::pinned_anchor_splits_the_band("from p import a\nprint(a)\nfrom q import b\n", Some((vec![0], 0)))]
+    #[case::shared_line_declines("from p import a; from q import b\n", None)]
+    fn import_bands_reads_the_band_the_hoist_seats(
+        #[case] src: &str,
+        #[case] first: Option<(Vec<usize>, usize)>,
+    ) {
+        let source = parse(src);
+        let rule = BandConstants::from_config(&Config::default());
+        let bands = rule.import_bands(&source, &source.ast().body, source.module_range());
+        assert_eq!(
+            bands.and_then(|bands| {
+                bands
+                    .imports
+                    .into_iter()
+                    .next()
+                    .map(|band| (band.slots, band.sorted_head))
+            }),
+            first,
+        );
+    }
 
     #[test]
     fn band_module_constants_hoists_an_import_below_a_definition() {

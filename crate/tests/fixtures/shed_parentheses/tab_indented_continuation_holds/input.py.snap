@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_parentheses/tab_indented_continuation_holds/input.py
+---
+def f():
+	gg(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa and
+	   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb)

@@ -24,10 +24,10 @@
 //!
 //! Both fit checks stay invariant to the later alignment: a dict entry
 //! measures at its canonical `": "`, and a rejoin tests against the
-//! column `align_equals` shifts the value to. The expanded layout stays
-//! invariant to the later ordering the same way, every row charged the
-//! separator closing it whatever position `alphabetize-siblings` moves
-//! it to.
+//! column `align_equals` shifts the value to. The expanded layout reads
+//! the later ordering the same way, every row charged the separator
+//! closing it and packed at the widths of the entries
+//! `alphabetize-siblings` leaves in it.
 
 use ruff_diagnostics::Edit;
 use ruff_text_size::Ranged;

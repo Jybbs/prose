@@ -10,9 +10,9 @@ use ruff_text_size::TextRange;
 use crate::{
     primitives::{
         binding::{bare_import_bound_name, from_import_bound_name, top_level_module},
-        imports::prune_import_aliases,
+        imports::{Dropping, prune_import_statements},
     },
-    rules::reflow_imports::Merges,
+    rules::reflow_imports::Folds,
     source::Source,
 };
 
@@ -95,13 +95,13 @@ impl<'a> TypingImports<'a> {
     /// One fix group per import statement, dropping every alias whose
     /// bound name `consumed` read as many times as the module reads it
     /// at all and leaving an alias with a surviving reference in place.
-    /// A statement `merges` folds into a surviving sibling drops whole
-    /// under a leading comment, the drop landing on the merged line.
+    /// A comment-led statement losing every alias lands on the import
+    /// `folds` carries its comment onto.
     pub(super) fn prune(
         &self,
         source: &Source,
         consumed: &HashMap<&str, usize>,
-        merges: Merges,
+        folds: &Folds,
     ) -> Vec<Vec<Edit>> {
         let analysis = source.binding_analysis();
         let unread = |bound: &str| {
@@ -109,28 +109,21 @@ impl<'a> TypingImports<'a> {
                 .get(bound)
                 .is_some_and(|&rewritten| rewritten == analysis.module_usage_count(bound))
         };
-        let groups = merges.groups(source, &source.ast().body);
-        let whole: Vec<usize> = self
+        let drops: Vec<Dropping> = self
             .statements
             .iter()
-            .filter(|import| {
-                import
-                    .names
-                    .iter()
-                    .all(|alias| import.orphaned(alias, &unread))
+            .map(|import| Dropping {
+                dropped: (0..import.names.len())
+                    .filter(|&index| import.orphaned(&import.names[index], &unread))
+                    .collect(),
+                names: import.names,
+                range: import.range,
+                slot: import.slot,
             })
-            .map(|import| import.slot)
             .collect();
-        self.statements
-            .iter()
-            .map(|import| {
-                let folded = Merges::folds(&groups, import.slot, |other| !whole.contains(&other));
-                prune_import_aliases(source, import.range, import.names, folded, |index| {
-                    !import.orphaned(&import.names[index], &unread)
-                })
-            })
-            .filter(|edits| !edits.is_empty())
-            .collect()
+        prune_import_statements(source, &source.ast().body, &drops, |slot, survives| {
+            folds.landing(source, slot, survives)
+        })
     }
 }
 

@@ -39,7 +39,14 @@ impl EntryColumns {
         settings: aligner::Settings,
     ) -> (Vec<aligner::Member>, Vec<aligner::Member>) {
         let parens = self.parens();
-        let mut columns = aligner::operator_columns(source, &parens, settings).into_iter();
+        let mut columns = aligner::operator_columns(
+            source,
+            &parens,
+            settings,
+            &aligner::Widenings::default(),
+            |_| None,
+        )
+        .into_iter();
         let colons = self
             .colons
             .iter()

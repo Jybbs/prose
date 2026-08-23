@@ -9,15 +9,12 @@
 //! import stays untouched, and a lone name whose own line overflows
 //! keeps it rather than splitting further.
 
-use std::collections::HashMap;
+use std::{cell::OnceCell, collections::HashMap};
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Alias, Stmt, StmtImport, StmtImportFrom,
-    helpers::format_import_from,
-    statement_visitor::{StatementVisitor, walk_body},
-    token::TokenKind,
+    Alias, Stmt, StmtImport, StmtImportFrom, helpers::format_import_from, token::TokenKind,
 };
 use ruff_python_trivia::indentation_at_offset;
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -28,12 +25,17 @@ use crate::{
     primitives::{
         aligner,
         edit::{apply_inline_edits, narrowed_replacement, whole_line_deletion},
-        imports::is_import,
+        imports::{ModuleKey, fold_landing, is_import, module_key, stands_alone},
         layout::pack,
-        slots::runs_where,
+        orderer::member_blocks,
+        scope::{scoped_body, sub_bodies},
+        slots::slot_runs,
     },
     rule::{Rule, RuleId},
-    rules::align_imports,
+    rules::{
+        align_imports,
+        band_constants::{BandConstants, Bands},
+    },
     source::Source,
 };
 
@@ -45,12 +47,9 @@ const IMPORT_KEYWORD_WIDTH: usize = "import ".len();
 /// counted against the budget each line packs to.
 const MEMBER_SEPARATOR: &str = ", ";
 
-/// What distinguishes one `from`-import's module from another, the
-/// leading-dot count alongside the module name.
-type ModuleKey<'a> = (u32, Option<&'a str>);
-
 pub(crate) struct ReflowImports {
     align_settings: Option<aligner::Settings>,
+    bands: Option<BandConstants>,
     divided: Option<Vec<String>>,
     import_line_length: usize,
     merge_members: bool,
@@ -69,6 +68,7 @@ impl ReflowImports {
             // carrying its `max-shift` but no line cap so a to-be-split
             // import reads the column it aligns to once split.
             align_settings: align.enabled.then(|| aligner::Settings::from(align)),
+            bands: band_forecast(config),
             divided: (config.group_imports_enabled() && config.rules.space_statements.enabled)
                 .then(|| config.first_party()),
             import_line_length: config.import_width(),
@@ -84,7 +84,8 @@ impl Rule for ReflowImports {
         let columns = self.align_settings.map_or_else(HashMap::new, |settings| {
             align_imports::aligned_import_columns(source, settings, self.divided.as_deref())
         });
-        let mut visitor = Layout {
+        let mut layout = Layout {
+            bands: self.bands.as_ref(),
             columns,
             groups: Vec::new(),
             import_line_length: self.import_line_length,
@@ -94,8 +95,8 @@ impl Rule for ReflowImports {
             source,
             split_multi_module: self.split_multi_module,
         };
-        visitor.visit_body(&source.ast().body);
-        visitor.groups
+        layout.layout_scope(&source.ast().body, source.module_range(), true);
+        layout.groups
     }
 
     fn id(&self) -> RuleId {
@@ -104,6 +105,7 @@ impl Rule for ReflowImports {
 }
 
 struct Layout<'a> {
+    bands: Option<&'a BandConstants>,
     columns: HashMap<TextSize, usize>,
     groups: Vec<Vec<Edit>>,
     import_line_length: usize,
@@ -115,6 +117,19 @@ struct Layout<'a> {
 }
 
 impl<'a> Layout<'a> {
+    /// Lays out `body` and then every body beneath it, a class or
+    /// function suite leaving module scope so no band forecast reaches
+    /// the imports inside it.
+    fn layout_scope(&mut self, body: &'a [Stmt], outer: TextRange, module_scope: bool) {
+        self.process_body(body, outer, module_scope);
+        for stmt in body {
+            let nested = module_scope && scoped_body(stmt).is_none();
+            for (sub, sub_outer) in sub_bodies(stmt) {
+                self.layout_scope(sub, sub_outer, nested);
+            }
+        }
+    }
+
     /// Folds every member of `group` into its first statement, laying
     /// the gathered roster out under the shared prefix and clearing each
     /// folded member's line. A group whose members already read that way
@@ -203,10 +218,18 @@ impl<'a> Layout<'a> {
     }
 
     /// Folds each repeated module in `body` into one statement and
-    /// splits every comma-joined bare import, one fix group apiece.
-    fn process_body(&mut self, body: &'a [Stmt]) {
+    /// splits every comma-joined bare import, one fix group apiece. At
+    /// module scope a repeated module gathers across the constants
+    /// `band-constants` hoists from between its statements.
+    fn process_body(&mut self, body: &'a [Stmt], outer: TextRange, module_scope: bool) {
         let groups = if self.merge_members {
-            module_groups(self.source, body)
+            let runs = MergeRuns::of(
+                self.bands.filter(|_| module_scope),
+                self.source,
+                body,
+                outer,
+            );
+            module_groups(self.source, body, outer, &runs)
         } else {
             Vec::new()
         };
@@ -258,24 +281,128 @@ impl<'a> Layout<'a> {
     }
 }
 
-impl<'a> StatementVisitor<'a> for Layout<'a> {
-    fn visit_body(&mut self, body: &'a [Stmt]) {
-        self.process_body(body);
-        walk_body(self, body);
+/// The runs a body's merges gather within, beside the member blocks a
+/// comment between two members is read against, built on first use.
+struct MergeRuns {
+    blocks: OnceCell<Vec<TextRange>>,
+    runs: Vec<Vec<usize>>,
+}
+
+impl MergeRuns {
+    /// The import runs of `body` as written, or the bands `bands`
+    /// forecasts once it hoists the constants between two runs, sought
+    /// only where a module repeats across the runs as written.
+    fn of(bands: Option<&BandConstants>, source: &Source, body: &[Stmt], outer: TextRange) -> Self {
+        let runs = import_runs(body);
+        let joined = bands
+            .filter(|_| repeats_across(source, body, &runs))
+            .and_then(|rule| rule.import_bands(source, body, outer));
+        match joined {
+            Some(Bands { blocks, imports }) => Self {
+                blocks: OnceCell::from(blocks),
+                runs: imports.into_iter().map(|band| band.slots).collect(),
+            },
+            None => Self {
+                blocks: OnceCell::new(),
+                runs,
+            },
+        }
     }
+}
+
+/// The same-module merges `reflow-imports` makes and the import bands
+/// `band-constants` heads, forecast by a rule seated ahead of both
+/// whose drop of a comment-led statement then lands on the import the
+/// comment reads over.
+pub(crate) struct Folds {
+    bands: Option<BandConstants>,
+    merges: bool,
+}
+
+impl Folds {
+    pub(crate) fn from_config(config: &Config) -> Self {
+        let rules = &config.rules.reflow_imports;
+        Self {
+            bands: band_forecast(config),
+            merges: rules.enabled && rules.merge_members,
+        }
+    }
+
+    /// The module-body slot whose import the drop of `slot` lands on,
+    /// per [`fold_landing`], `None` when no later rule carries the
+    /// comment onto a sibling that `survives` the drops.
+    pub(crate) fn landing(
+        &self,
+        source: &Source,
+        slot: usize,
+        survives: impl Fn(usize) -> bool,
+    ) -> Option<usize> {
+        let body = &source.ast().body;
+        let bands = self
+            .bands
+            .as_ref()
+            .and_then(|rule| rule.import_bands(source, body, source.module_range()));
+        let (runs, sorted_heads): (Vec<Vec<usize>>, Vec<usize>) = match bands {
+            Some(bands) => bands
+                .imports
+                .into_iter()
+                .map(|band| (band.slots, band.sorted_head))
+                .unzip(),
+            None => (import_runs(body), Vec::new()),
+        };
+        fold_landing(
+            source,
+            body,
+            &runs,
+            &sorted_heads,
+            self.merges,
+            slot,
+            survives,
+        )
+    }
+}
+
+/// `band-constants` as configured, `None` when the rule is off.
+fn band_forecast(config: &Config) -> Option<BandConstants> {
+    config
+        .rules
+        .band_constants
+        .enabled
+        .then(|| BandConstants::from_config(config))
 }
 
 /// True when the members at `slots` fold into one statement without
 /// disturbing their surroundings, being two or more statements of one
-/// notebook cell with no comment anywhere across the full lines the
-/// gather clears.
-fn gathers_cleanly(source: &Source, body: &[Stmt], slots: &[usize]) -> bool {
+/// notebook cell whose span from first to last carries no comment
+/// outside the block of a statement between them, which stays in place
+/// while the gather clears the member lines.
+fn gathers_cleanly(
+    source: &Source,
+    body: &[Stmt],
+    outer: TextRange,
+    slots: &[usize],
+    runs: &MergeRuns,
+) -> bool {
     let [first, .., last] = slots else {
         return false;
     };
     let span =
         source.full_lines_within_cell(TextRange::new(body[*first].start(), body[*last].end()));
-    source.same_cell(span.start(), span.end()) && !source.intersects_comment(span)
+    if !source.same_cell(span.start(), span.end()) {
+        return false;
+    }
+    let comments = source.comment_ranges().comments_in_range(span);
+    if comments.is_empty() {
+        return true;
+    }
+    let blocks = runs
+        .blocks
+        .get_or_init(|| member_blocks(source, body, outer));
+    comments.iter().all(|comment| {
+        (*first + 1..*last)
+            .filter(|slot| !slots.contains(slot))
+            .any(|slot| blocks[slot].contains_range(*comment))
+    })
 }
 
 /// The whitespace between `node`'s module and its `import` keyword, the
@@ -302,64 +429,38 @@ fn import_prefix(source: &Source, node: &StmtImportFrom) -> String {
     )
 }
 
+/// The runs of adjacent import statements in `body`, a lone import a
+/// run of its own.
+fn import_runs(body: &[Stmt]) -> Vec<Vec<usize>> {
+    slot_runs(body, |a, b| is_import(a) && is_import(b))
+        .filter(|run| is_import(&body[run.start]))
+        .map(Iterator::collect)
+        .collect()
+}
+
 /// True when `node` can join a merged roster, being a single-line
-/// `from`-import that opens its own line and binds no star member,
-/// since `*` admits no sibling on its statement.
+/// `from`-import holding its line alone, so the fold clears no code
+/// sharing it, and binding no star member, since `*` admits no sibling
+/// on its statement.
 fn mergeable(source: &Source, node: &StmtImportFrom) -> bool {
     own_line_indent(source, node).is_some()
+        && stands_alone(source, node.range())
         && !node.names.iter().any(|alias| alias.name.as_str() == "*")
 }
 
-/// The same-module merges `reflow-imports` will make, forecast by a
-/// rule seated ahead of it whose drop then lands on the merged line
-/// rather than on a statement of its own.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct Merges {
-    enabled: bool,
-}
-
-impl Merges {
-    pub(crate) fn from_config(config: &Config) -> Self {
-        let rules = &config.rules.reflow_imports;
-        Self {
-            enabled: rules.enabled && rules.merge_members,
-        }
-    }
-
-    /// The slot groups of `body` the rule folds together, empty where it
-    /// merges nothing.
-    pub(crate) fn groups(self, source: &Source, body: &[Stmt]) -> Vec<Vec<usize>> {
-        if !self.enabled {
-            return Vec::new();
-        }
-        module_groups(source, body)
-    }
-
-    /// True when `groups` folds the statement at `slot` into a sibling
-    /// that `survives` the drops the caller makes, so the drop of its
-    /// own names lands on the merged line rather than on a statement
-    /// of its own.
-    pub(crate) fn folds(
-        groups: &[Vec<usize>],
-        slot: usize,
-        survives: impl Fn(usize) -> bool,
-    ) -> bool {
-        groups
-            .iter()
-            .filter(|group| group.contains(&slot))
-            .any(|group| group.iter().any(|&other| other != slot && survives(other)))
-    }
-}
-
 /// Slot groups of two or more mergeable `from`-imports sharing one
-/// module within a run of adjacent import statements, each group
-/// spanning one notebook cell and carrying no comment between its
-/// first and last member.
-fn module_groups(source: &Source, body: &[Stmt]) -> Vec<Vec<usize>> {
+/// module within one of `runs`, each group spanning one notebook cell
+/// and gathering cleanly per [`gathers_cleanly`].
+fn module_groups(
+    source: &Source,
+    body: &[Stmt],
+    outer: TextRange,
+    runs: &MergeRuns,
+) -> Vec<Vec<usize>> {
     let mut groups = Vec::new();
-    for run in runs_where(body, is_import) {
+    for run in &runs.runs {
         let mut by_module: Vec<(ModuleKey, Vec<usize>)> = Vec::new();
-        for slot in run {
+        for &slot in run {
             let Some(node) = body[slot]
                 .as_import_from_stmt()
                 .filter(|n| mergeable(source, n))
@@ -376,15 +477,22 @@ fn module_groups(source: &Source, body: &[Stmt]) -> Vec<Vec<usize>> {
             by_module
                 .into_iter()
                 .map(|(_, slots)| slots)
-                .filter(|slots| gathers_cleanly(source, body, slots)),
+                .filter(|slots| gathers_cleanly(source, body, outer, slots, runs)),
         );
     }
     groups
 }
 
-/// The module `node` imports from.
-fn module_key(node: &StmtImportFrom) -> ModuleKey<'_> {
-    (node.level, node.module.as_deref())
+/// True when a mergeable `from`-import's module recurs in a second run
+/// of `runs`, the one shape a hoist between the runs would gather.
+fn repeats_across(source: &Source, body: &[Stmt], runs: &[Vec<usize>]) -> bool {
+    let mut seen: HashMap<ModuleKey, usize> = HashMap::new();
+    runs.iter().enumerate().any(|(index, run)| {
+        run.iter()
+            .filter_map(|&slot| body[slot].as_import_from_stmt())
+            .filter(|node| mergeable(source, node))
+            .any(|node| *seen.entry(module_key(node)).or_insert(index) != index)
+    })
 }
 
 /// The leading-whitespace prefix of `node`'s line when `node` is a
@@ -440,48 +548,44 @@ mod tests {
         assert_eq!(import_prefix(&source, node), expected);
     }
 
-    #[test]
-    fn multi_line_import_is_left_untouched() {
-        let source = parse("from pkg import (\n    alpha,\n    beta,\n    gamma,\n)\n");
-        let rule = ReflowImports {
+    /// The rule with every facet on and a ten-column import budget.
+    fn tight_rule() -> ReflowImports {
+        ReflowImports {
             align_settings: None,
+            bands: None,
             divided: None,
             import_line_length: 10,
             merge_members: true,
             sort_members: true,
             split_multi_module: true,
-        };
+        }
+    }
 
-        assert!(rule.apply(&source).is_empty());
+    #[test]
+    fn a_merge_leaves_a_statement_sharing_its_line_with_code() {
+        let source = parse(
+            "from pkg import alpha
+from pkg import beta; x = 1
+",
+        );
+        assert!(tight_rule().apply(&source).is_empty());
+    }
+
+    #[test]
+    fn multi_line_import_is_left_untouched() {
+        let source = parse("from pkg import (\n    alpha,\n    beta,\n    gamma,\n)\n");
+        assert!(tight_rule().apply(&source).is_empty());
     }
 
     #[test]
     fn semicolon_joined_bare_import_is_left_untouched() {
         let source = parse("x = 1; import os, sys\n");
-        let rule = ReflowImports {
-            align_settings: None,
-            divided: None,
-            import_line_length: 10,
-            merge_members: true,
-            sort_members: true,
-            split_multi_module: true,
-        };
-
-        assert!(rule.apply(&source).is_empty());
+        assert!(tight_rule().apply(&source).is_empty());
     }
 
     #[test]
     fn semicolon_joined_import_is_left_untouched() {
         let source = parse("x = 1; from pkg import alpha, beta, gamma\n");
-        let rule = ReflowImports {
-            align_settings: None,
-            divided: None,
-            import_line_length: 10,
-            merge_members: true,
-            sort_members: true,
-            split_multi_module: true,
-        };
-
-        assert!(rule.apply(&source).is_empty());
+        assert!(tight_rule().apply(&source).is_empty());
     }
 }

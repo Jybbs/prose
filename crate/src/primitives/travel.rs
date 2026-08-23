@@ -6,12 +6,17 @@
 use std::borrow::Cow;
 
 use ruff_python_ast::{Expr, StringLike, helpers::any_over_expr, token::TokenKind};
+use ruff_python_parser::{Mode, lexer::lex};
 use ruff_python_trivia::leading_indentation;
 use ruff_source_file::{Line, UniversalNewlines};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
-    primitives::{inline::indent_width, layout::item_indent},
+    primitives::{
+        inline::indent_width,
+        layout::item_indent,
+        tokens::{is_closer, is_opener},
+    },
     source::Source,
 };
 
@@ -177,32 +182,24 @@ pub(crate) fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
 /// there travels with the rest. `None` where the first row opens no
 /// bracket, where a row-spanning string opens on it, or where an
 /// interior row itself opens with a closing bracket, whose depth one
-/// move cannot follow.
+/// move cannot follow, a last row opening with the closer of a bracket
+/// an interior row opened reading as interior too.
 fn hanging_travel(block: &str, frozen: &[bool], landing: Landing) -> Option<Travel> {
     let head = block.universal_newlines().next()?;
     if !head.trim_end().ends_with(['(', '[', '{']) || frozen.get(1) == Some(&true) {
         return None;
     }
-    let mut interior: Vec<(usize, bool)> = movable_rows(block, frozen)
-        .map(|line| {
-            (
-                indent_width(&line),
-                line.trim_start().starts_with([')', ']', '}']),
-            )
-        })
-        .collect();
-    let close = interior
+    let rows: Vec<Line> = movable_rows(block, frozen).collect();
+    let opens_with_closer = |line: &Line| line.trim_start().starts_with([')', ']', '}']);
+    let close = rows
         .last()
-        .copied()
-        .filter(|(_, closes)| *closes)
-        .map(|(indent, _)| indent);
-    if close.is_some() {
-        interior.pop();
-    }
-    if interior.iter().any(|(_, closes)| *closes) {
+        .filter(|line| opens_with_closer(line) && closes_the_head(line.trim_start()))
+        .map(|line| indent_width(line));
+    let interior = &rows[..rows.len() - usize::from(close.is_some())];
+    if interior.iter().any(opens_with_closer) {
         return None;
     }
-    let floor = interior.iter().map(|(indent, _)| *indent).min()?;
+    let floor = interior.iter().map(|line| indent_width(line)).min()?;
     let rows = item_indent(landing.indent).cast_signed() - floor.cast_signed();
     Some(Travel {
         rows,
@@ -210,6 +207,30 @@ fn hanging_travel(block: &str, frozen: &[bool], landing: Landing) -> Option<Trav
             .filter(|indent| indent.saturating_add_signed(rows) != landing.indent)
             .map(|_| landing.indent),
     })
+}
+
+/// True where the closer `row` opens with closes the bracket the block's
+/// head left open rather than one an interior row opened, meaning no
+/// closer later on the row is left unmatched by an opener ahead of it.
+fn closes_the_head(row: &str) -> bool {
+    let mut lexer = lex(row, Mode::Expression);
+    let mut depth = 0_usize;
+    // The leading closer is the one under test.
+    lexer.next_token();
+    loop {
+        let kind = lexer.next_token();
+        if kind == TokenKind::EndOfFile {
+            return true;
+        }
+        if is_opener(kind) {
+            depth += 1;
+        } else if is_closer(kind) {
+            let Some(shallower) = depth.checked_sub(1) else {
+                return false;
+            };
+            depth = shallower;
+        }
+    }
 }
 
 /// The least indent among the movable non-blank continuation rows of
@@ -285,6 +306,9 @@ mod tests {
     #[case("[\n  a,\n\n  b,\n  ]", &[], Some((6, Some(4))))]
     #[case("(\n      a,\n  )", &[], Some((2, None)))]
     #[case("(\n  a,\n  b)", &[], Some((6, None)))]
+    #[case("(\n  a,\n  ).b", &[], Some((6, Some(4))))]
+    #[case("(\n    f(\n        a\n    ).b, c)", &[], None)]
+    #[case("(\n  a,\n  ).b(\")\")", &[], Some((6, Some(4))))]
     #[case("{\r\n  a,\r\n  }", &[], Some((6, Some(4))))]
     #[case("(a,\n  b)", &[], None)]
     #[case("plain", &[], None)]

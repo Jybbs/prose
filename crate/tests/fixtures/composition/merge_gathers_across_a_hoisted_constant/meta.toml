@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Merge Gathers Across a Hoisted Constant"
+
+description = '''
+[[band-constants]] will hoist the constant below the imports, so [[reflow-imports]] reads the two `pkg` statements as one band and gathers them onto the first line ahead of the hoist rather than waiting a pass for the constant to move.
+'''

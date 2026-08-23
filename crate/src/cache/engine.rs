@@ -40,6 +40,21 @@ pub struct Cache {
 }
 
 impl Cache {
+    /// An uncapped cache rooted under `store`, one generation deep.
+    #[cfg(test)]
+    pub(crate) fn in_store(store: PathBuf) -> Self {
+        let root = store.join("generation");
+        std::fs::create_dir_all(&root).expect("creates the cache root");
+        Self {
+            inserted: AtomicBool::new(false),
+            max_entries: usize::MAX,
+            max_size_bytes: u64::MAX,
+            own_output: OnceLock::new(),
+            root,
+            store,
+        }
+    }
+
     /// True where `key` names bytes a write-back run of this generation
     /// landed as its own output, read from the ledger on first probe.
     pub fn owns_output(&self, key: &CacheKey) -> bool {

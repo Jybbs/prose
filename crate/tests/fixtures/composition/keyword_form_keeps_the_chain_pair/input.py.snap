@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 59
+expression: snapshot
+input_file: crate/tests/fixtures/composition/keyword_form_keeps_the_chain_pair/input.py
+---
+def process_env_var(env_var: str) -> Variable:
+    return Variable(env_var)
+
+
+def _parse_marker_var(tokenizer):
+    if tokenizer.check("VARIABLE"):
+        return process_env_var(
+            env_var = (
+                tokenizer.read()
+                         .text.replace(".", "_")
+            )
+        )
+    return None

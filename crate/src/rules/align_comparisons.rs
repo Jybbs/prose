@@ -29,8 +29,11 @@ impl AlignComparisons {
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            settings: aligner::Settings::from(&config.rules.align_comparisons)
-                .within(config.code_width(), config.stranded_padding()),
+            settings: aligner::Settings::from(&config.rules.align_comparisons).within(
+                config.code_width(),
+                config.stranded_padding(),
+                config.comment_settling(),
+            ),
         }
     }
 }

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`# prose: keep` on a Dunder List Preserves Source Order"
+
+description = '''
+The trailing `# prose: keep` holds an `__all__` or `__slots__` sequence in its authored order the way it holds a dict, read on the opening bracket's line or the closing bracket's line alike. The unmarked `__all__` below shows what the marker suppressed.
+'''

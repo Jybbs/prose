@@ -37,7 +37,11 @@ impl AlignColons {
         let docstring_settings = type_settings.with_singleton_strip();
         Self {
             docstring_settings,
-            settings: docstring_settings.within(config.code_width(), config.stranded_padding()),
+            settings: docstring_settings.within(
+                config.code_width(),
+                config.stranded_padding(),
+                config.comment_settling(),
+            ),
             type_settings,
         }
     }

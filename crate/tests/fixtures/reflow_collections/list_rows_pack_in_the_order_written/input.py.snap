@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 59
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/list_rows_pack_in_the_order_written/input.py
+---
+x = [
+    1111111, 1111112,
+    111111111111, 111111111111
+]

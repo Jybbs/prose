@@ -24,6 +24,7 @@ pub(crate) mod padding;
 pub(crate) mod params;
 pub(crate) mod quoting;
 pub(crate) mod range;
+pub(crate) mod reseat;
 pub(crate) mod reserve;
 pub(crate) mod scope;
 pub(crate) mod sections;

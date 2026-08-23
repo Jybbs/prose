@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/comment_comma_does_not_hold_the_sort/input.py
+---
+alphabetize-siblings@17..96

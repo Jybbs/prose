@@ -5,7 +5,9 @@
 
 use std::borrow::Cow;
 
-use ruff_python_ast::{ArgOrKeyword, Arguments, Expr, ExprCall, visitor::Visitor as AstVisitor};
+use ruff_python_ast::{
+    ArgOrKeyword, Arguments, Expr, ExprCall, token::TokenKind, visitor::Visitor as AstVisitor,
+};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
@@ -15,7 +17,8 @@ use crate::primitives::{
     edit::apply_inline_edits,
     inline::{end_column, opening_width},
     layout::{Separator, explode_parens, is_fractured, item_indent},
-    tokens::is_opener,
+    padding,
+    tokens::{is_opener, opens_subscript},
     travel::{Landing, Travel, block_shift, shifted_block, spans_a_string_part},
 };
 
@@ -70,9 +73,11 @@ impl<'a> Exploder<'a> {
         arguments: &Arguments,
         indent: usize,
     ) -> String {
-        let last = self
-            .reorders
-            .sorted_last_keyword(keywords.args.iter().map(|arg| (arg.name, arg.value)));
+        let last = self.reorders.sorted_last_keyword(
+            self.source,
+            arguments,
+            keywords.args.iter().map(|arg| (arg.name, arg.value)),
+        );
         self.explode_items(
             arguments,
             indent,
@@ -125,23 +130,25 @@ impl<'a> Exploder<'a> {
         )
     }
 
-    /// The columns trailing this call on its row: the text to the end
+    /// The columns trailing this call on its row: the code to the end
     /// of the physical row, or to the region's end plus the columns the
-    /// enclosing text writes there where the region closes first. A
-    /// tail holding a bracket of its own is charged only through that
+    /// enclosing text writes there where the region closes first, a
+    /// trailing comment closing the measure either way. A tail holding
+    /// a bracket a later rule can break at is charged only through that
     /// bracket, since exploding the construct it opens ends the row
-    /// there.
-    fn row_tail(&self, end: TextSize) -> usize {
+    /// there, whereas a subscript's `[` never breaks and charges whole.
+    pub(super) fn row_tail(&self, end: TextSize) -> usize {
         let row_end = self.source.row_tail(end).end();
         let clipped = self.region.end() <= row_end;
         let tail = TextRange::new(end, row_end.min(self.region.end()));
-        if let Some(offset) = self.first_opener(tail) {
+        if let Some(offset) = self.first_breaking_opener(tail) {
             return self.source.width_between(end, offset + TextSize::from(1));
         }
+        let written = self.settled_width(tail, self.source.tail_width(tail));
         if clipped {
-            self.source.slice(tail).trim_end().width() + self.tail
+            written + self.tail
         } else {
-            self.source.row_tail_width(end)
+            written
         }
     }
 
@@ -149,13 +156,21 @@ impl<'a> Exploder<'a> {
     /// list written across rows, since closing it writes that text, and
     /// the source slice for one already on a single row, whose spacing
     /// the rule leaves as the author wrote it rather than at the
-    /// normalized gap `form` seats after each comma.
+    /// normalized gap `form` seats after each comma, less the padding
+    /// `strip-stranded-padding` drops from it.
     fn written_width(&self, arguments: &Arguments, form: &str) -> usize {
         if self.source.contains_line_break(arguments.range()) {
             form.width()
         } else {
-            self.source.slice(arguments.range()).width()
+            let range = arguments.range();
+            self.settled_width(range, self.source.slice(range).width())
         }
+    }
+
+    /// `width`, the display width `range` was measured at, less the
+    /// padding `strip-stranded-padding` drops inside `range`.
+    pub(super) fn settled_width(&self, range: TextRange, width: usize) -> usize {
+        width.saturating_add_signed(-padding::slack(self.source, self.padding, range))
     }
 
     /// The slot an argument lands in at `indent` with `tail` columns
@@ -170,12 +185,18 @@ impl<'a> Exploder<'a> {
         }
     }
 
-    /// The offset of the first opening bracket inside `range`, the token
-    /// that marks a construct whose own layout has yet to settle.
-    fn first_opener(&self, range: TextRange) -> Option<TextSize> {
+    /// The offset of the first opening bracket inside `range` that
+    /// opens a construct a later rule lays out across rows, which a
+    /// subscript's `[` never does.
+    fn first_breaking_opener(&self, range: TextRange) -> Option<TextSize> {
         self.source
             .tokens_overlapping(range)
-            .find(|token| range.contains(token.start()) && is_opener(token.kind()))
+            .find(|token| {
+                range.contains(token.start())
+                    && is_opener(token.kind())
+                    && (token.kind() != TokenKind::Lsqb
+                        || !opens_subscript(self.source.tokens(), token.start()))
+            })
             .map(Ranged::start)
     }
 
@@ -240,12 +261,20 @@ impl<'a> Exploder<'a> {
         } else {
             tail.width() + slot.tail
         };
+        // A value opening its own row below the pair's opener drops an
+        // exploded closer to that row's indent rather than the argument's.
+        let opens_own_row = head.contains('\n');
+        let opening_indent = if opens_own_row {
+            end_column(head, slot.indent)
+        } else {
+            slot.indent
+        };
         let Some(travel) = self.argument_shift(value, rendered, head, start, slot.indent) else {
             let column = settled.saturating_add_signed(self.line_shift);
             out.push_str(head);
             out.push_str(&self.reshape_value(
                 value,
-                Some(slot.indent),
+                Some(opening_indent),
                 column,
                 self.line_shift,
                 appended,
@@ -256,15 +285,20 @@ impl<'a> Exploder<'a> {
         let shift = self.line_shift + travel.rows;
         // The value opens on the argument's own row while the head holds
         // no break, and on a row the move carries otherwise.
-        let opening_shift = if head.contains('\n') {
+        let opening_shift = if opens_own_row {
             shift
         } else {
             self.line_shift
         };
         let column = settled.saturating_add_signed(opening_shift);
         // The nested walk writes its rows where the source wrote them,
-        // so the move below carries its exploded closer to `indent`.
-        let landing = slot.indent.saturating_add_signed(-travel.rows);
+        // so the move below carries its exploded closer to `indent`, a
+        // row the move also carries rendering at its source column.
+        let landing = if opens_own_row {
+            opening_indent
+        } else {
+            opening_indent.saturating_add_signed(-travel.rows)
+        };
         let reshaped = self.reshape_value(value, Some(landing), column, shift, appended);
         out.push_str(&shifted_block(&format!("{head}{reshaped}{tail}"), travel));
     }

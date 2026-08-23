@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Tab-Indented Continuation Holds"
+
+description = '''
+A continuation row indented with a tab has no column a character deletion can move by, so the shed leaves its indentation as written.
+'''

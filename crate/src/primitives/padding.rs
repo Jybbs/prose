@@ -1,9 +1,10 @@
 //! The padding `strip-stranded-padding` drops, read ahead of that rule
 //! by a rule measuring a row at the width the pipeline settles it to.
-//! [`Stranding`] names the padding rule so a row its skip directive
-//! holds stays out of the prediction, [`Stranding::edits`] lists every
-//! deletion and collapse the rule emits over a source, and [`slack`]
-//! sums the columns those edits take off one span.
+//! [`Stranding`] names the padding rule and whether it runs, so a row
+//! its skip directive holds stays out of the prediction and a disabled
+//! rule predicts nothing, [`Stranding::edits`] lists every deletion and
+//! collapse the rule emits over a source, and [`slack`] sums the
+//! columns those edits take off one span.
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
@@ -20,23 +21,29 @@ use crate::{
     source::Source,
 };
 
-/// The padding rule a prediction reads, carried by rule id.
+/// The padding rule a prediction reads, carried by rule id beside
+/// whether the rule runs at all.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Stranding {
+    enabled: bool,
     rule: RuleId,
 }
 
 impl Stranding {
-    pub(crate) fn new(rule: RuleId) -> Self {
-        Self { rule }
+    pub(crate) fn new(rule: RuleId, enabled: bool) -> Self {
+        Self { enabled, rule }
     }
 
     /// Every edit the padding rule emits over `source`, ascending by
-    /// start. A colon group no shared column justifies has its
-    /// pre-colon gap cleared and its post-colon gap collapsed to one
-    /// space, and the whitespace run directly inside a bracket
-    /// delimiter is deleted.
+    /// start, none where the rule is off. A colon group no shared
+    /// column justifies has its pre-colon gap cleared and its post-colon
+    /// gap collapsed to one space, and the whitespace run directly
+    /// inside a bracket delimiter is deleted, a row the rule's skip
+    /// directive holds keeping every gap it carries.
     pub(crate) fn edits(self, source: &Source) -> Vec<Edit> {
+        if !self.enabled {
+            return Vec::new();
+        }
         let mut emitter = Emitter {
             edits: Vec::new(),
             rule: self.rule,
@@ -44,7 +51,9 @@ impl Stranding {
         };
         emitter.walk(source);
         emitter.edits.extend(
-            delimiter_padding_gaps(source, source.module_range()).map(Edit::range_deletion),
+            delimiter_padding_gaps(source, source.module_range())
+                .filter(|gap| !aligner::is_held(source, self.rule, gap.start()))
+                .map(Edit::range_deletion),
         );
         emitter.edits.sort_by_key(Ranged::start);
         emitter.edits
@@ -223,8 +232,37 @@ mod tests {
         #[case] expected: isize,
     ) {
         let source = parse(src);
-        let edits = Stranding::new(RuleId::from("strip-stranded-padding")).edits(&source);
+        let edits = Stranding::new(RuleId::from("strip-stranded-padding"), true).edits(&source);
         assert_eq!(slack(&source, &edits, range(start, end)), expected);
+    }
+
+    #[rstest]
+    #[case::held_row(
+        "x = call( 1 )  # prose: skip[strip-stranded-padding]\ny = [ 2 ]\n",
+        true,
+        &["[ 2", "2 ]"]
+    )]
+    #[case::rule_off("x = call( 1 )\n", false, &[])]
+    fn edits_skip_a_held_row_and_a_rule_that_is_off(
+        #[case] src: &str,
+        #[case] enabled: bool,
+        #[case] padded: &[&str],
+    ) {
+        let source = parse(src);
+        let stranding = Stranding::new(RuleId::from("strip-stranded-padding"), enabled);
+        let gaps: Vec<u32> = stranding
+            .edits(&source)
+            .iter()
+            .map(|edit| edit.start().to_u32())
+            .collect();
+        let expected: Vec<u32> = padded
+            .iter()
+            .map(|pair| {
+                let at = src.find(pair).expect("the pair is in the source");
+                u32::try_from(at + pair.find(' ').expect("a padded pair")).expect("fits")
+            })
+            .collect();
+        assert_eq!(gaps, expected);
     }
 
     #[test]

@@ -38,7 +38,7 @@ impl Joins {
 /// `cap` is the argument count past which a list keeps its break, and
 /// `closes` is clear where `reflow_calls` is off and no fracture shuts
 /// at all.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Settings<'a> {
     cap: Option<usize>,
     closes: bool,
@@ -55,6 +55,12 @@ impl Settings<'_> {
             closes: self.closes,
             targets: Some(targets),
         }
+    }
+
+    /// True where `reflow-calls` runs at all, so a list its length
+    /// trigger reaches explodes once the rule takes its turn.
+    pub(crate) fn closes(self) -> bool {
+        self.closes
     }
 
     /// True where `reflow-calls`'s count trigger explodes `call`, its

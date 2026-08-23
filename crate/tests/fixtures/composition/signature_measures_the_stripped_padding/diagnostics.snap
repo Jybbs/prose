@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/signature_measures_the_stripped_padding/input.py
+---
+strip-stranded-padding@41..42

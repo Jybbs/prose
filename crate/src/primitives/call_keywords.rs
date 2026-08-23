@@ -29,10 +29,13 @@ pub(crate) struct KeywordArg<'src> {
     /// `all_unique` collision guard in `keyword_args`.
     pub(crate) name: &'src str,
     /// The `name=value` text, borrowed for a keyword already in that
-    /// form and owned for a positional argument named from its parameter.
+    /// form and owned for a positional argument named from its parameter,
+    /// a row-spanning positional keeping the grouping pair that holds
+    /// its rows together.
     pub(crate) rendered: Cow<'src, str>,
-    /// The offset the argument opens at in the source, the value's own
-    /// start for a positional argument the rendering names.
+    /// The offset the argument opens at in the source, the opening of
+    /// that pair or the value's own start for a positional argument the
+    /// rendering names.
     pub(crate) start: TextSize,
     /// The argument's value expression, the recursion point for a
     /// consumer that reshapes a nested call.
@@ -67,15 +70,16 @@ pub(crate) fn keyword_args<'src>(
         .zip(named_params)
         .map(|(arg, param)| {
             let name = param.name().as_str();
-            let value = source.slice(arg);
+            let range = source.spanning_paren_range(arg.into(), (&call.arguments).into());
+            let value = source.slice(range);
             KeywordArg {
                 name,
-                rendered: Cow::Owned(if requires_grouping(arg) {
+                rendered: Cow::Owned(if requires_grouping(arg) && range == arg.range() {
                     format!("{name}=({value})")
                 } else {
                     format!("{name}={value}")
                 }),
-                start: arg.start(),
+                start: range.start(),
                 value: arg,
             }
         })
@@ -167,6 +171,9 @@ mod tests {
     #[case("(a for a in items)", "x=(a for a in items)")]
     #[case("y := 1", "x=(y := 1)")]
     #[case("(y := 1)", "x=(y := 1)")]
+    #[case("(a)", "x=a")]
+    #[case("(\n    a\n    .b()\n)", "x=(\n    a\n    .b()\n)")]
+    #[case("(\n    y := 1\n)", "x=(y := 1)")]
     fn a_positional_renders_in_a_form_the_keyword_slot_accepts(
         #[case] argument: &str,
         #[case] expected: &str,

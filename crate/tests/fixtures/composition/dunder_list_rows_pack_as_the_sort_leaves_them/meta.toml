@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Dunder List Rows Pack as the Sort Leaves Them"
+
+description = '''
+`reflow-collections` packs the `__all__` list's rows at the widths of the entries `alphabetize-siblings` will leave in each slot, so the short strings the sort moves to the front share a row and the wide ones pair off behind them, and the sort lands on that distribution without widening a row.
+'''

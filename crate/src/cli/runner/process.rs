@@ -541,7 +541,7 @@ mod tests {
     use super::super::{report::status_from_outcomes, resolve::ConfigResolver};
     use super::*;
     use crate::{
-        cache::RewriteKind,
+        cache::{Cache, RewriteKind},
         config::Config,
         pipeline::Pipeline,
         rule::RuleId,
@@ -657,6 +657,49 @@ mod tests {
                 unstable: Some(_),
                 ..
             }
+        );
+    }
+
+    #[test]
+    fn a_marked_output_the_next_run_rewrites_proves_the_defect() {
+        let tmp = TempDir::new().expect("tempdir");
+        let path = tmp.path().join("a.py");
+        fs_err::write(&path, "x = 1\n").expect("writes the seed");
+        // Each run opens the cache afresh, as the CLI does, so the second
+        // reads the ledger the first appended to.
+        let run = || {
+            let resolver =
+                ConfigResolver::over(Resolved::over(Pipeline::from_rules(vec![Box::new(
+                    never_settles("widener"),
+                )])));
+            let setup = RunSetup {
+                cache: Some(Cache::in_store(tmp.path().join("cache"))),
+                cwd: resolver.seed(&Config::default()),
+                resolver,
+                verbose: false,
+            };
+            process_path(&path, PySourceType::Python, &setup, Pass::Rewrite)
+        };
+
+        let first = run();
+        assert_matches!(
+            &first,
+            FileOutcome::Done {
+                rewrite: Rewrite::Changed(kind),
+                unstable: None,
+                ..
+            } if kind.written() == "yy = 1\n",
+            "the ledger run marks its output rather than walking it",
+        );
+
+        fs_err::write(&path, "yy = 1\n").expect("lands the rewrite");
+        let second = run();
+        assert_matches!(
+            &second,
+            FileOutcome::Done {
+                unstable: Some(report),
+                ..
+            } if report.rules == [RuleId::from("widener")] && report.first == "yyy = 1\n",
         );
     }
 

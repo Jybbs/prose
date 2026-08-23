@@ -24,7 +24,9 @@
 use std::{borrow::Cow, ops::Range};
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{AnyNodeRef, ArgOrKeyword, Expr, Stmt, helpers::is_compound_statement};
+use ruff_python_ast::{
+    AnyNodeRef, ArgOrKeyword, Arguments, Expr, Stmt, helpers::is_compound_statement,
+};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -84,19 +86,37 @@ impl Reorders {
     }
 
     /// The range of the entry of `node` the sort leaves last, `None`
-    /// where no entry of `node` sorts: the rule off, a node of another
-    /// kind, a list or tuple bound to nothing the rule sorts under
-    /// `parent`, a dict held by `# prose: keep` or the config, or fewer
-    /// than two entries. A pinned last
-    /// entry stays last, and otherwise the greatest key in the run
-    /// closing there lands last.
+    /// where no entry of `node` sorts per [`Self::sorted_slots`]. A
+    /// pinned last entry stays last, and otherwise the greatest key in
+    /// the run closing there lands last.
     pub(crate) fn sorted_last(
         self,
         source: &Source,
         node: AnyNodeRef,
         parent: AnyNodeRef,
     ) -> Option<TextRange> {
-        if !self.enabled {
+        let sorted = self.sorted(source, node, parent)?;
+        Some(sorted.ranges[*sorted.order.last()?])
+    }
+
+    /// The order the sort leaves `node`'s entries in, each slot holding
+    /// the source index of the entry landing there, `None` where no
+    /// entry of `node` sorts: the rule off or skip-held over `node`, a
+    /// node of another kind, a list or tuple bound to nothing the rule
+    /// sorts under `parent`, a dict or dunder list held by
+    /// `# prose: keep` or the config, or fewer than two entries.
+    pub(crate) fn sorted_slots(
+        self,
+        source: &Source,
+        node: AnyNodeRef,
+        parent: AnyNodeRef,
+    ) -> Option<Vec<usize>> {
+        Some(self.sorted(source, node, parent)?.order)
+    }
+
+    /// The sort over `node`'s entries, per [`Self::sorted_slots`].
+    fn sorted(self, source: &Source, node: AnyNodeRef, parent: AnyNodeRef) -> Option<Sorted> {
+        if !self.sorts(source, node) {
             return None;
         }
         match node {
@@ -106,7 +126,7 @@ impl Reorders {
                 // whereas a positional argument pins in place inside one.
                 let inside =
                     |arg: &ArgOrKeyword| arg.as_keyword().is_none_or(|kw| kw.arg.is_some());
-                last_entry(&items, runs_where(&items, inside), |arg| {
+                sorted_entries(&items, runs_where(&items, inside), |arg| {
                     arg.as_keyword()?
                         .arg
                         .as_deref()
@@ -115,24 +135,36 @@ impl Reorders {
             }
             AnyNodeRef::ExprDict(dict) if self.sort_dict_keys && !has_keep_marker(source, dict) => {
                 let keyed = runs_where(&dict.items, |item| item.key.is_some());
-                last_entry(&dict.items, keyed, |item| dict_sort_key(source, item))
+                sorted_entries(&dict.items, keyed, |item| dict_sort_key(source, item))
             }
-            AnyNodeRef::ExprSet(set) => last_entry(&set.elts, whole(&set.elts), |e| {
+            AnyNodeRef::ExprSet(set) => sorted_entries(&set.elts, whole(&set.elts), |e| {
                 (!e.is_starred_expr()).then(|| joined_key(source, e))
             }),
-            AnyNodeRef::ExprList(_) | AnyNodeRef::ExprTuple(_) if self.sort_dunder_lists => {
+            AnyNodeRef::ExprList(_) | AnyNodeRef::ExprTuple(_)
+                if self.sort_dunder_lists && !has_keep_marker(source, node) =>
+            {
                 let AnyNodeRef::StmtAssign(assign) = parent else {
                     return None;
                 };
                 let elts = sequence_elts(&assign.value)
                     .filter(|_| matches!(single_name_target(assign), Some("__all__" | "__slots__")))
                     .filter(|_| assign.value.range() == node.range())?;
-                last_entry(elts, whole(elts), |e| {
+                sorted_entries(elts, whole(elts), |e| {
                     Some(e.as_string_literal_expr()?.value.to_str())
                 })
             }
             _ => None,
         }
+    }
+
+    /// True when the rule reaches `node` at all, on and not held by a
+    /// skip directive over it, the same hold the pipeline applies to the
+    /// rule's own fix group.
+    fn sorts(self, source: &Source, node: impl Ranged) -> bool {
+        self.enabled
+            && !source
+                .suppression_map()
+                .suppresses(node, AlphabetizeSiblings::SLUG)
     }
 
     /// True when the sort leaves `node` as laid out, the gates the rule
@@ -168,19 +200,28 @@ impl Reorders {
     /// The index of the row the sort leaves last among keyword `rows`,
     /// each a name and its value, a row binding an effectful value
     /// pinned in its slot and the rest sorted by name. `None` where the
-    /// rule is off.
+    /// rule is off or skip-held over `arguments`.
     pub(crate) fn sorted_last_keyword<'a>(
         self,
+        source: &Source,
+        arguments: &Arguments,
         rows: impl Iterator<Item = (&'a str, &'a Expr)>,
     ) -> Option<usize> {
-        if !self.enabled {
+        if !self.sorts(source, arguments) {
             return None;
         }
         let keys: Vec<Option<&str>> = rows
             .map(|(name, value)| (!value_is_effectful(value)).then_some(name))
             .collect();
-        last_slot(&keys, whole(&keys))
+        sorted_order(&keys, whole(&keys))?.pop()
     }
+}
+
+/// The sort over one node's entries: the source index landing in each
+/// slot, and every entry's range in source order.
+struct Sorted {
+    order: Vec<usize>,
+    ranges: Vec<TextRange>,
 }
 
 /// True when a leaf group over `items` holds its order as laid out: one
@@ -196,11 +237,17 @@ fn held_leaves<T: Ranged>(source: &Source, items: &[T]) -> bool {
 }
 
 /// `ranged`'s source text read the way a later join writes it onto one
-/// row, every whitespace run one space, none directly inside a bracket,
-/// and no comma ahead of a closer, so a fractured element sorts where
-/// its joined form will. A single-line slice passes through borrowed.
+/// row, per [`joined_text`], so a fractured element sorts where its
+/// joined form will.
 pub(super) fn joined_key<'a>(source: &'a Source, ranged: impl Ranged) -> Cow<'a, str> {
-    let slice = source.slice(ranged.range());
+    joined_text(source.slice(ranged.range()))
+}
+
+/// `slice` read the way a later join writes it onto one row, every
+/// whitespace run one space, none directly inside a bracket, and no
+/// comma ahead of a closer. A single-line slice passes through
+/// borrowed.
+pub(super) fn joined_text(slice: &str) -> Cow<'_, str> {
     if !slice.contains('\n') {
         return Cow::Borrowed(slice);
     }
@@ -218,37 +265,33 @@ pub(super) fn joined_key<'a>(source: &'a Source, ranged: impl Ranged) -> Cow<'a,
     Cow::Owned(out)
 }
 
-/// The range of the item in `items` the sort leaves last under `key`
-/// over `runs`, `None` where fewer than two are present.
-fn last_entry<'a, T: Ranged, K: Ord>(
+/// The sort of `items` under `key` over `runs`, `None` where fewer than
+/// two are present.
+fn sorted_entries<'a, T: Ranged, K: Ord>(
     items: &'a [T],
     runs: impl IntoIterator<Item = Range<usize>>,
     key: impl FnMut(&'a T) -> Option<K>,
-) -> Option<TextRange> {
-    if items.len() < 2 {
-        return None;
-    }
+) -> Option<Sorted> {
     let keys: Vec<Option<K>> = items.iter().map(key).collect();
-    last_slot(&keys, runs).map(|slot| items[slot].range())
+    Some(Sorted {
+        order: sorted_order(&keys, runs)?,
+        ranges: items.iter().map(Ranged::range).collect(),
+    })
 }
 
-/// The slot the sort leaves last: the last slot itself where it sits
-/// outside every run or holds a pinned item, and otherwise the greatest
-/// key in the run closing there, the later of equal keys.
-fn last_slot<K: Ord>(
+/// The slot order the sort leaves `keys` in, each run sorted on its own
+/// with a keyless slot pinned in place and equal keys keeping their
+/// order, `None` for fewer than two slots.
+fn sorted_order<K: Ord>(
     keys: &[Option<K>],
     runs: impl IntoIterator<Item = Range<usize>>,
-) -> Option<usize> {
-    let last = keys.len().checked_sub(1)?;
-    let Some(run) = runs.into_iter().find(|run| run.contains(&last)) else {
-        return Some(last);
-    };
-    if keys[last].is_none() {
-        return Some(last);
+) -> Option<Vec<usize>> {
+    if keys.len() < 2 {
+        return None;
     }
-    run.filter_map(|slot| keys[slot].as_ref().map(|key| (slot, key)))
-        .max_by(|a, b| a.1.cmp(b.1))
-        .map(|(slot, _)| slot)
+    let mut order: Vec<usize> = (0..keys.len()).collect();
+    permute_runs(&mut order, keys, runs, Option::as_ref);
+    Some(order)
 }
 
 /// One run covering every slot of `items`.
