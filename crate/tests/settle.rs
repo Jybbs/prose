@@ -46,7 +46,6 @@ impl Findings {
 /// Every pipeline the sweep runs, built once and shared across the
 /// corpus rather than rebuilt per file.
 struct Probes {
-    all: Pipeline,
     pairs: Vec<([RuleId; 2], Pipeline)>,
     solo: BTreeMap<RuleId, Pipeline>,
     /// The `pairs` slots each rule appears in, on either side.
@@ -66,7 +65,6 @@ impl Probes {
             touching.entry(*later).or_default().push(slot);
         }
         Self {
-            all: subset(config, Pipeline::known_ids()),
             pairs,
             solo: Pipeline::known_ids()
                 .iter()
@@ -99,13 +97,19 @@ fn in_order(
 }
 
 /// Sweeps one corpus file across every subset its active rules reach.
+/// A rule counts active when its own solo pipeline would edit the
+/// file, the same instance the solo and pair probes run.
 fn probe(probes: &Probes, path: &Path) -> Findings {
     let mut findings = Findings::default();
     let Ok(source) = Source::from_path(path) else {
         return findings;
     };
     let text = source.text();
-    let active: BTreeSet<RuleId> = probes.all.unsettled(&source).into_iter().collect();
+    let active: BTreeSet<RuleId> = probes
+        .solo
+        .iter()
+        .filter_map(|(&rule, solo)| (!solo.unsettled(&source).is_empty()).then_some(rule))
+        .collect();
     if active.is_empty() {
         return findings;
     }

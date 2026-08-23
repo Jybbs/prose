@@ -19,6 +19,7 @@ use std::{
     path::Path,
 };
 
+use itertools::Itertools;
 use prose::{
     config::Config, diagnostics::Severity, pipeline::Pipeline, rule::render_slugs, source::Source,
 };
@@ -81,14 +82,15 @@ fn probe(pipeline: &Pipeline, width: usize, path: &Path) -> Findings {
         return findings;
     };
     let ran = panic::catch_unwind(AssertUnwindSafe(|| {
-        let formatted = pipeline.run(source).ok()?;
-        let editing = pipeline.unsettled(&formatted.0);
+        let (formatted, _) = pipeline.run(source).ok()?;
+        let editing = pipeline.unsettled(&formatted);
         let unlanded: Vec<_> = pipeline
-            .diagnose(&formatted.0)
+            .diagnose(&formatted)
             .into_iter()
             .filter(|d| d.severity == Severity::Format && d.fix.is_some())
             .map(|d| d.rule)
             .filter(|rule| !editing.contains(rule))
+            .unique()
             .collect();
         Some((editing, unlanded))
     }));
