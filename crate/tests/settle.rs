@@ -7,7 +7,10 @@
 //! carry the guarantee between them. `PROSE_SETTLE_CORPUS` points the
 //! sweep at a directory other than the fixture tree.
 
-use std::{collections::BTreeMap, collections::BTreeSet, path::Path};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+};
 
 use itertools::Itertools;
 use prose::{
