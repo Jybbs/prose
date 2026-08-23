@@ -10,7 +10,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use ignore::Walk;
+use ignore::WalkBuilder;
 use itertools::Itertools;
 use prose::{config::Config, pipeline::Pipeline, rule::RuleId};
 use serde::Deserialize;
@@ -173,13 +173,17 @@ impl Tally {
 
 /// The `.py` files under the corpus root, sorted so a failure names the
 /// same file across runs. `PROSE_SETTLE_CORPUS` points a sweep at a
-/// directory other than the fixture tree.
+/// directory other than the fixture tree. The walk carries no standard
+/// filter, so a hidden directory and an ignored one both enter the
+/// sweep rather than leaving it short without saying so.
 pub(crate) fn corpus() -> Vec<PathBuf> {
     let root = env::var("PROSE_SETTLE_CORPUS").map_or_else(
         |_| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"),
         PathBuf::from,
     );
-    Walk::new(root)
+    WalkBuilder::new(root)
+        .standard_filters(false)
+        .build()
         .flatten()
         .map(ignore::DirEntry::into_path)
         .filter(|path| path.extension().is_some_and(|ext| ext == "py"))
