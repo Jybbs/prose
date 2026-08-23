@@ -427,46 +427,57 @@ fn body_layout<'a>(
         let in_class = scope == BodyScope::Class;
         if scope != BodyScope::Function {
             let holds = |stmt: &Stmt| !in_class && is_decorated(stmt);
-            for section in sections.ranges() {
-                if sort_definitions {
-                    permute_defs(
-                        &mut order,
-                        body,
-                        section.clone(),
-                        defer_annotations,
-                        holds,
-                        |s| {
-                            s.as_class_def_stmt().map(|c| {
-                                let name = c.name.as_str();
-                                (name, name)
-                            })
-                        },
-                    );
+            // A permutation reverted for a reference that a later
+            // permutation relocates becomes legal once that one lands, so
+            // the section's permutations run to a fixed point rather than
+            // leaving the rest of the sort to a second pass.
+            for _ in 0..body.len().max(1) {
+                let settled = order.clone();
+                for section in sections.ranges() {
+                    if sort_definitions {
+                        permute_defs(
+                            &mut order,
+                            body,
+                            section.clone(),
+                            defer_annotations,
+                            holds,
+                            |s| {
+                                s.as_class_def_stmt().map(|c| {
+                                    let name = c.name.as_str();
+                                    (name, name)
+                                })
+                            },
+                        );
+                    }
+                    if in_class {
+                        permute_class_assigns(
+                            &mut order,
+                            body,
+                            section.clone(),
+                            defer_annotations,
+                            keyword_fields_from,
+                        );
+                    }
+                    if sort_definitions && !(in_class && class_pins_methods(&body[section.clone()]))
+                    {
+                        permute_defs(
+                            &mut order,
+                            body,
+                            section.clone(),
+                            defer_annotations,
+                            holds,
+                            |s| {
+                                s.as_function_def_stmt().map(|f| {
+                                    let name = f.name.as_str();
+                                    let group = if group_methods { method_group(f) } else { 0 };
+                                    (name, (group, name))
+                                })
+                            },
+                        );
+                    }
                 }
-                if in_class {
-                    permute_class_assigns(
-                        &mut order,
-                        body,
-                        section.clone(),
-                        defer_annotations,
-                        keyword_fields_from,
-                    );
-                }
-                if sort_definitions && !(in_class && class_pins_methods(&body[section.clone()])) {
-                    permute_defs(
-                        &mut order,
-                        body,
-                        section.clone(),
-                        defer_annotations,
-                        holds,
-                        |s| {
-                            s.as_function_def_stmt().map(|f| {
-                                let name = f.name.as_str();
-                                let group = if group_methods { method_group(f) } else { 0 };
-                                (name, (group, name))
-                            })
-                        },
-                    );
+                if order == settled {
+                    break;
                 }
             }
         }
