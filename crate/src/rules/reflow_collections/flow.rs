@@ -12,8 +12,9 @@ use std::ops::Range;
 /// within `max_atomics`. The fit test sums the widest items for a
 /// row's size rather than the items in source order, so any later
 /// reordering of the elements lands within budget on the same
-/// distribution. Falls back to one item per line when no line count
-/// fits, the floor a single over-wide item forces.
+/// distribution, and it charges every row the comma closing it wherever
+/// the split leaves a row to follow. Falls back to one item per line
+/// when no line count fits, the floor a single over-wide item forces.
 pub(super) fn flow_lines(
     widths: &[usize],
     available: usize,
@@ -36,7 +37,8 @@ pub(super) fn flow_lines(
         .collect();
     let fits = |num_lines: usize| {
         let row = n.div_ceil(num_lines);
-        row <= max_atomics.max(1) && widest[row] + 2 * row.saturating_sub(1) <= available
+        let separators = 2 * row.saturating_sub(1) + usize::from(n > row);
+        row <= max_atomics.max(1) && widest[row] + separators <= available
     };
     let num_lines = (1..=n).find(|&num_lines| fits(num_lines)).unwrap_or(n);
     even_split(n, num_lines)
@@ -69,6 +71,13 @@ mod tests {
     #[test]
     fn even_split_divides_evenly_without_remainder() {
         assert_eq!(even_split(6, 3), vec![0..2, 2..4, 4..6]);
+    }
+
+    #[test]
+    fn flow_lines_charges_the_separator_closing_a_row() {
+        // Two rows of two would leave the first exactly on the budget
+        // before its comma lands, so the packer escalates to three rows.
+        assert_eq!(flow_lines(&[10, 10, 10], 22, 8), vec![0..1, 1..2, 2..3]);
     }
 
     #[test]

@@ -28,30 +28,49 @@ use crate::{
 /// the shift compose with a caller's own placement rather than
 /// replacing it.
 #[derive(Clone, Debug)]
-pub(crate) struct Columns(Vec<(TextRange, isize)>);
+pub(crate) struct Columns {
+    /// The gap an aligned row holds ahead of its operator, `None` where
+    /// the alignment rule is off.
+    buffer: Option<usize>,
+    shifts: Vec<(TextRange, isize)>,
+}
 
 impl Columns {
+    /// The columns the alignment moves `offset` by, zero where no
+    /// reservation covers it. A reservation never spans a row, so the
+    /// nearest one starting at or before `offset` is the only candidate.
+    fn shift(&self, offset: TextSize) -> isize {
+        let slot = self
+            .shifts
+            .partition_point(|(range, _)| range.start() <= offset);
+        slot.checked_sub(1)
+            .map(|i| self.shifts[i])
+            .filter(|(range, _)| range.contains(offset))
+            .map_or(0, |(_, shift)| shift)
+    }
+
     /// The column `offset` lands at, `fallback` moved by the shift the
     /// alignment applies to the row `offset` sits on.
     pub(crate) fn column(&self, offset: TextSize, fallback: impl FnOnce() -> usize) -> usize {
         fallback().saturating_add_signed(self.shift(offset))
     }
 
-    /// The columns the alignment moves `offset` by, zero where no
-    /// reservation covers it. A reservation never spans a row, so the
-    /// nearest one starting at or before `offset` is the only candidate.
-    fn shift(&self, offset: TextSize) -> isize {
-        let slot = self.0.partition_point(|(range, _)| range.start() <= offset);
-        slot.checked_sub(1)
-            .map(|i| self.0[i])
-            .filter(|(range, _)| range.contains(offset))
-            .map_or(0, |(_, shift)| shift)
-    }
-
     /// The column `offset` lands at, falling back to the column its own
     /// source line puts it at.
     pub(crate) fn column_in(&self, source: &Source, offset: TextSize) -> usize {
         self.column(offset, || source.column_of(offset))
+    }
+
+    /// The column the value of a keyword `name_width` wide lands at
+    /// once the alignment buffers it, the keyword sitting alone on its
+    /// row at `indent`. The value follows the name by the buffer, the
+    /// `=` itself, and the one-space value gap, which is the floor a
+    /// lone row settles at and the column a run resolving within the
+    /// line cap leaves it at. `None` where the alignment rule is off,
+    /// leaving the value where its row writes it.
+    pub(crate) fn keyword_value_column(&self, indent: usize, name_width: usize) -> Option<usize> {
+        self.buffer
+            .map(|buffer| indent + name_width + buffer + aligner::VALUE_OFFSET)
     }
 }
 
@@ -76,7 +95,10 @@ impl Reservations {
     /// the alignment does not move.
     pub(crate) fn columns(self, source: &Source) -> Columns {
         let Some(settings) = self.settings else {
-            return Columns(Vec::new());
+            return Columns {
+                buffer: None,
+                shifts: Vec::new(),
+            };
         };
         let mut visitor = ReserveVisitor {
             columns: Vec::new(),
@@ -88,7 +110,10 @@ impl Reservations {
         visitor
             .columns
             .sort_unstable_by_key(|(range, _)| range.start());
-        Columns(visitor.columns)
+        Columns {
+            buffer: Some(settings.buffer()),
+            shifts: visitor.columns,
+        }
     }
 }
 
@@ -102,17 +127,16 @@ struct ReserveVisitor<'a> {
 impl ReserveVisitor<'_> {
     /// Records the columns each member's aligned value shifts by, over
     /// the span from that value's start to the end of its physical row.
-    /// The value follows the operator's column by the operator's final
-    /// character and the one-space value gap. A member whose value opens
-    /// on a later line records nothing.
+    /// The value follows the operator's column by [`aligner::VALUE_OFFSET`].
+    /// A member whose value opens on a later line records nothing.
     fn record(&mut self, groups: Vec<Vec<aligner::Member>>) {
         for group in groups {
             let columns = aligner::operator_columns(self.source, &group, self.settings);
             self.columns
                 .extend(group.iter().zip(columns).filter_map(|(member, column)| {
                     let start = member.rewritten_value_gap(self.source)?.end();
-                    let shift =
-                        (column + 2).cast_signed() - self.source.column_of(start).cast_signed();
+                    let shift = (column + aligner::VALUE_OFFSET).cast_signed()
+                        - self.source.column_of(start).cast_signed();
                     Some((self.source.row_tail(start), shift))
                 }));
         }
@@ -148,5 +172,40 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         walk::walk_stmt(self, stmt);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+    use crate::{config::AlignmentConfig, testing::parse};
+
+    /// The reservation table an `align-equals` run under `settings`
+    /// reads back, built over a source carrying one assignment.
+    fn columns_under(settings: Option<aligner::Settings>) -> Columns {
+        Reservations::new(RuleId::from("align-equals"), settings).columns(&parse("a = 1\n"))
+    }
+
+    #[test]
+    fn keyword_value_column_answers_none_where_the_alignment_is_off() {
+        assert_eq!(columns_under(None).keyword_value_column(4, 5), None);
+    }
+
+    #[rstest]
+    #[case::at_the_margin(0, 3, 6)]
+    #[case::one_indent_step(4, 5, 12)]
+    #[case::wide_name(8, 12, 23)]
+    fn keyword_value_column_seats_the_value_past_the_buffer_and_the_operator(
+        #[case] indent: usize,
+        #[case] name: usize,
+        #[case] expected: usize,
+    ) {
+        let settings = aligner::Settings::from(&AlignmentConfig::default());
+        assert_eq!(
+            columns_under(Some(settings)).keyword_value_column(indent, name),
+            Some(expected),
+        );
     }
 }

@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Dict Entry Is Charged Its Separator Whatever Its Position"
+
+description = '''
+[[alphabetize-siblings]] settles which entry ends the dict, so [[reflow-collections]] charges every entry the trailing separator rather than reading its position in source order. The layout it picks then holds under either ordering.
+'''

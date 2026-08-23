@@ -22,13 +22,14 @@ use super::{
 use crate::{
     primitives::{
         INDENT_STEP,
+        call_keywords::CallTargets,
         edit::narrowed_replacement,
         layout::{is_collapse_only, is_collapsible, is_layoutable, item_indent, requires_expand},
         one_row, reserve,
         travel::{Landing, placed_block},
         walk::walk_stmt,
     },
-    rules::stack_adjacent_strings::concatenated_run,
+    rules::{reflow_calls::reshaped_calls, stack_adjacent_strings::concatenated_run},
     source::Source,
 };
 
@@ -41,13 +42,16 @@ pub(super) struct Layouter<'a> {
     pub(super) one_row: one_row::Settings<'a>,
     pub(super) reservations: &'a reserve::Columns,
     pub(super) source: &'a Source,
+    pub(super) targets: &'a CallTargets<'a>,
     pub(super) tripping_dicts: Vec<TextRange>,
     pub(super) wrap_dict_entries: bool,
 }
 
 impl<'a> Layouter<'a> {
     /// Builds the expanded form of `expr` as a string, recursively
-    /// laying out any qualifying child collections.
+    /// laying out any qualifying child collections. Every row is charged
+    /// the separator closing it whatever its position, so the layout
+    /// holds under the order `alphabetize-siblings` later imposes.
     fn expand(&self, expr: &Expr, indent: usize) -> String {
         let item_indent = item_indent(indent);
         let dict_items = expr.as_dict_expr().map(|d| &d.items);
@@ -63,6 +67,7 @@ impl<'a> Layouter<'a> {
         let total = texts.len();
         let item_prefix = " ".repeat(item_indent);
         let available = self.code_line_length.saturating_sub(item_indent);
+        let separator = usize::from(total > 1);
         let mut out = String::new();
         out.push(open);
         out.push_str(self.newline);
@@ -86,8 +91,7 @@ impl<'a> Layouter<'a> {
                         let has_more = idx + 1 < total;
                         let inline = &texts[idx];
                         let row_overflows = !inline.contains('\n')
-                            && item_indent + widths[idx] + usize::from(has_more)
-                                > self.code_line_length;
+                            && item_indent + widths[idx] + separator > self.code_line_length;
                         let hung = dict_items
                             .filter(|_| row_overflows && self.wrap_dict_entries)
                             .and_then(|items| {
@@ -113,7 +117,7 @@ impl<'a> Layouter<'a> {
 
     /// Collects the bracket pair and per-item text, atomicity, and source
     /// range for the collection at `expr`, each child serialized through
-    /// `serialize_expr` / `serialize_dict_item` at `indent` so nested
+    /// `serialize_item` / `serialize_dict_item` at `indent` so nested
     /// collections arrive already laid out. An item needing neither a
     /// rewrite nor a move borrows its source slice.
     fn gather_items(&self, expr: &Expr, indent: usize) -> GatheredItems<'a> {
@@ -144,7 +148,7 @@ impl<'a> Layouter<'a> {
         let (texts, widths, atomics, ranges): (Vec<_>, Vec<_>, Vec<_>, Vec<_>) = elts
             .iter()
             .map(|e| {
-                let text = self.serialize_expr(e, parent, indent, indent);
+                let text = self.serialize_item(e, parent, indent);
                 let width = text.width();
                 (text, width, is_atomic(e), e.range())
             })
@@ -347,6 +351,29 @@ impl<'a> Layouter<'a> {
         };
         self.replacement_for(expr, column, indent, 0)
             .map_or_else(|| self.placed_slice(expr, parent, landing), Cow::Owned)
+    }
+
+    /// Serializes one element of a list, set, or tuple the expand
+    /// relocates to `indent`. The element resolves through
+    /// [`Self::serialize_expr`], and one written on a single row whose
+    /// calls no longer fit the row it lands on explodes them here, the
+    /// move being what pushes them past the budget.
+    fn serialize_item(&self, expr: &Expr, parent: AnyNodeRef, indent: usize) -> Cow<'a, str> {
+        if let Some(text) = self.replacement_for(expr, indent, indent, 0) {
+            return Cow::Owned(text);
+        }
+        if let Some(text) = reshaped_calls(
+            self.source,
+            self.one_row,
+            self.reservations,
+            self.targets,
+            expr,
+            indent,
+            indent,
+        ) {
+            return Cow::Owned(text);
+        }
+        self.placed_slice(expr, parent, Landing::own_row(expr.start(), indent))
     }
 
     /// `expr`'s one-row form when it joins without a residual break and

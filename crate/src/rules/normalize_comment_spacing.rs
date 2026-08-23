@@ -7,23 +7,18 @@
 //! follows the run at all, leaving the trailing gap settled either way.
 
 use ruff_diagnostics::Edit;
-use ruff_python_trivia::{CommentRanges, PythonWhitespace};
+use ruff_python_trivia::CommentRanges;
 use ruff_text_size::{TextLen, TextRange};
 
 use crate::{
     config::Config,
     primitives::{
         aligner::{line_gap_before, space_padding_edit},
-        comments::TRAILING_GAP,
+        comments::{TRAILING_GAP, settled_opener},
     },
     rule::{Rule, RuleId},
     source::Source,
 };
-
-/// The characters whose appearance directly after a comment's hash run
-/// leaves the opener untouched, covering the shebang, the quoted and
-/// piped forms, and the structured `#:` attribute-doc marker.
-const EXEMPT_LEADERS: [char; 4] = ['!', '\'', ':', '|'];
 
 pub(crate) struct NormalizeCommentSpacing;
 
@@ -101,19 +96,8 @@ fn gap_edit(source: &Source, range: TextRange) -> Option<Edit> {
 /// comment block keeps its shape. `None` for an exempt leader and for a
 /// run already reading that way.
 fn opener_edit(source: &Source, range: TextRange, columnar: bool) -> Option<Edit> {
-    let body = source.slice(range).trim_start_matches('#');
-    if body.starts_with(EXEMPT_LEADERS) {
-        return None;
-    }
-    let text = body.trim_whitespace_start();
-    if columnar && body.starts_with(' ') && !text.is_empty() {
-        return None;
-    }
-    let opener = TextRange::at(
-        range.end() - body.text_len(),
-        body.text_len() - text.text_len(),
-    );
-    space_padding_edit(source, opener, usize::from(!text.is_empty()))
+    let (opener, settled) = settled_opener(source, range, columnar)?;
+    space_padding_edit(source, opener, settled)
 }
 
 #[cfg(test)]

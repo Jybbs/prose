@@ -26,11 +26,9 @@
 //! `measure` answers the column a construct reaches and the width it
 //! reads, and `render` builds the text that replaces an argument list.
 
-use std::collections::HashMap;
-
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Expr, InterpolatedStringElement, Parameters, Stmt,
+    Expr, InterpolatedStringElement, Stmt,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextSize};
@@ -38,8 +36,8 @@ use ruff_text_size::{Ranged, TextSize};
 use crate::{
     config::Config,
     primitives::{
-        call_keywords::module_call_params,
-        edit::{insert_edit, narrowed_replacement, singleton_groups},
+        call_keywords::{CallTargets, module_call_params},
+        edit::{apply_inline_edits, insert_edit, narrowed_replacement, singleton_groups},
         one_row, reserve,
         walk::walk_stmt,
     },
@@ -104,7 +102,7 @@ struct Exploder<'a> {
     origin_column: usize,
     reservations: &'a reserve::Columns,
     source: &'a Source,
-    targets: &'a HashMap<TextSize, &'a Parameters>,
+    targets: &'a CallTargets<'a>,
 }
 
 impl<'a> AstVisitor<'a> for Exploder<'a> {
@@ -136,6 +134,40 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         walk_stmt(self, stmt);
     }
+}
+
+/// `expr`'s text with every call inside it exploded from `column`, the
+/// column an enclosing layout relocates it to, an exploded closing `)`
+/// dropping to `indent`. `None` where nothing inside it reshapes, which
+/// leaves the caller its own placement of the source slice, and `None`
+/// for an `expr` the source wrote across rows, whose untouched rows
+/// answer to a source indent this reshape does not move.
+pub(crate) fn reshaped_calls<'src>(
+    source: &'src Source,
+    one_row: one_row::Settings<'src>,
+    reservations: &'src reserve::Columns,
+    targets: &'src CallTargets<'src>,
+    expr: &'src Expr,
+    column: usize,
+    indent: usize,
+) -> Option<String> {
+    if source.contains_line_break(expr.range()) {
+        return None;
+    }
+    let mut exploder = Exploder {
+        edits: Vec::new(),
+        indent: Some(indent),
+        line_shift: 0,
+        one_row,
+        origin: expr.start(),
+        origin_column: column,
+        reservations,
+        source,
+        targets,
+    };
+    exploder.visit_expr(expr);
+    (!exploder.edits.is_empty())
+        .then(|| apply_inline_edits(source, expr.range(), &exploder.edits).into_owned())
 }
 
 #[cfg(test)]

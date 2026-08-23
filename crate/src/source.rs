@@ -23,7 +23,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     primitives::{
         binding::BindingAnalysis,
-        comments::trailing_comment_start,
+        comments::trailing_comment,
         inline::indent_width,
         range::paren_aware_range,
         reserve::{Columns, Reservations},
@@ -423,7 +423,8 @@ impl Source {
     /// the code it annotates.
     pub fn row_tail_width(&self, offset: TextSize) -> usize {
         let tail = self.row_tail(offset);
-        let end = trailing_comment_start(self, offset)
+        let end = trailing_comment(self, offset)
+            .map(TextRange::start)
             .filter(|start| tail.contains(*start))
             .unwrap_or(tail.end());
         self.slice(TextRange::new(offset, end)).trim_end().width()

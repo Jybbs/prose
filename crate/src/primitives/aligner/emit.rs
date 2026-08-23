@@ -16,7 +16,7 @@ use super::{
 use crate::{
     config::MaxShift,
     primitives::{
-        comments::{TRAILING_GAP, trailing_comment_start},
+        comments::{TRAILING_GAP, settled_opener, trailing_comment},
         edit::repeat_edit,
     },
     source::Source,
@@ -44,8 +44,8 @@ pub(super) fn emit_group(
 /// reports its shared column, split on the `max-shift` cap, while any
 /// other group reports the settings' buffer past each member's own
 /// width.
-/// The token's following value sits two columns further on, the
-/// operator's final character plus the one-space value gap.
+/// The token's following value sits [`VALUE_OFFSET`](super::VALUE_OFFSET)
+/// columns further on.
 pub(crate) fn operator_columns(
     source: &Source,
     members: &[Member],
@@ -72,27 +72,35 @@ pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) ->
     Some(repeat_edit(range, " ", n))
 }
 
-/// The columns the gap ahead of a trailing comment carries away from
-/// [`TRAILING_GAP`] on `member`'s line, negative where the source
-/// writes a narrower gap than the floor, and zero where that line
-/// carries no trailing comment and where the gap is the one `member`
-/// rewrites itself.
+/// The columns a trailing comment on `member`'s line carries away from
+/// the width the comment rules settle it to, negative where they widen
+/// the line and zero where the line carries no trailing comment. The
+/// gap ahead of the comment measures against the [`TRAILING_GAP`] that
+/// `align-comments` seats it at, contributing nothing where it is the
+/// gap `member` rewrites itself, and the opener between the hash run
+/// and the text measures against the one space
+/// `normalize-comment-spacing` leaves there.
 fn comment_slack(source: &Source, member: Member) -> isize {
-    let Some(comment) = trailing_comment_start(source, member.line_start) else {
+    let Some(comment) = trailing_comment(source, member.line_start) else {
         return 0;
     };
-    let gap = line_gap_before(source, comment);
-    if gap == member.gap {
-        return 0;
-    }
-    source.slice(gap).width().cast_signed() - TRAILING_GAP.len().cast_signed()
+    let gap = line_gap_before(source, comment.start());
+    let gap_slack = if gap == member.gap {
+        0
+    } else {
+        slack(source, gap, TRAILING_GAP.len())
+    };
+    let opener_slack = settled_opener(source, comment, false)
+        .map_or(0, |(opener, settled)| slack(source, opener, settled));
+    gap_slack + opener_slack
 }
 
 /// The width of `member`'s line as the aligner emits it, less the
 /// pre-operator gap the padding replaces, with any rewritten
 /// post-operator gap collapsed to the one space an emitted row carries,
-/// and with a trailing comment measured at its [`TRAILING_GAP`] floor
-/// rather than wherever the source leaves it.
+/// and with a trailing comment measured at the gap and opener widths
+/// the comment rules settle it to rather than wherever the source
+/// leaves it.
 fn emitted_base_width(source: &Source, member: Member) -> usize {
     let line = source.text().line_str(member.line_start).width();
     let base = (line - source.slice(member.gap).width())
@@ -233,6 +241,12 @@ fn reading_order_groups<'m>(
     let last = &members[start..];
     groups.push((last, group_max_width(last)));
     groups
+}
+
+/// The columns the text over `span` carries away from the `settled`
+/// width the comment rules leave it at.
+fn slack(source: &Source, span: TextRange, settled: usize) -> isize {
+    source.slice(span).width().cast_signed() - settled.cast_signed()
 }
 
 #[cfg(test)]

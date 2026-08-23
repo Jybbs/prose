@@ -34,6 +34,11 @@ pub(crate) use members::{
 pub(crate) use walker::AlignWalker;
 pub(crate) use widen::Widenings;
 
+/// The columns between an aligned operator's column and the value
+/// following it, the operator's own character and the one-space value
+/// gap.
+pub(crate) const VALUE_OFFSET: usize = 2;
+
 /// One row in an alignment group.
 ///
 /// `gap` is the whitespace ending immediately before the aligned token
@@ -136,6 +141,12 @@ impl Settings {
         } else {
             self.buffer
         }
+    }
+
+    /// The gap an aligned row holds between its content and the aligned
+    /// token.
+    pub(crate) fn buffer(self) -> usize {
+        self.buffer
     }
 
     /// Returns a copy of `self` carrying `width` as the gap an aligned

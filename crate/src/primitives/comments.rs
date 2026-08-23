@@ -9,13 +9,18 @@
 //! rules both seat lives here as well.
 
 use ruff_python_ast::ExprDict;
-use ruff_python_trivia::{CommentRanges, is_pragma_comment};
+use ruff_python_trivia::{CommentRanges, PythonWhitespace, is_pragma_comment};
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::{
     primitives::blanks::whitespace_start_before, source::Source, suppression::is_directive_comment,
 };
+
+/// The characters whose appearance directly after a comment's hash run
+/// leaves the opener untouched, covering the shebang, the quoted and
+/// piped forms, and the structured `#:` attribute-doc marker.
+const EXEMPT_LEADERS: [char; 4] = ['!', '\'', ':', '|'];
 
 /// The gap PEP 8 seats between code and a trailing comment.
 pub(crate) const TRAILING_GAP: &str = "  ";
@@ -104,16 +109,41 @@ pub(crate) fn leading_comment_block(
     Some(TextRange::new(text.line_start(first.start()), last.end()))
 }
 
-/// The start of the trailing comment on `offset`'s line, `None` where
-/// that line carries no comment or carries an own-line one alone.
-pub(crate) fn trailing_comment_start(source: &Source, offset: TextSize) -> Option<TextSize> {
+/// The whitespace run between the hash run of the comment at `range`
+/// and its text, paired with the width that run settles to, which is
+/// one space ahead of text and none where no text follows. `None` where
+/// the opener passes through, covering an exempt leader and a
+/// `columnar` comment whose run already opens on a space.
+pub(crate) fn settled_opener(
+    source: &Source,
+    range: TextRange,
+    columnar: bool,
+) -> Option<(TextRange, usize)> {
+    let body = source.slice(range).trim_start_matches('#');
+    if body.starts_with(EXEMPT_LEADERS) {
+        return None;
+    }
+    let text = body.trim_whitespace_start();
+    if columnar && body.starts_with(' ') && !text.is_empty() {
+        return None;
+    }
+    let opener = TextRange::at(
+        range.end() - body.text_len(),
+        body.text_len() - text.text_len(),
+    );
+    Some((opener, usize::from(!text.is_empty())))
+}
+
+/// The trailing comment on `offset`'s line, `None` where that line
+/// carries no comment or carries an own-line one alone.
+pub(crate) fn trailing_comment(source: &Source, offset: TextSize) -> Option<TextRange> {
     let line = source.text().full_line_range(offset);
     source
         .comment_ranges()
         .comments_in_range(line)
         .iter()
-        .map(Ranged::start)
-        .find(|start| !CommentRanges::is_own_line(*start, source.text()))
+        .find(|comment| !CommentRanges::is_own_line(comment.start(), source.text()))
+        .copied()
 }
 
 /// True when `line` opens with two or more `#`, the Markdown-style
@@ -160,6 +190,7 @@ fn rule_run(mut chars: impl Iterator<Item = char>) -> usize {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+    use unicode_width::UnicodeWidthStr;
 
     use super::*;
     use crate::testing::{notebook, parse};
@@ -352,5 +383,41 @@ mod tests {
     #[case::trailing_comment_only("x = 1  # trail\ndef f(): pass\n")]
     fn leading_comment_block_returns_none_without_an_own_line_comment(#[case] src: &str) {
         assert!(gap_block(&parse(src)).is_none());
+    }
+
+    #[rstest]
+    #[case::tight_opener_gains_a_space("x = 1  #note\n", false, Some((0, 1)))]
+    #[case::settled_opener_holds("x = 1  # note\n", false, Some((1, 1)))]
+    #[case::wide_opener_collapses("x = 1  #    note\n", false, Some((4, 1)))]
+    #[case::empty_comment_sheds_its_run("x = 1  #   \n", false, Some((3, 0)))]
+    #[case::columnar_run_holds_its_indent("#     deep\n", true, None)]
+    #[case::columnar_bare_hash_still_sheds("#\n", true, Some((0, 0)))]
+    #[case::exempt_leader_passes_through("x = 1  #: attribute\n", false, None)]
+    fn settled_opener_reads_the_run_the_rule_settles(
+        #[case] src: &str,
+        #[case] columnar: bool,
+        #[case] expected: Option<(usize, usize)>,
+    ) {
+        let source = parse(src);
+        let comment = source.comment_ranges()[0];
+        let read = settled_opener(&source, comment, columnar)
+            .map(|(opener, settled)| (source.slice(opener).width(), settled));
+        assert_eq!(read, expected);
+    }
+
+    #[rstest]
+    #[case::trailing("x = 1  # note\n", Some("# note"))]
+    #[case::own_line("# note\nx = 1\n", None)]
+    #[case::no_comment("x = 1\n", None)]
+    fn trailing_comment_answers_only_a_comment_sharing_its_code_row(
+        #[case] src: &str,
+        #[case] expected: Option<&str>,
+    ) {
+        let source = parse(src);
+        let start = source.ast().body[0].start();
+        assert_eq!(
+            trailing_comment(&source, start).map(|range| source.slice(range)),
+            expected,
+        );
     }
 }

@@ -42,7 +42,10 @@ impl<'a> Exploder<'a> {
 
     /// Renders each of `keywords`'s arguments as `name=value` one per
     /// line at `indent`, re-exploding a nested call and re-indenting a
-    /// row-spanning value through [`Self::render_value`].
+    /// row-spanning value through [`Self::render_value`]. Every keyword
+    /// lands alone on its row and so takes the buffer `align-equals`
+    /// seats around its `=`, leaving each value measured from the column
+    /// that buffer settles it at rather than the one `name=` writes it at.
     fn explode_keywords(
         &self,
         keywords: &CallKeywords<'a>,
@@ -55,7 +58,17 @@ impl<'a> Exploder<'a> {
             keywords.args.len(),
             |out, i, item_indent| {
                 let arg = &keywords.args[i];
-                self.render_value(out, arg.value, &arg.rendered, arg.start, item_indent);
+                let aligned = self
+                    .reservations
+                    .keyword_value_column(item_indent, arg.name.width());
+                self.render_value(
+                    out,
+                    arg.value,
+                    &arg.rendered,
+                    arg.start,
+                    item_indent,
+                    aligned,
+                );
             },
         )
     }
@@ -90,6 +103,7 @@ impl<'a> Exploder<'a> {
                     self.source.slice(range),
                     range.start(),
                     item_indent,
+                    None,
                 );
             },
         )
@@ -109,6 +123,19 @@ impl<'a> Exploder<'a> {
         match self.first_opener(self.source.row_tail(end)) {
             Some(offset) => self.source.width_between(end, offset + TextSize::from(1)),
             None => self.source.row_tail_width(end),
+        }
+    }
+
+    /// The width `arguments` leaves on its row, which is `form` for a
+    /// list written across rows, since closing it writes that text, and
+    /// the source slice for one already on a single row, whose spacing
+    /// the rule leaves as the author wrote it rather than at the
+    /// normalized gap `form` seats after each comma.
+    fn written_width(&self, arguments: &Arguments, form: &str) -> usize {
+        if self.source.contains_line_break(arguments.range()) {
+            form.width()
+        } else {
+            self.source.slice(arguments.range()).width()
         }
     }
 
@@ -153,6 +180,11 @@ impl<'a> Exploder<'a> {
     /// [`Self::argument_shift`] reads. A grouping pair around the value
     /// stays outside the reshape and moves with the rest of the
     /// argument, whether the source carries it or `keyword_args` adds it.
+    /// `aligned` is the column a later alignment run settles the value
+    /// at, which the nested reshape measures from in place of the one
+    /// `rendered` writes it at, and `None` leaves that measure alone. A
+    /// value the rendering wraps in a grouping pair opens one column
+    /// past that settled gap.
     fn render_value(
         &self,
         out: &mut String,
@@ -160,13 +192,18 @@ impl<'a> Exploder<'a> {
         rendered: &str,
         start: TextSize,
         indent: usize,
+        aligned: Option<usize>,
     ) {
         let slice = self.source.slice(value.range());
         let (head, tail) = rendered
             .rsplit_once(slice)
             .expect("a rendered argument carries its value's source text");
+        let settled = aligned.map_or_else(
+            || end_column(head, indent),
+            |column| column + usize::from(head.ends_with('(')),
+        );
         let Some(travel) = self.argument_shift(value, rendered, head, start, indent) else {
-            let column = end_column(head, indent).saturating_add_signed(self.line_shift);
+            let column = settled.saturating_add_signed(self.line_shift);
             out.push_str(head);
             out.push_str(&self.reshape_value(value, Some(indent), column, self.line_shift));
             out.push_str(tail);
@@ -180,7 +217,7 @@ impl<'a> Exploder<'a> {
         } else {
             self.line_shift
         };
-        let column = end_column(head, indent).saturating_add_signed(opening_shift);
+        let column = settled.saturating_add_signed(opening_shift);
         // The nested walk writes its rows where the source wrote them,
         // so the move below carries its exploded closer to `indent`.
         let landing = indent.saturating_add_signed(-travel.rows);
@@ -238,7 +275,10 @@ impl<'a> Exploder<'a> {
         let form = self
             .one_row
             .arguments_form(self.source, arguments)
-            .filter(|form| self.one_row.fits(column + form.width() + tail));
+            .filter(|form| {
+                self.one_row
+                    .fits(column + self.written_width(arguments, form) + tail)
+            });
         let length_trips = form.is_none();
         // The filter above already fit the joined row, leaving only the
         // fracture question.

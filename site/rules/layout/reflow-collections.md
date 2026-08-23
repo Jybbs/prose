@@ -20,7 +20,7 @@ A member the expansion holds rather than lays out travels whole into the stacked
 
 A dict expands once it holds more than `max-dict-entries` entries whatever its width, taking any enclosing collection with it.
 
-A dict entry whose `key: value` width overflows the budget breaks at the `:` and hangs its value one indent step in, per row rather than across the literal. Only a dict carries that shape.
+A dict entry whose `key: value` width overflows the budget breaks at the `:` and hangs its value one indent step in, per row rather than across the literal. That width counts the separator closing the entry's row whatever position [[alphabetize-siblings]] settles it into, so the shape the pass picks holds under either ordering. Only a dict carries that shape.
 
 Each move sits behind its own facet, `explode` reaching the count trigger as well as the width one, whereas fracture repair has none.
 

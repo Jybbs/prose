@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/entry_separator_charged_before_ordering/input.py
+---
+alphabetize-siblings@172..294
+reflow-calls@153..309
+reflow-collections@294..295
