@@ -1,8 +1,14 @@
 //! Source-text wrapper bundling parsed AST, token stream, and line index.
 
-use std::{borrow::Cow, path::Path, str::FromStr, sync::OnceLock};
+use std::{
+    borrow::{Borrow, Cow},
+    path::Path,
+    str::FromStr,
+    sync::OnceLock,
+};
 
 use itertools::Itertools;
+use ruff_diagnostics::Edit;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
 use ruff_python_ast::{
     AnyNodeRef, ExprRef, ModModule, PySourceType, Stmt,
@@ -23,10 +29,13 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     primitives::{
         binding::BindingAnalysis,
-        comments::trailing_comment_start,
+        comments::trailing_comment,
         inline::indent_width,
+        layout::{is_layoutable, requires_expand},
+        padding::Stranding,
         range::paren_aware_range,
         reserve::{Columns, Reservations},
+        walk::filter_map_over_exprs,
     },
     suppression::SuppressionMap,
 };
@@ -34,16 +43,12 @@ use crate::{
 /// Owned wrapper around a parsed Python source file.
 ///
 /// Holds the source text, the parsed AST, the token stream, a lazy
-/// line index, a `CommentRanges` index built during parsing, and a
-/// `SuppressionMap` of `# prose: off` / `# prose: skip` spans (plus
-/// the `# fmt:` and `# yapf:` aliases), `# prose: skip[<id>]` per-rule
-/// spans and `# prose: ignore[<id>]` per-line directives, plus a
-/// `BindingAnalysis` table of every name's writes and reads.
-/// `source_type` is the parse mode, `cell_offsets` the notebook cell
-/// boundaries, and `cell_numbers` each cell's notebook position, the
-/// last two empty for an ordinary module. The alignment columns join
-/// the binding table as a walk built on first read and reused by every
-/// later reader.
+/// line index, the `CommentRanges` and `SuppressionMap` indexes built
+/// during parsing, and the `BindingAnalysis`, alignment-column, and
+/// stranded-padding walks each built on first read. `source_type` is
+/// the parse mode and `line_ending` the sequence the text breaks its
+/// lines with, leaving `cell_offsets` and `cell_numbers` to carry a
+/// notebook's cell boundaries and positions, empty for a module.
 #[derive(Debug)]
 pub struct Source {
     binding_analysis: OnceLock<Box<BindingAnalysis>>,
@@ -51,9 +56,12 @@ pub struct Source {
     cell_offsets: CellOffsets,
     columns: OnceLock<Box<(Reservations, Columns)>>,
     comment_ranges: CommentRanges,
+    expandable_literals: OnceLock<Vec<TextRange>>,
     file: SourceFile,
+    line_ending: LineEnding,
     parsed: Parsed<ModModule>,
     source_type: PySourceType,
+    stranded_padding: OnceLock<Box<(Stranding, Vec<Edit>)>>,
     suppression: Box<SuppressionMap>,
 }
 
@@ -131,6 +139,7 @@ impl Source {
         cell_offsets: CellOffsets,
         parsed: Parsed<ModModule>,
     ) -> Self {
+        let line_ending = find_newline(&text).map_or(LineEnding::Lf, |(_, ending)| ending);
         let file = SourceFileBuilder::new(name, text).finish();
         let comment_ranges = CommentRanges::from(parsed.tokens());
         let first_code_offset = parsed.syntax().body.first().map(Ranged::start);
@@ -146,10 +155,13 @@ impl Source {
             cell_numbers: Box::default(),
             cell_offsets,
             columns: OnceLock::new(),
+            expandable_literals: OnceLock::new(),
             comment_ranges,
             file,
+            line_ending,
             parsed,
             source_type,
+            stranded_padding: OnceLock::new(),
             suppression,
         }
     }
@@ -228,14 +240,9 @@ impl Source {
     /// against the same reservation and reads the walk back, whereas a
     /// read carrying a different one walks for itself.
     pub(crate) fn columns(&self, reservations: Reservations) -> Cow<'_, Columns> {
-        let held = self
-            .columns
-            .get_or_init(|| Box::new((reservations, reservations.columns(self))));
-        if held.0 == reservations {
-            Cow::Borrowed(&held.1)
-        } else {
-            Cow::Owned(reservations.columns(self))
-        }
+        keyed(&self.columns, reservations, |reservations| {
+            reservations.columns(self)
+        })
     }
 
     /// Returns `true` when the cell boundary at `index` sits on a
@@ -318,6 +325,25 @@ impl Source {
         self.file.source_text().contains_line_break(ranged.range())
     }
 
+    /// Returns `true` when the physical row holding `offset` continues
+    /// the row above it through a `\` explicit line join. A trailing
+    /// backslash inside a comment closes with its line and joins
+    /// nothing, so it reads as no join.
+    pub(crate) fn continues_a_logical_line(&self, offset: TextSize) -> bool {
+        let text = self.text();
+        let above = &text[..text.line_start(offset).to_usize()];
+        let Some(joined) = above
+            .strip_suffix('\n')
+            .map(|row| row.strip_suffix('\r').unwrap_or(row))
+        else {
+            return false;
+        };
+        let Some(ahead) = joined.strip_suffix('\\') else {
+            return false;
+        };
+        !self.intersects_comment(TextRange::new(TextSize::of(ahead), TextSize::of(joined)))
+    }
+
     /// Returns the start offset of the first token in `range` for
     /// which `predicate` is true. Callers that need the full `&Token`
     /// (kind, range, flags) should chain
@@ -359,6 +385,12 @@ impl Source {
     /// both `OneIndexed`.
     pub fn line_column(&self, offset: TextSize) -> LineColumn {
         self.file.to_source_code().line_column(offset)
+    }
+
+    /// Returns the line ending this source uses, the first one it
+    /// carries, or `LineEnding::Lf` when it carries none.
+    pub(crate) fn line_ending(&self) -> LineEnding {
+        self.line_ending
     }
 
     /// Returns the character-width of the leading-whitespace prefix on
@@ -422,11 +454,21 @@ impl Source {
     /// charging one against the code budget would let a comment reshape
     /// the code it annotates.
     pub fn row_tail_width(&self, offset: TextSize) -> usize {
-        let tail = self.row_tail(offset);
-        let end = trailing_comment_start(self, offset)
+        self.tail_width(self.row_tail(offset))
+    }
+
+    /// The display width of the code across `tail`, a span inside one
+    /// physical row, closed at a trailing comment the span reaches the
+    /// same way [`row_tail_width`](Self::row_tail_width) closes the
+    /// whole row.
+    pub(crate) fn tail_width(&self, tail: TextRange) -> usize {
+        let end = trailing_comment(self, tail.start())
+            .map(TextRange::start)
             .filter(|start| tail.contains(*start))
             .unwrap_or(tail.end());
-        self.slice(TextRange::new(offset, end)).trim_end().width()
+        self.slice(TextRange::new(tail.start(), end))
+            .trim_end()
+            .width()
     }
 
     /// Returns the range spanning the entire source text.
@@ -437,9 +479,7 @@ impl Source {
     /// Returns the line-ending sequence used in this source, or
     /// `"\n"` when the source carries no line break.
     pub fn newline_str(&self) -> &'static str {
-        find_newline(self.text())
-            .map_or(LineEnding::Lf, |(_, ending)| ending)
-            .as_str()
+        self.line_ending().as_str()
     }
 
     /// Returns `expr`'s range widened to the explicit parentheses
@@ -536,6 +576,30 @@ impl Source {
         }
     }
 
+    /// Returns the start-ascending ranges of the comment-free literals
+    /// `reflow-collections` can expand, walking the tree on the first
+    /// read.
+    pub(crate) fn expandable_literals(&self) -> &[TextRange] {
+        self.expandable_literals.get_or_init(|| {
+            filter_map_over_exprs(&self.ast().body, |expr| {
+                (is_layoutable(expr)
+                    && requires_expand(expr)
+                    && !self.intersects_comment(expr.range()))
+                .then_some(expr.range())
+            })
+        })
+    }
+
+    /// Returns the edits `stranding` emits over this source, walking the
+    /// tree on the first read. Every rule of a run measures against the
+    /// same padding rule and reads the walk back, whereas a read
+    /// carrying a different one walks for itself.
+    pub(crate) fn stranded_padding(&self, stranding: Stranding) -> Cow<'_, [Edit]> {
+        keyed(&self.stranded_padding, stranding, |stranding| {
+            stranding.edits(self)
+        })
+    }
+
     /// Returns the suppression index built during parsing.
     pub(crate) fn suppression_map(&self) -> &SuppressionMap {
         &self.suppression
@@ -596,6 +660,22 @@ impl FromStr for Source {
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
         Self::build_module(text.to_owned(), "<source>", PySourceType::default())
+    }
+}
+
+/// The value `build` derives for `key`, read back from `slot` where it
+/// already holds that key's value and built afresh otherwise, the
+/// first read filling the slot.
+fn keyed<K: Copy + PartialEq, B: ?Sized + ToOwned>(
+    slot: &OnceLock<Box<(K, B::Owned)>>,
+    key: K,
+    build: impl Fn(&K) -> B::Owned,
+) -> Cow<'_, B> {
+    let held = slot.get_or_init(|| Box::new((key, build(&key))));
+    if held.0 == key {
+        Cow::Borrowed(held.1.borrow())
+    } else {
+        Cow::Owned(build(&key))
     }
 }
 
@@ -816,6 +896,27 @@ mod tests {
         );
     }
 
+    #[rstest]
+    #[case::joined("\\\ny = 2\n", true)]
+    #[case::joined_across_crlf("\\\r\ny = 2\r\n", true)]
+    #[case::plain_row("x = 1\ny = 2\n", false)]
+    #[case::opening_row("y = 2\n", false)]
+    #[case::comment_head("# leads\ny = 2\n", false)]
+    #[case::backslash_closing_a_comment("# trails \\\ny = 2\n", false)]
+    fn continues_a_logical_line_reads_the_join_and_not_a_bare_backslash(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let last = source
+            .ast()
+            .body
+            .last()
+            .expect("the source carries a statement");
+
+        assert_eq!(source.continues_a_logical_line(last.start()), expected);
+    }
+
     #[test]
     fn empty_input_parses_as_empty_module() {
         let s = Source::from_str("").expect("empty source parses");
@@ -961,6 +1062,21 @@ mod tests {
         assert_eq!(s.line_column(TextSize::new(0)), line_column(0, 0));
         assert_eq!(s.line_column(TextSize::new(3)), line_column(1, 0));
         assert_eq!(s.line_column(TextSize::new(6)), line_column(2, 0));
+    }
+
+    #[rstest]
+    #[case("a\nb\n", LineEnding::Lf)]
+    #[case("a\r\nb\r\n", LineEnding::CrLf)]
+    #[case("a\rb\r", LineEnding::Cr)]
+    #[case("a\nb\r\n", LineEnding::Lf)]
+    #[case("a\r\nb\n", LineEnding::CrLf)]
+    #[case("x = 1", LineEnding::Lf)]
+    fn line_ending_reads_the_first_break_and_falls_back_to_lf(
+        #[case] src: &str,
+        #[case] expected: LineEnding,
+    ) {
+        assert_eq!(parse(src).line_ending(), expected);
+        assert_eq!(parse(src).newline_str(), expected.as_str());
     }
 
     #[test]

@@ -1,4 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description="Smoke-install the built wheel offline and run its binary"
-uv tool install --no-index --find-links=dist prose-formatter
+#MISE description = "Smoke-install the built wheel offline and run its binary"
+
+uv tool install --find-links=dist --no-index prose-formatter
 prose --version

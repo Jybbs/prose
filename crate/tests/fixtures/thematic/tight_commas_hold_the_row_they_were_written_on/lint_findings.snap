@@ -1,0 +1,59 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/thematic/tight_commas_hold_the_row_they_were_written_on/input.py
+---
+[
+  {
+    "code": "unsorted-positionals",
+    "end_location": {
+      "column": 22,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 10,
+      "row": 1
+    },
+    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 14,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 11,
+      "row": 1
+    },
+    "message": "Parameter `pen` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 21,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 16,
+      "row": 1
+    },
+    "message": "Parameter `level` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 10,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 1
+    },
+    "message": "`build` returns a value but has no return type annotation"
+  }
+]

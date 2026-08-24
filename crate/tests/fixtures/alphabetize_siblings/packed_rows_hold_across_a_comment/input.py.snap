@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/packed_rows_hold_across_a_comment/input.py
+---
+__all__ = [
+    # Two major classes
+    "Decimal", "Context",
+
+    # Contexts
+    "DefaultContext", "BasicContext", "ExtendedContext",
+]

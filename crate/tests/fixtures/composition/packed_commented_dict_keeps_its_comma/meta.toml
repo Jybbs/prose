@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Packed Commented Dict Keeps Its Comma"
+
+description = '''
+A multi-line dict packing entries onto a shared row with a comment on its `{` row holds its order under [[alphabetize-siblings]], because the comment holds [[reflow-collections]] off splitting that row and a packed row declines the reorder, so [[reflow-collections]] reads the comma the first entry carries now rather than the one a sort would leave and expands its over-wide value rather than leaving the row past the cap.
+'''

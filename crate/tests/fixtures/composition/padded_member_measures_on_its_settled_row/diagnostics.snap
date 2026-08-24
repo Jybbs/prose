@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/padded_member_measures_on_its_settled_row/input.py
+---
+reflow-calls@83..199
+reflow-collections@84..197
+strip-stranded-padding@197..198
+strip-stranded-padding@84..85

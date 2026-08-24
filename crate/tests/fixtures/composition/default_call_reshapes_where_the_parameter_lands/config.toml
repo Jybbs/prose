@@ -1,0 +1,4 @@
+code-line-length = 66
+
+[harness]
+rules = ["reflow-calls", "reflow-signatures", "align-equals"]

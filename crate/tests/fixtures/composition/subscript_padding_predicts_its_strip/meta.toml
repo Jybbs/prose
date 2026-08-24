@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Aligned Column Predicts the Padding Stripped Beneath It"
+
+description = '''
+`x[ 0 ]` carries padding just inside its brackets that `strip-stranded-padding` clears later in the same run, leaving `x[0]` as the row the file settles on. `align-equals` measures that settled width rather than the wider one the source wrote, so the **`=` column lands where the finished rows put it** and one pass reaches the output a second pass agrees with.
+'''

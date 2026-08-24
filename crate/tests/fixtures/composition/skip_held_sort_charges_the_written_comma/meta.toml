@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Skip-Held Sort Charges the Written Comma"
+
+description = '''
+`reflow-collections` forecasts which entry `alphabetize-siblings` leaves last so the comma it measures matches the one the sort writes, and a `# prose: skip[alphabetize-siblings]` directive over the dict turns that forecast off with the sort, leaving every entry measured with the comma it carries.
+'''

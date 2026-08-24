@@ -84,8 +84,10 @@ pub(super) fn module_band_plan<'src>(
     let mut carries: Vec<Carry> = Vec::new();
     let mut sites: Vec<ConstSite<'src>> = Vec::new();
     for (idx, stmt) in body.iter().enumerate() {
-        // A `# prose: off` span or a skip directive pins its statement, and
-        // so does an own-line comment run left standing between two blocks,
+        // A `# prose: off` span or a skip directive pins its statement, as
+        // does a row a `\` join continues, whose relocation would take the
+        // break the join rests on. So does an own-line comment run left
+        // standing between two blocks,
         // one `member_block` declined to bind because it anchors in place,
         // opens at another indent, or sits behind a notebook cell wall. A
         // pinned member holds its slot, bounding the bands to its side so
@@ -99,6 +101,7 @@ pub(super) fn module_band_plan<'src>(
         });
         let const_target = const_binding(stmt);
         let pinned = suppression.suppresses(stmt, BandConstants::SLUG)
+            || source.continues_a_logical_line(stmt.start())
             || gap_comment.is_some_and(|block| {
                 const_target.is_none()
                     || anchors_in_place(source, block)

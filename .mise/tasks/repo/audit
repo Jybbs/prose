@@ -19,6 +19,7 @@ from json    import loads as json_loads
 from pathlib import Path
 from re      import MULTILINE, finditer, search
 from tomllib import loads
+from typing  import NoReturn
 
 
 def action_pin(action: str, key: str) -> str:
@@ -65,8 +66,7 @@ def build_requirement(name: str) -> str:
                 r"==\s*(\S+)",
                 requirement
             )
-    annotate(f"no build-system requirement named {name!r}")
-    raise SystemExit(1)
+    fail(f"no build-system requirement named {name!r}")
 
 
 def cargo_lock_version(name: str) -> str:
@@ -76,8 +76,7 @@ def cargo_lock_version(name: str) -> str:
     for package in toml("Cargo.lock")["package"]:
         if package["name"] == name:
             return package["version"]
-    annotate(f"no Cargo.lock package named {name!r}")
-    raise SystemExit(1)
+    fail(f"no Cargo.lock package named {name!r}")
 
 
 def extract(message: str, pattern: str, text: str) -> str:
@@ -86,6 +85,13 @@ def extract(message: str, pattern: str, text: str) -> str:
     """
     if match := search(pattern, text):
         return match.group(1)
+    fail(message)
+
+
+def fail(message: str) -> NoReturn:
+    """
+    Emit an error annotation for `message` and exit nonzero.
+    """
     annotate(message)
     raise SystemExit(1)
 
@@ -143,7 +149,6 @@ def parity() -> int:
     project = toml("crate/pyproject.toml")
     rust    = cargo["workspace"]["package"]["rust-version"]
 
-    # The mise `rust` pin is a bare version string or a table with `version`.
     if isinstance(mise_rust := mise["tools"]["rust"], dict):
         mise_rust = mise_rust["version"]
 
@@ -204,8 +209,7 @@ def patch_pins(package: dict) -> list[tuple[str, str, str]]:
     for key in package.get("patchedDependencies", {}):
         name, _, version = key.rpartition("@")
         if (pinned := package["devDependencies"].get(name)) is None:
-            annotate(f"no site/package.json devDependency named {name!r}")
-            raise SystemExit(1)
+            fail(f"no site/package.json devDependency named {name!r}")
         pairs.append((
             f"site/package.json {name} patch key ↔ its devDependency pin",
             version,
@@ -214,15 +218,16 @@ def patch_pins(package: dict) -> list[tuple[str, str, str]]:
     return pairs
 
 
-def task_sources(task: str) -> str:
+def task_sources(task: str) -> list[str]:
     """
-    Return the `sources` frontmatter array the `task` file task declares.
+    Return the `sources` array the `task` file's `#MISE` frontmatter declares.
     """
-    return extract(
-        f"no sources declaration in .mise/tasks/{task}",
-        r"#MISE sources=(.*)",
-        Path(f".mise/tasks/{task}").read_text(encoding="utf-8")
-    )
+    lines  = Path(f".mise/tasks/{task}").read_text(encoding="utf-8").splitlines()
+    marked = (line.removeprefix("#MISE") for line in lines if line.startswith("#MISE"))
+    table  = loads("\n".join(marked))
+    if "sources" in table:
+        return table["sources"]
+    fail(f"no sources declaration in .mise/tasks/{task}")
 
 
 def toml(path: str) -> dict:

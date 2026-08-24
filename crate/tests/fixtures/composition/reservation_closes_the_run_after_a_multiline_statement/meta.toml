@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "The Reservation Closes Its Run Where the Aligner Does"
+
+description = '''
+The [[align-equals]] reservation builds its runs the way the rule itself does, so the statement whose value spans rows closes the run after it and the rows below settle to their own narrow column rather than the wider one above. [[reflow-collections]] then joins the tuple onto the cap rather than exploding it from a column the aligner never seats.
+'''

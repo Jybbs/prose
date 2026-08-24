@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/shed_super_settles_before_the_call_reflows/input.py
+---
+class Waiter(Base):
+    def add_exception(self, future):
+        with self.lock:
+            super().add_exception(
+                future
+            )

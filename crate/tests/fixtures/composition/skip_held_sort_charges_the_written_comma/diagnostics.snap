@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/skip_held_sort_charges_the_written_comma/input.py
+---
+reflow-collections@19..64

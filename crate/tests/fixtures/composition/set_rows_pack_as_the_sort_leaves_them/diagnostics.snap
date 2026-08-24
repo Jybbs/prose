@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 44
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/set_rows_pack_as_the_sort_leaves_them/input.py
+---
+alphabetize-siblings@20..49
+reflow-collections@5..49

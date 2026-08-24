@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "The `drop-duplicates` Facet Off Holds an Unread Repeat"
+
+description = '''
+`import os` appears twice, nothing reads `os`, and `drop-duplicates` is off. **Both lines hold**, because the repeat is no longer a drop and the second write it records still counts against the unreferenced test.
+'''

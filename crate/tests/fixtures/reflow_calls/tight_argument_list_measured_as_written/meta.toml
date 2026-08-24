@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Single-Row Argument List Is Measured as the Author Spaced It"
+
+description = '''
+The inner list carries no gap after its comma and keeps that spacing, so the length trigger reads the width the row actually holds rather than the normalized one-row form, which would charge a column no rewrite ever adds.
+'''

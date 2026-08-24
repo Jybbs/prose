@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_backslash_continuations/two_runs_under_one_expression_take_one_pair/input.py
+---
+def f(k, s):
+    if ((k in ("e", "f")) or
+         (k in ("g", "h"))
+         and not (s & ~M)):
+        pass

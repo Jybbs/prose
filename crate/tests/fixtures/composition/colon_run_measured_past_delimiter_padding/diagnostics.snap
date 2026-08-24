@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/colon_run_measured_past_delimiter_padding/input.py
+---
+reflow-collections@16..234
+strip-stranded-padding@94..95

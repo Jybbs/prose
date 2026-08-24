@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/wrap_docstrings/literal_block_introducer_holds_its_sample/input.py
+---
+def wait():
+    """
+    Example::
+
+        wait_random_exponential(multiplier=0.5,  # initial window
+        integer.copy().addParseAction(lambda toks: len(toks))
+        Optional(delimitedList(identifier)) + Word(alphas)
+    """

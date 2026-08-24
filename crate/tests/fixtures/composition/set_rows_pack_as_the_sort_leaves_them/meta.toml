@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Set Rows Pack as the Sort Leaves Them"
+
+description = '''
+`reflow-collections` packs a set's flowed rows at the widths of the entries `alphabetize-siblings` will leave in each slot, so the sorted rows fill the budget as densely as a list's and the sort lands without widening a row.
+'''

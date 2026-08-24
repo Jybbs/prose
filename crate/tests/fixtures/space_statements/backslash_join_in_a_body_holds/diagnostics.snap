@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/space_statements/backslash_join_in_a_body_holds/input.py
+---
+

@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 44
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/inner_closer_row_holds_inside_an_expanding_tuple/input.py
+---
+reflow-calls@267..267
+reflow-collections@238..266

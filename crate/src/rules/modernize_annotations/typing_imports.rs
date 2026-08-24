@@ -10,8 +10,9 @@ use ruff_text_size::TextRange;
 use crate::{
     primitives::{
         binding::{bare_import_bound_name, from_import_bound_name, top_level_module},
-        imports::prune_import_aliases,
+        imports::Dropping,
     },
+    rules::reflow_imports::Folds,
     source::Source,
 };
 
@@ -30,7 +31,7 @@ impl<'a> TypingImports<'a> {
     pub(super) fn collect(body: &'a [Stmt]) -> Option<Self> {
         let mut aliases = HashMap::new();
         let mut statements = Vec::new();
-        for stmt in body {
+        for (slot, stmt) in body.iter().enumerate() {
             match stmt {
                 Stmt::Import(node) => {
                     let mut bound = node
@@ -53,6 +54,7 @@ impl<'a> TypingImports<'a> {
                         bare: true,
                         names: &node.names,
                         range: node.range,
+                        slot,
                     });
                 }
                 Stmt::ImportFrom(node) if node.level == 0 => {
@@ -74,6 +76,7 @@ impl<'a> TypingImports<'a> {
                         bare: false,
                         names: &node.names,
                         range: node.range,
+                        slot,
                     });
                 }
                 _ => {}
@@ -92,22 +95,33 @@ impl<'a> TypingImports<'a> {
     /// One fix group per import statement, dropping every alias whose
     /// bound name `consumed` read as many times as the module reads it
     /// at all and leaving an alias with a surviving reference in place.
-    pub(super) fn prune(&self, source: &Source, consumed: &HashMap<&str, usize>) -> Vec<Vec<Edit>> {
+    /// A comment-led statement losing every alias lands on the import
+    /// `folds` carries its comment onto.
+    pub(super) fn prune(
+        &self,
+        source: &Source,
+        consumed: &HashMap<&str, usize>,
+        folds: &Folds,
+    ) -> Vec<Vec<Edit>> {
         let analysis = source.binding_analysis();
         let unread = |bound: &str| {
             consumed
                 .get(bound)
                 .is_some_and(|&rewritten| rewritten == analysis.module_usage_count(bound))
         };
-        self.statements
+        let drops: Vec<Dropping> = self
+            .statements
             .iter()
-            .map(|import| {
-                prune_import_aliases(source, import.range, import.names, |index| {
-                    !import.orphaned(&import.names[index], &unread)
-                })
+            .map(|import| Dropping {
+                dropped: (0..import.names.len())
+                    .filter(|&index| import.orphaned(&import.names[index], &unread))
+                    .collect(),
+                names: import.names,
+                range: import.range,
+                slot: import.slot,
             })
-            .filter(|edits| !edits.is_empty())
-            .collect()
+            .collect();
+        folds.prune(source, &drops)
     }
 }
 
@@ -117,6 +131,7 @@ struct TypingImport<'a> {
     bare: bool,
     names: &'a [Alias],
     range: TextRange,
+    slot: usize,
 }
 
 impl TypingImport<'_> {

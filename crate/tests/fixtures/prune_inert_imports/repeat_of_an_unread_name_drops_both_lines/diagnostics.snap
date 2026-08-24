@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/prune_inert_imports/repeat_of_an_unread_name_drops_both_lines/input.py
+---
+prune-inert-imports@0..10
+prune-inert-imports@16..26

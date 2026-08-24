@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/subscript_padding_predicts_its_strip/input.py
+---
+align-equals@2..3
+strip-stranded-padding@11..12
+strip-stranded-padding@9..10

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Final Row Comment Closes the Tail"
+
+description = '''
+A trailing comment on the module's last row, one no line terminator follows, closes the tail measure the same way a comment on any other row does, so the comment's width never decides whether the call ahead of it joins.
+'''

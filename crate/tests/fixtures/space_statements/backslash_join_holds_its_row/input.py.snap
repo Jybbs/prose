@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/space_statements/backslash_join_holds_its_row/input.py
+---
+\
+y = 2

@@ -428,7 +428,7 @@ macro_rules! register_rules {
 register_rules! {
     "shed-backslash-continuations": shed_backslash_continuations: ToggleOnly                 => ShedBackslashContinuations => [],
     "normalize-literals":           normalize_literals:           NormalizeLiteralsConfig    => NormalizeLiterals          => [],
-    "prune-inert-imports":          prune_inert_imports:          PruneInertImportsConfig    => PruneInertImports          => [],
+    "prune-inert-imports":          prune_inert_imports:          PruneInertImportsConfig    => PruneInertImports          => ["shed-backslash-continuations", "normalize-literals"],
     "strip-none-return":            strip_none_return:            ToggleOnly                 => StripNoneReturn            => [],
     "modernize-annotations":        modernize_annotations:        ModernizeAnnotationsConfig => ModernizeAnnotations       => [],
     "strip-trailing-commas":        strip_trailing_commas:        ToggleOnly                 => StripTrailingCommas        => [],
@@ -439,23 +439,23 @@ register_rules! {
     "frame-docstrings":             frame_docstrings:             ToggleOnly                 => FrameDocstrings            => [],
     "expand-docstrings":            expand_docstrings:            ToggleOnly                 => ExpandDocstrings           => ["frame-docstrings"],
     "group-imports":                group_imports:                ToggleOnly                 => GroupImports               => [],
+    "shed-super-args":              shed_super_args:              ToggleOnly                 => ShedSuperArgs              => [],
     "stack-method-chains":          stack_method_chains:          StackMethodChainsConfig    => StackMethodChains          => [],
-    "reflow-calls":                 reflow_calls:                 ReflowCallsConfig          => ReflowCalls                => ["shed-backslash-continuations", "stack-method-chains"],
-    "shed-super-args":              shed_super_args:              ToggleOnly                 => ShedSuperArgs              => ["reflow-calls"],
-    "reflow-signatures":            reflow_signatures:            ReflowSignaturesConfig     => ReflowSignatures           => ["strip-none-return"],
+    "reflow-calls":                 reflow_calls:                 ReflowCallsConfig          => ReflowCalls                => ["shed-backslash-continuations", "shed-parentheses", "simplify-comprehensions", "shed-super-args", "stack-method-chains"],
+    "reflow-signatures":            reflow_signatures:            ReflowSignaturesConfig     => ReflowSignatures           => ["strip-none-return", "shed-parentheses"],
     "reflow-collections":           reflow_collections:           ReflowCollectionsConfig    => ReflowCollections          => ["simplify-comprehensions", "stack-method-chains", "reflow-calls", "reflow-signatures"],
     "prefer-fstring":               prefer_fstring:               PreferFstringConfig        => PreferFstring              => ["normalize-literals", "reflow-collections"],
     "stack-adjacent-strings":       stack_adjacent_strings:       ToggleOnly                 => StackAdjacentStrings       => ["stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures"],
     "align-match-case":             align_match_case:             AlignmentConfig            => AlignMatchCase             => ["shed-parentheses"],
     "reflow-imports":               reflow_imports:               ReflowImportsConfig        => ReflowImports              => ["shed-backslash-continuations", "prune-inert-imports", "group-imports"],
     "band-constants":               band_constants:               BandConstantsConfig        => BandConstants              => ["simplify-comprehensions", "reflow-imports"],
-    "alphabetize-siblings":         alphabetize_siblings:         AlphabetizeSiblingsConfig  => AlphabetizeSiblings        => ["normalize-literals", "shed-parentheses", "stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures", "reflow-imports", "band-constants"],
+    "alphabetize-siblings":         alphabetize_siblings:         AlphabetizeSiblingsConfig  => AlphabetizeSiblings        => ["normalize-literals", "strip-trailing-commas", "shed-parentheses", "frame-docstrings", "expand-docstrings", "stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures", "reflow-imports", "band-constants"],
     "space-statements":             space_statements:             ToggleOnly                 => SpaceStatements            => ["prune-inert-imports", "group-imports", "alphabetize-siblings", "band-constants"],
     "align-imports":                align_imports:                AlignmentConfig            => AlignImports               => ["reflow-imports", "alphabetize-siblings", "band-constants", "space-statements"],
     "align-colons":                 align_colons:                 AlignmentConfig            => AlignColons                => ["strip-trailing-commas", "shed-parentheses", "reflow-collections", "reflow-signatures", "stack-adjacent-strings", "alphabetize-siblings", "band-constants"],
     "wrap-docstrings":              wrap_docstrings:              ToggleOnly                 => WrapDocstrings             => ["frame-docstrings", "expand-docstrings", "align-colons"],
     "align-equals":                 align_equals:                 AlignmentConfig            => AlignEquals                => ["strip-trailing-commas", "shed-parentheses", "reflow-collections", "alphabetize-siblings", "band-constants", "align-colons"],
-    "align-comparisons":            align_comparisons:            AlignmentConfig            => AlignComparisons           => ["shed-parentheses", "normalize-comparisons", "reflow-calls"],
+    "align-comparisons":            align_comparisons:            AlignmentConfig            => AlignComparisons           => ["shed-parentheses", "normalize-comparisons", "reflow-calls", "reflow-collections"],
     "strip-stranded-padding":       strip_stranded_padding:       ToggleOnly                 => StripStrandedPadding       => ["shed-parentheses", "align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"],
     "normalize-comment-spacing":    normalize_comment_spacing:    ToggleOnly                 => NormalizeCommentSpacing    => [],
     "align-comments":               align_comments:               AlignmentConfig            => AlignComments              => ["strip-trailing-commas", "strip-stranded-padding", "normalize-comment-spacing"],
@@ -478,7 +478,7 @@ mod tests {
 
     #[rstest]
     fn dependencies_of_returns_empty_for_a_rule_without_predecessors(
-        #[values("prune-inert-imports", "stack-method-chains", "not-a-rule")] slug: &str,
+        #[values("strip-none-return", "stack-method-chains", "not-a-rule")] slug: &str,
     ) {
         assert!(dependencies_of(slug).is_empty());
     }

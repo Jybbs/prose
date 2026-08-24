@@ -82,42 +82,39 @@ struct Walker<'a> {
 impl Walker<'_> {
     /// Places `target_newlines` line breaks immediately above
     /// `line_start`, emitting an edit when the actual count differs.
-    /// Preserves any indent that sits on `line_start`'s line.
+    /// Preserves any indent that sits on `line_start`'s line. A row
+    /// continuing the one above it through a `\` join keeps its gap,
+    /// which the join rests on.
     fn normalize_above(&mut self, line_start: TextSize, target_newlines: u32) {
-        if lines_before(line_start, self.source.text()) == target_newlines {
+        if self.source.continues_a_logical_line(line_start)
+            || lines_before(line_start, self.source.text()) == target_newlines
+        {
             return;
         }
         let span = TextRange::new(whitespace_start_before(self.source, line_start), line_start);
         if span.is_empty() && target_newlines == 0 {
             return;
         }
-        self.edits.push(repeat_edit(
-            span,
-            self.source.newline_str(),
-            target_newlines as usize,
-        ));
+        self.place(span, target_newlines);
     }
 
     /// Places `target_newlines` line breaks between `block_end` and
     /// `curr_line_start`, emitting an edit when the actual count
     /// differs. A gap straddling a notebook cell boundary is left
-    /// alone.
+    /// alone, as is one closing on a row a `\` join continues.
     fn normalize_below_block(
         &mut self,
         block_end: TextSize,
         curr_line_start: TextSize,
         target_newlines: u32,
     ) {
-        if !self.source.same_cell(block_end, curr_line_start)
+        if self.source.continues_a_logical_line(curr_line_start)
+            || !self.source.same_cell(block_end, curr_line_start)
             || lines_after(block_end, self.source.text()) == target_newlines
         {
             return;
         }
-        self.edits.push(repeat_edit(
-            TextRange::new(block_end, curr_line_start),
-            self.source.newline_str(),
-            target_newlines as usize,
-        ));
+        self.place(TextRange::new(block_end, curr_line_start), target_newlines);
     }
 
     /// Clears the blank run above the module's first statement, or
@@ -180,6 +177,15 @@ impl Walker<'_> {
                 newlines_below_block(self.source, b),
             );
         }
+    }
+
+    /// Places `target_newlines` line breaks over `span`.
+    fn place(&mut self, span: TextRange, target_newlines: u32) {
+        self.edits.push(repeat_edit(
+            span,
+            self.source.newline_str(),
+            target_newlines as usize,
+        ));
     }
 }
 

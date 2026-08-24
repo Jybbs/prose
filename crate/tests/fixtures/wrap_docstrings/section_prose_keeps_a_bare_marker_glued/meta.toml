@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Section Prose Keeps a Bare Marker Glued"
+
+description = '''
+Section prose wraps one row at a time, first-fit, and a break whose remainder would head the next row as an entry head, a comment marker, or a list marker folds back into the word before it. A plain fill would open a row on `threshold:`, so **the wrap takes `writes threshold:` down together** and the rows the first pass writes re-wrap to themselves.
+'''

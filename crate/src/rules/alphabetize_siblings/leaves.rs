@@ -13,14 +13,16 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Alias, Expr, ExprCall, ExprDict, ExprLambda, ExprSet, Identifier, Parameters, Stmt, StmtAssign,
     StmtDelete,
+    token::TokenKind,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use super::dict::rewrite_dict_text;
+use super::{dict::rewrite_dict_text, joined_text};
 use crate::{
     primitives::{
         binding::{sequence_elts, single_name_target},
+        comments::has_keep_marker,
         docstring::{documented_definitions, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, insert_edit, narrowed_replacement},
         effect::value_is_effectful,
@@ -72,6 +74,7 @@ impl<'a> LeafCollector<'a> {
     fn emit_dunder_list(&mut self, assign: &'a StmtAssign) {
         if self.sort_dunder_lists
             && matches!(single_name_target(assign), Some("__all__" | "__slots__"))
+            && !has_keep_marker(self.source, &*assign.value)
             && let Some(elements) = sequence_elts(&assign.value)
         {
             self.try_emit_inline_reorder(elements, |e| {
@@ -98,10 +101,20 @@ impl<'a> LeafCollector<'a> {
         self.try_emit_inline_reorder(&params.kwonlyargs, classify_param);
     }
 
+    /// Sorts the set's elements, each keyed on its text as the edits
+    /// already collected inside it rewrite it, so an element whose own
+    /// entries sort lands where its sorted form will.
     fn emit_set(&mut self, s: &'a ExprSet) {
-        self.try_emit_inline_reorder(&s.elts, |e| {
-            (!e.is_starred_expr()).then_some(self.source.slice(e))
-        });
+        let keys: HashMap<TextSize, String> = s
+            .elts
+            .iter()
+            .filter(|e| !e.is_starred_expr())
+            .map(|e| {
+                let placed = apply_inline_edits(self.source, e.range(), &self.edits);
+                (e.start(), joined_text(&placed).into_owned())
+            })
+            .collect();
+        self.try_emit_inline_reorder(&s.elts, |e| keys.get(&e.start()).cloned());
     }
 
     /// Replaces the leaf edits nested inside `span` with a single edit
@@ -124,28 +137,23 @@ impl<'a> LeafCollector<'a> {
             return;
         };
         let source = self.source;
-        // A group opening mid-row sits on a line whose head is not a
-        // member, so it swaps member slices through the lighter
-        // `reorder_text`, which keeps every gap verbatim. A comment
-        // inside such a group when it spans lines cannot travel with
-        // its member, so the group holds its order, whereas a
-        // single-line group's trailing comment reads against the whole
-        // line and rides out the swap in place.
+        // A group sharing lines, opening mid-row, or carrying code in
+        // its gaps swaps member slices through `reorder_text`, keeping
+        // every gap verbatim, and holds its order where a comment sits
+        // in a line-spanning swap span. A one-member-per-line group
+        // routes through `reorder_separated` so each trailing comment
+        // travels with its member, and a swap widening past the budget
+        // and the widest source row holds the group.
         let head_shared = !opens_its_line(source, first.start());
-        if head_shared
+        let swapped =
+            any_sibling_shares_line(source, items) || head_shared || gaps_carry_code(source, items);
+        if swapped
             && source.contains_line_break(TextRange::new(first.start(), last.end()))
             && swap_span_commented(source, items)
         {
             return;
         }
         let render = |_: usize, block| apply_inline_edits(source, block, &self.edits);
-        // A single-line or atomics-packed group shares lines, so both it
-        // and a mid-row-opening group keep their verbatim gaps through
-        // `reorder_text`. A group laid out one member per line routes
-        // through `reorder_separated` so each trailing comment travels
-        // with its member. A swap whose rows neither fit the budget nor
-        // keep their source width holds the group.
-        let swapped = any_sibling_shares_line(source, items) || head_shared;
         if swapped {
             let mut order: Vec<usize> = (0..items.len()).collect();
             permute_full(&mut order, items, &mut classify);
@@ -230,6 +238,48 @@ pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
     .collect()
 }
 
+/// Composite docstring-entry sort key. An entry naming a signature
+/// parameter takes that parameter's position, and any other entry
+/// sinks below the signature's, alphabetized by name.
+fn entry_key<'e>(name: &'e str, signature: Option<&[&str]>) -> (usize, &'e str) {
+    signature
+        .and_then(|names| names.iter().position(|&n| n == name))
+        .map_or((usize::MAX, name), |i| (i, ""))
+}
+
+/// True when a gap between two consecutive members of `items` carries
+/// a token of its own past the separators and comments inside it, the
+/// shape a positional argument sitting between two keywords takes.
+fn gaps_carry_code<T: Ranged>(source: &Source, items: &[T]) -> bool {
+    items.windows(2).any(|pair| {
+        let gap = TextRange::new(pair[0].end(), pair[1].start());
+        source.tokens_overlapping(gap).any(|token| {
+            gap.contains(token.start())
+                && !token.kind().is_trivia()
+                && token.kind() != TokenKind::Comma
+        })
+    })
+}
+
+/// Returns the parameter names in the order the rule leaves the
+/// signature: positional-only and positional-or-keyword in source
+/// order, then `*args`, then the keyword-only block sorted, then
+/// `**kwargs`.
+fn signature_order(params: &Parameters) -> Vec<&str> {
+    let mut names: Vec<&str> = params
+        .posonlyargs
+        .iter()
+        .chain(&params.args)
+        .map(|p| p.name().as_str())
+        .collect();
+    names.extend(params.vararg.as_deref().map(|p| p.name.as_str()));
+    let mut order: Vec<usize> = (0..params.kwonlyargs.len()).collect();
+    permute_full(&mut order, &params.kwonlyargs, classify_param);
+    names.extend(order.iter().map(|&i| params.kwonlyargs[i].name().as_str()));
+    names.extend(params.kwarg.as_deref().map(|p| p.name.as_str()));
+    names
+}
+
 /// Walks the AST collecting one non-overlapping leaf edit per outermost
 /// reordering structure, each folding its nested reorders in.
 /// `sort_dict_keys` and `sort_dunder_lists` gate the dict-literal and
@@ -250,34 +300,6 @@ pub(super) fn collect_leaf_edits(
     };
     collector.visit_body(&source.ast().body);
     collector.edits
-}
-
-/// Composite docstring-entry sort key. An entry naming a signature
-/// parameter takes that parameter's position, and any other entry
-/// sinks below the signature's, alphabetized by name.
-fn entry_key<'e>(name: &'e str, signature: Option<&[&str]>) -> (usize, &'e str) {
-    signature
-        .and_then(|names| names.iter().position(|&n| n == name))
-        .map_or((usize::MAX, name), |i| (i, ""))
-}
-
-/// Returns the parameter names in the order the rule leaves the
-/// signature: positional-only and positional-or-keyword in source
-/// order, then `*args`, then the keyword-only block sorted, then
-/// `**kwargs`.
-fn signature_order(params: &Parameters) -> Vec<&str> {
-    let mut names: Vec<&str> = params
-        .posonlyargs
-        .iter()
-        .chain(&params.args)
-        .map(|p| p.name().as_str())
-        .collect();
-    names.extend(params.vararg.as_deref().map(|p| p.name.as_str()));
-    let mut order: Vec<usize> = (0..params.kwonlyargs.len()).collect();
-    permute_full(&mut order, &params.kwonlyargs, classify_param);
-    names.extend(order.iter().map(|&i| params.kwonlyargs[i].name().as_str()));
-    names.extend(params.kwarg.as_deref().map(|p| p.name.as_str()));
-    names
 }
 
 #[cfg(test)]

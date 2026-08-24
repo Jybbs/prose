@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/relocated_item_reshapes_its_call/input.py
+---
+reflow-collections@345..445

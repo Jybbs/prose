@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/source_order_keyword_measured_past_the_buffer/input.py
+---
+class Turtle:
+    def stamp(self, screen, item, poly, fc, oc):
+        if poly:
+            if item:
+                screen._drawpoly(
+                    item,
+                    poly,
+                    fill = self._cc(fc),
+                    outline = self._cc(
+                        oc
+                    ),
+                    width = self._outlinewidth,
+                    top   = True
+                )

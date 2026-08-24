@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Backslash Join Under a Comment Holds"
+
+description = '''
+A `\` explicit line join whose row beneath opens a comment block still joins the two rows, so the gap the rule would normalize sits against the backslash rather than between two statements. **The comment block travels with the join**, leaving the run above it alone.
+'''

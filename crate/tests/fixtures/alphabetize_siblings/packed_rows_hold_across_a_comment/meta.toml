@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "Packed Rows Hold Their Order Across a Comment"
+
+description = '''
+A group packing several members onto a row swaps member slices with every gap kept verbatim, so a comment between its rows would stay put while the members flowed across it. The group holds its order instead, the way a group opening mid-row already does.
+'''

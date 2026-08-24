@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Backslash Join Holds Its Row"
+
+description = '''
+A `\` explicit line join makes the row beneath it part of the row above, so the break between the two is not a gap between statements at all. **The rule leaves a joined row alone**, where rewriting the run would take the newline the join rests on and leave source that no longer parses.
+'''

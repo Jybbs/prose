@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Enclosing Closer Keeps Its Column"
+
+description = '''
+The shed moves only the rows aligned to text it shifted, so the continuation under the first argument follows that argument leftward while the closing `)` of the enclosing call, which hangs from its own opener, stays where it was written.
+'''

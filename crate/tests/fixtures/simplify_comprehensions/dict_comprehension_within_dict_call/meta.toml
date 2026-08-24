@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Copying Dict Comprehension Folds to One `dict` Call"
+
+description = '''
+The comprehension repeats `key, value` unchanged as each entry, so it only copies `rows`, and the enclosing `dict()` is already the constructor it was spelling out. **Both collapse in one rewrite to `dict(rows)`**, the counterpart to the transforming case, which unwraps to the comprehension instead because its values pass through a call.
+'''
