@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_equals/capped_head_releases_the_cut_row/input.py
+---
+def layout(action):
+    help_position = min(self.maxlen, 24)
+    width           = self.width - 1
+    indent          = help_position - 2
+    header          = self.fmt(action)
+    header_no_color = decolor(header)

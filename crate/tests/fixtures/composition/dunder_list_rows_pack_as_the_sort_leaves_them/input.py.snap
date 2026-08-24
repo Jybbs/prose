@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 59
+expression: snapshot
+input_file: crate/tests/fixtures/composition/dunder_list_rows_pack_as_the_sort_leaves_them/input.py
+---
+__all__ = [
+    "aa", "bb",
+    "cc", "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmm",
+    "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnn", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+]

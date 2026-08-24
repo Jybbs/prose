@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Same-Module Imports Hold at Adjacent Cell Edges"
+
+description = '''
+Cell one closes on `from pkg import alpha` and cell two opens on `from pkg import beta`, so the two form one adjacent import run and a module-level gather would merge them, emptying the first cell of the import it declares. **The cell wall holds them apart**, so each cell keeps its own statement.
+'''

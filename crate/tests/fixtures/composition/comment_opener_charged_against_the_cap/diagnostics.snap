@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/comment_opener_charged_against_the_cap/input.py
+---
+align-equals@127..128
+normalize-comment-spacing@44..44

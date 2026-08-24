@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Subscript After the Closer Charges Whole"
+
+description = '''
+A subscript trailing the call on its row never breaks, so its whole `[0]` counts toward the joined row rather than the one column a breakable bracket would, and a join that only fits by leaving the index off stays fractured.
+'''

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/packed_row_joins_the_column_above_it/input.py
+---
+reflow-imports@64..105

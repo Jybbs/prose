@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Held Value Hangs From Its Entry Past a Relaid Key"
+
+description = '''
+The tuple key expands across rows, and the list value written one step past the entry keeps that hang rather than following the key's text, so the row neither drifts nor widens on a later pass.
+'''

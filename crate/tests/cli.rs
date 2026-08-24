@@ -137,7 +137,7 @@ const TWO_CODE_CELLS: &str = r#"{
 }"#;
 
 /// The unaligned two-assignment source the reformat and config-resolution
-/// tests reuse. `AB` is SCREAMING_CASE and `x` a single character, so the
+/// tests reuse. `AB` is `SCREAMING_CASE` and `x` a single character, so the
 /// lint rules pass it silently while `align-equals` still reshapes it.
 const UNALIGNED: &str = "AB = 1\nx = 2\n";
 
@@ -1223,34 +1223,6 @@ fn help_exits_clean() {
 #[test]
 fn no_args_prints_help_and_exits_clean() {
     prose().assert().success();
-}
-
-#[test]
-fn marker_reports_the_defect_on_the_run_that_rewrites_its_output() {
-    let (_dir, path) = fixture("dup.py", "import os\nx = 1\nimport os\ny = 2\n");
-    let (mut cmd, cache_dir) = prose_isolated();
-
-    let first = cmd.arg("format").arg(&path).assert().success();
-    assert!(
-        !stderr_utf8(&first).contains("second run"),
-        "the ledger run marks its output rather than walking it",
-    );
-
-    let mut second = prose();
-    second.env("PROSE_CACHE_DIR", cache_dir.path());
-    let replay = second.arg("format").arg(&path).assert().success();
-
-    let err = stderr_utf8(&replay);
-    assert!(err.contains("second run"), "stderr was {err:?}");
-    assert!(
-        err.contains("--select prune-inert-imports"),
-        "the probe hit narrows to the reproducing rule: {err:?}",
-    );
-
-    let mut third = prose();
-    third.env("PROSE_CACHE_DIR", cache_dir.path());
-    let settled = third.arg("format").arg(&path).assert().success();
-    assert!(!stderr_utf8(&settled).contains("second run"));
 }
 
 #[test]

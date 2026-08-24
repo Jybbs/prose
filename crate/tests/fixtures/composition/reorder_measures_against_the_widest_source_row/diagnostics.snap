@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/reorder_measures_against_the_widest_source_row/input.py
+---
+align-equals@174..175
+alphabetize-siblings@101..182

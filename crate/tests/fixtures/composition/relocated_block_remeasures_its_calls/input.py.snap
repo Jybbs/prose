@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/relocated_block_remeasures_its_calls/input.py
+---
+class Style:
+    def element_create(self, class_name, part_id, statemap):
+        specs = (
+            class_name, part_id,
+            tuple(
+                _mapdict_values(
+                    statemap
+                )
+            )
+        )

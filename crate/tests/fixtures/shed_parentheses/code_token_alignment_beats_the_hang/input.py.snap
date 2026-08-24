@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_parentheses/code_token_alignment_beats_the_hang/input.py
+---
+g(aaa + bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb or
+        cccccccccccccccccccccccccccccccccccccccc)

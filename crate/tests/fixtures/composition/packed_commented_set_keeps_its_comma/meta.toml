@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Packed Commented Set Keeps Its Comma"
+
+description = '''
+A multi-line set packing elements onto shared rows with a comment inside holds its order under [[alphabetize-siblings]], so [[reflow-collections]] reads the comma each element carries now rather than the one a sort would leave, and the over-wide element expands rather than sitting past the cap.
+'''

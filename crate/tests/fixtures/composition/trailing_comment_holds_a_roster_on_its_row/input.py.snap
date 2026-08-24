@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/trailing_comment_holds_a_roster_on_its_row/input.py
+---
+from sys import executable, platform  # Platform is set for one test.
+from tkinter      import BooleanVar, E
+from tkinter      import S, StringVar
+from tkinter      import Toplevel, W
+from tkinter.font import Font
+
+print(BooleanVar, E, Font, S, StringVar, Toplevel, W, executable, platform)

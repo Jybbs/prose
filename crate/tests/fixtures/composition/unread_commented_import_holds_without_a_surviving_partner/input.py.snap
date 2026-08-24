@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/unread_commented_import_holds_without_a_surviving_partner/input.py
+---
+# Local imports
+from pkg import a

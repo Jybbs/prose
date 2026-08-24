@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/shed_parentheses/keyword_flush_against_the_pair_keeps_a_space/input.py
+---
+shed-parentheses@114..115
+shed-parentheses@116..117
+shed-parentheses@129..130
+shed-parentheses@131..132
+shed-parentheses@141..142
+shed-parentheses@143..144
+shed-parentheses@37..38
+shed-parentheses@51..52
+shed-parentheses@61..62
+shed-parentheses@63..64
+shed-parentheses@80..81
+shed-parentheses@82..83
+shed-parentheses@94..95
+shed-parentheses@96..97

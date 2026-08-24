@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Rows Hanging Inside a Nested Bracket Hold"
+
+description = '''
+The rows below an opener that ends its row hang from that row rather than aligning to anything the shed moves, so they keep their column even where it coincides with the column directly past the shed opener.
+'''

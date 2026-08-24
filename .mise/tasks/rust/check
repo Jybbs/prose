@@ -1,5 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE alias="check"
-#MISE description="Verify Rust source matches `rustfmt` without rewriting"
+#MISE alias       = "check"
+#MISE description = "Verify Rust source matches `rustfmt` without rewriting"
 
 cargo fmt --all --check

@@ -9,11 +9,9 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    env,
-    path::{Path, PathBuf},
+    path::Path,
 };
 
-use ignore::Walk;
 use itertools::Itertools;
 use prose::{
     config::Config,
@@ -23,24 +21,24 @@ use prose::{
 };
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-/// How many distinct defects the failure message prints before it
-/// reports the remainder as a count.
-const SHOWN: usize = 30;
+use common::{Tally, corpus};
+
+mod common;
 
 /// The corpus defects one sweep found, each keyed by its own wording so
 /// the same shape across many files reports once.
 #[derive(Default)]
 struct Findings {
     /// Seatings the settling rests on, absent from the dependency column.
-    undeclared: BTreeMap<String, Site>,
+    undeclared: Tally,
     /// Subsets leaving a rule still editing their own output.
-    unsettled: BTreeMap<String, Site>,
+    unsettled: Tally,
 }
 
 impl Findings {
     fn absorb(&mut self, other: Self) {
-        merge(&mut self.undeclared, other.undeclared);
-        merge(&mut self.unsettled, other.unsettled);
+        self.undeclared.absorb(other.undeclared);
+        self.unsettled.absorb(other.unsettled);
     }
 
     fn total(&self) -> usize {
@@ -51,7 +49,6 @@ impl Findings {
 /// Every pipeline the sweep runs, built once and shared across the
 /// corpus rather than rebuilt per file.
 struct Probes {
-    all: Pipeline,
     pairs: Vec<([RuleId; 2], Pipeline)>,
     solo: BTreeMap<RuleId, Pipeline>,
     /// The `pairs` slots each rule appears in, on either side.
@@ -71,7 +68,6 @@ impl Probes {
             touching.entry(*later).or_default().push(slot);
         }
         Self {
-            all: subset(config, Pipeline::known_ids()),
             pairs,
             solo: Pipeline::known_ids()
                 .iter()
@@ -80,27 +76,6 @@ impl Probes {
             touching,
         }
     }
-}
-
-/// Where a defect first showed and how many corpus files carry it.
-struct Site {
-    count: usize,
-    file: String,
-}
-
-/// The `.py` files under the corpus root, sorted so a failure names the
-/// same file across runs.
-fn corpus() -> Vec<PathBuf> {
-    let root = env::var("PROSE_SETTLE_CORPUS").map_or_else(
-        |_| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"),
-        PathBuf::from,
-    );
-    Walk::new(root)
-        .flatten()
-        .map(ignore::DirEntry::into_path)
-        .filter(|path| path.extension().is_some_and(|ext| ext == "py"))
-        .sorted()
-        .collect()
 }
 
 /// Runs `first` then `second` over `text`, chaining a single-rule
@@ -124,24 +99,20 @@ fn in_order(
     settled(&probes.solo[&second], once.map_or(text, Source::text))?.ok()
 }
 
-/// Folds `other` into `into`, keeping the earlier file for a defect
-/// both sides carry and summing how many files reached it.
-fn merge(into: &mut BTreeMap<String, Site>, other: BTreeMap<String, Site>) {
-    for (defect, site) in other {
-        into.entry(defect)
-            .and_modify(|held| held.count += site.count)
-            .or_insert(site);
-    }
-}
-
 /// Sweeps one corpus file across every subset its active rules reach.
+/// A rule counts active when its own solo pipeline would edit the
+/// file, the same instance the solo and pair probes run.
 fn probe(probes: &Probes, path: &Path) -> Findings {
     let mut findings = Findings::default();
     let Ok(source) = Source::from_path(path) else {
         return findings;
     };
     let text = source.text();
-    let active: BTreeSet<RuleId> = probes.all.unsettled(&source).into_iter().collect();
+    let active: BTreeSet<RuleId> = probes
+        .solo
+        .iter()
+        .filter_map(|(&rule, solo)| (!solo.unsettled(&source).is_empty()).then_some(rule))
+        .collect();
     if active.is_empty() {
         return findings;
     }
@@ -180,11 +151,9 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         if pair.unsettled(&reversed).is_empty() || runs_behind(later.as_str(), earlier.as_str()) {
             continue;
         }
-        record(
-            &mut findings.undeclared,
-            format!("`{later}` settles only behind `{earlier}`"),
-            path,
-        );
+        findings
+            .undeclared
+            .record(format!("`{later}` settles only behind `{earlier}`"), path);
     }
     findings
 }
@@ -196,47 +165,16 @@ fn ran(
     pipeline: &Pipeline,
     text: &str,
     label: &str,
-    into: &mut BTreeMap<String, Site>,
+    into: &mut Tally,
     path: &Path,
 ) -> Option<Source> {
     match settled(pipeline, text)? {
         Ok(source) => Some(source),
         Err(error) => {
-            record(into, format!("{label} was rejected: {error}"), path);
+            into.record(format!("{label} was rejected: {error}"), path);
             None
         }
     }
-}
-
-/// Files a defect under its own wording, counting the corpus files that
-/// reach it and holding the first one as the example.
-fn record(into: &mut BTreeMap<String, Site>, defect: String, path: &Path) {
-    into.entry(defect)
-        .and_modify(|held| held.count += 1)
-        .or_insert_with(|| Site {
-            count: 1,
-            file: path.display().to_string(),
-        });
-}
-
-/// Renders `defects` as one line apiece under `heading`, capped at
-/// [`SHOWN`] with the remainder reported as a count.
-fn render(heading: &str, defects: &BTreeMap<String, Site>) -> String {
-    if defects.is_empty() {
-        return String::new();
-    }
-    let shown = defects
-        .iter()
-        .take(SHOWN)
-        .map(|(defect, site)| format!("  {defect} ({} files, e.g. {})", site.count, site.file))
-        .format("\n");
-    let rest = defects.len().saturating_sub(SHOWN);
-    let tail = if rest > 0 {
-        format!("\n  ... and {rest} more")
-    } else {
-        String::new()
-    };
-    format!("\n{heading} ({}):\n{shown}{tail}", defects.len())
 }
 
 /// Files a `label`-keyed defect for the rules still editing `output`,
@@ -245,15 +183,14 @@ fn reports_left(
     pipeline: &Pipeline,
     output: &Source,
     label: &str,
-    into: &mut BTreeMap<String, Site>,
+    into: &mut Tally,
     path: &Path,
 ) -> bool {
     let left = pipeline.unsettled(output);
     if left.is_empty() {
         return false;
     }
-    record(
-        into,
+    into.record(
         format!("{label} leaves {} editing", render_slugs(&left)),
         path,
     );
@@ -289,8 +226,8 @@ fn every_rule_subset_settles_and_declares_its_seating() {
     );
     let report = format!(
         "{}{}",
-        render("unsettled subsets", &findings.unsettled),
-        render("undeclared seatings", &findings.undeclared),
+        findings.unsettled.render("unsettled subsets"),
+        findings.undeclared.render("undeclared seatings"),
     );
     assert!(
         report.is_empty(),

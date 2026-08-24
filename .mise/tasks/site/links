@@ -1,10 +1,11 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE alias="links"
-#MISE description="Check the built site for broken internal links with `lychee`"
-#MISE depends=["site:press"]
-#MISE dir="site"
+#MISE alias       = "links"
+#MISE depends     = ["site:press"]
+#MISE description = "Check the built site for broken internal links with `lychee`"
+#MISE dir         = "site"
 
-lychee --offline \
-  --root-dir "$PWD/.vitepress/dist" \
+lychee \
   --fallback-extensions html \
+  --offline \
+  --root-dir "$PWD/.vitepress/dist" \
   .vitepress/dist

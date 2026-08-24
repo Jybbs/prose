@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/gathered_roster_packs_to_its_sorted_column/input.py
+---
+from email import charset as _charset
+from email import errors, utils
+from email._encoded_words import decode_b
+from email._policybase import compat32
+
+print(_charset, compat32, decode_b, errors, utils)

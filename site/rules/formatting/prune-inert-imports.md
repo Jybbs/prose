@@ -33,7 +33,7 @@ Two reads the count misses hold an import too. A `del` of the bound name needs t
 
 An import binding `__all__` itself holds on the same ground, as does a name a second import rebinds, keeping the fallback in a `try: from _speedups import loads` shim standing.
 
-An own-line comment directly above an import holds the whole statement, dropping the line stranding the comment on whatever follows.
+An own-line comment directly above an import holds the whole statement, dropping the line stranding the comment on whatever follows, unless [[reflow-imports]] will fold the statement into a same-module sibling, where the drop lands on the merged line the comment then leads.
 
 <Fixture rule="prune_inert_imports" case="leading_comment_holds_its_import" />
 

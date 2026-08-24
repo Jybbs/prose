@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Subscript Return Annotation Holds No Literal to Expand"
+
+description = '''
+The inline row overflows and its only literal is the subscript's own slice, which carries no bracket pair `reflow-collections` hangs rows on, so nothing ends the opening row early. The signature expands its parameters rather than resting on an expansion that never arrives and leaving the row over the budget.
+'''

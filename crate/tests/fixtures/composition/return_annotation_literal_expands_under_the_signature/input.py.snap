@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/return_annotation_literal_expands_under_the_signature/input.py
+---
+class Command:
+    def handler_map(self) -> dict[str, Callable[[
+        Values,
+        list[str]
+    ], None]]:
+        return {}

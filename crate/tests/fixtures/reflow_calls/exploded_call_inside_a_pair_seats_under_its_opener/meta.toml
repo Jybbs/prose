@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Exploded Call Inside a Pair Seats Under Its Opener"
+
+description = '''
+A call exploding inside a grouping pair hangs its argument row one step past the row its opener sits on and drops its closer back to that row's indent, whatever column the pair itself opened at.
+'''

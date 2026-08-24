@@ -1,8 +1,14 @@
 //! Source-text wrapper bundling parsed AST, token stream, and line index.
 
-use std::{borrow::Cow, path::Path, str::FromStr, sync::OnceLock};
+use std::{
+    borrow::{Borrow, Cow},
+    path::Path,
+    str::FromStr,
+    sync::OnceLock,
+};
 
 use itertools::Itertools;
+use ruff_diagnostics::Edit;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
 use ruff_python_ast::{
     AnyNodeRef, ExprRef, ModModule, PySourceType, Stmt,
@@ -23,10 +29,13 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     primitives::{
         binding::BindingAnalysis,
-        comments::trailing_comment_start,
+        comments::trailing_comment,
         inline::indent_width,
+        layout::{is_layoutable, requires_expand},
+        padding::Stranding,
         range::paren_aware_range,
         reserve::{Columns, Reservations},
+        walk::filter_map_over_exprs,
     },
     suppression::SuppressionMap,
 };
@@ -34,16 +43,11 @@ use crate::{
 /// Owned wrapper around a parsed Python source file.
 ///
 /// Holds the source text, the parsed AST, the token stream, a lazy
-/// line index, a `CommentRanges` index built during parsing, and a
-/// `SuppressionMap` of `# prose: off` / `# prose: skip` spans (plus
-/// the `# fmt:` and `# yapf:` aliases), `# prose: skip[<id>]` per-rule
-/// spans and `# prose: ignore[<id>]` per-line directives, plus a
-/// `BindingAnalysis` table of every name's writes and reads.
-/// `source_type` is the parse mode, `cell_offsets` the notebook cell
-/// boundaries, and `cell_numbers` each cell's notebook position, the
-/// last two empty for an ordinary module. The alignment columns join
-/// the binding table as a walk built on first read and reused by every
-/// later reader.
+/// line index, the `CommentRanges` and `SuppressionMap` indexes built
+/// during parsing, and the `BindingAnalysis`, alignment-column, and
+/// stranded-padding walks each built on first read. `source_type` is
+/// the parse mode, with `cell_offsets` and `cell_numbers` carrying a
+/// notebook's cell boundaries and positions, empty for a module.
 #[derive(Debug)]
 pub struct Source {
     binding_analysis: OnceLock<Box<BindingAnalysis>>,
@@ -51,9 +55,11 @@ pub struct Source {
     cell_offsets: CellOffsets,
     columns: OnceLock<Box<(Reservations, Columns)>>,
     comment_ranges: CommentRanges,
+    expandable_literals: OnceLock<Vec<TextRange>>,
     file: SourceFile,
     parsed: Parsed<ModModule>,
     source_type: PySourceType,
+    stranded_padding: OnceLock<Box<(Stranding, Vec<Edit>)>>,
     suppression: Box<SuppressionMap>,
 }
 
@@ -146,10 +152,12 @@ impl Source {
             cell_numbers: Box::default(),
             cell_offsets,
             columns: OnceLock::new(),
+            expandable_literals: OnceLock::new(),
             comment_ranges,
             file,
             parsed,
             source_type,
+            stranded_padding: OnceLock::new(),
             suppression,
         }
     }
@@ -228,14 +236,9 @@ impl Source {
     /// against the same reservation and reads the walk back, whereas a
     /// read carrying a different one walks for itself.
     pub(crate) fn columns(&self, reservations: Reservations) -> Cow<'_, Columns> {
-        let held = self
-            .columns
-            .get_or_init(|| Box::new((reservations, reservations.columns(self))));
-        if held.0 == reservations {
-            Cow::Borrowed(&held.1)
-        } else {
-            Cow::Owned(reservations.columns(self))
-        }
+        keyed(&self.columns, reservations, |reservations| {
+            reservations.columns(self)
+        })
     }
 
     /// Returns `true` when the cell boundary at `index` sits on a
@@ -422,11 +425,21 @@ impl Source {
     /// charging one against the code budget would let a comment reshape
     /// the code it annotates.
     pub fn row_tail_width(&self, offset: TextSize) -> usize {
-        let tail = self.row_tail(offset);
-        let end = trailing_comment_start(self, offset)
+        self.tail_width(self.row_tail(offset))
+    }
+
+    /// The display width of the code across `tail`, a span inside one
+    /// physical row, closed at a trailing comment the span reaches the
+    /// same way [`row_tail_width`](Self::row_tail_width) closes the
+    /// whole row.
+    pub(crate) fn tail_width(&self, tail: TextRange) -> usize {
+        let end = trailing_comment(self, tail.start())
+            .map(TextRange::start)
             .filter(|start| tail.contains(*start))
             .unwrap_or(tail.end());
-        self.slice(TextRange::new(offset, end)).trim_end().width()
+        self.slice(TextRange::new(tail.start(), end))
+            .trim_end()
+            .width()
     }
 
     /// Returns the range spanning the entire source text.
@@ -536,6 +549,30 @@ impl Source {
         }
     }
 
+    /// Returns the start-ascending ranges of the comment-free literals
+    /// `reflow-collections` can expand, walking the tree on the first
+    /// read.
+    pub(crate) fn expandable_literals(&self) -> &[TextRange] {
+        self.expandable_literals.get_or_init(|| {
+            filter_map_over_exprs(&self.ast().body, |expr| {
+                (is_layoutable(expr)
+                    && requires_expand(expr)
+                    && !self.intersects_comment(expr.range()))
+                .then_some(expr.range())
+            })
+        })
+    }
+
+    /// Returns the edits `stranding` emits over this source, walking the
+    /// tree on the first read. Every rule of a run measures against the
+    /// same padding rule and reads the walk back, whereas a read
+    /// carrying a different one walks for itself.
+    pub(crate) fn stranded_padding(&self, stranding: Stranding) -> Cow<'_, [Edit]> {
+        keyed(&self.stranded_padding, stranding, |stranding| {
+            stranding.edits(self)
+        })
+    }
+
     /// Returns the suppression index built during parsing.
     pub(crate) fn suppression_map(&self) -> &SuppressionMap {
         &self.suppression
@@ -596,6 +633,22 @@ impl FromStr for Source {
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
         Self::build_module(text.to_owned(), "<source>", PySourceType::default())
+    }
+}
+
+/// The value `build` derives for `key`, read back from `slot` where it
+/// already holds that key's value and built afresh otherwise, the
+/// first read filling the slot.
+fn keyed<K: Copy + PartialEq, B: ?Sized + ToOwned>(
+    slot: &OnceLock<Box<(K, B::Owned)>>,
+    key: K,
+    build: impl Fn(&K) -> B::Owned,
+) -> Cow<'_, B> {
+    let held = slot.get_or_init(|| Box::new((key, build(&key))));
+    if held.0 == key {
+        Cow::Borrowed(held.1.borrow())
+    } else {
+        Cow::Owned(build(&key))
     }
 }
 

@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 44
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/call_explodes_ahead_of_an_unbreakable_tail/input.py
+---
+reflow-calls@70..82
+reflow-collections@72..80

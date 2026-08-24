@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/shed_super_args/continuation_reseats_by_the_shed_span/input.py
+---
+shed-super-args@152..193

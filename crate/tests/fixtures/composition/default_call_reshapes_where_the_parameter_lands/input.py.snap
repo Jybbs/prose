@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 59
+expression: snapshot
+input_file: crate/tests/fixtures/composition/default_call_reshapes_where_the_parameter_lands/input.py
+---
+def function_nm(
+    parameter_x=outer_call_name(
+        first_arg_v,
+        keyword_name = inner_call_nm(
+            argument_one,
+            argument_two
+        ).attr
+    )
+):
+    pass
