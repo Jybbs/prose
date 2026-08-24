@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/padded_entry_holds_where_its_rebuild_fits/input.py
+---
+class Handlers:
+
+    def clear(self):
+        self.loggerMap = {alogger: None}

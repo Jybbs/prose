@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Backslash Join Inside a Body Holds"
+
+description = '''
+The join carries the same weight at function scope as at module scope, where the row it opens sits at the body's indent rather than at column zero. **A joined row inside a body is left alone**, matching what the rule does with one at the top level.
+'''

@@ -325,6 +325,25 @@ impl Source {
         self.file.source_text().contains_line_break(ranged.range())
     }
 
+    /// Returns `true` when the physical row holding `offset` continues
+    /// the row above it through a `\` explicit line join. A trailing
+    /// backslash inside a comment closes with its line and joins
+    /// nothing, so it reads as no join.
+    pub(crate) fn continues_a_logical_line(&self, offset: TextSize) -> bool {
+        let text = self.text();
+        let above = &text[..text.line_start(offset).to_usize()];
+        let Some(joined) = above
+            .strip_suffix('\n')
+            .map(|row| row.strip_suffix('\r').unwrap_or(row))
+        else {
+            return false;
+        };
+        let Some(ahead) = joined.strip_suffix('\\') else {
+            return false;
+        };
+        !self.intersects_comment(TextRange::new(TextSize::of(ahead), TextSize::of(joined)))
+    }
+
     /// Returns the start offset of the first token in `range` for
     /// which `predicate` is true. Callers that need the full `&Token`
     /// (kind, range, flags) should chain
@@ -875,6 +894,27 @@ mod tests {
             source.consecutive_lines(body[0].end(), body[1].start()),
             expected,
         );
+    }
+
+    #[rstest]
+    #[case::joined("\\\ny = 2\n", true)]
+    #[case::joined_across_crlf("\\\r\ny = 2\r\n", true)]
+    #[case::plain_row("x = 1\ny = 2\n", false)]
+    #[case::opening_row("y = 2\n", false)]
+    #[case::comment_head("# leads\ny = 2\n", false)]
+    #[case::backslash_closing_a_comment("# trails \\\ny = 2\n", false)]
+    fn continues_a_logical_line_reads_the_join_and_not_a_bare_backslash(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let last = source
+            .ast()
+            .body
+            .last()
+            .expect("the source carries a statement");
+
+        assert_eq!(source.continues_a_logical_line(last.start()), expected);
     }
 
     #[test]

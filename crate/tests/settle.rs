@@ -4,12 +4,17 @@
 //!
 //! A rule that settles alone and never un-settles an earlier one leaves
 //! every larger subset settled, so the singles and the ordered pairs
-//! carry the guarantee between them. `PROSE_SETTLE_CORPUS` points the
-//! sweep at a directory other than the fixture tree.
+//! carry the guarantee between them. The fixture tree runs the sweep at
+//! every line length the harness carries, because a subset that settles
+//! at one `code-line-length` can still edit its own output at another.
+//! `PROSE_SETTLE_CORPUS` points the sweep at a directory other than the
+//! fixture tree and drops it to the shipped default budget, and
+//! `PROSE_SETTLE_WIDTHS` names the set outright either way.
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    path::Path,
+    num::NonZeroUsize,
+    path::{Path, PathBuf},
 };
 
 use itertools::Itertools;
@@ -21,7 +26,7 @@ use prose::{
 };
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use common::{Tally, corpus};
+use common::{Tally, WIDTHS, corpus, pointed_corpus, widths_or};
 
 mod common;
 
@@ -46,9 +51,12 @@ impl Findings {
     }
 }
 
-/// Every pipeline the sweep runs, built once and shared across the
-/// corpus rather than rebuilt per file.
+/// Every pipeline one budget's sweep runs, built once and shared across
+/// the corpus rather than rebuilt per file.
 struct Probes {
+    /// The `code-line-length` clause every defect this budget files
+    /// carries.
+    budget: String,
     pairs: Vec<([RuleId; 2], Pipeline)>,
     solo: BTreeMap<RuleId, Pipeline>,
     /// The `pairs` slots each rule appears in, on either side.
@@ -56,11 +64,15 @@ struct Probes {
 }
 
 impl Probes {
-    fn build(config: &Config) -> Self {
+    fn build(length: usize) -> Self {
+        let config = Config {
+            code_line_length: NonZeroUsize::new(length),
+            ..Config::default()
+        };
         let pairs: Vec<([RuleId; 2], Pipeline)> = Pipeline::known_ids()
             .iter()
             .array_combinations()
-            .map(|[&earlier, &later]| ([earlier, later], subset(config, &[earlier, later])))
+            .map(|[&earlier, &later]| ([earlier, later], subset(&config, &[earlier, later])))
             .collect();
         let mut touching: BTreeMap<RuleId, Vec<usize>> = BTreeMap::new();
         for (slot, ([earlier, later], _)) in pairs.iter().enumerate() {
@@ -68,10 +80,11 @@ impl Probes {
             touching.entry(*later).or_default().push(slot);
         }
         Self {
+            budget: format!("at `code-line-length` {length}"),
             pairs,
             solo: Pipeline::known_ids()
                 .iter()
-                .map(|&rule| (rule, subset(config, &[rule])))
+                .map(|&rule| (rule, subset(&config, &[rule])))
                 .collect(),
             touching,
         }
@@ -99,9 +112,21 @@ fn in_order(
     settled(&probes.solo[&second], once.map_or(text, Source::text))?.ok()
 }
 
+/// The budgets this run probes. A pointed corpus takes the shipped
+/// default alone, holding its wall clock where it already sits, and
+/// `PROSE_SETTLE_WIDTHS` names the set outright either way.
+fn lengths() -> Vec<usize> {
+    let pointed = pointed_corpus()
+        .and(Config::default().code_line_length)
+        .map(|length| vec![length.get()]);
+    widths_or(pointed.as_deref().unwrap_or(&WIDTHS))
+}
+
 /// Sweeps one corpus file across every subset its active rules reach.
 /// A rule counts active when its own solo pipeline would edit the
-/// file, the same instance the solo and pair probes run.
+/// file, the same instance the solo and pair probes run. A rule that
+/// fails alone is dropped from the pair sweep, whose every slot would
+/// otherwise re-report that one defect.
 fn probe(probes: &Probes, path: &Path) -> Findings {
     let mut findings = Findings::default();
     let Ok(source) = Source::from_path(path) else {
@@ -118,13 +143,17 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
     }
 
     let mut alone: BTreeMap<RuleId, Source> = BTreeMap::new();
+    let mut broken: BTreeSet<RuleId> = BTreeSet::new();
     for &rule in &active {
         let solo = &probes.solo[&rule];
-        let label = format!("`{rule}` alone");
+        let label = format!("`{rule}` alone {}", probes.budget);
         let Some(once) = ran(solo, text, &label, &mut findings.unsettled, path) else {
+            broken.insert(rule);
             continue;
         };
-        reports_left(solo, &once, &label, &mut findings.unsettled, path);
+        if reports_left(solo, &once, &label, &mut findings.unsettled, path) {
+            broken.insert(rule);
+        }
         alone.insert(rule, once);
     }
 
@@ -135,7 +164,10 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
     for slot in reachable {
         let ([earlier, later], pair) = &probes.pairs[slot];
         let (earlier, later) = (*earlier, *later);
-        let label = format!("`{earlier}` then `{later}`");
+        if broken.contains(&earlier) || broken.contains(&later) {
+            continue;
+        }
+        let label = format!("`{earlier}` then `{later}` {}", probes.budget);
         let Some(forward) = ran(pair, text, &label, &mut findings.unsettled, path) else {
             continue;
         };
@@ -151,9 +183,13 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         if pair.unsettled(&reversed).is_empty() || runs_behind(later.as_str(), earlier.as_str()) {
             continue;
         }
-        findings
-            .undeclared
-            .record(format!("`{later}` settles only behind `{earlier}`"), path);
+        findings.undeclared.record(
+            format!(
+                "`{later}` settles only behind `{earlier}` {}",
+                probes.budget
+            ),
+            path,
+        );
     }
     findings
 }
@@ -211,19 +247,27 @@ fn subset(config: &Config, rules: &[RuleId]) -> Pipeline {
     Pipeline::with_filters(config, rules, &[])
 }
 
+/// Folds every file's findings under one budget's probes.
+fn sweep(probes: &Probes, files: &[PathBuf]) -> Findings {
+    files
+        .par_iter()
+        .map(|path| probe(probes, path))
+        .reduce(Findings::default, |mut held, next| {
+            held.absorb(next);
+            held
+        })
+}
+
 #[test]
 #[cfg_attr(coverage, ignore = "the sweep runs uninstrumented in its own row")]
 fn every_rule_subset_settles_and_declares_its_seating() {
     let files = corpus();
     assert!(!files.is_empty(), "the corpus holds no `.py` files");
-    let probes = Probes::build(&Config::default());
-    let findings = files.par_iter().map(|path| probe(&probes, path)).reduce(
-        Findings::default,
-        |mut held, next| {
-            held.absorb(next);
-            held
-        },
-    );
+    let lengths = lengths();
+    let mut findings = Findings::default();
+    for &length in &lengths {
+        findings.absorb(sweep(&Probes::build(length), &files));
+    }
     let report = format!(
         "{}{}",
         findings.unsettled.render("unsettled subsets"),
@@ -231,8 +275,9 @@ fn every_rule_subset_settles_and_declares_its_seating() {
     );
     assert!(
         report.is_empty(),
-        "{} distinct defects across the corpus's {} files:{report}",
+        "{} distinct defects across the corpus's {} files, swept at `code-line-length` {}:{report}",
         findings.total(),
         files.len(),
+        lengths.iter().format(", "),
     );
 }

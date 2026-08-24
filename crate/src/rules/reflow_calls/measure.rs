@@ -8,7 +8,6 @@ use std::borrow::Cow;
 use ruff_python_ast::{Expr, ExprCall, helpers::any_over_expr, token::TokenKind};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use super::Exploder;
 use crate::primitives::{
@@ -120,7 +119,9 @@ impl<'a> Exploder<'a> {
                 .rejoined(self.source, literal, literal.into(), column, tail)
                 .is_none();
         }
-        let width = self.settled_width(range, self.source.slice(range).width());
+        let width =
+            self.one_row
+                .narrowest_width(self.source, literal, literal.into(), range, self.padding);
         !self.one_row.fits(column + width + tail)
     }
 

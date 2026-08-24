@@ -22,6 +22,7 @@ use crate::{
         edit::apply_inline_edits,
         fracture::{self, outermost},
         layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
+        padding,
         params::parameter_sites,
     },
     source::Source,
@@ -190,6 +191,34 @@ impl<'a> Settings<'a> {
         tail: usize,
     ) -> Option<Cow<'a, str>> {
         self.measured(source, expr, parent, column, tail, Column::Holds)
+    }
+
+    /// The narrower of the width `range` settles to as written and the
+    /// width `expr`'s canonical rebuild carries. `padding` is the edit
+    /// list `strip-stranded-padding` emits, discounted from the
+    /// as-written reading alone.
+    pub(crate) fn narrowest_width(
+        &self,
+        source: &Source,
+        expr: &Expr,
+        parent: AnyNodeRef,
+        range: TextRange,
+        padding: &[Edit],
+    ) -> usize {
+        let settled = source
+            .slice(range)
+            .width()
+            .saturating_add_signed(-padding::slack(source, padding, range));
+        let condensed = self
+            .condensed(source, expr, parent)
+            .map_or(settled, |text| {
+                if source.slice(range) == text {
+                    settled
+                } else {
+                    text.width()
+                }
+            });
+        settled.min(condensed)
     }
 
     /// `param`'s one-row text, each row-spanning annotation and default

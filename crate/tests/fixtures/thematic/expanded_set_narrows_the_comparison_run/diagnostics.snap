@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/thematic/expanded_set_narrows_the_comparison_run/input.py
+---
+alphabetize-siblings@49..67
+reflow-collections@45..78
+signature-annotations@14..18
+space-statements@20..21

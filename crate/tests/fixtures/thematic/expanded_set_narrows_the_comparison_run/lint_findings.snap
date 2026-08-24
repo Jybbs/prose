@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/thematic/expanded_set_narrows_the_comparison_run/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 19,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 15,
+      "row": 1
+    },
+    "message": "Parameter `conn` has no type annotation"
+  }
+]

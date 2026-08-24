@@ -167,7 +167,7 @@ impl<'a> Layouter<'a> {
         (self.explode
             && expandable
             && (over_count
-                || column + self.condensed_width(expr, parent, range) + tail
+                || column + self.narrowest_width(expr, parent, range) + tail
                     > self.code_line_length))
             .then(|| self.expand(expr, parent, indent))
     }

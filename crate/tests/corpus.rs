@@ -13,7 +13,6 @@
 use std::{
     cell::RefCell,
     collections::BTreeMap,
-    env,
     io::Write,
     num::NonZeroUsize,
     panic::{self, AssertUnwindSafe},
@@ -36,18 +35,16 @@ use prose::{
 };
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use common::{Tally, corpus};
+use common::{CORPUS, Tally, WIDTHS, WIDTHS_VAR, corpus, env_list, pointed_corpus, widths_or};
 
 mod common;
 
-/// The axes the sweep crosses with every width absent
-/// `PROSE_SETTLE_AXES`, each varying the budget it names.
+/// The axes the sweep crosses with every width absent [`AXES_VAR`],
+/// each varying the budget it names.
 const AXES: [Axis; 4] = [Axis::Code, Axis::Docstring, Axis::Fallback, Axis::Import];
 
-/// The line lengths the sweep covers absent `PROSE_SETTLE_WIDTHS`, the
-/// default flanked by the narrow and wide settings a project sets it
-/// to.
-const WIDTHS: [usize; 6] = [40, 50, 60, 79, 88, 100];
+/// The environment variable narrowing the axes by name.
+const AXES_VAR: &str = "PROSE_SETTLE_AXES";
 
 /// The budget an axis varies at each width, every other budget held at
 /// its default.
@@ -100,7 +97,7 @@ impl Axis {
         }
     }
 
-    /// The `PROSE_SETTLE_AXES` token naming this axis.
+    /// The [`AXES_VAR`] token naming this axis.
     fn name(self) -> &'static str {
         match self {
             Self::Code => "code",
@@ -113,12 +110,10 @@ impl Axis {
     /// The command sweeping this axis at `width` alone, carrying the
     /// corpus override when the run took one.
     fn repro(self, width: usize) -> String {
-        let corpus = env::var("PROSE_SETTLE_CORPUS").map_or_else(
-            |_| String::new(),
-            |dir| format!("PROSE_SETTLE_CORPUS={dir} "),
-        );
+        let corpus =
+            pointed_corpus().map_or_else(String::new, |dir| format!("{CORPUS}={} ", dir.display()));
         format!(
-            "{corpus}PROSE_SETTLE_AXES={} PROSE_SETTLE_WIDTHS={width} cargo test --test corpus",
+            "{corpus}{AXES_VAR}={} {WIDTHS_VAR}={width} cargo test --test corpus",
             self.name(),
         )
     }
@@ -187,26 +182,17 @@ thread_local! {
     static PANIC_SITE: RefCell<Option<String>> = const { RefCell::new(None) };
 }
 
-/// The axes this run sweeps, `PROSE_SETTLE_AXES` narrowing [`AXES`] as
-/// a space-separated list of `code`, `docstring`, `import`, and
+/// The axes this run sweeps, [`AXES_VAR`] narrowing [`AXES`] as a
+/// space-separated list of `code`, `docstring`, `import`, and
 /// `fallback`.
 fn axes() -> Vec<Axis> {
-    env_list("PROSE_SETTLE_AXES", &AXES, |name| match name {
+    env_list(AXES_VAR, &AXES, |name| match name {
         "code" => Axis::Code,
         "docstring" => Axis::Docstring,
         "fallback" => Axis::Fallback,
         "import" => Axis::Import,
-        other => panic!("PROSE_SETTLE_AXES names an unknown axis: {other}"),
+        other => panic!("{AXES_VAR} names an unknown axis: {other}"),
     })
-}
-
-/// The values `var` carries as a space-separated list, `defaults`
-/// where it is unset.
-fn env_list<T: Clone>(var: &str, defaults: &[T], parse: impl Fn(&str) -> T) -> Vec<T> {
-    env::var(var).map_or_else(
-        |_| defaults.to_vec(),
-        |set| set.split_whitespace().map(&parse).collect(),
-    )
 }
 
 /// The message a caught panic carried, `"panicked"` for a payload of
@@ -325,17 +311,6 @@ fn watch_for_a_runaway() {
     });
 }
 
-/// The line lengths this run sweeps, `PROSE_SETTLE_WIDTHS` overriding
-/// [`WIDTHS`] as a space-separated list.
-fn widths() -> Vec<usize> {
-    env_list("PROSE_SETTLE_WIDTHS", &WIDTHS, |width| {
-        width
-            .parse::<NonZeroUsize>()
-            .expect("every `PROSE_SETTLE_WIDTHS` entry is a nonzero number")
-            .get()
-    })
-}
-
 #[test]
 #[cfg_attr(coverage, ignore = "the sweep runs uninstrumented in its own row")]
 fn every_width_settles_and_applies_what_it_reports() {
@@ -350,7 +325,7 @@ fn every_width_settles_and_applies_what_it_reports() {
         PANIC_SITE.with(|cell| cell.replace(site));
     }));
     let axes = axes();
-    let widths = widths();
+    let widths = widths_or(&WIDTHS);
     let mut findings = Findings::default();
     for &width in &widths {
         for &axis in &axes {

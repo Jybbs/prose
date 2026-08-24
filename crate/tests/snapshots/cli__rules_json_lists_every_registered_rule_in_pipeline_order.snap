@@ -108,6 +108,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "after": [
       "shed-backslash-continuations",
       "shed-parentheses",
+      "simplify-comprehensions",
       "shed-super-args",
       "stack-method-chains"
     ],
@@ -117,7 +118,8 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
-      "strip-none-return"
+      "strip-none-return",
+      "shed-parentheses"
     ],
     "imperative": "normalize function signature to one-line or one-per-line shape",
     "position": 17,
@@ -262,7 +264,8 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "after": [
       "shed-parentheses",
       "normalize-comparisons",
-      "reflow-calls"
+      "reflow-calls",
+      "reflow-collections"
     ],
     "imperative": "align consecutive comparison operators",
     "position": 30,
