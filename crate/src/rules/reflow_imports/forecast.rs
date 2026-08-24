@@ -384,12 +384,10 @@ impl<'a> Layout<'a> {
 
     /// The packing of every roster in `seats`, one `align-imports` run
     /// in reading order, each row seated at the column the aligner
-    /// settles it to. The rosters first read at their widest row, the
-    /// widest member or the last member with the trailing comment it
-    /// keeps, packing to whatever column the run settles on, and the
-    /// rows each roster then packs into seat one by one under the run
-    /// the aligner reads them in, so a row fitting a wider column above
-    /// joins it while the rows beneath keep their own.
+    /// settles it to. Each roster first reads at its widest row to
+    /// resolve the run's column, and the rows it packs into then seat
+    /// one by one, a row fitting a wider column above joining it while
+    /// the rows beneath keep their own.
     fn seat_run(&self, settings: aligner::Settings, seats: &[Seat<'a>]) -> Vec<(usize, Packing)> {
         let source = self.source;
         let budget = self.rule.import_line_length;

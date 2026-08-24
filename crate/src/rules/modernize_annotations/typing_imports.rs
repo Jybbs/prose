@@ -10,7 +10,7 @@ use ruff_text_size::TextRange;
 use crate::{
     primitives::{
         binding::{bare_import_bound_name, from_import_bound_name, top_level_module},
-        imports::{Dropping, prune_import_statements},
+        imports::Dropping,
     },
     rules::reflow_imports::Folds,
     source::Source,
@@ -121,9 +121,7 @@ impl<'a> TypingImports<'a> {
                 slot: import.slot,
             })
             .collect();
-        prune_import_statements(source, &source.ast().body, &drops, |slot, survives| {
-            folds.landing(source, slot, survives)
-        })
+        folds.prune(source, &drops)
     }
 }
 

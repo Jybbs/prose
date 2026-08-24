@@ -160,24 +160,6 @@ impl BandPlan<'_> {
         self.is_sound(&drained.banded).then_some(drained)
     }
 
-    /// Every import band the drained `order` seats beside every comment
-    /// the banding carries onto another member, `None` when the plan is
-    /// unsound.
-    pub(super) fn import_bands(
-        mut self,
-        body: &[Stmt],
-        sections: &Sections,
-        first_party: &[String],
-        grouped: bool,
-        order: &[usize],
-    ) -> Option<(Vec<ImportBand>, Vec<Carry>)> {
-        let Drained {
-            imports, shifts, ..
-        } = self.drained(body, sections, first_party, grouped, order)?;
-        self.relocate_heads(&shifts);
-        Some((imports, self.carries))
-    }
-
     /// True when every eager reference seats its referent ahead of the
     /// referrer in `order`, the import-safety invariant the hoist holds.
     fn is_sound(&self, order: &[usize]) -> bool {
@@ -247,6 +229,24 @@ impl BandPlan<'_> {
             *order = banded;
             banding
         })
+    }
+
+    /// Every import band the drained `order` seats beside every comment
+    /// the banding carries onto another member, `None` when the plan is
+    /// unsound.
+    pub(super) fn import_bands(
+        mut self,
+        body: &[Stmt],
+        sections: &Sections,
+        first_party: &[String],
+        grouped: bool,
+        order: &[usize],
+    ) -> Option<(Vec<ImportBand>, Vec<Carry>)> {
+        let Drained {
+            imports, shifts, ..
+        } = self.drained(body, sections, first_party, grouped, order)?;
+        self.relocate_heads(&shifts);
+        Some((imports, self.carries))
     }
 }
 

@@ -112,6 +112,15 @@ struct Layout<'a> {
 }
 
 impl<'a> Layout<'a> {
+    /// The edit rewriting `node` to `rows` joined one per line at the
+    /// statement's indent, `None` where the statement does not open its
+    /// own line or already reads that way.
+    fn joined_rows_edit(&self, node: &impl Ranged, rows: &[String]) -> Option<Edit> {
+        let indent = own_line_indent(self.source, node)?;
+        let joiner = format!("{}{indent}", self.newline);
+        narrowed_replacement(self.source, node.range(), rows.join(&joiner))
+    }
+
     /// Lays out `body` and then every body beneath it, a class or
     /// function suite leaving module scope so no band forecast reaches
     /// the imports inside it.
@@ -179,10 +188,8 @@ impl<'a> Layout<'a> {
         names: &[&str],
         rows: &[(Range<usize>, Cow<'a, str>)],
     ) -> Option<Edit> {
-        let indent = own_line_indent(self.source, node)?;
         let head = import_head(node);
-        let joiner = format!("{}{indent}", self.newline);
-        let rewrite = rows
+        let rows: Vec<String> = rows
             .iter()
             .map(|(range, gap)| {
                 format!(
@@ -190,8 +197,8 @@ impl<'a> Layout<'a> {
                     names[range.clone()].join(MEMBER_SEPARATOR)
                 )
             })
-            .join(&joiner);
-        narrowed_replacement(self.source, node.range(), rewrite)
+            .collect();
+        self.joined_rows_edit(node, &rows)
     }
 
     /// Folds each repeated module in `body` into one statement and
@@ -292,18 +299,13 @@ impl<'a> Layout<'a> {
         let [_, _, ..] = node.names.as_slice() else {
             return;
         };
-        let Some(indent) = own_line_indent(self.source, node) else {
-            return;
-        };
-        let joiner = format!("{}{indent}", self.newline);
-        let rewrite = node
+        let rows: Vec<String> = node
             .names
             .iter()
             .map(|alias| format!("import {}", self.source.slice(alias.range())))
-            .join(&joiner);
-        self.groups.extend(
-            narrowed_replacement(self.source, node.range(), rewrite).map(|edit| vec![edit]),
-        );
+            .collect();
+        self.groups
+            .extend(self.joined_rows_edit(node, &rows).map(|edit| vec![edit]));
     }
 }
 

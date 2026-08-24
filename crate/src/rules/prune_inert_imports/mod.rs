@@ -1,19 +1,13 @@
 //! Prunes an import binding that adds nothing, covering a name the
 //! module never references under `drop-unreferenced` and a repeat of a
-//! binding an earlier import already made under `drop-duplicates`.
-//!
-//! A package `__init__.py` or its stub re-exports what it imports, so
-//! an unreferenced binding there is reported rather than dropped. A
-//! repeat drops there like anywhere else, resolving out of
-//! `sys.modules` without running its module again.
-//!
+//! binding an earlier import already made under `drop-duplicates`. A
+//! package `__init__.py` or its stub reports an unreferenced binding
+//! rather than dropping it, whereas a repeat drops there too.
 //! `from __future__ import annotations` drops behind the annotation
-//! analysis in `future`. Every other `__future__` feature stays, and so
-//! does a `from … import *`, a name `__all__` lists, an import binding
-//! `__all__` itself, a name a second import rebinds, and an `x as x`
-//! alias marking a re-export. An own-line comment block leading an
-//! import holds the whole statement across a blank run between the
-//! two, up to the wall closing a notebook cell.
+//! analysis in `future`, and every other `__future__` feature stays,
+//! as does a `from … import *`, a name `__all__` lists, an import
+//! binding `__all__` itself, a name a second import rebinds, an
+//! `x as x` re-export alias, and an import an own-line comment leads.
 
 use std::{ffi::OsStr, path::Path};
 

@@ -34,6 +34,45 @@ struct Slot {
 }
 
 impl<'a> Exploder<'a> {
+    /// The move `rendered`, the text of the argument opening at `start`
+    /// with head `head`, makes over its continuation rows when the
+    /// argument lands at `indent`, read through [`block_shift`]. `None`
+    /// where the argument holds no continuation row, or where a
+    /// row-spanning string part inside `value` holds the whole argument,
+    /// whose interior a move would pad, leaving no row frozen for the
+    /// shift to skip.
+    fn argument_shift(
+        &self,
+        value: &Expr,
+        rendered: &str,
+        head: &str,
+        start: TextSize,
+        indent: usize,
+    ) -> Option<Travel> {
+        if spans_a_string_part(self.source, value) {
+            return None;
+        }
+        let landing = Landing {
+            column: end_column(head, indent),
+            indent,
+            item: start,
+        };
+        block_shift(self.source, rendered, &[], value.start(), landing)
+    }
+
+    /// True where an expandable literal opening earlier on the row than
+    /// `offset` explodes, which relays the row's overflow to that
+    /// literal and leaves the later ones in place.
+    fn earlier_literal_explodes(&self, offset: TextSize) -> bool {
+        let row_start = self.source.text().line_start(offset);
+        let literals = self.source.expandable_literals();
+        let first = literals.partition_point(|literal| literal.start() < row_start);
+        literals[first..]
+            .iter()
+            .take_while(|literal| literal.start() < offset)
+            .any(|literal| self.literal_explodes(*literal))
+    }
+
     /// Renders `count` arguments one per line at `indent` through
     /// `render`, closing each row under the trailing-comma policy over
     /// `arguments`. `render` receives the row index, the item indent,
@@ -131,61 +170,6 @@ impl<'a> Exploder<'a> {
         )
     }
 
-    /// The columns trailing this call on its row: the code to the end
-    /// of the physical row, or to the region's end plus the columns the
-    /// enclosing text writes there where the region closes first, a
-    /// trailing comment closing the measure either way. A tail holding
-    /// a bracket a later rule can break at is charged only through that
-    /// bracket, since exploding the construct it opens ends the row
-    /// there, whereas a subscript's `[` never breaks and charges whole.
-    pub(super) fn row_tail(&self, end: TextSize) -> usize {
-        let row_end = self.source.row_tail(end).end();
-        let clipped = self.region.end() <= row_end;
-        let tail = TextRange::new(end, row_end.min(self.region.end()));
-        if let Some(offset) = self.first_breaking_opener(tail) {
-            return self.source.width_between(end, offset + TextSize::from(1));
-        }
-        let written = self.settled_width(tail, self.source.tail_width(tail));
-        if clipped {
-            written + self.tail
-        } else {
-            written
-        }
-    }
-
-    /// The width `arguments` leaves on its row, which is `form` for a
-    /// list written across rows, since closing it writes that text, and
-    /// the source slice for one already on a single row, whose spacing
-    /// the rule leaves as the author wrote it rather than at the
-    /// normalized gap `form` seats after each comma, less the padding
-    /// `strip-stranded-padding` drops from it.
-    fn written_width(&self, arguments: &Arguments, form: &str) -> usize {
-        if self.source.contains_line_break(arguments.range()) {
-            form.width()
-        } else {
-            let range = arguments.range();
-            self.settled_width(range, self.source.slice(range).width())
-        }
-    }
-
-    /// `width`, the display width `range` was measured at, less the
-    /// padding `strip-stranded-padding` drops inside `range`.
-    pub(super) fn settled_width(&self, range: TextRange, width: usize) -> usize {
-        width.saturating_add_signed(-padding::slack(self.source, self.padding, range))
-    }
-
-    /// The slot an argument lands in at `indent` with `tail` columns
-    /// closing its row, a keyword `name` measuring its value from the
-    /// column the `align-equals` buffer settles it at.
-    fn slot(&self, name: Option<&str>, indent: usize, tail: usize) -> Slot {
-        Slot {
-            aligned: name
-                .and_then(|name| self.reservations.keyword_value_column(indent, name.width())),
-            indent,
-            tail,
-        }
-    }
-
     /// The offset of the first opening bracket inside `range` that
     /// opens a construct a later pass lays out across rows: a call's or
     /// grouping `(` always qualifies, whereas a bracket opening a
@@ -213,19 +197,6 @@ impl<'a> Exploder<'a> {
             .map(Ranged::start)
     }
 
-    /// True where an expandable literal opening earlier on the row than
-    /// `offset` explodes, which relays the row's overflow to that
-    /// literal and leaves the later ones in place.
-    fn earlier_literal_explodes(&self, offset: TextSize) -> bool {
-        let row_start = self.source.text().line_start(offset);
-        let literals = self.source.expandable_literals();
-        let first = literals.partition_point(|literal| literal.start() < row_start);
-        literals[first..]
-            .iter()
-            .take_while(|literal| literal.start() < offset)
-            .any(|literal| self.literal_explodes(*literal))
-    }
-
     /// True where the expand fires on the literal at `range`: one
     /// already written across rows, or one whose settled width overflows
     /// from the column it sits at with its own raw row tail.
@@ -240,44 +211,12 @@ impl<'a> Exploder<'a> {
         !self.one_row.fits(column + width + tail)
     }
 
-    /// The move `rendered`, the text of the argument opening at `start`
-    /// with head `head`, makes over its continuation rows when the
-    /// argument lands at `indent`, read through [`block_shift`]. `None`
-    /// where the argument holds no continuation row, or where a
-    /// row-spanning string part inside `value` holds the whole argument,
-    /// whose interior a move would pad, leaving no row frozen for the
-    /// shift to skip.
-    fn argument_shift(
-        &self,
-        value: &Expr,
-        rendered: &str,
-        head: &str,
-        start: TextSize,
-        indent: usize,
-    ) -> Option<Travel> {
-        if spans_a_string_part(self.source, value) {
-            return None;
-        }
-        let landing = Landing {
-            column: end_column(head, indent),
-            indent,
-            item: start,
-        };
-        block_shift(self.source, rendered, &[], value.start(), landing)
-    }
-
     /// Appends `rendered`, the text of the argument opening at `start`,
-    /// to `out`, its nested calls reshaped and, where the argument
-    /// travels, its continuation rows moved by whatever
-    /// [`Self::argument_shift`] reads. A grouping pair around the value
-    /// stays outside the reshape and moves with the rest of the
-    /// argument, whether the source carries it or `keyword_args` adds it.
-    /// `slot.aligned` is the column a later alignment run settles the
-    /// value at, which the nested reshape measures from, and `None`
-    /// leaves the measure at the column `rendered` writes. A value
-    /// wrapped in a grouping pair opens one column past that gap, and
-    /// the pair's closer joins `slot.tail` as the columns following the
-    /// value on its last row.
+    /// to `out`, its nested calls reshaped and its continuation rows
+    /// moved by whatever [`Self::argument_shift`] reads, a grouping
+    /// pair around the value moving with the rest. `slot.aligned` is
+    /// the column a later alignment settles the value at, and the
+    /// pair's closer joins `slot.tail` on the value's last row.
     fn render_value(
         &self,
         out: &mut String,
@@ -369,18 +308,40 @@ impl<'a> Exploder<'a> {
         apply_inline_edits(self.source, value.range(), &nested.edits)
     }
 
+    /// The slot an argument lands in at `indent` with `tail` columns
+    /// closing its row, a keyword `name` measuring its value from the
+    /// column the `align-equals` buffer settles it at.
+    fn slot(&self, name: Option<&str>, indent: usize, tail: usize) -> Slot {
+        Slot {
+            aligned: name
+                .and_then(|name| self.reservations.keyword_value_column(indent, name.width())),
+            indent,
+            tail,
+        }
+    }
+
+    /// The width `arguments` leaves on its row, which is `form` for a
+    /// list written across rows, since closing it writes that text, and
+    /// the source slice for one already on a single row, whose spacing
+    /// the rule leaves as the author wrote it rather than at the
+    /// normalized gap `form` seats after each comma, less the padding
+    /// `strip-stranded-padding` drops from it.
+    fn written_width(&self, arguments: &Arguments, form: &str) -> usize {
+        if self.source.contains_line_break(arguments.range()) {
+            form.width()
+        } else {
+            let range = arguments.range();
+            self.settled_width(range, self.source.slice(range).width())
+        }
+    }
+
     /// Returns the exploded `(...)` text for `call` when the count or
     /// length trigger fires, the closing `)` landing at the indent
     /// [`Self::indent_for`] reads and the length trigger measured from
-    /// `column`, where the `(` lands. The length trigger asks
-    /// `primitives::one_row` whether the list reaches one row at all and
-    /// whether that row fits, so a list holding an argument no join
-    /// closes explodes whatever its first row measures. A
-    /// keyword-expressible call renders one keyword per line, while any
-    /// other call renders positionally under the length trigger. A
-    /// nested call in an argument value explodes in the same text. Where
-    /// no trigger fires, a fractured list rejoins onto one line through
-    /// that same one-row form and every other call is left inline.
+    /// `column`. A keyword-expressible call renders one keyword per
+    /// line, any other call renders positionally under the length
+    /// trigger alone, and where no trigger fires a fractured list
+    /// rejoins onto one line through the same one-row form.
     pub(super) fn explode_args(&self, call: &'a ExprCall, column: usize) -> Option<String> {
         let arguments = &call.arguments;
         if arguments.is_empty() || self.source.intersects_comment(arguments.inner_range()) {
@@ -410,5 +371,33 @@ impl<'a> Exploder<'a> {
             // leaving such calls inline.
             _ => length_trips.then(|| self.explode_source_order(call, self.indent_for(call))),
         }
+    }
+
+    /// The columns trailing this call on its row: the code to the end
+    /// of the physical row, or to the region's end plus the columns the
+    /// enclosing text writes there where the region closes first, a
+    /// trailing comment closing the measure either way. A tail holding
+    /// a bracket a later rule can break at is charged only through that
+    /// bracket, since exploding the construct it opens ends the row
+    /// there, whereas a subscript's `[` never breaks and charges whole.
+    pub(super) fn row_tail(&self, end: TextSize) -> usize {
+        let row_end = self.source.row_tail(end).end();
+        let clipped = self.region.end() <= row_end;
+        let tail = TextRange::new(end, row_end.min(self.region.end()));
+        if let Some(offset) = self.first_breaking_opener(tail) {
+            return self.source.width_between(end, offset + TextSize::from(1));
+        }
+        let written = self.settled_width(tail, self.source.tail_width(tail));
+        if clipped {
+            written + self.tail
+        } else {
+            written
+        }
+    }
+
+    /// `width`, the display width `range` was measured at, less the
+    /// padding `strip-stranded-padding` drops inside `range`.
+    pub(super) fn settled_width(&self, range: TextRange, width: usize) -> usize {
+        width.saturating_add_signed(-padding::slack(self.source, self.padding, range))
     }
 }

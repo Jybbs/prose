@@ -20,74 +20,11 @@ use crate::primitives::{
 };
 
 impl<'a> Exploder<'a> {
-    /// The indent an exploded closing `)` drops to for `call`: this
-    /// walk's own indent where the argument list settles on the row the
-    /// region opens on, and otherwise the placed indent of the row
-    /// [`Self::settled_row_anchor`] resolves for the `(`.
-    pub(super) fn indent_for(&self, call: &ExprCall) -> usize {
-        let anchor = self
-            .settled_row_anchor(call.arguments.start())
-            .max(self.region.start());
-        if let Some(indent) = self.indent
-            && self.source.same_line(self.region.start(), anchor)
-        {
-            return indent;
-        }
-        let placed = self.placed_head(anchor);
-        indent_width(placed.rsplit('\n').next().unwrap_or(&placed))
-    }
-
-    /// True where `reflow-collections` expands `literal` once its row
-    /// lands, leaving every call inside to the reshape that rule runs
-    /// where the entries land: a multi-entry literal whose one-row form
-    /// overflows from the column it lands at with the columns trailing
-    /// it on its row, one written across rows that no rejoin reaches,
-    /// or one holding a dict past the entry cap.
-    pub(super) fn expands_later(&self, literal: &Expr) -> bool {
-        let range = literal.range();
-        if !self.expands_literals
-            || !requires_expand(literal)
-            || self.source.intersects_comment(range)
-        {
-            return false;
-        }
-        let over_count = self.one_row.dict_entry_cap().is_some_and(|cap| {
-            any_over_expr(literal, |e| e.as_dict_expr().is_some_and(|d| d.len() > cap))
-        });
-        if over_count {
-            return true;
-        }
-        let column = self.placed_column(range.start(), true);
-        let tail = self.row_tail(range.end());
-        if self.source.contains_line_break(range) {
-            return self
-                .one_row
-                .rejoined(self.source, literal, literal.into(), column, tail)
-                .is_none();
-        }
-        let width = self.settled_width(range, self.source.slice(range).width());
-        !self.one_row.fits(column + width + tail)
-    }
-
-    /// The column `call`'s `(` reaches once this walk's earlier edits
-    /// place the text ahead of it, a call whose rendered callee holds
-    /// no break starting from the column `align_equals` shifts its row
-    /// to in a module walk.
-    pub(super) fn open_paren_column(&self, call: &ExprCall) -> usize {
-        let callee = apply_inline_edits(self.source, call.func.range(), &self.edits);
-        self.placed_column(call.arguments.start(), !callee.contains('\n'))
-    }
-
     /// The column `offset` reaches once this walk's earlier edits place
-    /// the text ahead of it and the padding rule drops the padding on
-    /// its row ahead of it, a row past the region's opening one moved
-    /// by `line_shift`. In a module walk, a `reserved` offset starts
-    /// from the column `align_equals` shifts its row to.
-    ///
-    /// `end_column` reads the placed head's last row alone, so the
-    /// slack comes off the source that row covers rather than off the
-    /// whole source row, which the walk's own breaks can start later
-    /// than the source line does.
+    /// the text ahead of it and the padding rule settles its row, a row
+    /// past the region's opening one moved by `line_shift`. In a module
+    /// walk, a `reserved` offset starts from the column `align_equals`
+    /// shifts its row to.
     fn placed_column(&self, offset: TextSize, reserved: bool) -> usize {
         let placed = self.placed_head(offset);
         let tail = placed.rsplit('\n').next().unwrap_or(&placed);
@@ -153,5 +90,63 @@ impl<'a> Exploder<'a> {
             }
         }
         anchor
+    }
+
+    /// True where `reflow-collections` expands `literal` once its row
+    /// lands, leaving every call inside to the reshape that rule runs
+    /// where the entries land: a multi-entry literal whose one-row form
+    /// overflows from the column it lands at with the columns trailing
+    /// it on its row, one written across rows that no rejoin reaches,
+    /// or one holding a dict past the entry cap.
+    pub(super) fn expands_later(&self, literal: &Expr) -> bool {
+        let range = literal.range();
+        if !self.expands_literals
+            || !requires_expand(literal)
+            || self.source.intersects_comment(range)
+        {
+            return false;
+        }
+        let over_count = self.one_row.dict_entry_cap().is_some_and(|cap| {
+            any_over_expr(literal, |e| e.as_dict_expr().is_some_and(|d| d.len() > cap))
+        });
+        if over_count {
+            return true;
+        }
+        let column = self.placed_column(range.start(), true);
+        let tail = self.row_tail(range.end());
+        if self.source.contains_line_break(range) {
+            return self
+                .one_row
+                .rejoined(self.source, literal, literal.into(), column, tail)
+                .is_none();
+        }
+        let width = self.settled_width(range, self.source.slice(range).width());
+        !self.one_row.fits(column + width + tail)
+    }
+
+    /// The indent an exploded closing `)` drops to for `call`: this
+    /// walk's own indent where the argument list settles on the row the
+    /// region opens on, and otherwise the placed indent of the row
+    /// [`Self::settled_row_anchor`] resolves for the `(`.
+    pub(super) fn indent_for(&self, call: &ExprCall) -> usize {
+        let anchor = self
+            .settled_row_anchor(call.arguments.start())
+            .max(self.region.start());
+        if let Some(indent) = self.indent
+            && self.source.same_line(self.region.start(), anchor)
+        {
+            return indent;
+        }
+        let placed = self.placed_head(anchor);
+        indent_width(placed.rsplit('\n').next().unwrap_or(&placed))
+    }
+
+    /// The column `call`'s `(` reaches once this walk's earlier edits
+    /// place the text ahead of it, a call whose rendered callee holds
+    /// no break starting from the column `align_equals` shifts its row
+    /// to in a module walk.
+    pub(super) fn open_paren_column(&self, call: &ExprCall) -> usize {
+        let callee = apply_inline_edits(self.source, call.func.range(), &self.edits);
+        self.placed_column(call.arguments.start(), !callee.contains('\n'))
     }
 }

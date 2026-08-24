@@ -1,36 +1,16 @@
-//! Explodes a call to one argument per line under three triggers. The
-//! count trigger fires on a keyword-expressible call carrying more than
-//! `max_args` arguments, rendering one keyword per line. The length
-//! trigger fires on any call whose inline argument list crosses
-//! `code_line_length` from the column that list lands at, exploding a
-//! keyword-expressible call in keyword form and any other call
-//! positionally. The span trigger fires on any call one of whose
-//! arguments still spans rows once every closable fracture inside the
-//! list shuts and hangs from its own row rather than from a column
-//! inside it, whatever the argument count and whatever the joined width
-//! would have been. The closing `)` drops to the indent of the row
-//! carrying the argument list's `(`, a nested call in an argument value
-//! explodes in the same pass, and a chained call settles its receiver
-//! before the link that carries it, so every link measures the column it
-//! lands at. No trigger reaches a call inside an f-string or t-string,
-//! and none reaches a call inside the parameters or return annotation
-//! of a signature `reflow-signatures` lays out one parameter per line,
-//! which reshapes each such call where its parameter lands. Order, `=`
-//! alignment, and trailing commas stay with `alphabetize-siblings`,
-//! `align_equals`, and `strip_trailing_commas`.
-//!
-//! Where no trigger fires, an argument list the author fractured
-//! rejoins onto one row, measured across the column its `(` lands at,
-//! the joined arguments, and the text trailing the call to the end of
-//! its logical line, each at the width it settles to once
-//! `strip-stranded-padding` drops the padding inside it. A list carrying
-//! the flush column shape the explode path emits holds its break
-//! instead, the same reading `reflow_collections` gives a literal, and a
-//! call inside a single-row literal that rule expands is left to the
-//! reshape it runs where the literal's entries land.
-//!
-//! `measure` answers the column a construct reaches and the width it
-//! reads, and `render` builds the text that replaces an argument list.
+//! Explodes a call to one argument per line under three triggers: the
+//! count trigger on a keyword-expressible call past `max_args`, the
+//! length trigger on a call whose inline argument list crosses
+//! `code_line_length` from the column it lands at, and the span
+//! trigger on a call an argument of which still spans rows once every
+//! closable fracture inside the list shuts. The closing `)` drops to
+//! the indent of the row carrying the `(`, a nested call explodes in
+//! the same pass, and a chained call settles its receiver first. No
+//! trigger reaches a call inside an f-string or t-string, or inside a
+//! signature `reflow-signatures` lays out one parameter per line.
+//! Where no trigger fires, a fractured list rejoins onto one row,
+//! whereas the flush column shape holds its break. `measure` answers
+//! the columns a decision reads and `render` builds the replacement.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{

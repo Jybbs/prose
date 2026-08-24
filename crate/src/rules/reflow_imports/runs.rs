@@ -5,15 +5,18 @@
 
 use std::{cell::OnceCell, collections::HashMap};
 
+use ruff_diagnostics::Edit;
 use ruff_python_ast::{Stmt, StmtImportFrom};
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
     primitives::{
-        imports::{ModuleKey, fold_landing, is_import, module_key, stands_alone},
+        imports::{
+            Dropping, ModuleKey, fold_landing, import_runs, module_key, prune_import_statements,
+            stands_alone,
+        },
         orderer::member_blocks,
-        slots::slot_runs,
     },
     rules::band_constants::{BandConstants, Bands, Carry},
     source::Source,
@@ -24,9 +27,8 @@ use super::own_line_indent;
 /// The runs a body's merges gather within, beside the member blocks a
 /// comment between two members is read against, built on first use
 /// through [`Self::blocks`]. `banded` marks runs that are the bands
-/// `band-constants` sorts,
-/// `carries` then holding every comment the banding moves between
-/// members.
+/// `band-constants` sorts, `carries` then holding every comment the
+/// banding moves between members.
 pub(super) struct MergeRuns {
     pub(super) banded: bool,
     blocks: OnceCell<Vec<TextRange>>,
@@ -143,6 +145,14 @@ impl Folds {
             survives,
         )
     }
+
+    /// One fix group per statement of `drops`, a comment-led statement
+    /// losing every alias landing on the import this forecast names.
+    pub(crate) fn prune(&self, source: &Source, drops: &[Dropping]) -> Vec<Vec<Edit>> {
+        prune_import_statements(source, &source.ast().body, drops, |slot, survives| {
+            self.landing(source, slot, survives)
+        })
+    }
 }
 
 /// `band-constants` as configured, `None` when the rule is off.
@@ -206,15 +216,6 @@ fn gathers_cleanly(
             .filter(|slot| !slots.contains(slot))
             .any(|slot| blocks[slot].contains_range(*comment))
     })
-}
-
-/// The runs of adjacent import statements in `body`, a lone import a
-/// run of its own.
-fn import_runs(body: &[Stmt]) -> Vec<Vec<usize>> {
-    slot_runs(body, |a, b| is_import(a) && is_import(b))
-        .filter(|run| is_import(&body[run.start]))
-        .map(Iterator::collect)
-        .collect()
 }
 
 /// True when `node` can join a merged roster, being a single-line

@@ -137,20 +137,13 @@ impl<'a> LeafCollector<'a> {
             return;
         };
         let source = self.source;
-        // A single-line or atomics-packed group shares lines, a group
-        // opening mid-row sits on a line whose head is not a member, and
-        // a group whose gaps carry code of their own, a positional
-        // argument between two keywords, cannot rebuild its rows from
-        // its members alone, so each swaps member slices through the
-        // lighter `reorder_text`, which keeps every gap verbatim. A
-        // comment inside such a group
-        // when it spans lines cannot travel with its member, so the
-        // group holds its order, whereas a single-line group's trailing
-        // comment reads against the whole line and rides out the swap in
-        // place. A group laid out one member per line routes through
-        // `reorder_separated` so each trailing comment travels with its
-        // member. A swap whose rows widen past the budget and the widest
-        // source row holds the group.
+        // A group sharing lines, opening mid-row, or carrying code in
+        // its gaps swaps member slices through `reorder_text`, keeping
+        // every gap verbatim, and holds its order where a comment sits
+        // in a line-spanning swap span. A one-member-per-line group
+        // routes through `reorder_separated` so each trailing comment
+        // travels with its member, and a swap widening past the budget
+        // and the widest source row holds the group.
         let head_shared = !opens_its_line(source, first.start());
         let swapped =
             any_sibling_shares_line(source, items) || head_shared || gaps_carry_code(source, items);
@@ -245,6 +238,15 @@ pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
     .collect()
 }
 
+/// Composite docstring-entry sort key. An entry naming a signature
+/// parameter takes that parameter's position, and any other entry
+/// sinks below the signature's, alphabetized by name.
+fn entry_key<'e>(name: &'e str, signature: Option<&[&str]>) -> (usize, &'e str) {
+    signature
+        .and_then(|names| names.iter().position(|&n| n == name))
+        .map_or((usize::MAX, name), |i| (i, ""))
+}
+
 /// True when a gap between two consecutive members of `items` carries
 /// a token of its own past the separators and comments inside it, the
 /// shape a positional argument sitting between two keywords takes.
@@ -257,6 +259,25 @@ fn gaps_carry_code<T: Ranged>(source: &Source, items: &[T]) -> bool {
                 && token.kind() != TokenKind::Comma
         })
     })
+}
+
+/// Returns the parameter names in the order the rule leaves the
+/// signature: positional-only and positional-or-keyword in source
+/// order, then `*args`, then the keyword-only block sorted, then
+/// `**kwargs`.
+fn signature_order(params: &Parameters) -> Vec<&str> {
+    let mut names: Vec<&str> = params
+        .posonlyargs
+        .iter()
+        .chain(&params.args)
+        .map(|p| p.name().as_str())
+        .collect();
+    names.extend(params.vararg.as_deref().map(|p| p.name.as_str()));
+    let mut order: Vec<usize> = (0..params.kwonlyargs.len()).collect();
+    permute_full(&mut order, &params.kwonlyargs, classify_param);
+    names.extend(order.iter().map(|&i| params.kwonlyargs[i].name().as_str()));
+    names.extend(params.kwarg.as_deref().map(|p| p.name.as_str()));
+    names
 }
 
 /// Walks the AST collecting one non-overlapping leaf edit per outermost
@@ -279,34 +300,6 @@ pub(super) fn collect_leaf_edits(
     };
     collector.visit_body(&source.ast().body);
     collector.edits
-}
-
-/// Composite docstring-entry sort key. An entry naming a signature
-/// parameter takes that parameter's position, and any other entry
-/// sinks below the signature's, alphabetized by name.
-fn entry_key<'e>(name: &'e str, signature: Option<&[&str]>) -> (usize, &'e str) {
-    signature
-        .and_then(|names| names.iter().position(|&n| n == name))
-        .map_or((usize::MAX, name), |i| (i, ""))
-}
-
-/// Returns the parameter names in the order the rule leaves the
-/// signature: positional-only and positional-or-keyword in source
-/// order, then `*args`, then the keyword-only block sorted, then
-/// `**kwargs`.
-fn signature_order(params: &Parameters) -> Vec<&str> {
-    let mut names: Vec<&str> = params
-        .posonlyargs
-        .iter()
-        .chain(&params.args)
-        .map(|p| p.name().as_str())
-        .collect();
-    names.extend(params.vararg.as_deref().map(|p| p.name.as_str()));
-    let mut order: Vec<usize> = (0..params.kwonlyargs.len()).collect();
-    permute_full(&mut order, &params.kwonlyargs, classify_param);
-    names.extend(order.iter().map(|&i| params.kwonlyargs[i].name().as_str()));
-    names.extend(params.kwarg.as_deref().map(|p| p.name.as_str()));
-    names
 }
 
 #[cfg(test)]

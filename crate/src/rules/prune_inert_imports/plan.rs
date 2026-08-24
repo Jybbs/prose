@@ -15,11 +15,8 @@ use super::{
     reexports::Reexports,
 };
 use crate::{
-    diagnostics::Diagnostic,
-    primitives::imports::{Dropping, prune_import_statements},
-    rule::RuleId,
-    rules::reflow_imports::Folds,
-    source::Source,
+    diagnostics::Diagnostic, primitives::imports::Dropping, rule::RuleId,
+    rules::reflow_imports::Folds, source::Source,
 };
 
 /// The alias drops the rule applies, one entry per pruned statement,
@@ -152,9 +149,7 @@ impl<'a> Plan<'a> {
         let Some(folds) = self.folds else {
             return Vec::new();
         };
-        prune_import_statements(source, &source.ast().body, &self.drops, |slot, survives| {
-            folds.landing(source, slot, survives)
-        })
+        folds.prune(source, &self.drops)
     }
 }
 

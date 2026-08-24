@@ -30,6 +30,21 @@ use crate::{
     source::Source,
 };
 
+/// Composite within-run dict-entry sort key, scalar-valued entries sorting
+/// before collection-valued and alphabetizing within each partition by the
+/// key's source slice. A keyless `**` spread returns `None`, as does an
+/// entry whose value runs code, pinning that entry in its source slot.
+pub(super) fn dict_sort_key<'a>(
+    source: &'a Source,
+    item: &DictItem,
+) -> Option<(bool, Cow<'a, str>)> {
+    let key = item
+        .key
+        .as_ref()
+        .filter(|_| !value_is_effectful(&item.value))?;
+    Some((is_layoutable(&item.value), joined_key(source, key)))
+}
+
 /// Rewrites a dict literal's items span. Returns `Some((span, text))`
 /// when reordering, partition, or any nested reorder folded from `edits`
 /// produces text different from the source slice. Returns `None` for
@@ -120,21 +135,6 @@ pub(super) fn rewrite_dict_text(
         return None;
     }
     Some((span, assembled))
-}
-
-/// Composite within-run dict-entry sort key, scalar-valued entries sorting
-/// before collection-valued and alphabetizing within each partition by the
-/// key's source slice. A keyless `**` spread returns `None`, as does an
-/// entry whose value runs code, pinning that entry in its source slot.
-pub(super) fn dict_sort_key<'a>(
-    source: &'a Source,
-    item: &DictItem,
-) -> Option<(bool, Cow<'a, str>)> {
-    let key = item
-        .key
-        .as_ref()
-        .filter(|_| !value_is_effectful(&item.value))?;
-    Some((is_layoutable(&item.value), joined_key(source, key)))
 }
 
 /// Returns the new-order slot indices after which a blank-line divider

@@ -1,25 +1,16 @@
-//! Breaks a fluent method chain across lines under two triggers. The
-//! count trigger fires on a chain carrying more than `max_links` links,
-//! and the length trigger on one whose joined single-line form crosses
-//! `code_line_length` from the column it lands at. The broken chain sits
-//! inside a parenthesis pair, reusing one the source already carries,
-//! with its head holding the receiver and the first link and every later
-//! link hanging beneath the head's own dot. A receiver wider than
-//! `max_shift` takes the full split instead, standing alone with every
-//! link flush beneath it. A `.name` access that is not itself called
-//! shares the row of the link below it. Neither trigger reaches a chain
-//! inside an f-string or t-string replacement field, one spanning a
-//! comment, or one whose segments still carry a line break once the
-//! fractures inside them close up.
-//!
-//! Both measures and the rendered rows read the settled form rather
-//! than the source, so a link the author hand-wrapped counts and
-//! renders at the width `reflow_calls` closes it to. A chain inside a
-//! broken chain's receiver or argument measures from the column the
-//! break lands it at and breaks in the same text where it trips there.
-//!
-//! `spine` divides a chain into its receiver and links, and `render`
-//! builds the text that replaces it.
+//! Breaks a fluent method chain across lines under two triggers, the
+//! count trigger on a chain carrying more than `max_links` links and
+//! the length trigger on one whose joined single-line form crosses
+//! `code_line_length` from the column it lands at. The broken chain
+//! sits inside a parenthesis pair, its head holding the receiver and
+//! the first link and every later link hanging beneath the head's own
+//! dot, a receiver wider than `max_shift` taking the full split. Both
+//! measures read the settled form, so a hand-wrapped link counts at
+//! the width `reflow_calls` closes it to, and a chain inside a broken
+//! chain's receiver or argument breaks in the same text where it trips
+//! from the column the break lands it at. Neither trigger reaches a
+//! replacement field, a comment span, or a segment holding its break.
+//! `spine` divides a chain and `render` builds the replacement.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr};
@@ -36,7 +27,7 @@ use crate::{
         layout::item_indent,
         reserve,
         walk::{
-            Descent, ParentedProbe, walk_parented_arguments, walk_parented_expr,
+            Descent, ParentedCollector, ParentedProbe, walk_parented_arguments, walk_parented_expr,
             walk_parented_exprs,
         },
     },
@@ -156,10 +147,11 @@ impl<'a> Breaker<'a> {
         chain: &Chain<'a>,
         segment: usize,
     ) -> Vec<(&'a Expr, AnyNodeRef<'a>, Chain<'a>)> {
-        let mut nested = Nested {
-            found: Vec::new(),
-            source: self.source,
-        };
+        let source = self.source;
+        let mut nested =
+            ParentedCollector::new(Descent::Over, Descent::Over, |expr: &'a Expr, parent| {
+                outermost_chain(source, expr, parent).map(|chain| (expr, parent, chain))
+            });
         match segment.checked_sub(1) {
             None => walk_parented_expr(
                 chain.receiver,
@@ -238,27 +230,6 @@ impl<'a> ParentedProbe<'a> for Breaker<'a> {
         };
         insert_edit(&mut self.edits, edit);
         Descent::Over
-    }
-}
-
-/// Collects the outermost chains a parented walk reaches, each with the
-/// node enclosing it.
-struct Nested<'a> {
-    found: Vec<(&'a Expr, AnyNodeRef<'a>, Chain<'a>)>,
-    source: &'a Source,
-}
-
-impl<'a> ParentedProbe<'a> for Nested<'a> {
-    const INTERPOLATIONS: Descent = Descent::Over;
-
-    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
-        match outermost_chain(self.source, expr, parent) {
-            Some(chain) => {
-                self.found.push((expr, parent, chain));
-                Descent::Over
-            }
-            None => Descent::Into,
-        }
     }
 }
 
