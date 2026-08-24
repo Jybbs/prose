@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Tight Commas Hold the Row They Were Written On"
+
+description = '''
+The nested literal is written flat with no space after any internal comma, landing at 58 columns against a budget of `60`. Nothing rewrites the interior of a literal the author already wrote on one row, so **the row is measured as it stands rather than as a rebuild would spell it**, and it holds. Measuring the rebuilt spelling would charge three columns for the three tight commas, cross the budget, and expand a row the previous pass had just written.
+'''

@@ -13,25 +13,6 @@ use super::{Layouter, entry_tail};
 use crate::primitives::{edit::apply_inline_edits, padding};
 
 impl<'a> Layouter<'a> {
-    /// The display width `expr` settles to on one row, read off the
-    /// form the layout rules rebuild for it where one exists and off
-    /// the settled width of `range` otherwise. A rebuild carries the
-    /// canonical spacing, leaving padding written inside the construct
-    /// out of the fit test that decides whether to expand it.
-    pub(super) fn condensed_width(
-        &self,
-        expr: &Expr,
-        parent: AnyNodeRef,
-        range: TextRange,
-    ) -> usize {
-        self.one_row
-            .condensed(self.source, expr, parent)
-            .map_or_else(
-                || self.settled_width(range),
-                |text| self.text_width(&text, range),
-            )
-    }
-
     /// True when `expr` contains an over-cap `Dict` at any depth,
     /// including itself. A `Dict` inside a replacement field does not
     /// count.
@@ -47,6 +28,18 @@ impl<'a> Layouter<'a> {
     /// the `:` and the padding around it.
     pub(super) fn key_value_gap(&self, key_end: TextSize, value_start: TextSize) -> &'a str {
         self.source.slice(TextRange::new(key_end, value_start))
+    }
+
+    /// The narrower of the width `range` settles to as written and the
+    /// width `expr`'s canonical rebuild carries.
+    pub(super) fn narrowest_width(
+        &self,
+        expr: &Expr,
+        parent: AnyNodeRef,
+        range: TextRange,
+    ) -> usize {
+        self.one_row
+            .narrowest_width(self.source, expr, parent, range, self.padding)
     }
 
     /// The text ahead of `offset` on its logical line, rendered with the

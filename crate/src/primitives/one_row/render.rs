@@ -23,10 +23,6 @@ pub(super) struct Writer<'a> {
 }
 
 impl<'a> Writer<'a> {
-    /// `expr`'s one-row form over `range`, borrowing the source slice
-    /// where that range is already written flat and rebuilding it from
-    /// the children otherwise. `hold` reaches `expr` itself, every child
-    /// beneath it holding its own flush column either way.
     /// `expr` rebuilt from its children at the canonical spacing over
     /// `range`, whatever the source wrote inside it. `None` where a
     /// guard blocks the form or the rebuild reaches no single row.
@@ -42,6 +38,10 @@ impl<'a> Writer<'a> {
         self.rebuilt(expr)
     }
 
+    /// `expr`'s one-row form over `range`, borrowing the source slice
+    /// where that range is already written flat and rebuilding it from
+    /// the children otherwise. `hold` reaches `expr` itself, every child
+    /// beneath it holding its own flush column either way.
     pub(super) fn formed(
         &self,
         expr: &Expr,

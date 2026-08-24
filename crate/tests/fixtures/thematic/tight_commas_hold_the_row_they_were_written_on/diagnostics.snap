@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/thematic/tight_commas_hold_the_row_they_were_written_on/input.py
+---
+signature-annotations@10..13
+signature-annotations@15..20
+signature-annotations@4..9
+unsorted-positionals@9..21

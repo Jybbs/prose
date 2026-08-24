@@ -38,6 +38,14 @@ pub(crate) fn delimiter_padding_gaps(
         })
 }
 
+/// The display width of every [`delimiter_padding_gaps`] run inside
+/// `range`, which is the width `strip-stranded-padding` takes off it.
+pub(crate) fn delimiter_padding_width(source: &Source, range: TextRange) -> usize {
+    delimiter_padding_gaps(source, range)
+        .map(|gap| source.slice(gap).width())
+        .sum()
+}
+
 /// The columns the edits in `edits` take off `range`, negative where
 /// they widen it, counting each edit `range` covers whole. An insertion
 /// at either boundary belongs to the text beside `range` and is left

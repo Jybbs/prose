@@ -7,6 +7,7 @@ use std::{
     env,
     ffi::OsStr,
     io::ErrorKind,
+    num::NonZeroUsize,
     path::{Path, PathBuf},
 };
 
@@ -16,9 +17,21 @@ use prose::{config::Config, pipeline::Pipeline, rule::RuleId};
 use serde::Deserialize;
 use similar::TextDiff;
 
+/// The environment variable aiming a sweep at a directory other than
+/// the fixture tree.
+pub(crate) const CORPUS: &str = "PROSE_SETTLE_CORPUS";
+
 /// How many distinct defects a rendered tally prints before it reports
 /// the remainder as a count.
 const SHOWN: usize = 30;
+
+/// The line lengths a sweep covers absent [`WIDTHS_VAR`], the shipped
+/// default flanked by the narrow and wide settings a project sets it
+/// to.
+pub(crate) const WIDTHS: [usize; 6] = [40, 50, 60, 79, 88, 100];
+
+/// The environment variable naming the line lengths a sweep covers.
+pub(crate) const WIDTHS_VAR: &str = "PROSE_SETTLE_WIDTHS";
 
 /// Per-fixture flags read from the sidecar TOML's `[harness]` table,
 /// independent of the prose config the rule itself consumes.
@@ -141,15 +154,13 @@ pub(crate) fn case_name(path: &Path) -> &str {
 }
 
 /// The `.py` files under the corpus root, sorted so a failure names the
-/// same file across runs. `PROSE_SETTLE_CORPUS` points a sweep at a
-/// directory other than the fixture tree. The walk carries no standard
-/// filter, so a hidden directory and an ignored one both enter the
-/// sweep rather than leaving it short without saying so.
+/// same file across runs. [`CORPUS`] points a sweep at a directory
+/// other than the fixture tree. The walk carries no standard filter, so
+/// a hidden directory and an ignored one both enter the sweep rather
+/// than leaving it short without saying so.
 pub(crate) fn corpus() -> Vec<PathBuf> {
-    let root = env::var("PROSE_SETTLE_CORPUS").map_or_else(
-        |_| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"),
-        PathBuf::from,
-    );
+    let root = pointed_corpus()
+        .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
     WalkBuilder::new(root)
         .standard_filters(false)
         .build()
@@ -166,6 +177,15 @@ pub(crate) fn domain_name(path: &Path) -> &str {
         .and_then(Path::file_name)
         .and_then(OsStr::to_str)
         .expect("fixture path has a domain directory")
+}
+
+/// The values `var` carries as a space-separated list, `defaults` where
+/// it is unset.
+pub(crate) fn env_list<T: Clone>(var: &str, defaults: &[T], parse: impl Fn(&str) -> T) -> Vec<T> {
+    env::var(var).map_or_else(
+        |_| defaults.to_vec(),
+        |set| set.split_whitespace().map(&parse).collect(),
+    )
 }
 
 /// Reads a fixture's `config.toml` sidecar as a `prose.toml` document, lifting
@@ -202,11 +222,28 @@ pub(crate) fn in_snapshot_dir(path: &Path, f: impl FnOnce()) {
     });
 }
 
+/// The directory [`CORPUS`] aims a sweep at, `None` for the fixture
+/// tree.
+pub(crate) fn pointed_corpus() -> Option<PathBuf> {
+    env::var_os(CORPUS).map(PathBuf::from)
+}
+
 pub(crate) fn unified_diff(expected: &str, actual: &str) -> String {
     TextDiff::from_lines(expected, actual)
         .unified_diff()
         .header("expected", "actual")
         .to_string()
+}
+
+/// The line lengths this run sweeps, [`WIDTHS_VAR`] overriding
+/// `defaults` as a space-separated list.
+pub(crate) fn widths_or(defaults: &[usize]) -> Vec<usize> {
+    env_list(WIDTHS_VAR, defaults, |width| {
+        width
+            .parse::<NonZeroUsize>()
+            .unwrap_or_else(|_| panic!("every `{WIDTHS_VAR}` entry is a nonzero number"))
+            .get()
+    })
 }
 
 fn sidecar_contents(path: &Path) -> Option<String> {

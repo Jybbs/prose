@@ -12,7 +12,7 @@ use ruff_text_size::{TextLen, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::Member;
-use crate::{primitives::padding::delimiter_padding_gaps, source::Source};
+use crate::{primitives::padding::delimiter_padding_width, source::Source};
 
 /// Builds a `Member` for a row whose aligned token sits at `anchor`.
 /// Width is the display width of the line's content from the first
@@ -26,15 +26,12 @@ pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member 
     let head = TextRange::new(line_start, gap.start());
     let text = source.slice(head);
     let width = text.trim_whitespace_start().width();
-    let padding: usize = delimiter_padding_gaps(source, head)
-        .map(|gap| source.slice(gap).width())
-        .sum();
     Member {
         baseline: text.width() - width,
         gap,
         line_start,
         op_width: 0,
-        settled_width: width - padding,
+        settled_width: width - delimiter_padding_width(source, head),
         value_gap: None,
         width,
     }
@@ -122,7 +119,8 @@ where
 /// and pass a non-zero value when the LHS visually extends past
 /// `target` by characters not covered by the slice (e.g. the `+` of
 /// `x += 1` widens the LHS by one column without being part of the
-/// target range).
+/// target range). The settled width reads past the delimiter padding
+/// `strip-stranded-padding` deletes.
 fn range_anchored_member(
     source: &Source,
     target: TextRange,

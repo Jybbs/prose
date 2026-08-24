@@ -133,8 +133,13 @@ pub(crate) fn prune_import_statements(
 }
 
 /// True when `stmt` holds its lines alone, carrying only whitespace
-/// ahead of it and only whitespace or a trailing comment behind it.
+/// ahead of it and only whitespace or a trailing comment behind it. A
+/// row a `\` join continues is held by the row above, so it stands with
+/// that row rather than alone.
 pub(crate) fn stands_alone(source: &Source, stmt: TextRange) -> bool {
+    if source.continues_a_logical_line(stmt.start()) {
+        return false;
+    }
     let lines = source.text().full_lines_range(stmt);
     let before = source.slice(TextRange::new(lines.start(), stmt.start()));
     let after = source
