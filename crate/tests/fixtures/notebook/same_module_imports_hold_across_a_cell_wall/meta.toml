@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Same-Module Imports Hold Across a Cell Wall"
+
+description = '''
+Both cells import from `pkg`, and a module-level gather would merge them into one statement, emptying the second cell of the import its own code reads. **The cell wall holds the two apart**, so each cell keeps the import it declares.
+'''

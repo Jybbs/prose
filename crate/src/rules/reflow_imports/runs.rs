@@ -191,11 +191,11 @@ fn gathers_cleanly(
     let [first, .., last] = slots else {
         return false;
     };
-    let span =
-        source.full_lines_within_cell(TextRange::new(body[*first].start(), body[*last].end()));
-    if !source.same_cell(span.start(), span.end()) {
+    let reach = TextRange::new(body[*first].start(), body[*last].end());
+    if !source.same_cell(reach.start(), reach.end()) {
         return false;
     }
+    let span = source.full_lines_within_cell(reach);
     let comments = source.comment_ranges().comments_in_range(span);
     if comments.is_empty() {
         return true;
@@ -279,7 +279,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{notebook, parse};
 
     #[rstest]
     #[case("import a\nimport b\nx = 1\n", false)]
@@ -294,6 +294,27 @@ mod tests {
         assert_eq!(
             comments_beside(&source, body, source.module_range(), &runs),
             expected,
+        );
+    }
+
+    #[test]
+    fn module_groups_decline_a_gather_across_a_cell_wall() {
+        let source = notebook(&["from pkg import a\n", "from pkg import b\n"]);
+        let body = &source.ast().body;
+        let runs = MergeRuns::of(None, &source, body, source.module_range(), |_| true);
+
+        assert!(module_groups(&source, body, source.module_range(), &runs).is_empty());
+    }
+
+    #[test]
+    fn module_groups_gather_two_statements_of_one_module() {
+        let source = parse("from pkg import a\nfrom pkg import b\n");
+        let body = &source.ast().body;
+        let runs = MergeRuns::of(None, &source, body, source.module_range(), |_| true);
+
+        assert_eq!(
+            module_groups(&source, body, source.module_range(), &runs),
+            [vec![0, 1]],
         );
     }
 }
