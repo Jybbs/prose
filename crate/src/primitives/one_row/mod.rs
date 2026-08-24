@@ -143,6 +143,24 @@ impl<'a> Settings<'a> {
         Some(out)
     }
 
+    /// `expr`'s one-row form rebuilt at the canonical spacing rather
+    /// than read off the source, so padding written inside it stays out
+    /// of a measurement taken over it. `None` where no one-row form
+    /// exists.
+    pub(crate) fn condensed(
+        &self,
+        source: &'a Source,
+        expr: &Expr,
+        parent: AnyNodeRef,
+    ) -> Option<Cow<'a, str>> {
+        let range = source.paren_aware_range(expr.into(), parent);
+        let writer = Writer {
+            settings: *self,
+            source,
+        };
+        writer.condensed(expr, range, Column::Holds)
+    }
+
     /// True where `reflow-calls`'s count trigger explodes `call`, read
     /// off the rejoin terms these settings carry.
     pub(crate) fn count_explodes(&self, source: &Source, call: &ExprCall) -> bool {

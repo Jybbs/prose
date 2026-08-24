@@ -27,22 +27,49 @@ impl<'a> Writer<'a> {
     /// where that range is already written flat and rebuilding it from
     /// the children otherwise. `hold` reaches `expr` itself, every child
     /// beneath it holding its own flush column either way.
+    /// `expr` rebuilt from its children at the canonical spacing over
+    /// `range`, whatever the source wrote inside it. `None` where a
+    /// guard blocks the form or the rebuild reaches no single row.
+    pub(super) fn condensed(
+        &self,
+        expr: &Expr,
+        range: TextRange,
+        hold: Column,
+    ) -> Option<Cow<'a, str>> {
+        if self.blocked(expr, range, hold) {
+            return None;
+        }
+        self.rebuilt(expr)
+    }
+
     pub(super) fn formed(
         &self,
         expr: &Expr,
         range: TextRange,
         hold: Column,
     ) -> Option<Cow<'a, str>> {
-        if (hold == Column::Holds && self.settings.holds_its_column(self.source, expr))
-            || self.source.intersects_comment(range)
-            || self.reopens(expr)
-        {
+        if self.blocked(expr, range, hold) {
             return None;
         }
         let slice = self.source.slice(range);
         if !slice.contains('\n') {
             return Some(Cow::Borrowed(slice));
         }
+        self.rebuilt(expr)
+    }
+
+    /// True where no one-row form is written for `expr` over `range`,
+    /// covering its own flush column under `Column::Holds`, a comment
+    /// falling inside the range, and a later rule reopening it.
+    fn blocked(&self, expr: &Expr, range: TextRange, hold: Column) -> bool {
+        (hold == Column::Holds && self.settings.holds_its_column(self.source, expr))
+            || self.source.intersects_comment(range)
+            || self.reopens(expr)
+    }
+
+    /// `expr` rewritten from its children onto one row, `None` where
+    /// the rewrite reaches no single row.
+    fn rebuilt(&self, expr: &Expr) -> Option<Cow<'a, str>> {
         let mut out = String::new();
         self.write(&mut out, expr, expr.into())?;
         (!out.contains('\n')).then_some(Cow::Owned(out))
