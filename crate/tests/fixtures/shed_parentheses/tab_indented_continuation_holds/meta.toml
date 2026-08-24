@@ -3,5 +3,5 @@ previewable = true
 title       = "A Tab-Indented Continuation Holds"
 
 description = '''
-A continuation row indented with a tab has no column a character deletion can move by, so the shed leaves its indentation as written.
+A continuation row sitting on the anchor's column would follow the shed paren one column left, but its indent is written with a tab, whose width is not a column count an indent deletion can express, so the row keeps its indentation as written.
 '''

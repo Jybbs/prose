@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "List Rows Pack in the Order Written"
-
-description = '''
-A list keeps the order the author wrote, so each flowed row is tested at the widths it actually carries, and the widest pair packs onto the last row where no comma follows it.
-'''

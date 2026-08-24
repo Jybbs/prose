@@ -1,5 +1,5 @@
-from pkg.alpha import first_name, second_name
+from pkg.alpha import first, second
 LIMIT = 3
 from pkg.beta_module import third
 
-print(first_name, second_name, third, LIMIT)
+print(first, second, third, LIMIT)

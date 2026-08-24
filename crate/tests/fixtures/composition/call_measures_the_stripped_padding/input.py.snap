@@ -2,6 +2,6 @@
 source: crate/tests/integration.rs
 assertion_line: 59
 expression: snapshot
-input_file: crate/tests/fixtures/composition/call_joins_at_the_width_the_padding_leaves/input.py
+input_file: crate/tests/fixtures/composition/call_measures_the_stripped_padding/input.py
 ---
 result_value = some_function(argument_one_here, argument_two_here)

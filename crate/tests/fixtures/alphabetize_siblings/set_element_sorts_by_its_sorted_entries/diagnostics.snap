@@ -3,4 +3,4 @@ source: crate/tests/integration.rs
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/alphabetize_siblings/set_element_sorts_by_its_sorted_entries/input.py
 ---
-alphabetize-siblings@22..91
+alphabetize-siblings@31..80

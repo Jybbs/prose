@@ -5,4 +5,4 @@ input_file: crate/tests/fixtures/shed_parentheses/tab_indented_continuation_hold
 ---
 def f():
 	gg(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa and
-	   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb)
+	    bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb)

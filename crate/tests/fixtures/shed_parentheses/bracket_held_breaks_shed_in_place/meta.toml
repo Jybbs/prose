@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Pair Whose Breaks a Nested Bracket Holds Sheds in Place"
+title       = "The Shed Row Follows the Paren One Column Left"
 
 description = '''
-The pair around the comparison holds none of the breaks inside it, so it sheds in place and the rows inside the `find` call stay where the layout rules read them.
+The pair around the comparison holds none of the breaks inside it, so it sheds in place and the row inside the `find` call follows one column left, keeping its alignment to the call's first argument.
 '''

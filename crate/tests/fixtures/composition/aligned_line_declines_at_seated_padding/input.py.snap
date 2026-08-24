@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/composition/aligned_line_measured_past_stranded_padding/input.py
+input_file: crate/tests/fixtures/composition/aligned_line_declines_at_seated_padding/input.py
 ---
 _openers = {')': '(',']': '[','}': '{'}
 CHECK_DELAY = 100

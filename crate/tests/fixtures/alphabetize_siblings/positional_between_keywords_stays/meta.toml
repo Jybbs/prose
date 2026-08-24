@@ -4,5 +4,5 @@ previewable = true
 title       = "A Positional Argument Between Keywords Stays Put"
 
 description = '''
-A keyword run whose gaps carry a positional argument swaps its member slices in place with every gap kept verbatim, so the `*args` row keeps its slot between the sorted keywords rather than vanishing with the rows a block rebuild would drop.
+A keyword run whose gaps carry a positional argument swaps its member slices in place with every gap kept verbatim, so the `*overrides` row keeps its slot between the sorted keywords rather than vanishing with the rows a block rebuild would drop.
 '''

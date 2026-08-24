@@ -1,2 +1,2 @@
-result_value = fn_name_here(arg_one_value,
-                            arg_two_value)  # trailing note that is long
+report_value = write_header(section_label,
+                            column_widths)  # trailing note that is long

@@ -1,5 +1,6 @@
 import os
-from package.transforms import indentation, suitify  # prose: skip[align-imports]
-from package.formatting import alpha, beta
+from package.zeta_rendering import c
+from package.middle import b  # prose: skip[align-imports]
+from package.alpha import a
 
-print(os, indentation, suitify, alpha, beta)
+print(os, a, b, c)

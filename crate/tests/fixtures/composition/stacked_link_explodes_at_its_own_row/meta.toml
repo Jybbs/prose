@@ -3,5 +3,5 @@ previewable = true
 title       = "A Stacked Link Explodes at Its Own Row"
 
 description = '''
-`stack-method-chains` wraps the chain in a grouping pair and seats its first link on a row of its own below the opener, and when that link overflows the budget `reflow-calls` explodes it against the row the link landed on, its arguments one step in from that row and its closer back at the row's indent rather than at the indent of the pair's opener.
+`stack-method-chains` wraps the chain in a grouping pair and seats the receiver and its first link together on the row below the opener, and when that row overflows the budget `reflow-calls` explodes that link against the row it landed on, its arguments one step in from that row and its closer back at the row's indent rather than at the indent of the pair's opener.
 '''

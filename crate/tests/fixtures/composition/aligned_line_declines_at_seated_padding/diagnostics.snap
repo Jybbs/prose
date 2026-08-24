@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: render(diagnostics)
-input_file: crate/tests/fixtures/composition/aligned_line_measured_past_stranded_padding/input.py
+input_file: crate/tests/fixtures/composition/aligned_line_declines_at_seated_padding/input.py
 ---
 strip-stranded-padding@16..16
 strip-stranded-padding@24..24

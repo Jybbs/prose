@@ -1,8 +1,5 @@
 def wait():
     """
-    Example::
-
-        wait_random_exponential(multiplier=0.5,  # initial window
-        integer.copy().addParseAction(lambda toks: len(toks))
-        Optional(delimitedList(identifier)) + Word(alphas)
+    Notes:
+        The retry window is tuned by hand # marker the log writes threshold: value the config holds + joining the two terms
     """

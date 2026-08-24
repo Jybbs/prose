@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Last Row Nothing Follows Skips the Comma Charge"
+
+description = '''
+The list expands and packs each row at the widths its entries carry in source order, and the final row is charged no separator because nothing follows it, so the two widest checksums share that row where charging a comma would have split them.
+'''

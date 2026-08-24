@@ -3,8 +3,8 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/composition/merge_gathers_across_a_hoisted_constant/input.py
 ---
-from pkg import a, b
+from pkg import alpha, beta
 
-X = 1
+LIMIT = 3
 
-print(a, b, X)
+print(alpha, beta, LIMIT)

@@ -1,7 +1,7 @@
 [docs]
-previewable = true
+previewable = false
 title       = "An Inner Closer Row Keeps Its Column"
 
 description = '''
-The exploded `type` call closes on a row whose leading `)` is its own and whose final `)` closes the enclosing tuple, so the argument block's move reads that row as interior and leaves the closer at the call's column rather than seating it on the argument indent.
+The exploded `type` call closes on a row whose leading `)` is its own and whose final `)` closes the enclosing tuple, so the argument block's move reads that row as interior and leaves the closer at the call's column rather than seating it on the argument indent. Running `reflow-calls` alone leaves the `%` tuple beside it packed, since that literal belongs to `reflow-collections`, so the rows here are narrower than the pipeline settles them to.
 '''

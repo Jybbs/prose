@@ -5,7 +5,6 @@ input_file: crate/tests/fixtures/composition/band_heading_carries_off_the_merge_
 ---
 # Translated by Guido van Rossum from C source provided by
 # Adrian Baddeley.
-
 import _random
 
 from _collections_abc import Sequence as _Sequence

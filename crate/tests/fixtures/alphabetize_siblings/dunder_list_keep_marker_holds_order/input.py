@@ -5,5 +5,5 @@ __slots__ = (
     "alpha",
 )  # prose: keep
 
-sorted_anyway = ["zeta", "alpha"]
+plain_list = ["zeta", "alpha"]
 __all__ = ["zeta", "alpha"]

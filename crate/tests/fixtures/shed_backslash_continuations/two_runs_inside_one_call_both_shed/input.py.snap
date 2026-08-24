@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/shed_backslash_continuations/two_runs_wrap_into_one_call/input.py
+input_file: crate/tests/fixtures/shed_backslash_continuations/two_runs_inside_one_call_both_shed/input.py
 ---
 total = compute(alpha,
     beta, gamma,

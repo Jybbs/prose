@@ -1,5 +1,5 @@
-from pkg import a
-X = 1
-from pkg import b
+from pkg import alpha
+LIMIT = 3
+from pkg import beta
 
-print(a, b, X)
+print(alpha, beta, LIMIT)

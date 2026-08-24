@@ -3,5 +3,5 @@ previewable = false
 title       = "An Augmented Assignment Aligns Inside an Indented Run"
 
 description = '''
-The `+=` row counts its operator toward the left-hand side, so its `=` shares the column of the plain assignments around it at any indent.
+The `+=` row counts its operator toward the left-hand side, so its `=` shares the column of the plain assignments around it inside the indented body of `def tally`.
 '''

@@ -1,5 +1,5 @@
-class S:
-    def run(self):
+class ForkServer:
+    def ensure_running(self):
         try:
             fds_to_pass = [listener.fileno(), alive_r, authkey_r]
             main_kws["authkey_r"] = authkey_r

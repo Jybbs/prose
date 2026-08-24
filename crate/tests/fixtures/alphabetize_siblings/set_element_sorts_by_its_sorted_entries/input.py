@@ -1,4 +1,4 @@
-values = {
-    {"bb": fn(1000, 1000), "dd": 1},
-    {"dd": (10, 10), "bb": [10, 1000, 1000]},
+signatures = {
+    frozenset({"beta", "carrot"}),
+    frozenset({"delta", "alpha"}),
 }

@@ -3,9 +3,9 @@ source: crate/tests/integration.rs
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/band_heading_carries_off_the_merge_lead/input.py
 ---
-align-imports@207..301
-alphabetize-siblings@79..342
-band-constants@79..342
-group-imports@79..348
-reflow-imports@89..200
-space-statements@333..334
+align-imports@128..222
+alphabetize-siblings@0..341
+band-constants@0..341
+group-imports@0..347
+reflow-imports@10..121
+space-statements@254..255

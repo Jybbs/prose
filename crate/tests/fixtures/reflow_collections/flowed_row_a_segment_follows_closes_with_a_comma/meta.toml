@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Flowed Row a Segment Follows Closes With a Comma"
-
-description = '''
-A flow segment that fills its last row exactly is followed by a one-per-line segment, so that row closes with a comma the packer charges, splitting the pair that would otherwise land one column past the budget.
-'''

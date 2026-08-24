@@ -3,6 +3,6 @@ source: crate/tests/integration.rs
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/reservation_closes_the_run_after_a_multiline_statement/input.py
 ---
-align-equals@269..270
-align-equals@64..65
-reflow-collections@223..243
+align-equals@289..290
+align-equals@84..85
+reflow-collections@243..263

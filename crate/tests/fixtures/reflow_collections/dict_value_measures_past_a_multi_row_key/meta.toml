@@ -3,5 +3,5 @@ previewable = true
 title       = "A Dict Value Measures Past a Multi-Row Key"
 
 description = '''
-The comment holds the dict as written, so each entry's key and value measure on their own. The key overflows and expands, and the value then fits from the column past the key's closing row, where its `:` lands, rather than from the sum of the key's rows read as one impossibly wide line.
+The key overflows the budget and expands to one component per row, and the value then fits from the column where its `:` lands on the key's closing row, rather than from the sum of the key's rows read as one impossibly wide line.
 '''

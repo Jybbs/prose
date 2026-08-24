@@ -3,8 +3,8 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/composition/reservation_closes_the_run_after_a_multiline_statement/input.py
 ---
-class S:
-    def run(self):
+class ForkServer:
+    def ensure_running(self):
         try:
             fds_to_pass           = [listener.fileno(), alive_r, authkey_r]
             main_kws["authkey_r"] = authkey_r

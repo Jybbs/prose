@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Call Joins at the Width the Padding Leaves"
-
-description = '''
-`reflow-calls` measures a single-row argument list at the width it settles to once `strip-stranded-padding` drops the delimiter padding inside it, so a call whose padded text crosses the budget by exactly that padding joins where the stripped row fits.
-'''

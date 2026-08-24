@@ -3,5 +3,5 @@ previewable = false
 title       = "A Carried Comment Spills onto the Roster's Last Row"
 
 description = '''
-The three names overrun the `import-line-length` budget of `60`, so [[reflow-imports]] splits the statement into a run of repeated-prefix lines and the comment carried with it **lands on the last row rather than staying above the run**. The forecast seats that final row alone, holding the rows above it at the column they packed to, so the comment's width is measured against the row it actually joins rather than against the widest row of the roster.
+The three names overrun the `import-line-length` budget of `60`, so [[reflow-imports]] splits the statement into a run of repeated-prefix lines and the comment carried with it **lands inline on the last row rather than opening its own line above it**. The forecast seats that final row alone, holding the row above it at the column it packed to, so the comment's width is measured against the row it actually joins rather than against the widest row of the roster.
 '''

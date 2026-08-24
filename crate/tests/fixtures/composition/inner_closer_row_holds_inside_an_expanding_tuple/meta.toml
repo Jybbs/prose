@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Inner Closer Row Holds Inside an Expanding Tuple"
+title       = "An Inner `type` Call Holds Inside an Expanding Tuple"
 
 description = '''
-The tuple closing the `%` operand overflows, so `reflow-collections` expands it and `reflow-calls` leaves the `type` call inside alone, where the tail the expansion removes would otherwise have exploded it.
+The tuple closing the `%` operand overflows, so `reflow-collections` expands it and seats its closer on the row its opener sits on, and `reflow-calls` breaks the `TypeError` closer onto its own row while leaving the `type` call inside alone, where the tail the expansion removes would otherwise have exploded it.
 '''

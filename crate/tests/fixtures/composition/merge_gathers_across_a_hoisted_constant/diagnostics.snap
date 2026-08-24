@@ -3,6 +3,6 @@ source: crate/tests/integration.rs
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/merge_gathers_across_a_hoisted_constant/input.py
 ---
-band-constants@18..41
-reflow-imports@17..42
-space-statements@17..18
+band-constants@22..52
+reflow-imports@21..53
+space-statements@21..22

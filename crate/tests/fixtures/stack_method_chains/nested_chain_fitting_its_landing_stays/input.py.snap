@@ -3,7 +3,7 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/stack_method_chains/nested_chain_fitting_its_landing_stays/input.py
 ---
-short = (
+posix_path = (
     (subdir / name).resolve()
                    .relative_to(root.resolve().parent())
                    .as_posix()

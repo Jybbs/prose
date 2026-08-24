@@ -3,5 +3,5 @@ source: crate/tests/integration.rs
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/augmented_value_measured_from_its_column/input.py
 ---
-reflow-calls@133..152
+align-equals@112..113
 reflow-calls@197..218

@@ -1,5 +1,5 @@
-f(
-    bb=1,
-    *args,
-    aa=2
+configure(
+    verbose=True,
+    *overrides,
+    retries=3
 )
