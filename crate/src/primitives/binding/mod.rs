@@ -1,12 +1,10 @@
 //! Per-`Source` binding-resolution table.
 //!
 //! Walks the module once and records, for every name introduced or
-//! shadowed in a lexical scope, the offsets of every write and read.
-//! A read that finds no binding mid-walk defers and resolves against
-//! the completed scope chain after the walk, so a forward reference to
-//! a name bound later in source order still records against it.
-//! Consuming rules query the table by `BindingId`, by name, by source
-//! offset, or by an owning `&Stmt` rather than driving their own walk.
+//! shadowed in a lexical scope, the offsets of every write and read,
+//! a read finding no binding mid-walk resolving against the completed
+//! scope chain after it. Consuming rules query by `BindingId`, name,
+//! offset, or owning `&Stmt` rather than driving their own walk.
 //!
 //! ## Scope model
 //!
@@ -260,8 +258,15 @@ impl BindingAnalysis {
     /// more than one write or an augmented-assignment write, and
     /// `false` when `name` is write-once or unbound at module scope.
     pub(crate) fn module_reassigned(&self, name: &str) -> bool {
+        self.module_reassigned_beyond(name, 0)
+    }
+
+    /// [`Self::module_reassigned`] with `removed` of the binding's writes
+    /// discounted, the writes a caller drops in the same pass.
+    pub(crate) fn module_reassigned_beyond(&self, name: &str, removed: usize) -> bool {
         self.module_binding(name).is_some_and(|binding| {
-            binding.write_offsets.len() > 1 || binding.kinds.contains(&BindingKind::AugAssign)
+            binding.write_offsets.len() > removed + 1
+                || binding.kinds.contains(&BindingKind::AugAssign)
         })
     }
 

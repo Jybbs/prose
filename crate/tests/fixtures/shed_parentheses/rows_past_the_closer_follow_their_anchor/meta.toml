@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Rows Past the Closer Follow Their Anchor"
+
+description = '''
+The shed closer moves the text after it on its row, and a later row aligned to that text follows it by the same columns, so the second argument stays aligned under its own opener.
+'''

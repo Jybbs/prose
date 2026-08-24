@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/last_entry_at_the_cap_keeps_its_column/input.py
+---
+align-colons@27..83
+reflow-collections@30..69

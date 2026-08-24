@@ -2,7 +2,7 @@
 //! stopping at its last non-whitespace character so the text between two
 //! segments is the gap a break rewrites.
 
-use ruff_python_ast::{Expr, ExprAttribute, token::TokenKind};
+use ruff_python_ast::{Expr, ExprAttribute, ExprCall, token::TokenKind};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
@@ -10,20 +10,24 @@ use crate::{primitives::fracture, source::Source};
 
 /// A chain's receiver and its `.name(...)` links in source order, each
 /// link running from its own dot to the one opening the link below it,
-/// or to the chain's end for the last.
-pub(super) struct Chain {
+/// or to the chain's end for the last. `calls` carries the call each
+/// link closes with and `receiver` the expression the spine opens on.
+pub(super) struct Chain<'a> {
+    pub(super) calls: Vec<&'a ExprCall>,
     pub(super) links: Vec<TextRange>,
+    pub(super) receiver: &'a Expr,
     pub(super) receiver_range: TextRange,
 }
 
-impl Chain {
+impl<'a> Chain<'a> {
     /// The chain `expr` divides into, or `None` when its spine carries
     /// fewer than two links. A `.name` access that is not itself called
     /// opens no link of its own, moving the opening of the link below it
     /// down onto its own dot, and a trailing one stays with the link
     /// above it.
-    pub(super) fn of(source: &Source, expr: &Expr) -> Option<Self> {
-        let mut dots: Vec<TextSize> = Vec::new();
+    pub(super) fn of(source: &Source, expr: &'a Expr) -> Option<Self> {
+        let mut calls = Vec::new();
+        let mut dots = Vec::new();
         let mut cursor = expr;
         loop {
             let attribute = match cursor {
@@ -35,6 +39,7 @@ impl Chain {
                 }
                 Expr::Call(call) => match call.func.as_ref() {
                     Expr::Attribute(attribute) => {
+                        calls.push(call);
                         dots.push(dot_offset(source, attribute));
                         attribute
                     }
@@ -47,14 +52,17 @@ impl Chain {
         if dots.len() < 2 {
             return None;
         }
+        calls.reverse();
         dots.reverse();
         let stops = dots[1..].iter().copied().chain([expr.end()]);
         Some(Self {
+            calls,
             links: dots
                 .iter()
                 .zip(stops)
                 .map(|(&dot, stop)| trimmed(source, TextRange::new(dot, stop)))
                 .collect(),
+            receiver: cursor,
             receiver_range: trimmed(source, TextRange::new(expr.start(), dots[0])),
         })
     }
@@ -114,7 +122,7 @@ mod tests {
     };
 
     /// The chain `source`'s first assigned value divides into.
-    fn chain_of(source: &Source) -> Option<Chain> {
+    fn chain_of(source: &Source) -> Option<Chain<'_>> {
         Chain::of(source, first_value(source))
     }
 

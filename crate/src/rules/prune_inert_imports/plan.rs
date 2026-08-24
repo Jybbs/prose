@@ -1,10 +1,9 @@
 //! The per-alias decision the rule reaches over a module's imports, the
 //! drops it applies and the reports a package `__init__` holds back.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::Alias;
 use ruff_text_size::TextRange;
 
 use super::{
@@ -16,25 +15,31 @@ use super::{
     reexports::Reexports,
 };
 use crate::{
-    diagnostics::Diagnostic, primitives::imports::prune_import_aliases, rule::RuleId,
-    source::Source,
+    diagnostics::Diagnostic, primitives::imports::Dropping, rule::RuleId,
+    rules::reflow_imports::Folds, source::Source,
 };
 
 /// The alias drops the rule applies, one entry per pruned statement,
 /// beside the unreferenced bindings a package `__init__.py` holds.
 #[derive(Default)]
 pub(super) struct Plan<'a> {
-    drops: Vec<Pruned<'a>>,
+    drops: Vec<Dropping<'a>>,
+    folds: Option<&'a Folds>,
     reports: Vec<Report<'a>>,
 }
 
 impl<'a> Plan<'a> {
     /// Walks the module-scope imports of `source`, dropping every
     /// candidate and holding back the unreferenced ones a package
-    /// `__init__` re-exports.
-    pub(super) fn of(rule: &PruneInertImports, source: &'a Source) -> Self {
+    /// `__init__` re-exports. A repeat the pass drops no longer rebinds
+    /// the name, so the binding it repeated reads as write-once.
+    pub(super) fn of(rule: &'a PruneInertImports, source: &'a Source) -> Self {
         let body = &source.ast().body;
-        let nodes: Vec<ImportNode<'a>> = body.iter().filter_map(ImportNode::of).collect();
+        let nodes: Vec<(usize, ImportNode<'a>)> = body
+            .iter()
+            .enumerate()
+            .filter_map(|(slot, stmt)| ImportNode::of(stmt).map(|node| (slot, node)))
+            .collect();
         if nodes.is_empty() {
             return Self::default();
         }
@@ -47,28 +52,48 @@ impl<'a> Plan<'a> {
             HashSet::new()
         };
         let directive_is_inert = rule.unreferenced
-            && nodes.iter().any(|node| node.future_annotations().is_some())
+            && nodes
+                .iter()
+                .any(|(_, node)| node.future_annotations().is_some())
             && annotations_are_inert(source, rule.target_version);
 
         let mut bound_sources = HashSet::new();
+        let mut repeats: HashMap<&str, usize> = HashMap::new();
+        let repeated: Vec<Vec<bool>> = nodes
+            .iter()
+            .map(|(_, node)| {
+                node.names()
+                    .iter()
+                    .map(|alias| {
+                        let bound = node.bound(alias);
+                        let repeat =
+                            rule.duplicates && !bound_sources.insert((bound, node.source(alias)));
+                        if repeat && !reexports.holds(alias, bound) {
+                            *repeats.entry(bound).or_default() += 1;
+                        }
+                        repeat
+                    })
+                    .collect()
+            })
+            .collect();
         let mut dropped: Vec<Vec<usize>> = vec![Vec::new(); nodes.len()];
         let mut reports = Vec::new();
-        for (statement, node) in nodes.iter().enumerate() {
+        for (statement, (_, node)) in nodes.iter().enumerate() {
             let directive = node.future_annotations();
             for (index, alias) in node.names().iter().enumerate() {
                 let bound = node.bound(alias);
-                let repeat = rule.duplicates && !bound_sources.insert((bound, node.source(alias)));
                 let candidacy = if reexports.holds(alias, bound) {
                     None
-                } else if repeat {
+                } else if repeated[statement][index] {
                     Some(Candidacy::Inert)
                 } else if !rule.unreferenced || is_star(alias) {
                     None
                 } else if node.is_future() {
                     (directive_is_inert && directive == Some(index)).then_some(Candidacy::Inert)
                 } else {
+                    let repeats = repeats.get(bound).copied().unwrap_or_default();
                     (analysis.module_usage_count(bound) == 0
-                        && !analysis.module_reassigned(bound)
+                        && !analysis.module_reassigned_beyond(bound, repeats)
                         && !analysis.is_deleted(bound)
                         && !annotated.contains(bound))
                     .then_some(Candidacy::Unreferenced)
@@ -89,12 +114,14 @@ impl<'a> Plan<'a> {
                 .iter()
                 .zip(dropped)
                 .filter(|(_, dropped)| !dropped.is_empty())
-                .map(|(node, dropped)| Pruned {
+                .map(|((slot, node), dropped)| Dropping {
                     dropped,
                     names: node.names(),
                     range: node.range(),
+                    slot: *slot,
                 })
                 .collect(),
+            folds: Some(&rule.folds),
             reports,
         }
     }
@@ -115,17 +142,14 @@ impl<'a> Plan<'a> {
             .collect()
     }
 
-    /// One fix group per pruned statement.
+    /// One fix group per pruned statement, a comment-led statement
+    /// losing every alias landing on the import its comment heads once
+    /// the later rules have laid the block out.
     pub(super) fn edits(&self, source: &Source) -> Vec<Vec<Edit>> {
-        self.drops
-            .iter()
-            .map(|pruned| {
-                prune_import_aliases(source, pruned.range, pruned.names, |index| {
-                    !pruned.dropped.contains(&index)
-                })
-            })
-            .filter(|edits| !edits.is_empty())
-            .collect()
+        let Some(folds) = self.folds else {
+            return Vec::new();
+        };
+        folds.prune(source, &self.drops)
     }
 }
 
@@ -137,13 +161,6 @@ enum Candidacy {
     Inert,
     /// A binding the module's own reference count never reaches.
     Unreferenced,
-}
-
-/// The alias positions one import statement loses.
-struct Pruned<'a> {
-    dropped: Vec<usize>,
-    names: &'a [Alias],
-    range: TextRange,
 }
 
 /// One unreferenced binding a package `__init__.py` holds.

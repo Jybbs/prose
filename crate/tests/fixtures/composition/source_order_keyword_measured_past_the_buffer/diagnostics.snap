@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/source_order_keyword_measured_past_the_buffer/input.py
+---
+reflow-calls@134..254

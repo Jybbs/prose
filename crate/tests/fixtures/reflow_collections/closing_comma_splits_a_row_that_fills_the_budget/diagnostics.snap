@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_collections/closing_comma_splits_a_row_that_fills_the_budget/input.py
+---
+reflow-collections@17..67

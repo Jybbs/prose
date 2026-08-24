@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 59
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/sibling_literal_lands_on_the_closer_row/input.py
+---
+def walk(token):
+    while True:
+        if True:
+            yield DOCTYPE, (
+                token["name"],
+                token["publicId"],
+                token["systemId"]
+            ), (None, -1, -1)

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/shed_backslash_continuations/two_runs_under_one_expression_take_one_pair/input.py
+---
+shed-backslash-continuations@20..97

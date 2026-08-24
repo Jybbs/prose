@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Capped Head Releases the Row Its Column Cuts Off"
+
+description = '''
+The opening row sits on the line cap, so the column the last row sets would push it past and cuts that row off alone. The head releases as the singleton instead, and the rows beneath it share the wider column.
+'''

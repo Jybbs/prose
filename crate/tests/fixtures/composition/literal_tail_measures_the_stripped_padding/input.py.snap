@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 59
+expression: snapshot
+input_file: crate/tests/fixtures/composition/literal_tail_measures_the_stripped_padding/input.py
+---
+def finish(non_adjacent, la, lb):
+    if la or lb:
+        non_adjacent.append((la, lb, 0))

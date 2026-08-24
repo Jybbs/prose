@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Keyword Flush Against the Pair Keeps a Space"
+
+description = '''
+A pair written directly against a keyword sheds to a single space rather than nothing, so `return('<not given>')` becomes `return '<not given>'` and `elif(y):` becomes `elif y:`, on the closing side as much as the opening one. The same space lets a pair whose bare form would fuse into the keyword, `return(x)` read as `returnx`, shed at all.
+'''

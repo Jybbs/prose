@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Flat Literal Measures at the Width Its Padding Settles To"
+
+description = '''
+[[strip-stranded-padding]] drops the delimiter padding in the first dict and seats a space after each colon in the second, so [[reflow-collections]] measures both at those settled widths, leaving the first on its row and expanding the second.
+'''

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/parameter_default_joins_then_declines_the_column/input.py
+---
+reflow-collections@26..34

@@ -1,0 +1,5 @@
+_hash_action = {(False, False, False, False): None,
+                (False, False, False, True ): None,
+                (False, False, True,  False): None,
+                (False, True,  False, False): _hash_set_none,
+                }

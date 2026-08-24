@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Two Runs Under One Expression Take One Pair"
+
+description = '''
+Two backslash runs on separate rows of one condition are each spanned by the same outermost expression, so the wrap parenthesizes that expression once and drops every backslash inside it rather than inserting a pair per run.
+'''

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/transforming_dict_comprehension_sheds_its_call/input.py
+---
+def index(rows):
+    return {key: normalize(value) for key, value in rows}

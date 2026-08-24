@@ -1,8 +1,16 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE alias="typecheck"
-#MISE description="Type-check the docs-site TypeScript with `vue-tsc`"
-#MISE depends=["site:bake"]
-#MISE dir="site"
-#MISE sources=["../.mise/config.toml", "**/*", "!.vitepress/.temp/**/*", "!.vitepress/dist/**/*", "!.vitepress/tests/wasm/pkg/**/*", "!coverage/**/*", "!node_modules/**/*"]
+#MISE alias       = "typecheck"
+#MISE depends     = ["site:bake"]
+#MISE description = "Type-check the docs-site TypeScript with `vue-tsc`"
+#MISE dir         = "site"
+#MISE sources     = [
+#MISE   "../.mise/config.toml",
+#MISE   "**/*",
+#MISE   "!.vitepress/.temp/**/*",
+#MISE   "!.vitepress/dist/**/*",
+#MISE   "!.vitepress/tests/wasm/pkg/**/*",
+#MISE   "!coverage/**/*",
+#MISE   "!node_modules/**/*"
+#MISE ]
 
 bunx vue-tsc --noEmit

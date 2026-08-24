@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Pair Whose Breaks a Nested Bracket Holds Sheds in Place"
+
+description = '''
+The grouping pair around the comparison holds none of its breaks, the `find` call's own parentheses do, so [[shed-parentheses]] drops the pair in place and [[reflow-calls]] joins the call in the same pass.
+'''

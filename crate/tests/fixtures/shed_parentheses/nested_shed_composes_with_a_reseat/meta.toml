@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Nested Shed Composes With a Re-Seat"
+
+description = '''
+A continuation row aligned to the shed opener follows it leftward through an indent-only edit at the row start, so the redundant pair nested on that same row sheds in the same pass rather than colliding with the move.
+'''

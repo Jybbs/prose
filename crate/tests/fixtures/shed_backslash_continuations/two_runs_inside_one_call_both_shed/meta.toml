@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Two Backslash Runs Inside One Call Both Shed"
+
+description = '''
+`compute` spans three rows joined by two separate backslashes, and both sit inside the same call parentheses. **The call's own parentheses already span both breaks, so each backslash simply drops and the newline it sat on stays**, leaving the call as one bracketed argument list with no continuation markers left.
+'''

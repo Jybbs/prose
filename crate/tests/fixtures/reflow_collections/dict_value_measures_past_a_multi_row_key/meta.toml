@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Dict Value Measures Past a Multi-Row Key"
+
+description = '''
+The key overflows the budget and expands to one component per row, and the value then fits from the column where its `:` lands on the key's closing row, rather than from the sum of the key's rows read as one impossibly wide line.
+'''

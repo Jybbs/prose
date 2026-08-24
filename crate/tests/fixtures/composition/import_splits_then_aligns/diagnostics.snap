@@ -1,6 +1,6 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/import_splits_then_aligns/input.py
 ---
-reflow-imports@31..39
+reflow-imports@13..39

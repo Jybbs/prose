@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/reservation_closes_the_run_after_a_multiline_statement/input.py
+---
+align-equals@289..290
+align-equals@84..85
+reflow-collections@243..263

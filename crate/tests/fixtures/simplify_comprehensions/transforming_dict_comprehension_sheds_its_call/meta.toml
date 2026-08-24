@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Transforming Dict Comprehension Sheds Its `dict` Call"
+
+description = '''
+The comprehension rewrites each value through `normalize`, so it builds a new mapping rather than copying `rows`, and the surrounding `dict()` call adds nothing. **The call unwraps to the comprehension itself**, the counterpart to the copying case that reduces to its iterable instead.
+'''

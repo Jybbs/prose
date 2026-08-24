@@ -4,11 +4,14 @@
 //! it, folding nested reorders into each item block and declining when the
 //! reassembled dict no longer parses.
 
+use std::borrow::Cow;
+
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{DictItem, ExprDict};
 use ruff_python_parser::parse_expression;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
+use super::joined_key;
 use crate::{
     primitives::{
         comments::has_keep_marker,
@@ -26,6 +29,21 @@ use crate::{
     },
     source::Source,
 };
+
+/// Composite within-run dict-entry sort key, scalar-valued entries sorting
+/// before collection-valued and alphabetizing within each partition by the
+/// key's source slice. A keyless `**` spread returns `None`, as does an
+/// entry whose value runs code, pinning that entry in its source slot.
+pub(super) fn dict_sort_key<'a>(
+    source: &'a Source,
+    item: &DictItem,
+) -> Option<(bool, Cow<'a, str>)> {
+    let key = item
+        .key
+        .as_ref()
+        .filter(|_| !value_is_effectful(&item.value))?;
+    Some((is_layoutable(&item.value), joined_key(source, key)))
+}
 
 /// Rewrites a dict literal's items span. Returns `Some((span, text))`
 /// when reordering, partition, or any nested reorder folded from `edits`
@@ -91,12 +109,12 @@ pub(super) fn rewrite_dict_text(
         let source_last_has_comma = source.trailing_comma(d.range()).is_some();
         let value_ends: Vec<TextSize> = item_ranges.iter().map(Ranged::end).collect();
         assemble_separated(
+            source,
             &value_ends,
             blocks,
             &block_texts,
             &order,
             &divider_slots,
-            source.newline_str(),
             source_last_has_comma,
         )
     } else {
@@ -118,18 +136,6 @@ pub(super) fn rewrite_dict_text(
         return None;
     }
     Some((span, assembled))
-}
-
-/// Composite within-run dict-entry sort key, scalar-valued entries sorting
-/// before collection-valued and alphabetizing within each partition by the
-/// key's source slice. A keyless `**` spread returns `None`, as does an
-/// entry whose value runs code, pinning that entry in its source slot.
-fn dict_sort_key<'a>(source: &'a Source, item: &DictItem) -> Option<(bool, &'a str)> {
-    let key = item
-        .key
-        .as_ref()
-        .filter(|_| !value_is_effectful(&item.value))?;
-    Some((is_layoutable(&item.value), source.slice(key)))
 }
 
 /// Returns the new-order slot indices after which a blank-line divider
@@ -171,7 +177,7 @@ mod tests {
         let dict = first_value(&source).as_dict_expr().expect("dict value");
         assert_eq!(
             dict_sort_key(&source, &dict.items[0]),
-            Some((collection, "\"a\"")),
+            Some((collection, Cow::Borrowed("\"a\""))),
         );
     }
 

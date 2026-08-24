@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/single_entry_wraps_at_the_stripped_head/input.py
+---
+strip-stranded-padding@95..96
+wrap-docstrings@121..121

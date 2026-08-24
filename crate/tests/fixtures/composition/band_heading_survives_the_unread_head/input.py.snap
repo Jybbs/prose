@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/band_heading_survives_the_unread_head/input.py
+---
+# Local imports
+from ..pgen2 import driver
+
+print(driver)

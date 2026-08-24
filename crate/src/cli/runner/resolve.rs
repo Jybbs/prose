@@ -48,6 +48,24 @@ impl ConfigResolver {
         }
     }
 
+    /// A resolver answering every bare file with `resolved`.
+    #[cfg(test)]
+    pub(super) fn over(resolved: Resolved) -> Self {
+        let default = Arc::new(resolved);
+        Self {
+            anchor: Anchor::AsWritten,
+            built: Mutex::new(HashMap::from([(
+                default.config_toml.clone(),
+                Arc::clone(&default),
+            )])),
+            default,
+            ignore: Vec::new(),
+            notices: NoticeDedup::default(),
+            select: Vec::new(),
+            sources: Mutex::new(HashMap::new()),
+        }
+    }
+
     /// Returns the resolution for an effective `config`, building its
     /// pipeline once and memoizing it under its serialized TOML.
     fn built_for(&self, config: &Config) -> Arc<Resolved> {

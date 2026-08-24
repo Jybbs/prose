@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Inside an Expanding Literal Waits for the Layout"
+
+description = '''
+A list a keyword carries overflows its row, so `reflow-collections` expands it, and `reflow-calls` leaves the call inside that list alone rather than exploding it against a tail the expansion removes, the call reshaping where its entry lands and staying inline there.
+'''

@@ -24,6 +24,13 @@ pub(crate) struct EntryHead<'a> {
     pub(crate) type_group: Option<Range<usize>>,
 }
 
+/// True when `trimmed` is an entry head with its description missing,
+/// the `name:` shape alone, read by probing the parser with a synthetic
+/// description.
+pub(crate) fn is_bare_entry_head(trimmed: &str) -> bool {
+    trimmed.ends_with(':') && entry_head(&[trimmed, " x"].concat()).is_some()
+}
+
 /// True when `trimmed` opens with a Google-style `name: description`
 /// entry head, whatever its type group.
 pub(crate) fn is_entry_head(trimmed: &str) -> bool {
@@ -35,7 +42,13 @@ pub(crate) fn is_entry_head(trimmed: &str) -> bool {
 /// capitalized, immediately followed by `:`, and trailing content after
 /// the `:` is permitted. `None` for every other line.
 pub(crate) fn section_heading(trimmed: &str) -> Option<&str> {
-    SECTION_HEADING.find(trimmed)?.as_str().strip_suffix(':')
+    let found = SECTION_HEADING.find(trimmed)?.as_str();
+    // A second colon opens a reStructuredText literal block rather than
+    // a section, so the indented lines beneath it stay verbatim.
+    if trimmed[found.len()..].starts_with(':') {
+        return None;
+    }
+    found.strip_suffix(':')
 }
 
 /// Parses `trimmed` as a sibling of the entry above it. `None` when the
@@ -232,6 +245,13 @@ mod tests {
     fn section_heading_reads_the_name_before_trailing_content() {
         assert_eq!(section_heading("Returns: int"), Some("Returns"));
         assert_eq!(section_heading("Note: see below"), Some("Note"));
+    }
+
+    #[test]
+    fn section_heading_rejects_a_literal_block_introducer() {
+        assert!(section_heading("Example::").is_none());
+        assert!(section_heading("Note::").is_none());
+        assert_eq!(section_heading("Example:"), Some("Example"));
     }
 
     #[test]

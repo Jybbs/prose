@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/nested_chain_measures_where_the_link_explodes/input.py
+---
+def f(o, p):
+    return (
+        o.first_link_that_is_quite_long(
+            p.inner_one_is_long().inner_two_long()
+        )
+         .second()
+         .third()
+    )

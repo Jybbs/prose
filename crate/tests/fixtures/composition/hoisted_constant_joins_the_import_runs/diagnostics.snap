@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/hoisted_constant_joins_the_import_runs/input.py
+---
+band-constants@36..79
+reflow-imports@15..28
+space-statements@35..36

@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Commented Import Run Prunes Its First Line"
+
+description = '''
+[[reflow-imports]] will fold the unread first line into its same-module sibling, so the comment heading the run leads the merged line once the first goes and [[prune-inert-imports]] moves the sibling onto that line in the same pass rather than holding the first until the merge has landed.
+'''

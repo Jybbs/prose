@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/shed_parentheses/rows_past_the_closer_follow_their_anchor/input.py
+---
+shed-parentheses@109..110
+shed-parentheses@155..157
+shed-parentheses@16..17
+shed-parentheses@61..62
