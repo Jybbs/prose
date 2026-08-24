@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/carried_comment_spills_onto_the_last_row/input.py
+---
+from package.transforms import commatize, indentation
+from package.transforms import suitify  # A comment trailing the run.
+
+print(indentation, suitify, commatize)

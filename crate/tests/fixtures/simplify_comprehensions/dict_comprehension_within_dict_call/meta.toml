@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Dict Comprehension Sheds Its `dict` Call"
+
+description = '''
+`dict()` wrapping a comprehension that already builds a mapping does nothing the braces do not, so the call **unwraps to the comprehension itself**, leaving `{key: value for key, value in rows}`.
+'''

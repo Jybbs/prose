@@ -58,10 +58,13 @@ fn emit_one(writer: &mut dyn Write, file: &SourceFile, diag: &Diagnostic) -> io:
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
+
     use super::*;
     use crate::{
-        cli::emit::emitted,
-        testing::{format_diagnostic, parse, range},
+        cli::emit::{UnstableEntry, emitted, emitted_runs},
+        rule::RuleId,
+        testing::{FailingWriter, format_diagnostic, parse, range},
     };
 
     fn emit_to_string(file: &SourceFile, diag: &Diagnostic) -> String {
@@ -91,6 +94,41 @@ mod tests {
         assert_eq!(
             emit_to_string(source.source_file(), &diag),
             "::warning file=<source>,line=1,col=1,endLine=1,endColumn=2::rewrite x to y\n",
+        );
+    }
+
+    #[test]
+    fn propagates_the_error_a_failing_writer_raises() {
+        let source = parse("x = 1\n");
+        let diag = format_diagnostic(range(0, 1));
+        let runs = [Run::new(
+            source.source_file(),
+            std::slice::from_ref(&diag),
+            None,
+        )];
+        let result = Github.emit(
+            &mut FailingWriter(io::ErrorKind::BrokenPipe),
+            &runs,
+            &EmitterSummary::default(),
+        );
+        assert_matches!(result, Err(e) if e.kind() == io::ErrorKind::BrokenPipe);
+    }
+
+    #[test]
+    fn warns_for_each_file_a_second_run_would_change() {
+        let source = parse("x = 1\n");
+        let summary = EmitterSummary {
+            unstable: vec![UnstableEntry {
+                file: "a.py".to_owned(),
+                rules: vec![RuleId::from("align-colons"), RuleId::from("align-equals")],
+            }],
+            ..EmitterSummary::default()
+        };
+        let runs = [Run::new(source.source_file(), &[], None)];
+        let emitted = emitted_runs(&Github, &runs, &summary);
+        assert_eq!(
+            String::from_utf8(emitted).expect("utf-8"),
+            "::warning file=a.py::prose produced output a second run would change (`align-colons`, `align-equals`)\n",
         );
     }
 }

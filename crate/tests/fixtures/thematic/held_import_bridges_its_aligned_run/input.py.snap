@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/held_import_bridges_its_aligned_run/input.py
+---
+import os
+
+from package.formatting import alpha, beta
+from package.transforms import indentation, suitify  # prose: skip[align-imports]
+
+print(os, indentation, suitify, alpha, beta)
