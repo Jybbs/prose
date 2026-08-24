@@ -4,7 +4,9 @@
 //! docstring mirror, and the decorator predicate gates the rules that
 //! must not reorder a positionally-bound signature.
 
-use ruff_python_ast::{ParameterWithDefault, Parameters, StmtFunctionDef};
+use ruff_python_ast::{
+    AnyNodeRef, AnyParameterRef, Expr, ParameterWithDefault, Parameters, StmtFunctionDef,
+};
 
 use crate::primitives::{decorator::decorator_arguments, effect::value_is_effectful};
 
@@ -27,6 +29,23 @@ pub(crate) fn classify_param(p: &ParameterWithDefault) -> Option<(u8, &str)> {
 /// keyword-only or variadic.
 pub(crate) fn first_positional(parameters: &Parameters) -> Option<&ParameterWithDefault> {
     parameters.posonlyargs.first().or(parameters.args.first())
+}
+
+/// The annotation and default sites of `param`, each beside the node
+/// its parentheses recover against, the default carried by a
+/// non-variadic slot alone.
+pub(crate) fn parameter_sites<'a>(param: AnyParameterRef<'a>) -> Vec<(&'a Expr, AnyNodeRef<'a>)> {
+    let inner = param.as_parameter();
+    let mut sites: Vec<(&Expr, AnyNodeRef)> = Vec::new();
+    if let Some(annotation) = inner.annotation.as_deref() {
+        sites.push((annotation, inner.into()));
+    }
+    if let AnyParameterRef::NonVariadic(slot) = param
+        && let Some(default) = slot.default.as_deref()
+    {
+        sites.push((default, slot.into()));
+    }
+    sites
 }
 
 /// True when sorting a function's positional-or-keyword parameters by

@@ -1,12 +1,10 @@
 //! Per-`Source` binding-resolution table.
 //!
 //! Walks the module once and records, for every name introduced or
-//! shadowed in a lexical scope, the offsets of every write and read.
-//! A read that finds no binding mid-walk defers and resolves against
-//! the completed scope chain after the walk, so a forward reference to
-//! a name bound later in source order still records against it.
-//! Consuming rules query the table by `BindingId`, by name, by source
-//! offset, or by an owning `&Stmt` rather than driving their own walk.
+//! shadowed in a lexical scope, the offsets of every write and read,
+//! a read finding no binding mid-walk resolving against the completed
+//! scope chain after it. Consuming rules query by `BindingId`, name,
+//! offset, or owning `&Stmt` rather than driving their own walk.
 //!
 //! ## Scope model
 //!

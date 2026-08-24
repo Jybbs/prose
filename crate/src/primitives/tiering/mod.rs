@@ -7,6 +7,10 @@ use std::{
     ops::Range,
 };
 
+mod refs;
+
+pub(crate) use refs::{eval_refs, eval_time_refs, walk_lambda_defaults};
+
 use ruff_python_ast::{
     Expr, ExprLambda, Stmt,
     visitor::{Visitor as AstVisitor, walk_expr, walk_parameters},
@@ -14,50 +18,6 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextSize};
 
 use crate::primitives::{orderer::permute_in_place, slots::slot_positions, walk::walk_stmt};
-
-/// Accumulates load-context names through `eval_time_refs`, pruning
-/// function and lambda bodies and skipping deferred annotations.
-struct EvalRefVisitor<'src> {
-    defer_annotations: bool,
-    names: Vec<&'src str>,
-}
-
-impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
-    fn visit_annotation(&mut self, annotation: &'src Expr) {
-        if !self.defer_annotations {
-            self.visit_expr(annotation);
-        }
-    }
-
-    fn visit_expr(&mut self, expr: &'src Expr) {
-        match expr {
-            Expr::Lambda(lambda) => walk_lambda_defaults(self, lambda),
-            Expr::Name(name) if name.ctx.is_load() => self.names.push(name.id.as_str()),
-            _ => walk_expr(self, expr),
-        }
-    }
-
-    fn visit_stmt(&mut self, stmt: &'src Stmt) {
-        match stmt {
-            Stmt::AnnAssign(ann) => {
-                self.visit_annotation(&ann.annotation);
-                if let Some(value) = &ann.value {
-                    self.visit_expr(value);
-                }
-            }
-            Stmt::FunctionDef(func) => {
-                for decorator in &func.decorator_list {
-                    self.visit_expr(&decorator.expression);
-                }
-                walk_parameters(self, &func.parameters);
-                if let Some(returns) = &func.returns {
-                    self.visit_annotation(returns);
-                }
-            }
-            _ => walk_stmt(self, stmt),
-        }
-    }
-}
 
 /// Returns a per-member `(tier, key)` lookup keyed by each definition's
 /// start offset, or `None` when the run cannot reorder. The run skips
@@ -95,33 +55,6 @@ pub(crate) fn def_run_tier_keys<'src, K: Copy>(
             .map(|(stmt, _, key)| (stmt.range().start(), key)),
         &dep_sets,
     )
-}
-
-/// Collects the load-context names in `expr`, pruning every function
-/// and lambda body, the reference set a module constant's value or
-/// annotation contributes to the hoist graph.
-pub(crate) fn eval_refs(expr: &Expr) -> Vec<&str> {
-    let mut visitor = EvalRefVisitor {
-        defer_annotations: true,
-        names: Vec::new(),
-    };
-    visitor.visit_expr(expr);
-    visitor.names
-}
-
-/// Collects the load-context names in a definition's evaluation-time
-/// surface: its decorators, base classes and class keywords, parameter
-/// defaults, non-deferred annotations, and the top level of a class
-/// body, descending into nested definitions but pruning every function
-/// and lambda body. Annotation positions are skipped when
-/// `defer_annotations` holds.
-pub(crate) fn eval_time_refs(stmt: &Stmt, defer_annotations: bool) -> Vec<&str> {
-    let mut visitor = EvalRefVisitor {
-        defer_annotations,
-        names: Vec::new(),
-    };
-    visitor.visit_stmt(stmt);
-    visitor.names
 }
 
 /// Tiers the `member`-selected definitions within `range` and permutes
@@ -198,14 +131,6 @@ pub(crate) fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
         }
     }
     tiers.into_iter().collect()
-}
-
-/// Walks a lambda's parameter defaults, pruning its body, the eval-time
-/// surface a lambda contributes when it binds.
-pub(super) fn walk_lambda_defaults<'a>(visitor: &mut impl AstVisitor<'a>, lambda: &'a ExprLambda) {
-    if let Some(params) = lambda.parameters.as_deref() {
-        walk_parameters(visitor, params);
-    }
 }
 
 /// True when every statement in `range` keeps each `member_name` entry
@@ -372,11 +297,9 @@ mod tests {
             class Mid:
                 pass
 
-
             @dec
             class Node:
                 child: Node
-
 
             class Alpha:
                 pass
@@ -394,11 +317,9 @@ mod tests {
             class Zeta:
                 pass
 
-
             @dec
             class Alpha:
                 pass
-
 
             class Mid:
                 pass
@@ -421,11 +342,9 @@ mod tests {
             class Mid:
                 pass
 
-
             @dec
             class Zeta(Mid):
                 pass
-
 
             class Alpha:
                 pass

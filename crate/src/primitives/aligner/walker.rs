@@ -3,14 +3,18 @@
 //! math with the skip-hold check and the gap normalization.
 
 use ruff_diagnostics::Edit;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::{
-    Member, Settings, Widenings, emit::emit_group, is_held, retain_unheld, shares_column,
+    Member, Settings, Widenings, emit::emit_group, holds::shares_column, is_held, retain_unheld,
     space_padding_edit,
 };
-use crate::{primitives::edit::apply_inline_edits, rule::RuleId, source::Source};
+use crate::{
+    primitives::edit::{apply_inline_edits, insert_edit},
+    rule::RuleId,
+    source::Source,
+};
 
 /// Bundles the `groups` accumulator, `settings`, the owning `rule`, and
 /// borrowed `source` shared by every alignment-rule visitor. Each entry
@@ -186,8 +190,7 @@ impl<'a> AlignWalker<'a> {
     pub(crate) fn push_group(&mut self, edits: Vec<Edit>) {
         if !edits.is_empty() {
             for edit in &edits {
-                let at = self.placed.partition_point(|e| e.start() <= edit.start());
-                self.placed.insert(at, edit.clone());
+                insert_edit(&mut self.placed, edit.clone());
             }
             self.groups.push(edits);
         }

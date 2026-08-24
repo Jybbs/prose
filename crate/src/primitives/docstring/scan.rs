@@ -148,6 +148,12 @@ pub(crate) fn opens_structure(rest: &str) -> bool {
         || section_heading(trimmed).is_some()
 }
 
+/// True where a marker's remainder reads as the bare marker or opens
+/// its text on a space.
+fn bare_or_spaced(rest: &str) -> bool {
+    rest.is_empty() || rest.starts_with(' ')
+}
+
 /// True when `trimmed` is a delimited head, an `open` prefix then a
 /// non-empty name run then a `close` delimiter that ends the line or
 /// carries whitespace after it.
@@ -170,7 +176,7 @@ fn is_bracketed_literal(trimmed: &str) -> bool {
 /// True when `trimmed` opens a comment-led code example, the `# `
 /// prefix a Python comment carries or the bare `#` marker alone.
 fn is_comment_marker(trimmed: &str) -> bool {
-    trimmed == "#" || trimmed.starts_with("# ")
+    trimmed.strip_prefix('#').is_some_and(bare_or_spaced)
 }
 
 /// True when `trimmed` opens a reStructuredText directive, a `.. `
@@ -207,17 +213,14 @@ fn is_grid_table_line(trimmed: &str) -> bool {
 /// digits followed by `. `), each also matching as the bare marker
 /// alone.
 fn is_list_marker(trimmed: &str) -> bool {
-    if matches!(trimmed, "-" | "*" | "+") {
-        return true;
-    }
     if trimmed
         .strip_prefix(['-', '*', '+'])
-        .is_some_and(|rest| rest.starts_with(' '))
+        .is_some_and(bare_or_spaced)
     {
         return true;
     }
     let after_digits = trimmed.trim_start_matches(|c: char| c.is_ascii_digit());
-    after_digits.len() < trimmed.len() && (after_digits == "." || after_digits.starts_with(". "))
+    after_digits.len() < trimmed.len() && after_digits.strip_prefix('.').is_some_and(bare_or_spaced)
 }
 
 /// True when `trimmed` is a section underline, a run of one repeated

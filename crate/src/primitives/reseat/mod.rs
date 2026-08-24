@@ -1,20 +1,17 @@
 //! Re-seats the continuation rows of a logical line once a rule removes
 //! text from its rows, each row reading its indent against the bracket
-//! it sits inside. A row hanging below an opener that ends its row keeps
-//! its column, a row indented to the column directly past its bracket's
-//! opener tracks the first token after that opener, a row indented to a
-//! code token on the opener's row follows the token, a row one or two
-//! indent steps past the opener's row hangs from that row and moves as
-//! it does, and a row on any other token's column follows the token. A
-//! row inside a row-spanning string, a row indented with a tab, and a
-//! row aligned to nothing keep their columns.
+//! it sits inside: a hanging row keeps its column, a row on a token's
+//! column follows the token, and a row one or two indent steps past the
+//! opener's row moves as that row does. A row inside a row-spanning
+//! string, a row indented with a tab, and a row aligned to nothing keep
+//! their columns.
 
 use std::collections::BTreeMap;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::token::{Token, TokenKind};
 use ruff_python_trivia::leading_indentation;
-use ruff_source_file::OneIndexed;
+use ruff_source_file::{LineRanges, OneIndexed};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
@@ -30,16 +27,23 @@ use crate::{
 };
 
 /// Emits into `edits` the indent deletions moving each continuation row
-/// of `line` left by the columns the text it aligns to loses once
-/// `removals`, the rule's own edits on the line's rows, apply. `line`
-/// runs from the start of the first row a removal touches to the end of
-/// the logical line.
-pub(crate) fn push_reseat_edits(
-    source: &Source,
-    line: TextRange,
-    removals: &[Edit],
-    edits: &mut Vec<Edit>,
-) {
+/// left by the columns the text it aligns to loses once `removals`,
+/// the rule's own edits on the rows, apply. The reseat spans from the
+/// start of the first row a removal touches to the end of its logical
+/// line, and empty `removals` reseat nothing.
+pub(crate) fn push_reseat_edits(source: &Source, removals: &[Edit], edits: &mut Vec<Edit>) {
+    let Some(start) = removals.iter().map(Ranged::start).min() else {
+        return;
+    };
+    let end = removals
+        .iter()
+        .map(Ranged::end)
+        .max()
+        .expect("a removal exists");
+    let line = TextRange::new(
+        source.text().line_start(start),
+        source.logical_line_tail(end).end(),
+    );
     let row_of = |offset: TextSize| source.line_index(offset);
     let removed = |offset: TextSize| removals.iter().any(|edit| edit.range().contains(offset));
     let tokens: Vec<&Token> = source
@@ -148,4 +152,84 @@ fn enclosing_opener<'t>(tokens: &[&'t Token], offset: TextSize) -> Option<&'t To
 /// coincidence of a hang, every kind but a bracket and a comma.
 fn is_code(kind: TokenKind) -> bool {
     !is_opener(kind) && !is_closer(kind) && kind != TokenKind::Comma
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+    use crate::testing::{applied_text, parse};
+
+    /// Each two-space run `src` writes directly after a `(` or a `[`,
+    /// the padding a shedding rule removes, ascending by start.
+    fn opener_padding(src: &str) -> Vec<TextRange> {
+        let mut pads: Vec<TextRange> = src
+            .match_indices("(  ")
+            .chain(src.match_indices("[  "))
+            .map(|(at, _)| {
+                TextRange::new(
+                    TextSize::try_from(at + 1).expect("offset fits u32"),
+                    TextSize::try_from(at + 3).expect("offset fits u32"),
+                )
+            })
+            .collect();
+        pads.sort_by_key(Ranged::start);
+        pads
+    }
+
+    /// The text `src` leaves once its opener padding is deleted and the
+    /// reseat edits that deletion earns are applied beside it.
+    fn reseated(src: &str) -> String {
+        let source = parse(src);
+        let removals: Vec<Edit> = opener_padding(src)
+            .into_iter()
+            .map(Edit::range_deletion)
+            .collect();
+        let mut edits = Vec::new();
+        push_reseat_edits(&source, &removals, &mut edits);
+        for removal in removals {
+            insert_edit(&mut edits, removal);
+        }
+        applied_text(&source, edits)
+    }
+
+    #[rstest]
+    #[case::hangs_one_step_past_the_opener_row(
+        "result = compute(  alpha,\n    beta,\n)\n",
+        "result = compute(alpha,\n    beta,\n)\n"
+    )]
+    #[case::hangs_two_steps_past_the_opener_row(
+        "result = compute(  alpha,\n        beta,\n)\n",
+        "result = compute(alpha,\n        beta,\n)\n"
+    )]
+    #[case::follows_the_comma_it_sits_under(
+        "result = compute(  alpha, beta,\n                        gamma,\n)\n",
+        "result = compute(alpha, beta,\n                      gamma,\n)\n"
+    )]
+    #[case::holds_a_row_aligned_to_nothing(
+        "result = compute(  alpha,\n      beta,\n)\n",
+        "result = compute(alpha,\n      beta,\n)\n"
+    )]
+    #[case::follows_the_name_it_sits_under(
+        "result = outer([  alpha,\n                 inner(  beta,\n                         gamma,\n                 ),\n])\n",
+        "result = outer([alpha,\n                 inner(beta,\n                       gamma,\n                 ),\n])\n"
+    )]
+    #[case::holds_a_tab_indented_row(
+        "result = compute(  alpha, beta,\n\t\t\t\t\t\t\tgamma,\n)\n",
+        "result = compute(alpha, beta,\n\t\t\t\t\t\t\tgamma,\n)\n"
+    )]
+    fn a_continuation_row_reseats_against_the_token_it_reads(
+        #[case] src: &str,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(reseated(src), expected);
+    }
+
+    #[test]
+    fn empty_removals_reseat_nothing() {
+        let mut edits = Vec::new();
+        push_reseat_edits(&parse("x = compute(\n    1,\n)\n"), &[], &mut edits);
+        assert!(edits.is_empty());
+    }
 }

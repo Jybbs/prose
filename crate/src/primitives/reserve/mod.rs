@@ -13,6 +13,10 @@
 
 use std::collections::HashMap;
 
+mod visit;
+
+use visit::{ReserveVisitor, widenings_over};
+
 use ruff_python_ast::{
     AnyNodeRef, Expr, InterpolatedStringElement, Stmt,
     visitor::{Visitor, walk_body, walk_expr},
@@ -106,26 +110,6 @@ impl Reservations {
         }
     }
 
-    /// The widening the reserved rule seats on each line, empty where
-    /// that rule is off. A rule deciding a column ahead of the reserved
-    /// one reads this so its line-cap check measures a row at the width
-    /// the reserved rule leaves rather than the width the source
-    /// carries.
-    pub(crate) fn widenings(&self, source: &Source) -> aligner::Widenings {
-        let Some(settings) = self.settings else {
-            return aligner::Widenings::default();
-        };
-        let visitor = self.collected(source);
-        aligner::Widenings::of(
-            source,
-            settings,
-            visitor
-                .runs
-                .iter()
-                .flat_map(|run| run.members.iter().copied()),
-        )
-    }
-
     /// Walks `source` collecting the runs the reserved rule builds.
     fn collected<'a>(&self, source: &'a Source) -> ReserveVisitor<'a> {
         let mut visitor = ReserveVisitor {
@@ -152,14 +136,7 @@ impl Reservations {
         let visitor = self.collected(source);
         let targets = module_call_params(source);
         let one_row = self.one_row.against(&targets);
-        let widenings = aligner::Widenings::of(
-            source,
-            settings,
-            visitor
-                .runs
-                .iter()
-                .flat_map(|run| run.members.iter().copied()),
-        );
+        let widenings = widenings_over(source, settings, &visitor);
         let joined = |member: aligner::Member| {
             let start = member.rewritten_value_gap(source)?.end();
             let &(expr, parent) = visitor.values.get(&start)?;
@@ -195,110 +172,17 @@ impl Reservations {
             shifts,
         }
     }
-}
 
-/// One collected alignment run, `candidate` where the rule aligns it
-/// to a column or leaves it alone rather than buffering each row.
-struct Run {
-    candidate: bool,
-    members: Vec<aligner::Member>,
-}
-
-/// Collects the rule's runs and the value each member's row carries,
-/// keyed by the paren-aware start the member's value gap ends at.
-struct ReserveVisitor<'a> {
-    rule: RuleId,
-    runs: Vec<Run>,
-    source: &'a Source,
-    values: HashMap<TextSize, (&'a Expr, AnyNodeRef<'a>)>,
-}
-
-impl<'a> ReserveVisitor<'a> {
-    /// Records `value` under the start of its paren-aware range against
-    /// `parent`.
-    fn note(&mut self, value: &'a Expr, parent: AnyNodeRef<'a>) {
-        let start = self.source.paren_aware_range(value.into(), parent).start();
-        self.values.insert(start, (value, parent));
-    }
-
-    fn record(&mut self, groups: Vec<Vec<aligner::Member>>, candidate: bool) {
-        self.runs
-            .extend(groups.into_iter().map(|members| Run { candidate, members }));
-    }
-}
-
-impl<'a> Visitor<'a> for ReserveVisitor<'a> {
-    /// Builds the statement runs the way `align_equals` builds them, so
-    /// a multi-line statement closes its run and a held one is
-    /// transparent.
-    fn visit_body(&mut self, body: &'a [Stmt]) {
-        let source = self.source;
-        self.record(
-            aligner::line_adjacent_groups(source, body, self.rule, |stmt| {
-                equal_targets::assignment(source, stmt)
-            }),
-            false,
-        );
-        for stmt in body {
-            match stmt {
-                Stmt::Assign(a) => self.note(&a.value, stmt.into()),
-                Stmt::AugAssign(a) => self.note(&a.value, stmt.into()),
-                Stmt::AnnAssign(a) => {
-                    if let Some(value) = a.value.as_deref() {
-                        self.note(value, stmt.into());
-                    }
-                }
-                _ => {}
-            }
-        }
-        walk_body(self, body);
-    }
-
-    /// Builds the keyword runs the way `align_equals` builds them, a
-    /// multi-line value closing the run after it.
-    fn visit_expr(&mut self, expr: &'a Expr) {
-        if let Expr::Call(call) = expr {
-            self.record(
-                equal_targets::keyword_groups(self.source, self.rule, call, true),
-                false,
-            );
-            for keyword in &call.arguments.keywords {
-                self.note(&keyword.value, keyword.into());
-            }
-        }
-        walk_expr(self, expr);
-    }
-
-    /// Leaves a replacement field unwalked.
-    fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
-
-    /// Builds the parameter-default runs the way `align_equals` builds
-    /// them, a run aligning to a column or not at all and a multi-line
-    /// default closing the run after it.
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        if let Stmt::FunctionDef(def) = stmt {
-            let source = self.source;
-            let groups = aligner::adjacent_member_groups(
-                source,
-                def.parameters.iter_source_order(),
-                true,
-                |param| equal_targets::parameter(source, param).into(),
-            );
-            let rule = self.rule;
-            self.record(
-                groups
-                    .into_iter()
-                    .map(|group| aligner::retain_unheld(source, rule, group))
-                    .collect(),
-                true,
-            );
-            for param in def.parameters.iter_non_variadic_params() {
-                if let Some(default) = param.default.as_deref() {
-                    self.note(default, param.into());
-                }
-            }
-        }
-        walk::walk_stmt(self, stmt);
+    /// The widening the reserved rule seats on each line, empty where
+    /// that rule is off. A rule deciding a column ahead of the reserved
+    /// one reads this so its line-cap check measures a row at the width
+    /// the reserved rule leaves rather than the width the source
+    /// carries.
+    pub(crate) fn widenings(&self, source: &Source) -> aligner::Widenings {
+        let Some(settings) = self.settings else {
+            return aligner::Widenings::default();
+        };
+        widenings_over(source, settings, &self.collected(source))
     }
 }
 

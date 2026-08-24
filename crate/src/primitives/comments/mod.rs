@@ -1,19 +1,22 @@
-//! Own-line comment-block detection between two statements, covering
-//! the leading block, whether it reads as a decorative banner or a
-//! multi-hash heading, and where the block binding to the member below
-//! it starts. A run anchors in place on a section marker, a suppression
-//! directive, or a tool pragma, and binds to the member otherwise,
-//! whatever blank line sits between the two. A whole-line deletion of a
-//! member strands the run leading it, which the import prune reads
-//! before it deletes. The trailing-comment gap the banding and spacing
-//! rules both seat lives here as well, beside the [`Settling`] a rule
-//! measuring a row ahead of the comment rules reads a trailing comment
-//! at the width of.
+//! Own-line comment-block detection between two statements: the
+//! leading block, whether it reads as a banner or heading, and where
+//! the block binding to the member below it starts. A run anchors in
+//! place on a section marker, a suppression directive, or a tool
+//! pragma, and binds to the member otherwise, whatever blank line sits
+//! between the two. The trailing-comment gap the banding and spacing
+//! rules seat lives here too, beside the [`Settling`] a measuring rule
+//! reads a trailing comment at the width of.
 
 use ruff_python_trivia::{CommentRanges, PythonWhitespace, is_pragma_comment};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
+
+mod banners;
+
+pub(crate) use banners::is_banner_block;
+
+use banners::is_marker_line;
 
 use crate::{
     primitives::{aligner::is_held, blanks::whitespace_start_before},
@@ -142,12 +145,6 @@ pub(crate) fn has_keep_marker(source: &Source, literal: impl Ranged) -> bool {
         .any(|c| source.slice(c).trim_start_matches('#').trim() == "prose: keep")
 }
 
-/// True when any line in the comment block reads as a section marker,
-/// either a decorative rule line or a multi-hash heading.
-pub(super) fn is_banner_block(source: &Source, block: TextRange) -> bool {
-    source.slice(block).lines().any(is_marker_line)
-}
-
 /// Returns the range spanning every own-line comment between `lower`
 /// and `upper`, from the first comment's line start to the last
 /// comment's end, so a blank run dividing two comment runs falls
@@ -205,47 +202,6 @@ pub(crate) fn trailing_comment(source: &Source, offset: TextSize) -> Option<Text
         .iter()
         .find(|comment| !CommentRanges::is_own_line(comment.start(), source.text()))
         .copied()
-}
-
-/// True when `line` opens with two or more `#`, the Markdown-style
-/// heading shape that reads as a section divider.
-fn is_heading_line(line: &str) -> bool {
-    line.trim_start().starts_with("##")
-}
-
-/// True when `line` reads as a section marker, a decorative rule line or
-/// a multi-hash heading.
-fn is_marker_line(line: &str) -> bool {
-    is_rule_line(line) || is_heading_line(line)
-}
-
-/// True for a character authors repeat to draw a divider rule.
-fn is_rule_char(c: char) -> bool {
-    matches!(c, '-' | '=' | '~' | '*' | '_' | '#' | '─' | '━' | '═')
-}
-
-/// True when `line` reads as a decorative rule, one repeated rule
-/// character standing alone at five or more or flanking a label at three
-/// or more, on whichever side of the label the author drew it. A closing
-/// `#` caps a trailing run without breaking it, the box shape
-/// `# Label ****#` takes. Box-drawing dashes count as rule characters.
-fn is_rule_line(line: &str) -> bool {
-    let body = line.trim_start().strip_prefix('#').map_or("", str::trim);
-    let capped = body.strip_suffix('#').unwrap_or_default();
-    let run = rule_run(body.chars())
-        .max(rule_run(body.chars().rev()))
-        .max(rule_run(capped.chars().rev()));
-    run >= 5 || (run >= 3 && body.chars().count() > run)
-}
-
-/// The opening run of one repeated rule character in `chars`, zero when
-/// it opens on anything else. Reversing the iterator measures the run
-/// closing the same text.
-fn rule_run(mut chars: impl Iterator<Item = char>) -> usize {
-    match chars.next() {
-        Some(first) if is_rule_char(first) => 1 + chars.take_while(|&c| c == first).count(),
-        _ => 0,
-    }
 }
 
 #[cfg(test)]
@@ -368,99 +324,6 @@ mod tests {
         let s = notebook(cells);
         let item = s.ast().body.last().expect("a statement");
         assert!(!comment_leads(&s, item.start()));
-    }
-
-    #[rstest]
-    #[case::rule_line(
-        "x = 1\n# ========================\n# Section: helpers\n# ========================\ndef f(): pass\n",
-        true
-    )]
-    #[case::hash_heading("x = 1\n### Codec APIs\ndef f(): pass\n", true)]
-    #[case::heading_below_prose(
-        "x = 1\n# see the module docs\n### API Reference\ndef f(): pass\n",
-        true
-    )]
-    #[case::all_prose("x = 1\n# describes f\n# helper\ndef f(): pass\n", false)]
-    fn is_banner_block_reads_a_rule_line_or_a_hash_heading(
-        #[case] src: &str,
-        #[case] expected: bool,
-    ) {
-        let s = parse(src);
-        let block = gap_block(&s).expect("block");
-        assert_eq!(is_banner_block(&s, block), expected);
-    }
-
-    #[rstest]
-    fn is_heading_line_accepts_two_or_more_hashes(
-        #[values("## heading", "### Codec APIs", "#### deep", "  ## indented")] line: &str,
-    ) {
-        assert!(is_heading_line(line));
-    }
-
-    #[rstest]
-    fn is_heading_line_rejects_single_hash(
-        #[values("# describes f", "#", "#!/usr/bin/env python", "#%%")] line: &str,
-    ) {
-        assert!(!is_heading_line(line));
-    }
-
-    #[rstest]
-    fn is_rule_line_accepts_box_drawing_runs(
-        #[values("# ─────", "# ━━━━━", "# ═════")] line: &str,
-    ) {
-        assert!(is_rule_line(line));
-    }
-
-    #[rstest]
-    fn is_rule_line_accepts_canonical_decorative_runs(
-        #[values("# =====", "# -----", "# *****", "# _____", "# ~~~~~", "##########")] line: &str,
-    ) {
-        assert!(is_rule_line(line));
-    }
-
-    #[rstest]
-    fn is_rule_line_accepts_flanked_label(
-        #[values(
-            "# --- Lifecycle ---",
-            "# === Section ===",
-            "# ─── Box ───",
-            "# *** Note ***"
-        )]
-        line: &str,
-    ) {
-        assert!(is_rule_line(line));
-    }
-
-    #[rstest]
-    fn is_rule_line_accepts_trailing_rule(
-        #[values(
-            "# Sequence Operations *********#",
-            "# Loaders ######################",
-            "# -- Public interface ---------",
-            "# ─── Box ───────────────"
-        )]
-        line: &str,
-    ) {
-        assert!(is_rule_line(line));
-    }
-
-    #[rstest]
-    fn is_rule_line_rejects_alpha_prose(
-        #[values("# describes f", "# Section: helpers", "# x")] line: &str,
-    ) {
-        assert!(!is_rule_line(line));
-    }
-
-    #[rstest]
-    fn is_rule_line_rejects_mixed_characters(
-        #[values("# = = = =", "# -=-=-=", "# - - -", "# -*- coding: utf-8 -*-")] line: &str,
-    ) {
-        assert!(!is_rule_line(line));
-    }
-
-    #[rstest]
-    fn is_rule_line_rejects_short_runs(#[values("# ====", "# ---", "# ", "#")] line: &str) {
-        assert!(!is_rule_line(line));
     }
 
     #[test]
