@@ -10,7 +10,11 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
-use super::{Cap, Member, Settings, Widenings, members::line_gap_before};
+use super::{
+    Cap, Member, Settings, Widenings,
+    holds::{is_alignment_candidate, shares_column},
+    members::line_gap_before,
+};
 use crate::{
     config::MaxShift,
     primitives::{
@@ -55,15 +59,37 @@ pub(crate) fn operator_columns(
     widenings: &Widenings,
     joined: &[Option<usize>],
 ) -> Vec<usize> {
-    if !is_forecast_candidate(members, joined) {
-        return members
-            .iter()
-            .map(|m| m.baseline + m.settled_width + settings.buffer)
-            .collect();
-    }
-    group_paddings(source, members, settings, widenings, joined)
-        .map(|(m, pad)| m.baseline + m.settled_width + pad)
-        .collect()
+    columns(
+        source,
+        members,
+        settings,
+        widenings,
+        joined,
+        is_alignment_candidate(members),
+    )
+}
+
+/// [`operator_columns`] for the rows a rule writes, a row `joined`
+/// names standing on a line of its own where the source seats it on its
+/// neighbor's, since the rule writing that row seats it beneath the one
+/// before. A value `joined` merely widens an existing row with never
+/// stands a run up on its own, which is what keeps this entry point
+/// apart from [`operator_columns`].
+pub(crate) fn forecast_columns(
+    source: &Source,
+    members: &[Member],
+    settings: Settings,
+    widenings: &Widenings,
+    joined: &[Option<usize>],
+) -> Vec<usize> {
+    columns(
+        source,
+        members,
+        settings,
+        widenings,
+        joined,
+        is_forecast_candidate(members, joined),
+    )
 }
 
 /// The columns `member`'s line keeps past `code_end` once the comment
@@ -203,16 +229,37 @@ fn group_paddings<'m>(
         })
 }
 
-/// True when `members` form a multi-row group at one baseline, a row
-/// `joined` names standing on a line of its own where the source seats
-/// it on its neighbor's, since the rule writing that row seats it
-/// beneath the one before.
+/// The per-member columns of a run, the group math where `candidate`
+/// holds and the settings' buffer past each member's own width
+/// otherwise.
+fn columns(
+    source: &Source,
+    members: &[Member],
+    settings: Settings,
+    widenings: &Widenings,
+    joined: &[Option<usize>],
+    candidate: bool,
+) -> Vec<usize> {
+    if !candidate {
+        return members
+            .iter()
+            .map(|m| m.baseline + m.settled_width + settings.buffer)
+            .collect();
+    }
+    group_paddings(source, members, settings, widenings, joined)
+        .map(|(m, pad)| m.baseline + m.settled_width + pad)
+        .collect()
+}
+
+/// [`is_alignment_candidate`] with a pair excused where `joined` names
+/// the later row as one a rule writes, which then stands on a line of
+/// its own beneath the row before it.
 fn is_forecast_candidate(members: &[Member], joined: &[Option<usize>]) -> bool {
     members.len() >= 2
-        && members.windows(2).enumerate().all(|(i, w)| {
-            w[0].baseline == w[1].baseline
-                && (w[0].line_start != w[1].line_start
-                    || joined.get(i + 1).is_some_and(Option::is_some))
+        && members.windows(2).enumerate().all(|(i, pair)| {
+            shares_column(pair, |m| m.baseline)
+                || (pair[0].baseline == pair[1].baseline
+                    && joined.get(i + 1).is_some_and(Option::is_some))
         })
 }
 
@@ -735,6 +782,29 @@ mod tests {
     }
 
     #[test]
+    fn forecast_columns_seats_a_written_row_beneath_the_row_before() {
+        // Two members sharing one source line, the later a row a rule
+        // writes, so the run stands as a column at the widest width.
+        let source = parse("a = 1; bcd = 2\n");
+        let members = [
+            align_member(range(2, 3), 0, 2),
+            align_member(range(4, 5), 0, 4),
+        ];
+        let joined = [None, Some(12)];
+
+        assert_eq!(
+            forecast_columns(
+                &source,
+                &members,
+                Settings::aligned(cap(8)),
+                &Widenings::default(),
+                &joined,
+            ),
+            vec![5, 5],
+        );
+    }
+
+    #[test]
     fn operator_columns_buffers_a_lone_member_past_its_width() {
         let (source, members) = rows(&[(3, 5)]);
 
@@ -749,6 +819,29 @@ mod tests {
                 &[],
             ),
             vec![4],
+        );
+    }
+
+    #[test]
+    fn operator_columns_keeps_same_line_members_at_their_own_columns() {
+        // The same pair as the forecast test, read as the source wrote
+        // it, so a value joined onto an existing row stands no run up.
+        let source = parse("a = 1; bcd = 2\n");
+        let members = [
+            align_member(range(2, 3), 0, 2),
+            align_member(range(4, 5), 0, 4),
+        ];
+        let joined = [None, Some(12)];
+
+        assert_eq!(
+            operator_columns(
+                &source,
+                &members,
+                Settings::aligned(cap(8)),
+                &Widenings::default(),
+                &joined,
+            ),
+            vec![3, 5],
         );
     }
 
@@ -1078,5 +1171,20 @@ mod tests {
             sorted_summaries(&edits),
             vec![delete(&members[0]), fill(&members[1], 2)],
         );
+    }
+    #[test]
+    fn settled_tail_reads_the_comment_at_the_width_the_comment_rules_leave() {
+        let source = parse("a = 1    # note\n");
+        let member = align_member(range(1, 2), 0, 1);
+        let uncapped = Settings::aligned(cap(8));
+        let capped = uncapped.within(20, strip(), settling());
+
+        // The written tail past the value holds four spaces and the
+        // comment, which the gap rule settles to the two-space floor.
+        assert_eq!(
+            settled_tail(&source, member, uncapped, TextSize::new(5)),
+            10
+        );
+        assert_eq!(settled_tail(&source, member, capped, TextSize::new(5)), 8);
     }
 }
