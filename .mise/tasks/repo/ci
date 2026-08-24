@@ -7,7 +7,6 @@
 #MISE   "rust:cruft",
 #MISE   "rust:lint",
 #MISE   "rust:unused",
-#MISE   "site:bake",
 #MISE   "site:cruft",
 #MISE   "site:links",
 #MISE   "site:lint",

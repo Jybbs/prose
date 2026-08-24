@@ -9,13 +9,15 @@ coverage:
   status:
     patch: &targets
       default:
-        target: &target 95%
+        flag_coverage_not_uploaded_behavior : &missing pass
+        target                              : &target 95%
       rust: &status
-        flags  : [rust]
-        target : *target
+        flag_coverage_not_uploaded_behavior : *missing
+        flags                               : [rust]
+        target                              : *target
       site:
-        <<     : *status
-        flags  : [site]
+        <<    : *status
+        flags : [site]
 
     project: *targets
 

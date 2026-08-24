@@ -3,8 +3,9 @@ run-name    : 🪻 Deploy · ${{ github.head_ref || github.ref_name }}
 permissions : { contents: read }
 
 env:
-  REF : ${{ github.head_ref || github.ref_name }}
-  SHA : ${{ github.event.pull_request.head.sha || github.sha }}
+  PARENT : ${{ github.event.pull_request.base.sha || github.event.before }}
+  REF    : ${{ github.head_ref || github.ref_name }}
+  SHA    : ${{ github.event.pull_request.head.sha || github.sha }}
 
 on:
   pull_request:
@@ -65,9 +66,6 @@ jobs:
           cache      : ${{ matrix.shared-key != '' }}
           save       : &no-save 'false'
           shared-key : ${{ matrix.shared-key }}
-
-      - name : Install dependencies
-        run  : mise run site:bake
 
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}

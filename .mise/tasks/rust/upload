@@ -2,4 +2,6 @@
 #MISE depends     = ["rust:coverage"]
 #MISE description = "Upload the Rust coverage report to Codecov"
 
-codecovcli upload-process --file target/lcov.info --flag rust --sha "$SHA"
+source "$MISE_PROJECT_ROOT/.mise/lib/codecov.bash"
+
+upload_report rust target/lcov.info

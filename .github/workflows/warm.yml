@@ -3,8 +3,9 @@ run-name    : 🪻 Warm · ${{ github.ref_name }}
 permissions : { contents: read }
 
 env:
-  REF : ${{ github.head_ref || github.ref_name }}
-  SHA : ${{ github.event.pull_request.head.sha || github.sha }}
+  PARENT : ${{ github.event.pull_request.base.sha || github.event.before }}
+  REF    : ${{ github.head_ref || github.ref_name }}
+  SHA    : ${{ github.event.pull_request.head.sha || github.sha }}
 
 on:
   push:
