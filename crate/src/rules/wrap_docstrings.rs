@@ -17,8 +17,8 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
-use ruff_text_size::Ranged;
-use textwrap::{Options, WordSeparator, WordSplitter, core::Word};
+use ruff_text_size::{Ranged, TextRange, TextSize};
+use textwrap::{Options, WordSeparator, WordSplitter, WrapAlgorithm, core::Word};
 
 use crate::{
     config::{Config, DocstringStructuredPolicy},
@@ -28,6 +28,7 @@ use crate::{
             section_heading, sibling_entry_head, triple_quoted_body, typed_entry_head,
         },
         edit::narrowed_replacement,
+        padding,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -36,6 +37,7 @@ use crate::{
 pub(crate) struct WrapDocstrings {
     description_width: usize,
     section_width: usize,
+    stranding: padding::Stranding,
 }
 
 impl WrapDocstrings {
@@ -50,6 +52,7 @@ impl WrapDocstrings {
         Self {
             description_width,
             section_width,
+            stranding: config.stranded_padding(),
         }
     }
 }
@@ -63,7 +66,10 @@ impl Rule for WrapDocstrings {
             };
             let newline = source.newline_str();
             let indent_chars = source.line_indent_width(lit.start());
-            let Some(rewritten) = rewrite_body(&body, indent_chars, newline, self) else {
+            let padding = source.stranded_padding(self.stranding);
+            let Some(rewritten) =
+                rewrite_body(&body, indent_chars, newline, self, source, &padding)
+            else {
                 return;
             };
             edits.extend(narrowed_replacement(source, body.range, rewritten));
@@ -78,6 +84,7 @@ impl Rule for WrapDocstrings {
 #[derive(Default)]
 struct Paragraph<'a> {
     head: &'a str,
+    head_slack: usize,
     initial_indent: &'a str,
     lines: Vec<&'a str>,
     subsequent_indent: Cow<'a, str>,
@@ -91,13 +98,16 @@ enum Region {
 }
 
 struct Walker<'a> {
+    content_start: TextSize,
     newline: &'a str,
     out: String,
+    padding: &'a [Edit],
     paragraph: Paragraph<'a>,
     raw: bool,
     region: Region,
     rule: &'a WrapDocstrings,
     scanner: LineScanner,
+    source: &'a Source,
 }
 
 impl<'a> Walker<'a> {
@@ -109,7 +119,7 @@ impl<'a> Walker<'a> {
         self.paragraph.lines.push(text);
     }
 
-    fn consume(&mut self, line: &'a str) {
+    fn consume(&mut self, offset: TextSize, line: &'a str) {
         let ScannedLine {
             indent,
             indent_chars,
@@ -171,10 +181,17 @@ impl<'a> Walker<'a> {
             Region::Description => self.buffer_description(indent, text),
             Region::Section => {
                 if let Some(head) = sibling_entry_head(indent_chars, prose_indent, text) {
-                    self.start_entry(indent, indent_chars, text, head.desc_start);
+                    self.start_entry(indent, indent_chars, text, head.desc_start, offset);
                     return;
                 }
-                self.emit_wrapped(indent, indent, &collapsed([text]), self.rule.section_width);
+                // Section prose wraps one line at a time with no
+                // paragraph rejoin, so it takes the first-fit algorithm,
+                // whose maximal lines re-wrap to themselves.
+                let opts = wrap_options(self.rule.section_width, indent, indent)
+                    .wrap_algorithm(WrapAlgorithm::FirstFit);
+                for piece in textwrap::wrap(&collapsed([text]), opts) {
+                    self.emit_verbatim(&piece);
+                }
             }
             Region::SectionEntry => unreachable!("entries handled above"),
         }
@@ -186,16 +203,7 @@ impl<'a> Walker<'a> {
     }
 
     fn emit_wrapped(&mut self, initial: &str, subsequent: &str, text: &str, width: usize) {
-        // The separator keeps a slash- or hyphen-bearing token atomic
-        // alongside NoHyphenation, so an over-budget URL or path
-        // overflows instead of splitting.
-        let opts = Options::new(width)
-            .break_words(false)
-            .initial_indent(initial)
-            .subsequent_indent(subsequent)
-            .word_separator(WordSeparator::Custom(prose_words))
-            .word_splitter(WordSplitter::NoHyphenation);
-        for piece in textwrap::wrap(text, opts) {
+        for piece in textwrap::wrap(text, wrap_options(width, initial, subsequent)) {
             self.emit_verbatim(&piece);
         }
     }
@@ -204,6 +212,7 @@ impl<'a> Walker<'a> {
         if !self.paragraph.lines.is_empty() {
             let Paragraph {
                 head,
+                head_slack,
                 initial_indent,
                 lines,
                 subsequent_indent,
@@ -212,12 +221,31 @@ impl<'a> Walker<'a> {
             // it rides the initial indent, which `textwrap` never breaks
             // inside and never emits a row without a word after.
             let opening = [initial_indent, head].concat();
-            self.emit_wrapped(
-                &opening,
-                &subsequent_indent,
-                &collapsed(lines),
-                self.rule.description_width,
-            );
+            let text = collapsed(lines);
+            if head_slack == 0 {
+                self.emit_wrapped(
+                    &opening,
+                    &subsequent_indent,
+                    &text,
+                    self.rule.description_width,
+                );
+            } else {
+                // The rows break at the width the padding rule settles
+                // the head to, the head itself emitted as written with
+                // its padding left to that rule's edit.
+                let measured = " ".repeat(opening.chars().count().saturating_sub(head_slack));
+                let mut pieces = textwrap::wrap(
+                    &text,
+                    wrap_options(self.rule.description_width, &measured, &subsequent_indent),
+                )
+                .into_iter();
+                if let Some(first) = pieces.next() {
+                    self.emit_verbatim(&[opening.as_str(), &first[measured.len()..]].concat());
+                }
+                for piece in pieces {
+                    self.emit_verbatim(&piece);
+                }
+            }
         }
         if self.region == Region::SectionEntry {
             self.region = Region::Section;
@@ -244,11 +272,22 @@ impl<'a> Walker<'a> {
         indent_chars: usize,
         text: &'a str,
         desc_start: usize,
+        line_offset: TextSize,
     ) {
         let (head, description) = text.split_at(desc_start);
+        // The hang column reads the head at the width the padding rule
+        // settles it to.
+        let start = self.content_start + line_offset + TextSize::of(indent_str);
+        let range = TextRange::at(start, TextSize::of(head));
+        let slack = padding::slack(self.source, self.padding, range)
+            .max(0)
+            .cast_unsigned();
         self.paragraph.head = head;
+        self.paragraph.head_slack = slack;
         self.paragraph.initial_indent = indent_str;
-        self.paragraph.subsequent_indent = " ".repeat(indent_chars + head.chars().count()).into();
+        self.paragraph.subsequent_indent = " "
+            .repeat((indent_chars + head.chars().count()).saturating_sub(slack))
+            .into();
         self.paragraph.lines.push(description);
         self.region = Region::SectionEntry;
     }
@@ -289,21 +328,26 @@ fn rewrite_body<'a>(
     body_indent_chars: usize,
     newline: &'a str,
     rule: &'a WrapDocstrings,
+    source: &'a Source,
+    padding: &'a [Edit],
 ) -> Option<String> {
     let (content, closer_indent) = body.text.strip_prefix(newline)?.rsplit_once(newline)?;
     let lines = spliced_continuations(content, newline, body.raw);
 
     let mut walker = Walker {
+        content_start: body.range.start() + TextSize::of(newline),
         newline,
         out: String::with_capacity(content.len()),
+        padding,
         paragraph: Paragraph::default(),
         raw: body.raw,
         region: Region::Description,
         rule,
         scanner: LineScanner::new(body_indent_chars),
+        source,
     };
-    for line in &lines {
-        walker.consume(line);
+    for (offset, line) in &lines {
+        walker.consume(*offset, line);
     }
     walker.flush_paragraph();
 
@@ -315,12 +359,21 @@ fn rewrite_body<'a>(
 /// below it when neither side of the dropped backslash carries
 /// whitespace, the one join the paragraph collapse cannot reproduce.
 /// Every other line passes through split as written, leaving a
-/// continuation inside a passthrough region byte-identical.
-fn spliced_continuations<'a>(content: &'a str, newline: &str, raw: bool) -> Vec<Cow<'a, str>> {
-    let mut lines: Vec<Cow<'a, str>> = Vec::new();
+/// continuation inside a passthrough region byte-identical. Each line
+/// is paired with the byte offset of its first physical line within
+/// `content`.
+fn spliced_continuations<'a>(
+    content: &'a str,
+    newline: &str,
+    raw: bool,
+) -> Vec<(TextSize, Cow<'a, str>)> {
+    let mut lines: Vec<(TextSize, Cow<'a, str>)> = Vec::new();
     let mut physical = content.split(newline).peekable();
     let mut splicing = false;
+    let mut offset = TextSize::default();
     while let Some(line) = physical.next() {
+        let start = offset;
+        offset += TextSize::of(line) + TextSize::of(newline);
         let head = without_continuation(line, raw);
         let tight = head.len() < line.len()
             && !head.ends_with(char::is_whitespace)
@@ -329,8 +382,8 @@ fn spliced_continuations<'a>(content: &'a str, newline: &str, raw: bool) -> Vec<
                 .is_some_and(|next| !next.starts_with(char::is_whitespace));
         let text = if tight { head } else { line };
         match lines.last_mut().filter(|_| splicing) {
-            Some(last) => last.to_mut().push_str(text),
-            None => lines.push(Cow::Borrowed(text)),
+            Some((_, last)) => last.to_mut().push_str(text),
+            None => lines.push((start, Cow::Borrowed(text))),
         }
         splicing = tight;
     }
@@ -348,6 +401,18 @@ fn without_continuation(line: &str, raw: bool) -> &str {
         return line;
     }
     &line[..line.len() - 1]
+}
+
+/// The wrap options every emission shares. The custom separator keeps a
+/// slash- or hyphen-bearing token atomic alongside `NoHyphenation`, so
+/// an over-budget URL or path overflows instead of splitting.
+fn wrap_options<'o>(width: usize, initial: &'o str, subsequent: &'o str) -> Options<'o> {
+    Options::new(width)
+        .break_words(false)
+        .initial_indent(initial)
+        .subsequent_indent(subsequent)
+        .word_separator(WordSeparator::Custom(prose_words))
+        .word_splitter(WordSplitter::NoHyphenation)
 }
 
 #[cfg(test)]
@@ -480,7 +545,11 @@ mod tests {
         #[case] raw: bool,
         #[case] expected: &[&str],
     ) {
-        assert_eq!(spliced_continuations(content, "\n", raw), expected);
+        let lines: Vec<_> = spliced_continuations(content, "\n", raw)
+            .into_iter()
+            .map(|(_, line)| line)
+            .collect();
+        assert_eq!(lines, expected);
     }
 
     #[test]

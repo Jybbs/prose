@@ -1,0 +1,21 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 48
+expression: json
+input_file: crate/tests/fixtures/composition/single_entry_wraps_at_the_stripped_head/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 18,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 11,
+      "row": 1
+    },
+    "message": "Parameter `timeout` has no type annotation"
+  }
+]

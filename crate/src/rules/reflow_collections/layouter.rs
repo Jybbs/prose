@@ -21,7 +21,7 @@ use crate::{
     primitives::{
         INDENT_STEP,
         call_keywords::CallTargets,
-        edit::narrowed_replacement,
+        edit::{apply_inline_edits, narrowed_replacement},
         inline::end_column,
         layout::{is_collapsible, is_layoutable, item_indent, requires_expand},
         one_row, padding, reserve,
@@ -227,6 +227,13 @@ impl<'a> Layouter<'a> {
     /// the `:` and the padding around it.
     fn key_value_gap(&self, key_end: TextSize, value_start: TextSize) -> &'a str {
         self.source.slice(TextRange::new(key_end, value_start))
+    }
+
+    /// The text ahead of `offset` on its logical line, rendered with the
+    /// edits this walk has emitted so far.
+    fn placed_head(&self, offset: TextSize) -> Cow<'a, str> {
+        let start = self.source.logical_line_start(offset).start();
+        apply_inline_edits(self.source, TextRange::new(start, offset), &self.edits)
     }
 
     /// `expr`'s paren-recovered source range placed per `landing`, the
@@ -501,17 +508,31 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
         // value to and `strip-stranded-padding` settles the row ahead of
         // it at, not the column the literal currently opens at, so a fit
         // that survives both is what the rule collapses. A dict value
-        // measures from the canonical `": "` past its key, the column the
-        // aligner pads only where the cap allows.
-        let column = dict_key_of(parent, expr).map_or_else(
-            || self.settled_column(start),
-            |key| {
-                self.source.column_of(key.start())
-                    + self.source.slice(key).width()
-                    + CANONICAL_SEPARATOR
-            },
-        );
-        let indent = self.source.line_indent_width(start);
+        // measures from the canonical `": "` past its key's last row, the column the
+        // aligner pads only where the cap allows. Where this walk's own
+        // earlier edits rewrote the line ahead of the literal, the column
+        // and indent read from the row the literal lands on instead, the
+        // column still moved by the shift `align_equals` applies there.
+        let (column, indent) = match self.placed_head(start) {
+            Cow::Owned(head) => {
+                let indent = head.rsplit_once('\n').map_or_else(
+                    || self.source.line_indent_width(start),
+                    |(_, last)| last.width() - last.trim_start().width(),
+                );
+                let column = self.reservations.column(start, || end_column(&head, 0));
+                (column, indent)
+            }
+            Cow::Borrowed(_) => {
+                let column = dict_key_of(parent, expr).map_or_else(
+                    || self.settled_column(start),
+                    |key| {
+                        end_column(self.source.slice(key), self.source.column_of(key.start()))
+                            + CANONICAL_SEPARATOR
+                    },
+                );
+                (column, self.source.line_indent_width(start))
+            }
+        };
         let grandparent = ancestors[ancestors.len().saturating_sub(2)];
         let tail = self.row_tail(expr, parent, grandparent);
         let Some(text) = self.replacement_for(expr, parent, column, indent, tail) else {

@@ -15,6 +15,7 @@ use crate::primitives::{
     edit::apply_inline_edits,
     inline::{end_column, indent_width},
     layout::requires_expand,
+    padding,
     tokens::{is_closer, is_opener},
 };
 
@@ -78,12 +79,27 @@ impl<'a> Exploder<'a> {
     }
 
     /// The column `offset` reaches once this walk's earlier edits place
-    /// the text ahead of it, a row past the region's opening one moved
+    /// the text ahead of it and the padding rule drops the padding on
+    /// its row ahead of it, a row past the region's opening one moved
     /// by `line_shift`. In a module walk, a `reserved` offset starts
     /// from the column `align_equals` shifts its row to.
+    ///
+    /// `end_column` reads the placed head's last row alone, so the
+    /// slack comes off the source that row covers rather than off the
+    /// whole source row, which the walk's own breaks can start later
+    /// than the source line does.
     fn placed_column(&self, offset: TextSize, reserved: bool) -> usize {
         let placed = self.placed_head(offset);
-        let mut column = end_column(&placed, self.origin_column);
+        let tail = placed.rsplit('\n').next().unwrap_or(&placed);
+        let back = TextSize::new(u32::try_from(tail.len()).unwrap_or(u32::MAX));
+        let row_start = self
+            .source
+            .text()
+            .line_start(offset)
+            .max(offset.checked_sub(back).unwrap_or_default());
+        let row = TextRange::new(row_start, offset);
+        let mut column = end_column(&placed, self.origin_column)
+            .saturating_add_signed(-padding::slack(self.source, self.padding, row));
         if placed.contains('\n') {
             column = column.saturating_add_signed(self.line_shift);
         }

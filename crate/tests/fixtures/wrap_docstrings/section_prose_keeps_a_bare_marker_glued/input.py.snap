@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 59
+expression: snapshot
+input_file: crate/tests/fixtures/wrap_docstrings/section_prose_keeps_a_bare_marker_glued/input.py
+---
+def wait():
+    """
+    Example::
+
+        wait_random_exponential(multiplier=0.5, #
+        initial window
+        integer.copy().addParseAction(lambda toks:
+        len(toks))
+        Optional(delimitedList(identifier)) +
+        Word(alphas)
+    """

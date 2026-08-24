@@ -24,6 +24,13 @@ pub(crate) struct EntryHead<'a> {
     pub(crate) type_group: Option<Range<usize>>,
 }
 
+/// True when `trimmed` is an entry head with its description missing,
+/// the `name:` shape alone, read by probing the parser with a synthetic
+/// description.
+pub(crate) fn is_bare_entry_head(trimmed: &str) -> bool {
+    trimmed.ends_with(':') && entry_head(&[trimmed, " x"].concat()).is_some()
+}
+
 /// True when `trimmed` opens with a Google-style `name: description`
 /// entry head, whatever its type group.
 pub(crate) fn is_entry_head(trimmed: &str) -> bool {

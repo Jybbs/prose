@@ -8,6 +8,7 @@ use std::borrow::Cow;
 use ruff_python_ast::{
     ArgOrKeyword, Arguments, Expr, ExprCall, token::TokenKind, visitor::Visitor as AstVisitor,
 };
+use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
@@ -186,18 +187,57 @@ impl<'a> Exploder<'a> {
     }
 
     /// The offset of the first opening bracket inside `range` that
-    /// opens a construct a later rule lays out across rows, which a
+    /// opens a construct a later pass lays out across rows: a call's or
+    /// grouping `(` always qualifies, whereas a bracket opening a
+    /// literal qualifies only where `reflow-collections` can expand it
+    /// and no literal earlier on the row explodes first, and a
     /// subscript's `[` never does.
     fn first_breaking_opener(&self, range: TextRange) -> Option<TextSize> {
+        let literals = self.source.expandable_literals();
         self.source
             .tokens_overlapping(range)
             .find(|token| {
-                range.contains(token.start())
-                    && is_opener(token.kind())
-                    && (token.kind() != TokenKind::Lsqb
-                        || !opens_subscript(self.source.tokens(), token.start()))
+                if !range.contains(token.start()) || !is_opener(token.kind()) {
+                    return false;
+                }
+                if token.kind() == TokenKind::Lsqb
+                    && opens_subscript(self.source.tokens(), token.start())
+                {
+                    return false;
+                }
+                match literals.binary_search_by(|literal| literal.start().cmp(&token.start())) {
+                    Ok(_) => !self.earlier_literal_explodes(token.start()),
+                    Err(_) => token.kind() == TokenKind::Lpar,
+                }
             })
             .map(Ranged::start)
+    }
+
+    /// True where an expandable literal opening earlier on the row than
+    /// `offset` explodes, which relays the row's overflow to that
+    /// literal and leaves the later ones in place.
+    fn earlier_literal_explodes(&self, offset: TextSize) -> bool {
+        let row_start = self.source.text().line_start(offset);
+        let literals = self.source.expandable_literals();
+        let first = literals.partition_point(|literal| literal.start() < row_start);
+        literals[first..]
+            .iter()
+            .take_while(|literal| literal.start() < offset)
+            .any(|literal| self.literal_explodes(*literal))
+    }
+
+    /// True where the expand fires on the literal at `range`: one
+    /// already written across rows, or one whose settled width overflows
+    /// from the column it sits at with its own raw row tail.
+    fn literal_explodes(&self, range: TextRange) -> bool {
+        if self.source.contains_line_break(range) {
+            return true;
+        }
+        let column = self.source.column_of(range.start());
+        let width = self.settled_width(range, self.source.slice(range).width());
+        let tail_range = self.source.row_tail(range.end());
+        let tail = self.settled_width(tail_range, self.source.tail_width(tail_range));
+        !self.one_row.fits(column + width + tail)
     }
 
     /// The move `rendered`, the text of the argument opening at `start`

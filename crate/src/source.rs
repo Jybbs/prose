@@ -31,9 +31,11 @@ use crate::{
         binding::BindingAnalysis,
         comments::trailing_comment,
         inline::indent_width,
+        layout::{is_layoutable, requires_expand},
         padding::Stranding,
         range::paren_aware_range,
         reserve::{Columns, Reservations},
+        walk::filter_map_over_exprs,
     },
     suppression::SuppressionMap,
 };
@@ -58,6 +60,7 @@ pub struct Source {
     cell_offsets: CellOffsets,
     columns: OnceLock<Box<(Reservations, Columns)>>,
     comment_ranges: CommentRanges,
+    expandable_literals: OnceLock<Vec<TextRange>>,
     file: SourceFile,
     parsed: Parsed<ModModule>,
     source_type: PySourceType,
@@ -154,6 +157,7 @@ impl Source {
             cell_numbers: Box::default(),
             cell_offsets,
             columns: OnceLock::new(),
+            expandable_literals: OnceLock::new(),
             comment_ranges,
             file,
             parsed,
@@ -548,6 +552,20 @@ impl Source {
         } else {
             expr.range()
         }
+    }
+
+    /// Returns the start-ascending ranges of the comment-free literals
+    /// `reflow-collections` can expand, walking the tree on the first
+    /// read.
+    pub(crate) fn expandable_literals(&self) -> &[TextRange] {
+        self.expandable_literals.get_or_init(|| {
+            filter_map_over_exprs(&self.ast().body, |expr| {
+                (is_layoutable(expr)
+                    && requires_expand(expr)
+                    && !self.intersects_comment(expr.range()))
+                .then_some(expr.range())
+            })
+        })
     }
 
     /// Returns the edits `stranding` emits over this source, walking the

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Single Entry Wraps at the Stripped Head"
+
+description = '''
+`strip-stranded-padding` drops the padding before the lone entry's `:`, so the wrap breaks the description and hangs its continuation at the width the stripped head leaves, one column narrower than the head as written, while the head itself is emitted as written for the strip's own edit to settle.
+'''

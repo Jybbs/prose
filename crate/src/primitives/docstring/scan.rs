@@ -5,7 +5,7 @@ use ruff_python_trivia::{PythonWhitespace, leading_indentation};
 
 use crate::primitives::{
     INDENT_STEP,
-    docstring::grammar::{is_entry_head, section_heading},
+    docstring::grammar::{is_bare_entry_head, is_entry_head, section_heading},
 };
 
 /// The classification of a docstring body line by [`LineScanner`].
@@ -134,7 +134,8 @@ pub(crate) struct ScannedLine<'a> {
 /// pulling the break back word by word until the row head is prose.
 pub(crate) fn opens_structure(rest: &str) -> bool {
     let trimmed = rest.trim_whitespace_start();
-    is_bracketed_literal(trimmed)
+    is_bare_entry_head(trimmed)
+        || is_bracketed_literal(trimmed)
         || is_comment_marker(trimmed)
         || is_directive(trimmed)
         || is_doctest_prompt(trimmed)
@@ -167,9 +168,9 @@ fn is_bracketed_literal(trimmed: &str) -> bool {
 }
 
 /// True when `trimmed` opens a comment-led code example, the `# `
-/// prefix a Python comment carries.
+/// prefix a Python comment carries or the bare `#` marker alone.
 fn is_comment_marker(trimmed: &str) -> bool {
-    trimmed.starts_with("# ")
+    trimmed == "#" || trimmed.starts_with("# ")
 }
 
 /// True when `trimmed` opens a reStructuredText directive, a `.. `
@@ -203,8 +204,12 @@ fn is_grid_table_line(trimmed: &str) -> bool {
 
 /// True when `trimmed` opens with a Markdown list marker (`-`, `*`,
 /// or `+` followed by a space) or a numeric marker (one or more
-/// digits followed by `. `).
+/// digits followed by `. `), each also matching as the bare marker
+/// alone.
 fn is_list_marker(trimmed: &str) -> bool {
+    if matches!(trimmed, "-" | "*" | "+") {
+        return true;
+    }
     if trimmed
         .strip_prefix(['-', '*', '+'])
         .is_some_and(|rest| rest.starts_with(' '))
@@ -212,7 +217,7 @@ fn is_list_marker(trimmed: &str) -> bool {
         return true;
     }
     let after_digits = trimmed.trim_start_matches(|c: char| c.is_ascii_digit());
-    after_digits.len() < trimmed.len() && after_digits.starts_with(". ")
+    after_digits.len() < trimmed.len() && (after_digits == "." || after_digits.starts_with(". "))
 }
 
 /// True when `trimmed` is a section underline, a run of one repeated
@@ -302,10 +307,10 @@ mod tests {
     }
 
     #[test]
-    fn is_comment_marker_matches_hash_followed_by_a_space() {
+    fn is_comment_marker_matches_the_hash_prefix_and_the_bare_marker() {
         assert!(is_comment_marker("# compute the total"));
+        assert!(is_comment_marker("#"));
         assert!(!is_comment_marker("#1. open the file"));
-        assert!(!is_comment_marker("#"));
         assert!(!is_comment_marker("plain prose"));
     }
 
@@ -371,6 +376,8 @@ mod tests {
         assert!(is_list_marker("+ foo"));
         assert!(is_list_marker("1. foo"));
         assert!(is_list_marker("12. foo"));
+        assert!(is_list_marker("+"));
+        assert!(is_list_marker("12."));
         assert!(!is_list_marker("foo"));
         assert!(!is_list_marker("-foo"));
         assert!(!is_list_marker(". foo"));
