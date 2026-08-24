@@ -15,6 +15,7 @@ use std::borrow::Cow;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     AnyNodeRef, AnyParameterRef, Expr, Parameters, Stmt, StmtFunctionDef,
+    helpers::any_over_expr,
     statement_visitor::{StatementVisitor, walk_stmt},
     token::TokenKind,
 };
@@ -28,7 +29,7 @@ use crate::{
         call_keywords::{CallTargets, module_call_params},
         edit::{narrowed_replacement, singleton_groups},
         inline::{end_column, opening_width},
-        layout::{Separator, explode_parens, item_indent},
+        layout::{Separator, explode_parens, is_layoutable, item_indent, requires_expand},
         one_row, padding,
         range::return_annotation_range,
         reserve,
@@ -205,8 +206,10 @@ impl Expansion<'_> {
     /// row whose one-row form overflows from its column is the one
     /// `reflow-collections` expands. One inside a parameter leaves that
     /// parameter spanning rows, so the one-line form is out of reach,
-    /// whereas one inside the return annotation ends the opening row
-    /// at its bracket.
+    /// whereas one inside the return annotation ends the opening row at
+    /// its bracket, which needs a literal that rule expands somewhere
+    /// beneath it, leaving a subscript slice holding none to overflow
+    /// the row whole.
     fn inline_fits(&self, fd: &StmtFunctionDef, text: &str) -> bool {
         let start = fd.parameters.range().start();
         let slack_before = |offset: TextSize| -> isize {
@@ -241,7 +244,10 @@ impl Expansion<'_> {
                 continue;
             }
             let in_returns = returns.is_some_and(|ret| ret.range().contains_range(literal.range()));
-            return in_returns && column < self.code_line_length;
+            let breaks = any_over_expr(literal, &|inner: &Expr| {
+                is_layoutable(inner) && requires_expand(inner)
+            });
+            return in_returns && breaks && column < self.code_line_length;
         }
         false
     }
