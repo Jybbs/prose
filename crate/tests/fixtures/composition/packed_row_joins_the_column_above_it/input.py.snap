@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/packed_row_joins_the_column_above_it/input.py
+---
+from tkinter.simpledialog import _setup_dialog
+from tkinter.ttk          import Button
+from tkinter.ttk import Checkbutton
+from tkinter.ttk import Entry, Frame
+from tkinter.ttk import Label, Scrollbar
+
+print(Button, Checkbutton, Entry, Frame, Label, Scrollbar, _setup_dialog)

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Band Heading Carries Off the Merge Lead"
+
+description = '''
+[[group-imports]] seats `import _random` first, which leaves the comment block heading `from math` sitting directly under it with a blank line before the `math` rows, and [[band-constants]] carries that block back onto `import _random` as the heading of the whole block. [[reflow-imports]] reads the carry ahead of time, so **the gathered `math` rows land adjacent to `itertools` and share its column** rather than opening a run of their own under a comment that will have left.
+'''

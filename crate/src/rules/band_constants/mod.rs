@@ -33,7 +33,7 @@ use crate::{
 mod analysis;
 mod plan;
 
-pub(crate) use self::plan::ImportBand;
+pub(crate) use self::plan::{Carry, ImportBand};
 use self::{
     analysis::module_band_plan,
     plan::{Banding, banded_gap},
@@ -65,9 +65,10 @@ impl BandConstants {
     }
 
     /// The import bands the rule sorts over `body`, forecast for a rule
-    /// seated ahead of it. A band holds the imports of one region once
-    /// the hoist seats every constant between two of them below the
-    /// run. `None` when a sibling shares a line or the plan declines the
+    /// seated ahead of it, beside every comment the banding carries onto
+    /// another member. A band holds the imports of one region once the
+    /// hoist seats every constant between two of them below the run.
+    /// `None` when a sibling shares a line or the plan declines the
     /// body.
     pub(crate) fn import_bands(
         &self,
@@ -81,7 +82,7 @@ impl BandConstants {
         let blocks = member_blocks(source, body, outer);
         let sections = Sections::of(source, &blocks);
         let order: Vec<usize> = (0..body.len()).collect();
-        let imports = module_band_plan(
+        let (imports, carries) = module_band_plan(
             source,
             body,
             &blocks,
@@ -97,7 +98,11 @@ impl BandConstants {
             self.group_imports,
             &order,
         )?;
-        Some(Bands { blocks, imports })
+        Some(Bands {
+            blocks,
+            carries,
+            imports,
+        })
     }
 }
 
@@ -129,9 +134,10 @@ impl Rule for BandConstants {
 }
 
 /// The import bands forecast over one body beside the body's member
-/// blocks.
+/// blocks and the comments the banding carries between members.
 pub(crate) struct Bands {
     pub(crate) blocks: Vec<TextRange>,
+    pub(crate) carries: Vec<Carry>,
     pub(crate) imports: Vec<ImportBand>,
 }
 
@@ -337,6 +343,35 @@ mod tests {
                     .into_iter()
                     .next()
                     .map(|band| (band.slots, band.sorted_head))
+            }),
+            first,
+        );
+    }
+
+    #[rstest]
+    #[case::sort_reseats_the_heading("# heads the run\nfrom .p import a\nfrom ..q import b\n", Some((0, 1, false)))]
+    #[case::run_binds_back_as_a_trailer("import os\n# documents os\n\nfrom x import y\n", Some((1, 0, true)))]
+    #[case::run_binds_back_above_a_wide_line("import os\n# documents os at a length the line cannot take within the width\n\nfrom x import y\n", Some((1, 0, false)))]
+    #[case::heading_stays_on_the_sorted_head(
+        "# heads the run\nfrom ..q import b\nfrom .p import a\n",
+        None
+    )]
+    fn import_bands_reads_the_comment_the_banding_carries(
+        #[case] src: &str,
+        #[case] first: Option<(usize, usize, bool)>,
+    ) {
+        let source = parse(src);
+        let rule = BandConstants {
+            code_width: 40,
+            ..BandConstants::from_config(&Config::default())
+        };
+        let bands = rule.import_bands(&source, &source.ast().body, source.module_range());
+        assert_eq!(
+            bands.and_then(|bands| {
+                bands
+                    .carries
+                    .first()
+                    .map(|carry| (carry.absorbs, carry.carrier, carry.trails))
             }),
             first,
         );

@@ -17,7 +17,6 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     primitives::{
@@ -33,6 +32,10 @@ use crate::{
 
 const FUTURE_ANNOTATIONS: &str = "annotations";
 const FUTURE_MODULE: &str = "__future__";
+
+/// Display width of the `import ` keyword and its trailing space, the
+/// distance from an aligned `import` column to the first member.
+pub(crate) const IMPORT_KEYWORD_WIDTH: usize = "import ".len();
 
 /// What distinguishes one `from`-import's module from another, the
 /// leading-dot count alongside the module name.
@@ -192,25 +195,6 @@ pub(crate) fn fold_landing(
 }
 
 /// True for an absolute `from __future__ import …` statement.
-/// Display width of the `import ` keyword and its trailing space, the
-/// distance from an aligned `import` column to the first member.
-pub(crate) const IMPORT_KEYWORD_WIDTH: usize = "import ".len();
-
-/// The widest member a `from`-import carries, `None` for a statement
-/// holding one member alone, which `reflow-imports` never splits. A
-/// split roster packs one member per row at the narrowest, so this is
-/// the widest row the statement can reach past its prefix.
-pub(crate) fn widest_member_width(source: &Source, stmt: &Stmt) -> Option<usize> {
-    let node = stmt.as_import_from_stmt()?;
-    let [_, _, ..] = node.names.as_slice() else {
-        return None;
-    };
-    node.names
-        .iter()
-        .map(|alias| source.slice(alias.range()).width())
-        .max()
-}
-
 pub(crate) fn is_future(node: &StmtImportFrom) -> bool {
     node.level == 0 && node.module.as_deref() == Some(FUTURE_MODULE)
 }

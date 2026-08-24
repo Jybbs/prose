@@ -44,7 +44,7 @@ impl EntryColumns {
             &parens,
             settings,
             &aligner::Widenings::default(),
-            |_| None,
+            &[],
         )
         .into_iter();
         let colons = self

@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/hoisted_constant_joins_the_import_runs/input.py
+---
+from pkg.alpha       import first_name
+from pkg.alpha       import second_name
+from pkg.beta_module import third
+
+LIMIT = 3
+
+print(first_name, second_name, third, LIMIT)

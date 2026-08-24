@@ -174,8 +174,9 @@ impl Reservations {
             if run.candidate && !aligner::is_alignment_candidate(&run.members) {
                 continue;
             }
+            let joined: Vec<Option<usize>> = run.members.iter().map(|&m| joined(m)).collect();
             let columns =
-                aligner::operator_columns(source, &run.members, settings, &widenings, joined);
+                aligner::operator_columns(source, &run.members, settings, &widenings, &joined);
             shifts.extend(
                 run.members
                     .iter()

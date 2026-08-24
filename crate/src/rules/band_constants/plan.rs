@@ -160,18 +160,22 @@ impl BandPlan<'_> {
         self.is_sound(&drained.banded).then_some(drained)
     }
 
-    /// Every import band the drained `order` seats, `None` when the plan
-    /// is unsound.
+    /// Every import band the drained `order` seats beside every comment
+    /// the banding carries onto another member, `None` when the plan is
+    /// unsound.
     pub(super) fn import_bands(
-        &self,
+        mut self,
         body: &[Stmt],
         sections: &Sections,
         first_party: &[String],
         grouped: bool,
         order: &[usize],
-    ) -> Option<Vec<ImportBand>> {
-        self.drained(body, sections, first_party, grouped, order)
-            .map(|drained| drained.imports)
+    ) -> Option<(Vec<ImportBand>, Vec<Carry>)> {
+        let Drained {
+            imports, shifts, ..
+        } = self.drained(body, sections, first_party, grouped, order)?;
+        self.relocate_heads(&shifts);
+        Some((imports, self.carries))
     }
 
     /// True when every eager reference seats its referent ahead of the
@@ -261,11 +265,11 @@ pub(super) enum BandRank {
 /// `trails` and on the line above it otherwise. The block a comment
 /// binds backward from and the band head a sort reseats are the two
 /// moves, so `absorbs` and `carrier` always name different members.
-pub(super) struct Carry {
-    pub(super) absorbs: usize,
-    pub(super) carrier: usize,
-    pub(super) comment: TextRange,
-    pub(super) trails: bool,
+pub(crate) struct Carry {
+    pub(crate) absorbs: usize,
+    pub(crate) carrier: usize,
+    pub(crate) comment: TextRange,
+    pub(crate) trails: bool,
 }
 
 /// One import band: its body slots in source order and the slot the

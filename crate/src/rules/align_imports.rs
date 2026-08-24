@@ -9,23 +9,17 @@
 //! (parenthesized name lists, backslash continuations) skip alignment
 //! because shifting the keyword would break the continuation indent.
 
-use std::collections::HashMap;
-
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Stmt,
     statement_visitor::{StatementVisitor, walk_body},
     token::TokenKind,
 };
-use ruff_text_size::{Ranged, TextSize};
-use unicode_width::UnicodeWidthStr;
+use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
-    primitives::{
-        aligner,
-        imports::{IMPORT_KEYWORD_WIDTH, import_group, widest_member_width},
-    },
+    primitives::aligner,
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -93,63 +87,6 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
     }
 }
 
-/// Maps each aligned `from M import N` statement's start to the display
-/// column its `import` keyword lands at, so `reflow-imports` packs an
-/// over-budget import's members against the prefix width the alignment
-/// gives it.
-///
-/// A multi-member roster reads at the width of its widest member rather
-/// than of the whole line it currently occupies, since that is the row
-/// `align-imports` measures once `reflow-imports` has packed the roster
-/// one member per row. Reading the unpacked line instead answers for a
-/// row the run never sees, and drops the statement out of the column
-/// its packed rows go on to share.
-///
-/// `divided` keys the run on the canonical import group as well as the
-/// form, so the prediction closes where `space-statements` writes its
-/// divider rather than running across it. A caller writing no divider
-/// passes `None` and the prediction reads raw adjacency.
-pub(crate) fn aligned_import_columns(
-    source: &Source,
-    settings: aligner::Settings,
-    divided: Option<&[String]>,
-) -> HashMap<TextSize, usize> {
-    let groups =
-        aligner::keyed_line_adjacent_groups(source, &source.ast().body, AlignImports::SLUG, |s| {
-            let group = divided.and_then(|first_party| import_group(s, first_party));
-            let widest = widest_member_width(source, s);
-            qualify(source, s).map(|(form, m)| ((form, group), (s.start(), m, widest)))
-        });
-    let mut columns = HashMap::new();
-    for group in groups {
-        let members: Vec<aligner::Member> = group.iter().map(|(_, member, _)| *member).collect();
-        let packed: HashMap<TextSize, usize> = group
-            .iter()
-            .filter_map(|(_, member, widest)| Some((member.line_start, (*widest)?)))
-            .collect();
-        let joined = |member: aligner::Member| {
-            let widest = packed.get(&member.line_start)?;
-            Some(
-                member.baseline
-                    + member.settled_width
-                    + source.slice(member.gap).width()
-                    + IMPORT_KEYWORD_WIDTH
-                    + widest,
-            )
-        };
-        for ((start, ..), column) in group.iter().zip(aligner::operator_columns(
-            source,
-            &members,
-            settings,
-            &aligner::Widenings::default(),
-            joined,
-        )) {
-            columns.insert(*start, column);
-        }
-    }
-    columns
-}
-
 /// Tags a statement with its import form and alignment member, or
 /// `None` for a statement that joins no alignment run.
 fn qualify(source: &Source, stmt: &Stmt) -> Option<(Form, aligner::Member)> {
@@ -161,8 +98,9 @@ fn qualify(source: &Source, stmt: &Stmt) -> Option<(Form, aligner::Member)> {
 /// Builds an alignment member for a `from M import N` statement,
 /// anchored at the `import` keyword. Returns `None` for any other
 /// statement shape and for multi-line imports whose continuation
-/// indent would misalign if the keyword shifted.
-fn qualify_from(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
+/// indent would misalign if the keyword shifted. Read by the
+/// `reflow-imports` forecast as well, so both rules seat one row alike.
+pub(crate) fn qualify_from(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
     let s = stmt.as_import_from_stmt()?;
     if source.contains_line_break(s.range) {
         return None;

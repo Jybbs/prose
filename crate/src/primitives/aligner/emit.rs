@@ -7,12 +7,10 @@ use std::ops::RangeInclusive;
 
 use ruff_diagnostics::Edit;
 use ruff_source_file::LineRanges;
-use ruff_text_size::TextRange;
+use ruff_text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
-use super::{
-    Cap, Member, Settings, Widenings, holds::is_alignment_candidate, members::line_gap_before,
-};
+use super::{Cap, Member, Settings, Widenings, members::line_gap_before};
 use crate::{
     config::MaxShift,
     primitives::{
@@ -35,7 +33,7 @@ pub(super) fn emit_group(
     edits: &mut Vec<Edit>,
 ) {
     edits.extend(
-        group_paddings(source, members, settings, widenings, |_| None)
+        group_paddings(source, members, settings, widenings, &[])
             .filter_map(|(m, pad)| space_padding_edit(source, m.gap, pad)),
     );
 }
@@ -43,9 +41,10 @@ pub(super) fn emit_group(
 /// Per-member display column where each member's aligned token lands
 /// under the same column math `emit_group` applies, each line read
 /// with the `widenings` the rule's other groups seat on it and at the
-/// width `joined` names where a later rule joins the member's value
-/// onto its row. A candidate group reports its shared column, split on
-/// the `max-shift` cap, while any other group reports the settings'
+/// width `joined` names in step with `members` where a later rule
+/// writes the member's row, `None` or absent for a row the source
+/// already writes. A candidate group reports its shared column, split
+/// on the `max-shift` cap, while any other group reports the settings'
 /// buffer past each member's own width.
 /// The token's following value sits [`VALUE_OFFSET`](super::VALUE_OFFSET)
 /// columns further on.
@@ -54,9 +53,9 @@ pub(crate) fn operator_columns(
     members: &[Member],
     settings: Settings,
     widenings: &Widenings,
-    joined: impl Fn(Member) -> Option<usize>,
+    joined: &[Option<usize>],
 ) -> Vec<usize> {
-    if !is_alignment_candidate(members) {
+    if !is_forecast_candidate(members, joined) {
         return members
             .iter()
             .map(|m| m.baseline + m.settled_width + settings.buffer)
@@ -65,6 +64,23 @@ pub(crate) fn operator_columns(
     group_paddings(source, members, settings, widenings, joined)
         .map(|(m, pad)| m.baseline + m.settled_width + pad)
         .collect()
+}
+
+/// The columns `member`'s line keeps past `code_end` once the comment
+/// rules `settings` carries settle the trailing comment there, the
+/// written tail where no cap governs.
+pub(crate) fn settled_tail(
+    source: &Source,
+    member: Member,
+    settings: Settings,
+    code_end: TextSize,
+) -> usize {
+    let tail = source
+        .slice(TextRange::new(code_end, source.text().line_end(code_end)))
+        .width();
+    settings.cap.map_or(tail, |cap| {
+        tail.saturating_add_signed(-comment_slack(source, member, cap.settling))
+    })
 }
 
 /// Returns the edit needed to make `range` carry exactly `n` ASCII
@@ -118,15 +134,16 @@ fn emitted_bases(
     members: &[Member],
     settings: Settings,
     widenings: &Widenings,
-    joined: impl Fn(Member) -> Option<usize>,
+    joined: &[Option<usize>],
 ) -> Vec<usize> {
     let Some(cap) = settings.cap else {
         return Vec::new();
     };
     members
         .iter()
-        .map(|m| {
-            emitted_base_width(source, *m, cap, joined(*m))
+        .enumerate()
+        .map(|(i, m)| {
+            emitted_base_width(source, *m, cap, joined.get(i).copied().flatten())
                 .saturating_add_signed(widenings.delta(*m))
         })
         .collect()
@@ -173,7 +190,7 @@ fn group_paddings<'m>(
     members: &'m [Member],
     settings: Settings,
     widenings: &Widenings,
-    joined: impl Fn(Member) -> Option<usize>,
+    joined: &[Option<usize>],
 ) -> impl Iterator<Item = (Member, usize)> + 'm {
     reading_order_groups(source, members, settings, widenings, joined)
         .into_iter()
@@ -183,6 +200,19 @@ fn group_paddings<'m>(
             group
                 .iter()
                 .map(move |m| (*m, padding_width(*m, max_w, max_op, suffix)))
+        })
+}
+
+/// True when `members` form a multi-row group at one baseline, a row
+/// `joined` names standing on a line of its own where the source seats
+/// it on its neighbor's, since the rule writing that row seats it
+/// beneath the one before.
+fn is_forecast_candidate(members: &[Member], joined: &[Option<usize>]) -> bool {
+    members.len() >= 2
+        && members.windows(2).enumerate().all(|(i, w)| {
+            w[0].baseline == w[1].baseline
+                && (w[0].line_start != w[1].line_start
+                    || joined.get(i + 1).is_some_and(Option::is_some))
         })
 }
 
@@ -229,7 +259,7 @@ fn reading_order_groups<'m>(
     members: &'m [Member],
     settings: Settings,
     widenings: &Widenings,
-    joined: impl Fn(Member) -> Option<usize>,
+    joined: &[Option<usize>],
 ) -> Vec<(&'m [Member], usize)> {
     let shift_cap = match settings.max_shift {
         MaxShift::NoShift => {
@@ -698,7 +728,7 @@ mod tests {
                 &members,
                 Settings::aligned(cap(8)),
                 &Widenings::default(),
-                |_| None
+                &[],
             ),
             vec![4, 4, 4],
         );
@@ -716,7 +746,7 @@ mod tests {
                 &members,
                 Settings::aligned(cap(8)),
                 &Widenings::default(),
-                |_| None
+                &[],
             ),
             vec![4],
         );
@@ -734,7 +764,7 @@ mod tests {
                 &members,
                 Settings::aligned(cap(8)),
                 &Widenings::default(),
-                |_| None
+                &[],
             ),
             vec![2, 16],
         );

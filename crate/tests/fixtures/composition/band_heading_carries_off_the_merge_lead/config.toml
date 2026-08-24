@@ -1,0 +1,4 @@
+import-line-length = 60
+
+[harness]
+rules = ["group-imports", "reflow-imports", "band-constants", "alphabetize-siblings", "space-statements", "align-imports"]
