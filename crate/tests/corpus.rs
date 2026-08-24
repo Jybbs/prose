@@ -1,24 +1,14 @@
 //! Corpus sweep at every configured line length: the text the formatter
 //! writes leaves no rule rewriting it and no reported fix unapplied.
-//!
-//! The two defects share a shape and not a mechanism. A rewrite a second
-//! pass would change leaves a rule whose edits still splice, which
-//! [`Pipeline::unsettled`] reports. A fix the weave drops leaves a rule
-//! whose diagnostic still names an edit that never lands, which only the
-//! diagnostic pass reports, since the dropped edit splices back to the
-//! text it started from. The runtime settle check reads the first alone
-//! and reads it only over a file the pass rewrote, so this sweep reads
-//! both over every file. A run that panics is recorded against its file
-//! rather than ending the sweep, so one defect leaves the rest visible,
-//! and a run the pipeline rejects is recorded the same way. A file
-//! passing `BUDGET` stops the sweep and names itself, because a rule
-//! that fails to terminate grows without bound.
-//! Each width in [`WIDTHS`] runs once per axis in [`AXES`], one budget
-//! varied and the rest at their defaults, the fallback axis clearing
-//! `import_line_length` so the import budget falls back to the varied
-//! code budget. `PROSE_SETTLE_CORPUS` points the sweep at a directory
-//! other than the fixture tree, `PROSE_SETTLE_WIDTHS` overrides the
-//! width set, and `PROSE_SETTLE_AXES` narrows the axes by name.
+//! [`Pipeline::unsettled`] reports the first defect and the diagnostic
+//! pass alone reports the second, so the sweep reads both over every
+//! file. A run that panics or is rejected is recorded against its file
+//! rather than ending the sweep, and a file passing `BUDGET` stops the
+//! sweep and names itself. Each width in [`WIDTHS`] runs once per axis
+//! in [`AXES`], one budget varied and the rest at their defaults.
+//! `PROSE_SETTLE_CORPUS` points the sweep at another directory,
+//! `PROSE_SETTLE_WIDTHS` overrides the width set, and
+//! `PROSE_SETTLE_AXES` narrows the axes by name.
 
 use std::{
     cell::RefCell,
@@ -29,7 +19,7 @@ use std::{
     panic::{self, AssertUnwindSafe},
     path::Path,
     sync::{
-        Mutex,
+        Mutex, PoisonError,
         atomic::{AtomicUsize, Ordering},
     },
     thread,
@@ -75,31 +65,8 @@ enum Axis {
 }
 
 impl Axis {
-    /// The phrase a finding and a `Slot` label name this axis and width
-    /// by.
-    /// The `PROSE_SETTLE_AXES` token naming this axis.
-    fn name(self) -> &'static str {
-        match self {
-            Self::Code => "code",
-            Self::Docstring => "docstring",
-            Self::Fallback => "fallback",
-            Self::Import => "import",
-        }
-    }
-
-    /// The command sweeping this axis at `width` alone, carrying the
-    /// corpus override when the run took one.
-    fn repro(self, width: usize) -> String {
-        let corpus = env::var("PROSE_SETTLE_CORPUS").map_or_else(
-            |_| String::new(),
-            |dir| format!("PROSE_SETTLE_CORPUS={dir} "),
-        );
-        format!(
-            "{corpus}PROSE_SETTLE_AXES={} PROSE_SETTLE_WIDTHS={width} cargo test --test corpus",
-            self.name(),
-        )
-    }
-
+    /// The phrase a finding and a `Slot` label name this axis and
+    /// width by.
     fn clause(self, width: usize) -> String {
         match self {
             Self::Code => format!("code width {width}"),
@@ -131,6 +98,29 @@ impl Axis {
                 ..Config::default()
             },
         }
+    }
+
+    /// The `PROSE_SETTLE_AXES` token naming this axis.
+    fn name(self) -> &'static str {
+        match self {
+            Self::Code => "code",
+            Self::Docstring => "docstring",
+            Self::Fallback => "fallback",
+            Self::Import => "import",
+        }
+    }
+
+    /// The command sweeping this axis at `width` alone, carrying the
+    /// corpus override when the run took one.
+    fn repro(self, width: usize) -> String {
+        let corpus = env::var("PROSE_SETTLE_CORPUS").map_or_else(
+            |_| String::new(),
+            |dir| format!("PROSE_SETTLE_CORPUS={dir} "),
+        );
+        format!(
+            "{corpus}PROSE_SETTLE_AXES={} PROSE_SETTLE_WIDTHS={width} cargo test --test corpus",
+            self.name(),
+        )
     }
 }
 
@@ -165,7 +155,7 @@ impl Findings {
 
 /// The wall clock one file may take before the sweep treats its run as
 /// non-terminating.
-const BUDGET: Duration = Duration::from_secs(60);
+const BUDGET: Duration = Duration::from_mins(1);
 
 /// The files probes are reading right now, keyed by an opening order the
 /// watchdog reads back.
@@ -190,84 +180,33 @@ impl Drop for Slot {
     }
 }
 
-/// The in-flight registry. The lock is never held across a run, so it
-/// never carries a panic's poison.
-fn registry() -> std::sync::MutexGuard<'static, BTreeMap<usize, (Instant, String)>> {
-    IN_FLIGHT
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
-}
-
-/// Ends the process once a probe outruns `BUDGET`, naming the file it
-/// was reading. A rule that fails to terminate cannot be unwound from
-/// the thread running it, and it grows until the machine reaches an
-/// out-of-memory kill, so the sweep stops itself first.
-fn watch_for_a_runaway() {
-    thread::spawn(|| {
-        loop {
-            thread::sleep(Duration::from_secs(1));
-            let overrun = registry()
-                .values()
-                .find(|(since, _)| since.elapsed() > BUDGET)
-                .map(|(_, label)| label.clone());
-            if let Some(label) = overrun {
-                let mut stderr = std::io::stderr();
-                let _ = writeln!(
-                    stderr,
-                    "the sweep stopped itself, since {label} has run past {} seconds and is \
-                     treated as non-terminating",
-                    BUDGET.as_secs(),
-                );
-                let _ = stderr.flush();
-                std::process::exit(101);
-            }
-        }
-    });
+thread_local! {
+    /// Where the silent hook last saw a panic raised, read back by the
+    /// probe that caught it so a finding names the line as well as the
+    /// message.
+    static PANIC_SITE: RefCell<Option<String>> = const { RefCell::new(None) };
 }
 
 /// The axes this run sweeps, `PROSE_SETTLE_AXES` narrowing [`AXES`] as
 /// a space-separated list of `code`, `docstring`, `import`, and
 /// `fallback`.
 fn axes() -> Vec<Axis> {
-    env::var("PROSE_SETTLE_AXES").map_or_else(
-        |_| AXES.to_vec(),
-        |set| {
-            set.split_whitespace()
-                .map(|name| match name {
-                    "code" => Axis::Code,
-                    "docstring" => Axis::Docstring,
-                    "fallback" => Axis::Fallback,
-                    "import" => Axis::Import,
-                    other => panic!("PROSE_SETTLE_AXES names an unknown axis: {other}"),
-                })
-                .collect()
-        },
-    )
+    env_list("PROSE_SETTLE_AXES", &AXES, |name| match name {
+        "code" => Axis::Code,
+        "docstring" => Axis::Docstring,
+        "fallback" => Axis::Fallback,
+        "import" => Axis::Import,
+        other => panic!("PROSE_SETTLE_AXES names an unknown axis: {other}"),
+    })
 }
 
-/// The line lengths this run sweeps, `PROSE_SETTLE_WIDTHS` overriding
-/// [`WIDTHS`] as a space-separated list.
-fn widths() -> Vec<usize> {
-    env::var("PROSE_SETTLE_WIDTHS").map_or_else(
-        |_| WIDTHS.to_vec(),
-        |set| {
-            set.split_whitespace()
-                .map(|width| {
-                    width
-                        .parse::<NonZeroUsize>()
-                        .expect("every `PROSE_SETTLE_WIDTHS` entry is a nonzero number")
-                        .get()
-                })
-                .collect()
-        },
+/// The values `var` carries as a space-separated list, `defaults`
+/// where it is unset.
+fn env_list<T: Clone>(var: &str, defaults: &[T], parse: impl Fn(&str) -> T) -> Vec<T> {
+    env::var(var).map_or_else(
+        |_| defaults.to_vec(),
+        |set| set.split_whitespace().map(&parse).collect(),
     )
-}
-
-thread_local! {
-    /// Where the silent hook last saw a panic raised, read back by the
-    /// probe that caught it so a finding names the line as well as the
-    /// message.
-    static PANIC_SITE: RefCell<Option<String>> = const { RefCell::new(None) };
 }
 
 /// The message a caught panic carried, `"panicked"` for a payload of
@@ -306,7 +245,7 @@ fn probe(pipeline: &Pipeline, clause: &str, repro: &str, path: &Path) -> Finding
     let outcome = match ran {
         Ok(outcome) => outcome,
         Err(payload) => {
-            let site = PANIC_SITE.with(|cell| cell.take());
+            let site = PANIC_SITE.with(RefCell::take);
             let at = site.map_or_else(String::new, |site| format!(" at {site}"));
             findings.panicked.record_at(
                 format!(
@@ -351,6 +290,50 @@ fn probe(pipeline: &Pipeline, clause: &str, repro: &str, path: &Path) -> Finding
         );
     }
     findings
+}
+
+/// The in-flight registry. The lock is never held across a run, so it
+/// never carries a panic's poison.
+fn registry() -> std::sync::MutexGuard<'static, BTreeMap<usize, (Instant, String)>> {
+    IN_FLIGHT.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// Ends the process once a probe outruns `BUDGET`, naming the file it
+/// was reading. A rule that fails to terminate cannot be unwound from
+/// the thread running it, and it grows until the machine reaches an
+/// out-of-memory kill, so the sweep stops itself first.
+fn watch_for_a_runaway() {
+    thread::spawn(|| {
+        loop {
+            thread::sleep(Duration::from_secs(1));
+            let overrun = registry()
+                .values()
+                .find(|(since, _)| since.elapsed() > BUDGET)
+                .map(|(_, label)| label.clone());
+            if let Some(label) = overrun {
+                let mut stderr = std::io::stderr();
+                let _ = writeln!(
+                    stderr,
+                    "the sweep stopped itself, since {label} has run past {} seconds and is \
+                     treated as non-terminating",
+                    BUDGET.as_secs(),
+                );
+                let _ = stderr.flush();
+                std::process::exit(101);
+            }
+        }
+    });
+}
+
+/// The line lengths this run sweeps, `PROSE_SETTLE_WIDTHS` overriding
+/// [`WIDTHS`] as a space-separated list.
+fn widths() -> Vec<usize> {
+    env_list("PROSE_SETTLE_WIDTHS", &WIDTHS, |width| {
+        width
+            .parse::<NonZeroUsize>()
+            .expect("every `PROSE_SETTLE_WIDTHS` entry is a nonzero number")
+            .get()
+    })
 }
 
 #[test]

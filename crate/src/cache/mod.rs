@@ -1,19 +1,13 @@
 //! User-level content-addressed cache for `prose check` and `prose format`.
 //!
-//! Keys are BLAKE3 digests over the source bytes, the canonical TOML
-//! serialization of the active `Config`, the resolved rule selection
-//! the pipeline runs, the Prose version, a private
-//! `CACHE_FORMAT_VERSION` that bumps independently when the on-disk
-//! entry shape changes, and the `Anchor` naming which buffer the
-//! entry's diagnostics resolve against. A notebook's entry also holds
-//! the code cells the run read, so a hit reports against them rather
-//! than parsing the `.ipynb` JSON again. Entries live one file per key under
-//! the platform's cache directory, with the path resolving through
-//! `PROSE_CACHE_DIR` → `dirs::cache_dir()`. Inserts write to a
-//! temporary sibling then `rename` onto the final path, so a
-//! concurrent reader never observes a partial entry. LRU eviction by
-//! mtime caps the directory at the configured size, swept once a run's
-//! inserts have landed rather than once per insert.
+//! Keys are BLAKE3 digests over the source bytes, the active config's
+//! canonical TOML, the resolved rule selection, the Prose version, the
+//! private `CACHE_FORMAT_VERSION`, and the `Anchor` naming which
+//! buffer the diagnostics resolve against, with a notebook's entry
+//! also holding the code cells the run read. Entries live one file per
+//! key under the platform's cache directory via `PROSE_CACHE_DIR` →
+//! `dirs::cache_dir()`, inserts land through a temporary sibling and
+//! `rename`, and LRU eviction by mtime sweeps once per run.
 
 mod engine;
 mod key;
@@ -50,7 +44,7 @@ mod tests {
 
     /// Backdates `dir` past the sweep's grace window.
     fn age(dir: &Path) {
-        let stale = SystemTime::now() - Duration::from_secs(60 * 60 * 24);
+        let stale = SystemTime::now() - Duration::from_hours(24);
         fs_err::File::open(dir)
             .expect("opens the directory")
             .set_modified(stale)

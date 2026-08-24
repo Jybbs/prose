@@ -43,16 +43,11 @@ use crate::{
 /// Owned wrapper around a parsed Python source file.
 ///
 /// Holds the source text, the parsed AST, the token stream, a lazy
-/// line index, a `CommentRanges` index built during parsing, and a
-/// `SuppressionMap` of `# prose: off` / `# prose: skip` spans (plus
-/// the `# fmt:` and `# yapf:` aliases), `# prose: skip[<id>]` per-rule
-/// spans and `# prose: ignore[<id>]` per-line directives, plus a
-/// `BindingAnalysis` table of every name's writes and reads.
-/// `source_type` is the parse mode, `cell_offsets` the notebook cell
-/// boundaries, and `cell_numbers` each cell's notebook position, the
-/// last two empty for an ordinary module. The alignment columns join
-/// the binding table as a walk built on first read and reused by every
-/// later reader.
+/// line index, the `CommentRanges` and `SuppressionMap` indexes built
+/// during parsing, and the `BindingAnalysis`, alignment-column, and
+/// stranded-padding walks each built on first read. `source_type` is
+/// the parse mode, with `cell_offsets` and `cell_numbers` carrying a
+/// notebook's cell boundaries and positions, empty for a module.
 #[derive(Debug)]
 pub struct Source {
     binding_analysis: OnceLock<Box<BindingAnalysis>>,
@@ -629,6 +624,18 @@ impl Source {
     }
 }
 
+/// Parses Python source from an in-memory string.
+///
+/// The resulting `Source` carries the synthetic name `<source>` for
+/// diagnostics.
+impl FromStr for Source {
+    type Err = ParseError;
+
+    fn from_str(text: &str) -> Result<Self, Self::Err> {
+        Self::build_module(text.to_owned(), "<source>", PySourceType::default())
+    }
+}
+
 /// The value `build` derives for `key`, read back from `slot` where it
 /// already holds that key's value and built afresh otherwise, the
 /// first read filling the slot.
@@ -642,18 +649,6 @@ fn keyed<K: Copy + PartialEq, B: ?Sized + ToOwned>(
         Cow::Borrowed(held.1.borrow())
     } else {
         Cow::Owned(build(&key))
-    }
-}
-
-/// Parses Python source from an in-memory string.
-///
-/// The resulting `Source` carries the synthetic name `<source>` for
-/// diagnostics.
-impl FromStr for Source {
-    type Err = ParseError;
-
-    fn from_str(text: &str) -> Result<Self, Self::Err> {
-        Self::build_module(text.to_owned(), "<source>", PySourceType::default())
     }
 }
 

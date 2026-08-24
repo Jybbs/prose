@@ -137,7 +137,7 @@ const TWO_CODE_CELLS: &str = r#"{
 }"#;
 
 /// The unaligned two-assignment source the reformat and config-resolution
-/// tests reuse. `AB` is SCREAMING_CASE and `x` a single character, so the
+/// tests reuse. `AB` is `SCREAMING_CASE` and `x` a single character, so the
 /// lint rules pass it silently while `align-equals` still reshapes it.
 const UNALIGNED: &str = "AB = 1\nx = 2\n";
 

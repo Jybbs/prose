@@ -40,9 +40,6 @@ pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
     outcome
 }
 
-/// Dispatches `source` by `pass`, collecting the as-written diagnostics on
-/// a check pass and building the rewrite through `rewrite` on a format
-/// pass. A notebook threads its `index`, a module passes `None`.
 /// How a run answers the settle question for one file. `Eager` walks
 /// the rules over the output as it lands. The ledger variants apply
 /// where a live cache lets a write-back run mark its output instead,
@@ -55,6 +52,9 @@ pub(super) enum Marker {
     LedgerMiss,
 }
 
+/// Dispatches `source` by `pass`, collecting the as-written diagnostics
+/// on a check pass and building the rewrite through `rewrite` on a
+/// format pass. A notebook threads its `index`, a module passes `None`.
 pub(super) fn drive(
     source: Source,
     resolved: &Resolved,
@@ -342,15 +342,6 @@ pub(super) fn rehydrate(
     })
 }
 
-/// True where an entry recording `rewrite` is worth writing. A
-/// write-back pass commits the rewrite over the bytes its key was drawn
-/// from, so the file it just wrote never reads that entry back, and a
-/// `Changed` rewrite goes unwritten under such a pass. Every other
-/// pairing stores.
-pub(super) fn worth_storing(rewrite: &Rewrite, pass: Pass) -> bool {
-    !(pass.write_back() && matches!(rewrite, Rewrite::Changed(_)))
-}
-
 /// Collects the as-written diagnostics, and with `validate` guards the
 /// would-be rewrite against an output that fails to re-parse or to
 /// compile and against one a second pass would change.
@@ -443,8 +434,7 @@ fn run_and_assemble(
             // prior run's output failed to settle, arriving with the
             // minimal reproducing source in hand.
             let checks = match marker {
-                Marker::Eager => true,
-                Marker::LedgerHit => true,
+                Marker::Eager | Marker::LedgerHit => true,
                 Marker::LedgerMiss => !pass.write_back() || formatted.is_notebook(),
             };
             let proven = marker == Marker::LedgerHit && pass.write_back();
@@ -505,6 +495,15 @@ fn marked_report(
 
 fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
     failed(ExitStatus::ConfigError, format_args!("cannot walk: {err}"))
+}
+
+/// True where an entry recording `rewrite` is worth writing. A
+/// write-back pass commits the rewrite over the bytes its key was drawn
+/// from, so the file it just wrote never reads that entry back, and a
+/// `Changed` rewrite goes unwritten under such a pass. Every other
+/// pairing stores.
+fn worth_storing(rewrite: &Rewrite, pass: Pass) -> bool {
+    !(pass.write_back() && matches!(rewrite, Rewrite::Changed(_)))
 }
 
 /// Replaces `path`'s contents with `contents` through a temporary file

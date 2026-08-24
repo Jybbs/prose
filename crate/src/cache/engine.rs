@@ -352,12 +352,12 @@ impl Cache {
 
 /// How far an entry's recorded mtime may lag the clock before a hit
 /// rewrites it.
-const MTIME_GRANULARITY: Duration = Duration::from_secs(60 * 60);
+const MTIME_GRANULARITY: Duration = Duration::from_hours(1);
 
 /// How long a generation directory must sit untouched before a sweep
 /// reclaims it, leaving a concurrently running build of another
 /// version its own entries.
-const GENERATION_GRACE: Duration = Duration::from_secs(60 * 60);
+const GENERATION_GRACE: Duration = Duration::from_hours(1);
 
 /// The fraction of each cap an eviction pass drives down to, as a
 /// multiplier over a divisor so the arithmetic stays in integers.

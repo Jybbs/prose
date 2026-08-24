@@ -99,6 +99,17 @@ pub struct Config {
 }
 
 impl Config {
+    /// Deserializes a prose table into a base config, dropping the
+    /// `overrides` array that only per-file resolution through
+    /// [`ConfigSource`] consults.
+    fn from_base_table<F>(mut table: toml::Table, on_notice: &mut F) -> Result<Self, ConfigError>
+    where
+        F: FnMut(ConfigNotice<'_>),
+    {
+        table.remove("overrides");
+        deserialize_prose(table, on_notice)
+    }
+
     /// Parses a `prose.toml` snippet directly from a string, reading
     /// its keys at the document root.
     ///
@@ -123,6 +134,126 @@ impl Config {
             Some(table) => Self::from_base_table(table, &mut emit_notice),
             None => Ok(Self::default()),
         }
+    }
+
+    /// Shared implementation backing `load`, factored out so tests can
+    /// inspect the emitted notices without capturing stderr.
+    fn load_with_notices<P, F>(from: P, mut on_notice: F) -> Result<Self, ConfigError>
+    where
+        P: AsRef<Path>,
+        F: FnMut(ConfigNotice<'_>),
+    {
+        match walk_prose_table(from.as_ref(), &mut on_notice)? {
+            Some((_, table)) => Self::from_base_table(table, &mut on_notice),
+            None => Ok(Self::default()),
+        }
+    }
+
+    /// The alignment settings `config` resolves within `width`, each
+    /// line read at the padding and comment rules this config predicts.
+    pub(crate) fn align_settings(
+        &self,
+        config: &AlignmentConfig,
+        width: usize,
+    ) -> aligner::Settings {
+        aligner::Settings::from(config).within(
+            width,
+            self.stranded_padding(),
+            self.comment_settling(),
+        )
+    }
+
+    /// True when `name` matches `pattern`. An empty pattern matches every
+    /// input, so the emptiness test ahead of the match reads an unset
+    /// pattern as "exempt nothing" rather than "exempt everything".
+    pub(crate) fn allow_matches(pattern: &Regex, name: &str) -> bool {
+        !pattern.as_str().is_empty() && pattern.is_match(name)
+    }
+
+    pub(crate) fn allow_set(allow: &[String]) -> HashSet<String> {
+        allow.iter().cloned().collect()
+    }
+
+    pub(crate) fn alphabetize_siblings_enabled(&self) -> bool {
+        self.rules.alphabetize_siblings.enabled
+    }
+
+    pub(crate) fn code_width(&self) -> usize {
+        self.code_line_length
+            .expect("Config::default synthesizes Some(88)")
+            .get()
+    }
+
+    /// The two comment rules a measuring rule predicts, so a trailing
+    /// comment reads at the gap `align-comments` seats it at and the
+    /// opener `normalize-comment-spacing` settles it to.
+    pub(crate) fn comment_settling(&self) -> comments::Settling {
+        comments::Settling {
+            gap: self
+                .rules
+                .align_comments
+                .enabled
+                .then_some(AlignComments::SLUG),
+            opener: self
+                .rules
+                .normalize_comment_spacing
+                .enabled
+                .then_some(NormalizeCommentSpacing::SLUG),
+        }
+    }
+
+    pub(crate) fn docstring_width(&self) -> usize {
+        self.docstring_line_length
+            .expect("Config::default synthesizes Some(76)")
+            .get()
+    }
+
+    /// The `align-equals` reservation a rule measures a construct
+    /// against, reserving no column where that rule is off.
+    pub(crate) fn equals_reservations(&self) -> reserve::Reservations {
+        let settings = self
+            .rules
+            .align_equals
+            .enabled
+            .then(|| self.equals_settings());
+        reserve::Reservations::new(AlignEquals::SLUG, settings, self.one_row_settings())
+    }
+
+    /// The alignment settings `align-equals` runs under, resolving
+    /// within the code width and releasing a group's head, since its
+    /// rows reach their settled width under it.
+    pub(crate) fn equals_settings(&self) -> aligner::Settings {
+        self.align_settings(&self.rules.align_equals, self.code_width())
+            .releasing_heads()
+    }
+
+    pub(crate) fn first_party(&self) -> Vec<String> {
+        self.imports.first_party.clone()
+    }
+
+    /// The terms a fractured argument list closes under, closing
+    /// none where `reflow-calls` is off.
+    pub(crate) fn fracture_settings(&self) -> fracture::Settings<'static> {
+        fracture::Settings::from(&self.rules.reflow_calls)
+    }
+
+    pub(crate) fn group_imports_enabled(&self) -> bool {
+        self.rules.group_imports.enabled
+    }
+
+    /// The alignment settings `align-imports` runs under, resolving
+    /// within the import width, read by the rule itself and by the
+    /// forecast `reflow-imports` packs against, so the column the
+    /// forecast names is one the capped run seats.
+    pub(crate) fn import_align_settings(&self) -> aligner::Settings {
+        self.align_settings(&self.rules.align_imports, self.import_width())
+    }
+
+    /// The budget governing import wrapping, falling back to the code
+    /// budget when `import_line_length` is `None`.
+    pub(crate) fn import_width(&self) -> usize {
+        self.import_line_length
+            .map_or_else(|| self.code_width(), NonZeroUsize::get)
     }
 
     /// Walks upward from `from`, returning the config from the nearest
@@ -159,114 +290,6 @@ impl Config {
         Self::load_with_notices(from, |notice| dedup.emit(notice))
     }
 
-    /// Deserializes a prose table into a base config, dropping the
-    /// `overrides` array that only per-file resolution through
-    /// [`ConfigSource`] consults.
-    fn from_base_table<F>(mut table: toml::Table, on_notice: &mut F) -> Result<Self, ConfigError>
-    where
-        F: FnMut(ConfigNotice<'_>),
-    {
-        table.remove("overrides");
-        deserialize_prose(table, on_notice)
-    }
-
-    /// Shared implementation backing `load`, factored out so tests can
-    /// inspect the emitted notices without capturing stderr.
-    fn load_with_notices<P, F>(from: P, mut on_notice: F) -> Result<Self, ConfigError>
-    where
-        P: AsRef<Path>,
-        F: FnMut(ConfigNotice<'_>),
-    {
-        match walk_prose_table(from.as_ref(), &mut on_notice)? {
-            Some((_, table)) => Self::from_base_table(table, &mut on_notice),
-            None => Ok(Self::default()),
-        }
-    }
-
-    /// True when `name` matches `pattern`. An empty pattern matches every
-    /// input, so the emptiness test ahead of the match reads an unset
-    /// pattern as "exempt nothing" rather than "exempt everything".
-    pub(crate) fn allow_matches(pattern: &Regex, name: &str) -> bool {
-        !pattern.as_str().is_empty() && pattern.is_match(name)
-    }
-
-    pub(crate) fn allow_set(allow: &[String]) -> HashSet<String> {
-        allow.iter().cloned().collect()
-    }
-
-    pub(crate) fn alphabetize_siblings_enabled(&self) -> bool {
-        self.rules.alphabetize_siblings.enabled
-    }
-
-    pub(crate) fn code_width(&self) -> usize {
-        self.code_line_length
-            .expect("Config::default synthesizes Some(88)")
-            .get()
-    }
-
-    pub(crate) fn docstring_width(&self) -> usize {
-        self.docstring_line_length
-            .expect("Config::default synthesizes Some(76)")
-            .get()
-    }
-
-    /// The `align-equals` reservation a rule measures a construct
-    /// against, reserving no column where that rule is off.
-    pub(crate) fn equals_reservations(&self) -> reserve::Reservations {
-        let settings = self
-            .rules
-            .align_equals
-            .enabled
-            .then(|| self.equals_settings());
-        reserve::Reservations::new(AlignEquals::SLUG, settings, self.one_row_settings())
-    }
-
-    /// The alignment settings `align-equals` runs under, resolving
-    /// within the code width and releasing a group's head, since its
-    /// rows reach their settled width under it.
-    pub(crate) fn equals_settings(&self) -> aligner::Settings {
-        aligner::Settings::from(&self.rules.align_equals)
-            .within(
-                self.code_width(),
-                self.stranded_padding(),
-                self.comment_settling(),
-            )
-            .releasing_heads()
-    }
-
-    /// The alignment settings `align-imports` runs under, resolving
-    /// within the import width, read by the rule itself and by the
-    /// forecast `reflow-imports` packs against, so the column the
-    /// forecast names is one the capped run seats.
-    pub(crate) fn import_align_settings(&self) -> aligner::Settings {
-        aligner::Settings::from(&self.rules.align_imports).within(
-            self.import_width(),
-            self.stranded_padding(),
-            self.comment_settling(),
-        )
-    }
-
-    pub(crate) fn first_party(&self) -> Vec<String> {
-        self.imports.first_party.clone()
-    }
-
-    /// The terms a fractured argument list closes under, closing
-    /// none where `reflow-calls` is off.
-    pub(crate) fn fracture_settings(&self) -> fracture::Settings<'static> {
-        fracture::Settings::from(&self.rules.reflow_calls)
-    }
-
-    pub(crate) fn group_imports_enabled(&self) -> bool {
-        self.rules.group_imports.enabled
-    }
-
-    /// The budget governing import wrapping, falling back to the code
-    /// budget when `import_line_length` is `None`.
-    pub(crate) fn import_width(&self) -> usize {
-        self.import_line_length
-            .map_or_else(|| self.code_width(), NonZeroUsize::get)
-    }
-
     /// The terms a construct reaches one row under, read by every rule
     /// deciding where that construct lands.
     pub(crate) fn one_row_settings(&self) -> one_row::Settings<'static> {
@@ -277,24 +300,6 @@ impl Config {
     /// the separator `alphabetize-siblings` leaves after it.
     pub(crate) fn reorders(&self) -> Reorders {
         Reorders::from_config(self)
-    }
-
-    /// The two comment rules a measuring rule predicts, so a trailing
-    /// comment reads at the gap `align-comments` seats it at and the
-    /// opener `normalize-comment-spacing` settles it to.
-    pub(crate) fn comment_settling(&self) -> comments::Settling {
-        comments::Settling {
-            gap: self
-                .rules
-                .align_comments
-                .enabled
-                .then_some(AlignComments::SLUG),
-            opener: self
-                .rules
-                .normalize_comment_spacing
-                .enabled
-                .then_some(NormalizeCommentSpacing::SLUG),
-        }
     }
 
     /// The padding rule a measuring rule predicts, so a row reads at the
