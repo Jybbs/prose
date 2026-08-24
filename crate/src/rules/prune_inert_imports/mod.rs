@@ -1,13 +1,15 @@
 //! Prunes an import binding that adds nothing, covering a name the
 //! module never references under `drop-unreferenced` and a repeat of a
-//! binding an earlier import already made under `drop-duplicates`. A
-//! package `__init__.py` or its stub reports an unreferenced binding
-//! rather than dropping it, whereas a repeat drops there too.
-//! `from __future__ import annotations` drops behind the annotation
-//! analysis in `future`, and every other `__future__` feature stays,
-//! as does a `from … import *`, a name `__all__` lists, an import
-//! binding `__all__` itself, a name a second import rebinds, an
-//! `x as x` re-export alias, and an import an own-line comment leads.
+//! binding an earlier import already made under `drop-duplicates`, one
+//! walk deciding both facets so a repeat and the binding its drop
+//! leaves unreferenced go together. A package `__init__.py` or its stub
+//! reports an unreferenced binding rather than dropping it, whereas a
+//! repeat drops there too. `from __future__ import annotations` drops
+//! behind the annotation analysis in `future`, and every other
+//! `__future__` feature stays, as does a `from … import *`, a name
+//! `__all__` lists, an import binding `__all__` itself, a name a second
+//! import rebinds from another source, an `x as x` re-export alias, and
+//! an import an own-line comment leads.
 
 use std::{ffi::OsStr, path::Path};
 
@@ -186,6 +188,17 @@ mod tests {
 
         assert_eq!(applied_text(&source, groups.concat()), "\nvalue = 1\n");
         assert!(rule().lint(&source).is_empty());
+    }
+
+    #[test]
+    fn an_unread_repeat_reports_its_survivor_inside_a_package_init() {
+        let source = parse_init("import os\nimport os\n");
+        let groups = rule().apply(&source);
+        let diagnostics = rule().lint(&source);
+
+        assert_eq!(applied_text(&source, groups.concat()), "import os\n");
+        assert_eq!(diagnostics.len(), 1);
+        assert!(diagnostics[0].message.starts_with("`os` is imported"));
     }
 
     #[test]

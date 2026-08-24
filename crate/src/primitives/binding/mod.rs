@@ -258,14 +258,24 @@ impl BindingAnalysis {
     /// more than one write or an augmented-assignment write, and
     /// `false` when `name` is write-once or unbound at module scope.
     pub(crate) fn module_reassigned(&self, name: &str) -> bool {
-        self.module_reassigned_beyond(name, 0)
+        self.module_reassigned_without(name, |_| false)
     }
 
-    /// [`Self::module_reassigned`] with `removed` of the binding's writes
-    /// discounted, the writes a caller drops in the same pass.
-    pub(crate) fn module_reassigned_beyond(&self, name: &str, removed: usize) -> bool {
+    /// Returns `true` when the module-scope binding for `name` carries
+    /// more than one write `dropped` does not answer `true` for, or an
+    /// augmented-assignment write.
+    pub(crate) fn module_reassigned_without(
+        &self,
+        name: &str,
+        dropped: impl Fn(TextSize) -> bool,
+    ) -> bool {
         self.module_binding(name).is_some_and(|binding| {
-            binding.write_offsets.len() > removed + 1
+            binding
+                .write_offsets
+                .iter()
+                .filter(|&&offset| !dropped(offset))
+                .nth(1)
+                .is_some()
                 || binding.kinds.contains(&BindingKind::AugAssign)
         })
     }
@@ -562,6 +572,25 @@ mod tests {
     #[case("X += 1\n")]
     fn module_reassigned_is_true_when_written_twice_or_augmented(#[case] src: &str) {
         assert!(analyze(src).module_reassigned("X"));
+    }
+
+    #[rstest]
+    #[case("import os\nimport os\n")]
+    #[case("import os\nimport os\nimport os\n")]
+    fn module_reassigned_without_is_false_once_every_extra_write_drops(#[case] src: &str) {
+        let analysis = analyze(src);
+        let first = analysis.first_write_offset(module_binding_id(&analysis, "os"));
+
+        assert!(analysis.module_reassigned("os"));
+        assert!(!analysis.module_reassigned_without("os", |offset| offset != first));
+    }
+
+    #[test]
+    fn module_reassigned_without_is_true_where_another_write_remains() {
+        let analysis = analyze("import os\nimport os\nos = None\n");
+        let first = analysis.first_write_offset(module_binding_id(&analysis, "os"));
+
+        assert!(analysis.module_reassigned_without("os", |offset| offset == first));
     }
 
     #[test]

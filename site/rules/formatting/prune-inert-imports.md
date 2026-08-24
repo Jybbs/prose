@@ -31,7 +31,11 @@ Two reads the count misses hold an import too. A `del` of the bound name needs t
 
 <Fixture rule="prune_inert_imports" case="quoted_annotation_holds_its_import" />
 
-An import binding `__all__` itself holds on the same ground, as does a name a second import rebinds, keeping the fallback in a `try: from _speedups import loads` shim standing.
+An import binding `__all__` itself holds on the same ground, as does a name a second import rebinds from another source, keeping the fallback in a `try: from _speedups import loads` shim standing.
+
+A repeat of a name nothing reads takes the first binding with it, both facets resolving in the one walk rather than one per run.
+
+<Fixture rule="prune_inert_imports" case="repeat_of_an_unread_name_drops_both_lines" />
 
 An own-line comment directly above an import holds the whole statement, dropping the line stranding the comment on whatever follows, unless [[reflow-imports]] will fold the statement into a same-module sibling, where the drop lands on the merged line the comment then leads.
 

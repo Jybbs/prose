@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/prune_inert_imports/assignment_rebinding_the_name_holds_the_import/input.py
+---
+prune-inert-imports@10..20

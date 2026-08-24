@@ -489,7 +489,7 @@ fn marked_report(
     original: &str,
     formatted: &Source,
 ) -> Option<Box<UnstableRewrite>> {
-    crate::unstable::detect_marked(&resolved.pipeline, &resolved.config, original, formatted)
+    UnstableRewrite::detect_marked(&resolved.pipeline, &resolved.config, original, formatted)
         .map(Box::new)
 }
 

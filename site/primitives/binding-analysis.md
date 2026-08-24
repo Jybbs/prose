@@ -24,7 +24,7 @@ A downstream consumer can:
 
 A downstream consumer cannot:
 
-- Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `binds_name`, `first_write_offset`, `is_deleted`, `is_defined_before`, `module_attribute_count`, `module_binding_kinds`, `module_function_reads`, `module_reads_as_data`, `module_reassigned`, `module_usage_count`, `module_used_bare`, `scope_binds`, `unpack_target`, `usage_count`, or `walrus_in_condition` on the returned reference. Every reader is `pub(crate)`.
+- Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `binds_name`, `first_write_offset`, `is_deleted`, `is_defined_before`, `module_attribute_count`, `module_binding_kinds`, `module_function_reads`, `module_reads_as_data`, `module_reassigned`, `module_reassigned_without`, `module_usage_count`, `module_used_bare`, `scope_binds`, `unpack_target`, `usage_count`, or `walrus_in_condition` on the returned reference. Every reader is `pub(crate)`.
 - Implement a custom rule that consumes the binding table. The `Rule` trait is `pub(crate)`.
 
 The methods stabilize toward `1.0`, where every reader becomes `pub` and the `Rule` trait opens so downstream consumers can implement project-specific binding-aware rules.
@@ -47,6 +47,7 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `module_function_reads(name: &str) -> Option<&[TextSize]>` returns the read offsets of a module-scope name bound exactly once as a function definition, which [[reflow-calls]] uses through `module_call_params` to resolve the signature a module-function call binds, so it names the call's positional arguments when exploding it.
 - `module_reads_as_data(name: &str) -> bool` reports whether a module-scope name is read only where data stands and never where a type stands, one read in an annotation outranking every data read.
 - `module_reassigned(name: &str) -> bool` reports whether a module-scope name carries more than one write or an augmented assignment, which [[reassigned-constants]], [[miscased-constants]], and [[alphabetize-siblings]] read to skip names that are not write-once.
+- `module_reassigned_without(name: &str, dropped: impl Fn(TextSize) -> bool) -> bool` answers what `module_reassigned` answers once every write `dropped` names is removed, which [[prune-inert-imports]] reads so a repeat it is already dropping stops counting as the rebind that would otherwise hold the first binding.
 - `module_usage_count(name: &str) -> usize` counts every read recorded against a module-scope name, which [[modernize-annotations]] weighs against the reads its own rewrite consumed and [[prune-inert-imports]] reads directly to decide whether an import binding still has a reader.
 - `module_used_bare(name: &str) -> bool` reports whether a module-scope name is ever read without an attribute access *(the namespace object itself is used)*, which [[bare-imports]] reads before suggesting a `from` import.
 - `scope_binds(stmt: &Stmt, name: &str) -> bool` reports whether the local scope of a `def` binds a name, which [[shed-super-args]] reads to hold a call whose first argument names a local rather than the enclosing class.

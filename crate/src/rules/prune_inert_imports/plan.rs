@@ -1,10 +1,10 @@
 //! The per-alias decision the rule reaches over a module's imports, the
 //! drops it applies and the reports a package `__init__` holds back.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use ruff_diagnostics::Edit;
-use ruff_text_size::TextRange;
+use ruff_text_size::{TextRange, TextSize};
 
 use super::{
     PruneInertImports,
@@ -15,8 +15,11 @@ use super::{
     reexports::Reexports,
 };
 use crate::{
-    diagnostics::Diagnostic, primitives::imports::Dropping, rule::RuleId,
-    rules::reflow_imports::Folds, source::Source,
+    diagnostics::Diagnostic,
+    primitives::{binding::BindingAnalysis, imports::Dropping},
+    rule::RuleId,
+    rules::reflow_imports::Folds,
+    source::Source,
 };
 
 /// The alias drops the rule applies, one entry per pruned statement,
@@ -56,26 +59,12 @@ impl<'a> Plan<'a> {
                 .iter()
                 .any(|(_, node)| node.future_annotations().is_some())
             && annotations_are_inert(source, rule.target_version);
+        let repeats = if rule.duplicates {
+            repeat_writes(&nodes, &reexports)
+        } else {
+            HashSet::new()
+        };
 
-        let mut bound_sources = HashSet::new();
-        let mut repeats: HashMap<&str, usize> = HashMap::new();
-        let repeated: Vec<Vec<bool>> = nodes
-            .iter()
-            .map(|(_, node)| {
-                node.names()
-                    .iter()
-                    .map(|alias| {
-                        let bound = node.bound(alias);
-                        let repeat =
-                            rule.duplicates && !bound_sources.insert((bound, node.source(alias)));
-                        if repeat && !reexports.holds(alias, bound) {
-                            *repeats.entry(bound).or_default() += 1;
-                        }
-                        repeat
-                    })
-                    .collect()
-            })
-            .collect();
         let mut dropped: Vec<Vec<usize>> = vec![Vec::new(); nodes.len()];
         let mut reports = Vec::new();
         for (statement, (_, node)) in nodes.iter().enumerate() {
@@ -84,19 +73,15 @@ impl<'a> Plan<'a> {
                 let bound = node.bound(alias);
                 let candidacy = if reexports.holds(alias, bound) {
                     None
-                } else if repeated[statement][index] {
+                } else if repeats.contains(&alias.range.start()) {
                     Some(Candidacy::Inert)
                 } else if !rule.unreferenced || is_star(alias) {
                     None
                 } else if node.is_future() {
                     (directive_is_inert && directive == Some(index)).then_some(Candidacy::Inert)
                 } else {
-                    let repeats = repeats.get(bound).copied().unwrap_or_default();
-                    (analysis.module_usage_count(bound) == 0
-                        && !analysis.module_reassigned_beyond(bound, repeats)
-                        && !analysis.is_deleted(bound)
-                        && !annotated.contains(bound))
-                    .then_some(Candidacy::Unreferenced)
+                    is_unreferenced(analysis, bound, &repeats, &annotated)
+                        .then_some(Candidacy::Unreferenced)
                 };
                 match candidacy {
                     Some(Candidacy::Unreferenced) if package_init => reports.push(Report {
@@ -126,6 +111,7 @@ impl<'a> Plan<'a> {
         }
     }
 
+    /// One lint per unreferenced binding a package `__init__` holds.
     pub(super) fn diagnostics(&self, rule: RuleId) -> Vec<Diagnostic> {
         self.reports
             .iter()
@@ -167,4 +153,39 @@ enum Candidacy {
 struct Report<'a> {
     name: &'a str,
     range: TextRange,
+}
+
+/// True when nothing in the module reaches `bound`, counting neither a
+/// write in `repeats` as a rebind nor a name in `annotated` as unread.
+fn is_unreferenced(
+    analysis: &BindingAnalysis,
+    bound: &str,
+    repeats: &HashSet<TextSize>,
+    annotated: &HashSet<String>,
+) -> bool {
+    analysis.module_usage_count(bound) == 0
+        && !analysis.module_reassigned_without(bound, |offset| repeats.contains(&offset))
+        && !analysis.is_deleted(bound)
+        && !annotated.contains(bound)
+}
+
+/// The write offset of every alias repeating a binding an earlier
+/// import already made. An alias the re-export surface holds keeps its
+/// binding, so its offset stays out.
+fn repeat_writes(
+    nodes: &[(usize, ImportNode<'_>)],
+    reexports: &Reexports<'_>,
+) -> HashSet<TextSize> {
+    let mut bound_sources = HashSet::new();
+    let mut repeats = HashSet::new();
+    for (_, node) in nodes {
+        for alias in node.names() {
+            let bound = node.bound(alias);
+            let unseen = bound_sources.insert((bound, node.source(alias)));
+            if !unseen && !reexports.holds(alias, bound) {
+                repeats.insert(alias.range.start());
+            }
+        }
+    }
+    repeats
 }

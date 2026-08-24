@@ -6,6 +6,7 @@ use std::cmp::Reverse;
 use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
 
 use super::*;
+use crate::primitives::binding::top_level_module;
 
 /// What distinguishes one `from`-import's module from another, the
 /// leading-dot count alongside the module name.
@@ -84,10 +85,9 @@ pub(crate) fn module_key(node: &StmtImportFrom) -> ModuleKey<'_> {
     (node.level, node.module.as_deref())
 }
 
-/// True when the root package of `name` (the substring up to the
-/// first `.`) appears in `first_party`.
+/// True when the root package of `name` appears in `first_party`.
 fn is_first_party(name: &str, first_party: &[String]) -> bool {
-    let root = name.split_once('.').map_or(name, |(root, _)| root);
+    let root = top_level_module(name);
     first_party.iter().any(|p| p == root)
 }
 

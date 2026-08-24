@@ -166,7 +166,9 @@ impl<'a> Layouter<'a> {
         }
         (self.explode
             && expandable
-            && (over_count || column + self.settled_width(range) + tail > self.code_line_length))
+            && (over_count
+                || column + self.condensed_width(expr, parent, range) + tail
+                    > self.code_line_length))
             .then(|| self.expand(expr, parent, indent))
     }
 
@@ -273,4 +275,29 @@ fn dict_key_of<'a>(parent: AnyNodeRef<'a>, expr: &Expr) -> Option<&'a Expr> {
 /// entry holding them.
 pub(super) fn entry_tail(last: Option<TextRange>, entry: TextRange, current: usize) -> usize {
     last.map_or(current, |last| usize::from(!last.contains_range(entry)))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::num::NonZeroUsize;
+
+    use super::*;
+    use crate::testing::parse;
+
+    #[test]
+    fn a_padded_entry_condensing_inside_the_cap_holds_its_row() {
+        let src = "class A:\n    def f(self):\n        self.loggerMap = { alogger : None }\n";
+        let source = parse(src);
+        let mut config = Config {
+            code_line_length: NonZeroUsize::new(40),
+            ..Config::default()
+        };
+        config.rules.strip_stranded_padding.enabled = false;
+        assert!(
+            ReflowCollections::from_config(&config)
+                .apply(&source)
+                .is_empty(),
+            "the entry measures at the width its rebuild carries, so no expand fires:\n{src}",
+        );
+    }
 }
