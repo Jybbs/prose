@@ -1,9 +1,7 @@
 ---
 source: crate/tests/integration.rs
-assertion_line: 44
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/single_entry_wraps_at_the_stripped_head/input.py
 ---
-signature-annotations@10..17
 strip-stranded-padding@95..96
 wrap-docstrings@121..121

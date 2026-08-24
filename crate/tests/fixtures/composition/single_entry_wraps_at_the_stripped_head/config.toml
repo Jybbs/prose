@@ -1,1 +1,4 @@
 docstring-line-length = 40
+
+[harness]
+rules = ["wrap-docstrings", "strip-stranded-padding"]
