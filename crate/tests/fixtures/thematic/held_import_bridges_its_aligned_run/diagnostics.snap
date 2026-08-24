@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/thematic/held_import_bridges_its_aligned_run/input.py
+---
+align-imports@124..125
+alphabetize-siblings@23..133
+band-constants@10..133
+space-statements@9..10

@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/nested_call_charged_its_row_tail/input.py
+---
+class Widget:
+    def configure(self, cmd, cnf):
+        self.tk.call(
+            _flatten(
+                (self._w, cmd)
+            ) + self._options(cnf)
+        )

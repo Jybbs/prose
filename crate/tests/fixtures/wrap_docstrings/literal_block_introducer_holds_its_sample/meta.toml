@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Literal Block Introducer Holds Its Sample"
+
+description = '''
+`Example::` closes on the second colon reStructuredText opens a literal block with, so it heads no section and the indented sample beneath it **passes through verbatim** rather than wrapping as section prose. A heading closing on one colon still opens its section, and the sample here would be rewrapped into broken Python if this one did.
+'''

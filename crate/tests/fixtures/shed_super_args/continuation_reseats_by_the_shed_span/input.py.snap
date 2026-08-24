@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_super_args/continuation_reseats_by_the_shed_span/input.py
+---
+class Report:
+    def render(self, body, footer):
+        return body
+
+
+class Invoice(Report):
+    def render(self, body, footer):
+        return super().render(body,
+                              footer)

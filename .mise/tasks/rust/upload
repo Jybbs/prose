@@ -1,5 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description="Upload the Rust coverage report to Codecov"
-#MISE depends=["rust:coverage"]
+#MISE depends     = ["rust:coverage"]
+#MISE description = "Upload the Rust coverage report to Codecov"
 
-codecovcli upload-process --flag rust --file target/lcov.info --sha "$SHA"
+codecovcli upload-process --file target/lcov.info --flag rust --sha "$SHA"

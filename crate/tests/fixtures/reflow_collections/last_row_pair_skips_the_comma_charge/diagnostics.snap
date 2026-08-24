@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_collections/last_row_pair_skips_the_comma_charge/input.py
+---
+reflow-collections@13..57

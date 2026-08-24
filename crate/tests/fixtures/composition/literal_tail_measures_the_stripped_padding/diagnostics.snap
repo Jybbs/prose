@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 44
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/literal_tail_measures_the_stripped_padding/input.py
+---
+strip-stranded-padding@79..80
+strip-stranded-padding@91..92

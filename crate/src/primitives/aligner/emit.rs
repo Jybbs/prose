@@ -3,100 +3,78 @@
 //! `max-shift` and governing line-length caps allow and rewrites each
 //! member's gap to its group's column.
 
+use std::ops::RangeInclusive;
+
 use ruff_diagnostics::Edit;
 use ruff_source_file::LineRanges;
-use ruff_text_size::TextRange;
+use ruff_text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::{
-    Member, Settings, Widenings,
-    holds::is_alignment_candidate,
-    members::{baseline, line_gap_before},
+    Cap, Member, Settings, Widenings,
+    holds::{is_alignment_candidate, shares_column},
+    members::line_gap_before,
 };
 use crate::{
     config::MaxShift,
     primitives::{
-        comments::{TRAILING_GAP, trailing_comment_start},
+        comments::{Settling, trailing_comment},
         edit::repeat_edit,
+        padding::{self, Stranding},
     },
     source::Source,
 };
 
-/// Aligns `members` by splitting the source-ordered run into the
-/// contiguous groups `reading_order_groups` yields and emitting each at
-/// its widest member. A singleton group collapses its gap to the
-/// settings' buffer, or to zero when `settings.strip_singleton` is set.
-pub(super) fn emit_group(
+/// The per-member columns of a run, the group math where `candidate`
+/// holds and the settings' buffer past each member's own width
+/// otherwise.
+fn columns(
     source: &Source,
     members: &[Member],
     settings: Settings,
     widenings: &Widenings,
-    edits: &mut Vec<Edit>,
-) {
-    edits.extend(
-        group_paddings(source, members, settings, widenings)
-            .filter_map(|(m, pad)| space_padding_edit(source, m.gap, pad)),
-    );
-}
-
-/// Per-member display column where each member's aligned token lands
-/// under the same column math `emit_group` applies. A candidate group
-/// reports its shared column, split on the `max-shift` cap, while any
-/// other group reports the settings' buffer past each member's own
-/// width.
-/// The token's following value sits two columns further on, the
-/// operator's final character plus the one-space value gap.
-pub(crate) fn operator_columns(
-    source: &Source,
-    members: &[Member],
-    settings: Settings,
+    joined: &[Option<usize>],
+    candidate: bool,
 ) -> Vec<usize> {
-    if !is_alignment_candidate(source, members) {
+    if !candidate {
         return members
             .iter()
-            .map(|m| baseline(source, *m) + m.settled_width + settings.buffer)
+            .map(|m| m.baseline + m.settled_width + settings.buffer)
             .collect();
     }
-    group_paddings(source, members, settings, &Widenings::default())
-        .map(|(m, pad)| baseline(source, m) + m.settled_width + pad)
+    group_paddings(source, members, settings, widenings, joined)
+        .map(|(m, pad)| m.baseline + m.settled_width + pad)
         .collect()
 }
 
-/// Returns the edit needed to make `range` carry exactly `n` ASCII
-/// spaces, or `None` if it already does.
-pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) -> Option<Edit> {
-    let text = source.slice(range);
-    if text.len() == n && text.bytes().all(|b| b == b' ') {
-        return None;
-    }
-    Some(repeat_edit(range, " ", n))
+/// The columns a trailing comment on `member`'s line carries away from
+/// the width `settling`'s comment rules leave it at, zero where the
+/// line carries no trailing comment, per [`Settling::slack`] with the
+/// gap `member` rewrites itself left out.
+fn comment_slack(source: &Source, member: Member, settling: Settling) -> isize {
+    trailing_comment(source, member.line_start).map_or(0, |comment| {
+        let gap = line_gap_before(source, comment.start());
+        settling.slack(source, comment, gap, member.gap)
+    })
 }
 
-/// The columns the gap ahead of a trailing comment carries away from
-/// [`TRAILING_GAP`] on `member`'s line, negative where the source
-/// writes a narrower gap than the floor, and zero where that line
-/// carries no trailing comment and where the gap is the one `member`
-/// rewrites itself.
-fn comment_slack(source: &Source, member: Member) -> isize {
-    let Some(comment) = trailing_comment_start(source, member.line_start) else {
-        return 0;
+/// The width of `member`'s line as the aligner emits it: less the
+/// pre-operator gap the padding replaces, any rewritten post-operator
+/// gap collapsed to one space, a trailing comment at the gap and opener
+/// widths `cap`'s comment rules settle it to, and the padding its
+/// padding rule drops elsewhere on the line gone. A `joined` width
+/// stands in for the line as written where a later rule joins the
+/// member's value onto it, the code past the value then reading as
+/// that join leaves it and the padding inside the value already gone.
+fn emitted_base_width(source: &Source, member: Member, cap: Cap, joined: Option<usize>) -> usize {
+    let line = source.text().line_range(member.line_start);
+    let (written, padded) = match joined {
+        Some(width) => (width, TextRange::new(line.start(), member.gap.end())),
+        None => (source.slice(line).width(), line),
     };
-    let gap = line_gap_before(source, comment);
-    if gap == member.gap {
-        return 0;
-    }
-    source.slice(gap).width().cast_signed() - TRAILING_GAP.len().cast_signed()
-}
-
-/// The width of `member`'s line as the aligner emits it, less the
-/// pre-operator gap the padding replaces, with any rewritten
-/// post-operator gap collapsed to the one space an emitted row carries,
-/// and with a trailing comment measured at its [`TRAILING_GAP`] floor
-/// rather than wherever the source leaves it.
-fn emitted_base_width(source: &Source, member: Member) -> usize {
-    let line = source.text().line_str(member.line_start).width();
-    let base = (line - source.slice(member.gap).width())
-        .saturating_add_signed(-comment_slack(source, member));
+    let slack = joined.map_or_else(|| comment_slack(source, member, cap.settling), |_| 0)
+        + padding_slack(source, member, padded, cap.stranding);
+    let base = (written - source.slice(member.gap).width()).saturating_add_signed(-slack);
     member
         .rewritten_value_gap(source)
         .map_or(base, |gap| base + 1 - source.slice(gap).width())
@@ -110,13 +88,18 @@ fn emitted_bases(
     members: &[Member],
     settings: Settings,
     widenings: &Widenings,
+    joined: &[Option<usize>],
 ) -> Vec<usize> {
-    if settings.line_length.is_none() {
+    let Some(cap) = settings.cap else {
         return Vec::new();
-    }
+    };
     members
         .iter()
-        .map(|m| emitted_base_width(source, *m).saturating_add_signed(widenings.delta(*m)))
+        .enumerate()
+        .map(|(i, m)| {
+            emitted_base_width(source, *m, cap, joined.get(i).copied().flatten())
+                .saturating_add_signed(widenings.delta(*m))
+        })
         .collect()
 }
 
@@ -129,7 +112,7 @@ fn emitted_bases(
 /// widest member alone, so aligning never carries an over-cap line
 /// further out and never pushes a fitting line past the cap.
 fn fits_line_cap(group: &[Member], bases: &[usize], settings: Settings, max_w: usize) -> bool {
-    let Some(cap) = settings.line_length else {
+    let Some(cap) = settings.cap.map(|cap| cap.line_length) else {
         return true;
     };
     let max_op = max_op_width(group);
@@ -161,8 +144,9 @@ fn group_paddings<'m>(
     members: &'m [Member],
     settings: Settings,
     widenings: &Widenings,
+    joined: &[Option<usize>],
 ) -> impl Iterator<Item = (Member, usize)> + 'm {
-    reading_order_groups(source, members, settings, widenings)
+    reading_order_groups(source, members, settings, widenings, joined)
         .into_iter()
         .flat_map(move |(group, max_w)| {
             let suffix = settings.suffix_len(group.len());
@@ -173,10 +157,32 @@ fn group_paddings<'m>(
         })
 }
 
+/// [`is_alignment_candidate`] with a pair excused where `joined` names
+/// the later row as one a rule writes, which then stands on a line of
+/// its own beneath the row before it.
+fn is_forecast_candidate(members: &[Member], joined: &[Option<usize>]) -> bool {
+    members.len() >= 2
+        && members.windows(2).enumerate().all(|(i, pair)| {
+            shares_column(pair, |m| m.baseline)
+                || (pair[0].baseline == pair[1].baseline
+                    && joined.get(i + 1).is_some_and(Option::is_some))
+        })
+}
+
 /// Returns the widest `op_width` in `members`, or `0` when the slice
 /// is empty.
 fn max_op_width(members: &[Member]) -> usize {
     members.iter().map(|m| m.op_width).max().unwrap_or(0)
+}
+
+/// The columns the padding rule `stranding` names takes off `member`'s
+/// `line`, leaving aside the gaps the aligner rewrites itself.
+fn padding_slack(source: &Source, member: Member, line: TextRange, stranding: Stranding) -> isize {
+    let edits = source.stranded_padding(stranding);
+    let own = member
+        .rewritten_value_gap(source)
+        .map_or(0, |gap| padding::slack(source, &edits, gap));
+    padding::slack(source, &edits, line) - padding::slack(source, &edits, member.gap) - own
 }
 
 /// The gap that lands `member`'s aligned token in its group's shared
@@ -189,18 +195,19 @@ fn padding_width(member: Member, max_w: usize, max_op_w: usize, suffix_len: usiz
 
 /// Splits the source-ordered `members` into the contiguous groups the
 /// aligner emits independently, each paired with its widest settled
-/// width. `Unlimited` gathers the whole run into one group, `NoShift`
-/// leaves every row its own singleton, and `Cap(n)` grows a group while
-/// its settled-width spread stays within `n`. A governing `line_length` cap
-/// grows a group only while every member's aligned line stays within it,
-/// cutting a fresh group at the first row that would push the spread or a
-/// line past its cap. Each group is a sub-slice, so a column never jumps
-/// a row it skipped.
+/// width. `Unlimited` gathers the whole run, `NoShift` leaves every
+/// row its own singleton, and `Cap(n)` grows a group while its spread
+/// stays within `n` and, under a governing line cap, while every
+/// aligned line fits. Under `release_heads`, a head only the line cap
+/// pins releases as a singleton so the cut row joins the column
+/// beneath it. Each group is a sub-slice, so a column never jumps a
+/// row it skipped.
 fn reading_order_groups<'m>(
     source: &Source,
     members: &'m [Member],
     settings: Settings,
     widenings: &Widenings,
+    joined: &[Option<usize>],
 ) -> Vec<(&'m [Member], usize)> {
     let shift_cap = match settings.max_shift {
         MaxShift::NoShift => {
@@ -215,24 +222,134 @@ fn reading_order_groups<'m>(
     if members.is_empty() {
         return Vec::new();
     }
-    let bases = emitted_bases(source, members, settings, widenings);
-    let mut groups = Vec::new();
-    let mut start = 0;
-    for i in 1..members.len() {
-        if !group_holds(
-            &members[start..=i],
-            bases.get(start..=i).unwrap_or_default(),
+    let bases = emitted_bases(source, members, settings, widenings, joined);
+    let holds = |range: RangeInclusive<usize>| {
+        group_holds(
+            &members[range.clone()],
+            bases.get(range).unwrap_or_default(),
             settings,
             shift_cap,
-        ) {
-            let prev = &members[start..i];
-            groups.push((prev, group_max_width(prev)));
-            start = i;
+        )
+    };
+    let pinned = |range: RangeInclusive<usize>| {
+        let head = *range.start();
+        !fits_line_cap(
+            &members[head..=head],
+            bases.get(head..=head).unwrap_or_default(),
+            settings,
+            group_max_width(&members[range]),
+        )
+    };
+    let mut groups = Vec::new();
+    let mut start = 0;
+    let mut i = 1;
+    while i < members.len() {
+        if holds(start..=i) {
+            i += 1;
+            continue;
         }
+        let released = settings.release_heads
+            && i - start >= 2
+            && pinned(start..=i)
+            && (i + 1 == members.len() || !holds(i..=i + 1))
+            && holds(start + 1..=i);
+        let cut = if released { start + 1 } else { i };
+        let prev = &members[start..cut];
+        groups.push((prev, group_max_width(prev)));
+        start = cut;
+        i = i.max(cut + 1);
     }
     let last = &members[start..];
     groups.push((last, group_max_width(last)));
     groups
+}
+
+/// Aligns `members` by splitting the source-ordered run into the
+/// contiguous groups `reading_order_groups` yields and emitting each at
+/// its widest member. A singleton group collapses its gap to the
+/// settings' buffer, or to zero when `settings.strip_singleton` is set.
+pub(super) fn emit_group(
+    source: &Source,
+    members: &[Member],
+    settings: Settings,
+    widenings: &Widenings,
+    edits: &mut Vec<Edit>,
+) {
+    edits.extend(
+        group_paddings(source, members, settings, widenings, &[])
+            .filter_map(|(m, pad)| space_padding_edit(source, m.gap, pad)),
+    );
+}
+
+/// [`operator_columns`] for the rows a rule writes, a row `joined`
+/// names standing on a line of its own where the source seats it on
+/// its neighbor's, whereas a value merely widening an existing row
+/// stands no run up.
+pub(crate) fn forecast_columns(
+    source: &Source,
+    members: &[Member],
+    settings: Settings,
+    widenings: &Widenings,
+    joined: &[Option<usize>],
+) -> Vec<usize> {
+    columns(
+        source,
+        members,
+        settings,
+        widenings,
+        joined,
+        is_forecast_candidate(members, joined),
+    )
+}
+
+/// Per-member display column where each member's aligned token lands
+/// under `emit_group`'s column math, each line read with `widenings`
+/// and at the width `joined` names where a later rule writes the row.
+/// A candidate group reports its shared column, any other group the
+/// settings' buffer past each member's width, and the value follows
+/// [`VALUE_OFFSET`](super::VALUE_OFFSET) columns on.
+pub(crate) fn operator_columns(
+    source: &Source,
+    members: &[Member],
+    settings: Settings,
+    widenings: &Widenings,
+    joined: &[Option<usize>],
+) -> Vec<usize> {
+    columns(
+        source,
+        members,
+        settings,
+        widenings,
+        joined,
+        is_alignment_candidate(members),
+    )
+}
+
+/// The columns `member`'s line keeps past `code_end` once the comment
+/// rules `settings` carries settle the trailing comment there, the
+/// written tail where no cap governs.
+pub(crate) fn settled_tail(
+    source: &Source,
+    member: Member,
+    settings: Settings,
+    code_end: TextSize,
+) -> usize {
+    let tail = source
+        .slice(TextRange::new(code_end, source.text().line_end(code_end)))
+        .width();
+    settings.cap.map_or(tail, |cap| {
+        tail.saturating_add_signed(-comment_slack(source, member, cap.settling))
+    })
+}
+
+/// Returns the edit needed to make `range` carry exactly `n` ASCII
+/// spaces, or `None` if it already does.
+pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) -> Option<Edit> {
+    let text = source.slice(range);
+    if text.len() == n && text.bytes().all(|b| b == b' ') {
+        return None;
+    }
+    Some(repeat_edit(range, " ", n))
 }
 
 #[cfg(test)]
@@ -243,7 +360,24 @@ mod tests {
     use ruff_text_size::{Ranged, TextSize};
 
     use super::*;
-    use crate::testing::{align_member, parse, range};
+    use crate::{
+        rule::RuleId,
+        testing::{align_member, parse, range},
+    };
+
+    /// The padding rule every capped setting here reads, over sources
+    /// carrying no padding.
+    fn strip() -> Stranding {
+        Stranding::new(RuleId::from("strip-stranded-padding"), true)
+    }
+
+    /// The comment rules every capped setting here reads, both on.
+    fn settling() -> Settling {
+        Settling {
+            gap: Some(RuleId::from("align-comments")),
+            opener: Some(RuleId::from("normalize-comment-spacing")),
+        }
+    }
 
     /// Builds a `MaxShift::Cap` from a non-zero literal.
     fn cap(n: usize) -> MaxShift {
@@ -305,6 +439,28 @@ mod tests {
             text.push_str(&" ".repeat(gap_chars));
             let gap_end = TextSize::of(&text);
             text.push_str("= 0\n");
+            members.push(align_member(
+                TextRange::new(gap_start, gap_end),
+                line_start.to_u32(),
+                width,
+            ));
+        }
+        (parse(&text), members)
+    }
+
+    /// Builds a multi-line Python source where each row is
+    /// `x...x = {tail}\n` with a one-space gap before `=`, returning the
+    /// source plus one `Member` per row pointing at that gap.
+    fn tailed_rows(specs: &[(usize, &str)]) -> (Source, Vec<Member>) {
+        let mut text = String::new();
+        let mut members = Vec::new();
+        for &(width, tail) in specs {
+            let line_start = TextSize::of(&text);
+            text.push_str(&"x".repeat(width));
+            let gap_start = TextSize::of(&text);
+            text.push(' ');
+            let gap_end = TextSize::of(&text);
+            text.push_str(&format!("= {tail}\n"));
             members.push(align_member(
                 TextRange::new(gap_start, gap_end),
                 line_start.to_u32(),
@@ -423,6 +579,29 @@ mod tests {
     }
 
     #[test]
+    fn forecast_columns_seats_a_written_row_beneath_the_row_before() {
+        // Two members sharing one source line, the later a row a rule
+        // writes, so the run stands as a column at the widest width.
+        let source = parse("a = 1; bcd = 2\n");
+        let members = [
+            align_member(range(2, 3), 0, 2),
+            align_member(range(4, 5), 0, 4),
+        ];
+        let joined = [None, Some(12)];
+
+        assert_eq!(
+            forecast_columns(
+                &source,
+                &members,
+                Settings::aligned(cap(8)),
+                &Widenings::default(),
+                &joined,
+            ),
+            vec![5, 5],
+        );
+    }
+
+    #[test]
     fn line_cap_counts_the_post_operator_space() {
         let (source, members) = paired_rows("");
         let mut edits = Vec::new();
@@ -430,7 +609,7 @@ mod tests {
         emit_group(
             &source,
             &members,
-            Settings::aligned(cap(16)).with_line_length(10),
+            Settings::aligned(cap(16)).within(10, strip(), settling()),
             &Widenings::default(),
             &mut edits,
         );
@@ -452,7 +631,7 @@ mod tests {
         emit_group(
             &source,
             &members,
-            Settings::aligned(cap(16)).with_line_length(10),
+            Settings::aligned(cap(16)).within(10, strip(), settling()),
             &Widenings::default(),
             &mut edits,
         );
@@ -474,7 +653,7 @@ mod tests {
         emit_group(
             &source,
             &members,
-            Settings::aligned(cap(16)).with_line_length(8),
+            Settings::aligned(cap(16)).within(8, strip(), settling()),
             &Widenings::default(),
             &mut edits,
         );
@@ -492,7 +671,7 @@ mod tests {
         emit_group(
             &source,
             &members,
-            Settings::aligned(cap(16)).with_line_length(8),
+            Settings::aligned(cap(16)).within(8, strip(), settling()),
             &Widenings::default(),
             &mut edits,
         );
@@ -511,7 +690,7 @@ mod tests {
         emit_group(
             &source,
             &members,
-            Settings::aligned(cap(16)).with_line_length(11),
+            Settings::aligned(cap(16)).within(11, strip(), settling()),
             &Widenings::default(),
             &mut edits,
         );
@@ -541,7 +720,7 @@ mod tests {
         emit_group(
             &source,
             &members,
-            Settings::aligned(cap(8)).with_line_length(28),
+            Settings::aligned(cap(8)).within(28, strip(), settling()),
             &Widenings::default(),
             &mut edits,
         );
@@ -603,7 +782,13 @@ mod tests {
         // Three distinct-line rows at one baseline align their operator to
         // the widest member, so every column lands one past width 3.
         assert_eq!(
-            operator_columns(&source, &members, Settings::aligned(cap(8))),
+            operator_columns(
+                &source,
+                &members,
+                Settings::aligned(cap(8)),
+                &Widenings::default(),
+                &[],
+            ),
             vec![4, 4, 4],
         );
     }
@@ -615,8 +800,37 @@ mod tests {
         // A singleton is no candidate, so its operator takes a one-space
         // buffer past the width-3 name rather than a shared column.
         assert_eq!(
-            operator_columns(&source, &members, Settings::aligned(cap(8))),
+            operator_columns(
+                &source,
+                &members,
+                Settings::aligned(cap(8)),
+                &Widenings::default(),
+                &[],
+            ),
             vec![4],
+        );
+    }
+
+    #[test]
+    fn operator_columns_keeps_same_line_members_at_their_own_columns() {
+        // The same pair as the forecast test, read as the source wrote
+        // it, so a value joined onto an existing row stands no run up.
+        let source = parse("a = 1; bcd = 2\n");
+        let members = [
+            align_member(range(2, 3), 0, 2),
+            align_member(range(4, 5), 0, 4),
+        ];
+        let joined = [None, Some(12)];
+
+        assert_eq!(
+            operator_columns(
+                &source,
+                &members,
+                Settings::aligned(cap(8)),
+                &Widenings::default(),
+                &joined,
+            ),
+            vec![3, 5],
         );
     }
 
@@ -627,9 +841,31 @@ mod tests {
         // The width-14 spread breaks the cap, so each row forms its own
         // column: the narrow operator at 2, the wide one at 16.
         assert_eq!(
-            operator_columns(&source, &members, Settings::aligned(cap(8))),
+            operator_columns(
+                &source,
+                &members,
+                Settings::aligned(cap(8)),
+                &Widenings::default(),
+                &[],
+            ),
             vec![2, 16],
         );
+    }
+
+    #[test]
+    fn settled_tail_reads_the_comment_at_the_width_the_comment_rules_leave() {
+        let source = parse("a = 1    # note\n");
+        let member = align_member(range(1, 2), 0, 1);
+        let uncapped = Settings::aligned(cap(8));
+        let capped = uncapped.within(20, strip(), settling());
+
+        // The written tail past the value holds four spaces and the
+        // comment, which the gap rule settles to the two-space floor.
+        assert_eq!(
+            settled_tail(&source, member, uncapped, TextSize::new(5)),
+            10
+        );
+        assert_eq!(settled_tail(&source, member, capped, TextSize::new(5)), 8);
     }
 
     #[test]
@@ -671,6 +907,30 @@ mod tests {
         // A 49-wide spread that would break under any cap folds into one
         // column aligned at the width-50 member.
         assert_eq!(sorted_summaries(&edits), vec![fill(&members[0], 50)]);
+    }
+
+    #[test]
+    fn walk_advances_past_a_singleton_holding_as_no_group() {
+        let (source, members) = rows(&[(5, 1), (12, 1)]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(16))
+                .with_singleton_strip()
+                .within(15, strip(), settling()),
+            &Widenings::default(),
+            &mut edits,
+        );
+
+        // The width-12 row lands on the cap stripped and one past it
+        // buffered, so it holds as no group even alone, and the walk
+        // steps past it rather than re-testing it as its own group.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![delete(&members[0]), delete(&members[1])],
+        );
     }
 
     #[test]
@@ -718,6 +978,73 @@ mod tests {
     }
 
     #[test]
+    fn walk_keeps_a_head_no_line_cap_pins() {
+        let (source, members) = rows(&[(1, 1), (8, 1), (9, 1), (10, 1)]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(8)).releasing_heads(),
+            &Widenings::default(),
+            &mut edits,
+        );
+
+        // Width 10 breaks 1/8/9 on the spread alone and would stand
+        // alone, but only a line cap pins a head, so the prefix stays as
+        // cut rather than trading its column for the cut row's.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![fill(&members[0], 9), fill(&members[1], 2)],
+        );
+    }
+
+    #[test]
+    fn walk_keeps_a_head_the_spread_alone_cuts() {
+        let (source, members) = rows(&[(1, 1), (8, 1), (9, 1), (10, 1)]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(8))
+                .within(40, strip(), settling())
+                .releasing_heads(),
+            &Widenings::default(),
+            &mut edits,
+        );
+
+        // Width 10 breaks 1/8/9 on the spread while every line sits far
+        // inside the cap, so the head could follow the cut row's column
+        // and stays the prefix's head, leaving width 10 a singleton.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![fill(&members[0], 9), fill(&members[1], 2)],
+        );
+    }
+
+    #[test]
+    fn walk_keeps_a_pinned_head_where_the_rule_releases_none() {
+        let (source, members) = tailed_rows(&[(3, "123456"), (1, "0"), (2, "0"), (6, "0")]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(16)).within(12, strip(), settling()),
+            &Widenings::default(),
+            &mut edits,
+        );
+
+        // The same pinned head stays the prefix's head for a rule that
+        // releases none, so width 6 breaks off as a singleton.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![fill(&members[1], 3), fill(&members[2], 2)],
+        );
+    }
+
+    #[test]
     fn walk_keeps_row_at_exact_cap_boundary() {
         let (source, members) = rows(&[(1, 1), (9, 1)]);
         let mut edits = Vec::new();
@@ -732,6 +1059,35 @@ mod tests {
 
         // Spread 8 sits exactly at the cap, so the pair aligns at 9.
         assert_eq!(sorted_summaries(&edits), vec![fill(&members[0], 9)]);
+    }
+
+    #[test]
+    fn walk_keeps_the_head_when_the_cut_row_pairs_beneath() {
+        let (source, members) =
+            tailed_rows(&[(3, "123456"), (1, "0"), (2, "0"), (6, "0"), (5, "0")]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(16))
+                .within(12, strip(), settling())
+                .releasing_heads(),
+            &Widenings::default(),
+            &mut edits,
+        );
+
+        // Width 6 breaks the pinned head's group but pairs with width 5,
+        // so the cut row stands alone nowhere and the head keeps its
+        // group.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![
+                fill(&members[1], 3),
+                fill(&members[2], 2),
+                fill(&members[4], 2)
+            ],
+        );
     }
 
     #[test]
@@ -750,6 +1106,30 @@ mod tests {
         // Each member is its own group. Without strip, both singleton
         // targets are the one-space gap each row already carries.
         assert!(edits.is_empty());
+    }
+
+    #[test]
+    fn walk_releases_a_cap_pinned_head_that_would_strand_the_cut_row() {
+        let (source, members) = tailed_rows(&[(3, "123456"), (1, "0"), (2, "0"), (6, "0")]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(16))
+                .within(12, strip(), settling())
+                .releasing_heads(),
+            &Widenings::default(),
+            &mut edits,
+        );
+
+        // The column the width-6 row sets would carry the width-3 head
+        // past the cap, cutting width 6 off as a singleton. Releasing
+        // the head instead lets 1/2/6 share the column at 6.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![fill(&members[1], 6), fill(&members[2], 5)],
+        );
     }
 
     #[test]

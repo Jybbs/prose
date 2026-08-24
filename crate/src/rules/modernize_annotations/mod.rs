@@ -16,6 +16,7 @@ use crate::{
         walk::{Descent, ParentedProbe, walk_parented_exprs},
     },
     rule::{Rule, RuleId},
+    rules::reflow_imports::Folds,
     source::Source,
 };
 
@@ -27,6 +28,7 @@ use typing_imports::TypingImports;
 
 pub(crate) struct ModernizeAnnotations {
     generics: bool,
+    folds: Folds,
     unions: bool,
 }
 
@@ -43,6 +45,7 @@ impl ModernizeAnnotations {
         };
         Self {
             generics: facets.rewrite_generics && targets(PythonVersion::PY39),
+            folds: Folds::from_config(config),
             unions: facets.rewrite_unions && targets(PythonVersion::PY310),
         }
     }
@@ -64,7 +67,7 @@ impl Rule for ModernizeAnnotations {
         };
         walk_parented_exprs(source.ast(), &mut walker);
         let mut groups = singleton_groups(walker.edits);
-        groups.extend(imports.prune(source, &walker.consumed));
+        groups.extend(imports.prune(source, &walker.consumed, &self.folds));
         groups
     }
 

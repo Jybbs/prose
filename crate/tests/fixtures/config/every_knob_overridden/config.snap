@@ -76,6 +76,9 @@ Config {
         group_imports: ToggleOnly {
             enabled: false,
         },
+        shed_super_args: ToggleOnly {
+            enabled: false,
+        },
         stack_method_chains: StackMethodChainsConfig {
             enabled: false,
             max_links: InlineBudget(
@@ -94,9 +97,6 @@ Config {
                     6,
                 ),
             ),
-        },
-        shed_super_args: ToggleOnly {
-            enabled: false,
         },
         reflow_signatures: ReflowSignaturesConfig {
             enabled: false,

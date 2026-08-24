@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "An Unread Commented Import Holds Without a Surviving Partner"
+
+description = '''
+The second import carries no comment and drops, so the first has no sibling left for [[reflow-imports]] to fold it into and [[prune-inert-imports]] holds it under its comment rather than leaving the comment over nothing.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Nested Chain Fitting Where It Lands Stays Joined"
+
+description = '''
+Breaking the outer chain hangs the `relative_to` link, and the chain inside its argument fits from that column, so it stays on the link's row.
+'''

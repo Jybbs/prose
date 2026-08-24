@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Nested Chain Measures Where the Link Explodes"
+
+description = '''
+A chain inside a link's argument list measures from the column it lands at, and where the link's own row overflows the budget `reflow-calls` explodes that argument list, so the nested chain is measured one indent step past the row rather than at the column the joined row reaches, and stays on one line where it fits there.
+'''

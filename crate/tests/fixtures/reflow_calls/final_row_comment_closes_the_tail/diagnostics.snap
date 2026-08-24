@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 44
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_calls/final_row_comment_closes_the_tail/input.py
+---
+reflow-calls@42..70

@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Call After a Relaid Closer Hangs From the Opener's Row"
+
+description = '''
+The tuple target breaks before its closing parenthesis, and [[reflow-collections]] seats that closer at the indent of the row its opener sits on. [[reflow-calls]] reads the same row when it explodes the call after the closer, so the exploded rows hang from the statement rather than from the continuation row the source wrote.
+'''

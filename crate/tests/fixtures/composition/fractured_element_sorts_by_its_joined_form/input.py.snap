@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/fractured_element_sorts_by_its_joined_form/input.py
+---
+s = {
+    (
+        1, 1,
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    ),
+    (1, 2)
+}

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/stacked_link_explodes_at_its_own_row/input.py
+---
+stack-method-chains@107..225

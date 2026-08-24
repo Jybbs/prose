@@ -4,7 +4,6 @@
 use std::collections::HashSet;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::Alias;
 use ruff_text_size::{TextRange, TextSize};
 
 use super::{
@@ -17,8 +16,9 @@ use super::{
 };
 use crate::{
     diagnostics::Diagnostic,
-    primitives::{binding::BindingAnalysis, imports::prune_import_aliases},
+    primitives::{binding::BindingAnalysis, imports::Dropping},
     rule::RuleId,
+    rules::reflow_imports::Folds,
     source::Source,
 };
 
@@ -26,17 +26,23 @@ use crate::{
 /// beside the unreferenced bindings a package `__init__.py` holds.
 #[derive(Default)]
 pub(super) struct Plan<'a> {
-    drops: Vec<Pruned<'a>>,
+    drops: Vec<Dropping<'a>>,
+    folds: Option<&'a Folds>,
     reports: Vec<Report<'a>>,
 }
 
 impl<'a> Plan<'a> {
     /// Walks the module-scope imports of `source`, dropping every
     /// candidate and holding back the unreferenced ones a package
-    /// `__init__` re-exports.
-    pub(super) fn of(rule: &PruneInertImports, source: &'a Source) -> Self {
+    /// `__init__` re-exports. A repeat the pass drops no longer rebinds
+    /// the name, so the binding it repeated reads as write-once.
+    pub(super) fn of(rule: &'a PruneInertImports, source: &'a Source) -> Self {
         let body = &source.ast().body;
-        let nodes: Vec<ImportNode<'a>> = body.iter().filter_map(ImportNode::of).collect();
+        let nodes: Vec<(usize, ImportNode<'a>)> = body
+            .iter()
+            .enumerate()
+            .filter_map(|(slot, stmt)| ImportNode::of(stmt).map(|node| (slot, node)))
+            .collect();
         if nodes.is_empty() {
             return Self::default();
         }
@@ -49,7 +55,9 @@ impl<'a> Plan<'a> {
             HashSet::new()
         };
         let directive_is_inert = rule.unreferenced
-            && nodes.iter().any(|node| node.future_annotations().is_some())
+            && nodes
+                .iter()
+                .any(|(_, node)| node.future_annotations().is_some())
             && annotations_are_inert(source, rule.target_version);
         let repeats = if rule.duplicates {
             repeat_writes(&nodes, &reexports)
@@ -59,7 +67,7 @@ impl<'a> Plan<'a> {
 
         let mut dropped: Vec<Vec<usize>> = vec![Vec::new(); nodes.len()];
         let mut reports = Vec::new();
-        for (statement, node) in nodes.iter().enumerate() {
+        for (statement, (_, node)) in nodes.iter().enumerate() {
             let directive = node.future_annotations();
             for (index, alias) in node.names().iter().enumerate() {
                 let bound = node.bound(alias);
@@ -91,12 +99,14 @@ impl<'a> Plan<'a> {
                 .iter()
                 .zip(dropped)
                 .filter(|(_, dropped)| !dropped.is_empty())
-                .map(|(node, dropped)| Pruned {
+                .map(|((slot, node), dropped)| Dropping {
                     dropped,
                     names: node.names(),
                     range: node.range(),
+                    slot: *slot,
                 })
                 .collect(),
+            folds: Some(&rule.folds),
             reports,
         }
     }
@@ -118,17 +128,14 @@ impl<'a> Plan<'a> {
             .collect()
     }
 
-    /// One fix group per pruned statement.
+    /// One fix group per pruned statement, a comment-led statement
+    /// losing every alias landing on the import its comment heads once
+    /// the later rules have laid the block out.
     pub(super) fn edits(&self, source: &Source) -> Vec<Vec<Edit>> {
-        self.drops
-            .iter()
-            .map(|pruned| {
-                prune_import_aliases(source, pruned.range, pruned.names, |index| {
-                    !pruned.dropped.contains(&index)
-                })
-            })
-            .filter(|edits| !edits.is_empty())
-            .collect()
+        let Some(folds) = self.folds else {
+            return Vec::new();
+        };
+        folds.prune(source, &self.drops)
     }
 }
 
@@ -140,13 +147,6 @@ enum Candidacy {
     Inert,
     /// A binding the module's own reference count never reaches.
     Unreferenced,
-}
-
-/// The alias positions one import statement loses.
-struct Pruned<'a> {
-    dropped: Vec<usize>,
-    names: &'a [Alias],
-    range: TextRange,
 }
 
 /// One unreferenced binding a package `__init__.py` holds.
@@ -172,10 +172,13 @@ fn is_unreferenced(
 /// The write offset of every alias repeating a binding an earlier
 /// import already made. An alias the re-export surface holds keeps its
 /// binding, so its offset stays out.
-fn repeat_writes(nodes: &[ImportNode<'_>], reexports: &Reexports<'_>) -> HashSet<TextSize> {
+fn repeat_writes(
+    nodes: &[(usize, ImportNode<'_>)],
+    reexports: &Reexports<'_>,
+) -> HashSet<TextSize> {
     let mut bound_sources = HashSet::new();
     let mut repeats = HashSet::new();
-    for node in nodes {
+    for (_, node) in nodes {
         for alias in node.names() {
             let bound = node.bound(alias);
             let unseen = bound_sources.insert((bound, node.source(alias)));

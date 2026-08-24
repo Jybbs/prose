@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/wrap_docstrings/section_prose_keeps_a_bare_marker_glued/input.py
+---
+wrap-docstrings@67..148

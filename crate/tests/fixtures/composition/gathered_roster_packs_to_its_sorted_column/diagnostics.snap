@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/gathered_roster_packs_to_its_sorted_column/input.py
+---
+align-imports@10..35
+alphabetize-siblings@59..167
+reflow-imports@18..126

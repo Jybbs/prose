@@ -37,7 +37,7 @@ A repeat of a name nothing reads takes the first binding with it, both facets re
 
 <Fixture rule="prune_inert_imports" case="repeat_of_an_unread_name_drops_both_lines" />
 
-An own-line comment directly above an import holds the whole statement, dropping the line stranding the comment on whatever follows.
+An own-line comment directly above an import holds the whole statement, dropping the line stranding the comment on whatever follows, unless [[reflow-imports]] will fold the statement into a same-module sibling, where the drop lands on the merged line the comment then leads.
 
 <Fixture rule="prune_inert_imports" case="leading_comment_holds_its_import" />
 

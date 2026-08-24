@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/trailing_comment_widens_its_import_row/input.py
+---
+from pkg import alpha, beta  # A comment trailing the run.
+
+print(alpha, beta)

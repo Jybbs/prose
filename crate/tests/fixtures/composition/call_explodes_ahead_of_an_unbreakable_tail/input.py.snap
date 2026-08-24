@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 59
+expression: snapshot
+input_file: crate/tests/fixtures/composition/call_explodes_ahead_of_an_unbreakable_tail/input.py
+---
+class Graph:
+    def bfs(self, start):
+        queue, visited = deque(
+            [(start, 0)]
+        ), {start}
+        return queue, visited

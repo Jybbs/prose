@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Closer Row Follows the Outermost Bracket It Closes"
+
+description = '''
+The `.get` call opens on a row that closes both the tuple and the dict around it, and the balanced `bar(1)` pair ahead of the tuple is stepped over, so the exploded rows hang from the row the dict's `{` sits on.
+'''

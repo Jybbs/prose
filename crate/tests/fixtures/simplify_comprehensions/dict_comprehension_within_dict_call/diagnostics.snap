@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/simplify_comprehensions/dict_comprehension_within_dict_call/input.py
+---
+simplify-comprehensions@28..69

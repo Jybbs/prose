@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_super_args/enclosing_closer_keeps_its_column/input.py
+---
+def wrap(value):
+    return value
+
+
+class Report:
+    def render(self, body, footer):
+        return body + footer
+
+
+class Invoice(Report):
+    def render(self, body, footer):
+        return wrap(
+            super().render(body,
+                           footer)
+        )

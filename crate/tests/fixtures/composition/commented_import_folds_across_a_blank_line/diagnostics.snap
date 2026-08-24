@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/commented_import_folds_across_a_blank_line/input.py
+---
+prune-inert-imports@16..53
+reflow-imports@33..53

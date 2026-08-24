@@ -1,4 +1,8 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description="Build the `prose_wasm` member for `wasm32-unknown-unknown` under `wasm-release`"
+#MISE description = "Build the `prose_wasm` member for `wasm32-unknown-unknown` under `wasm-release`"
 
-cargo build --package prose_wasm --profile wasm-release --target wasm32-unknown-unknown --locked
+cargo build \
+  --locked \
+  --package prose_wasm \
+  --profile wasm-release \
+  --target wasm32-unknown-unknown

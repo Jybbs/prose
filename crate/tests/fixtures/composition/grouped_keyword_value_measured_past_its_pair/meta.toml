@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Grouped Keyword Value Opens One Column Past Its Pair"
+
+description = '''
+[[reflow-calls]] names the walrus argument `anchor` and wraps it in the grouping pair that a named expression needs, so the value opens one column further right than the bare `=` gap [[align-equals]] seats. Charging that column is what explodes the nested `len` call in this pass.
+'''

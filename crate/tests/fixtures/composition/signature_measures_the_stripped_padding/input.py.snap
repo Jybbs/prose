@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/signature_measures_the_stripped_padding/input.py
+---
+class Service:
+    def store(self, *, ttl: int = 3600):
+        pass

@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/comment_comma_does_not_hold_the_sort/input.py
+---
+__all__ = [
+    "alpha",
+    "zeta",  # first, second
+]
+
+f(
+    alpha=2,
+    zeta=1,  # one, two
+)

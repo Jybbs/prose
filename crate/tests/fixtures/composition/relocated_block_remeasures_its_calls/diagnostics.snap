@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 44
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/relocated_block_remeasures_its_calls/input.py
+---
+reflow-collections@91..144

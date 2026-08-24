@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/stacked_link_explodes_at_its_own_row/input.py
+---
+def write_constant(out, value):
+    if isinstance(value, (float, complex)):
+        out.write(
+            (
+                repr(value).replace(
+                    "infinity_and_beyond_and_more_and_more",
+                    "zzzzzzzzz"
+                )
+                           .replace("nan", "x")
+            )
+        )
