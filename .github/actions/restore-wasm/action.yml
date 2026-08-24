@@ -1,5 +1,5 @@
 name        : Restore wasm cache
-description : Restore `site/public/wasm` under an exact key derived from the wasm sources, stamping a hit forward so `wasm:pack` reads its outputs as current and skips the `wasm-pack` run. Saving is left to the caller.
+description : Restore `site/public/wasm` under an exact key derived from the wasm sources, stamping a hit forward so `wasm:pack` reads its outputs as current and skips the `wasm-pack` run. Saving is left to the caller, `warm.yml` being the only workflow that writes cache entries.
 
 outputs:
   cache-hit:
