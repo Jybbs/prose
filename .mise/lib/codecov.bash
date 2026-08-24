@@ -6,8 +6,8 @@ upload_report() {
   fi
 
   codecovcli upload-process \
-    --flag "$flag" \
     --file "$file" \
-    --sha "$SHA" \
-    ${parent:+--parent-sha "$parent"}
+    --flag "$flag" \
+    ${parent:+--parent-sha "$parent"} \
+    --sha "$SHA"
 }
