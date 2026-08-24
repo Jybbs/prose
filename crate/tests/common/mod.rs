@@ -112,6 +112,8 @@ const SHOWN: usize = 30;
 struct Site {
     count: usize,
     file: String,
+    /// The command narrowing a sweep to this defect alone.
+    repro: Option<String>,
 }
 
 /// The defects one corpus sweep found, each keyed by its own wording so
@@ -138,12 +140,19 @@ impl Tally {
     /// Files a defect under its own wording, counting the corpus files
     /// that reach it and holding the first one as the example.
     pub(crate) fn record(&mut self, defect: String, path: &Path) {
+        self.record_at(defect, path, None);
+    }
+
+    /// Records `defect` against `path`, keeping `repro` as the command
+    /// that sweeps this defect alone.
+    pub(crate) fn record_at(&mut self, defect: String, path: &Path, repro: Option<&str>) {
         self.0
             .entry(defect)
             .and_modify(|held| held.count += 1)
             .or_insert_with(|| Site {
                 count: 1,
                 file: path.display().to_string(),
+                repro: repro.map(str::to_owned),
             });
     }
 
@@ -159,7 +168,16 @@ impl Tally {
             .0
             .iter()
             .take(SHOWN)
-            .map(|(defect, site)| format!("  {defect} ({} files, e.g. {})", site.count, site.file))
+            .map(|(defect, site)| {
+                let repro = site
+                    .repro
+                    .as_ref()
+                    .map_or_else(String::new, |cmd| format!("\n    reproduce with {cmd}"));
+                format!(
+                    "  {defect} ({} files, e.g. {}){repro}",
+                    site.count, site.file
+                )
+            })
             .format("\n");
         let rest = self.0.len().saturating_sub(SHOWN);
         let tail = if rest > 0 {

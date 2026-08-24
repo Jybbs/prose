@@ -77,6 +77,29 @@ enum Axis {
 impl Axis {
     /// The phrase a finding and a `Slot` label name this axis and width
     /// by.
+    /// The `PROSE_SETTLE_AXES` token naming this axis.
+    fn name(self) -> &'static str {
+        match self {
+            Self::Code => "code",
+            Self::Docstring => "docstring",
+            Self::Fallback => "fallback",
+            Self::Import => "import",
+        }
+    }
+
+    /// The command sweeping this axis at `width` alone, carrying the
+    /// corpus override when the run took one.
+    fn repro(self, width: usize) -> String {
+        let corpus = env::var("PROSE_SETTLE_CORPUS").map_or_else(
+            |_| String::new(),
+            |dir| format!("PROSE_SETTLE_CORPUS={dir} "),
+        );
+        format!(
+            "{corpus}PROSE_SETTLE_AXES={} PROSE_SETTLE_WIDTHS={width} cargo test --test corpus",
+            self.name(),
+        )
+    }
+
     fn clause(self, width: usize) -> String {
         match self {
             Self::Code => format!("code width {width}"),
@@ -259,7 +282,7 @@ fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
 
 /// Formats `path` under `pipeline` and records what the output leaves
 /// behind, the run wrapped so a panic files against the file it read.
-fn probe(pipeline: &Pipeline, clause: &str, path: &Path) -> Findings {
+fn probe(pipeline: &Pipeline, clause: &str, repro: &str, path: &Path) -> Findings {
     let mut findings = Findings::default();
     let Ok(source) = Source::from_path(path) else {
         findings.skipped += 1;
@@ -285,12 +308,13 @@ fn probe(pipeline: &Pipeline, clause: &str, path: &Path) -> Findings {
         Err(payload) => {
             let site = PANIC_SITE.with(|cell| cell.take());
             let at = site.map_or_else(String::new, |site| format!(" at {site}"));
-            findings.panicked.record(
+            findings.panicked.record_at(
                 format!(
                     "at {clause}, the run panicked{at}: {}",
                     panic_message(&*payload)
                 ),
                 path,
+                Some(repro),
             );
             return findings;
         }
@@ -298,28 +322,32 @@ fn probe(pipeline: &Pipeline, clause: &str, path: &Path) -> Findings {
     let (editing, unlanded) = match outcome {
         Ok(pair) => pair,
         Err(error) => {
-            findings
-                .rejected
-                .record(format!("at {clause}, the run was rejected: {error}"), path);
+            findings.rejected.record_at(
+                format!("at {clause}, the run was rejected: {error}"),
+                path,
+                Some(repro),
+            );
             return findings;
         }
     };
     if !editing.is_empty() {
-        findings.unsettled.record(
+        findings.unsettled.record_at(
             format!(
                 "at {clause}, {} rewrites the output",
                 render_slugs(&editing)
             ),
             path,
+            Some(repro),
         );
     }
     if !unlanded.is_empty() {
-        findings.unapplied.record(
+        findings.unapplied.record_at(
             format!(
                 "at {clause}, {} reports a fix the output never took",
                 render_slugs(&unlanded)
             ),
             path,
+            Some(repro),
         );
     }
     findings
@@ -345,10 +373,11 @@ fn every_width_settles_and_applies_what_it_reports() {
         for &axis in &axes {
             let pipeline = Pipeline::with_defaults(&axis.config(width));
             let clause = axis.clause(width);
+            let repro = axis.repro(width);
             findings.absorb(
                 files
                     .par_iter()
-                    .map(|path| probe(&pipeline, &clause, path))
+                    .map(|path| probe(&pipeline, &clause, &repro, path))
                     .reduce(Findings::default, |mut held, next| {
                         held.absorb(next);
                         held
