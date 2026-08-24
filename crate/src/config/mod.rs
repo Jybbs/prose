@@ -234,6 +234,18 @@ impl Config {
             .releasing_heads()
     }
 
+    /// The alignment settings `align-imports` runs under, resolving
+    /// within the import width, read by the rule itself and by the
+    /// forecast `reflow-imports` packs against, so the column the
+    /// forecast names is one the capped run seats.
+    pub(crate) fn import_align_settings(&self) -> aligner::Settings {
+        aligner::Settings::from(&self.rules.align_imports).within(
+            self.import_width(),
+            self.stranded_padding(),
+            self.comment_settling(),
+        )
+    }
+
     pub(crate) fn first_party(&self) -> Vec<String> {
         self.imports.first_party.clone()
     }

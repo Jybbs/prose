@@ -18,10 +18,14 @@ use ruff_python_ast::{
     token::TokenKind,
 };
 use ruff_text_size::{Ranged, TextSize};
+use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,
-    primitives::{aligner, imports::import_group},
+    primitives::{
+        aligner,
+        imports::{IMPORT_KEYWORD_WIDTH, import_group, widest_member_width},
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -35,11 +39,7 @@ impl AlignImports {
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            settings: aligner::Settings::from(&config.rules.align_imports).within(
-                config.import_width(),
-                config.stranded_padding(),
-                config.comment_settling(),
-            ),
+            settings: config.import_align_settings(),
         }
     }
 }
@@ -95,10 +95,15 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
 
 /// Maps each aligned `from M import N` statement's start to the display
 /// column its `import` keyword lands at, so `reflow-imports` packs an
-/// over-budget import's names against the prefix width the alignment
-/// gives it. `settings` carries no line cap, so a to-be-split import
-/// reads the column it aligns to once split rather than the natural
-/// column the cap would leave it at unsplit.
+/// over-budget import's members against the prefix width the alignment
+/// gives it.
+///
+/// A multi-member roster reads at the width of its widest member rather
+/// than of the whole line it currently occupies, since that is the row
+/// `align-imports` measures once `reflow-imports` has packed the roster
+/// one member per row. Reading the unpacked line instead answers for a
+/// row the run never sees, and drops the statement out of the column
+/// its packed rows go on to share.
 ///
 /// `divided` keys the run on the canonical import group as well as the
 /// form, so the prediction closes where `space-statements` writes its
@@ -112,17 +117,32 @@ pub(crate) fn aligned_import_columns(
     let groups =
         aligner::keyed_line_adjacent_groups(source, &source.ast().body, AlignImports::SLUG, |s| {
             let group = divided.and_then(|first_party| import_group(s, first_party));
-            qualify(source, s).map(|(form, m)| ((form, group), (s.start(), m)))
+            let widest = widest_member_width(source, s);
+            qualify(source, s).map(|(form, m)| ((form, group), (s.start(), m, widest)))
         });
     let mut columns = HashMap::new();
     for group in groups {
-        let members: Vec<aligner::Member> = group.iter().map(|(_, member)| *member).collect();
-        for ((start, _), column) in group.iter().zip(aligner::operator_columns(
+        let members: Vec<aligner::Member> = group.iter().map(|(_, member, _)| *member).collect();
+        let packed: HashMap<TextSize, usize> = group
+            .iter()
+            .filter_map(|(_, member, widest)| Some((member.line_start, (*widest)?)))
+            .collect();
+        let joined = |member: aligner::Member| {
+            let widest = packed.get(&member.line_start)?;
+            Some(
+                member.baseline
+                    + member.settled_width
+                    + source.slice(member.gap).width()
+                    + IMPORT_KEYWORD_WIDTH
+                    + widest,
+            )
+        };
+        for ((start, ..), column) in group.iter().zip(aligner::operator_columns(
             source,
             &members,
             settings,
             &aligner::Widenings::default(),
-            |_| None,
+            joined,
         )) {
             columns.insert(*start, column);
         }

@@ -25,7 +25,9 @@ use crate::{
     primitives::{
         aligner,
         edit::{apply_inline_edits, narrowed_replacement, whole_line_deletion},
-        imports::{ModuleKey, fold_landing, is_import, module_key, stands_alone},
+        imports::{
+            IMPORT_KEYWORD_WIDTH, ModuleKey, fold_landing, is_import, module_key, stands_alone,
+        },
         layout::pack,
         orderer::member_blocks,
         scope::{scoped_body, sub_bodies},
@@ -38,10 +40,6 @@ use crate::{
     },
     source::Source,
 };
-
-/// Display width of the `import ` keyword and its trailing space, the
-/// distance from an aligned `import` column to the first name.
-const IMPORT_KEYWORD_WIDTH: usize = "import ".len();
 
 /// What joins two members sharing one line, written between them and
 /// counted against the budget each line packs to.
@@ -64,10 +62,10 @@ impl ReflowImports {
         let align = &config.rules.align_imports;
         let rules = &config.rules.reflow_imports;
         Self {
-            // Reserve the aligned prefix only when `align-imports` runs,
-            // carrying its `max-shift` but no line cap so a to-be-split
-            // import reads the column it aligns to once split.
-            align_settings: align.enabled.then(|| aligner::Settings::from(align)),
+            // Reserve the aligned prefix only when `align-imports`
+            // runs, under the settings that rule resolves within, so
+            // the forecast names a column the capped run seats.
+            align_settings: align.enabled.then(|| config.import_align_settings()),
             bands: band_forecast(config),
             divided: (config.group_imports_enabled() && config.rules.space_statements.enabled)
                 .then(|| config.first_party()),
