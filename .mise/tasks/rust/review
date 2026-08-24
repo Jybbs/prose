@@ -1,6 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "review"
 #MISE description = "Interactively review pending snapshot diffs"
-#MISE tools       = { cargo-insta = "1.48.0" }
 
 cargo insta review

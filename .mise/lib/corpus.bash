@@ -4,3 +4,9 @@ corpus_root() {
     || return
   (cd "$root" && pwd)
 }
+
+settle_corpus() {
+  local corpus
+  corpus=$(corpus_root "$1") || return
+  PROSE_SETTLE_CORPUS="$corpus" cargo test --locked "${@:2}"
+}

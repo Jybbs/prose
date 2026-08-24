@@ -4,5 +4,4 @@
 
 source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
 
-corpus=$(corpus_root "${1:-}")
-PROSE_SETTLE_CORPUS="$corpus" cargo test --locked --test corpus
+settle_corpus "${1:-}" --test corpus

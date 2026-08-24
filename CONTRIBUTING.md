@@ -125,7 +125,7 @@ mise review
 |---|---|
 | `mise ci` | The full local sweep every pull request answers to |
 | `mise run rust:test` | The Rust suites, including every fixture snapshot |
-| `mise run rust:settle` | Formats a corpus twice and names every file the second run changes |
+| `mise run rust:settle` | Sweeps a corpus at every line length for rewrites a second pass would change and fixes the output never took |
 | `mise run rust:subsets` | Probes each rule alone and each ordered rule pair over a corpus for one-pass settling |
 | `mise run rust:delta` | Formats a corpus with this tree and a baseline worktree at every line length and reports what differs, rule by rule and file by file |
 

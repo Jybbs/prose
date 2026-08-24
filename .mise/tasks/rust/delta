@@ -3,30 +3,15 @@
 #MISE description = "Compare this tree's formatting of a corpus against a baseline worktree's, at every line length"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
+source "$MISE_PROJECT_ROOT/.mise/lib/delta.bash"
 
-base_tree=$(cd "${1:-$MISE_PROJECT_ROOT/../main}" && pwd)
-corpus=$(corpus_root "${2:-}")
-widths="${PROSE_DELTA_WIDTHS:-40 50 60 79 88 100}"
-profile="${PROSE_DELTA_PROFILE:-release}"
-
-built_binary() {
-  cargo build \
-    --bin prose \
-    --locked \
-    --message-format json-render-diagnostics \
-    --profile "$profile" \
-    | jq -r '
-      select(
-        .executable != null
-        and .reason == "compiler-artifact"
-        and .target.name == "prose"
-      )
-      | .executable'
+fail_width() {
+  echo "$binary $* at width $width, stderr at $record.log" >&2
+  exit 1
 }
 
-die() {
-  echo "$*" >&2
-  exit 1
+file_delta() {
+  report "$(staged diff --stat-count=5 "base-$1" "head-$1")" 'no file differs'
 }
 
 format_tagged() {
@@ -34,14 +19,13 @@ format_tagged() {
   local record="$stage/.git/$side-$width"
   staged reset --hard -q pristine
   printf 'code-line-length = %s\n' "$width" > "$stage/prose.toml"
-  (cd "$stage" && "$binary" format --no-cache --output-format json .) \
+  "$binary" format --no-cache --output-format json "$stage" \
     2> "$record.log" \
     | jq -c 'select(.kind == "summary" and .schema_version == 1)' \
     > "$record.json" || status=$?
-  (( status <= 4 )) \
-    || die "$binary exited $status at width $width, stderr at $record.log"
-  [[ -s "$record.json" ]] \
-    || die "$binary emitted no summary at width $width, stderr at $record.log"
+  (( status <= 4 )) || fail_width "exited $status"
+  [[ -s "$record.json" ]] || fail_width "emitted no summary"
+  (( $(jq '.files_visited' "$record.json") > 0 )) || fail_width "visited no file"
   staged commit --allow-empty -am "$side at width $width" -q
   staged tag "$side-$width"
   unstable=$(jq -r '.unstable // [] | length' "$record.json")
@@ -50,26 +34,19 @@ format_tagged() {
 }
 
 report() {
-  local body="$1" empty="$2"
-  if [[ -n "$body" ]]; then
-    sed 's/^/  /' <<< "$body"
-  else
-    echo "  $empty"
-  fi
+  sed 's/^/  /' <<< "${1:-$2}"
 }
 
 rule_delta() {
   report "$(jq -rs '
-    . as [$was, $now]
-    | $was.rules_fired as $a
-    | $now.rules_fired as $b
+    map(.rules_fired) as [$a, $b]
     | ($a + $b | keys[]) as $slug
     | [($a[$slug] // 0), ($b[$slug] // 0)] as [$from, $to]
     | select($from != $to)
     | ($to - $from) as $delta
-    | (if $delta > 0 then "+\($delta)" else "\($delta)" end) as $signed
-    | [$slug, $from, "->", $to, $signed]
-    | @tsv' "$1" "$2" | column -t)" 'every rule fired the same number of times'
+    | [$slug, $from, "->", $to, "\(if $delta > 0 then "+" else "" end)\($delta)"]
+    | @tsv' "$stage/.git/base-$1.json" "$stage/.git/head-$1.json" | column -t)" \
+    'every rule fired the same number of times'
 }
 
 staged() {
@@ -81,8 +58,15 @@ staged() {
     "$@"
 }
 
-head_bin=$(built_binary)
-base_bin=$(cd "$base_tree" && built_binary)
+base_tree=$(baseline_root "${1:-}")
+[[ "$base_tree" != "$(git rev-parse --show-toplevel)" ]] \
+  || { echo "baseline $base_tree is this tree" >&2; exit 1; }
+corpus=$(corpus_root "${2:-}")
+widths="${PROSE_DELTA_WIDTHS:-40 50 60 79 88 100}"
+profile="${PROSE_DELTA_PROFILE:-release}"
+
+head_bin=$(built_binary "$profile")
+base_bin=$(cd "$base_tree" && built_binary "$profile")
 
 tmp="${TMPDIR:-/tmp}"
 stage=$(mktemp -d "${tmp%/}/prose-delta.XXXXXX")
@@ -103,10 +87,8 @@ for width in $widths; do
   printf 'width %s\n' "$width"
   format_tagged base "$base_bin" "$width"
   format_tagged head "$head_bin" "$width"
-  rule_delta "$stage/.git/base-$width.json" "$stage/.git/head-$width.json"
-  report \
-    "$(staged diff --stat --stat-count=5 "base-$width" "head-$width")" \
-    'no file differs'
+  rule_delta "$width"
+  file_delta "$width"
   printf '\n'
 done
 
