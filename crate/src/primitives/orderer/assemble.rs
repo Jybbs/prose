@@ -71,8 +71,10 @@ pub(crate) fn assemble_or_borrow<'src>(
 /// it lands after the value and before any trailing comment. `value_ends`
 /// split the code from each comma-and-comment tail. Non-last slots carry a
 /// comma, the new-last slot matches `source_last_has_comma`, and a blank line
-/// follows every slot in `divider_slots`.
+/// follows every slot in `divider_slots`. Every break it writes takes the
+/// ending `source` carries.
 pub(crate) fn assemble_separated(
+    source: &Source,
     value_ends: &[TextSize],
     blocks: &[TextRange],
     block_texts: &[Cow<'_, str>],
@@ -80,6 +82,7 @@ pub(crate) fn assemble_separated(
     divider_slots: &[usize],
     source_last_has_comma: bool,
 ) -> String {
+    let newline = source.newline_str();
     let mut out = String::with_capacity(blocks_span(blocks).len().to_usize());
     for (slot, &idx) in order.iter().enumerate() {
         let block_text = &block_texts[idx];
@@ -96,9 +99,9 @@ pub(crate) fn assemble_separated(
             out.push_str(comment);
         }
         if !is_last {
-            out.push('\n');
+            out.push_str(newline);
             if divider_slots.binary_search(&slot).is_ok() {
-                out.push('\n');
+                out.push_str(newline);
             }
         }
     }
@@ -177,6 +180,7 @@ where
     }
     let value_ends: Vec<TextSize> = items.iter().map(Ranged::end).collect();
     let assembled = assemble_separated(
+        source,
         &value_ends,
         &blocks,
         &block_texts,

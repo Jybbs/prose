@@ -109,6 +109,7 @@ pub(super) fn rewrite_dict_text(
         let source_last_has_comma = source.trailing_comma(d.range()).is_some();
         let value_ends: Vec<TextSize> = item_ranges.iter().map(Ranged::end).collect();
         assemble_separated(
+            source,
             &value_ends,
             blocks,
             &block_texts,

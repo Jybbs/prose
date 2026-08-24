@@ -14,6 +14,19 @@ const ALIGNS: &str = include_str!("fixtures/notebook/code_cell_aligns/input.ipyn
 const EMPTY: &str = include_str!("fixtures/notebook/empty/input.ipynb");
 const INTERLEAVED: &str = include_str!("fixtures/notebook/markdown_interleaved/input.ipynb");
 
+/// A module breaking every line with a lone carriage return, the third
+/// ending `LineEnding` carries.
+const CARRIAGE_RETURN_MODULE: &str = concat!(
+    "import sys\r",
+    "import os\r",
+    "from pathlib import Path\r",
+    "VALUES = {\"b\": 1, \"a\": 2}\r",
+    "def beta() -> tuple:\r",
+    "    return Path, sys, os\r",
+    "def alpha() -> dict:\r",
+    "    return VALUES\r",
+);
+
 /// A two-entry dict literal `reflow-collections` collapses, the shape
 /// that net-shrinks the rewritten buffer.
 const COLLAPSING_DICT: &str = "d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n";
@@ -70,6 +83,21 @@ const CRLF_CELLS: &str = r#"{
   "nbformat_minor": 5
 }"#;
 
+/// A CRLF module whose imports regroup, whose dict entries sort, and
+/// whose definitions band, so the rewrite writes a separator of its own
+/// at each of those seams. Every definition carries a return annotation,
+/// and the run emits no lint diagnostic.
+const CRLF_MODULE: &str = concat!(
+    "import sys\r\n",
+    "import os\r\n",
+    "from pathlib import Path\r\n",
+    "VALUES = {\"b\": 1, \"a\": 2}\r\n",
+    "def beta() -> tuple:\r\n",
+    "    return Path, sys, os\r\n",
+    "def alpha() -> dict:\r\n",
+    "    return VALUES\r\n",
+);
+
 /// The aligned rewrite of `ESCAPE_IN_LITERAL`, its `U+001B` intact.
 const ESCAPE_ALIGNED: &str = "AB = \"X\u{1b}Y\"\nc  = 2\n";
 
@@ -95,6 +123,19 @@ const FIRST_CELL_UNSORTED: &str = r#"{
 /// A module whose bare `import os` draws a lint the formatter leaves
 /// standing, so a `format` run discloses it beside the rewrite.
 const LINT_ONLY: &str = "import os\nos.getcwd()\n";
+
+/// A module whose first four lines break CRLF and whose remainder breaks
+/// LF, the shape a partial checkout conversion leaves behind.
+const MIXED_ENDING_MODULE: &str = concat!(
+    "import sys\r\n",
+    "import os\r\n",
+    "from pathlib import Path\r\n",
+    "VALUES = {\"b\": 1, \"a\": 2}\r\n",
+    "def beta() -> tuple:\n",
+    "    return Path, sys, os\n",
+    "def alpha() -> dict:\n",
+    "    return VALUES\n",
+);
 
 /// An R-kernel notebook the formatter passes over, the way an excluded
 /// path is skipped.
@@ -1223,6 +1264,92 @@ fn help_exits_clean() {
 #[test]
 fn no_args_prints_help_and_exits_clean() {
     prose().assert().success();
+}
+
+#[test]
+fn module_format_holds_each_line_ending_of_a_mixed_source() {
+    let (_dir, path) = fixture("mod.py", MIXED_ENDING_MODULE);
+    let format = || prose().args(["format", "--no-cache"]).arg(&path).assert();
+    format().success();
+    let once = std::fs::read_to_string(&path).expect("reads");
+
+    assert_eq!(
+        once,
+        concat!(
+            "import os\r\n",
+            "import sys\r\n",
+            "\r\n",
+            "from pathlib import Path\r\n",
+            "\r\n",
+            "VALUES = {\"a\": 2, \"b\": 1}\r\n",
+            "\r\n",
+            "\r\n",
+            "def alpha() -> dict:\n",
+            "    return VALUES\r\n",
+            "\r\n",
+            "\r\n",
+            "def beta() -> tuple:\n",
+            "    return Path, sys, os\n",
+        ),
+        "a break prose writes takes the first ending found, and a line it carries keeps its own",
+    );
+
+    format().success();
+    assert_eq!(once, std::fs::read_to_string(&path).expect("reads"));
+}
+
+#[test]
+fn module_format_preserves_crlf_line_endings() {
+    let (assert, after) = rewrite_fixture("mod.py", CRLF_MODULE, &["format", "--no-cache"]);
+    assert.success();
+
+    assert_eq!(
+        after,
+        concat!(
+            "import os\r\n",
+            "import sys\r\n",
+            "\r\n",
+            "from pathlib import Path\r\n",
+            "\r\n",
+            "VALUES = {\"a\": 2, \"b\": 1}\r\n",
+            "\r\n",
+            "\r\n",
+            "def alpha() -> dict:\r\n",
+            "    return VALUES\r\n",
+            "\r\n",
+            "\r\n",
+            "def beta() -> tuple:\r\n",
+            "    return Path, sys, os\r\n",
+        ),
+    );
+}
+
+#[test]
+fn module_format_preserves_lone_carriage_returns() {
+    let (assert, after) =
+        rewrite_fixture("mod.py", CARRIAGE_RETURN_MODULE, &["format", "--no-cache"]);
+    assert.success();
+
+    assert!(
+        !after.contains('\n'),
+        "no line feed reaches a CR-only module"
+    );
+    assert_eq!(after.matches('\r').count(), 14);
+}
+
+#[test]
+fn module_format_settles_on_crlf_input() {
+    let (_dir, path) = fixture("mod.py", CRLF_MODULE);
+    let format = || prose().args(["format", "--no-cache"]).arg(&path).assert();
+    format().success();
+    let once = std::fs::read_to_string(&path).expect("reads");
+
+    let second = format().success();
+    assert_eq!(once, std::fs::read_to_string(&path).expect("reads"));
+    assert!(
+        !stderr_utf8(&second).contains("second run"),
+        "a CRLF module settles without an unstable-output report",
+    );
 }
 
 #[test]

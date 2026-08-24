@@ -29,7 +29,7 @@ Each `Edit` carries:
 
 A zero-length range with non-empty content is an insertion. A non-empty range with empty content is a deletion. A non-empty range with non-empty content is a substitution. The three shapes compose, so a rule rewriting one logical change as several local edits emits each as its own `Edit` without coordinating.
 
-Edits span newlines freely, so a rule rewriting a multi-line construct emits one `Edit` whose `range` covers the whole construct and whose `content` carries the rewritten body. Line-ending style in `content` follows the rule's emission, and the pipeline does not normalize, so a rule on a CRLF source should emit CRLF in any newline it inserts. The [[source]] primitive exposes `newline_str()` for the per-file convention.
+Edits span newlines freely, so a rule rewriting a multi-line construct emits one `Edit` whose `range` covers the whole construct and whose `content` carries the rewritten body. Line-ending style in `content` follows the rule's emission, and the pipeline does not normalize, so every break a rule inserts takes the ending its source already carries. The [[source]] primitive exposes `newline_str()` for that per-file convention, and the fixture corpus runs every case a second time under CRLF to hold each rule to it.
 
 ## Internal Surface
 

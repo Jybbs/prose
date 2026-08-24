@@ -98,7 +98,10 @@ impl Walker<'_> {
             .iter()
             .map(|&block| Cow::Borrowed(self.source.slice(block)))
             .collect();
-        let assembled = assemble_blocks(self.source, run_blocks, &rendered, &order, |_| Some("\n"));
+        let newline = self.source.newline_str();
+        let assembled = assemble_blocks(self.source, run_blocks, &rendered, &order, |_| {
+            Some(newline)
+        });
         if let Some(edit) = narrowed_replacement(self.source, blocks_span(run_blocks), assembled) {
             self.edits.push(edit);
         }

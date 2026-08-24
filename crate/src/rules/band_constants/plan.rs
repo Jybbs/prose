@@ -8,6 +8,7 @@ use std::collections::HashMap;
 
 use itertools::Itertools;
 use ruff_python_ast::Stmt;
+use ruff_source_file::LineEnding;
 use ruff_text_size::TextRange;
 
 use crate::primitives::{
@@ -304,13 +305,15 @@ struct Drained {
 /// constant folding tight into the tier above instead, and an import run
 /// keeps one blank line between canonical groups. Every other pair takes
 /// the count [`module_blank_lines`] declares, one blank line standing in
-/// wherever that policy holds no opinion. `None` falls back to the source
-/// gap, the case for a pinned anchor on either side.
+/// wherever that policy holds no opinion, rendered in `ending`. `None`
+/// falls back to the source gap, the case for a pinned anchor on either
+/// side.
 pub(super) fn banded_gap(
     band: &Banding,
     body: &[Stmt],
     first_party: &[String],
     grouped: bool,
+    ending: LineEnding,
     a: usize,
     b: usize,
 ) -> Option<&'static str> {
@@ -323,7 +326,7 @@ pub(super) fn banded_gap(
         }
         _ => module_blank_lines(&body[a], &body[b], first_party, grouped).unwrap_or(1),
     };
-    Some(blank_gap(blanks))
+    Some(blank_gap(ending, blanks))
 }
 
 #[cfg(test)]

@@ -263,7 +263,7 @@ impl Rule for AlphabetizeSiblings {
             &layout.rendered,
             &layout.order,
             !layout.import_run_slots.is_empty(),
-            |i| import_gap(&layout.import_run_slots, i),
+            |i| import_gap(source, &layout.import_run_slots, i),
         );
         singleton_groups(edits)
     }

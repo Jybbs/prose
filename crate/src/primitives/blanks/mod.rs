@@ -1,30 +1,29 @@
 //! Module-scope blank-line policy, the gap text it renders to, and the
 //! walk back over a blank run. [`module_blank_lines`] declares the
 //! canonical blank count for a module-scope `(prev, curr)` pair,
-//! [`blank_gap`] turns a count into the separator an assembled body
-//! seats between two blocks, and [`whitespace_start_before`] reaches
-//! back over the run preceding an offset, stopping at the wall opening
-//! a notebook cell.
+//! [`blank_gap`] turns a line ending and a count into the separator an
+//! assembled body seats between two blocks, and
+//! [`whitespace_start_before`] reaches back over the run preceding an
+//! offset, stopping at the wall opening a notebook cell.
 
 use ruff_python_ast::{CmpOp, Expr, Stmt};
+use ruff_source_file::LineEnding;
 use ruff_text_size::TextSize;
 
 use crate::{primitives::imports::import_blank_lines, source::Source};
 
-/// Newline run the gap text slices, one newline longer than the widest
-/// count [`module_blank_lines`] returns.
-const NEWLINE_RUN: &str = "\n\n\n";
-
 /// The gap seating `blanks` blank lines between two assembled blocks,
-/// one newline closing the first block plus one per blank line.
-pub(crate) fn blank_gap(blanks: u32) -> &'static str {
-    let newlines = blanks as usize + 1;
-    NEWLINE_RUN.get(..newlines).unwrap_or_else(|| {
-        unreachable!(
-            "invariant: module blank policy returns at most {} blanks",
-            NEWLINE_RUN.len() - 1
-        )
-    })
+/// one newline closing the first block plus one per blank line, each in
+/// `ending`'s sequence.
+pub(crate) fn blank_gap(ending: LineEnding, blanks: u32) -> &'static str {
+    let run = newline_run(ending);
+    run.get(..(blanks as usize + 1) * ending.len())
+        .unwrap_or_else(|| {
+            unreachable!(
+                "invariant: module blank policy returns at most {} blanks",
+                run.len() / ending.len() - 1,
+            )
+        })
 }
 
 /// The canonical blank-line count for the module-scope pair `(prev,
@@ -85,6 +84,16 @@ fn is_main_guard(stmt: &Stmt) -> bool {
     left.id == "__name__" && right.value.to_str() == "__main__"
 }
 
+/// The run [`blank_gap`] slices, `ending` repeated one time more than
+/// the widest count [`module_blank_lines`] returns.
+fn newline_run(ending: LineEnding) -> &'static str {
+    match ending {
+        LineEnding::Cr => "\r\r\r",
+        LineEnding::CrLf => "\r\n\r\n\r\n",
+        LineEnding::Lf => "\n\n\n",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -103,18 +112,30 @@ mod tests {
         module_blank_lines(&body[0], &body[1], &list, true)
     }
 
-    #[test]
+    #[rstest]
     #[should_panic(expected = "invariant: module blank policy returns at most 2 blanks")]
-    fn blank_gap_refuses_a_count_beyond_the_policy() {
-        blank_gap(3);
+    fn blank_gap_refuses_a_count_beyond_the_policy(
+        #[values(LineEnding::Cr, LineEnding::CrLf, LineEnding::Lf)] ending: LineEnding,
+    ) {
+        blank_gap(ending, 3);
     }
 
     #[rstest]
-    #[case(0, "\n")]
-    #[case(1, "\n\n")]
-    #[case(2, "\n\n\n")]
-    fn blank_gap_seats_one_newline_per_blank_plus_one(#[case] blanks: u32, #[case] gap: &str) {
-        assert_eq!(blank_gap(blanks), gap);
+    #[case(LineEnding::Lf, 0, "\n")]
+    #[case(LineEnding::Lf, 1, "\n\n")]
+    #[case(LineEnding::Lf, 2, "\n\n\n")]
+    #[case(LineEnding::CrLf, 0, "\r\n")]
+    #[case(LineEnding::CrLf, 1, "\r\n\r\n")]
+    #[case(LineEnding::CrLf, 2, "\r\n\r\n\r\n")]
+    #[case(LineEnding::Cr, 0, "\r")]
+    #[case(LineEnding::Cr, 1, "\r\r")]
+    #[case(LineEnding::Cr, 2, "\r\r\r")]
+    fn blank_gap_seats_one_newline_per_blank_plus_one(
+        #[case] ending: LineEnding,
+        #[case] blanks: u32,
+        #[case] gap: &str,
+    ) {
+        assert_eq!(blank_gap(ending, blanks), gap);
     }
 
     #[test]
