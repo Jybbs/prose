@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/notebook/same_module_imports_hold_at_adjacent_cell_edges/input.ipynb
+---
+from pkg import alpha
+
+# --- cell 2 ---
+
+from pkg import beta
+
+print(alpha, beta)

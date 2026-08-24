@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/exploded_keyword_at_the_cap_keeps_its_tail/input.py
+---
+align-equals@9..20
+alphabetize-siblings@7..51
+reflow-calls@30..50

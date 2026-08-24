@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "An Unread Import Lands Past a Hoisted Constant"
+
+description = '''
+[[band-constants]] hoists the constant below the imports, which joins the two `pkg` statements into one band that [[reflow-imports]] folds, so [[prune-inert-imports]] moves the surviving sibling up over the constant onto the unread lead's line, leaving the comment heading the import it read over once the band has settled.
+'''

@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/grouped_keyword_value_measured_past_its_pair/input.py
+---
+def window(anchor, count, offset, source):
+    return (anchor, count, offset, source)
+
+
+window(
+    anchor = (seen := len(
+        rows
+    )),
+    count  = page_size,
+    offset = start,
+    source = rows
+)

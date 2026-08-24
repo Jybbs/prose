@@ -1,6 +1,7 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/hand_wrapped_super_rejoins_then_sheds/input.py
 ---
 reflow-calls@223..323
+shed-super-args@185..299

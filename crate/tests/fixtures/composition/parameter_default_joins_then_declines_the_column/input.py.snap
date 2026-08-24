@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/parameter_default_joins_then_declines_the_column/input.py
+---
+def f(
+    a: int = [1111, 2222, 3333, 4444],
+    bbbbbbbbbbbbbb: int = 2
+):
+    pass

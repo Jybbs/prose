@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Alignment to a Code Token Beats the Hang Guess"
+
+description = '''
+A continuation row sitting on the column of a name on the opening row follows that name leftward even where the column is also an indent step past the row, since alignment to a code token reads as intent where a coincidental hang does not.
+'''

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/align_equals_reserve_reads_the_joined_subscript/input.py
+---
+align-equals@49..50
+reflow-collections@61..119

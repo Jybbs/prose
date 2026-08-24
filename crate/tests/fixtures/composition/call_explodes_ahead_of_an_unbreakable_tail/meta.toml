@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Explodes Ahead of an Unbreakable Tail"
+
+description = '''
+The `{start}` set after the call holds one item, so `reflow-collections` never breaks it and the call's row tail charges whole rather than through its `{`. The row overflows, `deque(` explodes, and its argument lands packed on its own row where it fits, instead of the inner tuple exploding under a column the explode would have moved.
+'''

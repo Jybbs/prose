@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/unread_import_lands_past_a_hoisted_constant/input.py
+---
+# Local imports
+from pkg import b
+
+X = 1
+
+print(b, X)

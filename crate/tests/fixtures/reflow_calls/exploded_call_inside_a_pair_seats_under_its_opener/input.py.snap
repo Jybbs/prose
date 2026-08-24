@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 59
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_calls/exploded_call_inside_a_pair_seats_under_its_opener/input.py
+---
+zz = qq.relative_to(
+    (
+        self.gggggggggggggggggggggggg(
+            ""
+        )
+            .resolve()
+    ),
+    walk_up=True
+)

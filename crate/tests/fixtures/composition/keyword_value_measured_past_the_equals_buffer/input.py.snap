@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/keyword_value_measured_past_the_equals_buffer/input.py
+---
+left_list = _filter(
+    flist = os.listdir(
+        self.left_folders
+    ),
+    skip = self.hide
+)

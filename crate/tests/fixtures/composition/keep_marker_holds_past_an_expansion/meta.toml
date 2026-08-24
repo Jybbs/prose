@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Keep Marker Holds Past an Expansion"
+
+description = '''
+A `# prose: keep` comment binds to the line holding the dict's `{` or its `}`, so the expansion that carries the comment onto the closing line leaves the dict pinned against [[alphabetize-siblings]] and the entries keep their source order and their separators.
+'''

@@ -94,11 +94,15 @@ impl Rule for PrefixRule {
 }
 
 /// Builds an alignment `Member` whose pre-operator whitespace is `gap`,
-/// carrying no operator width and no post-operator gap. Layer
+/// carrying no operator width and no post-operator gap, its baseline
+/// read off the ASCII columns between `line_start` and the gap. Layer
 /// `with_op_width`, `with_settled_width`, or `with_value_gap` on top
 /// for a row that needs one.
 pub(crate) fn align_member(gap: TextRange, line_start: u32, width: usize) -> aligner::Member {
     aligner::Member {
+        baseline: (gap.start() - TextSize::new(line_start))
+            .to_usize()
+            .saturating_sub(width),
         gap,
         line_start: TextSize::new(line_start),
         op_width: 0,

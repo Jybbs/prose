@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/nested_call_charged_its_row_tail/input.py
+---
+reflow-calls@70..115
+reflow-collections@80..92

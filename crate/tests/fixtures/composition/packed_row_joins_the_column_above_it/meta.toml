@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Packed Row Joins the Column Above It"
+
+description = '''
+The `tkinter.ttk` roster overruns the cap at the column `tkinter.simpledialog` sets, so it packs at its own column. [[align-imports]] then reads each packed row on its own, and **the `Button` row alone fits the wider column above it and joins it**, while the rows beneath keep the column they packed to. [[reflow-imports]] seats every row where the aligner settles it, so the block reads the same on a second pass.
+'''

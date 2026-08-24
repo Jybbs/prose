@@ -2,12 +2,13 @@
 //! node enclosing each expression.
 
 use ruff_python_ast::{
-    AnyNodeRef, Arguments, Expr, ModModule, Stmt,
+    AnyNodeRef, Arguments, Expr, ExprCall, ModModule, Stmt,
     visitor::{self, Visitor, walk_expr},
 };
 
 /// Whether a parent-tracking walk descends into the expression its probe
 /// just read.
+#[derive(Clone, Copy)]
 pub(crate) enum Descent {
     /// Visit the expression's own children next.
     Into,
@@ -18,6 +19,11 @@ pub(crate) enum Descent {
 /// Reads each expression of a module alongside the node enclosing it
 /// and the full ancestor chain, outermost first.
 pub(crate) trait ParentedProbe<'src> {
+    /// Whether the walk reads the interior of a replacement field, a
+    /// probe set to `Over` leaving every f-string and t-string it
+    /// reaches unwalked whatever it reports on the string itself.
+    const INTERPOLATIONS: Descent = Descent::Into;
+
     fn probe(
         &mut self,
         expr: &'src Expr,
@@ -26,10 +32,24 @@ pub(crate) trait ParentedProbe<'src> {
     ) -> Descent;
 }
 
-struct ParentedCollector<F, T> {
-    found: Vec<T>,
+/// Collects each `Some` that `probe` returns, descending past a hit
+/// per `on_hit`, so `Descent::Over` keeps the outermost hits alone.
+pub(crate) struct ParentedCollector<F, T> {
+    pub(crate) found: Vec<T>,
     interpolations: Descent,
+    on_hit: Descent,
     probe: F,
+}
+
+impl<F, T> ParentedCollector<F, T> {
+    pub(crate) fn new(interpolations: Descent, on_hit: Descent, probe: F) -> Self {
+        Self {
+            found: Vec::new(),
+            interpolations,
+            on_hit,
+            probe,
+        }
+    }
 }
 
 impl<'src, F: FnMut(&'src Expr, AnyNodeRef<'src>) -> Option<T>, T> ParentedProbe<'src>
@@ -44,8 +64,13 @@ impl<'src, F: FnMut(&'src Expr, AnyNodeRef<'src>) -> Option<T>, T> ParentedProbe
         if is_interpolated_string(expr) && matches!(self.interpolations, Descent::Over) {
             return Descent::Over;
         }
-        self.found.extend((self.probe)(expr, parent));
-        Descent::Into
+        match (self.probe)(expr, parent) {
+            Some(found) => {
+                self.found.push(found);
+                self.on_hit
+            }
+            None => Descent::Into,
+        }
     }
 }
 
@@ -63,7 +88,9 @@ impl<'src, P: ParentedProbe<'src>> Visitor<'src> for ParentedWalk<'src, '_, P> {
 
     fn visit_expr(&mut self, expr: &'src Expr) {
         let parent = *self.parents.last().expect("seeded with the module node");
-        if matches!(self.probe.probe(expr, parent, &self.parents), Descent::Over) {
+        if matches!(self.probe.probe(expr, parent, &self.parents), Descent::Over)
+            || (matches!(P::INTERPOLATIONS, Descent::Over) && is_interpolated_string(expr))
+        {
             return;
         }
         self.parents.push(expr.into());
@@ -78,6 +105,13 @@ impl<'src, P: ParentedProbe<'src>> Visitor<'src> for ParentedWalk<'src, '_, P> {
     }
 }
 
+/// True for an f-string or t-string, the expression a probe leaves
+/// unwalked to keep every replacement field inside it the shape its
+/// author gave it.
+const fn is_interpolated_string(expr: &Expr) -> bool {
+    matches!(expr, Expr::FString(_) | Expr::TString(_))
+}
+
 /// Every `Some` that `probe` returns over each expression in `module`,
 /// each read alongside the node enclosing it. `interpolations` decides
 /// whether the walk reads the interior of a replacement field.
@@ -86,20 +120,38 @@ pub(crate) fn filter_map_over_parented_exprs<'src, T>(
     interpolations: Descent,
     probe: impl FnMut(&'src Expr, AnyNodeRef<'src>) -> Option<T>,
 ) -> Vec<T> {
-    let mut collector = ParentedCollector {
-        found: Vec::new(),
-        interpolations,
-        probe,
-    };
+    let mut collector = ParentedCollector::new(interpolations, Descent::Into, probe);
     walk_parented_exprs(module, &mut collector);
     collector.found
 }
 
-/// True for an f-string or t-string, the expression a probe reports
-/// `Descent::Over` on to leave every replacement field inside it the
-/// shape its author gave it.
-pub(crate) const fn is_interpolated_string(expr: &Expr) -> bool {
-    matches!(expr, Expr::FString(_) | Expr::TString(_))
+/// Walks every expression inside `call`'s argument list the way
+/// [`walk_parented_exprs`] walks a module, the list named as the node
+/// enclosing each top-level argument.
+pub(crate) fn walk_parented_arguments<'src>(
+    call: &'src ExprCall,
+    probe: &mut impl ParentedProbe<'src>,
+) {
+    ParentedWalk {
+        parents: vec![AnyNodeRef::from(call)],
+        probe,
+    }
+    .visit_arguments(&call.arguments);
+}
+
+/// Walks `expr` and every expression beneath it the way
+/// [`walk_parented_exprs`] walks a module, `parent` naming the node
+/// enclosing `expr`.
+pub(crate) fn walk_parented_expr<'src>(
+    expr: &'src Expr,
+    parent: AnyNodeRef<'src>,
+    probe: &mut impl ParentedProbe<'src>,
+) {
+    ParentedWalk {
+        parents: vec![parent],
+        probe,
+    }
+    .visit_expr(expr);
 }
 
 /// Walks every expression in `module`, handing each to `probe` with the

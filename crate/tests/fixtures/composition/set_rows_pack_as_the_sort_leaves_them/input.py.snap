@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/set_rows_pack_as_the_sort_leaves_them/input.py
+---
+y = {
+    1111111, 111111111111,
+    111111111113, 1111112
+}

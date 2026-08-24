@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 44
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_collections/sibling_literal_lands_on_the_closer_row/input.py
+---
+reflow-collections@78..157

@@ -1,0 +1,96 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias       = "delta"
+#MISE description = "Compare this tree's formatting of a corpus against a baseline worktree's, at every line length"
+
+source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
+source "$MISE_PROJECT_ROOT/.mise/lib/delta.bash"
+
+fail_width() {
+  echo "$binary $* at width $width, stderr at $record.log" >&2
+  exit 1
+}
+
+file_delta() {
+  report "$(staged diff --stat-count=5 "base-$1" "head-$1")" 'no file differs'
+}
+
+format_tagged() {
+  local side="$1" binary="$2" width="$3" status=0 unstable
+  local record="$stage/.git/$side-$width"
+  staged reset --hard -q pristine
+  printf 'code-line-length = %s\n' "$width" > "$stage/prose.toml"
+  "$binary" format --no-cache --output-format json "$stage" \
+    2> "$record.log" \
+    | jq -c 'select(.kind == "summary" and .schema_version == 1)' \
+    > "$record.json" || status=$?
+  (( status <= 4 )) || fail_width "exited $status"
+  [[ -s "$record.json" ]] || fail_width "emitted no summary"
+  (( $(jq '.files_visited' "$record.json") > 0 )) || fail_width "visited no file"
+  staged commit --allow-empty -am "$side at width $width" -q
+  staged tag "$side-$width"
+  unstable=$(jq -r '.unstable // [] | length' "$record.json")
+  (( unstable == 0 )) \
+    || echo "  $side is unstable on $unstable of the files at this width, stderr at $record.log"
+}
+
+report() {
+  sed 's/^/  /' <<< "${1:-$2}"
+}
+
+rule_delta() {
+  report "$(jq -rs '
+    map(.rules_fired) as [$a, $b]
+    | ($a + $b | keys[]) as $slug
+    | [($a[$slug] // 0), ($b[$slug] // 0)] as [$from, $to]
+    | select($from != $to)
+    | ($to - $from) as $delta
+    | [$slug, $from, "->", $to, "\(if $delta > 0 then "+" else "" end)\($delta)"]
+    | @tsv' "$stage/.git/base-$1.json" "$stage/.git/head-$1.json" | column -t)" \
+    'every rule fired the same number of times'
+}
+
+staged() {
+  git -C "$stage" \
+    -c commit.gpgsign=false \
+    -c tag.gpgsign=false \
+    -c user.email=delta@prose.fyi \
+    -c user.name=prose-delta \
+    "$@"
+}
+
+base_tree=$(baseline_root "${1:-}")
+[[ "$base_tree" != "$(git rev-parse --show-toplevel)" ]] \
+  || { echo "baseline $base_tree is this tree" >&2; exit 1; }
+corpus=$(corpus_root "${2:-}")
+widths="${PROSE_DELTA_WIDTHS:-40 50 60 79 88 100}"
+profile="${PROSE_DELTA_PROFILE:-release}"
+
+head_bin=$(built_binary "$profile")
+base_bin=$(cd "$base_tree" && built_binary "$profile")
+
+tmp="${TMPDIR:-/tmp}"
+stage=$(mktemp -d "${tmp%/}/prose-delta.XXXXXX")
+staged init -b delta -q
+staged --work-tree="$corpus" add -f -- '*.py'
+staged commit -m pristine -q
+staged tag pristine
+
+printf 'baseline %s (%s)\nhead     %s\ncorpus   %s (%d files)\nstage    %s\n\n' \
+  "$base_tree" \
+  "$(git -C "$base_tree" describe --always --dirty)" \
+  "$(git describe --always --dirty)" \
+  "$corpus" \
+  "$(staged ls-files | wc -l)" \
+  "$stage"
+
+for width in $widths; do
+  printf 'width %s\n' "$width"
+  format_tagged base "$base_bin" "$width"
+  format_tagged head "$head_bin" "$width"
+  rule_delta "$width"
+  file_delta "$width"
+  printf '\n'
+done
+
+printf 'each width survives as a tag pair in the stage, read one with\n'
+printf '  git -C %s diff base-<width> head-<width> [-- <path>]\n' "$stage"

@@ -1,0 +1,5 @@
+code-line-length = 40
+
+[harness]
+rules                 = ["reflow-collections", "strip-stranded-padding"]
+skip_ruff_coexistence = true

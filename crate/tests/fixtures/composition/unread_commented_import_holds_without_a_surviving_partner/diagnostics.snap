@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/unread_commented_import_holds_without_a_surviving_partner/input.py
+---
+prune-inert-imports@34..52
+reflow-imports@33..52

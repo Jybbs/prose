@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/reorder_measures_against_the_widest_source_row/input.py
+---
+class Action:
+    def __init__(self, dest, help, metavar):
+        if dest:
+            sup.__init__(dest=dest, help=help, metavar=metavar,
+                         option_strings = [])

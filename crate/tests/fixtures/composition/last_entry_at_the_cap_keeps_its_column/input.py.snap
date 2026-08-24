@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/last_entry_at_the_cap_keeps_its_column/input.py
+---
+_FORMATS = {
+    FMT_BINARY : {"detect": _is_fmt_binary},
+    FMT_XML    : {"d": _is_fmt_xml, "w": _PW}
+}

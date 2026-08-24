@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/flat_literal_measured_at_its_settled_width/input.py
+---
+class Logger:
+    def __init__(self, alogger):
+        self.loggerMap = {alogger: None}
+        m = {
+            "nw": 1,
+            "sw": 2,
+            "ne": 3,
+            "se": 4
+        }

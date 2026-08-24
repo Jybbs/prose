@@ -125,12 +125,13 @@ mise review
 |---|---|
 | `mise ci` | The full local sweep every pull request answers to |
 | `mise run rust:test` | The Rust suites, including every fixture snapshot |
-| `mise run rust:settle` | Formats a corpus twice, names every file the second run changes, then formats mutations of the settled output |
+| `mise run rust:settle` | Sweeps a corpus at every line length for rewrites a second pass would change and fixes the output never took, then sweeps mutations of it |
 | `mise run rust:subsets` | Probes each rule alone and each ordered rule pair over a corpus for one-pass settling |
+| `mise run rust:delta` | Formats a corpus with this tree and a baseline worktree at every line length and reports what differs, rule by rule and file by file |
 
-Both corpus tasks default to the interpreter's own standard library and take a directory argument to aim elsewhere. `rust:settle` answers whether a defect reproduces at all and over how many files, whereas `rust:subsets` locates it in the rule that carries it rather than in whichever pipeline happened to surface it. A fix answers to the second.
+Every corpus task defaults to the interpreter's own standard library and takes a directory argument to aim elsewhere, `rust:delta` taking it after the baseline worktree it compares against. `rust:settle` answers whether a defect reproduces at all and over how many files, whereas `rust:subsets` locates it in the rule that carries it rather than in whichever pipeline happened to surface it, and `rust:delta` shows what a fix changed across the corpus once it lands. A fix answers to the second.
 
-`rust:settle` then mutates its own settled output and formats each variant with the unstable-output notice on, so a rewrite that settles over the corpus as written but not over a parseable edit of it still surfaces. The mutations reorder top-level statements, widen and narrow identifiers, inject comments and suppression directives, and convert the line endings to CRLF, with every variant compiled before it lands so the report names a defect in *Prose* rather than one the mutation introduced. A second positional argument moves the pass off its sixty-second budget.
+`rust:settle` then mutates the corpus it has just swept and formats each variant with the unstable-output notice on, so a rewrite that settles over the corpus as written but not over a parseable edit of it still surfaces. The mutations reorder top-level statements, widen and narrow identifiers, inject comments and suppression directives, and convert the line endings to CRLF, with every variant compiled before it lands so the report names a defect in *Prose* rather than one the mutation introduced. A second positional argument moves the pass off its sixty-second budget.
 
 The fixture tree is itself a corpus, and the same probe sweeps it on every `cargo test`, failing the suite on any subset that needs a second pass at any swept `code-line-length`, because a subset that settles at one budget can still edit its own output at another. `rust:subsets` is that probe aimed at a wider corpus and built in release, narrowed to the shipped default budget so the pointed sweep's wall clock holds, which is why it stays a local tool rather than a per-pull-request check. Adding the reported case to the tree therefore turns the report into a permanent guard in the same stroke.
 

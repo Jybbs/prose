@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Keyword Form Keeps the Chain Pair"
+
+description = '''
+`stack-method-chains` wraps the positional argument in a grouping pair and stacks its links, and the keyword form `reflow-calls` renders keeps that pair around the row-spanning value, so the stacked chain holds its shape through the `=` alignment rather than re-wrapping on the next pass.
+'''

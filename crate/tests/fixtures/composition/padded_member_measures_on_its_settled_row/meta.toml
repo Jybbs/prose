@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Padded Member Measures on Its Settled Row"
+
+description = '''
+The list is written with padding inside its brackets, so `strip-stranded-padding` reports both delimiter columns, though the expansion rebuilds the bracket interior and carries them away before that strip lands. The member call lands on its own row at the literal's indent, where that padding sits nowhere ahead of it, so its `(` measures from the row the expansion leaves rather than from the source row, and the call explodes in the same pass that moves it.
+'''

@@ -1,4 +1,4 @@
 split_workspace() {
-  "$@" --workspace --exclude prose_wasm --locked
-  "$@" --package prose_wasm --locked
+  "$@" --exclude prose_wasm --locked --workspace
+  "$@" --locked --package prose_wasm
 }

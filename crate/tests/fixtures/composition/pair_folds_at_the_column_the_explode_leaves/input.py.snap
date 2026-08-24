@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/pair_folds_at_the_column_the_explode_leaves/input.py
+---
+class S:
+    def _c(self, prospective, spec, prefix):
+        return self._compare_greater_than_equal(
+            prospective,
+            spec
+        ) and self._compare_equal(prospective, prefix)

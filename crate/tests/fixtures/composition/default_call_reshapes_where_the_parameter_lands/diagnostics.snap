@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 44
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/default_call_reshapes_where_the_parameter_lands/input.py
+---
+reflow-signatures@16..117

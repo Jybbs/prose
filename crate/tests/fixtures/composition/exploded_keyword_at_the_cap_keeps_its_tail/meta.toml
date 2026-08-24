@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "An Exploded Keyword Ending on the Cap Keeps Its Tail"
+
+description = '''
+A nested call whose region ends exactly at its row's end still charges the columns the enclosing row writes after it, here the comma the keyword gains once [[alphabetize-siblings]] moves it first, so it explodes in the same pass rather than the next.
+'''

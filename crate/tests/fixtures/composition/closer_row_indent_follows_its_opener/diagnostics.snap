@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/closer_row_indent_follows_its_opener/input.py
+---
+reflow-calls@173..194
+reflow-collections@65..134

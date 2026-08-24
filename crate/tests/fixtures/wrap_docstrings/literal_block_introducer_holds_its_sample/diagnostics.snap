@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/wrap_docstrings/literal_block_introducer_holds_its_sample/input.py
+---
+
