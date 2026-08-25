@@ -18,7 +18,7 @@ use super::{
 use crate::{
     primitives::{
         fracture::outermost,
-        inline::folded_line_form,
+        inline::{carries_a_continuation, folded_line_form},
         splice::splice_preserves_tree,
         tokens::{is_closer, is_opener},
         walk::{Descent, ParentedProbe, filter_map_over_exprs, walk_parented_exprs},
@@ -158,9 +158,12 @@ fn candidate<'src>(
     // A walrus binding keeps its pair whatever the context, since the
     // grammar needs it almost everywhere, and a multi-line return
     // annotation belongs to `reflow-signatures`, so neither sheds here.
+    // A backslash continuing a row inside the pair belongs to
+    // `shed-backslash-continuations`, which runs ahead of this rule.
     if expr.is_named_expr()
         || (is_return_annotation(expr, parent) && source.contains_line_break(pair))
         || source.intersects_comment(pair)
+        || carries_a_continuation(source.slice(pair))
     {
         return None;
     }

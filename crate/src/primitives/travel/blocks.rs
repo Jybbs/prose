@@ -63,29 +63,57 @@ pub(crate) fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
     frozen
 }
 
+/// `range`'s text read through `edits`, hung from a row sitting at
+/// `indent`, so every movable continuation row lands one step further
+/// in and a closing row of the block's own returns to `indent`. A block
+/// whose head leaves a bracket open takes that bracket's shape through
+/// [`hanging_travel`], and one that does not moves rigidly. The seat
+/// reads `indent` alone rather than the column the source wrote the
+/// block at, so a caller rewriting the row it renders into reaches the
+/// same result on every later pass.
+pub(crate) fn hung_block_through<'s>(
+    source: &'s Source,
+    range: TextRange,
+    edits: &[Edit],
+    indent: usize,
+) -> Cow<'s, str> {
+    let block = apply_inline_edits(source, range, edits);
+    let frozen = frozen_rows(source, range);
+    let landing = Landing::own_row(range.start(), indent);
+    let opens_a_bracket = block
+        .universal_newlines()
+        .next()
+        .is_some_and(|head| head.trim_end().ends_with(OPENERS));
+    let travel = if opens_a_bracket {
+        // The bracket the head leaves open lays out the rows beneath it,
+        // so a block whose shape [`hanging_travel`] cannot follow holds
+        // where it sits rather than hanging from the row it lands on.
+        match hanging_travel(&block, &frozen, landing) {
+            Some(travel) => travel,
+            None => return block,
+        }
+    } else {
+        let Some(floor) = movable_floor(&block, &frozen) else {
+            return block;
+        };
+        Travel::rigid(item_indent(indent).cast_signed() - floor.cast_signed())
+    };
+    if travel.is_still() {
+        return block;
+    }
+    Cow::Owned(shifted_rows(&block, travel, &frozen))
+}
+
 /// `range`'s source text placed per `landing`, its continuation rows
 /// travelling and every row a row-spanning string part freezes left
 /// where the source wrote it. Borrowed where the block holds no movable
 /// continuation row or already sits where it lands.
 pub(crate) fn placed_block(source: &Source, range: TextRange, landing: Landing) -> Cow<'_, str> {
-    placed_block_through(source, range, &[], landing)
-}
-
-/// `range` placed per `landing` the way [`placed_block`] places it,
-/// reading the text `edits` leave rather than the text the source
-/// holds, so a caller folds its own pending rewrites into the block it
-/// moves.
-pub(crate) fn placed_block_through<'s>(
-    source: &'s Source,
-    range: TextRange,
-    edits: &[Edit],
-    landing: Landing,
-) -> Cow<'s, str> {
-    let block = apply_inline_edits(source, range, edits);
+    let block = source.slice(range);
     let frozen = frozen_rows(source, range);
-    match block_shift(source, &block, &frozen, range.start(), landing) {
-        Some(travel) if !travel.is_still() => Cow::Owned(shifted_rows(&block, travel, &frozen)),
-        _ => block,
+    match block_shift(source, block, &frozen, range.start(), landing) {
+        Some(travel) if !travel.is_still() => Cow::Owned(shifted_rows(block, travel, &frozen)),
+        _ => Cow::Borrowed(block),
     }
 }
 

@@ -1,7 +1,7 @@
 //! Moves a relocated block's continuation rows to the column it lands
 //! at. [`block_shift`] reads the move a block makes against its
-//! [`Landing`], [`placed_block`] applies it to a source range and
-//! [`placed_block_through`] to that range read through pending edits,
+//! [`Landing`], [`placed_block`] applies it to a source range,
+//! [`hung_block_through`] hangs one from the row it lands on instead,
 //! and a row a row-spanning string freezes stays where the source
 //! wrote it.
 
@@ -11,8 +11,7 @@ mod rows;
 use rows::{hanging_travel, movable_floor, shifted_rows};
 
 pub(crate) use blocks::{
-    block_shift, frozen_rows, placed_block, placed_block_through, shifted_block,
-    spans_a_string_part,
+    block_shift, frozen_rows, hung_block_through, placed_block, shifted_block, spans_a_string_part,
 };
 
 use ruff_diagnostics::Edit;

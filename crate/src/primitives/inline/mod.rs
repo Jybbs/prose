@@ -17,6 +17,16 @@ use crate::{
     source::Source,
 };
 
+/// True where a row of `slice` ends on a backslash continuation. The
+/// backslash reads as a line break rather than as a token, so a rewrite
+/// closing the row behind it strands the backslash ahead of a space and
+/// the text stops parsing. `shed-backslash-continuations` takes those
+/// out, and a subset running without it still reaches every rule that
+/// reshapes a row.
+pub(crate) fn carries_a_continuation(slice: &str) -> bool {
+    slice.lines().any(|line| line.trim_end().ends_with('\\'))
+}
+
 /// The column `text` ends at when its opening line starts at `indent`,
 /// measured past the last line break `text` carries.
 pub(crate) fn end_column(text: &str, indent: usize) -> usize {
@@ -28,8 +38,9 @@ pub(crate) fn end_column(text: &str, indent: usize) -> usize {
 /// the borrowed slice when it carries no break and the soft-wrap
 /// collapse when `expr` joins operands with an operator. `None` for
 /// every other multi-line expression, each of which a layout rule of
-/// its own lays out, and for one holding a string part that spans rows,
-/// whose interior the collapse would respace.
+/// its own lays out, for one holding a string part that spans rows,
+/// whose interior the collapse would respace, and for one a backslash
+/// continues, whose break the collapse would close.
 pub(crate) fn folded_line_form<'s>(
     source: &Source,
     expr: &Expr,
@@ -38,7 +49,7 @@ pub(crate) fn folded_line_form<'s>(
     if !slice.contains('\n') {
         return Some(Cow::Borrowed(slice));
     }
-    (is_operator_tree(expr) && !spans_a_string_part(source, expr))
+    (is_operator_tree(expr) && !spans_a_string_part(source, expr) && !carries_a_continuation(slice))
         .then(|| Cow::Owned(collapse_soft_wraps(slice)))
 }
 

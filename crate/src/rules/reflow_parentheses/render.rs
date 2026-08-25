@@ -21,7 +21,7 @@ use crate::{
         layout::{Separator, explode_parens, item_indent},
         splice::splice_preserves_tree,
         tokens::{is_closer, is_opener},
-        travel::{Landing, placed_block_through},
+        travel::hung_block_through,
     },
     source::Source,
 };
@@ -139,18 +139,11 @@ fn broken(source: &Source, chain: &[Operand], nested: &[Edit], indent: usize) ->
         chain.len(),
         |out, row| {
             let Operand { lead, range } = chain[row];
-            let mut column = item;
             if let Some(operator) = lead {
                 out.push_str(operator);
                 out.push(' ');
-                column += operator.width() + 1;
             }
-            let landing = Landing {
-                column,
-                indent: item,
-                item: range.start(),
-            };
-            out.push_str(&placed_block_through(source, range, nested, landing));
+            out.push_str(&hung_block_through(source, range, nested, item));
         },
         Separator::None,
     )
