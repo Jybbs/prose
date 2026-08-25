@@ -4,6 +4,7 @@ import { computed, ref, shallowRef, watch } from 'vue'
 
 import RuleCard from './RuleCard.vue'
 
+import { usePopperAnchor }                  from '../../../lib/composables/use-popper-anchor'
 import { lintShorthand, type Shorthand }    from '../../../lib/fixtures/lint-shorthand'
 import { data as rules, type RenderedRule } from '../../../lib/rules/rules.data'
 import { highlight }                        from '../../../lib/shared/highlight'
@@ -21,9 +22,9 @@ interface BlockPanes {
   before : string
 }
 
+const { aim, key, reference, target } = usePopperAnchor()
+
 const active      = ref<ActiveFinding | null>(null)
-const activeFlag  = shallowRef<HTMLElement | null>(null)
-const anchor      = ref(0)
 const block       = shallowRef<BlockPanes | null>(null)
 const messageHtml = computed(() => inlineCode(active.value?.message ?? ''))
 
@@ -32,8 +33,8 @@ const run = latestRun()
 // The `.lint-flag` anchors sit inside `v-html` static HTML, so event
 // delegation finds the hovered flag and the popper takes it as a dynamic
 // reference node rather than wrapping each anchor in a component. Floating
-// resolves that reference once per mount, so `anchor` keys the popper to a
-// fresh instance whenever the flag changes, pinning it to the hovered span
+// resolves that reference once per mount, so `usePopperAnchor` keys the popper
+// to a fresh instance whenever the flag changes, pinning it to the hovered span
 // rather than the panel it caches on first show.
 function show(event: Event): void {
   const flag = (event.target as HTMLElement).closest<HTMLElement>('.lint-flag')
@@ -43,10 +44,9 @@ function show(event: Event): void {
   // Crossing between a flag's own token spans re-fires the delegated hover,
   // so a repeat on the flag already shown returns before the render and the
   // highlight.
-  if (active.value && flag === activeFlag.value) return
+  if (active.value && flag === target.value) return
   const message    = flag.dataset.message ?? ''
-  if (flag !== activeFlag.value) anchor.value += 1
-  activeFlag.value = flag
+  aim(flag)
   active.value = {
     message,
     rule,
@@ -89,7 +89,7 @@ defineExpose({ hide, show })
 
 <template>
   <PopperWrapper
-    :key="anchor"
+    :key="key"
     theme="rule-card"
     placement="bottom-start"
     popper-class="lint-popover fam-lint"
@@ -99,7 +99,7 @@ defineExpose({ hide, show })
     :handle-resize="false"
     :overflow-padding="16"
     :popper-triggers="[]"
-    :reference-node="() => activeFlag!"
+    :reference-node="reference"
     :shown="active !== null"
     :triggers="[]"
   >

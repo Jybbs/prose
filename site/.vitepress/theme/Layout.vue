@@ -8,6 +8,7 @@ import BuildMetadata      from './components/layout/BuildMetadata.vue'
 import GlossaryFolioIndex from './components/glossary/GlossaryFolioIndex.vue'
 import NotFound           from './components/layout/NotFound.vue'
 import RuleChrome         from './components/rules/RuleChrome.vue'
+import RuleLinkPopper     from './components/rules/RuleLinkPopper.vue'
 import StarBadge          from './components/layout/StarBadge.vue'
 
 provideCurrentRule()
@@ -32,6 +33,7 @@ watchEffect(() => {
     </template>
     <template #layout-bottom>
       <BuildMetadata />
+      <RuleLinkPopper />
     </template>
     <template #not-found>
       <NotFound />
