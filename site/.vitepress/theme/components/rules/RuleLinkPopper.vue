@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { options, PopperWrapper }                      from 'floating-vue'
-import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+import { useEventListener }            from '@vueuse/core'
+import { options, PopperWrapper }      from 'floating-vue'
+import { onBeforeUnmount, shallowRef } from 'vue'
 
 import RuleCard from './RuleCard.vue'
 
+import { usePopperAnchor }                  from '../../../lib/composables/use-popper-anchor'
 import { data as rules, type RenderedRule } from '../../../lib/rules/rules.data'
 
 interface PopperTheme {
@@ -16,18 +18,17 @@ interface PopperTheme {
 const themes = (options as { themes: Record<string, PopperTheme> }).themes
 const delay  = themes['rule-card'].delay
 
-const activeLink = shallowRef<HTMLElement | null>(null)
-const anchor     = ref(0)
-const rule       = shallowRef<RenderedRule | null>(null)
+const { aim, key, reference, target } = usePopperAnchor()
+
+const rule = shallowRef<RenderedRule | null>(null)
 
 let timer: ReturnType<typeof setTimeout> | undefined
 
 // One delegated popper serves every `a.rule-link[data-rule]` in the page,
-// taking the hovered anchor as its reference node. `anchor` keys it to a fresh
-// instance whenever that reference changes.
+// taking the hovered anchor as its reference node.
 function linkFrom(event: Event): HTMLElement | null {
-  const target = event.target
-  return target instanceof Element ? target.closest<HTMLElement>('a.rule-link[data-rule]') : null
+  const node = event.target
+  return node instanceof Element ? node.closest<HTMLElement>('a.rule-link[data-rule]') : null
 }
 
 function show(event: Event): void {
@@ -36,12 +37,9 @@ function show(event: Event): void {
   const found = rules.bySlug[link.dataset.rule ?? '']
   if (!found) return
   clearTimeout(timer)
-  if (link === activeLink.value && rule.value) return
+  if (link === target.value && rule.value) return
   timer = setTimeout(() => {
-    if (link !== activeLink.value) {
-      anchor.value    += 1
-      activeLink.value = link
-    }
+    aim(link)
     rule.value = found
   }, delay.show)
 }
@@ -52,31 +50,23 @@ function hide(event: Event): void {
   timer = setTimeout(() => { rule.value = null }, delay.hide)
 }
 
-onMounted(() => {
-  document.addEventListener('focusin',   show)
-  document.addEventListener('focusout',  hide)
-  document.addEventListener('mouseover', show)
-  document.addEventListener('mouseout',  hide)
-})
+useEventListener('focusin',   show)
+useEventListener('focusout',  hide)
+useEventListener('mouseover', show)
+useEventListener('mouseout',  hide)
 
-onBeforeUnmount(() => {
-  clearTimeout(timer)
-  document.removeEventListener('focusin',   show)
-  document.removeEventListener('focusout',  hide)
-  document.removeEventListener('mouseover', show)
-  document.removeEventListener('mouseout',  hide)
-})
+onBeforeUnmount(() => clearTimeout(timer))
 </script>
 
 <template>
   <PopperWrapper
-    :key="anchor"
+    :key="key"
     theme="rule-card"
     :auto-hide="false"
     :no-auto-focus="true"
     :popper-class="`rule-card-popper fam-${rule?.family ?? ''}`"
     :popper-triggers="[]"
-    :reference-node="() => activeLink!"
+    :reference-node="reference"
     :shown="rule !== null"
     :triggers="[]"
   >
