@@ -1,7 +1,7 @@
 //! Maps a source offset through a set of edits, and narrows a whole-range
 //! replacement to the span that actually differs.
 
-use std::cmp::Ordering;
+use std::{borrow::Cow, cmp::Ordering};
 
 use ruff_diagnostics::{Edit, SourceMap, SourceMarker};
 use ruff_notebook::CellOffsets;
@@ -35,8 +35,12 @@ pub(crate) fn forward_offsets(
 /// Narrows `text` against the source slice covered by `span` and
 /// shapes the result as either a deletion or replacement Edit.
 /// Returns `None` when the text already matches the source slice.
-pub(crate) fn narrowed_replacement(source: &Source, span: TextRange, text: String) -> Option<Edit> {
-    let (narrowed_span, narrowed_text) = narrow_edit(text, span, source.slice(span))?;
+pub(crate) fn narrowed_replacement<'a>(
+    source: &Source,
+    span: TextRange,
+    text: impl Into<Cow<'a, str>>,
+) -> Option<Edit> {
+    let (narrowed_span, narrowed_text) = narrow_edit(text.into(), span, source.slice(span))?;
     Some(replacement_or_deletion(narrowed_span, narrowed_text))
 }
 
@@ -77,13 +81,14 @@ fn forward_offset(offset: TextSize, map: &SourceMap, is_final: bool) -> TextSize
 /// `source_slice` (no edit needed). Walks codepoint-by-codepoint so
 /// the trim never lands inside a multibyte UTF-8 sequence.
 pub(super) fn narrow_edit(
-    mut text: String,
+    text: Cow<'_, str>,
     span: TextRange,
     source_slice: &str,
 ) -> Option<(TextRange, String)> {
     if text == source_slice {
         return None;
     }
+    let mut text = text.into_owned();
     let prefix_len: TextSize = text
         .chars()
         .zip(source_slice.chars())
@@ -247,7 +252,7 @@ mod tests {
     #[test]
     fn narrow_edit_handles_multibyte_codepoint_at_divergence() {
         let span = range(0, 7);
-        let (r, text) = narrow_edit("α = 1\n".to_owned(), span, "β = 1\n").expect("differs");
+        let (r, text) = narrow_edit("α = 1\n".into(), span, "β = 1\n").expect("differs");
         assert_eq!(r.start().to_u32(), 0);
         assert_eq!(r.end().to_u32(), 2);
         assert_eq!(text, "α");
@@ -256,7 +261,7 @@ mod tests {
     #[test]
     fn narrow_edit_handles_pure_deletion() {
         let span = range(0, 3);
-        let (r, text) = narrow_edit("ab".to_owned(), span, "abc").expect("differs");
+        let (r, text) = narrow_edit("ab".into(), span, "abc").expect("differs");
         assert_eq!(r.start().to_u32(), 2);
         assert_eq!(r.end().to_u32(), 3);
         assert_eq!(text, "");
@@ -265,7 +270,7 @@ mod tests {
     #[test]
     fn narrow_edit_handles_pure_insertion() {
         let span = range(0, 3);
-        let (r, text) = narrow_edit("abxc".to_owned(), span, "abc").expect("differs");
+        let (r, text) = narrow_edit("abxc".into(), span, "abc").expect("differs");
         assert_eq!(r.start().to_u32(), 2);
         assert_eq!(r.end().to_u32(), 2);
         assert_eq!(text, "x");
@@ -273,13 +278,13 @@ mod tests {
 
     #[test]
     fn narrow_edit_returns_none_when_text_equals_source() {
-        assert!(narrow_edit("hello".to_owned(), range(0, 5), "hello").is_none());
+        assert!(narrow_edit("hello".into(), range(0, 5), "hello").is_none());
     }
 
     #[test]
     fn narrow_edit_returns_whole_input_when_no_common_prefix_or_suffix() {
         let span = range(0, 3);
-        let (r, text) = narrow_edit("abc".to_owned(), span, "xyz").expect("differs");
+        let (r, text) = narrow_edit("abc".into(), span, "xyz").expect("differs");
         assert_eq!(r.start().to_u32(), 0);
         assert_eq!(r.end().to_u32(), 3);
         assert_eq!(text, "abc");
@@ -288,7 +293,7 @@ mod tests {
     #[test]
     fn narrow_edit_trims_common_prefix() {
         let span = range(0, 3);
-        let (r, text) = narrow_edit("abc".to_owned(), span, "abd").expect("differs");
+        let (r, text) = narrow_edit("abc".into(), span, "abd").expect("differs");
         assert_eq!(r.start().to_u32(), 2);
         assert_eq!(r.end().to_u32(), 3);
         assert_eq!(text, "c");
@@ -297,7 +302,7 @@ mod tests {
     #[test]
     fn narrow_edit_trims_common_prefix_and_suffix() {
         let span = range(0, 7);
-        let (r, text) = narrow_edit("ab1cdef".to_owned(), span, "ab2cdef").expect("differs");
+        let (r, text) = narrow_edit("ab1cdef".into(), span, "ab2cdef").expect("differs");
         assert_eq!(r.start().to_u32(), 2);
         assert_eq!(r.end().to_u32(), 3);
         assert_eq!(text, "1");
@@ -306,7 +311,7 @@ mod tests {
     #[test]
     fn narrow_edit_trims_common_suffix() {
         let span = range(0, 3);
-        let (r, text) = narrow_edit("abc".to_owned(), span, "xbc").expect("differs");
+        let (r, text) = narrow_edit("abc".into(), span, "xbc").expect("differs");
         assert_eq!(r.start().to_u32(), 0);
         assert_eq!(r.end().to_u32(), 1);
         assert_eq!(text, "a");

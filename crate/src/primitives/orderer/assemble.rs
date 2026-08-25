@@ -123,60 +123,45 @@ pub(crate) fn assembled_cell_edits<'src>(
     forced: bool,
     mut gap: impl FnMut(usize) -> Option<&'src str>,
 ) -> Vec<Vec<Edit>> {
-    if !source.is_notebook() {
-        if !forced && !any_owned(rendered) && is_identity(order) {
-            return Vec::new();
-        }
-        let edits = piecewise_edits(source, blocks, rendered, order, &mut gap);
-        return if edits.is_empty() {
-            Vec::new()
-        } else {
-            vec![edits]
-        };
+    if !source.is_notebook() && !forced && !any_owned(rendered) && is_identity(order) {
+        return Vec::new();
     }
-    let mut groups = Vec::new();
-    for Range { start, end } in slot_runs(blocks, |a, b| source.same_cell(a.start(), b.start())) {
-        let cell = &blocks[start..end];
-        let rebased: Vec<usize> = order[start..end].iter().map(|&slot| slot - start).collect();
-        let mut cell_gap = |slot: usize| gap(start + slot);
-        let edits = piecewise_edits(source, cell, &rendered[start..end], &rebased, &mut cell_gap);
-        if !edits.is_empty() {
-            groups.push(edits);
-        }
-    }
-    groups
+    slot_runs(blocks, |a, b| source.same_cell(a.start(), b.start()))
+        .filter_map(|run| {
+            let edits = piecewise_edits(source, blocks, rendered, order, run, &mut gap);
+            (!edits.is_empty()).then_some(edits)
+        })
+        .collect()
 }
 
 /// One narrowed edit per piece of the assembly that differs from the
-/// source, walking the same partition [`assemble_blocks`] writes: the
-/// block standing at each destination slot, then the gap following it.
-/// A piece the assembly reproduces verbatim earns no edit, so the
-/// emitted ranges cover only the bytes the reorder rewrites and leave
-/// an untouched span between two of them free of any edit. The pieces
-/// tile the whole block span in ascending order, so splicing them all
+/// source, over the slots `run` covers, walking the same partition
+/// [`assemble_blocks`] writes: the block standing at each destination
+/// slot, then the gap following it. A piece the assembly reproduces
+/// verbatim earns no edit, so the emitted ranges cover only the bytes
+/// the reorder rewrites and leave an untouched span between two of them
+/// free of any edit. The final slot of `run` contributes no gap edit,
+/// keeping a notebook's edits inside the cell that `run` spans. The
+/// pieces tile that span in ascending order, so splicing them all
 /// yields the text [`assemble_blocks`] would have written.
 fn piecewise_edits<'src>(
     source: &'src Source,
     blocks: &[TextRange],
     rendered: &[Cow<'src, str>],
     order: &[usize],
+    run: Range<usize>,
     gap: &mut impl FnMut(usize) -> Option<&'src str>,
 ) -> Vec<Edit> {
     let mut edits = Vec::new();
-    for (i, (&idx, &block)) in order.iter().zip(blocks).enumerate() {
-        if *rendered[idx] != *source.slice(block) {
-            edits.extend(narrowed_replacement(
-                source,
-                block,
-                rendered[idx].to_string(),
-            ));
-        }
-        let Some(next) = blocks.get(i + 1) else {
+    for i in run.clone() {
+        let block = blocks[i];
+        edits.extend(narrowed_replacement(source, block, &*rendered[order[i]]));
+        let Some(next) = blocks.get(i + 1).filter(|_| i + 1 < run.end) else {
             continue;
         };
         if let Some(text) = gap(i) {
             let span = TextRange::new(block.end(), next.start());
-            edits.extend(narrowed_replacement(source, span, text.to_owned()));
+            edits.extend(narrowed_replacement(source, span, text));
         }
     }
     edits
