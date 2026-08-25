@@ -9,7 +9,7 @@ use ruff_python_ast::{
     AnyNodeRef, Expr,
     token::{TokenKind, parenthesized_range},
 };
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{
     chain::{Sheds, is_operator_chain},
@@ -28,9 +28,10 @@ use crate::{
 
 /// One grouping pair a reflow reaches, carrying the expression it
 /// wraps, that expression's range and single-line form, whether the
-/// pair links a wider chain as one of its operands, whether removing
-/// the pair leaves the parse unchanged, and the sides on which the pair
-/// runs into an identifier character.
+/// pair links a wider chain as one of its operands, whether the pair
+/// comes off without moving either the parse or the grouping a reader
+/// sees, and the sides on which the pair runs into an identifier
+/// character.
 pub(super) struct Candidate<'src> {
     pub(super) bare: Option<Cow<'src, str>>,
     pub(super) expr: &'src Expr,
@@ -42,6 +43,17 @@ pub(super) struct Candidate<'src> {
 }
 
 impl Candidate<'_> {
+    /// The two edits taking the pair's parenthesis characters out and
+    /// nothing else, the removal a pair inside an open fold earns,
+    /// since that fold closes the whitespace around them itself.
+    pub(super) fn lone_paren_removals(&self) -> [Edit; 2] {
+        let paren = TextSize::of('(');
+        self.flush.flanking(
+            TextRange::at(self.pair.start(), paren),
+            TextRange::at(self.pair.end() - paren, paren),
+        )
+    }
+
     /// The two edits taking the pair's own parentheses out, each
     /// leaving a space where the side runs into an identifier
     /// character.
@@ -118,11 +130,24 @@ pub(super) fn outermost_calls(source: &Source) -> Vec<TextRange> {
     }))
 }
 
+/// True where `expr` joins at one boolean operator and the node
+/// holding it joins at the other, so the pair around `expr` separates
+/// two bindings rather than repeating one. Dropping that pair would
+/// leave its operands reading as one flat run at a single operator,
+/// whether they land on one row or on rows of their own.
+fn binds_apart(expr: &Expr, parent: AnyNodeRef) -> bool {
+    let Expr::BoolOp(inner) = expr else {
+        return false;
+    };
+    matches!(parent, AnyNodeRef::ExprBoolOp(outer) if outer.op != inner.op)
+}
+
 /// The candidate `expr` contributes, or `None` where no pair encloses
 /// it, the pair carries syntax, or neither direction is open to it. An
 /// interior no fold joins still qualifies where the brackets inside it
 /// hold its breaks and where a break can divide it into rows, with
-/// `sheds` carrying whether removal itself holds the parse.
+/// `sheds` carrying whether removal holds both the parse and the
+/// grouping a reader sees.
 fn candidate<'src>(
     source: &'src Source,
     expr: &'src Expr,
@@ -147,7 +172,7 @@ fn candidate<'src>(
     }
     let flush = Flush::of(source, pair);
     let probe = flush.padded(bare.as_deref().unwrap_or_else(|| source.slice(inner)));
-    let sheds = splice_preserves_tree(source, pair, &probe);
+    let sheds = splice_preserves_tree(source, pair, &probe) && !binds_apart(expr, parent);
     (sheds || chains).then_some(Candidate {
         bare,
         expr,

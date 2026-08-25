@@ -7,19 +7,88 @@ use ruff_text_size::{Ranged, TextRange};
 
 use crate::source::Source;
 
+/// One operand of a divided chain, carrying the range it occupies and
+/// the spelling of the operator joining it to the operand ahead of it.
+/// The chain's first operand joins nothing and leaves `lead` as `None`.
+pub(super) struct Operand {
+    pub(super) lead: Option<&'static str>,
+    pub(super) range: TextRange,
+}
+
 /// Reports whether a pair around a given range comes off in this pass.
 pub(super) type Sheds<'a> = &'a dyn Fn(TextRange) -> bool;
 
-/// The operator level a break cuts at, every row of the break sharing
-/// it.
-#[derive(Clone, Copy)]
-enum Level {
-    /// Both boolean operators, an `and` nested inside an `or` reading
-    /// as one run of rows.
-    Boolean,
-    /// One binary-operator precedence, leaving a tighter-binding
-    /// operand whole on its row.
-    Binary(OperatorPrecedence),
+/// The context one chain division carries down its recursion, fixed
+/// for the whole walk while the node, its parent, and the operator
+/// leading it change per step.
+struct Division<'a> {
+    level: OperatorPrecedence,
+    sheds: Sheds<'a>,
+    source: &'a Source,
+}
+
+impl<'a> Division<'a> {
+    /// The division cutting at `level`, reading `source` against the
+    /// pairs `sheds` reports coming off.
+    fn at(level: OperatorPrecedence, sheds: Sheds<'a>, source: &'a Source) -> Self {
+        Self {
+            level,
+            sheds,
+            source,
+        }
+    }
+
+    /// The range `expr` occupies as an operand, widened to the pair
+    /// around it and narrowed back to the bare node where `sheds`
+    /// reports that pair comes off.
+    fn operand_range(&self, expr: &Expr, parent: AnyNodeRef) -> TextRange {
+        let held = self.source.paren_aware_range(expr.into(), parent);
+        if (self.sheds)(held) {
+            expr.range()
+        } else {
+            held
+        }
+    }
+
+    /// Pushes `expr`'s own operands onto `out`, descending through a
+    /// node joining its children at this division's level and pushing
+    /// the range whole otherwise. `lead` is the operator joining `expr`
+    /// to what precedes it, which the first operand of a descent
+    /// inherits and each later one takes from the node it descended
+    /// through. A pair the source wrote around `expr` holds the node on
+    /// one row, except where the pair comes off, leaving the node to
+    /// divide as the shed text would.
+    fn push(
+        &self,
+        expr: &Expr,
+        parent: AnyNodeRef,
+        lead: Option<&'static str>,
+        out: &mut Vec<Operand>,
+    ) {
+        let held = self.operand_range(expr, parent);
+        if held == expr.range() {
+            match expr {
+                Expr::BinOp(binary) if OperatorPrecedence::from(binary.op) == self.level => {
+                    self.push(&binary.left, expr.into(), lead, out);
+                    self.push(&binary.right, expr.into(), Some(binary.op.as_str()), out);
+                    return;
+                }
+                Expr::BoolOp(boolean) if OperatorPrecedence::from(boolean.op) == self.level => {
+                    for (index, value) in boolean.values.iter().enumerate() {
+                        let joined = if index > 0 {
+                            Some(boolean.op.as_str())
+                        } else {
+                            lead
+                        };
+                        self.push(value, expr.into(), joined, out);
+                    }
+                    return;
+                }
+                _ => {}
+            }
+        }
+        out.push(Operand { lead, range: held });
+    }
 }
 
 /// True for the three nodes a break divides into rows, read through
@@ -32,79 +101,51 @@ pub(super) fn is_operator_chain(expr: ExprRef) -> bool {
     )
 }
 
-/// The operand ranges `expr`'s outermost operator chain divides into,
+/// The operands `expr`'s outermost operator chain divides into,
 /// in source order. An operand `sheds` reports a pair around carries
 /// the bare range and divides further where its own node joins at the
 /// same level, so the division reads the text this pass leaves rather
-/// than the text it was handed. `None` for an expression that is no
-/// operator chain.
-pub(super) fn operands(source: &Source, expr: &Expr, sheds: Sheds) -> Option<Vec<TextRange>> {
+/// than the text it was handed. A boolean chain joining at the other
+/// operator stays whole on its row, the rows around it reading as one
+/// run at one operator. `None` for an expression that is no operator
+/// chain.
+pub(super) fn operands(source: &Source, expr: &Expr, sheds: Sheds) -> Option<Vec<Operand>> {
     let mut out = Vec::new();
     match expr {
         Expr::BinOp(binary) => {
-            let level = Level::Binary(OperatorPrecedence::from(binary.op));
-            for side in [binary.left.as_ref(), binary.right.as_ref()] {
-                push_operands(source, side, expr.into(), level, sheds, &mut out);
-            }
+            let walk = Division::at(OperatorPrecedence::from(binary.op), sheds, source);
+            walk.push(&binary.left, expr.into(), None, &mut out);
+            walk.push(
+                &binary.right,
+                expr.into(),
+                Some(binary.op.as_str()),
+                &mut out,
+            );
         }
         Expr::BoolOp(boolean) => {
-            for value in &boolean.values {
-                push_operands(source, value, expr.into(), Level::Boolean, sheds, &mut out);
+            let walk = Division::at(OperatorPrecedence::from(boolean.op), sheds, source);
+            for (index, value) in boolean.values.iter().enumerate() {
+                let lead = (index > 0).then(|| boolean.op.as_str());
+                walk.push(value, expr.into(), lead, &mut out);
             }
         }
         Expr::Compare(compare) => {
-            let held = |operand: &Expr| operand_range(source, operand, expr.into(), sheds);
-            out.push(held(compare.left.as_ref()));
-            out.extend(compare.comparators.iter().map(held));
+            let walk = Division::at(OperatorPrecedence::from(expr), sheds, source);
+            let held = |operand: &Expr| walk.operand_range(operand, expr.into());
+            out.push(Operand {
+                lead: None,
+                range: held(&compare.left),
+            });
+            for (operator, operand) in compare.ops.iter().zip(&compare.comparators) {
+                out.push(Operand {
+                    lead: Some(operator.as_str()),
+                    range: held(operand),
+                });
+            }
         }
         _ => return None,
     }
     Some(out)
-}
-
-/// The range `expr` occupies as an operand, widened to the pair around
-/// it and narrowed back to the bare node where `sheds` reports that
-/// pair comes off.
-fn operand_range(source: &Source, expr: &Expr, parent: AnyNodeRef, sheds: Sheds) -> TextRange {
-    let held = source.paren_aware_range(expr.into(), parent);
-    if sheds(held) { expr.range() } else { held }
-}
-
-/// Pushes `expr`'s own operand ranges onto `out`, descending through a
-/// node joining its children at `level` and pushing the range whole
-/// otherwise. A pair the source wrote around `expr` holds the node on
-/// one row, except where `sheds` reports the pair comes off, leaving
-/// the node to divide as the shed text would.
-fn push_operands(
-    source: &Source,
-    expr: &Expr,
-    parent: AnyNodeRef,
-    level: Level,
-    sheds: Sheds,
-    out: &mut Vec<TextRange>,
-) {
-    let held = operand_range(source, expr, parent, sheds);
-    let bare = held == expr.range();
-    if bare {
-        match (expr, level) {
-            (Expr::BinOp(binary), Level::Binary(precedence))
-                if OperatorPrecedence::from(binary.op) == precedence =>
-            {
-                for side in [binary.left.as_ref(), binary.right.as_ref()] {
-                    push_operands(source, side, expr.into(), level, sheds, out);
-                }
-                return;
-            }
-            (Expr::BoolOp(boolean), Level::Boolean) => {
-                for value in &boolean.values {
-                    push_operands(source, value, expr.into(), level, sheds, out);
-                }
-                return;
-            }
-            _ => {}
-        }
-    }
-    out.push(held);
 }
 
 #[cfg(test)]
@@ -120,8 +161,12 @@ mod tests {
         let source = parse(src);
         let expr = first_expr(&source);
         let holds = |_: TextRange| false;
-        operands(&source, expr, &holds)
-            .map(|ranges| ranges.iter().map(|r| source.slice(*r).to_owned()).collect())
+        operands(&source, expr, &holds).map(|found| {
+            found
+                .iter()
+                .map(|o| source.slice(o.range).to_owned())
+                .collect()
+        })
     }
 
     /// `src`'s chain divided with every grouping pair shedding.
@@ -129,8 +174,12 @@ mod tests {
         let source = parse(src);
         let expr = first_expr(&source);
         let all = |_: TextRange| true;
-        operands(&source, expr, &all)
-            .map(|ranges| ranges.iter().map(|r| source.slice(*r).to_owned()).collect())
+        operands(&source, expr, &all).map(|found| {
+            found
+                .iter()
+                .map(|o| source.slice(o.range).to_owned())
+                .collect()
+        })
     }
 
     #[rstest]
@@ -159,7 +208,7 @@ mod tests {
 
     #[rstest]
     #[case("a and b and c", &["a", "b", "c"])]
-    #[case("a and b or c and d", &["a", "b", "c", "d"])]
+    #[case("a and b or c and d", &["a and b", "c and d"])]
     #[case("a == 1 and b != 2", &["a == 1", "b != 2"])]
     #[case("a < b < c", &["a", "b", "c"])]
     #[case("a + b + c", &["a", "b", "c"])]
@@ -179,10 +228,23 @@ mod tests {
     }
 
     #[rstest]
-    #[case("a or (b and c)", &["a", "b", "c"])]
     #[case("a + (b + c) + d", &["a", "b", "c", "d"])]
     #[case("a and (b == 1)", &["a", "b == 1"])]
     fn operands_divide_through_a_pair_the_pass_sheds(#[case] src: &str, #[case] expected: &[&str]) {
+        let divided = divided_shedding(src).expect("the source holds a chain");
+        assert_eq!(
+            divided.iter().map(String::as_str).collect::<Vec<_>>(),
+            expected
+        );
+    }
+
+    #[rstest]
+    #[case("a or (b and c)", &["a", "b and c"])]
+    #[case("a and (b or c) and d", &["a", "b or c", "d"])]
+    fn operands_hold_a_chain_binding_at_the_other_boolean_operator(
+        #[case] src: &str,
+        #[case] expected: &[&str],
+    ) {
         let divided = divided_shedding(src).expect("the source holds a chain");
         assert_eq!(
             divided.iter().map(String::as_str).collect::<Vec<_>>(),

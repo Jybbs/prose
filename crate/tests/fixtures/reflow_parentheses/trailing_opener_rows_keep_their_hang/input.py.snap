@@ -9,4 +9,4 @@ x = [
     if
         o not in aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
         or
-        o in aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa and o in aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]
+        (o in aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa and o in aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)]

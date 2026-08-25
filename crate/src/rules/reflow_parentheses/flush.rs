@@ -12,8 +12,8 @@ use crate::{primitives::edit::joins_an_identifier, source::Source};
 /// written flush against its paren, where the pair's removal leaves a
 /// single space rather than nothing.
 pub(super) struct Flush {
-    pub(super) after: bool,
-    pub(super) before: bool,
+    after: bool,
+    before: bool,
 }
 
 impl Flush {
@@ -26,16 +26,14 @@ impl Flush {
         }
     }
 
-    /// `text` with the space each flush side keeps, the form the splice
-    /// probe and the emitted edits share.
-    pub(super) fn padded<'t>(&self, text: &'t str) -> Cow<'t, str> {
-        match (self.before, self.after) {
-            (false, false) => Cow::Borrowed(text),
-            (before, after) => {
-                let lead = if before { " " } else { "" };
-                let trail = if after { " " } else { "" };
-                Cow::Owned(format!("{lead}{text}{trail}"))
-            }
+    /// The edit removing `span`, one of the pair's parens with the
+    /// whitespace it takes along, leaving a space where `flush` says
+    /// the side touches an identifier character.
+    fn removal(flush: bool, span: TextRange) -> Edit {
+        if flush {
+            Edit::range_replacement(" ".to_owned(), span)
+        } else {
+            Edit::range_deletion(span)
         }
     }
 
@@ -49,14 +47,16 @@ impl Flush {
         ]
     }
 
-    /// The edit removing `span`, one of the pair's parens with the
-    /// whitespace it takes along, leaving a space where `flush` says
-    /// the side touches an identifier character.
-    fn removal(flush: bool, span: TextRange) -> Edit {
-        if flush {
-            Edit::range_replacement(" ".to_owned(), span)
-        } else {
-            Edit::range_deletion(span)
+    /// `text` with the space each flush side keeps, the form the splice
+    /// probe and the emitted edits share.
+    pub(super) fn padded<'t>(&self, text: &'t str) -> Cow<'t, str> {
+        match (self.before, self.after) {
+            (false, false) => Cow::Borrowed(text),
+            (before, after) => {
+                let lead = if before { " " } else { "" };
+                let trail = if after { " " } else { "" };
+                Cow::Owned(format!("{lead}{text}{trail}"))
+            }
         }
     }
 

@@ -1,5 +1,5 @@
 result = (
-    alpha and beta
+    alphas + betas
 ) or (
-    gamma and delta
+    gammas + deltas
 )

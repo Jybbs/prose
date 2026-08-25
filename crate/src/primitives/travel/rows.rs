@@ -5,7 +5,7 @@ use super::*;
 /// True where the closer `row` opens with closes the bracket the block's
 /// head left open rather than one an interior row opened, meaning no
 /// closer later on the row is left unmatched by an opener ahead of it.
-pub(super) fn closes_the_head(row: &str) -> bool {
+fn closes_the_head(row: &str) -> bool {
     let mut lexer = lex(row, Mode::Expression);
     let mut depth = 0_usize;
     // The leading closer is the one under test.
@@ -62,7 +62,7 @@ pub(super) fn hanging_travel(block: &str, frozen: &[bool], landing: Landing) -> 
 
 /// True for a non-blank continuation row at `row` that `frozen` leaves
 /// free to move.
-pub(super) fn is_movable(row: usize, line: &str, frozen: &[bool]) -> bool {
+fn is_movable(row: usize, line: &str, frozen: &[bool]) -> bool {
     row > 0 && frozen.get(row) != Some(&true) && !line.trim().is_empty()
 }
 
@@ -78,10 +78,7 @@ pub(super) fn movable_floor(block: &str, frozen: &[bool]) -> Option<usize> {
 
 /// Yields each movable non-blank continuation row of `block`, skipping
 /// the rows `frozen` marks.
-pub(super) fn movable_rows<'b>(
-    block: &'b str,
-    frozen: &'b [bool],
-) -> impl Iterator<Item = Line<'b>> {
+fn movable_rows<'b>(block: &'b str, frozen: &'b [bool]) -> impl Iterator<Item = Line<'b>> {
     block
         .universal_newlines()
         .enumerate()

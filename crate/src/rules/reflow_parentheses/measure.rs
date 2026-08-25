@@ -19,8 +19,14 @@ impl Shedder<'_> {
     /// The column `offset` reaches once the edits emitted so far apply,
     /// measured from the enclosing logical line.
     fn column_at(&self, offset: TextSize) -> usize {
-        let head = self.source.logical_line_start(offset);
-        end_column(&apply_inline_edits(self.source, head, &self.edits), 0)
+        self.column_through(self.source.logical_line_start(offset))
+    }
+
+    /// The column the text through `range` reaches once the edits
+    /// emitted so far apply, `range` opening at the row or the logical
+    /// line the measure reads from.
+    fn column_through(&self, range: TextRange) -> usize {
+        end_column(&apply_inline_edits(self.source, range, &self.edits), 0)
     }
 
     /// The columns `candidate`'s joined interior takes, widened by the
@@ -31,7 +37,7 @@ impl Shedder<'_> {
         let bare = candidate.bare.as_ref()?;
         let shed: usize = candidates
             .iter()
-            .filter(|other| candidate.inner.contains_range(other.pair))
+            .filter(|other| other.sheds && candidate.inner.contains_range(other.pair))
             .map(|other| 2 - other.flush.spaces())
             .sum();
         Some(bare.width() + candidate.flush.spaces() - shed)
@@ -51,12 +57,7 @@ impl Shedder<'_> {
             return column;
         }
         let row_start = self.source.text().line_start(offset);
-        let placed = |to: TextSize| {
-            end_column(
-                &apply_inline_edits(self.source, TextRange::new(row_start, to), &self.edits),
-                0,
-            )
-        };
+        let placed = |to: TextSize| self.column_through(TextRange::new(row_start, to));
         let indent = self.source.line_indent_width(offset);
         let mut shift = 0;
         for call in self
@@ -74,11 +75,8 @@ impl Shedder<'_> {
 
     /// The columns `pair`'s own row carries past its closing paren.
     fn tail_width(&self, pair: TextRange) -> usize {
-        self.source.text()[pair.end().to_usize()..]
-            .split(['\r', '\n'])
-            .next()
-            .unwrap_or_default()
-            .width()
+        let text = self.source.text();
+        text[TextRange::new(pair.end(), text.line_end(pair.end()))].width()
     }
 
     /// True when joining `candidate` leaves its line inside the budget

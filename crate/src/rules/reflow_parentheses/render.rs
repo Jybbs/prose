@@ -4,15 +4,13 @@
 //! Each operand renders through the pairs this same pass sheds inside
 //! it, so one edit carries both directions.
 
-use std::borrow::Cow;
-
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::{
     Shedder,
-    chain::operands,
+    chain::{Operand, operands},
     plan::{Candidate, breaks_held_inside},
 };
 use crate::{
@@ -133,18 +131,17 @@ impl Shedder<'_> {
 /// `indent` behind the operator joining it to the row above, and its
 /// `)` opening the row back at `indent`. Each operand renders through
 /// `nested`.
-fn broken(source: &Source, chain: &[TextRange], nested: &[Edit], indent: usize) -> String {
+fn broken(source: &Source, chain: &[Operand], nested: &[Edit], indent: usize) -> String {
     let item = item_indent(indent);
     explode_parens(
         source.newline_str(),
         indent,
         chain.len(),
         |out, row| {
-            let range = chain[row];
+            let Operand { lead, range } = chain[row];
             let mut column = item;
-            if let Some(previous) = row.checked_sub(1) {
-                let operator = operator_between(source, chain[previous], range);
-                out.push_str(&operator);
+            if let Some(operator) = lead {
+                out.push_str(operator);
                 out.push(' ');
                 column += operator.width() + 1;
             }
@@ -156,27 +153,6 @@ fn broken(source: &Source, chain: &[TextRange], nested: &[Edit], indent: usize) 
             out.push_str(&placed_block_through(source, range, nested, landing));
         },
         Separator::None,
-    )
-}
-
-/// The operator joining the operand ending at `left` to the one opening
-/// at `right`, read out of the gap between them so a two-word `is not`
-/// or `not in` carries its own spelling. The gap holds only the
-/// operator, the whitespace around it, and the brackets of any pair the
-/// division shed, so dropping those brackets leaves the operator alone.
-fn operator_between<'s>(source: &'s Source, left: TextRange, right: TextRange) -> Cow<'s, str> {
-    let gap = source
-        .slice(TextRange::new(left.end(), right.start()))
-        .trim();
-    let split = |c: char| c.is_whitespace() || matches!(c, '(' | ')');
-    if !gap.contains(split) {
-        return Cow::Borrowed(gap);
-    }
-    Cow::Owned(
-        gap.split(split)
-            .filter(|part| !part.is_empty())
-            .collect::<Vec<_>>()
-            .join(" "),
     )
 }
 
@@ -203,18 +179,6 @@ mod tests {
         testing::{first_expr, parse},
     };
 
-    /// The operator `src` writes between its lone `a` and its lone `b`,
-    /// read as a break would read it once every pair around them sheds.
-    fn between_a_and_b(src: &str) -> String {
-        let source = parse(src);
-        let at = |c: char| {
-            let offset = u32::try_from(source.text().find(c).expect("the source holds the atom"))
-                .expect("offset fits u32");
-            TextRange::new(offset.into(), (offset + 1).into())
-        };
-        operator_between(&source, at('a'), at('b')).into_owned()
-    }
-
     #[rstest]
     #[case("a and b", "(\n    a\n    and b\n)")]
     #[case("a and b and c", "(\n    a\n    and b\n    and c\n)")]
@@ -227,18 +191,5 @@ mod tests {
         let holds = |_: TextRange| false;
         let chain = operands(&source, expr, &holds).expect("the source holds a chain");
         assert_eq!(broken(&source, &chain, &[], 0), expected);
-    }
-
-    #[rstest]
-    #[case("a and b", "and")]
-    #[case("a is not b", "is not")]
-    #[case("a  not   in  b", "not in")]
-    #[case("(a) or (b)", "or")]
-    #[case("(a)or(b)", "or")]
-    fn operator_between_drops_the_brackets_a_shed_leaves(
-        #[case] src: &str,
-        #[case] expected: &str,
-    ) {
-        assert_eq!(between_a_and_b(src), expected);
     }
 }

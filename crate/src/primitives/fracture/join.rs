@@ -6,10 +6,10 @@ use super::*;
 
 /// Emits one replacement per fractured argument list beneath the
 /// visited expression.
-pub(super) struct FractureJoiner<'a> {
-    pub(super) edits: Vec<Edit>,
-    pub(super) settings: Settings<'a>,
-    pub(super) source: &'a Source,
+struct FractureJoiner<'a> {
+    edits: Vec<Edit>,
+    settings: Settings<'a>,
+    source: &'a Source,
 }
 
 impl<'ast> AstVisitor<'ast> for FractureJoiner<'_> {
@@ -44,7 +44,7 @@ pub(crate) fn outermost<T: Ranged>(mut edits: Vec<T>) -> Vec<T> {
 
 /// `arguments` joined by `", "` inside the parens, each argument
 /// settled so a nested fracture reads at its joined width.
-pub(super) fn join_args(source: &Source, settings: Settings<'_>, arguments: &Arguments) -> String {
+fn join_args(source: &Source, settings: Settings<'_>, arguments: &Arguments) -> String {
     format!(
         "({})",
         arguments
@@ -86,7 +86,7 @@ pub(super) fn join_edits(source: &Source, settings: Settings<'_>, expr: &Expr) -
 /// `parent`, which hold those rows together once the list closes,
 /// whereas a single-row argument leaves a redundant pair out of the
 /// joined form.
-pub(super) fn settled_argument<'a>(
+fn settled_argument<'a>(
     source: &'a Source,
     settings: Settings<'_>,
     expr: &Expr,

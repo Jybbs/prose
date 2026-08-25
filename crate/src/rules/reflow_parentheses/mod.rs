@@ -1,15 +1,17 @@
 //! Reflows a redundant grouping parenthesis pair against the line
-//! budget, the pair whose removal leaves the parse unchanged, so a
-//! precedence pair, a generator, a walrus binding, and a one-element
-//! tuple all survive. A wrapped pair folds onto one line when the bare
-//! form fits, one holding an over-budget operator chain breaks across
-//! rows one operand per row, and one whose breaks a bracket inside it
-//! holds sheds in place. `plan` finds the pairs, `chain` divides an
-//! interior into operands, `measure` answers whether each direction
-//! fits, and `render` builds the broken text.
+//! budget, the pair whose removal leaves both the parse and the
+//! grouping a reader sees unchanged, so a precedence pair, a generator,
+//! a walrus binding, a one-element tuple, and a pair holding one
+//! boolean operator inside a chain at the other all survive. A wrapped
+//! pair folds onto one line when the bare form fits, one holding an
+//! over-budget operator chain breaks across rows one operand per row,
+//! and one whose interior breaks sit inside a bracket of its own sheds
+//! in place. `plan` finds the pairs, `chain` divides an interior into
+//! operands, `measure` answers whether each direction fits, and
+//! `render` builds the broken text.
 
 use ruff_diagnostics::Edit;
-use ruff_text_size::{TextRange, TextSize};
+use ruff_text_size::TextRange;
 
 use crate::{
     config::Config,
@@ -107,11 +109,7 @@ impl Shedder<'_> {
             }
             let mut folding = !collapsing && self.source.contains_line_break(pair);
             let removals = if collapsing {
-                let paren = TextSize::new(1);
-                candidate.flush.flanking(
-                    TextRange::at(pair.start(), paren),
-                    TextRange::at(pair.end() - paren, paren),
-                )
+                candidate.lone_paren_removals()
             } else if folding && !self.fits(candidate, candidates) {
                 let Some((open, close)) = self.shed_in_place_spans(candidate) else {
                     continue;

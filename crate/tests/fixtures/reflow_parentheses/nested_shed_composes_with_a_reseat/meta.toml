@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Nested Shed Composes With a Re-Seat"
+title       = "A Re-Seat Composes With a Held Boolean Group"
 
 description = '''
-A continuation row aligned to the shed opener follows it leftward through an indent-only edit at the row start, so the redundant pair nested on that same row sheds in the same pass rather than colliding with the move.
+A continuation row aligned to the shed opener follows it leftward through an indent-only edit at the row start. The pair nested on that same row holds one `and` group inside the surrounding `or` chain, so it stays rather than shedding, and the break lands it whole on a row of its own.
 '''
