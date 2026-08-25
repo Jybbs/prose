@@ -1,13 +1,13 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
 ---
 align-colons@247..316
 align-equals@101..114
 align-equals@252..302
 alphabetize-siblings@7..822
-band-constants@7..607
+band-constants@7..608
 frame-docstrings@373..426
 group-imports@11..48
 miscased-constants@106..113

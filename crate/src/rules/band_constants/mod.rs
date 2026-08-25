@@ -3,8 +3,8 @@
 //! definitions, declining whenever the assembled order would seat an
 //! eager reference ahead of its definition. The rule walks the module
 //! body and each module-scope compound arm, applying the [`plan`]
-//! analysis and emitting one edit per banded body, or one per cell over
-//! a notebook.
+//! analysis and emitting one fix group per banded body, or one per cell
+//! over a notebook.
 
 use std::borrow::Cow;
 
@@ -17,7 +17,7 @@ use crate::{
     config::Config,
     primitives::{
         comments::TRAILING_GAP,
-        edit::{singleton_groups, splice_bodies},
+        edit::splice_bodies,
         imports::defers_annotations,
         orderer::{
             any_sibling_shares_line, assemble_or_borrow, assembled_cell_edits, member_blocks,
@@ -118,14 +118,14 @@ impl Rule for BandConstants {
             source,
         };
         let layout = bander.band_layout(body, source.module_range());
-        singleton_groups(assembled_cell_edits(
+        assembled_cell_edits(
             source,
             &layout.blocks,
             &layout.rendered,
             &layout.order,
             layout.forced(),
             |i| bander.band_gap(&layout, body, i),
-        ))
+        )
     }
 
     fn id(&self) -> RuleId {

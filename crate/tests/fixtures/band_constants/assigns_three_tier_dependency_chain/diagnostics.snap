@@ -1,6 +1,6 @@
 ---
-source: tests/integration.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/band_constants/assigns_three_tier_dependency_chain/input.py
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/band_constants/assigns_three_tier_dependency_chain/input.py
 ---
-band-constants@0..20
+band-constants@0..21

@@ -23,7 +23,6 @@ use crate::{
     primitives::{
         binding::{sequence_elts, single_name_target},
         comments::has_keep_marker,
-        edit::singleton_groups,
         effect::value_is_effectful,
         imports::defers_annotations,
         orderer::{
@@ -258,15 +257,14 @@ impl Rule for AlphabetizeSiblings {
             source,
         };
         let layout = body_layout(ctx, body, source.module_range(), BodyScope::Module);
-        let edits = assembled_cell_edits(
+        assembled_cell_edits(
             source,
             &layout.blocks,
             &layout.rendered,
             &layout.order,
             !layout.import_run_slots.is_empty(),
             |i| import_gap(source, &layout.import_run_slots, i),
-        );
-        singleton_groups(edits)
+        )
     }
 
     fn id(&self) -> RuleId {

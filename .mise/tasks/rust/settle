@@ -21,6 +21,7 @@ mutation_pass() {
 
 corpus=$(corpus_root "${1:-}")
 budget="${2:-60}"
+mutate="$MISE_PROJECT_ROOT/.mise/lib/mutate.py"
 
 settle_corpus "$corpus" --test corpus
 
@@ -28,10 +29,11 @@ binary=$(built_binary dev)
 mutations=$(mktemp -d "${TMPDIR:-/tmp}"/prose-mutations.XXXXXX)
 
 printf '\nMutating the corpus under a %ss budget\n' "$budget"
-"$MISE_PROJECT_ROOT/.mise/lib/mutate.py" "$corpus" "$mutations" "$budget"
+"$mutate" "$corpus" "$mutations" "$budget"
 
 while IFS= read -r variant; do
   mutation_pass "$variant"
 done < <(find "$mutations" -mindepth 1 -maxdepth 1 -type d | sort)
 
-printf '\neach mutation survives as a tree under %s\n' "$mutations"
+printf '\neach mutation survives as formatted output under %s\n' "$mutations"
+printf 'regenerate the pre-format variants it ran on with: %s %s <destination> %s\n' "$mutate" "$corpus" "$budget"

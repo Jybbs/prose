@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/suppressed_sibling_holds_its_slot/input.py
+---
+def apple():
+    return 3
+
+
+# prose: off
+def middle():
+    return 2
+# prose: on
+
+
+def zebra():
+    return 1

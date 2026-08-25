@@ -108,11 +108,13 @@ pub(crate) fn assemble_separated(
     out
 }
 
-/// Assembles a body rewrite into edits: one narrowed edit per notebook
-/// cell the `blocks` span, or a single body-spanning edit for an ordinary
-/// module. The arguments mirror [`assemble_or_borrow`]. `order` never
-/// crosses a cell boundary, so each cell's slots stay a contiguous run
-/// that reassembles against the cell's own block span.
+/// Assembles a body rewrite into fix groups, one per notebook cell the
+/// `blocks` span and one for an ordinary module, each holding the
+/// [`piecewise_edits`] of its own slots. The arguments mirror
+/// [`assemble_or_borrow`]. `order` never crosses a cell boundary, so
+/// each cell's slots stay a contiguous run that reassembles against the
+/// cell's own block span. A group whose pieces all match the source is
+/// dropped rather than emitted empty.
 pub(crate) fn assembled_cell_edits<'src>(
     source: &'src Source,
     blocks: &[TextRange],
@@ -120,24 +122,62 @@ pub(crate) fn assembled_cell_edits<'src>(
     order: &[usize],
     forced: bool,
     mut gap: impl FnMut(usize) -> Option<&'src str>,
-) -> Vec<Edit> {
+) -> Vec<Vec<Edit>> {
     if !source.is_notebook() {
-        let (text, span) = assemble_or_borrow(source, blocks, rendered, order, forced, gap);
-        return match text {
-            Cow::Borrowed(_) => Vec::new(),
-            Cow::Owned(owned) => narrowed_replacement(source, span, owned)
-                .into_iter()
-                .collect(),
+        if !forced && !any_owned(rendered) && is_identity(order) {
+            return Vec::new();
+        }
+        let edits = piecewise_edits(source, blocks, rendered, order, &mut gap);
+        return if edits.is_empty() {
+            Vec::new()
+        } else {
+            vec![edits]
         };
     }
-    let mut edits = Vec::new();
+    let mut groups = Vec::new();
     for Range { start, end } in slot_runs(blocks, |a, b| source.same_cell(a.start(), b.start())) {
         let cell = &blocks[start..end];
         let rebased: Vec<usize> = order[start..end].iter().map(|&slot| slot - start).collect();
-        let assembled = assemble_blocks(source, cell, &rendered[start..end], &rebased, |slot| {
-            gap(start + slot)
-        });
-        edits.extend(narrowed_replacement(source, blocks_span(cell), assembled));
+        let mut cell_gap = |slot: usize| gap(start + slot);
+        let edits = piecewise_edits(source, cell, &rendered[start..end], &rebased, &mut cell_gap);
+        if !edits.is_empty() {
+            groups.push(edits);
+        }
+    }
+    groups
+}
+
+/// One narrowed edit per piece of the assembly that differs from the
+/// source, walking the same partition [`assemble_blocks`] writes: the
+/// block standing at each destination slot, then the gap following it.
+/// A piece the assembly reproduces verbatim earns no edit, so the
+/// emitted ranges cover only the bytes the reorder rewrites and leave
+/// an untouched span between two of them free of any edit. The pieces
+/// tile the whole block span in ascending order, so splicing them all
+/// yields the text [`assemble_blocks`] would have written.
+fn piecewise_edits<'src>(
+    source: &'src Source,
+    blocks: &[TextRange],
+    rendered: &[Cow<'src, str>],
+    order: &[usize],
+    gap: &mut impl FnMut(usize) -> Option<&'src str>,
+) -> Vec<Edit> {
+    let mut edits = Vec::new();
+    for (i, (&idx, &block)) in order.iter().zip(blocks).enumerate() {
+        if *rendered[idx] != *source.slice(block) {
+            edits.extend(narrowed_replacement(
+                source,
+                block,
+                rendered[idx].to_string(),
+            ));
+        }
+        let Some(next) = blocks.get(i + 1) else {
+            continue;
+        };
+        if let Some(text) = gap(i) {
+            let span = TextRange::new(block.end(), next.start());
+            edits.extend(narrowed_replacement(source, span, text.to_owned()));
+        }
     }
     edits
 }

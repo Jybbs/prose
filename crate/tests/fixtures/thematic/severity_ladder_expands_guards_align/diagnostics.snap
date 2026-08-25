@@ -1,12 +1,12 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/thematic/severity_ladder_expands_guards_align/input.py
 ---
 align-comparisons@733..836
 align-equals@145..289
 alphabetize-siblings@86..1137
-band-constants@12..962
+band-constants@12..963
 bare-imports@7..11
 miscased-constants@243..264
 reassigned-constants@270..294

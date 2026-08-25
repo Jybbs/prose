@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/skip_between_two_bands_holds_each_side/input.py
+---
+MIDDLE = 3
+ZEBRA = 1
+PINNED = {
+    "key": "value"
+}  # prose: skip[band-constants]
+ALPHA = 2
+BETA = 4

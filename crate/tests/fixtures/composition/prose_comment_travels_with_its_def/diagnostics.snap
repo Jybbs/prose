@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/prose_comment_travels_with_its_def/input.py
 ---
 alphabetize-siblings@45..180
-band-constants@4..114
+band-constants@4..115
