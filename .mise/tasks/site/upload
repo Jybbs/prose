@@ -1,5 +1,7 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description="Upload the docs-site coverage report to Codecov"
-#MISE depends=["site:coverage"]
+#MISE depends     = ["site:coverage"]
+#MISE description = "Upload the docs-site coverage report to Codecov"
 
-codecovcli upload-process --flag site --file site/coverage/lcov.info --sha "$SHA"
+source "$MISE_PROJECT_ROOT/.mise/lib/codecov.bash"
+
+upload_report site site/coverage/lcov.info

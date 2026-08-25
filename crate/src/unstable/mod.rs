@@ -16,7 +16,7 @@ mod form;
 mod narrow;
 
 pub(crate) use form::report_url;
-use narrow::reproducing_subset;
+use narrow::{editing_subset, reproducing_subset};
 
 /// One file's rewrite that a second pass would change.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -48,16 +48,42 @@ impl UnstableRewrite {
         if editing.is_empty() {
             return None;
         }
-        let rules = (!formatted.is_notebook())
-            .then(|| narrowed(pipeline, config, original, &editing))
-            .flatten()
-            .unwrap_or_else(|| pipeline.rule_ids().collect());
-        Some(Self {
+        let rules = subset(pipeline, formatted, || {
+            narrowed(pipeline, config, original, &editing)
+        });
+        Some(Self::over(pipeline, config, formatted, rules))
+    }
+
+    /// The report for a probe hit on the own-output ledger, where
+    /// `original` is a prior run's own output that this run rewrote.
+    /// The proof already happened, so the walk the eager path runs is
+    /// skipped and the editing set reads straight off the marked bytes,
+    /// narrowed to the smallest subset still editing them.
+    pub(crate) fn detect_marked(
+        pipeline: &Pipeline,
+        config: &Config,
+        original: &str,
+        formatted: &Source,
+    ) -> Option<Self> {
+        let source = original.parse::<Source>().ok()?;
+        let editing = pipeline.unsettled(&source);
+        if editing.is_empty() {
+            return None;
+        }
+        let rules = subset(pipeline, formatted, || {
+            editing_subset(&editing, &source, filtered(config))
+        });
+        Some(Self::over(pipeline, config, formatted, rules))
+    }
+
+    /// The record over `formatted` under the reproducing `rules`.
+    fn over(pipeline: &Pipeline, config: &Config, formatted: &Source, rules: Vec<RuleId>) -> Self {
+        Self {
             config_toml: config.to_changed_toml(),
             first: formatted.text().to_owned(),
             rules,
             second: second_pass(pipeline, formatted),
-        })
+        }
     }
 
     /// A subject naming no `path` takes the `-` stdin positional.
@@ -102,38 +128,6 @@ pub(crate) fn headline(subject: &str) -> String {
     format!("prose rewrote {subject} to output a second run would change")
 }
 
-/// The report for a probe hit on the own-output ledger, where
-/// `original` is a prior run's own output that this run rewrote. The
-/// proof already happened, so the walk the eager path runs is skipped
-/// and the editing set reads straight off the marked bytes, narrowed
-/// to the smallest subset still editing them.
-pub(crate) fn detect_marked(
-    pipeline: &Pipeline,
-    config: &Config,
-    original: &str,
-    formatted: &Source,
-) -> Option<UnstableRewrite> {
-    let source = original.parse::<Source>().ok()?;
-    let editing = pipeline.unsettled(&source);
-    if editing.is_empty() {
-        return None;
-    }
-    let rules = (!formatted.is_notebook())
-        .then(|| {
-            narrow::editing_subset(&editing, &source, |subset| {
-                Pipeline::with_filters(config, subset, &[])
-            })
-        })
-        .flatten()
-        .unwrap_or_else(|| pipeline.rule_ids().collect());
-    Some(UnstableRewrite {
-        config_toml: config.to_changed_toml(),
-        first: formatted.text().to_owned(),
-        rules,
-        second: second_pass(pipeline, formatted),
-    })
-}
-
 /// The rules editing `original` together with the `editing` rules still
 /// editing the output, the `editing` rules leading so the pairs the
 /// probe budget reaches first are the ones anchored on a rule the
@@ -150,6 +144,11 @@ fn candidates(pipeline: &Pipeline, original: &str, editing: &[RuleId]) -> Vec<Ru
     named.into_iter().chain(rest).collect()
 }
 
+/// The pipeline seating `rules` alone under `config`.
+fn filtered(config: &Config) -> impl Fn(&[RuleId]) -> Pipeline + '_ {
+    move |rules| Pipeline::with_filters(config, rules, &[])
+}
+
 /// `None` where neither a rule alone nor a rule pair reproduces on this
 /// source.
 fn narrowed(
@@ -161,7 +160,7 @@ fn narrowed(
     reproducing_subset(
         &candidates(pipeline, original, editing),
         original,
-        |subset| Pipeline::with_filters(config, subset, &[]),
+        filtered(config),
     )
 }
 
@@ -180,6 +179,19 @@ fn second_pass(pipeline: &Pipeline, formatted: &Source) -> String {
         )
 }
 
+/// The reproducing subset for a report over `formatted`, taking the
+/// whole selection for a notebook and wherever `narrow` finds none.
+fn subset(
+    pipeline: &Pipeline,
+    formatted: &Source,
+    narrow: impl FnOnce() -> Option<Vec<RuleId>>,
+) -> Vec<RuleId> {
+    (!formatted.is_notebook())
+        .then(narrow)
+        .flatten()
+        .unwrap_or_else(|| pipeline.rule_ids().collect())
+}
+
 #[cfg(test)]
 mod tests {
     use std::num::NonZeroUsize;
@@ -187,6 +199,9 @@ mod tests {
     use super::*;
     use crate::testing::{PrefixRule, breaks_parse, never_settles, notebook, parse};
 
+    /// What `widening()` writes over `SOURCE`, standing in for the
+    /// bytes a prior write-back run marked as its own output.
+    const MARKED: &str = "yy = 1\n";
     const SOURCE: &str = "x = 1\n";
 
     /// A pipeline whose first rule settles after rewriting `x` to `q`,
@@ -257,21 +272,6 @@ mod tests {
     }
 
     #[test]
-    fn detect_reports_regardless_of_the_config_key() {
-        // The key gates the notice surfaces, not the detector, so a
-        // caller that wants the check despite the key, as `check
-        // --validate` does, reads a real answer here.
-        let pipeline = widening();
-        let (formatted, _) = pipeline.run(parse(SOURCE)).expect("runs");
-        let config = Config {
-            report_unstable_output: false,
-            ..Config::default()
-        };
-
-        assert!(UnstableRewrite::detect(&pipeline, &config, SOURCE, &formatted).is_some());
-    }
-
-    #[test]
     fn detect_holds_the_first_pass_where_a_second_run_is_rejected() {
         // `breaks-parse` still edits the buffer it is handed, so the
         // report opens, and its own output is what the second run
@@ -303,6 +303,59 @@ mod tests {
     }
 
     #[test]
+    fn detect_marked_is_none_where_the_marked_bytes_do_not_parse() {
+        let pipeline = widening();
+        let (formatted, _) = pipeline.run(parse(SOURCE)).expect("runs");
+
+        assert!(
+            UnstableRewrite::detect_marked(&pipeline, &Config::default(), "def (\n", &formatted)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn detect_marked_is_none_where_the_marked_bytes_settle() {
+        let pipeline = Pipeline::with_defaults(&Config::default());
+        let (formatted, _) = pipeline.run(parse("alpha = 1\nb = 22\n")).expect("runs");
+
+        assert!(
+            UnstableRewrite::detect_marked(
+                &pipeline,
+                &Config::default(),
+                formatted.text(),
+                &formatted
+            )
+            .is_none()
+        );
+    }
+
+    #[test]
+    fn detect_marked_names_the_whole_selection_for_a_notebook() {
+        let pipeline = widening();
+        let (formatted, _) = pipeline.run(notebook(&[MARKED])).expect("runs");
+
+        let report =
+            UnstableRewrite::detect_marked(&pipeline, &Config::default(), MARKED, &formatted)
+                .expect("the marked bytes are still unsettled");
+
+        assert_eq!(report.rules, pipeline.rule_ids().collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn detect_marked_reads_the_editing_set_off_the_marked_bytes() {
+        let pipeline = widening();
+        let (formatted, _) = pipeline.run(parse(MARKED)).expect("runs");
+
+        let report =
+            UnstableRewrite::detect_marked(&pipeline, &Config::default(), MARKED, &formatted)
+                .expect("the marked bytes are still unsettled");
+
+        assert_eq!(report.rules, vec![RuleId::from("widener")]);
+        assert_eq!(report.first, "yyy = 1\n");
+        assert_eq!(report.second, "yyyy = 1\n");
+    }
+
+    #[test]
     fn detect_names_the_whole_selection_for_a_notebook() {
         let pipeline = widening();
         let (formatted, _) = pipeline.run(notebook(&[SOURCE])).expect("runs");
@@ -311,6 +364,21 @@ mod tests {
             .expect("a widening rule leaves the output unsettled");
 
         assert_eq!(report.rules, pipeline.rule_ids().collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn detect_reports_regardless_of_the_config_key() {
+        // The key gates the notice surfaces, not the detector, so a
+        // caller that wants the check despite the key, as `check
+        // --validate` does, reads a real answer here.
+        let pipeline = widening();
+        let (formatted, _) = pipeline.run(parse(SOURCE)).expect("runs");
+        let config = Config {
+            report_unstable_output: false,
+            ..Config::default()
+        };
+
+        assert!(UnstableRewrite::detect(&pipeline, &config, SOURCE, &formatted).is_some());
     }
 
     #[test]

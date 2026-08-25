@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_calls/final_row_comment_closes_the_tail/input.py
+---
+report_value = write_header(section_label, column_widths)  # trailing note that is long

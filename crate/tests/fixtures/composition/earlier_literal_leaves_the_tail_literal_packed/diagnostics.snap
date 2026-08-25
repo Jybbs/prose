@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 44
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/earlier_literal_leaves_the_tail_literal_packed/input.py
+---
+reflow-calls@93..132
+reflow-collections@103..131

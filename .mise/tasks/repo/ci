@@ -1,5 +1,19 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE alias="ci"
-#MISE description="Full local CI sweep"
-#MISE depends=["repo:audit", "lock:check", "rust:check", "rust:cruft", "rust:lint", "rust:unused", "site:bake", "site:cruft", "site:links", "site:lint", "site:press", "site:test", "site:typecheck", "wasm:smoke"]
-#MISE depends_post=["rust:wheel"]
+#MISE alias        = "ci"
+#MISE depends      = [
+#MISE   "lock:check",
+#MISE   "repo:audit",
+#MISE   "rust:check",
+#MISE   "rust:cruft",
+#MISE   "rust:lint",
+#MISE   "rust:unused",
+#MISE   "site:cruft",
+#MISE   "site:links",
+#MISE   "site:lint",
+#MISE   "site:press",
+#MISE   "site:test",
+#MISE   "site:typecheck",
+#MISE   "wasm:smoke"
+#MISE ]
+#MISE depends_post = ["rust:wheel"]
+#MISE description  = "Full local CI sweep"

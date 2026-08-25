@@ -11,6 +11,7 @@ use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
     config::{AlignmentConfig, MaxShift},
+    primitives::{comments::Settling, padding::Stranding},
     rule::RuleId,
     source::Source,
 };
@@ -22,11 +23,11 @@ mod members;
 mod walker;
 mod widen;
 
-pub(crate) use emit::{operator_columns, space_padding_edit};
+pub(crate) use emit::{forecast_columns, operator_columns, settled_tail, space_padding_edit};
 pub(crate) use grouping::{
     Slot, adjacent_member_groups, keyed_line_adjacent_groups, line_adjacent_groups,
 };
-pub(crate) use holds::{is_alignment_candidate, is_held, retain_unheld, shares_column};
+pub(crate) use holds::{is_alignment_candidate, is_held, retain_unheld};
 pub(crate) use members::{
     line_anchored_member, line_anchored_member_at_kind, line_anchored_member_between,
     line_gap_before, parameter_split_groups, range_anchored_member_single_line,
@@ -34,19 +35,25 @@ pub(crate) use members::{
 pub(crate) use walker::AlignWalker;
 pub(crate) use widen::Widenings;
 
+/// The columns between an aligned operator's column and the value
+/// following it, the operator's own character and the one-space value
+/// gap.
+pub(crate) const VALUE_OFFSET: usize = 2;
+
 /// One row in an alignment group.
 ///
 /// `gap` is the whitespace ending immediately before the aligned token
 /// the rule rewrites, on the source line opening at `line_start`.
-/// `width` measures the row's left-hand side as the source carries it
-/// and `settled_width` measures it once an earlier column has padded
-/// the content ahead of the gap, so the column math reads the second
-/// while the baseline reads the first. `op_width` right-aligns a
-/// variable-width operator and stays zero otherwise. `value_gap` runs
-/// from just past the operator to the value, `None` where the rule
-/// leaves that spacing alone.
+/// `baseline` is the display column where the row's left-hand side
+/// begins. `width` measures that left-hand side as the source carries
+/// it and `settled_width` measures it once an earlier column has
+/// padded the content ahead of the gap, so the column math reads the
+/// second. `op_width` right-aligns a variable-width operator and stays
+/// zero otherwise. `value_gap` runs from just past the operator to the
+/// value, `None` where the rule leaves that spacing alone.
 #[derive(Clone, Copy)]
 pub(crate) struct Member {
+    pub baseline: usize,
     pub gap: TextRange,
     pub line_start: TextSize,
     pub op_width: usize,
@@ -103,15 +110,31 @@ impl Member {
 /// `buffer` is the gap an aligned row holds between its content and the
 /// aligned token. `max_shift` caps the run's width spread.
 /// `strip_singleton` collapses a size-one group's gap to zero width.
-/// `line_length` carries the governing cap when the rule resolves
-/// within it, so a member whose aligned line would cross the cap
+/// `cap` carries the governing line length when the rule resolves
+/// within one, so a member whose aligned line would cross it
 /// partitions out of the run the way an over-`max_shift` outlier does.
+/// `release_heads` lets a group's head row stand down as a singleton
+/// where the cap would otherwise strand the row that cut the group,
+/// which a rule opts into only where its rows reach their settled width
+/// under it, since a later alignment widening the head afterward
+/// re-partitions the run.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Settings {
     buffer: usize,
-    line_length: Option<usize>,
+    cap: Option<Cap>,
     max_shift: MaxShift,
+    release_heads: bool,
     strip_singleton: bool,
+}
+
+/// The line length a run resolves within, the padding rule whose later
+/// edits the cap check reads each line at, and the comment rules it
+/// reads a trailing comment at the width of.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct Cap {
+    line_length: usize,
+    settling: Settling,
+    stranding: Stranding,
 }
 
 impl Settings {
@@ -121,8 +144,9 @@ impl Settings {
     fn aligned(max_shift: MaxShift) -> Self {
         Self {
             buffer: 1,
-            line_length: None,
+            cap: None,
             max_shift,
+            release_heads: false,
             strip_singleton: false,
         }
     }
@@ -138,6 +162,12 @@ impl Settings {
         }
     }
 
+    /// The gap an aligned row holds between its content and the aligned
+    /// token.
+    pub(crate) fn buffer(self) -> usize {
+        self.buffer
+    }
+
     /// Returns a copy of `self` carrying `width` as the gap an aligned
     /// row holds ahead of the aligned token.
     pub(crate) fn with_buffer(mut self, width: usize) -> Self {
@@ -145,16 +175,33 @@ impl Settings {
         self
     }
 
-    /// Returns a copy of `self` carrying `cap` as the governing line
-    /// length the run resolves within.
-    pub(crate) fn with_line_length(mut self, cap: usize) -> Self {
-        self.line_length = Some(cap);
+    /// Returns a copy of `self` with `release_heads` enabled.
+    pub(crate) fn releasing_heads(mut self) -> Self {
+        self.release_heads = true;
         self
     }
 
     /// Returns a copy of `self` with `strip_singleton` enabled.
     pub(crate) fn with_singleton_strip(mut self) -> Self {
         self.strip_singleton = true;
+        self
+    }
+
+    /// Returns a copy of `self` carrying `cap` as the governing line
+    /// length the run resolves within, each line read at the width
+    /// `stranding`'s padding rule and `settling`'s comment rules leave
+    /// it at.
+    pub(crate) fn within(
+        mut self,
+        line_length: usize,
+        stranding: Stranding,
+        settling: Settling,
+    ) -> Self {
+        self.cap = Some(Cap {
+            line_length,
+            settling,
+            stranding,
+        });
         self
     }
 }

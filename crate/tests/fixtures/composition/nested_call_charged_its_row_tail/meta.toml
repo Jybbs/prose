@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Nested Call Is Charged the Text Trailing It Inside Its Value"
+
+description = '''
+The `call` argument holds two calls joined by `+`, and the first one measures the `+ self._options(` trailing it on the row, so it explodes in the same pass rather than leaving the tuple for [[reflow-collections]] to break and the span trigger to explode a pass later.
+'''

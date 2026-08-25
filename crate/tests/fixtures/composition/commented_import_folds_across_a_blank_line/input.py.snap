@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/commented_import_folds_across_a_blank_line/input.py
+---
+# Local imports
+from pkg import b
+
+print(b)

@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/packed_commented_set_keeps_its_comma/input.py
+---
+s = {(1, 1), (2, 2),  # note
+     (
+         9, 9,
+         aaaaaaaaaaaaaaaaaaaaaaaaaaa
+     ),
+     (3, 3)}

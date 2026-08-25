@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Assignment Rebinding the Name Holds the Surviving Import"
+
+description = '''
+`import os` appears twice and `os = None` rebinds the name afterwards. The repeat drops, and **the first import holds** because a write the prune does not remove still rebinds `os`.
+'''

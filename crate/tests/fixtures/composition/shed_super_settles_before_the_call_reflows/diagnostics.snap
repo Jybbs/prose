@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/shed_super_settles_before_the_call_reflows/input.py
+---
+reflow-calls@99..111
+shed-super-args@99..111

@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/held_import_bridges_its_aligned_run/input.py
+---
+import os
+
+from package.alpha          import a
+from package.middle import b  # prose: skip[align-imports]
+from package.zeta_rendering import c
+
+print(os, a, b, c)

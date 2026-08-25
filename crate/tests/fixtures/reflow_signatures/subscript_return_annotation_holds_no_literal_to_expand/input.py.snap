@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_signatures/subscript_return_annotation_holds_no_literal_to_expand/input.py
+---
+class RequirementsFileParser:
+    def _parse_file(
+        self,
+        filename: str,
+        constraint: bool
+    ) -> Generator[ParsedLine, None, None]:
+        return None

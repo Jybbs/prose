@@ -16,7 +16,7 @@ The head holds the receiver together with its first call, a bare receiver alone 
 
 The break only ever opens a chain, never rejoining one, so a chain already hung at its dots holds that shape even where its joined form would fit. A count trigger opposed by a fit test would alternate forever, the count breaking the chain and the fit test rejoining it on the pass after.
 
-The chain reuses a parenthesis pair the source already carries and settles in the run that first opens it, leaving each link's argument list to [[reflow-calls]] and the collection inside it to [[reflow-collections]]. Both the count and the width read against that settled form, so a hand-wrapped link is measured at the width [[reflow-calls]] closes it to.
+The chain reuses a parenthesis pair the source already carries and settles in the run that first opens it, leaving each link's argument list to [[reflow-calls]] and the collection inside it to [[reflow-collections]]. Both the count and the width read against that settled form, so a hand-wrapped link is measured at the width [[reflow-calls]] closes it to. A chain inside a link's argument or inside the receiver measures from the column the break lands it at and, where it trips there, breaks in the same text, seated at the indent of the row it lands on.
 
 A chain spanning a comment holds its source shape, relocating the links carrying the comment away from the row it annotates. A link holds open on a break that never closes, covering the flush column, an argument list past `max-args`, and a multi-line string.
 

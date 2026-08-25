@@ -8,6 +8,7 @@ use std::collections::HashMap;
 
 use itertools::Itertools;
 use ruff_python_ast::Stmt;
+use ruff_source_file::LineEnding;
 use ruff_text_size::TextRange;
 
 use crate::primitives::{
@@ -72,12 +73,13 @@ pub(super) struct BandPlan<'src> {
 }
 
 impl BandPlan<'_> {
-    /// Appends `region`'s body indices to `out`, the import run sorted to
-    /// the front, the leading constants below it, the definitions in
-    /// incoming order, the trailing constants last. The import run sorts by
-    /// group then name when `grouped`, flat otherwise. Both constant bands
-    /// sort by `(tier, subcategory, name)`. Pushes a `(from, to)` pair onto
-    /// `shifts` for every sorted band whose head member changed. Clears
+    /// Appends `region`'s body indices to the drained order, the import
+    /// run sorted to the front, the leading constants below it, the
+    /// definitions in incoming order, the trailing constants last. The
+    /// import run sorts by group then name when `grouped`, flat otherwise,
+    /// and is recorded as one import band. Both constant
+    /// bands sort by `(tier, subcategory, name)`. Records a `(from, to)`
+    /// shift for every sorted band whose head member changed. Clears
     /// `region`.
     fn drain_region(
         &self,
@@ -85,8 +87,7 @@ impl BandPlan<'_> {
         first_party: &[String],
         grouped: bool,
         region: &mut Vec<usize>,
-        shifts: &mut Vec<(usize, usize)>,
-        out: &mut Vec<usize>,
+        drained: &mut Drained,
     ) {
         let mut imports = Vec::new();
         let mut leading = Vec::new();
@@ -102,24 +103,62 @@ impl BandPlan<'_> {
         }
         let heads = |bands: [&[usize]; 3]| bands.map(|band| band.first().copied());
         let source_heads = heads([&imports, &leading, &trailing]);
+        let slots = imports.clone();
         imports.sort_by_key(|&idx| {
             import_sort_key(&body[idx], first_party, grouped)
                 .expect("import band holds only imports")
         });
+        if let Some(&sorted_head) = imports.first() {
+            drained.imports.push(ImportBand { slots, sorted_head });
+        }
         leading.sort_by_key(|idx| self.keys[idx]);
         trailing.sort_by_key(|idx| self.keys[idx]);
         let sorted_heads = heads([&imports, &leading, &trailing]);
-        shifts.extend(
+        drained.shifts.extend(
             source_heads
                 .into_iter()
                 .zip(sorted_heads)
                 .filter_map(|(before, after)| before.zip(after))
                 .filter(|(before, after)| before != after),
         );
-        out.append(&mut imports);
-        out.append(&mut leading);
-        out.append(&mut definitions);
-        out.append(&mut trailing);
+        let banded = &mut drained.banded;
+        banded.append(&mut imports);
+        banded.append(&mut leading);
+        banded.append(&mut definitions);
+        banded.append(&mut trailing);
+    }
+
+    /// Drains `order` into the banded order section by section, a
+    /// section marker and a pinned anchor each closing the running
+    /// region, `None` when an eager reference would seat ahead of its
+    /// definition.
+    fn drained(
+        &self,
+        body: &[Stmt],
+        sections: &Sections,
+        first_party: &[String],
+        grouped: bool,
+        order: &[usize],
+    ) -> Option<Drained> {
+        let mut drained = Drained {
+            banded: Vec::with_capacity(order.len()),
+            imports: Vec::new(),
+            shifts: Vec::new(),
+        };
+        let mut region = Vec::new();
+        for (slot, &idx) in order.iter().enumerate() {
+            if sections.is_boundary(slot) {
+                self.drain_region(body, first_party, grouped, &mut region, &mut drained);
+            }
+            if self.ranks.contains_key(&idx) {
+                region.push(idx);
+            } else {
+                self.drain_region(body, first_party, grouped, &mut region, &mut drained);
+                drained.banded.push(idx);
+            }
+        }
+        self.drain_region(body, first_party, grouped, &mut region, &mut drained);
+        self.is_sound(&drained.banded).then_some(drained)
     }
 
     /// True when every eager reference seats its referent ahead of the
@@ -149,13 +188,12 @@ impl BandPlan<'_> {
 
     /// Applies the plan to `order`, draining each section's slots into
     /// imports, leading constants, definitions, then trailing constants.
-    /// A section marker drains the running region, so a band never crosses
-    /// a divider. A comment heading a band's source-order head moves to
-    /// whichever member the sort seats first, so it heads the band still.
-    /// Returns the [`Banding`] when the plan is sound and the assembled
-    /// order differs from `order`, moves a comment onto another member,
-    /// or opens a tier blank line, rewriting `order` in place. Leaves
-    /// `order` untouched otherwise.
+    /// A comment heading a band's source-order head moves to whichever
+    /// member the sort seats first, so it heads the band still. Returns
+    /// the [`Banding`] when the plan is sound and the assembled order
+    /// differs from `order`, moves a comment onto another member, or opens
+    /// a tier blank line, rewriting `order` in place. Leaves `order`
+    /// untouched otherwise.
     pub(super) fn apply(
         mut self,
         body: &[Stmt],
@@ -165,27 +203,8 @@ impl BandPlan<'_> {
         max_tiers: Option<usize>,
         order: &mut Vec<usize>,
     ) -> Option<Banding> {
-        let mut shifts = Vec::new();
-        let mut banded = Vec::with_capacity(order.len());
-        let mut region = Vec::new();
-        let mut drain = |region: &mut Vec<usize>, banded: &mut Vec<usize>| {
-            self.drain_region(body, first_party, grouped, region, &mut shifts, banded);
-        };
-        for (slot, &idx) in order.iter().enumerate() {
-            if sections.is_boundary(slot) {
-                drain(&mut region, &mut banded);
-            }
-            if self.ranks.contains_key(&idx) {
-                region.push(idx);
-            } else {
-                drain(&mut region, &mut banded);
-                banded.push(idx);
-            }
-        }
-        drain(&mut region, &mut banded);
-        if !self.is_sound(&banded) {
-            return None;
-        }
+        let Drained { banded, shifts, .. } =
+            self.drained(body, sections, first_party, grouped, order)?;
         self.relocate_heads(&shifts);
         let tiers: HashMap<usize, usize> = self
             .keys
@@ -212,6 +231,24 @@ impl BandPlan<'_> {
             banding
         })
     }
+
+    /// Every import band the drained `order` seats beside every comment
+    /// the banding carries onto another member, `None` when the plan is
+    /// unsound.
+    pub(super) fn import_bands(
+        mut self,
+        body: &[Stmt],
+        sections: &Sections,
+        first_party: &[String],
+        grouped: bool,
+        order: &[usize],
+    ) -> Option<(Vec<ImportBand>, Vec<Carry>)> {
+        let Drained {
+            imports, shifts, ..
+        } = self.drained(body, sections, first_party, grouped, order)?;
+        self.relocate_heads(&shifts);
+        Some((imports, self.carries))
+    }
 }
 
 /// The band a statement hoists into. `drain_region` seats the bands as
@@ -229,11 +266,18 @@ pub(super) enum BandRank {
 /// `trails` and on the line above it otherwise. The block a comment
 /// binds backward from and the band head a sort reseats are the two
 /// moves, so `absorbs` and `carrier` always name different members.
-pub(super) struct Carry {
-    pub(super) absorbs: usize,
-    pub(super) carrier: usize,
-    pub(super) comment: TextRange,
-    pub(super) trails: bool,
+pub(crate) struct Carry {
+    pub(crate) absorbs: usize,
+    pub(crate) carrier: usize,
+    pub(crate) comment: TextRange,
+    pub(crate) trails: bool,
+}
+
+/// One import band: its body slots in source order and the slot the
+/// sort seats first, whose line the band's heading then reads over.
+pub(crate) struct ImportBand {
+    pub(crate) slots: Vec<usize>,
+    pub(crate) sorted_head: usize,
 }
 
 /// The kind a banded constant sorts into within its tier. A band keys on
@@ -247,19 +291,29 @@ pub(super) enum Subcategory {
     State,
 }
 
+/// The drained order of a body, its import bands, and the `(from, to)`
+/// head shift of every band the sort reseated.
+struct Drained {
+    banded: Vec<usize>,
+    imports: Vec<ImportBand>,
+    shifts: Vec<(usize, usize)>,
+}
+
 /// The gap the banded order seats after the block of rank `a`, ahead of
 /// the block of rank `b`. A same-band pair opens one blank line across a
 /// tier boundary into a sub-band of two or more members, a lone nested
 /// constant folding tight into the tier above instead, and an import run
 /// keeps one blank line between canonical groups. Every other pair takes
 /// the count [`module_blank_lines`] declares, one blank line standing in
-/// wherever that policy holds no opinion. `None` falls back to the source
-/// gap, the case for a pinned anchor on either side.
+/// wherever that policy holds no opinion, rendered in `ending`. `None`
+/// falls back to the source gap, the case for a pinned anchor on either
+/// side.
 pub(super) fn banded_gap(
     band: &Banding,
     body: &[Stmt],
     first_party: &[String],
     grouped: bool,
+    ending: LineEnding,
     a: usize,
     b: usize,
 ) -> Option<&'static str> {
@@ -272,7 +326,7 @@ pub(super) fn banded_gap(
         }
         _ => module_blank_lines(&body[a], &body[b], first_party, grouped).unwrap_or(1),
     };
-    Some(blank_gap(blanks))
+    Some(blank_gap(ending, blanks))
 }
 
 #[cfg(test)]

@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Shed Super Call Settles Before Its Row Reflows"
+
+description = '''
+[[shed-super-args]] runs ahead of [[reflow-calls]], so the bare `super()` is the text the length trigger measures, and the `add_exception` call explodes in the first pass rather than after the shed narrows the row.
+'''

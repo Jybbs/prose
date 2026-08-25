@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 59
+expression: snapshot
+input_file: crate/tests/fixtures/composition/earlier_literal_leaves_the_tail_literal_packed/input.py
+---
+class Results:
+    def check(self, toklist):
+        if True:
+            if not (isinstance(
+                toklist,
+                (type(None), basestring, list)
+            ) and toklist in (None, "", [])):
+                return

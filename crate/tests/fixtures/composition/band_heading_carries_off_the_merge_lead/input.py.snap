@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/band_heading_carries_off_the_merge_lead/input.py
+---
+# Translated by Guido van Rossum from C source provided by
+# Adrian Baddeley.
+import _random
+
+from _collections_abc import Sequence as _Sequence
+from itertools        import accumulate as _accumulate
+from math             import acos as _acos, cos as _cos
+from math             import e as _e, exp as _exp
+from math             import log as _log, pi as _pi
+from math             import sqrt as _sqrt
+from os               import urandom as _urandom
+
+print(_Sequence, _accumulate, _acos, _cos, _e, _exp, _log, _pi, _random, _sqrt, _urandom)

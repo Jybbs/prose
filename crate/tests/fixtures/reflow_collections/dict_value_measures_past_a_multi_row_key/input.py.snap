@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 59
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/dict_value_measures_past_a_multi_row_key/input.py
+---
+lookup = {
+    (
+        first_component,
+        second_component,
+        third_component
+    ): (1, 2),  # note
+}

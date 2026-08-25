@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/nested_chain_measures_where_the_link_explodes/input.py
+---
+reflow-calls@56..94
+stack-method-chains@24..111

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Quoted Annotation Holds Past Its Repeat"
+
+description = '''
+`from typing import List` appears twice and only a string-literal annotation reads `List`. The repeat drops, and **the first import holds** because the annotation parse reaches the name the binding table does not.
+'''

@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/entry_measured_at_its_sorted_position/input.py
+---
+class Loop:
+    def _loop_self_reading(self):
+        try:
+            pass
+        except BaseException as exc:
+            self.call_exception_handler(
+                {
+                    'exception': exc,
+                    'loop': self,
+                    'message': 'Error on reading from the event loop self pipe'
+                }
+            )

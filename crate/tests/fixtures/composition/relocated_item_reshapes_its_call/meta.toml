@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Relocated Item Reshapes the Call It Carries"
+
+description = '''
+Expanding the tuple moves its final item four columns right, past the budget. [[reflow-collections]] reshapes the [[reflow-calls]] layout of the call inside that item against the row it lands on, so the explosion happens in the same pass as the move.
+'''

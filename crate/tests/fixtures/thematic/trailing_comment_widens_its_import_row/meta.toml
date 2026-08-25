@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Trailing Comment Widens the Import Row It Joins"
+
+description = '''
+The comment sits directly beneath the import with no blank line between them, so it reads as that statement's trailing comment and **joins the import's row**.
+'''

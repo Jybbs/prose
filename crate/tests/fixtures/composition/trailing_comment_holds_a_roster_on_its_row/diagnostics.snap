@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/trailing_comment_holds_a_roster_on_its_row/input.py
+---
+reflow-imports@83..118

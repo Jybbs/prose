@@ -1,34 +1,37 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description="Report every corpus file the formatter rewrites on a second pass"
+#MISE alias       = "settle"
+#MISE description = "Sweep a corpus at every line length for rewrites a second pass would change and fixes the output never took, then sweep mutations of it"
 
-corpus="${1:-$(python -c 'import sysconfig; print(sysconfig.get_paths()["stdlib"])')}"
+source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
+source "$MISE_PROJECT_ROOT/.mise/lib/delta.bash"
 
-cargo build --release --bin prose --locked
-prose="$MISE_PROJECT_ROOT/target/release/prose"
-work=$(mktemp -d)
-once="$work/once"
-twice="$work/twice"
-mkdir -p "$once"
-
-(cd "$corpus" && find . -name '*.py' -not -path '*/test/*' -not -path '*/tests/*' -not -path '*/site-packages/*' -print0 \
-  | tar -cf - --null -T -) | tar -xf - -C "$once"
-
-format_pass() {
-  local status=0
-  "$prose" format --no-cache --quiet "$1" || status=$?
-  ((status <= 2)) || exit "$status"
+mutation_pass() {
+  local variant="$1" log name seen status=0 unstable
+  name=$(basename "$variant")
+  log="$mutations/$name.log"
+  "$binary" format --no-cache --quiet "$variant" 2> "$log" || status=$?
+  (( status <= 4 )) || { echo "$name exited $status, stderr at $log" >&2; exit 1; }
+  seen=$(find "$variant" -name '*.py' | wc -l | tr -d ' ')
+  unstable=$(sed -n 's/^\([0-9][0-9]*\) files\{0,1\} would change on a second run\.$/\1/p' "$log")
+  unstable="${unstable:-0}"
+  printf '\n%s: %s of %s variants rewrite to output a second run would change\n' \
+    "$name" "$unstable" "$seen"
+  (( unstable == 0 )) || cat "$log"
 }
 
-format_pass "$once"
-cp -R "$once" "$twice"
-format_pass "$twice"
+corpus=$(corpus_root "${1:-}")
+budget="${2:-60}"
 
-formatted=$(find "$once" -name '*.py' | wc -l | tr -d ' ')
-movers=$(diff -rq "$once" "$twice" | sed -n "s|^Files $once/\(.*\) and .* differ\$|\1|p")
-moved=0
-if [[ -n "$movers" ]]; then
-  printf '%s\n' "$movers"
-  moved=$(printf '%s\n' "$movers" | wc -l | tr -d ' ')
-fi
+settle_corpus "$corpus" --test corpus
 
-printf '\n%d of %d files rewrite on a second pass\n' "$moved" "$formatted"
+binary=$(built_binary dev)
+mutations=$(mktemp -d "${TMPDIR:-/tmp}"/prose-mutations.XXXXXX)
+
+printf '\nMutating the corpus under a %ss budget\n' "$budget"
+"$MISE_PROJECT_ROOT/.mise/lib/mutate.py" "$corpus" "$mutations" "$budget"
+
+while IFS= read -r variant; do
+  mutation_pass "$variant"
+done < <(find "$mutations" -mindepth 1 -maxdepth 1 -type d | sort)
+
+printf '\neach mutation survives as a tree under %s\n' "$mutations"

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_calls/sibling_call_measured_after_the_join/input.py
+---
+reflow-calls@116..124
+reflow-calls@64..83

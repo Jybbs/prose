@@ -10,6 +10,7 @@ python.uv_venv_auto                 = "create|source"
 
 [tools]
 "aqua:lycheeverse/lychee"      = "0.24.2"
+"aqua:mitsuhiko/insta"         = "1.48.0"
 "aqua:taiki-e/cargo-llvm-cov"  = "0.8.7"
 "aqua:wasm-bindgen/wasm-pack"  = "0.15.0"
 bun                            = "1.3.14"

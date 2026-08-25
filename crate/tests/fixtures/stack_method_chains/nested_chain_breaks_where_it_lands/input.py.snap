@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_method_chains/nested_chain_breaks_where_it_lands/input.py
+---
+class Distribution:
+    def files(self, subdir, text):
+        paths = (
+            (
+                (subdir / name).resolve()
+                               .relative_to((
+                                   self.locate_file('')
+                                       .resolve()
+                               ), walk_up=True)
+                               .as_posix()
+            )
+            for name in text.splitlines()
+        )

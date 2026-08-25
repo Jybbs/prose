@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/grouped_keyword_value_measured_past_its_pair/input.py
+---
+reflow-calls@95..136

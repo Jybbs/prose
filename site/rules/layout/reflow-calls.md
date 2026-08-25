@@ -1,6 +1,6 @@
 ---
 caption : "Explodes a call to one argument per line once its count, its width, or an argument spanning rows calls for it, and rejoins a fractured list where no trigger fires."
-related : [alphabetize-siblings, reflow-collections, reflow-signatures, strip-trailing-commas]
+related : [alphabetize-siblings, reflow-collections, reflow-signatures, strip-stranded-padding, strip-trailing-commas]
 layout  : doc
 ---
 
@@ -8,11 +8,11 @@ layout  : doc
 
 <RuleLayout rule="reflow_calls">
 
-`reflow-calls` takes a call whose argument count passes `max-args` and breaks it one argument per line in keyword form, leaving shorter calls inline. The expanded form lays each argument one indent step inside the row its `(` lands on with the closing `)` back at that row's own indent, and a nested eligible call explodes in the same pass.
+`reflow-calls` takes a call whose argument count passes `max-args` and breaks it one argument per line in keyword form, leaving shorter calls inline. The expanded form lays each argument one indent step inside the row its `(` lands on with the closing `)` back at that row's indent, read as the indent the row settles to, so a row opening on the closer of a bracket that opened earlier follows that opener's row rather than the continuation column the source wrote, and a nested eligible call explodes in the same pass.
 
 The pass fires only where every argument is keyword-expressible. A positional argument resolves to its parameter name through the call site's in-module binding, so the exploded form reads `name=value` whatever order the source passed it, and a bare generator expression, a walrus binding, and a `yield` each take a grouping pair. A positional-only prefix, a `*` or `**` unpacking, a callee that does not resolve to a module function, and a `from x import *` anywhere in the module each leave the call inline. The count trigger passes such a call over rather than holding its shape, so a list past `max-args` the pass cannot name closes its fracture and reads on one row the way a list beneath the cap does, leaving `code-line-length` as the only trigger that reaches it.
 
-Every measure reads the column a construct lands at once its parent settles, so a nested call fitting its destination row stays inline and a keyword value answers the budget from the column [[align-equals]] shifts it to.
+Every measure reads the column a construct lands at once its parent settles, so a nested call fitting its destination row stays inline, a call following a sibling the pass has just joined or exploded measures the row that sibling leaves it on, and a keyword value answers the budget from the column [[align-equals]] shifts it to, charging the comma closing its row at the position [[alphabetize-siblings]] later seats it at. A call inside a literal [[reflow-collections]] expands, or inside the parameters of a signature [[reflow-signatures]] lays out one per line, waits for that rule, which reshapes it where its entry or parameter lands, and every width reads the row as [[strip-stranded-padding]] leaves it.
 
 A third trigger reads the argument itself. One whose text still spans rows once every closable fracture inside the list shuts explodes the list one argument per line, whatever the count and joined width, so a call carrying a held literal, a nested flush column, or a stacked string run reaches the shape a long call does. A call carrying a single such argument explodes around it, and the held argument travels the way [[reflow-collections]] carries a held member.
 

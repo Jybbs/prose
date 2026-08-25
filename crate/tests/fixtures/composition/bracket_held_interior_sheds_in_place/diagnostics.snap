@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/bracket_held_interior_sheds_in_place/input.py
+---
+reflow-calls@171..212
+shed-parentheses@128..129
+shed-parentheses@172..173
+shed-parentheses@242..243

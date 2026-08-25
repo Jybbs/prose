@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/keyword_sort_run_spans_a_positional/input.py
+---
+alphabetize-siblings@2..49
+reflow-calls@2..49

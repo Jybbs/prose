@@ -1,12 +1,10 @@
 //! Per-`Source` binding-resolution table.
 //!
 //! Walks the module once and records, for every name introduced or
-//! shadowed in a lexical scope, the offsets of every write and read.
-//! A read that finds no binding mid-walk defers and resolves against
-//! the completed scope chain after the walk, so a forward reference to
-//! a name bound later in source order still records against it.
-//! Consuming rules query the table by `BindingId`, by name, by source
-//! offset, or by an owning `&Stmt` rather than driving their own walk.
+//! shadowed in a lexical scope, the offsets of every write and read,
+//! a read finding no binding mid-walk resolving against the completed
+//! scope chain after it. Consuming rules query by `BindingId`, name,
+//! offset, or owning `&Stmt` rather than driving their own walk.
 //!
 //! ## Scope model
 //!
@@ -260,8 +258,25 @@ impl BindingAnalysis {
     /// more than one write or an augmented-assignment write, and
     /// `false` when `name` is write-once or unbound at module scope.
     pub(crate) fn module_reassigned(&self, name: &str) -> bool {
+        self.module_reassigned_without(name, |_| false)
+    }
+
+    /// Returns `true` when the module-scope binding for `name` carries
+    /// more than one write `dropped` does not answer `true` for, or an
+    /// augmented-assignment write.
+    pub(crate) fn module_reassigned_without(
+        &self,
+        name: &str,
+        dropped: impl Fn(TextSize) -> bool,
+    ) -> bool {
         self.module_binding(name).is_some_and(|binding| {
-            binding.write_offsets.len() > 1 || binding.kinds.contains(&BindingKind::AugAssign)
+            binding
+                .write_offsets
+                .iter()
+                .filter(|&&offset| !dropped(offset))
+                .nth(1)
+                .is_some()
+                || binding.kinds.contains(&BindingKind::AugAssign)
         })
     }
 
@@ -557,6 +572,25 @@ mod tests {
     #[case("X += 1\n")]
     fn module_reassigned_is_true_when_written_twice_or_augmented(#[case] src: &str) {
         assert!(analyze(src).module_reassigned("X"));
+    }
+
+    #[rstest]
+    #[case("import os\nimport os\n")]
+    #[case("import os\nimport os\nimport os\n")]
+    fn module_reassigned_without_is_false_once_every_extra_write_drops(#[case] src: &str) {
+        let analysis = analyze(src);
+        let first = analysis.first_write_offset(module_binding_id(&analysis, "os"));
+
+        assert!(analysis.module_reassigned("os"));
+        assert!(!analysis.module_reassigned_without("os", |offset| offset != first));
+    }
+
+    #[test]
+    fn module_reassigned_without_is_true_where_another_write_remains() {
+        let analysis = analyze("import os\nimport os\nos = None\n");
+        let first = analysis.first_write_offset(module_binding_id(&analysis, "os"));
+
+        assert!(analysis.module_reassigned_without("os", |offset| offset == first));
     }
 
     #[test]

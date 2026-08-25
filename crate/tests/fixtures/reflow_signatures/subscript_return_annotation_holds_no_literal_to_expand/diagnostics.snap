@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_signatures/subscript_return_annotation_holds_no_literal_to_expand/input.py
+---
+reflow-signatures@50..87
