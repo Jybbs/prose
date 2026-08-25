@@ -19,13 +19,7 @@ vi.mock('../../lib/rules/rules.data', () => ({
   }
 }))
 
-// `RuleTooltipPopper` is registered globally by the theme rather than imported.
-const MOUNT = {
-  global: {
-    ...popperStubMount,
-    stubs: { ...popperStubMount.stubs, RuleTooltipPopper: { template: '<div><slot /></div>' } }
-  }
-}
+const MOUNT = { global: popperStubMount }
 
 const anchor = (hidden: boolean) => mount(
   defineComponent({
@@ -45,5 +39,9 @@ describe('InlineRuleLink', () => {
 
   it('leaves the tab order inside an aria-hidden subtree', () => {
     expect(anchor(true).attributes('tabindex')).toBe('-1')
+  })
+
+  it('carries the slug the delegated popper reads', () => {
+    expect(anchor(false).attributes('data-rule')).toBe('align-equals')
   })
 })
