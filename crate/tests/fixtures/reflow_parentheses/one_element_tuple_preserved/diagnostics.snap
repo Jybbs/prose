@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_parentheses/one_element_tuple_preserved/input.py
+---
+

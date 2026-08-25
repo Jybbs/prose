@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/rows_hanging_inside_a_nested_bracket_hold/input.py
+---
+reflow-parentheses@16..17
+reflow-parentheses@170..171

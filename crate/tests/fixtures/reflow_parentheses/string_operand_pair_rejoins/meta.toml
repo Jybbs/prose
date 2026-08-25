@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Chain Carrying a String Operand Rejoins"
+
+description = '''
+The interior is an operator chain whose operand happens to hold a string literal. The fold reads whether closing the soft wrap would respace a string's own interior rather than what kind of leaf the chain carries, so this pair joins onto one row and sheds exactly as one comparing against a number would.
+'''

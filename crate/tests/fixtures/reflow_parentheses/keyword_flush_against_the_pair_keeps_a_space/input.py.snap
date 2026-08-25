@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/keyword_flush_against_the_pair_keeps_a_space/input.py
+---
+def f(x, y):
+    if x:
+        return '<not given>'
+    elif y:
+        return x
+    assert x, "msg"
+    yield x
+    return x if y else x

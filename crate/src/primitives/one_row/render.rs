@@ -82,7 +82,7 @@ impl<'a> Writer<'a> {
     /// it, whether that is a call's argument list or a literal the
     /// author fractured. A break no close reaches leaves `None`.
     fn leaf_form(&self, expr: &Expr, range: TextRange) -> Option<Cow<'a, str>> {
-        if let Some(folded) = folded_line_form(expr, self.source.slice(range)) {
+        if let Some(folded) = folded_line_form(self.source, expr, self.source.slice(range)) {
             return Some(folded);
         }
         let mut joiner = Joiner {

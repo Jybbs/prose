@@ -817,6 +817,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "split-multi-module": true
           }
         },
+        "reflow-parentheses": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
         "reflow-signatures": {
           "anyOf": [
             {
@@ -845,19 +858,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           }
         },
         "shed-backslash-continuations": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/ToggleOnly"
-            }
-          ],
-          "default": {
-            "enabled": true
-          }
-        },
-        "shed-parentheses": {
           "anyOf": [
             {
               "type": "boolean"
@@ -1281,6 +1281,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "merge-members": true,
           "split-multi-module": true
         },
+        "reflow-parentheses": {
+          "enabled": true
+        },
         "reflow-signatures": {
           "enabled": true,
           "max-params": 4
@@ -1289,9 +1292,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true
         },
         "shed-backslash-continuations": {
-          "enabled": true
-        },
-        "shed-parentheses": {
           "enabled": true
         },
         "shed-redundant-base": {

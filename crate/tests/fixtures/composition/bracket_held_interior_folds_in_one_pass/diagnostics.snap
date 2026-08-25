@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/bracket_held_interior_folds_in_one_pass/input.py
+---
+reflow-calls@171..212
+reflow-parentheses@128..129
+reflow-parentheses@171..213
+reflow-parentheses@242..243

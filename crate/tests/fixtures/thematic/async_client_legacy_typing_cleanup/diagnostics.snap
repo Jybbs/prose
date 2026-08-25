@@ -1,6 +1,6 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/input.py
 ---
 align-equals@1626..1627
@@ -23,9 +23,9 @@ prune-inert-imports@138..164
 reflow-calls@1055..1147
 reflow-collections@496..605
 reflow-imports@59..164
+reflow-parentheses@1338..1339
+reflow-parentheses@1358..1359
 reflow-signatures@875..974
-shed-parentheses@1338..1339
-shed-parentheses@1358..1359
 signature-annotations@1494..1499
 signature-annotations@657..661
 signature-annotations@731..734

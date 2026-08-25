@@ -1,9 +1,18 @@
 //! Token-kind predicates over the bracket delimiters and the
-//! interpolated-string openers, and the reading of a `[` against the
-//! token ahead of it.
+//! interpolated-string openers, the characters those delimiters are
+//! written with, and the reading of a `[` against the token ahead of
+//! it.
 
 use ruff_python_ast::token::{TokenKind, Tokens};
 use ruff_text_size::TextSize;
+
+/// The characters a bracket closes with, the char-level counterpart to
+/// [`is_closer`].
+pub(crate) const CLOSERS: [char; 3] = [')', ']', '}'];
+
+/// The characters a bracket opens with, the char-level counterpart to
+/// [`is_opener`].
+pub(crate) const OPENERS: [char; 3] = ['(', '[', '{'];
 
 /// Returns `true` when `kind` is a closing bracket `)` `]` `}`.
 pub(crate) fn is_closer(kind: TokenKind) -> bool {

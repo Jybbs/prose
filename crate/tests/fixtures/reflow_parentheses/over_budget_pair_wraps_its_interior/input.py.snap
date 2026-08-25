@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/over_budget_pair_wraps_its_interior/input.py
+---
+ready = (
+    server.up and cache.warm
+)

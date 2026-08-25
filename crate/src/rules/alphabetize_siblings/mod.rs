@@ -32,6 +32,7 @@ use crate::{
         },
         scope::BodyScope,
         slots::runs_where,
+        tokens::{CLOSERS, OPENERS},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -297,11 +298,11 @@ pub(super) fn joined_text(slice: &str) -> Cow<'_, str> {
     }
     let mut out = String::with_capacity(slice.len());
     for word in slice.split_whitespace() {
-        if word.starts_with([')', ']', '}']) {
+        if word.starts_with(CLOSERS) {
             while out.ends_with(',') {
                 out.pop();
             }
-        } else if !out.is_empty() && !out.ends_with(['(', '[', '{']) {
+        } else if !out.is_empty() && !out.ends_with(OPENERS) {
             out.push(' ');
         }
         out.push_str(word);

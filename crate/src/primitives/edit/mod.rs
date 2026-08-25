@@ -34,15 +34,21 @@ pub(crate) fn insert_edit(edits: &mut Vec<Edit>, edit: Edit) {
     insert_sorted_by_key(edits, edit, Ranged::start);
 }
 
+/// True where `c` joins the identifier beside it, so text placed
+/// against it would run into that identifier rather than reading as a
+/// token of its own.
+pub(crate) fn joins_an_identifier(c: char) -> bool {
+    c.is_alphanumeric() || c == '_'
+}
+
 /// `text` carrying a leading space where the character before `start`
 /// would otherwise run into it, as `return[x for x in xs]` does.
 pub(crate) fn padded(source: &Source, start: TextSize, text: String) -> String {
-    let joins = |c: char| c.is_alphanumeric() || c == '_';
-    let merges = text.starts_with(joins)
+    let merges = text.starts_with(joins_an_identifier)
         && source.text()[..start.to_usize()]
             .chars()
             .next_back()
-            .is_some_and(joins);
+            .is_some_and(joins_an_identifier);
     if merges { format!(" {text}") } else { text }
 }
 

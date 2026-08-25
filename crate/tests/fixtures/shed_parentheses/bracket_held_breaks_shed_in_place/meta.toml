@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "The Shed Row Follows the Paren One Column Left"
-
-description = '''
-The pair around the comparison holds none of the breaks inside it, so it sheds in place and the row inside the `find` call follows one column left, keeping its alignment to the call's first argument.
-'''

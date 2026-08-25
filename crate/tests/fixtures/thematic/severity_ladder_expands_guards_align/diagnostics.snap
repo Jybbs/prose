@@ -13,10 +13,10 @@ reassigned-constants@270..294
 reassigned-constants@617..641
 reflow-calls@1027..1137
 reflow-collections@67..130
-shed-parentheses@386..387
-shed-parentheses@414..415
-shed-parentheses@919..920
-shed-parentheses@959..960
+reflow-parentheses@386..387
+reflow-parentheses@414..415
+reflow-parentheses@919..920
+reflow-parentheses@959..960
 signature-annotations@299..307
 signature-annotations@308..318
 signature-annotations@320..332

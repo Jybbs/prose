@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/nested_pairs_fold_the_outer/input.py
+---
+ready = server.up and cache.warm

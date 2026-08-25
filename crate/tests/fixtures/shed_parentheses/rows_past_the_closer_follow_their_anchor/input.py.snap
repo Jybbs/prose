@@ -1,9 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/shed_parentheses/rows_past_the_closer_follow_their_anchor/input.py
----
-def f():
-    gg(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa or
-       bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, (cccccccccccccccccccccccccccccccccccccccc,
-                                                  dddddddddddddddddddddddddddddddddddddddd))

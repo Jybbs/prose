@@ -1,7 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/shed_parentheses/replacement_field_pair_dropped/input.py
----
-label = f"{a + b}"
-value = c + d

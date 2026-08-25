@@ -68,11 +68,24 @@ pub(crate) fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
 /// where the source wrote it. Borrowed where the block holds no movable
 /// continuation row or already sits where it lands.
 pub(crate) fn placed_block(source: &Source, range: TextRange, landing: Landing) -> Cow<'_, str> {
-    let block = source.slice(range);
+    placed_block_through(source, range, &[], landing)
+}
+
+/// `range` placed per `landing` the way [`placed_block`] places it,
+/// reading the text `edits` leave rather than the text the source
+/// holds, so a caller folds its own pending rewrites into the block it
+/// moves.
+pub(crate) fn placed_block_through<'s>(
+    source: &'s Source,
+    range: TextRange,
+    edits: &[Edit],
+    landing: Landing,
+) -> Cow<'s, str> {
+    let block = apply_inline_edits(source, range, edits);
     let frozen = frozen_rows(source, range);
-    match block_shift(source, block, &frozen, range.start(), landing) {
-        Some(travel) if !travel.is_still() => Cow::Owned(shifted_rows(block, travel, &frozen)),
-        _ => Cow::Borrowed(block),
+    match block_shift(source, &block, &frozen, range.start(), landing) {
+        Some(travel) if !travel.is_still() => Cow::Owned(shifted_rows(&block, travel, &frozen)),
+        _ => block,
     }
 }
 

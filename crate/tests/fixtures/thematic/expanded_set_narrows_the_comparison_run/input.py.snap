@@ -5,9 +5,11 @@ input_file: crate/tests/fixtures/thematic/expanded_set_narrows_the_comparison_ru
 ---
 def configure(conn):
 
-    if (conn.family in {
-        INET6_FAMILY_TAG, INET_FAMILY_TAG
-    } and
-            conn.type  == STREAM_KIND and
-            conn.proto == TCP_PROTOCOL):
+    if (
+        conn.family in {
+            INET6_FAMILY_TAG, INET_FAMILY_TAG
+        }
+        and conn.type  == STREAM_KIND
+        and conn.proto == TCP_PROTOCOL
+    ):
         conn.enable()

@@ -1,7 +1,7 @@
 ---
 caption : "Rewrites a comparison to state its check directly, settling identity against `None`, operand order, and a leading `not`."
 lints   : true
-related : [align-comparisons, shed-parentheses]
+related : [align-comparisons, reflow-parentheses]
 layout  : doc
 ---
 
@@ -37,7 +37,7 @@ A comparison carrying a comment anywhere inside it holds its operand order, a sw
 
 A comparison inside an f-string or t-string replacement field is opaque the way the layout rules treat one.
 
-The rewrites compose in one pass, so `not x == None` settles as `x is not None` rather than needing a second run. Grouping parentheses travel with the operand they wrap, and [[shed-parentheses]] clears any pair the fold leaves redundant.
+The rewrites compose in one pass, so `not x == None` settles as `x is not None` rather than needing a second run. Grouping parentheses travel with the operand they wrap, and [[reflow-parentheses]] clears any pair the fold leaves redundant.
 
 <template #configuration>
 

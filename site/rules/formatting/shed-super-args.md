@@ -1,6 +1,6 @@
 ---
 caption : "Sheds the class and instance a `super(C, self)` call restates, leaving the bare `super()` the interpreter resolves on its own."
-related : [shed-parentheses, strip-none-return, modernize-annotations]
+related : [reflow-parentheses, strip-none-return, modernize-annotations]
 layout  : doc
 ---
 

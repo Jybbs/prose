@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/code_token_alignment_beats_the_hang/input.py
+---
+reflow-parentheses@102..103
+reflow-parentheses@2..3
+reflow-parentheses@53..54

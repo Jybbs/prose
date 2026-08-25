@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reflow_parentheses/generator_pair_preserved/input.py
+---
+squares = (item for item in items)

@@ -46,9 +46,9 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "after": [
       "shed-backslash-continuations"
     ],
-    "imperative": "shed a redundant grouping parenthesis pair",
+    "imperative": "reflow a redundant grouping parenthesis pair against the line budget",
     "position": 7,
-    "slug": "shed-parentheses"
+    "slug": "reflow-parentheses"
   },
   {
     "after": [],
@@ -58,7 +58,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
-      "shed-parentheses"
+      "reflow-parentheses"
     ],
     "imperative": "normalize a comparison to state its check directly",
     "position": 9,
@@ -66,7 +66,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
-      "shed-parentheses"
+      "reflow-parentheses"
     ],
     "imperative": "collapse a redundant collection constructor",
     "position": 10,
@@ -107,7 +107,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   {
     "after": [
       "shed-backslash-continuations",
-      "shed-parentheses",
+      "reflow-parentheses",
       "simplify-comprehensions",
       "shed-super-args",
       "stack-method-chains"
@@ -119,7 +119,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   {
     "after": [
       "strip-none-return",
-      "shed-parentheses"
+      "reflow-parentheses"
     ],
     "imperative": "normalize function signature to one-line or one-per-line shape",
     "position": 17,
@@ -158,7 +158,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
-      "shed-parentheses"
+      "reflow-parentheses"
     ],
     "imperative": "align match-case colons",
     "position": 21,
@@ -187,7 +187,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "after": [
       "normalize-literals",
       "strip-trailing-commas",
-      "shed-parentheses",
+      "reflow-parentheses",
       "frame-docstrings",
       "expand-docstrings",
       "stack-method-chains",
@@ -226,7 +226,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   {
     "after": [
       "strip-trailing-commas",
-      "shed-parentheses",
+      "reflow-parentheses",
       "reflow-collections",
       "reflow-signatures",
       "stack-adjacent-strings",
@@ -250,7 +250,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   {
     "after": [
       "strip-trailing-commas",
-      "shed-parentheses",
+      "reflow-parentheses",
       "reflow-collections",
       "alphabetize-siblings",
       "band-constants",
@@ -262,7 +262,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
-      "shed-parentheses",
+      "reflow-parentheses",
       "normalize-comparisons",
       "reflow-calls",
       "reflow-collections"
@@ -273,7 +273,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
-      "shed-parentheses",
+      "reflow-parentheses",
       "align-match-case",
       "align-imports",
       "align-colons",

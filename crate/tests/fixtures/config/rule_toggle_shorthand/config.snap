@@ -49,7 +49,7 @@ Config {
         strip_trailing_commas: ToggleOnly {
             enabled: true,
         },
-        shed_parentheses: ToggleOnly {
+        reflow_parentheses: ToggleOnly {
             enabled: true,
         },
         shed_redundant_base: ToggleOnly {

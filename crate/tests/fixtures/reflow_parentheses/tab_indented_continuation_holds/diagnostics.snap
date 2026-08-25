@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/tab_indented_continuation_holds/input.py
+---
+reflow-parentheses@104..105
+reflow-parentheses@13..14

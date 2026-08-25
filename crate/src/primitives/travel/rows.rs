@@ -37,11 +37,11 @@ pub(super) fn closes_the_head(row: &str) -> bool {
 /// an interior row opened reading as interior too.
 pub(super) fn hanging_travel(block: &str, frozen: &[bool], landing: Landing) -> Option<Travel> {
     let head = block.universal_newlines().next()?;
-    if !head.trim_end().ends_with(['(', '[', '{']) || frozen.get(1) == Some(&true) {
+    if !head.trim_end().ends_with(OPENERS) || frozen.get(1) == Some(&true) {
         return None;
     }
     let rows: Vec<Line> = movable_rows(block, frozen).collect();
-    let opens_with_closer = |line: &Line| line.trim_start().starts_with([')', ']', '}']);
+    let opens_with_closer = |line: &Line| line.trim_start().starts_with(CLOSERS);
     let close = rows
         .last()
         .filter(|line| opens_with_closer(line) && closes_the_head(line.trim_start()))

@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "An Over-Budget Grouping Stays Wrapped"
-
-description = '''
-`ready = (` wraps `server.up and cache.warm` across three lines, and with the budget set to `31` characters the folded single-line form would run one character over. The parentheses and the multi-line layout stay exactly as written.
-'''

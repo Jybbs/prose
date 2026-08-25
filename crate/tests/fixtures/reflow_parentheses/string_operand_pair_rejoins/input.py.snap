@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/string_operand_pair_rejoins/input.py
+---
+status = payload.state == "ready" and payload.count > 0

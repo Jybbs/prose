@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/rows_past_the_closer_follow_their_anchor/input.py
+---
+reflow-parentheses@109..110
+reflow-parentheses@155..157
+reflow-parentheses@16..17
+reflow-parentheses@61..62

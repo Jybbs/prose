@@ -36,7 +36,7 @@ impl<'ast> AstVisitor<'ast> for FractureJoiner<'_> {
 /// `edits` sorted ascending with every range an earlier edit already
 /// covers dropped. A nested list is reached twice over, once on its own
 /// and once inside the join its parent renders.
-pub(crate) fn outermost(mut edits: Vec<Edit>) -> Vec<Edit> {
+pub(crate) fn outermost<T: Ranged>(mut edits: Vec<T>) -> Vec<T> {
     edits.sort_by_key(|edit| (edit.start(), Reverse(edit.end())));
     edits.dedup_by(|edit, last| last.end() > edit.start());
     edits

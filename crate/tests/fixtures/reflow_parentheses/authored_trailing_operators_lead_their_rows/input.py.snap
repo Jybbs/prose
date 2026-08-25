@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/authored_trailing_operators_lead_their_rows/input.py
+---
+def gate(session):
+    if (
+        session.is_authenticated
+        and session.has_permission
+        and session.is_within_window
+    ):
+        return

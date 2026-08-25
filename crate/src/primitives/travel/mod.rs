@@ -1,7 +1,9 @@
 //! Moves a relocated block's continuation rows to the column it lands
 //! at. [`block_shift`] reads the move a block makes against its
-//! [`Landing`], [`placed_block`] applies it to a source range, and a
-//! row a row-spanning string freezes stays where the source wrote it.
+//! [`Landing`], [`placed_block`] applies it to a source range and
+//! [`placed_block_through`] to that range read through pending edits,
+//! and a row a row-spanning string freezes stays where the source
+//! wrote it.
 
 mod blocks;
 mod rows;
@@ -9,9 +11,11 @@ mod rows;
 use rows::{hanging_travel, movable_floor, shifted_rows};
 
 pub(crate) use blocks::{
-    block_shift, frozen_rows, placed_block, shifted_block, spans_a_string_part,
+    block_shift, frozen_rows, placed_block, placed_block_through, shifted_block,
+    spans_a_string_part,
 };
 
+use ruff_diagnostics::Edit;
 use ruff_python_ast::{Expr, StringLike, helpers::any_over_expr, token::TokenKind};
 use ruff_python_parser::{Mode, lexer::lex};
 use ruff_python_trivia::leading_indentation;
@@ -20,9 +24,10 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     primitives::{
+        edit::apply_inline_edits,
         inline::indent_width,
         layout::item_indent,
-        tokens::{is_closer, is_opener},
+        tokens::{CLOSERS, OPENERS, is_closer, is_opener},
     },
     source::Source,
 };

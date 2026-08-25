@@ -1,8 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: render(diagnostics)
-input_file: crate/tests/fixtures/shed_parentheses/code_token_alignment_beats_the_hang/input.py
----
-shed-parentheses@102..103
-shed-parentheses@2..3
-shed-parentheses@53..54

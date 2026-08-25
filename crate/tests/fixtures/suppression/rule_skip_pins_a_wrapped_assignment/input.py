@@ -1,3 +1,3 @@
 z = (
     x
-)  # prose: skip[shed-parentheses]
+)  # prose: skip[reflow-parentheses]

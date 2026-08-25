@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/nested_shed_composes_with_a_reseat/input.py
+---
+if a:
+    pass
+elif (
+    nextchar in self.wordchars
+    or nextchar in self.quotes
+    or self.whitespace_split
+    and nextchar not in aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+):
+    pass

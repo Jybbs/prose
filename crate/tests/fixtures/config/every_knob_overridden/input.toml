@@ -41,7 +41,7 @@ reflow-imports               = { enabled = false, merge-members = false, split-m
 reflow-signatures            = { enabled = false, max-params = false }
 restated-types               = false
 shed-backslash-continuations = false
-shed-parentheses             = false
+reflow-parentheses             = false
 shed-redundant-base          = false
 shed-super-args              = false
 signature-annotations        = false

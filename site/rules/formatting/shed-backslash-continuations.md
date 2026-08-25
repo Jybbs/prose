@@ -1,6 +1,6 @@
 ---
 caption : "Drops a trailing backslash and rejoins its statement, parenthesizing the split where the joined line would overflow."
-related : [shed-parentheses, reflow-collections, reflow-imports, line-overflow]
+related : [reflow-parentheses, reflow-collections, reflow-imports, line-overflow]
 layout  : doc
 ---
 

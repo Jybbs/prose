@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pair Whose Breaks a Nested Bracket Holds Folds and Sheds"
+
+description = '''
+The pair around the comparison holds none of the breaks inside it, the `find` call's own parentheses do, so the interior folds onto one row and the pair sheds with it. The joined line fits the `100` character budget the case sets.
+'''

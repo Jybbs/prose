@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_parentheses/nested_pair_dropped/input.py
+---
+reflow-parentheses@10..12
+reflow-parentheses@24..26
+reflow-parentheses@35..36
+reflow-parentheses@43..44
+reflow-parentheses@49..50
+reflow-parentheses@50..51

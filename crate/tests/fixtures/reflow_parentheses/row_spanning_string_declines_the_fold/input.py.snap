@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/row_spanning_string_declines_the_fold/input.py
+---
+def b(alpha, beta):
+    if alpha and beta == """first
+second""":
+        pass
