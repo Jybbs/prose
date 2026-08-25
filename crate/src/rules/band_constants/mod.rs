@@ -1,11 +1,10 @@
 //! Module-scope constant banding. Hoists single-name assignments into a
 //! leading band below the imports and a trailing band beneath the
-//! definitions, pinning both ends of any eager reference the assembled
-//! order would seat backward so the band forms around them, and
-//! declining the body only when no participant is left to pin. The
-//! rule walks the module body and each module-scope compound arm,
-//! applying the [`plan`] analysis and emitting one fix group per banded
-//! body, or one per cell over a notebook.
+//! definitions, declining whenever the assembled order would seat an
+//! eager reference ahead of its definition. The rule walks the module
+//! body and each module-scope compound arm, applying the [`plan`]
+//! analysis and emitting one fix group per banded body, or one per cell
+//! over a notebook.
 
 use std::borrow::Cow;
 

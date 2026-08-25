@@ -1,8 +1,7 @@
 //! The band plan and its application. [`BandPlan::apply`] drains each
 //! section's slots into imports, leading constants, definitions, then
-//! trailing constants, pinning both ends of an eager reference the
-//! assembled order leaves backward and draining again, and declining
-//! only when no participant is left to pin. [`banded_gap`] decides the
+//! trailing constants, declining when the assembled order would seat an
+//! eager reference ahead of its definition. [`banded_gap`] decides the
 //! blank between two seated bands.
 
 use std::collections::HashMap;
@@ -131,15 +130,16 @@ impl BandPlan<'_> {
 
     /// Drains `order` into the banded order section by section, a
     /// section marker and a pinned anchor each closing the running
-    /// region.
-    fn drain_once(
+    /// region, `None` when an eager reference would seat ahead of its
+    /// definition.
+    fn drained(
         &self,
         body: &[Stmt],
         sections: &Sections,
         first_party: &[String],
         grouped: bool,
         order: &[usize],
-    ) -> Drained {
+    ) -> Option<Drained> {
         let mut drained = Drained {
             banded: Vec::with_capacity(order.len()),
             imports: Vec::new(),
@@ -158,43 +158,16 @@ impl BandPlan<'_> {
             }
         }
         self.drain_region(body, first_party, grouped, &mut region, &mut drained);
-        drained
+        self.is_sound(&drained.banded).then_some(drained)
     }
 
-    /// Drains `order` into the banded order, pinning both ends of every
-    /// eager-reference edge the banding leaves backward and draining
-    /// again, so a band forms around the statements it cannot seat
-    /// rather than the whole body declining. `None` once no participant
-    /// is left to pin.
-    fn drained(
-        &mut self,
-        body: &[Stmt],
-        sections: &Sections,
-        first_party: &[String],
-        grouped: bool,
-        order: &[usize],
-    ) -> Option<Drained> {
-        loop {
-            let drained = self.drain_once(body, sections, first_party, grouped, order);
-            let position = slot_positions(&drained.banded);
-            let backward: Vec<(usize, usize)> = self
-                .edges
-                .iter()
-                .copied()
-                .filter(|&(from, to)| position[to] >= position[from])
-                .collect();
-            if backward.is_empty() {
-                return Some(drained);
-            }
-            let mut pinned = false;
-            for idx in backward.iter().flat_map(|&(from, to)| [from, to]) {
-                pinned |= self.ranks.remove(&idx).is_some();
-                self.keys.remove(&idx);
-            }
-            if !pinned {
-                return None;
-            }
-        }
+    /// True when every eager reference seats its referent ahead of the
+    /// referrer in `order`, the import-safety invariant the hoist holds.
+    fn is_sound(&self, order: &[usize]) -> bool {
+        let position = slot_positions(order);
+        self.edges
+            .iter()
+            .all(|&(from, to)| position[to] < position[from])
     }
 
     /// Moves each comment heading a band's source-order head onto the
