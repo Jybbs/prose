@@ -27,6 +27,17 @@ pub(crate) fn carries_a_continuation(slice: &str) -> bool {
     slice.lines().any(|line| line.trim_end().ends_with('\\'))
 }
 
+/// True where a row of `slice` opens on a `.`, the shape a hung method
+/// chain link takes. Closing that break would draw the dot up onto the
+/// row above, which `stack-method-chains` breaks open again from its
+/// own link count on the pass that follows.
+pub(crate) fn hangs_a_chain_link(slice: &str) -> bool {
+    slice
+        .lines()
+        .skip(1)
+        .any(|line| line.trim_start().starts_with('.'))
+}
+
 /// The column `text` ends at when its opening line starts at `indent`,
 /// measured past the last line break `text` carries.
 pub(crate) fn end_column(text: &str, indent: usize) -> usize {
@@ -39,8 +50,10 @@ pub(crate) fn end_column(text: &str, indent: usize) -> usize {
 /// collapse when `expr` joins operands with an operator. `None` for
 /// every other multi-line expression, each of which a layout rule of
 /// its own lays out, for one holding a string part that spans rows,
-/// whose interior the collapse would respace, and for one a backslash
-/// continues, whose break the collapse would close.
+/// whose interior the collapse would respace, for one a backslash
+/// continues, whose break the collapse would close, and for one
+/// hanging a method chain's links, whose dots the collapse would draw
+/// up a row.
 pub(crate) fn folded_line_form<'s>(
     source: &Source,
     expr: &Expr,
@@ -49,8 +62,11 @@ pub(crate) fn folded_line_form<'s>(
     if !slice.contains('\n') {
         return Some(Cow::Borrowed(slice));
     }
-    (is_operator_tree(expr) && !spans_a_string_part(source, expr) && !carries_a_continuation(slice))
-        .then(|| Cow::Owned(collapse_soft_wraps(slice)))
+    (is_operator_tree(expr)
+        && !spans_a_string_part(source, expr)
+        && !carries_a_continuation(slice)
+        && !hangs_a_chain_link(slice))
+    .then(|| Cow::Owned(collapse_soft_wraps(slice)))
 }
 
 /// The character width of `line`'s leading indentation. Tabs and

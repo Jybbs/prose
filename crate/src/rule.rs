@@ -432,9 +432,9 @@ register_rules! {
     "strip-none-return":            strip_none_return:            ToggleOnly                 => StripNoneReturn            => [],
     "modernize-annotations":        modernize_annotations:        ModernizeAnnotationsConfig => ModernizeAnnotations       => [],
     "strip-trailing-commas":        strip_trailing_commas:        ToggleOnly                 => StripTrailingCommas        => [],
-    "reflow-parentheses":           reflow_parentheses:           ToggleOnly                 => ReflowParentheses          => ["shed-backslash-continuations"],
+    "normalize-comparisons":        normalize_comparisons:        NormalizeComparisonsConfig => NormalizeComparisons       => [],
+    "reflow-parentheses":           reflow_parentheses:           ToggleOnly                 => ReflowParentheses          => ["shed-backslash-continuations", "normalize-comparisons"],
     "shed-redundant-base":          shed_redundant_base:          ToggleOnly                 => ShedRedundantBase          => [],
-    "normalize-comparisons":        normalize_comparisons:        NormalizeComparisonsConfig => NormalizeComparisons       => ["reflow-parentheses"],
     "simplify-comprehensions":      simplify_comprehensions:      ToggleOnly                 => SimplifyComprehensions     => ["reflow-parentheses"],
     "frame-docstrings":             frame_docstrings:             ToggleOnly                 => FrameDocstrings            => [],
     "expand-docstrings":            expand_docstrings:            ToggleOnly                 => ExpandDocstrings           => ["frame-docstrings"],
@@ -545,8 +545,11 @@ mod tests {
             "docstring-frame",
             "docstring-wrap",
             "import-layout",
+            "legacy-union-syntax",
+            "shed-parentheses",
             "signature-layout",
-            "strip-align-padding"
+            "strip-align-padding",
+            "unused-future-annotations"
         )]
         retired: &str,
     ) {

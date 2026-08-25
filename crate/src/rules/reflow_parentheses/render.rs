@@ -79,6 +79,21 @@ impl Shedder<'_> {
         outermost(edits)
     }
 
+    /// The indent of the row `pair`'s own statement opens on, the seat
+    /// a break hangs its rows from. The walk skips the trivia ahead of
+    /// that statement, so a comment or a blank row between two
+    /// statements leaves the seat reading the statement's own row
+    /// rather than the row the `(` happens to sit on.
+    fn statement_indent(&self, pair: TextRange) -> usize {
+        let head = self.source.logical_line_start(pair.start());
+        let opens_at = self
+            .source
+            .tokens_overlapping(head)
+            .find(|token| head.contains(token.start()) && !token.kind().is_trivia())
+            .map_or(pair.start(), Ranged::start);
+        self.source.line_indent_width(opens_at)
+    }
+
     /// Emits the replacement breaking `candidate`'s pair across rows,
     /// reporting whether the break owns the pair's shape. The interior
     /// holds one row of its own where its joined form fits a row one
@@ -103,7 +118,7 @@ impl Shedder<'_> {
         let Some(chain) = operands(self.source, candidate.expr, &sheds_pair) else {
             return false;
         };
-        let indent = self.source.line_indent_width(pair.start());
+        let indent = self.statement_indent(pair);
         let item = item_indent(indent);
         let joined = apply_inline_edits(self.source, inner, &nested);
         let text = match folded_line_form(self.source, candidate.expr, &joined)

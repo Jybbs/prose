@@ -43,26 +43,25 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "slug": "strip-trailing-commas"
   },
   {
+    "after": [],
+    "imperative": "normalize a comparison to state its check directly",
+    "position": 7,
+    "slug": "normalize-comparisons"
+  },
+  {
     "after": [
-      "shed-backslash-continuations"
+      "shed-backslash-continuations",
+      "normalize-comparisons"
     ],
     "imperative": "reflow a redundant grouping parenthesis pair against the line budget",
-    "position": 7,
+    "position": 8,
     "slug": "reflow-parentheses"
   },
   {
     "after": [],
     "imperative": "shed a redundant `object` base or empty class parentheses",
-    "position": 8,
-    "slug": "shed-redundant-base"
-  },
-  {
-    "after": [
-      "reflow-parentheses"
-    ],
-    "imperative": "normalize a comparison to state its check directly",
     "position": 9,
-    "slug": "normalize-comparisons"
+    "slug": "shed-redundant-base"
   },
   {
     "after": [

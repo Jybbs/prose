@@ -73,10 +73,19 @@ impl Shedder<'_> {
         column - shift
     }
 
-    /// The columns `pair`'s own row carries past its closing paren.
-    fn tail_width(&self, pair: TextRange) -> usize {
+    /// The columns `pair`'s own row carries past its closing paren,
+    /// narrowed by the parentheses this pass sheds along that stretch,
+    /// so the width reads the row the pass leaves rather than the row
+    /// the source wrote.
+    fn tail_width(&self, pair: TextRange, candidates: &[Candidate]) -> usize {
         let text = self.source.text();
-        text[TextRange::new(pair.end(), text.line_end(pair.end()))].width()
+        let tail = TextRange::new(pair.end(), text.line_end(pair.end()));
+        let shed: usize = candidates
+            .iter()
+            .filter(|other| other.sheds && tail.contains_range(other.pair))
+            .map(|other| 2 - other.flush.spaces())
+            .sum();
+        text[tail].width().saturating_sub(shed)
     }
 
     /// True when joining `candidate` leaves its line inside the budget
@@ -99,7 +108,9 @@ impl Shedder<'_> {
         let Some(width) = self.joined_width(candidate, candidates) else {
             return true;
         };
-        let row = self.column_at(candidate.pair.start()) + width + self.tail_width(candidate.pair);
+        let row = self.column_at(candidate.pair.start())
+            + width
+            + self.tail_width(candidate.pair, candidates);
         row > self.code_line_length
     }
 
