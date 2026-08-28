@@ -138,7 +138,9 @@ pub(crate) fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
 /// True when every statement in `range` keeps each `member_name` entry
 /// it names ahead of itself in `order`, a statement naming itself
 /// excepted, and keeps every non-member binding it names at evaluation
-/// time ahead of itself wherever the source already seated it there.
+/// time ahead of itself wherever the source already seated it there. A
+/// statement binding a name at its own slot is exempt on that name,
+/// since it can never seat itself ahead of itself.
 fn order_keeps_refs_backward<'src>(
     order: &[usize],
     body: &'src [Stmt],

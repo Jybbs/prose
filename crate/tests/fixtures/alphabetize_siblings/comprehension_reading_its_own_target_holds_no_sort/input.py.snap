@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/comprehension_reading_its_own_target_holds_no_sort/input.py
+---
+def alpha():
+    return 2
+
+
+NAMES = [name for name in dir(str) if not name.startswith(name[:1])]
+
+
+def zebra():
+    return 1
