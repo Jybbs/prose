@@ -34,15 +34,43 @@ pub(crate) fn assemble_blocks<'src>(
     mut gap_override: impl FnMut(usize) -> Option<&'src str>,
 ) -> String {
     let mut out = String::with_capacity(blocks_span(blocks).len().to_usize());
-    for (i, (&idx, block)) in order.iter().zip(blocks).enumerate() {
-        out.push_str(&rendered[idx]);
-        if let Some(next) = blocks.get(i + 1) {
-            let gap = gap_override(i)
-                .unwrap_or_else(|| source.slice(TextRange::new(block.end(), next.start())));
-            out.push_str(gap);
-        }
-    }
+    walk_assembly(
+        source,
+        blocks,
+        rendered,
+        order,
+        0..blocks.len(),
+        &mut gap_override,
+        |_, text| out.push_str(text),
+    );
     out
+}
+
+/// Walks the pieces an assembly of `blocks` writes over the slots
+/// `run` covers, handing each to `piece` as the source range it
+/// replaces and the text replacing it: the block standing at each
+/// destination slot, then the gap following it. A gap override
+/// substitutes its own text and `None` yields the source gap verbatim.
+/// The final slot of `run` contributes no gap, so the pieces tile that
+/// span in ascending order and concatenate to the assembled text.
+fn walk_assembly<'src>(
+    source: &'src Source,
+    blocks: &[TextRange],
+    rendered: &[Cow<'src, str>],
+    order: &[usize],
+    run: Range<usize>,
+    gap: &mut impl FnMut(usize) -> Option<&'src str>,
+    mut piece: impl FnMut(TextRange, &str),
+) {
+    for i in run.clone() {
+        let block = blocks[i];
+        piece(block, &rendered[order[i]]);
+        let Some(next) = blocks.get(i + 1).filter(|_| i + 1 < run.end) else {
+            continue;
+        };
+        let span = TextRange::new(block.end(), next.start());
+        piece(span, gap(i).unwrap_or_else(|| source.slice(span)));
+    }
 }
 
 /// Assembles `rendered` in `order` with `gap`, returning the covered
@@ -134,16 +162,11 @@ pub(crate) fn assembled_cell_edits<'src>(
         .collect()
 }
 
-/// One narrowed edit per piece of the assembly that differs from the
-/// source, over the slots `run` covers, walking the same partition
-/// [`assemble_blocks`] writes: the block standing at each destination
-/// slot, then the gap following it. A piece the assembly reproduces
-/// verbatim earns no edit, so the emitted ranges cover only the bytes
-/// the reorder rewrites and leave an untouched span between two of them
-/// free of any edit. The final slot of `run` contributes no gap edit,
-/// keeping a notebook's edits inside the cell that `run` spans. The
-/// pieces tile that span in ascending order, so splicing them all
-/// yields the text [`assemble_blocks`] would have written.
+/// One narrowed edit per piece of [`walk_assembly`] that differs from
+/// the source, over the slots `run` covers. A piece the assembly
+/// reproduces verbatim narrows to no edit, so the emitted ranges cover
+/// only the bytes the reorder rewrites and leave an untouched span
+/// between two of them free of any edit.
 fn piecewise_edits<'src>(
     source: &'src Source,
     blocks: &[TextRange],
@@ -153,17 +176,9 @@ fn piecewise_edits<'src>(
     gap: &mut impl FnMut(usize) -> Option<&'src str>,
 ) -> Vec<Edit> {
     let mut edits = Vec::new();
-    for i in run.clone() {
-        let block = blocks[i];
-        edits.extend(narrowed_replacement(source, block, &*rendered[order[i]]));
-        let Some(next) = blocks.get(i + 1).filter(|_| i + 1 < run.end) else {
-            continue;
-        };
-        if let Some(text) = gap(i) {
-            let span = TextRange::new(block.end(), next.start());
-            edits.extend(narrowed_replacement(source, span, text));
-        }
-    }
+    walk_assembly(source, blocks, rendered, order, run, gap, |span, text| {
+        edits.extend(narrowed_replacement(source, span, text));
+    });
     edits
 }
 
