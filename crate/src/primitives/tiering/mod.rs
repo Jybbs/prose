@@ -18,10 +18,7 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextSize};
 
 use crate::primitives::{
-    binding::{
-        ann_assign_with_named_field, bare_import_bound_name, from_import_bound_name,
-        single_name_target,
-    },
+    binding::{bare_import_bound_name, from_import_bound_name, module_assignments},
     orderer::permute_in_place,
     slots::slot_positions,
     walk::walk_stmt,
@@ -180,19 +177,21 @@ fn order_keeps_refs_backward<'src>(
         })
 }
 
-/// The module-level names `stmt` binds, covering the forms a definition
-/// run interleaves with: a single-target assignment, an annotated
-/// assignment, and each alias of an import.
+/// The names `stmt` binds, covering the forms a definition run
+/// interleaves with: the name a definition itself binds, each alias of
+/// an import, and every module-scope assignment it holds, a compound
+/// statement's own body included. A sort recognizing one definition
+/// kind leaves the other kind a non-member, so both appear here.
 fn bound_names(stmt: &Stmt) -> Vec<&str> {
     match stmt {
-        Stmt::Assign(assign) => single_name_target(assign).into_iter().collect(),
-        Stmt::AnnAssign(_) => ann_assign_with_named_field(stmt)
-            .map(|(_, name)| name)
-            .into_iter()
-            .collect(),
+        Stmt::ClassDef(class) => vec![class.name.as_str()],
+        Stmt::FunctionDef(func) => vec![func.name.as_str()],
         Stmt::Import(import) => import.names.iter().map(bare_import_bound_name).collect(),
         Stmt::ImportFrom(import) => import.names.iter().map(from_import_bound_name).collect(),
-        _ => Vec::new(),
+        _ => module_assignments(std::slice::from_ref(stmt))
+            .into_iter()
+            .map(|assignment| assignment.target.id.as_str())
+            .collect(),
     }
 }
 

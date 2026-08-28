@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Class Holds Below the Functions Its Body Reads"
+
+description = '''
+`Option` sorts ahead of both functions by name, and its class body evaluates `check_builtin` and `check_choice` the moment the `class` statement runs. Definitions sort in **two passes**, one over classes and one over functions, so a function is not a member of the pass that moves the class. The class **holds where it is**, because the check reads every binding the run passes over rather than only the members of the pass making the move.
+'''

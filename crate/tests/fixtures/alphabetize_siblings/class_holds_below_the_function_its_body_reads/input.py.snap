@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/class_holds_below_the_function_its_body_reads/input.py
+---
+def check_builtin(value):
+    return value
+
+
+def check_choice(value):
+    return value
+
+
+class Option:
+    TYPE_CHECKER = {"choice": check_choice, "int": check_builtin}
