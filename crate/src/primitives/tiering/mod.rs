@@ -172,7 +172,7 @@ fn order_keeps_refs_backward<'src>(
                     member_at.get(name).is_none_or(|&referent| {
                         referent == reader || position[referent] < position[reader]
                     }) && bound_at.get(name).is_none_or(|&binder| {
-                        binder > reader || position[binder] < position[reader]
+                        binder >= reader || position[binder] < position[reader]
                     })
                 })
         })
