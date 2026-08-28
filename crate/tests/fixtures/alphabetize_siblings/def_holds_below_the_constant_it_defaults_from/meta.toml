@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Definition Holds Below the Constant Its Default Reads"
+
+description = '''
+`alpha` sorts ahead of `zed` by name, and moving it would carry it above `CONST`, whose value the default argument evaluates the moment the `def` executes. The run **holds as written**, because a member never crosses a statement binding a name it reads at evaluation time, whether or not that statement is itself part of the run being sorted.
+'''

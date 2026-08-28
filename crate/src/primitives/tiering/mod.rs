@@ -17,7 +17,15 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextSize};
 
-use crate::primitives::{orderer::permute_in_place, slots::slot_positions, walk::walk_stmt};
+use crate::primitives::{
+    binding::{
+        ann_assign_with_named_field, bare_import_bound_name, from_import_bound_name,
+        single_name_target,
+    },
+    orderer::permute_in_place,
+    slots::slot_positions,
+    walk::walk_stmt,
+};
 
 /// Returns a per-member `(tier, key)` lookup keyed by each definition's
 /// start offset, or `None` when the run cannot reorder. The run skips
@@ -135,7 +143,8 @@ pub(crate) fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
 
 /// True when every statement in `range` keeps each `member_name` entry
 /// it names ahead of itself in `order`, a statement naming itself
-/// excepted.
+/// excepted, and keeps every non-member binding it names at evaluation
+/// time ahead of itself wherever the source already seated it there.
 fn order_keeps_refs_backward<'src>(
     order: &[usize],
     body: &'src [Stmt],
@@ -148,6 +157,12 @@ fn order_keeps_refs_backward<'src>(
         .zip(range.clone())
         .filter_map(|(stmt, at)| member_name(stmt).map(|name| (name, at)))
         .collect();
+    let bound_at: HashMap<&'src str, usize> = body[range.clone()]
+        .iter()
+        .zip(range.clone())
+        .filter(|(stmt, _)| member_name(stmt).is_none())
+        .flat_map(|(stmt, at)| bound_names(stmt).into_iter().map(move |name| (name, at)))
+        .collect();
     let position = slot_positions(order);
     body[range.clone()]
         .iter()
@@ -158,9 +173,27 @@ fn order_keeps_refs_backward<'src>(
                 .all(|name| {
                     member_at.get(name).is_none_or(|&referent| {
                         referent == reader || position[referent] < position[reader]
+                    }) && bound_at.get(name).is_none_or(|&binder| {
+                        binder > reader || position[binder] < position[reader]
                     })
                 })
         })
+}
+
+/// The module-level names `stmt` binds, covering the forms a definition
+/// run interleaves with: a single-target assignment, an annotated
+/// assignment, and each alias of an import.
+fn bound_names(stmt: &Stmt) -> Vec<&str> {
+    match stmt {
+        Stmt::Assign(assign) => single_name_target(assign).into_iter().collect(),
+        Stmt::AnnAssign(_) => ann_assign_with_named_field(stmt)
+            .map(|(_, name)| name)
+            .into_iter()
+            .collect(),
+        Stmt::Import(import) => import.names.iter().map(bare_import_bound_name).collect(),
+        Stmt::ImportFrom(import) => import.names.iter().map(from_import_bound_name).collect(),
+        _ => Vec::new(),
+    }
 }
 
 /// Tiers `dep_sets` and assembles a per-statement `(tier, key)` lookup
