@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Class Holds Below the Functions Its Body Reads"
+title       = "A Class Holds Below the Function Its Body Calls"
 
 description = '''
-`Option` sorts ahead of both functions by name, and its class body evaluates `check_builtin` and `check_choice` the moment the `class` statement runs. Definitions sort in **two passes**, one over classes and one over functions, so a function is not a member of the pass that moves the class. The class **holds where it is**, because the check reads every binding the run passes over rather than only the members of the pass making the move.
+`Alpha` sorts ahead of `Zebra` by name, and moving it would carry it above `helper`, which its class body calls the moment the `class` statement runs. Both classes **hold as written**, because the check reads every binding the run passes over rather than only the definitions it is currently sorting.
 '''

@@ -3,13 +3,13 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/alphabetize_siblings/class_holds_below_the_function_its_body_reads/input.py
 ---
-def check_builtin(value):
-    return value
+class Zebra:
+    pass
 
 
-def check_choice(value):
-    return value
+def helper():
+    return 1
 
 
-class Option:
-    TYPE_CHECKER = {"choice": check_choice, "int": check_builtin}
+class Alpha:
+    V = helper()

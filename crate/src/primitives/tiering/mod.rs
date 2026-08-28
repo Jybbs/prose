@@ -18,10 +18,7 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextSize};
 
 use crate::primitives::{
-    binding::{bare_import_bound_name, from_import_bound_name, module_assignments},
-    orderer::permute_in_place,
-    slots::slot_positions,
-    walk::walk_stmt,
+    binding::module_bound_names, orderer::permute_in_place, slots::slot_positions, walk::walk_stmt,
 };
 
 /// Returns a per-member `(tier, key)` lookup keyed by each definition's
@@ -154,12 +151,16 @@ fn order_keeps_refs_backward<'src>(
         .zip(range.clone())
         .filter_map(|(stmt, at)| member_name(stmt).map(|name| (name, at)))
         .collect();
-    let bound_at: HashMap<&'src str, usize> = body[range.clone()]
+    let mut bound_at: HashMap<&'src str, usize> = HashMap::new();
+    for (stmt, at) in body[range.clone()]
         .iter()
         .zip(range.clone())
         .filter(|(stmt, _)| member_name(stmt).is_none())
-        .flat_map(|(stmt, at)| bound_names(stmt).into_iter().map(move |name| (name, at)))
-        .collect();
+    {
+        for name in module_bound_names(stmt) {
+            bound_at.entry(name).or_insert(at);
+        }
+    }
     let position = slot_positions(order);
     body[range.clone()]
         .iter()
@@ -175,24 +176,6 @@ fn order_keeps_refs_backward<'src>(
                     })
                 })
         })
-}
-
-/// The names `stmt` binds, covering the forms a definition run
-/// interleaves with: the name a definition itself binds, each alias of
-/// an import, and every module-scope assignment it holds, a compound
-/// statement's own body included. A sort recognizing one definition
-/// kind leaves the other kind a non-member, so both appear here.
-fn bound_names(stmt: &Stmt) -> Vec<&str> {
-    match stmt {
-        Stmt::ClassDef(class) => vec![class.name.as_str()],
-        Stmt::FunctionDef(func) => vec![func.name.as_str()],
-        Stmt::Import(import) => import.names.iter().map(bare_import_bound_name).collect(),
-        Stmt::ImportFrom(import) => import.names.iter().map(from_import_bound_name).collect(),
-        _ => module_assignments(std::slice::from_ref(stmt))
-            .into_iter()
-            .map(|assignment| assignment.target.id.as_str())
-            .collect(),
-    }
 }
 
 /// Tiers `dep_sets` and assembles a per-statement `(tier, key)` lookup

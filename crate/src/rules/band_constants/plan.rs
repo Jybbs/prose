@@ -177,10 +177,14 @@ impl BandPlan<'_> {
     /// reordering inside the region can neither break such an edge nor
     /// repair one the incoming order already broke.
     fn region_holds_its_references(&self, banded: &[usize]) -> bool {
-        let seat = |idx: usize| banded.iter().position(|&held| held == idx);
+        let seat: HashMap<usize, usize> = banded
+            .iter()
+            .enumerate()
+            .map(|(seat, &idx)| (idx, seat))
+            .collect();
         self.edges
             .iter()
-            .all(|&(from, to)| match (seat(from), seat(to)) {
+            .all(|&(from, to)| match (seat.get(&from), seat.get(&to)) {
                 (Some(referrer), Some(referent)) => referent < referrer,
                 _ => true,
             })

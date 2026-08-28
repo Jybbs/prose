@@ -3,11 +3,14 @@
 //! block while descending into every other compound body.
 
 use ruff_python_ast::{
-    Expr, ExprName, Stmt,
+    ExceptHandler, Expr, ExprName, Stmt,
     statement_visitor::{StatementVisitor, walk_stmt},
+    visitor::{self, Visitor},
 };
 
-use super::names::{single_name_assignment, skips_module_scan};
+use super::names::{
+    bare_import_bound_name, from_import_bound_name, single_name_assignment, skips_module_scan,
+};
 
 /// A module-scope single-name assignment. The value is `None` for a bare
 /// annotation (`X: int`).
@@ -42,6 +45,68 @@ pub(crate) fn module_assignments(body: &[Stmt]) -> Vec<ModuleAssignment<'_>> {
     let mut walker = Walker { sites: Vec::new() };
     walker.visit_body(body);
     walker.sites
+}
+
+/// Collects the names a module binds while executing one statement.
+struct BindingWalker<'src> {
+    names: Vec<&'src str>,
+}
+
+impl<'src> Visitor<'src> for BindingWalker<'src> {
+    fn visit_stmt(&mut self, stmt: &'src Stmt) {
+        match stmt {
+            Stmt::FunctionDef(func) => {
+                self.names.push(func.name.as_str());
+                return;
+            }
+            Stmt::ClassDef(class) => {
+                self.names.push(class.name.as_str());
+                return;
+            }
+            Stmt::Import(import) => self
+                .names
+                .extend(import.names.iter().map(bare_import_bound_name)),
+            Stmt::ImportFrom(import) => self
+                .names
+                .extend(import.names.iter().map(from_import_bound_name)),
+            _ => {}
+        }
+        if skips_module_scan(stmt) {
+            return;
+        }
+        visitor::walk_stmt(self, stmt);
+    }
+
+    fn visit_expr(&mut self, expr: &'src Expr) {
+        if let Expr::Name(name) = expr
+            && name.ctx.is_store()
+        {
+            self.names.push(name.id.as_str());
+        }
+        visitor::walk_expr(self, expr);
+    }
+
+    fn visit_except_handler(&mut self, handler: &'src ExceptHandler) {
+        let ExceptHandler::ExceptHandler(caught) = handler;
+        if let Some(name) = &caught.name {
+            self.names.push(name.as_str());
+        }
+        visitor::walk_except_handler(self, handler);
+    }
+}
+
+/// Every name a module binds when it executes `stmt`, covering the
+/// store target of an assignment, an unpack, a `for`, a `with`, and a
+/// walrus, each alias of an import, an `except ... as` name, and the
+/// name of a definition. The walk descends the compound bodies a module
+/// executes and stops at a `def`, a `class`, and an `if TYPE_CHECKING:`
+/// block. A comprehension target and a lambda parameter bind in their
+/// own scope, so collecting them here names more than the module binds
+/// and only ever withholds a reorder.
+pub(crate) fn module_bound_names(stmt: &Stmt) -> Vec<&str> {
+    let mut walker = BindingWalker { names: Vec::new() };
+    walker.visit_stmt(stmt);
+    walker.names
 }
 
 #[cfg(test)]

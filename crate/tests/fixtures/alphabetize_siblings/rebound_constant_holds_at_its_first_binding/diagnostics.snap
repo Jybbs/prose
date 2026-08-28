@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/rebound_constant_holds_at_its_first_binding/input.py
+---
+

@@ -1,10 +1,10 @@
-def check_builtin(value):
-    return value
+class Zebra:
+    pass
 
 
-def check_choice(value):
-    return value
+def helper():
+    return 1
 
 
-class Option:
-    TYPE_CHECKER = {"choice": check_choice, "int": check_builtin}
+class Alpha:
+    V = helper()

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Rebound Constant Holds the Sort at Its First Binding"
+
+description = '''
+`ITEMS` binds twice, once above `alpha` and once below it, and only the first binding matters to the default argument that reads it. The run **holds as written**, because the check resolves a name to the earliest statement binding it rather than the last one it happens to see.
+'''
