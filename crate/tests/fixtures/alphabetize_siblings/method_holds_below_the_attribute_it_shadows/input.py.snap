@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/method_holds_below_the_attribute_it_shadows/input.py
+---
+class span:
+    __slots__ = ("start",)
+
+
+class window:
+
+    def zoom(self):
+        return None
+
+    limits = span.__slots__
+
+    def span(self):
+        return None

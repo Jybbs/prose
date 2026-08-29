@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Constant Naming a Shadowed Builtin Pins Above Its Definition"
+
+description = '''
+`LIMIT = TimeoutError` resolves against the builtin, because the module's own `class TimeoutError` binds further down the file. Seating the constant in the trailing band would bind it to that class instead, so **`LIMIT` holds its source slot** while `TABLE = dict` bands freely past `helper`, its builtin standing unshadowed.
+'''

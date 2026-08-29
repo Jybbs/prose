@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Constant Naming a Shadowed Import Pins Above Its Definition"
+
+description = '''
+`REGISTRY = OrderedDict` resolves against the import, because the module's own `class OrderedDict` binds further down the file. Seating the constant in the trailing band would bind it to that class instead, so **`REGISTRY` holds its source slot** while `TABLE = dict` bands freely past `helper`, its builtin standing unshadowed.
+'''

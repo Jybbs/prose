@@ -190,8 +190,18 @@ pub(super) fn module_band_plan<'src>(
         for (name, anchor_unresolved) in site.foreign_refs() {
             if dup_defs.contains(name) {
                 anchored[s] = true;
-            } else if def_at.contains_key(name) {
-                reaches_def[s] = true;
+            } else if let Some(&def) = def_at.get(name) {
+                // A definition below the site rebinds a name already
+                // resolving above it, so the site pins rather than
+                // reaching the trailing band.
+                let rebinds_below = def > site.idx
+                    && (is_python_builtin(name, builtins_minor, notebook)
+                        || analysis.is_defined_before(name, body[site.idx].start()));
+                if rebinds_below {
+                    anchored[s] = true;
+                } else {
+                    reaches_def[s] = true;
+                }
             } else if let Some(&dep) = site_at.get(name) {
                 deps[s].push(dep);
             } else if anchor_unresolved
