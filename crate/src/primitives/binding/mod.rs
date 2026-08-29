@@ -196,11 +196,13 @@ impl BindingAnalysis {
         self.binding(binding).write_offsets[0]
     }
 
-    /// Returns `true` when a `del` statement anywhere in the module
-    /// names `name`, which unbinds it and so consumes the binding
-    /// without recording a read.
-    pub(crate) fn is_deleted(&self, name: &str) -> bool {
-        self.deleted.contains(name)
+    /// Returns `true` when `name` has a module-scope write at an offset
+    /// strictly less than `offset`, a write nested in a conditional
+    /// branch (`if`/`for`/`while`/`try`/`match`) included, whereas
+    /// `is_defined_before` counts the unconditional writes alone.
+    pub(crate) fn is_bound_before(&self, name: &str, offset: TextSize) -> bool {
+        self.module_binding(name)
+            .is_some_and(|binding| binding.write_offsets[0] < offset)
     }
 
     /// Returns `true` when `name` has an unconditional module-scope
@@ -210,6 +212,13 @@ impl BindingAnalysis {
         self.module_binding(name)
             .and_then(|binding| binding.first_unconditional_write)
             .is_some_and(|first| first < offset)
+    }
+
+    /// Returns `true` when a `del` statement anywhere in the module
+    /// names `name`, which unbinds it and so consumes the binding
+    /// without recording a read.
+    pub(crate) fn is_deleted(&self, name: &str) -> bool {
+        self.deleted.contains(name)
     }
 
     /// Returns the number of distinct attributes read off the
@@ -405,6 +414,34 @@ mod tests {
             1,
             "the forward call resolves to outer's local",
         );
+    }
+
+    #[rstest]
+    #[case::conditional_only_write("if flag:\n    Helper = int\n", "Helper", 100)]
+    #[case::except_only_write("try:\n    pass\nexcept E:\n    Helper = int\n", "Helper", 100)]
+    #[case::for_only_write("for _ in xs:\n    Helper = int\n", "Helper", 100)]
+    #[case::match_case_only_write("match x:\n    case 1:\n        Helper = int\n", "Helper", 100)]
+    #[case::try_only_write("try:\n    Helper = int\nexcept E:\n    pass\n", "Helper", 100)]
+    #[case::unconditional_write("Helper = int\n", "Helper", 100)]
+    #[case::while_only_write("while flag:\n    Helper = int\n", "Helper", 100)]
+    fn is_bound_before_counts_a_write_inside_a_branch(
+        #[case] src: &str,
+        #[case] name: &str,
+        #[case] offset: u32,
+    ) {
+        assert!(analyze(src).is_bound_before(name, TextSize::new(offset)));
+    }
+
+    #[rstest]
+    #[case::function_local_write("def f():\n    Helper = int\n", "Helper", 100)]
+    #[case::undefined_name("x = 1\n", "y", 100)]
+    #[case::write_after_offset("x = 1\n", "x", 0)]
+    fn is_bound_before_is_false_without_a_prior_module_write(
+        #[case] src: &str,
+        #[case] name: &str,
+        #[case] offset: u32,
+    ) {
+        assert!(!analyze(src).is_bound_before(name, TextSize::new(offset)));
     }
 
     #[rstest]

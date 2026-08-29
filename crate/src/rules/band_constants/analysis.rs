@@ -210,12 +210,14 @@ pub(super) fn module_band_plan<'src>(
             if dup_defs.contains(name) {
                 anchored[s] = true;
             } else if let Some(&def) = def_at.get(name) {
-                // A definition below the site rebinds a name already
-                // resolving above it, so the site pins rather than
-                // reaching the trailing band.
+                // A definition below the site rebinds a name the site
+                // already resolves against a builtin or an earlier
+                // module-scope write, so the site pins rather than
+                // reaching the trailing band. A write inside a branch
+                // counts as that earlier binding.
                 let rebinds_below = def > site.idx
                     && (is_python_builtin(name, builtins_minor, notebook)
-                        || analysis.is_defined_before(name, body[site.idx].start()));
+                        || analysis.is_bound_before(name, body[site.idx].start()));
                 if rebinds_below {
                     anchored[s] = true;
                 } else {

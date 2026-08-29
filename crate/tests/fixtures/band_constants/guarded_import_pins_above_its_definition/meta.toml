@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Constant Naming a Guarded Import Pins Above Its Definition"
+
+description = '''
+`REGISTRY = OrderedDict` resolves against the guarded import, because the module's own `class OrderedDict` binds further down the file. A write inside a `try` counts as that earlier binding, so **`REGISTRY` holds its source slot** while `TABLE = dict` bands freely past `helper`, its builtin standing unshadowed.
+'''
