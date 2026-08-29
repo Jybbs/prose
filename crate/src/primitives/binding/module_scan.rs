@@ -3,7 +3,7 @@
 //! block while descending into every other compound body.
 
 use ruff_python_ast::{
-    ExceptHandler, Expr, ExprContext, ExprName, Stmt,
+    Comprehension, ExceptHandler, Expr, ExprContext, ExprName, Stmt,
     statement_visitor::{StatementVisitor, walk_stmt},
     visitor::{self, Visitor},
 };
@@ -86,6 +86,13 @@ impl<'src> Visitor<'src> for BindingWalker<'src> {
         visitor::walk_expr(self, expr);
     }
 
+    fn visit_comprehension(&mut self, comprehension: &'src Comprehension) {
+        self.visit_expr(&comprehension.iter);
+        for condition in &comprehension.ifs {
+            self.visit_expr(condition);
+        }
+    }
+
     fn visit_except_handler(&mut self, handler: &'src ExceptHandler) {
         let ExceptHandler::ExceptHandler(caught) = handler;
         if let Some(name) = &caught.name {
@@ -100,10 +107,10 @@ impl<'src> Visitor<'src> for BindingWalker<'src> {
 /// walrus, each alias of an import, an `except ... as` name, and the
 /// name of a definition. The walk descends the compound bodies a module
 /// executes and stops at a `def`, a `class`, and an `if TYPE_CHECKING:`
-/// block. A comprehension target binds in its own scope and is
-/// collected all the same, so the set names more than the module binds.
-/// A lambda parameter is an `Identifier` rather than a store-context
-/// name and never enters it.
+/// block. A comprehension target binds in its own scope and stays out,
+/// whereas a walrus anywhere inside one binds in the enclosing scope
+/// and enters. A lambda parameter is an `Identifier` rather than a
+/// store-context name and never enters it.
 pub(crate) fn module_bound_names(stmt: &Stmt) -> Vec<&str> {
     let mut walker = BindingWalker { names: Vec::new() };
     walker.visit_stmt(stmt);
@@ -134,5 +141,64 @@ mod tests {
             .map(|site| (site.target.id.as_str(), site.value.is_some()))
             .collect();
         assert_eq!(names, vec![("X", true), ("inner", true), ("y", false)]);
+    }
+
+    #[test]
+    fn module_bound_names_covers_every_binding_form() {
+        let source = parse(indoc! {"
+            for key, value in pairs:
+                with open(path) as handle:
+                    import json as codec
+                    from os import sep as divider
+                    del stale
+                    total = (running := 0)
+                try:
+                    pass
+                except OSError as failure:
+                    pass
+                class Inner:
+                    skipped = 1
+                def helper():
+                    hidden = 2
+        "});
+        let mut names = module_bound_names(&source.ast().body[0]);
+        names.sort_unstable();
+        assert_eq!(
+            names,
+            vec![
+                "Inner", "codec", "divider", "failure", "handle", "helper", "key", "running",
+                "stale", "total", "value",
+            ]
+        );
+    }
+
+    #[test]
+    fn module_bound_names_drops_a_comprehension_target_and_keeps_its_walrus() {
+        let source = parse("totals = [(seen := item) for item in rows if (kept := item)]");
+        let mut names = module_bound_names(&source.ast().body[0]);
+        names.sort_unstable();
+        assert_eq!(names, vec!["kept", "seen", "totals"]);
+    }
+
+    #[test]
+    fn module_bound_names_collects_an_except_alias() {
+        let source = parse(indoc! {"
+            try:
+                import fast
+            except ImportError as err:
+                fast = None
+        "});
+        let names = module_bound_names(&source.ast().body[0]);
+        assert!(names.contains(&"err"), "the except alias binds");
+        assert!(
+            names.contains(&"fast"),
+            "the import and the fallback both bind"
+        );
+    }
+
+    #[test]
+    fn module_bound_names_skips_a_type_checking_block() {
+        let source = parse("if TYPE_CHECKING:\n    from pkg import Only\n");
+        assert!(module_bound_names(&source.ast().body[0]).is_empty());
     }
 }

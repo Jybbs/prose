@@ -208,10 +208,6 @@ fn order_keeps_refs_backward<'src>(
         })
 }
 
-/// True when `binding` stays on the side of `reader` that the source
-/// seated it, so a reader neither rises above a binding it evaluates
-/// nor crosses one the source placed after it. A statement binding the
-/// name it reads imposes nothing on itself.
 /// Collects the names one definition reads and the names it binds.
 struct ScopeScan<'src> {
     binds: HashSet<&'src str>,
@@ -361,6 +357,10 @@ pub(crate) fn call_reachable(body: &[Stmt]) -> CallReach<'_> {
     reads
 }
 
+/// True when `binding` stays on the side of `reader` that the source
+/// seated it, so a reader neither rises above a binding it evaluates
+/// nor crosses one the source placed after it. A statement binding the
+/// name it reads imposes nothing on itself.
 fn side_kept(binding: usize, reader: usize, position: &[usize]) -> bool {
     match binding.cmp(&reader) {
         Ordering::Less => position[binding] < position[reader],
@@ -636,5 +636,46 @@ mod tests {
             deps[cycle_index].insert(cycle_index);
             prop_assert_eq!(tier_levels(&deps), None);
         }
+    }
+    #[rstest]
+    #[case::nested_class(
+        "def outer():\n    class Local(Outside):\n        pass\n    return Local\n",
+        "Local"
+    )]
+    #[case::bare_import("def outer():\n    import osmod\n    return osmod, Outside\n", "osmod")]
+    #[case::from_import(
+        "def outer():\n    from pkg import thing\n    return thing, Outside\n",
+        "thing"
+    )]
+    #[case::except_alias(
+        "def outer():\n    try:\n        Outside()\n    except ValueError as err:\n        return err\n",
+        "err"
+    )]
+    fn free_reads_excludes_a_name_the_body_binds(#[case] src: &str, #[case] bound: &str) {
+        let source = parse(src);
+        let reads = free_reads(&source.ast().body[0]);
+        assert!(!reads.contains(bound), "{bound} binds inside the body");
+        assert!(
+            reads.contains("Outside"),
+            "a name the body never binds stays a read"
+        );
+    }
+
+    #[test]
+    fn call_reachable_follows_call_edges_to_a_fixed_point() {
+        let source = parse(concat!(
+            "def leaf():\n    return LEAF_READ\n\n\n",
+            "def middle():\n    return leaf()\n\n\n",
+            "def top():\n    return middle()\n"
+        ));
+        let reach = call_reachable(&source.ast().body);
+        assert!(
+            reach["middle"].contains("LEAF_READ"),
+            "one call edge reaches the leaf read"
+        );
+        assert!(
+            reach["top"].contains("LEAF_READ"),
+            "two call edges reach the leaf read"
+        );
     }
 }
