@@ -108,6 +108,8 @@ struct Binding {
 #[derive(Debug, Serialize)]
 struct Scope {
     bindings: BTreeMap<String, BindingId>,
+    #[serde(skip)]
+    globals: BTreeSet<String>,
     kind: ScopeKind,
     parent: Option<ScopeId>,
 }
@@ -122,6 +124,8 @@ pub struct BindingAnalysis {
     condition_test_walruses: HashSet<BindingId>,
     #[serde(skip)]
     deleted: HashSet<String>,
+    #[serde(skip)]
+    global_writes: BTreeMap<String, Vec<TextSize>>,
     #[serde(skip)]
     function_scope_at: HashMap<TextSize, ScopeId>,
     scopes: Vec<Scope>,
@@ -201,8 +205,14 @@ impl BindingAnalysis {
     /// branch (`if`/`for`/`while`/`try`/`match`) included, whereas
     /// `is_defined_before` counts the unconditional writes alone.
     pub(crate) fn is_bound_before(&self, name: &str, offset: TextSize) -> bool {
-        self.module_binding(name)
-            .is_some_and(|binding| binding.write_offsets[0] < offset)
+        let module_write = self
+            .module_binding(name)
+            .is_some_and(|binding| binding.write_offsets[0] < offset);
+        module_write
+            || self
+                .global_writes
+                .get(name)
+                .is_some_and(|offsets| offsets.iter().any(|&write| write < offset))
     }
 
     /// Returns `true` when `name` has an unconditional module-scope
@@ -422,6 +432,11 @@ mod tests {
     #[case::for_only_write("for _ in xs:\n    Helper = int\n", "Helper", 100)]
     #[case::match_case_only_write("match x:\n    case 1:\n        Helper = int\n", "Helper", 100)]
     #[case::try_only_write("try:\n    Helper = int\nexcept E:\n    pass\n", "Helper", 100)]
+    #[case::global_write_in_a_function(
+        "def setup():\n    global Helper\n    Helper = int\n",
+        "Helper",
+        100
+    )]
     #[case::unconditional_write("Helper = int\n", "Helper", 100)]
     #[case::while_only_write("while flag:\n    Helper = int\n", "Helper", 100)]
     fn is_bound_before_counts_a_write_inside_a_branch(
@@ -434,6 +449,11 @@ mod tests {
 
     #[rstest]
     #[case::function_local_write("def f():\n    Helper = int\n", "Helper", 100)]
+    #[case::nonlocal_write_stays_local(
+        "def outer():\n    Helper = 0\n    def inner():\n        nonlocal Helper\n        Helper = int\n",
+        "Helper",
+        200
+    )]
     #[case::undefined_name("x = 1\n", "y", 100)]
     #[case::write_after_offset("x = 1\n", "x", 0)]
     fn is_bound_before_is_false_without_a_prior_module_write(

@@ -10,7 +10,8 @@ use ruff_python_ast::{
     CmpOp, ExceptHandler, Expr, ExprCompare, ExprDictComp, ExprGenerator, ExprLambda, ExprList,
     ExprListComp, ExprNamed, ExprSetComp, ExprTuple, Identifier, MatchCase, Operator, Parameters,
     Stmt, StmtAnnAssign, StmtAssign, StmtAugAssign, StmtClassDef, StmtDelete, StmtFor,
-    StmtFunctionDef, StmtIf, StmtImport, StmtImportFrom, StmtTry, StmtWhile, StmtWith, UnaryOp,
+    StmtFunctionDef, StmtGlobal, StmtIf, StmtImport, StmtImportFrom, StmtTry, StmtWhile, StmtWith,
+    UnaryOp,
     visitor::{Visitor, walk_arguments, walk_expr, walk_parameters},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -31,6 +32,7 @@ pub(super) struct Builder {
     conditional_depth: usize,
     deferred_reads: Vec<DeferredRead>,
     deleted: HashSet<String>,
+    global_writes: BTreeMap<String, Vec<TextSize>>,
     function_scope_at: HashMap<TextSize, ScopeId>,
     runtime_offsets: HashSet<TextSize>,
     scope_stack: Vec<ScopeId>,
@@ -51,6 +53,7 @@ impl Builder {
             deferred_reads: Vec::new(),
             deleted: HashSet::new(),
             function_scope_at: HashMap::new(),
+            global_writes: BTreeMap::new(),
             runtime_offsets: HashSet::new(),
             scope_stack: Vec::new(),
             scopes: Vec::new(),
@@ -181,6 +184,7 @@ impl Builder {
             condition_test_walruses: self.condition_test_walruses,
             deleted: self.deleted,
             function_scope_at: self.function_scope_at,
+            global_writes: self.global_writes,
             scopes: self.scopes,
             unpack_targets,
         }
@@ -302,6 +306,7 @@ impl Builder {
             kind,
             parent,
             bindings: BTreeMap::new(),
+            globals: BTreeSet::new(),
         });
         self.scope_stack.push(id);
         id
@@ -406,6 +411,12 @@ impl Builder {
 
     fn record_write(&mut self, name: &str, offset: TextSize, kind: BindingKind) -> BindingId {
         let scope = self.current_scope();
+        if self.scopes[scope.0 as usize].globals.contains(name) {
+            self.global_writes
+                .entry(name.to_owned())
+                .or_default()
+                .push(offset);
+        }
         self.record_write_in(scope, name, offset, kind)
     }
 
@@ -517,6 +528,17 @@ impl Builder {
     }
 
     /// Walks an `if`/`elif`/`else` chain with each branch body conditional.
+    /// Records each name a `global` statement declares, so a later
+    /// write in this scope binds at module scope rather than locally.
+    fn visit_global(&mut self, node: &StmtGlobal) {
+        let scope = self.current_scope();
+        for name in &node.names {
+            self.scopes[scope.0 as usize]
+                .globals
+                .insert(name.to_string());
+        }
+    }
+
     fn visit_if(&mut self, node: &StmtIf) {
         self.mark_runtime_read(&node.test);
         self.in_condition_test(|b| b.visit_expr(&node.test));
@@ -644,7 +666,8 @@ impl<'a> Visitor<'a> for Builder {
             Stmt::Delete(node) => self.visit_delete(node),
             Stmt::For(node) => self.visit_for(node),
             Stmt::FunctionDef(node) => self.enter_function(node, stmt.range().start()),
-            Stmt::Global(_) | Stmt::Nonlocal(_) => {}
+            Stmt::Global(node) => self.visit_global(node),
+            Stmt::Nonlocal(_) => {}
             Stmt::If(node) => self.visit_if(node),
             Stmt::Import(node) => self.visit_import(node),
             Stmt::ImportFrom(node) => self.visit_import_from(node),
