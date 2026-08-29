@@ -3,6 +3,7 @@
 //! that same reference graph.
 
 use std::{
+    cmp::Ordering,
     collections::{HashMap, HashSet},
     ops::Range,
 };
@@ -135,12 +136,12 @@ pub(crate) fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
     tiers.into_iter().collect()
 }
 
-/// True when every statement in `range` keeps each `member_name` entry
-/// it names ahead of itself in `order`, a statement naming itself
-/// excepted, and keeps every non-member binding it names at evaluation
-/// time ahead of itself wherever the source already seated it there. A
-/// statement binding a name at its own slot is exempt on that name,
-/// since it can never seat itself ahead of itself.
+/// True when every statement in `range` stays on the side of each
+/// binding it evaluates that the source seated it, covering both the
+/// members `member_name` selects and the non-member bindings among
+/// them, so a reader neither rises above the binding that introduces a
+/// name nor crosses a rebinding the source placed after it. A statement
+/// naming itself imposes nothing.
 fn order_keeps_refs_backward<'src>(
     order: &[usize],
     body: &'src [Stmt],
@@ -153,14 +154,14 @@ fn order_keeps_refs_backward<'src>(
         .zip(range.clone())
         .filter_map(|(stmt, at)| member_name(stmt).map(|name| (name, at)))
         .collect();
-    let mut bound_at: HashMap<&'src str, usize> = HashMap::new();
+    let mut bound_at: HashMap<&'src str, Vec<usize>> = HashMap::new();
     for (stmt, at) in body[range.clone()]
         .iter()
         .zip(range.clone())
         .filter(|(stmt, _)| member_name(stmt).is_none())
     {
         for name in module_bound_names(stmt) {
-            bound_at.entry(name).or_insert(at);
+            bound_at.entry(name).or_default().push(at);
         }
     }
     let position = slot_positions(order);
@@ -171,13 +172,28 @@ fn order_keeps_refs_backward<'src>(
             eval_time_refs(stmt, defer_annotations)
                 .into_iter()
                 .all(|name| {
-                    member_at.get(name).is_none_or(|&referent| {
-                        referent == reader || position[referent] < position[reader]
-                    }) && bound_at.get(name).is_none_or(|&binder| {
-                        binder >= reader || position[binder] < position[reader]
-                    })
+                    member_at
+                        .get(name)
+                        .is_none_or(|&referent| side_kept(referent, reader, &position))
+                        && bound_at.get(name).is_none_or(|binders| {
+                            binders
+                                .iter()
+                                .all(|&binder| side_kept(binder, reader, &position))
+                        })
                 })
         })
+}
+
+/// True when `binding` stays on the side of `reader` that the source
+/// seated it, so a reader neither rises above a binding it evaluates
+/// nor crosses one the source placed after it. A statement binding the
+/// name it reads imposes nothing on itself.
+fn side_kept(binding: usize, reader: usize, position: &[usize]) -> bool {
+    match binding.cmp(&reader) {
+        Ordering::Less => position[binding] < position[reader],
+        Ordering::Greater => position[binding] > position[reader],
+        Ordering::Equal => true,
+    }
 }
 
 /// Tiers `dep_sets` and assembles a per-statement `(tier, key)` lookup

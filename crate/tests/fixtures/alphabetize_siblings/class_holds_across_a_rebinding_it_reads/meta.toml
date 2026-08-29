@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Class Holds Across a Rebinding of the Constant It Reads"
+
+description = '''
+`Alpha` sorts ahead of `Zebra` by name, and moving it would carry it above the second `SCALE` assignment, whose value each class body evaluates the moment the `class` statement executes. Sorting would leave each class reading the other's value, a change no error reports because both arrangements still import. The run **holds as written**, because a member stays on whichever side of a binding it reads the source seated it on, so a reader neither rises above the binding that introduces a name nor crosses a rebinding placed after it.
+'''
