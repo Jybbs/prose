@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/observed_state_pins_above_its_mutating_definition/input.py
+---
+LABEL = "ready"
+TRACE = []
+
+
+class Setup:
+    TRACE.append(1)
+FIRST = TRACE[0]

@@ -10,7 +10,7 @@ use std::{
 
 mod refs;
 
-pub(crate) use refs::{eval_refs, eval_time_refs, walk_lambda_defaults};
+pub(crate) use refs::{eval_refs, eval_time_refs, observed_refs, walk_lambda_defaults};
 
 use ruff_python_ast::{
     ExceptHandler, Expr, ExprContext, ExprLambda, Parameter, Stmt,

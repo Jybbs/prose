@@ -73,6 +73,47 @@ pub(crate) fn eval_time_refs(stmt: &Stmt, defer_annotations: bool) -> Vec<&str> 
     visitor.names
 }
 
+/// Accumulates the names an expression reads through a subscript or an
+/// attribute, pruning lambda bodies.
+struct ObservedRefVisitor<'src> {
+    names: Vec<&'src str>,
+}
+
+impl<'src> AstVisitor<'src> for ObservedRefVisitor<'src> {
+    fn visit_expr(&mut self, expr: &'src Expr) {
+        match expr {
+            Expr::Lambda(lambda) => walk_lambda_defaults(self, lambda),
+            Expr::Attribute(_) | Expr::Subscript(_) => {
+                if let Some(name) = root_name(expr) {
+                    self.names.push(name);
+                }
+                walk_expr(self, expr);
+            }
+            _ => walk_expr(self, expr),
+        }
+    }
+}
+
+/// Returns the name a subscript or attribute chain reads from, or
+/// `None` when the chain roots in anything other than a name.
+fn root_name(expr: &Expr) -> Option<&str> {
+    match expr {
+        Expr::Attribute(attr) => root_name(&attr.value),
+        Expr::Name(name) => Some(name.id.as_str()),
+        Expr::Subscript(subscript) => root_name(&subscript.value),
+        _ => None,
+    }
+}
+
+/// Collects the names `expr` reads through a subscript or an attribute,
+/// the references whose result depends on the object's state at
+/// evaluation time rather than on the binding alone.
+pub(crate) fn observed_refs(expr: &Expr) -> Vec<&str> {
+    let mut visitor = ObservedRefVisitor { names: Vec::new() };
+    visitor.visit_expr(expr);
+    visitor.names
+}
+
 /// Walks a lambda's parameter defaults, pruning its body, the eval-time
 /// surface a lambda contributes when it binds.
 pub(crate) fn walk_lambda_defaults<'a>(visitor: &mut impl AstVisitor<'a>, lambda: &'a ExprLambda) {

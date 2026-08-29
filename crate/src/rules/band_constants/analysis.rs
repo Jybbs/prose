@@ -25,7 +25,7 @@ use crate::{
         },
         comments::{TRAILING_GAP, anchors_in_place, has_keep_marker, leading_comment_block},
         effect::value_is_effectful,
-        tiering::{eval_refs, eval_time_refs, tier_levels},
+        tiering::{eval_refs, eval_time_refs, observed_refs, tier_levels},
     },
     source::Source,
 };
@@ -40,6 +40,7 @@ struct ConstSite<'src> {
     effectful: bool,
     idx: usize,
     name: &'src str,
+    observed_refs: Vec<&'src str>,
     subcategory: Subcategory,
     value_refs: Vec<&'src str>,
 }
@@ -161,6 +162,7 @@ pub(super) fn module_band_plan<'src>(
                         effectful: value.is_some_and(value_is_effectful),
                         idx,
                         name,
+                        observed_refs: value.map_or_else(Vec::new, observed_refs),
                         subcategory: aliases
                             .as_ref()
                             .map_or_else(Subcategory::default, |aliases| {
@@ -199,6 +201,18 @@ pub(super) fn module_band_plan<'src>(
                 .get(site.name)
                 .is_some_and(|&reader| reader < site.idx)
         {
+            anchored[s] = true;
+            continue;
+        }
+        // A definition above the site reads, at evaluation time, a name
+        // the site observes through a subscript or attribute, so seating
+        // the site above that definition reads the object before the
+        // definition has run.
+        if site.observed_refs.iter().any(|name| {
+            eager_reader_at
+                .get(name)
+                .is_some_and(|&reader| reader < site.idx)
+        }) {
             anchored[s] = true;
             continue;
         }
