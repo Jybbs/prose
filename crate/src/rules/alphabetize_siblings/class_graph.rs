@@ -16,7 +16,7 @@ use crate::primitives::{
     binding::{ann_assign_with_named_field, is_classvar, single_name_target},
     constructor::classify_field,
     orderer::permute_in_place,
-    tiering::{def_run_tier_keys, permute_or_revert},
+    tiering::{CallReach, def_run_tier_keys, permute_or_revert},
 };
 
 /// Sorts a section's constant and data-field families through one tiered
@@ -26,12 +26,13 @@ use crate::primitives::{
 /// while the constants around it still sort. Leaves `order` untouched
 /// when fewer than two members reorder, a name repeats, the reference
 /// graph cycles, or the sorted order would strand a reader.
-pub(super) fn permute_class_assigns(
+pub(super) fn permute_class_assigns<'src>(
     order: &mut [usize],
-    body: &[Stmt],
+    body: &'src [Stmt],
     range: Range<usize>,
     defer_annotations: bool,
     keyword_fields_from: TextSize,
+    reachable: &CallReach<'src>,
 ) {
     let Some(tier_keys) = def_run_tier_keys(&body[range.clone()], defer_annotations, |stmt| {
         class_assign_member(stmt).map(|(name, _)| (name, name))
@@ -46,6 +47,7 @@ pub(super) fn permute_class_assigns(
         body,
         &range,
         defer_annotations,
+        reachable,
         |stmt| class_assign_member(stmt).map(|(name, _)| name),
         |order| {
             let fields_moved = permute_in_place(order, body, range.clone(), |stmt| {
@@ -85,7 +87,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        primitives::constructor::keyword_field_start,
+        primitives::{constructor::keyword_field_start, tiering::call_reachable},
         testing::{first_class, parse},
     };
 
@@ -94,12 +96,14 @@ mod tests {
         let class = first_class(&source);
         let body = &class.body;
         let mut order: Vec<usize> = (0..body.len()).collect();
+        let reachable = call_reachable(body);
         permute_class_assigns(
             &mut order,
             body,
             0..body.len(),
             false,
             keyword_field_start(class),
+            &reachable,
         );
         order
     }

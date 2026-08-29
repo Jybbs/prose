@@ -10,6 +10,10 @@ use std::{
 
 mod refs;
 
+/// Per module-level definition, the module-scope names a call into it
+/// can reach.
+pub(crate) type CallReach<'src> = HashMap<&'src str, HashSet<&'src str>>;
+
 pub(crate) use refs::{eval_refs, eval_time_refs, observed_refs, walk_lambda_defaults};
 
 use ruff_python_ast::{
@@ -73,6 +77,7 @@ pub(crate) fn permute_defs<'src, K: Copy + Ord>(
     body: &'src [Stmt],
     range: Range<usize>,
     defer_annotations: bool,
+    reachable: &CallReach<'src>,
     holds: impl Fn(&'src Stmt) -> bool,
     member: impl Fn(&'src Stmt) -> Option<(&'src str, K)>,
 ) {
@@ -84,6 +89,7 @@ pub(crate) fn permute_defs<'src, K: Copy + Ord>(
         body,
         &range,
         defer_annotations,
+        reachable,
         |stmt| member(stmt).map(|(name, _)| name),
         |order| {
             permute_in_place(order, body, range.clone(), |stmt| {
@@ -103,12 +109,20 @@ pub(crate) fn permute_or_revert<'src>(
     body: &'src [Stmt],
     range: &Range<usize>,
     defer_annotations: bool,
+    reachable: &CallReach<'src>,
     member_name: impl Fn(&'src Stmt) -> Option<&'src str>,
     permute: impl FnOnce(&mut [usize]) -> bool,
 ) {
     let snapshot = order.to_vec();
     if permute(order)
-        && !order_keeps_refs_backward(order, body, range, defer_annotations, member_name)
+        && !order_keeps_refs_backward(
+            order,
+            body,
+            range,
+            defer_annotations,
+            member_name,
+            reachable,
+        )
     {
         order.copy_from_slice(&snapshot);
     }
@@ -151,6 +165,7 @@ fn order_keeps_refs_backward<'src>(
     range: &Range<usize>,
     defer_annotations: bool,
     member_name: impl Fn(&'src Stmt) -> Option<&'src str>,
+    reachable: &CallReach<'src>,
 ) -> bool {
     let member_at: HashMap<&'src str, usize> = body[range.clone()]
         .iter()
@@ -168,7 +183,6 @@ fn order_keeps_refs_backward<'src>(
         }
     }
     let position = slot_positions(order);
-    let reachable = call_reachable(body);
     body[range.clone()]
         .iter()
         .zip(range.clone())
@@ -262,7 +276,7 @@ fn free_reads(stmt: &Stmt) -> HashSet<&str> {
 }
 
 /// Every name `stmt` calls directly.
-fn called_names(stmt: &Stmt) -> Vec<&str> {
+pub(crate) fn called_names(stmt: &Stmt) -> Vec<&str> {
     struct Calls<'src>(Vec<&'src str>);
     impl<'src> AstVisitor<'src> for Calls<'src> {
         fn visit_expr(&mut self, expr: &'src Expr) {
@@ -294,7 +308,7 @@ fn runs_on_construction(stmt: &Stmt) -> bool {
 
 /// Per module-level definition, every module-scope name a call into it
 /// can reach, following call edges between definitions to a fixed point.
-fn call_reachable(body: &[Stmt]) -> HashMap<&str, HashSet<&str>> {
+pub(crate) fn call_reachable(body: &[Stmt]) -> CallReach<'_> {
     let mut reads: HashMap<&str, HashSet<&str>> = HashMap::new();
     let mut edges: HashMap<&str, Vec<&str>> = HashMap::new();
     for stmt in body {
@@ -407,7 +421,16 @@ mod tests {
         let source = parse(src);
         let body = &source.ast().body;
         let mut order: Vec<usize> = (0..body.len()).collect();
-        permute_defs(&mut order, body, 0..body.len(), false, holds, class_member);
+        let reachable = call_reachable(body);
+        permute_defs(
+            &mut order,
+            body,
+            0..body.len(),
+            false,
+            &reachable,
+            holds,
+            class_member,
+        );
         order
     }
 

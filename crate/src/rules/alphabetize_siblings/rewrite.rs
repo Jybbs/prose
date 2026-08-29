@@ -26,7 +26,7 @@ use crate::{
         },
         scope::{BodyScope, compound_sub_bodies, scoped_body},
         sections::Sections,
-        tiering::permute_defs,
+        tiering::{CallReach, call_reachable, called_names, permute_defs},
     },
     source::Source,
 };
@@ -91,6 +91,17 @@ pub(super) fn body_layout<'a>(
             // permutation relocates becomes legal once that one lands, so
             // the section's permutations run to a fixed point rather than
             // leaving the rest of the sort to a second pass.
+            // Only a non-definition statement consults the call graph,
+            // so a body holding definitions alone builds none.
+            let consults_calls = body.iter().any(|stmt| {
+                !matches!(stmt, Stmt::FunctionDef(_) | Stmt::ClassDef(_))
+                    && !called_names(stmt).is_empty()
+            });
+            let reachable = if consults_calls {
+                call_reachable(body)
+            } else {
+                CallReach::new()
+            };
             for _ in 0..body.len().max(1) {
                 let settled = order.clone();
                 for section in sections.ranges() {
@@ -100,6 +111,7 @@ pub(super) fn body_layout<'a>(
                             body,
                             section.clone(),
                             defer_annotations,
+                            &reachable,
                             holds,
                             |s| {
                                 s.as_class_def_stmt().map(|c| {
@@ -116,6 +128,7 @@ pub(super) fn body_layout<'a>(
                             section.clone(),
                             defer_annotations,
                             keyword_fields_from,
+                            &reachable,
                         );
                     }
                     if sort_definitions && !(in_class && class_pins_methods(&body[section.clone()]))
@@ -125,6 +138,7 @@ pub(super) fn body_layout<'a>(
                             body,
                             section.clone(),
                             defer_annotations,
+                            &reachable,
                             holds,
                             |s| {
                                 s.as_function_def_stmt().map(|f| {
