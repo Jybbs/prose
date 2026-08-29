@@ -162,7 +162,9 @@ pub(super) fn module_band_plan<'src>(
                         effectful: value.is_some_and(value_is_effectful),
                         idx,
                         name,
-                        observed_refs: value.map_or_else(Vec::new, observed_refs),
+                        observed_refs: value
+                            .filter(|_| !is_explicit_type_alias(stmt))
+                            .map_or_else(Vec::new, observed_refs),
                         subcategory: aliases
                             .as_ref()
                             .map_or_else(Subcategory::default, |aliases| {
