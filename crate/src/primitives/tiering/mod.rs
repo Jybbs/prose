@@ -289,21 +289,12 @@ pub(crate) fn called_names(stmt: &Stmt) -> Vec<&str> {
     calls.0
 }
 
-/// True when constructing a class runs `stmt` from its body, covering
-/// the constructor hooks alone. Instantiating a class evaluates
-/// `__new__` and `__init__` rather than every method it defines, so a
-/// method nothing calls at construction contributes no eager read.
-fn runs_on_construction(stmt: &Stmt) -> bool {
-    match stmt {
-        Stmt::FunctionDef(func) => {
-            matches!(func.name.as_str(), "__new__" | "__init__" | "__post_init__")
-        }
-        _ => false,
-    }
-}
-
 /// Per module-level definition, every module-scope name a call into it
 /// can reach, following call edges between definitions to a fixed point.
+/// A class contributes every name its whole body reads, because a
+/// constructor reaches its siblings through `self` attribute calls the
+/// call graph cannot follow and an attribute access runs `__getattr__`
+/// with no call at all.
 pub(crate) fn call_reachable(body: &[Stmt]) -> CallReach<'_> {
     let mut reads: HashMap<&str, HashSet<&str>> = HashMap::new();
     let mut edges: HashMap<&str, Vec<&str>> = HashMap::new();
@@ -314,17 +305,8 @@ pub(crate) fn call_reachable(body: &[Stmt]) -> CallReach<'_> {
                 edges.insert(func.name.as_str(), called_names(stmt));
             }
             Stmt::ClassDef(class) => {
-                let mut union = HashSet::new();
-                let mut calls = Vec::new();
-                for member in &class.body {
-                    if !runs_on_construction(member) {
-                        continue;
-                    }
-                    union.extend(free_reads(member));
-                    calls.extend(called_names(member));
-                }
-                reads.insert(class.name.as_str(), union);
-                edges.insert(class.name.as_str(), calls);
+                reads.insert(class.name.as_str(), free_reads(stmt));
+                edges.insert(class.name.as_str(), called_names(stmt));
             }
             _ => continue,
         }
@@ -432,6 +414,75 @@ mod tests {
             class_member,
         );
         order
+    }
+
+    /// The new-order permutation `permute_defs` produces over `src`'s
+    /// function run, holding nothing.
+    fn func_order(src: &str) -> Vec<usize> {
+        let source = parse(src);
+        let body = &source.ast().body;
+        let mut order: Vec<usize> = (0..body.len()).collect();
+        let reachable = call_reachable(body);
+        permute_defs(
+            &mut order,
+            body,
+            0..body.len(),
+            false,
+            &reachable,
+            |_| false,
+            |stmt| {
+                stmt.as_function_def_stmt().map(|func| {
+                    let name = func.name.as_str();
+                    (name, name)
+                })
+            },
+        );
+        order
+    }
+
+    #[test]
+    fn call_reachable_covers_a_name_a_constructor_reaches_through_self() {
+        let source = parse(indoc! {"
+            def zzz_helper():
+                return 1
+
+            class C:
+                def __init__(self):
+                    self.value = self.compute()
+
+                def compute(self):
+                    return zzz_helper()
+        "});
+        let reachable = call_reachable(&source.ast().body);
+        assert!(
+            reachable["C"].contains("zzz_helper"),
+            "instantiating C runs compute through a self call, evaluating zzz_helper"
+        );
+    }
+
+    #[test]
+    fn permute_defs_holds_a_definition_a_constructor_reaches_through_self() {
+        let src = indoc! {"
+            def zzz_helper():
+                return 1
+
+            class C:
+                def __init__(self):
+                    self.value = self.compute()
+
+                def compute(self):
+                    return zzz_helper()
+
+            obj = C()
+
+            def aaa():
+                pass
+        "};
+        assert_eq!(
+            func_order(src),
+            vec![0, 1, 2, 3],
+            "the instantiation reaches zzz_helper, so the run holds its source order"
+        );
     }
 
     #[test]
