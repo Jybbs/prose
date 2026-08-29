@@ -73,17 +73,6 @@ impl<'a> Division<'a> {
                     self.push(&binary.right, expr.into(), Some(binary.op.as_str()), out);
                     return;
                 }
-                Expr::BoolOp(boolean) if OperatorPrecedence::from(boolean.op) == self.level => {
-                    for (index, value) in boolean.values.iter().enumerate() {
-                        let joined = if index > 0 {
-                            Some(boolean.op.as_str())
-                        } else {
-                            lead
-                        };
-                        self.push(value, expr.into(), joined, out);
-                    }
-                    return;
-                }
                 _ => {}
             }
         }
