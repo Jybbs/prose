@@ -98,7 +98,9 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "slug": "shed-super-args"
   },
   {
-    "after": [],
+    "after": [
+      "reflow-parentheses"
+    ],
     "imperative": "break a long method chain to one link per line",
     "position": 15,
     "slug": "stack-method-chains"

@@ -440,7 +440,7 @@ register_rules! {
     "expand-docstrings":            expand_docstrings:            ToggleOnly                 => ExpandDocstrings           => ["frame-docstrings"],
     "group-imports":                group_imports:                ToggleOnly                 => GroupImports               => [],
     "shed-super-args":              shed_super_args:              ToggleOnly                 => ShedSuperArgs              => [],
-    "stack-method-chains":          stack_method_chains:          StackMethodChainsConfig    => StackMethodChains          => [],
+    "stack-method-chains":          stack_method_chains:          StackMethodChainsConfig    => StackMethodChains          => ["reflow-parentheses"],
     "reflow-calls":                 reflow_calls:                 ReflowCallsConfig          => ReflowCalls                => ["shed-backslash-continuations", "reflow-parentheses", "simplify-comprehensions", "shed-super-args", "stack-method-chains"],
     "reflow-signatures":            reflow_signatures:            ReflowSignaturesConfig     => ReflowSignatures           => ["strip-none-return", "reflow-parentheses"],
     "reflow-collections":           reflow_collections:           ReflowCollectionsConfig    => ReflowCollections          => ["simplify-comprehensions", "stack-method-chains", "reflow-calls", "reflow-signatures"],
@@ -478,7 +478,7 @@ mod tests {
 
     #[rstest]
     fn dependencies_of_returns_empty_for_a_rule_without_predecessors(
-        #[values("strip-none-return", "stack-method-chains", "not-a-rule")] slug: &str,
+        #[values("strip-none-return", "shed-super-args", "not-a-rule")] slug: &str,
     ) {
         assert!(dependencies_of(slug).is_empty());
     }
