@@ -3,7 +3,7 @@
 //! block while descending into every other compound body.
 
 use ruff_python_ast::{
-    ExceptHandler, Expr, ExprName, Stmt,
+    ExceptHandler, Expr, ExprContext, ExprName, Stmt,
     statement_visitor::{StatementVisitor, walk_stmt},
     visitor::{self, Visitor},
 };
@@ -79,7 +79,7 @@ impl<'src> Visitor<'src> for BindingWalker<'src> {
 
     fn visit_expr(&mut self, expr: &'src Expr) {
         if let Expr::Name(name) = expr
-            && name.ctx.is_store()
+            && matches!(name.ctx, ExprContext::Del | ExprContext::Store)
         {
             self.names.push(name.id.as_str());
         }
@@ -95,14 +95,15 @@ impl<'src> Visitor<'src> for BindingWalker<'src> {
     }
 }
 
-/// Every name a module binds when it executes `stmt`, covering the
+/// Every name a module binds or unbinds when it executes `stmt`, covering the
 /// store target of an assignment, an unpack, a `for`, a `with`, and a
 /// walrus, each alias of an import, an `except ... as` name, and the
 /// name of a definition. The walk descends the compound bodies a module
 /// executes and stops at a `def`, a `class`, and an `if TYPE_CHECKING:`
-/// block. A comprehension target and a lambda parameter bind in their
-/// own scope, so collecting them here names more than the module binds
-/// and only ever withholds a reorder.
+/// block. A comprehension target binds in its own scope and is
+/// collected all the same, so the set names more than the module binds.
+/// A lambda parameter is an `Identifier` rather than a store-context
+/// name and never enters it.
 pub(crate) fn module_bound_names(stmt: &Stmt) -> Vec<&str> {
     let mut walker = BindingWalker { names: Vec::new() };
     walker.visit_stmt(stmt);
