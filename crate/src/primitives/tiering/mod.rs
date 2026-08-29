@@ -13,13 +13,16 @@ mod refs;
 pub(crate) use refs::{eval_refs, eval_time_refs, walk_lambda_defaults};
 
 use ruff_python_ast::{
-    Expr, ExprLambda, Stmt,
-    visitor::{Visitor as AstVisitor, walk_expr, walk_parameters},
+    ExceptHandler, Expr, ExprContext, ExprLambda, Parameter, Stmt,
+    visitor::{self, Visitor as AstVisitor, walk_expr, walk_parameters},
 };
 use ruff_text_size::{Ranged, TextSize};
 
 use crate::primitives::{
-    binding::module_bound_names, orderer::permute_in_place, slots::slot_positions, walk::walk_stmt,
+    binding::{bare_import_bound_name, from_import_bound_name, module_bound_names},
+    orderer::permute_in_place,
+    slots::slot_positions,
+    walk::walk_stmt,
 };
 
 /// Returns a per-member `(tier, key)` lookup keyed by each definition's
@@ -165,22 +168,29 @@ fn order_keeps_refs_backward<'src>(
         }
     }
     let position = slot_positions(order);
+    let reachable = call_reachable(body);
     body[range.clone()]
         .iter()
         .zip(range.clone())
         .all(|(stmt, reader)| {
-            eval_time_refs(stmt, defer_annotations)
-                .into_iter()
-                .all(|name| {
-                    member_at
-                        .get(name)
-                        .is_none_or(|&referent| side_kept(referent, reader, &position))
-                        && bound_at.get(name).is_none_or(|binders| {
-                            binders
-                                .iter()
-                                .all(|&binder| side_kept(binder, reader, &position))
-                        })
-                })
+            let mut names = eval_time_refs(stmt, defer_annotations);
+            if !matches!(stmt, Stmt::FunctionDef(_) | Stmt::ClassDef(_)) {
+                for called in called_names(stmt) {
+                    if let Some(reached) = reachable.get(called) {
+                        names.extend(reached.iter().copied());
+                    }
+                }
+            }
+            names.into_iter().all(|name| {
+                member_at
+                    .get(name)
+                    .is_none_or(|&referent| side_kept(referent, reader, &position))
+                    && bound_at.get(name).is_none_or(|binders| {
+                        binders
+                            .iter()
+                            .all(|&binder| side_kept(binder, reader, &position))
+                    })
+            })
         })
 }
 
@@ -188,6 +198,155 @@ fn order_keeps_refs_backward<'src>(
 /// seated it, so a reader neither rises above a binding it evaluates
 /// nor crosses one the source placed after it. A statement binding the
 /// name it reads imposes nothing on itself.
+/// Collects the names one definition reads and the names it binds.
+struct ScopeScan<'src> {
+    binds: HashSet<&'src str>,
+    reads: HashSet<&'src str>,
+}
+
+impl<'src> AstVisitor<'src> for ScopeScan<'src> {
+    fn visit_expr(&mut self, expr: &'src Expr) {
+        if let Expr::Name(name) = expr {
+            if matches!(name.ctx, ExprContext::Load) {
+                self.reads.insert(name.id.as_str());
+            } else {
+                self.binds.insert(name.id.as_str());
+            }
+        }
+        walk_expr(self, expr);
+    }
+
+    fn visit_stmt(&mut self, stmt: &'src Stmt) {
+        match stmt {
+            Stmt::FunctionDef(func) => {
+                self.binds.insert(func.name.as_str());
+            }
+            Stmt::ClassDef(class) => {
+                self.binds.insert(class.name.as_str());
+            }
+            Stmt::Import(import) => self
+                .binds
+                .extend(import.names.iter().map(bare_import_bound_name)),
+            Stmt::ImportFrom(import) => self
+                .binds
+                .extend(import.names.iter().map(from_import_bound_name)),
+            _ => {}
+        }
+        visitor::walk_stmt(self, stmt);
+    }
+
+    fn visit_parameter(&mut self, parameter: &'src Parameter) {
+        self.binds.insert(parameter.name.as_str());
+        visitor::walk_parameter(self, parameter);
+    }
+
+    fn visit_except_handler(&mut self, handler: &'src ExceptHandler) {
+        let ExceptHandler::ExceptHandler(caught) = handler;
+        if let Some(name) = &caught.name {
+            self.binds.insert(name.as_str());
+        }
+        visitor::walk_except_handler(self, handler);
+    }
+}
+
+/// The names a call into `stmt` evaluates that `stmt` does not bind
+/// itself, being the module-scope surface its body reads.
+fn free_reads(stmt: &Stmt) -> HashSet<&str> {
+    let mut scan = ScopeScan {
+        binds: HashSet::new(),
+        reads: HashSet::new(),
+    };
+    scan.visit_stmt(stmt);
+    scan.reads.retain(|name| !scan.binds.contains(name));
+    scan.reads
+}
+
+/// Every name `stmt` calls directly.
+fn called_names(stmt: &Stmt) -> Vec<&str> {
+    struct Calls<'src>(Vec<&'src str>);
+    impl<'src> AstVisitor<'src> for Calls<'src> {
+        fn visit_expr(&mut self, expr: &'src Expr) {
+            if let Expr::Call(call) = expr
+                && let Expr::Name(name) = call.func.as_ref()
+            {
+                self.0.push(name.id.as_str());
+            }
+            walk_expr(self, expr);
+        }
+    }
+    let mut calls = Calls(Vec::new());
+    calls.visit_stmt(stmt);
+    calls.0
+}
+
+/// True when constructing a class runs `stmt` from its body, covering
+/// the constructor hooks alone. Instantiating a class evaluates
+/// `__new__` and `__init__` rather than every method it defines, so a
+/// method nothing calls at construction contributes no eager read.
+fn runs_on_construction(stmt: &Stmt) -> bool {
+    match stmt {
+        Stmt::FunctionDef(func) => {
+            matches!(func.name.as_str(), "__new__" | "__init__" | "__post_init__")
+        }
+        _ => false,
+    }
+}
+
+/// Per module-level definition, every module-scope name a call into it
+/// can reach, following call edges between definitions to a fixed point.
+fn call_reachable(body: &[Stmt]) -> HashMap<&str, HashSet<&str>> {
+    let mut reads: HashMap<&str, HashSet<&str>> = HashMap::new();
+    let mut edges: HashMap<&str, Vec<&str>> = HashMap::new();
+    for stmt in body {
+        match stmt {
+            Stmt::FunctionDef(func) => {
+                reads.insert(func.name.as_str(), free_reads(stmt));
+                edges.insert(func.name.as_str(), called_names(stmt));
+            }
+            Stmt::ClassDef(class) => {
+                let mut union = HashSet::new();
+                let mut calls = Vec::new();
+                for member in &class.body {
+                    if !runs_on_construction(member) {
+                        continue;
+                    }
+                    union.extend(free_reads(member));
+                    calls.extend(called_names(member));
+                }
+                reads.insert(class.name.as_str(), union);
+                edges.insert(class.name.as_str(), calls);
+            }
+            _ => continue,
+        }
+    }
+    for edge in edges.values_mut() {
+        edge.retain(|callee| reads.contains_key(callee));
+    }
+    loop {
+        let mut pending: Vec<(&str, HashSet<&str>)> = Vec::new();
+        for (&name, callees) in &edges {
+            let mut extra: HashSet<&str> = HashSet::new();
+            for callee in callees.iter().filter(|callee| **callee != name) {
+                for reached in &reads[callee] {
+                    if !reads[name].contains(reached) {
+                        extra.insert(reached);
+                    }
+                }
+            }
+            if !extra.is_empty() {
+                pending.push((name, extra));
+            }
+        }
+        if pending.is_empty() {
+            break;
+        }
+        for (name, extra) in pending {
+            reads.get_mut(name).unwrap().extend(extra);
+        }
+    }
+    reads
+}
+
 fn side_kept(binding: usize, reader: usize, position: &[usize]) -> bool {
     match binding.cmp(&reader) {
         Ordering::Less => position[binding] < position[reader],
