@@ -70,8 +70,8 @@ pub(crate) fn def_run_tier_keys<'src, K: Copy>(
 /// Tiers the `member`-selected definitions within `range` and permutes
 /// those slots of `order` by `(tier, key)`, leaving `order` untouched
 /// when the run declines. A member `holds` selects keeps its source
-/// slot, and the permutation reverts when it seats a definition below a
-/// statement that names it.
+/// slot, and a member the permutation would seat below a statement that
+/// names it holds its slot while the rest of the run still sorts.
 pub(crate) fn permute_defs<'src, K: Copy + Ord>(
     order: &mut [usize],
     body: &'src [Stmt],
@@ -84,48 +84,65 @@ pub(crate) fn permute_defs<'src, K: Copy + Ord>(
     let Some(keys) = def_run_tier_keys(&body[range.clone()], defer_annotations, &member) else {
         return;
     };
-    permute_or_revert(
+    permute_or_repair(
         order,
         body,
         &range,
         defer_annotations,
         reachable,
         |stmt| member(stmt).map(|(name, _)| name),
-        |order| {
+        |order, pinned| {
             permute_in_place(order, body, range.clone(), |stmt| {
                 keys.get(&stmt.range().start())
                     .copied()
-                    .filter(|_| !holds(stmt))
+                    .filter(|_| !holds(stmt) && !pinned.contains(&stmt.range().start()))
             })
         },
     );
 }
 
-/// Runs `permute` against `order`, restoring the pre-permutation slots
-/// when it moves a slot and the result seats a `member_name` entry below
-/// a statement that names it.
-pub(crate) fn permute_or_revert<'src>(
+/// Runs `permute` against `order` and repairs the result until it
+/// strands nothing, re-running the permutation with every stranded
+/// member pinned to its pre-permutation slot. `permute` reads that pin
+/// set by definition start offset and declines each entry it holds.
+/// Restores the pre-permutation slots when the repair runs out of
+/// members to pin, so an arrangement no pin set rescues reverts whole.
+pub(crate) fn permute_or_repair<'src>(
     order: &mut [usize],
     body: &'src [Stmt],
     range: &Range<usize>,
     defer_annotations: bool,
     reachable: &CallReach<'src>,
     member_name: impl Fn(&'src Stmt) -> Option<&'src str>,
-    permute: impl FnOnce(&mut [usize]) -> bool,
+    mut permute: impl FnMut(&mut [usize], &HashSet<TextSize>) -> bool,
 ) {
     let snapshot = order.to_vec();
-    if permute(order)
-        && !order_keeps_refs_backward(
+    let mut pinned: HashSet<TextSize> = HashSet::new();
+    for _ in 0..=range.len() {
+        order.copy_from_slice(&snapshot);
+        if !permute(order, &pinned) {
+            break;
+        }
+        let stranded = stranded_defs(
             order,
             body,
             range,
             defer_annotations,
-            member_name,
+            &member_name,
             reachable,
-        )
-    {
-        order.copy_from_slice(&snapshot);
+        );
+        if stranded.is_empty() {
+            return;
+        }
+        let mut grew = false;
+        for offset in stranded {
+            grew |= pinned.insert(offset);
+        }
+        if !grew {
+            break;
+        }
     }
+    order.copy_from_slice(&snapshot);
 }
 
 /// Assigns each binding a Kahn-style topological tier from its
@@ -153,59 +170,66 @@ pub(crate) fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
     tiers.into_iter().collect()
 }
 
-/// True when every statement in `range` stays on the side of each
-/// binding it evaluates that the source seated it, covering both the
-/// members `member_name` selects and the non-member bindings among
-/// them, so a reader neither rises above the binding that introduces a
-/// name nor crosses a rebinding the source placed after it. A statement
-/// naming itself imposes nothing.
-fn order_keeps_refs_backward<'src>(
+/// The start offsets of the `member_name` members `order` seats across
+/// a binding they evaluate, being the members a repair pins. A
+/// statement's evaluated surface covers the names it reads itself and,
+/// for a statement that is not a definition, every module-scope name
+/// `reachable` reaches through the definitions it calls. Each crossed
+/// pair contributes whichever of its two sides `member_name` selects,
+/// since every other statement already holds its slot. An empty set
+/// means the arrangement strands nothing.
+fn stranded_defs<'src>(
     order: &[usize],
     body: &'src [Stmt],
     range: &Range<usize>,
     defer_annotations: bool,
     member_name: impl Fn(&'src Stmt) -> Option<&'src str>,
     reachable: &CallReach<'src>,
-) -> bool {
-    let member_at: HashMap<&'src str, usize> = body[range.clone()]
-        .iter()
-        .zip(range.clone())
-        .filter_map(|(stmt, at)| member_name(stmt).map(|name| (name, at)))
-        .collect();
+) -> HashSet<TextSize> {
     let mut bound_at: HashMap<&'src str, Vec<usize>> = HashMap::new();
-    for (stmt, at) in body[range.clone()]
-        .iter()
-        .zip(range.clone())
-        .filter(|(stmt, _)| member_name(stmt).is_none())
-    {
-        for name in module_bound_names(stmt) {
-            bound_at.entry(name).or_default().push(at);
+    for (stmt, at) in body[range.clone()].iter().zip(range.clone()) {
+        match member_name(stmt) {
+            Some(name) => bound_at.entry(name).or_default().push(at),
+            None => {
+                for name in module_bound_names(stmt) {
+                    bound_at.entry(name).or_default().push(at);
+                }
+            }
         }
     }
     let position = slot_positions(order);
-    body[range.clone()]
-        .iter()
-        .zip(range.clone())
-        .all(|(stmt, reader)| {
-            let mut names = eval_time_refs(stmt, defer_annotations);
-            if !matches!(stmt, Stmt::FunctionDef(_) | Stmt::ClassDef(_)) {
-                for called in called_names(stmt) {
-                    if let Some(reached) = reachable.get(called) {
-                        names.extend(reached.iter().copied());
-                    }
+    let pinnable = |stmt: &'src Stmt| member_name(stmt).map(|_| stmt.range().start());
+    let mut stranded = HashSet::new();
+    for (stmt, reader) in body[range.clone()].iter().zip(range.clone()) {
+        for name in evaluated_names(stmt, defer_annotations, reachable) {
+            for &binder in bound_at.get(name).into_iter().flatten() {
+                if side_kept(binder, reader, &position) {
+                    continue;
                 }
+                stranded.extend(pinnable(&body[binder]));
+                stranded.extend(pinnable(stmt));
             }
-            names.into_iter().all(|name| {
-                member_at
-                    .get(name)
-                    .is_none_or(|&referent| side_kept(referent, reader, &position))
-                    && bound_at.get(name).is_none_or(|binders| {
-                        binders
-                            .iter()
-                            .all(|&binder| side_kept(binder, reader, &position))
-                    })
-            })
-        })
+        }
+    }
+    stranded
+}
+
+/// Every module-scope name evaluating `stmt` reads, being the names in
+/// its own evaluation-time surface widened by the reach of each
+/// definition it calls. A definition's own body is not evaluated where
+/// it binds, so only a non-definition statement widens.
+fn evaluated_names<'src>(
+    stmt: &'src Stmt,
+    defer_annotations: bool,
+    reachable: &CallReach<'src>,
+) -> Vec<&'src str> {
+    let mut names = eval_time_refs(stmt, defer_annotations);
+    if !matches!(stmt, Stmt::FunctionDef(_) | Stmt::ClassDef(_)) {
+        for called in called_names(stmt) {
+            names.extend(reachable.get(called).into_iter().flatten().copied());
+        }
+    }
+    names
 }
 
 /// Collects the names one definition reads and the names it binds.
@@ -599,6 +623,75 @@ mod tests {
             class_order(src, |_| false),
             vec![1, 2, 0],
             "without the hold Alpha sorts to the front"
+        );
+    }
+
+    #[test]
+    fn permute_defs_pins_a_definition_a_module_level_call_reaches() {
+        let src = indoc! {"
+            def zeta():
+                return 1
+
+            def mid():
+                return zeta()
+
+            mid()
+
+            def delta():
+                pass
+
+            def beta():
+                pass
+        "};
+        assert_eq!(
+            func_order(src),
+            vec![0, 1, 2, 4, 3],
+            "the call holds zeta and mid while delta and beta still sort"
+        );
+    }
+
+    #[test]
+    fn permute_defs_pins_through_a_two_hop_call_chain() {
+        let src = indoc! {"
+            def zeta():
+                return 1
+
+            def inner():
+                return zeta()
+
+            def outer():
+                return inner()
+
+            outer()
+
+            def delta():
+                pass
+
+            def beta():
+                pass
+        "};
+        assert_eq!(
+            func_order(src),
+            vec![0, 1, 2, 3, 5, 4],
+            "the reach of outer covers zeta two hops down"
+        );
+    }
+
+    #[test]
+    fn permute_defs_sorts_past_a_call_reaching_nothing_in_the_run() {
+        let src = indoc! {"
+            def zeta():
+                return 1
+
+            unrelated()
+
+            def alpha():
+                pass
+        "};
+        assert_eq!(
+            func_order(src),
+            vec![2, 1, 0],
+            "a call into no definition of the run constrains nothing"
         );
     }
 

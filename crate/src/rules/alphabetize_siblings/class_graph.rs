@@ -16,7 +16,7 @@ use crate::primitives::{
     binding::{ann_assign_with_named_field, is_classvar, single_name_target},
     constructor::classify_field,
     orderer::permute_in_place,
-    tiering::{CallReach, def_run_tier_keys, permute_or_revert},
+    tiering::{CallReach, def_run_tier_keys, permute_or_repair},
 };
 
 /// Sorts a section's constant and data-field families through one tiered
@@ -42,16 +42,16 @@ pub(super) fn permute_class_assigns<'src>(
     if tier_keys.len() < 2 {
         return;
     }
-    permute_or_revert(
+    permute_or_repair(
         order,
         body,
         &range,
         defer_annotations,
         reachable,
         |stmt| class_assign_member(stmt).map(|(name, _)| name),
-        |order| {
+        |order, pinned| {
             let fields_moved = permute_in_place(order, body, range.clone(), |stmt| {
-                if stmt.start() < keyword_fields_from {
+                if stmt.start() < keyword_fields_from || pinned.contains(&stmt.start()) {
                     return None;
                 }
                 let (default, _) = classify_field(stmt)?;
@@ -60,7 +60,7 @@ pub(super) fn permute_class_assigns<'src>(
             });
             let constants_moved = permute_in_place(order, body, range.clone(), |stmt| {
                 class_assign_member(stmt)
-                    .filter(|&(_, is_const)| is_const)
+                    .filter(|&(_, is_const)| is_const && !pinned.contains(&stmt.start()))
                     .map(|_| tier_keys[&stmt.start()])
             });
             fields_moved || constants_moved
