@@ -1,0 +1,21 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/module_attribute_pins_above_its_configuring_definition/input.py
+---
+import logging
+
+
+class Configure:
+    logging.basicConfig(level=logging.DEBUG)
+    seen = logging.root.level
+
+
+LEVEL = logging.root.level
+
+
+TABLE = dict
+
+
+def helper():
+    return 1
