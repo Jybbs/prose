@@ -174,12 +174,31 @@ pub(super) fn module_band_plan<'src>(
     }
     let site_at: HashMap<&'src str, usize> =
         sites.iter().enumerate().map(|(s, c)| (c.name, s)).collect();
+    let mut eager_reader_at: HashMap<&'src str, usize> = HashMap::new();
+    for (idx, stmt) in body.iter().enumerate() {
+        if matches!(stmt, Stmt::ClassDef(_) | Stmt::FunctionDef(_)) {
+            for name in eval_time_refs(stmt, defer_annotations) {
+                eager_reader_at.entry(name).or_insert(idx);
+            }
+        }
+    }
     let n = sites.len();
     let mut anchored = vec![false; n];
     let mut reaches_def = vec![false; n];
     let mut deps: Vec<Vec<usize>> = vec![Vec::new(); n];
     for (s, site) in sites.iter().enumerate() {
         if site.effectful || analysis.module_reassigned(site.name) {
+            anchored[s] = true;
+            continue;
+        }
+        // A definition above the site reads the site's name at
+        // evaluation time, resolving it against the builtin, so seating
+        // the site above that definition rebinds what it read.
+        if is_python_builtin(site.name, builtins_minor, notebook)
+            && eager_reader_at
+                .get(site.name)
+                .is_some_and(|&reader| reader < site.idx)
+        {
             anchored[s] = true;
             continue;
         }

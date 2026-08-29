@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/builtin_read_by_a_definition_above_pins/input.py
+---
+TABLE = 5
+
+
+def helper(x=list):
+    return x
+
+
+list = [1, 2, 3]
