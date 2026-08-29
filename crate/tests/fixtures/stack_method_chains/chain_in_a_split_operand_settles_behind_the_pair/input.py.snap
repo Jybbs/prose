@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/stack_method_chains/chain_in_a_split_operand_settles_behind_the_pair/input.py
+---
+x = (r'pipe-%d-%d-%s' %
+     (os.getpid(), next(_mmap_counter), os.urandom(8).hex()))

@@ -13,6 +13,7 @@ layout  : doc
 | Surface | Order |
 |---|---|
 | Classes in a module | Alphabetical |
+| Functions in a module | Alphabetical |
 | Methods in a class | Dunders, properties, private, public |
 | Enum members | Alphabetical |
 | Pydantic `BaseModel` and `TypedDict` fields | Required before optional |
@@ -23,6 +24,8 @@ layout  : doc
 | Docstring entries | Parameter entries mirror the signature, all else alphabetical |
 
 Order that is load-bearing stays untouched, covering positional-only parameters ahead of the `/`, enum members carrying explicit values, and tuple-unpacking targets.
+
+At module scope the classes sort among themselves and the functions sort among themselves, so a class and a function adjacent to one another keep their order whatever their names are.
 
 A definition holds its place behind any sibling it names at evaluation time (*a base class, a decorator, a parameter default, a non-deferred annotation, a class-body value*), and a module-level statement reading one binds its run the same way. A module-level statement binding a name pins the run too, covering an assignment, an unpack target, a `for` or `with` target, a walrus, each alias of an import, an `except ... as` name, and a `del`, so a definition naming it keeps the side of that binding the source seated it on, a reader below never rising above and one above never sinking below. A module-level call reaches through to what it runs, binding the run against the names its target reads at evaluation time. A decorated definition at module scope holds its slot outright whereas a decorated method still sorts, and a reference cycle leaves its run in source order. Inside a class body the constants and the annotated fields tier through one graph, so a constant a method default or base class reads stays above it.
 
