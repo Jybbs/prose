@@ -5,7 +5,7 @@ use std::{
     path::Path,
 };
 
-use ruff_diagnostics::Edit;
+use ruff_diagnostics::{Edit, SourceMap};
 use ruff_notebook::{Notebook, NotebookIndex};
 use ruff_python_ast::{Expr, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_text_size::{TextLen, TextRange, TextSize};
@@ -17,10 +17,10 @@ use crate::{
     pipeline::Pipeline,
     primitives::{
         aligner,
-        edit::apply_edits,
+        edit::apply_edits_mapped,
         tiering::{Evaluated, call_reachable},
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -64,6 +64,10 @@ impl Rule for GroupSentinelRule {
     fn message(&self) -> &'static str {
         "group test rule"
     }
+
+    fn preserves(&self) -> Preserves {
+        Preserves::Nothing
+    }
 }
 
 /// A rule editing only a buffer whose text opens with `reads`,
@@ -95,6 +99,10 @@ impl Rule for PrefixRule {
     fn message(&self) -> &'static str {
         "prefix test rule"
     }
+
+    fn preserves(&self) -> Preserves {
+        Preserves::Nothing
+    }
 }
 
 /// Builds an alignment `Member` whose pre-operator whitespace is `gap`,
@@ -117,7 +125,9 @@ pub(crate) fn align_member(gap: TextRange, line_start: u32, width: usize) -> ali
 }
 
 pub(crate) fn applied_text(source: &Source, edits: Vec<Edit>) -> String {
-    apply_edits(source.text(), edits).expect("non-overlapping edits")
+    apply_edits_mapped(source.text(), edits)
+        .expect("non-overlapping edits")
+        .0
 }
 
 pub(crate) fn assert_send_sync<T: Send + Sync>() {}
@@ -223,6 +233,15 @@ pub(crate) fn range(start: u32, end: u32) -> TextRange {
     TextRange::new(start.into(), end.into())
 }
 
+/// A rule replacing the source's first byte with `y`, the one-edit
+/// rewrite most pipeline tests run.
+pub(crate) fn rewrites_x_to_y() -> GroupSentinelRule {
+    GroupSentinelRule {
+        groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
+        id: RuleId::from("rewrite-x-to-y"),
+    }
+}
+
 pub(crate) fn run_rule(slug: &str, src: &str) -> String {
     let pipeline = Pipeline::for_rule(slug, &Config::default()).expect("rule is registered");
     pipeline
@@ -243,6 +262,20 @@ pub(crate) fn self_overlapping() -> GroupSentinelRule {
         ]],
         id: RuleId::from("self-overlapping"),
     }
+}
+
+/// `source` with every lazily built table filled under `config`.
+pub(crate) fn with_every_table(source: Source, config: &Config) -> Source {
+    source.binding_analysis();
+    source.columns(config.equals_reservations());
+    source.stranded_padding(config.stranded_padding());
+    source
+}
+
+/// The text `edits` weave into `text`, beside the `SourceMap` of the
+/// weave.
+pub(crate) fn woven(text: &str, edits: Vec<Edit>) -> (String, SourceMap) {
+    apply_edits_mapped(text, edits).expect("the edits weave")
 }
 
 pub(crate) fn write_dotconfig_prose_toml(dir: &Path, contents: &str) {

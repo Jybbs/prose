@@ -66,6 +66,34 @@ use crate::{
 #[error("unknown rule id `{0}`")]
 pub struct ParseRuleIdError(String);
 
+/// What a rule's edits leave standing in the module, read by the
+/// pipeline to decide which tables the `Source` built after them
+/// inherits rather than rebuilds. A rule preserving rows preserves
+/// bindings too.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Preserves {
+    /// Everything `Bindings` keeps, and every row keeps its text and its
+    /// column and every statement its row neighbors, blank rows aside.
+    All,
+    /// Every binding keeps its name, its scope, and its writes and reads
+    /// in their order, and every assignment value keeps its extent.
+    Bindings,
+    /// No table survives.
+    Nothing,
+}
+
+impl Preserves {
+    /// True where the binding table survives.
+    pub(crate) fn bindings(self) -> bool {
+        !matches!(self, Self::Nothing)
+    }
+
+    /// True where the layout forecasts survive.
+    pub(crate) fn rows(self) -> bool {
+        matches!(self, Self::All)
+    }
+}
+
 /// Every rule in Prose implements this trait and nothing more.
 ///
 /// Implementations inspect `source` and return the edits that would
@@ -101,6 +129,13 @@ pub(crate) trait Rule: Send + Sync {
     /// to the `MESSAGE` const on the rule registered under `self.id()`.
     fn message(&self) -> &'static str {
         message_for_id(self.id())
+    }
+
+    /// What this rule's edits leave standing, deciding which tables the
+    /// `Source` built after them inherits. Defaults to the `PRESERVES`
+    /// const on the rule registered under `self.id()`.
+    fn preserves(&self) -> Preserves {
+        preserves_for_id(self.id())
     }
 }
 
@@ -229,6 +264,11 @@ const fn precedes(earlier: &str, later: &str) -> bool {
     }
 }
 
+/// The registry index of `id`, which every id outside a test carries.
+fn registered_index(id: RuleId) -> usize {
+    slug_index(id.as_str()).unwrap_or_else(|| unreachable!("rule id must be registered"))
+}
+
 /// Byte-wise equality on `&[u8]` usable from const contexts.
 const fn slug_bytes_equal(a: &[u8], b: &[u8]) -> bool {
     if a.len() != b.len() {
@@ -257,16 +297,17 @@ const fn slug_index(slug: &str) -> Option<usize> {
 }
 
 /// Generates [`KNOWN_IDS`], [`RuleConfigs`] with its bool-or-table
-/// `JsonSchema` impl, [`message_for_id`], [`Pipeline::for_rule`],
-/// [`Pipeline::with_defaults`], and [`Pipeline::with_filters`] from a
-/// registry table. Each row leads with the rule's kebab-case slug,
-/// then its `[tool.prose.rules]` field name, config sub-table type,
-/// rule struct, and the slugs it must run behind. The slug is the
-/// single source consumed by `RuleId::from_str`, the
-/// `[tool.prose.rules.<slug>]` section name, the
-/// `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
-/// Each rule's one-line imperative lives on its own type as
-/// `MESSAGE`, which [`message_for_id`] reads back per slug.
+/// `JsonSchema` impl, [`message_for_id`], [`preserves_for_id`],
+/// [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
+/// [`Pipeline::with_filters`] from a registry table. Each row leads
+/// with the rule's kebab-case slug, then its `[tool.prose.rules]`
+/// field name, config sub-table type, rule struct, and the slugs it
+/// must run behind. The slug is the single source consumed by
+/// `RuleId::from_str`, the `[tool.prose.rules.<slug>]` section name,
+/// the `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
+/// Each rule's one-line imperative lives on its own type as `MESSAGE`
+/// and what its edits leave standing as `PRESERVES`, which
+/// [`message_for_id`] and [`preserves_for_id`] read back per slug.
 ///
 /// Row order is pipeline order.
 ///
@@ -286,6 +327,10 @@ macro_rules! register_rules {
 
         /// The slugs each rule runs behind, indexed alongside [`KNOWN_IDS`].
         const PIPELINE_DEPENDENCIES: &[&[&str]] = &[$(&[$($after),*]),*];
+
+        /// What each rule's edits leave standing, indexed alongside
+        /// [`KNOWN_IDS`].
+        const PRESERVES: &[Preserves] = &[$($ty::PRESERVES),*];
 
         // Asserts each declared dependency names a rule seated earlier.
         $($(const _: () = assert!(
@@ -362,10 +407,13 @@ macro_rules! register_rules {
         /// Default backing for [`Rule::message`], the `MESSAGE` const
         /// on the rule registered under `id`.
         pub(crate) fn message_for_id(id: RuleId) -> &'static str {
-            match slug_index(id.as_str()) {
-                Some(index) => MESSAGES[index],
-                None => unreachable!("rule id must be registered"),
-            }
+            MESSAGES[registered_index(id)]
+        }
+
+        /// Default backing for [`Rule::preserves`], the `PRESERVES`
+        /// const on the rule registered under `id`.
+        fn preserves_for_id(id: RuleId) -> Preserves {
+            PRESERVES[registered_index(id)]
         }
 
         impl Pipeline {

@@ -2,14 +2,12 @@
 //! read exactly once, where inlining the right-hand side into the use
 //! site is usually more direct. Lint-only, emits no edits.
 //!
-//! Conservative skips absorb the false-positive surfaces:
+//! The rule leaves these shapes unflagged:
 //!
 //! - Functions whose body declares `global` or `nonlocal` are skipped
-//!   entirely, since the scope analysis becomes cross-function.
-//! - Comprehension targets are skipped, since their bindings live in
-//!   the comprehension's own scope rather than the enclosing function.
-//! - Augmented assignments are skipped, since `x += 1` is both a read
-//!   and a write of `x`.
+//!   entirely.
+//! - Comprehension targets are skipped.
+//! - Augmented assignments are skipped.
 //! - Names matching the configurable `allow_pattern` glob (default
 //!   `_*`) are skipped, exempting `_unused` and similar, whereas an
 //!   empty pattern exempts nothing.
@@ -17,17 +15,11 @@
 //!   loop targets, `with`-targets, exception handlers, and nested
 //!   `def`/`class` bindings out of the diagnostic surface.
 //! - A single-use tuple-unpack target is exempt when a sibling reads
-//!   more than once, since removing it would split the unpack into an
-//!   indexed read.
+//!   more than once.
 //! - A walrus bound in the test of an `if`, `elif`, or `while` is
-//!   exempt, since the test consumes the value and the single later
-//!   read is the second use.
+//!   exempt.
 
 use ruff_python_ast::statement_visitor::StatementVisitor;
-
-mod walk;
-
-use walk::Visitor;
 
 use crate::{
     config::{AllowPattern, Config},
@@ -36,9 +28,13 @@ use crate::{
         binding::{BindingAnalysis, BindingId, BindingKind, UnpackKind},
         walk::any_over_stmts,
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
+
+mod walk;
+
+use walk::Visitor;
 
 pub(crate) struct SingleUseVariables {
     allow_pattern: AllowPattern,
@@ -46,6 +42,8 @@ pub(crate) struct SingleUseVariables {
 
 impl SingleUseVariables {
     pub(crate) const MESSAGE: &'static str = "Binding is assigned and used once. Consider inlining";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::All;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

@@ -29,7 +29,7 @@ use crate::{
         scope::{scoped_body, splice_compound_arms},
         sections::Sections,
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -50,6 +50,8 @@ pub(crate) struct BandConstants {
 impl BandConstants {
     pub(crate) const MESSAGE: &'static str =
         "band module constants into leading and trailing bands";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Nothing;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.band_constants;

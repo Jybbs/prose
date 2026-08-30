@@ -19,7 +19,7 @@ use ruff_python_ast::PythonVersion;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     rules::reflow_imports::Folds,
     source::Source,
 };
@@ -43,6 +43,8 @@ pub(crate) struct PruneInertImports {
 impl PruneInertImports {
     pub(crate) const MESSAGE: &'static str =
         "prune an import binding nothing references or a repeat of one already bound";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Nothing;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let facets = &config.rules.prune_inert_imports;

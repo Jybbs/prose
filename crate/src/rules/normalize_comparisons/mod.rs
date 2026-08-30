@@ -14,9 +14,19 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::walk::{Descent, filter_map_over_exprs, filter_map_over_parented_exprs},
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
+
+mod constancy;
+mod lint;
+mod plan;
+mod render;
+
+use constancy::constancy;
+use lint::boolean_lint;
+use plan::{Plan, Test};
+use render::{edits, identity_op, negating_parent, reflected};
 
 pub(crate) struct NormalizeComparisons {
     identity: bool,
@@ -26,6 +36,8 @@ pub(crate) struct NormalizeComparisons {
 
 impl NormalizeComparisons {
     pub(crate) const MESSAGE: &'static str = "normalize a comparison to state its check directly";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let facets = &config.rules.normalize_comparisons;
@@ -107,16 +119,6 @@ impl Rule for NormalizeComparisons {
         })
     }
 }
-
-mod constancy;
-mod lint;
-mod plan;
-mod render;
-
-use constancy::constancy;
-use lint::boolean_lint;
-use plan::{Plan, Test};
-use render::{edits, identity_op, negating_parent, reflected};
 
 #[cfg(test)]
 mod tests {

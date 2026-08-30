@@ -30,7 +30,7 @@ use crate::{
             walk_parented_exprs,
         },
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -49,6 +49,8 @@ pub(crate) struct StackMethodChains {
 
 impl StackMethodChains {
     pub(crate) const MESSAGE: &'static str = "break a long method chain to one link per line";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Nothing;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.stack_method_chains;

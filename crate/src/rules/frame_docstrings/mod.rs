@@ -19,7 +19,7 @@ use crate::{
         edit::narrowed_replacement,
         quoting::{TRIPLE_QUOTE, abuts_triple_closer},
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -28,6 +28,8 @@ pub(crate) struct FrameDocstrings;
 impl FrameDocstrings {
     pub(crate) const MESSAGE: &'static str =
         "canonicalize docstring quotes and frame the opener and closer on their own lines";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self

@@ -78,8 +78,9 @@ export const glossary: Record<string, GlossaryEntry> = {
   'BindingAnalysis': {
     aliases    : ['binding analysis', 'binding map', 'name bindings', 'binding', 'bindings'],
     definition : '`BindingAnalysis` is a per-`Source` table indexing every write and read of '
-               + 'every name in every lexical scope. The `single-use-variables` rule consumes '
-               + 'it.',
+               + 'every name in every lexical scope, built on first read and carried across a '
+               + 'reparse by a rule that keeps every binding. The `single-use-variables` rule '
+               + 'consumes it.',
     families   : ['engine', 'lint'],
     href       : '/primitives/binding-analysis'
   },
@@ -514,9 +515,10 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'reparse': {
     aliases    : ['reparses', 'reparsing'],
-    definition : 'Reparse names the `Source::reparse` step the `Pipeline` runs between rules. '
-               + 'Each rule reads a settled AST built from the post-rewrite text, so no rule '
-               + 'observes another rule\'s half-applied state.',
+    definition : 'Reparse names the `Source::reparse_carrying` step the `Pipeline` runs between '
+               + 'rules. Each rule reads a settled AST built from the post-rewrite text, so no '
+               + 'rule observes another rule\'s half-applied state, and the tables the rule '
+               + 'between leaves standing travel into the new `Source`.',
     families   : ['engine'],
     href       : '/primitives/pipeline'
   },

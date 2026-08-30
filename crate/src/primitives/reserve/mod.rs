@@ -11,6 +11,7 @@
 //! is reserved for a value inside an f-string or t-string replacement
 //! field.
 
+use ruff_diagnostics::SourceMap;
 use ruff_python_ast::{
     AnyNodeRef, Expr, InterpolatedStringElement, Stmt,
     visitor::{Visitor, walk_body, walk_expr},
@@ -20,8 +21,8 @@ use rustc_hash::FxHashMap;
 
 use crate::{
     primitives::{
-        aligner, call_keywords::module_call_params, equal_targets, inline::display_width, one_row,
-        walk,
+        aligner, call_keywords::module_call_params, edit::forward_range, equal_targets,
+        inline::display_width, last_at_or_before, one_row, walk,
     },
     rule::RuleId,
     source::Source,
@@ -38,7 +39,7 @@ use visit::{ReserveVisitor, widenings_over};
 /// a construct nested inside an aligned value move with it, and lets
 /// the shift compose with a caller's own placement rather than
 /// replacing it.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Columns {
     /// The gap an aligned row holds ahead of its operator, `None` where
     /// the alignment rule is off.
@@ -51,10 +52,7 @@ impl Columns {
     /// reservation covers it. A reservation never spans a row, so the
     /// nearest one starting at or before `offset` is the only candidate.
     fn shift(&self, offset: TextSize) -> isize {
-        let slot = self
-            .shifts
-            .partition_point(|(range, _)| range.start() <= offset);
-        slot.checked_sub(1)
+        last_at_or_before(&self.shifts, offset, |(range, _)| range.start())
             .map(|i| self.shifts[i])
             .filter(|(range, _)| range.contains(offset))
             .map_or(0, |(_, shift)| shift)
@@ -70,6 +68,16 @@ impl Columns {
     /// source line puts it at.
     pub(crate) fn column_in(&self, source: &Source, offset: TextSize) -> usize {
         self.column(offset, || source.column_of(offset))
+    }
+
+    /// This table over the woven text `map` describes, each shift's row
+    /// span moved to where that text carries it. `None` where an edit
+    /// in `map` replaced either end of a span.
+    pub(crate) fn forwarded(mut self, map: &SourceMap) -> Option<Self> {
+        for (span, _) in &mut self.shifts {
+            *span = forward_range(*span, map)?;
+        }
+        Some(self)
     }
 
     /// The column the value of a keyword `name_width` wide lands at
@@ -190,11 +198,12 @@ mod tests {
     use std::num::NonZeroUsize;
 
     use rstest::rstest;
+    use ruff_diagnostics::Edit;
 
     use super::*;
     use crate::{
         config::{AlignmentConfig, Config},
-        testing::parse,
+        testing::{parse, range, woven},
     };
 
     /// The reservation table an `align-equals` run under `settings`
@@ -257,6 +266,36 @@ mod tests {
     fn columns_shift_each_value_to_the_run_column() {
         // `a`'s value follows `bbb`'s to column 6 while `bbb`'s stays.
         assert_eq!(landed("a = 1\nbbb = 2\n", 88, &[4, 12]), vec![6, 6]);
+    }
+
+    #[test]
+    fn forwarded_answers_none_where_an_edit_replaced_a_span() {
+        let source = parse("a = 1\nbbb = 2\n");
+        let (_, map) = woven(
+            source.text(),
+            vec![Edit::range_replacement("22".to_owned(), range(10, 13))],
+        );
+
+        let columns = Config::default().equals_reservations().columns(&source);
+
+        assert!(columns.forwarded(&map).is_none());
+    }
+
+    #[test]
+    fn forwarded_moves_each_span_past_an_edit_ahead_of_it() {
+        let source = parse("import os\na = 1\nbbb = 2\n");
+        let reservations = Config::default().equals_reservations();
+        let (after, map) = woven(
+            source.text(),
+            vec![Edit::insertion("\n".to_owned(), TextSize::new(10))],
+        );
+
+        let carried = reservations
+            .columns(&source)
+            .forwarded(&map)
+            .expect("every span survives");
+
+        assert_eq!(carried, reservations.columns(&parse(&after)));
     }
 
     #[test]

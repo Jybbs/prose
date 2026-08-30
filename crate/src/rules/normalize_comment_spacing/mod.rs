@@ -16,7 +16,7 @@ use crate::{
         aligner::{line_gap_before, space_padding_edit},
         comments::{TRAILING_GAP, settled_opener},
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -24,6 +24,8 @@ pub(crate) struct NormalizeCommentSpacing;
 
 impl NormalizeCommentSpacing {
     pub(crate) const MESSAGE: &'static str = "normalize comment spacing";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self

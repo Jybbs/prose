@@ -30,7 +30,7 @@ use crate::{
         layout::pack,
         scope::{scoped_body, sub_bodies},
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     rules::band_constants::BandConstants,
     source::Source,
 };
@@ -63,6 +63,8 @@ pub(crate) struct ReflowImports {
 
 impl ReflowImports {
     pub(crate) const MESSAGE: &'static str = "lay out an import block one module per line";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Nothing;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let align = &config.rules.align_imports;

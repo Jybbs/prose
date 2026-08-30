@@ -13,7 +13,7 @@ use crate::{
         binding::ann_assign_with_named_field,
         docstring::{documented_definitions, entry_carrying_sections},
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -22,6 +22,8 @@ pub(crate) struct RestatedTypes;
 impl RestatedTypes {
     pub(crate) const MESSAGE: &'static str =
         "Flag a docstring type group the code already annotates";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::All;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self

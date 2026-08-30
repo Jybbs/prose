@@ -18,7 +18,7 @@ use crate::{
         binding::{ModuleAssignment, is_explicit_type_alias, is_screaming_case},
         effect::value_is_effectful,
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -29,6 +29,8 @@ pub(crate) struct MiscasedConstants {
 impl MiscasedConstants {
     pub(crate) const MESSAGE: &'static str =
         "Module constant is not SCREAMING_CASE. Rename it to the SCREAMING_CASE form";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::All;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
@@ -88,8 +90,10 @@ mod tests {
     use ruff_diagnostics::Applicability;
 
     use super::*;
-    use crate::diagnostics::Severity;
-    use crate::testing::{notebook, parse};
+    use crate::{
+        diagnostics::Severity,
+        testing::{notebook, parse},
+    };
 
     fn rule() -> MiscasedConstants {
         MiscasedConstants::from_config(&Config::default())

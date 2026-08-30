@@ -15,7 +15,7 @@ use crate::{
         docstring::{indent_prefix, rewrite_docstrings, triple_quoted_body},
         edit::narrowed_replacement,
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -23,6 +23,8 @@ pub(crate) struct ExpandDocstrings;
 
 impl ExpandDocstrings {
     pub(crate) const MESSAGE: &'static str = "expand single-line docstring to multi-line form";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self

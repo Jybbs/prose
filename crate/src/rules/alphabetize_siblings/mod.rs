@@ -38,7 +38,7 @@ use crate::{
         slots::runs_where,
         tokens::{CLOSERS, OPENERS},
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -62,6 +62,8 @@ pub(crate) struct AlphabetizeSiblings {
 
 impl AlphabetizeSiblings {
     pub(crate) const MESSAGE: &'static str = "alphabetize this group";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Nothing;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let alphabetize_siblings = &config.rules.alphabetize_siblings;

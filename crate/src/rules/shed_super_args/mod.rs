@@ -12,10 +12,6 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::visitor::Visitor;
 use ruff_text_size::TextSize;
 
-mod walk;
-
-use walk::Walker;
-
 use crate::{
     config::Config,
     primitives::{
@@ -23,15 +19,21 @@ use crate::{
         inline::indent_width, params::first_positional, reseat::push_reseat_edits,
         travel::frozen_rows, walk::walk_stmt,
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
+
+mod walk;
+
+use walk::Walker;
 
 pub(crate) struct ShedSuperArgs;
 
 impl ShedSuperArgs {
     pub(crate) const MESSAGE: &'static str =
         "shed the arguments a parameterized `super()` call restates";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Nothing;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
@@ -70,34 +72,6 @@ mod tests {
     use crate::testing::parse;
 
     #[rstest]
-    #[case::no_enclosing_callable("class C:\n    marker = super(C, marker)\n")]
-    #[case::class_nested_in_a_callable(
-        "def f(self):\n    class C:\n        marker = super(C, self)\n"
-    )]
-    fn degenerate_scope_holds_the_call(#[case] src: &str) {
-        assert!(ShedSuperArgs.apply(&parse(src)).is_empty());
-    }
-
-    #[test]
-    fn deletes_only_the_span_between_the_parentheses() {
-        let source = parse("class C:\n    def m(self):\n        return super(C, self).m()\n");
-        let groups = ShedSuperArgs.apply(&source);
-        let [edit] = groups[0].as_slice() else {
-            panic!("a call on one row deletes its span alone");
-        };
-        assert!(edit.is_deletion());
-        assert_eq!(&source.text()[edit.range()], "C, self");
-    }
-
-    #[rstest]
-    fn reserved_name_binding_holds_every_call(#[values("__class__", "super")] name: &str) {
-        let source = parse(&format!(
-            "class C:\n    def m(self):\n        {name} = 1\n        return super(C, self).m()\n"
-        ));
-        assert!(ShedSuperArgs.apply(&source).is_empty());
-    }
-
-    #[rstest]
     #[case::aligned_continuation(
         "class C:\n    def m(self, a, b):\n        return super(C, self).m(a,\n                                b)\n",
         Some(7)
@@ -127,5 +101,33 @@ mod tests {
             .collect();
         assert_eq!(indents.first().copied(), re_seated);
         assert_eq!(indents.len(), usize::from(re_seated.is_some()));
+    }
+
+    #[rstest]
+    #[case::no_enclosing_callable("class C:\n    marker = super(C, marker)\n")]
+    #[case::class_nested_in_a_callable(
+        "def f(self):\n    class C:\n        marker = super(C, self)\n"
+    )]
+    fn degenerate_scope_holds_the_call(#[case] src: &str) {
+        assert!(ShedSuperArgs.apply(&parse(src)).is_empty());
+    }
+
+    #[test]
+    fn deletes_only_the_span_between_the_parentheses() {
+        let source = parse("class C:\n    def m(self):\n        return super(C, self).m()\n");
+        let groups = ShedSuperArgs.apply(&source);
+        let [edit] = groups[0].as_slice() else {
+            panic!("a call on one row deletes its span alone");
+        };
+        assert!(edit.is_deletion());
+        assert_eq!(&source.text()[edit.range()], "C, self");
+    }
+
+    #[rstest]
+    fn reserved_name_binding_holds_every_call(#[values("__class__", "super")] name: &str) {
+        let source = parse(&format!(
+            "class C:\n    def m(self):\n        {name} = 1\n        return super(C, self).m()\n"
+        ));
+        assert!(ShedSuperArgs.apply(&source).is_empty());
     }
 }

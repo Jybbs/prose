@@ -12,7 +12,7 @@ use crate::{
     primitives::{
         edit::singleton_groups, range::return_annotation_range, walk::filter_map_over_stmts,
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -20,6 +20,8 @@ pub(crate) struct StripNoneReturn;
 
 impl StripNoneReturn {
     pub(crate) const MESSAGE: &'static str = "drop a redundant `-> None` return annotation";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self

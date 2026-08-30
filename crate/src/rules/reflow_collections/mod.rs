@@ -31,7 +31,7 @@ use crate::{
         travel::Landing,
         walk::{Descent, ParentedProbe, filter_map_over_exprs, walk_parented_exprs},
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     rules::alphabetize_siblings::Reorders,
     source::Source,
 };
@@ -56,6 +56,8 @@ pub(crate) struct ReflowCollections {
 
 impl ReflowCollections {
     pub(crate) const MESSAGE: &'static str = "lay out collection literal against the line budget";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.reflow_collections;

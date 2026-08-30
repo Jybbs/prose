@@ -24,7 +24,7 @@ use crate::{
         docstring::docstring_slots, edit::narrowed_replacement,
         tokens::is_interpolated_string_start,
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -43,6 +43,8 @@ pub(crate) struct NormalizeLiterals {
 impl NormalizeLiterals {
     pub(crate) const MESSAGE: &'static str =
         "canonicalize literal quote, prefix, and numeric spelling";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let rule = &config.rules.normalize_literals;

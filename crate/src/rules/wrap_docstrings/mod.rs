@@ -3,7 +3,8 @@
 //! sections to the budget `docstring_structured_policy` selects, and
 //! each `name: description` entry to `docstring_line_length` with a
 //! hanging indent, later lines opening no entry of their own gathered
-//! into it. Every region [`LineScan`] marks verbatim passes through
+//! into it. Every region [`LineScan`](crate::primitives::docstring::LineScan)
+//! marks verbatim passes through
 //! unchanged, reflowed prose collapses interior whitespace to one
 //! space, and a backslash continuing a line of non-raw prose resolves
 //! into the join rather than reaching the output as a word.
@@ -18,7 +19,7 @@ use crate::{
         edit::narrowed_replacement,
         padding,
     },
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -29,6 +30,13 @@ mod wrapping;
 use paragraph::Paragraph;
 use wrapping::spliced_continuations;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum Region {
+    Description,
+    Section,
+    SectionEntry,
+}
+
 pub(crate) struct WrapDocstrings {
     pub(super) description_width: usize,
     pub(super) section_width: usize,
@@ -37,6 +45,8 @@ pub(crate) struct WrapDocstrings {
 
 impl WrapDocstrings {
     pub(crate) const MESSAGE: &'static str = "wrap docstring prose to the configured budget";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let description_width = config.docstring_width();
@@ -74,13 +84,6 @@ impl Rule for WrapDocstrings {
     fn id(&self) -> RuleId {
         Self::SLUG
     }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum Region {
-    Description,
-    Section,
-    SectionEntry,
 }
 
 struct Walker<'a> {

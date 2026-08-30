@@ -13,12 +13,10 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::{params::first_positional, walk::filter_map_over_stmts},
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
-/// Builds the [`CallArgs`] index, resolving each in-module callee through
-/// `module_call_params` and `keyword_args`.
 mod literals;
 mod signals;
 
@@ -29,6 +27,8 @@ pub(crate) struct SignatureAnnotations;
 
 impl SignatureAnnotations {
     pub(crate) const MESSAGE: &'static str = "Flag a missing parameter or return type annotation";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::All;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
@@ -57,8 +57,9 @@ impl Rule for SignatureAnnotations {
 /// call-site argument bound to each named parameter.
 type CallArgs<'a> = FxHashMap<TextSize, FxHashMap<&'a str, Vec<&'a Expr>>>;
 
-/// Collects, per resolved module function, the call-site argument
-/// expression bound to each named parameter.
+/// Emits the parameter reports and the missing-return report for each
+/// function definition, reading `call_args` for the call-site arguments
+/// bound to each parameter.
 struct Walker<'a> {
     call_args: CallArgs<'a>,
     diagnostics: Vec<Diagnostic>,

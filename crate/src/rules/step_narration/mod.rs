@@ -9,7 +9,7 @@ use ruff_python_trivia::{
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -18,6 +18,8 @@ pub(crate) struct StepNarration;
 impl StepNarration {
     pub(crate) const MESSAGE: &'static str =
         "Numbered-step comment found. Consider extracting each step as a named function";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::All;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
@@ -102,6 +104,8 @@ fn matches_step_word(body: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
     use crate::testing::parse;
 
@@ -111,35 +115,33 @@ mod tests {
         assert!(StepNarration.apply(&source).is_empty());
     }
 
-    #[test]
-    fn matches_numeric_dot_accepts_no_space_after_hash_and_multi_digit() {
-        assert!(is_step_narration("#1. open file"));
-        assert!(is_step_narration("#  12. parse header"));
+    #[rstest]
+    fn is_step_narration_accepts_a_numbered_or_step_led_comment(
+        #[values(
+            "#1. open file",
+            "#  12. parse header",
+            "# step 2: parse",
+            "# step 2. parse"
+        )]
+        comment: &str,
+    ) {
+        assert!(is_step_narration(comment));
     }
 
-    #[test]
-    fn matches_numeric_dot_requires_whitespace_after_dot() {
-        assert!(!is_step_narration("# 1.open"));
-        assert!(!is_step_narration("# 1."));
-    }
-
-    #[test]
-    fn matches_step_word_accepts_lowercase_leader() {
-        assert!(is_step_narration("# step 2: parse"));
-        assert!(is_step_narration("# step 2. parse"));
-    }
-
-    #[test]
-    fn matches_step_word_rejects_uppercase_or_partial_word() {
-        assert!(!is_step_narration("# STEP 1: validate"));
-        assert!(!is_step_narration("# stepping 1: validate"));
-        assert!(!is_step_narration("# StEp 1: validate"));
-    }
-
-    #[test]
-    fn matches_step_word_requires_separator_and_text() {
-        assert!(!is_step_narration("# Step 1 validate"));
-        assert!(!is_step_narration("# Step 1:"));
-        assert!(!is_step_narration("# Step abc: validate"));
+    #[rstest]
+    fn is_step_narration_rejects_a_comment_off_the_step_shape(
+        #[values(
+            "# 1.open",
+            "# 1.",
+            "# STEP 1: validate",
+            "# stepping 1: validate",
+            "# StEp 1: validate",
+            "# Step 1 validate",
+            "# Step 1:",
+            "# Step abc: validate"
+        )]
+        comment: &str,
+    ) {
+        assert!(!is_step_narration(comment));
     }
 }

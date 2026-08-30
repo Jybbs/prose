@@ -30,7 +30,7 @@ tagline: deterministic rule runner
 
 ### Execution
 
-`run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError>` walks the registered rules in their canonical order. Each rule applies its edits, the pipeline reparses, and the new *Source* feeds the next rule, with the final text and every emitted diagnostic returned to the caller. Suppression is applied transparently inside `run`, with every `# fmt: off` block, `# fmt: skip` marker, and `# prose: ignore[<rule>]` directive consulted at the edit-emission boundary so suppressed fix groups and lint diagnostics never reach the returned vector. A fix group drops whole as soon as one of its edits falls under a directive, leaving a rule's co-dependent edits either all applied or all withheld.
+`run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError>` walks the registered rules in their canonical order. Each rule applies its edits, the pipeline reparses, and the new *Source* feeds the next rule carrying whichever of the previous one's tables the rule's edits left standing, with the final text and every emitted diagnostic returned to the caller. Suppression is applied transparently inside `run`, with every `# fmt: off` block, `# fmt: skip` marker, and `# prose: ignore[<rule>]` directive consulted at the edit-emission boundary so suppressed fix groups and lint diagnostics never reach the returned vector. A fix group drops whole as soon as one of its edits falls under a directive, leaving a rule's co-dependent edits either all applied or all withheld.
 
 `diagnose(&self, source: &Source) -> Vec<Diagnostic>` collects every enabled rule's findings against the unmodified source, applying no edits and never reparsing, so each range stays anchored to the source as written rather than to an intermediate rewrite. `prose check`, `prose server`, and a structured `format` report through `diagnose`, where a rendered diagnostic points at the file the author wrote, while `run` feeds the rewritten text behind `prose format`'s diff, on-disk rewrite, and would-reformat summary. Both consult the same [[suppression-map]] and rule set, diverging only in that `diagnose` reads every rule against the original where `run` reads each against the prior rule's reparsed output.
 
@@ -68,7 +68,7 @@ Rule order is fixed and the same every run, so a given source plus configuration
 
 ## Internal Surface
 
-`Pipeline::from_rules` is `pub(crate)`, so a downstream cannot register a hand-rolled rule list today. The `Rule` trait that concrete rules implement is also `pub(crate)`. Both surfaces stabilize toward `1.0`, where consumers will be able to compose custom rule sets and implement project-specific rules against a stable trait.
+`Pipeline::from_rules` is `pub(crate)`, so a downstream cannot register a hand-rolled rule list today. The `Rule` trait that concrete rules implement is also `pub(crate)`, and each rule declares through it what its edits leave standing, which decides the tables the next *Source* inherits across the reparse. Both surfaces stabilize toward `1.0`, where consumers will be able to compose custom rule sets and implement project-specific rules against a stable trait.
 
 ## Re-Using This Primitive
 
@@ -92,10 +92,10 @@ The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives
 
 <template #related>
 
-- [[source]] is the value the pipeline reads and re-emits, reparsed between rules so each downstream pass reads a settled AST.
+- [[source]] is the value the pipeline reads and re-emits, reparsed between rules so each downstream pass reads a settled AST, with the tables the rule between leaves standing carried into the new value.
 - [[rule-id]] is the handle each rule registers under, consumed by the pipeline's deterministic ordering and surfaced through `known_ids`.
 - [[suppression-map]] filters the pipeline's emitted edits and lint diagnostics, dropping suppressed entries before they surface to the caller.
-- [[binding-analysis]] builds once per *Source* and feeds rules whose questions are binding-shaped.
+- [[binding-analysis]] builds on first read, carries across a reparse where the rule between keeps every binding, and feeds rules whose questions are binding-shaped.
 
 For the rule catalog the pipeline iterates, the [**Rules**](/rules/) page walks every shipped rule by category, and the [**Pipeline Order**](/reference/pipeline-order) reference renders the canonical run order with the rationale per rule.
 

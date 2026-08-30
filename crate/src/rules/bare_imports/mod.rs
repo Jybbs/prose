@@ -14,7 +14,7 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::binding::{BindingAnalysis, top_level_module},
-    rule::{Rule, RuleId},
+    rule::{Preserves, Rule, RuleId},
     source::Source,
 };
 
@@ -26,6 +26,8 @@ pub(crate) struct BareImports {
 
 impl BareImports {
     pub(crate) const MESSAGE: &'static str = "Flag a bare import a `from` import could replace";
+
+    pub(crate) const PRESERVES: Preserves = Preserves::All;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.bare_imports;
@@ -101,8 +103,7 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostics::Severity;
-    use crate::testing::parse;
+    use crate::{diagnostics::Severity, testing::parse};
 
     #[test]
     fn diagnostic_shape_pins_severity_no_fix_and_message_format() {
