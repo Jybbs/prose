@@ -71,6 +71,9 @@ jobs:
           - command    : mise run rust:upload
             name       : ☂️ Coverage
             shared-key : prose-coverage
+          - command    : mise run rust:probe
+            name       : 🔦 Probe
+            shared-key : prose-probe
 
     steps:
       - *checkout

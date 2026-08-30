@@ -32,6 +32,7 @@ mod reexports;
 
 use plan::Plan;
 
+#[derive(Debug)]
 pub(crate) struct PruneInertImports {
     duplicates: bool,
     folds: Folds,

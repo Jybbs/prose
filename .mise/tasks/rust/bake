@@ -1,0 +1,31 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description = "Bake the baseline stage of a corpus at every line length, and its mutation set, for a later head cycle"
+
+source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
+source "$MISE_PROJECT_ROOT/.mise/lib/delta.bash"
+
+corpus=$(corpus_root "${1:-}")
+budget="${2:-600}"
+stage="${PROSE_DELTA_STAGE:?names the directory the baked stage lands in}"
+
+if [[ -n "${PROSE_DELTA_BASELINE:-}" ]]; then
+  base_tree=$(baseline_root "$PROSE_DELTA_BASELINE")
+  binary=$(baseline_binary "$base_tree")
+  baseline=$(baseline_label "$base_tree")
+else
+  binary=$(built_binary)
+  baseline=$(git describe --always --dirty)
+fi
+
+mkdir -p "$stage"
+stage_corpus "$corpus"
+echo "$baseline" > "$stage/.git/baseline"
+
+format_widths base "$binary"
+staged gc -q --prune=now
+
+if [[ -n "${PROSE_SETTLE_MUTATIONS:-}" ]]; then
+  mutate_corpus "$corpus" "$PROSE_SETTLE_MUTATIONS" "$budget"
+fi
+
+printf '\nbaseline %s baked into %s\n' "$baseline" "$stage"

@@ -27,6 +27,14 @@ ruff_python_trivia = { opt-level = 2 }
 ruff_source_file   = { opt-level = 2 }
 similar            = { opt-level = 2 }
 
+[profile.probe]
+debug-assertions = true
+inherits         = "release"
+lto              = false
+overflow-checks  = true
+panic            = "unwind"
+strip            = "none"
+
 [profile.profiling]
 debug    = "full"
 inherits = "release"

@@ -135,6 +135,13 @@ impl Pipeline {
         (diagnostics, edits_at)
     }
 
+    /// A rendering of every rule's settings, equal for two pipelines
+    /// whose rules were constructed against selections they read
+    /// alike.
+    pub fn fingerprint(&self) -> String {
+        format!("{:?}", self.rules)
+    }
+
     /// Returns every registered rule's id in a stable order.
     /// Surfaces the same registry that
     /// [`RuleId::from_str`](crate::rule::RuleId) consults.
@@ -213,24 +220,74 @@ impl Pipeline {
         Ok((self.fold_rules(source, None, first)?, diagnostics))
     }
 
-    /// The enabled rules whose edits would still rewrite `source`,
-    /// empty once the run has settled. Reads whichever subset this
-    /// pipeline carries, so a `--select` run answers for that subset
-    /// alone, and a file-level `# prose: off` answers empty. A rule
-    /// whose surviving groups do not splice, or splice back to the same
-    /// text, is left out.
-    pub fn unsettled(&self, source: &Source) -> Vec<RuleId> {
+    /// What one walk over `source` reads for the settle check, so the
+    /// rules still editing and the rules reporting a fix the weave
+    /// never lands come off the same fix groups. Reads whichever subset
+    /// this pipeline carries, so a `--select` run answers for that
+    /// subset alone, and a file-level `# prose: off` answers empty.
+    pub fn settle_report(&self, source: &Source) -> SettleReport {
+        let mut report = SettleReport::default();
         if source.suppression_map().file_is_suppressed() {
-            return Vec::new();
+            return report;
         }
+        for rule in &self.rules {
+            let groups = prepared_groups(&**rule, source);
+            if groups.is_empty() {
+                continue;
+            }
+            let rule_id = rule.id();
+            match weave_distinct(&**rule, source, &groups) {
+                Some((text, _)) if text != source.text() => {
+                    report.editing.push(rule_id);
+                    report.witness.get_or_insert((rule_id, text));
+                }
+                _ => report.unlanded.push(rule_id),
+            }
+        }
+        report
+    }
+
+    /// One pipeline per rule this pipeline carries, in order, each
+    /// holding its rule as this pipeline constructed it, so a rule that
+    /// reads a sibling's flag keeps the answer this selection gave it.
+    pub fn split(self) -> Vec<(RuleId, Self)> {
+        let target_version = self.target_version;
         self.rules
-            .iter()
-            .filter_map(|rule| {
-                let (_, text, _) = woven_groups(&**rule, source)?;
-                (text != source.text()).then(|| rule.id())
+            .into_iter()
+            .map(|rule| {
+                (
+                    rule.id(),
+                    Self {
+                        rules: vec![rule],
+                        target_version,
+                    },
+                )
             })
             .collect()
     }
+
+    /// The enabled rules whose edits would still rewrite `source`,
+    /// empty once the run has settled. A rule whose surviving groups do
+    /// not splice, or splice back to the same text, is left out, and
+    /// [`settle_report`](Self::settle_report) names those separately.
+    pub fn unsettled(&self, source: &Source) -> Vec<RuleId> {
+        self.settle_report(source).editing
+    }
+}
+
+/// What a settle check reads off one walk over a completed run's
+/// output.
+#[derive(Debug, Default)]
+pub struct SettleReport {
+    /// The enabled rules whose edits still rewrite the buffer, in
+    /// registration order.
+    pub editing: Vec<RuleId>,
+    /// The enabled rules holding a fix group that splices back to the
+    /// same text or does not apply, in registration order.
+    pub unlanded: Vec<RuleId>,
+    /// The first editing rule and the text its edits weave, the
+    /// rewrite a report shows.
+    pub witness: Option<(RuleId, String)>,
 }
 
 /// True when no two edits across `groups` match on both range and
@@ -263,6 +320,21 @@ fn weave_groups(source: &Source, edits: Vec<Edit>) -> Option<(String, Option<Sou
     }
 }
 
+/// Weaves `rule`'s `groups` into `source`, checking first that no two
+/// of its edits repeat.
+fn weave_distinct(
+    rule: &dyn Rule,
+    source: &Source,
+    groups: &[Vec<Edit>],
+) -> Option<(String, Option<SourceMap>)> {
+    debug_assert!(
+        distinct_edits(groups),
+        "rule `{}` emitted a duplicate edit, the signature of a walk reaching one node twice",
+        rule.id(),
+    );
+    weave_groups(source, groups.concat())
+}
+
 /// Applies `rule` to `source` and weaves its surviving fix groups into
 /// new text, returning `None` when no group survives or the edits do not
 /// apply.
@@ -274,12 +346,7 @@ fn woven_groups(
     if groups.is_empty() {
         return None;
     }
-    debug_assert!(
-        distinct_edits(&groups),
-        "rule `{}` emitted a duplicate edit, the signature of a walk reaching one node twice",
-        rule.id(),
-    );
-    let (new_text, map) = weave_groups(source, groups.concat())?;
+    let (new_text, map) = weave_distinct(rule, source, &groups)?;
     Some((groups, new_text, map))
 }
 
@@ -291,6 +358,7 @@ mod tests {
     };
 
     use itertools::Itertools;
+    use rstest::rstest;
     use ruff_diagnostics::Edit;
     use ruff_text_size::{TextRange, TextSize};
 
@@ -311,6 +379,7 @@ mod tests {
 
     /// Test-only lint-only rule that returns the range list supplied
     /// at construction and never produces edits.
+    #[derive(Debug)]
     struct LintSentinelRule {
         id: RuleId,
         ranges: Vec<TextRange>,
@@ -342,6 +411,7 @@ mod tests {
     /// Test-only lint-only rule that locates `needle` in the source it
     /// is handed and emits one lint over it, so its range tracks the
     /// buffer the rule actually reads rather than a fixed offset.
+    #[derive(Debug)]
     struct NeedleLintRule {
         id: RuleId,
         needle: &'static str,
@@ -369,6 +439,7 @@ mod tests {
 
     /// Test-only rule that records its own id into a shared log and
     /// never produces edits.
+    #[derive(Debug)]
     struct SentinelRule {
         id: RuleId,
         log: Arc<Mutex<Vec<&'static str>>>,
@@ -391,6 +462,7 @@ mod tests {
 
     /// Test-only rule that captures `source.text()` at apply time and
     /// returns the edit list supplied at construction.
+    #[derive(Debug)]
     struct TextCapturingRule {
         edits: Vec<Edit>,
         id: RuleId,
@@ -579,6 +651,27 @@ mod tests {
 
         assert_eq!(result.text(), "x = 1\n");
         assert!(diagnostics.is_empty());
+    }
+
+    #[rstest]
+    #[case("band-constants", "group-imports", false)]
+    #[case("align-equals", "align-colons", true)]
+    fn fingerprint_reads_a_sibling_flag_off_the_selection(
+        #[case] rule: &'static str,
+        #[case] sibling: &'static str,
+        #[case] alike: bool,
+    ) {
+        let config = Config::default();
+        let rule = RuleId::from(rule);
+        let alone = Pipeline::with_filters(&config, &[rule], &[]);
+        let beside = Pipeline::with_filters(&config, &[rule, RuleId::from(sibling)], &[]);
+        let (_, seated) = beside
+            .split()
+            .into_iter()
+            .find(|(id, _)| *id == rule)
+            .expect("the pair seats the rule");
+
+        assert_eq!(alone.fingerprint() == seated.fingerprint(), alike);
     }
 
     #[test]
@@ -1024,6 +1117,76 @@ mod tests {
         assert_eq!(
             result.text(),
             "import sys\nfrom __future__ import annotations\n"
+        );
+    }
+
+    #[test]
+    fn settle_report_holds_the_first_editing_rule_as_its_witness() {
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(never_settles("first")),
+            Box::new(never_settles("second")),
+        ]);
+        let source = parse("x = 1\n");
+
+        let report = pipeline.settle_report(&source);
+
+        assert_eq!(
+            report.editing,
+            vec![RuleId::from("first"), RuleId::from("second")]
+        );
+        assert_matches!(report.witness, Some((id, _)) if id == RuleId::from("first"));
+    }
+
+    #[test]
+    fn settle_report_names_a_rule_whose_fix_never_lands() {
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(self_overlapping()),
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("x".to_owned(), range(0, 1))]],
+                id: RuleId::from("rewrite-x-to-x"),
+            }),
+        ]);
+        let source = parse("x = 1\n");
+
+        let report = pipeline.settle_report(&source);
+
+        assert!(report.editing.is_empty());
+        assert_eq!(
+            report.unlanded,
+            vec![self_overlapping().id(), RuleId::from("rewrite-x-to-x")]
+        );
+        assert!(report.witness.is_none());
+    }
+
+    #[test]
+    fn settle_report_names_the_editing_rule_and_the_text_it_weaves() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
+        let source = parse("x = 1\n");
+
+        let report = pipeline.settle_report(&source);
+
+        assert_eq!(report.editing, vec![RuleId::from("widener")]);
+        assert!(report.unlanded.is_empty());
+        assert_matches!(
+            report.witness,
+            Some((id, text)) if id == RuleId::from("widener") && text == "yy = 1\n"
+        );
+    }
+
+    #[test]
+    fn split_seats_each_rule_alone_in_pipeline_order() {
+        let config = Config::default();
+        let selected = ["align-equals", "band-constants", "align-colons"].map(RuleId::from);
+        let singles = Pipeline::with_filters(&config, &selected, &[]).split();
+
+        assert_eq!(
+            singles.iter().map(|(id, _)| id.as_str()).collect_vec(),
+            ["band-constants", "align-colons", "align-equals"],
+        );
+        assert!(
+            singles
+                .iter()
+                .all(|(id, single)| registered_slugs(single) == [id.as_str()])
         );
     }
 

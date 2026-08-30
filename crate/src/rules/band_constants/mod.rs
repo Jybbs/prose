@@ -38,6 +38,7 @@ mod plan;
 
 pub(crate) use self::plan::Carry;
 
+#[derive(Debug)]
 pub(crate) struct BandConstants {
     code_width: usize,
     first_party: Vec<String>,

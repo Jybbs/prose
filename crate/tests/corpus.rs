@@ -1,14 +1,11 @@
 //! Corpus sweep at every configured line length: the text the formatter
 //! writes leaves no rule rewriting it and no reported fix unapplied.
-//! [`Pipeline::unsettled`] reports the first defect and the diagnostic
-//! pass alone reports the second, so the sweep reads both over every
-//! file. A run that panics or is rejected is recorded against its file
-//! rather than ending the sweep, and a file passing `BUDGET` stops the
-//! sweep and names itself. Each width in [`WIDTHS`] runs once per axis
-//! in [`AXES`], one budget varied and the rest at their defaults.
-//! `PROSE_SETTLE_CORPUS` points the sweep at another directory,
-//! `PROSE_SETTLE_WIDTHS` overrides the width set, and
-//! `PROSE_SETTLE_AXES` narrows the axes by name.
+//! [`Pipeline::settle_report`] reads both defects off one walk over
+//! every file's output. A run that panics or is rejected is recorded
+//! against its file rather than ending the sweep, and a file passing
+//! `BUDGET` stops the sweep and names itself. Each width in [`WIDTHS`]
+//! runs once per axis in [`AXES`], one budget varied and the rest at
+//! their defaults.
 
 use std::{
     cell::RefCell,
@@ -29,13 +26,16 @@ use itertools::Itertools;
 use prose::{
     config::Config,
     diagnostics::Severity,
-    pipeline::{Pipeline, PipelineError},
-    rule::render_slugs,
+    pipeline::{Pipeline, PipelineError, SettleReport},
+    rule::{RuleId, render_slugs},
     source::Source,
 };
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use common::{CORPUS, Tally, WIDTHS, WIDTHS_VAR, corpus, env_list, pointed_corpus, widths_or};
+use common::{
+    CORPUS, EXCERPT, Hit, SHOWN, Tally, WIDTHS, WIDTHS_VAR, corpus, env_list, excerpt,
+    note_verified, report_verified, verifying, widths_or,
+};
 
 mod common;
 
@@ -45,6 +45,21 @@ const AXES: [Axis; 4] = [Axis::Code, Axis::Docstring, Axis::Fallback, Axis::Impo
 
 /// The environment variable narrowing the axes by name.
 const AXES_VAR: &str = "PROSE_SETTLE_AXES";
+
+/// The wall clock one file may take before the sweep treats its run as
+/// non-terminating.
+const BUDGET: Duration = Duration::from_mins(1);
+
+/// The files probes are reading right now, keyed by an opening order the
+/// watchdog reads back.
+static IN_FLIGHT: Mutex<BTreeMap<usize, (Instant, String)>> = Mutex::new(BTreeMap::new());
+
+thread_local! {
+    /// Where the silent hook last saw a panic raised, read back by the
+    /// probe that caught it so a finding names the line as well as the
+    /// message.
+    static PANIC_SITE: RefCell<Option<String>> = const { RefCell::new(None) };
+}
 
 /// The budget an axis varies at each width, every other budget held at
 /// its default.
@@ -65,12 +80,7 @@ impl Axis {
     /// The phrase a finding and a `Slot` label name this axis and
     /// width by.
     fn clause(self, width: usize) -> String {
-        match self {
-            Self::Code => format!("code width {width}"),
-            Self::Docstring => format!("docstring width {width}"),
-            Self::Fallback => format!("code width {width} with import-line-length unset"),
-            Self::Import => format!("import width {width}"),
-        }
+        format!("{} {width}", self.label())
     }
 
     /// The default configuration with this axis's budget at `width`.
@@ -97,6 +107,16 @@ impl Axis {
         }
     }
 
+    /// The phrase naming this axis ahead of a width.
+    fn label(self) -> &'static str {
+        match self {
+            Self::Code => "code width",
+            Self::Docstring => "docstring width",
+            Self::Fallback => "code width (import-line-length unset)",
+            Self::Import => "import width",
+        }
+    }
+
     /// The [`AXES_VAR`] token naming this axis.
     fn name(self) -> &'static str {
         match self {
@@ -107,13 +127,11 @@ impl Axis {
         }
     }
 
-    /// The command sweeping this axis at `width` alone, carrying the
-    /// corpus override when the run took one.
-    fn repro(self, width: usize) -> String {
-        let corpus =
-            pointed_corpus().map_or_else(String::new, |dir| format!("{CORPUS}={} ", dir.display()));
+    /// The command sweeping `path` alone on this axis at `width`.
+    fn repro(self, width: usize, path: &Path) -> String {
         format!(
-            "{corpus}{AXES_VAR}={} {WIDTHS_VAR}={width} cargo test --test corpus",
+            "{CORPUS}={} {AXES_VAR}={} {WIDTHS_VAR}={width} cargo test --test corpus",
+            path.display(),
             self.name(),
         )
     }
@@ -148,14 +166,6 @@ impl Findings {
     }
 }
 
-/// The wall clock one file may take before the sweep treats its run as
-/// non-terminating.
-const BUDGET: Duration = Duration::from_mins(1);
-
-/// The files probes are reading right now, keyed by an opening order the
-/// watchdog reads back.
-static IN_FLIGHT: Mutex<BTreeMap<usize, (Instant, String)>> = Mutex::new(BTreeMap::new());
-
 /// One probe's entry in `IN_FLIGHT`, cleared however the probe leaves.
 struct Slot(usize);
 
@@ -173,13 +183,6 @@ impl Drop for Slot {
     fn drop(&mut self) {
         registry().remove(&self.0);
     }
-}
-
-thread_local! {
-    /// Where the silent hook last saw a panic raised, read back by the
-    /// probe that caught it so a finding names the line as well as the
-    /// message.
-    static PANIC_SITE: RefCell<Option<String>> = const { RefCell::new(None) };
 }
 
 /// The axes this run sweeps, [`AXES_VAR`] narrowing [`AXES`] as a
@@ -207,25 +210,23 @@ fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
 
 /// Formats `path` under `pipeline` and records what the output leaves
 /// behind, the run wrapped so a panic files against the file it read.
-fn probe(pipeline: &Pipeline, clause: &str, repro: &str, path: &Path) -> Findings {
+fn probe(pipeline: &Pipeline, axis: Axis, width: usize, path: &Path) -> Findings {
     let mut findings = Findings::default();
     let Ok(source) = Source::from_path(path) else {
         findings.skipped += 1;
         return findings;
     };
-    let slot = Slot::open(clause, path);
+    let clause = axis.clause(width);
+    let hit = |detail: Option<String>| Hit {
+        clause: Some((axis.label().to_owned(), width)),
+        detail,
+        repro: Some(axis.repro(width, path)),
+    };
+    let slot = Slot::open(&clause, path);
     let ran = panic::catch_unwind(AssertUnwindSafe(|| {
         let (formatted, _) = pipeline.run(source)?;
-        let editing = pipeline.unsettled(&formatted);
-        let unlanded: Vec<_> = pipeline
-            .diagnose(&formatted)
-            .into_iter()
-            .filter(|d| d.severity == Severity::Format && d.fix.is_some())
-            .map(|d| d.rule)
-            .filter(|rule| !editing.contains(rule))
-            .unique()
-            .collect();
-        Ok::<_, PipelineError>((editing, unlanded))
+        let report = pipeline.settle_report(&formatted);
+        Ok::<_, PipelineError>((formatted, report))
     }));
     drop(slot);
     let outcome = match ran {
@@ -233,46 +234,56 @@ fn probe(pipeline: &Pipeline, clause: &str, repro: &str, path: &Path) -> Finding
         Err(payload) => {
             let site = PANIC_SITE.with(RefCell::take);
             let at = site.map_or_else(String::new, |site| format!(" at {site}"));
-            findings.panicked.record_at(
-                format!(
-                    "at {clause}, the run panicked{at}: {}",
-                    panic_message(&*payload)
-                ),
+            findings.panicked.record_hit(
+                format!("the run panicked{at}: {}", panic_message(&*payload)),
                 path,
-                Some(repro),
+                hit(None),
             );
             return findings;
         }
     };
-    let (editing, unlanded) = match outcome {
+    let (
+        formatted,
+        SettleReport {
+            editing,
+            unlanded,
+            witness,
+        },
+    ) = match outcome {
         Ok(pair) => pair,
         Err(error) => {
-            findings.rejected.record_at(
-                format!("at {clause}, the run was rejected: {error}"),
-                path,
-                Some(repro),
-            );
+            findings
+                .rejected
+                .record_hit(format!("the run was rejected: {error}"), path, hit(None));
             return findings;
         }
     };
+    if verifying() {
+        verify_unlanded(pipeline, &formatted, &editing, &unlanded, path);
+    }
     if !editing.is_empty() {
-        findings.unsettled.record_at(
-            format!(
-                "at {clause}, {} rewrites the output",
-                render_slugs(&editing)
-            ),
+        let detail = witness.map(|(rule, second)| {
+            excerpt(
+                "formatted",
+                &format!("`{rule}` on a second pass"),
+                formatted.text(),
+                &second,
+            )
+        });
+        findings.unsettled.record_hit(
+            format!("{} rewrites the output", render_slugs(&editing)),
             path,
-            Some(repro),
+            hit(detail),
         );
     }
     if !unlanded.is_empty() {
-        findings.unapplied.record_at(
+        findings.unapplied.record_hit(
             format!(
-                "at {clause}, {} reports a fix the output never took",
+                "{} reports a fix the output never took",
                 render_slugs(&unlanded)
             ),
             path,
-            Some(repro),
+            hit(None),
         );
     }
     findings
@@ -282,6 +293,32 @@ fn probe(pipeline: &Pipeline, clause: &str, repro: &str, path: &Path) -> Finding
 /// never carries a panic's poison.
 fn registry() -> std::sync::MutexGuard<'static, BTreeMap<usize, (Instant, String)>> {
     IN_FLIGHT.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// Reads the unlanded set off the diagnose pass and panics where it
+/// differs from what `settle_report` read off one walk.
+fn verify_unlanded(
+    pipeline: &Pipeline,
+    formatted: &Source,
+    editing: &[RuleId],
+    unlanded: &[RuleId],
+    path: &Path,
+) {
+    let old_unlanded: Vec<_> = pipeline
+        .diagnose(formatted)
+        .into_iter()
+        .filter(|d| d.severity == Severity::Format && d.fix.is_some())
+        .map(|d| d.rule)
+        .filter(|rule| !editing.contains(rule))
+        .unique()
+        .collect();
+    assert_eq!(
+        old_unlanded,
+        unlanded,
+        "unlanded set differs on {}",
+        path.display()
+    );
+    note_verified();
 }
 
 /// Ends the process once a probe outruns `BUDGET`, naming the file it
@@ -330,12 +367,10 @@ fn every_width_settles_and_applies_what_it_reports() {
     for &width in &widths {
         for &axis in &axes {
             let pipeline = Pipeline::with_defaults(&axis.config(width));
-            let clause = axis.clause(width);
-            let repro = axis.repro(width);
             findings.absorb(
                 files
                     .par_iter()
-                    .map(|path| probe(&pipeline, &clause, &repro, path))
+                    .map(|path| probe(&pipeline, axis, width, path))
                     .reduce(Findings::default, |mut held, next| {
                         held.absorb(next);
                         held
@@ -344,6 +379,7 @@ fn every_width_settles_and_applies_what_it_reports() {
         }
     }
     panic::set_hook(previous);
+    report_verified("settle reports against the diagnose pass");
     // Every configuration walks the same file list, so the skips divide
     // back to the count of files no configuration could read.
     let unreadable = findings.skipped / (widths.len() * axes.len());
@@ -377,4 +413,146 @@ fn every_width_settles_and_applies_what_it_reports() {
         widths.len(),
         axes.len(),
     );
+}
+
+#[test]
+fn excerpt_counts_both_the_lines_and_the_hunks_past_its_cap() {
+    let before: String = (1..=60).map(|n| format!("line {n}\n")).collect();
+    let after: String = (1..=60)
+        .map(|n| {
+            if n <= 30 || n == 55 {
+                format!("row {n}\n")
+            } else {
+                format!("line {n}\n")
+            }
+        })
+        .collect();
+
+    let shown = excerpt("before", "after", &before, &after);
+
+    assert!(shown.ends_with(" more lines and 1 more hunks"), "{shown}");
+}
+
+#[test]
+fn excerpt_counts_the_lines_past_its_cap() {
+    let before: String = (1..=40).map(|n| format!("line {n}\n")).collect();
+    let after: String = (1..=40).map(|n| format!("row {n}\n")).collect();
+
+    let shown = excerpt("before", "after", &before, &after);
+
+    assert_eq!(shown.lines().count(), 2 + EXCERPT + 1, "{shown}");
+    assert!(shown.ends_with(" more lines"), "{shown}");
+}
+
+#[test]
+fn excerpt_ends_on_the_hunk_when_nothing_is_cut() {
+    let before: String = (1..=10).map(|n| format!("line {n}\n")).collect();
+    let after = before.replace("line 2\n", "line two\n");
+
+    let shown = excerpt("before", "after", &before, &after);
+
+    assert!(!shown.contains("..."), "{shown}");
+    assert_eq!(shown.lines().count(), 2 + 7, "{shown}");
+}
+
+#[test]
+fn excerpt_shows_the_first_hunk_and_counts_the_rest() {
+    let before: String = (1..=60).map(|n| format!("line {n}\n")).collect();
+    let after = before
+        .replace("line 2\n", "line two\n")
+        .replace("line 50\n", "line fifty\n");
+
+    let shown = excerpt("first pass", "second pass", &before, &after);
+
+    assert!(
+        shown.starts_with("--- first pass\n+++ second pass\n@@"),
+        "{shown}"
+    );
+    assert!(shown.contains("-line 2\n+line two\n"), "{shown}");
+    assert!(shown.ends_with("... and 1 more hunks"), "{shown}");
+}
+
+#[test]
+fn tally_names_a_defect_once_across_clauses_and_keeps_the_earliest_example() {
+    let hit = |label: &str, width| Hit {
+        clause: Some((label.to_owned(), width)),
+        detail: None,
+        repro: None,
+    };
+    let mut tally = Tally::default();
+    tally.record_hit(
+        "still editing".to_owned(),
+        Path::new("b.py"),
+        hit("code", 88),
+    );
+    tally.record_hit(
+        "still editing".to_owned(),
+        Path::new("a.py"),
+        hit("import", 60),
+    );
+    tally.record_hit(
+        "still editing".to_owned(),
+        Path::new("a.py"),
+        hit("code", 40),
+    );
+
+    let rendered = tally.render("defects");
+
+    assert_eq!(tally.len(), 1);
+    assert!(
+        rendered.contains("still editing (2 files, e.g. a.py at code 40)"),
+        "{rendered}"
+    );
+    assert!(
+        rendered.contains("reached at code 40, 88 and import 60"),
+        "{rendered}"
+    );
+}
+
+#[test]
+fn tally_render_caps_the_defects_it_prints_and_counts_the_rest() {
+    let mut tally = Tally::default();
+    for n in 0..=SHOWN {
+        let hit = Hit {
+            clause: None,
+            detail: None,
+            repro: None,
+        };
+        tally.record_hit(format!("defect {n:02}"), Path::new("a.py"), hit);
+    }
+
+    let rendered = tally.render("defects");
+
+    assert!(
+        rendered.contains(&format!("defect {:02}", SHOWN - 1)),
+        "{rendered}"
+    );
+    assert!(
+        !rendered.contains(&format!("defect {SHOWN:02}")),
+        "{rendered}"
+    );
+    assert!(rendered.ends_with("... and 1 more"), "{rendered}");
+}
+
+#[test]
+fn tally_render_carries_the_example_repro_and_detail() {
+    let mut tally = Tally::default();
+    let hit = Hit {
+        clause: None,
+        detail: Some("--- a\n+++ b".to_owned()),
+        repro: Some("cargo test".to_owned()),
+    };
+    tally.record_hit("still editing".to_owned(), Path::new("a.py"), hit);
+
+    let rendered = tally.render("defects");
+
+    assert!(
+        rendered.contains("still editing (1 file, e.g. a.py)"),
+        "{rendered}"
+    );
+    assert!(
+        rendered.contains("\n    reproduce with cargo test"),
+        "{rendered}"
+    );
+    assert!(rendered.ends_with("\n    --- a\n    +++ b"), "{rendered}");
 }

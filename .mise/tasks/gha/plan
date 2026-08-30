@@ -1,24 +1,65 @@
 #!/usr/bin/env -S uv run --script
-#MISE description="Verify a tagged release and emit the wheel build matrix"
+#MISE description="Emit a workflow matrix, the wheel build on a verified release or the corpus subset probe"
 # /// script
 # requires-python = ">=3.11"
+# dependencies = ["pyyaml==6.0.3"]
 # ///
 """
-Plan a wheel run, verifying a tagged release before emitting its matrix.
+Plan a workflow run, emitting the matrix its jobs fan out over.
 
-On a tag run, exits nonzero with an `::error::` unless `crate/Cargo.toml`
-carries the tag's version. Reads `.github/scripts/platforms.toml`, keeps
-the entries that carry a `runner` (every wheel row does, the sdist row
-does not), drops the fields no matrix row consumes (`label`, `pattern`,
-`smoke`), and emits `matrix=<json>` plus `smoke=wheels-<name>`, naming
-the artifact the release validate job installs. Lines land in
-`$GITHUB_OUTPUT` when it is set, stdout otherwise.
+Bare, plans a wheel run. On a tag run, exits nonzero with an `::error::`
+unless `crate/Cargo.toml` carries the tag's version. Reads
+`.github/scripts/platforms.toml`, keeps the entries that carry a `runner`
+(every wheel row does, the sdist row does not), drops the fields no
+matrix row consumes (`label`, `pattern`, `smoke`), and emits
+`matrix=<json>` plus `smoke=wheels-<name>`, naming the artifact the
+release validate job installs.
+
+With `corpus`, plans the subset probe. Reads `BASE` and
+`GITHUB_EVENT_NAME`. A push run, and a pull request changing anything
+the corpus workflow watches other than a registered rule's module, take
+the full probe sharded `SHARDS` ways. A pull request whose watched
+changes all sit under `crate/src/rules/<module>/` takes one unsharded
+row scoped to those rules through `PROSE_SETTLE_RULES`.
+
+Lines land in `$GITHUB_OUTPUT` when it is set, stdout otherwise.
 """
 
-from json    import dumps
-from os      import environ
-from pathlib import Path
-from tomllib import loads
+from fnmatch    import fnmatch
+from json       import dumps
+from os         import environ
+from pathlib    import Path
+from re         import MULTILINE, findall
+from subprocess import run
+from sys        import argv
+from tomllib    import loads
+from yaml       import safe_load
+
+SHARDS = 3
+
+
+def changed() -> list[str]:
+    """
+    Return the paths the checked-out merge changes against `BASE`.
+    """
+    base = environ["BASE"]
+    run(["git", "fetch", "--depth=1", "-q", "origin", base], check=True)
+    diff = run(["git", "diff", "--name-only", base, "HEAD"], capture_output=True, check=True, text=True)
+    return diff.stdout.split()
+
+
+def corpus():
+    """
+    Emit the subset probe's matrix, scoped to the rules a pull request
+    touches or sharded `SHARDS` ways.
+    """
+    slugs = [] if environ.get("GITHUB_EVENT_NAME") == "push" else scoped(changed())
+    rows  = (
+        [{"label": "", "rules": " ".join(slugs), "shard": ""}]
+        if slugs
+        else [{"label": f" {k}/{SHARDS}", "rules": "", "shard": f"{k}/{SHARDS}"} for k in range(1, SHARDS + 1)]
+    )
+    emit(f"matrix={dumps({'include': rows})}")
 
 
 def emit(*lines: str):
@@ -30,6 +71,33 @@ def emit(*lines: str):
             f.writelines(f"{line}\n" for line in lines)
     else:
         print("\n".join(lines))
+
+
+def registry() -> dict[str, str]:
+    """
+    Map each rule module directory to its slug, read off `register_rules!`.
+    """
+    source = Path("crate/src/rule.rs").read_text(encoding="utf-8")
+    return {module: slug for slug, module in findall(r'^\s*"([a-z-]+)":\s+([a-z_]+):', source, MULTILINE)}
+
+
+def scoped(paths: list[str]) -> list[str]:
+    """
+    Return the slugs of the rule modules `paths` touch, empty when a
+    path the corpus workflow watches sits outside a registered rule's
+    module.
+    """
+    globs   = watched()
+    modules = registry()
+    slugs   = set()
+    for path in paths:
+        if not any(fnmatch(path, glob) for glob in globs):
+            continue
+        parts = path.split("/")
+        if parts[:3] != ["crate", "src", "rules"] or len(parts) < 5 or parts[3] not in modules:
+            return []
+        slugs.add(modules[parts[3]])
+    return sorted(slugs)
 
 
 def verify_tag():
@@ -49,8 +117,18 @@ def verify_tag():
         )
 
 
-if __name__ == "__main__":
+def watched() -> list[str]:
+    """
+    The path globs the corpus workflow's pull-request trigger filters on.
+    """
+    triggers = safe_load(Path(".github/workflows/corpus.yml").read_text(encoding="utf-8"))
+    return triggers.get("on", triggers.get(True))["pull_request"]["paths"]
 
+
+def wheels():
+    """
+    Verify a tagged release and emit the wheel build matrix.
+    """
     verify_tag()
 
     platforms = loads(Path(".github/scripts/platforms.toml").read_text())["platforms"]
@@ -64,3 +142,8 @@ if __name__ == "__main__":
         f"matrix={dumps({'include': include})}",
         f"smoke=wheels-{smoke}"
     )
+
+
+if __name__ == "__main__":
+
+    corpus() if argv[1:] == ["corpus"] else wheels()

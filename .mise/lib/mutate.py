@@ -1,87 +1,131 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
+# dependencies = ["libcst==1.9.0"]
 # ///
 """
 Write parseable mutations of a corpus, one subdirectory per mutation.
 
-    commented   A comment line above a sample of statements.
-    crlf        Every line ending rewritten to CRLF.
-    shuffled    Top-level statements reordered, each keeping its source.
-    suppressed  A `# prose: off` region and a logical-line `# prose: skip`.
-    widened     Identifiers lengthened or shortened.
+    commented      A comment line above a sample of statements.
+    crlf           Every line ending rewritten to CRLF.
+    members        Each class body's members reordered behind its docstring.
+    parenthesized  Every argument of a sample of calls wrapped in parentheses.
+    shuffled       Top-level statements reordered, each keeping its lines.
+    suppressed     A `# prose: off` region and a logical-line `# prose: skip`.
+    widened        Identifiers lengthened or shortened.
 
 Usage: mutate.py <corpus> <destination> [budget-seconds] [seed]
 
-The walk stops once the budget runs out, leaving the pass to cost what it
-is given rather than what the corpus is worth. Every variant compiles
-before it lands, so a mutation the grammar rejects is dropped rather than
-reaching the formatter as a defect it never had.
+Each mutation edits the module's concrete syntax tree, so a comment or a
+blank line travels with the statement it leads and every byte a mutation
+leaves alone round-trips. Files mutate across a process pool, each
+seeded from the seed and its own path, so a variant is the same whatever
+order the pool reaches the files in. The walk stops once the budget runs
+out, leaving the pass to cost what it is given rather than what the
+corpus is worth. Every variant compiles before it lands, so a mutation
+the grammar rejects is dropped rather than reaching the formatter as a
+defect it never had.
 """
 
-from ast         import ImportFrom, Module, parse, stmt, walk
-from collections import defaultdict
-from io          import StringIO
-from keyword     import iskeyword, issoftkeyword
-from pathlib     import Path
-from random      import Random
-from sys         import argv
-from time        import monotonic
-from token       import NAME
-from tokenize    import TokenError, generate_tokens
-from warnings    import filterwarnings
+from argparse           import ArgumentParser
+from collections.abc    import Callable
+from concurrent.futures import ProcessPoolExecutor, TimeoutError, as_completed
+from keyword            import iskeyword, issoftkeyword
+from pathlib            import Path
+from random             import Random
+from warnings           import filterwarnings
 
-COMMENTS = 8
+from libcst import (
+    BaseCompoundStatement, BaseStatement, Call, ClassDef, Comment, ConcatenatedString, CSTLogicError,
+    CSTNode, CSTTransformer, CSTVisitor, EmptyLine, Expr, ImportFrom, IndentedBlock, LeftParen, Module,
+    Name, ParserSyntaxError, RightParen, SimpleStatementLine, SimpleString, SimpleWhitespace,
+    TrailingWhitespace, parse_module,
+)
+
+SAMPLE = 8
 
 filterwarnings("ignore", category=SyntaxWarning)
 
 
-def argument(index: int, fallback: str) -> str:
+class Collector(CSTVisitor):
     """
-    Return the `index` positional argument, or `fallback` where the
-    invocation left it off.
+    Gather every node of the given `kinds`, in source order.
     """
-    return argv[index] if len(argv) > index else fallback
+
+    def __init__(self, kinds: tuple[type, ...]):
+        self.kinds = kinds
+        self.nodes: list[CSTNode] = []
+
+    def on_visit(self, node: CSTNode) -> bool:
+        if isinstance(node, self.kinds):
+            self.nodes.append(node)
+        return True
 
 
-def commented(text: str, rng: Random) -> str | None:
+class Rewriter(CSTTransformer):
     """
-    Return `text` with a comment line inserted above a sample of its
-    statements, each at that statement's own indent. `None` when the
-    module carries no statement.
+    Apply `edit` to each of the `chosen` nodes on the way back up the tree.
     """
-    rows = statement_rows(text)
-    if not rows:
+
+    def __init__(self, chosen: list[CSTNode], edit: Callable):
+        self.chosen = {id(node) for node in chosen}
+        self.edit   = edit
+
+    def on_leave(self, original: CSTNode, updated: CSTNode) -> CSTNode:
+        return self.edit(updated) if id(original) in self.chosen else updated
+
+
+def collect(module: Module, *kinds: type) -> list[CSTNode]:
+    """
+    Return every node of `kinds` that `module` holds, in source order.
+    """
+    collector = Collector(kinds)
+    module.visit(collector)
+    return collector.nodes
+
+
+def commented(module: Module, rng: Random) -> Module | None:
+    """
+    Return `module` with a comment line leading a sample of its statements,
+    each at that statement's own indent. `None` when it holds no statement.
+    """
+    statements = collect(module, SimpleStatementLine, BaseCompoundStatement)
+    if not statements:
         return None
-    lines = text.splitlines(keepends=True)
-    for row in sorted(rng.sample(rows, k=min(len(rows), COMMENTS)), reverse=True):
-        lines.insert(row - 1, f"{indent_of(lines[row - 1])}# probe\n")
-    return "".join(lines)
+    return rewrite(module, rng.sample(statements, k=min(len(statements), SAMPLE)), lambda node: led(node, "# probe"))
 
 
-def crlf(text: str, _rng: Random) -> str | None:
+def crlf(module: Module, _rng: Random) -> Module | None:
     """
-    Return `text` with every line ending rewritten to CRLF. `None` when it
-    carries no line ending to rewrite.
+    Return `module` with every line ending rewritten to CRLF. `None` when
+    it carries no line ending to rewrite.
     """
-    if "\n" not in text:
+    if "\n" not in module.code:
         return None
-    return text.replace("\r\n", "\n").replace("\n", "\r\n")
+    return module.with_changes(default_newline="\r\n")
 
 
-def indent_of(line: str) -> str:
+def is_docstring(statement: BaseStatement) -> bool:
     """
-    Return the leading whitespace of `line`.
+    Report whether `statement` is a lone string expression.
     """
-    return line[: len(line) - len(line.lstrip())]
+    return (
+        isinstance(statement, SimpleStatementLine)
+        and len(statement.body) == 1
+        and isinstance(statement.body[0], Expr)
+        and isinstance(statement.body[0].value, (ConcatenatedString, SimpleString))
+    )
 
 
-def is_future(node: stmt) -> bool:
+def is_future(statement: BaseStatement) -> bool:
     """
-    Report whether `node` is a `from __future__ import ...` statement,
-    which the grammar admits only ahead of every other statement.
+    Report whether `statement` is a `from __future__ import ...`, which
+    the grammar admits only ahead of every other statement.
     """
-    return isinstance(node, ImportFrom) and node.module == "__future__"
+    return isinstance(statement, SimpleStatementLine) and any(
+        isinstance(small, ImportFrom) and isinstance(small.module, Name) and small.module.value == "__future__"
+        for small in statement.body
+    )
 
 
 def is_reserved(name: str) -> bool:
@@ -92,26 +136,110 @@ def is_reserved(name: str) -> bool:
     return iskeyword(name) or issoftkeyword(name)
 
 
-def parsed(text: str) -> Module | None:
+def leads(index: int, statement: BaseStatement) -> bool:
     """
-    Return the module `text` parses to, or `None` when it does not parse.
+    Report whether `statement` is a docstring seated first.
+    """
+    return index == 0 and is_docstring(statement)
+
+
+def led(statement: BaseStatement, comment: str, first: bool = False) -> BaseStatement:
+    """
+    Return `statement` with a `comment` line among its leading lines, last
+    among them so it sits directly above the statement, or `first` so it
+    sits directly beneath the statement before it.
+    """
+    line  = EmptyLine(comment=Comment(comment))
+    lines = [line, *statement.leading_lines] if first else [*statement.leading_lines, line]
+    return statement.with_changes(leading_lines=lines)
+
+
+def mutated(path: Path, corpus: Path, destination: Path, seed: str) -> int:
+    """
+    Write every variant of the file at `path` under `destination`, one
+    subdirectory per mutation, and return how many landed.
     """
     try:
-        return parse(text)
-    except (SyntaxError, ValueError):
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return 0
+    relative = path.relative_to(corpus)
+    written  = 0
+    for name, variant in variants(text, Random(f"{seed}:{relative}")).items():
+        target = destination / name / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(variant, encoding="utf-8", newline="")
+        written += 1
+    return written
+
+
+def members(module: Module, rng: Random) -> Module | None:
+    """
+    Return `module` with each class body's members reordered behind its
+    docstring. `None` when no class holds two members free to move.
+    """
+    classes = [
+        node
+        for node in collect(module, ClassDef)
+        if isinstance(node.body, IndentedBlock) and len(partition(node.body.body, leads)[1]) >= 2
+    ]
+    if not classes:
+        return None
+
+    def reordered(node: ClassDef) -> ClassDef:
+        pinned, movable = partition(node.body.body, leads)
+        rng.shuffle(movable)
+        return node.with_changes(body=node.body.with_changes(body=[*pinned, *movable]))
+
+    return rewrite(module, classes, reordered)
+
+
+def parenthesized(module: Module, rng: Random) -> Module | None:
+    """
+    Return `module` with every argument of a sample of its calls wrapped
+    in redundant parentheses. `None` when no call takes an argument.
+    """
+    calls = [node for node in collect(module, Call) if node.args]
+    if not calls:
+        return None
+    return rewrite(
+        module,
+        rng.sample(calls, k=min(len(calls), SAMPLE)),
+        lambda node: node.with_changes(args=[
+            arg.with_changes(value=arg.value.with_changes(lpar=[LeftParen()], rpar=[RightParen()]))
+            for arg in node.args
+        ]),
+    )
+
+
+def parsed(text: str) -> Module | None:
+    """
+    Return the module `text` parses to, or `None` when the parser rejects
+    it or fails on a shape it does not model.
+    """
+    try:
+        return parse_module(text)
+    except (CSTLogicError, ParserSyntaxError, RecursionError):
         return None
 
 
-def rename_map(tokens: list, rng: Random) -> dict[str, str]:
+def partition(
+    body: list[BaseStatement], held: Callable[[int, BaseStatement], bool]
+) -> tuple[list[BaseStatement], list[BaseStatement]]:
     """
-    Return a respelling for a sample of the identifiers `tokens` carries,
-    empty when none is renameable.
+    Split `body` into the statements `held` keeps in their seats and the
+    rest, each in source order.
     """
-    names = sorted({
-        token.string
-        for token in tokens
-        if token.type == NAME and not is_reserved(token.string)
-    })
+    kept = [statement for index, statement in enumerate(body) if held(index, statement)]
+    free = [statement for index, statement in enumerate(body) if not held(index, statement)]
+    return kept, free
+
+
+def rename_map(names: list[str], rng: Random) -> dict[str, str]:
+    """
+    Return a respelling for a sample of `names`, empty when none is
+    renameable.
+    """
     if not names:
         return {}
     renames = {}
@@ -135,63 +263,51 @@ def renamed(name: str, rng: Random) -> str | None:
     return None if is_reserved(candidate) else candidate
 
 
-def shuffled(text: str, rng: Random) -> str | None:
+def rewrite(module: Module, chosen: list[CSTNode], edit: Callable) -> Module:
     """
-    Return `text` with its top-level statements reordered, each keeping
+    Return `module` with `edit` applied to each of the `chosen` nodes.
+    """
+    return module.visit(Rewriter(chosen, edit))
+
+
+def shuffled(module: Module, rng: Random) -> Module | None:
+    """
+    Return `module` with its top-level statements reordered, each keeping
     the lines it owns. A `__future__` import holds its seat ahead of the
     shuffle. `None` when fewer than two statements are free to move.
     """
-    module = parsed(text)
-    if module is None:
-        return None
-    lines = text.splitlines(keepends=True)
-    pinned, movable, start = [], [], 0
-    for node in module.body:
-        chunk = terminated("".join(lines[start : node.end_lineno]))
-        (pinned if is_future(node) else movable).append(chunk)
-        start = node.end_lineno
+    pinned, movable = partition(module.body, lambda _, statement: is_future(statement))
     if len(movable) < 2:
         return None
     rng.shuffle(movable)
-    return "".join(pinned + movable + lines[start:])
+    return module.with_changes(body=[*pinned, *movable])
 
 
-def statement_rows(text: str) -> list[int]:
+def skipped(line: SimpleStatementLine) -> SimpleStatementLine:
     """
-    Return the 1-based rows a statement starts on, which are the rows a
-    comment line may precede. Empty when `text` does not parse.
+    Return `line` closed by a `# prose: skip` comment.
     """
-    module = parsed(text)
-    if module is None:
-        return []
-    return sorted({node.lineno for node in walk(module) if isinstance(node, stmt)})
+    trailing = TrailingWhitespace(whitespace=SimpleWhitespace("  "), comment=Comment("# prose: skip"))
+    return line.with_changes(trailing_whitespace=trailing)
 
 
-def suppressed(text: str, rng: Random) -> str | None:
+def suppressed(module: Module, rng: Random) -> Module | None:
     """
-    Return `text` with a `# prose: off` region wrapped around one
-    top-level statement and a `# prose: skip` closing a statement's
-    logical line. `None` when the module carries no top-level statement.
+    Return `module` with a `# prose: off` region wrapped around one
+    top-level statement and a `# prose: skip` closing one logical line.
+    `None` when it holds no top-level statement or no simple line.
     """
-    module = parsed(text)
-    if module is None or not module.body:
+    lines = collect(module, SimpleStatementLine)
+    if not module.body or not lines:
         return None
-    lines = text.splitlines(keepends=True)
-    row = rng.choice(module.body).end_lineno - 1
-    lines[row] = lines[row].rstrip("\r\n") + "  # prose: skip\n"
-    node = rng.choice(module.body)
-    indent = indent_of(lines[node.lineno - 1])
-    lines.insert(node.end_lineno, f"{indent}# prose: on\n")
-    lines.insert(node.lineno - 1, f"{indent}# prose: off\n")
-    return "".join(lines)
-
-
-def terminated(chunk: str) -> str:
-    """
-    Return `chunk` carrying a trailing newline, so a reordered statement
-    never joins the line beneath it.
-    """
-    return chunk if chunk.endswith("\n") else f"{chunk}\n"
+    module = rewrite(module, [rng.choice(lines)], skipped)
+    body   = list(module.body)
+    region = rng.randrange(len(body))
+    body[region] = led(body[region], "# prose: off")
+    if region + 1 < len(body):
+        body[region + 1] = led(body[region + 1], "# prose: on", first=True)
+        return module.with_changes(body=body)
+    return module.with_changes(body=body, footer=[EmptyLine(comment=Comment("# prose: on")), *module.footer])
 
 
 def variants(text: str, rng: Random) -> dict[str, str]:
@@ -199,68 +315,62 @@ def variants(text: str, rng: Random) -> dict[str, str]:
     Return each mutation's rendering of `text`, dropping the ones that do
     not apply and the ones the grammar rejects.
     """
+    module = parsed(text)
+    if module is None:
+        return {}
     built = {}
     for mutation in MUTATIONS:
-        candidate = mutation(text, rng)
+        candidate = mutation(module, rng)
         if candidate is None:
             continue
+        code = candidate.code
         try:
-            compile(candidate, mutation.__name__, "exec")
+            compile(code, mutation.__name__, "exec")
         except (SyntaxError, ValueError):
             continue
-        built[mutation.__name__] = candidate
+        built[mutation.__name__] = code
     return built
 
 
-def widened(text: str, rng: Random) -> str | None:
+def widened(module: Module, rng: Random) -> Module | None:
     """
-    Return `text` with a sample of its identifiers lengthened or
+    Return `module` with a sample of its identifiers lengthened or
     shortened, shifting every column their width feeds. `None` when it
-    does not tokenize or carries no renameable name.
+    carries no renameable name.
     """
-    try:
-        tokens = list(generate_tokens(StringIO(text).readline))
-    except (IndentationError, SyntaxError, TokenError, ValueError):
-        return None
-    renames = rename_map(tokens, rng)
+    names   = collect(module, Name)
+    renames = rename_map(sorted({node.value for node in names if not is_reserved(node.value)}), rng)
     if not renames:
         return None
-    edits = defaultdict(list)
-    for token in tokens:
-        if token.type == NAME and token.string in renames:
-            row, column = token.start
-            edits[row].append((column, token.end[1], renames[token.string]))
-    lines = text.splitlines(keepends=True)
-    for row, spans in edits.items():
-        line = lines[row - 1]
-        for start, end, replacement in sorted(spans, reverse=True):
-            line = line[:start] + replacement + line[end:]
-        lines[row - 1] = line
-    return "".join(lines)
+    return rewrite(
+        module,
+        [node for node in names if node.value in renames],
+        lambda node: node.with_changes(value=renames[node.value]),
+    )
 
 
-MUTATIONS = (commented, crlf, shuffled, suppressed, widened)
+MUTATIONS = (commented, crlf, members, parenthesized, shuffled, suppressed, widened)
 
 
 if __name__ == "__main__":
 
-    corpus, destination = Path(argv[1]), Path(argv[2])
-    budget   = float(argument(3, "60"))
-    rng      = Random(int(argument(4, "0")))
-    deadline = monotonic() + budget
-    written  = 0
+    parser = ArgumentParser(description="Write parseable mutations of a corpus, one subdirectory per mutation")
+    parser.add_argument("corpus", type=Path)
+    parser.add_argument("destination", type=Path)
+    parser.add_argument("budget", nargs="?", type=float, default=60)
+    parser.add_argument("seed", nargs="?", default="0")
+    args    = parser.parse_args()
+    written = 0
 
-    for path in sorted(corpus.rglob("*.py")):
-        if monotonic() >= deadline:
-            break
+    with ProcessPoolExecutor() as pool:
+        futures = [
+            pool.submit(mutated, path, args.corpus, args.destination, args.seed)
+            for path in sorted(args.corpus.rglob("*.py"))
+        ]
         try:
-            text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
-            continue
-        for name, variant in variants(text, rng).items():
-            target = destination / name / path.relative_to(corpus)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(variant, encoding="utf-8", newline="")
-            written += 1
+            for future in as_completed(futures, timeout=args.budget):
+                written += future.result()
+        except TimeoutError:
+            pool.shutdown(cancel_futures=True)
 
     print(f"{written} variants written")

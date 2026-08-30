@@ -11,7 +11,7 @@ tagline: deterministic rule runner
 
 <PrimitiveLayout primitive="pipeline">
 
-*Pipeline* is the value `prose format` and `prose check` resolve into. It carries the registered rules in their canonical order and exposes three ways to read them. `run` applies each rule's edits to a fresh buffer, reparses between rules so every downstream pass reads a settled AST, and emits the final [[source]] plus a diagnostic list, `diagnose` collects every rule's findings against the source as written for reporting, and `unsettled` answers which of the carried rules would still rewrite a buffer a run has already produced.
+*Pipeline* is the value `prose format` and `prose check` resolve into. It carries the registered rules in their canonical order and exposes them through a handful of readings. `run` applies each rule's edits to a fresh buffer, reparses between rules so every downstream pass reads a settled AST, and emits the final [[source]] plus a diagnostic list, `diagnose` collects every rule's findings against the source as written for reporting, `settle_report` reads what a buffer a run has already produced still leaves behind, and `unsettled` answers the first part of that reading alone.
 
 ## Public Surface
 
@@ -28,6 +28,12 @@ tagline: deterministic rule runner
 
 `Pipeline::known_ids() -> &'static [RuleId]` exposes the full registered-rule list in canonical order, with the same shape the CLI's `--help` consumes. Consumers driving custom UIs over the catalog read from this.
 
+### Splitting
+
+`split(self) -> Vec<(RuleId, Self)>` breaks a pipeline into one single-rule pipeline per rule it carries, in order, each holding its rule exactly as the parent's selection constructed it. Several rules read a sibling's flag off the resolved selection, `band-constants` and `alphabetize-siblings` reading whether `group-imports` is enabled among them, so a rule built alone through `for_rule` is not the rule that runs beside its sibling, and `split` is how a consumer runs the two one at a time without changing what either read.
+
+`fingerprint(&self) -> String` renders every carried rule's settings, equal for two pipelines whose rules resolved alike, so a consumer holding many single-rule pipelines can share the ones that would behave the same.
+
 ### Execution
 
 `run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError>` walks the registered rules in their canonical order. Each rule applies its edits, the pipeline reparses, and the new *Source* feeds the next rule, with the final text and every emitted diagnostic returned to the caller. Suppression is applied transparently inside `run`, with every `# fmt: off` block, `# fmt: skip` marker, and `# prose: ignore[<rule>]` directive consulted at the edit-emission boundary so suppressed fix groups and lint diagnostics never reach the returned vector. A fix group drops whole as soon as one of its edits falls under a directive, leaving a rule's co-dependent edits either all applied or all withheld.
@@ -35,6 +41,16 @@ tagline: deterministic rule runner
 `diagnose(&self, source: &Source) -> Vec<Diagnostic>` collects every enabled rule's findings against the unmodified source, applying no edits and never reparsing, so each range stays anchored to the source as written rather than to an intermediate rewrite. `prose check`, `prose server`, and a structured `format` report through `diagnose`, where a rendered diagnostic points at the file the author wrote, while `run` feeds the rewritten text behind `prose format`'s diff, on-disk rewrite, and would-reformat summary. Both consult the same [[suppression-map]] and rule set, diverging only in that `diagnose` reads every rule against the original where `run` reads each against the prior rule's reparsed output.
 
 `unsettled(&self, source: &Source) -> Vec<RuleId>` names every rule this pipeline carries whose edits would still rewrite `source`, and answers empty for a buffer that has settled. It reads the subset the pipeline was built with rather than the default set, so a `--select` run answers for that selection alone, and a file carrying a file-level `# prose: off` answers empty because no rule reaches it. Every `prose format` run reads it over each file it rewrote, raising the [**unstable-output notice**](/reference/cli#unstable-output) where it names rules, and a corpus sweep over each rule alone and each ordered rule pair reads it too, which is where a rule leaning on a later rule to finish its work surfaces.
+
+`settle_report(&self, source: &Source) -> SettleReport` makes the same walk once and returns three things `unsettled` collapses into one, `editing` being the rules whose edits still rewrite `source` in registration order, `unlanded` the rules holding a fix group that splices back to the same text or does not apply, and `witness` the first editing rule paired with the text its edits weave, which a report shows as the rewrite. `unsettled` delegates to it and returns `editing` alone. The corpus sweep reads `settle_report` over every file a run produced, so a rule that is stable and incomplete at once surfaces beside a rule that keeps editing.
+
+```rust
+pub struct SettleReport {
+    pub editing  : Vec<RuleId>,              // the rules whose edits still rewrite the buffer
+    pub unlanded : Vec<RuleId>,              // the rules reporting a fix the weave never lands
+    pub witness  : Option<(RuleId, String)>, // the first editing rule and the text it weaves
+}
+```
 
 `Diagnostic` carries the per-finding payload returned in the `Vec`:
 

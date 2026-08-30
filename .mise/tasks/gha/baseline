@@ -1,0 +1,24 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description = "Serve a pull request its baked delta baseline, or bake one in place when the restored stage is stale"
+
+base="${BASE:?}"
+restored="${RESTORED:-}"
+stage="${STAGE:?}"
+tree="$RUNNER_TEMP/base"
+
+git fetch --depth=1 -q origin "$base" ${restored:+"${restored##*-}"}
+
+if [[ -n "$restored" ]]; then
+  baked="${restored##*-}"
+  if [[ "$baked" == "$base" ]] \
+    || git diff --quiet "$baked" "$base" -- \
+      Cargo.lock Cargo.toml crate/Cargo.toml crate/src; then
+    printf 'the stage baked at %s serves %s\n' "$baked" "$base"
+    exit 0
+  fi
+  rm -rf "$stage"
+fi
+
+git worktree add -q "$tree" "$base"
+CARGO_TARGET_DIR="$PWD/target" PROSE_DELTA_BASELINE="$tree" PROSE_DELTA_STAGE="$stage" \
+  mise run rust:bake
