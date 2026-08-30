@@ -10,13 +10,12 @@ use ruff_python_ast::{
 };
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use super::Exploder;
 use crate::primitives::{
     call_keywords::{CallKeywords, keyword_args, resolve_call_params},
     edit::apply_inline_edits,
-    inline::{end_column, opening_width},
+    inline::{display_width, end_column, opening_width},
     layout::{Separator, explode_parens, is_fractured, item_indent},
     padding,
     tokens::{is_opener, opens_subscript},
@@ -205,7 +204,7 @@ impl<'a> Exploder<'a> {
             return true;
         }
         let column = self.source.column_of(range.start());
-        let width = self.settled_width(range, self.source.slice(range).width());
+        let width = self.settled_width(range, display_width(self.source.slice(range)));
         let tail_range = self.source.row_tail(range.end());
         let tail = self.settled_width(tail_range, self.source.tail_width(tail_range));
         !self.one_row.fits(column + width + tail)
@@ -238,7 +237,7 @@ impl<'a> Exploder<'a> {
         let appended = if tail.contains('\n') {
             opening_width(tail)
         } else {
-            tail.width() + slot.tail
+            display_width(tail) + slot.tail
         };
         // A value opening its own row below the pair's opener drops an
         // exploded closer to that row's indent rather than the argument's.
@@ -313,8 +312,10 @@ impl<'a> Exploder<'a> {
     /// column the `align-equals` buffer settles it at.
     fn slot(&self, name: Option<&str>, indent: usize, tail: usize) -> Slot {
         Slot {
-            aligned: name
-                .and_then(|name| self.reservations.keyword_value_column(indent, name.width())),
+            aligned: name.and_then(|name| {
+                self.reservations
+                    .keyword_value_column(indent, display_width(name))
+            }),
             indent,
             tail,
         }
@@ -328,10 +329,10 @@ impl<'a> Exploder<'a> {
     /// `strip-stranded-padding` drops from it.
     fn written_width(&self, arguments: &Arguments, form: &str) -> usize {
         if self.source.contains_line_break(arguments.range()) {
-            form.width()
+            display_width(form)
         } else {
             let range = arguments.range();
-            self.settled_width(range, self.source.slice(range).width())
+            self.settled_width(range, display_width(self.source.slice(range)))
         }
     }
 

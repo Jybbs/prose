@@ -1,6 +1,6 @@
 //! Walks a module collecting the columns each reserved run settles to.
 
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 
 use super::*;
 
@@ -12,12 +12,12 @@ pub(super) struct Run {
 }
 
 /// Collects the rule's runs and the value each member's row carries,
-/// keyed by the paren-aware start the member's value gapub(super) p ends at.
+/// keyed by the paren-aware start the member's value gap ends at.
 pub(super) struct ReserveVisitor<'a> {
     pub(super) rule: RuleId,
     pub(super) runs: Vec<Run>,
     pub(super) source: &'a Source,
-    pub(super) values: HashMap<TextSize, (&'a Expr, AnyNodeRef<'a>)>,
+    pub(super) values: FxHashMap<TextSize, (&'a Expr, AnyNodeRef<'a>)>,
 }
 
 impl<'a> ReserveVisitor<'a> {

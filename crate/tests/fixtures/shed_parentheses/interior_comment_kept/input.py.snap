@@ -1,8 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/shed_parentheses/interior_comment_kept/input.py
----
-total = (  # running sum
-    base + bonus
-)

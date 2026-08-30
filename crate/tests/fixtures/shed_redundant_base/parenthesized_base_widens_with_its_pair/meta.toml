@@ -3,5 +3,5 @@ previewable = false
 title       = "A Base Wrapped in Its Own Parentheses Goes With Them"
 
 description = '''
-`class Adapter(Mapping, (object)):` and `class Wrapper((object), Sized):` each wrap `object` in its own redundant set of parentheses, sitting outside the `object` expression's own range. The deletion widens to take those parentheses along with the base, because stopping inside them would strand the closing parenthesis and leave the file unparseable. In the default pipeline [[shed-parentheses]] would already have cleared such parentheses, but this fixture runs the rule in isolation, so the case still shows them.
+`class Adapter(Mapping, (object)):` and `class Wrapper((object), Sized):` each wrap `object` in its own redundant set of parentheses, sitting outside the `object` expression's own range. The deletion widens to take those parentheses along with the base, because stopping inside them would strand the closing parenthesis and leave the file unparseable. In the default pipeline [[reflow-parentheses]] would already have cleared such parentheses, but this fixture runs the rule in isolation, so the case still shows them.
 '''

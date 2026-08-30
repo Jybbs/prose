@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/banded_class_keeps_the_deferring_directive/input.py
+---
+from __future__ import annotations
+
+
+class Node:
+
+    pass
+
+
+def visit(node: Node) -> Node:
+    return node

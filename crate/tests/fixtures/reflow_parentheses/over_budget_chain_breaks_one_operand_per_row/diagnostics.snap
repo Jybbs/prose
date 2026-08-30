@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/over_budget_chain_breaks_one_operand_per_row/input.py
+---
+reflow-parentheses@30..93

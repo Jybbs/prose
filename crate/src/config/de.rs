@@ -1,10 +1,8 @@
 //! Serde `deserialize_with` and `serialize_with` helpers: the
-//! bool-or-table rule reader, and the optional-cap and regex
-//! round-trips.
+//! bool-or-table rule reader and the optional-cap round-trips.
 
 use std::{fmt, marker::PhantomData, num::NonZeroUsize};
 
-use regex_lite::Regex;
 use serde::{
     Deserialize, Deserializer, Serializer,
     de::{IntoDeserializer, MapAccess, Visitor, value::MapAccessDeserializer},
@@ -65,13 +63,6 @@ pub(super) fn deserialize_prose(
     )?)
 }
 
-pub(super) fn deserialize_regex<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<Regex, D::Error> {
-    let pattern = String::deserialize(deserializer)?;
-    Regex::new(&pattern).map_err(serde::de::Error::custom)
-}
-
 /// Resolves a rule's config from either a bare bool toggle or a
 /// sub-table. `deserialize_any` dispatches on the TOML value so the
 /// sub-table arm forwards a live map, preserving `serde_ignored`'s
@@ -112,11 +103,4 @@ pub(super) fn serialize_optional_cap<S: Serializer>(
         Some(n) => serializer.serialize_u64(n.get() as u64),
         None => serializer.serialize_bool(false),
     }
-}
-
-pub(super) fn serialize_regex<S: Serializer>(
-    regex: &Regex,
-    serializer: S,
-) -> Result<S::Ok, S::Error> {
-    serializer.serialize_str(regex.as_str())
 }

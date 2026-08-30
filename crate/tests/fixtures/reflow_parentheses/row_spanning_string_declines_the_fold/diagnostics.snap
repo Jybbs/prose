@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/row_spanning_string_declines_the_fold/input.py
+---
+reflow-parentheses@27..28
+reflow-parentheses@64..65

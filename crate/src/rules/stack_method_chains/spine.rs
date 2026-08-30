@@ -4,9 +4,11 @@
 
 use ruff_python_ast::{Expr, ExprAttribute, ExprCall, token::TokenKind};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
-use crate::{primitives::fracture, source::Source};
+use crate::{
+    primitives::{fracture, inline::display_width},
+    source::Source,
+};
 
 /// A chain's receiver and its `.name(...)` links in source order, each
 /// link running from its own dot to the one opening the link below it,
@@ -75,7 +77,7 @@ impl<'a> Chain<'a> {
     /// The receiver's display width, the columns a hung link's dot sits
     /// past the indent the broken chain opens at.
     pub(super) fn receiver_width(&self, source: &Source) -> usize {
-        source.slice(self.receiver_range).width()
+        display_width(source.slice(self.receiver_range))
     }
 
     /// True when a segment still carries a line break once the
@@ -90,7 +92,7 @@ impl<'a> Chain<'a> {
     /// segment measured at the width its own fractures settle to.
     pub(super) fn width(&self, source: &Source, joins: &fracture::Joins) -> usize {
         self.segments()
-            .map(|segment| joins.settled(source, segment).width())
+            .map(|segment| display_width(&joins.settled(source, segment)))
             .sum()
     }
 }

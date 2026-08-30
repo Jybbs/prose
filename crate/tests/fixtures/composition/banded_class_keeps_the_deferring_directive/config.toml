@@ -1,0 +1,2 @@
+[harness]
+rules = ["prune-inert-imports", "alphabetize-siblings", "space-statements"]

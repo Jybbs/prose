@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/over_budget_wrapped_pair_sheds_in_place/input.py
+---
+reflow-parentheses@125..135
+reflow-parentheses@67..69

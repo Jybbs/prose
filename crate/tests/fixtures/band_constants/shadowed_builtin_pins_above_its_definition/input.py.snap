@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/shadowed_builtin_pins_above_its_definition/input.py
+---
+LIMIT = TimeoutError
+
+
+TABLE = dict
+
+
+def helper():
+    return 1
+
+
+class TimeoutError(Exception):
+    pass

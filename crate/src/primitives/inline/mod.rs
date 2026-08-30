@@ -1,31 +1,66 @@
-//! The whitespace-folded form of a leaf expression, collapsing a
-//! soft-wrapped operator-atom tree onto one line and declining a leaf a
-//! fold would split or respace, plus the column measures a rendered
-//! form or a source line answers the budget with.
+//! The whitespace-folded form of an expression, closing its soft wraps
+//! onto one line and declining the one leaf a fold would respace, plus
+//! the column measures a rendered form or a source line answers the
+//! budget with.
 
 use std::borrow::Cow;
 
-use ruff_python_ast::{Expr, helpers::is_dotted_name};
+use memchr::memchr;
+use ruff_python_ast::Expr;
 use ruff_python_trivia::leading_indentation;
 use unicode_width::UnicodeWidthStr;
+
+use crate::{
+    primitives::{
+        tokens::{CLOSERS, OPENERS},
+        travel::spans_a_string_part,
+    },
+    source::Source,
+};
+
+/// True where a row of `slice` ends on a backslash continuation.
+pub(crate) fn carries_a_continuation(slice: &str) -> bool {
+    slice.lines().any(|line| line.trim_end().ends_with('\\'))
+}
+
+/// The display width of `text`, its byte length where every byte is
+/// ASCII and none is a carriage return.
+pub(crate) fn display_width(text: &str) -> usize {
+    if text.is_ascii() && memchr(b'\r', text.as_bytes()).is_none() {
+        text.len()
+    } else {
+        text.width()
+    }
+}
 
 /// The column `text` ends at when its opening line starts at `indent`,
 /// measured past the last line break `text` carries.
 pub(crate) fn end_column(text: &str, indent: usize) -> usize {
-    text.rsplit_once('\n')
-        .map_or_else(|| indent + text.width(), |(_, last)| last.width())
+    text.rsplit_once('\n').map_or_else(
+        || indent + display_width(text),
+        |(_, last)| display_width(last),
+    )
 }
 
 /// `slice`'s single-line form reachable by folding whitespace alone:
-/// the borrowed slice when it carries no break, the soft-wrap collapse
-/// when `expr` is a break-carrying operator-atom tree, and `None` for a
-/// multi-line leaf a fold would split or respace. Every form it returns
-/// is reachable by folding whitespace alone.
-pub(crate) fn folded_line_form<'s>(expr: &Expr, slice: &'s str) -> Option<Cow<'s, str>> {
+/// the borrowed slice when it carries no break and the soft-wrap
+/// collapse when `expr` joins operands with an operator. `None` for
+/// every other multi-line expression, for one holding a string part
+/// that spans rows, for one a backslash continues, and for one hanging
+/// a method chain's links.
+pub(crate) fn folded_line_form<'s>(
+    source: &Source,
+    expr: &Expr,
+    slice: &'s str,
+) -> Option<Cow<'s, str>> {
     if !slice.contains('\n') {
         return Some(Cow::Borrowed(slice));
     }
-    is_operator_atom_tree(expr).then(|| Cow::Owned(collapse_soft_wraps(slice)))
+    (is_operator_tree(expr)
+        && !spans_a_string_part(source, expr)
+        && !carries_a_continuation(slice)
+        && !hangs_a_chain_link(slice))
+    .then(|| Cow::Owned(collapse_soft_wraps(slice)))
 }
 
 /// The character width of `line`'s leading indentation. Tabs and
@@ -36,7 +71,14 @@ pub(crate) fn indent_width(line: &str) -> usize {
 
 /// The display width of `text`'s opening line.
 pub(crate) fn opening_width(text: &str) -> usize {
-    text.lines().next().unwrap_or_default().width()
+    display_width(text.lines().next().unwrap_or_default())
+}
+
+/// True where the whitespace run covering `[begin, begin + len)` of
+/// `text` closes to a single space rather than to nothing, meaning it
+/// sits between two tokens rather than directly inside a bracket.
+pub(crate) fn run_closes_to_a_space(text: &str, begin: usize, len: usize) -> bool {
+    !text[..begin].ends_with(OPENERS) && !text[begin + len..].starts_with(CLOSERS)
 }
 
 /// Yields the `(start, len)` byte span of each whitespace run in `text`
@@ -59,36 +101,40 @@ pub(crate) fn whitespace_runs(text: &str) -> impl Iterator<Item = (usize, usize)
     })
 }
 
-/// Collapses each whitespace run that spans a line break into a single
-/// space, leaving every other run as the source wrote it.
+/// Collapses each whitespace run that spans a line break, to nothing
+/// where the run sits directly inside a bracket and to a single space
+/// everywhere else, leaving every run that carries no break as the
+/// source wrote it.
 fn collapse_soft_wraps(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut prev_end = 0;
     for (begin, len) in soft_wrap_runs(text) {
         out.push_str(&text[prev_end..begin]);
-        out.push(' ');
         prev_end = begin + len;
+        if run_closes_to_a_space(text, begin, len) {
+            out.push(' ');
+        }
     }
     out.push_str(&text[prev_end..]);
     out
 }
 
-/// True for an expression built only from binary, boolean, comparison,
-/// and unary operators over dotted names and numeric atoms. Such a tree
-/// carries no string, call, or bracketed member, so collapsing the
-/// whitespace of a soft-wrapped one onto a single line cannot split or
-/// respace a token the way a multi-line string or call would.
-fn is_operator_atom_tree(expr: &Expr) -> bool {
-    match expr {
-        Expr::BinOp(b) => is_operator_atom_tree(&b.left) && is_operator_atom_tree(&b.right),
-        Expr::BoolOp(b) => b.values.iter().all(is_operator_atom_tree),
-        Expr::BooleanLiteral(_) | Expr::NoneLiteral(_) | Expr::NumberLiteral(_) => true,
-        Expr::Compare(c) => {
-            is_operator_atom_tree(&c.left) && c.comparators.iter().all(is_operator_atom_tree)
-        }
-        Expr::UnaryOp(u) => is_operator_atom_tree(&u.operand),
-        _ => is_dotted_name(expr),
-    }
+/// True where a row of `slice` opens on a `.`, the shape a hung method
+/// chain link takes.
+fn hangs_a_chain_link(slice: &str) -> bool {
+    slice
+        .lines()
+        .skip(1)
+        .any(|line| line.trim_start().starts_with('.'))
+}
+
+/// True for an expression whose own node joins operands with an
+/// operator, whatever its operands.
+fn is_operator_tree(expr: &Expr) -> bool {
+    matches!(
+        expr,
+        Expr::BinOp(_) | Expr::BoolOp(_) | Expr::Compare(_) | Expr::UnaryOp(_)
+    )
 }
 
 #[cfg(test)]
@@ -103,11 +149,27 @@ mod tests {
     #[case("a\n    + b", "a + b")]
     #[case("a +  b", "a +  b")]
     #[case("first\n    and second", "first and second")]
+    #[case("f(\n    a,\n    b\n)", "f(a, b)")]
+    #[case("[\n    a\n]", "[a]")]
+    #[case("f(a,\n    b)", "f(a, b)")]
     fn collapse_soft_wraps_folds_only_runs_carrying_a_break(
         #[case] src: &str,
         #[case] expected: &str,
     ) {
         assert_eq!(collapse_soft_wraps(src), expected);
+    }
+
+    #[rstest]
+    #[case("", 0)]
+    #[case("abc", 3)]
+    #[case("a\r\nb", 3)]
+    #[case("é", 1)]
+    fn display_width_matches_unicode_width_across_the_fast_path_boundary(
+        #[case] text: &str,
+        #[case] expected: usize,
+    ) {
+        assert_eq!(display_width(text), expected);
+        assert_eq!(display_width(text), text.width());
     }
 
     #[rstest]
@@ -137,23 +199,21 @@ mod tests {
 
     #[rstest]
     #[case("a + b", true)]
-    #[case("a + b * c", true)]
-    #[case("(a + b) * c", true)]
     #[case("a and b", true)]
-    #[case("a < b <= c", true)]
-    #[case("-a + b", true)]
-    #[case("module.attr + offset", true)]
-    #[case("2 ** depth", true)]
-    #[case("a + helper(b)", false)]
-    #[case("prefix + values[0]", false)]
-    #[case("greeting + \"!\"", false)]
-    fn is_operator_atom_tree_accepts_operator_trees_over_atoms_only(
+    #[case("a < b", true)]
+    #[case("not a", true)]
+    #[case("a + helper(b)", true)]
+    #[case("greeting + \"!\"", true)]
+    #[case("helper(a)", false)]
+    #[case("[a, b]", false)]
+    #[case("\"a\" \"b\"", false)]
+    #[case("value", false)]
+    fn is_operator_tree_admits_operator_nodes_whatever_their_operands(
         #[case] src: &str,
         #[case] expected: bool,
     ) {
         let source = parse(src);
-        let expr = first_expr(&source);
-        assert_eq!(is_operator_atom_tree(expr), expected);
+        assert_eq!(is_operator_tree(first_expr(&source)), expected);
     }
 
     #[rstest]

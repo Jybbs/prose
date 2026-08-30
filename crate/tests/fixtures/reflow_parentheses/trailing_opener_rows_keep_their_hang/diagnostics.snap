@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/trailing_opener_rows_keep_their_hang/input.py
+---
+reflow-parentheses@211..221
+reflow-parentheses@34..36

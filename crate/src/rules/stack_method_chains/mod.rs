@@ -15,7 +15,6 @@
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr};
 use ruff_text_size::TextRange;
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::{Config, MaxShift},
@@ -23,7 +22,7 @@ use crate::{
         call_keywords::module_call_params,
         edit::{insert_edit, narrowed_replacement, singleton_groups},
         fracture,
-        inline::end_column,
+        inline::{display_width, end_column},
         layout::item_indent,
         reserve,
         walk::{
@@ -183,7 +182,7 @@ impl<'a> Breaker<'a> {
             .checked_sub(1)
             .map_or(chain.receiver_range, |link| chain.links[link]);
         let explodes = self.rejoin.closes()
-            && column + joins.settled(self.source, range).width() > self.code_line_length;
+            && column + display_width(&joins.settled(self.source, range)) > self.code_line_length;
         let mut out = String::new();
         let mut cursor = range.start();
         for (expr, parent, nested) in self.nested(chain, segment) {

@@ -1,6 +1,6 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/band_constants/bound_comment_re_emits_a_settled_band/input.py
 ---
-band-constants@21..66
+band-constants@21..67

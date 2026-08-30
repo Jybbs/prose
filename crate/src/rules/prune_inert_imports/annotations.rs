@@ -2,20 +2,19 @@
 //! reach them, their identifiers sitting inside a string literal rather
 //! than in the AST.
 
-use std::collections::HashSet;
-
 use ruff_python_ast::{
     Expr, ModModule,
     visitor::{Visitor, walk_expr},
 };
 use ruff_python_parser::parse_expression;
+use rustc_hash::FxHashSet;
 
 use crate::primitives::walk::for_each_annotation;
 
 /// Gathers every loaded name of a type expression into `names`, holding
 /// each quoted member it carries for a further parse.
 struct NameCollector<'a> {
-    names: &'a mut HashSet<String>,
+    names: &'a mut FxHashSet<String>,
     nested: Vec<String>,
 }
 
@@ -35,8 +34,8 @@ impl<'a> Visitor<'a> for NameCollector<'_> {
 /// Every name a string-literal annotation in `module` reads, alongside
 /// the unquoted names sharing those annotations, empty when the module
 /// carries no annotation at all.
-pub(super) fn annotation_names(module: &ModModule) -> HashSet<String> {
-    let mut names = HashSet::new();
+pub(super) fn annotation_names(module: &ModModule) -> FxHashSet<String> {
+    let mut names = FxHashSet::default();
     for_each_annotation(&module.body, |annotation| absorb(annotation, &mut names));
     names
 }
@@ -44,7 +43,7 @@ pub(super) fn annotation_names(module: &ModModule) -> HashSet<String> {
 /// Records every name `annotation` loads, feeding each quoted member it
 /// carries back through the parse. A literal that does not parse is
 /// left alone.
-fn absorb(annotation: &Expr, names: &mut HashSet<String>) {
+fn absorb(annotation: &Expr, names: &mut FxHashSet<String>) {
     let mut pending = collect_names(annotation, names);
     while let Some(text) = pending.pop() {
         let Ok(parsed) = parse_expression(&text) else {
@@ -56,7 +55,7 @@ fn absorb(annotation: &Expr, names: &mut HashSet<String>) {
 
 /// Adds every name `expr` loads to `names` and returns the text of each
 /// string literal it carries.
-fn collect_names(expr: &Expr, names: &mut HashSet<String>) -> Vec<String> {
+fn collect_names(expr: &Expr, names: &mut FxHashSet<String>) -> Vec<String> {
     let mut collector = NameCollector {
         names,
         nested: Vec::new(),

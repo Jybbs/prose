@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Constant Reading a Branch-Bound Name Pins Above Its Definition"
+
+description = '''
+`DEFAULT = Selector` resolves against the branch that bound `Selector`, because the module's own `class Selector` binds further down the file. A write inside an `if` counts as that earlier binding, so **`DEFAULT` holds its source slot** while `TABLE = dict` bands freely past `helper`, its builtin standing unshadowed.
+'''

@@ -1,6 +1,6 @@
 //! Resolves a name to the alias target it stands for.
 
-use std::collections::HashSet;
+use rustc_hash::FxHashSet;
 
 use super::*;
 
@@ -8,7 +8,7 @@ use super::*;
 /// cyclic base settles once.
 pub(super) struct Resolver<'ctx, 'src> {
     pub(super) ctx: &'ctx AliasContext<'src>,
-    pub(super) visited: HashSet<&'src str>,
+    pub(super) visited: FxHashSet<&'src str>,
 }
 
 impl<'src> Resolver<'_, 'src> {
@@ -130,7 +130,8 @@ impl<'src> Resolver<'_, 'src> {
                     )
             }
 
-            // An int, a bool, and bytes ride on `Literal` alone.
+            // An int, a bool, and bytes belong in a type expression only
+            // inside `Literal`.
             Expr::BooleanLiteral(_)
             | Expr::BytesLiteral(_)
             | Expr::NumberLiteral(ExprNumberLiteral {

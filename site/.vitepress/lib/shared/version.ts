@@ -16,7 +16,7 @@ export function readRequiresPython(crateDir: string): string {
     parsed.project?.['requires-python'],
     `Could not find project.requires-python in ${projectPath}`
   )
-  return bound.replace(/^>=/, '')
+  return bound.startsWith('>=') ? bound.slice(2) : bound
 }
 
 export function readRuffTag(crateDir: string): string {

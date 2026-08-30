@@ -23,41 +23,6 @@ pub(super) struct Writer<'a> {
 }
 
 impl<'a> Writer<'a> {
-    /// `expr` rebuilt from its children at the canonical spacing over
-    /// `range`, whatever the source wrote inside it. `None` where a
-    /// guard blocks the form or the rebuild reaches no single row.
-    pub(super) fn condensed(
-        &self,
-        expr: &Expr,
-        range: TextRange,
-        hold: Column,
-    ) -> Option<Cow<'a, str>> {
-        if self.blocked(expr, range, hold) {
-            return None;
-        }
-        self.rebuilt(expr)
-    }
-
-    /// `expr`'s one-row form over `range`, borrowing the source slice
-    /// where that range is already written flat and rebuilding it from
-    /// the children otherwise. `hold` reaches `expr` itself, every child
-    /// beneath it holding its own flush column either way.
-    pub(super) fn formed(
-        &self,
-        expr: &Expr,
-        range: TextRange,
-        hold: Column,
-    ) -> Option<Cow<'a, str>> {
-        if self.blocked(expr, range, hold) {
-            return None;
-        }
-        let slice = self.source.slice(range);
-        if !slice.contains('\n') {
-            return Some(Cow::Borrowed(slice));
-        }
-        self.rebuilt(expr)
-    }
-
     /// True where no one-row form is written for `expr` over `range`,
     /// covering its own flush column under `Column::Holds`, a comment
     /// falling inside the range, and a later rule reopening it.
@@ -67,14 +32,6 @@ impl<'a> Writer<'a> {
             || self.reopens(expr)
     }
 
-    /// `expr` rewritten from its children onto one row, `None` where
-    /// the rewrite reaches no single row.
-    fn rebuilt(&self, expr: &Expr) -> Option<Cow<'a, str>> {
-        let mut out = String::new();
-        self.write(&mut out, expr, expr.into())?;
-        (!out.contains('\n')).then_some(Cow::Owned(out))
-    }
-
     /// The one-row form of a leaf, meaning an expression the dispatch in
     /// [`Self::write`] does not itself rebuild. An operator tree over
     /// atoms soft-wrapped across rows folds its break, and every other
@@ -82,7 +39,7 @@ impl<'a> Writer<'a> {
     /// it, whether that is a call's argument list or a literal the
     /// author fractured. A break no close reaches leaves `None`.
     fn leaf_form(&self, expr: &Expr, range: TextRange) -> Option<Cow<'a, str>> {
-        if let Some(folded) = folded_line_form(expr, self.source.slice(range)) {
+        if let Some(folded) = folded_line_form(self.source, expr, self.source.slice(range)) {
             return Some(folded);
         }
         let mut joiner = Joiner {
@@ -96,6 +53,14 @@ impl<'a> Writer<'a> {
         }
         let joined = apply_inline_edits(self.source, range, &outermost(joiner.edits));
         (!joined.contains('\n')).then_some(joined)
+    }
+
+    /// `expr` rewritten from its children onto one row, `None` where
+    /// the rewrite reaches no single row.
+    fn rebuilt(&self, expr: &Expr) -> Option<Cow<'a, str>> {
+        let mut out = String::new();
+        self.write(&mut out, expr, expr.into())?;
+        (!out.contains('\n')).then_some(Cow::Owned(out))
     }
 
     /// True where a later rule reopens `expr` whatever its current
@@ -162,19 +127,6 @@ impl<'a> Writer<'a> {
                 Some(())
             }
         }
-    }
-
-    /// Appends one top-level call argument to `out`, its grouping parens
-    /// recovered only where its own text spans rows.
-    pub(super) fn write_argument(
-        &self,
-        out: &mut String,
-        expr: &Expr,
-        parent: AnyNodeRef,
-    ) -> Option<()> {
-        let range = self.source.spanning_paren_range(expr.into(), parent);
-        out.push_str(&self.formed(expr, range, Column::Holds)?);
-        Some(())
     }
 
     /// Appends a child `expr`'s one-row serialization to `out`, a held
@@ -272,6 +224,54 @@ impl<'a> Writer<'a> {
             out.push(',');
         }
         out.extend(close);
+        Some(())
+    }
+
+    /// `expr` rebuilt from its children at the canonical spacing over
+    /// `range`, whatever the source wrote inside it. `None` where a
+    /// guard blocks the form or the rebuild reaches no single row.
+    pub(super) fn condensed(
+        &self,
+        expr: &Expr,
+        range: TextRange,
+        hold: Column,
+    ) -> Option<Cow<'a, str>> {
+        if self.blocked(expr, range, hold) {
+            return None;
+        }
+        self.rebuilt(expr)
+    }
+
+    /// `expr`'s one-row form over `range`, borrowing the source slice
+    /// where that range is already written flat and rebuilding it from
+    /// the children otherwise. `hold` reaches `expr` itself, every child
+    /// beneath it holding its own flush column either way.
+    pub(super) fn formed(
+        &self,
+        expr: &Expr,
+        range: TextRange,
+        hold: Column,
+    ) -> Option<Cow<'a, str>> {
+        if self.blocked(expr, range, hold) {
+            return None;
+        }
+        let slice = self.source.slice(range);
+        if !slice.contains('\n') {
+            return Some(Cow::Borrowed(slice));
+        }
+        self.rebuilt(expr)
+    }
+
+    /// Appends one top-level call argument to `out`, its grouping parens
+    /// recovered only where its own text spans rows.
+    pub(super) fn write_argument(
+        &self,
+        out: &mut String,
+        expr: &Expr,
+        parent: AnyNodeRef,
+    ) -> Option<()> {
+        let range = self.source.spanning_paren_range(expr.into(), parent);
+        out.push_str(&self.formed(expr, range, Column::Holds)?);
         Some(())
     }
 }

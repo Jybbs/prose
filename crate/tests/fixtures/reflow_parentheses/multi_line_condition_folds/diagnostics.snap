@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_parentheses/multi_line_condition_folds/input.py
+---
+reflow-parentheses@23..28
+reflow-parentheses@42..44
+reflow-parentheses@8..14

@@ -11,7 +11,8 @@ use ruff_text_size::Ranged;
 
 mod gaps;
 
-pub(crate) use gaps::{delimiter_padding_gaps, delimiter_padding_width, slack};
+use gaps::delimiter_padding_gaps;
+pub(crate) use gaps::{delimiter_padding_width, slack};
 
 use crate::{
     primitives::{

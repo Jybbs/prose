@@ -3,5 +3,5 @@ previewable = false
 title       = "Per-Rule Skip Reaches Back to the Statement's Opening Line"
 
 description = '''
-`# prose: skip[shed-parentheses]` trails the closing `)` of `z`'s wrapped assignment, and it **suppresses that rule across every line the statement spans** rather than only the physical line the directive sits on. The redundant parentheses around `x` survive because the whole assignment, not just its last line, falls inside the suppressed span.
+`# prose: skip[reflow-parentheses]` trails the closing `)` of `z`'s wrapped assignment, and it **suppresses that rule across every line the statement spans** rather than only the physical line the directive sits on. The redundant parentheses around `x` survive because the whole assignment, not just its last line, falls inside the suppressed span.
 '''

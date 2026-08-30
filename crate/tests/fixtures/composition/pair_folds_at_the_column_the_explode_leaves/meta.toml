@@ -3,5 +3,5 @@ previewable = true
 title       = "A Pair Folds at the Column the Explode Leaves"
 
 description = '''
-`shed-parentheses` measures a wrapped pair from the column it lands on once `reflow-calls` explodes the call ahead of it on the overflowing row, so a pair that fits after that call's closer drops to the indent folds on the same pass rather than waiting for the explode to move it.
+`reflow-parentheses` measures a wrapped pair from the column it lands on once `reflow-calls` explodes the call ahead of it on the overflowing row, so a pair that fits after that call's closer drops to the indent folds on the same pass rather than waiting for the explode to move it.
 '''

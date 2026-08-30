@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Chain Inside a Split Operand Settles Behind the Pair"
+
+description = '''
+The `%` expression runs over budget at a narrow width, so `reflow-parentheses` breaks its operands across rows before `stack-method-chains` reaches the `os.urandom(8).hex()` chain sitting inside the right operand. Running the chain rule first leaves the pair unsettled, which is the seating the `stack-method-chains` dependency column declares.
+'''

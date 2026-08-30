@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/reverting_region_holds_its_imports/input.py
+---
+import zlib
+import abc
+
+
+def decorate(f):
+    return f
+
+
+HANDLER = decorate
+
+
+@HANDLER
+def target():
+    pass

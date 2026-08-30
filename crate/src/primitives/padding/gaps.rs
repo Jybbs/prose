@@ -1,11 +1,12 @@
-//! The whitespace runs inside a bracket delimiter and the columns an edit set takes off a span.
+//! The whitespace runs inside a bracket delimiter and the columns an
+//! edit set takes off a span.
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextRange};
-use unicode_width::UnicodeWidthStr;
 
 use super::*;
+use crate::primitives::inline::display_width;
 
 /// The whitespace runs inside `range` sitting directly inside a bracket
 /// delimiter, after an opening `(` `[` `{` or before its closer, each
@@ -13,7 +14,7 @@ use super::*;
 /// own line keeps its leading indent, since the gap then spans a line
 /// break, and a run inside an f-string or t-string replacement field
 /// stays untouched, tracked through `interp_depth`.
-pub(crate) fn delimiter_padding_gaps(
+pub(super) fn delimiter_padding_gaps(
     source: &Source,
     range: TextRange,
 ) -> impl Iterator<Item = TextRange> + '_ {
@@ -42,7 +43,7 @@ pub(crate) fn delimiter_padding_gaps(
 /// `range`, which is the width `strip-stranded-padding` takes off it.
 pub(crate) fn delimiter_padding_width(source: &Source, range: TextRange) -> usize {
     delimiter_padding_gaps(source, range)
-        .map(|gap| source.slice(gap).width())
+        .map(|gap| display_width(source.slice(gap)))
         .sum()
 }
 
@@ -61,11 +62,8 @@ pub(crate) fn slack(source: &Source, edits: &[Edit], range: TextRange) -> isize 
                     && (edit.start() == range.start() || edit.start() == range.end()))
         })
         .map(|edit| {
-            source.slice(edit.range()).width().cast_signed()
-                - edit
-                    .content()
-                    .map_or(0, UnicodeWidthStr::width)
-                    .cast_signed()
+            display_width(source.slice(edit.range())).cast_signed()
+                - edit.content().map_or(0, display_width).cast_signed()
         })
         .sum()
 }

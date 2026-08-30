@@ -22,6 +22,13 @@ pub(super) fn class_pins_methods(body: &[Stmt]) -> bool {
             .any(pins_positional_params)
 }
 
+/// The method group `f` sorts under and its name, the group `0` for
+/// every function unless `group_methods`.
+pub(super) fn function_key(f: &StmtFunctionDef, group_methods: bool) -> (u8, &str) {
+    let group = if group_methods { method_group(f) } else { 0 };
+    (group, f.name.as_str())
+}
+
 /// Returns the method-group index. `0` for dunders, `1` for
 /// `@property` / `@cached_property` (decided by the first decorator),
 /// `2` for single-leading-underscore privates, `3` for public.

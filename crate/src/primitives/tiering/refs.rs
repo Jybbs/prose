@@ -1,12 +1,17 @@
 //! Collects the names an expression reads at evaluation time.
 
-use super::*;
+use ruff_python_ast::{
+    Expr, ExprLambda, Stmt,
+    visitor::{Visitor as AstVisitor, walk_expr, walk_parameters},
+};
+
+use crate::primitives::walk::walk_stmt;
 
 /// Accumulates load-context names through `eval_time_refs`, pruning
 /// function and lambda bodies and skipping deferred annotations.
-pub(super) struct EvalRefVisitor<'src> {
-    pub(super) defer_annotations: bool,
-    pub(super) names: Vec<&'src str>,
+struct EvalRefVisitor<'src> {
+    defer_annotations: bool,
+    names: Vec<&'src str>,
 }
 
 impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
@@ -46,6 +51,27 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
     }
 }
 
+/// Accumulates the names an expression reads through a subscript or an
+/// attribute, pruning lambda bodies.
+struct ObservedRefVisitor<'src> {
+    names: Vec<&'src str>,
+}
+
+impl<'src> AstVisitor<'src> for ObservedRefVisitor<'src> {
+    fn visit_expr(&mut self, expr: &'src Expr) {
+        match expr {
+            Expr::Lambda(lambda) => walk_lambda_defaults(self, lambda),
+            Expr::Attribute(_) | Expr::Subscript(_) => {
+                if let Some(name) = root_name(expr) {
+                    self.names.push(name);
+                }
+                walk_expr(self, expr);
+            }
+            _ => walk_expr(self, expr),
+        }
+    }
+}
+
 /// Collects the load-context names in `expr`, pruning every function
 /// and lambda body, the reference set a module constant's value or
 /// annotation contributes to the hoist graph.
@@ -64,7 +90,7 @@ pub(crate) fn eval_refs(expr: &Expr) -> Vec<&str> {
 /// body, descending into nested definitions but pruning every function
 /// and lambda body. Annotation positions are skipped when
 /// `defer_annotations` holds.
-pub(crate) fn eval_time_refs(stmt: &Stmt, defer_annotations: bool) -> Vec<&str> {
+pub(super) fn eval_time_refs(stmt: &Stmt, defer_annotations: bool) -> Vec<&str> {
     let mut visitor = EvalRefVisitor {
         defer_annotations,
         names: Vec::new(),
@@ -73,10 +99,78 @@ pub(crate) fn eval_time_refs(stmt: &Stmt, defer_annotations: bool) -> Vec<&str> 
     visitor.names
 }
 
+/// Collects the names `expr` reads through a subscript or an attribute.
+pub(crate) fn observed_refs(expr: &Expr) -> Vec<&str> {
+    let mut visitor = ObservedRefVisitor { names: Vec::new() };
+    visitor.visit_expr(expr);
+    visitor.names
+}
+
+/// Returns the name a subscript or attribute chain reads from, or
+/// `None` when the chain roots in anything other than a name.
+pub(super) fn root_name(expr: &Expr) -> Option<&str> {
+    match expr {
+        Expr::Attribute(attr) => root_name(&attr.value),
+        Expr::Name(name) => Some(name.id.as_str()),
+        Expr::Subscript(subscript) => root_name(&subscript.value),
+        _ => None,
+    }
+}
+
 /// Walks a lambda's parameter defaults, pruning its body, the eval-time
 /// surface a lambda contributes when it binds.
 pub(crate) fn walk_lambda_defaults<'a>(visitor: &mut impl AstVisitor<'a>, lambda: &'a ExprLambda) {
     if let Some(params) = lambda.parameters.as_deref() {
         walk_parameters(visitor, params);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use indoc::indoc;
+    use rustc_hash::FxHashSet;
+
+    use super::*;
+    use crate::testing::parse;
+
+    #[test]
+    fn eval_time_refs_collects_eval_surface_and_skips_bodies() {
+        let source = parse(indoc! {"
+            class Probe(BaseRef):
+                field: AnnotRef
+
+                def method(self, p: ParamRef = DefaultRef) -> ReturnRef:
+                    return BodyRef
+        "});
+        let collected: FxHashSet<&str> = eval_time_refs(&source.ast().body[0], false)
+            .into_iter()
+            .collect();
+        assert_eq!(
+            collected,
+            FxHashSet::from_iter(["AnnotRef", "BaseRef", "DefaultRef", "ParamRef", "ReturnRef"]),
+        );
+    }
+
+    #[test]
+    fn eval_time_refs_prunes_a_lambda_body() {
+        let source = parse("class Probe:\n    factory = lambda seed=SeedRef: BodyRef\n");
+        let collected: FxHashSet<&str> = eval_time_refs(&source.ast().body[0], false)
+            .into_iter()
+            .collect();
+        assert_eq!(collected, FxHashSet::from_iter(["SeedRef"]));
+    }
+
+    #[test]
+    fn eval_time_refs_skips_annotations_when_deferred() {
+        let source = parse(indoc! {"
+            class Probe(BaseRef):
+                field: AnnotRef
+
+                def method(self, p: ParamRef = DefaultRef) -> ReturnRef: ...
+        "});
+        let collected: FxHashSet<&str> = eval_time_refs(&source.ast().body[0], true)
+            .into_iter()
+            .collect();
+        assert_eq!(collected, FxHashSet::from_iter(["BaseRef", "DefaultRef"]));
     }
 }

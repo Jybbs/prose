@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Constant Rebinding a Builtin a Definition Above It Reads Pins"
+
+description = '''
+`def helper(x=list)` evaluates its default against the builtin `list`, and the module rebinds that name further down. Hoisting `list = [1, 2, 3]` above the definition would bind the default to the list object instead, so **the constant holds its source slot** while `TABLE = 5` bands past `helper`, its own name shadowing nothing the definition reads.
+'''

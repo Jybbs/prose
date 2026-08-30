@@ -27,7 +27,7 @@ impl Expansion<'_> {
     pub(super) fn push_return_and_colon(&self, out: &mut String, fd: &StmtFunctionDef) {
         if let Some(ret) = fd.returns.as_deref() {
             out.push_str(" -> ");
-            let range = return_annotation_range(ret, fd, self.source.tokens());
+            let range = return_annotation_range(ret, fd, self.source);
             out.push_str(self.source.slice(range));
         }
         out.push(':');

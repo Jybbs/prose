@@ -5,7 +5,7 @@
 //! carries an action that opens the pre-filled report form, and the
 //! reply naming that action is what sends the open request.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use lsp_server::{Connection, Message, RequestId, Response};
 use lsp_types::{
@@ -14,6 +14,7 @@ use lsp_types::{
     notification::{Notification as NotificationTrait, ShowMessage},
     request::{Request as RequestTrait, ShowDocument, ShowMessageRequest},
 };
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::{
     conversion,
@@ -26,16 +27,16 @@ const FILE_IT: &str = "File a report";
 /// Which documents this session has already notified, and the document
 /// and form behind each outstanding action.
 pub(super) struct Notices {
-    pending: HashMap<RequestId, (Uri, Uri)>,
-    reported: HashSet<Uri>,
+    pending: FxHashMap<RequestId, (Uri, Uri)>,
+    reported: FxHashSet<Uri>,
     show_document: bool,
 }
 
 impl Notices {
     pub(super) fn new(show_document: bool) -> Self {
         Self {
-            pending: HashMap::new(),
-            reported: HashSet::new(),
+            pending: FxHashMap::default(),
+            reported: FxHashSet::default(),
             show_document,
         }
     }
@@ -96,19 +97,6 @@ impl Notices {
         )
     }
 
-    /// Sends `rewrite`'s notice for `uri` the first time the session
-    /// reaches it, dropping every later one for the same document.
-    ///
-    /// # Errors
-    ///
-    /// Returns whatever `send` returns when the channel to the client
-    /// has closed.
-    /// True where `uri` already drew its once-per-session notice, so a
-    /// caller skips the settle check whose result could never render.
-    pub(super) fn reported(&self, uri: &Uri) -> bool {
-        self.reported.contains(uri)
-    }
-
     pub(super) fn offer(
         &mut self,
         connection: &Connection,
@@ -152,6 +140,19 @@ impl Notices {
             Some((uri.clone(), form)),
         )
     }
+
+    /// Sends `rewrite`'s notice for `uri` the first time the session
+    /// reaches it, dropping every later one for the same document.
+    ///
+    /// # Errors
+    ///
+    /// Returns whatever `send` returns when the channel to the client
+    /// has closed.
+    /// True where `uri` already drew its once-per-session notice, so a
+    /// caller skips the settle check whose result could never render.
+    pub(super) fn reported(&self, uri: &Uri) -> bool {
+        self.reported.contains(uri)
+    }
 }
 
 /// A buffer naming no local file keeps its URI in the sentence and
@@ -181,34 +182,6 @@ mod tests {
 
     fn rewrite() -> UnstableRewrite {
         UnstableRewrite::sample("align-equals")
-    }
-
-    #[test]
-    fn answered_drops_an_error_reply() {
-        let (server, client) = Connection::memory();
-        let mut notices = Notices::new(true);
-        notices
-            .offer(&server, &uri("file:///a.py"), ORIGINAL, &rewrite())
-            .expect("offers");
-        let Some(Message::Request(request)) = drained(&client).into_iter().next() else {
-            panic!("expected a message request");
-        };
-
-        notices
-            .answered(
-                &server,
-                &Response::new_err(
-                    request.id,
-                    ErrorCode::RequestCanceled as i32,
-                    "cancelled".to_owned(),
-                ),
-            )
-            .expect("answers");
-
-        assert!(
-            drained(&client).is_empty(),
-            "an error reply opened a document"
-        );
     }
 
     #[test]
@@ -250,6 +223,34 @@ mod tests {
             .expect("answers");
 
         assert!(drained(&client).is_empty());
+    }
+
+    #[test]
+    fn answered_drops_an_error_reply() {
+        let (server, client) = Connection::memory();
+        let mut notices = Notices::new(true);
+        notices
+            .offer(&server, &uri("file:///a.py"), ORIGINAL, &rewrite())
+            .expect("offers");
+        let Some(Message::Request(request)) = drained(&client).into_iter().next() else {
+            panic!("expected a message request");
+        };
+
+        notices
+            .answered(
+                &server,
+                &Response::new_err(
+                    request.id,
+                    ErrorCode::RequestCanceled as i32,
+                    "cancelled".to_owned(),
+                ),
+            )
+            .expect("answers");
+
+        assert!(
+            drained(&client).is_empty(),
+            "an error reply opened a document"
+        );
     }
 
     #[test]

@@ -4,10 +4,9 @@
 //! `TypeAliasType` constructors, the `if TYPE_CHECKING:` block, and the
 //! per-project `allow` list) drop out ahead of the reassignment gate.
 
-use std::collections::HashSet;
-
 use ruff_python_ast::Expr;
 use ruff_text_size::Ranged;
+use rustc_hash::FxHashSet;
 
 use crate::{
     config::Config,
@@ -20,7 +19,7 @@ use crate::{
 };
 
 pub(crate) struct ReassignedConstants {
-    allow: HashSet<String>,
+    allow: FxHashSet<String>,
 }
 
 impl ReassignedConstants {

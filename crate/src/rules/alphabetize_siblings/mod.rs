@@ -18,12 +18,16 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, ArgOrKeyword, Arguments, Expr};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
+use self::{
+    dict::dict_sort_key,
+    leaves::{collect_docstring_entry_edits, collect_leaf_edits},
+    rewrite::{RewriteCtx, body_layout, import_gap},
+};
 use crate::{
     config::Config,
     primitives::{
         binding::{sequence_elts, single_name_target},
         comments::has_keep_marker,
-        edit::singleton_groups,
         effect::value_is_effectful,
         imports::defers_annotations,
         orderer::{
@@ -32,6 +36,7 @@ use crate::{
         },
         scope::BodyScope,
         slots::runs_where,
+        tokens::{CLOSERS, OPENERS},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -41,13 +46,79 @@ mod class_graph;
 mod dict;
 mod leaves;
 mod members;
+mod module_graph;
 mod rewrite;
 
-use self::{
-    dict::dict_sort_key,
-    leaves::{collect_docstring_entry_edits, collect_leaf_edits},
-    rewrite::{RewriteCtx, body_layout, import_gap},
-};
+pub(crate) struct AlphabetizeSiblings {
+    code_width: usize,
+    first_party: Vec<String>,
+    group_imports: bool,
+    group_methods: bool,
+    sort_definitions: bool,
+    sort_dict_keys: bool,
+    sort_docstring_entries: bool,
+    sort_dunder_lists: bool,
+}
+
+impl AlphabetizeSiblings {
+    pub(crate) const MESSAGE: &'static str = "alphabetize this group";
+
+    pub(crate) fn from_config(config: &Config) -> Self {
+        let alphabetize_siblings = &config.rules.alphabetize_siblings;
+        Self {
+            code_width: config.code_width(),
+            first_party: config.first_party(),
+            group_imports: config.group_imports_enabled(),
+            group_methods: alphabetize_siblings.group_methods,
+            sort_definitions: alphabetize_siblings.sort_definitions,
+            sort_dict_keys: alphabetize_siblings.sort_dict_keys,
+            sort_docstring_entries: alphabetize_siblings.sort_docstring_entries,
+            sort_dunder_lists: alphabetize_siblings.sort_dunder_lists,
+        }
+    }
+}
+
+impl Rule for AlphabetizeSiblings {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        let body = &source.ast().body;
+        if body.is_empty() {
+            return Vec::new();
+        }
+        let mut leaf_edits = collect_leaf_edits(
+            source,
+            self.code_width,
+            self.sort_dict_keys,
+            self.sort_dunder_lists,
+        );
+        if self.sort_docstring_entries {
+            leaf_edits.extend(collect_docstring_entry_edits(source));
+            leaf_edits.sort_unstable();
+        }
+        let ctx = RewriteCtx {
+            defer_annotations: defers_annotations(body),
+            first_party: &self.first_party,
+            group_imports: self.group_imports,
+            group_methods: self.group_methods,
+            keyword_fields_from: TextSize::default(),
+            leaf_edits: &leaf_edits,
+            sort_definitions: self.sort_definitions,
+            source,
+        };
+        let layout = body_layout(ctx, body, source.module_range(), BodyScope::Module);
+        assembled_cell_edits(
+            source,
+            &layout.blocks,
+            &layout.rendered,
+            &layout.order,
+            !layout.import_run_slots.is_empty(),
+            |i| import_gap(source, &layout.import_run_slots, i),
+        )
+    }
+
+    fn id(&self) -> RuleId {
+        Self::SLUG
+    }
+}
 
 /// The leaf sorts `alphabetize-siblings` will make, forecast by a rule
 /// seated ahead of it that measures an entry with the separator the
@@ -67,35 +138,6 @@ impl Reorders {
             sort_dict_keys: rules.sort_dict_keys,
             sort_dunder_lists: rules.sort_dunder_lists,
         }
-    }
-
-    /// The range of the entry of `node` the sort leaves last, `None`
-    /// where no entry of `node` sorts per [`Self::sorted_slots`]. A
-    /// pinned last entry stays last, and otherwise the greatest key in
-    /// the run closing there lands last.
-    pub(crate) fn sorted_last(
-        self,
-        source: &Source,
-        node: AnyNodeRef,
-        parent: AnyNodeRef,
-    ) -> Option<TextRange> {
-        let sorted = self.sorted(source, node, parent)?;
-        Some(sorted.ranges[*sorted.order.last()?])
-    }
-
-    /// The order the sort leaves `node`'s entries in, each slot holding
-    /// the source index of the entry landing there, `None` where no
-    /// entry of `node` sorts: the rule off or skip-held over `node`, a
-    /// node of another kind, a list or tuple bound to nothing the rule
-    /// sorts under `parent`, a dict or dunder list held by
-    /// `# prose: keep` or the config, or fewer than two entries.
-    pub(crate) fn sorted_slots(
-        self,
-        source: &Source,
-        node: AnyNodeRef,
-        parent: AnyNodeRef,
-    ) -> Option<Vec<usize>> {
-        Some(self.sorted(source, node, parent)?.order)
     }
 
     /// The sort over `node`'s entries, per [`Self::sorted_slots`].
@@ -181,6 +223,20 @@ impl Reorders {
         }
     }
 
+    /// The range of the entry of `node` the sort leaves last, `None`
+    /// where no entry of `node` sorts per [`Self::sorted_slots`]. A
+    /// pinned last entry stays last, and otherwise the greatest key in
+    /// the run closing there lands last.
+    pub(crate) fn sorted_last(
+        self,
+        source: &Source,
+        node: AnyNodeRef,
+        parent: AnyNodeRef,
+    ) -> Option<TextRange> {
+        let sorted = self.sorted(source, node, parent)?;
+        Some(sorted.ranges[*sorted.order.last()?])
+    }
+
     /// The index of the row the sort leaves last among keyword `rows`,
     /// each a name and its value, a row binding an effectful value
     /// pinned in its slot and the rest sorted by name. `None` where the
@@ -199,77 +255,20 @@ impl Reorders {
             .collect();
         sorted_order(&keys, whole(&keys))?.pop()
     }
-}
 
-pub(crate) struct AlphabetizeSiblings {
-    code_width: usize,
-    first_party: Vec<String>,
-    group_imports: bool,
-    group_methods: bool,
-    sort_definitions: bool,
-    sort_dict_keys: bool,
-    sort_docstring_entries: bool,
-    sort_dunder_lists: bool,
-}
-
-impl AlphabetizeSiblings {
-    pub(crate) const MESSAGE: &'static str = "alphabetize this group";
-
-    pub(crate) fn from_config(config: &Config) -> Self {
-        let alphabetize_siblings = &config.rules.alphabetize_siblings;
-        Self {
-            code_width: config.code_width(),
-            first_party: config.first_party(),
-            group_imports: config.group_imports_enabled(),
-            group_methods: alphabetize_siblings.group_methods,
-            sort_definitions: alphabetize_siblings.sort_definitions,
-            sort_dict_keys: alphabetize_siblings.sort_dict_keys,
-            sort_docstring_entries: alphabetize_siblings.sort_docstring_entries,
-            sort_dunder_lists: alphabetize_siblings.sort_dunder_lists,
-        }
-    }
-}
-
-impl Rule for AlphabetizeSiblings {
-    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let body = &source.ast().body;
-        if body.is_empty() {
-            return Vec::new();
-        }
-        let mut leaf_edits = collect_leaf_edits(
-            source,
-            self.code_width,
-            self.sort_dict_keys,
-            self.sort_dunder_lists,
-        );
-        if self.sort_docstring_entries {
-            leaf_edits.extend(collect_docstring_entry_edits(source));
-            leaf_edits.sort_unstable();
-        }
-        let ctx = RewriteCtx {
-            defer_annotations: defers_annotations(body),
-            first_party: &self.first_party,
-            group_imports: self.group_imports,
-            group_methods: self.group_methods,
-            keyword_fields_from: TextSize::default(),
-            leaf_edits: &leaf_edits,
-            sort_definitions: self.sort_definitions,
-            source,
-        };
-        let layout = body_layout(ctx, body, source.module_range(), BodyScope::Module);
-        let edits = assembled_cell_edits(
-            source,
-            &layout.blocks,
-            &layout.rendered,
-            &layout.order,
-            !layout.import_run_slots.is_empty(),
-            |i| import_gap(source, &layout.import_run_slots, i),
-        );
-        singleton_groups(edits)
-    }
-
-    fn id(&self) -> RuleId {
-        Self::SLUG
+    /// The order the sort leaves `node`'s entries in, each slot holding
+    /// the source index of the entry landing there, `None` where no
+    /// entry of `node` sorts: the rule off or skip-held over `node`, a
+    /// node of another kind, a list or tuple bound to nothing the rule
+    /// sorts under `parent`, a dict or dunder list held by
+    /// `# prose: keep` or the config, or fewer than two entries.
+    pub(crate) fn sorted_slots(
+        self,
+        source: &Source,
+        node: AnyNodeRef,
+        parent: AnyNodeRef,
+    ) -> Option<Vec<usize>> {
+        Some(self.sorted(source, node, parent)?.order)
     }
 }
 
@@ -278,35 +277,6 @@ impl Rule for AlphabetizeSiblings {
 struct Sorted {
     order: Vec<usize>,
     ranges: Vec<TextRange>,
-}
-
-/// `ranged`'s source text read the way a later join writes it onto one
-/// row, per [`joined_text`], so a fractured element sorts where its
-/// joined form will.
-pub(super) fn joined_key(source: &Source, ranged: impl Ranged) -> Cow<'_, str> {
-    joined_text(source.slice(ranged.range()))
-}
-
-/// `slice` read the way a later join writes it onto one row, every
-/// whitespace run one space, none directly inside a bracket, and no
-/// comma ahead of a closer. A single-line slice passes through
-/// borrowed.
-pub(super) fn joined_text(slice: &str) -> Cow<'_, str> {
-    if !slice.contains('\n') {
-        return Cow::Borrowed(slice);
-    }
-    let mut out = String::with_capacity(slice.len());
-    for word in slice.split_whitespace() {
-        if word.starts_with([')', ']', '}']) {
-            while out.ends_with(',') {
-                out.pop();
-            }
-        } else if !out.is_empty() && !out.ends_with(['(', '[', '{']) {
-            out.push(' ');
-        }
-        out.push_str(word);
-    }
-    Cow::Owned(out)
 }
 
 /// True when a leaf group over `items` holds its order as laid out: one
@@ -319,6 +289,35 @@ fn held_leaves<T: Ranged>(source: &Source, items: &[T]) -> bool {
     (any_sibling_shares_line(source, items) || !opens_its_line(source, first.start()))
         && source.contains_line_break(TextRange::new(first.start(), last.end()))
         && swap_span_commented(source, items)
+}
+
+/// `ranged`'s source text read the way a later join writes it onto one
+/// row, per [`joined_text`], so a fractured element sorts where its
+/// joined form will.
+fn joined_key(source: &Source, ranged: impl Ranged) -> Cow<'_, str> {
+    joined_text(source.slice(ranged.range()))
+}
+
+/// `slice` read the way a later join writes it onto one row, every
+/// whitespace run one space, none directly inside a bracket, and no
+/// comma ahead of a closer. A single-line slice passes through
+/// borrowed.
+fn joined_text(slice: &str) -> Cow<'_, str> {
+    if !slice.contains('\n') {
+        return Cow::Borrowed(slice);
+    }
+    let mut out = String::with_capacity(slice.len());
+    for word in slice.split_whitespace() {
+        if word.starts_with(CLOSERS) {
+            while out.ends_with(',') {
+                out.pop();
+            }
+        } else if !out.is_empty() && !out.ends_with(OPENERS) {
+            out.push(' ');
+        }
+        out.push_str(word);
+    }
+    Cow::Owned(out)
 }
 
 /// The sort of `items` under `key` over `runs`, `None` where fewer than
@@ -363,23 +362,6 @@ mod tests {
     use super::*;
     use crate::testing::{applied_text, first_value, parse};
 
-    #[rstest]
-    #[case::packed_commented_list("x = [b, a,  # c\n     d]\n", true)]
-    #[case::packed_commented_tuple("x = (b, a,  # c\n     d)\n", true)]
-    #[case::packed_commented_set("x = {b, a,  # c\n     d}\n", true)]
-    #[case::one_per_line_commented("x = [\n    b,  # c\n    a,\n]\n", false)]
-    #[case::single_element("x = [b]\n", false)]
-    #[case::packed_commented_dict("x = {\"b\": 1, \"a\": 2,  # c\n     \"d\": 3}\n", true)]
-    #[case::single_entry_dict("x = {\"b\": 1}\n", false)]
-    fn holds_as_laid_out_reads_the_layout_gates(#[case] src: &str, #[case] expected: bool) {
-        let source = parse(src);
-        let reorders = Reorders::from_config(&Config::default());
-        assert_eq!(
-            reorders.holds_as_laid_out(&source, first_value(&source).into()),
-            expected
-        );
-    }
-
     #[test]
     fn apply_skips_dict_key_reorder_when_config_disables_it() {
         let src = "row = {\"model\": 1, \"epochs\": 2}\ntags = {\"zeta\", \"alpha\"}\n";
@@ -421,6 +403,23 @@ mod tests {
         assert!(
             bar_pos < alpha_pos,
             "docstring entries should keep source order when sort-docstring-entries is off",
+        );
+    }
+
+    #[rstest]
+    #[case::packed_commented_list("x = [b, a,  # c\n     d]\n", true)]
+    #[case::packed_commented_tuple("x = (b, a,  # c\n     d)\n", true)]
+    #[case::packed_commented_set("x = {b, a,  # c\n     d}\n", true)]
+    #[case::one_per_line_commented("x = [\n    b,  # c\n    a,\n]\n", false)]
+    #[case::single_element("x = [b]\n", false)]
+    #[case::packed_commented_dict("x = {\"b\": 1, \"a\": 2,  # c\n     \"d\": 3}\n", true)]
+    #[case::single_entry_dict("x = {\"b\": 1}\n", false)]
+    fn holds_as_laid_out_reads_the_layout_gates(#[case] src: &str, #[case] expected: bool) {
+        let source = parse(src);
+        let reorders = Reorders::from_config(&Config::default());
+        assert_eq!(
+            reorders.holds_as_laid_out(&source, first_value(&source).into()),
+            expected
         );
     }
 }

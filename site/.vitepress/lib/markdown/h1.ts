@@ -1,2 +1,2 @@
 export const markdownH1 = (content: string): string | undefined =>
-  content.match(/^#\s+(.+?)\s*$/m)?.[1]
+  content.split('\n').find(line => line.startsWith('# '))?.slice(2).trim()

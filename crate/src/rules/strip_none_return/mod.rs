@@ -55,7 +55,7 @@ fn strip(source: &Source, fd: &StmtFunctionDef) -> Option<Edit> {
     if !returns.is_none_literal_expr() || is_ellipsis_stub(&fd.body) {
         return None;
     }
-    let annotation = return_annotation_range(returns, fd, source.tokens());
+    let annotation = return_annotation_range(returns, fd, source);
     Some(Edit::range_deletion(TextRange::new(
         fd.parameters.range().end(),
         annotation.end(),

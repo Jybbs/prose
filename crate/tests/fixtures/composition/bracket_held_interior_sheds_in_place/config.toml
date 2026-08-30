@@ -1,4 +1,0 @@
-code-line-length = 100
-
-[harness]
-rules = ["shed-parentheses", "reflow-calls"]

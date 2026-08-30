@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/band_constants/skip_between_two_bands_holds_each_side/input.py
+---
+band-constants@0..102

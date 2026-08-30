@@ -12,7 +12,7 @@ use ruff_diagnostics::Edit;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
 use ruff_python_ast::{
     AnyNodeRef, ExprRef, ModModule, PySourceType, Stmt,
-    token::{Token, TokenKind, Tokens},
+    token::{Token, TokenKind, Tokens, parenthesized_range},
 };
 use ruff_python_parser::{ParseError, ParseOptions, Parsed, parse};
 use ruff_python_trivia::{
@@ -23,17 +23,16 @@ use ruff_source_file::{
     SourceFileBuilder, SourceLocation, find_newline,
 };
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
+use rustc_hash::FxHashSet;
 use thiserror::Error;
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     primitives::{
         binding::BindingAnalysis,
         comments::trailing_comment,
-        inline::indent_width,
+        inline::{display_width, indent_width},
         layout::{is_layoutable, requires_expand},
         padding::Stranding,
-        range::paren_aware_range,
         reserve::{Columns, Reservations},
         walk::filter_map_over_exprs,
     },
@@ -59,6 +58,7 @@ pub struct Source {
     expandable_literals: OnceLock<Vec<TextRange>>,
     file: SourceFile,
     line_ending: LineEnding,
+    paren_followers: OnceLock<FxHashSet<TextSize>>,
     parsed: Parsed<ModModule>,
     source_type: PySourceType,
     stranded_padding: OnceLock<Box<(Stranding, Vec<Edit>)>>,
@@ -66,31 +66,6 @@ pub struct Source {
 }
 
 impl Source {
-    fn build(
-        text: String,
-        name: impl Into<Box<str>>,
-        source_type: PySourceType,
-        cell_offsets: CellOffsets,
-    ) -> Result<Self, ParseError> {
-        let parsed = parse_typed_module(&text, source_type)?;
-        Ok(Self::from_parsed(
-            text,
-            name,
-            source_type,
-            cell_offsets,
-            parsed,
-        ))
-    }
-
-    /// Builds a source carrying no notebook cell boundaries.
-    pub(crate) fn build_module(
-        text: String,
-        name: impl Into<Box<str>>,
-        source_type: PySourceType,
-    ) -> Result<Self, ParseError> {
-        Self::build(text, name, source_type, CellOffsets::default())
-    }
-
     /// Builds the concatenated source of a parsed notebook, attaching its
     /// cell boundaries and each code cell's notebook position. The caller
     /// keeps `notebook` to re-emit the document after formatting.
@@ -110,12 +85,6 @@ impl Source {
             .map(|cell| cell.cell_index())
             .collect();
         Ok(source)
-    }
-
-    /// Parses `text` as a plain module, handing back the tree a probe
-    /// rebuild clones rather than re-parsing per subset.
-    pub(crate) fn parsed_module(text: &str) -> Result<Parsed<ModModule>, ParseError> {
-        parse_typed_module(text, PySourceType::default())
     }
 
     /// Builds a plain module source around an already-parsed tree, the
@@ -155,10 +124,11 @@ impl Source {
             cell_numbers: Box::default(),
             cell_offsets,
             columns: OnceLock::new(),
-            expandable_literals: OnceLock::new(),
             comment_ranges,
+            expandable_literals: OnceLock::new(),
             file,
             line_ending,
+            paren_followers: OnceLock::new(),
             parsed,
             source_type,
             stranded_padding: OnceLock::new(),
@@ -184,6 +154,44 @@ impl Source {
             return Self::from_notebook(&notebook, name).map_err(Into::into);
         }
         Self::build_module(text, name, source_type).map_err(Into::into)
+    }
+
+    fn build(
+        text: String,
+        name: impl Into<Box<str>>,
+        source_type: PySourceType,
+        cell_offsets: CellOffsets,
+    ) -> Result<Self, ParseError> {
+        let parsed = parse_typed_module(&text, source_type)?;
+        Ok(Self::from_parsed(
+            text,
+            name,
+            source_type,
+            cell_offsets,
+            parsed,
+        ))
+    }
+
+    /// The start offsets of the non-trivia tokens an `(` directly
+    /// precedes, built on the first read.
+    fn paren_followers(&self) -> &FxHashSet<TextSize> {
+        self.paren_followers.get_or_init(|| {
+            self.tokens()
+                .iter()
+                .filter(|token| !token.kind().is_trivia())
+                .tuple_windows()
+                .filter(|(open, _)| open.kind() == TokenKind::Lpar)
+                .map(|(_, follower)| follower.start())
+                .collect()
+        })
+    }
+
+    /// Returns the first non-trivia token scanning backward from
+    /// `offset`, or `None` when the scan finds none.
+    fn prev_non_trivia_token(&self, offset: TextSize) -> Option<SimpleToken> {
+        BackwardsTokenizer::up_to(offset, self.text(), self.comment_ranges())
+            .skip_trivia()
+            .next()
     }
 
     /// Recuts `offsets` onto the statement boundaries `body` and `text`
@@ -219,6 +227,15 @@ impl Source {
             .get_or_init(|| Box::new(BindingAnalysis::new(self.ast())))
     }
 
+    /// Builds a source carrying no notebook cell boundaries.
+    pub(crate) fn build_module(
+        text: String,
+        name: impl Into<Box<str>>,
+        source_type: PySourceType,
+    ) -> Result<Self, ParseError> {
+        Self::build(text, name, source_type, CellOffsets::default())
+    }
+
     /// Returns the absolute notebook position of the code cell at
     /// `index`, counting Markdown cells, or `index` one-indexed for an
     /// ordinary module.
@@ -233,16 +250,6 @@ impl Source {
     /// empty for an ordinary module.
     pub(crate) fn cell_offsets(&self) -> &CellOffsets {
         &self.cell_offsets
-    }
-
-    /// Returns the columns `reservations` shifts each aligned value to,
-    /// walking the tree on the first read. Every rule of a run measures
-    /// against the same reservation and reads the walk back, whereas a
-    /// read carrying a different one walks for itself.
-    pub(crate) fn columns(&self, reservations: Reservations) -> Cow<'_, Columns> {
-        keyed(&self.columns, reservations, |reservations| {
-            reservations.columns(self)
-        })
     }
 
     /// Returns `true` when the cell boundary at `index` sits on a
@@ -261,19 +268,6 @@ impl Source {
         self.cell_offsets
             .containing_range(offset)
             .map(TextRange::start)
-    }
-
-    /// The full lines `range` spans, held back from the synthetic
-    /// newline closing the notebook cell that holds it. An ordinary
-    /// module takes the span unclamped, and a deletion over the result
-    /// empties a cell rather than merging it into the next.
-    pub(crate) fn full_lines_within_cell(&self, range: TextRange) -> TextRange {
-        let lines = self.text().full_lines_range(range);
-        let Some(cell) = self.cell_offsets.containing_range(range.start()) else {
-            return lines;
-        };
-        let content_end = cell.end() - TextSize::from(1);
-        TextRange::new(lines.start(), lines.end().min(content_end))
     }
 
     /// Returns the source text of each notebook cell, the whole buffer
@@ -303,6 +297,16 @@ impl Source {
     /// `offset`'s column extends past `budget`.
     pub fn column_overflows(&self, offset: TextSize, width: usize, budget: usize) -> bool {
         self.column_of(offset) + width > budget
+    }
+
+    /// Returns the columns `reservations` shifts each aligned value to,
+    /// walking the tree on the first read. Every rule of a run measures
+    /// against the same reservation and reads the walk back, whereas a
+    /// read carrying a different one walks for itself.
+    pub(crate) fn columns(&self, reservations: Reservations) -> Cow<'_, Columns> {
+        keyed(&self.columns, reservations, |reservations| {
+            reservations.columns(self)
+        })
     }
 
     /// Returns the comment-range index built during parsing.
@@ -344,6 +348,20 @@ impl Source {
         !self.intersects_comment(TextRange::new(TextSize::of(ahead), TextSize::of(joined)))
     }
 
+    /// Returns the start-ascending ranges of the comment-free literals
+    /// `reflow-collections` can expand, walking the tree on the first
+    /// read.
+    pub(crate) fn expandable_literals(&self) -> &[TextRange] {
+        self.expandable_literals.get_or_init(|| {
+            filter_map_over_exprs(&self.ast().body, |expr| {
+                (is_layoutable(expr)
+                    && requires_expand(expr)
+                    && !self.intersects_comment(expr.range()))
+                .then_some(expr.range())
+            })
+        })
+    }
+
     /// Returns the start offset of the first token in `range` for
     /// which `predicate` is true. Callers that need the full `&Token`
     /// (kind, range, flags) should chain
@@ -361,6 +379,19 @@ impl Source {
             .iter()
             .find(|&t| predicate(t))
             .map(Token::start)
+    }
+
+    /// The full lines `range` spans, held back from the synthetic
+    /// newline closing the notebook cell that holds it. An ordinary
+    /// module takes the span unclamped, and a deletion over the result
+    /// empties a cell rather than merging it into the next.
+    pub(crate) fn full_lines_within_cell(&self, range: TextRange) -> TextRange {
+        let lines = self.text().full_lines_range(range);
+        let Some(cell) = self.cell_offsets.containing_range(range.start()) else {
+            return lines;
+        };
+        let content_end = cell.end() - TextSize::from(1);
+        TextRange::new(lines.start(), lines.end().min(content_end))
     }
 
     /// Returns `true` when at least one blank line separates the
@@ -405,20 +436,6 @@ impl Source {
         self.file.to_source_code().line_index(offset)
     }
 
-    /// Returns the range from `offset` to the end of its logical line,
-    /// the start of the first `Newline` token past it or the module's
-    /// own end. A break inside a bracketed construct carries
-    /// `NonLogicalNewline` and leaves the logical line open.
-    pub fn logical_line_tail(&self, offset: TextSize) -> TextRange {
-        let module_end = self.module_range().end();
-        let end = self
-            .first_token_offset_in_range(TextRange::new(offset, module_end), |token| {
-                token.kind() == TokenKind::Newline
-            })
-            .unwrap_or(module_end);
-        TextRange::new(offset, end)
-    }
-
     /// Returns the range from the start of `offset`'s logical line to
     /// `offset`, the text already placed ahead of it on that line. A
     /// break inside a bracketed construct carries `NonLogicalNewline`,
@@ -439,36 +456,18 @@ impl Source {
         TextRange::new(start, offset)
     }
 
-    /// Returns the range from `offset` to the end of its physical row,
-    /// the columns a construct ending at `offset` shares its row with
-    /// once it joins. A construct inside brackets leaves its logical
-    /// line open past that row, so [`logical_line_tail`](Self::logical_line_tail)
-    /// would charge every row beneath it.
-    pub fn row_tail(&self, offset: TextSize) -> TextRange {
-        TextRange::new(offset, self.text().line_end(offset))
-    }
-
-    /// The display width of the code from `offset` to the end of its
-    /// physical row, the columns a construct ending there shares its row
-    /// with once it joins. A trailing comment closes the measure, since
-    /// charging one against the code budget would let a comment reshape
-    /// the code it annotates.
-    pub fn row_tail_width(&self, offset: TextSize) -> usize {
-        self.tail_width(self.row_tail(offset))
-    }
-
-    /// The display width of the code across `tail`, a span inside one
-    /// physical row, closed at a trailing comment the span reaches the
-    /// same way [`row_tail_width`](Self::row_tail_width) closes the
-    /// whole row.
-    pub(crate) fn tail_width(&self, tail: TextRange) -> usize {
-        let end = trailing_comment(self, tail.start())
-            .map(TextRange::start)
-            .filter(|start| tail.contains(*start))
-            .unwrap_or(tail.end());
-        self.slice(TextRange::new(tail.start(), end))
-            .trim_end()
-            .width()
+    /// Returns the range from `offset` to the end of its logical line,
+    /// the start of the first `Newline` token past it or the module's
+    /// own end. A break inside a bracketed construct carries
+    /// `NonLogicalNewline` and leaves the logical line open.
+    pub fn logical_line_tail(&self, offset: TextSize) -> TextRange {
+        let module_end = self.module_range().end();
+        let end = self
+            .first_token_offset_in_range(TextRange::new(offset, module_end), |token| {
+                token.kind() == TokenKind::Newline
+            })
+            .unwrap_or(module_end);
+        TextRange::new(offset, end)
     }
 
     /// Returns the range spanning the entire source text.
@@ -483,17 +482,30 @@ impl Source {
     }
 
     /// Returns `expr`'s range widened to the explicit parentheses
-    /// recovered against `parent`, threading this source's token stream.
+    /// recovered against `parent`, falling back to the bare expression
+    /// range when none enclose it.
     pub(crate) fn paren_aware_range(&self, expr: ExprRef, parent: AnyNodeRef) -> TextRange {
-        paren_aware_range(expr, parent, self.tokens())
+        self.parenthesized_range(expr, parent)
+            .unwrap_or_else(|| expr.range())
     }
 
-    /// Returns the first non-trivia token scanning backward from
-    /// `offset`, or `None` when the scan finds none.
-    fn prev_non_trivia_token(&self, offset: TextSize) -> Option<SimpleToken> {
-        BackwardsTokenizer::up_to(offset, self.text(), self.comment_ranges())
-            .skip_trivia()
-            .next()
+    /// The range of `expr` including the parentheses recovered against
+    /// `parent`, `None` where none enclose it.
+    pub(crate) fn parenthesized_range(
+        &self,
+        expr: ExprRef,
+        parent: AnyNodeRef,
+    ) -> Option<TextRange> {
+        self.paren_followers()
+            .contains(&expr.start())
+            .then(|| parenthesized_range(expr, parent, self.tokens()))
+            .flatten()
+    }
+
+    /// Parses `text` as a plain module, handing back the tree a probe
+    /// rebuild clones rather than re-parsing per subset.
+    pub(crate) fn parsed_module(text: &str) -> Result<Parsed<ModModule>, ParseError> {
+        parse_typed_module(text, PySourceType::default())
     }
 
     /// Returns the end offset of the token preceding `offset`, scanning
@@ -528,6 +540,24 @@ impl Source {
         );
         next.cell_numbers.clone_from(&self.cell_numbers);
         Ok(next)
+    }
+
+    /// Returns the range from `offset` to the end of its physical row,
+    /// the columns a construct ending at `offset` shares its row with
+    /// once it joins. A construct inside brackets leaves its logical
+    /// line open past that row, so [`logical_line_tail`](Self::logical_line_tail)
+    /// would charge every row beneath it.
+    pub fn row_tail(&self, offset: TextSize) -> TextRange {
+        TextRange::new(offset, self.text().line_end(offset))
+    }
+
+    /// The display width of the code from `offset` to the end of its
+    /// physical row, the columns a construct ending there shares its row
+    /// with once it joins. A trailing comment closes the measure, since
+    /// charging one against the code budget would let a comment reshape
+    /// the code it annotates.
+    pub fn row_tail_width(&self, offset: TextSize) -> usize {
+        self.tail_width(self.row_tail(offset))
     }
 
     /// Returns `true` when `a` and `b` sit in one notebook cell, with `a`
@@ -576,20 +606,6 @@ impl Source {
         }
     }
 
-    /// Returns the start-ascending ranges of the comment-free literals
-    /// `reflow-collections` can expand, walking the tree on the first
-    /// read.
-    pub(crate) fn expandable_literals(&self) -> &[TextRange] {
-        self.expandable_literals.get_or_init(|| {
-            filter_map_over_exprs(&self.ast().body, |expr| {
-                (is_layoutable(expr)
-                    && requires_expand(expr)
-                    && !self.intersects_comment(expr.range()))
-                .then_some(expr.range())
-            })
-        })
-    }
-
     /// Returns the edits `stranding` emits over this source, walking the
     /// tree on the first read. Every rule of a run measures against the
     /// same padding rule and reads the walk back, whereas a read
@@ -603,6 +619,18 @@ impl Source {
     /// Returns the suppression index built during parsing.
     pub(crate) fn suppression_map(&self) -> &SuppressionMap {
         &self.suppression
+    }
+
+    /// The display width of the code across `tail`, a span inside one
+    /// physical row, closed at a trailing comment the span reaches the
+    /// same way [`row_tail_width`](Self::row_tail_width) closes the
+    /// whole row.
+    pub(crate) fn tail_width(&self, tail: TextRange) -> usize {
+        let end = trailing_comment(self, tail.start())
+            .map(TextRange::start)
+            .filter(|start| tail.contains(*start))
+            .unwrap_or(tail.end());
+        display_width(self.slice(TextRange::new(tail.start(), end)).trim_end())
     }
 
     pub fn text(&self) -> &str {
@@ -647,7 +675,7 @@ impl Source {
 
     /// Returns the display width of the source text between `a` and `b`.
     pub(crate) fn width_between(&self, a: TextSize, b: TextSize) -> usize {
-        self.slice(TextRange::new(a, b)).width()
+        display_width(self.slice(TextRange::new(a, b)))
     }
 }
 
@@ -661,6 +689,17 @@ impl FromStr for Source {
     fn from_str(text: &str) -> Result<Self, Self::Err> {
         Self::build_module(text.to_owned(), "<source>", PySourceType::default())
     }
+}
+
+/// Failure to load and parse a source file from disk.
+#[derive(Debug, Error)]
+pub enum SourceError {
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Notebook(#[from] NotebookError),
+    #[error(transparent)]
+    Parse(#[from] ParseError),
 }
 
 /// The value `build` derives for `key`, read back from `slot` where it
@@ -677,17 +716,6 @@ fn keyed<K: Copy + PartialEq, B: ?Sized + ToOwned>(
     } else {
         Cow::Owned(build(&key))
     }
-}
-
-/// Failure to load and parse a source file from disk.
-#[derive(Debug, Error)]
-pub enum SourceError {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
-    #[error(transparent)]
-    Notebook(#[from] NotebookError),
-    #[error(transparent)]
-    Parse(#[from] ParseError),
 }
 
 /// Parses `text` in `source_type`'s mode as a module.
@@ -724,27 +752,12 @@ mod tests {
     use ruff_text_size::TextRange;
 
     use super::*;
+    use crate::primitives::walk::{Descent, filter_map_over_parented_exprs};
     use crate::{
         config::Config,
         primitives::scope::sub_bodies,
         testing::{assert_send_sync, notebook, parse, range},
     };
-
-    #[test]
-    fn columns_holds_the_first_reservation_and_walks_for_any_other() {
-        let source = parse("x = 1\nlonger = 2\n");
-        let mut disabled = Config::default();
-        disabled.rules.align_equals.enabled = false;
-        let aligned = Config::default().equals_reservations();
-        let unaligned = disabled.equals_reservations();
-        let value = TextSize::new(4);
-        let written = source.column_of(value);
-
-        let held = source.columns(aligned).column_in(&source, value);
-        assert!(held > written);
-        assert_eq!(source.columns(aligned).column_in(&source, value), held);
-        assert_eq!(source.columns(unaligned).column_in(&source, value), written);
-    }
 
     /// Replaces `before`'s interior boundaries with `drifts` in order and
     /// its closing offset with `after`'s length, the shape a rule's edits
@@ -791,6 +804,37 @@ mod tests {
     }
 
     #[test]
+    fn cell_number_counts_markdown_cells_and_survives_a_reparse() {
+        let json = r##"{
+            "cells": [
+                {"cell_type": "markdown", "metadata": {}, "source": "# Notes"},
+                {"cell_type": "code", "execution_count": null, "metadata": {},
+                 "outputs": [], "source": "x = 1\n"}
+            ],
+            "metadata": {"language_info": {"name": "python"}},
+            "nbformat": 4,
+            "nbformat_minor": 5
+        }"##;
+        let parsed = Notebook::from_source_code(json).expect("notebook parses");
+        let nb = Source::from_notebook(&parsed, "<nb>").expect("notebook source builds");
+
+        assert_eq!(nb.cell_number(0), OneIndexed::from_zero_indexed(1));
+
+        let reparsed = nb
+            .reparse_carrying(nb.text().to_owned(), nb.cell_offsets().clone())
+            .expect("reparses");
+        assert_eq!(reparsed.cell_number(0), OneIndexed::from_zero_indexed(1));
+    }
+
+    #[test]
+    fn cell_number_falls_back_to_the_position_for_a_module() {
+        assert_eq!(
+            parse("x = 1\n").cell_number(3),
+            OneIndexed::from_zero_indexed(3)
+        );
+    }
+
+    #[test]
     fn cell_offsets_empty_for_a_module_and_present_for_a_notebook() {
         let module = Source::from_str("x = 1\n").expect("parses");
         assert!(module.cell_offsets().is_empty());
@@ -824,37 +868,6 @@ mod tests {
     }
 
     #[test]
-    fn cell_number_counts_markdown_cells_and_survives_a_reparse() {
-        let json = r##"{
-            "cells": [
-                {"cell_type": "markdown", "metadata": {}, "source": "# Notes"},
-                {"cell_type": "code", "execution_count": null, "metadata": {},
-                 "outputs": [], "source": "x = 1\n"}
-            ],
-            "metadata": {"language_info": {"name": "python"}},
-            "nbformat": 4,
-            "nbformat_minor": 5
-        }"##;
-        let parsed = Notebook::from_source_code(json).expect("notebook parses");
-        let nb = Source::from_notebook(&parsed, "<nb>").expect("notebook source builds");
-
-        assert_eq!(nb.cell_number(0), OneIndexed::from_zero_indexed(1));
-
-        let reparsed = nb
-            .reparse_carrying(nb.text().to_owned(), nb.cell_offsets().clone())
-            .expect("reparses");
-        assert_eq!(reparsed.cell_number(0), OneIndexed::from_zero_indexed(1));
-    }
-
-    #[test]
-    fn cell_number_falls_back_to_the_position_for_a_module() {
-        assert_eq!(
-            parse("x = 1\n").cell_number(3),
-            OneIndexed::from_zero_indexed(3)
-        );
-    }
-
-    #[test]
     fn cell_texts_returns_the_whole_buffer_for_a_module() {
         assert_eq!(parse("x = 1\ny = 2\n").cell_texts(), vec!["x = 1\ny = 2\n"]);
     }
@@ -869,6 +882,22 @@ mod tests {
     fn changed_from_returns_text_when_it_differs() {
         let s = Source::from_str("x = 1\n").expect("parses");
         assert_eq!(s.changed_from("y = 2\n"), Some("x = 1\n"));
+    }
+
+    #[test]
+    fn columns_holds_the_first_reservation_and_walks_for_any_other() {
+        let source = parse("x = 1\nlonger = 2\n");
+        let mut disabled = Config::default();
+        disabled.rules.align_equals.enabled = false;
+        let aligned = Config::default().equals_reservations();
+        let unaligned = disabled.equals_reservations();
+        let value = TextSize::new(4);
+        let written = source.column_of(value);
+
+        let held = source.columns(aligned).column_in(&source, value);
+        assert!(held > written);
+        assert_eq!(source.columns(aligned).column_in(&source, value), held);
+        assert_eq!(source.columns(unaligned).column_in(&source, value), written);
     }
 
     #[test]
@@ -978,31 +1007,6 @@ mod tests {
     }
 
     #[test]
-    fn full_lines_within_cell_holds_the_separator_closing_a_cell() {
-        // The first cell carries no newline of its own, so the one that
-        // ends its line is the separator `ruff_notebook` synthesized.
-        let source = notebook(&["import os", "value = 1\n"]);
-        let first = source.ast().body[0].range();
-
-        assert_eq!(
-            &source.text()[source.full_lines_within_cell(first)],
-            "import os",
-            "the span stops before the newline separating the cells",
-        );
-    }
-
-    #[test]
-    fn full_lines_within_cell_takes_the_whole_lines_of_an_ordinary_module() {
-        let source = parse("import os\nvalue = 1\n");
-        let first = source.ast().body[0].range();
-
-        assert_eq!(
-            &source.text()[source.full_lines_within_cell(first)],
-            "import os\n"
-        );
-    }
-
-    #[test]
     fn from_path_bad_syntax_returns_parse_error() {
         let tmp = tempfile::NamedTempFile::new().expect("temp file creates");
         std::fs::write(tmp.path(), b"def foo(").expect("temp file writes");
@@ -1037,6 +1041,31 @@ mod tests {
         let s = Source::from_path(tmp.path()).expect("existing file parses");
         assert_eq!(s.text(), "x = 1\n");
         assert_eq!(s.ast().body.len(), 1);
+    }
+
+    #[test]
+    fn full_lines_within_cell_holds_the_separator_closing_a_cell() {
+        // The first cell carries no newline of its own, so the one that
+        // ends its line is the separator `ruff_notebook` synthesized.
+        let source = notebook(&["import os", "value = 1\n"]);
+        let first = source.ast().body[0].range();
+
+        assert_eq!(
+            &source.text()[source.full_lines_within_cell(first)],
+            "import os",
+            "the span stops before the newline separating the cells",
+        );
+    }
+
+    #[test]
+    fn full_lines_within_cell_takes_the_whole_lines_of_an_ordinary_module() {
+        let source = parse("import os\nvalue = 1\n");
+        let first = source.ast().body[0].range();
+
+        assert_eq!(
+            &source.text()[source.full_lines_within_cell(first)],
+            "import os\n"
+        );
     }
 
     #[test]
@@ -1077,6 +1106,30 @@ mod tests {
     ) {
         assert_eq!(parse(src).line_ending(), expected);
         assert_eq!(parse(src).newline_str(), expected.as_str());
+    }
+
+    #[rstest]
+    #[case("f(a)\n")]
+    #[case("(a)\n")]
+    #[case("((a))\n")]
+    #[case("x = (  # c\n    a\n)\n")]
+    #[case("[a]\n")]
+    #[case("f((a), (b))\n")]
+    #[case("x = a if (b) else c\n")]
+    fn parenthesized_range_agrees_with_the_token_walk(#[case] src: &str) {
+        let source = parse(src);
+        let pairs = filter_map_over_parented_exprs(source.ast(), Descent::Into, |expr, parent| {
+            Some((expr, parent))
+        });
+        assert!(!pairs.is_empty());
+        for (expr, parent) in pairs {
+            assert_eq!(
+                source.parenthesized_range(expr.into(), parent),
+                parenthesized_range(expr.into(), parent, source.tokens()),
+                "{src:?} at {:?}",
+                expr.range()
+            );
+        }
     }
 
     #[test]

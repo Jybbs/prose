@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Backslash-Continued Argument Keeps Its Break"
+
+description = '''
+A backslash continues the row inside the call's argument, and it reads as a line break rather than as a token, so closing the row behind it would strand the backslash ahead of a space and the text would stop parsing. The argument keeps the break, leaving the backslash to [[shed-backslash-continuations]], which runs ahead of this rule in the default pipeline.
+'''

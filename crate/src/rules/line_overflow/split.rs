@@ -8,11 +8,10 @@ use std::iter;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::StringLiteral;
 use ruff_text_size::{Ranged, TextRange};
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     primitives::{
-        inline::whitespace_runs,
+        inline::{display_width, whitespace_runs},
         layout::{Separator, explode_parens, item_indent, pack},
     },
     source::Source,
@@ -27,7 +26,8 @@ pub(super) fn concatenation(source: &Source, lit: &StringLiteral, cap: usize) ->
     let indent = source.line_indent_width(lit.start());
     let opener = source.slice(TextRange::new(lit.start(), inner.start()));
     let closer = source.slice(TextRange::new(inner.end(), lit.end()));
-    let budget = cap.saturating_sub(item_indent(indent) + opener.width() + closer.width());
+    let budget =
+        cap.saturating_sub(item_indent(indent) + display_width(opener) + display_width(closer));
     let parts = concatenated_parts(source.slice(inner), budget)?;
     Some(Edit::range_replacement(
         explode_parens(
@@ -64,7 +64,7 @@ fn concatenated_parts(content: &str, budget: usize) -> Option<Vec<&str>> {
         .collect();
     let widths: Vec<usize> = bounds
         .windows(2)
-        .map(|pair| content[pair[0]..pair[1]].width())
+        .map(|pair| display_width(&content[pair[0]..pair[1]]))
         .collect();
     let lines = pack(&widths, 0, 0, budget);
     (lines.len() > 1).then(|| {

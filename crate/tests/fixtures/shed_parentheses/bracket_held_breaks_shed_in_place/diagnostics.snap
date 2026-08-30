@@ -1,8 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: render(diagnostics)
-input_file: crate/tests/fixtures/shed_parentheses/bracket_held_breaks_shed_in_place/input.py
----
-shed-parentheses@128..129
-shed-parentheses@172..173
-shed-parentheses@242..243

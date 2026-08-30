@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/group_pair_holds_across_boolean_operators/input.py
+---
+held = (alpha and beta) or gamma
+same = (alpha and beta) and gamma

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Class Holds Below the Function Its Body Calls"
+
+description = '''
+`Alpha` sorts ahead of `Zebra` by name, and moving it would carry it above `helper`, which its class body calls the moment the `class` statement runs. Both classes **hold as written**, because the check reads every binding the run passes over rather than only the definitions it is currently sorting.
+'''

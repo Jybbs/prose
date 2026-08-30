@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_parentheses/nested_pair_in_fold/input.py
+---
+reflow-parentheses@14..15
+reflow-parentheses@24..25
+reflow-parentheses@25..30
+reflow-parentheses@44..46
+reflow-parentheses@8..14

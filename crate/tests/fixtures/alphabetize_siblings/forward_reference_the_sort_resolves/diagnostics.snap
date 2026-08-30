@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/forward_reference_the_sort_resolves/input.py
+---
+alphabetize-siblings@37..106

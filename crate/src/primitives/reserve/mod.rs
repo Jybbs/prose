@@ -11,24 +11,25 @@
 //! is reserved for a value inside an f-string or t-string replacement
 //! field.
 
-use std::collections::HashMap;
-
-mod visit;
-
-use visit::{ReserveVisitor, widenings_over};
-
 use ruff_python_ast::{
     AnyNodeRef, Expr, InterpolatedStringElement, Stmt,
     visitor::{Visitor, walk_body, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
+use rustc_hash::FxHashMap;
 
 use crate::{
-    primitives::{aligner, call_keywords::module_call_params, equal_targets, one_row, walk},
+    primitives::{
+        aligner, call_keywords::module_call_params, equal_targets, inline::display_width, one_row,
+        walk,
+    },
     rule::RuleId,
     source::Source,
 };
+
+mod visit;
+
+use visit::{ReserveVisitor, widenings_over};
 
 /// The columns each aligned value shifts by once the alignment
 /// settles, one entry per reservation ascending by start, each carrying
@@ -116,7 +117,7 @@ impl Reservations {
             rule: self.rule,
             runs: Vec::new(),
             source,
-            values: HashMap::new(),
+            values: FxHashMap::default(),
         };
         visitor.visit_body(&source.ast().body);
         visitor
@@ -137,34 +138,32 @@ impl Reservations {
         let targets = module_call_params(source);
         let one_row = self.one_row.against(&targets);
         let widenings = widenings_over(source, settings, &visitor);
-        let joined = |member: aligner::Member| {
+        let place = |member: aligner::Member| {
             let start = member.rewritten_value_gap(source)?.end();
+            Some((start, source.column_of(start)))
+        };
+        let joined = |(start, column): (TextSize, usize)| {
             let &(expr, parent) = visitor.values.get(&start)?;
-            let column = source.column_of(start);
             let end = source.paren_aware_range(expr.into(), parent).end();
             let tail = source.row_tail_width(end);
             let form = one_row.rejoined(source, expr, parent, column, tail)?;
-            Some(column + form.width() + tail)
+            Some(column + display_width(&form) + tail)
         };
         let mut shifts = Vec::new();
         for run in &visitor.runs {
             if run.candidate && !aligner::is_alignment_candidate(&run.members) {
                 continue;
             }
-            let joined: Vec<Option<usize>> = run.members.iter().map(|&m| joined(m)).collect();
+            let placed: Vec<Option<(TextSize, usize)>> =
+                run.members.iter().map(|&m| place(m)).collect();
+            let joined: Vec<Option<usize>> = placed.iter().map(|&at| joined(at?)).collect();
             let columns =
                 aligner::operator_columns(source, &run.members, settings, &widenings, &joined);
-            shifts.extend(
-                run.members
-                    .iter()
-                    .zip(columns)
-                    .filter_map(|(member, column)| {
-                        let start = member.rewritten_value_gap(source)?.end();
-                        let shift = (column + aligner::VALUE_OFFSET).cast_signed()
-                            - source.column_of(start).cast_signed();
-                        Some((source.row_tail(start), shift))
-                    }),
-            );
+            shifts.extend(placed.iter().zip(columns).filter_map(|(&placed, column)| {
+                let (start, at) = placed?;
+                let shift = (column + aligner::VALUE_OFFSET).cast_signed() - at.cast_signed();
+                Some((source.row_tail(start), shift))
+            }));
         }
         shifts.sort_unstable_by_key(|(range, _)| range.start());
         Columns {
@@ -226,12 +225,6 @@ mod tests {
     }
 
     #[test]
-    fn columns_shift_each_value_to_the_run_column() {
-        // `a`'s value follows `bbb`'s to column 6 while `bbb`'s stays.
-        assert_eq!(landed("a = 1\nbbb = 2\n", 88, &[4, 12]), vec![6, 6]);
-    }
-
-    #[test]
     fn columns_count_a_keyword_the_rule_widens_on_the_same_line() {
         // Aligning `x` to `longer` lands its line on 15 columns, inside
         // a cap of 16 until the stacked `k=1` keyword the rule buffers
@@ -258,6 +251,12 @@ mod tests {
         assert_eq!(landed(stacked, 88, &[20]), vec![15]);
         let packed = "def f(a: int = 1, bbb: str = \"\"):\n    pass\n";
         assert_eq!(landed(packed, 88, &[15]), vec![15]);
+    }
+
+    #[test]
+    fn columns_shift_each_value_to_the_run_column() {
+        // `a`'s value follows `bbb`'s to column 6 while `bbb`'s stays.
+        assert_eq!(landed("a = 1\nbbb = 2\n", 88, &[4, 12]), vec![6, 6]);
     }
 
     #[test]

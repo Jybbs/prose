@@ -4,10 +4,11 @@
 //! config build it once.
 
 use std::{
-    collections::HashMap,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
+
+use rustc_hash::FxHashMap;
 
 use crate::{
     cache::{Anchor, CacheKeyPrefix},
@@ -23,12 +24,12 @@ use crate::{
 /// directory whose config fails to load reports once and fails its files.
 pub(super) struct ConfigResolver {
     anchor: Anchor,
-    built: Mutex<HashMap<String, Arc<Resolved>>>,
+    built: Mutex<FxHashMap<String, Arc<Resolved>>>,
     default: Arc<Resolved>,
     ignore: Vec<RuleId>,
     notices: NoticeDedup,
     select: Vec<RuleId>,
-    sources: Mutex<HashMap<PathBuf, DirResolution>>,
+    sources: Mutex<FxHashMap<PathBuf, DirResolution>>,
 }
 
 impl ConfigResolver {
@@ -36,7 +37,7 @@ impl ConfigResolver {
         let default = Arc::new(build_resolved(&Config::default(), &select, &ignore, anchor));
         Self {
             anchor,
-            built: Mutex::new(HashMap::from([(
+            built: Mutex::new(FxHashMap::from_iter([(
                 default.config_toml.clone(),
                 Arc::clone(&default),
             )])),
@@ -44,7 +45,7 @@ impl ConfigResolver {
             ignore,
             notices: NoticeDedup::default(),
             select,
-            sources: Mutex::new(HashMap::new()),
+            sources: Mutex::new(FxHashMap::default()),
         }
     }
 
@@ -54,7 +55,7 @@ impl ConfigResolver {
         let default = Arc::new(resolved);
         Self {
             anchor: Anchor::AsWritten,
-            built: Mutex::new(HashMap::from([(
+            built: Mutex::new(FxHashMap::from_iter([(
                 default.config_toml.clone(),
                 Arc::clone(&default),
             )])),
@@ -62,7 +63,7 @@ impl ConfigResolver {
             ignore: Vec::new(),
             notices: NoticeDedup::default(),
             select: Vec::new(),
-            sources: Mutex::new(HashMap::new()),
+            sources: Mutex::new(FxHashMap::default()),
         }
     }
 
@@ -319,22 +320,6 @@ mod tests {
     }
 
     #[test]
-    fn resolve_siblings_under_one_config_share_a_resolution() {
-        let tmp = TempDir::new().expect("tempdir");
-        write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 120\n");
-        let resolver = resolver();
-
-        let first = resolver
-            .resolve(&tmp.path().join("a.py"), b"x = 1\n")
-            .expect("resolves");
-        let second = resolver
-            .resolve(&tmp.path().join("b.py"), b"y = 2\n")
-            .expect("resolves");
-
-        assert!(Arc::ptr_eq(&first, &second));
-    }
-
-    #[test]
     fn resolve_siblings_under_different_overrides_cache_independently() {
         let tmp = TempDir::new().expect("tempdir");
         write_pyproject(
@@ -352,6 +337,22 @@ mod tests {
 
         assert!(!Arc::ptr_eq(&matched, &plain));
         assert_ne!(matched.config_toml, plain.config_toml);
+    }
+
+    #[test]
+    fn resolve_siblings_under_one_config_share_a_resolution() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 120\n");
+        let resolver = resolver();
+
+        let first = resolver
+            .resolve(&tmp.path().join("a.py"), b"x = 1\n")
+            .expect("resolves");
+        let second = resolver
+            .resolve(&tmp.path().join("b.py"), b"y = 2\n")
+            .expect("resolves");
+
+        assert!(Arc::ptr_eq(&first, &second));
     }
 
     #[test]

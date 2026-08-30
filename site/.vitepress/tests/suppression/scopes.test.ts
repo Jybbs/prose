@@ -1,13 +1,14 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
+import { slugify } from '@mdit-vue/shared'
+
 import * as scopes from '../../lib/suppression/scopes'
 
 const page    = fs.readFileSync(
   path.join(import.meta.dirname, '../../../reference/suppression-directives.md'), 'utf8'
 )
-const anchors = [...page.matchAll(/^## (.+)$/gm)].map(([, heading]) =>
-  heading.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-').replaceAll(/^-|-$/g, ''))
+const anchors = [...page.matchAll(/^## (.+)$/gm)].map(([, heading]) => slugify(heading))
 
 describe('directiveHref', () => {
   it.each(scopes.SCOPE_ORDER)('anchors the %s scope to a heading on the reference page', scope => {

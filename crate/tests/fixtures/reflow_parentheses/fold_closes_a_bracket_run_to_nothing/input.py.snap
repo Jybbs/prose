@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/fold_closes_a_bracket_run_to_nothing/input.py
+---
+x = helper(arg) and flag

@@ -1426,11 +1426,11 @@ dependencies = [
  "itertools",
  "lsp-server",
  "lsp-types",
+ "memchr",
  "mimalloc",
  "postcard",
  "proptest",
  "rayon",
- "regex-lite",
  "rstest",
  "ruff_diagnostics",
  "ruff_notebook",
@@ -1442,12 +1442,14 @@ dependencies = [
  "ruff_python_trivia",
  "ruff_source_file",
  "ruff_text_size",
+ "rustc-hash",
  "schemars",
  "serde",
  "serde-sarif",
  "serde_ignored",
  "serde_json",
  "similar 3.1.2",
+ "smallvec",
  "tempfile",
  "textwrap",
  "thiserror",
@@ -1681,12 +1683,6 @@ dependencies = [
  "memchr",
  "regex-syntax",
 ]
-
-[[package]]
-name = "regex-lite"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cab834c73d247e67f4fae452806d17d3c7501756d98c8808d7c9c7aa7d18f973"
 
 [[package]]
 name = "regex-syntax"
@@ -2296,6 +2292,9 @@ name = "smallvec"
 version = "1.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ed6a63f02c8539c91a8685a86f4099661ba3da017932f6ebbea6de3f0fa7c90"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "smawk"

@@ -3,12 +3,14 @@
 //! sorts, the merge groups they hold, and the landing a comment-led
 //! drop takes once a fold clears its statement.
 
-use std::{cell::OnceCell, collections::HashMap};
+use std::cell::OnceCell;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Stmt, StmtImportFrom};
 use ruff_text_size::{Ranged, TextRange};
+use rustc_hash::FxHashMap;
 
+use super::own_line_indent;
 use crate::{
     config::Config,
     primitives::{
@@ -21,84 +23,6 @@ use crate::{
     rules::band_constants::{BandConstants, Bands, Carry},
     source::Source,
 };
-
-use super::own_line_indent;
-
-/// The runs a body's merges gather within, beside the member blocks a
-/// comment between two members is read against, built on first use
-/// through [`Self::blocks`]. `banded` marks runs that are the bands
-/// `band-constants` sorts, `carries` then holding every comment the
-/// banding moves between members.
-pub(super) struct MergeRuns {
-    pub(super) banded: bool,
-    blocks: OnceCell<Vec<TextRange>>,
-    pub(super) carries: Vec<Carry>,
-    pub(super) runs: Vec<Vec<usize>>,
-    /// The slot each band's sort seats first, in step with `runs` and
-    /// empty where the runs are the imports as written.
-    pub(super) sorted_heads: Vec<usize>,
-}
-
-impl MergeRuns {
-    /// The member blocks of `body` through the statement after its
-    /// last import, every slot the runs and the gaps between them
-    /// read, built on first use.
-    pub(super) fn blocks(&self, source: &Source, body: &[Stmt], outer: TextRange) -> &[TextRange] {
-        self.blocks.get_or_init(|| {
-            let reach = self
-                .runs
-                .iter()
-                .flatten()
-                .max()
-                .map_or(0, |&last| (last + 2).min(body.len()));
-            member_blocks(source, &body[..reach], outer)
-        })
-    }
-
-    /// The import runs of `body` as written, or the bands `bands`
-    /// forecasts once it hoists the constants between two runs and
-    /// sorts each, sought where a module repeats across the runs as
-    /// written or where `seek` reads them as needed over the runs as
-    /// written.
-    pub(super) fn of(
-        bands: Option<&BandConstants>,
-        source: &Source,
-        body: &[Stmt],
-        outer: TextRange,
-        seek: impl FnOnce(&[Vec<usize>]) -> bool,
-    ) -> Self {
-        let runs = import_runs(body);
-        let joined = bands
-            .filter(|_| seek(&runs) || repeats_across(source, body, &runs))
-            .and_then(|rule| rule.import_bands(source, body, outer));
-        match joined {
-            Some(Bands {
-                blocks,
-                carries,
-                imports,
-            }) => {
-                let (runs, sorted_heads) = imports
-                    .into_iter()
-                    .map(|band| (band.slots, band.sorted_head))
-                    .unzip();
-                Self {
-                    banded: true,
-                    blocks: OnceCell::from(blocks),
-                    carries,
-                    runs,
-                    sorted_heads,
-                }
-            }
-            None => Self {
-                banded: false,
-                blocks: OnceCell::new(),
-                carries: Vec::new(),
-                runs,
-                sorted_heads: Vec::new(),
-            },
-        }
-    }
-}
 
 /// The same-module merges `reflow-imports` makes and the import bands
 /// `band-constants` heads, forecast by a rule seated ahead of both
@@ -155,6 +79,82 @@ impl Folds {
     }
 }
 
+/// The runs a body's merges gather within, beside the member blocks a
+/// comment between two members is read against, built on first use
+/// through [`Self::blocks`]. `banded` marks runs that are the bands
+/// `band-constants` sorts, `carries` then holding every comment the
+/// banding moves between members.
+pub(super) struct MergeRuns {
+    pub(super) banded: bool,
+    blocks: OnceCell<Vec<TextRange>>,
+    pub(super) carries: Vec<Carry>,
+    pub(super) runs: Vec<Vec<usize>>,
+    /// The slot each band's sort seats first, in step with `runs` and
+    /// empty where the runs are the imports as written.
+    pub(super) sorted_heads: Vec<usize>,
+}
+
+impl MergeRuns {
+    /// The import runs of `body` as written, or the bands `bands`
+    /// forecasts once it hoists the constants between two runs and
+    /// sorts each, sought where a module repeats across the runs as
+    /// written or where `seek` reads them as needed over the runs as
+    /// written.
+    pub(super) fn of(
+        bands: Option<&BandConstants>,
+        source: &Source,
+        body: &[Stmt],
+        outer: TextRange,
+        seek: impl FnOnce(&[Vec<usize>]) -> bool,
+    ) -> Self {
+        let runs = import_runs(body);
+        let joined = bands
+            .filter(|_| seek(&runs) || repeats_across(source, body, &runs))
+            .and_then(|rule| rule.import_bands(source, body, outer));
+        match joined {
+            Some(Bands {
+                blocks,
+                carries,
+                imports,
+            }) => {
+                let (runs, sorted_heads) = imports
+                    .into_iter()
+                    .map(|band| (band.slots, band.sorted_head))
+                    .unzip();
+                Self {
+                    banded: true,
+                    blocks: OnceCell::from(blocks),
+                    carries,
+                    runs,
+                    sorted_heads,
+                }
+            }
+            None => Self {
+                banded: false,
+                blocks: OnceCell::new(),
+                carries: Vec::new(),
+                runs,
+                sorted_heads: Vec::new(),
+            },
+        }
+    }
+
+    /// The member blocks of `body` through the statement after its
+    /// last import, every slot the runs and the gaps between them
+    /// read, built on first use.
+    pub(super) fn blocks(&self, source: &Source, body: &[Stmt], outer: TextRange) -> &[TextRange] {
+        self.blocks.get_or_init(|| {
+            let reach = self
+                .runs
+                .iter()
+                .flatten()
+                .max()
+                .map_or(0, |&last| (last + 2).min(body.len()));
+            member_blocks(source, &body[..reach], outer)
+        })
+    }
+}
+
 /// `band-constants` as configured, `None` when the rule is off.
 pub(super) fn band_forecast(config: &Config) -> Option<BandConstants> {
     config
@@ -184,6 +184,41 @@ pub(super) fn comments_beside(
             .comments_in_range(TextRange::new(lower, upper))
             .is_empty()
     })
+}
+
+/// Slot groups of two or more mergeable `from`-imports sharing one
+/// module within one of `runs`, each group spanning one notebook cell
+/// and gathering cleanly per [`gathers_cleanly`].
+pub(super) fn module_groups(
+    source: &Source,
+    body: &[Stmt],
+    outer: TextRange,
+    runs: &MergeRuns,
+) -> Vec<Vec<usize>> {
+    let mut groups = Vec::new();
+    for run in &runs.runs {
+        let mut by_module: Vec<(ModuleKey, Vec<usize>)> = Vec::new();
+        for &slot in run {
+            let Some(node) = body[slot]
+                .as_import_from_stmt()
+                .filter(|n| mergeable(source, n))
+            else {
+                continue;
+            };
+            let key = module_key(node);
+            match by_module.iter_mut().find(|(seen, _)| *seen == key) {
+                Some((_, slots)) => slots.push(slot),
+                None => by_module.push((key, vec![slot])),
+            }
+        }
+        groups.extend(
+            by_module
+                .into_iter()
+                .map(|(_, slots)| slots)
+                .filter(|slots| gathers_cleanly(source, body, outer, slots, runs)),
+        );
+    }
+    groups
 }
 
 /// True when the members at `slots` fold into one statement without
@@ -228,45 +263,10 @@ fn mergeable(source: &Source, node: &StmtImportFrom) -> bool {
         && !node.names.iter().any(|alias| alias.name.as_str() == "*")
 }
 
-/// Slot groups of two or more mergeable `from`-imports sharing one
-/// module within one of `runs`, each group spanning one notebook cell
-/// and gathering cleanly per [`gathers_cleanly`].
-pub(super) fn module_groups(
-    source: &Source,
-    body: &[Stmt],
-    outer: TextRange,
-    runs: &MergeRuns,
-) -> Vec<Vec<usize>> {
-    let mut groups = Vec::new();
-    for run in &runs.runs {
-        let mut by_module: Vec<(ModuleKey, Vec<usize>)> = Vec::new();
-        for &slot in run {
-            let Some(node) = body[slot]
-                .as_import_from_stmt()
-                .filter(|n| mergeable(source, n))
-            else {
-                continue;
-            };
-            let key = module_key(node);
-            match by_module.iter_mut().find(|(seen, _)| *seen == key) {
-                Some((_, slots)) => slots.push(slot),
-                None => by_module.push((key, vec![slot])),
-            }
-        }
-        groups.extend(
-            by_module
-                .into_iter()
-                .map(|(_, slots)| slots)
-                .filter(|slots| gathers_cleanly(source, body, outer, slots, runs)),
-        );
-    }
-    groups
-}
-
 /// True when a mergeable `from`-import's module recurs in a second run
 /// of `runs`, the one shape a hoist between the runs would gather.
 fn repeats_across(source: &Source, body: &[Stmt], runs: &[Vec<usize>]) -> bool {
-    let mut seen: HashMap<ModuleKey, usize> = HashMap::new();
+    let mut seen: FxHashMap<ModuleKey, usize> = FxHashMap::default();
     runs.iter().enumerate().any(|(index, run)| {
         run.iter()
             .filter_map(|&slot| body[slot].as_import_from_stmt())

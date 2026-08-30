@@ -1,0 +1,23 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/branch_bound_name_pins_above_its_definition/input.py
+---
+if __debug__:
+    Selector = object
+else:
+    Selector = None
+
+
+DEFAULT = Selector
+
+
+TABLE = dict
+
+
+def helper():
+    return 1
+
+
+class Selector:
+    pass

@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_parentheses/return_annotation_pair_dropped/input.py
+---
+reflow-parentheses@15..16
+reflow-parentheses@19..20

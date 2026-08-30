@@ -3,5 +3,5 @@ previewable = false
 title       = "A Pair Wrapped in Its Own Grouping Pair Holds the Call"
 
 description = '''
-`dict([((1, 2))])` wraps its one member, the tuple `(1, 2)`, in a second set of parentheses the tuple does not need. Rewriting the call to spell that tuple as a dict entry would strand those outer parentheses, so `simplify-comprehensions` declines and leaves `shed-parentheses` to remove them first.
+`dict([((1, 2))])` wraps its one member, the tuple `(1, 2)`, in a second set of parentheses the tuple does not need. Rewriting the call to spell that tuple as a dict entry would strand those outer parentheses, so `simplify-comprehensions` declines and leaves `reflow-parentheses` to remove them first.
 '''

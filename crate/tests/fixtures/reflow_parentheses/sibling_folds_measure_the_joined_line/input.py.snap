@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/sibling_folds_measure_the_joined_line/input.py
+---
+result = alphas + betas or (
+    gammas + deltas
+)

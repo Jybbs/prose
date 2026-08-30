@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reflow_parentheses/redundant_pair_dropped/input.py
+---
+reflow-parentheses@19..20
+reflow-parentheses@29..30
+reflow-parentheses@34..35
+reflow-parentheses@8..9

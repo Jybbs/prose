@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Second Fold Answers the Line the First One Left"
-
-description = '''
-Under `code-line-length = 40`, the first pair folds and sheds, joining `alpha and beta` onto the assignment line. The second pair is measured against that already-joined line, and folding `gamma and delta` up as well would push the line past the limit, so its parentheses stay and the group keeps its multi-line shape.
-'''

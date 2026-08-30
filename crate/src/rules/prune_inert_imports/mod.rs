@@ -35,6 +35,7 @@ use plan::Plan;
 pub(crate) struct PruneInertImports {
     duplicates: bool,
     folds: Folds,
+    sorts_definitions: bool,
     target_version: Option<PythonVersion>,
     unreferenced: bool,
 }
@@ -48,6 +49,8 @@ impl PruneInertImports {
         Self {
             duplicates: facets.drop_duplicates,
             folds: Folds::from_config(config),
+            sorts_definitions: config.alphabetize_siblings_enabled()
+                && config.rules.alphabetize_siblings.sort_definitions,
             target_version: config.target_version,
             unreferenced: facets.drop_unreferenced,
         }

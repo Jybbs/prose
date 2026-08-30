@@ -47,7 +47,7 @@ use resolve::{ConfigResolver, Resolved};
 
 /// The diagnostic name a stdin run carries, rendered back as the `-`
 /// positional wherever a report names an invocation.
-pub(super) const STDIN_NAME: &str = "<stdin>";
+const STDIN_NAME: &str = "<stdin>";
 
 /// One file's contribution to the run.
 #[derive(Debug)]
@@ -347,7 +347,7 @@ fn build_run(
     })
 }
 
-/// Resolves how the diff heads each file, painting the `🧵` line only
+/// Resolves how the diff heads each file, styling the `🧵` line only
 /// where stdout carries color through.
 fn diff_heading(present: &Presentation) -> Heading {
     if present.decorate_diff() {
@@ -401,30 +401,6 @@ fn format_paths_diff<O: Write, E: Write>(
     );
     render_summary(stderr, present, &outcomes, &summary, Pass::Preview);
     Ok(status)
-}
-
-/// The unified diff `outcome` renders to under `heading`, empty where
-/// the rewrite left the file as written.
-fn render_diff_block(outcome: &FileOutcome, heading: Heading) -> anyhow::Result<Vec<u8>> {
-    let FileOutcome::Done {
-        file,
-        notebook_index,
-        rewrite: Rewrite::Changed(kind),
-        ..
-    } = outcome
-    else {
-        return Ok(Vec::new());
-    };
-    let mut block = Vec::new();
-    write_rewrite_diff(
-        &mut block,
-        file.name(),
-        file.source_text(),
-        kind,
-        notebook_index.as_deref(),
-        heading,
-    )?;
-    Ok(block)
 }
 
 fn format_paths_rewrite<O: RawStream + AsLockedWrite, E: Write>(
@@ -517,6 +493,30 @@ fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
         })
         .inspect_err(|e| eprintln!("warning: cache disabled: {e}"))
         .ok()
+}
+
+/// The unified diff `outcome` renders to under `heading`, empty where
+/// the rewrite left the file as written.
+fn render_diff_block(outcome: &FileOutcome, heading: Heading) -> anyhow::Result<Vec<u8>> {
+    let FileOutcome::Done {
+        file,
+        notebook_index,
+        rewrite: Rewrite::Changed(kind),
+        ..
+    } = outcome
+    else {
+        return Ok(Vec::new());
+    };
+    let mut block = Vec::new();
+    write_rewrite_diff(
+        &mut block,
+        file.name(),
+        file.source_text(),
+        kind,
+        notebook_index.as_deref(),
+        heading,
+    )?;
+    Ok(block)
 }
 
 /// Resolves the source type of stdin input from a `--stdin-filename`,
@@ -967,6 +967,7 @@ mod tests {
 
         assert_eq!(status, ExitStatus::ConfigError);
     }
+
     #[rstest]
     #[case(Pass::Both, Anchor::AsWritten)]
     #[case(Pass::Diagnose { validate: false }, Anchor::AsWritten)]

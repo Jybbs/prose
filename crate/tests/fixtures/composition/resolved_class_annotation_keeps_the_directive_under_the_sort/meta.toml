@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Resolved Class Annotation Still Keeps the Directive Under the Sort"
+
+description = '''
+`Node` is defined above the `visit` that names it, which on its own lets `prune-inert-imports` drop the directive. With `alphabetize-siblings` sorting definitions in the same pipeline the class is a binding the sort can move, so **the directive stays whichever side of `visit` the class sits on**.
+'''

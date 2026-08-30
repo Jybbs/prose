@@ -13,7 +13,6 @@ use std::borrow::Cow;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, AnyParameterRef, ArgOrKeyword, Arguments, Expr, ExprCall};
 use ruff_text_size::{Ranged, TextRange};
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,
@@ -21,6 +20,7 @@ use crate::{
         call_keywords::CallTargets,
         edit::apply_inline_edits,
         fracture::{self, outermost},
+        inline::display_width,
         layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
         padding,
         params::parameter_sites,
@@ -69,7 +69,8 @@ impl<'a> Settings<'a> {
     ) -> Option<Cow<'a, str>> {
         let range = source.paren_aware_range(expr.into(), parent);
         let form = self.written(source, expr, range, hold)?;
-        self.fits(column + form.width() + tail).then_some(form)
+        self.fits(column + display_width(&form) + tail)
+            .then_some(form)
     }
 
     /// `expr`'s one-row form over `range`, `hold` deciding whether its
@@ -205,9 +206,7 @@ impl<'a> Settings<'a> {
         range: TextRange,
         padding: &[Edit],
     ) -> usize {
-        let settled = source
-            .slice(range)
-            .width()
+        let settled = display_width(source.slice(range))
             .saturating_add_signed(-padding::slack(source, padding, range));
         let condensed = self
             .condensed(source, expr, parent)
@@ -215,7 +214,7 @@ impl<'a> Settings<'a> {
                 if source.slice(range) == text {
                     settled
                 } else {
-                    text.width()
+                    display_width(&text)
                 }
             });
         settled.min(condensed)
@@ -338,40 +337,6 @@ mod tests {
     }
 
     #[rstest]
-    #[case::already_flat("[a, b]", Some("[a, b]"))]
-    #[case::fracture_closes("[\n    a, b]", Some("[a, b]"))]
-    #[case::nested_literal_joins("{\n    'k': [\n        1, 2]}", Some("{'k': [1, 2]}"))]
-    #[case::subscript_joins("table[\n    key]", Some("table[key]"))]
-    #[case::held_column("[\n    a,\n    b,\n]", None)]
-    #[case::multiline_string("[\n    \"\"\"x\ny\"\"\"]", None)]
-    #[case::comment_inside("[\n    a,  # note\n    b]", None)]
-    #[case::over_cap_call_inside("[helper(a, b, c, d)]", None)]
-    fn form_answers_none_where_no_one_row_shape_survives(
-        #[case] src: &str,
-        #[case] expected: Option<&str>,
-    ) {
-        assert_eq!(form_under(&Config::default(), src).as_deref(), expected);
-    }
-
-    #[test]
-    fn form_declines_a_dict_past_the_entry_cap() {
-        let mut config = Config::default();
-        config.rules.reflow_collections.max_dict_entries.0 = NonZeroUsize::new(2);
-        assert_eq!(form_under(&config, "{'a': 1, 'b': 2, 'c': 3}"), None);
-    }
-
-    #[test]
-    fn form_joins_a_dict_the_cleared_explode_facet_leaves_inert() {
-        let mut config = Config::default();
-        config.rules.reflow_collections.explode = false;
-        config.rules.reflow_collections.max_dict_entries.0 = NonZeroUsize::new(2);
-        assert_eq!(
-            form_under(&config, "{'a': 1,\n 'b': 2, 'c': 3}").as_deref(),
-            Some("{'a': 1, 'b': 2, 'c': 3}"),
-        );
-    }
-
-    #[rstest]
     #[case::fracture_closes("helper(a,\n       b)\n", Some("(a, b)"))]
     #[case::single_row_grouping_pair_drops("helper((a),\n       b)\n", Some("(a, b)"))]
     #[case::own_count_left_to_the_caller("helper(a, b, c, d)\n", Some("(a, b, c, d)"))]
@@ -407,6 +372,40 @@ mod tests {
                 .fitted(&source, expr, expr.into(), column, tail)
                 .is_some(),
             fits,
+        );
+    }
+
+    #[rstest]
+    #[case::already_flat("[a, b]", Some("[a, b]"))]
+    #[case::fracture_closes("[\n    a, b]", Some("[a, b]"))]
+    #[case::nested_literal_joins("{\n    'k': [\n        1, 2]}", Some("{'k': [1, 2]}"))]
+    #[case::subscript_joins("table[\n    key]", Some("table[key]"))]
+    #[case::held_column("[\n    a,\n    b,\n]", None)]
+    #[case::multiline_string("[\n    \"\"\"x\ny\"\"\"]", None)]
+    #[case::comment_inside("[\n    a,  # note\n    b]", None)]
+    #[case::over_cap_call_inside("[helper(a, b, c, d)]", None)]
+    fn form_answers_none_where_no_one_row_shape_survives(
+        #[case] src: &str,
+        #[case] expected: Option<&str>,
+    ) {
+        assert_eq!(form_under(&Config::default(), src).as_deref(), expected);
+    }
+
+    #[test]
+    fn form_declines_a_dict_past_the_entry_cap() {
+        let mut config = Config::default();
+        config.rules.reflow_collections.max_dict_entries.0 = NonZeroUsize::new(2);
+        assert_eq!(form_under(&config, "{'a': 1, 'b': 2, 'c': 3}"), None);
+    }
+
+    #[test]
+    fn form_joins_a_dict_the_cleared_explode_facet_leaves_inert() {
+        let mut config = Config::default();
+        config.rules.reflow_collections.explode = false;
+        config.rules.reflow_collections.max_dict_entries.0 = NonZeroUsize::new(2);
+        assert_eq!(
+            form_under(&config, "{'a': 1,\n 'b': 2, 'c': 3}").as_deref(),
+            Some("{'a': 1, 'b': 2, 'c': 3}"),
         );
     }
 }

@@ -52,17 +52,17 @@ Config {
         strip_trailing_commas: ToggleOnly {
             enabled: false,
         },
-        shed_parentheses: ToggleOnly {
-            enabled: false,
-        },
-        shed_redundant_base: ToggleOnly {
-            enabled: false,
-        },
         normalize_comparisons: NormalizeComparisonsConfig {
             enabled: false,
             rewrite_identity: false,
             rewrite_negation: false,
             rewrite_operand_order: false,
+        },
+        reflow_parentheses: ToggleOnly {
+            enabled: false,
+        },
+        shed_redundant_base: ToggleOnly {
+            enabled: false,
         },
         simplify_comprehensions: ToggleOnly {
             enabled: false,
@@ -208,8 +208,8 @@ Config {
             max_attributes: 2,
         },
         miscased_constants: MiscasedConstantsConfig {
-            allow_pattern: Regex(
-                "^_",
+            allow_pattern: AllowPattern(
+                "_*",
             ),
             enabled: false,
         },
@@ -223,8 +223,8 @@ Config {
             enabled: false,
         },
         single_use_variables: SingleUseVariablesConfig {
-            allow_pattern: Regex(
-                "^tmp_",
+            allow_pattern: AllowPattern(
+                "tmp_*",
             ),
             enabled: false,
         },

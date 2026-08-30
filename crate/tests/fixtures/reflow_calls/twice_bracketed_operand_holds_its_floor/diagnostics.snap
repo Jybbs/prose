@@ -1,6 +1,6 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/reflow_calls/twice_bracketed_operand_holds_its_floor/input.py
 ---
-reflow-calls@5..71
+reflow-calls@5..128

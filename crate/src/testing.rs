@@ -7,7 +7,7 @@ use std::{
 
 use ruff_diagnostics::Edit;
 use ruff_notebook::{Notebook, NotebookIndex};
-use ruff_python_ast::{Expr, StmtClassDef, StmtFunctionDef};
+use ruff_python_ast::{Expr, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_text_size::{TextLen, TextRange, TextSize};
 use serde_json::{Value, json};
 
@@ -15,7 +15,11 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     pipeline::Pipeline,
-    primitives::{aligner, edit::apply_edits},
+    primitives::{
+        aligner,
+        edit::apply_edits,
+        tiering::{Evaluated, call_reachable},
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -143,6 +147,16 @@ pub(crate) fn breaks_parse() -> GroupSentinelRule {
     }
 }
 
+/// `body`'s evaluated pair under its full call reach, annotations
+/// eager.
+pub(crate) fn evaluated<'src>(source: &'src Source, body: &'src [Stmt]) -> Evaluated<'src> {
+    Evaluated::of(
+        body,
+        &call_reachable(source.binding_analysis(), body),
+        false,
+    )
+}
+
 pub(crate) fn first_class(source: &Source) -> &StmtClassDef {
     source.ast().body[0]
         .as_class_def_stmt()
@@ -195,30 +209,6 @@ pub(crate) fn notebook(cells: &[&str]) -> Source {
     Source::from_notebook(&notebook_document(cells), "<nb>").expect("notebook source builds")
 }
 
-/// The parsed notebook `cells` describes, one code cell per source.
-fn notebook_document(cells: &[&str]) -> Notebook {
-    let cells: Vec<Value> = cells
-        .iter()
-        .map(|source| {
-            json!({
-                "cell_type": "code",
-                "execution_count": null,
-                "metadata": {},
-                "outputs": [],
-                "source": source,
-            })
-        })
-        .collect();
-    let document = json!({
-        "cells": cells,
-        "metadata": { "language_info": { "name": "python" } },
-        "nbformat": 4,
-        "nbformat_minor": 5,
-    });
-    let json = serde_json::to_string(&document).expect("notebook json serializes");
-    Notebook::from_source_code(&json).expect("notebook parses")
-}
-
 /// The cell index of a notebook built from `cells`, the translator a
 /// report renders each concatenated position through.
 pub(crate) fn notebook_index(cells: &[&str]) -> NotebookIndex {
@@ -267,4 +257,28 @@ pub(crate) fn write_prose_toml(dir: &Path, contents: &str) {
 
 pub(crate) fn write_pyproject(dir: &Path, contents: &str) {
     std::fs::write(dir.join("pyproject.toml"), contents).expect("pyproject writes");
+}
+
+/// The parsed notebook `cells` describes, one code cell per source.
+fn notebook_document(cells: &[&str]) -> Notebook {
+    let cells: Vec<Value> = cells
+        .iter()
+        .map(|source| {
+            json!({
+                "cell_type": "code",
+                "execution_count": null,
+                "metadata": {},
+                "outputs": [],
+                "source": source,
+            })
+        })
+        .collect();
+    let document = json!({
+        "cells": cells,
+        "metadata": { "language_info": { "name": "python" } },
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    });
+    let json = serde_json::to_string(&document).expect("notebook json serializes");
+    Notebook::from_source_code(&json).expect("notebook parses")
 }

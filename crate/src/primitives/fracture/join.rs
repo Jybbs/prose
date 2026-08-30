@@ -6,10 +6,10 @@ use super::*;
 
 /// Emits one replacement per fractured argument list beneath the
 /// visited expression.
-pub(super) struct FractureJoiner<'a> {
-    pub(super) edits: Vec<Edit>,
-    pub(super) settings: Settings<'a>,
-    pub(super) source: &'a Source,
+struct FractureJoiner<'a> {
+    edits: Vec<Edit>,
+    settings: Settings<'a>,
+    source: &'a Source,
 }
 
 impl<'ast> AstVisitor<'ast> for FractureJoiner<'_> {
@@ -33,10 +33,25 @@ impl<'ast> AstVisitor<'ast> for FractureJoiner<'_> {
     }
 }
 
+/// The replacement edits closing every fractured argument list beneath
+/// `expr`, ascending by start and disjoint.
+pub(super) fn join_edits(source: &Source, settings: Settings<'_>, expr: &Expr) -> Vec<Edit> {
+    if !source.contains_line_break(expr.range()) {
+        return Vec::new();
+    }
+    let mut joiner = FractureJoiner {
+        edits: Vec::new(),
+        settings,
+        source,
+    };
+    joiner.visit_expr(expr);
+    outermost(joiner.edits)
+}
+
 /// `edits` sorted ascending with every range an earlier edit already
 /// covers dropped. A nested list is reached twice over, once on its own
 /// and once inside the join its parent renders.
-pub(crate) fn outermost(mut edits: Vec<Edit>) -> Vec<Edit> {
+pub(crate) fn outermost<T: Ranged>(mut edits: Vec<T>) -> Vec<T> {
     edits.sort_by_key(|edit| (edit.start(), Reverse(edit.end())));
     edits.dedup_by(|edit, last| last.end() > edit.start());
     edits
@@ -44,7 +59,7 @@ pub(crate) fn outermost(mut edits: Vec<Edit>) -> Vec<Edit> {
 
 /// `arguments` joined by `", "` inside the parens, each argument
 /// settled so a nested fracture reads at its joined width.
-pub(super) fn join_args(source: &Source, settings: Settings<'_>, arguments: &Arguments) -> String {
+fn join_args(source: &Source, settings: Settings<'_>, arguments: &Arguments) -> String {
     format!(
         "({})",
         arguments
@@ -64,21 +79,6 @@ pub(super) fn join_args(source: &Source, settings: Settings<'_>, arguments: &Arg
     )
 }
 
-/// The replacement edits closing every fractured argument list beneath
-/// `expr`, ascending by start and disjoint.
-pub(super) fn join_edits(source: &Source, settings: Settings<'_>, expr: &Expr) -> Vec<Edit> {
-    if !source.contains_line_break(expr.range()) {
-        return Vec::new();
-    }
-    let mut joiner = FractureJoiner {
-        edits: Vec::new(),
-        settings,
-        source,
-    };
-    joiner.visit_expr(expr);
-    outermost(joiner.edits)
-}
-
 /// One argument's text with every fractured list beneath it closed onto
 /// one line. A column-shaped list keeps its break, so an enclosing
 /// measure still reads it as spanning lines. An argument whose own text
@@ -86,7 +86,7 @@ pub(super) fn join_edits(source: &Source, settings: Settings<'_>, expr: &Expr) -
 /// `parent`, which hold those rows together once the list closes,
 /// whereas a single-row argument leaves a redundant pair out of the
 /// joined form.
-pub(super) fn settled_argument<'a>(
+fn settled_argument<'a>(
     source: &'a Source,
     settings: Settings<'_>,
     expr: &Expr,

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/band_constants/observed_state_pins_above_its_mutating_definition/input.py
+---
+band-constants@0..63

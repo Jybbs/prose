@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/banded_functions_keep_their_groups/input.py
+---
+class Widget:
+    pass
+
+
+def __getattr__(name):
+    pass
+
+
+def _helper():
+    pass
+
+
+def Factory():
+    pass

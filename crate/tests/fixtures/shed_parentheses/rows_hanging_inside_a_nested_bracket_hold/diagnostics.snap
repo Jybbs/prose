@@ -1,7 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: render(diagnostics)
-input_file: crate/tests/fixtures/shed_parentheses/rows_hanging_inside_a_nested_bracket_hold/input.py
----
-shed-parentheses@16..17
-shed-parentheses@170..171

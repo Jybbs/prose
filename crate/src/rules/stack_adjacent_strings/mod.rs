@@ -15,7 +15,6 @@ pub(crate) use layout::concatenated_run;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr, StringLike};
 use ruff_text_size::{Ranged, TextRange};
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,

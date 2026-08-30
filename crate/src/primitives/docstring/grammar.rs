@@ -3,15 +3,9 @@
 //! head. Every predicate here takes a trimmed line and returns a
 //! verdict, carrying no state across lines.
 
-use std::{ops::Range, sync::LazyLock};
-
-use regex_lite::Regex;
+use std::ops::Range;
 
 use crate::primitives::unbracketed_colon;
-
-static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^[A-Z][A-Za-z]*( [A-Z][A-Za-z]*)*:").expect("static pattern compiles")
-});
 
 /// A parsed `name: description` entry head, its byte offsets measured
 /// within the trimmed line. `colon` locates the separating `:`,
@@ -24,17 +18,11 @@ pub(crate) struct EntryHead<'a> {
     pub(crate) type_group: Option<Range<usize>>,
 }
 
-/// True when `trimmed` is an entry head with its description missing,
-/// the `name:` shape alone, read by probing the parser with a synthetic
-/// description.
-pub(crate) fn is_bare_entry_head(trimmed: &str) -> bool {
-    trimmed.ends_with(':') && entry_head(&[trimmed, " x"].concat()).is_some()
-}
-
 /// True when `trimmed` opens with a Google-style `name: description`
-/// entry head, whatever its type group.
-pub(crate) fn is_entry_head(trimmed: &str) -> bool {
-    entry_head(trimmed).is_some()
+/// entry head, its description present or, where the line ends at the
+/// `:`, absent.
+pub(super) fn opens_entry(trimmed: &str) -> bool {
+    parse_head(trimmed, trimmed.ends_with(':')).is_some()
 }
 
 /// The heading `trimmed` opens with, read without its trailing `:`. A
@@ -42,13 +30,11 @@ pub(crate) fn is_entry_head(trimmed: &str) -> bool {
 /// capitalized, immediately followed by `:`, and trailing content after
 /// the `:` is permitted. `None` for every other line.
 pub(crate) fn section_heading(trimmed: &str) -> Option<&str> {
-    let found = SECTION_HEADING.find(trimmed)?.as_str();
+    let end = title_case_run(trimmed)?;
+    let rest = &trimmed[end..];
     // A second colon opens a reStructuredText literal block rather than
     // a section, so the indented lines beneath it stay verbatim.
-    if trimmed[found.len()..].starts_with(':') {
-        return None;
-    }
-    found.strip_suffix(':')
+    (rest.starts_with(':') && !rest.starts_with("::")).then(|| &trimmed[..end])
 }
 
 /// Parses `trimmed` as a sibling of the entry above it. `None` when the
@@ -78,30 +64,43 @@ pub(crate) fn typed_entry_head(trimmed: &str) -> bool {
 /// excludes any `*`/`**` prefix. `None` for any line that does not
 /// match the head shape or carries no description after the `:`.
 fn entry_head(trimmed: &str) -> Option<EntryHead<'_>> {
-    let colon = unbracketed_colon(trimmed)?;
-    let head = trimmed[..colon].trim_end();
-    let after_stars = head.trim_start_matches('*');
-    if head.len() - after_stars.len() > 2 {
+    parse_head(trimmed, false)
+}
+
+/// The head [`entry_head`] parses, a `probe` accepting a head whose
+/// description is missing and reporting the description as opening at
+/// the end of the line.
+fn parse_head(trimmed: &str, probe: bool) -> Option<EntryHead<'_>> {
+    let after_stars = trimmed.trim_start_matches('*');
+    let stars = trimmed.len() - after_stars.len();
+    if stars > 2 {
         return None;
     }
     let name_end = after_stars
         .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_' || c == '.'))
         .unwrap_or(after_stars.len());
     let name = &after_stars[..name_end];
-    if !name.starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_') {
+    if !name.starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_')
+        || !after_stars[name_end..].trim_start().starts_with(['(', ':'])
+    {
         return None;
     }
-    let paren_type = after_stars[name_end..].trim();
+    let colon = unbracketed_colon(trimmed)?;
+    let head = trimmed[..colon].trim_end();
+    let paren_type = head[stars + name_end..].trim();
     let inner_type = paren_type
         .strip_prefix('(')
         .and_then(|inner| inner.strip_suffix(')'));
     if !(paren_type.is_empty() || inner_type.is_some()) {
         return None;
     }
-    let description = trimmed[colon + 1..]
-        .strip_prefix(char::is_whitespace)?
-        .trim_start();
-    if description.is_empty() {
+    let rest = &trimmed[colon + 1..];
+    let description = match rest.strip_prefix(char::is_whitespace) {
+        Some(after) => after.trim_start(),
+        None if probe && rest.is_empty() => "",
+        None => return None,
+    };
+    if description.is_empty() && !probe {
         return None;
     }
     let carries_type = inner_type.is_some_and(|inner| !inner.trim().is_empty());
@@ -114,6 +113,29 @@ fn entry_head(trimmed: &str) -> Option<EntryHead<'_>> {
             .filter(|_| carries_type)
             .map(|start| start..head.len()),
     })
+}
+
+/// The byte length of the Title-case run opening `trimmed`, each word
+/// an uppercase ASCII letter followed by ASCII letters and the words
+/// joined by single spaces. `None` where the line opens with anything
+/// else.
+fn title_case_run(trimmed: &str) -> Option<usize> {
+    let bytes = trimmed.as_bytes();
+    let mut end = 0;
+    loop {
+        if !bytes.get(end).is_some_and(u8::is_ascii_uppercase) {
+            return None;
+        }
+        end += 1;
+        while bytes.get(end).is_some_and(u8::is_ascii_alphabetic) {
+            end += 1;
+        }
+        if bytes.get(end) != Some(&b' ') || !bytes.get(end + 1).is_some_and(u8::is_ascii_uppercase)
+        {
+            return Some(end);
+        }
+        end += 1;
+    }
 }
 
 #[cfg(test)]
@@ -164,6 +186,10 @@ mod tests {
         assert_eq!(name_and_start(entry_head("name: desc")), Some(("name", 6)));
         assert_eq!(name_and_start(entry_head("name : desc")), Some(("name", 7)));
         assert_eq!(
+            name_and_start(entry_head("name\t: desc")),
+            Some(("name", 7))
+        );
+        assert_eq!(
             name_and_start(entry_head("dotted.name: desc")),
             Some(("dotted.name", 13)),
         );
@@ -207,6 +233,20 @@ mod tests {
             Some(("kwargs", 12)),
         );
         assert!(entry_head("***nope: three stars").is_none());
+    }
+
+    #[rstest]
+    #[case("Returns:", true)]
+    #[case("timeout (float):", true)]
+    #[case("name: desc", true)]
+    #[case("An example::", false)]
+    #[case("http://wwwsearch.sf.net/):", false)]
+    #[case("just prose", false)]
+    fn opens_entry_reads_a_head_with_or_without_its_description(
+        #[case] trimmed: &str,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(opens_entry(trimmed), expected, "{trimmed}");
     }
 
     #[test]

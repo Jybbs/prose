@@ -10,20 +10,18 @@
 use ruff_python_trivia::{CommentRanges, PythonWhitespace, is_pragma_comment};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
-
-mod banners;
-
-pub(crate) use banners::is_banner_block;
-
-use banners::is_marker_line;
 
 use crate::{
-    primitives::{aligner::is_held, blanks::whitespace_start_before},
+    primitives::{aligner::is_held, blanks::whitespace_start_before, inline::display_width},
     rule::RuleId,
     source::Source,
     suppression::is_directive_comment,
 };
+
+mod banners;
+
+pub(crate) use banners::is_banner_block;
+use banners::is_marker_line;
 
 /// The characters whose appearance directly after a comment's hash run
 /// leaves the opener untouched, covering the shebang, the quoted and
@@ -62,7 +60,7 @@ impl Settling {
     ) -> isize {
         let settles =
             |rule: Option<RuleId>| rule.is_some_and(|rule| !is_held(source, rule, comment.start()));
-        let width = |span: TextRange| source.slice(span).width().cast_signed();
+        let width = |span: TextRange| display_width(source.slice(span)).cast_signed();
         let floored = width(gap) - TRAILING_GAP.len().cast_signed();
         let gap_slack = if gap == own {
             0
@@ -226,31 +224,6 @@ mod tests {
     }
 
     #[rstest]
-    #[case::wide_gap_and_opener("x = 1     #    note\n", settling(), 3 + 3)]
-    #[case::gap_rule_off("x = 1     #    note\n", Settling { gap: None, ..settling() }, 3)]
-    #[case::gap_floored("x = 1 #    note\n", Settling { gap: None, ..settling() }, -1 + 3)]
-    #[case::gap_unfloored("x = 1 #    note\n", Settling { gap: None, opener: None }, 0)]
-    #[case::opener_rule_off("x = 1     #    note\n", Settling { opener: None, ..settling() }, 3)]
-    #[case::opener_held(
-        "x = 1     #    prose: skip[normalize-comment-spacing]\n",
-        settling(),
-        3
-    )]
-    #[case::gap_held("x = 1     #    prose: skip[align-comments]\n", settling(), 3)]
-    #[case::settled("x = 1  # note\n", settling(), 0)]
-    fn settling_slack_reads_only_the_rules_running_on_the_line(
-        #[case] src: &str,
-        #[case] settling: Settling,
-        #[case] expected: isize,
-    ) {
-        let s = parse(src);
-        let comment = trailing_comment(&s, TextSize::new(0)).expect("a trailing comment");
-        let gap = TextRange::new(s.ast().body[0].end(), comment.start());
-        let own = TextRange::empty(TextSize::new(0));
-        assert_eq!(settling.slack(&s, comment, gap, own), expected);
-    }
-
-    #[rstest]
     #[case("x = 1\n# describes a\ndef a(): pass\n", false)]
     #[case("x = 1\n# --- Section ---\ndef a(): pass\n", true)]
     #[case("x = 1\n# prose: off\ndef a(): pass\n", true)]
@@ -360,6 +333,31 @@ mod tests {
         let read = settled_opener(&source, comment, columnar)
             .map(|(opener, settled)| (source.slice(opener).width(), settled));
         assert_eq!(read, expected);
+    }
+
+    #[rstest]
+    #[case::wide_gap_and_opener("x = 1     #    note\n", settling(), 3 + 3)]
+    #[case::gap_rule_off("x = 1     #    note\n", Settling { gap: None, ..settling() }, 3)]
+    #[case::gap_floored("x = 1 #    note\n", Settling { gap: None, ..settling() }, -1 + 3)]
+    #[case::gap_unfloored("x = 1 #    note\n", Settling { gap: None, opener: None }, 0)]
+    #[case::opener_rule_off("x = 1     #    note\n", Settling { opener: None, ..settling() }, 3)]
+    #[case::opener_held(
+        "x = 1     #    prose: skip[normalize-comment-spacing]\n",
+        settling(),
+        3
+    )]
+    #[case::gap_held("x = 1     #    prose: skip[align-comments]\n", settling(), 3)]
+    #[case::settled("x = 1  # note\n", settling(), 0)]
+    fn settling_slack_reads_only_the_rules_running_on_the_line(
+        #[case] src: &str,
+        #[case] settling: Settling,
+        #[case] expected: isize,
+    ) {
+        let s = parse(src);
+        let comment = trailing_comment(&s, TextSize::new(0)).expect("a trailing comment");
+        let gap = TextRange::new(s.ast().body[0].end(), comment.start());
+        let own = TextRange::empty(TextSize::new(0));
+        assert_eq!(settling.slack(&s, comment, gap, own), expected);
     }
 
     #[rstest]

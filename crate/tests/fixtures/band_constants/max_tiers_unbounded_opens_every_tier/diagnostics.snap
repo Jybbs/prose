@@ -1,6 +1,6 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/band_constants/max_tiers_unbounded_opens_every_tier/input.py
 ---
-band-constants@12..31
+band-constants@12..32

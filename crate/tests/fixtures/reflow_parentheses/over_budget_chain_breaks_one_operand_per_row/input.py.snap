@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/over_budget_chain_breaks_one_operand_per_row/input.py
+---
+def dispatch(request):
+    if (
+        request.is_secure
+        and request.user.is_active
+        and request.body
+    ):
+        return

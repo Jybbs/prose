@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/fold_closes_a_bracket_run_to_nothing/input.py
+---
+reflow-parentheses@12..17
+reflow-parentheses@20..21
+reflow-parentheses@31..32
+reflow-parentheses@4..5

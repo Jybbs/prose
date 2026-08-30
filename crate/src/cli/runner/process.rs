@@ -2,7 +2,6 @@
 //! pipeline, and classify the outcome.
 
 use std::{
-    collections::HashMap,
     io::{self, Read, Write},
     path::{Path, PathBuf},
     string::FromUtf8Error,
@@ -13,6 +12,7 @@ use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterato
 use ruff_notebook::NotebookIndex;
 use ruff_python_ast::PySourceType;
 use ruff_source_file::{SourceFile, SourceFileBuilder};
+use rustc_hash::FxHashMap;
 use tempfile::NamedTempFile;
 
 use super::{
@@ -26,6 +26,22 @@ use crate::{
     walker::{self, Found},
 };
 
+/// How a run answers the settle question for one file. `Eager` walks
+/// the rules over the output as it lands. The ledger variants apply
+/// where a live cache lets a write-back run mark its output instead,
+/// wherein the walk is skipped and `LedgerHit` proves the input bytes
+/// are a prior run's own output that failed to settle.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum Marker {
+    Eager,
+    LedgerHit,
+    LedgerMiss,
+}
+
+/// One walk entry's outcome paired with the block its own worker
+/// rendered, `None` for an entry that yields neither.
+type Landed = anyhow::Result<Option<(FileOutcome, Vec<u8>)>>;
+
 pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
     let FileOutcome::Done {
         rewrite: Rewrite::Changed(kind),
@@ -38,18 +54,6 @@ pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
         return failed(ExitStatus::ConfigError, e);
     }
     outcome
-}
-
-/// How a run answers the settle question for one file. `Eager` walks
-/// the rules over the output as it lands. The ledger variants apply
-/// where a live cache lets a write-back run mark its output instead,
-/// wherein the walk is skipped and `LedgerHit` proves the input bytes
-/// are a prior run's own output that failed to settle.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum Marker {
-    Eager,
-    LedgerHit,
-    LedgerMiss,
 }
 
 /// Dispatches `source` by `pass`, collecting the as-written diagnostics
@@ -189,93 +193,6 @@ where
         .collect()
 }
 
-/// One walk entry's outcome paired with the block its own worker
-/// rendered, `None` for an entry that yields neither.
-type Landed = anyhow::Result<Option<(FileOutcome, Vec<u8>)>>;
-
-/// Runs `handle` over the walk on the rayon pool and hands each file's
-/// rendered block to `write` in walker order, releasing a block as soon
-/// as every entry ahead of it has landed rather than once the whole
-/// walk has. Rendering happens in the worker that produced the outcome,
-/// so the only serial work left is the write itself. Returns the
-/// outcomes in walker order, the same order [`process_paths`] returns.
-pub(super) fn stream_paths<F, W>(
-    paths: &[PathBuf],
-    handle: F,
-    mut write: W,
-) -> anyhow::Result<Vec<FileOutcome>>
-where
-    F: Fn(&Path, PySourceType) -> anyhow::Result<(FileOutcome, Vec<u8>)> + Send + Sync,
-    W: FnMut(&[u8]) -> anyhow::Result<()>,
-{
-    let entries: Vec<_> = walker::walk(paths).collect();
-    let total = entries.len();
-    let (sender, receiver) = mpsc::channel();
-    let mut outcomes = Vec::with_capacity(total);
-    let mut drained = Ok(());
-    // The producer takes a thread of its own rather than a rayon scope,
-    // because a scope holds its closure to `Send` and `write` borrows
-    // the caller's stream. It fans out across the pool from there, so
-    // the draining thread stays free to write what has already landed.
-    std::thread::scope(|scope| {
-        scope.spawn(|| {
-            entries
-                .into_par_iter()
-                .enumerate()
-                .for_each_with(sender, |sender, (slot, entry)| {
-                    sender.send((slot, landed(&handle, entry))).ok();
-                });
-        });
-        drained = drain_in_order(&receiver, total, &mut outcomes, &mut write);
-    });
-    drained.map(|()| outcomes)
-}
-
-/// Runs `handle` over one walk entry, reporting a passed-over symlink
-/// on stderr and turning a walk failure into its own outcome.
-fn landed<F>(handle: &F, entry: Result<Found, ignore::Error>) -> Landed
-where
-    F: Fn(&Path, PySourceType) -> anyhow::Result<(FileOutcome, Vec<u8>)>,
-{
-    match entry {
-        Ok(Found::Formattable(path, source_type)) => handle(&path, source_type).map(Some),
-        Ok(Found::PassedLink(path)) => {
-            eprintln!("note: passed over the symlink {}", path.display());
-            Ok(None)
-        }
-        Err(e) => Ok(Some((walk_error(e), Vec::new()))),
-    }
-}
-
-/// Writes each landed block through `write` in slot order, holding a
-/// block that arrives ahead of its predecessors until they land.
-fn drain_in_order<W>(
-    receiver: &mpsc::Receiver<(usize, Landed)>,
-    total: usize,
-    outcomes: &mut Vec<FileOutcome>,
-    write: &mut W,
-) -> anyhow::Result<()>
-where
-    W: FnMut(&[u8]) -> anyhow::Result<()>,
-{
-    let mut held: HashMap<usize, Landed> = HashMap::new();
-    let mut next = 0;
-    while next < total {
-        let Ok((slot, landed)) = receiver.recv() else {
-            break;
-        };
-        held.insert(slot, landed);
-        while let Some(landed) = held.remove(&next) {
-            next += 1;
-            if let Some((outcome, block)) = landed? {
-                write(&block)?;
-                outcomes.push(outcome);
-            }
-        }
-    }
-    Ok(())
-}
-
 pub(super) fn process_stdin(
     text: String,
     source_type: PySourceType,
@@ -342,6 +259,44 @@ pub(super) fn rehydrate(
     })
 }
 
+/// Runs `handle` over the walk on the rayon pool and hands each file's
+/// rendered block to `write` in walker order, releasing a block as soon
+/// as every entry ahead of it has landed rather than once the whole
+/// walk has. Rendering happens in the worker that produced the outcome,
+/// so the only serial work left is the write itself. Returns the
+/// outcomes in walker order, the same order [`process_paths`] returns.
+pub(super) fn stream_paths<F, W>(
+    paths: &[PathBuf],
+    handle: F,
+    mut write: W,
+) -> anyhow::Result<Vec<FileOutcome>>
+where
+    F: Fn(&Path, PySourceType) -> anyhow::Result<(FileOutcome, Vec<u8>)> + Send + Sync,
+    W: FnMut(&[u8]) -> anyhow::Result<()>,
+{
+    let entries: Vec<_> = walker::walk(paths).collect();
+    let total = entries.len();
+    let (sender, receiver) = mpsc::channel();
+    let mut outcomes = Vec::with_capacity(total);
+    let mut drained = Ok(());
+    // The producer takes a thread of its own rather than a rayon scope,
+    // because a scope holds its closure to `Send` and `write` borrows
+    // the caller's stream. It fans out across the pool from there, so
+    // the draining thread stays free to write what has already landed.
+    std::thread::scope(|scope| {
+        scope.spawn(|| {
+            entries
+                .into_par_iter()
+                .enumerate()
+                .for_each_with(sender, |sender, (slot, entry)| {
+                    sender.send((slot, landed(&handle, entry))).ok();
+                });
+        });
+        drained = drain_in_order(&receiver, total, &mut outcomes, &mut write);
+    });
+    drained.map(|()| outcomes)
+}
+
 /// Collects the as-written diagnostics, and with `validate` guards the
 /// would-be rewrite against an output that fails to re-parse or to
 /// compile and against one a second pass would change.
@@ -373,6 +328,62 @@ fn diagnose_only(
         rewrite: Rewrite::Skipped,
         unstable,
     }
+}
+
+/// Writes each landed block through `write` in slot order, holding a
+/// block that arrives ahead of its predecessors until they land.
+fn drain_in_order<W>(
+    receiver: &mpsc::Receiver<(usize, Landed)>,
+    total: usize,
+    outcomes: &mut Vec<FileOutcome>,
+    write: &mut W,
+) -> anyhow::Result<()>
+where
+    W: FnMut(&[u8]) -> anyhow::Result<()>,
+{
+    let mut held: FxHashMap<usize, Landed> = FxHashMap::default();
+    let mut next = 0;
+    while next < total {
+        let Ok((slot, landed)) = receiver.recv() else {
+            break;
+        };
+        held.insert(slot, landed);
+        while let Some(landed) = held.remove(&next) {
+            next += 1;
+            if let Some((outcome, block)) = landed? {
+                write(&block)?;
+                outcomes.push(outcome);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Runs `handle` over one walk entry, reporting a passed-over symlink
+/// on stderr and turning a walk failure into its own outcome.
+fn landed<F>(handle: &F, entry: Result<Found, ignore::Error>) -> Landed
+where
+    F: Fn(&Path, PySourceType) -> anyhow::Result<(FileOutcome, Vec<u8>)>,
+{
+    match entry {
+        Ok(Found::Formattable(path, source_type)) => handle(&path, source_type).map(Some),
+        Ok(Found::PassedLink(path)) => {
+            eprintln!("note: passed over the symlink {}", path.display());
+            Ok(None)
+        }
+        Err(e) => Ok(Some((walk_error(e), Vec::new()))),
+    }
+}
+
+/// The report a ledger probe hit mints, reading the editing set off the
+/// marked input rather than walking the fresh output.
+fn marked_report(
+    resolved: &Resolved,
+    original: &str,
+    formatted: &Source,
+) -> Option<Box<UnstableRewrite>> {
+    UnstableRewrite::detect_marked(&resolved.pipeline, &resolved.config, original, formatted)
+        .map(Box::new)
 }
 
 /// Routes a source text to the notebook or module pipeline path under
@@ -482,17 +493,6 @@ fn settle_report(
     UnstableRewrite::detect(&resolved.pipeline, &resolved.config, original, formatted).map(Box::new)
 }
 
-/// The report a ledger probe hit mints, reading the editing set off the
-/// marked input rather than walking the fresh output.
-fn marked_report(
-    resolved: &Resolved,
-    original: &str,
-    formatted: &Source,
-) -> Option<Box<UnstableRewrite>> {
-    UnstableRewrite::detect_marked(&resolved.pipeline, &resolved.config, original, formatted)
-        .map(Box::new)
-}
-
 fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
     failed(ExitStatus::ConfigError, format_args!("cannot walk: {err}"))
 }
@@ -546,6 +546,85 @@ mod tests {
         rule::RuleId,
         testing::{GroupSentinelRule, breaks_parse, never_settles, notebook_index, parse, range},
     };
+
+    /// Seeds `dir` with one module per name and returns the walk order
+    /// the driver hands them back in.
+    fn seeded(dir: &TempDir, names: &[&str]) -> Vec<PathBuf> {
+        for name in names {
+            fs_err::write(dir.path().join(name), "x = 1\n").expect("seeds the module");
+        }
+        let root = vec![dir.path().to_path_buf()];
+        walker::walk(&root)
+            .filter_map(|entry| match entry {
+                Ok(Found::Formattable(path, _)) => Some(path),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_marked_output_the_next_run_rewrites_proves_the_defect() {
+        let tmp = TempDir::new().expect("tempdir");
+        let path = tmp.path().join("a.py");
+        fs_err::write(&path, "x = 1\n").expect("writes the seed");
+        // Each run opens the cache afresh, as the CLI does, so the second
+        // reads the ledger the first appended to.
+        let run = || {
+            let resolver =
+                ConfigResolver::over(Resolved::over(Pipeline::from_rules(vec![Box::new(
+                    never_settles("widener"),
+                )])));
+            let setup = RunSetup {
+                cache: Some(Cache::in_store(tmp.path().join("cache"))),
+                cwd: resolver.seed(&Config::default()),
+                resolver,
+                verbose: false,
+            };
+            process_path(&path, PySourceType::Python, &setup, Pass::Rewrite)
+        };
+
+        let first = run();
+        assert_matches!(
+            &first,
+            FileOutcome::Done {
+                rewrite: Rewrite::Changed(kind),
+                unstable: None,
+                ..
+            } if kind.written() == "yy = 1\n",
+            "the ledger run marks its output rather than walking it",
+        );
+
+        fs_err::write(&path, "yy = 1\n").expect("lands the rewrite");
+        let second = run();
+        assert_matches!(
+            &second,
+            FileOutcome::Done {
+                unstable: Some(report),
+                ..
+            } if report.rules == [RuleId::from("widener")] && report.first == "yyy = 1\n",
+        );
+    }
+
+    #[test]
+    fn a_settled_rewrite_carries_no_report() {
+        let resolved = Resolved::over(Pipeline::with_defaults(&Config::default()));
+
+        let outcome = run_pipeline(
+            parse("alpha = 1\nb = 22\n"),
+            &resolved,
+            Pass::Rewrite,
+            Marker::Eager,
+        );
+
+        assert_matches!(
+            &outcome,
+            FileOutcome::Done {
+                rewrite: Rewrite::Changed(_),
+                unstable: None,
+                ..
+            }
+        );
+    }
 
     #[test]
     fn check_validate_fails_on_unparseable_rule_output() {
@@ -634,72 +713,6 @@ mod tests {
         let outcome = run_pipeline(parse("x = 1\n"), &resolved, pass, Marker::Eager);
 
         assert_matches!(outcome, FileOutcome::Done { unstable: None, .. });
-    }
-
-    #[test]
-    fn validate_reports_a_rewrite_despite_the_config_key() {
-        let mut resolved = Resolved::over(Pipeline::from_rules(vec![Box::new(never_settles(
-            "widener",
-        ))]));
-        resolved.config.report_unstable_output = false;
-
-        let outcome = run_pipeline(
-            parse("x = 1\n"),
-            &resolved,
-            Pass::Diagnose { validate: true },
-            Marker::Eager,
-        );
-
-        assert_matches!(
-            outcome,
-            FileOutcome::Done {
-                unstable: Some(_),
-                ..
-            }
-        );
-    }
-
-    #[test]
-    fn a_marked_output_the_next_run_rewrites_proves_the_defect() {
-        let tmp = TempDir::new().expect("tempdir");
-        let path = tmp.path().join("a.py");
-        fs_err::write(&path, "x = 1\n").expect("writes the seed");
-        // Each run opens the cache afresh, as the CLI does, so the second
-        // reads the ledger the first appended to.
-        let run = || {
-            let resolver =
-                ConfigResolver::over(Resolved::over(Pipeline::from_rules(vec![Box::new(
-                    never_settles("widener"),
-                )])));
-            let setup = RunSetup {
-                cache: Some(Cache::in_store(tmp.path().join("cache"))),
-                cwd: resolver.seed(&Config::default()),
-                resolver,
-                verbose: false,
-            };
-            process_path(&path, PySourceType::Python, &setup, Pass::Rewrite)
-        };
-
-        let first = run();
-        assert_matches!(
-            &first,
-            FileOutcome::Done {
-                rewrite: Rewrite::Changed(kind),
-                unstable: None,
-                ..
-            } if kind.written() == "yy = 1\n",
-            "the ledger run marks its output rather than walking it",
-        );
-
-        fs_err::write(&path, "yy = 1\n").expect("lands the rewrite");
-        let second = run();
-        assert_matches!(
-            &second,
-            FileOutcome::Done {
-                unstable: Some(report),
-                ..
-            } if report.rules == [RuleId::from("widener")] && report.first == "yyy = 1\n",
-        );
     }
 
     #[test]
@@ -864,27 +877,6 @@ mod tests {
     }
 
     #[test]
-    fn a_settled_rewrite_carries_no_report() {
-        let resolved = Resolved::over(Pipeline::with_defaults(&Config::default()));
-
-        let outcome = run_pipeline(
-            parse("alpha = 1\nb = 22\n"),
-            &resolved,
-            Pass::Rewrite,
-            Marker::Eager,
-        );
-
-        assert_matches!(
-            &outcome,
-            FileOutcome::Done {
-                rewrite: Rewrite::Changed(_),
-                unstable: None,
-                ..
-            }
-        );
-    }
-
-    #[test]
     fn rewrite_pass_fails_on_unparseable_rule_output() {
         let resolved = Resolved::over(Pipeline::from_rules(vec![Box::new(breaks_parse())]));
         let source = parse("x = 1\n");
@@ -927,41 +919,44 @@ mod tests {
         );
     }
 
-    #[test]
-    fn walk_error_returns_failed_with_config_error() {
-        let outcome = walk_error("synthetic walk failure");
-        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
-    }
-
     #[cfg(unix)]
-    #[rstest]
-    #[case::changed_under_a_commit(Rewrite::text("y = 1\n".to_owned()), Pass::Rewrite, false)]
-    #[case::changed_under_a_structured_commit(Rewrite::text("y = 1\n".to_owned()), Pass::Both, false)]
-    #[case::changed_under_a_preview(Rewrite::text("y = 1\n".to_owned()), Pass::Preview, true)]
-    #[case::unchanged_under_a_commit(Rewrite::Unchanged, Pass::Rewrite, true)]
-    #[case::passed_over_under_a_commit(Rewrite::PassedOver, Pass::Rewrite, true)]
-    #[case::skipped_under_a_check(Rewrite::Skipped, Pass::Diagnose { validate: false }, true)]
-    fn worth_storing_drops_only_a_rewrite_a_committing_pass_lands(
-        #[case] rewrite: Rewrite,
-        #[case] pass: Pass,
-        #[case] stores: bool,
-    ) {
-        assert_eq!(worth_storing(&rewrite, pass), stores);
+    #[test]
+    fn stream_paths_passes_over_a_symlink_without_a_block() {
+        let dir = TempDir::new().expect("a temporary directory");
+        seeded(&dir, &["a.py"]);
+        std::os::unix::fs::symlink(dir.path().join("a.py"), dir.path().join("link.py"))
+            .expect("links to the module");
+        let mut blocks = 0;
+
+        let outcomes = stream_paths(
+            &[dir.path().to_path_buf()],
+            |_, _| Ok((FileOutcome::Failed(ExitStatus::Clean), Vec::new())),
+            |_| {
+                blocks += 1;
+                Ok(())
+            },
+        )
+        .expect("the walk streams");
+
+        assert_eq!(blocks, 1);
+        assert_eq!(outcomes.len(), 1);
     }
 
-    /// Seeds `dir` with one module per name and returns the walk order
-    /// the driver hands them back in.
-    fn seeded(dir: &TempDir, names: &[&str]) -> Vec<PathBuf> {
-        for name in names {
-            fs_err::write(dir.path().join(name), "x = 1\n").expect("seeds the module");
-        }
-        let root = vec![dir.path().to_path_buf()];
-        walker::walk(&root)
-            .filter_map(|entry| match entry {
-                Ok(Found::Formattable(path, _)) => Some(path),
-                _ => None,
-            })
-            .collect()
+    #[test]
+    fn stream_paths_returns_the_writers_failure() {
+        let dir = TempDir::new().expect("a temporary directory");
+        seeded(&dir, &["a.py"]);
+
+        let result = stream_paths(
+            &[dir.path().to_path_buf()],
+            |_, _| Ok((FileOutcome::Failed(ExitStatus::Clean), b"block".to_vec())),
+            |_| Err(anyhow::anyhow!("the writer declined")),
+        );
+
+        assert_eq!(
+            result.expect_err("the writer failure surfaces").to_string(),
+            "the writer declined",
+        );
     }
 
     #[test]
@@ -998,43 +993,48 @@ mod tests {
     }
 
     #[test]
-    fn stream_paths_returns_the_writers_failure() {
-        let dir = TempDir::new().expect("a temporary directory");
-        seeded(&dir, &["a.py"]);
+    fn validate_reports_a_rewrite_despite_the_config_key() {
+        let mut resolved = Resolved::over(Pipeline::from_rules(vec![Box::new(never_settles(
+            "widener",
+        ))]));
+        resolved.config.report_unstable_output = false;
 
-        let result = stream_paths(
-            &[dir.path().to_path_buf()],
-            |_, _| Ok((FileOutcome::Failed(ExitStatus::Clean), b"block".to_vec())),
-            |_| Err(anyhow::anyhow!("the writer declined")),
+        let outcome = run_pipeline(
+            parse("x = 1\n"),
+            &resolved,
+            Pass::Diagnose { validate: true },
+            Marker::Eager,
         );
 
-        assert_eq!(
-            result.expect_err("the writer failure surfaces").to_string(),
-            "the writer declined",
+        assert_matches!(
+            outcome,
+            FileOutcome::Done {
+                unstable: Some(_),
+                ..
+            }
         );
     }
 
-    #[cfg(unix)]
     #[test]
-    fn stream_paths_passes_over_a_symlink_without_a_block() {
-        let dir = TempDir::new().expect("a temporary directory");
-        seeded(&dir, &["a.py"]);
-        std::os::unix::fs::symlink(dir.path().join("a.py"), dir.path().join("link.py"))
-            .expect("links to the module");
-        let mut blocks = 0;
+    fn walk_error_returns_failed_with_config_error() {
+        let outcome = walk_error("synthetic walk failure");
+        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
+    }
 
-        let outcomes = stream_paths(
-            &[dir.path().to_path_buf()],
-            |_, _| Ok((FileOutcome::Failed(ExitStatus::Clean), Vec::new())),
-            |_| {
-                blocks += 1;
-                Ok(())
-            },
-        )
-        .expect("the walk streams");
-
-        assert_eq!(blocks, 1);
-        assert_eq!(outcomes.len(), 1);
+    #[cfg(unix)]
+    #[rstest]
+    #[case::changed_under_a_commit(Rewrite::text("y = 1\n".to_owned()), Pass::Rewrite, false)]
+    #[case::changed_under_a_structured_commit(Rewrite::text("y = 1\n".to_owned()), Pass::Both, false)]
+    #[case::changed_under_a_preview(Rewrite::text("y = 1\n".to_owned()), Pass::Preview, true)]
+    #[case::unchanged_under_a_commit(Rewrite::Unchanged, Pass::Rewrite, true)]
+    #[case::passed_over_under_a_commit(Rewrite::PassedOver, Pass::Rewrite, true)]
+    #[case::skipped_under_a_check(Rewrite::Skipped, Pass::Diagnose { validate: false }, true)]
+    fn worth_storing_drops_only_a_rewrite_a_committing_pass_lands(
+        #[case] rewrite: Rewrite,
+        #[case] pass: Pass,
+        #[case] stores: bool,
+    ) {
+        assert_eq!(worth_storing(&rewrite, pass), stores);
     }
 
     #[test]

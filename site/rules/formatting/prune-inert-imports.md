@@ -45,7 +45,7 @@ A package `__init__.py` reports an unreferenced import rather than dropping it, 
 
 ## The `__future__` Directive
 
-`from __future__ import annotations` drops on three branches, where the module carries no annotation, where `target-version` is 3.14 or higher and PEP 749 defers evaluation, and where every annotated name resolves to an unconditional module-scope binding written before it.
+`from __future__ import annotations` drops on three branches, where the module carries no annotation, where `target-version` is 3.14 or higher and PEP 749 defers evaluation, and where every annotated name resolves to an unconditional module-scope binding written before it. Where [[alphabetize-siblings]] sorts definitions in the same pipeline, a name a module-level class or function binds counts as unresolved whichever side of the annotation it sits on, since the sort reseats definitions after this rule has run, so a directive covering such a reference stays in whichever order the sort writes.
 
 Every other `__future__` feature stays, `division` and its siblings changing how the module compiles rather than binding a name.
 

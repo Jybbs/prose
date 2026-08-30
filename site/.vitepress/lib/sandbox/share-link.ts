@@ -27,5 +27,7 @@ export async function encodeShare(state: SharedState): Promise<string | null> {
   const packed = new Uint8Array(await new Response(stream).arrayBuffer())
   let binary = ''
   for (const byte of packed) binary += String.fromCodePoint(byte)
-  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
+  const encoded = btoa(binary).replaceAll('+', '-').replaceAll('/', '_')
+  const padding = encoded.indexOf('=')
+  return padding === -1 ? encoded : encoded.slice(0, padding)
 }

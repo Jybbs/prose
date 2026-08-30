@@ -3,6 +3,7 @@
 use std::borrow::Cow;
 
 use super::*;
+use crate::primitives::inline::display_width;
 
 /// Emits the break each over-budget or raggedly stacked string run
 /// needs, probing each expression the parent-tracking walk hands it
@@ -72,7 +73,7 @@ impl<'a> Layout<'a> {
         let start = span.start();
         let column = self.reservations.column_in(self.source, start);
         if !self.source.contains_line_break(span)
-            && column + self.source.slice(span).width() <= self.code_line_length
+            && column + display_width(self.source.slice(span)) <= self.code_line_length
         {
             return;
         }

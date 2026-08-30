@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comprehension Reading Its Own Target Holds No Sort Back"
+
+description = '''
+The comprehension binds `name` and reads it in the same statement, so it is its own binder. `alpha` and `zebra` **still trade places around it**, because a statement is exempt from the binding rule on a name it binds at its own slot, where a statement can never seat itself ahead of itself.
+'''

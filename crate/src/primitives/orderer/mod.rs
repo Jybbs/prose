@@ -7,9 +7,8 @@
 
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
-use unicode_width::UnicodeWidthStr;
 
-use crate::source::Source;
+use crate::{primitives::inline::display_width, source::Source};
 
 mod assemble;
 mod blocks;
@@ -64,11 +63,11 @@ pub(crate) fn reordered_lines_fit(
     let cap = source
         .slice(outer)
         .lines()
-        .map(UnicodeWidthStr::width)
+        .map(display_width)
         .fold(budget, usize::max);
     format!("{head}{assembled}{tail}")
         .lines()
-        .all(|line| line.width() <= cap)
+        .all(|line| display_width(line) <= cap)
 }
 
 /// True when `order` moves a member whose range spans lines, the

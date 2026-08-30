@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Mixed Boolean Chain Breaks at Its Outer Operator"
+
+description = '''
+The break cuts at the `or` alone, leaving each `and` group whole on its row, so the two rows state the structure the expression actually has. Cutting at both operators would land four peer rows reading as one flat run.
+'''

@@ -4,7 +4,7 @@ expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/pair_folds_at_the_column_the_explode_leaves/input.py
 ---
 reflow-calls@103..120
-shed-parentheses@121..122
-shed-parentheses@127..141
-shed-parentheses@181..191
-shed-parentheses@69..70
+reflow-parentheses@121..122
+reflow-parentheses@127..141
+reflow-parentheses@181..191
+reflow-parentheses@69..70

@@ -10,8 +10,8 @@
 //!   the comprehension's own scope rather than the enclosing function.
 //! - Augmented assignments are skipped, since `x += 1` is both a read
 //!   and a write of `x`.
-//! - Names matching the configurable `allow_pattern` regex (default
-//!   `^_`) are skipped, exempting `_unused` and similar, whereas an
+//! - Names matching the configurable `allow_pattern` glob (default
+//!   `_*`) are skipped, exempting `_unused` and similar, whereas an
 //!   empty pattern exempts nothing.
 //! - Only `Assignment` and `Walrus` writes flag, leaving parameters,
 //!   loop targets, `with`-targets, exception handlers, and nested
@@ -23,7 +23,6 @@
 //!   exempt, since the test consumes the value and the single later
 //!   read is the second use.
 
-use regex_lite::Regex;
 use ruff_python_ast::statement_visitor::StatementVisitor;
 
 mod walk;
@@ -31,7 +30,7 @@ mod walk;
 use walk::Visitor;
 
 use crate::{
-    config::Config,
+    config::{AllowPattern, Config},
     diagnostics::Diagnostic,
     primitives::{
         binding::{BindingAnalysis, BindingId, BindingKind, UnpackKind},
@@ -42,7 +41,7 @@ use crate::{
 };
 
 pub(crate) struct SingleUseVariables {
-    allow_pattern: Regex,
+    allow_pattern: AllowPattern,
 }
 
 impl SingleUseVariables {
@@ -81,13 +80,12 @@ mod tests {
     #[test]
     fn an_empty_allow_pattern_exempts_nothing() {
         let mut config = Config::default();
-        config.rules.single_use_variables.allow_pattern =
-            Regex::new("").expect("empty pattern compiles");
+        config.rules.single_use_variables.allow_pattern = "".parse().expect("empty pattern parses");
         let source = parse("def f():\n    _unused = 1\n    return _unused\n");
         let diagnostics = SingleUseVariables::from_config(&config).lint(&source);
         assert!(
             !diagnostics.is_empty(),
-            "the default `^_` would spare `_unused`, and an empty pattern spares nothing",
+            "the default `_*` would spare `_unused`, and an empty pattern spares nothing",
         );
     }
 

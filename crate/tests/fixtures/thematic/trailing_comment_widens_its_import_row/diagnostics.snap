@@ -3,6 +3,6 @@ source: crate/tests/integration.rs
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/thematic/trailing_comment_widens_its_import_row/input.py
 ---
-band-constants@27..58
+band-constants@27..59
 space-statements@27..28
 space-statements@57..59

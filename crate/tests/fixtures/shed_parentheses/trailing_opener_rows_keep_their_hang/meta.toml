@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "Rows Below a Trailing Opener Keep Their Hang"
-
-description = '''
-An opener ending its row leaves nothing on that row to align to, so the rows below it hang by construction and stay where they were written when the pair sheds in place, the nested pair on the last row shedding with it.
-'''

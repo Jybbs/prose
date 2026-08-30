@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Group Pair Holds Across Two Boolean Operators"
+
+description = '''
+Both pairs stay, for two different reasons. The first wraps an `and` group inside an `or` chain, where dropping it parses identically and only the reading changes, so the pair is what separates the two bindings. The second nests `and` inside `and`, and there the parse itself moves, a nested `BoolOp` becoming a flat three-value one.
+'''

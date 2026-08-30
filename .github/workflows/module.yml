@@ -1,0 +1,54 @@
+name        : 🪻 Module
+run-name    : 🪻 Module · ${{ github.ref_name }}
+permissions : { contents: read }
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/actions/**
+      - .github/workflows/module.yml
+      - .mise/config.toml
+      - .mise/tasks/wasm/pack
+      - Cargo.lock
+      - Cargo.toml
+      - crate/Cargo.toml
+      - crate/src/**
+      - wasm/**
+
+  workflow_dispatch:
+
+concurrency:
+  cancel-in-progress : false
+  group              : ${{ github.workflow }}
+
+jobs:
+  module:
+    name            : 🛶 Module
+    runs-on         : ubuntu-latest
+    timeout-minutes : 15
+
+    steps:
+      - name : Check out repository
+        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+      - name : Restore the wasm module
+        id   : wasm-module
+        uses : ./.github/actions/restore-wasm
+
+      - name : Provision Cargo
+        if   : ${{ steps.wasm-module.outputs.cache-hit != 'true' }}
+        uses : ./.github/actions/provision-cargo
+        with : { shared-key: prose-wasm }
+
+      - name : Build the wasm module
+        if   : ${{ steps.wasm-module.outputs.cache-hit != 'true' }}
+        run  : mise run wasm:build && mise run wasm:pack
+
+      - name : Save the wasm module
+        if   : ${{ steps.wasm-module.outputs.cache-hit != 'true' }}
+        uses : actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          key  : ${{ steps.wasm-module.outputs.key }}
+          path : site/public/wasm

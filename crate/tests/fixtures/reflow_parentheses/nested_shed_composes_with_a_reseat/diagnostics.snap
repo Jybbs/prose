@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/nested_shed_composes_with_a_reseat/input.py
+---
+reflow-parentheses@20..181

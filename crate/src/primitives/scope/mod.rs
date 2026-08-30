@@ -1,8 +1,13 @@
 //! The body scope a statement sits in (module, class, or function) and
 //! the sub-bodies a compound statement opens.
 
+use std::borrow::Cow;
+
+use ruff_diagnostics::Edit;
 use ruff_python_ast::{ExceptHandler, Stmt};
 use ruff_text_size::{Ranged, TextRange};
+
+use crate::{primitives::edit::splice_bodies, source::Source};
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub(crate) enum BodyScope {
@@ -11,10 +16,45 @@ pub(crate) enum BodyScope {
     Module,
 }
 
+/// Returns the body and scope a class or function definition opens.
+/// `None` for every other statement.
+pub(crate) fn scoped_body(stmt: &Stmt) -> Option<(&[Stmt], BodyScope)> {
+    match stmt {
+        Stmt::ClassDef(c) => Some((&c.body, BodyScope::Class)),
+        Stmt::FunctionDef(f) => Some((&f.body, BodyScope::Function)),
+        _ => None,
+    }
+}
+
+/// `block` with each sub-body of the compound `stmt` rewritten through
+/// `rewrite_body` and spliced back around `leaf_edits`.
+pub(crate) fn splice_compound_arms<'src>(
+    source: &'src Source,
+    stmt: &'src Stmt,
+    block: TextRange,
+    leaf_edits: &[Edit],
+    mut rewrite_body: impl FnMut(&'src [Stmt], TextRange) -> (Cow<'src, str>, TextRange),
+) -> Cow<'src, str> {
+    let bodies = compound_sub_bodies(stmt)
+        .into_iter()
+        .map(|(body, outer)| rewrite_body(body, outer));
+    splice_bodies(source, block, bodies, leaf_edits)
+}
+
+/// Returns the body and enclosing range of every direct sub-body a
+/// statement opens, the class- or function-definition suite and each arm
+/// of a compound statement alike.
+pub(crate) fn sub_bodies(stmt: &Stmt) -> Vec<(&[Stmt], TextRange)> {
+    if let Some((body, _)) = scoped_body(stmt) {
+        return vec![(body, stmt.range())];
+    }
+    compound_sub_bodies(stmt)
+}
+
 /// Returns one `(body, outer)` pair per non-empty sub-body of a compound
 /// statement. `outer` carries the enclosing arm's range, which bounds a
 /// leading-comment scan for the body's first item.
-pub(crate) fn compound_sub_bodies(stmt: &Stmt) -> Vec<(&[Stmt], TextRange)> {
+fn compound_sub_bodies(stmt: &Stmt) -> Vec<(&[Stmt], TextRange)> {
     let mut bodies = match stmt {
         Stmt::For(s) => vec![(s.body.as_slice(), s.range), (s.orelse.as_slice(), s.range)],
         Stmt::If(s) => std::iter::once((s.body.as_slice(), s.range))
@@ -46,26 +86,6 @@ pub(crate) fn compound_sub_bodies(stmt: &Stmt) -> Vec<(&[Stmt], TextRange)> {
     };
     bodies.retain(|(body, _)| !body.is_empty());
     bodies
-}
-
-/// Returns the body and scope a class or function definition opens.
-/// `None` for every other statement.
-pub(crate) fn scoped_body(stmt: &Stmt) -> Option<(&[Stmt], BodyScope)> {
-    match stmt {
-        Stmt::ClassDef(c) => Some((&c.body, BodyScope::Class)),
-        Stmt::FunctionDef(f) => Some((&f.body, BodyScope::Function)),
-        _ => None,
-    }
-}
-
-/// Returns the body and enclosing range of every direct sub-body a
-/// statement opens, the class- or function-definition suite and each arm
-/// of a compound statement alike.
-pub(crate) fn sub_bodies(stmt: &Stmt) -> Vec<(&[Stmt], TextRange)> {
-    if let Some((body, _)) = scoped_body(stmt) {
-        return vec![(body, stmt.range())];
-    }
-    compound_sub_bodies(stmt)
 }
 
 #[cfg(test)]

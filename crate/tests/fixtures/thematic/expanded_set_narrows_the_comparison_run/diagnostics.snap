@@ -5,5 +5,6 @@ input_file: crate/tests/fixtures/thematic/expanded_set_narrows_the_comparison_ru
 ---
 alphabetize-siblings@49..67
 reflow-collections@45..78
+reflow-parentheses@28..164
 signature-annotations@14..18
 space-statements@20..21

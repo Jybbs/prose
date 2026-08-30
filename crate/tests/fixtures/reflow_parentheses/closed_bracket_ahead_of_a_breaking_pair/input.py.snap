@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/closed_bracket_ahead_of_a_breaking_pair/input.py
+---
+result = compute(value)[0] if (
+    first_operand_name and second_operand_name and third_operand
+) else fallback_value

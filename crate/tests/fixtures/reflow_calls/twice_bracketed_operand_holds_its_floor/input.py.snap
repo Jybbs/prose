@@ -4,12 +4,12 @@ expression: snapshot
 input_file: crate/tests/fixtures/reflow_calls/twice_bracketed_operand_holds_its_floor/input.py
 ---
 emit(
-    alpha,
-    beta,
-    compute(
-        first,
-    ) + compute(
-        second,
+    alpha_value,
+    beta_value,
+    compute_the_first(
+        first_argument,
+    ) + compute_the_second(
+        second_argument,
     ),
-    delta
+    delta_value
 )

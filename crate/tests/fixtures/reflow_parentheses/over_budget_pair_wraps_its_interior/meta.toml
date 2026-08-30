@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Over-Budget Grouping Wraps Its Interior"
+
+description = '''
+`ready = (` wraps `server.up and cache.warm`, and with the budget set to `31` characters the joined single-line form runs one character over. The pair therefore breaks rather than folding, and because the interior fits a row of its own one indent step in, it takes that row whole rather than one operand per row.
+'''

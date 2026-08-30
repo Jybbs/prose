@@ -4,11 +4,10 @@
 
 use ruff_python_ast::{AnyNodeRef, Expr, StmtFunctionDef, helpers::any_over_expr};
 use ruff_text_size::{Ranged, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use super::terms::Expansion;
 use crate::primitives::{
-    inline::opening_width,
+    inline::{display_width, opening_width},
     layout::{is_layoutable, requires_expand},
     padding,
     params::parameter_sites,
@@ -50,10 +49,9 @@ impl Expansion<'_> {
         let returns = fd.returns.as_deref();
         for (literal, parent, head) in self.inline_literals(fd, text) {
             let column = self.source.column_of(start)
-                + text[..head]
-                    .width()
+                + display_width(&text[..head])
                     .saturating_add_signed(-slack_before(literal.start()));
-            let tail = text[head + self.source.slice(literal).len()..].width();
+            let tail = display_width(&text[head + self.source.slice(literal).len()..]);
             if self
                 .one_row
                 .fitted(self.source, literal, parent, column, tail)
@@ -97,7 +95,7 @@ impl Expansion<'_> {
             }
         }
         if let Some(returns) = fd.returns.as_deref() {
-            let annotation = return_annotation_range(returns, fd, self.source.tokens());
+            let annotation = return_annotation_range(returns, fd, self.source);
             // The text closes with the annotation's slice and `:`.
             let base = text.len() - 1 - annotation.len().to_usize();
             for (literal, enclosing) in literals_beneath(returns, fd.into()) {

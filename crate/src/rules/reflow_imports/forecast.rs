@@ -3,16 +3,14 @@
 //! the column its run settles, and every row's gap read off the
 //! aligner's own column math.
 
-use std::{
-    collections::{HashMap, HashSet},
-    ops::Range,
-};
+use std::ops::Range;
 
 use ruff_python_ast::Stmt;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
+use rustc_hash::{FxHashMap, FxHashSet};
 
+use super::{Layout, MEMBER_SEPARATOR, Packing, own_line_indent, runs::MergeRuns};
 use crate::{
     primitives::{
         aligner,
@@ -20,6 +18,7 @@ use crate::{
         imports::{
             IMPORT_KEYWORD_WIDTH, import_blank_lines, import_group, import_sort_key, is_import,
         },
+        inline::display_width,
         layout::pack,
         orderer::any_sibling_shares_line,
         sections::Sections,
@@ -31,16 +30,14 @@ use crate::{
     source::Source,
 };
 
-use super::{Layout, MEMBER_SEPARATOR, Packing, own_line_indent, runs::MergeRuns};
-
 /// The rows a banding moves comments between, read by slot: the rows
 /// whose heading leaves them, the rows an own-line comment lands
 /// above, and the rows a comment trails, each with the columns it
 /// adds.
 struct Carried {
-    headed: HashSet<usize>,
-    trailed: HashMap<usize, usize>,
-    unheaded: HashSet<usize>,
+    headed: FxHashSet<usize>,
+    trailed: FxHashMap<usize, usize>,
+    unheaded: FxHashSet<usize>,
 }
 
 impl Carried {
@@ -48,15 +45,16 @@ impl Carried {
     /// row a comment lands on where the carrier folds into a merge.
     fn of(source: &Source, carries: &[Carry], seat_of: impl Fn(usize) -> usize) -> Self {
         let mut carried = Self {
-            headed: HashSet::new(),
-            trailed: HashMap::new(),
-            unheaded: HashSet::new(),
+            headed: FxHashSet::default(),
+            trailed: FxHashMap::default(),
+            unheaded: FxHashSet::default(),
         };
         for carry in carries {
             carried.unheaded.insert(carry.absorbs);
             let carrier = seat_of(carry.carrier);
             if carry.trails {
-                let width = TRAILING_GAP.width() + source.slice(carry.comment).trim_start().width();
+                let width = display_width(TRAILING_GAP)
+                    + display_width(source.slice(carry.comment).trim_start());
                 *carried.trailed.entry(carrier).or_default() += width;
             } else {
                 carried.headed.insert(carrier);
@@ -115,7 +113,7 @@ impl Seat<'_> {
     fn row_width(&self, source: &Source, content: usize) -> usize {
         self.member.baseline
             + self.member.width
-            + source.slice(self.member.gap).width()
+            + display_width(source.slice(self.member.gap))
             + IMPORT_KEYWORD_WIDTH
             + content
     }
@@ -127,7 +125,7 @@ impl Seat<'_> {
         let Packs::Roster(names) = &self.packs else {
             unreachable!("invariant: a seat spills a row of its roster");
         };
-        let widths: Vec<usize> = names.iter().map(|name| name.width()).collect();
+        let widths: Vec<usize> = names.iter().map(|name| display_width(name)).collect();
         let content = self.content(&widths, &range);
         Self {
             member: self.member,
@@ -161,8 +159,8 @@ impl<'a> Layout<'a> {
         let blocks = runs.blocks(source, body, outer);
         let sections = Sections::of(source, blocks);
         let mut folded = vec![false; body.len()];
-        let mut lead_of: HashMap<usize, usize> = HashMap::new();
-        let mut rosters: HashMap<usize, Vec<&'a str>> = HashMap::new();
+        let mut lead_of: FxHashMap<usize, usize> = FxHashMap::default();
+        let mut rosters: FxHashMap<usize, Vec<&'a str>> = FxHashMap::default();
         for group in groups {
             for &slot in &group[1..] {
                 folded[slot] = true;
@@ -237,73 +235,6 @@ impl<'a> Layout<'a> {
         seated
     }
 
-    /// The packing of every from-import `reflow-imports` could split in
-    /// `body`, each row seated at the column `align-imports` settles it
-    /// to, keyed by statement start. A roster a carried comment splits
-    /// packs with the rows above it and spills its last row, fixed at
-    /// the width it packed to, into the run the comment opens beneath,
-    /// or spills whole where it packs into one row.
-    pub(super) fn forecast(
-        &self,
-        settings: aligner::Settings,
-        body: &'a [Stmt],
-        outer: TextRange,
-        runs: &MergeRuns,
-        groups: &[Vec<usize>],
-    ) -> HashMap<TextSize, Packing> {
-        let mut packings: HashMap<TextSize, Packing> = HashMap::new();
-        let mut record = |seats: &[Seat<'a>], packed: Vec<(usize, Packing)>| {
-            for (index, packing) in packed {
-                packings
-                    .entry(seats[index].stmt.start())
-                    .or_default()
-                    .extend(packing);
-            }
-        };
-        for run in self.align_runs(settings, body, outer, runs, groups) {
-            let mut at = 0;
-            let mut spilled: Option<Seat<'a>> = None;
-            while at < run.len() {
-                let split = run[at..]
-                    .iter()
-                    .position(|seat| seat.splits)
-                    .map(|found| at + found);
-                let end = split.map_or(run.len(), |split| split + 1);
-                let mut seats: Vec<Seat<'a>> = spilled
-                    .take()
-                    .into_iter()
-                    .chain(run[at..end].iter().cloned())
-                    .collect();
-                let mut packed = self.seat_run(settings, &seats);
-                if split.is_some() {
-                    let (_, mut packing) = packed.pop().expect("a splitting seat packs its roster");
-                    let seat = seats.pop().expect("a splitting seat closes its run");
-                    if packing.len() == 1 {
-                        // The comment lands above the roster's only row,
-                        // so the roster opens the run beneath instead.
-                        packed = self.seat_run(settings, &seats);
-                        spilled = Some(Seat {
-                            splits: false,
-                            ..seat
-                        });
-                    } else {
-                        let (range, _) = packing.pop().expect("a packed roster holds a row");
-                        spilled = Some(seat.spill(self.source, range));
-                        seats.push(seat);
-                        packed.push((seats.len() - 1, packing));
-                    }
-                }
-                record(&seats, packed);
-                at = end;
-            }
-            if let Some(seat) = spilled {
-                let seats = [seat];
-                record(&seats, self.seat_run(settings, &seats));
-            }
-        }
-        packings
-    }
-
     /// True when the row of `moved[1]`, opening on its own statement,
     /// lands directly under the row of `moved[0]` once the later rules
     /// lay the block out, the two seated at the run positions `held`
@@ -374,10 +305,7 @@ impl<'a> Layout<'a> {
             stmt,
             tail,
             width: (trailed > 0).then(|| {
-                source
-                    .slice(source.text().line_range(member.line_start))
-                    .width()
-                    + trailed
+                display_width(source.slice(source.text().line_range(member.line_start))) + trailed
             }),
         }
     }
@@ -397,8 +325,12 @@ impl<'a> Layout<'a> {
             .iter()
             .map(|seat| match &seat.packs {
                 Packs::Roster(names) => {
-                    let widest = names.iter().map(|name| name.width()).max().unwrap_or(0);
-                    let last = names.last().map_or(0, |name| name.width()) + seat.tail;
+                    let widest = names
+                        .iter()
+                        .map(|name| display_width(name))
+                        .max()
+                        .unwrap_or(0);
+                    let last = names.last().map_or(0, |name| display_width(name)) + seat.tail;
                     Some(seat.row_width(source, widest.max(last)))
                 }
                 Packs::Spilled(_) | Packs::Written => seat.width,
@@ -412,7 +344,7 @@ impl<'a> Layout<'a> {
             let first = rows.len();
             match &seat.packs {
                 Packs::Roster(names) => {
-                    let widths: Vec<usize> = names.iter().map(|name| name.width()).collect();
+                    let widths: Vec<usize> = names.iter().map(|name| display_width(name)).collect();
                     let ranges = pack(
                         &widths,
                         column + IMPORT_KEYWORD_WIDTH,
@@ -447,6 +379,73 @@ impl<'a> Layout<'a> {
                 (index, ranges.into_iter().zip(gaps).collect())
             })
             .collect()
+    }
+
+    /// The packing of every from-import `reflow-imports` could split in
+    /// `body`, each row seated at the column `align-imports` settles it
+    /// to, keyed by statement start. A roster a carried comment splits
+    /// packs with the rows above it and spills its last row, fixed at
+    /// the width it packed to, into the run the comment opens beneath,
+    /// or spills whole where it packs into one row.
+    pub(super) fn forecast(
+        &self,
+        settings: aligner::Settings,
+        body: &'a [Stmt],
+        outer: TextRange,
+        runs: &MergeRuns,
+        groups: &[Vec<usize>],
+    ) -> FxHashMap<TextSize, Packing> {
+        let mut packings: FxHashMap<TextSize, Packing> = FxHashMap::default();
+        let mut record = |seats: &[Seat<'a>], packed: Vec<(usize, Packing)>| {
+            for (index, packing) in packed {
+                packings
+                    .entry(seats[index].stmt.start())
+                    .or_default()
+                    .extend(packing);
+            }
+        };
+        for run in self.align_runs(settings, body, outer, runs, groups) {
+            let mut at = 0;
+            let mut spilled: Option<Seat<'a>> = None;
+            while at < run.len() {
+                let split = run[at..]
+                    .iter()
+                    .position(|seat| seat.splits)
+                    .map(|found| at + found);
+                let end = split.map_or(run.len(), |split| split + 1);
+                let mut seats: Vec<Seat<'a>> = spilled
+                    .take()
+                    .into_iter()
+                    .chain(run[at..end].iter().cloned())
+                    .collect();
+                let mut packed = self.seat_run(settings, &seats);
+                if split.is_some() {
+                    let (_, mut packing) = packed.pop().expect("a splitting seat packs its roster");
+                    let seat = seats.pop().expect("a splitting seat closes its run");
+                    if packing.len() == 1 {
+                        // The comment lands above the roster's only row,
+                        // so the roster opens the run beneath instead.
+                        packed = self.seat_run(settings, &seats);
+                        spilled = Some(Seat {
+                            splits: false,
+                            ..seat
+                        });
+                    } else {
+                        let (range, _) = packing.pop().expect("a packed roster holds a row");
+                        spilled = Some(seat.spill(self.source, range));
+                        seats.push(seat);
+                        packed.push((seats.len() - 1, packing));
+                    }
+                }
+                record(&seats, packed);
+                at = end;
+            }
+            if let Some(seat) = spilled {
+                let seats = [seat];
+                record(&seats, self.seat_run(settings, &seats));
+            }
+        }
+        packings
     }
 }
 

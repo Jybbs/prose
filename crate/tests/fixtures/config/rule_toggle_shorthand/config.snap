@@ -49,17 +49,17 @@ Config {
         strip_trailing_commas: ToggleOnly {
             enabled: true,
         },
-        shed_parentheses: ToggleOnly {
-            enabled: true,
-        },
-        shed_redundant_base: ToggleOnly {
-            enabled: true,
-        },
         normalize_comparisons: NormalizeComparisonsConfig {
             enabled: true,
             rewrite_identity: true,
             rewrite_negation: true,
             rewrite_operand_order: true,
+        },
+        reflow_parentheses: ToggleOnly {
+            enabled: true,
+        },
+        shed_redundant_base: ToggleOnly {
+            enabled: true,
         },
         simplify_comprehensions: ToggleOnly {
             enabled: true,
@@ -202,7 +202,7 @@ Config {
             max_attributes: 4,
         },
         miscased_constants: MiscasedConstantsConfig {
-            allow_pattern: Regex(
+            allow_pattern: AllowPattern(
                 "",
             ),
             enabled: true,
@@ -215,8 +215,8 @@ Config {
             enabled: true,
         },
         single_use_variables: SingleUseVariablesConfig {
-            allow_pattern: Regex(
-                "^_",
+            allow_pattern: AllowPattern(
+                "_*",
             ),
             enabled: true,
         },

@@ -6,11 +6,7 @@
 //! builds the text each shape lands as.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    Stmt, StmtFunctionDef,
-    statement_visitor::{StatementVisitor, walk_stmt},
-    token::TokenKind,
-};
+use ruff_python_ast::{Stmt, StmtFunctionDef, token::TokenKind};
 use ruff_python_parser::parse_module;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -22,6 +18,7 @@ use crate::{
         layout::item_indent,
         padding, reserve,
         splice::splice_parses,
+        walk::filter_map_over_stmts,
     },
     rule::{Rule, RuleId},
     rules::{alphabetize_siblings::Reorders, reflow_calls::Reshaper},
@@ -78,7 +75,9 @@ impl Rule for ReflowSignatures {
             },
             source,
         };
-        visitor.visit_body(&source.ast().body);
+        for fd in filter_map_over_stmts(&source.ast().body, Stmt::as_function_def_stmt) {
+            visitor.process_def(fd);
+        }
         singleton_groups(visitor.edits)
     }
 
@@ -157,14 +156,5 @@ impl Layout<'_> {
             )
             .expect("function def carries a `:` between `)` and the body");
         TextRange::new(fd.parameters.range().start(), colon + TextSize::from(1u32))
-    }
-}
-
-impl<'a> StatementVisitor<'a> for Layout<'a> {
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        if let Stmt::FunctionDef(fd) = stmt {
-            self.process_def(fd);
-        }
-        walk_stmt(self, stmt);
     }
 }

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Async Functions Sort in the Function Band"
+
+description = '''
+`zeta` and `beta` are `async def`, and they sort among the plain functions by name below the class band rather than holding their slots.
+'''

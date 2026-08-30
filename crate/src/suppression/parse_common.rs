@@ -1,9 +1,8 @@
 //! Shared directive-parsing primitives: the `# prose:` prefix scan
 //! and the bracketed rule-list reader.
 
-use std::collections::HashSet;
-
 use ruff_python_trivia::PythonWhitespace;
+use rustc_hash::FxHashSet;
 
 use crate::rule::RuleId;
 
@@ -19,7 +18,7 @@ pub(super) fn after_prose_prefix(after_hash: &str) -> Option<&str> {
 /// Parses the rule-id body of a `[<id>[, <id>...]]` suffix into the
 /// set of rule ids. Returns `None` when the brackets are missing
 /// or malformed. Unknown rule ids are silently dropped.
-pub(super) fn parse_bracketed_rule_list(body: &str) -> Option<HashSet<RuleId>> {
+pub(super) fn parse_bracketed_rule_list(body: &str) -> Option<FxHashSet<RuleId>> {
     Some(
         body.strip_prefix('[')?
             .strip_suffix(']')?

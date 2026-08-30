@@ -1,10 +1,9 @@
 //! The per-alias decision the rule reaches over a module's imports, the
 //! drops it applies and the reports a package `__init__` holds back.
 
-use std::collections::HashSet;
-
 use ruff_diagnostics::Edit;
 use ruff_text_size::{TextRange, TextSize};
+use rustc_hash::FxHashSet;
 
 use super::{
     PruneInertImports,
@@ -52,17 +51,17 @@ impl<'a> Plan<'a> {
         let annotated = if rule.unreferenced {
             annotation_names(source.ast())
         } else {
-            HashSet::new()
+            FxHashSet::default()
         };
         let directive_is_inert = rule.unreferenced
             && nodes
                 .iter()
                 .any(|(_, node)| node.future_annotations().is_some())
-            && annotations_are_inert(source, rule.target_version);
+            && annotations_are_inert(source, rule.target_version, rule.sorts_definitions);
         let repeats = if rule.duplicates {
             repeat_writes(&nodes, &reexports)
         } else {
-            HashSet::new()
+            FxHashSet::default()
         };
 
         let mut dropped: Vec<Vec<usize>> = vec![Vec::new(); nodes.len()];
@@ -160,8 +159,8 @@ struct Report<'a> {
 fn is_unreferenced(
     analysis: &BindingAnalysis,
     bound: &str,
-    repeats: &HashSet<TextSize>,
-    annotated: &HashSet<String>,
+    repeats: &FxHashSet<TextSize>,
+    annotated: &FxHashSet<String>,
 ) -> bool {
     analysis.module_usage_count(bound) == 0
         && !analysis.module_reassigned_without(bound, |offset| repeats.contains(&offset))
@@ -175,9 +174,9 @@ fn is_unreferenced(
 fn repeat_writes(
     nodes: &[(usize, ImportNode<'_>)],
     reexports: &Reexports<'_>,
-) -> HashSet<TextSize> {
-    let mut bound_sources = HashSet::new();
-    let mut repeats = HashSet::new();
+) -> FxHashSet<TextSize> {
+    let mut bound_sources = FxHashSet::default();
+    let mut repeats = FxHashSet::default();
     for (_, node) in nodes {
         for alias in node.names() {
             let bound = node.bound(alias);

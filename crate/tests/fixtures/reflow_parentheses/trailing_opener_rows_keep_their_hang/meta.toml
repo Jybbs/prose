@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "Rows Below a Trailing Opener Keep Their Hang"
+
+description = '''
+An opener ending its row leaves nothing on that row to align to, so the rows below it hang by construction and stay where they were written when the pair sheds in place. The pair on the last row holds an `and` group inside the surrounding `or` chain, so it stays rather than shedding with the outer one.
+'''

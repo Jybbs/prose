@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Constants Hold Their Order When Definition Sorting Is Off"
+
+description = '''
+With `sort-definitions = false` the module run holds every slot, `ZEBRA`, `APPLE`, and `MANGO` staying in source order above `render` and `Widget`. The class-body constant sort never reaches module scope, so the knob that freezes the definitions leaves the constants alone as well.
+'''
