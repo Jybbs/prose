@@ -517,8 +517,8 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['reparses', 'reparsing'],
     definition : 'Reparse names the `Source::reparse_carrying` step the `Pipeline` runs between '
                + 'rules. Each rule reads a settled AST built from the post-rewrite text, so no '
-               + 'rule observes another rule\'s half-applied state, and the tables the rule '
-               + 'between leaves standing travel into the new `Source`.',
+               + 'rule observes another rule\'s half-applied state, and the binding table '
+               + 'travels into the new `Source` behind a rule that keeps every binding.',
     families   : ['engine'],
     href       : '/primitives/pipeline'
   },

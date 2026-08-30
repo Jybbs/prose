@@ -11,7 +11,7 @@ use ruff_diagnostics::Edit;
 use crate::{
     config::Config,
     primitives::{edit::singleton_groups, padding::Stranding},
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -22,7 +22,7 @@ pub(crate) struct StripStrandedPadding {
 impl StripStrandedPadding {
     pub(crate) const MESSAGE: &'static str = "drop padding that lines up with nothing";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

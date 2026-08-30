@@ -20,7 +20,7 @@ use crate::{
         edit::apply_edits_mapped,
         tiering::{Evaluated, call_reachable},
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -65,8 +65,8 @@ impl Rule for GroupSentinelRule {
         "group test rule"
     }
 
-    fn preserves(&self) -> Preserves {
-        Preserves::Nothing
+    fn preserves_bindings(&self) -> bool {
+        false
     }
 }
 
@@ -100,8 +100,8 @@ impl Rule for PrefixRule {
         "prefix test rule"
     }
 
-    fn preserves(&self) -> Preserves {
-        Preserves::Nothing
+    fn preserves_bindings(&self) -> bool {
+        false
     }
 }
 
@@ -262,14 +262,6 @@ pub(crate) fn self_overlapping() -> GroupSentinelRule {
         ]],
         id: RuleId::from("self-overlapping"),
     }
-}
-
-/// `source` with every lazily built table filled under `config`.
-pub(crate) fn with_every_table(source: Source, config: &Config) -> Source {
-    source.binding_analysis();
-    source.columns(config.equals_reservations());
-    source.stranded_padding(config.stranded_padding());
-    source
 }
 
 /// The text `edits` weave into `text`, beside the `SourceMap` of the

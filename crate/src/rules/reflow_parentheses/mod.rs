@@ -20,7 +20,7 @@ use crate::{
         fracture::outermost,
         reseat::push_reseat_edits,
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -41,7 +41,7 @@ impl ReflowParentheses {
     pub(crate) const MESSAGE: &'static str =
         "reflow a redundant grouping parenthesis pair against the line budget";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

@@ -14,7 +14,7 @@ use crate::{
     primitives::binding::{
         BindingAnalysis, ModuleAssignment, is_screaming_case, module_assignments, tail_identifier,
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -25,7 +25,7 @@ pub(crate) struct ReassignedConstants {
 impl ReassignedConstants {
     pub(crate) const MESSAGE: &'static str = "SCREAMING_CASE name is reassigned despite its constant casing. Rename it lowercase or keep it write-once";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::All;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

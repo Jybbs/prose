@@ -22,7 +22,7 @@ use crate::{
         tokens::{is_closer, is_opener},
         walk::{Descent, ParentedProbe, walk_parented_exprs},
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -40,7 +40,7 @@ impl StackAdjacentStrings {
     pub(crate) const MESSAGE: &'static str =
         "stack an implicitly concatenated string run one literal per line";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

@@ -14,7 +14,7 @@ use ruff_python_ast::statement_visitor::StatementVisitor;
 use crate::{
     config::Config,
     primitives::{INDENT_STEP, aligner, colon_targets},
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -30,7 +30,7 @@ pub(crate) struct AlignMatchCase {
 impl AlignMatchCase {
     pub(crate) const MESSAGE: &'static str = "align match-case colons";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

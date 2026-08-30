@@ -13,7 +13,7 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::{params::first_positional, walk::filter_map_over_stmts},
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -28,7 +28,7 @@ pub(crate) struct SignatureAnnotations;
 impl SignatureAnnotations {
     pub(crate) const MESSAGE: &'static str = "Flag a missing parameter or return type annotation";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::All;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self

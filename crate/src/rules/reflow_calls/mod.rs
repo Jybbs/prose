@@ -29,7 +29,7 @@ use crate::{
         travel::{Landing, block_shift, shifted_block, spans_a_string_part},
         walk::walk_stmt,
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     rules::{alphabetize_siblings::Reorders, reflow_signatures},
     source::Source,
 };
@@ -49,7 +49,7 @@ pub(crate) struct ReflowCalls {
 impl ReflowCalls {
     pub(crate) const MESSAGE: &'static str = "reflow call arguments against the line budget";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Nothing;
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let collections = &config.rules.reflow_collections;

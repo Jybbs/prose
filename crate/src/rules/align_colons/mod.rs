@@ -17,7 +17,7 @@ use crate::{
         colon_targets::{ColonEmitter, EntryColumns},
         reserve,
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -31,7 +31,7 @@ pub(crate) struct AlignColons {
 impl AlignColons {
     pub(crate) const MESSAGE: &'static str = "align consecutive `:` separators";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let type_settings = aligner::Settings::from(&config.rules.align_colons);

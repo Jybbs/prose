@@ -20,7 +20,7 @@ use crate::{
         splice::splice_parses,
         walk::filter_map_over_stmts,
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     rules::{alphabetize_siblings::Reorders, reflow_calls::Reshaper},
     source::Source,
 };
@@ -44,7 +44,7 @@ impl ReflowSignatures {
     pub(crate) const MESSAGE: &'static str =
         "normalize function signature to one-line or one-per-line shape";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

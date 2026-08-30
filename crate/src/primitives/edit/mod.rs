@@ -23,9 +23,7 @@ mod apply;
 mod offsets;
 
 pub(crate) use apply::{apply_edits_mapped, apply_inline_edits, splice_bodies};
-pub(crate) use offsets::{
-    forward_edits, forward_offsets, forward_range, forward_start, narrowed_replacement,
-};
+pub(crate) use offsets::{forward_offsets, forward_range, forward_start, narrowed_replacement};
 
 /// True when any element of `parts` is `Cow::Owned`, the signal a
 /// rewrite produced fresh content rather than a borrow of the source.

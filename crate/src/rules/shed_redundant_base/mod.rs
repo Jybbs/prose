@@ -15,7 +15,7 @@ use crate::{
     primitives::{
         edit::singleton_groups, range::dropped_member_spans, walk::filter_map_over_stmts,
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -27,7 +27,7 @@ impl ShedRedundantBase {
     pub(crate) const MESSAGE: &'static str =
         "shed a redundant `object` base or empty class parentheses";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Nothing;
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self

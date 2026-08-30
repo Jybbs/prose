@@ -21,7 +21,7 @@ use crate::{
         range::blocks_span,
         walk::filter_map_over_stmts,
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -30,7 +30,7 @@ pub(crate) struct UnsortedPositionals;
 impl UnsortedPositionals {
     pub(crate) const MESSAGE: &'static str = "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::All;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self

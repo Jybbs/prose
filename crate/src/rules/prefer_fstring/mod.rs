@@ -18,7 +18,7 @@ use crate::{
         inline::display_width,
         walk::{Descent, filter_map_over_parented_exprs},
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -41,7 +41,7 @@ impl PreferFstring {
     pub(crate) const MESSAGE: &'static str =
         "convert `%` or `str.format()` interpolation to an f-string";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Nothing;
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let facets = &config.rules.prefer_fstring;

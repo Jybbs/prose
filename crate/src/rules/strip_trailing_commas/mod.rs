@@ -15,7 +15,7 @@ use ruff_text_size::{Ranged, TextRange};
 use crate::{
     config::Config,
     primitives::{edit::singleton_groups, walk::walk_stmt},
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -24,7 +24,7 @@ pub(crate) struct StripTrailingCommas;
 impl StripTrailingCommas {
     pub(crate) const MESSAGE: &'static str = "strip trailing comma";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self

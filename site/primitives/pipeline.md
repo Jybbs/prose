@@ -68,7 +68,7 @@ Rule order is fixed and the same every run, so a given source plus configuration
 
 ## Internal Surface
 
-`Pipeline::from_rules` is `pub(crate)`, so a downstream cannot register a hand-rolled rule list today. The `Rule` trait that concrete rules implement is also `pub(crate)`, and each rule declares through it what its edits leave standing, which decides the tables the next *Source* inherits across the reparse. Both surfaces stabilize toward `1.0`, where consumers will be able to compose custom rule sets and implement project-specific rules against a stable trait.
+`Pipeline::from_rules` is `pub(crate)`, so a downstream cannot register a hand-rolled rule list today. The `Rule` trait that concrete rules implement is also `pub(crate)`, and each rule declares through it whether its edits leave every binding standing, which decides whether the next *Source* inherits the binding table across the reparse. Both surfaces stabilize toward `1.0`, where consumers will be able to compose custom rule sets and implement project-specific rules against a stable trait.
 
 ## Re-Using This Primitive
 

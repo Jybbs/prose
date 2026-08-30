@@ -9,7 +9,7 @@ use ruff_python_trivia::{
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -19,7 +19,7 @@ impl StepNarration {
     pub(crate) const MESSAGE: &'static str =
         "Numbered-step comment found. Consider extracting each step as a named function";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::All;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self

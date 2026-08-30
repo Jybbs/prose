@@ -19,7 +19,7 @@ use crate::{
         inline::indent_width, params::first_positional, reseat::push_reseat_edits,
         travel::frozen_rows, walk::walk_stmt,
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -33,7 +33,7 @@ impl ShedSuperArgs {
     pub(crate) const MESSAGE: &'static str =
         "shed the arguments a parameterized `super()` call restates";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Nothing;
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self

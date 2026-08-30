@@ -48,7 +48,7 @@ Methods covering the common *"where does this offset land?"* and *"what does the
 
 ### Mutation
 
-`reparse_carrying(text: String, cell_offsets: CellOffsets) -> Result<Self, ParseError>` returns a fresh *Source* over the mutated text, carrying a notebook's cell boundaries forward across the rule. The pipeline drives this between rules, so each downstream rule reads a settled AST, and then hands the tables the previous *Source* built to the new one through `inherit`, each offset moved through the `SourceMap` of the applied edits. A rule declares what its edits leave standing, so one that keeps every binding hands over the binding table and one that keeps every row hands over the layout tables too, whereas a table one of whose offsets an edit replaced is left for the next read to rebuild. Both methods are `pub(crate)`, leaving reparsing inside the crate.
+`reparse_carrying(text: String, cell_offsets: CellOffsets) -> Result<Self, ParseError>` returns a fresh *Source* over the mutated text, carrying a notebook's cell boundaries forward across the rule. The pipeline drives this between rules, so each downstream rule reads a settled AST, and then hands the binding table the previous *Source* built to the new one through `inherit`, every offset moved through the `SourceMap` of the applied edits. A rule declares whether its edits leave every binding standing, so one that does hands the table over, whereas a table one of whose offsets an edit replaced is left for the next read to rebuild, as are the layout forecasts behind every rule. Both methods are `pub(crate)`, leaving reparsing inside the crate.
 
 ### Errors
 

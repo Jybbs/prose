@@ -23,7 +23,7 @@ use crate::{
         splice::splice_preserves_tree,
         tokens::{is_closer, is_opener},
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -34,7 +34,7 @@ pub(crate) struct ShedBackslashContinuations {
 impl ShedBackslashContinuations {
     pub(crate) const MESSAGE: &'static str = "shed a backslash line continuation";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

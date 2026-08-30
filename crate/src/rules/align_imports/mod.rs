@@ -18,7 +18,7 @@ use ruff_text_size::Ranged;
 use crate::{
     config::Config,
     primitives::aligner,
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -29,7 +29,7 @@ pub(crate) struct AlignImports {
 impl AlignImports {
     pub(crate) const MESSAGE: &'static str = "align consecutive `import`s";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

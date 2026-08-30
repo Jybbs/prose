@@ -18,7 +18,7 @@ use crate::{
         binding::{ModuleAssignment, is_explicit_type_alias, is_screaming_case},
         effect::value_is_effectful,
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -30,7 +30,7 @@ impl MiscasedConstants {
     pub(crate) const MESSAGE: &'static str =
         "Module constant is not SCREAMING_CASE. Rename it to the SCREAMING_CASE form";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::All;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

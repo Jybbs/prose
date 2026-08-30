@@ -28,7 +28,7 @@ use crate::{
         binding::{BindingAnalysis, BindingId, BindingKind, UnpackKind},
         walk::any_over_stmts,
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -43,7 +43,7 @@ pub(crate) struct SingleUseVariables {
 impl SingleUseVariables {
     pub(crate) const MESSAGE: &'static str = "Binding is assigned and used once. Consider inlining";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::All;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

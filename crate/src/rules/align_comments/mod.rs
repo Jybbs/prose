@@ -14,7 +14,7 @@ use ruff_python_trivia::CommentRanges;
 use crate::{
     config::Config,
     primitives::{aligner, comments::TRAILING_GAP},
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -25,7 +25,7 @@ pub(crate) struct AlignComments {
 impl AlignComments {
     pub(crate) const MESSAGE: &'static str = "align consecutive trailing comments";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

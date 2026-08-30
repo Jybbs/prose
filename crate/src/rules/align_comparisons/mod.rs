@@ -16,7 +16,7 @@ use ruff_text_size::Ranged;
 use crate::{
     config::Config,
     primitives::{aligner, comparison::opening_token_kind, walk::walk_stmt},
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -27,7 +27,7 @@ pub(crate) struct AlignComparisons {
 impl AlignComparisons {
     pub(crate) const MESSAGE: &'static str = "align consecutive comparison operators";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

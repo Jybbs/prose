@@ -1,9 +1,7 @@
 //! Tests over the pipeline, one file per surface they cover.
 
 use std::{
-    assert_matches,
-    collections::BTreeSet,
-    env,
+    assert_matches, env,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
@@ -17,14 +15,13 @@ use crate::{
     config::Config,
     diagnostics::Severity,
     primitives::edit::singleton_groups,
-    rule::Preserves,
     rules::{
         align_colons::AlignColons, align_equals::AlignEquals,
         alphabetize_siblings::AlphabetizeSiblings,
     },
     testing::{
         FUTURE_LEAD, GroupSentinelRule, assert_send_sync, breaks_compile, breaks_parse,
-        never_settles, notebook, parse, range, rewrites_x_to_y, self_overlapping, with_every_table,
+        never_settles, notebook, parse, range, rewrites_x_to_y, self_overlapping,
     },
     walker::{self, Found},
 };
@@ -141,8 +138,8 @@ impl Rule for TextCapturingRule {
         "test rule"
     }
 
-    fn preserves(&self) -> Preserves {
-        Preserves::Nothing
+    fn preserves_bindings(&self) -> bool {
+        false
     }
 }
 

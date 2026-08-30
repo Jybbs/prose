@@ -14,7 +14,7 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::binding::{BindingAnalysis, top_level_module},
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -27,7 +27,7 @@ pub(crate) struct BareImports {
 impl BareImports {
     pub(crate) const MESSAGE: &'static str = "Flag a bare import a `from` import could replace";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::All;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.bare_imports;

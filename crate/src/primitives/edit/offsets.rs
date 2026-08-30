@@ -11,22 +11,6 @@ use ruff_text_size::{TextLen, TextRange, TextSize};
 use super::*;
 use crate::source::Source;
 
-/// `edits` over the woven text `map` describes, each range moved to
-/// where that text carries it. `None` where an edit in `map` replaced
-/// either end of one.
-pub(crate) fn forward_edits(edits: Vec<Edit>, map: &SourceMap) -> Option<Vec<Edit>> {
-    edits
-        .into_iter()
-        .map(|edit| {
-            let range = forward_range(edit.range(), map)?;
-            Some(match edit.into_content() {
-                None => Edit::range_deletion(range),
-                Some(content) => Edit::range_replacement(content.into_string(), range),
-            })
-        })
-        .collect()
-}
-
 /// Forwards each cell boundary in `offsets` through `map`, shifting it
 /// by the delta of the nearest marker at or before it, the slide that
 /// keeps notebook cell boundaries current across a reparse. `limit` is
@@ -191,36 +175,6 @@ mod tests {
     /// The map of `edits` woven into `abcdef`.
     fn mapped(edits: Vec<Edit>) -> SourceMap {
         woven("abcdef", edits).1
-    }
-
-    #[test]
-    fn forward_edits_answers_none_once_one_edit_lands_in_a_replaced_span() {
-        let map = mapped(vec![Edit::range_replacement("X".to_owned(), range(2, 4))]);
-        let edits = vec![
-            Edit::range_deletion(range(0, 1)),
-            Edit::range_deletion(range(3, 5)),
-        ];
-
-        assert_eq!(forward_edits(edits, &map), None);
-    }
-
-    #[test]
-    fn forward_edits_keeps_each_edits_content_and_kind() {
-        let map = mapped(vec![Edit::range_deletion(range(0, 1))]);
-        let edits = vec![
-            Edit::range_deletion(range(2, 3)),
-            Edit::insertion(" ".to_owned(), TextSize::new(4)),
-            Edit::range_replacement("X".to_owned(), range(4, 6)),
-        ];
-
-        assert_eq!(
-            forward_edits(edits, &map),
-            Some(vec![
-                Edit::range_deletion(range(1, 2)),
-                Edit::insertion(" ".to_owned(), TextSize::new(3)),
-                Edit::range_replacement("X".to_owned(), range(3, 5)),
-            ]),
-        );
     }
 
     #[test]

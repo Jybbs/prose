@@ -29,7 +29,7 @@ use crate::{
         last_at_or_before,
         walk::walk_stmt,
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     rules::stack_adjacent_strings::concatenated_run,
     source::Source,
 };
@@ -45,7 +45,7 @@ pub(crate) struct LineOverflow {
 impl LineOverflow {
     pub(crate) const MESSAGE: &'static str = "Flag a line over its length budget, offering the split form where a string literal can take the break";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::All;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

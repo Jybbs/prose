@@ -20,7 +20,7 @@ use crate::{
         scope::sub_bodies,
         sections::Sections,
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -32,7 +32,7 @@ impl GroupImports {
     pub(crate) const MESSAGE: &'static str =
         "group imports into bare, external, and local sections";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Nothing;
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

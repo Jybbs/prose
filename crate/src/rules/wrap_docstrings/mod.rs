@@ -19,7 +19,7 @@ use crate::{
         edit::narrowed_replacement,
         padding,
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -46,7 +46,7 @@ pub(crate) struct WrapDocstrings {
 impl WrapDocstrings {
     pub(crate) const MESSAGE: &'static str = "wrap docstring prose to the configured budget";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let description_width = config.docstring_width();

@@ -66,34 +66,6 @@ use crate::{
 #[error("unknown rule id `{0}`")]
 pub struct ParseRuleIdError(String);
 
-/// What a rule's edits leave standing in the module, read by the
-/// pipeline to decide which tables the `Source` built after them
-/// inherits rather than rebuilds. A rule preserving rows preserves
-/// bindings too.
-#[derive(Clone, Copy, Debug)]
-pub(crate) enum Preserves {
-    /// Everything `Bindings` keeps, and every row keeps its text and its
-    /// column and every statement its row neighbors, blank rows aside.
-    All,
-    /// Every binding keeps its name, its scope, and its writes and reads
-    /// in their order, and every assignment value keeps its extent.
-    Bindings,
-    /// No table survives.
-    Nothing,
-}
-
-impl Preserves {
-    /// True where the binding table survives.
-    pub(crate) fn bindings(self) -> bool {
-        !matches!(self, Self::Nothing)
-    }
-
-    /// True where the layout forecasts survive.
-    pub(crate) fn rows(self) -> bool {
-        matches!(self, Self::All)
-    }
-}
-
 /// Every rule in Prose implements this trait and nothing more.
 ///
 /// Implementations inspect `source` and return the edits that would
@@ -131,11 +103,14 @@ pub(crate) trait Rule: Send + Sync {
         message_for_id(self.id())
     }
 
-    /// What this rule's edits leave standing, deciding which tables the
-    /// `Source` built after them inherits. Defaults to the `PRESERVES`
-    /// const on the rule registered under `self.id()`.
-    fn preserves(&self) -> Preserves {
-        preserves_for_id(self.id())
+    /// True where this rule's edits leave every binding its name, its
+    /// scope, and its writes and reads in their order, and every
+    /// assignment value its extent, so the `Source` built after them
+    /// inherits the binding table rather than rebuilding it. Defaults
+    /// to the `PRESERVES_BINDINGS` const on the rule registered under
+    /// `self.id()`.
+    fn preserves_bindings(&self) -> bool {
+        preserves_bindings_for_id(self.id())
     }
 }
 
@@ -297,7 +272,7 @@ const fn slug_index(slug: &str) -> Option<usize> {
 }
 
 /// Generates [`KNOWN_IDS`], [`RuleConfigs`] with its bool-or-table
-/// `JsonSchema` impl, [`message_for_id`], [`preserves_for_id`],
+/// `JsonSchema` impl, [`message_for_id`], [`preserves_bindings_for_id`],
 /// [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
 /// [`Pipeline::with_filters`] from a registry table. Each row leads
 /// with the rule's kebab-case slug, then its `[tool.prose.rules]`
@@ -306,8 +281,9 @@ const fn slug_index(slug: &str) -> Option<usize> {
 /// `RuleId::from_str`, the `[tool.prose.rules.<slug>]` section name,
 /// the `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
 /// Each rule's one-line imperative lives on its own type as `MESSAGE`
-/// and what its edits leave standing as `PRESERVES`, which
-/// [`message_for_id`] and [`preserves_for_id`] read back per slug.
+/// and whether its edits leave every binding standing as
+/// `PRESERVES_BINDINGS`, which [`message_for_id`] and
+/// [`preserves_bindings_for_id`] read back per slug.
 ///
 /// Row order is pipeline order.
 ///
@@ -328,9 +304,9 @@ macro_rules! register_rules {
         /// The slugs each rule runs behind, indexed alongside [`KNOWN_IDS`].
         const PIPELINE_DEPENDENCIES: &[&[&str]] = &[$(&[$($after),*]),*];
 
-        /// What each rule's edits leave standing, indexed alongside
-        /// [`KNOWN_IDS`].
-        const PRESERVES: &[Preserves] = &[$($ty::PRESERVES),*];
+        /// Whether each rule's edits leave every binding standing,
+        /// indexed alongside [`KNOWN_IDS`].
+        const PRESERVES_BINDINGS: &[bool] = &[$($ty::PRESERVES_BINDINGS),*];
 
         // Asserts each declared dependency names a rule seated earlier.
         $($(const _: () = assert!(
@@ -410,10 +386,10 @@ macro_rules! register_rules {
             MESSAGES[registered_index(id)]
         }
 
-        /// Default backing for [`Rule::preserves`], the `PRESERVES`
-        /// const on the rule registered under `id`.
-        fn preserves_for_id(id: RuleId) -> Preserves {
-            PRESERVES[registered_index(id)]
+        /// Default backing for [`Rule::preserves_bindings`], the
+        /// `PRESERVES_BINDINGS` const on the rule registered under `id`.
+        fn preserves_bindings_for_id(id: RuleId) -> bool {
+            PRESERVES_BINDINGS[registered_index(id)]
         }
 
         impl Pipeline {

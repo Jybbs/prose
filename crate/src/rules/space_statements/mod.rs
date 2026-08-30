@@ -28,7 +28,7 @@ use crate::{
         edit::{repeat_edit, singleton_groups},
         scope::{BodyScope, scoped_body},
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -44,7 +44,7 @@ pub(crate) struct SpaceStatements {
 impl SpaceStatements {
     pub(crate) const MESSAGE: &'static str = "normalize the gap between adjacent statements";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::All;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

@@ -14,7 +14,7 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::walk::{Descent, filter_map_over_exprs, filter_map_over_parented_exprs},
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -37,7 +37,7 @@ pub(crate) struct NormalizeComparisons {
 impl NormalizeComparisons {
     pub(crate) const MESSAGE: &'static str = "normalize a comparison to state its check directly";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let facets = &config.rules.normalize_comparisons;

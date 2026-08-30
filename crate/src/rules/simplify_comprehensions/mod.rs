@@ -14,7 +14,7 @@ use ruff_text_size::{Ranged, TextRange};
 use crate::{
     config::Config,
     primitives::walk::filter_map_over_exprs,
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -29,7 +29,7 @@ pub(crate) struct SimplifyComprehensions;
 impl SimplifyComprehensions {
     pub(crate) const MESSAGE: &'static str = "collapse a redundant collection constructor";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Nothing;
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
 
     pub(crate) fn from_config(_: &Config) -> Self {
         Self

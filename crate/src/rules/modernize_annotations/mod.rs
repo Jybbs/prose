@@ -14,7 +14,7 @@ use crate::{
         edit::{narrowed_replacement, singleton_groups},
         walk::{Descent, ParentedProbe, walk_parented_exprs},
     },
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     rules::reflow_imports::Folds,
     source::Source,
 };
@@ -35,7 +35,7 @@ impl ModernizeAnnotations {
     pub(crate) const MESSAGE: &'static str =
         "modernize a legacy `typing` annotation to its builtin or PEP 604 form";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Nothing;
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let facets = &config.rules.modernize_annotations;

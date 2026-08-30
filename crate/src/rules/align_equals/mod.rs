@@ -17,7 +17,7 @@ use ruff_python_ast::visitor::Visitor as AstVisitor;
 use crate::{
     config::Config,
     primitives::{aligner, equal_targets, walk::walk_stmt},
-    rule::{Preserves, Rule, RuleId},
+    rule::{Rule, RuleId},
     source::Source,
 };
 
@@ -32,7 +32,7 @@ pub(crate) struct AlignEquals {
 impl AlignEquals {
     pub(crate) const MESSAGE: &'static str = "align consecutive `=` operators";
 
-    pub(crate) const PRESERVES: Preserves = Preserves::Bindings;
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
