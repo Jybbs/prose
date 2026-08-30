@@ -8,7 +8,7 @@ on:
       - main
     paths:
       - .github/actions/**
-      - .github/workflows/warm-module.yml
+      - .github/workflows/module.yml
       - .mise/config.toml
       - .mise/tasks/wasm/pack
       - Cargo.lock
