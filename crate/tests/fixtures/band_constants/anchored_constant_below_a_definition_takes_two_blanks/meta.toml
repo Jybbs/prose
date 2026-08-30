@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Anchored Constant below a Definition Takes Two Blank Lines"
+
+description = '''
+`LIMIT = compute()` anchors on its call directly under `helper` with no blank line between them, and `ALPHA` and `ZETA` sort beneath it. **The anchored constant takes the two blank lines the module policy seats after a definition**, the count a banded constant in the same slot would take.
+'''

@@ -30,10 +30,7 @@ use crate::{
         comments::has_keep_marker,
         effect::value_is_effectful,
         imports::defers_annotations,
-        orderer::{
-            any_sibling_shares_line, assembled_cell_edits, opens_its_line, permute_runs,
-            swap_span_commented,
-        },
+        orderer::{any_sibling_shares_line, opens_its_line, permute_runs, swap_span_commented},
         scope::BodyScope,
         slots::runs_where,
         tokens::{CLOSERS, OPENERS},
@@ -105,14 +102,11 @@ impl Rule for AlphabetizeSiblings {
             source,
         };
         let layout = body_layout(ctx, body, source.module_range(), BodyScope::Module);
-        assembled_cell_edits(
-            source,
-            &layout.blocks,
-            &layout.rendered,
-            &layout.order,
-            !layout.import_run_slots.is_empty(),
-            |i| import_gap(source, &layout.import_run_slots, i),
-        )
+        layout
+            .assembly
+            .cell_edits(source, !layout.import_run_slots.is_empty(), |i| {
+                import_gap(source, &layout.import_run_slots, i)
+            })
     }
 
     fn id(&self) -> RuleId {

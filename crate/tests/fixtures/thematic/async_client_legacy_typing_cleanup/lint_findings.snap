@@ -47,12 +47,12 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
     "code": "single-use-variables",
     "end_location": {
       "column": 11,
-      "row": 43
+      "row": 44
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 43
+      "row": 44
     },
     "message": "`parsed` is assigned and used once. Consider inlining `json.loads(raw)`"
   },
@@ -60,12 +60,12 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
     "code": "unsorted-positionals",
     "end_location": {
       "column": 2,
-      "row": 53
+      "row": 54
     },
     "fix": null,
     "location": {
       "column": 15,
-      "row": 47
+      "row": 48
     },
     "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
   },
@@ -73,12 +73,12 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
     "code": "unsorted-positionals",
     "end_location": {
       "column": 37,
-      "row": 72
+      "row": 73
     },
     "fix": null,
     "location": {
       "column": 13,
-      "row": 72
+      "row": 73
     },
     "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
   },
@@ -86,12 +86,12 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
     "code": "signature-annotations",
     "end_location": {
       "column": 70,
-      "row": 26
+      "row": 27
     },
     "fix": null,
     "location": {
       "column": 65,
-      "row": 26
+      "row": 27
     },
     "message": "Parameter `limit` has no type annotation"
   },
@@ -99,12 +99,12 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
     "code": "signature-annotations",
     "end_location": {
       "column": 15,
-      "row": 39
+      "row": 40
     },
     "fix": null,
     "location": {
       "column": 12,
-      "row": 39
+      "row": 40
     },
     "message": "Parameter `raw` has no type annotation"
   },
@@ -112,12 +112,12 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
     "code": "signature-annotations",
     "end_location": {
       "column": 11,
-      "row": 48
+      "row": 49
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 48
+      "row": 49
     },
     "message": "Parameter `client` has no type annotation"
   },
@@ -125,12 +125,12 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
     "code": "signature-annotations",
     "end_location": {
       "column": 18,
-      "row": 72
+      "row": 73
     },
     "fix": null,
     "location": {
       "column": 14,
-      "row": 72
+      "row": 73
     },
     "message": "Parameter `kind` has no type annotation"
   }

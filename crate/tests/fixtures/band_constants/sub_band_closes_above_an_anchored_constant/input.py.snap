@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/sub_band_closes_above_an_anchored_constant/input.py
+---
+def base():
+    return 1
+
+
+FIRST = base
+SECOND = base
+
+DERIVED_A = FIRST + SECOND
+DERIVED_B = FIRST * SECOND
+
+LIMIT = compute()

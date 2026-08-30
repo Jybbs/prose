@@ -22,8 +22,7 @@ use crate::{
         edit::{apply_inline_edits, splice_bodies},
         imports::{import_blank_lines, import_sort_key, sectioned_import_runs},
         orderer::{
-            adjacent_slots, any_sibling_shares_line, assemble_or_borrow, permute_runs,
-            rendered_member_blocks,
+            Assembly, adjacent_slots, any_sibling_shares_line, permute_runs, rendered_member_blocks,
         },
         scope::{BodyScope, scoped_body, splice_compound_arms},
         sections::Sections,
@@ -32,15 +31,13 @@ use crate::{
     source::Source,
 };
 
-/// The reorder layout of one body: its member blocks, their rendered
-/// text, the new-order permutation, and the new-order slots whose import
-/// neighbor collapses onto one line. [`rewrite_body`] folds it into the
-/// combined `Cow` and the notebook path splits it per cell.
+/// The reorder layout of one body: its assembly of member blocks,
+/// rendered text, and new-order permutation, and the new-order slots
+/// whose import neighbor collapses onto one line. [`rewrite_body`] folds
+/// it into the combined `Cow` and the notebook path splits it per cell.
 pub(super) struct BodyLayout<'a> {
-    pub(super) blocks: Vec<TextRange>,
+    pub(super) assembly: Assembly<'a>,
     pub(super) import_run_slots: Vec<usize>,
-    pub(super) order: Vec<usize>,
-    pub(super) rendered: Vec<Cow<'a, str>>,
 }
 
 /// Context threaded through the body-rewrite recursion, every field
@@ -187,10 +184,12 @@ pub(super) fn body_layout<'a>(
         });
     }
     BodyLayout {
-        blocks,
+        assembly: Assembly {
+            blocks,
+            order,
+            rendered,
+        },
         import_run_slots,
-        order,
-        rendered,
     }
 }
 
@@ -221,14 +220,11 @@ fn rewrite_body<'a>(
     scope: BodyScope,
 ) -> (Cow<'a, str>, TextRange) {
     let layout = body_layout(ctx, body, outer, scope);
-    assemble_or_borrow(
-        ctx.source,
-        &layout.blocks,
-        &layout.rendered,
-        &layout.order,
-        !layout.import_run_slots.is_empty(),
-        |i| import_gap(ctx.source, &layout.import_run_slots, i),
-    )
+    layout
+        .assembly
+        .assemble(ctx.source, !layout.import_run_slots.is_empty(), |i| {
+            import_gap(ctx.source, &layout.import_run_slots, i)
+        })
 }
 
 /// Recurses into each sub-body of a compound statement, splicing

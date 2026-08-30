@@ -19,6 +19,68 @@ use crate::{
     source::Source,
 };
 
+/// The member blocks of one body, their rendered text, and the new-order
+/// permutation an assembly writes them in.
+pub(crate) struct Assembly<'src> {
+    pub(crate) blocks: Vec<TextRange>,
+    pub(crate) order: Vec<usize>,
+    pub(crate) rendered: Vec<Cow<'src, str>>,
+}
+
+impl<'src> Assembly<'src> {
+    /// The assembled text beside the span it covers, borrowed from
+    /// `source` when no block rewrote and the order is identity, unless
+    /// `forced` holds. `gap` overrides the source gap after each slot.
+    pub(crate) fn assemble(
+        &self,
+        source: &'src Source,
+        forced: bool,
+        gap: impl FnMut(usize) -> Option<&'src str>,
+    ) -> (Cow<'src, str>, TextRange) {
+        assemble_or_borrow(
+            source,
+            &self.blocks,
+            &self.rendered,
+            &self.order,
+            forced,
+            gap,
+        )
+    }
+
+    /// One fix group per notebook cell the blocks span and one for an
+    /// ordinary module, each holding the [`piecewise_edits`] of its own
+    /// slots. A group whose pieces all match the source is dropped, and a
+    /// module whose blocks all borrow at identity order emits nothing
+    /// unless `forced`.
+    pub(crate) fn cell_edits(
+        &self,
+        source: &'src Source,
+        forced: bool,
+        mut gap: impl FnMut(usize) -> Option<&'src str>,
+    ) -> Vec<Vec<Edit>> {
+        if !source.is_notebook()
+            && !forced
+            && !any_owned(&self.rendered)
+            && is_identity(&self.order)
+        {
+            return Vec::new();
+        }
+        slot_runs(&self.blocks, |a, b| source.same_cell(a.start(), b.start()))
+            .filter_map(|run| {
+                let edits = piecewise_edits(
+                    source,
+                    &self.blocks,
+                    &self.rendered,
+                    &self.order,
+                    run,
+                    &mut gap,
+                );
+                (!edits.is_empty()).then_some(edits)
+            })
+            .collect()
+    }
+}
+
 /// Splices each rendered child at its sorted position. `gap_override`
 /// returning `Some(text)` for new-order slot `i` substitutes that
 /// text for the source gap between slot `i` and slot `i + 1`. A
@@ -43,28 +105,6 @@ pub(crate) fn assemble_blocks<'src>(
         |_, text| out.push_str(text),
     );
     out
-}
-
-/// Assembles `rendered` in `order` with `gap`, returning the covered
-/// span alongside the text. Short-circuits to a borrow of the source
-/// span when no child rewrote and `order` is identity, unless `forced`
-/// holds, the signal a gap override reshapes spacing without reordering.
-pub(crate) fn assemble_or_borrow<'src>(
-    source: &'src Source,
-    blocks: &[TextRange],
-    rendered: &[Cow<'src, str>],
-    order: &[usize],
-    forced: bool,
-    gap: impl FnMut(usize) -> Option<&'src str>,
-) -> (Cow<'src, str>, TextRange) {
-    let span = blocks_span(blocks);
-    if !forced && !any_owned(rendered) && is_identity(order) {
-        return (Cow::Borrowed(source.slice(span)), span);
-    }
-    (
-        Cow::Owned(assemble_blocks(source, blocks, rendered, order, gap)),
-        span,
-    )
 }
 
 /// Concatenates `block_texts` in `order`, re-emitting each member's comma so
@@ -106,30 +146,6 @@ pub(crate) fn assemble_separated(
         }
     }
     out
-}
-
-/// Assembles a body rewrite into fix groups, one per notebook cell the
-/// `blocks` span and one for an ordinary module, each holding the
-/// [`piecewise_edits`] of its own slots. The arguments mirror
-/// [`assemble_or_borrow`], and `order` never crosses a cell boundary.
-/// A group whose pieces all match the source is dropped.
-pub(crate) fn assembled_cell_edits<'src>(
-    source: &'src Source,
-    blocks: &[TextRange],
-    rendered: &[Cow<'src, str>],
-    order: &[usize],
-    forced: bool,
-    mut gap: impl FnMut(usize) -> Option<&'src str>,
-) -> Vec<Vec<Edit>> {
-    if !source.is_notebook() && !forced && !any_owned(rendered) && is_identity(order) {
-        return Vec::new();
-    }
-    slot_runs(blocks, |a, b| source.same_cell(a.start(), b.start()))
-        .filter_map(|run| {
-            let edits = piecewise_edits(source, blocks, rendered, order, run, &mut gap);
-            (!edits.is_empty()).then_some(edits)
-        })
-        .collect()
 }
 
 /// Reorders a comma-separated group laid out one member per line, the comma
@@ -222,6 +238,28 @@ where
     let mut order: Vec<usize> = (0..items.len()).collect();
     permute_full(&mut order, items, classify);
     assemble_or_borrow(source, &blocks, &rendered, &order, false, |_| None)
+}
+
+/// Assembles `rendered` in `order` with `gap`, returning the covered
+/// span alongside the text. Short-circuits to a borrow of the source
+/// span when no child rewrote and `order` is identity, unless `forced`
+/// holds, the signal a gap override reshapes spacing without reordering.
+fn assemble_or_borrow<'src>(
+    source: &'src Source,
+    blocks: &[TextRange],
+    rendered: &[Cow<'src, str>],
+    order: &[usize],
+    forced: bool,
+    gap: impl FnMut(usize) -> Option<&'src str>,
+) -> (Cow<'src, str>, TextRange) {
+    let span = blocks_span(blocks);
+    if !forced && !any_owned(rendered) && is_identity(order) {
+        return (Cow::Borrowed(source.slice(span)), span);
+    }
+    (
+        Cow::Owned(assemble_blocks(source, blocks, rendered, order, gap)),
+        span,
+    )
 }
 
 /// One narrowed edit per piece of [`walk_assembly`] that differs from

@@ -23,6 +23,8 @@ A constant also pins wherever banding it would change which object a name resolv
 
 Only an inert value bands. An inert value reads names and builds a result (*a literal, a name, an attribute or subscript read, a display or operator expression, or a `lambda`*), whereas an effectful value carries a call, a comprehension, or an `await` and moving it would reorder that work. `RANDOM_SEED = 42` hoists into the leading band whereas `wide_trainer = L.Trainer(**trainer_kwargs)` holds its place.
 
+A constant the analysis pins for a reassigned or unresolved name, a resolution hazard, or an effectful value still spaces as a member of the band beside it, so its pair with a banded constant seats tight, a tier boundary between them opens one blank line, and a heading standing a blank line off the pinned constant keeps one blank line above it. Every other pinned member keeps the gap the source wrote.
+
 An own-line comment above a member travels with it wherever the rule seats it, and a comment on the line below documents that member instead and travels the other way. A banner (*`# --- Configuration ---`*), a suppression directive, a tool pragma (*`# noqa`*), and a comment opening at another indent each hold their slot and pin the member beneath, so a band never crosses a banner. A notebook carries the same reach as a module, with its cell boundary bounding the carry.
 
 Relocation and its spacing settle in one run, so the file reaches its final shape on the first format.

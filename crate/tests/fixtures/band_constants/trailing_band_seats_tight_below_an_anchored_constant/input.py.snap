@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/trailing_band_seats_tight_below_an_anchored_constant/input.py
+---
+def base():
+    return 1
+
+
+LIMIT = compute()
+FIRST = base
+SECOND = base

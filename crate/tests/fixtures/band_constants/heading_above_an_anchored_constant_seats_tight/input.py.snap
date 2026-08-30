@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/heading_above_an_anchored_constant_seats_tight/input.py
+---
+ALPHA = 2
+ZETA = 1
+# the ceiling the scheduler reads
+LIMIT = compute()

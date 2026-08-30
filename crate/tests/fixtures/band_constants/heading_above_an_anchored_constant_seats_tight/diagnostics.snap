@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/band_constants/heading_above_an_anchored_constant_seats_tight/input.py
+---
+band-constants@0..20
