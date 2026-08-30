@@ -15,8 +15,8 @@ use crate::{
     config::Config,
     primitives::{
         imports::{
-            Dropping, ModuleKey, fold_landing, import_runs, module_key, prune_import_statements,
-            stands_alone,
+            Dropping, ModuleKey, defers_annotations, fold_landing, import_runs, module_key,
+            prune_import_statements, stands_alone,
         },
         orderer::member_blocks,
     },
@@ -40,6 +40,12 @@ impl Folds {
             bands: band_forecast(config),
             merges: rules.enabled && rules.merge_members,
         }
+    }
+
+    /// `band-constants` as this pipeline runs it, `None` when the rule
+    /// is off.
+    pub(crate) fn bands(&self) -> Option<&BandConstants> {
+        self.bands.as_ref()
     }
 
     /// The module-body slot whose import the drop of `slot` lands on,
@@ -110,12 +116,15 @@ impl MergeRuns {
         let runs = import_runs(body);
         let joined = bands
             .filter(|_| seek(&runs) || repeats_across(source, body, &runs))
-            .and_then(|rule| rule.import_bands(source, body, outer));
+            .and_then(|rule| {
+                rule.forecast(source, body, outer, defers_annotations(&source.ast().body))
+            });
         match joined {
             Some(Bands {
                 blocks,
                 carries,
                 imports,
+                ..
             }) => {
                 let (runs, sorted_heads) = imports
                     .into_iter()

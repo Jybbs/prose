@@ -34,6 +34,7 @@ use crate::{
         layout::{is_layoutable, requires_expand},
         padding::Stranding,
         reserve::{Columns, Reservations},
+        slot_holding,
         walk::filter_map_over_exprs,
     },
     suppression::SuppressionMap,
@@ -738,8 +739,9 @@ fn splits_statements(offset: TextSize, body: &[Stmt], text: &str) -> bool {
 /// Returns the statement of `body` that `offset` falls strictly inside,
 /// or `None` when `offset` sits at a statement's own start or between two.
 fn statement_spanning(offset: TextSize, body: &[Stmt]) -> Option<&Stmt> {
-    let after = body.partition_point(|stmt| stmt.start() < offset);
-    body[..after].last().filter(|stmt| offset < stmt.end())
+    slot_holding(body, offset)
+        .map(|slot| &body[slot])
+        .filter(|stmt| stmt.start() < offset && offset < stmt.end())
 }
 
 #[cfg(test)]

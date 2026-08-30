@@ -9,6 +9,7 @@ use ruff_source_file::LineEnding;
 use ruff_text_size::TextRange;
 use rustc_hash::FxHashMap;
 
+use super::Bands;
 use crate::primitives::{
     blanks::{blank_gap, module_blank_lines},
     group_map,
@@ -132,9 +133,11 @@ impl BandPlan<'_> {
     /// Drains `order` into the banded order section by section, a
     /// section marker and a pinned anchor each closing the running
     /// region, a region whose reorder would seat an eager reference
-    /// ahead of its referent draining in its incoming order instead.
+    /// ahead of its referent draining in its incoming order instead,
+    /// and moves each comment heading a band's source-order head onto
+    /// the member the sort seated first.
     fn drained(
-        &self,
+        &mut self,
         body: &[Stmt],
         sections: &Sections,
         first_party: &[String],
@@ -159,6 +162,7 @@ impl BandPlan<'_> {
             }
         }
         self.drain_region(body, first_party, grouped, &mut region, &mut drained);
+        self.relocate_heads(&drained.shifts);
         drained
     }
 
@@ -212,9 +216,7 @@ impl BandPlan<'_> {
         max_tiers: Option<usize>,
         order: &mut Vec<usize>,
     ) -> Option<Banding> {
-        let Drained { banded, shifts, .. } =
-            self.drained(body, sections, first_party, grouped, order);
-        self.relocate_heads(&shifts);
+        let Drained { banded, .. } = self.drained(body, sections, first_party, grouped, order);
         let tiers: FxHashMap<usize, usize> = self
             .keys
             .iter()
@@ -244,21 +246,27 @@ impl BandPlan<'_> {
         })
     }
 
-    /// Every import band the drained `order` seats beside every comment
-    /// the banding carries onto another member.
-    pub(super) fn import_bands(
+    /// The seating forecast over `body`: `blocks`, the comments the
+    /// banding carries onto another member, every import band it seats,
+    /// and the order the band seats `body` in.
+    pub(super) fn forecast(
         mut self,
         body: &[Stmt],
+        blocks: Vec<TextRange>,
         sections: &Sections,
         first_party: &[String],
         grouped: bool,
         order: &[usize],
-    ) -> Option<(Vec<ImportBand>, Vec<Carry>)> {
+    ) -> Bands {
         let Drained {
-            imports, shifts, ..
+            banded, imports, ..
         } = self.drained(body, sections, first_party, grouped, order);
-        self.relocate_heads(&shifts);
-        Some((imports, self.carries))
+        Bands {
+            blocks,
+            carries: self.carries,
+            imports,
+            order: banded,
+        }
     }
 }
 

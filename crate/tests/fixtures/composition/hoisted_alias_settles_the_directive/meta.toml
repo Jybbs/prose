@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Hoisted Alias Settles the Directive in One Run"
+
+description = '''
+`convert` names `Alias` in its annotations while `Alias = int` sits below it, and `band-constants` hoists that assignment into the leading band on the same run. `prune-inert-imports` counts the hoisted binding as written ahead of the annotations, so **the `from __future__ import annotations` directive drops on the first run** rather than the second, and the file a first run writes is the file a second run leaves alone.
+'''

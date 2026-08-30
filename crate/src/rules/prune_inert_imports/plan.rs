@@ -57,7 +57,7 @@ impl<'a> Plan<'a> {
             && nodes
                 .iter()
                 .any(|(_, node)| node.future_annotations().is_some())
-            && annotations_are_inert(source, rule.target_version, rule.sorts_definitions);
+            && annotations_are_inert(rule, source);
         let repeats = if rule.duplicates {
             repeat_writes(&nodes, &reexports)
         } else {

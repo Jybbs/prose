@@ -119,6 +119,14 @@ impl BindingAnalysis {
             .any(|scope| scope.bindings.contains_key(name))
     }
 
+    /// Returns the offset of the earliest unconditional module-scope
+    /// write of `name`, `None` when every write sits in a conditional
+    /// branch (`if`/`for`/`while`/`try`/`match`) or `name` is unbound at
+    /// module scope.
+    pub(crate) fn first_unconditional_write(&self, name: &str) -> Option<TextSize> {
+        self.module_binding(name)?.first_unconditional_write
+    }
+
     /// Returns the offset of the earliest recorded write of `binding`.
     pub(crate) fn first_write_offset(&self, binding: BindingId) -> TextSize {
         self.binding(binding).write_offsets[0]
@@ -143,8 +151,7 @@ impl BindingAnalysis {
     /// write at an offset strictly less than `offset`. A write nested in
     /// a conditional branch (`if`/`for`/`while`/`try`/`match`) is excluded.
     pub(crate) fn is_defined_before(&self, name: &str, offset: TextSize) -> bool {
-        self.module_binding(name)
-            .and_then(|binding| binding.first_unconditional_write)
+        self.first_unconditional_write(name)
             .is_some_and(|first| first < offset)
     }
 
@@ -445,6 +452,26 @@ mod tests {
             analysis.usage_count(helper),
             1,
             "the forward call resolves to outer's local",
+        );
+    }
+
+    #[rstest]
+    #[case::unconditional_write("Helper = int\n", "Helper", Some(0))]
+    #[case::unconditional_after_conditional(
+        "if flag:\n    Helper = str\nHelper = int\n",
+        "Helper",
+        Some(26)
+    )]
+    #[case::conditional_only_write("if flag:\n    Helper = int\n", "Helper", None)]
+    #[case::undefined_name("x = 1\n", "y", None)]
+    fn first_unconditional_write_reads_the_earliest_unconditional_offset(
+        #[case] src: &str,
+        #[case] name: &str,
+        #[case] expected: Option<u32>,
+    ) {
+        assert_eq!(
+            analyze(src).first_unconditional_write(name),
+            expected.map(TextSize::new)
         );
     }
 

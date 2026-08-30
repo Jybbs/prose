@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Hoisted Import Settles the Directive in One Run"
+
+description = '''
+`convert` names `Sequence` in its annotations while `from collections.abc import Sequence` sits below it, and `band-constants` seats that import in the import band above the definition on the same run. The relocated binding counts as written ahead of the annotations, so **the `from __future__ import annotations` directive drops on the first run**, leaving nothing for a second run to change.
+'''

@@ -1,5 +1,7 @@
 //! Shared primitives used across rule implementations.
 
+use ruff_python_ast::Stmt;
+use ruff_text_size::{Ranged, TextSize};
 use rustc_hash::FxHashMap;
 
 pub(crate) mod alias;
@@ -53,6 +55,13 @@ pub(crate) fn group_map<K: Eq + std::hash::Hash, V>(
         })
 }
 
+/// The slot of the `body` statement whose start is at or before
+/// `offset`, `None` ahead of the first statement.
+pub(crate) fn slot_holding(body: &[Stmt], offset: TextSize) -> Option<usize> {
+    body.partition_point(|stmt| stmt.start() <= offset)
+        .checked_sub(1)
+}
+
 /// Byte offset of the first `:` in `s` that sits at paren-and-bracket
 /// depth zero, reading the walrus `:=` as one operator rather than as a
 /// colon. `None` when every colon is nested or `s` carries none.
@@ -81,12 +90,30 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
+    use crate::testing::parse;
 
     #[test]
     fn group_map_keeps_each_keys_values_in_arrival_order() {
         let grouped = group_map([(1, "a"), (2, "b"), (1, "c")]);
         assert_eq!(grouped[&1], vec!["a", "c"]);
         assert_eq!(grouped[&2], vec!["b"]);
+    }
+
+    #[rstest]
+    #[case::ahead_of_the_first_statement(0, None)]
+    #[case::statement_start(7, Some(0))]
+    #[case::inside_a_statement(10, Some(0))]
+    #[case::between_statements(13, Some(0))]
+    #[case::past_the_last_statement(20, Some(1))]
+    fn slot_holding_reads_the_statement_starting_at_or_before_the_offset(
+        #[case] offset: u32,
+        #[case] expected: Option<usize>,
+    ) {
+        let source = parse("# lead\nx = 1\n\ny = 2\n");
+        assert_eq!(
+            slot_holding(&source.ast().body, TextSize::new(offset)),
+            expected
+        );
     }
 
     #[rstest]

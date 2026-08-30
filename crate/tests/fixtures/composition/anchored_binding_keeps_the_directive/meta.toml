@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Anchored Binding Keeps the Directive"
+
+description = '''
+`Alias = build()` runs code as it binds, so `band-constants` pins it below `convert` rather than hoisting it into a band. Nothing seats the binding ahead of the annotations naming it, so **the `from __future__ import annotations` directive stays** while the unread `import os` beside it drops.
+'''

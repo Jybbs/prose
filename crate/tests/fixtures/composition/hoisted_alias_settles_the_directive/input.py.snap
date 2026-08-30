@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/hoisted_alias_settles_the_directive/input.py
+---
+Alias = int
+
+
+def convert(value: Alias) -> Alias:
+    return value
