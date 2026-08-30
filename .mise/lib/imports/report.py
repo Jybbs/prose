@@ -10,9 +10,23 @@ from pathlib     import Path
 from shlex       import quote
 
 from records import Break, Width
+from sweep   import Sweep
 
 KNOBS = ("PROSE_IMPORTS_PROFILE", "PROSE_IMPORTS_PYTHON", "PROSE_IMPORTS_TIMEOUT")
 SHOWN = 30
+
+
+def banner(sweep: Sweep) -> str:
+    """
+    Return the header naming the corpus, binary, interpreter, and stage
+    of `sweep`.
+    """
+    return (
+        f"corpus      {sweep.corpus}\n"
+        f"binary      {sweep.binary}\n"
+        f"interpreter {sweep.runner.python} ({sweep.version})\n"
+        f"stage       {sweep.stage.root}"
+    )
 
 
 def render(found: Width, carried: set[str], corpus: Path) -> str:

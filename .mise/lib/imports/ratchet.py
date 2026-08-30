@@ -38,3 +38,24 @@ def judge(found: Width, held: dict) -> set[str]:
     """
     known = {tuple(key) for key in held.get(found.label, [])}
     return {brk.module for brk in found.breaks if (brk.frame[0], brk.reason) in known}
+
+
+def verdict(results: list[tuple[Width, set[str]]]) -> int | str:
+    """
+    Return the run's exit status, the message where a run left a module
+    unmeasured, zero after baking where `PROSE_IMPORTS_BAKE` names a file,
+    and otherwise whether any width breaks a module its baseline does not
+    carry.
+    """
+    if any(found.unmeasured for found, _ in results):
+        return (
+            "a run left modules unmeasured, so the uncomparable count cannot be named"
+        )
+    if baked := environ.get("PROSE_IMPORTS_BAKE"):
+        bake([found for found, _ in results], baked)
+        print(f"break set baked into {baked}")
+        return 0
+    fresh = any(
+        brk.module not in carried for found, carried in results for brk in found.breaks
+    )
+    return int(fresh)
