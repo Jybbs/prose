@@ -715,6 +715,21 @@ fn cache_writes_back_a_settled_file_from_its_own_entry() {
 }
 
 #[test]
+fn carry_trace_env_reports_each_table_build_and_carry_to_stderr() {
+    let (dir, path) = fixture("traced.py", "import os\n\n\ndef f():\n    return None\n");
+
+    let assert = prose()
+        .env("PROSE_CARRY_TRACE", "1")
+        .args(["format", "--diff", "--no-cache"])
+        .arg(&path)
+        .current_dir(dir.path())
+        .assert();
+
+    assert_stderr_has(&assert, "build\tbindings\n");
+    assert_stderr_has(&assert, "carry\tprune-inert-imports\tbindings\tdeclined\n");
+}
+
+#[test]
 fn check_clean_fixture_exits_zero() {
     run_fixture("clean.py", "x = 1\n", &["check"]).success();
 }

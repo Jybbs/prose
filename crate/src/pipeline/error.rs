@@ -62,7 +62,7 @@ pub(super) fn reparse_or_reject(
     {
         return Err(PipelineError::Compile { error, rule: id });
     }
-    next.inherit(source, map, rule.preserves());
+    next.inherit(source, map, rule);
     Ok(next)
 }
 

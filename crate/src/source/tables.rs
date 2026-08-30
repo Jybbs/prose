@@ -9,7 +9,10 @@ use std::{
 
 use ruff_diagnostics::{Edit, SourceMap};
 
-use super::Source;
+use super::{
+    Source,
+    trace::{self, Outcome},
+};
 use crate::{
     primitives::{
         binding::BindingAnalysis,
@@ -17,8 +20,13 @@ use crate::{
         padding::Stranding,
         reserve::{Columns, Reservations},
     },
-    rule::Preserves,
+    rule::{Rule, RuleId},
 };
+
+/// The label each table reports its builds and carries under.
+const BINDINGS: &str = "bindings";
+const COLUMNS: &str = "columns";
+const STRANDED: &str = "stranded";
 
 impl Source {
     /// Panics where a table a reparse carried into this source differs
@@ -60,8 +68,10 @@ impl Source {
     /// Returns the binding-analysis table, built on the first read
     /// where the reparse before it carried none.
     pub fn binding_analysis(&self) -> &BindingAnalysis {
-        self.binding_analysis
-            .get_or_init(|| Box::new(BindingAnalysis::new(self.ast())))
+        self.binding_analysis.get_or_init(|| {
+            trace::built(BINDINGS);
+            Box::new(BindingAnalysis::new(self.ast()))
+        })
     }
 
     /// Returns the columns `reservations` shifts each aligned value to,
@@ -70,30 +80,39 @@ impl Source {
     /// reservation and reads the walk back, whereas a read carrying a
     /// different one walks for itself.
     pub(crate) fn columns(&self, reservations: Reservations) -> Cow<'_, Columns> {
-        keyed(&self.columns, reservations, |reservations| {
+        keyed(&self.columns, COLUMNS, reservations, |reservations| {
             reservations.columns(self)
         })
     }
 
-    /// Fills the tables `previous` built and `preserves` leaves
-    /// standing, each moved through `map` to the positions this text
-    /// carries, so the next read finds the table in place. A table an
-    /// edit in `map` leaves nowhere to move, one of whose offsets that
-    /// edit replaced, is left for that read to rebuild.
-    pub(crate) fn inherit(&mut self, previous: Source, map: &SourceMap, preserves: Preserves) {
-        if preserves.bindings() {
-            self.binding_analysis = carried(previous.binding_analysis, |analysis| {
-                analysis.forwarded(map)
-            });
-        }
-        if preserves.rows() {
-            self.columns = carried(previous.columns, |(key, columns)| {
-                Some((key, columns.forwarded(map)?))
-            });
-            self.stranded_padding = carried(previous.stranded_padding, |(key, edits)| {
-                Some((key, forward_edits(edits, map)?))
-            });
-        }
+    /// Fills the tables `previous` built and `rule` declares its edits
+    /// leave standing, each moved through `map` to the positions this
+    /// text carries, so the next read finds the table in place. A table
+    /// an edit in `map` leaves nowhere to move, one of whose offsets
+    /// that edit replaced, is left for that read to rebuild.
+    pub(crate) fn inherit(&mut self, previous: Source, map: &SourceMap, rule: &dyn Rule) {
+        let (id, preserves) = (rule.id(), rule.preserves());
+        self.binding_analysis = inherited(
+            id,
+            BINDINGS,
+            preserves.bindings(),
+            previous.binding_analysis,
+            |analysis| analysis.forwarded(map),
+        );
+        self.columns = inherited(
+            id,
+            COLUMNS,
+            preserves.rows(),
+            previous.columns,
+            |(key, columns)| Some((key, columns.forwarded(map)?)),
+        );
+        self.stranded_padding = inherited(
+            id,
+            STRANDED,
+            preserves.rows(),
+            previous.stranded_padding,
+            |(key, edits)| Some((key, forward_edits(edits, map)?)),
+        );
     }
 
     /// Returns the edits `stranding` emits over this source, walking the
@@ -102,29 +121,47 @@ impl Source {
     /// reads the walk back, whereas a read carrying a different one
     /// walks for itself.
     pub(crate) fn stranded_padding(&self, stranding: Stranding) -> Cow<'_, [Edit]> {
-        keyed(&self.stranded_padding, stranding, |stranding| {
+        keyed(&self.stranded_padding, STRANDED, stranding, |stranding| {
             stranding.edits(self)
         })
     }
 }
 
-/// `slot`'s table moved through `forward`, an empty slot where `slot`
-/// holds none or the move fails.
-fn carried<T>(slot: OnceLock<Box<T>>, forward: impl FnOnce(T) -> Option<T>) -> OnceLock<Box<T>> {
-    slot.into_inner()
-        .and_then(|held| forward(*held))
+/// `slot`'s table moved through `forward` where `rule` leaves it
+/// `permitted` to survive, and an empty slot where the rule declines
+/// it, `slot` holds none, or the move fails, the outcome reported
+/// under `table`.
+fn inherited<T>(
+    rule: RuleId,
+    table: &'static str,
+    permitted: bool,
+    slot: OnceLock<Box<T>>,
+    forward: impl FnOnce(T) -> Option<T>,
+) -> OnceLock<Box<T>> {
+    let held = slot.get().is_some();
+    let moved = permitted
+        .then(|| slot.into_inner())
+        .flatten()
+        .and_then(|table| forward(*table));
+    trace::carried(rule, table, Outcome::of(permitted, held, moved.is_some()));
+    moved
         .map(Box::new)
         .map_or_else(OnceLock::new, OnceLock::from)
 }
 
 /// The value `build` derives for `key`, read back from `slot` where it
 /// already holds that key's value and built afresh otherwise, the
-/// first read filling the slot.
-fn keyed<K: Copy + PartialEq, B: ?Sized + ToOwned>(
-    slot: &OnceLock<Box<(K, B::Owned)>>,
+/// first read filling the slot and each build reported under `table`.
+fn keyed<'a, K: Copy + PartialEq, B: ?Sized + ToOwned>(
+    slot: &'a OnceLock<Box<(K, B::Owned)>>,
+    table: &'static str,
     key: K,
     build: impl Fn(&K) -> B::Owned,
-) -> Cow<'_, B> {
+) -> Cow<'a, B> {
+    let build = |key: &K| {
+        trace::built(table);
+        build(key)
+    };
     let held = slot.get_or_init(|| Box::new((key, build(&key))));
     if held.0 == key {
         Cow::Borrowed(held.1.borrow())
@@ -161,8 +198,26 @@ mod tests {
     use super::*;
     use crate::{
         config::Config,
+        rule::Preserves,
         testing::{parse, range, with_every_table, woven},
     };
+
+    /// A rule editing nothing and declaring its edits preserve `.0`.
+    struct Declaring(Preserves);
+
+    impl Rule for Declaring {
+        fn id(&self) -> RuleId {
+            RuleId::from("declaring")
+        }
+
+        fn message(&self) -> &'static str {
+            "declaring test rule"
+        }
+
+        fn preserves(&self) -> Preserves {
+            self.0
+        }
+    }
 
     /// `source` reparsed over the text `edits` weave into it, with
     /// every table it built carried forward under `preserves`.
@@ -171,7 +226,7 @@ mod tests {
         let mut next = source
             .reparse_carrying(text, CellOffsets::default())
             .expect("reparses");
-        next.inherit(source, &map, preserves);
+        next.inherit(source, &map, &Declaring(preserves));
         next
     }
 
