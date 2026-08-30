@@ -1,2 +1,5 @@
 [imports]
-first-party = ["reach", "records", "report"]
+first-party = [
+    "attribution", "binary", "bindings", "corpus", "diff", "fixes", "ratchet",
+    "records", "report", "runner", "stage", "sweep",
+]

@@ -7,8 +7,11 @@ Usage: execute.py <record> <module> <tree>...
 
 Each tree goes ahead of everything else on `sys.path` in the order
 given, and the module loads from the first tree carrying it, bound to the
-`__name__`, `__file__`, `__package__`, and `__spec__` an import binds. The
-record is the `repr` of a dict.
+`__name__`, `__file__`, `__package__`, and `__spec__` an import binds.
+The record is the `repr` of a dict holding the fields of the harness's
+`Outcome`. The runner imports nothing beyond `importlib`, `os`, and `sys`,
+so every other module the run loads comes from a tree rather than from the
+interpreter's own library ahead of it.
 """
 
 from __future__ import annotations
@@ -41,7 +44,8 @@ def constant(value: object) -> str | None:
         return None
     if isinstance(value, frozenset):
         return f"frozenset({{{', '.join(sorted(parts))}}})"
-    return f"({', '.join(parts)},)" if len(parts) == 1 else f"({', '.join(parts)})"
+    joined = ", ".join(parts)
+    return f"({joined},)" if len(parts) == 1 else f"({joined})"
 
 
 def execute(record: str, relative: str, trees: list[str]):
@@ -64,49 +68,45 @@ def execute(record: str, relative: str, trees: list[str]):
         spec.loader.exec_module(module)
     except BaseException as exc:
         left = {
-            "error"   : f"{type(exc).__name__}: {exc}",
-            "frames"  : frames(exc),
-            "name"    : missing(exc),
-            "outcome" : "raised"
+            "error"  : f"raises {type(exc).__name__}: {exc}",
+            "frames" : frames(exc),
+            "kind"   : "raised",
+            "name"   : missing(exc)
         }
     else:
         names, constants = namespace(module)
-        left             = {"constants": constants, "names": names, "outcome": "ok"}
+        left             = {"constants": constants, "kind": "ok", "names": names}
     left["loaded"] = loaded(trees)
     with open(record, "w", encoding="utf-8") as sink:
         sink.write(repr(left))
 
 
-def frames(exc: BaseException) -> list[tuple[str, int]]:
+def frames(exc: BaseException) -> tuple[tuple[str, int], ...]:
     """
-    Return the `(file, line)` of every frame the exception chain passed
-    through, in the order a traceback prints them.
+    Return the `(file, line)` of every frame `exc` passed through, in the
+    order a traceback prints them.
     """
-    chain = []
-    while exc is not None and all(link is not exc for link in chain):
-        chain.append(exc)
-        exc = exc.__cause__ or (None if exc.__suppress_context__ else exc.__context__)
-    seen = []
-    for link in reversed(chain):
-        tb = link.__traceback__
-        while tb is not None:
-            seen.append((tb.tb_frame.f_code.co_filename, tb.tb_lineno))
-            tb = tb.tb_next
-    return seen
+    seen, tb = [], exc.__traceback__
+    while tb is not None:
+        seen.append((tb.tb_frame.f_code.co_filename, tb.tb_lineno))
+        tb = tb.tb_next
+    return tuple(seen)
 
 
-def loaded(trees: list[str]) -> list[str]:
+def loaded(trees: list[str]) -> tuple[str, ...]:
     """
     Return the path, relative to its tree, of every module `sys.modules`
     holds from one of `trees`, sorted.
     """
     modules = list(sys.modules.values())
     files   = [getattr(module, "__file__", None) or "" for module in modules]
-    found   = set()
-    for tree in trees:
-        prefix = f"{tree}/"
-        found |= {file[len(prefix):] for file in files if file.startswith(prefix)}
-    return sorted(found)
+    found   = {
+        file.removeprefix(prefix)
+        for tree in trees
+        for file in files
+        if file.startswith(prefix := f"{tree}/")
+    }
+    return tuple(sorted(found))
 
 
 def missing(exc: BaseException) -> str | None:
@@ -128,18 +128,19 @@ def module_name(relative: str) -> str:
     return ".".join(parts)
 
 
-def namespace(module: object) -> tuple[list[str], dict[str, str]]:
+def namespace(module: object) -> tuple[tuple[str, ...], tuple[tuple[str, str], ...]]:
     """
     Return the names `module` binds beyond the loader's own and its
     docstring, sorted, and the plain constants among them, spelt, the value
     of a name the formatter reorders left out.
     """
     bound = {key: value for key, value in vars(module).items() if key not in UNBOUND}
-    spelt = {}
-    for key, value in bound.items():
-        if key not in REORDERED and (spelling := constant(value)):
-            spelt[key] = spelling
-    return sorted(bound), spelt
+    spelt = {
+        key: spelling
+        for key, value in bound.items()
+        if key not in REORDERED and (spelling := constant(value))
+    }
+    return tuple(sorted(bound)), tuple(sorted(spelt.items()))
 
 
 if __name__ == "__main__":
