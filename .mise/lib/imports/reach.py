@@ -32,7 +32,7 @@ def bindings(path: Path) -> dict[str, range]:
     rows = {}
     for node in statements(module.body):
         for name in bound(node):
-            rows.setdefault(name, range(node.lineno, node.end_lineno + 1))
+            rows.setdefault(name, header_rows(node))
     return rows
 
 
@@ -106,6 +106,16 @@ def fixes_by_file(records: list[dict], tree: Path) -> dict:
             file = Path(record["filename"]).relative_to(tree).as_posix()
             by_file[file].append((record["code"], fix["edits"]))
     return by_file
+
+
+def header_rows(node: stmt) -> range:
+    """
+    Return the rows a statement `node` binds its names on, the header alone
+    for a function or class.
+    """
+    if isinstance(node, (AsyncFunctionDef, ClassDef, FunctionDef)):
+        return range(node.lineno, max(node.body[0].lineno, node.lineno + 1))
+    return range(node.lineno, node.end_lineno + 1)
 
 
 @cache

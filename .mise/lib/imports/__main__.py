@@ -239,13 +239,14 @@ class Sweep:
             start_new_session = True,
             stderr            = PIPE,
             stdin             = DEVNULL,
-            stdout            = PIPE
+            stdout            = DEVNULL
         )
         try:
             _, err = child.communicate(timeout=self.timeout)
         except TimeoutExpired:
             killpg(child.pid, SIGKILL)
-            child.communicate()
+            child.stderr.close()
+            child.wait()
             return Outcome("timeout", f"times out after {self.timeout:g}s")
         if left := Path(record).read_text(encoding="utf-8"):
             try:
@@ -332,9 +333,10 @@ class Sweep:
         files  : tuple[str, ...]
     ) -> Path:
         """
-        Return a tree holding the original of each of `files` beside the
-        data files its directory carries, ready to be formatted under `slug`
-        alone ahead of the original tree on `sys.path`.
+        Return a tree holding the original of each of `files`, every
+        other entry of their directories linked to the original, ready
+        to be formatted under `slug` alone ahead of the original tree on
+        `sys.path`.
         """
         overlay = self.stage / "alone" / label / module.replace("/", "+") / slug
         for file in files:
@@ -342,9 +344,10 @@ class Sweep:
             target.parent.mkdir(exist_ok=True, parents=True)
             copy2(self.original / file, target)
         for parent in {(overlay / file).parent for file in files}:
-            for sibling in (self.original / parent.relative_to(overlay)).iterdir():
-                if sibling.is_file() and sibling.suffix != ".py":
-                    copy2(sibling, parent / sibling.name)
+            for entry in (self.original / parent.relative_to(overlay)).iterdir():
+                target = parent / entry.name
+                if entry.name != "__pycache__" and not target.exists():
+                    target.symlink_to(entry)
         return overlay
 
     def prose(self, *arguments: str) -> bytes:
@@ -530,11 +533,19 @@ if __name__ == "__main__":
         found     = sweep.sweep(width)
         reproduce = partial(sweep.reproduction, width=width)
         broken    = {brk.module for brk in found.breaks}
-        carried   = broken & set(baseline.get(found.label, []))
+        held      = baseline.get(found.label, {})
+        known     = {tuple(key) for key in held.get("frames", [])}
+        carried   = {brk.module for brk in found.breaks if (
+            brk.frame[0],
+            brk.reason
+        ) in known}
+        grown = carried - set(held.get("modules", []))
         print(
             f"\nwidth {found.label}\n{render(reproduce, found, carried)}",
             flush = True
         )
+        if grown:
+            print(f"  grown        {len(grown):>5}", flush=True)
         reports.append((found, broken, carried))
 
     print(f"\neach tree survives under {sweep.stage}")
@@ -543,7 +554,15 @@ if __name__ == "__main__":
             "a run left modules unmeasured, so the uncomparable count cannot be named"
         )
     if baked := environ.get("PROSE_IMPORTS_BAKE"):
-        breaks = {found.label: sorted(broken) for found, broken, _ in reports}
+        breaks = {
+            found.label: {
+                "frames"  : sorted(
+                    {(brk.frame[0], brk.reason) for brk in found.breaks}
+                ),
+                "modules" : sorted(broken)
+            }
+            for found, broken, _ in reports
+        }
         Path(baked).write_text(dumps(breaks, indent=2) + "\n", encoding="utf-8")
         print(f"break set baked into {baked}")
         raise SystemExit(0)

@@ -47,6 +47,12 @@ def hunk(pairs: SequenceMatcher, row: int | None) -> list[str]:
         if gap.start > j2:
             shown.append((None, "..."))
         shown += [(k, f" {pairs.b[k]}") for k in gap]
+    if at is not None and at < j1:
+        gap  = range(max(0, at - CONTEXT), min(j1, at + CONTEXT + 1))
+        lead = [(k, f" {pairs.b[k]}") for k in gap]
+        if gap.stop < j1:
+            lead.append((None, "..."))
+        shown[1:1] = lead
     found     = (k for k, (seen, _) in enumerate(shown) if seen == at)
     index     = 1 + CONTEXT if at is None else next(found, 1 + CONTEXT)
     low, high = max(1, index - CONTEXT), index + CONTEXT + 1
