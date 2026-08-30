@@ -42,43 +42,68 @@ class Sweep:
         formatted    = self.stage.copy(f"formatted-{label}", width)
         records, log = format_tree(self.binary, formatted)
         (self.stage.root / f"format-{label}.log").write_text(log, encoding="utf-8")
-        modules = candidates(self.stage.original, formatted, self.only)
-        before  = self.runner.originals(modules)
-        after   = self.runner.outcomes(formatted, modules)
-        suspects, comparable, unmeasured = compare(modules, before, after)
-        confirm  = partial(self.runner.confirm, formatted)
-        verdicts = list(self.runner.pool.map(confirm, suspects))
-        breaks   = list(compress(suspects, verdicts))
-        flaky    = [brk.module for brk in compress(suspects, map(not_, verdicts))]
-        covered  = fixes_by_file(records, formatted)
-        blame = Attributor(self.runner, self.binary, formatted, covered, width, label)
-        blame.attribute(breaks)
-        return Width(label, len(modules), len(comparable), breaks, flaky, unmeasured)
+        modules = candidates(formatted, self.only, self.stage.original)
+        suspects, comparable, unmeasured = compare(
+            after   = self.runner.outcomes(modules, formatted),
+            before  = self.runner.originals(modules),
+            modules = modules
+        )
+        verdicts = list(
+            self.runner.pool.map(
+                partial(self.runner.confirm, formatted=formatted),
+                suspects
+            )
+        )
+        breaks = list(compress(suspects, verdicts))
+        Attributor(
+            self.binary,
+            fixes_by_file(records, formatted),
+            formatted,
+            label,
+            self.runner,
+            width
+        ).attribute(breaks)
+        return Width(
+            breaks,
+            len(modules),
+            len(comparable),
+            [brk.module for brk in compress(suspects, map(not_, verdicts))],
+            label,
+            unmeasured
+        )
 
 
 def compare(
-    modules : list[str],
+    after   : dict[str, Outcome],
     before  : dict[str, Outcome],
-    after   : dict[str, Outcome]
+    modules : list[str]
 ) -> tuple[list[Break], list[str], list[str]]:
     """
     Return the breaks among `modules` between what the original tree left
     in `before` and the formatted tree in `after`, the modules comparable at
     all, and the ones a run left unmeasured.
     """
-    unmeasured = [
-        module
-        for module in modules
-        if "unmeasured" in (before[module].kind, after[module].kind)
-    ]
     comparable = [
         module
         for module in modules
         if before[module].kind == "ok" and after[module].kind != "unmeasured"
     ]
-    suspects = [
-        Break(module, *differs, before[module], after[module])
-        for module in comparable
-        if (differs := divergence(before[module], after[module]))
-    ]
-    return suspects, comparable, unmeasured
+    return (
+        [
+            Break(
+                formatted = after[module],
+                module    = module,
+                name      = differs[1],
+                original  = before[module],
+                reason    = differs[0]
+            )
+            for module in comparable
+            if (differs := divergence(after[module], before[module]))
+        ],
+        comparable,
+        [
+            module
+            for module in modules
+            if "unmeasured" in (before[module].kind, after[module].kind)
+        ]
+    )

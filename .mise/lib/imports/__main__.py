@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 # /// script
-# requires-python = ">=3.11"
+# requires-python = ">=3.14"
 # ///
 """
 Import each module of a corpus before and after formatting and report the
@@ -29,11 +29,11 @@ widths = [None, *map(int, environ.get("PROSE_IMPORTS_WIDTHS", "").split())]
 held   = baseline()
 
 print(banner(sweep), flush=True)
-results = []
+results = []  # prose: ignore[miscased-constants]
 for width in widths:
     found   = sweep.sweep(width)
     carried = judge(found, held)
-    report  = render(found, carried, sweep.corpus)
+    report  = render(carried, sweep.corpus, found)
     print(f"\nwidth {found.label}\n{report}", flush=True)
     results.append((found, carried))
 

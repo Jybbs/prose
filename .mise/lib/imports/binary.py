@@ -20,9 +20,16 @@ def format_tree(
     Format `target` in place under every rule, or under `select` alone, and
     return the run's diagnostic records with its stderr.
     """
-    chosen  = ["--select", select] if select else []
-    command = [binary, "format", "--no-cache", "--output-format", "json", *chosen]
-    done    = run([*command, str(target)], capture_output=True, cwd=target, text=True)
+    done = run(
+        [
+            binary, "format", "--no-cache", "--output-format", "json",
+            *(["--select", select] if select else []),
+            str(target)
+        ],
+        capture_output = True,
+        cwd            = target,
+        text           = True
+    )
     if done.returncode > EXIT_CAP:
         raise SystemExit(
             f"format exited {done.returncode} on {target}: {last_line(done.stderr)}"
@@ -42,5 +49,7 @@ def rules(binary: str) -> list[str]:
     """
     Return the rule slugs `binary` runs, in pipeline order.
     """
-    listed = check_output([binary, "rules", "--output-format", "json"])
-    return [rule["slug"] for rule in loads(listed)]
+    return [
+        rule["slug"]
+        for rule in loads(check_output([binary, "rules", "--output-format", "json"]))
+    ]

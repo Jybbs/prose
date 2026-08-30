@@ -33,39 +33,35 @@ class Runner:
         self.pool    = ThreadPoolExecutor(cpu_count())
         self.known   = {}
 
-    def confirm(self, formatted: Path, brk: Break) -> bool:
+    def confirm(self, brk: Break, formatted: Path) -> bool:
         """
-        Report whether a second run of both sides still breaks `brk` and the
-        original agrees with its own first run.
+        Report whether the original agrees with its own first run and, where
+        it does, whether a second run of the formatted side still breaks
+        `brk`.
         """
-        before = self.execute([self.stage.original], brk.module)
-        after  = self.execute([formatted], brk.module)
-        steady = before.kind == "ok" and divergence(brk.original, before) is None
-        return steady and divergence(before, after) is not None
+        before = self.execute(brk.module, [self.stage.original])
+        return (
+            before.kind == "ok"
+            and divergence(before, brk.original) is None
+            and divergence(self.execute(brk.module, [formatted]), before) is not None
+        )
 
-    def execute(self, trees: list[Path], relative: str) -> Outcome:
+    def execute(self, relative: str, trees: list[Path]) -> Outcome:
         """
         Run the module at `relative` from the first of `trees` carrying it
         in a fresh interpreter and return what it left behind.
         """
         descriptor, record = mkstemp(dir=self.stage.records)
         close(descriptor)
-        command = [
-            self.python, "-I", "-B",
-            str(RUNNER),
-            record, relative,
-            *map(str, trees)
-        ]
-        env = {
-            "HOME"   : str(self.stage.home),
-            "PATH"   : environ["PATH"],
-            "TMPDIR" : str(self.stage.tmp)
-        }
         child = Popen(
-            command,
-            cwd               = self.stage.tmp,
-            encoding          = "utf-8",
-            env               = env,
+            [self.python, "-I", "-B", str(RUNNER), record, relative, *map(str, trees)],
+            cwd      = self.stage.tmp,
+            encoding = "utf-8",
+            env      = {
+                "HOME"   : str(self.stage.home),
+                "PATH"   : environ["PATH"],
+                "TMPDIR" : str(self.stage.tmp)
+            },
             errors            = "replace",
             start_new_session = True,
             stderr            = PIPE,
@@ -78,37 +74,45 @@ class Runner:
             killpg(child.pid, SIGKILL)
             child.stderr.close()
             child.wait()
-            return Outcome("timeout", f"times out after {self.timeout:g}s")
+            return Outcome("timeout", error=f"times out after {self.timeout:g}s")
         if left := Path(record).read_text(encoding="utf-8"):
             try:
                 return Outcome(**literal_eval(left))
             except (SyntaxError, TypeError, ValueError):
-                return Outcome("unmeasured", "leaves an unreadable record")
+                return Outcome("unmeasured", error="leaves an unreadable record")
         if child.returncode < 0:
-            return Outcome("raised", f"dies on signal {-child.returncode}")
+            return Outcome("raised", error=f"dies on signal {-child.returncode}")
         if child.returncode:
-            printed = last_line(err)
-            return Outcome("raised", f"exits {child.returncode} printing {printed}")
-        return Outcome("unmeasured", "leaves no record")
+            return Outcome(
+                "raised",
+                error = f"exits {child.returncode} printing {last_line(err)}"
+            )
+        return Outcome("unmeasured", error="leaves no record")
 
     def originals(self, modules: list[str]) -> dict[str, Outcome]:
         """
         Return what the original tree leaves for each of `modules`, running
         the ones not yet run.
         """
-        fresh = [module for module in modules if module not in self.known]
-        self.known.update(self.outcomes(self.stage.original, fresh))
+        self.known.update(
+            self.outcomes(
+                [module for module in modules if module not in self.known],
+                self.stage.original
+            )
+        )
         return {module: self.known[module] for module in modules}
 
-    def outcomes(self, tree: Path, modules: list[str]) -> dict[str, Outcome]:
+    def outcomes(self, modules: list[str], tree: Path) -> dict[str, Outcome]:
         """
         Return what each of `modules` leaves behind when run from `tree`,
         the runs sharing the worker pool.
         """
-        return dict(zip(modules, self.pool.map(partial(self.execute, [tree]), modules)))
+        return dict(
+            zip(modules, self.pool.map(partial(self.execute, trees=[tree]), modules))
+        )
 
 
-def divergence(original: Outcome, formatted: Outcome) -> tuple[str, str | None] | None:
+def divergence(formatted: Outcome, original: Outcome) -> tuple[str, str | None] | None:
     """
     Return why `formatted` counts as broken beside `original` and the name
     it hinges on, or `None` where both bind the same namespace.

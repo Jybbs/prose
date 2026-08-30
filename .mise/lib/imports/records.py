@@ -19,12 +19,12 @@ class Outcome:
     """
 
     kind      : str
+    constants : tuple      = ()
     error     : str        = ""
     frames    : tuple      = ()
     loaded    : tuple      = ()
     name      : str | None = None
     names     : tuple      = ()
-    constants : tuple      = ()
 
 
 @dataclass
@@ -34,11 +34,11 @@ class Break:
     frame and rules the run attributed it to.
     """
 
+    formatted   : Outcome
     module      : str
-    reason      : str
     name        : str | None
     original    : Outcome
-    formatted   : Outcome
+    reason      : str
     attribution : str       = ""
     frame       : Frame     = ("", None)
     hunk        : list[str] = field(default_factory=list)
@@ -58,11 +58,11 @@ class Width:
     One width's tallies and findings.
     """
 
-    label      : str
+    breaks     : list[Break]
     candidates : int
     comparable : int
-    breaks     : list[Break]
     flaky      : list[str]
+    label      : str
     unmeasured : list[str]
 
     @property

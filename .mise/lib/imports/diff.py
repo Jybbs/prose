@@ -24,12 +24,12 @@ def hunk(pairs: SequenceMatcher, row: int | None, name: str = "") -> list[str]:
             shown += [(None, f"-{line}") for line in pairs.a[i1:i2]]
         if tag != "delete":
             mark   = " " if tag == "equal" else "+"
-            rows   = pairs.b[j1:j2]
-            shown += [(j1 + k, f"{mark}{line}") for k, line in enumerate(rows)]
+            shown += [(j1 + k, f"{mark}{line}") for k, line in enumerate(
+                pairs.b[j1:j2]
+            )]
     if row is None:
         changed = [k for k, (_, line) in enumerate(shown) if line[0] != " "]
-        named   = [k for k in changed if name in shown[k][1]]
-        index   = next(iter(named or changed), 0)
+        index   = next(iter([k for k in changed if name in shown[k][1]] or changed), 0)
     else:
         index = next((k for k, (seen, _) in enumerate(shown) if seen == row - 1), 0)
     low, high = max(0, index - CONTEXT), index + CONTEXT + 1
@@ -55,13 +55,17 @@ def mapped_rows(pairs: SequenceMatcher, row: int) -> range:
 
 
 @cache
-def pairing(before: Path, after: Path) -> SequenceMatcher:
+def pairing(after: Path, before: Path) -> SequenceMatcher:
     """
     Return the line matcher between the modules at `before` and `after`,
     built once per pair.
     """
-    was, now = text_of(before).splitlines(), text_of(after).splitlines()
-    return SequenceMatcher(None, was, now, autojunk=False)
+    return SequenceMatcher(
+        None,
+        text_of(before).splitlines(),
+        text_of(after).splitlines(),
+        autojunk = False
+    )
 
 
 @cache

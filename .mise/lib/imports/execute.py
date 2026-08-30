@@ -16,11 +16,10 @@ interpreter's own library ahead of it.
 
 from __future__ import annotations
 
-import importlib.util
-import sys
-
-from os      import _exit
-from os.path import dirname, exists, join
+from importlib.util import module_from_spec, spec_from_file_location
+from os             import _exit
+from os.path        import dirname, exists, join
+from sys            import argv, modules, path
 
 REORDERED = {"__all__"}
 UNBOUND   = {
@@ -53,17 +52,19 @@ def execute(record: str, relative: str, trees: list[str]):
     Load the module at `relative` from the first of `trees` carrying it,
     execute it, and write what it left behind to `record`.
     """
-    sys.path[:0] = trees
-    path         = next(filter(exists, (join(tree, relative) for tree in trees)))
-    locations    = [dirname(path)] if relative.endswith("__init__.py") else None
-    name         = module_name(relative)
-    spec         = importlib.util.spec_from_file_location(
+    path[:0] = trees
+    located  = next(filter(exists, (join(tree, relative) for tree in trees)))
+    name     = module_name(relative)
+    spec     = spec_from_file_location(
         name,
-        path,
-        submodule_search_locations = locations
+        located,
+        submodule_search_locations =
+            [dirname(located)] if relative.endswith(
+                "__init__.py"
+            ) else None
     )
-    module            = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
+    module        = module_from_spec(spec)
+    modules[name] = module
     try:
         spec.loader.exec_module(module)
     except BaseException as exc:
@@ -98,15 +99,17 @@ def loaded(trees: list[str]) -> tuple[str, ...]:
     Return the path, relative to its tree, of every module `sys.modules`
     holds from one of `trees`, sorted.
     """
-    modules = list(sys.modules.values())
-    files   = [getattr(module, "__file__", None) or "" for module in modules]
-    found   = {
-        file.removeprefix(prefix)
-        for tree in trees
-        for file in files
-        if file.startswith(prefix := f"{tree}/")
-    }
-    return tuple(sorted(found))
+    files = [getattr(module, "__file__", None) or "" for module in [*modules.values()]]
+    return tuple(
+        sorted(
+            {
+                file.removeprefix(prefix)
+                for tree in trees
+                for file in files
+                if file.startswith(prefix := f"{tree}/")
+            }
+        )
+    )
 
 
 def missing(exc: BaseException) -> str | None:
@@ -135,16 +138,19 @@ def namespace(module: object) -> tuple[tuple[str, ...], tuple[tuple[str, str], .
     of a name the formatter reorders left out.
     """
     bound = {key: value for key, value in vars(module).items() if key not in UNBOUND}
-    spelt = {
-        key: spelling
-        for key, value in bound.items()
-        if key not in REORDERED and (spelling := constant(value))
-    }
-    return tuple(sorted(bound)), tuple(sorted(spelt.items()))
+    return tuple(sorted(bound)), tuple(
+        sorted(
+            {
+                key: spelling
+                for key, value in bound.items()
+                if key not in REORDERED and (spelling := constant(value))
+            }.items()
+        )
+    )
 
 
 if __name__ == "__main__":
 
-    record, relative, *trees = sys.argv[1:]
+    record, relative, *trees = argv[1:]
     execute(record, relative, trees)
     _exit(0)

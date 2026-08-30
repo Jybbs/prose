@@ -29,15 +29,14 @@ def banner(sweep: Sweep) -> str:
     )
 
 
-def render(found: Width, carried: set[str], corpus: Path) -> str:
+def render(carried: set[str], corpus: Path, found: Width) -> str:
     """
     Return the report of one width's findings, `carried` naming the broken
     modules the baseline already holds, the breaks grouped by the frame and
     rules they share.
     """
-    timing  = [brk for brk in found.breaks if brk.formatted.kind == "timeout"]
-    raising = [brk for brk in found.breaks if brk.formatted.kind != "timeout"]
-    lines   = [
+    timing = [brk for brk in found.breaks if brk.formatted.kind == "timeout"]
+    lines  = [
         f"  candidates   {found.candidates:>5}",
         f"  comparable   {found.comparable:>5}",
         f"  uncomparable {'unmeasured' if found.unmeasured else found.uncomparable:>5}",
@@ -47,7 +46,13 @@ def render(found: Width, carried: set[str], corpus: Path) -> str:
     ]
     if carried:
         lines.append(f"  carried      {len(carried):>5}")
-    for heading, listed in (("raises or rebinds", raising), ("times out", timing)):
+    for heading, listed in (
+        (
+            "raises or rebinds",
+            [brk for brk in found.breaks if brk.formatted.kind != "timeout"]
+        ),
+        ("times out", timing)
+    ):
         if not listed:
             continue
         groups = defaultdict(list)
@@ -75,10 +80,10 @@ def render(found: Width, carried: set[str], corpus: Path) -> str:
 
 
 def rendered_group(
-    members : list[Break],
     carried : set[str],
     corpus  : Path,
-    label   : str
+    label   : str,
+    members : list[Break]
 ) -> list[str]:
     """
     Return the report of the breaks `members` sharing a frame and
@@ -87,26 +92,27 @@ def rendered_group(
     `SHOWN` modules named with the rest counted.
     """
     file, row = members[0].frame
-    where     = f"{file}:{row}" if row else file
-    reasons   = {brk.reason for brk in members}
-    shared    = members[0].reason if len(reasons) == 1 else ""
+    shared    = members[0].reason if len({brk.reason for brk in members}) == 1 else ""
     ordered   = sorted(members, key=lambda brk: (brk.module in carried, brk.module))
-    lines     = [f"    {where} {members[0].attribution}"]
+    lines     = [f"    {f'{file}:{row}' if row else file} {members[0].attribution}"]
     if shared:
         lines.append(f"      each {shared}")
     lines += [f"      {line}" for line in members[0].hunk]
     for brk in ordered[:SHOWN]:
-        reason   = "" if shared else f" {brk.reason}"
-        carriage = ", carried by the baseline" if brk.module in carried else ""
-        lines.append(f"      {brk.module}{reason}{carriage}")
+        lines.append(
+            f"      {brk.module}"
+            f"{'' if shared else f' {brk.reason}'}"
+            f"{', carried by the baseline' if brk.module in carried else ''}"
+        )
     if len(ordered) > SHOWN:
         lines.append(f"      ... and {len(ordered) - SHOWN} more")
-    command = reproduction(corpus, ordered[0].module, label)
-    lines.append(f"      reproduce with {command}")
+    lines.append(
+        f"      reproduce with {reproduction(corpus, label, ordered[0].module)}"
+    )
     return lines
 
 
-def reproduction(corpus: Path, module: str, label: str) -> str:
+def reproduction(corpus: Path, label: str, module: str) -> str:
     """
     Return the command running `module` of `corpus` alone at the width
     `label` names.

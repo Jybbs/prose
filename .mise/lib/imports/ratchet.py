@@ -1,7 +1,7 @@
 """
 The ratchet on a width's breaks, meaning the frame set a baseline carries,
-the modules whose break it already holds, and the set a run bakes for the
-next.
+the modules whose break it already holds, the set a run bakes for the next,
+and the exit status the run ends on.
 """
 
 from json    import dumps, loads
@@ -11,16 +11,23 @@ from pathlib import Path
 from records import Width
 
 
-def bake(widths: list[Width], path: str):
+def bake(path: str, widths: list[Width]):
     """
     Write the file and reason of every frame each of `widths` breaks at to
     `path`, keyed by the width's label.
     """
-    frames = {
-        found.label: sorted({(brk.frame[0], brk.reason) for brk in found.breaks})
-        for found in widths
-    }
-    Path(path).write_text(dumps(frames, indent=2) + "\n", encoding="utf-8")
+    Path(path).write_text(
+        dumps(
+            {
+                found.label: sorted(
+                    {(brk.frame[0], brk.reason) for brk in found.breaks}
+                )
+                for found in widths
+            },
+            indent = 2
+        ) + "\n",
+        encoding = "utf-8"
+    )
 
 
 def baseline() -> dict:
@@ -52,10 +59,13 @@ def verdict(results: list[tuple[Width, set[str]]]) -> int | str:
             "a run left modules unmeasured, so the uncomparable count cannot be named"
         )
     if baked := environ.get("PROSE_IMPORTS_BAKE"):
-        bake([found for found, _ in results], baked)
+        bake(baked, [found for found, _ in results])
         print(f"break set baked into {baked}")
         return 0
-    fresh = any(
-        brk.module not in carried for found, carried in results for brk in found.breaks
+    return int(
+        any(
+            brk.module not in carried
+            for found, carried in results
+            for brk in found.breaks
+        )
     )
-    return int(fresh)

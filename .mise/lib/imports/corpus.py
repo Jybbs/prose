@@ -12,7 +12,7 @@ ENTRY_POINTS = {"antigravity.py", "idlelib/idle.py", "webbrowser.py"}
 ENTRY_TREES  = {"idle_test", "test", "tests", "turtledemo"}
 
 
-def candidates(original: Path, formatted: Path, only: str | None) -> list[str]:
+def candidates(formatted: Path, only: str | None, original: Path) -> list[str]:
     """
     Return the modules to run, which is the one `only` names, or every
     module `formatted` rewrites beside `original` outside the entry points.
@@ -44,16 +44,20 @@ def interpreter(python: str) -> tuple[Path, str]:
     """
     Return the standard library `python` owns and its version.
     """
-    probe = (
-        "import sys, sysconfig\n"
-        "print(sysconfig.get_paths()['stdlib'])\n"
-        "print(sys.version.split()[0])"
-    )
     try:
-        printed = check_output([python, "-I", "-c", probe], text=True)
+        stdlib, version = check_output(
+            [
+                python,
+                "-I",
+                "-c",
+                "import sys, sysconfig\n"
+                "print(sysconfig.get_paths()['stdlib'])\n"
+                "print(sys.version.split()[0])"
+            ],
+            text = True
+        ).splitlines()
     except OSError as error:
         raise SystemExit(f"{python or 'python'} does not run: {error}") from None
-    stdlib, version = printed.splitlines()
     return Path(stdlib).resolve(), version
 
 

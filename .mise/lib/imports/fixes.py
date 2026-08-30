@@ -12,12 +12,12 @@ from re          import escape, search
 Fixes = dict[str, list[tuple[str, list[dict]]]]
 
 
-def drops(text: str, edits: list[dict], name: str) -> bool:
+def drops(edits: list[dict], name: str, text: str) -> bool:
     """
     Report whether `edits`, one fix's edits over `text` together, take
     `name` out of the span they reach.
     """
-    was, now = rewritten(text, edits)
+    was, now = rewritten(edits, text)
     word     = rf"\b{escape(name)}\b"
     return bool(search(word, was)) and not search(word, now)
 
@@ -41,8 +41,9 @@ def fixes_by_file(records: list[dict], tree: Path) -> Fixes:
     by_file = defaultdict(list)
     for record in records:
         if (fix := record.get("fix")) and fix["applicability"] == "safe":
-            file = Path(record["filename"]).relative_to(tree).as_posix()
-            by_file[file].append((record["code"], fix["edits"]))
+            by_file[Path(record["filename"]).relative_to(tree).as_posix()].append(
+                (record["code"], fix["edits"])
+            )
     return by_file
 
 
@@ -58,7 +59,7 @@ def reaches(edits: list[dict], rows: range, text: str = "") -> bool:
     )
 
 
-def rewritten(text: str, edits: list[dict]) -> tuple[str, str]:
+def rewritten(edits: list[dict], text: str) -> tuple[str, str]:
     """
     Return the lines of `text` one fix's `edits` reach, as written and as
     the edits leave them, each edit placed by its row and column in `text`.

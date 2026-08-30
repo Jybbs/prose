@@ -24,12 +24,12 @@ class Attributor:
     the runner and binary an attribution runs and formats through.
     """
 
-    runner    : Runner
     binary    : str
-    formatted : Path
     covered   : Fixes
-    width     : int | None
+    formatted : Path
     label     : str
+    runner    : Runner
+    width     : int | None
 
     def alone(self, brk: Break) -> str:
         """
@@ -40,10 +40,12 @@ class Attributor:
         stage, width = self.runner.stage, self.width
 
         def reproduces(slug: str) -> bool:
-            tree = stage.overlay(self.label, brk.module, slug, brk.loaded, width)
+            tree = stage.overlay(brk.loaded, self.label, brk.module, slug, width)
             format_tree(self.binary, tree, slug)
-            after = self.runner.execute([tree, stage.original], brk.module)
-            found = divergence(brk.original, after)
+            found = divergence(
+                self.runner.execute(brk.module, [tree, stage.original]),
+                brk.original
+            )
             return found is not None and found[0] == brk.reason
 
         listed = rules(self.binary)
@@ -72,14 +74,19 @@ class Attributor:
         for module in brk.loaded:
             path = self.runner.stage.original / module
             if rows := bindings(path).get(brk.name):
-                text = text_of(path)
 
                 def fits(edits: list[dict]) -> bool:
-                    return reaches(edits, rows) and drops(text, edits, brk.name)
+                    return reaches(edits, rows) and drops(
+                        edits,
+                        brk.name,
+                        text_of(path)
+                    )
 
                 if listed := self.fitting(module, fits):
-                    where = f"`{brk.name}` bound at {module}:{rows.start}"
-                    return f"{where}, dropped by {listed}"
+                    return (
+                        f"`{brk.name}` bound at {module}:{rows.start}, "
+                        f"dropped by {listed}"
+                    )
         return ""
 
     def explain(self, brk: Break):
@@ -89,7 +96,7 @@ class Attributor:
         reproducing it alone where no record does.
         """
         file, row = brk.frame
-        pairs     = pairing(self.runner.stage.original / file, self.formatted / file)
+        pairs     = pairing(self.formatted / file, self.runner.stage.original / file)
         clauses   = []
         if row is not None:
             rows, line = mapped_rows(pairs, row), pairs.b[row - 1].strip()

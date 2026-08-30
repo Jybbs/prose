@@ -37,10 +37,10 @@ class Stage:
 
     def overlay(
         self,
+        files  : tuple[str, ...],
         label  : str,
         module : str,
         slug   : str,
-        files  : tuple[str, ...],
         width  : int | None
     ) -> Path:
         """
