@@ -14,11 +14,10 @@ fn schema() -> Value {
 }
 
 #[rstest]
-fn allow_pattern_reads_a_regex_string_with_the_config_default(schema: Value) {
+fn allow_pattern_reads_a_glob_string_with_the_config_default(schema: Value) {
     let allow_pattern = &schema["$defs"]["SingleUseVariablesConfig"]["properties"]["allow-pattern"];
     assert_eq!(allow_pattern["type"], json!("string"));
-    assert_eq!(allow_pattern["format"], json!("regex"));
-    assert_eq!(allow_pattern["default"], json!("^_"));
+    assert_eq!(allow_pattern["default"], json!("_*"));
 }
 
 #[rstest]

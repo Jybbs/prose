@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/sort_definitions_false_holds_module_constants/input.py
+---
+ZEBRA = 1
+APPLE = 2
+MANGO = 3
+
+
+def render():
+    pass
+
+
+class Widget:
+    pass

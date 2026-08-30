@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/async_functions_sort_in_the_function_band/input.py
+---
+class Widget:
+    pass
+
+
+def alpha():
+    pass
+
+
+async def beta():
+    pass
+
+
+async def zeta():
+    pass

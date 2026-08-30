@@ -4,9 +4,9 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, find_node::covering_node, token::TokenKind};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
-use unicode_width::UnicodeWidthStr;
 
 use super::*;
+use crate::primitives::inline::display_width;
 
 /// Replaces each gap in `run` with its join text, folding the physical
 /// lines the run continues onto one.
@@ -33,7 +33,11 @@ pub(super) fn join_text(token: TokenKind, next: TokenKind) -> &'static str {
 /// measured from the opening line's first column through the closing
 /// line's last.
 pub(super) fn joined_width(source: &Source, span: TextRange, edits: &[Edit]) -> usize {
-    apply_inline_edits(source, source.text().lines_range(span), edits).width()
+    display_width(&apply_inline_edits(
+        source,
+        source.text().lines_range(span),
+        edits,
+    ))
 }
 
 /// Drops every backslash in `gap` along with the whitespace ahead of

@@ -2,9 +2,8 @@
 //! module-scope `__all__` writes and from the PEP 484 `x as x` alias
 //! form.
 
-use std::collections::HashSet;
-
 use ruff_python_ast::{Alias, Expr, Stmt};
+use rustc_hash::FxHashSet;
 
 use super::inventory::is_self_alias;
 use crate::primitives::{
@@ -17,7 +16,7 @@ const DUNDER_ALL: &str = "__all__";
 
 /// The names a module marks for re-export.
 pub(super) struct Reexports<'a> {
-    names: HashSet<&'a str>,
+    names: FxHashSet<&'a str>,
     settled: bool,
 }
 
@@ -27,7 +26,7 @@ impl<'a> Reexports<'a> {
     /// on any write nested below module scope, and an unsettled surface
     /// holds every name.
     pub(super) fn of(body: &'a [Stmt]) -> Self {
-        let mut names = HashSet::new();
+        let mut names = FxHashSet::default();
         for stmt in body {
             match dunder_all_write(stmt) {
                 None => {}
@@ -47,7 +46,7 @@ impl<'a> Reexports<'a> {
     /// A surface no static read settles, holding every name.
     fn unsettled() -> Self {
         Self {
-            names: HashSet::new(),
+            names: FxHashSet::default(),
             settled: false,
         }
     }
@@ -93,6 +92,12 @@ fn mutates_dunder_all(value: &Expr) -> bool {
     })
 }
 
+/// True when `expr` is the bare name `__all__`.
+fn names_dunder_all(expr: &Expr) -> bool {
+    expr.as_name_expr()
+        .is_some_and(|name| name.id.as_str() == DUNDER_ALL)
+}
+
 /// True when a statement below `stmt`'s own level writes `__all__`,
 /// covering a conditional branch, a loop body, and a `def` or `class`
 /// scope alike.
@@ -100,12 +105,6 @@ fn nested_dunder_all_write(stmt: &Stmt) -> bool {
     sub_bodies(stmt)
         .into_iter()
         .any(|(body, _)| any_over_stmts(body, |nested| dunder_all_write(nested).is_some()))
-}
-
-/// True when `expr` is the bare name `__all__`.
-fn names_dunder_all(expr: &Expr) -> bool {
-    expr.as_name_expr()
-        .is_some_and(|name| name.id.as_str() == DUNDER_ALL)
 }
 
 /// The string-literal items of a list or tuple display. `None` when
@@ -124,21 +123,6 @@ mod tests {
 
     use super::*;
     use crate::testing::parse;
-
-    #[rstest]
-    #[case::list("__all__ = [\"loads\"]\n", true)]
-    #[case::tuple("__all__ = (\"loads\",)\n", true)]
-    #[case::annotated("__all__: list[str] = [\"loads\"]\n", true)]
-    #[case::augmented("__all__ = []\n__all__ += [\"loads\"]\n", true)]
-    #[case::bare_annotation("__all__: list[str]\n", false)]
-    #[case::other_name("__slots__ = [\"loads\"]\n", false)]
-    #[case::no_dunder_all("value = 1\n", false)]
-    fn of_reads_the_listed_names(#[case] src: &str, #[case] holds: bool) {
-        let source = parse(&format!("from json import loads\n{src}"));
-        let body = &source.ast().body;
-        let alias = &body[0].as_import_from_stmt().expect("a from import").names[0];
-        assert_eq!(Reexports::of(body).holds(alias, "loads"), holds);
-    }
 
     #[rstest]
     #[case::conditional("if flag:\n    __all__ = [\"other\"]\n")]
@@ -164,5 +148,20 @@ mod tests {
         let body = &source.ast().body;
         let alias = &body[0].as_import_from_stmt().expect("a from import").names[0];
         assert!(Reexports::of(body).holds(alias, "dumps"));
+    }
+
+    #[rstest]
+    #[case::list("__all__ = [\"loads\"]\n", true)]
+    #[case::tuple("__all__ = (\"loads\",)\n", true)]
+    #[case::annotated("__all__: list[str] = [\"loads\"]\n", true)]
+    #[case::augmented("__all__ = []\n__all__ += [\"loads\"]\n", true)]
+    #[case::bare_annotation("__all__: list[str]\n", false)]
+    #[case::other_name("__slots__ = [\"loads\"]\n", false)]
+    #[case::no_dunder_all("value = 1\n", false)]
+    fn of_reads_the_listed_names(#[case] src: &str, #[case] holds: bool) {
+        let source = parse(&format!("from json import loads\n{src}"));
+        let body = &source.ast().body;
+        let alias = &body[0].as_import_from_stmt().expect("a from import").names[0];
+        assert_eq!(Reexports::of(body).holds(alias, "loads"), holds);
     }
 }

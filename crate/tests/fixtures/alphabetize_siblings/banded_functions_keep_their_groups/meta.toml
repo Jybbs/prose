@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Banded Functions Keep the Dunder, Private, Public Order"
+
+description = '''
+`Factory` sorts below `_helper` and `__getattr__` even though `F` precedes `_` in byte order, because the function band keys on the same dunder, private, and public groups the methods take before the name decides. `Widget` bands above all three.
+'''

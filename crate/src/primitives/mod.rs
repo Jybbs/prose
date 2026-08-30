@@ -1,5 +1,7 @@
 //! Shared primitives used across rule implementations.
 
+use rustc_hash::FxHashMap;
+
 pub(crate) mod alias;
 pub(crate) mod aligner;
 pub(crate) mod binding;
@@ -38,11 +40,17 @@ pub(crate) mod walk;
 /// PEP 8 indent step in spaces, the depth one nested level adds.
 pub(crate) const INDENT_STEP: usize = 4;
 
-/// Inserts `item` into `vec` at the slot keeping it ascending by
-/// `key`, before any element whose key compares equal.
-pub(crate) fn insert_sorted_by_key<T, K: Ord>(vec: &mut Vec<T>, item: T, key: impl Fn(&T) -> K) {
-    let slot = vec.partition_point(|existing| key(existing) < key(&item));
-    vec.insert(slot, item);
+/// `pairs` grouped by key, each key holding its values in arrival
+/// order.
+pub(crate) fn group_map<K: Eq + std::hash::Hash, V>(
+    pairs: impl IntoIterator<Item = (K, V)>,
+) -> FxHashMap<K, Vec<V>> {
+    pairs
+        .into_iter()
+        .fold(FxHashMap::default(), |mut map, (key, value)| {
+            map.entry(key).or_default().push(value);
+            map
+        })
 }
 
 /// Byte offset of the first `:` in `s` that sits at paren-and-bracket
@@ -62,11 +70,24 @@ pub(crate) fn unbracketed_colon(s: &str) -> Option<usize> {
     None
 }
 
+/// The slot at which `item` keeps `items` ascending by `key`, ahead of
+/// any element whose key compares equal.
+fn sorted_slot<T, K: Ord>(items: &[T], item: &T, key: impl Fn(&T) -> K) -> usize {
+    items.partition_point(|existing| key(existing) < key(item))
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
 
     use super::*;
+
+    #[test]
+    fn group_map_keeps_each_keys_values_in_arrival_order() {
+        let grouped = group_map([(1, "a"), (2, "b"), (1, "c")]);
+        assert_eq!(grouped[&1], vec!["a", "c"]);
+        assert_eq!(grouped[&2], vec!["b"]);
+    }
 
     #[rstest]
     #[case("n := 5", None)]

@@ -20,7 +20,7 @@ A subscript can be either, as `SETTINGS["db"]` and `Literal["read"]` both are, s
 
 <RuleConfigTable />
 
-The `allow-pattern` regex is empty by default, exempting nothing beyond the structural carve-outs. A project holding a name out of `SCREAMING_CASE` on purpose sets it to spare that name, which is a different job from never flagging a type alias, and only the second happens without configuration.
+The `allow-pattern` glob is empty by default, exempting nothing beyond the structural carve-outs. A project holding a name out of `SCREAMING_CASE` on purpose sets it to spare that name, which is a different job from never flagging a type alias, and only the second happens without configuration.
 
 </template>
 

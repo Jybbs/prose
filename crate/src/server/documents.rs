@@ -1,15 +1,14 @@
 //! In-memory store of each open buffer's live text and version, keyed by URI.
 
-use std::collections::HashMap;
-
 use lsp_types::Uri;
+use rustc_hash::FxHashMap;
 
 /// Tracks the editor's current text and version for every open document.
 /// Full document sync means an open or change carries the whole buffer, so
 /// both collapse to a single insert and a close drops the entry.
 #[derive(Default)]
 pub(super) struct DocumentStore {
-    docs: HashMap<Uri, Document>,
+    docs: FxHashMap<Uri, Document>,
 }
 
 /// One open buffer's live text paired with the version the editor stamped.

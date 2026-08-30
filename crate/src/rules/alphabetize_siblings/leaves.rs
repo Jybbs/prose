@@ -7,7 +7,7 @@
 //! keyword bound to an effectful value holds its slot while the inert
 //! keywords around it sort.
 
-use std::{borrow::Cow, collections::HashMap};
+use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -17,6 +17,7 @@ use ruff_python_ast::{
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
+use rustc_hash::FxHashMap;
 
 use super::{dict::rewrite_dict_text, joined_text};
 use crate::{
@@ -105,7 +106,7 @@ impl<'a> LeafCollector<'a> {
     /// already collected inside it rewrite it, so an element whose own
     /// entries sort lands where its sorted form will.
     fn emit_set(&mut self, s: &'a ExprSet) {
-        let keys: HashMap<TextSize, String> = s
+        let keys: FxHashMap<TextSize, String> = s
             .elts
             .iter()
             .filter(|e| !e.is_starred_expr())
@@ -211,7 +212,7 @@ impl<'a> AstVisitor<'a> for LeafCollector<'a> {
 /// replaces the section's entries-span with the reordered text.
 /// Returns an empty list when no docstring carries a sortable section.
 pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
-    let param_docs: HashMap<TextSize, Vec<&str>> = documented_definitions(source)
+    let param_docs: FxHashMap<TextSize, Vec<&str>> = documented_definitions(source)
         .into_iter()
         .filter_map(|(definition, lit)| {
             let function = definition.as_function_def_stmt()?;
@@ -236,6 +237,28 @@ pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
     .into_iter()
     .flatten()
     .collect()
+}
+
+/// Walks the AST collecting one non-overlapping leaf edit per outermost
+/// reordering structure, each folding its nested reorders in.
+/// `sort_dict_keys` and `sort_dunder_lists` gate the dict-literal and
+/// `__all__` / `__slots__` reorders, every other shape sorting
+/// regardless.
+pub(super) fn collect_leaf_edits(
+    source: &Source,
+    code_width: usize,
+    sort_dict_keys: bool,
+    sort_dunder_lists: bool,
+) -> Vec<Edit> {
+    let mut collector = LeafCollector {
+        code_width,
+        edits: Vec::new(),
+        sort_dict_keys,
+        sort_dunder_lists,
+        source,
+    };
+    collector.visit_body(&source.ast().body);
+    collector.edits
 }
 
 /// Composite docstring-entry sort key. An entry naming a signature
@@ -278,28 +301,6 @@ fn signature_order(params: &Parameters) -> Vec<&str> {
     names.extend(order.iter().map(|&i| params.kwonlyargs[i].name().as_str()));
     names.extend(params.kwarg.as_deref().map(|p| p.name.as_str()));
     names
-}
-
-/// Walks the AST collecting one non-overlapping leaf edit per outermost
-/// reordering structure, each folding its nested reorders in.
-/// `sort_dict_keys` and `sort_dunder_lists` gate the dict-literal and
-/// `__all__` / `__slots__` reorders, every other shape sorting
-/// regardless.
-pub(super) fn collect_leaf_edits(
-    source: &Source,
-    code_width: usize,
-    sort_dict_keys: bool,
-    sort_dunder_lists: bool,
-) -> Vec<Edit> {
-    let mut collector = LeafCollector {
-        code_width,
-        edits: Vec::new(),
-        sort_dict_keys,
-        sort_dunder_lists,
-        source,
-    };
-    collector.visit_body(&source.ast().body);
-    collector.edits
 }
 
 #[cfg(test)]

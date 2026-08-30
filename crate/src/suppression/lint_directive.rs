@@ -2,11 +2,10 @@
 //! its `ignore[<id>]` form, plus the rule entry both the lint and the
 //! format namespaces record.
 
-use std::collections::HashSet;
-
 use ruff_python_trivia::PythonWhitespace;
+use rustc_hash::FxHashSet;
 
-use super::parse_common::{after_prose_prefix, parse_bracketed_rule_list};
+use super::parse_common::parse_bracketed_rule_list;
 use crate::rule::RuleId;
 
 /// The rule set one `# prose: ignore` or `# prose: skip[<id>]`
@@ -18,7 +17,7 @@ pub(super) enum RuleEntry {
     All,
     /// `# prose: ignore[<id>[, <id>...]]` or `# prose: skip[<id>[,
     /// <id>...]]`. Unknown ids are dropped.
-    Specific(HashSet<RuleId>),
+    Specific(FxHashSet<RuleId>),
 }
 
 impl RuleEntry {
@@ -44,34 +43,16 @@ impl RuleEntry {
 
 impl Default for RuleEntry {
     fn default() -> Self {
-        Self::Specific(HashSet::new())
+        Self::Specific(FxHashSet::default())
     }
 }
 
-/// Splits `comment` at each `#` boundary, parsing each chunk as a
-/// `prose: ignore` directive and folding successful hits through
-/// `RuleEntry::merge`. Catches nested forms like `# my note # prose:
-/// ignore` and multi-directive lines like `# prose: ignore  # prose:
-/// ignore[align-equals]`.
-pub(super) fn find_prose_ignore(comment: &str) -> Option<RuleEntry> {
-    comment
-        .split('#')
-        .skip(1)
-        .filter_map(parse_prose_ignore)
-        .reduce(|mut acc, next| {
-            acc.merge(next);
-            acc
-        })
-}
-
-/// Parses the post-`#` body of a `prose: ignore`, `prose: ignore[<id>]`,
-/// or `prose: ignore[<id>, <id>...]` directive. Returns `None` for any
-/// other shape. Whitespace tolerated around `:`, `[`, `,`, and `]`.
-/// Unknown rule ids inside the brackets are dropped.
-fn parse_prose_ignore(after_hash: &str) -> Option<RuleEntry> {
-    let body = after_prose_prefix(after_hash)?
-        .strip_prefix("ignore")?
-        .trim_whitespace();
+/// Parses the body past a `prose:` prefix as `ignore`, `ignore[<id>]`,
+/// or `ignore[<id>, <id>...]`. Returns `None` for any other shape.
+/// Whitespace is tolerated around `[`, `,`, and `]`, and unknown rule
+/// ids inside the brackets are dropped.
+pub(super) fn parse_ignore(body: &str) -> Option<RuleEntry> {
+    let body = body.strip_prefix("ignore")?.trim_whitespace();
     if body.is_empty() {
         return Some(RuleEntry::All);
     }

@@ -4,12 +4,11 @@
 //! passes while `exempt-aliased` holds, and a top-level segment on the
 //! `allow` list keeps its bare form. Lint-only, emits no edits.
 
-use std::collections::HashSet;
-
 use ruff_python_ast::{
     Stmt,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
+use rustc_hash::FxHashSet;
 
 use crate::{
     config::Config,
@@ -20,7 +19,7 @@ use crate::{
 };
 
 pub(crate) struct BareImports {
-    allow: HashSet<String>,
+    allow: FxHashSet<String>,
     exempt_aliased: bool,
     max_attributes: usize,
 }
@@ -58,7 +57,7 @@ impl Rule for BareImports {
 }
 
 struct Visitor<'a> {
-    allow: &'a HashSet<String>,
+    allow: &'a FxHashSet<String>,
     analysis: &'a BindingAnalysis,
     diagnostics: Vec<Diagnostic>,
     exempt_aliased: bool,

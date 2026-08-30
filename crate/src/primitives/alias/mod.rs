@@ -22,19 +22,18 @@
 //! calls `value_is_alias` and skips this last check, sorting its
 //! sub-band on the value alone.
 
-use std::collections::{HashMap, HashSet};
-
-mod resolver;
-
-use resolver::Resolver;
-
 use ruff_python_ast::{
     Expr, ExprAttribute, ExprBinOp, ExprList, ExprNumberLiteral, ExprSubscript, ExprTuple,
     ExprUnaryOp, Number, Operator, Stmt, UnaryOp, helpers::is_dunder, name::UnqualifiedName,
 };
 use ruff_python_stdlib::typing::{is_literal_member, is_pep_593_generic_member};
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::binding::{BindingAnalysis, BindingKind, ModuleAssignment, module_assignments};
+
+mod resolver;
+
+use resolver::Resolver;
 
 /// The module-scope evidence the alias read consumes, pairing the
 /// binding table with every module-scope assignment and an index from
@@ -42,7 +41,7 @@ use super::binding::{BindingAnalysis, BindingKind, ModuleAssignment, module_assi
 pub(crate) struct AliasContext<'src> {
     analysis: &'src BindingAnalysis,
     sites: Vec<ModuleAssignment<'src>>,
-    values: HashMap<&'src str, &'src Expr>,
+    values: FxHashMap<&'src str, &'src Expr>,
 }
 
 impl<'src> AliasContext<'src> {
@@ -59,14 +58,14 @@ impl<'src> AliasContext<'src> {
         }
     }
 
-    /// Every module-scope single-name assignment, in source order.
-    pub(crate) fn sites(&self) -> &[ModuleAssignment<'src>] {
-        &self.sites
-    }
-
     /// The binding table the checks read.
     pub(crate) fn analysis(&self) -> &'src BindingAnalysis {
         self.analysis
+    }
+
+    /// Every module-scope single-name assignment, in source order.
+    pub(crate) fn sites(&self) -> &[ModuleAssignment<'src>] {
+        &self.sites
     }
 }
 
@@ -83,7 +82,7 @@ pub(crate) fn is_type_alias(site: &ModuleAssignment<'_>, ctx: &AliasContext<'_>)
 pub(crate) fn value_is_alias(value: &Expr, ctx: &AliasContext<'_>) -> bool {
     Resolver {
         ctx,
-        visited: HashSet::new(),
+        visited: FxHashSet::default(),
     }
     .alias_value(value)
 }
@@ -103,6 +102,90 @@ mod tests {
         let ctx = AliasContext::new(&source.ast().body, analysis);
         let site = ctx.sites().last().expect("a module assignment");
         value_is_alias(site.value.expect("a value"), &ctx)
+    }
+
+    /// Classifies the first module-scope assignment, reading how the
+    /// rest of the module uses the name it binds.
+    fn first_is_type_alias(src: &str) -> bool {
+        let source = parse(src);
+        let analysis = source.binding_analysis();
+        let ctx = AliasContext::new(&source.ast().body, analysis);
+        is_type_alias(ctx.sites().first().expect("a module assignment"), &ctx)
+    }
+
+    #[rstest]
+    #[case::dict_display("SETTINGS = {\"db\": \"pg\"}\nX = SETTINGS[\"db\"]", false)]
+    #[case::list_display("ROWS = [1, 2]\nX = ROWS[0]", false)]
+    #[case::string_value("BASE = \"abc\"\nX = BASE[0]", false)]
+    #[case::indirect_dict("A = {\"k\": 1}\nB = A\nX = B[\"k\"]", false)]
+    #[case::bare_reference("SETTINGS = {\"db\": \"pg\"}\nX = SETTINGS", false)]
+    #[case::runtime_name_slice("IDX = 0\nX = table[IDX]", false)]
+    #[case::class_generic("class Box(Generic[T]):\n    pass\nX = Box[int]", true)]
+    #[case::imported_generic("from numpy.typing import NDArray\nX = NDArray[float]", true)]
+    #[case::imported_literal("from typing import Literal\nX = Literal[\"read\"]", true)]
+    #[case::local_alias_slice("Key = int\nX = dict[Key, str]", true)]
+    #[case::reassigned_base("A = {}\nA = load()\nX = A[\"k\"]", true)]
+    #[case::rebound_dict_base("A = {}\nA = {\"k\": 1}\nX = A[\"k\"]", true)]
+    #[case::attribute_valued_base("sep = os.sep\nX = table[sep]", true)]
+    #[case::self_indexing_base("A = A[0]\nX = A[1]", false)]
+    #[case::mutually_cyclic_bases("A = B[int]\nB = A[int]\nX = A[str]", true)]
+    fn the_module_binding_settles_the_base(#[case] src: &str, #[case] expected: bool) {
+        assert_eq!(last_value_is_alias(src), expected, "{src}");
+    }
+
+    #[rstest]
+    #[case::unread("Mode = Literal[\"read\"]", true)]
+    #[case::annotated_parameter("Mode = Literal[\"a\"]\ndef f(m: Mode):\n    pass", true)]
+    #[case::annotated_return("Mode = Literal[\"a\"]\ndef f() -> Mode:\n    pass", true)]
+    #[case::annotated_variable("Mode = Literal[\"a\"]\nvalue: Mode = x", true)]
+    #[case::forward_annotation("def f(m: Mode):\n    pass\nMode = Literal[\"a\"]", true)]
+    #[case::pep695_alias_value("Mode = Literal[\"a\"]\ntype Pair = tuple[Mode, Mode]", true)]
+    #[case::call_argument("Mode = Literal[\"a\"]\nregister(Mode)", true)]
+    #[case::callee("Registry = dict[str, int]\nr = Registry()", true)]
+    #[case::attribute_read("int_ = int\nint_.from_bytes(raw)", true)]
+    #[case::identity_test("Alias = Generic\nif base is Alias:\n    pass", true)]
+    #[case::membership_test("Alias = Undefined\nif x in (Alias, Required):\n    pass", true)]
+    #[case::annotation_outranks_runtime(
+        "Mode = Literal[\"a\"]\ndef f(m: Mode):\n    pass\nif Mode:\n    pass",
+        true
+    )]
+    #[case::iterated_enum_alias("Colors = ColorEnum\nfor c in Colors:\n    pass", true)]
+    #[case::comprehension_over_alias("Colors = ColorEnum\nxs = [c for c in Colors]", true)]
+    #[case::equality_against_a_class("Kind = Shape\nif type(x) == Kind:\n    pass", true)]
+    #[case::truth_test("flag = registry.enabled\nif flag:\n    pass", false)]
+    #[case::negated_test("flag = registry.enabled\nif not flag:\n    pass", false)]
+    #[case::while_test("flag = registry.enabled\nwhile flag:\n    pass", false)]
+    #[case::ternary_test("flag = registry.enabled\nx = 1 if flag else 2", false)]
+    #[case::bool_op("flag = registry.enabled\nx = flag and other", false)]
+    #[case::order_comparison("limit = config.limit\nif count > limit:\n    pass", false)]
+    #[case::subset_comparison("modes = os.modes\nif {read, write} <= modes:\n    pass", false)]
+    #[case::arithmetic("base = config.base\nx = base + 1", false)]
+    fn the_read_context_settles_a_value_the_shape_cannot(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(first_is_type_alias(src), expected, "{src}");
+    }
+
+    #[rstest]
+    #[case::slice_index("X = path_separators[1:]", false)]
+    #[case::bare_slice("X = data[:]", false)]
+    #[case::stepped_slice("X = data[::2]", false)]
+    #[case::dunder_slice("X = sys.modules[__name__]", false)]
+    #[case::dunder_base("X = __builtins__[\"open\"]", false)]
+    #[case::int_index("X = path_separators[0]", false)]
+    #[case::negative_index("X = items[-1]", false)]
+    #[case::positive_signed_index("X = offsets[+1]", false)]
+    #[case::inverted_index("X = mask[~3]", false)]
+    #[case::bool_index("X = options[True]", false)]
+    #[case::float_index("X = table[3.14]", false)]
+    #[case::call_slice("X = config[name.upper()]", false)]
+    #[case::arithmetic_slice("X = row[index + 1]", false)]
+    #[case::fstring_slice("X = table[f\"{key}-row\"]", false)]
+    #[case::comparison_slice("X = frame[column > 3]", false)]
+    #[case::comprehension_slice("X = frame[[c for c in cols]]", false)]
+    fn the_typing_grammar_rejects_a_runtime_index(#[case] src: &str, #[case] expected: bool) {
+        assert_eq!(last_value_is_alias(src), expected, "{src}");
     }
 
     #[rstest]
@@ -149,89 +232,5 @@ mod tests {
         #[case] expected: bool,
     ) {
         assert_eq!(last_value_is_alias(src), expected, "{src}");
-    }
-
-    #[rstest]
-    #[case::slice_index("X = path_separators[1:]", false)]
-    #[case::bare_slice("X = data[:]", false)]
-    #[case::stepped_slice("X = data[::2]", false)]
-    #[case::dunder_slice("X = sys.modules[__name__]", false)]
-    #[case::dunder_base("X = __builtins__[\"open\"]", false)]
-    #[case::int_index("X = path_separators[0]", false)]
-    #[case::negative_index("X = items[-1]", false)]
-    #[case::positive_signed_index("X = offsets[+1]", false)]
-    #[case::inverted_index("X = mask[~3]", false)]
-    #[case::bool_index("X = options[True]", false)]
-    #[case::float_index("X = table[3.14]", false)]
-    #[case::call_slice("X = config[name.upper()]", false)]
-    #[case::arithmetic_slice("X = row[index + 1]", false)]
-    #[case::fstring_slice("X = table[f\"{key}-row\"]", false)]
-    #[case::comparison_slice("X = frame[column > 3]", false)]
-    #[case::comprehension_slice("X = frame[[c for c in cols]]", false)]
-    fn the_typing_grammar_rejects_a_runtime_index(#[case] src: &str, #[case] expected: bool) {
-        assert_eq!(last_value_is_alias(src), expected, "{src}");
-    }
-
-    #[rstest]
-    #[case::dict_display("SETTINGS = {\"db\": \"pg\"}\nX = SETTINGS[\"db\"]", false)]
-    #[case::list_display("ROWS = [1, 2]\nX = ROWS[0]", false)]
-    #[case::string_value("BASE = \"abc\"\nX = BASE[0]", false)]
-    #[case::indirect_dict("A = {\"k\": 1}\nB = A\nX = B[\"k\"]", false)]
-    #[case::bare_reference("SETTINGS = {\"db\": \"pg\"}\nX = SETTINGS", false)]
-    #[case::runtime_name_slice("IDX = 0\nX = table[IDX]", false)]
-    #[case::class_generic("class Box(Generic[T]):\n    pass\nX = Box[int]", true)]
-    #[case::imported_generic("from numpy.typing import NDArray\nX = NDArray[float]", true)]
-    #[case::imported_literal("from typing import Literal\nX = Literal[\"read\"]", true)]
-    #[case::local_alias_slice("Key = int\nX = dict[Key, str]", true)]
-    #[case::reassigned_base("A = {}\nA = load()\nX = A[\"k\"]", true)]
-    #[case::rebound_dict_base("A = {}\nA = {\"k\": 1}\nX = A[\"k\"]", true)]
-    #[case::attribute_valued_base("sep = os.sep\nX = table[sep]", true)]
-    #[case::self_indexing_base("A = A[0]\nX = A[1]", false)]
-    #[case::mutually_cyclic_bases("A = B[int]\nB = A[int]\nX = A[str]", true)]
-    fn the_module_binding_settles_the_base(#[case] src: &str, #[case] expected: bool) {
-        assert_eq!(last_value_is_alias(src), expected, "{src}");
-    }
-
-    /// Classifies the first module-scope assignment, reading how the
-    /// rest of the module uses the name it binds.
-    fn first_is_type_alias(src: &str) -> bool {
-        let source = parse(src);
-        let analysis = source.binding_analysis();
-        let ctx = AliasContext::new(&source.ast().body, analysis);
-        is_type_alias(ctx.sites().first().expect("a module assignment"), &ctx)
-    }
-
-    #[rstest]
-    #[case::unread("Mode = Literal[\"read\"]", true)]
-    #[case::annotated_parameter("Mode = Literal[\"a\"]\ndef f(m: Mode):\n    pass", true)]
-    #[case::annotated_return("Mode = Literal[\"a\"]\ndef f() -> Mode:\n    pass", true)]
-    #[case::annotated_variable("Mode = Literal[\"a\"]\nvalue: Mode = x", true)]
-    #[case::forward_annotation("def f(m: Mode):\n    pass\nMode = Literal[\"a\"]", true)]
-    #[case::pep695_alias_value("Mode = Literal[\"a\"]\ntype Pair = tuple[Mode, Mode]", true)]
-    #[case::call_argument("Mode = Literal[\"a\"]\nregister(Mode)", true)]
-    #[case::callee("Registry = dict[str, int]\nr = Registry()", true)]
-    #[case::attribute_read("int_ = int\nint_.from_bytes(raw)", true)]
-    #[case::identity_test("Alias = Generic\nif base is Alias:\n    pass", true)]
-    #[case::membership_test("Alias = Undefined\nif x in (Alias, Required):\n    pass", true)]
-    #[case::annotation_outranks_runtime(
-        "Mode = Literal[\"a\"]\ndef f(m: Mode):\n    pass\nif Mode:\n    pass",
-        true
-    )]
-    #[case::iterated_enum_alias("Colors = ColorEnum\nfor c in Colors:\n    pass", true)]
-    #[case::comprehension_over_alias("Colors = ColorEnum\nxs = [c for c in Colors]", true)]
-    #[case::equality_against_a_class("Kind = Shape\nif type(x) == Kind:\n    pass", true)]
-    #[case::truth_test("flag = registry.enabled\nif flag:\n    pass", false)]
-    #[case::negated_test("flag = registry.enabled\nif not flag:\n    pass", false)]
-    #[case::while_test("flag = registry.enabled\nwhile flag:\n    pass", false)]
-    #[case::ternary_test("flag = registry.enabled\nx = 1 if flag else 2", false)]
-    #[case::bool_op("flag = registry.enabled\nx = flag and other", false)]
-    #[case::order_comparison("limit = config.limit\nif count > limit:\n    pass", false)]
-    #[case::subset_comparison("modes = os.modes\nif {read, write} <= modes:\n    pass", false)]
-    #[case::arithmetic("base = config.base\nx = base + 1", false)]
-    fn the_read_context_settles_a_value_the_shape_cannot(
-        #[case] src: &str,
-        #[case] expected: bool,
-    ) {
-        assert_eq!(first_is_type_alias(src), expected, "{src}");
     }
 }

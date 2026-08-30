@@ -53,7 +53,7 @@ struct Collector<F, T> {
     probe: F,
 }
 
-impl<'src, F: FnMut(&Stmt) -> Option<T>, T> StatementVisitor<'src> for Collector<F, T> {
+impl<'src, F: FnMut(&'src Stmt) -> Option<T>, T> StatementVisitor<'src> for Collector<F, T> {
     fn visit_stmt(&mut self, stmt: &'src Stmt) {
         self.found.extend((self.probe)(stmt));
         statement_visitor::walk_stmt(self, stmt);
@@ -102,9 +102,9 @@ pub(crate) fn filter_map_over_exprs<T>(
 
 /// Every `Some` that `probe` returns over `body`, descending through
 /// every compound body including nested `def` and `class` scopes.
-pub(crate) fn filter_map_over_stmts<T>(
-    body: &[Stmt],
-    probe: impl FnMut(&Stmt) -> Option<T>,
+pub(crate) fn filter_map_over_stmts<'src, T>(
+    body: &'src [Stmt],
+    probe: impl FnMut(&'src Stmt) -> Option<T>,
 ) -> Vec<T> {
     let mut collector = Collector {
         found: Vec::new(),

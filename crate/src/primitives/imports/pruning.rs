@@ -1,14 +1,16 @@
 //! Drops the imports and aliases a module never reads, and reads where
 //! a dropped statement lands its comment.
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::BTreeMap;
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Alias, Stmt};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
+use rustc_hash::{FxHashMap, FxHashSet};
 
+use super::*;
 use crate::{
     primitives::{
         comments::comment_leads,
@@ -17,8 +19,6 @@ use crate::{
     },
     source::Source,
 };
-
-use super::*;
 
 /// One import statement and the alias positions a rule drops from it.
 pub(crate) struct Dropping<'a> {
@@ -75,7 +75,7 @@ pub(crate) fn prune_import_statements(
     drops: &[Dropping],
     landing: impl Fn(usize, &dyn Fn(usize) -> bool) -> Option<usize>,
 ) -> Vec<Vec<Edit>> {
-    let whole: HashSet<usize> = drops
+    let whole: FxHashSet<usize> = drops
         .iter()
         .filter(|drop| drop.dropped.len() == drop.names.len())
         .map(|drop| drop.slot)
@@ -86,7 +86,7 @@ pub(crate) fn prune_import_statements(
         .filter(|drop| whole.contains(&drop.slot) && comment_leads(source, drop.range.start()))
         .filter_map(|drop| landing(drop.slot, &survives).map(|onto| (drop.slot, onto)))
         .collect();
-    let claims: HashMap<usize, usize> =
+    let claims: FxHashMap<usize, usize> =
         landings.iter().map(|(&lead, &onto)| (onto, lead)).collect();
     let edits_of = |drop: &Dropping| {
         prune_import_aliases(
@@ -99,7 +99,7 @@ pub(crate) fn prune_import_statements(
     };
     let line_span =
         |range: TextRange| TextRange::new(range.start(), source.text().line_end(range.end()));
-    let mut consumed = HashSet::new();
+    let mut consumed = FxHashSet::default();
     let groups: Vec<(usize, Vec<Edit>)> = drops
         .iter()
         .map(|drop| {
@@ -193,6 +193,62 @@ mod tests {
     }
 
     #[rstest]
+    #[case::same_module_sibling("# c\nfrom p import a\nfrom q import x\nfrom p import b\n", &[], true, Some(2))]
+    #[case::merges_off("# c\nfrom p import a\nfrom q import x\nfrom p import b\n", &[], false, None)]
+    #[case::band_head_reseated("# c\nfrom .p import a\nfrom ..q import x\n", &[1], false, Some(1))]
+    #[case::band_head_sorts_first("# c\nfrom ..p import a\nfrom .q import x\n", &[0], false, None)]
+    #[case::not_the_head("from ..q import x\n# c\nfrom .p import a\nfrom .r import y\n", &[0], false, None)]
+    #[case::sibling_led_by_a_comment("# c\nfrom p import a\n# d\nfrom p import b\n", &[], true, None)]
+    #[case::sibling_sharing_its_line("# c\nfrom p import a\nfrom p import b; x = 1\n", &[], true, None)]
+    #[case::lone_import("# c\nfrom p import a\nx = 1\n", &[], true, None)]
+    fn fold_landing_names_the_import_the_comment_heads_next(
+        #[case] src: &str,
+        #[case] sorted_heads: &[usize],
+        #[case] merges: bool,
+        #[case] expected: Option<usize>,
+    ) {
+        let source = parse(src);
+        let body = &source.ast().body;
+        let slot = body
+            .iter()
+            .position(|stmt| {
+                stmt.as_import_from_stmt()
+                    .is_some_and(|node| node.names[0].name.as_str() == "a")
+            })
+            .expect("the `a` import");
+        let landing = fold_landing(
+            &source,
+            body,
+            &merge_runs(&source),
+            sorted_heads,
+            merges,
+            slot,
+            |_| true,
+        );
+        assert_eq!(landing, expected);
+    }
+
+    #[test]
+    fn fold_landing_skips_a_sibling_the_drops_take() {
+        let source = parse("# c\nfrom p import a\nfrom p import b\nfrom p import d\n");
+        let body = &source.ast().body;
+        let landing = fold_landing(&source, body, &merge_runs(&source), &[], true, 0, |slot| {
+            slot != 1
+        });
+        assert_eq!(landing, Some(2));
+    }
+
+    #[test]
+    fn prune_import_aliases_drops_a_commented_statement_a_merge_folds() {
+        let source = parse("# local imports\nfrom pkg import a\nfrom pkg import b\n");
+        let stmt = &source.ast().body[0];
+        let names = &stmt.as_import_from_stmt().expect("a from-import").names;
+        let edits = prune_import_aliases(&source, stmt.range(), names, true, |_| false);
+        let pruned = apply_edits(source.text(), edits).expect("the deletion stands alone");
+        assert_eq!(pruned, "# local imports\nfrom pkg import b\n");
+    }
+
+    #[rstest]
     #[case::sole_alias("from typing import Optional\n", &[0], "")]
     #[case::sole_alias_with_trailing_comment("from typing import Optional  # noqa\n", &[0], "")]
     #[case::every_alias("from typing import Optional, cast\n", &[0, 1], "")]
@@ -255,52 +311,6 @@ mod tests {
     }
 
     #[rstest]
-    #[case::same_module_sibling("# c\nfrom p import a\nfrom q import x\nfrom p import b\n", &[], true, Some(2))]
-    #[case::merges_off("# c\nfrom p import a\nfrom q import x\nfrom p import b\n", &[], false, None)]
-    #[case::band_head_reseated("# c\nfrom .p import a\nfrom ..q import x\n", &[1], false, Some(1))]
-    #[case::band_head_sorts_first("# c\nfrom ..p import a\nfrom .q import x\n", &[0], false, None)]
-    #[case::not_the_head("from ..q import x\n# c\nfrom .p import a\nfrom .r import y\n", &[0], false, None)]
-    #[case::sibling_led_by_a_comment("# c\nfrom p import a\n# d\nfrom p import b\n", &[], true, None)]
-    #[case::sibling_sharing_its_line("# c\nfrom p import a\nfrom p import b; x = 1\n", &[], true, None)]
-    #[case::lone_import("# c\nfrom p import a\nx = 1\n", &[], true, None)]
-    fn fold_landing_names_the_import_the_comment_heads_next(
-        #[case] src: &str,
-        #[case] sorted_heads: &[usize],
-        #[case] merges: bool,
-        #[case] expected: Option<usize>,
-    ) {
-        let source = parse(src);
-        let body = &source.ast().body;
-        let slot = body
-            .iter()
-            .position(|stmt| {
-                stmt.as_import_from_stmt()
-                    .is_some_and(|node| node.names[0].name.as_str() == "a")
-            })
-            .expect("the `a` import");
-        let landing = fold_landing(
-            &source,
-            body,
-            &merge_runs(&source),
-            sorted_heads,
-            merges,
-            slot,
-            |_| true,
-        );
-        assert_eq!(landing, expected);
-    }
-
-    #[test]
-    fn fold_landing_skips_a_sibling_the_drops_take() {
-        let source = parse("# c\nfrom p import a\nfrom p import b\nfrom p import d\n");
-        let body = &source.ast().body;
-        let landing = fold_landing(&source, body, &merge_runs(&source), &[], true, 0, |slot| {
-            slot != 1
-        });
-        assert_eq!(landing, Some(2));
-    }
-
-    #[rstest]
     #[case::moves_the_sibling_up(
         "# c\nfrom p import a\n\nfrom p import b\n",
         &[(0, &[0][..]), (1, &[][..])],
@@ -351,15 +361,5 @@ mod tests {
         });
         let pruned = apply_edits(source.text(), groups.concat()).expect("the edits weave");
         assert_eq!(pruned, expected);
-    }
-
-    #[test]
-    fn prune_import_aliases_drops_a_commented_statement_a_merge_folds() {
-        let source = parse("# local imports\nfrom pkg import a\nfrom pkg import b\n");
-        let stmt = &source.ast().body[0];
-        let names = &stmt.as_import_from_stmt().expect("a from-import").names;
-        let edits = prune_import_aliases(&source, stmt.range(), names, true, |_| false);
-        let pruned = apply_edits(source.text(), edits).expect("the deletion stands alone");
-        assert_eq!(pruned, "# local imports\nfrom pkg import b\n");
     }
 }

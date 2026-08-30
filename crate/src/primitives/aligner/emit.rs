@@ -8,7 +8,6 @@ use std::ops::RangeInclusive;
 use ruff_diagnostics::Edit;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use super::{
     Cap, Member, Settings, Widenings,
@@ -20,10 +19,98 @@ use crate::{
     primitives::{
         comments::{Settling, trailing_comment},
         edit::repeat_edit,
+        inline::display_width,
         padding::{self, Stranding},
     },
     source::Source,
 };
+
+/// Aligns `members` by splitting the source-ordered run into the
+/// contiguous groups `reading_order_groups` yields and emitting each at
+/// its widest member. A singleton group collapses its gap to the
+/// settings' buffer, or to zero when `settings.strip_singleton` is set.
+pub(super) fn emit_group(
+    source: &Source,
+    members: &[Member],
+    settings: Settings,
+    widenings: &Widenings,
+    edits: &mut Vec<Edit>,
+) {
+    edits.extend(
+        group_paddings(source, members, settings, widenings, &[])
+            .filter_map(|(m, pad)| space_padding_edit(source, m.gap, pad)),
+    );
+}
+
+/// [`operator_columns`] for the rows a rule writes, a row `joined`
+/// names standing on a line of its own where the source seats it on
+/// its neighbor's, whereas a value merely widening an existing row
+/// stands no run up.
+pub(crate) fn forecast_columns(
+    source: &Source,
+    members: &[Member],
+    settings: Settings,
+    widenings: &Widenings,
+    joined: &[Option<usize>],
+) -> Vec<usize> {
+    columns(
+        source,
+        members,
+        settings,
+        widenings,
+        joined,
+        is_forecast_candidate(members, joined),
+    )
+}
+
+/// Per-member display column where each member's aligned token lands
+/// under `emit_group`'s column math, each line read with `widenings`
+/// and at the width `joined` names where a later rule writes the row.
+/// A candidate group reports its shared column, any other group the
+/// settings' buffer past each member's width, and the value follows
+/// [`VALUE_OFFSET`](super::VALUE_OFFSET) columns on.
+pub(crate) fn operator_columns(
+    source: &Source,
+    members: &[Member],
+    settings: Settings,
+    widenings: &Widenings,
+    joined: &[Option<usize>],
+) -> Vec<usize> {
+    columns(
+        source,
+        members,
+        settings,
+        widenings,
+        joined,
+        is_alignment_candidate(members),
+    )
+}
+
+/// The columns `member`'s line keeps past `code_end` once the comment
+/// rules `settings` carries settle the trailing comment there, the
+/// written tail where no cap governs.
+pub(crate) fn settled_tail(
+    source: &Source,
+    member: Member,
+    settings: Settings,
+    code_end: TextSize,
+) -> usize {
+    let tail =
+        display_width(source.slice(TextRange::new(code_end, source.text().line_end(code_end))));
+    settings.cap.map_or(tail, |cap| {
+        tail.saturating_add_signed(-comment_slack(source, member, cap.settling))
+    })
+}
+
+/// Returns the edit needed to make `range` carry exactly `n` ASCII
+/// spaces, or `None` if it already does.
+pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) -> Option<Edit> {
+    let text = source.slice(range);
+    if text.len() == n && text.bytes().all(|b| b == b' ') {
+        return None;
+    }
+    Some(repeat_edit(range, " ", n))
+}
 
 /// The per-member columns of a run, the group math where `candidate`
 /// holds and the settings' buffer past each member's own width
@@ -70,14 +157,14 @@ fn emitted_base_width(source: &Source, member: Member, cap: Cap, joined: Option<
     let line = source.text().line_range(member.line_start);
     let (written, padded) = match joined {
         Some(width) => (width, TextRange::new(line.start(), member.gap.end())),
-        None => (source.slice(line).width(), line),
+        None => (display_width(source.slice(line)), line),
     };
     let slack = joined.map_or_else(|| comment_slack(source, member, cap.settling), |_| 0)
         + padding_slack(source, member, padded, cap.stranding);
-    let base = (written - source.slice(member.gap).width()).saturating_add_signed(-slack);
+    let base = (written - display_width(source.slice(member.gap))).saturating_add_signed(-slack);
     member
         .rewritten_value_gap(source)
-        .map_or(base, |gap| base + 1 - source.slice(gap).width())
+        .map_or(base, |gap| base + 1 - display_width(source.slice(gap)))
 }
 
 /// Each member's emitted line width, measured once per run rather than
@@ -262,94 +349,6 @@ fn reading_order_groups<'m>(
     let last = &members[start..];
     groups.push((last, group_max_width(last)));
     groups
-}
-
-/// Aligns `members` by splitting the source-ordered run into the
-/// contiguous groups `reading_order_groups` yields and emitting each at
-/// its widest member. A singleton group collapses its gap to the
-/// settings' buffer, or to zero when `settings.strip_singleton` is set.
-pub(super) fn emit_group(
-    source: &Source,
-    members: &[Member],
-    settings: Settings,
-    widenings: &Widenings,
-    edits: &mut Vec<Edit>,
-) {
-    edits.extend(
-        group_paddings(source, members, settings, widenings, &[])
-            .filter_map(|(m, pad)| space_padding_edit(source, m.gap, pad)),
-    );
-}
-
-/// [`operator_columns`] for the rows a rule writes, a row `joined`
-/// names standing on a line of its own where the source seats it on
-/// its neighbor's, whereas a value merely widening an existing row
-/// stands no run up.
-pub(crate) fn forecast_columns(
-    source: &Source,
-    members: &[Member],
-    settings: Settings,
-    widenings: &Widenings,
-    joined: &[Option<usize>],
-) -> Vec<usize> {
-    columns(
-        source,
-        members,
-        settings,
-        widenings,
-        joined,
-        is_forecast_candidate(members, joined),
-    )
-}
-
-/// Per-member display column where each member's aligned token lands
-/// under `emit_group`'s column math, each line read with `widenings`
-/// and at the width `joined` names where a later rule writes the row.
-/// A candidate group reports its shared column, any other group the
-/// settings' buffer past each member's width, and the value follows
-/// [`VALUE_OFFSET`](super::VALUE_OFFSET) columns on.
-pub(crate) fn operator_columns(
-    source: &Source,
-    members: &[Member],
-    settings: Settings,
-    widenings: &Widenings,
-    joined: &[Option<usize>],
-) -> Vec<usize> {
-    columns(
-        source,
-        members,
-        settings,
-        widenings,
-        joined,
-        is_alignment_candidate(members),
-    )
-}
-
-/// The columns `member`'s line keeps past `code_end` once the comment
-/// rules `settings` carries settle the trailing comment there, the
-/// written tail where no cap governs.
-pub(crate) fn settled_tail(
-    source: &Source,
-    member: Member,
-    settings: Settings,
-    code_end: TextSize,
-) -> usize {
-    let tail = source
-        .slice(TextRange::new(code_end, source.text().line_end(code_end)))
-        .width();
-    settings.cap.map_or(tail, |cap| {
-        tail.saturating_add_signed(-comment_slack(source, member, cap.settling))
-    })
-}
-
-/// Returns the edit needed to make `range` carry exactly `n` ASCII
-/// spaces, or `None` if it already does.
-pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) -> Option<Edit> {
-    let text = source.slice(range);
-    if text.len() == n && text.bytes().all(|b| b == b' ') {
-        return None;
-    }
-    Some(repeat_edit(range, " ", n))
 }
 
 #[cfg(test)]

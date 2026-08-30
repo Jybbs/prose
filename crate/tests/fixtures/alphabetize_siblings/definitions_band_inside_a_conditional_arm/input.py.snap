@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/definitions_band_inside_a_conditional_arm/input.py
+---
+import sys
+
+if sys.version_info >= (3, 12):
+    class Widget:
+        pass
+
+    def build():
+        pass
+
+    def render():
+        pass
+else:
+    def render():
+        pass

@@ -340,7 +340,7 @@ fn rules_bare_bool_sets_enabled(#[case] literal: &str, #[case] expected: bool) {
 #[test]
 fn rules_inline_table_compiles_regex_knob() {
     let config = Config::from_pyproject_str(
-        "[tool.prose.rules]\nsingle-use-variables = { allow-pattern = \"^tmp_\" }\n",
+        "[tool.prose.rules]\nsingle-use-variables = { allow-pattern = \"tmp_*\" }\n",
     )
     .expect("parses");
 
@@ -349,7 +349,7 @@ fn rules_inline_table_compiles_regex_knob() {
             .rules
             .single_use_variables
             .allow_pattern
-            .is_match("tmp_x")
+            .matches("tmp_x")
     );
     assert!(config.rules.single_use_variables.enabled);
 }
@@ -389,7 +389,7 @@ fn rules_subtable_form_still_parses() {
 #[test]
 fn single_use_variables_explicit_allow_pattern_takes_effect() {
     let config = Config::from_pyproject_str(
-        "[tool.prose.rules.single-use-variables]\nallow-pattern = \"^tmp_\"\n",
+        "[tool.prose.rules.single-use-variables]\nallow-pattern = \"tmp_*\"\n",
     )
     .expect("parses");
 
@@ -398,14 +398,14 @@ fn single_use_variables_explicit_allow_pattern_takes_effect() {
             .rules
             .single_use_variables
             .allow_pattern
-            .is_match("tmp_x")
+            .matches("tmp_x")
     );
     assert!(
         !config
             .rules
             .single_use_variables
             .allow_pattern
-            .is_match("xtmp_")
+            .matches("xtmp_")
     );
 }
 

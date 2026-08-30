@@ -1,11 +1,10 @@
 //! Indexes the module's `typing` imports for the rewrite to resolve
 //! against, and drops each alias the rewrite leaves unread.
 
-use std::collections::HashMap;
-
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Alias, Stmt, name::QualifiedName};
 use ruff_text_size::TextRange;
+use rustc_hash::FxHashMap;
 
 use crate::{
     primitives::{
@@ -20,7 +19,7 @@ use crate::{
 /// bound name to the qualified path it names and holding the statements
 /// that bound them.
 pub(super) struct TypingImports<'a> {
-    aliases: HashMap<&'a str, QualifiedName<'a>>,
+    aliases: FxHashMap<&'a str, QualifiedName<'a>>,
     statements: Vec<TypingImport<'a>>,
 }
 
@@ -29,7 +28,7 @@ impl<'a> TypingImports<'a> {
     /// binds a `typing` name. An import below module scope and a
     /// relative `from .typing import …` both go unread.
     pub(super) fn collect(body: &'a [Stmt]) -> Option<Self> {
-        let mut aliases = HashMap::new();
+        let mut aliases = FxHashMap::default();
         let mut statements = Vec::new();
         for (slot, stmt) in body.iter().enumerate() {
             match stmt {
@@ -88,7 +87,7 @@ impl<'a> TypingImports<'a> {
         })
     }
 
-    pub(super) fn aliases(&self) -> &HashMap<&'a str, QualifiedName<'a>> {
+    pub(super) fn aliases(&self) -> &FxHashMap<&'a str, QualifiedName<'a>> {
         &self.aliases
     }
 
@@ -100,7 +99,7 @@ impl<'a> TypingImports<'a> {
     pub(super) fn prune(
         &self,
         source: &Source,
-        consumed: &HashMap<&str, usize>,
+        consumed: &FxHashMap<&str, usize>,
         folds: &Folds,
     ) -> Vec<Vec<Edit>> {
         let analysis = source.binding_analysis();

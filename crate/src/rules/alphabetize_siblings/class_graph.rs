@@ -16,7 +16,7 @@ use crate::primitives::{
     binding::{ann_assign_with_named_field, is_classvar, single_name_target},
     constructor::classify_field,
     orderer::permute_in_place,
-    tiering::{CallReach, def_run_tier_keys, permute_or_repair},
+    tiering::{Evaluation, def_run_tier_keys, permute_or_repair},
 };
 
 /// Sorts a section's constant and data-field families through one tiered
@@ -30,11 +30,10 @@ pub(super) fn permute_class_assigns<'src>(
     order: &mut [usize],
     body: &'src [Stmt],
     range: Range<usize>,
-    defer_annotations: bool,
+    evaluation: Evaluation<'_, 'src>,
     keyword_fields_from: TextSize,
-    reachable: &CallReach<'src>,
 ) {
-    let Some(tier_keys) = def_run_tier_keys(&body[range.clone()], defer_annotations, |stmt| {
+    let Some(tier_keys) = def_run_tier_keys(&body[range.clone()], evaluation, |stmt| {
         class_assign_member(stmt).map(|(name, _)| (name, name))
     }) else {
         return;
@@ -46,8 +45,7 @@ pub(super) fn permute_class_assigns<'src>(
         order,
         body,
         &range,
-        defer_annotations,
-        reachable,
+        evaluation,
         |stmt| class_assign_member(stmt).map(|(name, _)| name),
         |order, pinned| {
             let fields_moved = permute_in_place(order, body, range.clone(), |stmt| {
@@ -87,8 +85,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        primitives::{constructor::keyword_field_start, tiering::call_reachable},
-        testing::{first_class, parse},
+        primitives::constructor::keyword_field_start,
+        testing::{evaluated, first_class, parse},
     };
 
     fn class_order(src: &str) -> Vec<usize> {
@@ -96,14 +94,13 @@ mod tests {
         let class = first_class(&source);
         let body = &class.body;
         let mut order: Vec<usize> = (0..body.len()).collect();
-        let reachable = call_reachable(body);
+        let evaluated = evaluated(&source, body);
         permute_class_assigns(
             &mut order,
             body,
             0..body.len(),
-            false,
+            evaluated.evaluation(),
             keyword_field_start(class),
-            &reachable,
         );
         order
     }

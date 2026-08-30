@@ -204,7 +204,7 @@ Config {
             max_attributes: 4,
         },
         miscased_constants: MiscasedConstantsConfig {
-            allow_pattern: Regex(
+            allow_pattern: AllowPattern(
                 "",
             ),
             enabled: true,
@@ -217,8 +217,8 @@ Config {
             enabled: true,
         },
         single_use_variables: SingleUseVariablesConfig {
-            allow_pattern: Regex(
-                "^_",
+            allow_pattern: AllowPattern(
+                "_*",
             ),
             enabled: true,
         },

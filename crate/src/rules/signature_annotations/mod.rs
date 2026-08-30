@@ -1,29 +1,29 @@
 //! Reports a function parameter that carries no type annotation and a
 //! value-returning function that carries no return annotation. `self`,
 //! `cls`, `*args`, and `**kwargs` stay outside the parameter report. A
-//! literal default or in-module call sites passing only literals ride
-//! as a display-only annotation suggestion, never auto-applied.
-
-use std::collections::HashMap;
+//! literal default or in-module call sites passing only literals produce
+//! a display-only annotation suggestion, never auto-applied.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    Expr, ParameterWithDefault, Parameters, Stmt, StmtFunctionDef,
-    statement_visitor::{StatementVisitor, walk_stmt},
-};
+use ruff_python_ast::{Expr, ParameterWithDefault, Parameters, Stmt, StmtFunctionDef};
 use ruff_text_size::{Ranged, TextSize};
+use rustc_hash::FxHashMap;
 
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::params::first_positional,
+    primitives::{params::first_positional, walk::filter_map_over_stmts},
     rule::{Rule, RuleId},
     source::Source,
 };
 
-/// Per resolved module function (keyed by its parameters' start), the
-/// call-site argument bound to each named parameter.
-pub(super) type CallArgs<'a> = HashMap<TextSize, HashMap<&'a str, Vec<&'a Expr>>>;
+/// Builds the [`CallArgs`] index, resolving each in-module callee through
+/// `module_call_params` and `keyword_args`.
+mod literals;
+mod signals;
+
+use literals::{call_argument_literals, returns_value};
+use signals::SignalSet;
 
 pub(crate) struct SignatureAnnotations;
 
@@ -46,10 +46,16 @@ impl Rule for SignatureAnnotations {
             diagnostics: Vec::new(),
             rule: self.id(),
         };
-        walker.visit_body(&source.ast().body);
+        for fd in filter_map_over_stmts(&source.ast().body, Stmt::as_function_def_stmt) {
+            walker.process_def(fd);
+        }
         walker.diagnostics
     }
 }
+
+/// Per resolved module function (keyed by its parameters' start), the
+/// call-site argument bound to each named parameter.
+type CallArgs<'a> = FxHashMap<TextSize, FxHashMap<&'a str, Vec<&'a Expr>>>;
 
 /// Collects, per resolved module function, the call-site argument
 /// expression bound to each named parameter.
@@ -121,23 +127,6 @@ impl Walker<'_> {
         self.diagnostics.push(diagnostic);
     }
 }
-
-impl<'a> StatementVisitor<'a> for Walker<'a> {
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        if let Stmt::FunctionDef(fd) = stmt {
-            self.process_def(fd);
-        }
-        walk_stmt(self, stmt);
-    }
-}
-
-/// Builds the [`CallArgs`] index, resolving each in-module callee through
-/// `module_call_params` and `keyword_args`.
-mod literals;
-mod signals;
-
-use literals::{call_argument_literals, returns_value};
-use signals::SignalSet;
 
 #[cfg(test)]
 mod tests {

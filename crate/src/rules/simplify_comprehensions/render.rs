@@ -1,7 +1,7 @@
 //! Turns a rewrite plan into the edits that land it.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{Expr, ExprTuple, Keyword, token::parenthesized_range};
+use ruff_python_ast::{Expr, ExprTuple, Keyword};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{constructor::Constructor, plan::Plan};
@@ -88,10 +88,11 @@ fn pair_edits(
     inner: &Expr,
     pairs: &[&ExprTuple],
 ) -> Option<Vec<Edit>> {
-    if pairs
-        .iter()
-        .any(|pair| parenthesized_range((*pair).into(), inner.into(), source.tokens()).is_some())
-    {
+    if pairs.iter().any(|pair| {
+        source
+            .parenthesized_range((*pair).into(), inner.into())
+            .is_some()
+    }) {
         return None;
     }
     let width = delimiter(inner);

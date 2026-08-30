@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/classes_band_above_functions/input.py
+---
+class Gadget:
+    pass
+
+
+class Widget:
+    pass
+
+
+def build():
+    pass
+
+
+def render():
+    pass

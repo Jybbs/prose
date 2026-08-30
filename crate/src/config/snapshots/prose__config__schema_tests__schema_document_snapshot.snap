@@ -195,8 +195,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "properties": {
         "allow-pattern": {
           "default": "",
-          "description": "Constant names exempted from the lint, such as old-style bare\naliases.",
-          "format": "regex",
+          "description": "Constant names exempted from the lint, a glob matched against\nthe whole name, such as old-style bare aliases.",
           "type": "string"
         },
         "enabled": {
@@ -932,7 +931,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             }
           ],
           "default": {
-            "allow-pattern": "^_",
+            "allow-pattern": "_*",
             "enabled": true
           }
         },
@@ -1062,9 +1061,8 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "description": "Configuration for the `single-use-variables` rule.",
       "properties": {
         "allow-pattern": {
-          "default": "^_",
-          "description": "Binding names exempted from the lint.",
-          "format": "regex",
+          "default": "_*",
+          "description": "Binding names exempted from the lint, a glob matched against the\nwhole name.",
           "type": "string"
         },
         "enabled": {
@@ -1307,7 +1305,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true
         },
         "single-use-variables": {
-          "allow-pattern": "^_",
+          "allow-pattern": "_*",
           "enabled": true
         },
         "space-statements": {

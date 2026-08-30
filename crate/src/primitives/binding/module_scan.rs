@@ -3,7 +3,7 @@
 //! block while descending into every other compound body.
 
 use ruff_python_ast::{
-    Comprehension, ExceptHandler, Expr, ExprContext, ExprName, Stmt,
+    Comprehension, ExceptHandler, Expr, ExprContext, ExprName, Stmt, StmtClassDef, StmtFunctionDef,
     statement_visitor::{StatementVisitor, walk_stmt},
     visitor::{self, Visitor},
 };
@@ -18,6 +18,58 @@ pub(crate) struct ModuleAssignment<'src> {
     pub(crate) stmt: &'src Stmt,
     pub(crate) target: &'src ExprName,
     pub(crate) value: Option<&'src Expr>,
+}
+
+/// Collects the names a module binds while executing one statement.
+struct BindingWalker<'src> {
+    names: Vec<&'src str>,
+}
+
+impl<'src> Visitor<'src> for BindingWalker<'src> {
+    fn visit_comprehension(&mut self, comprehension: &'src Comprehension) {
+        self.visit_expr(&comprehension.iter);
+        for condition in &comprehension.ifs {
+            self.visit_expr(condition);
+        }
+    }
+
+    fn visit_except_handler(&mut self, handler: &'src ExceptHandler) {
+        let ExceptHandler::ExceptHandler(caught) = handler;
+        if let Some(name) = &caught.name {
+            self.names.push(name.as_str());
+        }
+        visitor::walk_except_handler(self, handler);
+    }
+
+    fn visit_expr(&mut self, expr: &'src Expr) {
+        if let Expr::Name(name) = expr
+            && matches!(name.ctx, ExprContext::Del | ExprContext::Store)
+        {
+            self.names.push(name.id.as_str());
+        }
+        visitor::walk_expr(self, expr);
+    }
+
+    fn visit_stmt(&mut self, stmt: &'src Stmt) {
+        match stmt {
+            Stmt::ClassDef(StmtClassDef { name, .. })
+            | Stmt::FunctionDef(StmtFunctionDef { name, .. }) => {
+                self.names.push(name.as_str());
+                return;
+            }
+            Stmt::Import(import) => self
+                .names
+                .extend(import.names.iter().map(bare_import_bound_name)),
+            Stmt::ImportFrom(import) => self
+                .names
+                .extend(import.names.iter().map(from_import_bound_name)),
+            _ => {}
+        }
+        if skips_module_scan(stmt) {
+            return;
+        }
+        visitor::walk_stmt(self, stmt);
+    }
 }
 
 struct Walker<'src> {
@@ -47,70 +99,13 @@ pub(crate) fn module_assignments(body: &[Stmt]) -> Vec<ModuleAssignment<'_>> {
     walker.sites
 }
 
-/// Collects the names a module binds while executing one statement.
-struct BindingWalker<'src> {
-    names: Vec<&'src str>,
-}
-
-impl<'src> Visitor<'src> for BindingWalker<'src> {
-    fn visit_stmt(&mut self, stmt: &'src Stmt) {
-        match stmt {
-            Stmt::FunctionDef(func) => {
-                self.names.push(func.name.as_str());
-                return;
-            }
-            Stmt::ClassDef(class) => {
-                self.names.push(class.name.as_str());
-                return;
-            }
-            Stmt::Import(import) => self
-                .names
-                .extend(import.names.iter().map(bare_import_bound_name)),
-            Stmt::ImportFrom(import) => self
-                .names
-                .extend(import.names.iter().map(from_import_bound_name)),
-            _ => {}
-        }
-        if skips_module_scan(stmt) {
-            return;
-        }
-        visitor::walk_stmt(self, stmt);
-    }
-
-    fn visit_expr(&mut self, expr: &'src Expr) {
-        if let Expr::Name(name) = expr
-            && matches!(name.ctx, ExprContext::Del | ExprContext::Store)
-        {
-            self.names.push(name.id.as_str());
-        }
-        visitor::walk_expr(self, expr);
-    }
-
-    fn visit_comprehension(&mut self, comprehension: &'src Comprehension) {
-        self.visit_expr(&comprehension.iter);
-        for condition in &comprehension.ifs {
-            self.visit_expr(condition);
-        }
-    }
-
-    fn visit_except_handler(&mut self, handler: &'src ExceptHandler) {
-        let ExceptHandler::ExceptHandler(caught) = handler;
-        if let Some(name) = &caught.name {
-            self.names.push(name.as_str());
-        }
-        visitor::walk_except_handler(self, handler);
-    }
-}
-
-/// Every name a module binds or unbinds when it executes `stmt`, covering the
-/// store target of an assignment, an unpack, a `for`, a `with`, and a
+/// Every name a module binds or unbinds when it executes `stmt`: the
+/// targets of an assignment, an unpack, a `for`, a `with`, and a
 /// walrus, each alias of an import, an `except ... as` name, and the
 /// name of a definition. The walk descends the compound bodies a module
 /// executes and stops at a `def`, a `class`, and an `if TYPE_CHECKING:`
-/// block. A comprehension target binds in its own scope and stays out,
-/// whereas a walrus anywhere inside one binds in the enclosing scope
-/// and enters. A lambda parameter is an `Identifier` rather than a
-/// store-context name and never enters it.
+/// block. A comprehension target stays out, whereas a walrus inside one
+/// enters.
 pub(crate) fn module_bound_names(stmt: &Stmt) -> Vec<&str> {
     let mut walker = BindingWalker { names: Vec::new() };
     walker.visit_stmt(stmt);
@@ -141,6 +136,22 @@ mod tests {
             .map(|site| (site.target.id.as_str(), site.value.is_some()))
             .collect();
         assert_eq!(names, vec![("X", true), ("inner", true), ("y", false)]);
+    }
+
+    #[test]
+    fn module_bound_names_collects_an_except_alias() {
+        let source = parse(indoc! {"
+            try:
+                import fast
+            except ImportError as err:
+                fast = None
+        "});
+        let names = module_bound_names(&source.ast().body[0]);
+        assert!(names.contains(&"err"), "the except alias binds");
+        assert!(
+            names.contains(&"fast"),
+            "the import and the fallback both bind"
+        );
     }
 
     #[test]
@@ -178,22 +189,6 @@ mod tests {
         let mut names = module_bound_names(&source.ast().body[0]);
         names.sort_unstable();
         assert_eq!(names, vec!["kept", "seen", "totals"]);
-    }
-
-    #[test]
-    fn module_bound_names_collects_an_except_alias() {
-        let source = parse(indoc! {"
-            try:
-                import fast
-            except ImportError as err:
-                fast = None
-        "});
-        let names = module_bound_names(&source.ast().body[0]);
-        assert!(names.contains(&"err"), "the except alias binds");
-        assert!(
-            names.contains(&"fast"),
-            "the import and the fallback both bind"
-        );
     }
 
     #[test]

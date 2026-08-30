@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/closed_bracket_ahead_of_a_breaking_pair/input.py
+---
+reflow-parentheses@30..92

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/classes_band_above_functions/input.py
+---
+alphabetize-siblings@0..86

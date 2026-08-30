@@ -26,7 +26,10 @@ describe('corpusLintFindings', () => {
   it('maps every findings-bearing case by its fixture id', () => {
     const map = walker.corpusLintFindings(crate)
     expect(map.size).toBeGreaterThan(0)
-    expect([...map.keys()].every(id => /^[^/]+\/[^/]+$/.test(id))).toBe(true)
+    expect([...map.keys()].every(id => {
+      const parts = id.split('/')
+      return parts.length === 2 && parts.every(Boolean)
+    })).toBe(true)
     expect([...map.values()].every(findings => findings.length > 0)).toBe(true)
   })
 })

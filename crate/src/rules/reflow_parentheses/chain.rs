@@ -66,23 +66,19 @@ impl<'a> Division<'a> {
         out: &mut Vec<Operand>,
     ) {
         let held = self.operand_range(expr, parent);
-        if held == expr.range() {
-            match expr {
-                Expr::BinOp(binary) if OperatorPrecedence::from(binary.op) == self.level => {
-                    self.push(&binary.left, expr.into(), lead, out);
-                    self.push(&binary.right, expr.into(), Some(binary.op.as_str()), out);
-                    return;
-                }
-                _ => {}
-            }
+        if held == expr.range()
+            && let Expr::BinOp(binary) = expr
+            && OperatorPrecedence::from(binary.op) == self.level
+        {
+            self.push(&binary.left, expr.into(), lead, out);
+            self.push(&binary.right, expr.into(), Some(binary.op.as_str()), out);
+            return;
         }
         out.push(Operand { lead, range: held });
     }
 }
 
-/// True for the three nodes a break divides into rows, read through
-/// `ExprRef` so an ancestor reached as an `AnyNodeRef` answers the same
-/// question a bare expression does.
+/// True for the three nodes a break divides into rows.
 pub(super) fn is_operator_chain(expr: ExprRef) -> bool {
     matches!(
         expr,
@@ -90,14 +86,11 @@ pub(super) fn is_operator_chain(expr: ExprRef) -> bool {
     )
 }
 
-/// The operands `expr`'s outermost operator chain divides into,
-/// in source order. An operand `sheds` reports a pair around carries
-/// the bare range and divides further where its own node joins at the
-/// same level, so the division reads the text this pass leaves rather
-/// than the text it was handed. A boolean chain joining at the other
-/// operator stays whole on its row, the rows around it reading as one
-/// run at one operator. `None` for an expression that is no operator
-/// chain.
+/// The operands `expr`'s outermost operator chain divides into, in
+/// source order. An operand `sheds` reports a pair around carries the
+/// bare range and divides further where its own node joins at the same
+/// level. A boolean chain joining at the other operator stays whole on
+/// its row. `None` for an expression that is no operator chain.
 pub(super) fn operands(source: &Source, expr: &Expr, sheds: Sheds) -> Option<Vec<Operand>> {
     let mut out = Vec::new();
     match expr {

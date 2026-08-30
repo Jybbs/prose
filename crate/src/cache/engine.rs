@@ -2,7 +2,6 @@
 //! LRU eviction.
 
 use std::{
-    collections::HashSet,
     fs::Metadata,
     io::{self, BufWriter, Read, Write},
     path::{Path, PathBuf},
@@ -14,9 +13,25 @@ use std::{
 };
 
 use fs_err::DirEntry;
+use rustc_hash::FxHashSet;
 use tempfile::NamedTempFile;
 
 use super::{CacheEntry, CacheEntryRef, CacheInfo, CacheKey, CleanReport, key::generation};
+
+/// How long a generation directory must sit untouched before a sweep
+/// reclaims it, leaving a concurrently running build of another
+/// version its own entries.
+const GENERATION_GRACE: Duration = Duration::from_hours(1);
+
+/// The fraction of each cap an eviction pass drives down to, as a
+/// multiplier over a divisor so the arithmetic stays in integers.
+const LOW_WATER_DIVISOR: u64 = 5;
+
+const LOW_WATER_MULTIPLIER: u64 = 4;
+
+/// How far an entry's recorded mtime may lag the clock before a hit
+/// rewrites it.
+const MTIME_GRANULARITY: Duration = Duration::from_hours(1);
 
 /// User-level on-disk cache.
 #[derive(Debug)]
@@ -32,7 +47,7 @@ pub struct Cache {
     /// landed, so a later run rewriting them again holds a proven
     /// settle defect. Advisory only, in that a lost marker loses a
     /// detection and never corrupts a run.
-    pub(super) own_output: OnceLock<HashSet<[u8; 32]>>,
+    pub(super) own_output: OnceLock<FxHashSet<[u8; 32]>>,
     /// This build's generation directory, where every entry lands.
     pub(super) root: PathBuf,
     /// The directory holding every generation, swept for dead ones.
@@ -55,74 +70,6 @@ impl Cache {
         }
     }
 
-    /// True where `key` names bytes a write-back run of this generation
-    /// landed as its own output, read from the ledger on first probe.
-    pub fn owns_output(&self, key: &CacheKey) -> bool {
-        self.own_output
-            .get_or_init(|| {
-                let Ok(bytes) = std::fs::read(self.own_output_path()) else {
-                    return HashSet::new();
-                };
-                bytes
-                    .chunks_exact(32)
-                    .map(|chunk| chunk.try_into().expect("a 32-byte chunk"))
-                    .collect()
-            })
-            .contains(key.0.as_bytes())
-    }
-
-    /// Marks `key`'s bytes as this run's own output, appended to the
-    /// generation's ledger. An oversized ledger truncates first, which
-    /// forgets old markers rather than growing without bound, a loss
-    /// the advisory contract absorbs.
-    pub fn record_own_output(&self, key: &CacheKey) {
-        let path = self.own_output_path();
-        let oversized = std::fs::metadata(&path).is_ok_and(|meta| meta.len() > 1 << 20);
-        let mut open = std::fs::OpenOptions::new();
-        open.create(true);
-        if oversized {
-            open.write(true).truncate(true);
-        } else {
-            open.append(true);
-        }
-        if let Ok(mut file) = open.open(&path) {
-            let _ = file.write_all(key.0.as_bytes());
-        }
-    }
-
-    fn own_output_path(&self) -> PathBuf {
-        self.root.join("own-output")
-    }
-
-    /// Opens or creates the cache directory with an unbounded size cap.
-    ///
-    /// Resolves the path through `PROSE_CACHE_DIR` →
-    /// `dirs::cache_dir().join("prose")`.
-    ///
-    /// # Errors
-    ///
-    /// Returns `io::ErrorKind::NotFound` when no override is set and
-    /// the platform exposes no cache directory, or any underlying IO
-    /// error encountered while creating the directory.
-    pub fn open() -> io::Result<Self> {
-        let store = cache_root().ok_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::NotFound,
-                "no platform cache directory is available",
-            )
-        })?;
-        let root = store.join(generation());
-        fs_err::create_dir_all(&root)?;
-        Ok(Self {
-            inserted: AtomicBool::new(false),
-            max_entries: usize::MAX,
-            max_size_bytes: u64::MAX,
-            own_output: OnceLock::new(),
-            root,
-            store,
-        })
-    }
-
     /// Sets the LRU eviction cap on the directory's entry count.
     #[must_use]
     pub fn with_max_entries(mut self, entries: u32) -> Self {
@@ -137,8 +84,64 @@ impl Cache {
         self
     }
 
+    /// True where an eviction pass has driven the directory far enough
+    /// below its caps to stop. Stopping at the cap itself leaves the
+    /// next insert over it again, so every run pays a full walk and a
+    /// removal, whereas stopping below buys many runs of headroom for
+    /// one pass. The entry floor holds at one, so a cap of one still
+    /// keeps an entry.
+    fn below_low_water(&self, total: u64, count: usize) -> bool {
+        let count = u64::try_from(count).unwrap_or(u64::MAX);
+        let entries = u64::try_from(self.max_entries).unwrap_or(u64::MAX);
+        total <= low_water(self.max_size_bytes) && count <= low_water(entries).max(1)
+    }
+
     fn entries(&self) -> impl Iterator<Item = (DirEntry, Metadata)> + use<> {
         entries_in(&self.root)
+    }
+
+    fn own_output_path(&self) -> PathBuf {
+        self.root.join("own-output")
+    }
+
+    /// Removes every generation directory but this build's, plus any
+    /// entry file left directly in the store by a build that predates
+    /// the generation layout. A directory touched within
+    /// [`GENERATION_GRACE`] is left alone, so a concurrently running
+    /// build of another version keeps its own entries.
+    fn prune_dead_generations(&self) -> CleanReport {
+        let mut report = CleanReport::default();
+        let now = SystemTime::now();
+        for entry in fs_err::read_dir(&self.store)
+            .into_iter()
+            .flatten()
+            .filter_map(Result::ok)
+        {
+            let path = entry.path();
+            if path == self.root {
+                continue;
+            }
+            let Ok(metadata) = entry.metadata() else {
+                continue;
+            };
+            if !metadata.is_dir() {
+                if is_entry_file(&path) && fs_err::remove_file(&path).is_ok() {
+                    report.record(on_disk(&metadata));
+                }
+                continue;
+            }
+            if metadata
+                .modified()
+                .ok()
+                .and_then(|m| now.duration_since(m).ok())
+                .is_none_or(|age| age < GENERATION_GRACE)
+            {
+                continue;
+            }
+            report.absorb(sweep(&path));
+            let _ = fs_err::remove_dir(&path);
+        }
+        report
     }
 
     /// Every entry the store holds, across this build's generation and
@@ -154,10 +157,6 @@ impl Cache {
         entries_in(&self.store).chain(generations.into_iter().flat_map(|d| entries_in(&d)))
     }
 
-    pub(super) fn path_for(&self, key: &CacheKey) -> PathBuf {
-        self.root.join(key.0.to_hex().as_str())
-    }
-
     fn try_insert(&self, key: &CacheKey, value: &CacheEntryRef<'_>) -> io::Result<()> {
         let mut tmp = NamedTempFile::with_suffix_in(".tmp", &self.root)?;
         {
@@ -167,6 +166,12 @@ impl Cache {
         }
         tmp.persist(self.path_for(key)).map_err(|e| e.error)?;
         Ok(())
+    }
+
+    /// True where a directory of `count` entries occupying `total` bytes
+    /// sits inside both configured caps.
+    fn within_caps(&self, total: u64, count: usize) -> bool {
+        total <= self.max_size_bytes && count <= self.max_entries
     }
 
     /// Removes every file in the cache directory and returns the
@@ -234,64 +239,6 @@ impl Cache {
         report
     }
 
-    /// True where a directory of `count` entries occupying `total` bytes
-    /// sits inside both configured caps.
-    fn within_caps(&self, total: u64, count: usize) -> bool {
-        total <= self.max_size_bytes && count <= self.max_entries
-    }
-
-    /// True where an eviction pass has driven the directory far enough
-    /// below its caps to stop. Stopping at the cap itself leaves the
-    /// next insert over it again, so every run pays a full walk and a
-    /// removal, whereas stopping below buys many runs of headroom for
-    /// one pass. The entry floor holds at one, so a cap of one still
-    /// keeps an entry.
-    fn below_low_water(&self, total: u64, count: usize) -> bool {
-        let count = u64::try_from(count).unwrap_or(u64::MAX);
-        let entries = u64::try_from(self.max_entries).unwrap_or(u64::MAX);
-        total <= low_water(self.max_size_bytes) && count <= low_water(entries).max(1)
-    }
-
-    /// Removes every generation directory but this build's, plus any
-    /// entry file left directly in the store by a build that predates
-    /// the generation layout. A directory touched within
-    /// [`GENERATION_GRACE`] is left alone, so a concurrently running
-    /// build of another version keeps its own entries.
-    fn prune_dead_generations(&self) -> CleanReport {
-        let mut report = CleanReport::default();
-        let now = SystemTime::now();
-        for entry in fs_err::read_dir(&self.store)
-            .into_iter()
-            .flatten()
-            .filter_map(Result::ok)
-        {
-            let path = entry.path();
-            if path == self.root {
-                continue;
-            }
-            let Ok(metadata) = entry.metadata() else {
-                continue;
-            };
-            if !metadata.is_dir() {
-                if is_entry_file(&path) && fs_err::remove_file(&path).is_ok() {
-                    report.record(on_disk(&metadata));
-                }
-                continue;
-            }
-            if metadata
-                .modified()
-                .ok()
-                .and_then(|m| now.duration_since(m).ok())
-                .is_none_or(|age| age < GENERATION_GRACE)
-            {
-                continue;
-            }
-            report.absorb(sweep(&path));
-            let _ = fs_err::remove_dir(&path);
-        }
-        report
-    }
-
     /// Reports the cache directory's path, entry count, and byte total,
     /// plus the oldest and newest entry mtimes when any entry exists.
     pub fn info(&self) -> CacheInfo {
@@ -348,31 +295,99 @@ impl Cache {
         }
         Some(entry)
     }
-}
 
-/// How far an entry's recorded mtime may lag the clock before a hit
-/// rewrites it.
-const MTIME_GRANULARITY: Duration = Duration::from_hours(1);
+    /// Opens or creates the cache directory with an unbounded size cap.
+    ///
+    /// Resolves the path through `PROSE_CACHE_DIR` →
+    /// `dirs::cache_dir().join("prose")`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `io::ErrorKind::NotFound` when no override is set and
+    /// the platform exposes no cache directory, or any underlying IO
+    /// error encountered while creating the directory.
+    pub fn open() -> io::Result<Self> {
+        let store = cache_root().ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                "no platform cache directory is available",
+            )
+        })?;
+        let root = store.join(generation());
+        fs_err::create_dir_all(&root)?;
+        Ok(Self {
+            inserted: AtomicBool::new(false),
+            max_entries: usize::MAX,
+            max_size_bytes: u64::MAX,
+            own_output: OnceLock::new(),
+            root,
+            store,
+        })
+    }
 
-/// How long a generation directory must sit untouched before a sweep
-/// reclaims it, leaving a concurrently running build of another
-/// version its own entries.
-const GENERATION_GRACE: Duration = Duration::from_hours(1);
+    /// True where `key` names bytes a write-back run of this generation
+    /// landed as its own output, read from the ledger on first probe.
+    pub fn owns_output(&self, key: &CacheKey) -> bool {
+        self.own_output
+            .get_or_init(|| {
+                let Ok(bytes) = std::fs::read(self.own_output_path()) else {
+                    return FxHashSet::default();
+                };
+                bytes
+                    .chunks_exact(32)
+                    .map(|chunk| chunk.try_into().expect("a 32-byte chunk"))
+                    .collect()
+            })
+            .contains(key.0.as_bytes())
+    }
 
-/// The fraction of each cap an eviction pass drives down to, as a
-/// multiplier over a divisor so the arithmetic stays in integers.
-const LOW_WATER_DIVISOR: u64 = 5;
-const LOW_WATER_MULTIPLIER: u64 = 4;
+    pub(super) fn path_for(&self, key: &CacheKey) -> PathBuf {
+        self.root.join(key.0.to_hex().as_str())
+    }
 
-/// The level `cap` is driven down to once an eviction pass starts.
-fn low_water(cap: u64) -> u64 {
-    cap / LOW_WATER_DIVISOR * LOW_WATER_MULTIPLIER
+    /// Marks `key`'s bytes as this run's own output, appended to the
+    /// generation's ledger. An oversized ledger truncates first, which
+    /// forgets old markers rather than growing without bound, a loss
+    /// the advisory contract absorbs.
+    pub fn record_own_output(&self, key: &CacheKey) {
+        let path = self.own_output_path();
+        let oversized = std::fs::metadata(&path).is_ok_and(|meta| meta.len() > 1 << 20);
+        let mut open = std::fs::OpenOptions::new();
+        open.create(true);
+        if oversized {
+            open.write(true).truncate(true);
+        } else {
+            open.append(true);
+        }
+        if let Ok(mut file) = open.open(&path) {
+            let _ = file.write_all(key.0.as_bytes());
+        }
+    }
 }
 
 fn cache_root() -> Option<PathBuf> {
     std::env::var_os("PROSE_CACHE_DIR")
         .map(PathBuf::from)
         .or_else(|| dirs::cache_dir().map(|d| d.join("prose")))
+}
+
+/// The entry files directly under `dir`, paired with their metadata.
+fn entries_in(dir: &Path) -> impl Iterator<Item = (DirEntry, Metadata)> + use<> {
+    fs_err::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .filter_map(Result::ok)
+        .filter(|e| is_entry_file(&e.path()))
+        .filter_map(|e| e.metadata().ok().filter(Metadata::is_file).map(|m| (e, m)))
+}
+
+fn is_entry_file(path: &Path) -> bool {
+    path.extension().is_none() && path.file_name().is_none_or(|name| name != "own-output")
+}
+
+/// The level `cap` is driven down to once an eviction pass starts.
+fn low_water(cap: u64) -> u64 {
+    cap / LOW_WATER_DIVISOR * LOW_WATER_MULTIPLIER
 }
 
 /// The space one entry occupies, which a filesystem allocates in whole
@@ -389,18 +404,16 @@ fn on_disk(metadata: &Metadata) -> u64 {
     metadata.len().next_multiple_of(4096)
 }
 
-fn is_entry_file(path: &Path) -> bool {
-    path.extension().is_none() && path.file_name().is_none_or(|name| name != "own-output")
-}
-
-/// The entry files directly under `dir`, paired with their metadata.
-fn entries_in(dir: &Path) -> impl Iterator<Item = (DirEntry, Metadata)> + use<> {
-    fs_err::read_dir(dir)
-        .into_iter()
-        .flatten()
-        .filter_map(Result::ok)
-        .filter(|e| is_entry_file(&e.path()))
-        .filter_map(|e| e.metadata().ok().filter(Metadata::is_file).map(|m| (e, m)))
+/// True where `file`'s recorded mtime is older than
+/// [`MTIME_GRANULARITY`], or where the metadata read fails, since a
+/// file whose age cannot be read is bumped rather than left to sort
+/// as the oldest entry in the directory.
+fn stale(file: &fs_err::File, now: SystemTime) -> bool {
+    file.metadata()
+        .ok()
+        .and_then(|m| m.modified().ok())
+        .and_then(|m| now.duration_since(m).ok())
+        .is_none_or(|age| age >= MTIME_GRANULARITY)
 }
 
 /// Removes every file directly under `dir`, reporting what went.
@@ -417,16 +430,4 @@ fn sweep(dir: &Path) -> CleanReport {
         }
     }
     report
-}
-
-/// True where `file`'s recorded mtime is older than
-/// [`MTIME_GRANULARITY`], or where the metadata read fails, since a
-/// file whose age cannot be read is bumped rather than left to sort
-/// as the oldest entry in the directory.
-fn stale(file: &fs_err::File, now: SystemTime) -> bool {
-    file.metadata()
-        .ok()
-        .and_then(|m| m.modified().ok())
-        .and_then(|m| now.duration_since(m).ok())
-        .is_none_or(|age| age >= MTIME_GRANULARITY)
 }

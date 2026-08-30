@@ -7,9 +7,8 @@ use ruff_diagnostics::{Edit, SourceMap, SourceMarker};
 use ruff_notebook::CellOffsets;
 use ruff_text_size::{TextLen, TextRange, TextSize};
 
-use crate::source::Source;
-
 use super::*;
+use crate::source::Source;
 
 /// Forwards each cell boundary in `offsets` through `map`, shifting it
 /// by the delta of the nearest marker at or before it, the slide that
@@ -30,49 +29,6 @@ pub(crate) fn forward_offsets(
         floor = *offset;
     }
     forwarded
-}
-
-/// Narrows `text` against the source slice covered by `span` and
-/// shapes the result as either a deletion or replacement Edit.
-/// Returns `None` when the text already matches the source slice.
-pub(crate) fn narrowed_replacement<'a>(
-    source: &Source,
-    span: TextRange,
-    text: impl Into<Cow<'a, str>>,
-) -> Option<Edit> {
-    let (narrowed_span, narrowed_text) = narrow_edit(text.into(), span, source.slice(span))?;
-    Some(replacement_or_deletion(narrowed_span, narrowed_text))
-}
-
-/// Shifts a single offset by the delta of the nearest marker at or
-/// before it, the per-boundary slide [`forward_offsets`] maps over a
-/// notebook's cell offsets. Markers sharing an interior offset's exact
-/// source resolve to the first pushed, so an insertion landing on a
-/// cell boundary stays inside the cell it opens, whereas the final
-/// boundary resolves to the last pushed, keeping an end-of-buffer
-/// insertion inside the last cell.
-fn forward_offset(offset: TextSize, map: &SourceMap, is_final: bool) -> TextSize {
-    let markers = map.markers();
-    if is_final {
-        let upto = markers.partition_point(|marker| marker.source() <= offset);
-        return markers[..upto]
-            .last()
-            .map_or(offset, |m| shifted(offset, m));
-    }
-    let index = markers.partition_point(|marker| marker.source() < offset);
-    if let Some(marker) = markers
-        .get(index)
-        .filter(|marker| marker.source() == offset)
-    {
-        return shifted(offset, marker);
-    }
-    let Some(marker) = markers[..index].last() else {
-        return offset;
-    };
-    if index % 2 == 1 {
-        return marker.dest();
-    }
-    shifted(offset, marker)
 }
 
 /// Trims a candidate replacement to its minimal spanning range by
@@ -111,6 +67,18 @@ pub(super) fn narrow_edit(
     Some((span.add_start(prefix_len).sub_end(suffix_len), text))
 }
 
+/// Narrows `text` against the source slice covered by `span` and
+/// shapes the result as either a deletion or replacement Edit.
+/// Returns `None` when the text already matches the source slice.
+pub(crate) fn narrowed_replacement<'a>(
+    source: &Source,
+    span: TextRange,
+    text: impl Into<Cow<'a, str>>,
+) -> Option<Edit> {
+    let (narrowed_span, narrowed_text) = narrow_edit(text.into(), span, source.slice(span))?;
+    Some(replacement_or_deletion(narrowed_span, narrowed_text))
+}
+
 /// `offset` moved by `marker`'s source-to-destination delta.
 pub(super) fn shifted(offset: TextSize, marker: &SourceMarker) -> TextSize {
     match marker.source().cmp(&marker.dest()) {
@@ -120,9 +88,39 @@ pub(super) fn shifted(offset: TextSize, marker: &SourceMarker) -> TextSize {
     }
 }
 
+/// Shifts a single offset by the delta of the nearest marker at or
+/// before it, the per-boundary slide [`forward_offsets`] maps over a
+/// notebook's cell offsets. Markers sharing an interior offset's exact
+/// source resolve to the first pushed, so an insertion landing on a
+/// cell boundary stays inside the cell it opens, whereas the final
+/// boundary resolves to the last pushed, keeping an end-of-buffer
+/// insertion inside the last cell.
+fn forward_offset(offset: TextSize, map: &SourceMap, is_final: bool) -> TextSize {
+    let markers = map.markers();
+    if is_final {
+        let upto = markers.partition_point(|marker| marker.source() <= offset);
+        return markers[..upto]
+            .last()
+            .map_or(offset, |m| shifted(offset, m));
+    }
+    let index = markers.partition_point(|marker| marker.source() < offset);
+    if let Some(marker) = markers
+        .get(index)
+        .filter(|marker| marker.source() == offset)
+    {
+        return shifted(offset, marker);
+    }
+    let Some(marker) = markers[..index].last() else {
+        return offset;
+    };
+    if index % 2 == 1 {
+        return marker.dest();
+    }
+    shifted(offset, marker)
+}
+
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use crate::testing::{notebook, range};
 

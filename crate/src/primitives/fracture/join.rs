@@ -33,6 +33,21 @@ impl<'ast> AstVisitor<'ast> for FractureJoiner<'_> {
     }
 }
 
+/// The replacement edits closing every fractured argument list beneath
+/// `expr`, ascending by start and disjoint.
+pub(super) fn join_edits(source: &Source, settings: Settings<'_>, expr: &Expr) -> Vec<Edit> {
+    if !source.contains_line_break(expr.range()) {
+        return Vec::new();
+    }
+    let mut joiner = FractureJoiner {
+        edits: Vec::new(),
+        settings,
+        source,
+    };
+    joiner.visit_expr(expr);
+    outermost(joiner.edits)
+}
+
 /// `edits` sorted ascending with every range an earlier edit already
 /// covers dropped. A nested list is reached twice over, once on its own
 /// and once inside the join its parent renders.
@@ -62,21 +77,6 @@ fn join_args(source: &Source, settings: Settings<'_>, arguments: &Arguments) -> 
             })
             .join(", "),
     )
-}
-
-/// The replacement edits closing every fractured argument list beneath
-/// `expr`, ascending by start and disjoint.
-pub(super) fn join_edits(source: &Source, settings: Settings<'_>, expr: &Expr) -> Vec<Edit> {
-    if !source.contains_line_break(expr.range()) {
-        return Vec::new();
-    }
-    let mut joiner = FractureJoiner {
-        edits: Vec::new(),
-        settings,
-        source,
-    };
-    joiner.visit_expr(expr);
-    outermost(joiner.edits)
 }
 
 /// One argument's text with every fractured list beneath it closed onto

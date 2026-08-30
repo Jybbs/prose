@@ -10,13 +10,13 @@
 //! the pipeline skip rule execution entirely when an unmatched off
 //! precedes every statement.
 
-use std::collections::HashMap;
-
+use memchr::memchr;
 use ruff_notebook::CellOffsets;
 use ruff_python_ast::token::{Token, TokenKind, Tokens};
 use ruff_python_trivia::{CommentLinePosition, CommentRanges, SuppressionKind};
 use ruff_source_file::{LineRanges, OneIndexed, SourceCode};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
+use rustc_hash::FxHashMap;
 
 use crate::rule::RuleId;
 
@@ -24,8 +24,9 @@ mod format_directive;
 mod lint_directive;
 mod parse_common;
 
-use format_directive::{FormatDirective, classify_format_directive};
-use lint_directive::{RuleEntry, find_prose_ignore};
+use format_directive::{FormatDirective, parse_format};
+use lint_directive::{RuleEntry, parse_ignore};
+use parse_common::after_prose_prefix;
 
 /// Sorted byte-range lists for the `# prose: off` regions and the bare
 /// `# prose: skip` spans, paired with the `# prose: skip[<id>]` per-rule
@@ -37,7 +38,7 @@ use lint_directive::{RuleEntry, find_prose_ignore};
 #[derive(Debug)]
 pub(crate) struct SuppressionMap {
     file_suppressed: bool,
-    lints: HashMap<OneIndexed, RuleEntry>,
+    lints: FxHashMap<OneIndexed, RuleEntry>,
     skip_spans: Vec<TextRange>,
     skips: Vec<(TextRange, RuleEntry)>,
     spans: Vec<TextRange>,
@@ -57,14 +58,15 @@ impl SuppressionMap {
         cell_offsets: &CellOffsets,
     ) -> Self {
         let source_text = source.text();
-        let mut lints: HashMap<OneIndexed, RuleEntry> = HashMap::new();
+        let mut lints: FxHashMap<OneIndexed, RuleEntry> = FxHashMap::default();
         let mut skip_spans: Vec<TextRange> = Vec::new();
         let mut skips: Vec<(TextRange, RuleEntry)> = Vec::new();
         let mut spans: Vec<TextRange> = Vec::new();
         let mut open_off: Option<TextSize> = None;
         for range in comments {
             let comment = &source_text[range];
-            if let Some(directive) = classify_format_directive(comment) {
+            let found = directives(comment);
+            if let Some(directive) = found.format {
                 let position = CommentLinePosition::for_range(range, source_text);
                 match directive {
                     FormatDirective::Kind(SuppressionKind::Off) if position.is_own_line() => {
@@ -87,7 +89,7 @@ impl SuppressionMap {
                     FormatDirective::Kind(_) => {}
                 }
             }
-            if let Some(entry) = find_prose_ignore(comment) {
+            if let Some(entry) = found.lint {
                 let line = source.line_index(range.start());
                 lints.entry(line).or_default().merge(entry);
             }
@@ -156,11 +158,19 @@ impl SuppressionMap {
     }
 }
 
+/// The format and lint directives one comment carries.
+#[derive(Default)]
+struct Directives {
+    format: Option<FormatDirective>,
+    lint: Option<RuleEntry>,
+}
+
 /// True when `comment` is a recognized format or lint directive, so it
 /// drives suppression from its own line and must stay pinned there
-/// rather than ride a sibling reorder.
+/// rather than move with a sibling reorder.
 pub(crate) fn is_directive_comment(comment: &str) -> bool {
-    classify_format_directive(comment).is_some() || find_prose_ignore(comment).is_some()
+    let found = directives(comment);
+    found.format.is_some() || found.lint.is_some()
 }
 
 /// The offset an unmatched `# prose: off` opened at `start` closes at:
@@ -176,6 +186,37 @@ fn cell_close_end(cell_offsets: &CellOffsets, source_text: &str, start: TextSize
 /// `spans` by at least one byte.
 fn covers(spans: &[TextRange], range: TextRange) -> bool {
     spans.binary_search_by(|s| s.ordering(range)).is_ok()
+}
+
+/// Parses `comment` once for both directive families. Each `#` chunk
+/// carrying the `prose:` prefix feeds whichever family its body names,
+/// a later `skip[<id>]` or `ignore[<id>]` chunk unioning its ids into
+/// the first, and the `# fmt:` and `# yapf:` aliases stand in where no
+/// `prose:` format directive is present. A comment carrying no `:`
+/// holds neither and skips the walk.
+fn directives(comment: &str) -> Directives {
+    let mut found = Directives::default();
+    if memchr(b':', comment.as_bytes()).is_none() {
+        return found;
+    }
+    for body in comment.split('#').skip(1).filter_map(after_prose_prefix) {
+        if let Some(next) = parse_format(body) {
+            match (&mut found.format, next) {
+                (Some(FormatDirective::SkipRules(rules)), FormatDirective::SkipRules(more)) => {
+                    rules.extend(more);
+                }
+                (Some(_), _) => {}
+                (slot @ None, next) => *slot = Some(next),
+            }
+        }
+        if let Some(entry) = parse_ignore(body) {
+            found.lint.get_or_insert_default().merge(entry);
+        }
+    }
+    if found.format.is_none() {
+        found.format = SuppressionKind::from_comment(comment).map(FormatDirective::Kind);
+    }
+    found
 }
 
 fn merge_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
@@ -215,11 +256,13 @@ fn skip_span(source_text: &str, tokens: &Tokens, comment: TextRange) -> TextRang
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
+
     use rstest::rstest;
     use ruff_source_file::OneIndexed;
     use ruff_text_size::TextRange;
 
-    use super::is_directive_comment;
+    use super::{FormatDirective, SuppressionKind, directives, is_directive_comment};
     use crate::{
         rule::RuleId,
         rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
@@ -307,6 +350,15 @@ mod tests {
     fn file_not_suppressed_when_top_off_has_matching_on() {
         let source = parse("# prose: off\nx = 1\n# prose: on\ny = 2\n");
         assert!(!source.suppression_map().file_is_suppressed());
+    }
+
+    #[test]
+    fn first_format_directive_on_a_comment_wins() {
+        let found = directives("# prose: off # prose: on");
+        assert_matches!(
+            found.format,
+            Some(FormatDirective::Kind(SuppressionKind::Off))
+        );
     }
 
     #[test]

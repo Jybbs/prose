@@ -1,17 +1,14 @@
 //! The per-rule config sub-tables, the rule-toggle macro, and the
 //! shared `MaxShift` and docstring-policy enums.
 
-use std::{borrow::Cow, num::NonZeroUsize};
+use std::{borrow::Cow, fmt, num::NonZeroUsize, str::FromStr};
 
-use regex_lite::Regex;
+use globset::{Glob, GlobMatcher};
 use schemars::{JsonSchema, Schema, SchemaGenerator};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use super::{
-    de::{
-        deserialize_cap_or_false, deserialize_optional_cap, deserialize_regex,
-        serialize_optional_cap, serialize_regex,
-    },
+    de::{deserialize_cap_or_false, deserialize_optional_cap, serialize_optional_cap},
     json_schema::{cap_or_false_schema, optional_cap_schema},
 };
 
@@ -35,6 +32,65 @@ impl Default for AlignmentConfig {
             enabled: true,
             max_shift: MaxShift::default(),
         }
+    }
+}
+
+/// A glob a lint reads names against, matched against the whole name,
+/// the empty pattern matching no name at all.
+#[derive(Clone)]
+pub struct AllowPattern(GlobMatcher);
+
+impl AllowPattern {
+    /// The pattern as written.
+    pub(crate) fn as_str(&self) -> &str {
+        self.0.glob().glob()
+    }
+
+    /// True when the whole of `name` matches the pattern.
+    pub(crate) fn matches(&self, name: &str) -> bool {
+        !self.as_str().is_empty() && self.0.is_match(name)
+    }
+}
+
+impl fmt::Debug for AllowPattern {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("AllowPattern").field(&self.as_str()).finish()
+    }
+}
+
+impl<'de> Deserialize<'de> for AllowPattern {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        String::deserialize(deserializer)?
+            .parse()
+            .map_err(serde::de::Error::custom)
+    }
+}
+
+impl FromStr for AllowPattern {
+    type Err = globset::Error;
+
+    fn from_str(pattern: &str) -> Result<Self, Self::Err> {
+        Glob::new(pattern).map(|glob| Self(glob.compile_matcher()))
+    }
+}
+
+impl JsonSchema for AllowPattern {
+    fn schema_name() -> Cow<'static, str> {
+        Cow::Borrowed("AllowPattern")
+    }
+
+    fn json_schema(generator: &mut SchemaGenerator) -> Schema {
+        String::json_schema(generator)
+    }
+
+    fn inline_schema() -> bool {
+        true
+    }
+}
+
+impl Serialize for AllowPattern {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.as_str())
     }
 }
 
@@ -288,24 +344,17 @@ impl Serialize for MaxShift {
 #[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct MiscasedConstantsConfig {
-    /// Constant names exempted from the lint, such as old-style bare
-    /// aliases.
-    #[schemars(
-        with = "String",
-        extend("format" = "regex", "default" = Self::default().allow_pattern.as_str())
-    )]
-    #[serde(
-        deserialize_with = "deserialize_regex",
-        serialize_with = "serialize_regex"
-    )]
-    pub allow_pattern: Regex,
+    /// Constant names exempted from the lint, a glob matched against
+    /// the whole name, such as old-style bare aliases.
+    #[schemars(extend("default" = Self::default().allow_pattern.as_str()))]
+    pub allow_pattern: AllowPattern,
     pub enabled: bool,
 }
 
 impl Default for MiscasedConstantsConfig {
     fn default() -> Self {
         Self {
-            allow_pattern: Regex::new("").expect("empty pattern compiles"),
+            allow_pattern: "".parse().expect("empty pattern parses"),
             enabled: true,
         }
     }
@@ -582,23 +631,17 @@ pub(crate) trait RuleToggle: Default {
 #[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct SingleUseVariablesConfig {
-    /// Binding names exempted from the lint.
-    #[schemars(
-        with = "String",
-        extend("format" = "regex", "default" = Self::default().allow_pattern.as_str())
-    )]
-    #[serde(
-        deserialize_with = "deserialize_regex",
-        serialize_with = "serialize_regex"
-    )]
-    pub allow_pattern: Regex,
+    /// Binding names exempted from the lint, a glob matched against the
+    /// whole name.
+    #[schemars(extend("default" = Self::default().allow_pattern.as_str()))]
+    pub allow_pattern: AllowPattern,
     pub enabled: bool,
 }
 
 impl Default for SingleUseVariablesConfig {
     fn default() -> Self {
         Self {
-            allow_pattern: Regex::new("^_").expect("`^_` compiles"),
+            allow_pattern: "_*".parse().expect("`_*` parses"),
             enabled: true,
         }
     }

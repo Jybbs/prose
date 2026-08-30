@@ -9,7 +9,7 @@
 //! laid the block out. A multi-line import stays untouched, and a lone
 //! name whose own line overflows keeps it rather than splitting further.
 
-use std::{borrow::Cow, collections::HashMap, ops::Range};
+use std::{borrow::Cow, ops::Range};
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
@@ -18,7 +18,7 @@ use ruff_python_ast::{
 };
 use ruff_python_trivia::indentation_at_offset;
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
+use rustc_hash::FxHashMap;
 
 use crate::{
     config::Config,
@@ -26,6 +26,7 @@ use crate::{
         aligner,
         edit::{apply_inline_edits, narrowed_replacement, whole_line_deletion},
         imports::IMPORT_KEYWORD_WIDTH,
+        inline::display_width,
         layout::pack,
         scope::{scoped_body, sub_bodies},
     },
@@ -42,7 +43,11 @@ use runs::{MergeRuns, band_forecast, comments_beside, module_groups};
 
 /// What joins two members sharing one line, written between them and
 /// counted against the budget each line packs to.
-pub(super) const MEMBER_SEPARATOR: &str = ", ";
+const MEMBER_SEPARATOR: &str = ", ";
+
+/// The rows a from-import packs into, each the members it carries
+/// beside the gap it holds ahead of `import`.
+pub(super) type Packing = Vec<(Range<usize>, usize)>;
 
 pub(crate) struct ReflowImports {
     align_settings: Option<aligner::Settings>,
@@ -84,7 +89,7 @@ impl Rule for ReflowImports {
         let mut layout = Layout {
             groups: Vec::new(),
             newline: source.newline_str(),
-            packings: HashMap::new(),
+            packings: FxHashMap::default(),
             rule: self,
             source,
         };
@@ -97,16 +102,12 @@ impl Rule for ReflowImports {
     }
 }
 
-/// The rows a from-import packs into, each the members it carries
-/// beside the gap it holds ahead of `import`.
-pub(super) type Packing = Vec<(Range<usize>, usize)>;
-
 struct Layout<'a> {
     groups: Vec<Vec<Edit>>,
     newline: &'static str,
     /// The forecast packing of every from-import the body under layout
     /// could split, keyed by statement start.
-    packings: HashMap<TextSize, Packing>,
+    packings: FxHashMap<TextSize, Packing>,
     rule: &'a ReflowImports,
     source: &'a Source,
 }
@@ -226,9 +227,11 @@ impl<'a> Layout<'a> {
         } else {
             Vec::new()
         };
-        self.packings = rule.align_settings.map_or_else(HashMap::new, |settings| {
-            self.forecast(settings, body, outer, &runs, &groups)
-        });
+        self.packings = rule
+            .align_settings
+            .map_or_else(FxHashMap::default, |settings| {
+                self.forecast(settings, body, outer, &runs, &groups)
+            });
         let gathered: Vec<usize> = groups.iter().flatten().copied().collect();
         for group in &groups {
             self.merge_group(body, group);
@@ -275,10 +278,10 @@ impl<'a> Layout<'a> {
             );
         }
         let gap = import_keyword_gap(self.source, node)?;
-        let widths: Vec<usize> = names.iter().map(|name| name.width()).collect();
+        let widths: Vec<usize> = names.iter().map(|name| display_width(name)).collect();
         let prefix = self.source.line_indent_width(node.start())
-            + import_head(node).width()
-            + gap.width()
+            + display_width(&import_head(node))
+            + display_width(gap)
             + IMPORT_KEYWORD_WIDTH;
         Some(
             pack(
@@ -311,10 +314,7 @@ impl<'a> Layout<'a> {
 
 /// Every alias the `from`-imports at `slots` of `body` carry, in slot
 /// order.
-pub(super) fn group_aliases<'a>(
-    body: &'a [Stmt],
-    slots: &[usize],
-) -> impl Iterator<Item = &'a Alias> {
+fn group_aliases<'a>(body: &'a [Stmt], slots: &[usize]) -> impl Iterator<Item = &'a Alias> {
     slots
         .iter()
         .filter_map(|&slot| body[slot].as_import_from_stmt())
@@ -346,7 +346,7 @@ fn import_keyword_gap<'src>(source: &'src Source, node: &StmtImportFrom) -> Opti
 /// The leading-whitespace prefix of `node`'s line when `node` is a
 /// single-line statement beginning that line, or `None` when it spans
 /// a line break or other code precedes it (a `;`-joined statement).
-pub(super) fn own_line_indent<'src>(source: &'src Source, node: &impl Ranged) -> Option<&'src str> {
+fn own_line_indent<'src>(source: &'src Source, node: &impl Ranged) -> Option<&'src str> {
     if source.contains_line_break(node.range()) {
         return None;
     }
@@ -359,6 +359,32 @@ mod tests {
 
     use super::*;
     use crate::testing::parse;
+
+    /// The rule with every facet on and a ten-column import budget,
+    /// forecasting no aligned column.
+    fn tight_rule() -> ReflowImports {
+        ReflowImports {
+            align_settings: None,
+            bands: None,
+            divides: false,
+            first_party: Vec::new(),
+            group_imports: true,
+            import_line_length: 10,
+            merge_members: true,
+            sorts: true,
+            split_multi_module: true,
+        }
+    }
+
+    #[test]
+    fn a_merge_leaves_a_statement_sharing_its_line_with_code() {
+        let source = parse(
+            "from pkg import alpha
+from pkg import beta; x = 1
+",
+        );
+        assert!(tight_rule().apply(&source).is_empty());
+    }
 
     #[rstest]
     #[case("from a.b.c import x\n", "from a.b.c")]
@@ -394,32 +420,6 @@ mod tests {
             .expect("first statement is a from-import");
 
         assert_eq!(import_keyword_gap(&source, node), expected);
-    }
-
-    /// The rule with every facet on and a ten-column import budget,
-    /// forecasting no aligned column.
-    fn tight_rule() -> ReflowImports {
-        ReflowImports {
-            align_settings: None,
-            bands: None,
-            divides: false,
-            first_party: Vec::new(),
-            group_imports: true,
-            import_line_length: 10,
-            merge_members: true,
-            sorts: true,
-            split_multi_module: true,
-        }
-    }
-
-    #[test]
-    fn a_merge_leaves_a_statement_sharing_its_line_with_code() {
-        let source = parse(
-            "from pkg import alpha
-from pkg import beta; x = 1
-",
-        );
-        assert!(tight_rule().apply(&source).is_empty());
     }
 
     #[test]

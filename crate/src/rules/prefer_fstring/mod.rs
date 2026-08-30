@@ -10,12 +10,12 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr, PythonVersion};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,
     primitives::{
         edit::{apply_inline_edits, narrowed_replacement, padded, singleton_groups},
+        inline::display_width,
         walk::{Descent, filter_map_over_parented_exprs},
     },
     rule::{Rule, RuleId},
@@ -88,7 +88,7 @@ impl PreferFstring {
             slice::from_ref(edit),
         )
         .lines()
-        .all(|line| line.width() <= self.code_line_length)
+        .all(|line| display_width(line) <= self.code_line_length)
     }
 }
 

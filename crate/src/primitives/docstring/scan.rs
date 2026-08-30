@@ -5,7 +5,7 @@ use ruff_python_trivia::{PythonWhitespace, leading_indentation};
 
 use crate::primitives::{
     INDENT_STEP,
-    docstring::grammar::{is_bare_entry_head, is_entry_head, section_heading},
+    docstring::grammar::{opens_entry, section_heading},
 };
 
 /// The classification of a docstring body line by [`LineScanner`].
@@ -134,17 +134,16 @@ pub(crate) struct ScannedLine<'a> {
 /// pulling the break back word by word until the row head is prose.
 pub(crate) fn opens_structure(rest: &str) -> bool {
     let trimmed = rest.trim_whitespace_start();
-    is_bare_entry_head(trimmed)
-        || is_bracketed_literal(trimmed)
+    is_bracketed_literal(trimmed)
         || is_comment_marker(trimmed)
         || is_directive(trimmed)
         || is_doctest_prompt(trimmed)
-        || is_entry_head(trimmed)
         || is_field_marker(trimmed)
         || is_grid_table_line(trimmed)
         || is_list_marker(trimmed)
         || is_section_underline(trimmed)
         || is_simple_table_rule(trimmed)
+        || opens_entry(trimmed)
         || section_heading(trimmed).is_some()
 }
 

@@ -27,7 +27,7 @@ expand-docstrings            = false
 frame-docstrings             = false
 group-imports                = false
 line-overflow                = { enabled = false, suggest-string-splits = false }
-miscased-constants           = { allow-pattern = "^_", enabled = false }
+miscased-constants           = { allow-pattern = "_*", enabled = false }
 modernize-annotations        = { enabled = false, rewrite-generics = false, rewrite-unions = false }
 normalize-comment-spacing    = false
 normalize-comparisons        = { enabled = false, rewrite-identity = false, rewrite-negation = false, rewrite-operand-order = false }
@@ -46,7 +46,7 @@ shed-redundant-base          = false
 shed-super-args              = false
 signature-annotations        = false
 simplify-comprehensions      = false
-single-use-variables         = { allow-pattern = "^tmp_", enabled = false }
+single-use-variables         = { allow-pattern = "tmp_*", enabled = false }
 space-statements             = false
 stack-adjacent-strings       = false
 stack-method-chains          = { enabled = false, max-links = 4, max-shift = 8 }

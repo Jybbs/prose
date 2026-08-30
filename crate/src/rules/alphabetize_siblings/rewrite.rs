@@ -12,7 +12,8 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{
     class_graph::permute_class_assigns,
-    members::{class_pins_methods, method_group},
+    members::{class_pins_methods, function_key},
+    module_graph::permute_module_defs,
 };
 use crate::{
     primitives::{
@@ -24,9 +25,9 @@ use crate::{
             adjacent_slots, any_sibling_shares_line, assemble_or_borrow, permute_runs,
             rendered_member_blocks,
         },
-        scope::{BodyScope, compound_sub_bodies, scoped_body},
+        scope::{BodyScope, scoped_body, splice_compound_arms},
         sections::Sections,
-        tiering::{CallReach, call_reachable, called_names, permute_defs},
+        tiering::{CallReach, Evaluated, call_reachable, calls_a_name, permute_defs},
     },
     source::Source,
 };
@@ -87,66 +88,75 @@ pub(super) fn body_layout<'a>(
         let in_class = scope == BodyScope::Class;
         if scope != BodyScope::Function {
             let holds = |stmt: &Stmt| !in_class && is_decorated(stmt);
+            // Only a non-definition statement consults the call graph,
+            // so a body holding definitions alone builds none.
+            let consults_calls = body.iter().any(|stmt| {
+                !matches!(stmt, Stmt::FunctionDef(_) | Stmt::ClassDef(_)) && calls_a_name(stmt)
+            });
+            let reachable = if consults_calls {
+                call_reachable(source.binding_analysis(), body)
+            } else {
+                CallReach::default()
+            };
+            let evaluated = Evaluated::of(body, &reachable, defer_annotations);
+            let evaluation = evaluated.evaluation();
             // A permutation reverted for a reference that a later
             // permutation relocates becomes legal once that one lands, so
             // the section's permutations run to a fixed point rather than
             // leaving the rest of the sort to a second pass.
-            // Only a non-definition statement consults the call graph,
-            // so a body holding definitions alone builds none.
-            let consults_calls = body.iter().any(|stmt| {
-                !matches!(stmt, Stmt::FunctionDef(_) | Stmt::ClassDef(_))
-                    && !called_names(stmt).is_empty()
-            });
-            let reachable = if consults_calls {
-                call_reachable(body)
-            } else {
-                CallReach::new()
-            };
             for _ in 0..body.len().max(1) {
                 let settled = order.clone();
                 for section in sections.ranges() {
-                    if sort_definitions {
-                        permute_defs(
-                            &mut order,
-                            body,
-                            section.clone(),
-                            defer_annotations,
-                            &reachable,
-                            holds,
-                            |s| {
-                                s.as_class_def_stmt().map(|c| {
-                                    let name = c.name.as_str();
-                                    (name, name)
-                                })
-                            },
-                        );
-                    }
+                    // A class body keeps a pass per family, the method sort
+                    // carrying its own pinned-field gate, whereas module
+                    // scope sorts its classes and functions as one banded
+                    // run.
                     if in_class {
+                        if sort_definitions {
+                            permute_defs(
+                                &mut order,
+                                body,
+                                section.clone(),
+                                evaluation,
+                                holds,
+                                |s| {
+                                    s.as_class_def_stmt().map(|c| {
+                                        let name = c.name.as_str();
+                                        (name, name)
+                                    })
+                                },
+                                |tier, key| (tier, key),
+                            );
+                        }
                         permute_class_assigns(
                             &mut order,
                             body,
                             section.clone(),
-                            defer_annotations,
+                            evaluation,
                             keyword_fields_from,
-                            &reachable,
                         );
-                    }
-                    if sort_definitions && !(in_class && class_pins_methods(&body[section.clone()]))
-                    {
-                        permute_defs(
+                        if sort_definitions && !class_pins_methods(&body[section.clone()]) {
+                            permute_defs(
+                                &mut order,
+                                body,
+                                section.clone(),
+                                evaluation,
+                                holds,
+                                |s| {
+                                    s.as_function_def_stmt()
+                                        .map(|f| (f.name.as_str(), function_key(f, group_methods)))
+                                },
+                                |tier, key| (tier, key),
+                            );
+                        }
+                    } else if sort_definitions {
+                        permute_module_defs(
                             &mut order,
                             body,
                             section.clone(),
-                            defer_annotations,
-                            &reachable,
+                            evaluation,
                             holds,
-                            |s| {
-                                s.as_function_def_stmt().map(|f| {
-                                    let name = f.name.as_str();
-                                    let group = if group_methods { method_group(f) } else { 0 };
-                                    (name, (group, name))
-                                })
-                            },
+                            group_methods,
                         );
                     }
                 }
@@ -230,10 +240,9 @@ fn rewrite_compound<'a>(
     block: TextRange,
     scope: BodyScope,
 ) -> Cow<'a, str> {
-    let bodies = compound_sub_bodies(stmt)
-        .into_iter()
-        .map(|(body, outer)| rewrite_body(ctx, body, outer, scope));
-    splice_bodies(ctx.source, block, bodies, ctx.leaf_edits)
+    splice_compound_arms(ctx.source, stmt, block, ctx.leaf_edits, |body, outer| {
+        rewrite_body(ctx, body, outer, scope)
+    })
 }
 
 /// Rewrites a single statement. Classes and functions fold their body

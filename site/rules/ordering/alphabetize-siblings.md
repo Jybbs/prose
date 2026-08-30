@@ -12,8 +12,7 @@ layout  : doc
 
 | Surface | Order |
 |---|---|
-| Classes in a module | Alphabetical |
-| Functions in a module | Alphabetical |
+| Classes and functions in a module | Classes above functions, alphabetical within each band |
 | Methods in a class | Dunders, properties, private, public |
 | Enum members | Alphabetical |
 | Pydantic `BaseModel` and `TypedDict` fields | Required before optional |
@@ -25,9 +24,9 @@ layout  : doc
 
 Order that is load-bearing stays untouched, covering positional-only parameters ahead of the `/`, enum members carrying explicit values, and tuple-unpacking targets.
 
-At module scope the classes sort among themselves and the functions sort among themselves, so a class and a function adjacent to one another keep their order whatever their names are.
+At module scope the classes and the functions sort as one run with every class seated above every function, each band alphabetical and the function band taking the dunder, private, public grouping the methods take, so a module reads its classes first and its functions below them whatever order the author interleaved them in.
 
-A definition holds its place behind any sibling it names at evaluation time (*a base class, a decorator, a parameter default, a non-deferred annotation, a class-body value*), and a module-level statement reading one binds its run the same way. A module-level statement binding a name pins the run too, covering an assignment, an unpack target, a `for` or `with` target, a walrus, each alias of an import, an `except ... as` name, and a `del`, so a definition naming it keeps the side of that binding the source seated it on, a reader below never rising above and one above never sinking below. A module-level call reaches through to what it runs, binding the run against the names its target reads at evaluation time. A decorated definition at module scope holds its slot outright whereas a decorated method still sorts, and a reference cycle leaves its run in source order. Inside a class body the constants and the annotated fields tier through one graph, so a constant a method default or base class reads stays above it.
+A definition holds its place behind any sibling it names at evaluation time (*a base class, a decorator, a parameter default, a non-deferred annotation, a class-body value*), and a module-level statement reading one binds its run the same way. A module-level statement binding a name pins the run too, covering an assignment, an unpack target, a `for` or `with` target, a walrus, each alias of an import, an `except ... as` name, and a `del`, so a definition naming it keeps the side of that binding the source seated it on, a reader below never rising above and one above never sinking below. A module-level call reaches through to what it runs, binding the run against the names its target reads at evaluation time, a method call on a class reaching the whole class body, and a definition reaches the same way through the decorators, bases, metaclass, and defaults it evaluates as it binds. A decorated definition at module scope holds its slot outright whereas a decorated method still sorts, and a reference cycle leaves its run in source order. Inside a class body the constants and the annotated fields tier through one graph, so a constant a method default or base class reads stays above it.
 
 A section marker splits a run into sections that each sort on their own while it holds its place, covering a banner (*`# --- Lifecycle ---`*), the same banner drawn with its rule closing the label rather than opening it (*`# Lifecycle -------#`*), a `##` heading, and a suppression directive. An ordinary comment is no divider and travels with the member below it, and a group packing several members onto a row holds its order across one, since its members swap in place with every gap kept verbatim and the comment would stay put while they flowed past it.
 

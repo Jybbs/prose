@@ -5,15 +5,6 @@
 //! and a row a row-spanning string freezes stays where the source
 //! wrote it.
 
-mod blocks;
-mod rows;
-
-use rows::{hanging_travel, movable_floor, shifted_rows};
-
-pub(crate) use blocks::{
-    block_shift, frozen_rows, hung_block_through, placed_block, shifted_block, spans_a_string_part,
-};
-
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Expr, StringLike, helpers::any_over_expr, token::TokenKind};
 use ruff_python_parser::{Mode, lexer::lex};
@@ -30,6 +21,14 @@ use crate::{
     },
     source::Source,
 };
+
+mod blocks;
+mod rows;
+
+pub(crate) use blocks::{
+    block_shift, frozen_rows, hung_block_through, placed_block, shifted_block, spans_a_string_part,
+};
+use rows::{hanging_travel, movable_floor, shifted_rows};
 
 /// Where a block lands: the indent the row carrying it lands at, the
 /// column the block's own start lands at, and the offset of the item
@@ -59,8 +58,8 @@ impl Landing {
 /// on one column outright.
 #[derive(Clone, Copy)]
 pub(crate) struct Travel {
-    pub(crate) rows: isize,
     closer: Option<usize>,
+    pub(crate) rows: isize,
 }
 
 impl Travel {

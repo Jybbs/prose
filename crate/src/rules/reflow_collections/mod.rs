@@ -17,14 +17,13 @@ use std::borrow::Cow;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr};
 use ruff_text_size::{Ranged, TextRange};
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,
     primitives::{
         call_keywords::{CallTargets, module_call_params},
         edit::{narrowed_replacement, singleton_groups},
-        inline::end_column,
+        inline::{display_width, end_column},
         layout::{is_collapsible, is_layoutable, requires_expand},
         one_row,
         padding::Stranding,
@@ -41,6 +40,8 @@ mod classify;
 mod flow;
 mod measure;
 mod render;
+
+const CANONICAL_SEPARATOR: usize = 2;
 
 pub(crate) struct ReflowCollections {
     code_line_length: usize,
@@ -112,9 +113,7 @@ impl Rule for ReflowCollections {
     }
 }
 
-pub(super) const CANONICAL_SEPARATOR: usize = 2;
-
-pub(super) struct Layouter<'a> {
+struct Layouter<'a> {
     pub(super) code_line_length: usize,
     pub(super) edits: Vec<Edit>,
     pub(super) explode: bool,
@@ -141,7 +140,7 @@ impl<'a> Layouter<'a> {
     /// comprehension only ever rejoin. The `explode` facet gates every
     /// expansion, and a set `keep_multiline_literals` suppresses the
     /// literal rejoin, a cleared `explode` returning `None`.
-    pub(super) fn replacement_for(
+    fn replacement_for(
         &self,
         expr: &Expr,
         parent: AnyNodeRef,
@@ -178,7 +177,7 @@ impl<'a> Layouter<'a> {
     /// slice placed at `indent` when no rewrite applies. `column` and
     /// `indent` differ for dict values, where the key text sits between
     /// the line indent and the value's own start.
-    pub(super) fn serialize_expr(
+    fn serialize_expr(
         &self,
         expr: &Expr,
         parent: AnyNodeRef,
@@ -228,7 +227,7 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
             Cow::Owned(head) => {
                 let indent = head.rsplit_once('\n').map_or_else(
                     || self.source.line_indent_width(start),
-                    |(_, last)| last.width() - last.trim_start().width(),
+                    |(_, last)| display_width(last) - display_width(last.trim_start()),
                 );
                 let column = self.reservations.column(start, || end_column(&head, 0));
                 (column, indent)
@@ -273,7 +272,7 @@ fn dict_key_of<'a>(parent: AnyNodeRef<'a>, expr: &Expr) -> Option<&'a Expr> {
 /// otherwise one for an entry the sort leaves anywhere but last. A
 /// keyword's value and a dict entry's key or value each read as the
 /// entry holding them.
-pub(super) fn entry_tail(last: Option<TextRange>, entry: TextRange, current: usize) -> usize {
+fn entry_tail(last: Option<TextRange>, entry: TextRange, current: usize) -> usize {
     last.map_or(current, |last| usize::from(!last.contains_range(entry)))
 }
 

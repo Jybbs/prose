@@ -5,6 +5,7 @@
 
 use std::borrow::Cow;
 
+use memchr::memchr;
 use ruff_python_ast::Expr;
 use ruff_python_trivia::leading_indentation;
 use unicode_width::UnicodeWidthStr;
@@ -17,43 +18,36 @@ use crate::{
     source::Source,
 };
 
-/// True where a row of `slice` ends on a backslash continuation. The
-/// backslash reads as a line break rather than as a token, so a rewrite
-/// closing the row behind it strands the backslash ahead of a space and
-/// the text stops parsing. `shed-backslash-continuations` takes those
-/// out, and a subset running without it still reaches every rule that
-/// reshapes a row.
+/// True where a row of `slice` ends on a backslash continuation.
 pub(crate) fn carries_a_continuation(slice: &str) -> bool {
     slice.lines().any(|line| line.trim_end().ends_with('\\'))
 }
 
-/// True where a row of `slice` opens on a `.`, the shape a hung method
-/// chain link takes. Closing that break would draw the dot up onto the
-/// row above, which `stack-method-chains` breaks open again from its
-/// own link count on the pass that follows.
-pub(crate) fn hangs_a_chain_link(slice: &str) -> bool {
-    slice
-        .lines()
-        .skip(1)
-        .any(|line| line.trim_start().starts_with('.'))
+/// The display width of `text`, its byte length where every byte is
+/// ASCII and none is a carriage return.
+pub(crate) fn display_width(text: &str) -> usize {
+    if text.is_ascii() && memchr(b'\r', text.as_bytes()).is_none() {
+        text.len()
+    } else {
+        text.width()
+    }
 }
 
 /// The column `text` ends at when its opening line starts at `indent`,
 /// measured past the last line break `text` carries.
 pub(crate) fn end_column(text: &str, indent: usize) -> usize {
-    text.rsplit_once('\n')
-        .map_or_else(|| indent + text.width(), |(_, last)| last.width())
+    text.rsplit_once('\n').map_or_else(
+        || indent + display_width(text),
+        |(_, last)| display_width(last),
+    )
 }
 
 /// `slice`'s single-line form reachable by folding whitespace alone:
 /// the borrowed slice when it carries no break and the soft-wrap
 /// collapse when `expr` joins operands with an operator. `None` for
-/// every other multi-line expression, each of which a layout rule of
-/// its own lays out, for one holding a string part that spans rows,
-/// whose interior the collapse would respace, for one a backslash
-/// continues, whose break the collapse would close, and for one
-/// hanging a method chain's links, whose dots the collapse would draw
-/// up a row.
+/// every other multi-line expression, for one holding a string part
+/// that spans rows, for one a backslash continues, and for one hanging
+/// a method chain's links.
 pub(crate) fn folded_line_form<'s>(
     source: &Source,
     expr: &Expr,
@@ -77,7 +71,7 @@ pub(crate) fn indent_width(line: &str) -> usize {
 
 /// The display width of `text`'s opening line.
 pub(crate) fn opening_width(text: &str) -> usize {
-    text.lines().next().unwrap_or_default().width()
+    display_width(text.lines().next().unwrap_or_default())
 }
 
 /// True where the whitespace run covering `[begin, begin + len)` of
@@ -110,9 +104,7 @@ pub(crate) fn whitespace_runs(text: &str) -> impl Iterator<Item = (usize, usize)
 /// Collapses each whitespace run that spans a line break, to nothing
 /// where the run sits directly inside a bracket and to a single space
 /// everywhere else, leaving every run that carries no break as the
-/// source wrote it. A run against a delimiter closes to nothing because
-/// the space would strand as padding `strip-stranded-padding` takes
-/// back on a later pass.
+/// source wrote it.
 fn collapse_soft_wraps(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut prev_end = 0;
@@ -127,11 +119,17 @@ fn collapse_soft_wraps(text: &str) -> String {
     out
 }
 
+/// True where a row of `slice` opens on a `.`, the shape a hung method
+/// chain link takes.
+fn hangs_a_chain_link(slice: &str) -> bool {
+    slice
+        .lines()
+        .skip(1)
+        .any(|line| line.trim_start().starts_with('.'))
+}
+
 /// True for an expression whose own node joins operands with an
-/// operator, the shape carrying its soft wraps between operands rather
-/// than inside a leaf a rule of its own reshapes. The operands
-/// themselves are unconstrained, so a call, a subscript, a collection,
-/// and a string literal each ride along inside one.
+/// operator, whatever its operands.
 fn is_operator_tree(expr: &Expr) -> bool {
     matches!(
         expr,
@@ -159,6 +157,19 @@ mod tests {
         #[case] expected: &str,
     ) {
         assert_eq!(collapse_soft_wraps(src), expected);
+    }
+
+    #[rstest]
+    #[case("", 0)]
+    #[case("abc", 3)]
+    #[case("a\r\nb", 3)]
+    #[case("é", 1)]
+    fn display_width_matches_unicode_width_across_the_fast_path_boundary(
+        #[case] text: &str,
+        #[case] expected: usize,
+    ) {
+        assert_eq!(display_width(text), expected);
+        assert_eq!(display_width(text), text.width());
     }
 
     #[rstest]

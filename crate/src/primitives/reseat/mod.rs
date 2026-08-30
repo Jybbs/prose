@@ -13,13 +13,12 @@ use ruff_python_ast::token::{Token, TokenKind};
 use ruff_python_trivia::leading_indentation;
 use ruff_source_file::{LineRanges, OneIndexed};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     primitives::{
         INDENT_STEP,
         edit::insert_edit,
-        inline::indent_width,
+        inline::{display_width, indent_width},
         tokens::{is_closer, is_opener},
         travel::frozen_rows,
     },
@@ -70,8 +69,7 @@ pub(crate) fn push_reseat_edits(source: &Source, removals: &[Edit], edits: &mut 
                     && edit.range().end() <= token.start()
             })
             .map(|edit| {
-                source.slice(edit.range()).width()
-                    - edit.content().map_or(0, UnicodeWidthStr::width)
+                display_width(source.slice(edit.range())) - edit.content().map_or(0, display_width)
             })
             .sum();
         row + lost

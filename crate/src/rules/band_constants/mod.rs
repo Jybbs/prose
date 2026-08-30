@@ -13,17 +13,20 @@ use ruff_python_ast::{PythonVersion, Stmt, helpers::is_compound_statement};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
 
+use self::{
+    analysis::module_band_plan,
+    plan::{Banding, ImportBand, banded_gap},
+};
 use crate::{
     config::Config,
     primitives::{
         comments::TRAILING_GAP,
-        edit::splice_bodies,
         imports::defers_annotations,
         orderer::{
             any_sibling_shares_line, assemble_or_borrow, assembled_cell_edits, member_blocks,
             rendered_member_blocks,
         },
-        scope::{compound_sub_bodies, scoped_body},
+        scope::{scoped_body, splice_compound_arms},
         sections::Sections,
     },
     rule::{Rule, RuleId},
@@ -33,11 +36,7 @@ use crate::{
 mod analysis;
 mod plan;
 
-pub(crate) use self::plan::{Carry, ImportBand};
-use self::{
-    analysis::module_band_plan,
-    plan::{Banding, banded_gap},
-};
+pub(crate) use self::plan::Carry;
 
 pub(crate) struct BandConstants {
     code_width: usize,
@@ -139,6 +138,24 @@ pub(crate) struct Bands {
     pub(crate) blocks: Vec<TextRange>,
     pub(crate) carries: Vec<Carry>,
     pub(crate) imports: Vec<ImportBand>,
+}
+
+/// The banding layout of a module body: its member blocks, their
+/// rendered text, the new-order permutation, and the applied band. The
+/// combined [`Bander::band_body`] and the per-cell notebook emit read it.
+struct BandLayout<'a> {
+    band: Option<Banding>,
+    blocks: Vec<TextRange>,
+    order: Vec<usize>,
+    rendered: Vec<Cow<'a, str>>,
+}
+
+impl BandLayout<'_> {
+    /// True when the band opens a tier blank, forcing an owned assembly
+    /// so the spacing lands even when the order is already settled.
+    fn forced(&self) -> bool {
+        self.band.as_ref().is_some_and(Banding::stratifies)
+    }
 }
 
 /// Invariant banding context threaded through the recursion.
@@ -246,30 +263,11 @@ impl<'a> Bander<'a> {
     /// with the inherited module scope. Any other statement is verbatim.
     fn band_stmt(&self, stmt: &'a Stmt, block: TextRange) -> Cow<'a, str> {
         if scoped_body(stmt).is_none() && is_compound_statement(stmt) {
-            let bodies = compound_sub_bodies(stmt)
-                .into_iter()
-                .map(|(body, outer)| self.band_body(body, outer));
-            return splice_bodies(self.source, block, bodies, &[]);
+            return splice_compound_arms(self.source, stmt, block, &[], |body, outer| {
+                self.band_body(body, outer)
+            });
         }
         Cow::Borrowed(self.source.slice(block))
-    }
-}
-
-/// The banding layout of a module body: its member blocks, their
-/// rendered text, the new-order permutation, and the applied band. The
-/// combined [`Bander::band_body`] and the per-cell notebook emit read it.
-struct BandLayout<'a> {
-    band: Option<Banding>,
-    blocks: Vec<TextRange>,
-    order: Vec<usize>,
-    rendered: Vec<Cow<'a, str>>,
-}
-
-impl BandLayout<'_> {
-    /// True when the band opens a tier blank, forcing an owned assembly
-    /// so the spacing lands even when the order is already settled.
-    fn forced(&self) -> bool {
-        self.band.as_ref().is_some_and(Banding::stratifies)
     }
 }
 
@@ -325,6 +323,37 @@ mod tests {
     use super::*;
     use crate::{primitives::orderer::member_blocks, testing::parse};
 
+    #[test]
+    fn band_module_constants_hoists_an_import_below_a_definition() {
+        let source =
+            parse("def helper(value):\n    return value\n\n\nimport os\n\n\nCONFIG = helper\n");
+        let body = &source.ast().body;
+        let blocks = member_blocks(&source, body, source.module_range());
+        let mut order: Vec<usize> = (0..body.len()).collect();
+        let rule = BandConstants {
+            code_width: 88,
+            first_party: Vec::new(),
+            group_imports: true,
+            group_subcategories: true,
+            max_tiers: Some(2),
+            target_version: None,
+        };
+        let bander = Bander {
+            defer_annotations: false,
+            rule: &rule,
+            source: &source,
+        };
+        let sections = Sections::of(&source, &blocks);
+        bander
+            .band_module_constants(body, &blocks, &sections, &mut order)
+            .expect("a definition before an import bands without panicking");
+        assert_eq!(
+            order,
+            vec![1, 0, 2],
+            "the import hoists above the def and CONFIG pools below it",
+        );
+    }
+
     #[rstest]
     #[case::hoist_joins_the_runs("from p import a\nX = 1\nfrom q import b\n\nprint(a, b, X)\n", Some((vec![0, 2], 0)))]
     #[case::sort_reseats_the_head("from .p import a\nfrom ..q import b\n", Some((vec![0, 1], 1)))]
@@ -375,37 +404,6 @@ mod tests {
                     .map(|carry| (carry.absorbs, carry.carrier, carry.trails))
             }),
             first,
-        );
-    }
-
-    #[test]
-    fn band_module_constants_hoists_an_import_below_a_definition() {
-        let source =
-            parse("def helper(value):\n    return value\n\n\nimport os\n\n\nCONFIG = helper\n");
-        let body = &source.ast().body;
-        let blocks = member_blocks(&source, body, source.module_range());
-        let mut order: Vec<usize> = (0..body.len()).collect();
-        let rule = BandConstants {
-            code_width: 88,
-            first_party: Vec::new(),
-            group_imports: true,
-            group_subcategories: true,
-            max_tiers: Some(2),
-            target_version: None,
-        };
-        let bander = Bander {
-            defer_annotations: false,
-            rule: &rule,
-            source: &source,
-        };
-        let sections = Sections::of(&source, &blocks);
-        bander
-            .band_module_constants(body, &blocks, &sections, &mut order)
-            .expect("a definition before an import bands without panicking");
-        assert_eq!(
-            order,
-            vec![1, 0, 2],
-            "the import hoists above the def and CONFIG pools below it",
         );
     }
 }

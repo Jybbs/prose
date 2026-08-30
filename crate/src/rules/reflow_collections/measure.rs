@@ -7,10 +7,9 @@ use std::borrow::Cow;
 use ruff_python_ast::{AnyNodeRef, Expr};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use super::{Layouter, entry_tail};
-use crate::primitives::{edit::apply_inline_edits, padding};
+use crate::primitives::{edit::apply_inline_edits, inline::display_width, padding};
 
 impl<'a> Layouter<'a> {
     /// True when `expr` contains an over-cap `Dict` at any depth,
@@ -105,10 +104,11 @@ impl<'a> Layouter<'a> {
     /// The display width `range` settles to once the padding rule drops
     /// the delimiter padding and colon padding inside it.
     pub(super) fn settled_width(&self, range: TextRange) -> usize {
-        self.source
-            .slice(range)
-            .width()
-            .saturating_add_signed(-padding::slack(self.source, self.padding, range))
+        display_width(self.source.slice(range)).saturating_add_signed(-padding::slack(
+            self.source,
+            self.padding,
+            range,
+        ))
     }
 
     /// The display width `text` settles to: the settled width of `range`
@@ -118,7 +118,7 @@ impl<'a> Layouter<'a> {
         if self.source.slice(range) == text {
             self.settled_width(range)
         } else {
-            text.width()
+            display_width(text)
         }
     }
 }

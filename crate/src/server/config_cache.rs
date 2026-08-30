@@ -5,12 +5,10 @@
 //! registered, each directory's project source is memoized and cleared on
 //! a watched change. Without one, resolution re-walks on every call.
 
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use lsp_types::Uri;
+use rustc_hash::FxHashMap;
 
 use super::conversion;
 use crate::config::{Config, ConfigSource, NoticeDedup};
@@ -20,7 +18,7 @@ use crate::config::{Config, ConfigSource, NoticeDedup};
 /// cache on a config change.
 #[derive(Default)]
 pub(super) struct ConfigCache {
-    by_dir: HashMap<PathBuf, DirSource>,
+    by_dir: FxHashMap<PathBuf, DirSource>,
     enabled: bool,
 }
 

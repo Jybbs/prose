@@ -3,10 +3,9 @@
 //! pass leaves it rather than the width the source carries.
 
 use ruff_text_size::{TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use super::{Member, Settings};
-use crate::source::Source;
+use crate::{primitives::inline::display_width, source::Source};
 
 /// The widening each collected member seats on its own line, the gap
 /// ahead of the token brought to the settings' buffer and the
@@ -26,11 +25,11 @@ impl Widenings {
     ) -> Self {
         let mut entries: Vec<(TextSize, TextRange, isize)> = members
             .filter_map(|m| {
-                let gap_part =
-                    settings.buffer.cast_signed() - source.slice(m.gap).width().cast_signed();
+                let gap_part = settings.buffer.cast_signed()
+                    - display_width(source.slice(m.gap)).cast_signed();
                 let value_part = m
                     .rewritten_value_gap(source)
-                    .map_or(0, |g| 1 - source.slice(g).width().cast_signed());
+                    .map_or(0, |g| 1 - display_width(source.slice(g)).cast_signed());
                 let delta = (gap_part + value_part).max(0);
                 (delta != 0).then_some((m.line_start, m.gap, delta))
             })

@@ -5,12 +5,10 @@
 //! own-line comment binds to the member above or below it that it
 //! documents.
 
-use std::collections::{HashMap, HashSet};
-
 use ruff_python_ast::{Expr, PythonVersion, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextRange};
-use unicode_width::UnicodeWidthStr;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::{
     BandConstants,
@@ -25,7 +23,9 @@ use crate::{
         },
         comments::{TRAILING_GAP, anchors_in_place, has_keep_marker, leading_comment_block},
         effect::value_is_effectful,
-        tiering::{eval_refs, eval_time_refs, observed_refs, tier_levels},
+        group_map,
+        inline::display_width,
+        tiering::{eval_refs, eval_time_refs_of, observed_refs, tier_levels},
     },
     source::Source,
 };
@@ -76,12 +76,13 @@ pub(super) fn module_band_plan<'src>(
     let aliases = group_subcategories.then(|| AliasContext::new(body, analysis));
     let builtins_minor = target_version.unwrap_or_default().minor;
     let notebook = source.is_notebook();
+    let is_builtin = |name: &str| is_python_builtin(name, builtins_minor, notebook);
     let suppression = source.suppression_map();
-    let mut def_at: HashMap<&'src str, usize> = HashMap::new();
-    let mut dup_defs: HashSet<&'src str> = HashSet::new();
-    let mut imports: HashSet<&'src str> = HashSet::new();
-    let mut ranks: HashMap<usize, BandRank> = HashMap::new();
-    let mut attached: HashMap<usize, TextRange> = HashMap::new();
+    let mut def_at: FxHashMap<&'src str, usize> = FxHashMap::default();
+    let mut dup_defs: FxHashSet<&'src str> = FxHashSet::default();
+    let mut imports: FxHashSet<&'src str> = FxHashSet::default();
+    let mut ranks: FxHashMap<usize, BandRank> = FxHashMap::default();
+    let mut attached: FxHashMap<usize, TextRange> = FxHashMap::default();
     let mut carries: Vec<Carry> = Vec::new();
     let mut sites: Vec<ConstSite<'src>> = Vec::new();
     for (idx, stmt) in body.iter().enumerate() {
@@ -176,12 +177,14 @@ pub(super) fn module_band_plan<'src>(
             }
         }
     }
-    let site_at: HashMap<&'src str, usize> =
+    let site_at: FxHashMap<&'src str, usize> =
         sites.iter().enumerate().map(|(s, c)| (c.name, s)).collect();
-    let mut eager_reader_at: HashMap<&'src str, usize> = HashMap::new();
+    let refs = eval_time_refs_of(body, defer_annotations);
+    let refs_of = |stmt: &Stmt| refs.get(&stmt.start()).into_iter().flatten().copied();
+    let mut eager_reader_at: FxHashMap<&'src str, usize> = FxHashMap::default();
     for (idx, stmt) in body.iter().enumerate() {
         if matches!(stmt, Stmt::ClassDef(_) | Stmt::FunctionDef(_)) {
-            for name in eval_time_refs(stmt, defer_annotations) {
+            for name in refs_of(stmt) {
                 eager_reader_at.entry(name).or_insert(idx);
             }
         }
@@ -198,7 +201,7 @@ pub(super) fn module_band_plan<'src>(
         // A definition above the site reads the site's name at
         // evaluation time, resolving it against the builtin, so seating
         // the site above that definition rebinds what it read.
-        if is_python_builtin(site.name, builtins_minor, notebook)
+        if is_builtin(site.name)
             && eager_reader_at
                 .get(site.name)
                 .is_some_and(|&reader| reader < site.idx)
@@ -232,8 +235,7 @@ pub(super) fn module_band_plan<'src>(
                 // reaching the trailing band. A write inside a branch
                 // counts as that earlier binding.
                 let rebinds_below = def > site.idx
-                    && (is_python_builtin(name, builtins_minor, notebook)
-                        || analysis.is_bound_before(name, body[site.idx].start()));
+                    && (is_builtin(name) || analysis.is_bound_before(name, body[site.idx].start()));
                 if rebinds_below {
                     anchored[s] = true;
                 } else {
@@ -241,27 +243,25 @@ pub(super) fn module_band_plan<'src>(
                 }
             } else if let Some(&dep) = site_at.get(name) {
                 deps[s].push(dep);
-            } else if anchor_unresolved
-                && !imports.contains(name)
-                && !is_python_builtin(name, builtins_minor, notebook)
-            {
+            } else if anchor_unresolved && !imports.contains(name) && !is_builtin(name) {
                 anchored[s] = true;
             }
         }
     }
-    propagate(&mut anchored, &deps);
+    let dependents = dependents(&deps);
+    propagate(&mut anchored, &dependents);
     let mut trailing: Vec<bool> = (0..n).map(|s| reaches_def[s] && !anchored[s]).collect();
-    propagate(&mut trailing, &deps);
+    propagate(&mut trailing, &dependents);
     let (trailing_members, leading_members): (Vec<usize>, Vec<usize>) =
         (0..n).filter(|&s| !anchored[s]).partition(|&s| trailing[s]);
-    let mut keys: HashMap<usize, (usize, Subcategory, &'src str)> = HashMap::new();
+    let mut keys: FxHashMap<usize, (usize, Subcategory, &'src str)> = FxHashMap::default();
     for (rank, members) in [
         (BandRank::Leading, leading_members),
         (BandRank::Trailing, trailing_members),
     ] {
-        let local: HashMap<usize, usize> =
+        let local: FxHashMap<usize, usize> =
             members.iter().enumerate().map(|(at, &s)| (s, at)).collect();
-        let dep_sets: Vec<HashSet<usize>> = members
+        let dep_sets: Vec<FxHashSet<usize>> = members
             .iter()
             .map(|&s| {
                 deps[s]
@@ -296,7 +296,7 @@ pub(super) fn module_band_plan<'src>(
     }
     for (idx, stmt) in body.iter().enumerate() {
         if ranks.get(&idx) == Some(&BandRank::Definition) {
-            for name in eval_time_refs(stmt, defer_annotations) {
+            for name in refs_of(stmt) {
                 edges.extend(site_edge(idx, name));
             }
         }
@@ -352,7 +352,7 @@ fn backward_carry(
             && !source.contains_line_break(&body[prev])
             && !source.column_overflows(
                 blocks[prev].end(),
-                TRAILING_GAP.width() + source.slice(block).trim_start().width(),
+                display_width(TRAILING_GAP) + display_width(source.slice(block).trim_start()),
                 code_width,
             ),
     })
@@ -372,17 +372,24 @@ fn const_binding(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
     }
 }
 
-/// Closes `state` over `deps` to a fixed point, flipping a slot true
-/// once any slot it depends on is true, so an initially-seeded flag
-/// reaches every slot transitively downstream of a seed.
-fn propagate(state: &mut [bool], deps: &[Vec<usize>]) {
-    let mut changed = true;
-    while changed {
-        changed = false;
-        for slot in 0..state.len() {
-            if !state[slot] && deps[slot].iter().any(|&dep| state[dep]) {
+/// The slots depending on each slot, the reverse of `deps`.
+fn dependents(deps: &[Vec<usize>]) -> FxHashMap<usize, Vec<usize>> {
+    group_map(
+        deps.iter()
+            .enumerate()
+            .flat_map(|(slot, deps)| deps.iter().map(move |&dep| (dep, slot))),
+    )
+}
+
+/// Closes `state` over `dependents`, flipping a slot true once any
+/// slot it depends on is true.
+fn propagate(state: &mut [bool], dependents: &FxHashMap<usize, Vec<usize>>) {
+    let mut queue: Vec<usize> = (0..state.len()).filter(|&slot| state[slot]).collect();
+    while let Some(seed) = queue.pop() {
+        for &slot in dependents.get(&seed).into_iter().flatten() {
+            if !state[slot] {
                 state[slot] = true;
-                changed = true;
+                queue.push(slot);
             }
         }
     }
@@ -621,7 +628,7 @@ mod tests {
     fn propagate_flips_slots_reachable_from_a_seed() {
         let deps = vec![vec![], vec![0], vec![1]];
         let mut state = vec![true, false, false];
-        propagate(&mut state, &deps);
+        propagate(&mut state, &dependents(&deps));
         assert_eq!(state, vec![true, true, true]);
     }
 
@@ -629,7 +636,7 @@ mod tests {
     fn propagate_leaves_unreached_slots_untouched() {
         let deps = vec![vec![], vec![], vec![]];
         let mut state = vec![false, true, false];
-        propagate(&mut state, &deps);
+        propagate(&mut state, &dependents(&deps));
         assert_eq!(state, vec![false, true, false]);
     }
 

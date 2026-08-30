@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Closed Bracket Ahead of a Breaking Pair Holds Nothing Open"
+
+description = '''
+`compute(value)[0]` closes both its brackets before the pair opens, so the pair breaks on its own row with the interior joined, the closed brackets ahead of it holding nothing open.
+'''

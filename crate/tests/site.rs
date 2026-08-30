@@ -10,7 +10,6 @@ use std::{
 use ignore::{WalkBuilder, types::TypesBuilder};
 use itertools::Itertools;
 use prose::pipeline::Pipeline;
-use regex_lite::Regex;
 use serde::Deserialize;
 
 const INPUT_SNAPS: [(&str, &str); 3] = [
@@ -42,6 +41,13 @@ struct Meta {
     docs: Docs,
 }
 
+/// The double-quoted value of the `name` attribute inside `tag`, `None`
+/// where `tag` carries no such attribute.
+fn attribute<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
+    let (_, after) = tag.split_once(&format!(" {name}=\""))?;
+    after.split_once('"').map(|(value, _)| value)
+}
+
 /// Each `.snap` in `case_dir` paired with the `input_file` its header
 /// names, skipping any snapshot carrying no such line.
 fn declared_inputs(case_dir: &Path) -> Vec<(String, String)> {
@@ -66,6 +72,15 @@ fn dir_name(path: &Path) -> String {
         .and_then(|name| name.to_str())
         .expect("fixture directory name is UTF-8")
         .to_owned()
+}
+
+/// The `(rule, case)` pair of every `<Fixture…>` tag in `text` that
+/// carries both attributes.
+fn fixture_invocations(text: &str) -> impl Iterator<Item = (&str, &str)> {
+    text.match_indices("<Fixture").filter_map(|(at, _)| {
+        let (tag, _) = text[at..].split_once('>')?;
+        Some((attribute(tag, "rule")?, attribute(tag, "case")?))
+    })
 }
 
 /// True when the rule at `module`, a single file or a directory of
@@ -248,7 +263,6 @@ fn every_case_directory_is_well_formed() {
 fn every_fixture_invocation_resolves() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let site = root.join("../site");
-    let pattern = Regex::new(r#"<Fixture\w* rule="([^"]+)" case="([^"]+)" /?>"#).unwrap();
     let mut types = TypesBuilder::new();
     types.add_defaults();
     types.select("markdown");
@@ -263,8 +277,7 @@ fn every_fixture_invocation_resolves() {
         found_any = true;
         let path = entry.path();
         let body = fs_err::read_to_string(path).unwrap();
-        for caps in pattern.captures_iter(&body) {
-            let (_, [rule, case]) = caps.extract();
+        for (rule, case) in fixture_invocations(&body) {
             let dir = root.join("tests/fixtures").join(rule).join(case);
             let input = dir.join("input.py");
             let snap = dir.join("input.py.snap");

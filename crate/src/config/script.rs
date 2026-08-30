@@ -6,6 +6,8 @@
 //! `0.15.10` its `metadata` field is private with no accessor, so the
 //! extraction is reimplemented here against the PEP 723 grammar.
 
+use memchr::memmem;
+
 use super::{ConfigError, load::prose_table_from_str};
 
 /// Opening pragma of a PEP 723 metadata block.
@@ -19,19 +21,36 @@ const OPEN: &str = "# /// script";
 ///
 /// Returns `ConfigError::Toml` when the stripped block is not valid TOML.
 pub(super) fn extract_prose_table(bytes: &[u8]) -> Result<Option<toml::Table>, ConfigError> {
-    let Some(metadata) = std::str::from_utf8(bytes).ok().and_then(script_metadata) else {
+    let Some(metadata) = open_line_offset(bytes).and_then(|open| {
+        std::str::from_utf8(bytes)
+            .ok()
+            .and_then(|text| script_metadata(text, open))
+    }) else {
         return Ok(None);
     };
     prose_table_from_str(&metadata)
 }
 
+/// The offset of the first line of `bytes` reading exactly `OPEN`,
+/// closed by a line feed, a carriage return and line feed, or the end
+/// of the bytes.
+fn open_line_offset(bytes: &[u8]) -> Option<usize> {
+    memmem::find_iter(bytes, OPEN).find(|&at| {
+        (at == 0 || bytes[at - 1] == b'\n')
+            && matches!(
+                &bytes[at + OPEN.len()..],
+                [] | [b'\n', ..] | [b'\r', b'\n', ..]
+            )
+    })
+}
+
 /// Strips the comment prefixes from the metadata between the opening
-/// `# /// script` and the last closing `# ///`, yielding the embedded
-/// TOML. `None` when no opening or closing pragma is present.
-fn script_metadata(text: &str) -> Option<String> {
-    let mut lines = text.lines().skip_while(|line| *line != OPEN);
-    lines.next()?;
-    let mut body: Vec<&str> = lines
+/// `# /// script` line at `open` and the last closing `# ///`, yielding
+/// the embedded TOML. `None` when no closing pragma follows.
+fn script_metadata(text: &str, open: usize) -> Option<String> {
+    let mut body: Vec<&str> = text[open..]
+        .lines()
+        .skip(1)
         .map_while(|line| {
             let rest = line.strip_prefix('#')?;
             if rest.is_empty() {
@@ -47,6 +66,7 @@ fn script_metadata(text: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
+    use rstest::rstest;
 
     use super::*;
 
@@ -129,6 +149,17 @@ mod tests {
     #[test]
     fn non_utf8_bytes_yield_none() {
         assert_eq!(extract_prose_table(&[0xff, 0xfe]).expect("parses"), None);
+    }
+
+    #[rstest]
+    #[case(b"x = 1  # /// script\n# ///\n", None)]
+    #[case(b"# /// script\r\n# [tool.prose]\r\n# ///\r\n", Some(0))]
+    #[case(b"# /// script\r# ///\n", None)]
+    fn open_line_offset_reads_only_a_whole_line(
+        #[case] bytes: &[u8],
+        #[case] expected: Option<usize>,
+    ) {
+        assert_eq!(open_line_offset(bytes), expected);
     }
 
     #[test]

@@ -2,7 +2,7 @@
 //! descending through every member so a nested legacy spelling lands in
 //! the same pass as the one enclosing it.
 
-use std::{borrow::Cow, collections::HashMap};
+use std::borrow::Cow;
 
 use itertools::Itertools;
 use ruff_python_ast::{
@@ -11,6 +11,7 @@ use ruff_python_ast::{
 };
 use ruff_python_stdlib::typing::as_pep_585_generic;
 use ruff_text_size::{Ranged, TextRange};
+use rustc_hash::FxHashMap;
 
 use crate::{primitives::edit::splice_bodies, source::Source};
 
@@ -19,7 +20,7 @@ use crate::{primitives::edit::splice_bodies, source::Source};
 pub(super) struct Renderer<'a> {
     consumed: Vec<&'a str>,
     generics: bool,
-    imports: &'a HashMap<&'a str, QualifiedName<'a>>,
+    imports: &'a FxHashMap<&'a str, QualifiedName<'a>>,
     source: &'a Source,
     unions: bool,
 }
@@ -27,7 +28,7 @@ pub(super) struct Renderer<'a> {
 impl<'a> Renderer<'a> {
     pub(super) fn new(
         source: &'a Source,
-        imports: &'a HashMap<&'a str, QualifiedName<'a>>,
+        imports: &'a FxHashMap<&'a str, QualifiedName<'a>>,
         generics: bool,
         unions: bool,
     ) -> Self {

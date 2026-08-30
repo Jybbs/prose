@@ -2,30 +2,6 @@
 
 use super::*;
 
-/// True where the closer `row` opens with closes the bracket the block's
-/// head left open rather than one an interior row opened, meaning no
-/// closer later on the row is left unmatched by an opener ahead of it.
-fn closes_the_head(row: &str) -> bool {
-    let mut lexer = lex(row, Mode::Expression);
-    let mut depth = 0_usize;
-    // The leading closer is the one under test.
-    lexer.next_token();
-    loop {
-        let kind = lexer.next_token();
-        if kind == TokenKind::EndOfFile {
-            return true;
-        }
-        if is_opener(kind) {
-            depth += 1;
-        } else if is_closer(kind) {
-            let Some(shallower) = depth.checked_sub(1) else {
-                return false;
-            };
-            depth = shallower;
-        }
-    }
-}
-
 /// The move for a block whose first row leaves a bracket open, seating
 /// the shallowest interior row one `INDENT_STEP` inside `landing.indent`
 /// and a closing row of the block's own back on that indent, the shape
@@ -60,12 +36,6 @@ pub(super) fn hanging_travel(block: &str, frozen: &[bool], landing: Landing) -> 
     })
 }
 
-/// True for a non-blank continuation row at `row` that `frozen` leaves
-/// free to move.
-fn is_movable(row: usize, line: &str, frozen: &[bool]) -> bool {
-    row > 0 && frozen.get(row) != Some(&true) && !line.trim().is_empty()
-}
-
 /// The least indent among the movable non-blank continuation rows of
 /// `block`, `None` where every continuation row is blank or frozen. An
 /// empty `frozen` holds no row, the shape a caller passes when nothing
@@ -74,16 +44,6 @@ pub(super) fn movable_floor(block: &str, frozen: &[bool]) -> Option<usize> {
     movable_rows(block, frozen)
         .map(|line| indent_width(&line))
         .min()
-}
-
-/// Yields each movable non-blank continuation row of `block`, skipping
-/// the rows `frozen` marks.
-fn movable_rows<'b>(block: &'b str, frozen: &'b [bool]) -> impl Iterator<Item = Line<'b>> {
-    block
-        .universal_newlines()
-        .enumerate()
-        .filter(|(row, line)| is_movable(*row, line, frozen))
-        .map(|(_, line)| line)
 }
 
 /// `block`'s continuation rows moved per `travel`, each blank row and
@@ -106,4 +66,44 @@ pub(super) fn shifted_rows(block: &str, travel: Travel, frozen: &[bool]) -> Stri
         out.push_str(&line[leading_indentation(line).len()..]);
     }
     out
+}
+
+/// True where the closer `row` opens with closes the bracket the block's
+/// head left open rather than one an interior row opened, meaning no
+/// closer later on the row is left unmatched by an opener ahead of it.
+fn closes_the_head(row: &str) -> bool {
+    let mut lexer = lex(row, Mode::Expression);
+    let mut depth = 0_usize;
+    // The leading closer is the one under test.
+    lexer.next_token();
+    loop {
+        let kind = lexer.next_token();
+        if kind == TokenKind::EndOfFile {
+            return true;
+        }
+        if is_opener(kind) {
+            depth += 1;
+        } else if is_closer(kind) {
+            let Some(shallower) = depth.checked_sub(1) else {
+                return false;
+            };
+            depth = shallower;
+        }
+    }
+}
+
+/// True for a non-blank continuation row at `row` that `frozen` leaves
+/// free to move.
+fn is_movable(row: usize, line: &str, frozen: &[bool]) -> bool {
+    row > 0 && frozen.get(row) != Some(&true) && !line.trim().is_empty()
+}
+
+/// Yields each movable non-blank continuation row of `block`, skipping
+/// the rows `frozen` marks.
+fn movable_rows<'b>(block: &'b str, frozen: &'b [bool]) -> impl Iterator<Item = Line<'b>> {
+    block
+        .universal_newlines()
+        .enumerate()
+        .filter(|(row, line)| is_movable(*row, line, frozen))
+        .map(|(_, line)| line)
 }

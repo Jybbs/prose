@@ -1,2 +1,2 @@
 [rules]
-miscased-constants = { allow-pattern = "^[A-Z][a-z]" }
+miscased-constants = { allow-pattern = "[A-Z][a-z]*" }

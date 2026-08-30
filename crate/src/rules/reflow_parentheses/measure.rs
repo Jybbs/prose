@@ -6,12 +6,14 @@ use ruff_diagnostics::Edit;
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
-use super::{Shedder, plan::Candidate};
+use super::{
+    Shedder,
+    plan::{Candidate, shed_columns},
+};
 use crate::primitives::{
     edit::{apply_inline_edits, insert_edit},
-    inline::{end_column, run_closes_to_a_space, soft_wrap_runs},
+    inline::{display_width, end_column, run_closes_to_a_space, soft_wrap_runs},
     splice::splice_preserves_tree,
 };
 
@@ -35,12 +37,10 @@ impl Shedder<'_> {
     /// fold joins.
     fn joined_width(&self, candidate: &Candidate, candidates: &[Candidate]) -> Option<usize> {
         let bare = candidate.bare.as_ref()?;
-        let shed: usize = candidates
-            .iter()
-            .filter(|other| other.sheds && candidate.inner.contains_range(other.pair))
-            .map(|other| 2 - other.flush.spaces())
-            .sum();
-        Some(bare.width() + candidate.flush.spaces() - shed)
+        Some(
+            display_width(bare) + candidate.flush.spaces()
+                - shed_columns(candidate.inner, candidates),
+        )
     }
 
     /// The column `offset` reaches once the edits emitted so far apply
@@ -48,9 +48,6 @@ impl Shedder<'_> {
     /// call ending ahead of `offset` on that row explodes while the row
     /// through `offset` still overflows the budget, dropping its closer
     /// to the row's indent and the text after it along with it.
-    /// Measuring from the enclosing logical line rather than the file
-    /// start reads the same row, since a fold never joins across the
-    /// `Newline` token that opens the line.
     fn shifted_column(&self, offset: TextSize) -> usize {
         let column = self.column_at(offset);
         if column < self.code_line_length {
@@ -74,18 +71,11 @@ impl Shedder<'_> {
     }
 
     /// The columns `pair`'s own row carries past its closing paren,
-    /// narrowed by the parentheses this pass sheds along that stretch,
-    /// so the width reads the row the pass leaves rather than the row
-    /// the source wrote.
+    /// narrowed by the parentheses this pass sheds along that stretch.
     fn tail_width(&self, pair: TextRange, candidates: &[Candidate]) -> usize {
         let text = self.source.text();
         let tail = TextRange::new(pair.end(), text.line_end(pair.end()));
-        let shed: usize = candidates
-            .iter()
-            .filter(|other| other.sheds && tail.contains_range(other.pair))
-            .map(|other| 2 - other.flush.spaces())
-            .sum();
-        text[tail].width().saturating_sub(shed)
+        display_width(&text[tail]).saturating_sub(shed_columns(tail, candidates))
     }
 
     /// True when joining `candidate` leaves its line inside the budget
@@ -99,11 +89,8 @@ impl Shedder<'_> {
     }
 
     /// True where joining `candidate` crosses the budget on the row the
-    /// source puts it on, the measure a break answers. It reads the
-    /// column the row reaches rather than the one a later explode would
-    /// leave, so a break that takes those columns back itself decides
-    /// the same way before and after that explode runs. An interior no
-    /// fold joins overflows outright.
+    /// source puts it on, the measure a break answers. An interior no fold
+    /// joins overflows outright.
     pub(super) fn overflows(&self, candidate: &Candidate, candidates: &[Candidate]) -> bool {
         let Some(width) = self.joined_width(candidate, candidates) else {
             return true;
@@ -116,8 +103,7 @@ impl Shedder<'_> {
 
     /// Emits an edit closing each line-spanning whitespace run inside
     /// `inner`, to a single space between two tokens and to nothing
-    /// against a bracket, the join a multi-line interior needs before
-    /// its parentheses can go.
+    /// against a bracket.
     pub(super) fn push_fold_edits(&mut self, inner: TextRange) {
         let text = self.source.slice(inner);
         for (begin, len) in soft_wrap_runs(text) {

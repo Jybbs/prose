@@ -2,13 +2,13 @@
 //! table, the TOML reads, and the precedence / unknown-key notices.
 
 use std::{
-    collections::HashSet,
     fmt,
     io::ErrorKind,
     path::{Path, PathBuf},
     sync::Mutex,
 };
 
+use rustc_hash::FxHashSet;
 use serde::{Deserialize, de::IntoDeserializer};
 
 use super::ConfigError;
@@ -98,7 +98,7 @@ impl fmt::Display for ConfigNotice<'_> {
 /// both warns each key once rather than twice.
 #[derive(Default)]
 pub(crate) struct NoticeDedup {
-    seen: Mutex<HashSet<String>>,
+    seen: Mutex<FxHashSet<String>>,
 }
 
 impl NoticeDedup {
@@ -140,17 +140,6 @@ pub(super) fn prose_table_from_str(contents: &str) -> Result<Option<toml::Table>
             prose.clone().into_deserializer(),
         )?)),
         None => Ok(None),
-    }
-}
-
-/// Reads a config file that may not exist. `NotADirectory` reads as
-/// absent too, so a walk whose starting path is itself a file skips
-/// the join through that file rather than erroring.
-fn read_optional(path: PathBuf) -> Result<Option<String>, ConfigError> {
-    match fs_err::read_to_string(path) {
-        Ok(contents) => Ok(Some(contents)),
-        Err(e) if matches!(e.kind(), ErrorKind::NotADirectory | ErrorKind::NotFound) => Ok(None),
-        Err(e) => Err(e.into()),
     }
 }
 
@@ -197,4 +186,15 @@ where
 
 fn prose_value(value: &toml::Value) -> Option<&toml::Value> {
     value.get("tool").and_then(|tool| tool.get("prose"))
+}
+
+/// Reads a config file that may not exist. `NotADirectory` reads as
+/// absent too, so a walk whose starting path is itself a file skips
+/// the join through that file rather than erroring.
+fn read_optional(path: PathBuf) -> Result<Option<String>, ConfigError> {
+    match fs_err::read_to_string(path) {
+        Ok(contents) => Ok(Some(contents)),
+        Err(e) if matches!(e.kind(), ErrorKind::NotADirectory | ErrorKind::NotFound) => Ok(None),
+        Err(e) => Err(e.into()),
+    }
 }

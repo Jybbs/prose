@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Definitions Band Inside a Conditional Arm"
+
+description = '''
+The `if` arm's `Widget` bands above `build` and `render` exactly as a module body would order them, and the `else` arm's lone `render` holds, each arm sorting on its own.
+'''

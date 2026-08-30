@@ -2,22 +2,21 @@
 //! on their rows and every operand led by the operator joining it to
 //! the row above, or its interior whole on one row where that fits.
 //! Each operand renders through the pairs this same pass sheds inside
-//! it, so one edit carries both directions.
+//! it.
 
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use super::{
     Shedder,
     chain::{Operand, operands},
-    plan::{Candidate, breaks_held_inside},
+    plan::{Candidate, breaks_held_inside, shedding_inside},
 };
 use crate::{
     primitives::{
         edit::{apply_inline_edits, insert_edit},
         fracture::outermost,
-        inline::folded_line_form,
+        inline::{display_width, folded_line_form},
         layout::{Separator, explode_parens, item_indent},
         splice::splice_preserves_tree,
         tokens::{is_closer, is_opener},
@@ -27,10 +26,8 @@ use crate::{
 };
 
 impl Shedder<'_> {
-    /// True where a bracket this pass leaves standing still holds
-    /// `pair` open, so the construct that bracket belongs to lays out
-    /// the rows around it. A grouping pair the pass sheds holds nothing,
-    /// leaving the reading the same before and after the shed.
+    /// True where a bracket this pass leaves standing still holds `pair`
+    /// open.
     fn held_inside_a_bracket(&self, pair: TextRange, candidates: &[Candidate]) -> bool {
         let head = self.source.logical_line_start(pair.start());
         let mut open: Vec<TextSize> = Vec::new();
@@ -46,19 +43,16 @@ impl Shedder<'_> {
             }
         }
         open.iter().any(|start| {
-            !candidates
-                .iter()
-                .any(|other| other.sheds && other.pair.start() == *start)
+            candidates
+                .binary_search_by_key(start, |other| other.pair.start())
+                .ok()
+                .is_none_or(|found| !candidates[found].sheds)
         })
     }
 
     /// True where every line break inside `inner` sits within a bracket
-    /// `inner` opens and this pass leaves standing, so the pair around
-    /// it holds none of them and the bracket that does lays out the
-    /// rows. A bracket `nested` takes out holds nothing, leaving the
-    /// reading the same before and after those pairs shed. An interior
-    /// carrying no break reads false, the pair being free to open rows
-    /// of its own.
+    /// `inner` opens and this pass leaves standing, and false for an
+    /// interior carrying no break.
     fn holds_its_breaks_inside(&self, inner: TextRange, nested: &[Edit]) -> bool {
         let inside_a_shed =
             |range: TextRange| nested.iter().any(|edit| edit.range().contains_range(range));
@@ -71,19 +65,16 @@ impl Shedder<'_> {
     /// through. A candidate whose own removal shifts the parse keeps
     /// its pair and contributes nothing.
     fn nested_shed_edits(&self, candidate: &Candidate, candidates: &[Candidate]) -> Vec<Edit> {
-        let edits: Vec<Edit> = candidates
-            .iter()
-            .filter(|other| other.sheds && candidate.inner.contains_range(other.pair))
-            .flat_map(Candidate::paren_removals)
-            .collect();
-        outermost(edits)
+        outermost(
+            shedding_inside(candidate.inner, candidates)
+                .flat_map(Candidate::paren_removals)
+                .collect(),
+        )
     }
 
-    /// The indent of the row `pair`'s own statement opens on, the seat
-    /// a break hangs its rows from. The walk skips the trivia ahead of
-    /// that statement, so a comment or a blank row between two
-    /// statements leaves the seat reading the statement's own row
-    /// rather than the row the `(` happens to sit on.
+    /// The indent of the row `pair`'s own statement opens on, the seat a
+    /// break hangs its rows from, read past the trivia ahead of that
+    /// statement.
     fn statement_indent(&self, pair: TextRange) -> usize {
         let head = self.source.logical_line_start(pair.start());
         let opens_at = self
@@ -97,10 +88,8 @@ impl Shedder<'_> {
     /// Emits the replacement breaking `candidate`'s pair across rows,
     /// reporting whether the break owns the pair's shape. The interior
     /// holds one row of its own where its joined form fits a row one
-    /// indent step in, and takes one row per operand otherwise. Every
-    /// row renders through the pairs `candidate` encloses that this
-    /// pass sheds, so the division and the text both read what the
-    /// pass leaves rather than what it was handed.
+    /// indent step in, and takes one row per operand otherwise. Every row
+    /// renders through the pairs `candidate` encloses that this pass sheds.
     pub(super) fn push_break_edits(
         &mut self,
         candidate: &Candidate,
@@ -122,7 +111,7 @@ impl Shedder<'_> {
         let item = item_indent(indent);
         let joined = apply_inline_edits(self.source, inner, &nested);
         let text = match folded_line_form(self.source, candidate.expr, &joined)
-            .filter(|row| item + row.width() <= self.code_line_length)
+            .filter(|row| item + display_width(row) <= self.code_line_length)
         {
             Some(row) => wrapped(self.source, &row, indent),
             None => broken(self.source, &chain, &nested, indent),

@@ -20,6 +20,7 @@
     "@iconify-json/simple-icons"          : "1.2.93",
     "@iconify/types"                      : "2.0.0",
     "@iconify/utils"                      : "3.1.4",
+    "@mdit-vue/shared"                    : "3.0.2",
     "@resvg/resvg-js"                     : "2.6.2",
     "@shikijs/magic-move"                 : "4.4.2",
     "@shikijs/types"                      : "4.4.2",

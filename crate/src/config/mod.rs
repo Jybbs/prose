@@ -21,10 +21,10 @@
 //! schema` prints a JSON Schema carrying every key's type, default,
 //! and range.
 
-use std::{collections::HashSet, num::NonZeroUsize, path::Path};
+use std::{num::NonZeroUsize, path::Path};
 
-use regex_lite::Regex;
 use ruff_python_ast::PythonVersion;
+use rustc_hash::FxHashSet;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -163,14 +163,7 @@ impl Config {
         )
     }
 
-    /// True when `name` matches `pattern`. An empty pattern matches every
-    /// input, so the emptiness test ahead of the match reads an unset
-    /// pattern as "exempt nothing" rather than "exempt everything".
-    pub(crate) fn allow_matches(pattern: &Regex, name: &str) -> bool {
-        !pattern.as_str().is_empty() && pattern.is_match(name)
-    }
-
-    pub(crate) fn allow_set(allow: &[String]) -> HashSet<String> {
+    pub(crate) fn allow_set(allow: &[String]) -> FxHashSet<String> {
         allow.iter().cloned().collect()
     }
 
@@ -187,7 +180,7 @@ impl Config {
     /// The two comment rules a measuring rule predicts, so a trailing
     /// comment reads at the gap `align-comments` seats it at and the
     /// opener `normalize-comment-spacing` settles it to.
-    pub(crate) fn comment_settling(&self) -> comments::Settling {
+    fn comment_settling(&self) -> comments::Settling {
         comments::Settling {
             gap: self
                 .rules

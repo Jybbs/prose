@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/resolved_class_annotation_keeps_the_directive_under_the_sort/input.py
+---
+from __future__ import annotations
+
+
+class Node:
+
+    pass
+
+
+def visit(node: Node) -> Node:
+    return node

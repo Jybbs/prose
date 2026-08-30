@@ -16,11 +16,13 @@
 //! the nearest non-comprehension scope, and class-scope names are
 //! invisible to nested functions and comprehensions.
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
-use ruff_python_ast::{ModModule, Stmt, visitor::Visitor};
+use ruff_python_ast::{ModModule, Stmt, name::Name, visitor::Visitor};
 use ruff_text_size::{Ranged, TextRange, TextSize};
+use rustc_hash::{FxHashMap, FxHashSet};
 use serde::Serialize;
+use smallvec::SmallVec;
 
 mod builder;
 mod module_scan;
@@ -34,103 +36,23 @@ pub(crate) use names::{
     single_name_target, tail_identifier, top_level_module, type_head_identifier,
 };
 
-/// Stable handle to a binding in `BindingAnalysis`. Cheap to copy.
-#[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(transparent)]
-pub(crate) struct BindingId(u32);
-
-/// Stable handle to a scope in `BindingAnalysis`. Cheap to copy.
-#[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(transparent)]
-struct ScopeId(u32);
-
-/// Categories of write event recorded against a binding.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize)]
-pub(crate) enum BindingKind {
-    Assignment,
-    AugAssign,
-    ClassDef,
-    Comprehension,
-    ExceptHandler,
-    For,
-    FunctionDef,
-    Import,
-    Parameter,
-    Walrus,
-    With,
-}
-
-/// Categories of lexical scope.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize)]
-enum ScopeKind {
-    Class,
-    Comprehension,
-    Function,
-    Module,
-}
-
-/// Disposition of a multi-name unpack target for the single-use lint.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub(crate) enum UnpackKind {
-    /// Flagged with no subscript rewrite, because the right-hand side
-    /// is a call or a starred target shifts the indices.
-    Bare,
-    /// A sibling target reads more than once, so removing this target
-    /// would split the unpack into an indexed read.
-    Exempt,
-    /// Flagged with a subscript rewrite: the right-hand-side range and
-    /// this target's index.
-    Suggested(TextRange, usize),
-}
-
-/// One named binding in some scope, with every observed write and read.
-/// `attributes` collects the distinct attribute names read off the
-/// binding (`os.environ` records `environ`), `bare_read` flips when the
-/// name is read without an attribute access (`foo(os)`), and
-/// `first_unconditional_write` holds the earliest write not nested in a
-/// conditional branch (`if`/`for`/`while`/`try`/`match`), or `None` when
-/// every write is conditional.
-#[derive(Debug, Serialize)]
-struct Binding {
-    annotation_read: bool,
-    attributes: BTreeSet<String>,
-    bare_read: bool,
-    first_unconditional_write: Option<TextSize>,
-    kinds: Vec<BindingKind>,
-    name: String,
-    read_offsets: Vec<TextSize>,
-    runtime_read: bool,
-    scope: ScopeId,
-    write_offsets: Vec<TextSize>,
-}
-
-/// One lexical scope plus its binding table keyed by name.
-#[derive(Debug, Serialize)]
-struct Scope {
-    bindings: BTreeMap<String, BindingId>,
-    #[serde(skip)]
-    globals: BTreeSet<String>,
-    kind: ScopeKind,
-    parent: Option<ScopeId>,
-}
-
 /// Module-wide binding-resolution table.
 #[derive(Debug, Serialize)]
 pub struct BindingAnalysis {
     #[serde(skip)]
-    assignment_values: HashMap<TextSize, TextRange>,
+    assignment_values: FxHashMap<TextSize, TextRange>,
     bindings: Vec<Binding>,
     #[serde(skip)]
-    condition_test_walruses: HashSet<BindingId>,
+    condition_test_walruses: FxHashSet<BindingId>,
     #[serde(skip)]
-    deleted: HashSet<String>,
+    deleted: FxHashSet<Name>,
     #[serde(skip)]
-    global_writes: BTreeMap<String, Vec<TextSize>>,
+    function_scope_at: FxHashMap<TextSize, ScopeId>,
     #[serde(skip)]
-    function_scope_at: HashMap<TextSize, ScopeId>,
+    global_writes: BTreeMap<Name, Vec<TextSize>>,
     scopes: Vec<Scope>,
     #[serde(skip)]
-    unpack_targets: HashMap<BindingId, UnpackKind>,
+    unpack_targets: FxHashMap<BindingId, UnpackKind>,
 }
 
 impl BindingAnalysis {
@@ -192,7 +114,9 @@ impl BindingAnalysis {
     /// Returns `true` when any scope in the module binds `name`, the
     /// test that reports a builtin shadowed somewhere in the file.
     pub(crate) fn binds_name(&self, name: &str) -> bool {
-        self.bindings.iter().any(|binding| binding.name == name)
+        self.scopes
+            .iter()
+            .any(|scope| scope.bindings.contains_key(name))
     }
 
     /// Returns the offset of the earliest recorded write of `binding`.
@@ -224,9 +148,8 @@ impl BindingAnalysis {
             .is_some_and(|first| first < offset)
     }
 
-    /// Returns `true` when a `del` statement anywhere in the module
-    /// names `name`, which unbinds it and so consumes the binding
-    /// without recording a read.
+    /// Returns `true` when a `del` statement anywhere in the module names
+    /// `name`.
     pub(crate) fn is_deleted(&self, name: &str) -> bool {
         self.deleted.contains(name)
     }
@@ -260,8 +183,27 @@ impl BindingAnalysis {
             return None;
         }
         let binding = self.module_binding(name)?;
-        (binding.kinds == [BindingKind::FunctionDef] && binding.write_offsets.len() == 1)
+        (binding.kinds.as_slice() == [BindingKind::FunctionDef] && binding.write_offsets.len() == 1)
             .then_some(binding.read_offsets.as_slice())
+    }
+
+    /// The names the module scope binds that are read inside each of
+    /// `ranges`, which ascend and never overlap, one set per range.
+    pub(crate) fn module_names_read_within(&self, ranges: &[TextRange]) -> Vec<FxHashSet<&str>> {
+        let mut read = vec![FxHashSet::default(); ranges.len()];
+        let reads = self.scopes[0].bindings.iter().flat_map(|(name, &id)| {
+            self.binding(id)
+                .read_offsets
+                .iter()
+                .map(move |&offset| (name.as_str(), offset))
+        });
+        for (name, offset) in reads {
+            let slot = ranges.partition_point(|range| range.end() <= offset);
+            if ranges.get(slot).is_some_and(|range| range.contains(offset)) {
+                read[slot].insert(name);
+            }
+        }
+        read
     }
 
     /// Returns `true` when the module reads the module-scope binding for
@@ -341,6 +283,86 @@ impl BindingAnalysis {
     pub(crate) fn walrus_in_condition(&self, binding: BindingId) -> bool {
         self.condition_test_walruses.contains(&binding)
     }
+}
+
+/// Stable handle to a binding in `BindingAnalysis`. Cheap to copy.
+#[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(transparent)]
+pub(crate) struct BindingId(u32);
+
+/// Categories of write event recorded against a binding.
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize)]
+pub(crate) enum BindingKind {
+    Assignment,
+    AugAssign,
+    ClassDef,
+    Comprehension,
+    ExceptHandler,
+    For,
+    FunctionDef,
+    Import,
+    Parameter,
+    Walrus,
+    With,
+}
+
+/// Disposition of a multi-name unpack target for the single-use lint.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub(crate) enum UnpackKind {
+    /// Flagged with no subscript rewrite, because the right-hand side
+    /// is a call or a starred target shifts the indices.
+    Bare,
+    /// A sibling target reads more than once, so removing this target
+    /// would split the unpack into an indexed read.
+    Exempt,
+    /// Flagged with a subscript rewrite: the right-hand-side range and
+    /// this target's index.
+    Suggested(TextRange, usize),
+}
+
+/// One named binding in some scope, with every observed write and read.
+/// `attributes` collects the distinct attribute names read off the
+/// binding (`os.environ` records `environ`), `bare_read` flips when the
+/// name is read without an attribute access (`foo(os)`), and
+/// `first_unconditional_write` holds the earliest write not nested in a
+/// conditional branch (`if`/`for`/`while`/`try`/`match`), or `None` when
+/// every write is conditional.
+#[derive(Debug, Serialize)]
+struct Binding {
+    annotation_read: bool,
+    attributes: BTreeSet<Name>,
+    bare_read: bool,
+    first_unconditional_write: Option<TextSize>,
+    kinds: SmallVec<[BindingKind; 2]>,
+    name: Name,
+    read_offsets: SmallVec<[TextSize; 4]>,
+    runtime_read: bool,
+    scope: ScopeId,
+    write_offsets: SmallVec<[TextSize; 2]>,
+}
+
+/// One lexical scope plus its binding table keyed by name.
+#[derive(Debug, Serialize)]
+struct Scope {
+    bindings: BTreeMap<Name, BindingId>,
+    #[serde(skip)]
+    globals: BTreeSet<Name>,
+    kind: ScopeKind,
+    parent: Option<ScopeId>,
+}
+
+/// Stable handle to a scope in `BindingAnalysis`. Cheap to copy.
+#[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(transparent)]
+struct ScopeId(u32);
+
+/// Categories of lexical scope.
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize)]
+enum ScopeKind {
+    Class,
+    Comprehension,
+    Function,
+    Module,
 }
 
 #[cfg(test)]
@@ -616,6 +638,31 @@ mod tests {
         assert!(analyze(src).module_function_reads("f").is_none());
     }
 
+    #[test]
+    fn module_names_read_within_names_the_module_bindings_each_range_reaches() {
+        let source = parse(indoc! {"
+            def helper():
+                return 1
+
+            def outer(helper):
+                return helper()
+
+            def caller():
+                return helper() + Outside
+        "});
+        let ranges: Vec<TextRange> = source.ast().body.iter().map(Ranged::range).collect();
+        let read = source.binding_analysis().module_names_read_within(&ranges);
+        assert!(
+            read[1].is_empty(),
+            "the parameter shadows the module helper"
+        );
+        assert_eq!(
+            read[2],
+            FxHashSet::from_iter(["helper"]),
+            "an unbound name never enters"
+        );
+    }
+
     #[rstest]
     #[case("X = 1\n")]
     #[case("x = 1\n")]
@@ -776,7 +823,7 @@ mod tests {
                 .expect("inner is a function scope");
             let inner = *inner_scope
                 .bindings
-                .get(&name)
+                .get(name.as_str())
                 .expect("inner shadows name");
             prop_assert_ne!(outer, inner);
             prop_assert_eq!(analysis.usage_count(outer), 0);

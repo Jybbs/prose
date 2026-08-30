@@ -1,6 +1,5 @@
 //! Walks each scope collecting the bindings read exactly once.
 
-use regex_lite::Regex;
 use ruff_python_ast::{
     Stmt,
     statement_visitor::{StatementVisitor, walk_stmt},
@@ -10,7 +9,7 @@ use ruff_text_size::{TextRange, TextSize};
 use super::*;
 
 pub(super) struct Visitor<'a> {
-    pub(super) allow_pattern: &'a Regex,
+    pub(super) allow_pattern: &'a AllowPattern,
     pub(super) analysis: &'a BindingAnalysis,
     pub(super) diagnostics: Vec<Diagnostic>,
     pub(super) rule: RuleId,
@@ -32,7 +31,7 @@ impl Visitor<'_> {
             return None;
         }
         let name = self.analysis.binding_name(binding);
-        if Config::allow_matches(self.allow_pattern, name) {
+        if self.allow_pattern.matches(name) {
             return None;
         }
         let write_offset = self.analysis.first_write_offset(binding);

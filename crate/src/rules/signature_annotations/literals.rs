@@ -1,14 +1,13 @@
 //! The call-site literals a parameter's inferred type reads, collected
 //! per callee, beside whether a definition returns a value at all.
 
-use std::collections::HashMap;
-
 use ruff_python_ast::{
     Expr, Parameters, Stmt, StmtFunctionDef,
     helpers::ReturnStatementVisitor,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextSize};
+use rustc_hash::FxHashMap;
 
 use super::CallArgs;
 use crate::{
@@ -21,7 +20,7 @@ use crate::{
 
 struct LiteralCollector<'a> {
     map: CallArgs<'a>,
-    resolved: HashMap<TextSize, &'a Parameters>,
+    resolved: FxHashMap<TextSize, &'a Parameters>,
     source: &'a Source,
 }
 
@@ -46,7 +45,7 @@ impl<'a> AstVisitor<'a> for LiteralCollector<'a> {
 
 pub(super) fn call_argument_literals(source: &Source) -> CallArgs<'_> {
     let mut collector = LiteralCollector {
-        map: HashMap::new(),
+        map: FxHashMap::default(),
         resolved: module_call_params(source),
         source,
     };

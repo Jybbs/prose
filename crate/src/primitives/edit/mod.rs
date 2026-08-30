@@ -14,7 +14,7 @@ use std::borrow::Cow;
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::{primitives::insert_sorted_by_key, source::Source};
+use crate::{primitives::sorted_slot, source::Source};
 
 mod apply;
 mod offsets;
@@ -31,12 +31,12 @@ pub(crate) fn any_owned(parts: &[Cow<str>]) -> bool {
 /// Inserts `edit` at the slot keeping `edits` ascending by start, the
 /// order [`apply_inline_edits`] reads them in.
 pub(crate) fn insert_edit(edits: &mut Vec<Edit>, edit: Edit) {
-    insert_sorted_by_key(edits, edit, Ranged::start);
+    let slot = sorted_slot(edits, &edit, Ranged::start);
+    edits.insert(slot, edit);
 }
 
-/// True where `c` joins the identifier beside it, so text placed
-/// against it would run into that identifier rather than reading as a
-/// token of its own.
+/// True where `c` is an identifier character: a letter, a digit, or an
+/// underscore.
 pub(crate) fn joins_an_identifier(c: char) -> bool {
     c.is_alphanumeric() || c == '_'
 }

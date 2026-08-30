@@ -5,10 +5,7 @@
 use std::{borrow::Cow, cmp::Reverse};
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    AnyNodeRef, Expr,
-    token::{TokenKind, parenthesized_range},
-};
+use ruff_python_ast::{AnyNodeRef, Expr, token::TokenKind};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{
@@ -44,8 +41,7 @@ pub(super) struct Candidate<'src> {
 
 impl Candidate<'_> {
     /// The two edits taking the pair's parenthesis characters out and
-    /// nothing else, the removal a pair inside an open fold earns,
-    /// since that fold closes the whitespace around them itself.
+    /// nothing else, the removal a pair inside an open fold earns.
     pub(super) fn lone_paren_removals(&self) -> [Edit; 2] {
         let paren = TextSize::of('(');
         self.flush.flanking(
@@ -87,11 +83,7 @@ impl<'src> ParentedProbe<'src> for Probe<'src> {
 }
 
 /// True when every line break inside `inner` sits within a bracket
-/// `inner` itself opens and `shed` reports this pass leaves standing,
-/// so the pair around it holds none of them and the bracket that does
-/// lays out the rows. A bracket `shed` reports coming out holds
-/// nothing, leaving the reading the same before and after those pairs
-/// shed.
+/// `inner` itself opens and `shed` reports this pass leaves standing.
 pub(super) fn breaks_held_inside(source: &Source, inner: TextRange, shed: Sheds) -> bool {
     let mut depth = 0_usize;
     source
@@ -130,11 +122,29 @@ pub(super) fn outermost_calls(source: &Source) -> Vec<TextRange> {
     }))
 }
 
+/// The columns the pairs shed inside `range` give back, two per pair
+/// less the spaces its flush sides keep.
+pub(super) fn shed_columns(range: TextRange, candidates: &[Candidate]) -> usize {
+    shedding_inside(range, candidates)
+        .map(|other| 2 - other.flush.spaces())
+        .sum()
+}
+
+/// The candidates this pass sheds whose pair sits inside `range`.
+pub(super) fn shedding_inside<'c, 'src>(
+    range: TextRange,
+    candidates: &'c [Candidate<'src>],
+) -> impl Iterator<Item = &'c Candidate<'src>> {
+    let from = candidates.partition_point(|other| other.pair.start() < range.start());
+    candidates[from..]
+        .iter()
+        .take_while(move |other| other.pair.start() < range.end())
+        .filter(move |other| other.sheds && range.contains_range(other.pair))
+}
+
 /// True where `expr` joins at one boolean operator and the node
 /// holding it joins at the other, so the pair around `expr` separates
-/// two bindings rather than repeating one. Dropping that pair would
-/// leave its operands reading as one flat run at a single operator,
-/// whether they land on one row or on rows of their own.
+/// two bindings rather than repeating one.
 fn binds_apart(expr: &Expr, parent: AnyNodeRef) -> bool {
     let Expr::BoolOp(inner) = expr else {
         return false;
@@ -154,7 +164,7 @@ fn candidate<'src>(
     parent: AnyNodeRef,
     ancestors: &[AnyNodeRef],
 ) -> Option<Candidate<'src>> {
-    let pair = parenthesized_range(expr.into(), parent, source.tokens())?;
+    let pair = source.parenthesized_range(expr.into(), parent)?;
     // A walrus binding keeps its pair whatever the context, since the
     // grammar needs it almost everywhere, and a multi-line return
     // annotation belongs to `reflow-signatures`, so neither sheds here.

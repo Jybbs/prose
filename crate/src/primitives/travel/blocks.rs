@@ -67,10 +67,7 @@ pub(crate) fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
 /// `indent`, so every movable continuation row lands one step further
 /// in and a closing row of the block's own returns to `indent`. A block
 /// whose head leaves a bracket open takes that bracket's shape through
-/// [`hanging_travel`], and one that does not moves rigidly. The seat
-/// reads `indent` alone rather than the column the source wrote the
-/// block at, so a caller rewriting the row it renders into reaches the
-/// same result on every later pass.
+/// [`hanging_travel`], and one that does not moves rigidly.
 pub(crate) fn hung_block_through<'s>(
     source: &'s Source,
     range: TextRange,

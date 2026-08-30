@@ -7,19 +7,9 @@ use ruff_python_ast::{
     statement_visitor::{StatementVisitor, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use super::*;
-
-/// Outcome of qualifying one `case` arm. `Align` enrolls the arm in
-/// the active alignment sub-group. `Disqualify` breaks the sub-group
-/// without emitting an edit. `Split` breaks the sub-group and emits
-/// an edit pushing the body onto the next source line.
-pub(super) enum CaseOutcome {
-    Align(aligner::Member, TextRange),
-    Disqualify,
-    Split(Edit),
-}
+use crate::primitives::inline::display_width;
 
 pub(super) struct Visitor<'a> {
     pub(super) code_line_length: usize,
@@ -57,7 +47,7 @@ impl Visitor<'_> {
         let source = self.walker.source;
         let pre_colon_end = colon_targets::match_case_pre_colon_end(case);
         let lhs_width = source.width_between(case.start(), pre_colon_end);
-        let body_width = source.slice(body_first.range()).width();
+        let body_width = display_width(source.slice(body_first.range()));
         source.column_overflows(
             case.start(),
             lhs_width + 3 + body_width,
@@ -119,6 +109,16 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
         }
         walk_stmt(self, stmt);
     }
+}
+
+/// Outcome of qualifying one `case` arm. `Align` enrolls the arm in
+/// the active alignment sub-group. `Disqualify` breaks the sub-group
+/// without emitting an edit. `Split` breaks the sub-group and emits
+/// an edit pushing the body onto the next source line.
+enum CaseOutcome {
+    Align(aligner::Member, TextRange),
+    Disqualify,
+    Split(Edit),
 }
 
 #[cfg(test)]

@@ -6,13 +6,12 @@
 //! rename is display-only, and notebooks are skipped whole.
 
 use heck::ToShoutySnakeCase;
-use regex_lite::Regex;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::ExprName;
 use ruff_text_size::Ranged;
 
 use crate::{
-    config::Config,
+    config::{AllowPattern, Config},
     diagnostics::Diagnostic,
     primitives::{
         alias::{AliasContext, is_type_alias},
@@ -24,7 +23,7 @@ use crate::{
 };
 
 pub(crate) struct MiscasedConstants {
-    allow_pattern: Regex,
+    allow_pattern: AllowPattern,
 }
 
 impl MiscasedConstants {
@@ -47,7 +46,7 @@ impl MiscasedConstants {
             && !is_screaming_case(name)
             && !ctx.analysis().module_reassigned(name)
             && !is_explicit_type_alias(site.stmt)
-            && !Config::allow_matches(&self.allow_pattern, name)
+            && !self.allow_pattern.matches(name)
             && !is_type_alias(site, ctx)
             && site
                 .value

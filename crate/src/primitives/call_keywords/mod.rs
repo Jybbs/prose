@@ -4,7 +4,7 @@
 //! in-module call sites to the signature they bind, and
 //! [`resolve_call_params`] resolves one call's callee against that map.
 
-use std::{borrow::Cow, collections::HashMap};
+use std::borrow::Cow;
 
 mod params;
 
@@ -13,6 +13,7 @@ pub(crate) use params::{module_call_params, resolve_call_params};
 use itertools::Itertools;
 use ruff_python_ast::{Expr, ExprCall, ParameterWithDefault, Parameters, Stmt};
 use ruff_text_size::{Ranged, TextSize};
+use rustc_hash::FxHashMap;
 
 use crate::{primitives::params::pins_positional_params, source::Source};
 
@@ -25,7 +26,7 @@ pub(crate) struct CallKeywords<'src> {
 
 /// The callee-offset lookup [`module_call_params`] returns, resolving a
 /// call to the module function it binds.
-pub(crate) type CallTargets<'src> = HashMap<TextSize, &'src Parameters>;
+pub(crate) type CallTargets<'src> = FxHashMap<TextSize, &'src Parameters>;
 
 /// One argument of a call rendered as a `name=value` keyword binding.
 pub(crate) struct KeywordArg<'src> {

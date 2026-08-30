@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/definitions_band_inside_a_conditional_arm/input.py
+---
+alphabetize-siblings@48..121

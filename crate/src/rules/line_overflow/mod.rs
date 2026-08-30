@@ -19,13 +19,13 @@ use ruff_python_ast::{
 };
 use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::{
         docstring::{body_docstring, docstring_slots},
+        inline::display_width,
         walk::walk_stmt,
     },
     rule::{Rule, RuleId},
@@ -74,7 +74,7 @@ impl Rule for LineOverflow {
         let mut diagnostics = Vec::new();
         for line in source.text().universal_newlines() {
             let range = line.range();
-            let width = line.as_str().width();
+            let width = display_width(line.as_str());
             if width <= floor {
                 continue;
             }

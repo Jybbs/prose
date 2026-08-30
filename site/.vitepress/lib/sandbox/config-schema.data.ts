@@ -5,6 +5,7 @@ import { discoverRuleIndex }                  from '../rules/discovery'
 import * as paths                             from '../shared/paths'
 import type { RuleFamily }                    from '../shared/registries'
 import * as ruleSchema                        from '../shared/rule-schema'
+import { stripSuffix }                        from '../shared/strip-suffix'
 import { toTitleCase }                        from '../shared/title-case'
 
 type FacetKind = 'bool' | 'int' | 'string' | 'stringList'
@@ -83,7 +84,7 @@ export default defineLoader({
       .map(([key, def]): LengthKnob => ({
         default : def.default as number,
         key,
-        label   : toTitleCase(key.replace(/-line-length$/, ''), '-')
+        label   : toTitleCase(stripSuffix(key, '-line-length'), '-')
       }))
     return { codeLineLength: props['code-line-length'].default as number, lengths, rules }
   }

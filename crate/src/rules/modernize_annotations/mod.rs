@@ -4,10 +4,9 @@
 //! subscript to the PEP 604 pipe union under `rewrite-unions`, then
 //! dropping every `typing` import the rewrites leave unread.
 
-use std::collections::HashMap;
-
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr, PythonVersion};
+use rustc_hash::FxHashMap;
 
 use crate::{
     config::Config,
@@ -27,8 +26,8 @@ use render::Renderer;
 use typing_imports::TypingImports;
 
 pub(crate) struct ModernizeAnnotations {
-    generics: bool,
     folds: Folds,
+    generics: bool,
     unions: bool,
 }
 
@@ -60,7 +59,7 @@ impl Rule for ModernizeAnnotations {
             return Vec::new();
         };
         let mut walker = Walker {
-            consumed: HashMap::new(),
+            consumed: FxHashMap::default(),
             edits: Vec::new(),
             renderer: Renderer::new(source, imports.aliases(), self.generics, self.unions),
             source,
@@ -79,7 +78,7 @@ impl Rule for ModernizeAnnotations {
 /// Rewrites the outermost expression whose rendered form differs,
 /// counting the bound name each rewritten head read.
 struct Walker<'a> {
-    consumed: HashMap<&'a str, usize>,
+    consumed: FxHashMap<&'a str, usize>,
     edits: Vec<Edit>,
     renderer: Renderer<'a>,
     source: &'a Source,

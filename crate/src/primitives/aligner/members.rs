@@ -9,10 +9,12 @@ use ruff_python_ast::{
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{TextLen, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use super::Member;
-use crate::{primitives::padding::delimiter_padding_width, source::Source};
+use crate::{
+    primitives::{inline::display_width, padding::delimiter_padding_width},
+    source::Source,
+};
 
 /// Builds a `Member` for a row whose aligned token sits at `anchor`.
 /// Width is the display width of the line's content from the first
@@ -25,9 +27,9 @@ pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member 
     let gap = line_gap_before(source, anchor);
     let head = TextRange::new(line_start, gap.start());
     let text = source.slice(head);
-    let width = text.trim_whitespace_start().width();
+    let width = display_width(text.trim_whitespace_start());
     Member {
-        baseline: text.width() - width,
+        baseline: display_width(text) - width,
         gap,
         line_start,
         op_width: 0,
@@ -127,7 +129,7 @@ fn range_anchored_member(
     anchor: TextSize,
     extra_width: usize,
 ) -> Member {
-    let width = source.slice(target).width() + extra_width;
+    let width = display_width(source.slice(target)) + extra_width;
     let line_start = source.text().line_start(anchor);
     Member {
         baseline: source.width_between(line_start, target.start()),

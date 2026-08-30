@@ -3,7 +3,7 @@
 //! write and read it meets, and resolving each deferred read against the
 //! completed scope chain.
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 use itertools::Itertools;
 use ruff_python_ast::{
@@ -12,29 +12,32 @@ use ruff_python_ast::{
     Stmt, StmtAnnAssign, StmtAssign, StmtAugAssign, StmtClassDef, StmtDelete, StmtFor,
     StmtFunctionDef, StmtGlobal, StmtIf, StmtImport, StmtImportFrom, StmtTry, StmtWhile, StmtWith,
     UnaryOp,
+    name::Name,
     visitor::{Visitor, walk_arguments, walk_expr, walk_parameters},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
+use rustc_hash::{FxHashMap, FxHashSet};
+use smallvec::SmallVec;
 
 use super::{
     Binding, BindingAnalysis, BindingId, BindingKind, Scope, ScopeId, ScopeKind, UnpackKind,
     names::{bare_import_bound_name, from_import_bound_name},
 };
-use crate::primitives::{insert_sorted_by_key, walk::walk_stmt};
+use crate::primitives::{sorted_slot, walk::walk_stmt};
 
 pub(super) struct Builder {
     annotation_depth: usize,
-    annotation_offsets: HashSet<TextSize>,
-    assignment_values: HashMap<TextSize, TextRange>,
+    annotation_offsets: FxHashSet<TextSize>,
+    assignment_values: FxHashMap<TextSize, TextRange>,
     bindings: Vec<Binding>,
     condition_test_depth: usize,
-    condition_test_walruses: HashSet<BindingId>,
+    condition_test_walruses: FxHashSet<BindingId>,
     conditional_depth: usize,
     deferred_reads: Vec<DeferredRead>,
-    deleted: HashSet<String>,
-    global_writes: BTreeMap<String, Vec<TextSize>>,
-    function_scope_at: HashMap<TextSize, ScopeId>,
-    runtime_offsets: HashSet<TextSize>,
+    deleted: FxHashSet<Name>,
+    function_scope_at: FxHashMap<TextSize, ScopeId>,
+    global_writes: BTreeMap<Name, Vec<TextSize>>,
+    runtime_offsets: FxHashSet<TextSize>,
     scope_stack: Vec<ScopeId>,
     scopes: Vec<Scope>,
     unpack_groups: Vec<UnpackGroup>,
@@ -44,17 +47,17 @@ impl Builder {
     pub(super) fn new() -> Self {
         let mut builder = Self {
             annotation_depth: 0,
-            annotation_offsets: HashSet::new(),
-            assignment_values: HashMap::new(),
+            annotation_offsets: FxHashSet::default(),
+            assignment_values: FxHashMap::default(),
             bindings: Vec::new(),
             condition_test_depth: 0,
-            condition_test_walruses: HashSet::new(),
+            condition_test_walruses: FxHashSet::default(),
             conditional_depth: 0,
             deferred_reads: Vec::new(),
-            deleted: HashSet::new(),
-            function_scope_at: HashMap::new(),
+            deleted: FxHashSet::default(),
+            function_scope_at: FxHashMap::default(),
             global_writes: BTreeMap::new(),
-            runtime_offsets: HashSet::new(),
+            runtime_offsets: FxHashSet::default(),
             scope_stack: Vec::new(),
             scopes: Vec::new(),
             unpack_groups: Vec::new(),
@@ -136,58 +139,6 @@ impl Builder {
             }
             b.visit_expr(&lambda.body);
         });
-    }
-
-    pub(super) fn finish(mut self) -> BindingAnalysis {
-        for deferred in std::mem::take(&mut self.deferred_reads) {
-            if let Some(binding_id) = resolve_in_chain(&self.scopes, deferred.scope, &deferred.name)
-            {
-                self.record_resolved_read(
-                    binding_id,
-                    deferred.offset,
-                    deferred.attribute.as_deref(),
-                );
-            }
-        }
-        // Folded after the deferred reads land, so a forward reference
-        // from an annotation to a name bound later still records.
-        for binding in &mut self.bindings {
-            binding.annotation_read = binding
-                .read_offsets
-                .iter()
-                .any(|offset| self.annotation_offsets.contains(offset));
-            binding.runtime_read = binding
-                .read_offsets
-                .iter()
-                .any(|offset| self.runtime_offsets.contains(offset));
-        }
-        let mut unpack_targets = HashMap::new();
-        for group in &self.unpack_groups {
-            let reused = group
-                .members
-                .iter()
-                .any(|&member| self.bindings[member.0 as usize].read_offsets.len() > 1);
-            for (index, &member) in group.members.iter().enumerate() {
-                let kind = if reused {
-                    UnpackKind::Exempt
-                } else if group.suggestible {
-                    UnpackKind::Suggested(group.value, index)
-                } else {
-                    UnpackKind::Bare
-                };
-                unpack_targets.insert(member, kind);
-            }
-        }
-        BindingAnalysis {
-            assignment_values: self.assignment_values,
-            bindings: self.bindings,
-            condition_test_walruses: self.condition_test_walruses,
-            deleted: self.deleted,
-            function_scope_at: self.function_scope_at,
-            global_writes: self.global_writes,
-            scopes: self.scopes,
-            unpack_targets,
-        }
     }
 
     fn for_each_target_name(
@@ -336,10 +287,11 @@ impl Builder {
     /// the attribute it accessed.
     fn record_resolved_read(&mut self, id: BindingId, offset: TextSize, attribute: Option<&str>) {
         let binding = &mut self.bindings[id.0 as usize];
-        insert_sorted_by_key(&mut binding.read_offsets, offset, |&existing| existing);
+        let slot = sorted_slot(&binding.read_offsets, &offset, |&existing| existing);
+        binding.read_offsets.insert(slot, offset);
         match attribute {
             Some(attribute) => {
-                binding.attributes.insert(attribute.to_owned());
+                binding.attributes.insert(attribute.into());
             }
             None => binding.bare_read = true,
         }
@@ -378,8 +330,8 @@ impl Builder {
         match resolve_in_chain(&self.scopes, innermost, name) {
             Some(binding) => self.record_resolved_read(binding, offset, attribute),
             None => self.deferred_reads.push(DeferredRead {
-                attribute: attribute.map(str::to_owned),
-                name: name.to_owned(),
+                attribute: attribute.map(Name::from),
+                name: name.into(),
                 offset,
                 scope: innermost,
             }),
@@ -413,7 +365,7 @@ impl Builder {
         let scope = self.current_scope();
         if self.scopes[scope.0 as usize].globals.contains(name) {
             self.global_writes
-                .entry(name.to_owned())
+                .entry(name.into())
                 .or_default()
                 .push(offset);
         }
@@ -434,18 +386,18 @@ impl Builder {
         } else {
             let id =
                 BindingId(u32::try_from(self.bindings.len()).expect("binding count fits in u32"));
-            scope_data.bindings.insert(name.to_owned(), id);
+            scope_data.bindings.insert(name.into(), id);
             self.bindings.push(Binding {
                 annotation_read: false,
                 attributes: BTreeSet::new(),
                 bare_read: false,
                 first_unconditional_write: None,
-                kinds: Vec::new(),
-                name: name.to_owned(),
-                read_offsets: Vec::new(),
+                kinds: SmallVec::new(),
+                name: name.into(),
+                read_offsets: SmallVec::new(),
                 runtime_read: false,
                 scope,
-                write_offsets: Vec::new(),
+                write_offsets: SmallVec::new(),
             });
             id
         };
@@ -505,13 +457,21 @@ impl Builder {
         }
     }
 
+    /// Visits `test` as the condition of an `if`, `elif`, or `while`,
+    /// its bare name a runtime read and any walrus inside it a
+    /// condition-test walrus.
+    fn visit_condition_test(&mut self, test: &Expr) {
+        self.mark_runtime_read(test);
+        self.in_condition_test(|b| b.visit_expr(test));
+    }
+
     /// Records each name a `del` unbinds, which is neither a read nor a
     /// write, and walks any other target shape for its own reads.
     fn visit_delete(&mut self, node: &StmtDelete) {
         for target in &node.targets {
             match target {
                 Expr::Name(name) => {
-                    self.deleted.insert(name.id.to_string());
+                    self.deleted.insert(name.id.clone());
                 }
                 _ => walk_expr(self, target),
             }
@@ -527,7 +487,6 @@ impl Builder {
         });
     }
 
-    /// Walks an `if`/`elif`/`else` chain with each branch body conditional.
     /// Records each name a `global` statement declares, so a later
     /// write in this scope binds at module scope rather than locally.
     fn visit_global(&mut self, node: &StmtGlobal) {
@@ -535,18 +494,17 @@ impl Builder {
         for name in &node.names {
             self.scopes[scope.0 as usize]
                 .globals
-                .insert(name.to_string());
+                .insert(name.id.clone());
         }
     }
 
+    /// Walks an `if`/`elif`/`else` chain with each branch body conditional.
     fn visit_if(&mut self, node: &StmtIf) {
-        self.mark_runtime_read(&node.test);
-        self.in_condition_test(|b| b.visit_expr(&node.test));
+        self.visit_condition_test(&node.test);
         self.in_conditional(|b| b.visit_body(&node.body));
         for clause in &node.elif_else_clauses {
             if let Some(test) = &clause.test {
-                self.mark_runtime_read(test);
-                self.in_condition_test(|b| b.visit_expr(test));
+                self.visit_condition_test(test);
             }
             self.in_conditional(|b| b.visit_body(&clause.body));
         }
@@ -585,8 +543,7 @@ impl Builder {
     }
 
     fn visit_while(&mut self, node: &StmtWhile) {
-        self.mark_runtime_read(&node.test);
-        self.in_condition_test(|b| b.visit_expr(&node.test));
+        self.visit_condition_test(&node.test);
         self.in_conditional(|b| {
             b.visit_body(&node.body);
             b.visit_body(&node.orelse);
@@ -601,6 +558,58 @@ impl Builder {
             }
         }
         self.visit_body(&node.body);
+    }
+
+    pub(super) fn finish(mut self) -> BindingAnalysis {
+        for deferred in std::mem::take(&mut self.deferred_reads) {
+            if let Some(binding_id) = resolve_in_chain(&self.scopes, deferred.scope, &deferred.name)
+            {
+                self.record_resolved_read(
+                    binding_id,
+                    deferred.offset,
+                    deferred.attribute.as_deref(),
+                );
+            }
+        }
+        // Folded after the deferred reads land, so a forward reference
+        // from an annotation to a name bound later still records.
+        for binding in &mut self.bindings {
+            binding.annotation_read = binding
+                .read_offsets
+                .iter()
+                .any(|offset| self.annotation_offsets.contains(offset));
+            binding.runtime_read = binding
+                .read_offsets
+                .iter()
+                .any(|offset| self.runtime_offsets.contains(offset));
+        }
+        let mut unpack_targets = FxHashMap::default();
+        for group in &self.unpack_groups {
+            let reused = group
+                .members
+                .iter()
+                .any(|&member| self.bindings[member.0 as usize].read_offsets.len() > 1);
+            for (index, &member) in group.members.iter().enumerate() {
+                let kind = if reused {
+                    UnpackKind::Exempt
+                } else if group.suggestible {
+                    UnpackKind::Suggested(group.value, index)
+                } else {
+                    UnpackKind::Bare
+                };
+                unpack_targets.insert(member, kind);
+            }
+        }
+        BindingAnalysis {
+            assignment_values: self.assignment_values,
+            bindings: self.bindings,
+            condition_test_walruses: self.condition_test_walruses,
+            deleted: self.deleted,
+            function_scope_at: self.function_scope_at,
+            global_writes: self.global_writes,
+            scopes: self.scopes,
+            unpack_targets,
+        }
     }
 }
 
@@ -686,8 +695,8 @@ impl<'a> Visitor<'a> for Builder {
 /// A read left unresolved mid-walk, retained until `finish`
 /// re-resolves it against the completed scope chain.
 struct DeferredRead {
-    attribute: Option<String>,
-    name: String,
+    attribute: Option<Name>,
+    name: Name,
     offset: TextSize,
     scope: ScopeId,
 }

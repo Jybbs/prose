@@ -22,7 +22,7 @@ export async function readFixtureToggle(inputPath: string): Promise<FixtureToggl
     fs.readFile(inputPath,               'utf8'),
     fs.readFile(snapshotPath(inputPath), 'utf8')
   ])
-  const output        = matter(snapRaw).content.replace(/\s+$/, '\n')
+  const output        = matter(snapRaw).content.trimEnd() + '\n'
   const changesSource = inputRaw !== output
   const hasFindings   = readLintFindings(inputPath).length > 0
   return {

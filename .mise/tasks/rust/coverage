@@ -3,6 +3,6 @@
 
 source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
 
-cargo llvm-cov clean --profraw-only
+cargo llvm-cov clean --workspace
 split_workspace cargo llvm-cov --no-report
 cargo llvm-cov report --lcov --output-path target/lcov.info

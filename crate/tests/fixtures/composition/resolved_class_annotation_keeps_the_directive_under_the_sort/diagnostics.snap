@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/resolved_class_annotation_keeps_the_directive_under_the_sort/input.py
+---
+space-statements@48..49

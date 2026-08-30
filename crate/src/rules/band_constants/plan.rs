@@ -4,15 +4,14 @@
 //! eager reference ahead of its definition. [`banded_gap`] decides the
 //! blank between two seated bands.
 
-use std::collections::HashMap;
-
-use itertools::Itertools;
 use ruff_python_ast::Stmt;
 use ruff_source_file::LineEnding;
 use ruff_text_size::TextRange;
+use rustc_hash::FxHashMap;
 
 use crate::primitives::{
     blanks::{blank_gap, module_blank_lines},
+    group_map,
     imports::{import_blank_lines, import_sort_key},
     sections::Sections,
 };
@@ -22,11 +21,11 @@ use crate::primitives::{
 /// tier, the comment run still heading each member, and the comment each
 /// member carries onto another member's line.
 pub(super) struct Banding {
-    pub(super) attached: HashMap<usize, TextRange>,
+    pub(super) attached: FxHashMap<usize, TextRange>,
     pub(super) carries: Vec<Carry>,
-    ranks: HashMap<usize, BandRank>,
-    tier_sizes: HashMap<(BandRank, usize), usize>,
-    tiers: HashMap<usize, usize>,
+    ranks: FxHashMap<usize, BandRank>,
+    tier_sizes: FxHashMap<(BandRank, usize), usize>,
+    tiers: FxHashMap<usize, usize>,
 }
 
 impl Banding {
@@ -64,11 +63,11 @@ impl Banding {
 /// carries onto another member's line. A statement absent from `ranks`
 /// is a pinned anchor.
 pub(super) struct BandPlan<'src> {
-    pub(super) attached: HashMap<usize, TextRange>,
+    pub(super) attached: FxHashMap<usize, TextRange>,
     pub(super) carries: Vec<Carry>,
     pub(super) edges: Vec<(usize, usize)>,
-    pub(super) keys: HashMap<usize, (usize, Subcategory, &'src str)>,
-    pub(super) ranks: HashMap<usize, BandRank>,
+    pub(super) keys: FxHashMap<usize, (usize, Subcategory, &'src str)>,
+    pub(super) ranks: FxHashMap<usize, BandRank>,
 }
 
 impl BandPlan<'_> {
@@ -89,18 +88,12 @@ impl BandPlan<'_> {
         drained: &mut Drained,
     ) {
         let incoming = std::mem::take(region);
-        let mut imports = Vec::new();
-        let mut leading = Vec::new();
-        let mut definitions = Vec::new();
-        let mut trailing = Vec::new();
-        for &idx in &incoming {
-            match self.ranks[&idx] {
-                BandRank::Import => imports.push(idx),
-                BandRank::Leading => leading.push(idx),
-                BandRank::Definition => definitions.push(idx),
-                BandRank::Trailing => trailing.push(idx),
-            }
-        }
+        let mut bands = group_map(incoming.iter().map(|&idx| (self.ranks[&idx], idx)));
+        let mut take = |rank| bands.remove(&rank).unwrap_or_default();
+        let mut imports = take(BandRank::Import);
+        let mut leading = take(BandRank::Leading);
+        let definitions = take(BandRank::Definition);
+        let mut trailing = take(BandRank::Trailing);
         let heads = |bands: [&[usize]; 3]| bands.map(|band| band.first().copied());
         let source_heads = heads([&imports, &leading, &trailing]);
         let slots = imports.clone();
@@ -170,14 +163,10 @@ impl BandPlan<'_> {
     }
 
     /// True when `banded` seats every eager reference whose two ends
-    /// both sit inside this region behind its referent, the
-    /// import-safety invariant the hoist holds. An edge reaching outside
-    /// the region imposes nothing, because a region occupies one
-    /// contiguous slot span and every anchor keeps its own slot, so
-    /// reordering inside the region can neither break such an edge nor
-    /// repair one the incoming order already broke.
+    /// both sit inside this region behind its referent. An edge reaching
+    /// outside the region imposes nothing.
     fn region_holds_its_references(&self, banded: &[usize]) -> bool {
-        let seat: HashMap<usize, usize> = banded
+        let seat: FxHashMap<usize, usize> = banded
             .iter()
             .enumerate()
             .map(|(seat, &idx)| (idx, seat))
@@ -226,7 +215,7 @@ impl BandPlan<'_> {
         let Drained { banded, shifts, .. } =
             self.drained(body, sections, first_party, grouped, order);
         self.relocate_heads(&shifts);
-        let tiers: HashMap<usize, usize> = self
+        let tiers: FxHashMap<usize, usize> = self
             .keys
             .iter()
             .map(|(&idx, &(tier, ..))| {
@@ -238,7 +227,10 @@ impl BandPlan<'_> {
             .collect();
         let tier_sizes = tiers
             .iter()
-            .counts_by(|(&idx, &tier)| (self.ranks[&idx], tier));
+            .fold(FxHashMap::default(), |mut sizes, (&idx, &tier)| {
+                *sizes.entry((self.ranks[&idx], tier)).or_insert(0) += 1;
+                sizes
+            });
         let banding = Banding {
             attached: self.attached,
             carries: self.carries,

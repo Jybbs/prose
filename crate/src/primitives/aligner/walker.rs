@@ -4,14 +4,16 @@
 
 use ruff_diagnostics::Edit;
 use ruff_text_size::{TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use super::{
     Member, Settings, Widenings, emit::emit_group, holds::shares_column, is_held, retain_unheld,
     space_padding_edit,
 };
 use crate::{
-    primitives::edit::{apply_inline_edits, insert_edit},
+    primitives::{
+        edit::{apply_inline_edits, insert_edit},
+        inline::display_width,
+    },
     rule::RuleId,
     source::Source,
 };
@@ -78,7 +80,8 @@ impl<'a> AlignWalker<'a> {
         let prefix = TextRange::new(member.line_start, member.gap.start());
         let placed = apply_inline_edits(self.source, prefix, &self.placed);
         member.baseline.saturating_add_signed(
-            placed.width().cast_signed() - self.source.slice(prefix).width().cast_signed(),
+            display_width(&placed).cast_signed()
+                - display_width(self.source.slice(prefix)).cast_signed(),
         )
     }
 
