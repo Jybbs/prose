@@ -6,7 +6,7 @@ use std::fmt::Debug;
 
 use rstest::rstest;
 
-use super::*;
+use crate::config::*;
 
 /// Asserts a parsed config survives a TOML dump and re-parse,
 /// comparing through `project`.

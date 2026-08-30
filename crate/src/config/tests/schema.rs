@@ -5,7 +5,7 @@ use rstest::{fixture, rstest};
 use schemars::schema_for;
 use serde_json::{Value, json};
 
-use super::*;
+use crate::config::*;
 use crate::pipeline::Pipeline;
 
 #[fixture]

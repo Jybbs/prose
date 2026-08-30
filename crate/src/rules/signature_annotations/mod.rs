@@ -156,7 +156,7 @@ mod tests {
     }
 
     #[test]
-    fn a_confident_signal_rides_a_display_only_suggestion() {
+    fn a_confident_signal_becomes_a_display_only_suggestion() {
         let source = parse("def f(threshold=0.5):\n    return threshold\n");
         let rule = SignatureAnnotations::from_config(&Config::default());
         let diagnostics = rule.lint(&source);

@@ -5,8 +5,8 @@ use std::assert_matches;
 use indoc::indoc;
 use tempfile::TempDir;
 
-use super::load::ConfigForm;
-use super::*;
+use crate::config::load::ConfigForm;
+use crate::config::*;
 use crate::testing::{write_dotconfig_prose_toml, write_prose_toml, write_pyproject};
 
 fn load_collecting_precedence(dir: &Path) -> (Config, Vec<(ConfigForm, ConfigForm)>) {

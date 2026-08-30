@@ -348,8 +348,4 @@ pub enum ConfigError {
 }
 
 #[cfg(test)]
-mod load_tests;
-#[cfg(test)]
-mod parse_tests;
-#[cfg(test)]
-mod schema_tests;
+mod tests;

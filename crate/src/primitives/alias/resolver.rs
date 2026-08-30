@@ -130,7 +130,8 @@ impl<'src> Resolver<'_, 'src> {
                     )
             }
 
-            // An int, a bool, and bytes ride on `Literal` alone.
+            // An int, a bool, and bytes belong in a type expression only
+            // inside `Literal`.
             Expr::BooleanLiteral(_)
             | Expr::BytesLiteral(_)
             | Expr::NumberLiteral(ExprNumberLiteral {

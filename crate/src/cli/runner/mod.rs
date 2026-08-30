@@ -347,7 +347,7 @@ fn build_run(
     })
 }
 
-/// Resolves how the diff heads each file, painting the `🧵` line only
+/// Resolves how the diff heads each file, styling the `🧵` line only
 /// where stdout carries color through.
 fn diff_heading(present: &Presentation) -> Heading {
     if present.decorate_diff() {
