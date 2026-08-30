@@ -1,37 +1,43 @@
 //! Runs the enabled rules against a source file in deterministic order.
 //!
 //! Each rule returns a `Vec<Edit>` and a `Vec<TextRange>` of lint
-//! ranges. The pipeline sorts and applies the edits into a fresh
-//! buffer, then reparses and confirms the result still compiles before
-//! handing the new `Source` to the next rule. Registration order follows
-//! the data dependency, seating every rule that mutates a line's width,
-//! a group's member order, or a statement's position ahead of every rule
-//! that reads one. The settle check re-applies the enabled rules to a
+//! ranges. The pipeline splices the edits of a batch of consecutive
+//! rules into a fresh buffer in one pass, then reparses and confirms
+//! the result still compiles before handing the new `Source` to the
+//! next batch. Registration order follows the data dependency, seating
+//! every rule that mutates a line's width, a group's member order, or
+//! a statement's position ahead of every rule that reads one, and a
+//! rule joins a batch only beside rules the registry declares it
+//! independent of. The settle check re-applies the enabled rules to a
 //! completed run's output and names every rule still editing it.
 
-use ruff_diagnostics::{Edit, SourceMap};
+use itertools::Itertools;
+use ruff_diagnostics::Edit;
 use ruff_python_ast::PythonVersion;
-use ruff_text_size::Ranged;
 
 use crate::{
     diagnostics::Diagnostic,
-    primitives::edit::{apply_edits, apply_edits_mapped},
-    rule::{Rule, RuleId},
+    rule::{Rule, RuleId, independent},
     source::Source,
 };
 
+mod batch;
 mod error;
 mod filter;
 mod validity;
 
+use batch::{Batch, Spliceable};
 pub use error::PipelineError;
-use error::reparse_or_reject;
 use filter::{prepared_groups, settled_lints};
 use validity::compile_gate;
 
 /// Ordered sequence of enabled rules, run against each source file.
 pub struct Pipeline {
     rules: Vec<Box<dyn Rule>>,
+    /// The earlier seats each seat's rule shares a splice with under
+    /// [`Sharing::Declared`].
+    shares: Vec<Vec<usize>>,
+    sharing: Sharing,
     target_version: PythonVersion,
 }
 
@@ -42,74 +48,23 @@ impl Pipeline {
     }
 
     pub(crate) fn from_rules(rules: Vec<Box<dyn Rule>>) -> Self {
+        let shares = rules
+            .iter()
+            .enumerate()
+            .map(|(seat, rule)| {
+                let later = rule.id();
+                rules[..seat]
+                    .iter()
+                    .positions(|earlier| independent(later.as_str(), earlier.id().as_str()))
+                    .collect()
+            })
+            .collect();
         Self {
             rules,
+            shares,
+            sharing: Sharing::default(),
             target_version: PythonVersion::default(),
         }
-    }
-
-    /// Sets the Python version the compile gate evaluates against.
-    #[must_use]
-    pub(crate) fn targeting(mut self, target_version: Option<PythonVersion>) -> Self {
-        self.target_version = target_version.unwrap_or_default();
-        self
-    }
-
-    /// Folds each rule's edits into `source` in registration order from
-    /// the `first` seat onward, reparsing between rules and extending
-    /// `diagnostics` with each rule's format findings when the caller
-    /// supplies one.
-    ///
-    /// `first` is the seat a [`diagnosed`](Self::diagnosed) pass over
-    /// this same buffer found editing before any other, leaving every
-    /// rule ahead of it with no fix group for this fold to re-derive. A
-    /// caller with the whole roster to fold passes zero.
-    ///
-    /// # Errors
-    ///
-    /// Returns whichever `PipelineError` a rule's output draws from
-    /// [`reparse_or_reject`].
-    fn fold_rules(
-        &self,
-        source: Source,
-        mut diagnostics: Option<&mut Vec<Diagnostic>>,
-        first: usize,
-    ) -> Result<Source, PipelineError> {
-        let gate = compile_gate(&source, self.target_version);
-        self.rules[first..].iter().try_fold(source, |source, rule| {
-            let rule_id = rule.id();
-            let Some((groups, new_text, map)) = woven_groups(&**rule, &source) else {
-                return Ok(source);
-            };
-            debug_assert!(
-                new_text != source.text(),
-                "rule `{rule_id}` emitted edits that produced identical text",
-            );
-            if let Some(collected) = diagnostics.as_deref_mut() {
-                collected.extend(format_diagnostics(&**rule, groups));
-            }
-            reparse_or_reject(&source, new_text, rule_id, map, gate)
-        })
-    }
-
-    #[cfg(test)]
-    fn is_empty(&self) -> bool {
-        self.rules.is_empty()
-    }
-
-    #[cfg(test)]
-    fn len(&self) -> usize {
-        self.rules.len()
-    }
-
-    /// Collects every rule's diagnostics against `source` without
-    /// applying edits or reparsing between rules, so each range stays
-    /// valid against the original buffer. Format rules contribute one
-    /// diagnostic per surviving fix group and lint rules their lint
-    /// diagnostics, both filtered through the suppression map exactly as
-    /// [`run`](Self::run) filters them.
-    pub fn diagnose(&self, source: &Source) -> Vec<Diagnostic> {
-        self.diagnosed(source).0
     }
 
     /// The diagnostics [`diagnose`](Self::diagnose) collects, paired
@@ -133,6 +88,83 @@ impl Pipeline {
         }
         diagnostics.extend(settled_lints(&self.rules, source));
         (diagnostics, edits_at)
+    }
+
+    /// Folds each rule's edits into `source` in registration order from
+    /// the `first` seat onward, splicing a batch of rules in one pass
+    /// and reparsing between batches, and extending `diagnostics` with
+    /// each rule's format findings when the caller supplies one. A
+    /// batch closes ahead of a rule whose edits overlap one it holds,
+    /// and ahead of a rule the run's [`Sharing`] keeps out of it.
+    ///
+    /// `first` is the seat a [`diagnosed`](Self::diagnosed) pass over
+    /// this same buffer found editing before any other, leaving every
+    /// rule ahead of it with no fix group for this fold to re-derive. A
+    /// caller with the whole roster to fold passes zero.
+    ///
+    /// # Errors
+    ///
+    /// Returns whichever `PipelineError` a rule's output draws from
+    /// [`reparse_or_reject`](error::reparse_or_reject).
+    fn fold_rules(
+        &self,
+        mut source: Source,
+        mut diagnostics: Option<&mut Vec<Diagnostic>>,
+        first: usize,
+    ) -> Result<Source, PipelineError> {
+        let gate = compile_gate(&source, self.target_version);
+        let replays = self.sharing == Sharing::Declared;
+        let mut batch = Batch::default();
+        for (seat, rule) in self.rules.iter().enumerate().skip(first) {
+            let joins = match self.sharing {
+                Sharing::Always => true,
+                Sharing::Declared => batch.shares_with(&self.shares[seat]),
+                Sharing::Never => false,
+            };
+            if !joins {
+                source = batch.close(source, gate, replays)?;
+            }
+            let Some(mut spliceable) = Spliceable::of(&**rule, &source) else {
+                continue;
+            };
+            if batch.conflicts_with(&spliceable.edits) {
+                source = batch.close(source, gate, replays)?;
+                let Some(reread) = Spliceable::of(&**rule, &source) else {
+                    continue;
+                };
+                spliceable = reread;
+            }
+            debug_assert!(
+                spliceable.rewrites(&source),
+                "rule `{}` emitted edits that produced identical text",
+                rule.id(),
+            );
+            if let Some(collected) = diagnostics.as_deref_mut() {
+                collected.extend(format_diagnostics(&**rule, spliceable.groups));
+            }
+            batch.push(seat, &**rule, spliceable.edits);
+        }
+        batch.close(source, gate, replays)
+    }
+
+    #[cfg(test)]
+    fn is_empty(&self) -> bool {
+        self.rules.is_empty()
+    }
+
+    #[cfg(test)]
+    fn len(&self) -> usize {
+        self.rules.len()
+    }
+
+    /// Collects every rule's diagnostics against `source` without
+    /// applying edits or reparsing between rules, so each range stays
+    /// valid against the original buffer. Format rules contribute one
+    /// diagnostic per surviving fix group and lint rules their lint
+    /// diagnostics, both filtered through the suppression map exactly as
+    /// [`run`](Self::run) filters them.
+    pub fn diagnose(&self, source: &Source) -> Vec<Diagnostic> {
+        self.diagnosed(source).0
     }
 
     /// Returns every registered rule's id in a stable order.
@@ -213,6 +245,20 @@ impl Pipeline {
         Ok((self.fold_rules(source, None, first)?, diagnostics))
     }
 
+    /// Sets which rules a run lets share a splice and a parse.
+    #[must_use]
+    pub fn sharing(mut self, sharing: Sharing) -> Self {
+        self.sharing = sharing;
+        self
+    }
+
+    /// Sets the Python version the compile gate evaluates against.
+    #[must_use]
+    pub(crate) fn targeting(mut self, target_version: Option<PythonVersion>) -> Self {
+        self.target_version = target_version.unwrap_or_default();
+        self
+    }
+
     /// The enabled rules whose edits would still rewrite `source`,
     /// empty once the run has settled. Reads whichever subset this
     /// pipeline carries, so a `--select` run answers for that subset
@@ -225,22 +271,32 @@ impl Pipeline {
         }
         self.rules
             .iter()
-            .filter_map(|rule| {
-                let (_, text, _) = woven_groups(&**rule, source)?;
-                (text != source.text()).then(|| rule.id())
+            .filter(|rule| {
+                Spliceable::of(rule.as_ref(), source).is_some_and(|s| s.rewrites(source))
             })
+            .map(|rule| rule.id())
             .collect()
     }
 }
 
-/// True when no two edits across `groups` match on both range and
-/// content. A byte-identical duplicate is the signature of a walk
-/// reaching one node twice, whereas two differing edits over one span
-/// are the overlap the weave declines on its own.
-fn distinct_edits(groups: &[Vec<Edit>]) -> bool {
-    let mut edits: Vec<&Edit> = groups.iter().flatten().collect();
-    edits.sort_by_key(|edit| (edit.start(), edit.end()));
-    edits.windows(2).all(|pair| pair[0] != pair[1])
+/// Which rules a run lets share a splice and a parse with the editing
+/// rules ahead of them.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum Sharing {
+    /// Every rule, so a run reparses only where a rule's edits overlap
+    /// one already batched, the reading the subset probe takes of a
+    /// pair to test whether its edits are independent. A batch the
+    /// reparse rejects surfaces as [`PipelineError::Batch`] rather
+    /// than replaying.
+    Always,
+    /// The rules the registry's independence table declares, every
+    /// other rule reading the tree the batch ahead of it left.
+    #[default]
+    Declared,
+    /// No rule, so every editing rule reads the tree the rule ahead of
+    /// it left, the fold the subset probe measures a batched pair
+    /// against.
+    Never,
 }
 
 /// The format diagnostics `rule`'s surviving fix groups emit, one per
@@ -252,37 +308,6 @@ fn format_diagnostics(rule: &dyn Rule, groups: Vec<Vec<Edit>>) -> impl Iterator<
         .map(move |group| Diagnostic::format(rule_id, group, message.to_owned()))
 }
 
-/// Splices a rule's concatenated edits into `source`, returning the
-/// woven text and, for a notebook, the `SourceMap` of cell-offset
-/// deltas. An ordinary module skips the map.
-fn weave_groups(source: &Source, edits: Vec<Edit>) -> Option<(String, Option<SourceMap>)> {
-    if source.is_notebook() {
-        apply_edits_mapped(source.text(), edits).map(|(text, map)| (text, Some(map)))
-    } else {
-        apply_edits(source.text(), edits).map(|text| (text, None))
-    }
-}
-
-/// Applies `rule` to `source` and weaves its surviving fix groups into
-/// new text, returning `None` when no group survives or the edits do not
-/// apply.
-fn woven_groups(
-    rule: &dyn Rule,
-    source: &Source,
-) -> Option<(Vec<Vec<Edit>>, String, Option<SourceMap>)> {
-    let groups = prepared_groups(rule, source);
-    if groups.is_empty() {
-        return None;
-    }
-    debug_assert!(
-        distinct_edits(&groups),
-        "rule `{}` emitted a duplicate edit, the signature of a walk reaching one node twice",
-        rule.id(),
-    );
-    let (new_text, map) = weave_groups(source, groups.concat())?;
-    Some((groups, new_text, map))
-}
-
 #[cfg(test)]
 mod tests {
     use std::{
@@ -292,7 +317,7 @@ mod tests {
 
     use itertools::Itertools;
     use ruff_diagnostics::Edit;
-    use ruff_text_size::{TextRange, TextSize};
+    use ruff_text_size::{TextLen, TextRange, TextSize};
 
     use super::*;
     use crate::{
@@ -304,10 +329,36 @@ mod tests {
             alphabetize_siblings::AlphabetizeSiblings,
         },
         testing::{
-            FUTURE_LEAD, GroupSentinelRule, assert_send_sync, breaks_compile, breaks_parse,
-            never_settles, notebook, parse, range, self_overlapping,
+            FUTURE_LEAD, GroupSentinelRule, PrefixRule, assert_send_sync, breaks_compile,
+            breaks_parse, never_settles, notebook, parse, range, self_overlapping,
         },
     };
+
+    /// Test-only rule that emits `edit` only while the buffer opens
+    /// with `guard`.
+    struct GuardedRule {
+        edit: Edit,
+        guard: &'static str,
+        id: RuleId,
+    }
+
+    impl Rule for GuardedRule {
+        fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+            if source.text().starts_with(self.guard) {
+                vec![vec![self.edit.clone()]]
+            } else {
+                Vec::new()
+            }
+        }
+
+        fn id(&self) -> RuleId {
+            self.id
+        }
+
+        fn message(&self) -> &'static str {
+            "guarded test rule"
+        }
+    }
 
     /// Test-only lint-only rule that returns the range list supplied
     /// at construction and never produces edits.
@@ -549,28 +600,6 @@ mod tests {
     }
 
     #[test]
-    fn downstream_rule_apply_sees_upstream_rewritten_text() {
-        let seen = Arc::new(Mutex::new(Vec::<String>::new()));
-        let pipeline = Pipeline::from_rules(vec![
-            Box::new(TextCapturingRule {
-                edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
-                id: RuleId::from("rewrite-x-to-y"),
-                seen: seen.clone(),
-            }),
-            Box::new(TextCapturingRule {
-                edits: Vec::new(),
-                id: RuleId::from("downstream-observer"),
-                seen: seen.clone(),
-            }),
-        ]);
-        let source = parse("x = 1\n");
-
-        pipeline.run(source).expect("both stages succeed");
-
-        assert_eq!(*seen.lock().expect("seen mutex"), ["x = 1\n", "y = 1\n"]);
-    }
-
-    #[test]
     fn empty_pipeline_returns_identical_source() {
         let pipeline = Pipeline::from_rules(Vec::new());
         let source = parse("x = 1\n");
@@ -579,6 +608,37 @@ mod tests {
 
         assert_eq!(result.text(), "x = 1\n");
         assert!(diagnostics.is_empty());
+    }
+
+    #[test]
+    fn from_rules_seats_each_rule_beside_the_earlier_seats_it_shares_a_splice_with() {
+        let seated = |slug: &'static str| -> Box<dyn Rule> {
+            Box::new(GroupSentinelRule {
+                groups: Vec::new(),
+                id: RuleId::from(slug),
+            })
+        };
+        let pipeline = Pipeline::from_rules(vec![
+            seated("strip-trailing-commas"),
+            seated("bare-imports"),
+            seated("align-equals"),
+        ]);
+
+        let seats = |later: &str, earlier: &[&str]| -> Vec<usize> {
+            earlier
+                .iter()
+                .positions(|slug| independent(later, slug))
+                .collect()
+        };
+
+        assert_eq!(
+            pipeline.shares,
+            [
+                vec![],
+                seats("bare-imports", &["strip-trailing-commas"]),
+                seats("align-equals", &["strip-trailing-commas", "bare-imports"]),
+            ],
+        );
     }
 
     #[test]
@@ -803,15 +863,133 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "emitted a duplicate edit")]
-    fn run_flags_a_byte_identical_duplicate_edit() {
-        let edit = Edit::range_replacement("y".to_owned(), range(0, 1));
-        let rule = GroupSentinelRule {
-            groups: vec![vec![edit.clone()], vec![edit]],
-            id: RuleId::from("duplicating"),
-        };
-        let pipeline = Pipeline::from_rules(vec![Box::new(rule)]);
-        let _ = pipeline.run(parse("x = 1\n"));
+    fn run_batches_a_declared_pair_against_one_buffer() {
+        // `strip-trailing-commas` shares a splice with
+        // `normalize-literals` in the registry's table, so the second
+        // sentinel reads the buffer the first read.
+        let seen = Arc::new(Mutex::new(Vec::<String>::new()));
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(TextCapturingRule {
+                edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+                id: RuleId::from("normalize-literals"),
+                seen: seen.clone(),
+            }),
+            Box::new(TextCapturingRule {
+                edits: vec![Edit::range_replacement("2".to_owned(), range(4, 5))],
+                id: RuleId::from("strip-trailing-commas"),
+                seen: seen.clone(),
+            }),
+        ]);
+
+        let (result, _) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
+
+        assert_eq!(result.text(), "y = 2\n");
+        assert_eq!(*seen.lock().expect("seen mutex"), ["x = 1\n", "x = 1\n"]);
+    }
+
+    #[test]
+    fn run_batches_adjacent_edits_from_two_rules() {
+        // An edit ending where the next begins is no overlap, so both
+        // rules read the base buffer and land in one splice.
+        let seen = Arc::new(Mutex::new(Vec::<String>::new()));
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(TextCapturingRule {
+                edits: vec![Edit::range_replacement("a".to_owned(), range(0, 1))],
+                id: RuleId::from("rewrite-head"),
+                seen: seen.clone(),
+            }),
+            Box::new(TextCapturingRule {
+                edits: vec![Edit::range_replacement("b".to_owned(), range(1, 2))],
+                id: RuleId::from("rewrite-gap"),
+                seen: seen.clone(),
+            }),
+        ])
+        .sharing(Sharing::Always);
+
+        let (result, _) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
+
+        assert_eq!(result.text(), "ab= 1\n");
+        assert_eq!(*seen.lock().expect("seen mutex"), ["x = 1\n", "x = 1\n"]);
+    }
+
+    #[test]
+    fn run_batches_declared_pairs_alone() {
+        // Neither sentinel is in the registry's independence table, so
+        // the second reads the first's rewrite under the default
+        // sharing, and the batch closes between them.
+        let seen = Arc::new(Mutex::new(Vec::<String>::new()));
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(TextCapturingRule {
+                edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+                id: RuleId::from("rewrite-x-to-y"),
+                seen: seen.clone(),
+            }),
+            Box::new(TextCapturingRule {
+                edits: Vec::new(),
+                id: RuleId::from("downstream-observer"),
+                seen: seen.clone(),
+            }),
+        ]);
+
+        pipeline.run(parse("x = 1\n")).expect("both stages succeed");
+
+        assert_eq!(*seen.lock().expect("seen mutex"), ["x = 1\n", "y = 1\n"]);
+    }
+
+    #[test]
+    fn run_batches_independent_rules_against_one_buffer() {
+        // The second reads the buffer the first read rather than the
+        // first's rewrite, and both rewrites land in one splice.
+        let seen = Arc::new(Mutex::new(Vec::<String>::new()));
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(TextCapturingRule {
+                edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+                id: RuleId::from("rewrite-x-to-y"),
+                seen: seen.clone(),
+            }),
+            Box::new(TextCapturingRule {
+                edits: vec![Edit::range_replacement("2".to_owned(), range(4, 5))],
+                id: RuleId::from("rewrite-1-to-2"),
+                seen: seen.clone(),
+            }),
+        ])
+        .sharing(Sharing::Always);
+
+        let (result, diagnostics) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
+
+        assert_eq!(result.text(), "y = 2\n");
+        assert_eq!(diagnostics.len(), 2);
+        assert_eq!(*seen.lock().expect("seen mutex"), ["x = 1\n", "x = 1\n"]);
+    }
+
+    #[test]
+    fn run_closes_a_batch_ahead_of_an_overlapping_edit() {
+        // The second rule's edit covers the first's, so the batch
+        // holding the first closes and the second re-reads the spliced
+        // buffer before its own edit lands.
+        let seen = Arc::new(Mutex::new(Vec::<String>::new()));
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(TextCapturingRule {
+                edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+                id: RuleId::from("rewrite-x-to-y"),
+                seen: seen.clone(),
+            }),
+            Box::new(TextCapturingRule {
+                edits: vec![Edit::range_replacement("z".to_owned(), range(0, 1))],
+                id: RuleId::from("rewrite-head-to-z"),
+                seen: seen.clone(),
+            }),
+        ])
+        .sharing(Sharing::Always);
+
+        let (result, diagnostics) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
+
+        assert_eq!(result.text(), "z = 1\n");
+        assert_eq!(diagnostics.len(), 2);
+        assert_eq!(
+            *seen.lock().expect("seen mutex"),
+            ["x = 1\n", "x = 1\n", "y = 1\n"],
+        );
     }
 
     #[test]
@@ -828,33 +1006,28 @@ mod tests {
     }
 
     #[test]
-    fn run_resolves_a_lint_range_against_the_settled_source() {
-        // The lint rule registers ahead of the rewriting rule, which
-        // inserts a line above the ignored statement. Collecting lints
-        // after the rewrites settle keeps the lint's range on the row
-        // carrying the directive, so the ignore still matches.
+    fn run_drops_a_rule_whose_edits_vanish_once_the_batch_closes() {
+        // The second rule's edit overlaps the first's, so the batch
+        // closes, and the spliced buffer no longer opens with `x`, so
+        // its re-read emits nothing.
         let pipeline = Pipeline::from_rules(vec![
-            Box::new(NeedleLintRule {
-                id: RuleId::from("single-use-variables"),
-                needle: "y = 2",
+            Box::new(PrefixRule {
+                id: RuleId::from("rewrite-x-to-y"),
+                reads: "x",
+                writes: "y",
             }),
-            Box::new(GroupSentinelRule {
-                groups: vec![vec![Edit::insertion(
-                    "a = 0\n".to_owned(),
-                    TextSize::new(0),
-                )]],
-                id: RuleId::from("prepend-a"),
+            Box::new(PrefixRule {
+                id: RuleId::from("rewrite-x-to-z"),
+                reads: "x",
+                writes: "z",
             }),
-        ]);
-        let source = parse("x = 1\ny = 2  # prose: ignore[single-use-variables]\n");
+        ])
+        .sharing(Sharing::Always);
 
-        let (result, diagnostics) = pipeline.run(source).expect("prepend run succeeds");
+        let (result, diagnostics) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
 
-        assert_eq!(
-            result.text(),
-            "a = 0\nx = 1\ny = 2  # prose: ignore[single-use-variables]\n",
-        );
-        assert!(diagnostics.iter().all(|d| !d.severity.is_lint()));
+        assert_eq!(result.text(), "y = 1\n");
+        assert_eq!(diagnostics.len(), 1);
     }
 
     #[test]
@@ -963,6 +1136,182 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "emitted a duplicate edit")]
+    fn run_flags_a_byte_identical_duplicate_edit() {
+        let edit = Edit::range_replacement("y".to_owned(), range(0, 1));
+        let rule = GroupSentinelRule {
+            groups: vec![vec![edit.clone()], vec![edit]],
+            id: RuleId::from("duplicating"),
+        };
+        let pipeline = Pipeline::from_rules(vec![Box::new(rule)]);
+        let _ = pipeline.run(parse("x = 1\n"));
+    }
+
+    #[test]
+    #[should_panic(expected = "invariant: a batch whose splice is rejected")]
+    fn run_flags_a_replay_that_passes_where_its_batch_was_rejected() {
+        // Spliced together the two rewrites demote the `__future__`
+        // import and fail the gate, whereas replayed one at a time the
+        // second rule sees `x = 1` and emits nothing, so the declared
+        // pair has read each other's rewrite on this buffer.
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement(
+                    "x = 1".to_owned(),
+                    range(0, 34),
+                )]],
+                id: RuleId::from("normalize-literals"),
+            }),
+            Box::new(GuardedRule {
+                edit: Edit::range_replacement(
+                    "from __future__ import division".to_owned(),
+                    range(35, 44),
+                ),
+                guard: "from __future__",
+                id: RuleId::from("strip-trailing-commas"),
+            }),
+        ]);
+        let _ = pipeline.run(parse(FUTURE_LEAD));
+    }
+
+    #[test]
+    fn run_forwards_a_notebook_through_one_batched_splice() {
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("xx".to_owned(), range(0, 1))]],
+                id: RuleId::from("widen-x"),
+            }),
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("yy".to_owned(), range(7, 8))]],
+                id: RuleId::from("widen-y"),
+            }),
+        ])
+        .sharing(Sharing::Always);
+        let source = notebook(&["x = 1\n", "y = 2\n"]);
+
+        let (result, _) = pipeline.run(source).expect("notebook run succeeds");
+
+        assert_eq!(result.text(), "xx = 1\n\nyy = 2\n\n");
+        assert_eq!(result.cell_texts(), ["xx = 1\n", "yy = 2\n"]);
+    }
+
+    #[test]
+    fn run_names_every_rule_of_a_batch_the_gate_rejects_under_always() {
+        // The appended assignment and the demoting rewrite splice into
+        // one buffer that parses and fails to compile, which the
+        // probe's sharing reports as the batch rather than replaying.
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::insertion(
+                    "x = 1\n".to_owned(),
+                    FUTURE_LEAD.text_len(),
+                )]],
+                id: RuleId::from("append-x"),
+            }),
+            Box::new(breaks_compile()),
+        ])
+        .sharing(Sharing::Always);
+
+        assert_matches!(
+            pipeline.run(parse(FUTURE_LEAD)),
+            Err(PipelineError::Batch { rules })
+                if rules == [RuleId::from("append-x"), RuleId::from("breaks-compile")]
+        );
+    }
+
+    #[test]
+    fn run_names_every_rule_of_a_batch_the_reparse_rejects_under_always() {
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(breaks_parse()),
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("z".to_owned(), range(6, 7))]],
+                id: RuleId::from("rewrite-y-to-z"),
+            }),
+        ])
+        .sharing(Sharing::Always);
+
+        assert_matches!(
+            pipeline.run(parse("x = 1\ny = 2\n")),
+            Err(PipelineError::Batch { rules })
+                if rules == [RuleId::from("breaks-parse"), RuleId::from("rewrite-y-to-z")]
+        );
+    }
+
+    #[test]
+    fn run_names_the_rule_whose_output_a_declared_batch_replay_fails_to_compile() {
+        // The demoting rewrite carries a slug sharing a splice with the
+        // appending one, so the batch splices into one buffer that
+        // fails the gate and the replay names the demoting rule alone.
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::insertion(
+                    "x = 1\n".to_owned(),
+                    FUTURE_LEAD.text_len(),
+                )]],
+                id: RuleId::from("normalize-literals"),
+            }),
+            Box::new(GroupSentinelRule {
+                groups: breaks_compile().groups,
+                id: RuleId::from("strip-trailing-commas"),
+            }),
+        ]);
+
+        assert_matches!(
+            pipeline.run(parse(FUTURE_LEAD)),
+            Err(PipelineError::Compile { rule, .. }) if rule.as_str() == "strip-trailing-commas"
+        );
+    }
+
+    #[test]
+    fn run_names_the_rule_whose_splice_a_declared_batch_replay_rejects() {
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(GroupSentinelRule {
+                groups: breaks_parse().groups,
+                id: RuleId::from("normalize-literals"),
+            }),
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("z".to_owned(), range(6, 7))]],
+                id: RuleId::from("strip-trailing-commas"),
+            }),
+        ]);
+
+        assert_matches!(
+            pipeline.run(parse("x = 1\ny = 2\n")),
+            Err(PipelineError::Reparse { rule, .. }) if rule.as_str() == "normalize-literals"
+        );
+    }
+
+    #[test]
+    fn run_resolves_a_lint_range_against_the_settled_source() {
+        // The lint rule registers ahead of the rewriting rule, which
+        // inserts a line above the ignored statement. Collecting lints
+        // after the rewrites settle keeps the lint's range on the row
+        // carrying the directive, so the ignore still matches.
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(NeedleLintRule {
+                id: RuleId::from("single-use-variables"),
+                needle: "y = 2",
+            }),
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::insertion(
+                    "a = 0\n".to_owned(),
+                    TextSize::new(0),
+                )]],
+                id: RuleId::from("prepend-a"),
+            }),
+        ]);
+        let source = parse("x = 1\ny = 2  # prose: ignore[single-use-variables]\n");
+
+        let (result, diagnostics) = pipeline.run(source).expect("prepend run succeeds");
+
+        assert_eq!(
+            result.text(),
+            "a = 0\nx = 1\ny = 2  # prose: ignore[single-use-variables]\n",
+        );
+        assert!(diagnostics.iter().all(|d| !d.severity.is_lint()));
+    }
+
+    #[test]
     fn run_short_circuits_when_file_is_suppressed() {
         let log = Arc::new(Mutex::new(Vec::<&'static str>::new()));
         let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
@@ -1025,6 +1374,29 @@ mod tests {
             result.text(),
             "import sys\nfrom __future__ import annotations\n"
         );
+    }
+
+    #[test]
+    fn sharing_never_hands_a_downstream_rule_the_upstream_rewrite() {
+        let seen = Arc::new(Mutex::new(Vec::<String>::new()));
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(TextCapturingRule {
+                edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+                id: RuleId::from("rewrite-x-to-y"),
+                seen: seen.clone(),
+            }),
+            Box::new(TextCapturingRule {
+                edits: Vec::new(),
+                id: RuleId::from("downstream-observer"),
+                seen: seen.clone(),
+            }),
+        ])
+        .sharing(Sharing::Never);
+        let source = parse("x = 1\n");
+
+        pipeline.run(source).expect("both stages succeed");
+
+        assert_eq!(*seen.lock().expect("seen mutex"), ["x = 1\n", "y = 1\n"]);
     }
 
     #[test]

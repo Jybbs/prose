@@ -10,7 +10,7 @@ import MiddleEllipsis from '../base/MiddleEllipsis.vue'
   <section class="pipeline-order panel" aria-label="Pipeline order">
     <header class="pipeline-order-masthead">
       <span class="kicker pipeline-order-edition">
-        {{ pipeline.rules.length }} passes &middot; <code>src/rule.rs</code>
+        {{ pipeline.rules.length }} passes &middot; <code>src/rule/mod.rs</code>
       </span>
     </header>
     <ol class="pipeline-order-columns">
