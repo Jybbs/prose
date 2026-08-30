@@ -37,51 +37,21 @@ from warnings           import filterwarnings
 
 from libcst import (
     BaseCompoundStatement, BaseStatement, Call, ClassDef, Comment, ConcatenatedString, CSTLogicError,
-    CSTNode, CSTTransformer, CSTVisitor, EmptyLine, Expr, ImportFrom, IndentedBlock, LeftParen, Module,
-    Name, ParserSyntaxError, RightParen, SimpleStatementLine, SimpleString, SimpleWhitespace,
-    TrailingWhitespace, parse_module,
+    CSTNode, EmptyLine, Expr, ImportFrom, IndentedBlock, LeftParen, Module, Name, ParserSyntaxError,
+    RightParen, SimpleStatementLine, SimpleString, SimpleWhitespace, TrailingWhitespace, parse_module,
 )
+from libcst.matchers import MatchIfTrue, findall, replace
 
 SAMPLE = 8
 
 filterwarnings("ignore", category=SyntaxWarning)
 
 
-class Collector(CSTVisitor):
-    """
-    Gather every node of the given `kinds`, in source order.
-    """
-
-    def __init__(self, kinds: tuple[type, ...]):
-        self.kinds = kinds
-        self.nodes: list[CSTNode] = []
-
-    def on_visit(self, node: CSTNode) -> bool:
-        if isinstance(node, self.kinds):
-            self.nodes.append(node)
-        return True
-
-
-class Rewriter(CSTTransformer):
-    """
-    Apply `edit` to each of the `chosen` nodes on the way back up the tree.
-    """
-
-    def __init__(self, chosen: list[CSTNode], edit: Callable):
-        self.chosen = {id(node) for node in chosen}
-        self.edit   = edit
-
-    def on_leave(self, original: CSTNode, updated: CSTNode) -> CSTNode:
-        return self.edit(updated) if id(original) in self.chosen else updated
-
-
 def collect(module: Module, *kinds: type) -> list[CSTNode]:
     """
     Return every node of `kinds` that `module` holds, in source order.
     """
-    collector = Collector(kinds)
-    module.visit(collector)
-    return collector.nodes
+    return findall(module, MatchIfTrue(lambda node: isinstance(node, kinds)))
 
 
 def commented(module: Module, rng: Random) -> Module | None:
@@ -267,7 +237,8 @@ def rewrite(module: Module, chosen: list[CSTNode], edit: Callable) -> Module:
     """
     Return `module` with `edit` applied to each of the `chosen` nodes.
     """
-    return module.visit(Rewriter(chosen, edit))
+    picked = {id(node) for node in chosen}
+    return replace(module, MatchIfTrue(lambda node: id(node) in picked), lambda node, _: edit(node))
 
 
 def shuffled(module: Module, rng: Random) -> Module | None:

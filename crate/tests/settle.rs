@@ -13,7 +13,7 @@
 //! `code-line-length` can still edit its own output at another.
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet},
     num::NonZeroUsize,
     path::{Path, PathBuf},
     rc::Rc,
@@ -28,6 +28,7 @@ use prose::{
     source::Source,
 };
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rustc_hash::FxHashMap;
 
 use common::{
     CORPUS, Hit, Tally, WIDTHS, WIDTHS_VAR, corpus, note_verified, pointed_corpus, report_verified,
@@ -80,7 +81,7 @@ impl Findings {
 /// the rule in [`Probes::singles`] and the buffer it ran over.
 struct Memo<'p> {
     probes: &'p Probes,
-    runs: HashMap<(usize, Rc<str>), Applied>,
+    runs: FxHashMap<(usize, Rc<str>), Applied>,
 }
 
 impl Memo<'_> {
@@ -170,7 +171,7 @@ impl Probes {
         let in_scope = |rule: &RuleId| scope.as_ref().is_none_or(|set| set.contains(rule));
         let taken = |slot: &usize| slot % shares == share;
         let mut singles = Vec::new();
-        let mut seats = HashMap::new();
+        let mut seats = FxHashMap::default();
         let mut seat = |rule: RuleId, pipeline: Pipeline| -> usize {
             *seats
                 .entry((rule, pipeline.fingerprint()))
@@ -255,7 +256,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
     let text: Rc<str> = Rc::from(source.text());
     let mut memo = Memo {
         probes,
-        runs: HashMap::new(),
+        runs: FxHashMap::default(),
     };
     let mut broken: BTreeSet<RuleId> = BTreeSet::new();
     for (&rule, &seat) in &probes.solo {

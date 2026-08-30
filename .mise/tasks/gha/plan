@@ -29,7 +29,6 @@ from fnmatch    import fnmatch
 from json       import dumps
 from os         import environ
 from pathlib    import Path
-from re         import MULTILINE, findall
 from subprocess import run
 from sys        import argv
 from tomllib    import loads
@@ -75,10 +74,10 @@ def emit(*lines: str):
 
 def registry() -> dict[str, str]:
     """
-    Map each rule module directory to its slug, read off `register_rules!`.
+    Map each rule module directory to its slug, the directory's name with
+    `_` read as `-`.
     """
-    source = Path("crate/src/rule.rs").read_text(encoding="utf-8")
-    return {module: slug for slug, module in findall(r'^\s*"([a-z-]+)":\s+([a-z_]+):', source, MULTILINE)}
+    return {d.name: d.name.replace("_", "-") for d in Path("crate/src/rules").iterdir() if d.is_dir()}
 
 
 def scoped(paths: list[str]) -> list[str]:
