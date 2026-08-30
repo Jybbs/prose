@@ -3,6 +3,7 @@
 #![allow(dead_code, unused_imports)]
 
 use std::{
+    cmp::Reverse,
     env,
     ffi::OsStr,
     io::ErrorKind,
@@ -81,11 +82,12 @@ pub(crate) fn case_name(path: &Path) -> &str {
         .expect("fixture path has a case directory")
 }
 
-/// The `.py` files under the corpus root, sorted so a failure names the
-/// same file across runs. [`CORPUS`] points a sweep at a directory
-/// other than the fixture tree. The walk carries no standard filter, so
-/// a hidden directory and an ignored one both enter the sweep rather
-/// than leaving it short without saying so.
+/// The `.py` files under the corpus root, largest first with the path
+/// breaking ties, so a parallel sweep's tail is one file long and a
+/// failure names the same file across runs. [`CORPUS`] points a sweep
+/// at a directory other than the fixture tree. The walk carries no
+/// standard filter, so a hidden directory and an ignored one both enter
+/// the sweep rather than leaving it short without saying so.
 pub(crate) fn corpus() -> Vec<PathBuf> {
     let root = pointed_corpus()
         .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
@@ -95,7 +97,10 @@ pub(crate) fn corpus() -> Vec<PathBuf> {
         .flatten()
         .map(ignore::DirEntry::into_path)
         .filter(|path| path.extension().is_some_and(|ext| ext == "py"))
-        .sorted()
+        .sorted_by_cached_key(|path| {
+            let size = fs_err::metadata(path).map_or(0, |data| data.len());
+            (Reverse(size), path.clone())
+        })
         .collect()
 }
 
@@ -110,8 +115,8 @@ pub(crate) fn domain_name(path: &Path) -> &str {
 /// The values `var` carries as a space-separated list, `defaults` where
 /// it is unset.
 pub(crate) fn env_list<T: Clone>(var: &str, defaults: &[T], parse: impl Fn(&str) -> T) -> Vec<T> {
-    env::var(var).map_or_else(
-        |_| defaults.to_vec(),
+    setting(var).map_or_else(
+        || defaults.to_vec(),
         |set| set.split_whitespace().map(&parse).collect(),
     )
 }
@@ -158,7 +163,7 @@ pub(crate) fn note_verified() {
 /// The directory [`CORPUS`] aims a sweep at, `None` for the fixture
 /// tree.
 pub(crate) fn pointed_corpus() -> Option<PathBuf> {
-    env::var_os(CORPUS).map(PathBuf::from)
+    setting(CORPUS).map(PathBuf::from)
 }
 
 /// Prints how many probes were verified, `what` naming them, when any
@@ -170,9 +175,14 @@ pub(crate) fn report_verified(what: &str) {
     }
 }
 
+/// The value `var` carries, `None` where it is unset or blank.
+pub(crate) fn setting(var: &str) -> Option<String> {
+    env::var(var).ok().filter(|value| !value.trim().is_empty())
+}
+
 /// Whether [`VERIFY_VAR`] is set.
 pub(crate) fn verifying() -> bool {
-    env::var_os(VERIFY_VAR).is_some()
+    setting(VERIFY_VAR).is_some()
 }
 
 /// The line lengths this run sweeps, [`WIDTHS_VAR`] overriding

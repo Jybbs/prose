@@ -18,9 +18,12 @@ release validate job installs.
 With `corpus`, plans the subset probe. Reads `BASE` and
 `GITHUB_EVENT_NAME`. A push run, and a pull request changing anything
 the corpus workflow watches other than a registered rule's module, take
-the full probe sharded `SHARDS` ways. A pull request whose watched
-changes all sit under `crate/src/rules/<module>/` takes one unsharded
-row scoped to those rules through `PROSE_SETTLE_RULES`.
+the full probe as one row per rule family carrying the family's rules.
+A pull request whose watched changes all sit under
+`crate/src/rules/<module>/` takes one row per family those rules belong
+to, scoped to them through `PROSE_SETTLE_RULES`. A row is named by its
+family's badge and label, read off the docs site's `FAMILY_META`, with
+membership read off the rule pages under `site/rules/<family>/`.
 
 Lines land in `$GITHUB_OUTPUT` when it is set, stdout otherwise.
 """
@@ -29,12 +32,22 @@ from fnmatch    import fnmatch
 from json       import dumps
 from os         import environ
 from pathlib    import Path
+from re         import MULTILINE, finditer
 from subprocess import run
 from sys        import argv
 from tomllib    import loads
 from yaml       import safe_load
 
-SHARDS = 3
+FAMILY_META_ENTRY = r"^\s*(?P<family>\w+)\s*:\s*\{ badge: '(?P<badge>[^']+)', label: '(?P<label>[^']+)'"
+
+
+def badges() -> dict[str, tuple[str, str]]:
+    """
+    Map each family to its badge and label, read off `FAMILY_META` in
+    the docs site's shared registry.
+    """
+    source = Path("site/.vitepress/lib/shared/registries.ts").read_text(encoding="utf-8")
+    return {m["family"]: (m["badge"], m["label"]) for m in finditer(FAMILY_META_ENTRY, source, MULTILINE)}
 
 
 def changed() -> list[str]:
@@ -49,16 +62,18 @@ def changed() -> list[str]:
 
 def corpus():
     """
-    Emit the subset probe's matrix, scoped to the rules a pull request
-    touches or sharded `SHARDS` ways.
+    Emit the subset probe's matrix, one row per rule family, scoped to
+    the rules a pull request touches or carrying the whole family.
     """
     slugs = [] if environ.get("GITHUB_EVENT_NAME") == "push" else scoped(changed())
-    rows  = (
-        [{"label": "", "rules": " ".join(slugs), "shard": ""}]
-        if slugs
-        else [{"label": f" {k}/{SHARDS}", "rules": "", "shard": f"{k}/{SHARDS}"} for k in range(1, SHARDS + 1)]
-    )
-    emit(f"matrix={dumps({'include': rows})}")
+    meta  = badges()
+    rows  = []
+    for family, members in families().items():
+        held = [slug for slug in members if slug in slugs] if slugs else members
+        if held:
+            badge, label = meta[family]
+            rows.append({"label": f"{badge} Subsets · {label}", "rules": " ".join(held)})
+    emit(f"matrix={dumps({'include': rows}, ensure_ascii=False)}")
 
 
 def emit(*lines: str):
@@ -70,6 +85,22 @@ def emit(*lines: str):
             f.writelines(f"{line}\n" for line in lines)
     else:
         print("\n".join(lines))
+
+
+def families() -> dict[str, list[str]]:
+    """
+    Map each rule family to its registered slugs, read off the rule pages
+    under `site/rules/<family>/`, failing on a registered rule no page
+    places.
+    """
+    known = set(registry().values())
+    pages = {
+        d.name: sorted(p.stem for p in d.glob("*.md") if p.stem in known)
+        for d in sorted(Path("site/rules").iterdir()) if d.is_dir()
+    }
+    if unplaced := known - {slug for slugs in pages.values() for slug in slugs}:
+        raise SystemExit(f"::error::no page under site/rules/<family>/ places {', '.join(sorted(unplaced))}")
+    return {family: slugs for family, slugs in pages.items() if slugs}
 
 
 def registry() -> dict[str, str]:

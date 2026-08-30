@@ -13,9 +13,10 @@ baseline_root() {
 }
 
 built_binary() {
-  local profile="${1:-${PROSE_DELTA_PROFILE:-probe}}"
+  local harness=1 profile="${1:-${PROSE_DELTA_PROFILE:-probe}}"
   grep -q "^\[profile\.$profile\]" Cargo.toml || {
     echo "$PWD defines no $profile profile, building release instead" >&2
+    harness=
     profile=release
   }
   cargo build \
@@ -23,6 +24,7 @@ built_binary() {
     --locked \
     --message-format json-render-diagnostics \
     --profile "$profile" \
+    ${harness:+--test corpus} \
     | jq -r 'select(.executable != null and .target.name == "prose") | .executable'
 }
 

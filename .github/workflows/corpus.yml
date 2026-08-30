@@ -95,10 +95,18 @@ jobs:
           print("version=" + sys.version.split()[0])
           ' >> "$GITHUB_OUTPUT"
 
+      - name : Look up the mutation set
+        id   : mutations
+        uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          key         : &mutations-key corpus-mutations-${{ steps.python.outputs.version }}-${{ hashFiles('.mise/lib/mutate.py') }}
+          lookup-only : true
+          path        : &mutations-path ${{ runner.temp }}/mutations
+
       - name : Bake the baseline stage and the mutation set
         env:
           PROSE_DELTA_STAGE      : ${{ runner.temp }}/stage
-          PROSE_SETTLE_MUTATIONS : ${{ runner.temp }}/mutations
+          PROSE_SETTLE_MUTATIONS : ${{ steps.mutations.outputs.cache-hit != 'true' && format('{0}/mutations', runner.temp) || '' }}
         run  : mise run rust:bake
 
       - name : Save the baseline stage
@@ -108,14 +116,31 @@ jobs:
           path : ${{ runner.temp }}/stage/.git
 
       - name : Save the mutation set
+        if   : ${{ steps.mutations.outputs.cache-hit != 'true' }}
         uses : actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          key  : corpus-mutations-${{ steps.python.outputs.version }}-${{ github.sha }}
-          path : ${{ runner.temp }}/mutations
+          key  : *mutations-key
+          path : *mutations-path
 
   settle:
     name            : ⚓ Settle
-    if              : ${{ github.event_name == 'pull_request' }}
+    if              : &pull-request ${{ github.event_name == 'pull_request' }}
+    runs-on         : *ubuntu
+    timeout-minutes : *sweep
+
+    steps:
+      - *checkout
+
+      - *provision-cargo
+
+      - *interpreter
+
+      - name : Sweep the corpus at every width and axis
+        run  : mise run rust:settle "${{ steps.python.outputs.corpus }}"
+
+  mutations:
+    name            : 🎨 Mutations
+    if              : *pull-request
     runs-on         : *ubuntu
     timeout-minutes : *sweep
 
@@ -130,17 +155,16 @@ jobs:
         id   : mutations
         uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          key          : corpus-mutations-${{ steps.python.outputs.version }}-${{ env.BASE }}
-          path         : ${{ runner.temp }}/mutations
-          restore-keys : corpus-mutations-${{ steps.python.outputs.version }}-
+          key  : *mutations-key
+          path : *mutations-path
 
-      - name : Sweep the corpus at every width and axis, then its mutations
-        env  : { PROSE_SETTLE_MUTATIONS: "${{ steps.mutations.outputs.cache-matched-key != '' && format('{0}/mutations', runner.temp) || '' }}" }
-        run  : mise run rust:settle "${{ steps.python.outputs.corpus }}" 600
+      - name : Format every mutation of the corpus
+        env  : { PROSE_SETTLE_MUTATIONS: "${{ runner.temp }}/mutations" }
+        run  : mise run rust:mutations "${{ steps.python.outputs.corpus }}" 600
 
   delta:
     name            : 🦋 Delta
-    if              : ${{ github.event_name == 'pull_request' }}
+    if              : *pull-request
     runs-on         : *ubuntu
     timeout-minutes : *sweep
 
@@ -172,7 +196,7 @@ jobs:
         run  : mise run rust:delta
 
   subsets:
-    name            : 🪢 Subsets${{ matrix.label }}
+    name            : ${{ matrix.label }}
     needs           : plan
     runs-on         : *ubuntu
     timeout-minutes : *sweep
@@ -186,16 +210,14 @@ jobs:
 
       - *provision-cargo
 
-      - name : Probe every rule alone and every pair
-        env:
-          PROSE_SETTLE_RULES : ${{ matrix.rules }}
-          PROSE_SETTLE_SHARD : ${{ matrix.shard }}
+      - name : Probe every rule alone and every pair touching the family
+        env  : { PROSE_SETTLE_RULES: "${{ matrix.rules }}" }
         run  : mise run rust:subsets
 
   gate:
     name            : 🗞️ Brief
     if              : always()
-    needs           : [bake, delta, plan, settle, subsets]
+    needs           : [bake, delta, mutations, plan, settle, subsets]
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 
@@ -206,9 +228,10 @@ jobs:
 
       - name : Summarize and gate
         env:
-          BAKE    : ${{ needs.bake.result }}
-          DELTA   : ${{ needs.delta.result }}
-          PLAN    : ${{ needs.plan.result }}
-          SETTLE  : ${{ needs.settle.result }}
-          SUBSETS : ${{ needs.subsets.result }}
+          BAKE      : ${{ needs.bake.result }}
+          DELTA     : ${{ needs.delta.result }}
+          MUTATIONS : ${{ needs.mutations.result }}
+          PLAN      : ${{ needs.plan.result }}
+          SETTLE    : ${{ needs.settle.result }}
+          SUBSETS   : ${{ needs.subsets.result }}
         run  : mise run gha:brief corpus

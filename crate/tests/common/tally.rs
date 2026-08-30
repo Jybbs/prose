@@ -5,6 +5,7 @@ use std::{
         BTreeMap, BTreeSet,
         btree_map::Entry::{Occupied, Vacant},
     },
+    fmt::Write,
     path::Path,
 };
 
@@ -15,6 +16,7 @@ use itertools::Itertools;
 pub(crate) const SHOWN: usize = 30;
 
 /// What one hit of a defect carries past its wording and its file.
+#[derive(Default)]
 pub(crate) struct Hit {
     /// The sweep clause the hit showed under, as a label and the width
     /// the label was swept at.
@@ -159,14 +161,14 @@ impl Site {
                 .iter()
                 .map(|(label, widths)| format!("{label} {}", widths.iter().format(", ")))
                 .format(" and ");
-            rendered.push_str(&format!("\n    reached at {reached}"));
+            let _ = write!(rendered, "\n    reached at {reached}");
         }
         if let Some(cmd) = &self.example.repro {
-            rendered.push_str(&format!("\n    reproduce with {cmd}"));
+            let _ = write!(rendered, "\n    reproduce with {cmd}");
         }
         if let Some(detail) = &self.example.detail {
             for line in detail.lines() {
-                rendered.push_str(&format!("\n    {line}"));
+                let _ = write!(rendered, "\n    {line}");
             }
         }
         rendered

@@ -30,6 +30,7 @@ runs:
       shell : bash
       run   : |
         {
+          echo "CARGO_NET_GIT_FETCH_WITH_CLI=true"
           echo "CARGO_TERM_COLOR=always"
           echo "MISE_RUSTUP_HOME=$HOME/.local/share/mise/rustup"
         } >> "$GITHUB_ENV"

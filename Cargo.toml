@@ -30,7 +30,7 @@ similar            = { opt-level = 2 }
 [profile.probe]
 debug-assertions = true
 inherits         = "release"
-lto              = false
+lto              = "off"
 overflow-checks  = true
 panic            = "unwind"
 strip            = "none"

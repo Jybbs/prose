@@ -1,65 +1,7 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "settle"
-#MISE description = "Sweep a corpus at every line length for rewrites a second pass would change and fixes the output never took, then sweep mutations of it"
+#MISE description = "Sweep a corpus at every line length for rewrites a second pass would change and fixes the output never took"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
-source "$MISE_PROJECT_ROOT/.mise/lib/delta.bash"
 
-mutation_pass() {
-  local variant="$1" log name record seen status=0 unstable
-  name=$(basename "$variant")
-  log="$mutations/$name.log"
-  record="$mutations/$name.json"
-  "$binary" format --no-cache --output-format json "$variant" 2> "$log" \
-    | jq -c 'select(.kind == "summary" and .schema_version == 1)' \
-    > "$record" || status=$?
-  (( status <= 4 )) || { echo "$name exited $status, stderr at $log" >&2; exit 1; }
-  seen=$(jq '.files_visited' "$record")
-  unstable=$(jq '.unstable | length' "$record")
-  printf '\n%s: %s of %s variants rewrite to output a second run would change\n' \
-    "$name" "$unstable" "$seen"
-  (( unstable == 0 )) || second_pass "$name" "$record"
-}
-
-second_pass() {
-  local name="$1" record="$2" file first rules shown=8
-  while IFS=$'\t' read -r file rules; do
-    first="$file.first-pass"
-    cp "$file" "$first"
-    "$binary" format --no-cache --quiet "$file" 2> /dev/null || true
-    printf '\n  %s, where a second pass leaves %s editing:\n' \
-      "${file#"$mutations/$name/"}" "$rules"
-    diff --label 'first pass' --label 'second pass' -u "$first" "$file" \
-      > "$first.diff" || true
-    sed -n '3,26{s/^/    /;p;}' "$first.diff"
-    rm "$first" "$first.diff"
-  done < <(jq --argjson n "$shown" -r '
-    .unstable[:$n][]
-    | [.file, (.rules | map("`\(.)`") | join(", "))]
-    | @tsv' "$record")
-  (( $(jq '.unstable | length' "$record") <= shown )) \
-    || printf '\n  ... and %s more, listed in %s\n' \
-      "$(jq --argjson n "$shown" '.unstable | length - $n' "$record")" "$record"
-}
-
-corpus=$(corpus_root "${1:-}")
-budget="${2:-60}"
-mutate="$MISE_PROJECT_ROOT/.mise/lib/mutate.py"
-
-settle_corpus "$corpus" --profile probe --test corpus
-
-binary=$(built_binary probe)
-
-if [[ -n "${PROSE_SETTLE_MUTATIONS:-}" ]]; then
-  mutations="$PROSE_SETTLE_MUTATIONS"
-else
-  mutations=$(scratch_dir mutations)
-  mutate_corpus "$corpus" "$mutations" "$budget"
-fi
-
-while IFS= read -r variant; do
-  mutation_pass "$variant"
-done < <(find "$mutations" -mindepth 1 -maxdepth 1 -type d | sort)
-
-printf '\neach mutation survives as formatted output under %s\n' "$mutations"
-printf 'regenerate the pre-format variants it ran on with: %s %s <destination> %s\n' "$mutate" "$corpus" "$budget"
+settle_corpus "${1:-}" --profile probe --test corpus

@@ -9,6 +9,8 @@
 //! that reads one. The settle check re-applies the enabled rules to a
 //! completed run's output and names every rule still editing it.
 
+use std::ops::Range;
+
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_python_ast::PythonVersion;
 use ruff_text_size::Ranged;
@@ -55,15 +57,18 @@ impl Pipeline {
         self
     }
 
-    /// Folds each rule's edits into `source` in registration order from
-    /// the `first` seat onward, reparsing between rules and extending
+    /// Folds each rule's edits into `source` in registration order
+    /// across `seats`, reparsing between rules and extending
     /// `diagnostics` with each rule's format findings when the caller
     /// supplies one.
     ///
-    /// `first` is the seat a [`diagnosed`](Self::diagnosed) pass over
-    /// this same buffer found editing before any other, leaving every
-    /// rule ahead of it with no fix group for this fold to re-derive. A
-    /// caller with the whole roster to fold passes zero.
+    /// `seats` bounds the fold to the rules seated in that range.
+    /// [`run_as_written`](Self::run_as_written) opens at the first seat
+    /// a [`diagnosed`](Self::diagnosed) pass found editing, leaving
+    /// every rule ahead of it with no fix group for this fold to
+    /// re-derive, and [`format_span`](Self::format_span) resumes behind
+    /// a prefix another fold produced. The compile gate reads the
+    /// segment's entry source.
     ///
     /// # Errors
     ///
@@ -73,10 +78,10 @@ impl Pipeline {
         &self,
         source: Source,
         mut diagnostics: Option<&mut Vec<Diagnostic>>,
-        first: usize,
+        seats: Range<usize>,
     ) -> Result<Source, PipelineError> {
         let gate = compile_gate(&source, self.target_version);
-        self.rules[first..].iter().try_fold(source, |source, rule| {
+        self.rules[seats].iter().try_fold(source, |source, rule| {
             let rule_id = rule.id();
             let Some((groups, new_text, map)) = woven_groups(&**rule, &source) else {
                 return Ok(source);
@@ -142,6 +147,41 @@ impl Pipeline {
         format!("{:?}", self.rules)
     }
 
+    /// Rewrites `source` through every enabled rule, skipping the
+    /// diagnostics [`run`](Self::run) collects and the lint pass it
+    /// closes on.
+    ///
+    /// # Errors
+    ///
+    /// Returns whichever `PipelineError` a rule's output draws from the
+    /// reparse between rules.
+    pub fn format(&self, source: Source) -> Result<Source, PipelineError> {
+        if source.suppression_map().file_is_suppressed() {
+            return Ok(source);
+        }
+        self.fold_rules(source, None, 0..self.rules.len())
+    }
+
+    /// Rewrites `source` through the rules seated in `seats`, resuming
+    /// behind a prefix whose output the caller already holds. The
+    /// compile gate reads the segment's entry source.
+    ///
+    /// # Errors
+    ///
+    /// Returns whichever `PipelineError` a rule's output draws from the
+    /// reparse between rules.
+    ///
+    /// # Panics
+    ///
+    /// Panics when `seats` reaches past the rule count.
+    pub fn format_span(
+        &self,
+        source: Source,
+        seats: Range<usize>,
+    ) -> Result<Source, PipelineError> {
+        self.fold_rules(source, None, seats)
+    }
+
     /// Returns every registered rule's id in a stable order.
     /// Surfaces the same registry that
     /// [`RuleId::from_str`](crate::rule::RuleId) consults.
@@ -183,7 +223,7 @@ impl Pipeline {
             return Ok((source, Vec::new()));
         }
         let mut diagnostics = Vec::new();
-        let source = self.fold_rules(source, Some(&mut diagnostics), 0)?;
+        let source = self.fold_rules(source, Some(&mut diagnostics), 0..self.rules.len())?;
         diagnostics.extend(settled_lints(&self.rules, &source));
         Ok((source, diagnostics))
     }
@@ -217,7 +257,10 @@ impl Pipeline {
         let Some(first) = edits_at else {
             return Ok((source, diagnostics));
         };
-        Ok((self.fold_rules(source, None, first)?, diagnostics))
+        Ok((
+            self.fold_rules(source, None, first..self.rules.len())?,
+            diagnostics,
+        ))
     }
 
     /// What one walk over `source` reads for the settle check, so the
@@ -672,6 +715,27 @@ mod tests {
             .expect("the pair seats the rule");
 
         assert_eq!(alone.fingerprint() == seated.fingerprint(), alike);
+    }
+
+    #[test]
+    fn format_matches_the_text_half_of_run() {
+        let pipeline = Pipeline::with_defaults(&Config::default());
+        let text = "import sys\nimport os\n\n\n\n\nx  =  1\n";
+        let formatted = pipeline.format(text.parse().unwrap()).unwrap();
+        let (ran, _) = pipeline.run(text.parse().unwrap()).unwrap();
+        assert_eq!(formatted.text(), ran.text());
+    }
+
+    #[test]
+    fn format_span_segments_compose_to_the_full_fold() {
+        let pipeline = Pipeline::with_defaults(&Config::default());
+        let text = "import sys\nimport os\n\n\n\n\ny  =  2\n";
+        let source: Source = text.parse().unwrap();
+        let copy = source.clone();
+        let full = pipeline.format(source).unwrap();
+        let head = pipeline.format_span(copy, 0..20).unwrap();
+        let tail = pipeline.format_span(head, 20..pipeline.len()).unwrap();
+        assert_eq!(tail.text(), full.text());
     }
 
     #[test]

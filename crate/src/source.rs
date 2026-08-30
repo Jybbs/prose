@@ -524,6 +524,16 @@ impl Source {
     /// # Errors
     ///
     /// Returns `ParseError` if `text` is not a valid Python module.
+    /// Parses Python source from an in-memory string, carrying `name`
+    /// the way a file-backed source carries its path.
+    ///
+    /// # Errors
+    ///
+    /// Returns the parse error the module parser draws from the text.
+    pub fn parse_named(text: String, name: &str) -> Result<Self, ParseError> {
+        Self::build_module(text, name, PySourceType::default())
+    }
+
     pub(crate) fn reparse_carrying(
         &self,
         text: String,
@@ -676,6 +686,28 @@ impl Source {
     /// Returns the display width of the source text between `a` and `b`.
     pub(crate) fn width_between(&self, a: TextSize, b: TextSize) -> usize {
         display_width(self.slice(TextRange::new(a, b)))
+    }
+}
+
+/// Clones the text, parsed tree, and comment indexes, leaving each lazy
+/// cache to fill on the copy's own first read.
+impl Clone for Source {
+    fn clone(&self) -> Self {
+        Self {
+            binding_analysis: OnceLock::new(),
+            cell_numbers: self.cell_numbers.clone(),
+            cell_offsets: self.cell_offsets.clone(),
+            columns: OnceLock::new(),
+            comment_ranges: self.comment_ranges.clone(),
+            expandable_literals: OnceLock::new(),
+            file: self.file.clone(),
+            line_ending: self.line_ending,
+            paren_followers: OnceLock::new(),
+            parsed: self.parsed.clone(),
+            source_type: self.source_type,
+            stranded_padding: OnceLock::new(),
+            suppression: self.suppression.clone(),
+        }
     }
 }
 

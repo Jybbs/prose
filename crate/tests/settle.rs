@@ -32,7 +32,7 @@ use rustc_hash::FxHashMap;
 
 use common::{
     CORPUS, Hit, Tally, WIDTHS, WIDTHS_VAR, corpus, note_verified, pointed_corpus, report_verified,
-    verifying, widths_or,
+    setting, verifying, widths_or,
 };
 
 mod common;
@@ -44,6 +44,9 @@ const RULES_VAR: &str = "PROSE_SETTLE_RULES";
 /// The environment variable taking one share of the pairs as `k/n`,
 /// the `k`th of `n` counted from one.
 const SHARD_VAR: &str = "PROSE_SETTLE_SHARD";
+
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 /// One rule's run over one buffer.
 #[derive(Clone)]
@@ -222,14 +225,13 @@ impl Probes {
     /// alone at this budget.
     fn hit(&self, path: &Path, rules: &[RuleId]) -> Hit {
         Hit {
-            clause: None,
-            detail: None,
             repro: Some(format!(
                 "{CORPUS}={} {RULES_VAR}='{}' {WIDTHS_VAR}={} cargo test --test settle",
                 path.display(),
                 rules.iter().format(" "),
                 self.width,
             )),
+            ..Hit::default()
         }
     }
 }
@@ -343,19 +345,16 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
 /// The rules [`RULES_VAR`] names, `None` for every rule when it is
 /// absent or blank.
 fn scope() -> Option<BTreeSet<RuleId>> {
-    std::env::var(RULES_VAR)
-        .ok()
-        .filter(|named| !named.trim().is_empty())
-        .map(|named| {
-            named
-                .split([' ', ','])
-                .filter(|slug| !slug.is_empty())
-                .map(|slug| {
-                    RuleId::from_str(slug)
-                        .unwrap_or_else(|_| panic!("{RULES_VAR} names an unknown rule: {slug}"))
-                })
-                .collect()
-        })
+    setting(RULES_VAR).map(|named| {
+        named
+            .split([' ', ','])
+            .filter(|slug| !slug.is_empty())
+            .map(|slug| {
+                RuleId::from_str(slug)
+                    .unwrap_or_else(|_| panic!("{RULES_VAR} names an unknown rule: {slug}"))
+            })
+            .collect()
+    })
 }
 
 /// The single-rule pipelines a selection of exactly `N` rules splits
@@ -371,10 +370,7 @@ fn seated<const N: usize>(config: &Config, rules: [RuleId; N]) -> [(RuleId, Pipe
 /// The zero-based share and the share count [`SHARD_VAR`] names, the
 /// whole set when it is absent or blank.
 fn shard() -> (usize, usize) {
-    let Some(spec) = std::env::var(SHARD_VAR)
-        .ok()
-        .filter(|spec| !spec.is_empty())
-    else {
+    let Some(spec) = setting(SHARD_VAR) else {
         return (0, 1);
     };
     let parsed = spec

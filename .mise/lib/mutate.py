@@ -210,13 +210,8 @@ def rename_map(names: list[str], rng: Random) -> dict[str, str]:
     Return a respelling for a sample of `names`, empty when none is
     renameable.
     """
-    if not names:
-        return {}
-    renames = {}
-    for name in rng.sample(names, k=max(1, len(names) // 3)):
-        if candidate := renamed(name, rng):
-            renames[name] = candidate
-    return renames
+    picked = rng.sample(names, k=max(1, len(names) // 3)) if names else []
+    return {name: candidate for name in picked if (candidate := renamed(name, rng))}
 
 
 def renamed(name: str, rng: Random) -> str | None:
@@ -228,9 +223,8 @@ def renamed(name: str, rng: Random) -> str | None:
         candidate = name + "_w" * rng.randint(1, 3)
     else:
         candidate = name[: max(1, len(name) // 2)]
-    if candidate == name or not candidate.isidentifier():
-        return None
-    return None if is_reserved(candidate) else candidate
+    usable = candidate != name and candidate.isidentifier() and not is_reserved(candidate)
+    return candidate if usable else None
 
 
 def rewrite(module: Module, chosen: list[CSTNode], edit: Callable) -> Module:

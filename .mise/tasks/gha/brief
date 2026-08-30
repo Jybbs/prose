@@ -121,7 +121,7 @@ class Summary:
             sweeps = [
                 {
                     "mark" : marks.get(environ[job.upper()], "❌"),
-                    "name" : jobs[job]["name"].split("${{")[0].strip()
+                    "name" : jobs[job]["name"].split("${{")[0].strip() or job.capitalize()
                 }
                 for job in needed
             ]
