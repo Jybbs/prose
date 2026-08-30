@@ -1,0 +1,10 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias       = "imports"
+#MISE description = "Import each module of a corpus before and after formatting to catch a rewrite that breaks it"
+
+source "$MISE_PROJECT_ROOT/.mise/lib/delta.bash"
+
+binary=$(built_binary "${PROSE_IMPORTS_PROFILE:-release}")
+python="${PROSE_IMPORTS_PYTHON:-$(command -v python)}"
+
+"$MISE_PROJECT_ROOT/.mise/lib/imports/__main__.py" "$binary" "$python" "${1:-}"
