@@ -13,9 +13,10 @@
 //! `code-line-length` can still edit its own output at another.
 
 use std::{
+    assert_matches,
     collections::{BTreeMap, BTreeSet},
     num::NonZeroUsize,
-    path::{Path, PathBuf},
+    path::Path,
     rc::Rc,
     str::FromStr,
 };
@@ -27,15 +28,18 @@ use prose::{
     rule::{RuleId, render_slugs, runs_behind},
     source::Source,
 };
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rstest::rstest;
 use rustc_hash::FxHashMap;
 
 use common::{
-    CORPUS, Hit, Tally, WIDTHS, WIDTHS_VAR, corpus, note_verified, pointed_corpus, report_verified,
-    setting, verifying, widths_or,
+    Absorbing, CORPUS, Hit, Slot, Tally, WIDTHS, WIDTHS_VAR, corpus, note_verified, pointed_corpus,
+    report_verified, setting, swept, verifying, watch_for_a_runaway, widths_or,
 };
 
 mod common;
+
+/// The environment variable choosing how a scoped run claims its pairs.
+const PAIRS_VAR: &str = "PROSE_SETTLE_PAIRS";
 
 /// The environment variable naming the rules a sweep touches, every
 /// subset holding none of them left unprobed.
@@ -59,10 +63,24 @@ enum Applied {
     Same,
 }
 
+/// How a scoped run claims the pairs it probes.
+#[derive(Clone, Copy, Debug)]
+enum Claim {
+    /// Every pair whose earlier rule this run scopes, so a set of runs
+    /// partitioning the rules probes each pair exactly once.
+    Owned,
+    /// Every pair either of whose rules this run scopes, so one run
+    /// reaches every subset touching them.
+    Touching,
+}
+
 /// The corpus defects one sweep found, each keyed by its own wording so
 /// the same shape across many files reports once.
 #[derive(Default)]
 struct Findings {
+    /// Files the corpus held that the probe could not read, named once
+    /// however many widths reached them.
+    skipped: BTreeSet<String>,
     /// Seatings the settling rests on, absent from the dependency column.
     undeclared: Tally,
     /// Subsets leaving a rule still editing their own output.
@@ -70,13 +88,16 @@ struct Findings {
 }
 
 impl Findings {
-    fn absorb(&mut self, other: Self) {
-        self.undeclared.absorb(other.undeclared);
-        self.unsettled.absorb(other.unsettled);
-    }
-
     fn total(&self) -> usize {
         self.undeclared.len() + self.unsettled.len()
+    }
+}
+
+impl Absorbing for Findings {
+    fn absorb(&mut self, other: Self) {
+        self.skipped.extend(other.skipped);
+        self.undeclared.absorb(other.undeclared);
+        self.unsettled.absorb(other.unsettled);
     }
 }
 
@@ -104,9 +125,9 @@ impl Memo<'_> {
             .entry((seat, Rc::clone(text)))
             .or_insert_with(|| match text.parse::<Source>() {
                 Err(_) => Applied::Rejected(Rc::from("the buffer does not parse")),
-                Ok(source) => match probes.singles[seat].pipeline.run(source) {
-                    Ok((out, _)) if out.text() == &**text => Applied::Same,
-                    Ok((out, _)) => Applied::Changed(Rc::from(out.text())),
+                Ok(source) => match probes.singles[seat].pipeline.format(source) {
+                    Ok(out) if out.text() == &**text => Applied::Same,
+                    Ok(out) => Applied::Changed(Rc::from(out.text())),
                     Err(error) => Applied::Rejected(Rc::from(error.to_string())),
                 },
             })
@@ -171,6 +192,7 @@ impl Probes {
         };
         let scope = scope();
         let (share, shares) = shard();
+        let claim = claim();
         let in_scope = |rule: &RuleId| scope.as_ref().is_none_or(|set| set.contains(rule));
         let taken = |slot: &usize| slot % shares == share;
         let mut singles = Vec::new();
@@ -194,7 +216,10 @@ impl Probes {
             .iter()
             .array_combinations()
             .map(|[&earlier, &later]| [earlier, later])
-            .filter(|[earlier, later]| in_scope(earlier) || in_scope(later))
+            .filter(|[earlier, later]| match claim {
+                Claim::Owned => in_scope(earlier),
+                Claim::Touching => in_scope(earlier) || in_scope(later),
+            })
             .enumerate()
             .filter(|(slot, _)| taken(slot))
             .map(|(_, pair)| {
@@ -236,6 +261,23 @@ impl Probes {
     }
 }
 
+/// How this run claims its pairs, [`PAIRS_VAR`] naming the shape and
+/// `touching` standing where it is absent.
+fn claim() -> Claim {
+    claim_of(setting(PAIRS_VAR).as_deref())
+}
+
+/// The claim `named` chooses, `touching` for anything else.
+fn claim_of(named: Option<&str>) -> Claim {
+    match named {
+        Some("owned") => Claim::Owned,
+        Some(other) if other != "touching" => {
+            panic!("{PAIRS_VAR} takes `owned` or `touching`: {other}")
+        }
+        _ => Claim::Touching,
+    }
+}
+
 /// The budgets this run probes. A pointed corpus takes the shipped
 /// default alone, holding its wall clock where it already sits, and
 /// `PROSE_SETTLE_WIDTHS` names the set outright either way.
@@ -243,7 +285,7 @@ fn lengths() -> Vec<usize> {
     let pointed = pointed_corpus()
         .and(Config::default().code_line_length)
         .map(|length| vec![length.get()]);
-    widths_or(pointed.as_deref().unwrap_or(&WIDTHS))
+    widths_or(pointed.as_deref().unwrap_or(WIDTHS))
 }
 
 /// Sweeps one corpus file across every subset it reaches. A rule that
@@ -253,8 +295,10 @@ fn lengths() -> Vec<usize> {
 fn probe(probes: &Probes, path: &Path) -> Findings {
     let mut findings = Findings::default();
     let Ok(source) = Source::from_path(path) else {
+        findings.skipped.insert(path.display().to_string());
         return findings;
     };
+    let _slot = Slot::open(format!("{} {}", path.display(), probes.budget));
     let text: Rc<str> = Rc::from(source.text());
     let mut memo = Memo {
         probes,
@@ -326,8 +370,8 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
                 continue;
             }
         };
-        if memo.editing(&seats, &reversed).is_empty()
-            || runs_behind(later.as_str(), earlier.as_str())
+        if runs_behind(later.as_str(), earlier.as_str())
+            || memo.editing(&seats, &reversed).is_empty()
         {
             continue;
         }
@@ -345,7 +389,12 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
 /// The rules [`RULES_VAR`] names, `None` for every rule when it is
 /// absent or blank.
 fn scope() -> Option<BTreeSet<RuleId>> {
-    setting(RULES_VAR).map(|named| {
+    scope_of(setting(RULES_VAR).as_deref())
+}
+
+/// The rules `named` lists, separated by spaces or commas.
+fn scope_of(named: Option<&str>) -> Option<BTreeSet<RuleId>> {
+    named.map(|named| {
         named
             .split([' ', ','])
             .filter(|slug| !slug.is_empty())
@@ -370,7 +419,13 @@ fn seated<const N: usize>(config: &Config, rules: [RuleId; N]) -> [(RuleId, Pipe
 /// The zero-based share and the share count [`SHARD_VAR`] names, the
 /// whole set when it is absent or blank.
 fn shard() -> (usize, usize) {
-    let Some(spec) = setting(SHARD_VAR) else {
+    shard_of(setting(SHARD_VAR).as_deref())
+}
+
+/// The zero-based share and the share count `spec` names as `k/n`, the
+/// whole set for no spec.
+fn shard_of(spec: Option<&str>) -> (usize, usize) {
+    let Some(spec) = spec else {
         return (0, 1);
     };
     let parsed = spec
@@ -388,17 +443,6 @@ fn subset(config: &Config, rules: &[RuleId]) -> Pipeline {
     Pipeline::with_filters(config, rules, &[])
 }
 
-/// Folds every file's findings under one budget's probes.
-fn sweep(probes: &Probes, files: &[PathBuf]) -> Findings {
-    files
-        .par_iter()
-        .map(|path| probe(probes, path))
-        .reduce(Findings::default, |mut held, next| {
-            held.absorb(next);
-            held
-        })
-}
-
 /// Folds `pair` over `text` and panics where the fold's text or its
 /// still-editing set differs from the `chained` single-rule runs.
 fn verify_pair(
@@ -414,7 +458,7 @@ fn verify_pair(
     let old = text
         .parse::<Source>()
         .ok()
-        .map(|source| folded.run(source).map(|(out, _)| out.text().to_owned()));
+        .map(|source| folded.format(source).map(|out| out.text().to_owned()));
     match (chained, old) {
         (Ok(new), Some(Ok(old))) => assert!(
             **new == *old,
@@ -443,11 +487,32 @@ fn verify_pair(
     note_verified();
 }
 
+#[rstest]
+#[case(None)]
+#[case(Some("touching"))]
+fn claim_of_reaches_every_pair_touching_the_scope(#[case] named: Option<&str>) {
+    assert_matches!(claim_of(named), Claim::Touching);
+}
+
+#[test]
+fn claim_of_reads_the_owned_shape() {
+    assert_matches!(claim_of(Some("owned")), Claim::Owned);
+}
+
+#[rstest]
+#[case("both")]
+#[case("Owned")]
+#[should_panic(expected = "takes `owned` or `touching`")]
+fn claim_of_rejects_an_unknown_shape(#[case] named: &str) {
+    let _ = claim_of(Some(named));
+}
+
 #[test]
 #[cfg_attr(coverage, ignore = "the sweep runs uninstrumented in its own row")]
 fn every_rule_subset_settles_and_declares_its_seating() {
     let files = corpus();
     assert!(!files.is_empty(), "the corpus holds no `.py` files");
+    watch_for_a_runaway();
     let lengths = lengths();
     let mut findings = Findings::default();
     for &length in &lengths {
@@ -458,9 +523,19 @@ fn every_rule_subset_settles_and_declares_its_seating() {
             probes.solo.len(),
             probes.pairs.len(),
         );
-        findings.absorb(sweep(&probes, &files));
+        findings.absorb(swept(&files, |path| probe(&probes, path)));
     }
     report_verified("chained pairs against the two-rule fold");
+    let unread = match findings.skipped.len() {
+        0 => String::new(),
+        n => {
+            eprintln!(
+                "the probe could not read {n} of the {} files under the corpus root",
+                files.len()
+            );
+            format!(" and {n} the probe could not read")
+        }
+    };
     let report = format!(
         "{}{}",
         findings.unsettled.render("unsettled subsets"),
@@ -468,9 +543,50 @@ fn every_rule_subset_settles_and_declares_its_seating() {
     );
     assert!(
         report.is_empty(),
-        "{} distinct defects across the corpus's {} files, swept at `code-line-length` {}:{report}",
+        "{} distinct defects across the corpus's {} files{unread}, swept at \
+         `code-line-length` {}:{report}",
         findings.total(),
         files.len(),
         lengths.iter().format(", "),
     );
+}
+
+#[test]
+fn scope_of_answers_every_rule_for_no_setting() {
+    assert!(scope_of(None).is_none());
+}
+
+#[rstest]
+#[case("align-equals band-constants")]
+#[case("align-equals,band-constants")]
+#[case("align-equals, band-constants")]
+fn scope_of_splits_on_spaces_and_commas(#[case] named: &str) {
+    let named = scope_of(Some(named)).expect("a named set scopes the sweep");
+
+    assert_eq!(
+        named,
+        BTreeSet::from([
+            RuleId::from_str("align-equals").unwrap(),
+            RuleId::from_str("band-constants").unwrap(),
+        ])
+    );
+}
+
+#[rstest]
+#[case(None, (0, 1))]
+#[case(Some("1/1"), (0, 1))]
+#[case(Some("2/3"), (1, 3))]
+#[case(Some("3/3"), (2, 3))]
+fn shard_of_counts_its_share_from_one(#[case] spec: Option<&str>, #[case] share: (usize, usize)) {
+    assert_eq!(shard_of(spec), share);
+}
+
+#[rstest]
+#[case("0/3")]
+#[case("4/3")]
+#[case("2")]
+#[case("k/n")]
+#[should_panic(expected = "takes `k/n`")]
+fn shard_of_rejects_a_share_outside_one_through_n(#[case] spec: &str) {
+    let _ = shard_of(Some(spec));
 }

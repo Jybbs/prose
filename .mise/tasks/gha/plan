@@ -63,7 +63,9 @@ def changed() -> list[str]:
 def corpus():
     """
     Emit the subset probe's matrix, one row per rule family, scoped to
-    the rules a pull request touches or carrying the whole family.
+    the rules a pull request touches or carrying the whole family. A run
+    carrying whole families partitions the rules, so each row claims the
+    pairs its own family opens and no pair is probed twice.
     """
     slugs = [] if environ.get("GITHUB_EVENT_NAME") == "push" else scoped(changed())
     meta  = badges()
@@ -72,7 +74,11 @@ def corpus():
         held = [slug for slug in members if slug in slugs] if slugs else members
         if held:
             badge, label = meta[family]
-            rows.append({"label": f"{badge} Subsets · {label}", "rules": " ".join(held)})
+            rows.append({
+                "label": f"{badge} Subsets · {label}",
+                "pairs": "touching" if slugs else "owned",
+                "rules": " ".join(held),
+            })
     emit(f"matrix={dumps({'include': rows}, ensure_ascii=False)}")
 
 

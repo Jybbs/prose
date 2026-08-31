@@ -72,6 +72,7 @@ jobs:
   bake:
     name            : 🧱 Bake
     if              : ${{ github.event_name != 'pull_request' }}
+    permissions     : { actions: write, contents: read }
     runs-on         : *ubuntu
     timeout-minutes : &sweep 30
 
@@ -121,6 +122,20 @@ jobs:
         with:
           key  : *mutations-key
           path : *mutations-path
+
+      - name : Drop the stages this bake replaces
+        env:
+          GH_TOKEN : ${{ github.token }}
+          KEPT     : corpus-stage-${{ steps.python.outputs.version }}-${{ github.sha }}
+          PREFIX   : corpus-stage-${{ steps.python.outputs.version }}-
+        run  : |
+          gh api "repos/$GITHUB_REPOSITORY/actions/caches?per_page=100" \
+            --jq '.actions_caches[]
+                  | select(.key | startswith(env.PREFIX))
+                  | select(.key != env.KEPT)
+                  | .id' \
+            | xargs -r -I {} gh api --method DELETE \
+              "repos/$GITHUB_REPOSITORY/actions/caches/{}"
 
   settle:
     name            : ⚓ Settle
@@ -211,7 +226,9 @@ jobs:
       - *provision-cargo
 
       - name : Probe every rule alone and every pair touching the family
-        env  : { PROSE_SETTLE_RULES: "${{ matrix.rules }}" }
+        env:
+          PROSE_SETTLE_PAIRS : ${{ matrix.pairs }}
+          PROSE_SETTLE_RULES : ${{ matrix.rules }}
         run  : mise run rust:subsets
 
   gate:

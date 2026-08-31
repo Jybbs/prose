@@ -502,6 +502,16 @@ impl Source {
             .flatten()
     }
 
+    /// Parses Python source from an in-memory string, carrying `name`
+    /// the way a file-backed source carries its path.
+    ///
+    /// # Errors
+    ///
+    /// Returns the parse error the module parser draws from the text.
+    pub fn parse_named(text: String, name: &str) -> Result<Self, ParseError> {
+        Self::build_module(text, name, PySourceType::default())
+    }
+
     /// Parses `text` as a plain module, handing back the tree a probe
     /// rebuild clones rather than re-parsing per subset.
     pub(crate) fn parsed_module(text: &str) -> Result<Parsed<ModModule>, ParseError> {
@@ -524,16 +534,6 @@ impl Source {
     /// # Errors
     ///
     /// Returns `ParseError` if `text` is not a valid Python module.
-    /// Parses Python source from an in-memory string, carrying `name`
-    /// the way a file-backed source carries its path.
-    ///
-    /// # Errors
-    ///
-    /// Returns the parse error the module parser draws from the text.
-    pub fn parse_named(text: String, name: &str) -> Result<Self, ParseError> {
-        Self::build_module(text, name, PySourceType::default())
-    }
-
     pub(crate) fn reparse_carrying(
         &self,
         text: String,
@@ -914,6 +914,17 @@ mod tests {
     fn changed_from_returns_text_when_it_differs() {
         let s = Source::from_str("x = 1\n").expect("parses");
         assert_eq!(s.changed_from("y = 2\n"), Some("x = 1\n"));
+    }
+
+    #[test]
+    fn clone_carries_the_text_tree_and_suppression() {
+        let source = parse("# prose: off\nx = 1\n");
+
+        let copy = source.clone();
+
+        assert_eq!(copy.text(), source.text());
+        assert_eq!(copy.ast().body.len(), source.ast().body.len());
+        assert!(copy.suppression_map().file_is_suppressed());
     }
 
     #[test]

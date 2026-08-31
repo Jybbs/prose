@@ -124,25 +124,6 @@ def led(statement: BaseStatement, comment: str, first: bool = False) -> BaseStat
     return statement.with_changes(leading_lines=lines)
 
 
-def mutated(path: Path, corpus: Path, destination: Path, seed: str) -> int:
-    """
-    Write every variant of the file at `path` under `destination`, one
-    subdirectory per mutation, and return how many landed.
-    """
-    try:
-        text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return 0
-    relative = path.relative_to(corpus)
-    written  = 0
-    for name, variant in variants(text, Random(f"{seed}:{relative}")).items():
-        target = destination / name / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(variant, encoding="utf-8", newline="")
-        written += 1
-    return written
-
-
 def members(module: Module, rng: Random) -> Module | None:
     """
     Return `module` with each class body's members reordered behind its
@@ -162,6 +143,25 @@ def members(module: Module, rng: Random) -> Module | None:
         return node.with_changes(body=node.body.with_changes(body=[*pinned, *movable]))
 
     return rewrite(module, classes, reordered)
+
+
+def mutated(path: Path, corpus: Path, destination: Path, seed: str) -> int:
+    """
+    Write every variant of the file at `path` under `destination`, one
+    subdirectory per mutation, and return how many landed.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return 0
+    relative = path.relative_to(corpus)
+    written  = 0
+    for name, variant in variants(text, Random(f"{seed}:{relative}")).items():
+        target = destination / name / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(variant, encoding="utf-8", newline="")
+        written += 1
+    return written
 
 
 def parenthesized(module: Module, rng: Random) -> Module | None:
@@ -238,10 +238,15 @@ def rewrite(module: Module, chosen: list[CSTNode], edit: Callable) -> Module:
 def shuffled(module: Module, rng: Random) -> Module | None:
     """
     Return `module` with its top-level statements reordered, each keeping
-    the lines it owns. A `__future__` import holds its seat ahead of the
-    shuffle. `None` when fewer than two statements are free to move.
+    the lines it owns. A `__future__` import and a leading docstring hold
+    their seats ahead of the shuffle, the one because the grammar admits
+    it nowhere else and the other because a docstring moved off the front
+    stops being one. `None` when fewer than two statements are free to
+    move.
     """
-    pinned, movable = partition(module.body, lambda _, statement: is_future(statement))
+    pinned, movable = partition(
+        module.body, lambda index, statement: is_future(statement) or leads(index, statement)
+    )
     if len(movable) < 2:
         return None
     rng.shuffle(movable)
@@ -337,5 +342,7 @@ if __name__ == "__main__":
                 written += future.result()
         except TimeoutError:
             pool.shutdown(cancel_futures=True)
+            reached = sum(1 for future in futures if future.done())
+            print(f"the {args.budget}s budget ran out after {reached} of {len(futures)} files")
 
     print(f"{written} variants written")

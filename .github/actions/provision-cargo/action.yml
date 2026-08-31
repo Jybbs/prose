@@ -30,7 +30,6 @@ runs:
       shell : bash
       run   : |
         {
-          echo "CARGO_NET_GIT_FETCH_WITH_CLI=true"
           echo "CARGO_TERM_COLOR=always"
           echo "MISE_RUSTUP_HOME=$HOME/.local/share/mise/rustup"
         } >> "$GITHUB_ENV"
@@ -49,3 +48,7 @@ runs:
         key           : ${{ hashFiles('Cargo.toml') }}
         save-if       : ${{ inputs.save != 'false' }}
         shared-key    : ${{ inputs.shared-key }}
+
+    - name  : Point Cargo at the git CLI for its git dependencies
+      shell : bash
+      run   : echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"

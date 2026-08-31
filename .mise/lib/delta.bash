@@ -13,10 +13,9 @@ baseline_root() {
 }
 
 built_binary() {
-  local harness=1 profile="${1:-${PROSE_DELTA_PROFILE:-probe}}"
+  local profile="${1:-${PROSE_DELTA_PROFILE:-probe}}"
   grep -q "^\[profile\.$profile\]" Cargo.toml || {
     echo "$PWD defines no $profile profile, building release instead" >&2
-    harness=
     profile=release
   }
   cargo build \
@@ -24,7 +23,6 @@ built_binary() {
     --locked \
     --message-format json-render-diagnostics \
     --profile "$profile" \
-    ${harness:+--test corpus} \
     | jq -r 'select(.executable != null and .target.name == "prose") | .executable'
 }
 
@@ -33,7 +31,7 @@ delta_widths() {
 }
 
 fail_width() {
-  echo "$binary $* at width $width, stderr at $record.log" >&2
+  echo "$1 at width $2, stderr at $3.log" >&2
   exit 1
 }
 
@@ -48,9 +46,10 @@ format_tagged() {
         if .kind == "summary" then select(.schema_version == 1)
         else {code, filename: (.filename | ltrimstr($stage))} end' \
     > "$record.ndjson" || status=$?
-  (( status <= 4 )) || fail_width "exited $status"
+  (( status <= 4 )) || fail_width "$binary exited $status" "$width" "$record"
   jq -es 'map(select(.kind == "summary")) | length == 1 and .[0].files_visited > 0' \
-    "$record.ndjson" > /dev/null || fail_width "visited no file"
+    "$record.ndjson" > /dev/null \
+    || fail_width "$binary visited no file" "$width" "$record"
   staged commit --allow-empty -am "$side at width $width" -q
   staged tag -f "$side-$width" > /dev/null
 }
