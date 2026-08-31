@@ -20,7 +20,7 @@ def bake(path: str, widths: list[Width]):
         dumps(
             {
                 found.label: sorted(
-                    {(brk.frame[0], brk.reason) for brk in found.breaks}
+                    {brk.key for brk in found.breaks}
                 )
                 for found in widths
             },
@@ -35,6 +35,7 @@ def baseline() -> dict:
     Return the break set `PROSE_IMPORTS_BASELINE` names, empty where unset.
     """
     named = environ.get("PROSE_IMPORTS_BASELINE")
+
     return loads(Path(named).read_text(encoding="utf-8")) if named else {}
 
 
@@ -44,7 +45,8 @@ def judge(found: Width, held: dict) -> set[str]:
     baseline `held` carries for its width.
     """
     known = {tuple(key) for key in held.get(found.label, [])}
-    return {brk.module for brk in found.breaks if (brk.frame[0], brk.reason) in known}
+
+    return {brk.module for brk in found.breaks if brk.key in known}
 
 
 def verdict(results: list[tuple[Width, set[str]]]) -> int | str:
@@ -58,10 +60,12 @@ def verdict(results: list[tuple[Width, set[str]]]) -> int | str:
         return (
             "a run left modules unmeasured, so the uncomparable count cannot be named"
         )
+
     if baked := environ.get("PROSE_IMPORTS_BAKE"):
         bake(baked, [found for found, _ in results])
         print(f"break set baked into {baked}")
         return 0
+
     return int(
         any(
             brk.module not in carried

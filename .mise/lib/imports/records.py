@@ -5,7 +5,7 @@ module the rewrite breaks, and one width's tallies and findings.
 
 from dataclasses import dataclass, field
 
-Frame = tuple[str, int | None]
+type Frame = tuple[str, int | None]
 
 
 @dataclass(frozen=True)
@@ -42,6 +42,14 @@ class Break:
     attribution : str       = ""
     frame       : Frame     = ("", None)
     hunk        : list[str] = field(default_factory=list)
+
+    @property
+    def key(self) -> tuple[str, str]:
+        """
+        The file its frame names and its reason, which is what a baseline
+        carries per break.
+        """
+        return self.frame[0], self.reason
 
     @property
     def loaded(self) -> tuple[str, ...]:

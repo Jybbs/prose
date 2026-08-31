@@ -24,14 +24,14 @@ def hunk(pairs: SequenceMatcher, row: int | None, name: str = "") -> list[str]:
             shown += [(None, f"-{line}") for line in pairs.a[i1:i2]]
         if tag != "delete":
             mark   = " " if tag == "equal" else "+"
-            shown += [(j1 + k, f"{mark}{line}") for k, line in enumerate(
-                pairs.b[j1:j2]
-            )]
+            shown += [(j, f"{mark}{line}") for j, line in enumerate(pairs.b[j1:j2], j1)]
+
     if row is None:
         changed = [k for k, (_, line) in enumerate(shown) if line[0] != " "]
         index   = next(iter([k for k in changed if name in shown[k][1]] or changed), 0)
     else:
         index = next((k for k, (seen, _) in enumerate(shown) if seen == row - 1), 0)
+
     low, high = max(0, index - CONTEXT), index + CONTEXT + 1
     return [
         *(["..."] if low else []),
@@ -51,6 +51,7 @@ def mapped_rows(pairs: SequenceMatcher, row: int) -> range:
             if tag == "equal":
                 return range(landed := i1 + row - j1, landed + 1)
             return range(i1 + 1, max(i1 + 1, i2) + 1)
+
     return range(0)
 
 

@@ -9,7 +9,7 @@ from itertools   import accumulate
 from pathlib     import Path
 from re          import escape, search
 
-Fixes = dict[str, list[tuple[str, list[dict]]]]
+type Fixes = dict[str, list[tuple[str, list[dict]]]]
 
 
 def drops(edits: list[dict], name: str, text: str) -> bool:
@@ -19,6 +19,7 @@ def drops(edits: list[dict], name: str, text: str) -> bool:
     """
     was, now = rewritten(edits, text)
     word     = rf"\b{escape(name)}\b"
+
     return bool(search(word, was)) and not search(word, now)
 
 
@@ -30,6 +31,7 @@ def edit_rows(edit: dict) -> range:
     start, end = edit["location"]["row"], edit["end_location"]["row"]
     if end > start and edit["end_location"]["column"] == 1:
         end -= 1
+
     return range(start, end + 1)
 
 
@@ -44,6 +46,7 @@ def fixes_by_file(records: list[dict], tree: Path) -> Fixes:
             by_file[Path(record["filename"]).relative_to(tree).as_posix()].append(
                 (record["code"], fix["edits"])
             )
+
     return by_file
 
 
@@ -76,7 +79,9 @@ def rewritten(edits: list[dict], text: str) -> tuple[str, str]:
     low  = text.rfind("\n", 0, spans[0][0]) + 1
     high = text.find("\n", max(end for _, end, _ in spans))
     high = len(text) if high < 0 else high
+
     left = text
     for start, end, content in reversed(spans):
         left = f"{left[:start]}{content}{left[end:]}"
+
     return text[low:high], left[low:high + len(left) - len(text)]

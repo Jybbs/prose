@@ -9,12 +9,13 @@ from dataclasses     import dataclass
 from itertools       import compress
 from pathlib         import Path
 
-from binary   import format_tree, rules
-from bindings import bindings
-from diff     import hunk, mapped_rows, pairing, text_of
-from fixes    import Fixes, drops, reaches
-from records  import Break, Frame
-from runner   import Runner, divergence
+from binary     import format_tree, rules
+from bindings   import bindings
+from comparison import divergence
+from diff       import hunk, mapped_rows, pairing, text_of
+from fixes      import Fixes, drops, reaches
+from records    import Break, Frame
+from runner     import Runner
 
 
 @dataclass
@@ -60,6 +61,7 @@ class Attributor:
         for brk in breaks:
             brk.frame = self.locate(brk)
             first     = explained.setdefault((brk.frame, brk.reason), brk)
+
             if first is brk:
                 self.explain(brk)
             else:
@@ -87,6 +89,7 @@ class Attributor:
                         f"`{brk.name}` bound at {module}:{rows.start}, "
                         f"dropped by {listed}"
                     )
+
         return ""
 
     def explain(self, brk: Break):
@@ -98,17 +101,21 @@ class Attributor:
         file, row = brk.frame
         pairs     = pairing(self.formatted / file, self.runner.stage.original / file)
         clauses   = []
+
         if row is not None:
             rows, line = mapped_rows(pairs, row), pairs.b[row - 1].strip()
             if under := self.fitting(file, lambda edits: reaches(edits, rows, line)):
                 clauses.append(f"under {under}")
+
         if brk.name and (clause := self.binding(brk)):
             clauses.append(clause)
+
         brk.attribution = ", ".join(clauses) or (
             f"reproduced by {alone} alone"
             if (alone := self.alone(brk))
             else "no single rule reproduces it"
         )
+
         brk.hunk = hunk(pairs, row, brk.name or "")
 
     def fitting(self, file: str, fits: Callable[[list[dict]], bool]) -> str:
@@ -117,6 +124,7 @@ class Attributor:
         joined in pipeline order.
         """
         hit = {slug for slug, edits in self.covered.get(file, []) if fits(edits)}
+
         return ", ".join(slug for slug in rules(self.binary) if slug in hit)
 
     def locate(self, brk: Break) -> Frame:
@@ -127,10 +135,11 @@ class Attributor:
         neither exists.
         """
         if under := [
-            (Path(file).relative_to(self.formatted).as_posix(), line)
+            (path.relative_to(self.formatted).as_posix(), line)
             for file, line in brk.formatted.frames
-            if file.startswith(f"{self.formatted}/")
+            if (path := Path(file)).is_relative_to(self.formatted)
         ]:
             return under[-1]
+
         rows = bindings(self.formatted / brk.module).get(brk.name)
         return brk.module, rows.start if rows else None

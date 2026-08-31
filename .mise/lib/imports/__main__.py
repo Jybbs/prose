@@ -20,7 +20,7 @@ from os  import environ
 from sys import argv
 
 from ratchet import baseline, judge, verdict
-from report  import banner, render
+from report  import render
 from sweep   import Sweep
 
 binary, python, target = argv[1:]
@@ -28,12 +28,14 @@ sweep  = Sweep(binary, python, target)
 widths = [None, *map(int, environ.get("PROSE_IMPORTS_WIDTHS", "").split())]
 held   = baseline()
 
-print(banner(sweep), flush=True)
+print(sweep, flush=True)
+
 results = []  # prose: ignore[miscased-constants]
 for width in widths:
     found   = sweep.sweep(width)
     carried = judge(found, held)
     report  = render(carried, sweep.corpus, found)
+
     print(f"\nwidth {found.label}\n{report}", flush=True)
     results.append((found, carried))
 

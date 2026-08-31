@@ -31,10 +31,12 @@ def bindings(path: Path) -> dict[str, range]:
         module = parse(text_of(path))
     except (SyntaxError, ValueError):
         return {}
+
     rows = {}
     for node in statements(module):
         for name in bound(node):
             rows.setdefault(name, header_rows(node))
+
     return rows
 
 
@@ -44,14 +46,16 @@ def bound(node: stmt) -> list[str]:
     a definition, the first segment of each import, and every name stored
     outside a nested scope otherwise.
     """
-    match node:
-        case FunctionDef() | AsyncFunctionDef() | ClassDef(): return [node.name]
-        case Import() | ImportFrom():
-            return [
-                (alias.asname or alias.name).split(".")[0]
-                for alias in node.names
-                if alias.name != "*"
-            ]
+    if isinstance(node, DEFINITIONS):
+        return [node.name]
+
+    if isinstance(node, (Import, ImportFrom)):
+        return [
+            (alias.asname or alias.name).split(".")[0]
+            for alias in node.names
+            if alias.name != "*"
+        ]
+
     return [
         child.id
         for child in own(node)
@@ -66,6 +70,7 @@ def header_rows(node: stmt) -> range:
     """
     if isinstance(node, DEFINITIONS):
         return range(node.lineno, max(node.body[0].lineno, node.lineno + 1))
+
     return range(node.lineno, node.end_lineno + 1)
 
 

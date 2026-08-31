@@ -28,12 +28,15 @@ def format_tree(
         ],
         capture_output = True,
         cwd            = target,
-        text           = True
+        encoding       = "utf-8",
+        errors         = "replace"
     )
+
     if done.returncode > EXIT_CAP:
         raise SystemExit(
             f"format exited {done.returncode} on {target}: {last_line(done.stderr)}"
         )
+
     return [loads(line) for line in done.stdout.splitlines()], done.stderr
 
 

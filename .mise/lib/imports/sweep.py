@@ -5,15 +5,14 @@ attributed.
 """
 
 from functools import partial
-from itertools import compress
-from operator  import not_
 
 from attribution import Attributor
 from binary      import format_tree
+from comparison  import compare
 from corpus      import candidates, interpreter, resolve
 from fixes       import fixes_by_file
-from records     import Break, Outcome, Width
-from runner      import Runner, divergence
+from records     import Width
+from runner      import Runner
 from stage       import Stage
 
 
@@ -32,6 +31,17 @@ class Sweep:
         self.stage  = Stage(self.corpus)
         self.runner = Runner(python, self.stage)
 
+    def __str__(self) -> str:
+        """
+        The header naming the corpus, binary, interpreter, and stage.
+        """
+        return (
+            f"corpus      {self.corpus}\n"
+            f"binary      {self.binary}\n"
+            f"interpreter {self.runner.python} ({self.version})\n"
+            f"stage       {self.stage.root}"
+        )
+
     def sweep(self, width: int | None) -> Width:
         """
         Format a copy of the corpus at `width`, run every module the
@@ -42,68 +52,39 @@ class Sweep:
         formatted    = self.stage.copy(f"formatted-{label}", width)
         records, log = format_tree(self.binary, formatted)
         (self.stage.root / f"format-{label}.log").write_text(log, encoding="utf-8")
+
         modules = candidates(formatted, self.only, self.stage.original)
         suspects, comparable, unmeasured = compare(
             after   = self.runner.outcomes(modules, formatted),
             before  = self.runner.originals(modules),
             modules = modules
         )
+
         verdicts = list(
             self.runner.pool.map(
                 partial(self.runner.confirm, formatted=formatted),
                 suspects
             )
         )
-        breaks = list(compress(suspects, verdicts))
+
+        breaks = [brk for brk, broken in zip(suspects, verdicts) if broken]
+        flaky  = [brk.module for brk, broken in zip(suspects, verdicts) if not broken]
+
         Attributor(
-            self.binary,
-            fixes_by_file(records, formatted),
-            formatted,
-            label,
-            self.runner,
-            width
+            binary    = self.binary,
+            covered   = fixes_by_file(records, formatted),
+            formatted = formatted,
+            label     = label,
+            runner    = self.runner,
+            width     = width
         ).attribute(breaks)
+
         return Width(
-            breaks,
-            len(modules),
-            len(comparable),
-            [brk.module for brk in compress(suspects, map(not_, verdicts))],
-            label,
-            unmeasured
+            breaks     = breaks,
+            candidates = len(modules),
+            comparable = len(comparable),
+            flaky      = flaky,
+            label      = label,
+            unmeasured = unmeasured
         )
 
-
-def compare(
-    after   : dict[str, Outcome],
-    before  : dict[str, Outcome],
-    modules : list[str]
-) -> tuple[list[Break], list[str], list[str]]:
-    """
-    Return the breaks among `modules` between what the original tree left
-    in `before` and the formatted tree in `after`, the modules comparable at
-    all, and the ones a run left unmeasured.
-    """
-    comparable = [
-        module
-        for module in modules
-        if before[module].kind == "ok" and after[module].kind != "unmeasured"
-    ]
-    return (
-        [
-            Break(
-                formatted = after[module],
-                module    = module,
-                name      = differs[1],
-                original  = before[module],
-                reason    = differs[0]
-            )
-            for module in comparable
-            if (differs := divergence(after[module], before[module]))
-        ],
-        comparable,
-        [
-            module
-            for module in modules
-            if "unmeasured" in (before[module].kind, after[module].kind)
-        ]
-    )

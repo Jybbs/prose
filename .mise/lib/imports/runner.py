@@ -1,23 +1,24 @@
 """
 Running one module of a tree in a fresh interpreter, meaning what each run
-left behind, whether a break holds on a second run, and how two runs differ.
+left behind and whether a break holds on a second run.
 """
 
 from ast                import literal_eval
 from concurrent.futures import ThreadPoolExecutor
+from contextlib         import suppress
 from functools          import partial
-from os                 import close, cpu_count, environ, killpg
+from os                 import close, environ, killpg, process_cpu_count
 from pathlib            import Path
-from signal             import SIGKILL
+from signal             import SIGKILL, Signals
 from subprocess         import DEVNULL, PIPE, Popen, TimeoutExpired
 from tempfile           import mkstemp
 
-from binary  import last_line
-from records import Break, Outcome
-from stage   import Stage
+from binary     import last_line
+from comparison import divergence
+from records    import Break, Outcome
+from stage      import Stage
 
-MISSING = "no plain constant"
-RUNNER  = Path(__file__).with_name("execute.py")
+RUNNER = Path(__file__).with_name("execute.py")
 
 
 class Runner:
@@ -30,7 +31,7 @@ class Runner:
         self.python  = python
         self.stage   = stage
         self.timeout = float(environ.get("PROSE_IMPORTS_TIMEOUT", "30"))
-        self.pool    = ThreadPoolExecutor(cpu_count())
+        self.pool    = ThreadPoolExecutor(process_cpu_count())
         self.known   = {}
 
     def confirm(self, brk: Break, formatted: Path) -> bool:
@@ -40,6 +41,7 @@ class Runner:
         `brk`.
         """
         before = self.execute(brk.module, [self.stage.original])
+
         return (
             before.kind == "ok"
             and divergence(before, brk.original) is None
@@ -53,7 +55,8 @@ class Runner:
         """
         descriptor, record = mkstemp(dir=self.stage.records)
         close(descriptor)
-        child = Popen(
+
+        with Popen(
             [self.python, "-I", "-B", str(RUNNER), record, relative, *map(str, trees)],
             cwd      = self.stage.tmp,
             encoding = "utf-8",
@@ -67,26 +70,29 @@ class Runner:
             stderr            = PIPE,
             stdin             = DEVNULL,
             stdout            = DEVNULL
-        )
-        try:
-            _, err = child.communicate(timeout=self.timeout)
-        except TimeoutExpired:
-            killpg(child.pid, SIGKILL)
-            child.stderr.close()
-            child.wait()
-            return Outcome("timeout", error=f"times out after {self.timeout:g}s")
+        ) as child:
+            try:
+                _, err = child.communicate(timeout=self.timeout)
+            except TimeoutExpired:
+                with suppress(ProcessLookupError):
+                    killpg(child.pid, SIGKILL)
+                return Outcome("timeout", error=f"times out after {self.timeout:g}s")
+
         if left := Path(record).read_text(encoding="utf-8"):
             try:
                 return Outcome(**literal_eval(left))
             except (SyntaxError, TypeError, ValueError):
                 return Outcome("unmeasured", error="leaves an unreadable record")
+
         if child.returncode < 0:
-            return Outcome("raised", error=f"dies on signal {-child.returncode}")
+            return Outcome("raised", error=f"dies on {Signals(-child.returncode).name}")
+
         if child.returncode:
             return Outcome(
                 "raised",
                 error = f"exits {child.returncode} printing {last_line(err)}"
             )
+
         return Outcome("unmeasured", error="leaves no record")
 
     def originals(self, modules: list[str]) -> dict[str, Outcome]:
@@ -100,6 +106,7 @@ class Runner:
                 self.stage.original
             )
         )
+
         return {module: self.known[module] for module in modules}
 
     def outcomes(self, modules: list[str], tree: Path) -> dict[str, Outcome]:
@@ -111,24 +118,3 @@ class Runner:
             zip(modules, self.pool.map(partial(self.execute, trees=[tree]), modules))
         )
 
-
-def divergence(formatted: Outcome, original: Outcome) -> tuple[str, str | None] | None:
-    """
-    Return why `formatted` counts as broken beside `original` and the name
-    it hinges on, or `None` where both bind the same namespace.
-    """
-    if formatted.kind != "ok":
-        return formatted.error, formatted.name
-    bound, rebound = set(original.names), set(formatted.names)
-    if unbound := bound - rebound:
-        name = min(unbound)
-        return f"leaves `{name}` unbound", name
-    if extra := rebound - bound:
-        name = min(extra)
-        return f"binds `{name}` the original does not", name
-    before, after = dict(original.constants), dict(formatted.constants)
-    if differing := {name for name, _ in before.items() ^ after.items()}:
-        name     = min(differing)
-        was, now = before.get(name, MISSING), after.get(name, MISSING)
-        return f"binds `{name}` to {now} where the original binds {was}", name
-    return None

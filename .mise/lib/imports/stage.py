@@ -22,6 +22,7 @@ class Stage:
         self.records  = self.root / "records"
         self.tmp      = self.root / "tmp"
         self.original = self.copy("original")
+
         for directory in (self.home, self.records, self.tmp):
             directory.mkdir()
 
@@ -33,6 +34,7 @@ class Stage:
         tree = self.root / name
         copytree(self.corpus, tree, ignore=ignore_patterns("__pycache__"))
         configure(tree, width)
+
         return tree
 
     def overlay(
@@ -51,13 +53,16 @@ class Stage:
         """
         tree = self.root / "alone" / label / module.replace("/", "+") / slug
         tree.mkdir(parents=True)
+
         for top in {file.split("/")[0] for file in files}:
             source, target = self.original / top, tree / top
             if source.is_dir():
                 copytree(source, target)
             else:
                 copy2(source, target)
+
         configure(tree, width)
+
         return tree
 
 
@@ -67,4 +72,7 @@ def configure(tree: Path, width: int | None):
     at the default width.
     """
     if width is not None:
-        (tree / "prose.toml").write_text(f"code-line-length = {width}\n")
+        (tree / "prose.toml").write_text(
+            f"code-line-length = {width}\n",
+            encoding = "utf-8"
+        )

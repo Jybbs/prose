@@ -10,23 +10,9 @@ from pathlib     import Path
 from shlex       import quote
 
 from records import Break, Width
-from sweep   import Sweep
 
 KNOBS = ("PROSE_IMPORTS_PROFILE", "PROSE_IMPORTS_PYTHON", "PROSE_IMPORTS_TIMEOUT")
 SHOWN = 30
-
-
-def banner(sweep: Sweep) -> str:
-    """
-    Return the header naming the corpus, binary, interpreter, and stage
-    of `sweep`.
-    """
-    return (
-        f"corpus      {sweep.corpus}\n"
-        f"binary      {sweep.binary}\n"
-        f"interpreter {sweep.runner.python} ({sweep.version})\n"
-        f"stage       {sweep.stage.root}"
-    )
 
 
 def render(carried: set[str], corpus: Path, found: Width) -> str:
@@ -44,8 +30,10 @@ def render(carried: set[str], corpus: Path, found: Width) -> str:
         f"  timeouts     {len(timing):>5}",
         f"  flaky        {len(found.flaky):>5}"
     ]
+
     if carried:
         lines.append(f"  carried      {len(carried):>5}")
+
     for heading, listed in (
         (
             "raises or rebinds",
@@ -55,9 +43,11 @@ def render(carried: set[str], corpus: Path, found: Width) -> str:
     ):
         if not listed:
             continue
+
         groups = defaultdict(list)
         for brk in listed:
             groups[(brk.frame, brk.attribution)].append(brk)
+
         lines += ["", f"  {heading} ({len(listed)} modules at {len(groups)} frames):"]
         for members in groups.values():
             lines += rendered_group(
@@ -66,6 +56,7 @@ def render(carried: set[str], corpus: Path, found: Width) -> str:
                 label   = found.label,
                 members = members
             )
+
     for heading, listed in (
         ("flaky, a second run disagreed", found.flaky),
         ("unmeasured, a run left no record", found.unmeasured)
@@ -76,6 +67,7 @@ def render(carried: set[str], corpus: Path, found: Width) -> str:
                 f"  {heading} ({len(listed)}):",
                 *(f"    {module}" for module in listed)
             ]
+
     return "\n".join(lines)
 
 
@@ -95,17 +87,21 @@ def rendered_group(
     shared    = members[0].reason if len({brk.reason for brk in members}) == 1 else ""
     ordered   = sorted(members, key=lambda brk: (brk.module in carried, brk.module))
     lines     = [f"    {f'{file}:{row}' if row else file} {members[0].attribution}"]
+
     if shared:
         lines.append(f"      each {shared}")
+
     lines += [f"      {line}" for line in members[0].hunk]
-    for brk in ordered[:SHOWN]:
-        lines.append(
-            f"      {brk.module}"
-            f"{'' if shared else f' {brk.reason}'}"
-            f"{', carried by the baseline' if brk.module in carried else ''}"
-        )
+    lines += [
+        f"      {brk.module}"
+        f"{'' if shared else f' {brk.reason}'}"
+        f"{', carried by the baseline' if brk.module in carried else ''}"
+        for brk in ordered[:SHOWN]
+    ]
+
     if len(ordered) > SHOWN:
         lines.append(f"      ... and {len(ordered) - SHOWN} more")
+
     lines.append(
         f"      reproduce with {reproduction(corpus, label, ordered[0].module)}"
     )
@@ -120,4 +116,5 @@ def reproduction(corpus: Path, label: str, module: str) -> str:
     knobs = [f"{knob}={quote(environ[knob])}" for knob in KNOBS if knob in environ]
     if label != "default":
         knobs.append(f"PROSE_IMPORTS_WIDTHS={label}")
+
     return " ".join([*knobs, "mise", "run", "imports", quote(str(corpus / module))])
