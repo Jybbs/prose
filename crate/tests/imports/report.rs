@@ -10,8 +10,8 @@ use std::{
 use itertools::Itertools;
 
 use crate::{
-    records::{Break, Width},
-    sweep::{MODULE_VAR, PYTHON_VAR, TIMEOUT_VAR, WIDTHS_VAR},
+    records::{Break, Kind, Width},
+    sweep::{DEFAULT_LABEL, MODULE_VAR, PYTHON_VAR, TIMEOUT_VAR, WIDTHS_VAR},
 };
 
 /// How many broken modules a group names before it counts the rest.
@@ -23,44 +23,45 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
     let timeouts: Vec<_> = found
         .breaks
         .iter()
-        .filter(|brk| brk.formatted.kind == "timeout")
+        .filter(|brk| brk.formatted.kind == Kind::Timeout)
         .collect();
     let raising: Vec<_> = found
         .breaks
         .iter()
-        .filter(|brk| brk.formatted.kind != "timeout")
+        .filter(|brk| brk.formatted.kind != Kind::Timeout)
         .collect();
     let uncomparable = if found.unmeasured.is_empty() {
         found.uncomparable().to_string()
     } else {
         "unmeasured".to_owned()
     };
+    let row = |label: &str, value: &str| format!("  {label:<12} {value:>5}");
     let mut lines = vec![
-        format!("  candidates   {:>5}", found.candidates),
-        format!("  comparable   {:>5}", found.comparable),
-        format!("  uncomparable {uncomparable:>5}"),
-        format!("  breaks       {:>5}", found.breaks.len()),
-        format!("  timeouts     {:>5}", timeouts.len()),
-        format!("  flaky        {:>5}", found.flaky.len()),
+        row("candidates", &found.candidates.to_string()),
+        row("comparable", &found.comparable.to_string()),
+        row("uncomparable", &uncomparable),
+        row("breaks", &found.breaks.len().to_string()),
+        row("timeouts", &timeouts.len().to_string()),
+        row("flaky", &found.flaky.len().to_string()),
     ];
     if !carried.is_empty() {
-        lines.push(format!("  carried      {:>5}", carried.len()));
+        lines.push(row("carried", &carried.len().to_string()));
     }
     if found.refused > 0 {
-        lines.push(format!("  refused      {:>5}", found.refused));
+        lines.push(row("refused", &found.refused.to_string()));
     }
     for (heading, listed) in [("raises or rebinds", raising), ("times out", timeouts)] {
         if listed.is_empty() {
             continue;
         }
-        let mut seats: BTreeMap<_, usize> = BTreeMap::new();
+        let mut seats: BTreeMap<(&(String, Option<usize>), &String), usize> = BTreeMap::new();
         let mut groups: Vec<Vec<&Break>> = Vec::new();
         for brk in &listed {
-            let key = (brk.frame.clone(), brk.attribution.clone());
-            let seat = *seats.entry(key).or_insert(groups.len());
-            if seat == groups.len() {
+            let key = (&brk.frame, &brk.attribution);
+            let seat = *seats.entry(key).or_insert_with(|| {
                 groups.push(Vec::new());
-            }
+                groups.len() - 1
+            });
             groups[seat].push(brk);
         }
         lines.push(String::new());
@@ -74,7 +75,7 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
         }
     }
     for (heading, listed) in [
-        ("flaky, a second run disagreed", &found.flaky),
+        ("flaky, a second run did not confirm it", &found.flaky),
         ("unmeasured, a run left no record", &found.unmeasured),
     ] {
         if !listed.is_empty() {
@@ -84,20 +85,6 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
         }
     }
     lines.join("\n")
-}
-
-/// The command that runs one module on its own, carrying every knob the
-/// current run set.
-fn reproduction(label: &str, module: &str) -> String {
-    let mut knobs: Vec<_> = [PYTHON_VAR, TIMEOUT_VAR]
-        .iter()
-        .filter_map(|knob| Some(format!("{knob}={}", env::var(knob).ok()?)))
-        .collect();
-    if label != "default" {
-        knobs.push(format!("{WIDTHS_VAR}={label}"));
-    }
-    knobs.push(format!("{MODULE_VAR}={module}"));
-    format!("{} mise run imports", knobs.join(" "))
 }
 
 /// Renders the breaks that share a frame and an attribution, the hunk once,
@@ -111,7 +98,9 @@ fn rendered_group(carried: &BTreeSet<String>, label: &str, members: &[&Break]) -
         .then(|| leader.reason.clone());
     let ordered: Vec<_> = members
         .iter()
-        .sorted_by_key(|brk| (carried.contains(&brk.module), brk.module.clone()))
+        .sorted_by(|a, b| {
+            (carried.contains(&a.module), &a.module).cmp(&(carried.contains(&b.module), &b.module))
+        })
         .collect();
     let at = row.map_or_else(|| file.clone(), |row| format!("{file}:{row}"));
     let mut lines = vec![format!("    {at} {}", leader.attribution)];
@@ -138,4 +127,18 @@ fn rendered_group(carried: &BTreeSet<String>, label: &str, members: &[&Break]) -
         reproduction(label, &ordered[0].module)
     ));
     lines
+}
+
+/// The command that runs one module on its own, carrying every knob the
+/// current run set.
+fn reproduction(label: &str, module: &str) -> String {
+    let mut knobs: Vec<_> = [PYTHON_VAR, TIMEOUT_VAR]
+        .iter()
+        .filter_map(|knob| Some(format!("{knob}={}", env::var(knob).ok()?)))
+        .collect();
+    if label != DEFAULT_LABEL {
+        knobs.push(format!("{WIDTHS_VAR}={label}"));
+    }
+    knobs.push(format!("{MODULE_VAR}={module}"));
+    format!("{} mise run imports", knobs.join(" "))
 }

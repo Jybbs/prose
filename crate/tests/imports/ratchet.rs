@@ -14,7 +14,7 @@ use crate::records::{Break, Width};
 pub(crate) const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
 /// The environment variable naming a break set an earlier run wrote.
-pub(crate) const BASELINE_VAR: &str = "PROSE_IMPORTS_BASELINE";
+const BASELINE_VAR: &str = "PROSE_IMPORTS_BASELINE";
 
 /// The file and reason of every frame a run broke at, keyed by width label.
 pub(crate) type Baseline = BTreeMap<String, BTreeSet<(String, String)>>;

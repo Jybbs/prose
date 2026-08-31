@@ -30,35 +30,31 @@ pub(crate) fn edit_rows(lines: &LineIndex, text: &str, range: &Range<usize>) -> 
     start..end + 1
 }
 
-/// How many modules the last format run could not read, parse, or write,
-/// which a caller reports rather than leaving the shortfall silent.
-pub(crate) static REFUSED: AtomicUsize = AtomicUsize::new(0);
-
 /// Formats every module of a tree in place and returns the safe fixes each
-/// file's run recorded.
+/// file's run recorded, beside how many modules the pipeline refused.
 ///
-/// A module the pipeline refuses is left as it was and counted in
-/// [`REFUSED`], since a run that quietly formats less than it walked reports
-/// fewer breaks for a reason that never reaches the report.
-pub(crate) fn format_tree(tree: &Path, pipeline: &Pipeline) -> Fixes {
-    REFUSED.store(0, Ordering::Relaxed);
-    modules_under(tree)
+/// A module the pipeline refuses is left as it was and counted, since a run
+/// that quietly formats less than it walked reports fewer breaks for a reason
+/// that never reaches the report.
+pub(crate) fn format_tree(tree: &Path, pipeline: &Pipeline) -> (Fixes, usize) {
+    let refused = AtomicUsize::new(0);
+    let fixes = modules_under(tree)
         .par_iter()
         .filter_map(|relative| {
             let path = tree.join(relative);
             let Ok(source) = Source::from_path(&path) else {
-                REFUSED.fetch_add(1, Ordering::Relaxed);
+                refused.fetch_add(1, Ordering::Relaxed);
                 return None;
             };
             let text = source.text().to_owned();
             let lines = LineIndex::from_source_text(&text);
             let diagnostics = pipeline.diagnose(&source);
             let Ok((formatted, _)) = pipeline.run(source) else {
-                REFUSED.fetch_add(1, Ordering::Relaxed);
+                refused.fetch_add(1, Ordering::Relaxed);
                 return None;
             };
             if formatted.text() != text && fs_err::write(&path, formatted.text()).is_err() {
-                REFUSED.fetch_add(1, Ordering::Relaxed);
+                refused.fetch_add(1, Ordering::Relaxed);
                 return None;
             }
             let fixes: Vec<_> = diagnostics
@@ -85,15 +81,16 @@ pub(crate) fn format_tree(tree: &Path, pipeline: &Pipeline) -> Fixes {
                 .collect();
             (!fixes.is_empty()).then(|| (relative.clone(), fixes))
         })
-        .collect()
-}
-
-/// The byte offset as the size a line index reads.
-pub(crate) fn offset(at: usize) -> TextSize {
-    TextSize::try_from(at).expect("a corpus module fits a text size")
+        .collect();
+    (fixes, refused.load(Ordering::Relaxed))
 }
 
 /// The row `at` sits on, counting from one.
 pub(crate) fn row_of(lines: &LineIndex, at: usize) -> usize {
     lines.line_index(offset(at)).get()
+}
+
+/// The byte offset as the size a line index reads.
+fn offset(at: usize) -> TextSize {
+    TextSize::try_from(at).expect("a corpus module fits a text size")
 }

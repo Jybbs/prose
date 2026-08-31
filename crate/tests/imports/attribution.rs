@@ -4,12 +4,14 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
+    ops::Range,
     path::Path,
 };
 
 use itertools::Itertools;
 use prose::{config::Config, pipeline::Pipeline, rule::render_slugs};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use similar::TextDiff;
 
 use crate::{
     bindings::binding_rows,
@@ -70,46 +72,11 @@ impl Attributor<'_> {
         render_slugs(&reproducing).to_string()
     }
 
-    /// Locates every break and explains the first of each group sharing a
-    /// frame and reason, the rest taking that one's attribution and hunk.
-    pub(crate) fn attribute(&self, breaks: &mut [Break]) {
-        for brk in breaks.iter_mut() {
-            brk.frame = self.locate(brk);
-        }
-        let mut leaders: BTreeMap<(String, Option<usize>, String), usize> = BTreeMap::new();
-        let mut follows: Vec<Option<usize>> = Vec::with_capacity(breaks.len());
-        for (at, brk) in breaks.iter().enumerate() {
-            let key = (brk.frame.0.clone(), brk.frame.1, brk.reason.clone());
-            let leader = *leaders.entry(key).or_insert(at);
-            follows.push((leader != at).then_some(leader));
-        }
-        let ordered: Vec<_> = leaders.values().copied().sorted().collect();
-        let explained: Vec<_> = ordered
-            .par_iter()
-            .map(|at| self.explain(&breaks[*at]))
-            .collect();
-        for (at, (attribution, lines)) in ordered.iter().zip(explained) {
-            breaks[*at].attribution = attribution;
-            breaks[*at].hunk = lines;
-        }
-        for at in 0..breaks.len() {
-            if let Some(leader) = follows[at] {
-                breaks[at].attribution = breaks[leader].attribution.clone();
-                breaks[at].hunk = breaks[leader].hunk.clone();
-            }
-        }
-    }
-
     /// The clause naming where the name a break turns on was bound and the
     /// rules whose fixes dropped it, empty where no fix did.
-    fn binding(&self, brk: &Break) -> String {
-        let name = brk.name.as_deref().unwrap_or_default();
+    fn binding(&self, brk: &Break, name: &str) -> String {
         for module in brk.loaded() {
-            let path = self.stage.original.join(&module);
-            let Ok(text) = fs_err::read_to_string(&path) else {
-                continue;
-            };
-            let Some(rows) = binding_rows(&text).get(name).cloned() else {
+            let Some((rows, text)) = bound_at(&self.stage.original, &module, name) else {
                 continue;
             };
             let listed = self.fitting(&module, |edits| {
@@ -133,17 +100,18 @@ impl Attributor<'_> {
         let after = fs_err::read_to_string(self.formatted.join(file)).unwrap_or_default();
         let was: Vec<_> = before.lines().collect();
         let now: Vec<_> = after.lines().collect();
+        let diff = TextDiff::from_slices(&was, &now);
         let mut clauses = Vec::new();
         if let Some(row) = *row {
-            let rows = mapped_rows(&was, &now, row);
+            let rows = mapped_rows(&diff, row);
             let line = now.get(row - 1).unwrap_or(&"").trim();
             let under = self.fitting(file, |edits| reaches(edits, &rows, line));
             if !under.is_empty() {
                 clauses.push(format!("under {under}"));
             }
         }
-        if brk.name.is_some() {
-            let clause = self.binding(brk);
+        if let Some(name) = brk.name.as_deref() {
+            let clause = self.binding(brk, name);
             if !clause.is_empty() {
                 clauses.push(clause);
             }
@@ -158,7 +126,7 @@ impl Attributor<'_> {
         };
         (
             attribution,
-            hunk(&was, &now, *row, brk.name.as_deref().unwrap_or_default()),
+            hunk(&diff, *row, brk.name.as_deref().unwrap_or_default()),
         )
     }
 
@@ -192,12 +160,49 @@ impl Attributor<'_> {
                 .map(|relative| (relative.to_string_lossy().into_owned(), Some(*line)))
         });
         under.unwrap_or_else(|| {
-            let text = fs_err::read_to_string(self.formatted.join(&brk.module)).unwrap_or_default();
-            let row = brk
-                .name
-                .as_deref()
-                .and_then(|name| binding_rows(&text).get(name).map(|rows| rows.start));
+            let row = brk.name.as_deref().and_then(|name| {
+                bound_at(self.formatted, &brk.module, name).map(|(rows, _)| rows.start)
+            });
             (brk.module.clone(), row)
         })
     }
+
+    /// Locates every break and explains the first of each group sharing a
+    /// frame and reason, the rest taking that one's attribution and hunk.
+    pub(crate) fn attribute(&self, breaks: &mut [Break]) {
+        let frames: Vec<_> = breaks.par_iter().map(|brk| self.locate(brk)).collect();
+        for (brk, frame) in breaks.iter_mut().zip(frames) {
+            brk.frame = frame;
+        }
+        let mut leaders: BTreeMap<(String, Option<usize>, String), usize> = BTreeMap::new();
+        let mut follows: Vec<Option<usize>> = Vec::with_capacity(breaks.len());
+        for (at, brk) in breaks.iter().enumerate() {
+            let key = (brk.frame.0.clone(), brk.frame.1, brk.reason.clone());
+            let leader = *leaders.entry(key).or_insert(at);
+            follows.push((leader != at).then_some(leader));
+        }
+        let ordered: Vec<_> = leaders.values().copied().sorted().collect();
+        let explained: Vec<_> = ordered
+            .par_iter()
+            .map(|at| self.explain(&breaks[*at]))
+            .collect();
+        for (at, (attribution, lines)) in ordered.iter().zip(explained) {
+            breaks[*at].attribution = attribution;
+            breaks[*at].hunk = lines;
+        }
+        for at in 0..breaks.len() {
+            if let Some(leader) = follows[at] {
+                breaks[at].attribution = breaks[leader].attribution.clone();
+                breaks[at].hunk = breaks[leader].hunk.clone();
+            }
+        }
+    }
+}
+
+/// The rows binding `name` in one module of `tree`, beside that module's
+/// text, `None` where the module does not read or does not bind it.
+fn bound_at(tree: &Path, module: &str, name: &str) -> Option<(Range<usize>, String)> {
+    let text = fs_err::read_to_string(tree.join(module)).ok()?;
+    let rows = binding_rows(&text).get(name)?.clone();
+    Some((rows, text))
 }

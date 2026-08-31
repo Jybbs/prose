@@ -1,12 +1,8 @@
 //! The names a module binds, meaning the rows of the first module-level
 //! statement binding each name, walked into compound statements and not into
 //! a function, class, comprehension, or lambda.
-//!
-//! `BindingAnalysis` answers this question inside the crate and every method
-//! it carries is crate-private, so the walk lives here over the same parser
-//! the formatter reads, through the traversal `ruff_python_ast` ships.
 
-use std::{collections::BTreeMap, ops::Range};
+use std::{collections::BTreeMap, ops::Range, slice::from_ref};
 
 use ruff_python_ast::{
     Expr, ExprContext, Stmt,
@@ -18,21 +14,6 @@ use ruff_source_file::LineIndex;
 use ruff_text_size::Ranged;
 
 use crate::format::row_of;
-
-/// The rows of the first module-level statement binding each name, empty
-/// where the module does not parse.
-pub(crate) fn binding_rows(text: &str) -> BTreeMap<String, Range<usize>> {
-    let Ok(parsed) = parse_module(text) else {
-        return BTreeMap::new();
-    };
-    let lines = LineIndex::from_source_text(text);
-    let mut walk = Walk {
-        lines: &lines,
-        rows: BTreeMap::new(),
-    };
-    walk.visit_body(&parsed.syntax().body);
-    walk.rows
-}
 
 /// The walk recording where each module-level name is first bound.
 struct Walk<'a> {
@@ -76,15 +57,30 @@ impl<'a> StatementVisitor<'a> for Walk<'_> {
     }
 }
 
+/// The rows of the first module-level statement binding each name, empty
+/// where the module does not parse.
+pub(crate) fn binding_rows(text: &str) -> BTreeMap<String, Range<usize>> {
+    let Ok(parsed) = parse_module(text) else {
+        return BTreeMap::new();
+    };
+    let lines = LineIndex::from_source_text(text);
+    let mut walk = Walk {
+        lines: &lines,
+        rows: BTreeMap::new(),
+    };
+    walk.visit_body(&parsed.syntax().body);
+    walk.rows
+}
+
 /// The names one module-level statement binds, which is the name of a
 /// definition, the first segment of each import, or every name it stores.
 fn bound(statement: &Stmt) -> Vec<String> {
     match statement {
-        Stmt::AnnAssign(assign) => stored(std::slice::from_ref(&assign.target)),
+        Stmt::AnnAssign(assign) => stored(from_ref(&assign.target)),
         Stmt::Assign(assign) => stored(&assign.targets),
-        Stmt::AugAssign(assign) => stored(std::slice::from_ref(&assign.target)),
+        Stmt::AugAssign(assign) => stored(from_ref(&assign.target)),
         Stmt::ClassDef(class) => vec![class.name.to_string()],
-        Stmt::For(loop_) => stored(std::slice::from_ref(&loop_.target)),
+        Stmt::For(loop_) => stored(from_ref(&loop_.target)),
         Stmt::FunctionDef(function) => vec![function.name.to_string()],
         Stmt::Import(import) => import
             .names
@@ -97,15 +93,49 @@ fn bound(statement: &Stmt) -> Vec<String> {
             .filter(|alias| alias.name.as_str() != "*")
             .map(|alias| segment(alias.asname.as_ref().unwrap_or(&alias.name)))
             .collect(),
-        Stmt::TypeAlias(alias) => stored(std::slice::from_ref(&alias.name)),
+        Stmt::TypeAlias(alias) => stored(from_ref(&alias.name)),
         Stmt::With(with) => with
             .items
             .iter()
             .filter_map(|item| item.optional_vars.as_deref())
-            .flat_map(|target| stored(std::slice::from_ref(target)))
+            .flat_map(|target| stored(from_ref(target)))
             .collect(),
         other => walrus_targets(other),
     }
+}
+
+/// The first dotted segment of an imported name.
+fn segment(name: &str) -> String {
+    name.split('.').next().unwrap_or(name).to_owned()
+}
+
+/// The expressions one statement holds directly, which is where a walrus
+/// can sit outside a nested body.
+fn statement_expressions(statement: &Stmt) -> Vec<&Expr> {
+    match statement {
+        Stmt::Assert(assert) => vec![&assert.test],
+        Stmt::Expr(expr) => vec![&expr.value],
+        Stmt::If(branch) => vec![&branch.test],
+        Stmt::Match(matched) => vec![matched.subject.as_ref()],
+        Stmt::Return(returned) => returned.value.as_deref().into_iter().collect(),
+        Stmt::While(loop_) => vec![&loop_.test],
+        _ => Vec::new(),
+    }
+}
+
+/// The names a run of targets stores, reaching into a tuple or list target
+/// and leaving a subscript or attribute alone.
+fn stored(targets: &[Expr]) -> Vec<String> {
+    targets
+        .iter()
+        .flat_map(|target| match target {
+            Expr::List(list) => stored(&list.elts),
+            Expr::Name(name) if name.ctx == ExprContext::Store => vec![name.id.to_string()],
+            Expr::Starred(starred) => stored(from_ref(&starred.value)),
+            Expr::Tuple(tuple) => stored(&tuple.elts),
+            _ => Vec::new(),
+        })
+        .collect()
 }
 
 /// The names a statement binds through a walrus anywhere in its own
@@ -125,37 +155,4 @@ fn walrus_targets(statement: &Stmt) -> Vec<String> {
         any_over_expr(expr, &mut walk);
     }
     names
-}
-
-/// The expressions one statement holds directly, which is where a walrus
-/// can sit outside a nested body.
-fn statement_expressions(statement: &Stmt) -> Vec<&Expr> {
-    match statement {
-        Stmt::Assert(assert) => vec![&assert.test],
-        Stmt::Expr(expr) => vec![&expr.value],
-        Stmt::If(branch) => vec![&branch.test],
-        Stmt::Return(returned) => returned.value.as_deref().into_iter().collect(),
-        Stmt::While(loop_) => vec![&loop_.test],
-        _ => Vec::new(),
-    }
-}
-
-/// The first dotted segment of an imported name.
-fn segment(name: &str) -> String {
-    name.split('.').next().unwrap_or(name).to_owned()
-}
-
-/// The names a run of targets stores, reaching into a tuple or list target
-/// and leaving a subscript or attribute alone.
-fn stored(targets: &[Expr]) -> Vec<String> {
-    targets
-        .iter()
-        .flat_map(|target| match target {
-            Expr::List(list) => stored(&list.elts),
-            Expr::Name(name) if name.ctx == ExprContext::Store => vec![name.id.to_string()],
-            Expr::Starred(starred) => stored(std::slice::from_ref(&starred.value)),
-            Expr::Tuple(tuple) => stored(&tuple.elts),
-            _ => Vec::new(),
-        })
-        .collect()
 }

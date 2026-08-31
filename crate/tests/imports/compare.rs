@@ -1,9 +1,9 @@
 //! Comparing what two trees left behind, meaning why one module's run counts
 //! as broken beside the original, and which modules of a sweep broke at all.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
-use crate::records::{Break, Outcome};
+use crate::records::{Break, Kind, Outcome};
 
 /// The reading a constant takes where the run bound no plain constant of
 /// that name.
@@ -18,15 +18,15 @@ pub(crate) fn compare(
     before: &BTreeMap<String, Outcome>,
     modules: &[String],
 ) -> (Vec<Break>, usize, Vec<String>) {
-    let reading = |held: &BTreeMap<String, Outcome>, module: &String| {
+    let reading = |held: &BTreeMap<String, Outcome>, module: &str| {
         held.get(module)
             .cloned()
-            .unwrap_or_else(|| Outcome::of("unmeasured", "left no outcome at all".to_owned()))
+            .unwrap_or_else(|| Outcome::of(Kind::Unmeasured, "left no outcome at all"))
     };
     let comparable: Vec<_> = modules
         .iter()
         .filter(|module| {
-            reading(before, module).kind == "ok" && reading(after, module).kind != "unmeasured"
+            kind(before, module) == Kind::Ok && kind(after, module) != Kind::Unmeasured
         })
         .cloned()
         .collect();
@@ -51,8 +51,7 @@ pub(crate) fn compare(
     let unmeasured = modules
         .iter()
         .filter(|module| {
-            reading(before, module).kind == "unmeasured"
-                || reading(after, module).kind == "unmeasured"
+            kind(before, module) == Kind::Unmeasured || kind(after, module) == Kind::Unmeasured
         })
         .cloned()
         .collect();
@@ -65,19 +64,19 @@ pub(crate) fn divergence(
     formatted: &Outcome,
     original: &Outcome,
 ) -> Option<(String, Option<String>)> {
-    if formatted.kind != "ok" {
+    if formatted.kind != Kind::Ok {
         return Some((formatted.error.clone(), formatted.name.clone()));
     }
-    let bound: BTreeSet<_> = original.names.iter().collect();
-    let rebound: BTreeSet<_> = formatted.names.iter().collect();
-    if let Some(name) = bound.difference(&rebound).min() {
-        return Some((format!("leaves `{name}` unbound"), Some((*name).clone())));
+    let missing = |from: &[String], held: &[String]| {
+        from.iter()
+            .find(|name| held.binary_search(name).is_err())
+            .cloned()
+    };
+    if let Some(name) = missing(&original.names, &formatted.names) {
+        return Some((format!("leaves `{name}` unbound"), Some(name)));
     }
-    if let Some(name) = rebound.difference(&bound).min() {
-        return Some((
-            format!("binds `{name}` the original does not"),
-            Some((*name).clone()),
-        ));
+    if let Some(name) = missing(&formatted.names, &original.names) {
+        return Some((format!("binds `{name}` the original does not"), Some(name)));
     }
     let differing = original
         .constants
@@ -92,4 +91,11 @@ pub(crate) fn divergence(
         format!("binds `{differing}` to {now} where the original binds {was}"),
         Some(differing.clone()),
     ))
+}
+
+/// The kind a run of one module left behind, `unmeasured` where the tree was
+/// never asked about it.
+fn kind(held: &BTreeMap<String, Outcome>, module: &str) -> Kind {
+    held.get(module)
+        .map_or(Kind::Unmeasured, |outcome| outcome.kind)
 }

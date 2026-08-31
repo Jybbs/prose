@@ -6,6 +6,7 @@ use std::{
     collections::BTreeSet,
     env,
     path::{Path, PathBuf},
+    process,
 };
 
 use ignore::WalkBuilder;
@@ -33,7 +34,7 @@ impl Stage {
     /// Builds the stage, copying the corpus once as the original tree and
     /// writing the probe beside it.
     pub(crate) fn new(corpus: &Path) -> Self {
-        let root = env::temp_dir().join(format!("prose-imports.{}", std::process::id()));
+        let root = env::temp_dir().join(format!("prose-imports.{}", process::id()));
         let _ = fs_err::remove_dir_all(&root);
         let stage = Self {
             corpus: corpus.to_path_buf(),
@@ -46,7 +47,7 @@ impl Stage {
         for directory in [&stage.home, &stage.records, &stage.tmp] {
             fs_err::create_dir_all(directory).expect("create a stage directory");
         }
-        fs_err::write(root.join("probe.py"), PROBE).expect("write the probe");
+        fs_err::write(stage.probe(), PROBE).expect("write the probe");
         copy_tree(corpus, &stage.original);
         stage
     }

@@ -30,7 +30,7 @@ pub(crate) fn holds_word(haystack: &str, name: &str) -> bool {
 /// Reports whether one fix's edits touch a row or write a given line.
 pub(crate) fn reaches(edits: &[EditRows], rows: &Range<usize>, line: &str) -> bool {
     edits.iter().any(|edit| {
-        edit.rows.start < rows.end && rows.start < edit.rows.end
+        (edit.rows.start < rows.end && rows.start < edit.rows.end)
             || !line.is_empty() && edit.content.lines().any(|written| written.trim() == line)
     })
 }
@@ -42,10 +42,11 @@ pub(crate) fn rewritten(edits: &[EditRows], text: &str) -> (String, String) {
         .map(|edit| (edit.range.start, edit.range.end, edit.content.as_str()))
         .sorted()
         .collect();
-    let Some(&(first, _, _)) = spans.first() else {
+    let (Some(&(first, _, _)), Some(last)) =
+        (spans.first(), spans.iter().map(|(_, end, _)| *end).max())
+    else {
         return (String::new(), String::new());
     };
-    let last = spans.iter().map(|(_, end, _)| *end).max().unwrap_or(first);
     if last > text.len() {
         return (String::new(), String::new());
     }

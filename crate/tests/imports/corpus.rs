@@ -22,10 +22,8 @@ const ENTRY_TREES: [&str; 4] = ["idle_test", "test", "tests", "turtledemo"];
 pub(crate) fn candidates(formatted: &Path, original: &Path) -> Vec<String> {
     modules_under(original)
         .into_iter()
+        .filter(|relative| !excluded(relative))
         .filter(|relative| {
-            if excluded(relative) {
-                return false;
-            }
             match (
                 fs_err::read(original.join(relative)),
                 fs_err::read(formatted.join(relative)),
@@ -39,11 +37,12 @@ pub(crate) fn candidates(formatted: &Path, original: &Path) -> Vec<String> {
 
 /// Reports whether a module is an entry point rather than a library module.
 pub(crate) fn excluded(relative: &str) -> bool {
-    let parts: Vec<_> = relative.split('/').collect();
-    let (last, directories) = parts.split_last().expect("a path holds a last segment");
-    *last == "__main__.py"
+    let (directories, last) = relative.rsplit_once('/').unwrap_or(("", relative));
+    last == "__main__.py"
         || ENTRY_POINTS.contains(&relative)
-        || directories.iter().any(|part| ENTRY_TREES.contains(part))
+        || directories
+            .split('/')
+            .any(|part| ENTRY_TREES.contains(&part))
 }
 
 /// Asks an interpreter which standard library it owns.
@@ -56,7 +55,11 @@ pub(crate) fn interpreter(python: &str) -> PathBuf {
         ])
         .output()
         .unwrap_or_else(|error| panic!("{python} does not run: {error}"));
-    assert!(asked.status.success(), "{python} does not run");
+    assert!(
+        asked.status.success(),
+        "{python} does not run: {}",
+        String::from_utf8_lossy(&asked.stderr).trim()
+    );
     PathBuf::from(String::from_utf8_lossy(&asked.stdout).trim())
         .canonicalize()
         .expect("the interpreter names a standard library")

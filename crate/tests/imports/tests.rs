@@ -3,21 +3,31 @@
 //! than failing.
 
 use std::{
-    collections::BTreeMap, ops::Range, os::unix::process::ExitStatusExt, process::ExitStatus,
+    collections::{BTreeMap, BTreeSet},
+    env,
+    ops::Range,
+    os::unix::process::ExitStatusExt,
+    path::Path,
+    process::{self, ExitStatus},
 };
 
+use itertools::Itertools;
 use rstest::rstest;
 use ruff_source_file::LineIndex;
+use similar::TextDiff;
 
 use crate::{
     bindings::binding_rows,
-    compare::divergence,
+    compare::{compare, divergence},
     corpus::excluded,
     diff::{hunk, mapped_rows},
-    execute::ending,
+    execute::{ending, module_name},
     fixes::{drops, holds_word, reaches, rewritten},
     format::{edit_rows, row_of},
-    records::{EditRows, Outcome},
+    ratchet::{Baseline, bake, judge},
+    records::{Break, EditRows, Kind, Outcome, Width},
+    report::render,
+    sweep::DEFAULT_LABEL,
 };
 
 /// An outcome that ran cleanly, binding `names` and the constants `spelt`.
@@ -27,9 +37,27 @@ fn bound(names: &[&str], spelt: &[(&str, &str)]) -> Outcome {
             .iter()
             .map(|(name, value)| ((*name).to_owned(), (*value).to_owned()))
             .collect(),
-        kind: "ok".to_owned(),
-        names: names.iter().map(|name| (*name).to_owned()).collect(),
+        kind: Kind::Ok,
+        names: names
+            .iter()
+            .map(|name| (*name).to_owned())
+            .sorted()
+            .collect(),
         ..Outcome::default()
+    }
+}
+
+/// A break at `frame` for `module`, diverging for `reason`.
+fn broken(module: &str, frame: &str, reason: &str) -> Break {
+    Break {
+        attribution: String::new(),
+        formatted: Outcome::default(),
+        frame: (frame.to_owned(), None),
+        hunk: Vec::new(),
+        module: module.to_owned(),
+        name: None,
+        original: Outcome::default(),
+        reason: reason.to_owned(),
     }
 }
 
@@ -40,6 +68,37 @@ fn edit(content: &str, range: Range<usize>, text: &str) -> EditRows {
         rows: edit_rows(&LineIndex::from_source_text(text), text, &range),
         range,
     }
+}
+
+#[test]
+fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
+    let found = Width {
+        breaks: vec![broken("m.py", "re/_parser.py", "leaves `X` unbound")],
+        candidates: 1,
+        comparable: 1,
+        flaky: Vec::new(),
+        label: "default".to_owned(),
+        refused: 0,
+        unmeasured: Vec::new(),
+    };
+    let baked = env::temp_dir().join(format!("prose-imports-baseline.{}", process::id()));
+    bake(&baked, &[found]);
+    let held: Baseline = serde_json::from_str(
+        &fs_err::read_to_string(&baked).expect("the baked break set reads back"),
+    )
+    .expect("the baked break set parses");
+    assert_eq!(
+        held["default"],
+        [("re/_parser.py".to_owned(), "leaves `X` unbound".to_owned())].into()
+    );
+}
+
+#[test]
+fn a_clean_exit_without_a_record_is_unmeasured_and_a_dirty_one_raises() {
+    assert_eq!(ending(ExitStatus::from_raw(0), "").kind, Kind::Unmeasured);
+    let dirty = ending(ExitStatus::from_raw(2 << 8), "boom");
+    assert_eq!(dirty.kind, Kind::Raised);
+    assert_eq!(dirty.error, "ends on exit status: 2, printing boom");
 }
 
 #[test]
@@ -67,10 +126,57 @@ fn a_constant_that_is_no_longer_plain_reads_as_missing() {
 }
 
 #[test]
+fn a_decorated_definition_binds_on_its_def_row_rather_than_its_decorator() {
+    let rows = binding_rows("@deco\n@other\ndef f():\n    pass\n\n\n@deco\nclass K:\n    pass\n");
+    assert_eq!(rows.get("f"), Some(&(3..4)));
+    assert_eq!(rows.get("K"), Some(&(8..9)));
+}
+
+#[test]
+fn a_dropped_name_and_an_added_name_report_their_direction() {
+    let original = bound(&["a", "b"], &[]);
+    let formatted = bound(&["a"], &[]);
+    assert_eq!(
+        divergence(&formatted, &original),
+        Some(("leaves `b` unbound".to_owned(), Some("b".to_owned())))
+    );
+    assert_eq!(
+        divergence(&original, &formatted),
+        Some((
+            "binds `b` the original does not".to_owned(),
+            Some("b".to_owned())
+        ))
+    );
+}
+
+#[rstest]
+#[case("os.py", "os")]
+#[case("asyncio/queues.py", "asyncio.queues")]
+#[case("asyncio/__init__.py", "asyncio")]
+#[case("importlib/metadata/__init__.py", "importlib.metadata")]
+fn a_module_path_binds_the_name_an_import_binds(#[case] module: &str, #[case] dotted: &str) {
+    assert_eq!(module_name(module), dotted);
+}
+
+#[test]
+fn a_raise_row_composes_its_sentence_beside_the_other_endings() {
+    let record = [
+        ["kind", "raised"].join("\0"),
+        ["raise", "NameError", "name 'x' is not defined"].join("\0"),
+        ["missing", "x"].join("\0"),
+    ]
+    .join("\u{1e}");
+    let read = Outcome::parse(&record, &[Path::new("/tree")]);
+    assert_eq!(read.kind, Kind::Raised);
+    assert_eq!(read.error, "raises NameError: name 'x' is not defined");
+    assert_eq!(read.name, Some("x".to_owned()));
+}
+
+#[test]
 fn a_raised_run_returns_its_error_and_name() {
     let raised = Outcome {
         error: "raises NameError: name 'x' is not defined".to_owned(),
-        kind: "raised".to_owned(),
+        kind: Kind::Raised,
         name: Some("x".to_owned()),
         ..Outcome::default()
     };
@@ -81,12 +187,46 @@ fn a_raised_run_returns_its_error_and_name() {
 }
 
 #[test]
+fn a_signal_death_is_a_raise_rather_than_a_timeout() {
+    let died = ending(ExitStatus::from_raw(11), "");
+    assert_eq!(died.kind, Kind::Raised);
+    assert_eq!(died.error, "ends on signal: 11 (SIGSEGV)");
+}
+
+#[test]
+fn a_walrus_and_a_type_alias_bind_at_module_level() {
+    let rows = binding_rows(
+        "if (n := go()):\n    pass\n\nwhile (m := go()):\n    pass\n\ntype Alias = int\n",
+    );
+    assert_eq!(rows.get("n"), Some(&(1..3)));
+    assert_eq!(rows.get("m"), Some(&(4..6)));
+    assert_eq!(rows.get("Alias"), Some(&(7..8)));
+}
+
+#[test]
+fn a_walrus_in_a_match_subject_binds_at_module_level() {
+    let rows = binding_rows("match (n := go()):\n    case _:\n        pass\n");
+    assert_eq!(rows.get("n"), Some(&(1..4)));
+}
+
+#[test]
 fn an_end_at_column_one_closes_on_the_row_above() {
     let text = "a = 1\nb = 2\nc = 3\n";
     let lines = LineIndex::from_source_text(text);
     assert_eq!(edit_rows(&lines, text, &(0..12)), 1..3);
     assert_eq!(edit_rows(&lines, text, &(0..13)), 1..4);
     assert_eq!(edit_rows(&lines, text, &(0..5)), 1..2);
+}
+
+#[test]
+fn an_unrecognised_kind_row_reads_as_unmeasured() {
+    let read = Outcome::parse(&["kind", "wat"].join("\0"), &[]);
+    assert_eq!(read.kind, Kind::Unmeasured);
+}
+
+#[test]
+fn binding_rows_are_empty_for_a_module_that_does_not_parse() {
+    assert_eq!(binding_rows("def (\n"), BTreeMap::new());
 }
 
 #[test]
@@ -110,25 +250,33 @@ fn binding_rows_walk_compound_statements_and_skip_nested_scopes() {
 }
 
 #[test]
-fn a_decorated_definition_binds_on_its_def_row_rather_than_its_decorator() {
-    let rows = binding_rows("@deco\n@other\ndef f():\n    pass\n\n\n@deco\nclass K:\n    pass\n");
-    assert_eq!(rows.get("f"), Some(&(3..4)));
-    assert_eq!(rows.get("K"), Some(&(8..9)));
-}
-
-#[test]
-fn a_walrus_and_a_type_alias_bind_at_module_level() {
-    let rows = binding_rows(
-        "if (n := go()):\n    pass\n\nwhile (m := go()):\n    pass\n\ntype Alias = int\n",
-    );
-    assert_eq!(rows.get("n"), Some(&(1..3)));
-    assert_eq!(rows.get("m"), Some(&(4..6)));
-    assert_eq!(rows.get("Alias"), Some(&(7..8)));
-}
-
-#[test]
-fn binding_rows_are_empty_for_a_module_that_does_not_parse() {
-    assert_eq!(binding_rows("def (\n"), BTreeMap::new());
+fn comparing_sorts_each_module_into_broken_comparable_or_unmeasured() {
+    let modules = [
+        "gone.py".to_owned(),
+        "kept.py".to_owned(),
+        "lost.py".to_owned(),
+    ];
+    let before = [
+        ("gone.py".to_owned(), bound(&["a", "b"], &[])),
+        ("kept.py".to_owned(), bound(&["a"], &[])),
+        ("lost.py".to_owned(), bound(&["a"], &[])),
+    ]
+    .into();
+    let after = [
+        ("gone.py".to_owned(), bound(&["a"], &[])),
+        ("kept.py".to_owned(), bound(&["a"], &[])),
+        (
+            "lost.py".to_owned(),
+            Outcome::of(Kind::Unmeasured, "left no record"),
+        ),
+    ]
+    .into();
+    let (breaks, comparable, unmeasured) = compare(&after, &before, &modules);
+    assert_eq!(comparable, 2);
+    assert_eq!(unmeasured, ["lost.py".to_owned()]);
+    assert_eq!(breaks.len(), 1);
+    assert_eq!(breaks[0].module, "gone.py");
+    assert_eq!(breaks[0].reason, "leaves `b` unbound");
 }
 
 #[test]
@@ -153,6 +301,12 @@ fn entry_points_leave_the_walk(#[case] relative: &str) {
     assert!(excluded(relative));
 }
 
+#[test]
+fn identical_namespaces_do_not_diverge() {
+    let same = bound(&["N"], &[("N", "1")]);
+    assert_eq!(divergence(&same, &same), None);
+}
+
 #[rstest]
 #[case("test_x.py")]
 #[case("unittest/mock.py")]
@@ -163,24 +317,25 @@ fn library_modules_stay_in_the_walk(#[case] relative: &str) {
 }
 
 #[test]
-fn a_signal_death_is_a_raise_rather_than_a_timeout() {
-    let died = ending(ExitStatus::from_raw(11), "");
-    assert_eq!(died.kind, "raised");
-    assert_eq!(died.error, "ends on signal: 11 (SIGSEGV)");
-}
-
-#[test]
-fn a_clean_exit_without_a_record_is_unmeasured_and_a_dirty_one_raises() {
-    assert_eq!(ending(ExitStatus::from_raw(0), "").kind, "unmeasured");
-    let dirty = ending(ExitStatus::from_raw(2 << 8), "boom");
-    assert_eq!(dirty.kind, "raised");
-    assert_eq!(dirty.error, "ends on exit status: 2, printing boom");
-}
-
-#[test]
-fn identical_namespaces_do_not_diverge() {
-    let same = bound(&["N"], &[("N", "1")]);
-    assert_eq!(divergence(&same, &same), None);
+fn parsing_a_record_filters_loader_names_and_reads_frames() {
+    let record = [
+        ["kind", "ok"].join("\0"),
+        ["bound", "__file__"].join("\0"),
+        ["bound", "__all__"].join("\0"),
+        ["bound", "N"].join("\0"),
+        ["const", "__all__", "('a',)"].join("\0"),
+        ["const", "N", "1"].join("\0"),
+        ["frame", "9", "/tree/m.py"].join("\0"),
+        ["loaded", "/tree/m.py"].join("\0"),
+        ["loaded", "/elsewhere/other.py"].join("\0"),
+    ]
+    .join("\u{1e}");
+    let read = Outcome::parse(&record, &[Path::new("/tree")]);
+    assert_eq!(read.kind, Kind::Ok);
+    assert_eq!(read.names, ["N", "__all__"]);
+    assert_eq!(read.constants, [("N".to_owned(), "1".to_owned())].into());
+    assert_eq!(read.frames, [("/tree/m.py".to_owned(), 9)]);
+    assert_eq!(read.loaded, ["m.py"]);
 }
 
 #[test]
@@ -203,28 +358,23 @@ fn rewritten_returns_the_reached_lines_before_and_after() {
 }
 
 #[test]
-fn rows_map_back_through_an_equal_a_replaced_and_an_inserted_block() {
-    let before = ["x", "Y", "Q", "z"];
-    let after = ["x", "y", "z"];
-    assert_eq!(mapped_rows(&before, &after, 1), 1..2);
-    assert_eq!(mapped_rows(&before, &after, 2), 2..4);
-    assert_eq!(mapped_rows(&before, &after, 9), 0..0);
-    assert_eq!(mapped_rows(&["x", "z"], &["x", "N", "z"], 2), 2..3);
+fn rows_count_from_one() {
+    let lines = LineIndex::from_source_text("a\nbb\nccc\n");
+    assert_eq!(row_of(&lines, 0), 1);
+    assert_eq!(row_of(&lines, 2), 2);
+    assert_eq!(row_of(&lines, 5), 3);
 }
 
 #[test]
-fn the_hunk_cuts_context_either_side_of_the_row() {
-    let before: Vec<String> = (1..=10).map(|n| format!("l{n}")).collect();
-    let mut after = before.clone();
-    after[5] = "L6".to_owned();
-    let was: Vec<&str> = before.iter().map(String::as_str).collect();
-    let now: Vec<&str> = after.iter().map(String::as_str).collect();
-    assert_eq!(
-        hunk(&was, &now, Some(6), ""),
-        [
-            "...", " l4", " l5", "-l6", "+L6", " l7", " l8", " l9", "..."
-        ]
-    );
+fn rows_map_back_through_an_equal_a_replaced_and_an_inserted_block() {
+    let before = ["x", "Y", "Q", "z"];
+    let after = ["x", "y", "z"];
+    let diff = TextDiff::from_slices(&before, &after);
+    assert_eq!(mapped_rows(&diff, 1), 1..2);
+    assert_eq!(mapped_rows(&diff, 2), 2..4);
+    assert_eq!(mapped_rows(&diff, 9), 0..0);
+    let inserted = TextDiff::from_slices(&["x", "z"], &["x", "N", "z"]);
+    assert_eq!(mapped_rows(&inserted, 2), 2..3);
 }
 
 #[test]
@@ -235,9 +385,69 @@ fn the_hunk_centres_on_the_changed_line_naming_the_name() {
     after[5] = "MARK".to_owned();
     let was: Vec<&str> = before.iter().map(String::as_str).collect();
     let now: Vec<&str> = after.iter().map(String::as_str).collect();
-    let lines = hunk(&was, &now, None, "MARK");
+    let lines = hunk(&TextDiff::from_slices(&was, &now), None, "MARK");
     assert!(lines.iter().any(|line| line == "+MARK"));
     assert!(!lines.iter().any(|line| line == "+L3"));
+}
+
+#[test]
+fn the_hunk_cuts_context_either_side_of_the_row() {
+    let before: Vec<String> = (1..=10).map(|n| format!("l{n}")).collect();
+    let mut after = before.clone();
+    after[5] = "L6".to_owned();
+    let was: Vec<&str> = before.iter().map(String::as_str).collect();
+    let now: Vec<&str> = after.iter().map(String::as_str).collect();
+    assert_eq!(
+        hunk(&TextDiff::from_slices(&was, &now), Some(6), ""),
+        [
+            "...", " l4", " l5", "-l6", "+L6", " l7", " l8", " l9", "..."
+        ]
+    );
+}
+
+#[test]
+fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
+    let found = Width {
+        breaks: vec![broken("m.py", "re/_parser.py", "leaves `X` unbound")],
+        candidates: 10,
+        comparable: 7,
+        flaky: Vec::new(),
+        label: "default".to_owned(),
+        refused: 0,
+        unmeasured: vec!["u.py".to_owned()],
+    };
+    let held: Baseline = [(
+        "default".to_owned(),
+        [("re/_parser.py".to_owned(), "leaves `X` unbound".to_owned())].into(),
+    )]
+    .into();
+    assert_eq!(judge(&found, &held), ["m.py".to_owned()].into());
+    assert_eq!(judge(&found, &Baseline::new()), BTreeSet::new());
+    assert_eq!(found.uncomparable(), 2);
+}
+
+#[test]
+fn the_summary_block_holds_every_count_in_one_column() {
+    let found = Width {
+        breaks: Vec::new(),
+        candidates: 12,
+        comparable: 9,
+        flaky: Vec::new(),
+        label: DEFAULT_LABEL.to_owned(),
+        refused: 0,
+        unmeasured: Vec::new(),
+    };
+    assert_eq!(
+        render(&BTreeSet::new(), &found),
+        concat!(
+            "  candidates      12\n",
+            "  comparable       9\n",
+            "  uncomparable     3\n",
+            "  breaks           0\n",
+            "  timeouts         0\n",
+            "  flaky            0",
+        )
+    );
 }
 
 #[test]
@@ -245,12 +455,4 @@ fn whole_word_matching_rejects_a_longer_identifier() {
     assert!(holds_word("from m import a, b", "a"));
     assert!(!holds_word("from m import ab", "a"));
     assert!(!holds_word("renamed", "name"));
-}
-
-#[test]
-fn rows_count_from_one() {
-    let lines = LineIndex::from_source_text("a\nbb\nccc\n");
-    assert_eq!(row_of(&lines, 0), 1);
-    assert_eq!(row_of(&lines, 2), 2);
-    assert_eq!(row_of(&lines, 5), 3);
 }

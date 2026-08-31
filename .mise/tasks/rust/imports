@@ -5,6 +5,10 @@
 export PROSE_IMPORTS_MODULE="${1:-}"
 export PROSE_IMPORTS_PYTHON="${PROSE_IMPORTS_PYTHON:-$(command -v python)}"
 
-cargo test --locked --profile "${PROSE_IMPORTS_PROFILE:-release}" --test imports -- \
+cargo test \
+  --locked \
+  --profile "${PROSE_IMPORTS_PROFILE:-release}" \
+  --test imports \
+  -- \
   --ignored \
   --nocapture

@@ -1,11 +1,6 @@
 //! Import sweep: every module the formatter rewrites is executed from the
 //! original tree and from the formatted one, and the two namespaces are
 //! compared, so a rewrite that settles and still breaks the code is caught.
-//! A settling gate asks whether a second pass changes the output, which
-//! output that is broken and stable passes exactly as correct output does,
-//! and no static reader closes the gap, because a name bound in class scope,
-//! a `del`, and a member shadowing a module global each defeat a binding
-//! scan.
 //!
 //! Each module runs in a fresh interpreter through `probe.py`, which loads it
 //! the way an import loads it and records the names and plain constants it
@@ -42,18 +37,15 @@ mod report;
 mod stage;
 mod sweep;
 
-use std::{env, num::NonZeroUsize, path::Path};
+use std::{collections::BTreeSet, env, iter, num::NonZeroUsize, path::Path};
 
-use common::env_list;
-use corpus::interpreter;
-use itertools::Itertools;
-use ratchet::{BAKE_VAR, bake, baseline, judge};
-use report::render;
-use sweep::{PYTHON_VAR, Sweep, WIDTHS_VAR};
-
-/// The environment variable naming a file every break is written to, one
-/// row apiece, which is what a comparison against another harness reads.
-const ROWS_VAR: &str = "PROSE_IMPORTS_ROWS";
+use crate::{
+    common::env_list,
+    corpus::interpreter,
+    ratchet::{BAKE_VAR, bake, baseline, judge},
+    report::render,
+    sweep::{PYTHON_VAR, Sweep, WIDTHS_VAR},
+};
 
 /// The interpreter the sweep runs absent [`PYTHON_VAR`].
 const PYTHON: &str = "python3";
@@ -64,7 +56,7 @@ fn every_rewritten_module_still_imports() {
     let python = env::var(PYTHON_VAR).unwrap_or_else(|_| PYTHON.to_owned());
     let corpus = interpreter(&python);
     let sweep = Sweep::new(&corpus, python.clone());
-    let widths = std::iter::once(None).chain(env_list(WIDTHS_VAR, &[], |width| {
+    let widths = iter::once(None).chain(env_list(WIDTHS_VAR, &[], |width| {
         Some(
             width
                 .parse::<NonZeroUsize>()
@@ -78,7 +70,7 @@ fn every_rewritten_module_still_imports() {
     );
     let held = baseline();
     let found: Vec<_> = widths.map(|width| sweep.sweep(width)).collect();
-    let mut fresh = Vec::new();
+    let mut fresh = BTreeSet::new();
     for width in &found {
         let carried = judge(width, &held);
         println!("\nwidth {}\n{}", width.label, render(&carried, width));
@@ -90,29 +82,6 @@ fn every_rewritten_module_still_imports() {
                 .map(|brk| brk.module.clone()),
         );
     }
-    if let Some(rows) = env::var_os(ROWS_VAR) {
-        let listed: Vec<_> = found
-            .iter()
-            .flat_map(|width| {
-                width.breaks.iter().map(|brk| {
-                    let (file, row) = &brk.frame;
-                    let at = row.map_or_else(String::new, |row| row.to_string());
-                    format!(
-                        "{}\t{}\t{}\t{at}\t{}",
-                        width.label, brk.module, file, brk.reason
-                    )
-                })
-            })
-            .sorted()
-            .collect();
-        fs_err::write(Path::new(&rows), listed.join("\n") + "\n").expect("write the break rows");
-        println!(
-            "\n{} break rows written to {}",
-            listed.len(),
-            Path::new(&rows).display()
-        );
-    }
-    println!("\neach tree survives under {}", sweep.stage.root.display());
     let unmeasured: Vec<_> = found
         .iter()
         .flat_map(|width| width.unmeasured.iter())
@@ -123,15 +92,16 @@ fn every_rewritten_module_still_imports() {
         unmeasured.len(),
     );
     if let Some(baked) = env::var_os(BAKE_VAR) {
-        bake(Path::new(&baked), &found);
-        println!("break set baked into {}", Path::new(&baked).display());
+        let baked = Path::new(&baked);
+        bake(baked, &found);
+        println!("break set baked into {}", baked.display());
         return;
     }
     assert!(
         fresh.is_empty(),
         "{} modules break that the baseline does not carry, the first being {}",
         fresh.len(),
-        fresh[0],
+        fresh.iter().next().map_or("", String::as_str),
     );
 }
 

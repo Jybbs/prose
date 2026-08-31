@@ -7,6 +7,10 @@ use std::{collections::BTreeMap, ops::Range, path::Path};
 use itertools::Itertools;
 use prose::rule::RuleId;
 
+/// The names the formatter reorders by design, whose value a comparison
+/// therefore leaves out.
+const REORDERED: [&str; 1] = ["__all__"];
+
 /// The names every module binds through the loader rather than through its
 /// own code, which a comparison leaves out.
 const UNBOUND: [&str; 7] = [
@@ -18,10 +22,6 @@ const UNBOUND: [&str; 7] = [
     "__path__",
     "__spec__",
 ];
-
-/// The names the formatter reorders by design, whose value a comparison
-/// therefore leaves out.
-const REORDERED: [&str; 1] = ["__all__"];
 
 /// A module the rewrite breaks.
 pub(crate) struct Break {
@@ -74,6 +74,31 @@ pub(crate) struct EditRows {
 /// The safe fixes one format run recorded, keyed by the file each rewrote.
 pub(crate) type Fixes = BTreeMap<String, Vec<(RuleId, Vec<EditRows>)>>;
 
+/// What a run of a module amounted to.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub(crate) enum Kind {
+    /// The run bound a namespace.
+    Ok,
+    /// The run raised.
+    Raised,
+    /// The run outran its deadline.
+    Timeout,
+    /// The run left no record to read.
+    #[default]
+    Unmeasured,
+}
+
+impl Kind {
+    /// The kind a probe's `kind` row names.
+    fn of(named: &str) -> Self {
+        match named {
+            "ok" => Self::Ok,
+            "raised" => Self::Raised,
+            _ => Self::Unmeasured,
+        }
+    }
+}
+
 /// What one run of a module left behind, as the probe records it.
 #[derive(Clone, Default)]
 pub(crate) struct Outcome {
@@ -83,8 +108,8 @@ pub(crate) struct Outcome {
     pub(crate) error: String,
     /// The file and row of every frame a raise passed through.
     pub(crate) frames: Vec<(String, usize)>,
-    /// Either `ok`, `raised`, `timeout`, or `unmeasured`.
-    pub(crate) kind: String,
+    /// What the run amounted to.
+    pub(crate) kind: Kind,
     /// Every module the run took from a tree, relative to it, sorted.
     pub(crate) loaded: Vec<String>,
     /// The name a raised run could not find.
@@ -95,10 +120,10 @@ pub(crate) struct Outcome {
 
 impl Outcome {
     /// An outcome of `kind` carrying `error` and nothing else.
-    pub(crate) fn of(kind: &str, error: String) -> Self {
+    pub(crate) fn of(kind: Kind, error: impl Into<String>) -> Self {
         Self {
-            error,
-            kind: kind.to_owned(),
+            error: error.into(),
+            kind,
             ..Self::default()
         }
     }
@@ -123,19 +148,21 @@ impl Outcome {
                 {
                     read.constants.insert(name.to_owned(), spelt.to_owned());
                 }
-                (Some("error"), Some(error), _) => read.error = error.to_owned(),
                 (Some("frame"), Some(row), Some(file)) => {
                     if let Ok(row) = row.parse() {
                         read.frames.push((file.to_owned(), row));
                     }
                 }
-                (Some("kind"), Some(kind), _) => read.kind = kind.to_owned(),
+                (Some("kind"), Some(kind), _) => read.kind = Kind::of(kind),
                 (Some("loaded"), Some(path), _) => {
                     if let Some(relative) = relative_to(path, trees) {
                         read.loaded.push(relative);
                     }
                 }
                 (Some("missing"), Some(name), _) => read.name = Some(name.to_owned()),
+                (Some("raise"), Some(raised), Some(message)) => {
+                    read.error = format!("raises {raised}: {message}");
+                }
                 _ => {}
             }
         }

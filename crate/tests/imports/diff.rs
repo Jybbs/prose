@@ -4,7 +4,7 @@
 use std::ops::Range;
 
 use itertools::Itertools;
-use similar::{DiffTag, TextDiff};
+use similar::{ChangeTag, DiffTag, TextDiff};
 
 /// How many diff lines a hunk shows either side of the row it centres on.
 const CONTEXT: usize = 3;
@@ -14,23 +14,18 @@ const CONTEXT: usize = 3;
 ///
 /// Where the row is unknown the window centres on the first changed line
 /// naming `name`, and failing that on the first changed line at all.
-pub(crate) fn hunk(before: &[&str], after: &[&str], row: Option<usize>, name: &str) -> Vec<String> {
-    let mut shown: Vec<(Option<usize>, String)> = Vec::new();
-    for op in TextDiff::from_slices(before, after).ops() {
-        let (tag, old, new) = op.as_tag_tuple();
-        if matches!(tag, DiffTag::Delete | DiffTag::Replace) {
-            shown.extend(before[old].iter().map(|line| (None, format!("-{line}"))));
-        }
-        if tag != DiffTag::Delete {
-            let mark = if tag == DiffTag::Equal { ' ' } else { '+' };
-            shown.extend(
-                after[new.clone()]
-                    .iter()
-                    .enumerate()
-                    .map(|(k, line)| (Some(new.start + k), format!("{mark}{line}"))),
-            );
-        }
-    }
+pub(crate) fn hunk(diff: &TextDiff<'_, '_, str>, row: Option<usize>, name: &str) -> Vec<String> {
+    let shown: Vec<_> = diff
+        .iter_all_changes()
+        .map(|change| {
+            let mark = match change.tag() {
+                ChangeTag::Delete => '-',
+                ChangeTag::Equal => ' ',
+                ChangeTag::Insert => '+',
+            };
+            (change.new_index(), format!("{mark}{}", change.value()))
+        })
+        .collect();
     let index = match row {
         Some(row) => shown
             .iter()
@@ -63,8 +58,8 @@ pub(crate) fn hunk(before: &[&str], after: &[&str], row: Option<usize>, name: &s
 /// The original rows that one row of the formatted side came from, which is
 /// one row for an unchanged block, every row of the block that rewrote it,
 /// and the row an insertion landed at.
-pub(crate) fn mapped_rows(before: &[&str], after: &[&str], row: usize) -> Range<usize> {
-    for op in TextDiff::from_slices(before, after).ops() {
+pub(crate) fn mapped_rows(diff: &TextDiff<'_, '_, str>, row: usize) -> Range<usize> {
+    for op in diff.ops() {
         let (tag, old, new) = op.as_tag_tuple();
         if new.contains(&(row - 1)) {
             if tag == DiffTag::Equal {
