@@ -9,7 +9,7 @@ use std::{
     path::{Path, PathBuf},
     process,
     sync::{
-        Mutex, MutexGuard, PoisonError,
+        Mutex, MutexGuard, Once, PoisonError,
         atomic::{AtomicUsize, Ordering},
     },
     thread,
@@ -188,26 +188,30 @@ fn walked() -> Vec<PathBuf> {
 /// Ends the process once a probe outruns [`BUDGET`], naming what it was
 /// reading. A rule that fails to terminate cannot be unwound from the
 /// thread running it, and it grows until the machine reaches an
-/// out-of-memory kill, so a sweep stops itself first.
-fn watch_for_a_runaway() {
-    thread::spawn(|| {
-        loop {
-            thread::sleep(Duration::from_secs(1));
-            let overrun = registry()
-                .values()
-                .find(|(since, _)| since.elapsed() > BUDGET)
-                .map(|(_, label)| label.clone());
-            if let Some(label) = overrun {
-                let mut stderr = io::stderr();
-                let _ = writeln!(
-                    stderr,
-                    "the sweep stopped itself, since {label} has run past {} seconds and is \
+/// out-of-memory kill, so a sweep stops itself first. The watch starts
+/// once however many times a sweep asks for it.
+pub(crate) fn watch_for_a_runaway() {
+    static STARTED: Once = Once::new();
+    STARTED.call_once(|| {
+        thread::spawn(|| {
+            loop {
+                thread::sleep(Duration::from_secs(1));
+                let overrun = registry()
+                    .values()
+                    .find(|(since, _)| since.elapsed() > BUDGET)
+                    .map(|(_, label)| label.clone());
+                if let Some(label) = overrun {
+                    let mut stderr = io::stderr();
+                    let _ = writeln!(
+                        stderr,
+                        "the sweep stopped itself, since {label} has run past {} seconds and is \
                      treated as non-terminating",
-                    BUDGET.as_secs(),
-                );
-                let _ = stderr.flush();
-                process::exit(101);
+                        BUDGET.as_secs(),
+                    );
+                    let _ = stderr.flush();
+                    process::exit(101);
+                }
             }
-        }
+        });
     });
 }

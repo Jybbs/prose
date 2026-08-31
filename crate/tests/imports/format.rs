@@ -3,17 +3,16 @@
 
 use std::{
     ops::Range,
-    path::Path,
-    sync::atomic::{AtomicUsize, Ordering},
+    path::{Path, PathBuf},
 };
 
 use prose::{pipeline::Pipeline, source::Source};
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use ruff_diagnostics::Applicability;
 use ruff_source_file::LineIndex;
 use ruff_text_size::{Ranged, TextSize};
 
 use crate::{
+    common::{Absorbing, Slot, swept},
     corpus::modules_under,
     records::{EditRows, Fixes},
 };
@@ -30,59 +29,89 @@ pub(crate) fn edit_rows(lines: &LineIndex, text: &str, range: &Range<usize>) -> 
     start..end + 1
 }
 
+/// What formatting one tree in place left behind.
+#[derive(Default)]
+pub(crate) struct Formatted {
+    /// The safe fixes each file's run recorded.
+    pub(crate) fixes: Fixes,
+    /// How many modules the pipeline could not read, parse, or write.
+    pub(crate) refused: usize,
+}
+
+impl Absorbing for Formatted {
+    fn absorb(&mut self, other: Self) {
+        self.fixes.extend(other.fixes);
+        self.refused += other.refused;
+    }
+}
+
 /// Formats every module of a tree in place and returns the safe fixes each
 /// file's run recorded, beside how many modules the pipeline refused.
 ///
 /// A module the pipeline refuses is left as it was and counted, since a run
 /// that quietly formats less than it walked reports fewer breaks for a reason
 /// that never reaches the report.
-pub(crate) fn format_tree(tree: &Path, pipeline: &Pipeline) -> (Fixes, usize) {
-    let refused = AtomicUsize::new(0);
-    let fixes = modules_under(tree)
-        .par_iter()
-        .filter_map(|relative| {
-            let path = tree.join(relative);
-            let Ok(source) = Source::from_path(&path) else {
-                refused.fetch_add(1, Ordering::Relaxed);
-                return None;
-            };
-            let text = source.text().to_owned();
-            let lines = LineIndex::from_source_text(&text);
-            let diagnostics = pipeline.diagnose(&source);
-            let Ok((formatted, _)) = pipeline.run(source) else {
-                refused.fetch_add(1, Ordering::Relaxed);
-                return None;
-            };
-            if formatted.text() != text && fs_err::write(&path, formatted.text()).is_err() {
-                refused.fetch_add(1, Ordering::Relaxed);
-                return None;
-            }
-            let fixes: Vec<_> = diagnostics
-                .into_iter()
-                .filter_map(|diagnostic| {
-                    let fix = diagnostic.fix?;
-                    (fix.applicability() == Applicability::Safe).then(|| {
-                        let edits = fix
-                            .edits()
-                            .iter()
-                            .map(|edit| {
-                                let range = usize::from(edit.range().start())
-                                    ..usize::from(edit.range().end());
-                                EditRows {
-                                    content: edit.content().unwrap_or_default().to_owned(),
-                                    rows: edit_rows(&lines, &text, &range),
-                                    range,
-                                }
-                            })
-                            .collect();
-                        (diagnostic.rule, edits)
+pub(crate) fn format_tree(tree: &Path, pipeline: &Pipeline) -> Formatted {
+    let files: Vec<PathBuf> = modules_under(tree)
+        .into_iter()
+        .map(|relative| tree.join(relative))
+        .collect();
+    swept(&files, |path| formatted(path, pipeline, tree))
+}
+
+/// What formatting one module of `tree` in place left behind, a module the
+/// pipeline refuses counting itself and recording no fix.
+fn formatted(path: &Path, pipeline: &Pipeline, tree: &Path) -> Formatted {
+    let refused = Formatted {
+        refused: 1,
+        ..Formatted::default()
+    };
+    let _slot = Slot::open(path.display().to_string());
+    let Ok(relative) = path.strip_prefix(tree) else {
+        return refused;
+    };
+    let Ok(source) = Source::from_path(path) else {
+        return refused;
+    };
+    let text = source.text().to_owned();
+    let lines = LineIndex::from_source_text(&text);
+    let diagnostics = pipeline.diagnose(&source);
+    let Ok((written, _)) = pipeline.run(source) else {
+        return refused;
+    };
+    if written.text() != text && fs_err::write(path, written.text()).is_err() {
+        return refused;
+    }
+    let fixes: Vec<_> = diagnostics
+        .into_iter()
+        .filter_map(|diagnostic| {
+            let fix = diagnostic.fix?;
+            (fix.applicability() == Applicability::Safe).then(|| {
+                let edits = fix
+                    .edits()
+                    .iter()
+                    .map(|edit| {
+                        let range =
+                            usize::from(edit.range().start())..usize::from(edit.range().end());
+                        EditRows {
+                            content: edit.content().unwrap_or_default().to_owned(),
+                            rows: edit_rows(&lines, &text, &range),
+                            range,
+                        }
                     })
-                })
-                .collect();
-            (!fixes.is_empty()).then(|| (relative.clone(), fixes))
+                    .collect();
+                (diagnostic.rule, edits)
+            })
         })
         .collect();
-    (fixes, refused.load(Ordering::Relaxed))
+    Formatted {
+        fixes: if fixes.is_empty() {
+            Fixes::new()
+        } else {
+            Fixes::from([(relative.to_string_lossy().into_owned(), fixes)])
+        },
+        refused: 0,
+    }
 }
 
 /// The row `at` sits on, counting from one.

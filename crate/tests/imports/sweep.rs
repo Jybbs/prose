@@ -34,9 +34,6 @@ const TIMEOUT: f64 = 30.0;
 /// The environment variable bounding one module's run, in seconds.
 pub(crate) const TIMEOUT_VAR: &str = "PROSE_IMPORTS_TIMEOUT";
 
-/// The environment variable adding widths beside the default.
-pub(crate) const WIDTHS_VAR: &str = "PROSE_IMPORTS_WIDTHS";
-
 /// One corpus, the interpreter owning it, and the stage a sweep works
 /// through.
 pub(crate) struct Sweep {
@@ -117,7 +114,7 @@ impl Sweep {
             ..Config::default()
         });
         let formatted = self.stage.copy(&format!("formatted-{label}"));
-        let (fixes, refused) = format_tree(&formatted, &Pipeline::with_defaults(&config));
+        let run = format_tree(&formatted, &Pipeline::with_defaults(&config));
         let modules = setting(MODULE_VAR).map_or_else(
             || candidates(&formatted, &self.stage.original),
             |only| vec![only],
@@ -140,7 +137,7 @@ impl Sweep {
         }
         Attributor {
             config: &config,
-            fixes: &fixes,
+            fixes: &run.fixes,
             formatted: &formatted,
             label: &label,
             python: &self.python,
@@ -154,7 +151,7 @@ impl Sweep {
             comparable,
             flaky,
             label,
-            refused,
+            refused: run.refused,
             unmeasured,
         }
     }

@@ -15,10 +15,11 @@
 //! The sweep is ignored by default, since it executes a corpus and costs a
 //! minute of wall clock. `PROSE_IMPORTS_PYTHON` names the interpreter whose
 //! standard library it runs, `PROSE_IMPORTS_MODULE` narrows it to one module,
-//! `PROSE_IMPORTS_WIDTHS` adds widths beside the default,
+//! `PROSE_SETTLE_WIDTHS` adds widths beside the default,
 //! `PROSE_IMPORTS_TIMEOUT` bounds one module's run, `PROSE_IMPORTS_BAKE`
 //! writes the break set, and `PROSE_IMPORTS_BASELINE` names one an earlier
-//! run wrote, so only a break it does not carry fails the run.
+//! run wrote, so only a break it does not carry fails the run or reaches
+//! the report.
 
 #[path = "../common/mod.rs"]
 mod common;
@@ -40,19 +41,23 @@ mod sweep;
 use std::{collections::BTreeSet, iter, num::NonZeroUsize, path::Path};
 
 use crate::{
-    common::{env_list, setting},
+    common::{WIDTHS_VAR, env_list, setting, watch_for_a_runaway},
     corpus::interpreter,
     ratchet::{BAKE_VAR, bake, baseline, judge},
     report::render,
-    sweep::{PYTHON_VAR, Sweep, WIDTHS_VAR},
+    sweep::{PYTHON_VAR, Sweep},
 };
 
 /// The interpreter the sweep runs absent [`PYTHON_VAR`].
 const PYTHON: &str = "python3";
 
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 #[test]
 #[ignore = "the sweep executes a corpus and runs in its own row"]
 fn every_rewritten_module_still_imports() {
+    watch_for_a_runaway();
     let python = setting(PYTHON_VAR).unwrap_or_else(|| PYTHON.to_owned());
     let corpus = interpreter(&python);
     let sweep = Sweep::new(&corpus, python.clone());

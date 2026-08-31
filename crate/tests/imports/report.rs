@@ -1,30 +1,21 @@
-//! Render one width's findings, the breaks grouped by the frame and rules
-//! they share, each group with the hunk around the row it names and the
-//! command reproducing one of its modules alone.
+//! Render one width's findings, the breaks the baseline does not carry
+//! tallied by the frame and rules they share, each with the hunk around the
+//! row it names and the command reproducing one of its modules alone.
 
-use std::collections::{BTreeMap, BTreeSet};
-
-use itertools::Itertools;
+use std::{collections::BTreeSet, path::Path};
 
 use crate::{
-    common::{SHOWN, setting},
+    common::{Hit, Tally, WIDTHS_VAR, setting},
     records::{Break, Kind, Width},
-    sweep::{DEFAULT_LABEL, MODULE_VAR, PYTHON_VAR, TIMEOUT_VAR, WIDTHS_VAR},
+    sweep::{DEFAULT_LABEL, MODULE_VAR, PYTHON_VAR, TIMEOUT_VAR},
 };
 
 /// Renders one width's findings, `carried` naming the broken modules the
-/// baseline already holds.
+/// baseline already holds, which the tallies leave out so what a run shows
+/// is what it newly broke.
 pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
-    let timeouts: Vec<_> = found
-        .breaks
-        .iter()
-        .filter(|brk| brk.formatted.kind == Kind::Timeout)
-        .collect();
-    let raising: Vec<_> = found
-        .breaks
-        .iter()
-        .filter(|brk| brk.formatted.kind != Kind::Timeout)
-        .collect();
+    let timeouts = tallied(carried, found, Kind::Timeout);
+    let raising = tallied(carried, found, Kind::Raised);
     let uncomparable = if found.unmeasured.is_empty() {
         found.uncomparable().to_string()
     } else {
@@ -45,83 +36,29 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
     if found.refused > 0 {
         lines.push(row("refused", &found.refused.to_string()));
     }
-    for (heading, listed) in [("raises or rebinds", raising), ("times out", timeouts)] {
-        if listed.is_empty() {
-            continue;
-        }
-        let mut seats: BTreeMap<(&(String, Option<usize>), &String), usize> = BTreeMap::new();
-        let mut groups: Vec<Vec<&Break>> = Vec::new();
-        for brk in &listed {
-            let key = (&brk.frame, &brk.attribution);
-            let seat = *seats.entry(key).or_insert_with(|| {
-                groups.push(Vec::new());
-                groups.len() - 1
-            });
-            groups[seat].push(brk);
-        }
-        lines.push(String::new());
-        lines.push(format!(
-            "  {heading} ({} modules at {} frames):",
-            listed.len(),
-            groups.len()
-        ));
-        for members in &groups {
-            lines.extend(rendered_group(carried, &found.label, members));
-        }
-    }
+    let mut rendered = lines.join("\n");
+    rendered.push_str(&raising.render("raises or rebinds"));
+    rendered.push_str(&timeouts.render("times out"));
     for (heading, listed) in [
         ("flaky, a second run did not confirm it", &found.flaky),
         ("unmeasured, a run left no record", &found.unmeasured),
     ] {
         if !listed.is_empty() {
-            lines.push(String::new());
-            lines.push(format!("  {heading} ({}):", listed.len()));
-            lines.extend(listed.iter().map(|module| format!("    {module}")));
+            rendered.push_str(&format!("\n\n{heading} ({}):", listed.len()));
+            for module in listed {
+                rendered.push_str(&format!("\n  {module}"));
+            }
         }
     }
-    lines.join("\n")
+    rendered
 }
 
-/// Renders the breaks that share a frame and an attribution, the hunk once,
-/// a reason every member shares once, the modules the baseline does not carry
-/// ahead of the ones it does, and up to [`SHOWN`] modules with the rest
-/// counted.
-fn rendered_group(carried: &BTreeSet<String>, label: &str, members: &[&Break]) -> Vec<String> {
-    let leader = members[0];
-    let (file, row) = &leader.frame;
-    let shared = (members.iter().map(|brk| &brk.reason).unique().count() == 1)
-        .then(|| leader.reason.clone());
-    let ordered: Vec<_> = members
-        .iter()
-        .sorted_by(|a, b| {
-            (carried.contains(&a.module), &a.module).cmp(&(carried.contains(&b.module), &b.module))
-        })
-        .collect();
+/// The sentence naming where a break raises, why, and what it traces to,
+/// which is the wording a tally keys it by.
+fn defect(brk: &Break) -> String {
+    let (file, row) = &brk.frame;
     let at = row.map_or_else(|| file.clone(), |row| format!("{file}:{row}"));
-    let mut lines = vec![format!("    {at} {}", leader.attribution)];
-    if let Some(reason) = &shared {
-        lines.push(format!("      each {reason}"));
-    }
-    lines.extend(leader.hunk.iter().map(|line| format!("      {line}")));
-    lines.extend(ordered.iter().take(SHOWN).map(|brk| {
-        let reason = shared
-            .as_ref()
-            .map_or_else(|| format!(" {}", brk.reason), |_| String::new());
-        let held = if carried.contains(&brk.module) {
-            ", carried by the baseline"
-        } else {
-            ""
-        };
-        format!("      {}{reason}{held}", brk.module)
-    }));
-    if ordered.len() > SHOWN {
-        lines.push(format!("      ... and {} more", ordered.len() - SHOWN));
-    }
-    lines.push(format!(
-        "      reproduce with {}",
-        reproduction(label, &ordered[0].module)
-    ));
-    lines
+    format!("{at} {}, {}", brk.reason, brk.attribution)
 }
 
 /// The command that runs one module on its own, carrying every knob the
@@ -136,4 +73,25 @@ fn reproduction(label: &str, module: &str) -> String {
     }
     knobs.push(format!("{MODULE_VAR}={module}"));
     format!("{} mise run imports", knobs.join(" "))
+}
+
+/// The breaks of one kind the baseline does not carry, keyed by the sentence
+/// they share so one frame reaching many modules reports once.
+fn tallied(carried: &BTreeSet<String>, found: &Width, kind: Kind) -> Tally {
+    let mut tally = Tally::default();
+    for brk in found.breaks.iter().filter(|brk| {
+        !carried.contains(&brk.module)
+            && (brk.formatted.kind == Kind::Timeout) == (kind == Kind::Timeout)
+    }) {
+        tally.record_hit(
+            defect(brk),
+            Path::new(&brk.module),
+            Hit {
+                clause: None,
+                detail: Some(brk.hunk.join("\n")),
+                repro: Some(reproduction(&found.label, &brk.module)),
+            },
+        );
+    }
+    tally
 }
