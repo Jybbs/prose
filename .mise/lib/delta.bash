@@ -1,5 +1,5 @@
 baseline_binary() {
-  (cd "$1" && PROSE_SETTLE_BIN= built_binary "${2:-}")
+  (cd "$1" && built_binary "${2:-}")
 }
 
 baseline_label() {
@@ -13,10 +13,6 @@ baseline_root() {
 }
 
 built_binary() {
-  if [[ -n "${PROSE_SETTLE_BIN:-}" ]]; then
-    echo "$PROSE_SETTLE_BIN/prose"
-    return
-  fi
   local profile="${1:-${PROSE_DELTA_PROFILE:-probe}}"
   grep -q "^\[profile\.$profile\]" Cargo.toml || {
     echo "$PWD defines no $profile profile, building release instead" >&2
