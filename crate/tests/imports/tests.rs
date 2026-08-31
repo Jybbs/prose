@@ -18,14 +18,16 @@ use similar::TextDiff;
 
 use crate::{
     bindings::binding_rows,
+    common::SHOWN,
     compare::{compare, divergence},
-    corpus::excluded,
+    corpus::{candidates, excluded},
     diff::{hunk, mapped_rows},
     execute::{ending, module_name},
     fixes::{drops, holds_word, reaches, rewritten},
     format::{edit_rows, row_of},
-    ratchet::{Baseline, bake, judge},
-    records::{Break, EditRows, Kind, Outcome, Width},
+    outcome::{Kind, Outcome, relative_to},
+    ratchet::{Baseline, Carried, bake, judge},
+    records::{Break, EditRows, Frame, Width},
     report::render,
     sweep::DEFAULT_LABEL,
 };
@@ -52,7 +54,10 @@ fn broken(module: &str, frame: &str, reason: &str) -> Break {
     Break {
         attribution: String::new(),
         formatted: Outcome::default(),
-        frame: (frame.to_owned(), None),
+        frame: Frame {
+            file: frame.to_owned(),
+            row: None,
+        },
         hunk: Vec::new(),
         module: module.to_owned(),
         name: None,
@@ -89,8 +94,55 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
     .expect("the baked break set parses");
     assert_eq!(
         held["default"],
-        [("re/_parser.py".to_owned(), "leaves `X` unbound".to_owned())].into()
+        [Carried {
+            file: "re/_parser.py".to_owned(),
+            reason: "leaves `X` unbound".to_owned(),
+        }]
+        .into()
     );
+}
+
+#[test]
+fn a_break_reporting_no_loaded_modules_falls_back_to_its_own() {
+    let mut brk = broken("m.py", "m.py", "leaves `X` unbound");
+    assert_eq!(brk.loaded(), ["m.py"]);
+    brk.formatted.loaded = vec!["a.py".to_owned(), "b.py".to_owned()];
+    assert_eq!(brk.loaded(), ["a.py", "b.py"]);
+}
+
+#[test]
+fn a_break_the_report_names_carries_its_frame_reason_and_repro() {
+    let mut brk = broken(
+        "_colorize.py",
+        "re/_parser.py",
+        "raises NameError: no MAXGROUPS",
+    );
+    brk.attribution = "under `prune-inert-imports`".to_owned();
+    brk.frame.row = Some(111);
+    brk.hunk = vec!["-from _sre import MAXGROUPS".to_owned()];
+    let found = Width {
+        breaks: vec![brk],
+        candidates: 4,
+        comparable: 3,
+        flaky: Vec::new(),
+        label: DEFAULT_LABEL.to_owned(),
+        refused: 1,
+        unmeasured: Vec::new(),
+    };
+    let shown = render(&["kept.py".to_owned()].into(), &found);
+    assert!(shown.contains("  carried          1"), "{shown}");
+    assert!(shown.contains("  refused          1"), "{shown}");
+    assert!(
+        shown.contains(
+            "re/_parser.py:111 raises NameError: no MAXGROUPS, under `prune-inert-imports`"
+        ),
+        "{shown}"
+    );
+    assert!(
+        shown.contains("reproduce with mise run imports _colorize.py"),
+        "{shown}"
+    );
+    assert!(shown.contains("-from _sre import MAXGROUPS"), "{shown}");
 }
 
 #[test]
@@ -159,6 +211,20 @@ fn a_module_path_binds_the_name_an_import_binds(#[case] module: &str, #[case] do
 }
 
 #[test]
+fn a_path_names_itself_against_the_first_tree_carrying_it() {
+    let trees = [Path::new("/formatted"), Path::new("/original")];
+    assert_eq!(
+        relative_to("/formatted/m.py", &trees),
+        Some("m.py".to_owned())
+    );
+    assert_eq!(
+        relative_to("/original/m.py", &trees),
+        Some("m.py".to_owned())
+    );
+    assert_eq!(relative_to("/elsewhere/m.py", &trees), None);
+}
+
+#[test]
 fn a_raise_row_composes_its_sentence_beside_the_other_endings() {
     let record = [
         ["kind", "raised"].join("\0"),
@@ -194,6 +260,28 @@ fn a_signal_death_is_a_raise_rather_than_a_timeout() {
 }
 
 #[test]
+fn a_timing_out_break_counts_as_a_module_rather_than_a_defect() {
+    let timed = |module: &str| {
+        let mut brk = broken(module, "socket.py", "times out after 30s");
+        brk.formatted = Outcome::of(Kind::Timeout, "times out after 30s");
+        brk
+    };
+    let found = Width {
+        breaks: vec![timed("a.py"), timed("b.py")],
+        candidates: 2,
+        comparable: 2,
+        flaky: Vec::new(),
+        label: DEFAULT_LABEL.to_owned(),
+        refused: 0,
+        unmeasured: Vec::new(),
+    };
+    assert_eq!(found.timing_out(), 2);
+    let shown = render(&BTreeSet::new(), &found);
+    assert!(shown.contains("  timeouts         2"), "{shown}");
+    assert!(shown.contains("times out (1):"), "{shown}");
+}
+
+#[test]
 fn a_walrus_and_a_type_alias_bind_at_module_level() {
     let rows = binding_rows(
         "if (n := go()):\n    pass\n\nwhile (m := go()):\n    pass\n\ntype Alias = int\n",
@@ -219,6 +307,16 @@ fn an_end_at_column_one_closes_on_the_row_above() {
 }
 
 #[test]
+fn an_import_binds_its_first_dotted_segment() {
+    let rows =
+        binding_rows("import os.path\nimport xml.etree.ElementTree as et\nfrom a.b import c\n");
+    assert_eq!(rows.get("os"), Some(&(1..2)));
+    assert_eq!(rows.get("et"), Some(&(2..3)));
+    assert_eq!(rows.get("c"), Some(&(3..4)));
+    assert!(!rows.contains_key("xml"));
+}
+
+#[test]
 fn an_unrecognised_kind_row_reads_as_unmeasured() {
     let read = Outcome::parse(&["kind", "wat"].join("\0"), &[]);
     assert_eq!(read.kind, Kind::Unmeasured);
@@ -227,6 +325,14 @@ fn an_unrecognised_kind_row_reads_as_unmeasured() {
 #[test]
 fn binding_rows_are_empty_for_a_module_that_does_not_parse() {
     assert_eq!(binding_rows("def (\n"), BTreeMap::new());
+}
+
+#[test]
+fn binding_rows_reach_tuple_and_starred_targets() {
+    let rows = binding_rows("STRICT, CONFORM = boundary()\nhead, *rest = xs\n[a, b] = pair\n");
+    for name in ["STRICT", "CONFORM", "head", "rest", "a", "b"] {
+        assert!(rows.contains_key(name), "{name} binds at module level");
+    }
 }
 
 #[test]
@@ -247,6 +353,14 @@ fn binding_rows_walk_compound_statements_and_skip_nested_scopes() {
             "{absent} binds in a nested scope"
         );
     }
+}
+
+#[test]
+fn candidates_drop_the_entry_points_from_the_rewritten_set() {
+    let rewritten = ["os.py", "test/x.py", "turtledemo/y.py", "re/_parser.py"]
+        .map(str::to_owned)
+        .into();
+    assert_eq!(candidates(&rewritten), ["os.py", "re/_parser.py"]);
 }
 
 #[test]
@@ -288,16 +402,20 @@ fn dropping_a_name_reads_whole_words_only() {
 }
 
 #[rstest]
-#[case("pkg/__main__.py")]
-#[case("__main__.py")]
-#[case("test/x.py")]
-#[case("a/tests/b.py")]
-#[case("idlelib/idle_test/x.py")]
-#[case("turtledemo/x.py")]
-#[case("antigravity.py")]
-#[case("idlelib/idle.py")]
-#[case("webbrowser.py")]
-fn entry_points_leave_the_walk(#[case] relative: &str) {
+fn entry_points_leave_the_walk(
+    #[values(
+        "pkg/__main__.py",
+        "__main__.py",
+        "test/x.py",
+        "a/tests/b.py",
+        "idlelib/idle_test/x.py",
+        "turtledemo/x.py",
+        "antigravity.py",
+        "idlelib/idle.py",
+        "webbrowser.py"
+    )]
+    relative: &str,
+) {
     assert!(excluded(relative));
 }
 
@@ -308,11 +426,9 @@ fn identical_namespaces_do_not_diverge() {
 }
 
 #[rstest]
-#[case("test_x.py")]
-#[case("unittest/mock.py")]
-#[case("a/testing/b.py")]
-#[case("re/_parser.py")]
-fn library_modules_stay_in_the_walk(#[case] relative: &str) {
+fn library_modules_stay_in_the_walk(
+    #[values("test_x.py", "unittest/mock.py", "a/testing/b.py", "re/_parser.py")] relative: &str,
+) {
     assert!(!excluded(relative));
 }
 
@@ -349,6 +465,18 @@ fn reaching_reads_a_row_overlap_or_a_written_line() {
 }
 
 #[test]
+fn rewritten_returns_nothing_for_no_edits_or_a_span_past_the_text() {
+    let text = "a = 1\n";
+    assert_eq!(rewritten(&[], text), (String::new(), String::new()));
+    let beyond = EditRows {
+        content: "x".to_owned(),
+        range: 0..99,
+        rows: 1..2,
+    };
+    assert_eq!(rewritten(&[beyond], text), (String::new(), String::new()));
+}
+
+#[test]
 fn rewritten_returns_the_reached_lines_before_and_after() {
     let text = "a = 1\nb = 2\nc = 3\n";
     assert_eq!(
@@ -375,6 +503,29 @@ fn rows_map_back_through_an_equal_a_replaced_and_an_inserted_block() {
     assert_eq!(mapped_rows(&diff, 9), 0..0);
     let inserted = TextDiff::from_slices(&["x", "z"], &["x", "N", "z"]);
     assert_eq!(mapped_rows(&inserted, 2), 2..3);
+}
+
+#[test]
+fn the_flaky_list_caps_at_the_shown_limit() {
+    let found = Width {
+        breaks: Vec::new(),
+        candidates: SHOWN + 3,
+        comparable: SHOWN + 3,
+        flaky: (0..SHOWN + 3).map(|n| format!("m{n}.py")).collect(),
+        label: DEFAULT_LABEL.to_owned(),
+        refused: 0,
+        unmeasured: Vec::new(),
+    };
+    let shown = render(&BTreeSet::new(), &found);
+    assert!(
+        shown.contains(&format!(
+            "flaky, a second run did not confirm it ({}):",
+            SHOWN + 3
+        )),
+        "{shown}"
+    );
+    assert!(shown.contains("... and 3 more"), "{shown}");
+    assert!(!shown.contains("m32.py"), "{shown}");
 }
 
 #[test]
@@ -406,6 +557,18 @@ fn the_hunk_cuts_context_either_side_of_the_row() {
 }
 
 #[test]
+fn the_hunk_falls_back_to_the_first_change_with_no_row_or_name() {
+    let before: Vec<String> = (1..=10).map(|n| format!("l{n}")).collect();
+    let mut after = before.clone();
+    after[6] = "L7".to_owned();
+    let was: Vec<&str> = before.iter().map(String::as_str).collect();
+    let now: Vec<&str> = after.iter().map(String::as_str).collect();
+    let lines = hunk(&TextDiff::from_slices(&was, &now), None, "");
+    assert!(lines.iter().any(|line| line == "-l7"), "{lines:?}");
+    assert!(lines.iter().any(|line| line == "+L7"), "{lines:?}");
+}
+
+#[test]
 fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
     let found = Width {
         breaks: vec![broken("m.py", "re/_parser.py", "leaves `X` unbound")],
@@ -418,7 +581,11 @@ fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
     };
     let held: Baseline = [(
         "default".to_owned(),
-        [("re/_parser.py".to_owned(), "leaves `X` unbound".to_owned())].into(),
+        [Carried {
+            file: "re/_parser.py".to_owned(),
+            reason: "leaves `X` unbound".to_owned(),
+        }]
+        .into(),
     )]
     .into();
     assert_eq!(judge(&found, &held), ["m.py".to_owned()].into());

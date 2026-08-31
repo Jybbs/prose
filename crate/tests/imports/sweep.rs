@@ -4,6 +4,7 @@
 
 use std::{collections::BTreeMap, num::NonZeroUsize, path::Path, sync::Mutex};
 
+use itertools::{Either, Itertools};
 use prose::{config::Config, pipeline::Pipeline};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
@@ -12,40 +13,30 @@ use crate::{
     common::setting,
     compare::{compare, divergence},
     corpus::candidates,
-    execute::execute,
+    execute::Runner,
     format::format_tree,
-    records::{Break, Kind, Outcome, Width},
-    stage::Stage,
+    outcome::{Kind, Outcome},
+    records::{Break, Width},
 };
 
 /// The label a sweep gives the width no `code-line-length` pinned.
 pub(crate) const DEFAULT_LABEL: &str = "default";
 
 /// The environment variable narrowing a run to one module.
-pub(crate) const MODULE_VAR: &str = "PROSE_IMPORTS_MODULE";
+const MODULE_VAR: &str = "PROSE_IMPORTS_MODULE";
 
 /// The environment variable naming the interpreter whose standard library
 /// the sweep runs.
 pub(crate) const PYTHON_VAR: &str = "PROSE_IMPORTS_PYTHON";
 
-/// How many seconds one module may run for absent [`TIMEOUT_VAR`].
-const TIMEOUT: f64 = 30.0;
-
-/// The environment variable bounding one module's run, in seconds.
-pub(crate) const TIMEOUT_VAR: &str = "PROSE_IMPORTS_TIMEOUT";
-
-/// One corpus, the interpreter owning it, and the stage a sweep works
-/// through.
+/// One corpus, the runner every module goes through, and what the original
+/// tree has already been asked.
 pub(crate) struct Sweep {
     /// What the original tree left for each module already run from it,
     /// which every width reads rather than running the tree again.
     known: Mutex<BTreeMap<String, Outcome>>,
-    /// The interpreter each module runs under.
-    python: String,
-    /// How many seconds one module may run for.
-    seconds: f64,
-    /// The scratch stage every copy and run lives in.
-    pub(crate) stage: Stage,
+    /// The interpreter, deadline, and stage every run goes through.
+    pub(crate) runner: Runner,
 }
 
 impl Sweep {
@@ -53,22 +44,20 @@ impl Sweep {
     pub(crate) fn new(corpus: &Path, python: String) -> Self {
         Self {
             known: Mutex::new(BTreeMap::new()),
-            python,
-            seconds: setting(TIMEOUT_VAR)
-                .and_then(|held| held.parse().ok())
-                .unwrap_or(TIMEOUT),
-            stage: Stage::new(corpus),
+            runner: Runner::new(corpus, python),
         }
     }
 
     /// Reports whether the original matches its own first run and a second
     /// run of the formatted side still breaks.
     fn confirm(&self, brk: &Break, formatted: &Path) -> bool {
-        let before = self.run(&brk.module, &[self.stage.original.as_path()]);
+        let before = self
+            .runner
+            .run(&brk.module, &[self.runner.stage.original.as_path()]);
         if before.kind != Kind::Ok || divergence(&before, &brk.original).is_some() {
             return false;
         }
-        let after = self.run(&brk.module, &[formatted]);
+        let after = self.runner.run(&brk.module, &[formatted]);
         after.kind != Kind::Unmeasured && divergence(&after, &before).is_some()
     }
 
@@ -83,7 +72,7 @@ impl Sweep {
                 .cloned()
                 .collect()
         };
-        let ran = self.outcomes(&missing, &self.stage.original);
+        let ran = self.outcomes(&missing, &self.runner.stage.original);
         let mut known = self.known.lock().expect("the memo is never poisoned");
         known.extend(ran);
         modules
@@ -96,13 +85,8 @@ impl Sweep {
     fn outcomes(&self, modules: &[String], tree: &Path) -> BTreeMap<String, Outcome> {
         modules
             .par_iter()
-            .map(|module| (module.clone(), self.run(module, &[tree])))
+            .map(|module| (module.clone(), self.runner.run(module, &[tree])))
             .collect()
-    }
-
-    /// Runs one module from the given trees.
-    fn run(&self, module: &str, trees: &[&Path]) -> Outcome {
-        execute(&self.stage, &self.python, module, trees, self.seconds)
     }
 
     /// Sweeps the corpus at one width, running every module the formatter
@@ -113,12 +97,10 @@ impl Sweep {
             code_line_length: Some(width),
             ..Config::default()
         });
-        let formatted = self.stage.copy(&format!("formatted-{label}"));
+        let formatted = self.runner.stage.copy(&format!("formatted-{label}"));
         let run = format_tree(&formatted, &Pipeline::with_defaults(&config));
-        let modules = setting(MODULE_VAR).map_or_else(
-            || candidates(&formatted, &self.stage.original),
-            |only| vec![only],
-        );
+        let modules =
+            setting(MODULE_VAR).map_or_else(|| candidates(&run.rewritten), |only| vec![only]);
         let after = self.outcomes(&modules, &formatted);
         let before = self.originals(&modules);
         let (suspects, comparable, unmeasured) = compare(&after, &before, &modules);
@@ -126,23 +108,22 @@ impl Sweep {
             .par_iter()
             .map(|brk| self.confirm(brk, &formatted))
             .collect();
-        let mut breaks = Vec::new();
-        let mut flaky = Vec::new();
-        for (brk, holds) in suspects.into_iter().zip(verdicts) {
-            if holds {
-                breaks.push(brk);
-            } else {
-                flaky.push(brk.module);
-            }
-        }
+        let (mut breaks, flaky): (Vec<_>, Vec<_>) = suspects
+            .into_iter()
+            .zip(verdicts)
+            .partition_map(|(brk, holds)| {
+                if holds {
+                    Either::Left(brk)
+                } else {
+                    Either::Right(brk.module)
+                }
+            });
         Attributor {
             config: &config,
             fixes: &run.fixes,
             formatted: &formatted,
             label: &label,
-            python: &self.python,
-            seconds: self.seconds,
-            stage: &self.stage,
+            runner: &self.runner,
         }
         .attribute(&mut breaks);
         Width {

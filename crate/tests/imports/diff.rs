@@ -23,34 +23,40 @@ pub(crate) fn hunk(diff: &TextDiff<'_, '_, str>, row: Option<usize>, name: &str)
                 ChangeTag::Equal => ' ',
                 ChangeTag::Insert => '+',
             };
-            (change.new_index(), format!("{mark}{}", change.value()))
+            (change.new_index(), mark, change.value())
         })
         .collect();
-    let index = match row {
-        Some(row) => shown
-            .iter()
-            .position(|(seen, _)| *seen == Some(row - 1))
-            .unwrap_or_default(),
-        None => {
+    let index = row.map_or_else(
+        || {
             let changed: Vec<_> = shown
                 .iter()
-                .positions(|(_, line)| !line.starts_with(' '))
+                .positions(|(_, mark, _)| *mark != ' ')
                 .collect();
             changed
                 .iter()
-                .find(|at| !name.is_empty() && shown[**at].1.contains(name))
+                .find(|at| !name.is_empty() && shown[**at].2.contains(name))
                 .or_else(|| changed.first())
                 .copied()
                 .unwrap_or_default()
-        }
-    };
+        },
+        |row| {
+            shown
+                .iter()
+                .position(|(seen, _, _)| *seen == Some(row - 1))
+                .unwrap_or_default()
+        },
+    );
     let low = index.saturating_sub(CONTEXT);
     let high = (index + CONTEXT + 1).min(shown.len());
     let opening = (low > 0).then(|| "...".to_owned());
     let closing = (high < shown.len()).then(|| "...".to_owned());
     opening
         .into_iter()
-        .chain(shown[low..high].iter().map(|(_, line)| line.clone()))
+        .chain(
+            shown[low..high]
+                .iter()
+                .map(|(_, mark, line)| format!("{mark}{line}")),
+        )
         .chain(closing)
         .collect()
 }

@@ -1,27 +1,12 @@
-//! The records one sweep leaves, meaning what a run of a module left
-//! behind, a module the rewrite breaks, one edit of a recorded fix, and one
-//! width's tallies and findings.
+//! The records one sweep leaves, meaning a module the rewrite breaks, the
+//! frame it points at, one edit of a recorded fix, and one width's tallies
+//! and findings.
 
-use std::{collections::BTreeMap, ops::Range, path::Path};
+use std::{collections::BTreeMap, ops::Range};
 
-use itertools::Itertools;
 use prose::rule::RuleId;
 
-/// The names the formatter reorders by design, whose value a comparison
-/// therefore leaves out.
-const REORDERED: [&str; 1] = ["__all__"];
-
-/// The names every module binds through the loader rather than through its
-/// own code, which a comparison leaves out.
-const UNBOUND: [&str; 7] = [
-    "__builtins__",
-    "__cached__",
-    "__doc__",
-    "__file__",
-    "__loader__",
-    "__path__",
-    "__spec__",
-];
+use crate::outcome::{Kind, Outcome};
 
 /// A module the rewrite breaks.
 pub(crate) struct Break {
@@ -30,7 +15,7 @@ pub(crate) struct Break {
     /// What the run from the formatted tree left behind.
     pub(crate) formatted: Outcome,
     /// The file and row it points at.
-    pub(crate) frame: (String, Option<usize>),
+    pub(crate) frame: Frame,
     /// The diff lines around that row.
     pub(crate) hunk: Vec<String>,
     /// The module, relative to its tree.
@@ -44,12 +29,6 @@ pub(crate) struct Break {
 }
 
 impl Break {
-    /// The file its frame names and its reason, which is what a baseline
-    /// holds per break.
-    pub(crate) fn key(&self) -> (String, String) {
-        (self.frame.0.clone(), self.reason.clone())
-    }
-
     /// The modules the formatted run loaded from its tree, or the module
     /// itself where the run recorded none.
     pub(crate) fn loaded(&self) -> Vec<String> {
@@ -74,102 +53,13 @@ pub(crate) struct EditRows {
 /// The safe fixes one format run recorded, keyed by the file each rewrote.
 pub(crate) type Fixes = BTreeMap<String, Vec<(RuleId, Vec<EditRows>)>>;
 
-/// What a run of a module amounted to.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(crate) enum Kind {
-    /// The run bound a namespace.
-    Ok,
-    /// The run raised.
-    Raised,
-    /// The run outran its deadline.
-    Timeout,
-    /// The run left no record to read.
-    #[default]
-    Unmeasured,
-}
-
-impl Kind {
-    /// The kind a probe's `kind` row names.
-    fn of(named: &str) -> Self {
-        match named {
-            "ok" => Self::Ok,
-            "raised" => Self::Raised,
-            _ => Self::Unmeasured,
-        }
-    }
-}
-
-/// What one run of a module left behind, as the probe records it.
-#[derive(Clone, Default)]
-pub(crate) struct Outcome {
-    /// The plain constants the run bound, each spelt.
-    pub(crate) constants: BTreeMap<String, String>,
-    /// The predicate of a sentence naming the module.
-    pub(crate) error: String,
-    /// The file and row of every frame a raise passed through.
-    pub(crate) frames: Vec<(String, usize)>,
-    /// What the run amounted to.
-    pub(crate) kind: Kind,
-    /// Every module the run took from a tree, relative to it, sorted.
-    pub(crate) loaded: Vec<String>,
-    /// The name a raised run could not find.
-    pub(crate) name: Option<String>,
-    /// The names an `ok` run bound, sorted.
-    pub(crate) names: Vec<String>,
-}
-
-impl Outcome {
-    /// An outcome of `kind` carrying `error` and nothing else.
-    pub(crate) fn of(kind: Kind, error: impl Into<String>) -> Self {
-        Self {
-            error: error.into(),
-            kind,
-            ..Self::default()
-        }
-    }
-
-    /// Reads back the record the probe wrote, which is one tagged row per
-    /// line separated by `RS`, each field separated by `NUL`.
-    ///
-    /// The probe reports the namespace as it stands and every module path as
-    /// the interpreter saw it, so the loader's own names come out here, the
-    /// names sort here, and a loaded path is made relative to whichever of
-    /// `trees` carries it.
-    pub(crate) fn parse(record: &str, trees: &[&Path]) -> Self {
-        let mut read = Self::default();
-        for row in record.split('\u{1e}') {
-            let mut fields = row.split('\0');
-            match (fields.next(), fields.next(), fields.next()) {
-                (Some("bound"), Some(name), _) if !UNBOUND.contains(&name) => {
-                    read.names.push(name.to_owned());
-                }
-                (Some("const"), Some(name), Some(spelt))
-                    if !UNBOUND.contains(&name) && !REORDERED.contains(&name) =>
-                {
-                    read.constants.insert(name.to_owned(), spelt.to_owned());
-                }
-                (Some("frame"), Some(row), Some(file)) => {
-                    if let Ok(row) = row.parse() {
-                        read.frames.push((file.to_owned(), row));
-                    }
-                }
-                (Some("kind"), Some(kind), _) => read.kind = Kind::of(kind),
-                (Some("loaded"), Some(path), _) => {
-                    if let Some(relative) = relative_to(path, trees) {
-                        read.loaded.push(relative);
-                    }
-                }
-                (Some("missing"), Some(name), _) => read.name = Some(name.to_owned()),
-                (Some("raise"), Some(raised), Some(message)) => {
-                    read.error = format!("raises {raised}: {message}");
-                }
-                _ => {}
-            }
-        }
-        read.loaded = read.loaded.into_iter().sorted().dedup().collect();
-        read.names.sort();
-        read
-    }
+/// The file and row a break points at.
+#[derive(Clone, Default, Eq, Ord, PartialEq, PartialOrd)]
+pub(crate) struct Frame {
+    /// The file, relative to the tree it was found in.
+    pub(crate) file: String,
+    /// The row it names, where the traceback gave one.
+    pub(crate) row: Option<usize>,
 }
 
 /// One width's tallies and findings.
@@ -191,20 +81,17 @@ pub(crate) struct Width {
 }
 
 impl Width {
+    /// How many of this width's breaks outran their deadline.
+    pub(crate) fn timing_out(&self) -> usize {
+        self.breaks
+            .iter()
+            .filter(|brk| brk.formatted.kind == Kind::Timeout)
+            .count()
+    }
+
     /// How many candidates the original tree did not run cleanly, the
     /// unmeasured ones aside.
     pub(crate) fn uncomparable(&self) -> usize {
         self.candidates - self.comparable - self.unmeasured.len()
     }
-}
-
-/// A module path named relative to whichever of `trees` carries it, `None`
-/// for one the interpreter loaded from its own library.
-fn relative_to(path: &str, trees: &[&Path]) -> Option<String> {
-    trees.iter().find_map(|tree| {
-        Path::new(path)
-            .strip_prefix(tree)
-            .ok()
-            .map(|relative| relative.to_string_lossy().into_owned())
-    })
 }

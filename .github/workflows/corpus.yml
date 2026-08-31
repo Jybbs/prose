@@ -44,6 +44,7 @@ on:
       - Cargo.toml
       - crate/Cargo.toml
       - crate/src/**
+      - crate/tests/common/**
       - crate/tests/imports/**
 
   workflow_dispatch:
@@ -129,9 +130,7 @@ jobs:
 
       - name : Bake the break set every rewritten module imports against
         env  : { PROSE_IMPORTS_BAKE: &breaks-path "${{ runner.temp }}/breaks/set.json" }
-        run  : |
-          mkdir -p "$(dirname "$PROSE_IMPORTS_BAKE")"
-          mise run imports
+        run  : mise run imports
 
       - name : Save the break set
         uses : actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -250,8 +249,8 @@ jobs:
           restore-keys : corpus-breaks-${{ steps.python.outputs.version }}-
 
       - name : Import every rewritten module against the baked break set
-        if   : ${{ steps.breaks.outputs.cache-matched-key != '' }}
         env  : { PROSE_IMPORTS_BASELINE: *breaks-path }
+        if   : ${{ steps.breaks.outputs.cache-matched-key != '' }}
         run  : mise run imports
 
       - name : Report a break set no bake has written yet

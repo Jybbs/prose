@@ -2,36 +2,22 @@
 //! the corpus, the entry points a run leaves out, and the modules a format
 //! run rewrote.
 
-use std::{
-    path::{Path, PathBuf},
-    process::Command,
-};
-
-use ignore::WalkBuilder;
-use itertools::Itertools;
+use std::{collections::BTreeSet, path::PathBuf, process::Command};
 
 /// The modules a walk leaves out, since running an entry point launches
 /// whatever it launches.
-const ENTRY_POINTS: [&str; 3] = ["antigravity.py", "idlelib/idle.py", "webbrowser.py"];
+const ENTRY_POINTS: &[&str] = &["antigravity.py", "idlelib/idle.py", "webbrowser.py"];
 
 /// The directories a walk leaves out wholesale.
-const ENTRY_TREES: [&str; 4] = ["idle_test", "test", "tests", "turtledemo"];
+const ENTRY_TREES: &[&str] = &["idle_test", "test", "tests", "turtledemo"];
 
-/// The modules a sweep runs, which is every module the two trees differ on
+/// The modules a sweep runs, which is every module the format run rewrote
 /// outside the entry points, sorted.
-pub(crate) fn candidates(formatted: &Path, original: &Path) -> Vec<String> {
-    modules_under(original)
-        .into_iter()
+pub(crate) fn candidates(rewritten: &BTreeSet<String>) -> Vec<String> {
+    rewritten
+        .iter()
         .filter(|relative| !excluded(relative))
-        .filter(|relative| {
-            match (
-                fs_err::read(original.join(relative)),
-                fs_err::read(formatted.join(relative)),
-            ) {
-                (Ok(was), Ok(now)) => was != now,
-                _ => true,
-            }
-        })
+        .cloned()
         .collect()
 }
 
@@ -63,17 +49,4 @@ pub(crate) fn interpreter(python: &str) -> PathBuf {
     PathBuf::from(String::from_utf8_lossy(&asked.stdout).trim())
         .canonicalize()
         .expect("the interpreter names a standard library")
-}
-
-/// The `.py` files under `tree`, each named relative to it, sorted.
-pub(crate) fn modules_under(tree: &Path) -> Vec<String> {
-    WalkBuilder::new(tree)
-        .standard_filters(false)
-        .build()
-        .flatten()
-        .map(ignore::DirEntry::into_path)
-        .filter(|path| path.extension().is_some_and(|ext| ext == "py"))
-        .filter_map(|path| Some(path.strip_prefix(tree).ok()?.to_str()?.to_owned()))
-        .sorted()
-        .collect()
 }

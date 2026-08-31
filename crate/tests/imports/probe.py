@@ -5,8 +5,7 @@ Usage: probe.py <record> <name> <module> <tree>...
 
 An import here loads the interpreter's own copy into `sys.modules` ahead of
 the tree's, so the probe imports nothing that is not already loaded before
-it runs. `importlib.util` would reach `re`, `enum`, and `typing`, where the
-frozen loaders it wraps reach nothing.
+it runs.
 """
 
 from _frozen_importlib          import module_from_spec
@@ -133,7 +132,7 @@ def constant(value: object) -> "str | None":
 
 def frames(exc: BaseException):
     """
-    The row naming every frame an exception passed through.
+    The rows naming every frame an exception passed through.
 
     Args:
         exc: The exception to walk.

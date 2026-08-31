@@ -3,7 +3,10 @@
 
 use std::collections::BTreeMap;
 
-use crate::records::{Break, Kind, Outcome};
+use crate::{
+    outcome::{Kind, Outcome},
+    records::{Break, Frame},
+};
 
 /// The reading a constant takes where the run bound no plain constant of
 /// that name.
@@ -18,11 +21,6 @@ pub(crate) fn compare(
     before: &BTreeMap<String, Outcome>,
     modules: &[String],
 ) -> (Vec<Break>, usize, Vec<String>) {
-    let reading = |held: &BTreeMap<String, Outcome>, module: &str| {
-        held.get(module)
-            .cloned()
-            .unwrap_or_else(|| Outcome::of(Kind::Unmeasured, "left no outcome at all"))
-    };
     let comparable: Vec<_> = modules
         .iter()
         .filter(|module| {
@@ -33,17 +31,17 @@ pub(crate) fn compare(
     let breaks = comparable
         .iter()
         .filter_map(|module| {
-            let formatted = reading(after, module);
-            let original = reading(before, module);
-            let (reason, name) = divergence(&formatted, &original)?;
+            let formatted = after.get(module)?;
+            let original = before.get(module)?;
+            let (reason, name) = divergence(formatted, original)?;
             Some(Break {
                 attribution: String::new(),
-                formatted,
-                frame: (String::new(), None),
+                formatted: formatted.clone(),
+                frame: Frame::default(),
                 hunk: Vec::new(),
                 module: module.clone(),
                 name,
-                original,
+                original: original.clone(),
                 reason,
             })
         })
@@ -84,9 +82,14 @@ pub(crate) fn divergence(
         .chain(formatted.constants.keys())
         .filter(|name| original.constants.get(*name) != formatted.constants.get(*name))
         .min()?;
-    let missing = MISSING.to_owned();
-    let was = original.constants.get(differing).unwrap_or(&missing);
-    let now = formatted.constants.get(differing).unwrap_or(&missing);
+    let was = original
+        .constants
+        .get(differing)
+        .map_or(MISSING, String::as_str);
+    let now = formatted
+        .constants
+        .get(differing)
+        .map_or(MISSING, String::as_str);
     Some((
         format!("binds `{differing}` to {now} where the original binds {was}"),
         Some(differing.clone()),

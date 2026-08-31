@@ -106,7 +106,9 @@ fn bound(statement: &Stmt) -> Vec<String> {
 
 /// The first dotted segment of an imported name.
 fn segment(name: &str) -> String {
-    name.split('.').next().unwrap_or(name).to_owned()
+    name.split_once('.')
+        .map_or(name, |(first, _)| first)
+        .to_owned()
 }
 
 /// The expressions one statement holds directly, which is where a walrus

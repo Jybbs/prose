@@ -2,6 +2,7 @@
 //! safe fix rewrote, which is what an attribution reads back.
 
 use std::{
+    collections::BTreeSet,
     ops::Range,
     path::{Path, PathBuf},
 };
@@ -12,10 +13,28 @@ use ruff_source_file::LineIndex;
 use ruff_text_size::{Ranged, TextSize};
 
 use crate::{
-    common::{Absorbing, Slot, swept},
-    corpus::modules_under,
+    common::{Absorbing, Slot, python_files, swept},
     records::{EditRows, Fixes},
 };
+
+/// What formatting one tree in place left behind.
+#[derive(Default)]
+pub(crate) struct Formatted {
+    /// The safe fixes each file's run recorded.
+    pub(crate) fixes: Fixes,
+    /// How many modules the pipeline could not read, parse, or write.
+    pub(crate) refused: usize,
+    /// The modules the run rewrote, each named relative to the tree.
+    pub(crate) rewritten: BTreeSet<String>,
+}
+
+impl Absorbing for Formatted {
+    fn absorb(&mut self, other: Self) {
+        self.fixes.extend(other.fixes);
+        self.refused += other.refused;
+        self.rewritten.extend(other.rewritten);
+    }
+}
 
 /// The original rows one edit rewrote, an end at column 1 closing on the row
 /// above it.
@@ -29,34 +48,21 @@ pub(crate) fn edit_rows(lines: &LineIndex, text: &str, range: &Range<usize>) -> 
     start..end + 1
 }
 
-/// What formatting one tree in place left behind.
-#[derive(Default)]
-pub(crate) struct Formatted {
-    /// The safe fixes each file's run recorded.
-    pub(crate) fixes: Fixes,
-    /// How many modules the pipeline could not read, parse, or write.
-    pub(crate) refused: usize,
-}
-
-impl Absorbing for Formatted {
-    fn absorb(&mut self, other: Self) {
-        self.fixes.extend(other.fixes);
-        self.refused += other.refused;
-    }
-}
-
-/// Formats every module of a tree in place and returns the safe fixes each
-/// file's run recorded, beside how many modules the pipeline refused.
+/// Formats every module of a tree in place and returns the modules it
+/// rewrote and the safe fixes each file's run recorded, beside how many
+/// modules the pipeline refused.
 ///
 /// A module the pipeline refuses is left as it was and counted, since a run
 /// that quietly formats less than it walked reports fewer breaks for a reason
 /// that never reaches the report.
 pub(crate) fn format_tree(tree: &Path, pipeline: &Pipeline) -> Formatted {
-    let files: Vec<PathBuf> = modules_under(tree)
-        .into_iter()
-        .map(|relative| tree.join(relative))
-        .collect();
+    let files: Vec<PathBuf> = python_files(tree).collect();
     swept(&files, |path| formatted(path, pipeline, tree))
+}
+
+/// The row `at` sits on, counting from one.
+pub(crate) fn row_of(lines: &LineIndex, at: usize) -> usize {
+    lines.line_index(offset(at)).get()
 }
 
 /// What formatting one module of `tree` in place left behind, a module the
@@ -67,9 +73,9 @@ fn formatted(path: &Path, pipeline: &Pipeline, tree: &Path) -> Formatted {
         ..Formatted::default()
     };
     let _slot = Slot::open(path.display().to_string());
-    let Ok(relative) = path.strip_prefix(tree) else {
-        return refused;
-    };
+    let relative = path
+        .strip_prefix(tree)
+        .unwrap_or_else(|_| unreachable!("invariant: the walk is rooted at the tree"));
     let Ok(source) = Source::from_path(path) else {
         return refused;
     };
@@ -79,9 +85,11 @@ fn formatted(path: &Path, pipeline: &Pipeline, tree: &Path) -> Formatted {
     let Ok((written, _)) = pipeline.run(source) else {
         return refused;
     };
-    if written.text() != text && fs_err::write(path, written.text()).is_err() {
+    let changed = written.text() != text;
+    if changed && fs_err::write(path, written.text()).is_err() {
         return refused;
     }
+    let module = relative.to_string_lossy().into_owned();
     let fixes: Vec<_> = diagnostics
         .into_iter()
         .filter_map(|diagnostic| {
@@ -105,18 +113,10 @@ fn formatted(path: &Path, pipeline: &Pipeline, tree: &Path) -> Formatted {
         })
         .collect();
     Formatted {
-        fixes: if fixes.is_empty() {
-            Fixes::new()
-        } else {
-            Fixes::from([(relative.to_string_lossy().into_owned(), fixes)])
-        },
+        fixes: Fixes::from_iter((!fixes.is_empty()).then(|| (module.clone(), fixes))),
         refused: 0,
+        rewritten: changed.then_some(module).into_iter().collect(),
     }
-}
-
-/// The row `at` sits on, counting from one.
-pub(crate) fn row_of(lines: &LineIndex, at: usize) -> usize {
-    lines.line_index(offset(at)).get()
 }
 
 /// The byte offset as the size a line index reads.
