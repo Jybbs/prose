@@ -100,7 +100,7 @@ jobs:
         id   : mutations
         uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          key         : &mutations-key corpus-mutations-${{ steps.python.outputs.version }}-${{ hashFiles('.mise/lib/mutate.py') }}
+          key         : &mutations-key corpus-mutations-${{ steps.python.outputs.version }}-${{ hashFiles('sweeps/src/bin/mutate.rs', 'sweeps/Cargo.toml') }}
           lookup-only : true
           path        : &mutations-path ${{ runner.temp }}/mutations
 

@@ -35,16 +35,15 @@ fn format_matches_the_text_half_of_run() {
 #[test]
 fn format_short_circuits_when_file_is_suppressed() {
     let log = Arc::new(Mutex::new(Vec::<&'static str>::new()));
+    let text = "# prose: off\nx = 1\n";
     let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
         id: RuleId::from("never-called"),
         log: log.clone(),
     })]);
 
-    let formatted = pipeline
-        .format(parse("# prose: off\nx = 1\n"))
-        .expect("short-circuit format");
+    let formatted = pipeline.format(parse(text)).expect("short-circuit format");
 
-    assert_eq!(formatted.text(), "# prose: off\nx = 1\n");
+    assert_eq!(formatted.text(), text);
     assert!(log.lock().expect("log mutex").is_empty());
 }
 

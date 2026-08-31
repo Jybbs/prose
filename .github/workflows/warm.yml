@@ -19,6 +19,7 @@ on:
       - Cargo.lock
       - Cargo.toml
       - crate/Cargo.toml
+      - sweeps/Cargo.toml
       - wasm/Cargo.toml
 
   workflow_dispatch:

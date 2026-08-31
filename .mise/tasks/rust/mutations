@@ -45,10 +45,9 @@ budget="${2:-60}"
 binary=$(built_binary)
 
 mutations="${PROSE_SETTLE_MUTATIONS:-}"
-if [[ ! -f "$mutations/.generated" ]]; then
+if [[ -z "$mutations" || ! -f "$mutations/.generated" ]]; then
   mutations="${mutations:-$(scratch_dir mutations)}"
   mutate_corpus "$corpus" "$mutations" "$budget"
-  touch "$mutations/.generated"
 fi
 rm -f "$mutations/.generated"
 
@@ -58,4 +57,4 @@ done < <(find "$mutations" -mindepth 1 -maxdepth 1 -type d | sort)
 
 printf '\neach mutation survives as formatted output under %s\n' "$mutations"
 printf 'regenerate the pre-format variants it ran on with: %s %s <destination> %s\n' \
-  "$MISE_PROJECT_ROOT/.mise/lib/mutate.py" "$corpus" "$budget"
+  "cargo run --release -p prose_sweeps --bin mutate --" "$corpus" "$budget"

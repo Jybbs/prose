@@ -1,0 +1,38 @@
+[package]
+edition      = "2024"
+license      = { workspace = true }
+name         = "prose_sweeps"
+publish      = false
+repository   = { workspace = true }
+rust-version = { workspace = true }
+version      = "0.0.0"
+
+[package.metadata.cargo-machete]
+ignored = ["libcst"]
+
+[[bin]]
+name = "delta"
+path = "src/bin/delta.rs"
+
+[[bin]]
+name = "mutate"
+path = "src/bin/mutate.rs"
+
+[dependencies]
+bumpalo       = "3.20"
+clap          = { version = "4.5", features = ["derive"] }
+fs-err        = "3"
+itertools     = "0.15"
+libcst        = { version = "1.8", default-features = false }
+rand          = "0.10"
+rayon         = "1.10"
+ruff_python_ast    = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22" }
+ruff_python_parser = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22" }
+ruff_python_stdlib = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22" }
+ruff_text_size     = { git = "https://github.com/astral-sh/ruff", tag = "0.15.22" }
+rustc-hash    = "2"
+serde_json    = "1.0"
+tabled        = { version = "0.21", default-features = false, features = ["std"] }
+
+[lints]
+workspace = true

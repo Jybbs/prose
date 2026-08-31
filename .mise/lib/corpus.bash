@@ -7,7 +7,7 @@ corpus_root() {
 
 mutate_corpus() {
   printf '\nMutating the corpus under a %ss budget\n' "$3"
-  "$MISE_PROJECT_ROOT/.mise/lib/mutate.py" "$@"
+  cargo run --quiet --release --locked -p prose_sweeps --bin mutate -- "$@"
 }
 
 scratch_dir() {
