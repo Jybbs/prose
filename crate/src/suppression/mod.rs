@@ -35,7 +35,7 @@ use parse_common::after_prose_prefix;
 /// alike, whereas a skip span suppresses rewrites alone and leaves lints
 /// to the `ignore` directives. Span queries run in O(log n) against
 /// `spans` and `skip_spans`, O(n) against `skips`, and O(1) per line.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct SuppressionMap {
     file_suppressed: bool,
     lints: FxHashMap<OneIndexed, RuleEntry>,

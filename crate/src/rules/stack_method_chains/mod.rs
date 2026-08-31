@@ -39,6 +39,7 @@ mod spine;
 
 use spine::Chain;
 
+#[derive(Debug)]
 pub(crate) struct StackMethodChains {
     code_line_length: usize,
     max_links: Option<usize>,

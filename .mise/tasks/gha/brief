@@ -2,7 +2,7 @@
 #MISE description="Render a workflow step summary and exit with its gate verdict"
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["jinja2==3.1.6"]
+# dependencies = ["jinja2==3.1.6", "pyyaml==6.0.3"]
 # ///
 """
 Render a Prose step summary and gate the workflow's exit code.
@@ -10,6 +10,11 @@ Render a Prose step summary and gate the workflow's exit code.
 Subcommands:
     ci       Render the CI gate summary. Reads `CHECK` plus the
              GitHub-runner defaults. Exits 0 when `CHECK` is success.
+    corpus   Render the Corpus gate summary. Reads the result of every
+             job the corpus workflow's gate depends on, each under its
+             upper-cased job id, plus the GitHub-runner defaults. Exits
+             0 when every one of them that ran is a success, the delta
+             reporting without gating.
     deploy   Render the Deploy gate summary. Reads `CHECKS`, `PRESS`,
              `DEPLOY`, and `URL` plus the GitHub-runner defaults. Exits
              0 when every one of them is success.
@@ -33,6 +38,7 @@ from os      import environ
 from pathlib import Path
 from sys     import argv
 from tomllib import loads
+from yaml    import safe_load
 
 
 def failed(*signals: str) -> bool:
@@ -98,6 +104,28 @@ class Summary:
         Render the CI gate summary and exit with the matrix verdict.
         """
         self._gate("ci", "CHECK")
+
+    def corpus(self):
+        """
+        Render the Corpus gate summary and exit with the verdict of every
+        job the workflow's gate depends on, read off the workflow itself,
+        the delta reporting without gating.
+        """
+        jobs   = safe_load(Path(".github/workflows/corpus.yml").read_text(encoding="utf-8"))["jobs"]
+        needed = jobs["gate"]["needs"]
+        marks  = {"skipped": "➖", "success": "✅"}
+
+        self._gate(
+            "corpus",
+            *[job.upper() for job in needed if job != "delta" and environ[job.upper()] != "skipped"],
+            sweeps = [
+                {
+                    "mark" : marks.get(environ[job.upper()], "❌"),
+                    "name" : jobs[job]["name"].split("${{")[0].strip() or job.capitalize()
+                }
+                for job in needed
+            ]
+        )
 
     def deploy(self):
         """
