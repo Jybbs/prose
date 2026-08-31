@@ -1,5 +1,0 @@
-[imports]
-first-party = [
-    "attribution", "binary", "bindings", "comparison", "corpus", "diff", "execute",
-    "fixes", "ratchet", "records", "report", "runner", "stage", "sweep",
-]
