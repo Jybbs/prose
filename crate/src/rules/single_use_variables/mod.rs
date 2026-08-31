@@ -40,6 +40,7 @@ use crate::{
     source::Source,
 };
 
+#[derive(Debug)]
 pub(crate) struct SingleUseVariables {
     allow_pattern: AllowPattern,
 }

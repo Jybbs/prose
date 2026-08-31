@@ -1,6 +1,6 @@
 comment: false
 
-ignore: [wasm/src]
+ignore: [sweeps/src, wasm/src]
 
 coverage:
   precision : 2

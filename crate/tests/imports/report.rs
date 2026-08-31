@@ -2,20 +2,15 @@
 //! they share, each group with the hunk around the row it names and the
 //! command reproducing one of its modules alone.
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    env,
-};
+use std::collections::{BTreeMap, BTreeSet};
 
 use itertools::Itertools;
 
 use crate::{
+    common::{SHOWN, setting},
     records::{Break, Kind, Width},
     sweep::{DEFAULT_LABEL, MODULE_VAR, PYTHON_VAR, TIMEOUT_VAR, WIDTHS_VAR},
 };
-
-/// How many broken modules a group names before it counts the rest.
-const SHOWN: usize = 30;
 
 /// Renders one width's findings, `carried` naming the broken modules the
 /// baseline already holds.
@@ -134,7 +129,7 @@ fn rendered_group(carried: &BTreeSet<String>, label: &str, members: &[&Break]) -
 fn reproduction(label: &str, module: &str) -> String {
     let mut knobs: Vec<_> = [PYTHON_VAR, TIMEOUT_VAR]
         .iter()
-        .filter_map(|knob| Some(format!("{knob}={}", env::var(knob).ok()?)))
+        .filter_map(|knob| Some(format!("{knob}={}", setting(knob)?)))
         .collect();
     if label != DEFAULT_LABEL {
         knobs.push(format!("{WIDTHS_VAR}={label}"));

@@ -49,6 +49,7 @@ mod members;
 mod module_graph;
 mod rewrite;
 
+#[derive(Debug)]
 pub(crate) struct AlphabetizeSiblings {
     code_width: usize,
     first_party: Vec<String>,

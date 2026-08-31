@@ -7,7 +7,7 @@ export PROSE_IMPORTS_PYTHON="${PROSE_IMPORTS_PYTHON:-$(command -v python)}"
 
 cargo test \
   --locked \
-  --profile "${PROSE_IMPORTS_PROFILE:-release}" \
+  --profile probe \
   --test imports \
   -- \
   --ignored \

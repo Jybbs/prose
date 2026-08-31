@@ -2,13 +2,14 @@
 //! every module the formatter rewrote from both trees, and each break
 //! confirmed and attributed.
 
-use std::{collections::BTreeMap, env, num::NonZeroUsize, path::Path, sync::Mutex};
+use std::{collections::BTreeMap, num::NonZeroUsize, path::Path, sync::Mutex};
 
 use prose::{config::Config, pipeline::Pipeline};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
     attribution::Attributor,
+    common::setting,
     compare::{compare, divergence},
     corpus::candidates,
     execute::execute,
@@ -56,8 +57,7 @@ impl Sweep {
         Self {
             known: Mutex::new(BTreeMap::new()),
             python,
-            seconds: env::var(TIMEOUT_VAR)
-                .ok()
+            seconds: setting(TIMEOUT_VAR)
                 .and_then(|held| held.parse().ok())
                 .unwrap_or(TIMEOUT),
             stage: Stage::new(corpus),
@@ -118,10 +118,10 @@ impl Sweep {
         });
         let formatted = self.stage.copy(&format!("formatted-{label}"));
         let (fixes, refused) = format_tree(&formatted, &Pipeline::with_defaults(&config));
-        let modules = match env::var(MODULE_VAR) {
-            Ok(only) if !only.is_empty() => vec![only],
-            _ => candidates(&formatted, &self.stage.original),
-        };
+        let modules = setting(MODULE_VAR).map_or_else(
+            || candidates(&formatted, &self.stage.original),
+            |only| vec![only],
+        );
         let after = self.outcomes(&modules, &formatted);
         let before = self.originals(&modules);
         let (suspects, comparable, unmeasured) = compare(&after, &before, &modules);

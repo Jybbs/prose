@@ -37,10 +37,10 @@ mod report;
 mod stage;
 mod sweep;
 
-use std::{collections::BTreeSet, env, iter, num::NonZeroUsize, path::Path};
+use std::{collections::BTreeSet, iter, num::NonZeroUsize, path::Path};
 
 use crate::{
-    common::env_list,
+    common::{env_list, setting},
     corpus::interpreter,
     ratchet::{BAKE_VAR, bake, baseline, judge},
     report::render,
@@ -53,7 +53,7 @@ const PYTHON: &str = "python3";
 #[test]
 #[ignore = "the sweep executes a corpus and runs in its own row"]
 fn every_rewritten_module_still_imports() {
-    let python = env::var(PYTHON_VAR).unwrap_or_else(|_| PYTHON.to_owned());
+    let python = setting(PYTHON_VAR).unwrap_or_else(|| PYTHON.to_owned());
     let corpus = interpreter(&python);
     let sweep = Sweep::new(&corpus, python.clone());
     let widths = iter::once(None).chain(env_list(WIDTHS_VAR, &[], |width| {
@@ -91,7 +91,7 @@ fn every_rewritten_module_still_imports() {
         "a run left {} modules unmeasured, so the uncomparable count cannot be named",
         unmeasured.len(),
     );
-    if let Some(baked) = env::var_os(BAKE_VAR) {
+    if let Some(baked) = setting(BAKE_VAR) {
         let baked = Path::new(&baked);
         bake(baked, &found);
         println!("break set baked into {}", baked.display());

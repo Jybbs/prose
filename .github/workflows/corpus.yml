@@ -1,0 +1,253 @@
+name        : 🪻 Corpus
+run-name    : 🪻 Corpus · ${{ github.head_ref || github.ref_name }}
+permissions : { contents: read }
+
+env:
+  BASE : ${{ github.event.pull_request.base.sha || github.sha }}
+  REF  : ${{ github.head_ref || github.ref_name }}
+  SHA  : ${{ github.event.pull_request.head.sha || github.sha }}
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/corpus.yml
+      - .mise/config.toml
+      - .mise/lib/**
+      - .mise/tasks/gha/baseline
+      - .mise/tasks/gha/plan
+      - .mise/tasks/rust/bake
+      - .mise/tasks/rust/delta
+      - .mise/tasks/rust/probe
+      - .mise/tasks/rust/settle
+      - .mise/tasks/rust/subsets
+      - Cargo.lock
+      - Cargo.toml
+      - crate/Cargo.toml
+      - crate/src/**
+      - crate/tests/common/**
+      - crate/tests/corpus.rs
+      - crate/tests/settle.rs
+
+  push:
+    branches:
+      - main
+    paths:
+      - .github/actions/**
+      - .github/workflows/corpus.yml
+      - .mise/config.toml
+      - .mise/lib/**
+      - .mise/tasks/rust/bake
+      - Cargo.lock
+      - Cargo.toml
+      - crate/Cargo.toml
+      - crate/src/**
+
+  workflow_dispatch:
+
+concurrency:
+  cancel-in-progress : ${{ github.event_name == 'pull_request' }}
+  group              : ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+
+jobs:
+  plan:
+    name            : 🗺️ Plan
+    outputs         : { matrix: "${{ steps.matrix.outputs.matrix }}" }
+    runs-on         : &ubuntu ubuntu-latest
+    timeout-minutes : &timeout 15
+
+    steps:
+      - &checkout
+        name : Check out repository
+        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+      - &provision-uv
+        name : Provision uv
+        uses : ./.github/actions/provision-uv
+        with : { save: &no-save 'false' }
+
+      - name : Scope the subset probe
+        id   : matrix
+        run  : mise run gha:plan corpus
+
+  bake:
+    name            : 🧱 Bake
+    if              : ${{ github.event_name != 'pull_request' }}
+    permissions     : { actions: write, contents: read }
+    runs-on         : *ubuntu
+    timeout-minutes : &sweep 30
+
+    steps:
+      - *checkout
+
+      - &provision-cargo
+        name : Provision Cargo
+        uses : ./.github/actions/provision-cargo
+        with:
+          save       : *no-save
+          shared-key : prose-probe
+
+      - &interpreter
+        name : Read the pinned interpreter
+        id   : python
+        run  : |
+          mise x -- python -c '
+          import sys, sysconfig
+          print("corpus=" + sysconfig.get_paths()["stdlib"])
+          print("version=" + sys.version.split()[0])
+          ' >> "$GITHUB_OUTPUT"
+
+      - name : Look up the mutation set
+        id   : mutations
+        uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          key         : &mutations-key corpus-mutations-${{ steps.python.outputs.version }}-${{ hashFiles('sweeps/src/bin/mutate.rs', 'sweeps/Cargo.toml') }}
+          lookup-only : true
+          path        : &mutations-path ${{ runner.temp }}/mutations
+
+      - name : Bake the baseline stage and the mutation set
+        env:
+          PROSE_DELTA_STAGE      : ${{ runner.temp }}/stage
+          PROSE_SETTLE_MUTATIONS : ${{ steps.mutations.outputs.cache-hit != 'true' && format('{0}/mutations', runner.temp) || '' }}
+        run  : mise run rust:bake
+
+      - name : Save the baseline stage
+        uses : actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          key  : corpus-stage-${{ steps.python.outputs.version }}-${{ github.sha }}
+          path : ${{ runner.temp }}/stage/.git
+
+      - name : Save the mutation set
+        if   : ${{ steps.mutations.outputs.cache-hit != 'true' }}
+        uses : actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          key  : *mutations-key
+          path : *mutations-path
+
+      - name : Drop the stages this bake replaces
+        env:
+          GH_TOKEN : ${{ github.token }}
+          KEPT     : corpus-stage-${{ steps.python.outputs.version }}-${{ github.sha }}
+          PREFIX   : corpus-stage-${{ steps.python.outputs.version }}-
+        run  : |
+          gh api "repos/$GITHUB_REPOSITORY/actions/caches?per_page=100" \
+            --jq '.actions_caches[]
+                  | select(.key | startswith(env.PREFIX))
+                  | select(.key != env.KEPT)
+                  | .id' \
+            | xargs -r -I {} gh api --method DELETE \
+              "repos/$GITHUB_REPOSITORY/actions/caches/{}"
+
+  settle:
+    name            : ⚓ Settle
+    if              : &pull-request ${{ github.event_name == 'pull_request' }}
+    runs-on         : *ubuntu
+    timeout-minutes : *sweep
+
+    steps:
+      - *checkout
+
+      - *provision-cargo
+
+      - *interpreter
+
+      - name : Sweep the corpus at every width and axis
+        run  : mise run rust:settle "${{ steps.python.outputs.corpus }}"
+
+  mutations:
+    name            : 🎨 Mutations
+    if              : *pull-request
+    runs-on         : *ubuntu
+    timeout-minutes : *sweep
+
+    steps:
+      - *checkout
+
+      - *provision-cargo
+
+      - *interpreter
+
+      - name : Restore the mutation set
+        id   : mutations
+        uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          key  : *mutations-key
+          path : *mutations-path
+
+      - name : Format every mutation of the corpus
+        env  : { PROSE_SETTLE_MUTATIONS: "${{ runner.temp }}/mutations" }
+        run  : mise run rust:mutations "${{ steps.python.outputs.corpus }}" 600
+
+  delta:
+    name            : 🦋 Delta
+    if              : *pull-request
+    runs-on         : *ubuntu
+    timeout-minutes : *sweep
+
+    steps:
+      - *checkout
+
+      - *provision-cargo
+
+      - *interpreter
+
+      - name : Restore the baseline stage
+        id   : stage
+        uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          key          : corpus-stage-${{ steps.python.outputs.version }}-${{ env.BASE }}
+          path         : ${{ runner.temp }}/stage/.git
+          restore-keys : corpus-stage-${{ steps.python.outputs.version }}-
+
+      - name : Serve or rebake the baseline
+        env:
+          RESTORED : ${{ steps.stage.outputs.cache-matched-key }}
+          STAGE    : ${{ runner.temp }}/stage
+        run  : mise run gha:baseline
+
+      - name : Format the head at every width against the baseline
+        env:
+          PROSE_DELTA_STAGE : ${{ runner.temp }}/stage
+        run  : mise run rust:delta
+
+  subsets:
+    name            : ${{ matrix.label }}
+    needs           : plan
+    runs-on         : *ubuntu
+    timeout-minutes : *sweep
+
+    strategy:
+      fail-fast : false
+      matrix    : ${{ fromJSON(needs.plan.outputs.matrix) }}
+
+    steps:
+      - *checkout
+
+      - *provision-cargo
+
+      - name : Probe every rule alone and every pair touching the family
+        env:
+          PROSE_SETTLE_PAIRS : ${{ matrix.pairs }}
+          PROSE_SETTLE_RULES : ${{ matrix.rules }}
+        run  : mise run rust:subsets
+
+  gate:
+    name            : 🗞️ Brief
+    if              : always()
+    needs           : [bake, delta, mutations, plan, settle, subsets]
+    runs-on         : *ubuntu
+    timeout-minutes : *timeout
+
+    steps:
+      - *checkout
+
+      - *provision-uv
+
+      - name : Summarize and gate
+        env:
+          BAKE      : ${{ needs.bake.result }}
+          DELTA     : ${{ needs.delta.result }}
+          MUTATIONS : ${{ needs.mutations.result }}
+          PLAN      : ${{ needs.plan.result }}
+          SETTLE    : ${{ needs.settle.result }}
+          SUBSETS   : ${{ needs.subsets.result }}
+        run  : mise run gha:brief corpus

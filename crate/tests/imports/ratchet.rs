@@ -4,11 +4,13 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    env,
     path::Path,
 };
 
-use crate::records::{Break, Width};
+use crate::{
+    common::setting,
+    records::{Break, Width},
+};
 
 /// The environment variable naming a file the break set is written to.
 pub(crate) const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
@@ -36,7 +38,7 @@ pub(crate) fn bake(path: &Path, widths: &[Width]) {
 
 /// The break set [`BASELINE_VAR`] names, empty where the variable is unset.
 pub(crate) fn baseline() -> Baseline {
-    let Some(named) = env::var_os(BASELINE_VAR) else {
+    let Some(named) = setting(BASELINE_VAR) else {
         return Baseline::new();
     };
     let held = fs_err::read_to_string(Path::new(&named)).expect("read the baseline");
