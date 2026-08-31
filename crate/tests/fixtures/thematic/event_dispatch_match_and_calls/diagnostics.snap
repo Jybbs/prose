@@ -1,6 +1,6 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/thematic/event_dispatch_match_and_calls/input.py
 ---
 align-match-case@335..440
@@ -10,6 +10,7 @@ bare-imports@32..39
 expand-docstrings@90..120
 frame-docstrings@516..555
 group-imports@0..39
+inlinable-bindings@560..566
 reflow-calls@229..312
 reflow-collections@570..637
 signature-annotations@46..54
@@ -18,6 +19,5 @@ signature-annotations@501..508
 signature-annotations@55..60
 signature-annotations@62..70
 signature-annotations@72..80
-single-use-variables@560..566
 space-statements@24..25
 unsorted-positionals@54..81

@@ -1,0 +1,33 @@
+---
+source: tests/integration.rs
+expression: json
+input_file: tests/fixtures/inlinable_bindings/every_unpack_target_subscripted/input.py
+---
+[
+  {
+    "code": "inlinable-bindings",
+    "end_location": {
+      "column": 10,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "`first` is assigned and used once. Consider inlining `batch[0]`"
+  },
+  {
+    "code": "inlinable-bindings",
+    "end_location": {
+      "column": 18,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 2
+    },
+    "message": "`second` is assigned and used once. Consider inlining `batch[1]`"
+  }
+]

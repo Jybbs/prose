@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Non-Assignment Write Kinds Are Exempt"
-
-description = '''
-`arg`, `value`, `fp`, `err`, and `os` in `kinds` are each written once and read once, the shape `single-use-variables` flags for a plain assignment, yet none of them is reported. **The rule only reports assignments and walrus bindings**, so a function parameter, a `for` target, a `with` target, an `except` handler name, and an `import` binding all stay exempt, none of them having a right-hand side a rewrite could inline.
-'''

@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/inlinable_bindings/if_body_read_still_flags/input.py
+---
+[
+  {
+    "code": "inlinable-bindings",
+    "end_location": {
+      "column": 10,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "`total` is assigned and used once. Consider inlining `sum(data)`"
+  }
+]

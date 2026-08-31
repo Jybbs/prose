@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `global` Declaration Skips the Whole Function"
+
+description = '''
+`updater` declares `global counter`, so `inlinable-bindings` **skips the whole function** rather than reasoning about `next_value` in isolation, because tracking whether `counter` is truly single-use would mean following the binding out to module scope. The exemption covers the entire function body, not just the `global` line.
+'''

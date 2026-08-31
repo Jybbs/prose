@@ -1,7 +1,7 @@
 ---
 caption : "Drops an import binding nothing references and a repeat of a binding an earlier import already made, reporting the one a package `__init__.py` re-exports."
 lints   : true
-related : [bare-imports, group-imports, modernize-annotations, single-use-variables]
+related : [bare-imports, group-imports, inlinable-bindings, modernize-annotations]
 layout  : doc
 ---
 
@@ -9,7 +9,7 @@ layout  : doc
 
 <RuleLayout rule="prune_inert_imports">
 
-`prune-inert-imports` drops an import binding a name nothing references under `drop-unreferenced`, and a second import rebinding a name already bound under `drop-duplicates`, resolving both against the binding table [[single-use-variables]] reads.
+`prune-inert-imports` drops an import binding a name nothing references under `drop-unreferenced`, and a second import rebinding a name already bound under `drop-duplicates`, resolving both against the binding table [[inlinable-bindings]] reads.
 
 <Fixture rule="prune_inert_imports" case="repeat_and_unread_member_both_go" />
 

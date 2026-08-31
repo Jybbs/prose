@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Walrus Expression's Own Value Counts as a Use"
+
+description = '''
+`total := len(items)` hands its value to the `print` call around it, which is one use, and `return total` is a second. **`total` reaches two uses and goes unreported**, the reading every walrus target takes wherever anything consumes it.
+'''

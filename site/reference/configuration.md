@@ -110,7 +110,7 @@ code-line-length = 200
 paths = ["tests/**"]
 
 [overrides.rules]
-single-use-variables = false
+inlinable-bindings = false
 ```
 
 Globs anchor to the declaring config's directory, so `tests/**` matches the `tests/` beside the config rather than at any depth below it. The array-of-tables shape keeps a multi-facet override readable across lines, where a glob-keyed inline table would crowd it onto one against *Prose*'s legibility mandate. When several entries match one file, *Prose* layers their bodies in document order, leaving the last matching entry to win each facet it sets while the earlier entries' other facets stay in place.

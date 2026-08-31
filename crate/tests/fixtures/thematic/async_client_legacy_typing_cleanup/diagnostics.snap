@@ -12,6 +12,7 @@ bare-imports@187..194
 bare-imports@202..206
 expand-docstrings@765..809
 group-imports@35..206
+inlinable-bindings@817..823
 modernize-annotations@218..219
 modernize-annotations@292..309
 modernize-annotations@59..125
@@ -30,7 +31,6 @@ signature-annotations@1494..1499
 signature-annotations@657..661
 signature-annotations@731..734
 signature-annotations@875..881
-single-use-variables@817..823
 space-statements@1002..1003
 space-statements@1429..1430
 space-statements@164..165

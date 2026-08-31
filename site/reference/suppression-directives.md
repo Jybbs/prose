@@ -59,7 +59,7 @@ A skip reaches the rewrite rules alone, so lint diagnostics on the statement sti
 
 ```python
 SCREAMING_CONSTANT = 42  # prose: ignore[reassigned-constants]
-TIMEOUT = 30             # prose: ignore[reassigned-constants, single-use-variables]
+TIMEOUT = 30             # prose: ignore[reassigned-constants, inlinable-bindings]
 helper = build_helper()  # prose: ignore
 ```
 
@@ -85,11 +85,11 @@ A single line can carry one block marker, one `# fmt: skip` *(or its `# prose: s
 
 ```python
 # fmt: off
-data = build()  # prose: ignore[reassigned-constants]  # prose: ignore[single-use-variables]
+data = build()  # prose: ignore[reassigned-constants]  # prose: ignore[inlinable-bindings]
 # fmt: on
 ```
 
-The same line carries the block marker pair *(opening and closing on the surrounding lines)*, plus two bracketed line directives whose rule lists merge into `{reassigned-constants, single-use-variables}`. A bare `# prose: ignore` anywhere on the line would override both into a widen-to-every-rule.
+The same line carries the block marker pair *(opening and closing on the surrounding lines)*, plus two bracketed line directives whose rule lists merge into `{reassigned-constants, inlinable-bindings}`. A bare `# prose: ignore` anywhere on the line would override both into a widen-to-every-rule.
 
 ::: warning Malformed Directives No-Op
 A malformed directive *(unclosed brackets, misspelled keyword, trailing text after `ignore`)* parses as a no-op, surfacing nothing and rewriting nothing.

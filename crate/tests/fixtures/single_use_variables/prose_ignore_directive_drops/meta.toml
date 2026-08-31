@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A `# prose: ignore` Directive Drops the Diagnostic"
-
-description = '''
-`x = expensive(arg)` carries a trailing `# prose: ignore[single-use-variables]` comment, **so the diagnostic that line would otherwise report is dropped**. The suppression is applied after the rule runs, filtering its lint output by line rather than changing what the rule itself detects.
-'''

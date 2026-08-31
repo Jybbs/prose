@@ -3,5 +3,5 @@ source: crate/tests/integration.rs
 expression: render(&diagnostics)
 input_file: crate/tests/fixtures/suppression/skip_leaves_lint_diagnostics_alone/input.py
 ---
-single-use-variables@32..37
-single-use-variables@83..88
+inlinable-bindings@32..37
+inlinable-bindings@83..88

@@ -13,7 +13,7 @@ use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
-    primitives::walk::filter_map_over_exprs,
+    primitives::walk::{Descent, filter_map_over_exprs},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -42,7 +42,7 @@ impl Rule for SimplifyComprehensions {
             .filter(|ctor| analysis.binds_name(ctor.as_str()))
             .collect();
         let mut claimed: Vec<TextRange> = Vec::new();
-        filter_map_over_exprs(&source.ast().body, |expr| {
+        filter_map_over_exprs(&source.ast().body, Descent::Over, |expr| {
             let plan = plan_for(expr, &rebound)?;
             let edits = edits_for(source, expr, &plan)?;
             if edits.iter().any(|edit| overlaps(&claimed, edit.range())) {

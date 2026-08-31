@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/annotated_assignment_names_its_value/input.py
+---
+def parse(raw):
+    parsed: int = int(raw)
+    return parsed + 1

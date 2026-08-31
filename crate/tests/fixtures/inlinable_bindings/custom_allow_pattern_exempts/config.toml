@@ -1,0 +1,2 @@
+[rules]
+inlinable-bindings = { allow-pattern = "tmp_*" }

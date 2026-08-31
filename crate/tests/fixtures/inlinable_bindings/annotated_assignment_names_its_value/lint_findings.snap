@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/inlinable_bindings/annotated_assignment_names_its_value/input.py
+---
+[
+  {
+    "code": "inlinable-bindings",
+    "end_location": {
+      "column": 11,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "`parsed` is assigned and used once. Consider inlining `int(raw)`"
+  }
+]

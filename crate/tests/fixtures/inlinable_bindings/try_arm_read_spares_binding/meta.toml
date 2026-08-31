@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Read Inside an `except` Arm Spares the Binding"
+
+description = '''
+`default` is written above the `try` and read once inside the `except OSError` arm. **The binding stays unreported**, because inlining would move `fallback or {}` under a guard written to cover the `read_json` call rather than the fallback.
+'''

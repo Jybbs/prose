@@ -5,7 +5,7 @@ input_file: tests/fixtures/composition/align_run_then_flag_once_used/input.py
 ---
 [
   {
-    "code": "single-use-variables",
+    "code": "inlinable-bindings",
     "end_location": {
       "column": 9,
       "row": 2
@@ -18,7 +18,7 @@ input_file: tests/fixtures/composition/align_run_then_flag_once_used/input.py
     "message": "`base` is assigned and used once. Consider inlining `data * 2`"
   },
   {
-    "code": "single-use-variables",
+    "code": "inlinable-bindings",
     "end_location": {
       "column": 11,
       "row": 5
@@ -31,7 +31,7 @@ input_file: tests/fixtures/composition/align_run_then_flag_once_used/input.py
     "message": "`result` is assigned and used once. Consider inlining `used_twice + offset`"
   },
   {
-    "code": "single-use-variables",
+    "code": "inlinable-bindings",
     "end_location": {
       "column": 15,
       "row": 4

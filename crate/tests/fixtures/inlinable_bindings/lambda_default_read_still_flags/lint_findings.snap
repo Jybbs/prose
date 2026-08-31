@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/inlinable_bindings/lambda_default_read_still_flags/input.py
+---
+[
+  {
+    "code": "inlinable-bindings",
+    "end_location": {
+      "column": 8,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "`sep` is assigned and used once. Consider inlining `\", \"`"
+  }
+]

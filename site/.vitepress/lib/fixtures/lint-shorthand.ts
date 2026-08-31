@@ -72,9 +72,9 @@ export function lintShorthand(input: ShorthandInput): Shorthand | null {
       return flagged && suggested
         ? { anchor : flagged, inserted : truncate(suggested), kind : 'insert' }
         : null
-    case 'single-use-variables': {
+    case 'inlinable-bindings': {
       // `flagged` spans the binding name, leaving the inlined value to come
-      // from single_use_variables.rs's "Consider inlining `<value>`" message.
+      // from inlinable_bindings's "Consider inlining `<value>`" message.
       const inlined = /Consider inlining `([^`]+)`/.exec(message)?.[1]
       return flagged && inlined
         ? replacement(flagged, truncate(inlined))

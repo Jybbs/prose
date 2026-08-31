@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/inlinable_bindings/call_unpack_resolves_no_replacement/input.py
+---
+def fetch():
+    name, value = lookup()
+    return render(name, value)

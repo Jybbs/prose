@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Read Inside a `with` Body Spares the Binding"
+
+description = '''
+`encoded` is written above the `with` and read once inside it, so inlining would run `payload.encode()` with the file already open. **The binding stays unreported**, the same disposition a `try` arm read takes.
+'''

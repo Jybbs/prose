@@ -62,6 +62,7 @@ impl<'src, F: FnMut(&'src Stmt) -> Option<T>, T> StatementVisitor<'src> for Coll
 
 struct ExprCollector<F, T> {
     found: Vec<T>,
+    interpolations: Descent,
     probe: F,
 }
 
@@ -71,8 +72,11 @@ impl<'src, F: FnMut(&Expr) -> Option<T>, T> Visitor<'src> for ExprCollector<F, T
         walk_expr(self, expr);
     }
 
-    /// Leaves a replacement field unwalked.
-    fn visit_interpolated_string_element(&mut self, _: &'src InterpolatedStringElement) {}
+    fn visit_interpolated_string_element(&mut self, element: &'src InterpolatedStringElement) {
+        if matches!(self.interpolations, Descent::Into) {
+            visitor::walk_interpolated_string_element(self, element);
+        }
+    }
 }
 
 /// True when any statement in `body` satisfies `hit`, descending through
@@ -86,14 +90,16 @@ pub(crate) fn any_over_stmts(body: &[Stmt], hit: impl FnMut(&Stmt) -> bool) -> b
 
 /// Every `Some` that `probe` returns over each expression in `body`,
 /// descending through every compound body including nested `def` and
-/// `class` scopes. An expression inside an f-string or t-string
-/// replacement field is not visited.
+/// `class` scopes. `interpolations` decides whether the walk reads the
+/// interior of an f-string or t-string replacement field.
 pub(crate) fn filter_map_over_exprs<T>(
     body: &[Stmt],
+    interpolations: Descent,
     probe: impl FnMut(&Expr) -> Option<T>,
 ) -> Vec<T> {
     let mut collector = ExprCollector {
         found: Vec::new(),
+        interpolations,
         probe,
     };
     collector.visit_body(body);
@@ -155,7 +161,7 @@ mod tests {
 
     /// The entry count of every dict literal in `src`, in walk order.
     fn dict_sizes(src: &str) -> Vec<usize> {
-        filter_map_over_exprs(&parse(src).ast().body, |expr| {
+        filter_map_over_exprs(&parse(src).ast().body, Descent::Over, |expr| {
             Some(expr.as_dict_expr()?.len())
         })
     }

@@ -25,7 +25,7 @@ function flaggedText(finding: LintFinding, lines: readonly string[]): string {
 describe('lintShorthand', () => {
   it.each([
     [
-      { flagged: 'tmp', message: 'Consider inlining `compute()`', rule: 'single-use-variables' },
+      { flagged: 'tmp', message: 'Consider inlining `compute()`', rule: 'inlinable-bindings' },
       { after: 'compute()', before: 'tmp', kind: 'replace' }
     ],
     [
@@ -74,8 +74,8 @@ describe('lintShorthand', () => {
     ['a reassigned-constants without a backticked name', { flagged: '', message: 'no name here', rule: 'reassigned-constants' }],
     ['a signature-annotations without an annotation',    { flagged: 'count', message: '', rule: 'signature-annotations' }],
     ['a signature-annotations without a flagged span',   { flagged: '', message: '', rule: 'signature-annotations', suggested: ': int' }],
-    ['a single-use-variables without an inlining hint',  { flagged: 'x', message: 'nope', rule: 'single-use-variables' }],
-    ['a single-use-variables without a flagged span',    { flagged: '', message: 'Consider inlining `y`', rule: 'single-use-variables' }]
+    ['an inlinable-bindings without an inlining hint',  { flagged: 'x', message: 'nope', rule: 'inlinable-bindings' }],
+    ['an inlinable-bindings without a flagged span',    { flagged: '', message: 'Consider inlining `y`', rule: 'inlinable-bindings' }]
   ])('returns null for %s', (_name, input) => {
     expect(lintShorthand(input)).toBeNull()
   })

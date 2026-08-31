@@ -1,6 +1,6 @@
 ---
 caption : "Surfaces comments that narrate the next line."
-related : [reassigned-constants, single-use-variables]
+related : [inlinable-bindings, reassigned-constants]
 layout  : doc
 ---
 
