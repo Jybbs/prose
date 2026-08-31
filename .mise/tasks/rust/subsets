@@ -4,4 +4,4 @@
 
 source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
 
-settle_corpus "${1:-}" --profile probe --test settle
+settle_corpus "${1:-}" settle

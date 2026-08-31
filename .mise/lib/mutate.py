@@ -33,6 +33,7 @@ from concurrent.futures import ProcessPoolExecutor, TimeoutError, as_completed
 from keyword            import iskeyword, issoftkeyword
 from pathlib            import Path
 from random             import Random
+from typing             import NamedTuple
 from warnings           import filterwarnings
 
 from libcst import (
@@ -42,30 +43,57 @@ from libcst import (
 )
 from libcst.matchers import MatchIfTrue, findall, replace
 
+
+class Nodes(NamedTuple):
+    """
+    The nodes one walk gathers, bucketed by the kind each mutation reads.
+    """
+
+    calls: list[Call]
+    classes: list[ClassDef]
+    lines: list[SimpleStatementLine]
+    names: list[Name]
+    statements: list[BaseStatement]
+
+KINDS = (BaseCompoundStatement, Call, ClassDef, Name, SimpleStatementLine)
+
 SAMPLE = 8
 
 filterwarnings("ignore", category=SyntaxWarning)
 
 
-def collect(module: Module, *kinds: type) -> list[CSTNode]:
+def collected(module: Module) -> Nodes:
     """
-    Return every node of `kinds` that `module` holds, in source order.
+    Return every node the mutations read, gathered in one walk and kept in
+    source order, with both statement kinds interleaved as they appear.
     """
-    return findall(module, MatchIfTrue(lambda node: isinstance(node, kinds)))
+    found = Nodes([], [], [], [], [])
+    for node in findall(module, MatchIfTrue(lambda node: isinstance(node, KINDS))):
+        if isinstance(node, Call):
+            found.calls.append(node)
+        if isinstance(node, ClassDef):
+            found.classes.append(node)
+        if isinstance(node, Name):
+            found.names.append(node)
+        if isinstance(node, SimpleStatementLine):
+            found.lines.append(node)
+        if isinstance(node, (BaseCompoundStatement, SimpleStatementLine)):
+            found.statements.append(node)
+    return found
 
 
-def commented(module: Module, rng: Random) -> Module | None:
+def commented(module: Module, nodes: Nodes, rng: Random) -> Module | None:
     """
     Return `module` with a comment line leading a sample of its statements,
     each at that statement's own indent. `None` when it holds no statement.
     """
-    statements = collect(module, SimpleStatementLine, BaseCompoundStatement)
+    statements = nodes.statements
     if not statements:
         return None
     return rewrite(module, rng.sample(statements, k=min(len(statements), SAMPLE)), lambda node: led(node, "# probe"))
 
 
-def crlf(module: Module, _rng: Random) -> Module | None:
+def crlf(module: Module, _nodes: Nodes, _rng: Random) -> Module | None:
     """
     Return `module` with every line ending rewritten to CRLF. `None` when
     it carries no line ending to rewrite.
@@ -124,14 +152,14 @@ def led(statement: BaseStatement, comment: str, first: bool = False) -> BaseStat
     return statement.with_changes(leading_lines=lines)
 
 
-def members(module: Module, rng: Random) -> Module | None:
+def members(module: Module, nodes: Nodes, rng: Random) -> Module | None:
     """
     Return `module` with each class body's members reordered behind its
     docstring. `None` when no class holds two members free to move.
     """
     classes = [
         node
-        for node in collect(module, ClassDef)
+        for node in nodes.classes
         if isinstance(node.body, IndentedBlock) and len(partition(node.body.body, leads)[1]) >= 2
     ]
     if not classes:
@@ -164,12 +192,12 @@ def mutated(path: Path, corpus: Path, destination: Path, seed: str) -> int:
     return written
 
 
-def parenthesized(module: Module, rng: Random) -> Module | None:
+def parenthesized(module: Module, nodes: Nodes, rng: Random) -> Module | None:
     """
     Return `module` with every argument of a sample of its calls wrapped
     in redundant parentheses. `None` when no call takes an argument.
     """
-    calls = [node for node in collect(module, Call) if node.args]
+    calls = [node for node in nodes.calls if node.args]
     if not calls:
         return None
     return rewrite(
@@ -235,7 +263,7 @@ def rewrite(module: Module, chosen: list[CSTNode], edit: Callable) -> Module:
     return replace(module, MatchIfTrue(lambda node: id(node) in picked), lambda node, _: edit(node))
 
 
-def shuffled(module: Module, rng: Random) -> Module | None:
+def shuffled(module: Module, _nodes: Nodes, rng: Random) -> Module | None:
     """
     Return `module` with its top-level statements reordered, each keeping
     the lines it owns. A `__future__` import and a leading docstring hold
@@ -261,13 +289,13 @@ def skipped(line: SimpleStatementLine) -> SimpleStatementLine:
     return line.with_changes(trailing_whitespace=trailing)
 
 
-def suppressed(module: Module, rng: Random) -> Module | None:
+def suppressed(module: Module, nodes: Nodes, rng: Random) -> Module | None:
     """
     Return `module` with a `# prose: off` region wrapped around one
     top-level statement and a `# prose: skip` closing one logical line.
     `None` when it holds no top-level statement or no simple line.
     """
-    lines = collect(module, SimpleStatementLine)
+    lines = nodes.lines
     if not module.body or not lines:
         return None
     module = rewrite(module, [rng.choice(lines)], skipped)
@@ -288,9 +316,10 @@ def variants(text: str, rng: Random) -> dict[str, str]:
     module = parsed(text)
     if module is None:
         return {}
+    nodes = collected(module)
     built = {}
     for mutation in MUTATIONS:
-        candidate = mutation(module, rng)
+        candidate = mutation(module, nodes, rng)
         if candidate is None:
             continue
         code = candidate.code
@@ -302,13 +331,13 @@ def variants(text: str, rng: Random) -> dict[str, str]:
     return built
 
 
-def widened(module: Module, rng: Random) -> Module | None:
+def widened(module: Module, nodes: Nodes, rng: Random) -> Module | None:
     """
     Return `module` with a sample of its identifiers lengthened or
     shortened, shifting every column their width feeds. `None` when it
     carries no renameable name.
     """
-    names   = collect(module, Name)
+    names   = nodes.names
     renames = rename_map(sorted({node.value for node in names if not is_reserved(node.value)}), rng)
     if not renames:
         return None

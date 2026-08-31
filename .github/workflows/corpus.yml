@@ -69,10 +69,8 @@ jobs:
         id   : matrix
         run  : mise run gha:plan corpus
 
-  bake:
-    name            : 🧱 Bake
-    if              : ${{ github.event_name != 'pull_request' }}
-    permissions     : { actions: write, contents: read }
+  probe:
+    name            : 🔦 Probe
     runs-on         : *ubuntu
     timeout-minutes : &sweep 30
 
@@ -85,6 +83,38 @@ jobs:
         with:
           save       : *no-save
           shared-key : prose-probe
+
+      - name : Stage the probe binary and the sweep harnesses
+        run  : mise run rust:forge dist
+
+      - name : Upload them
+        uses : actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name           : probe
+          path           : dist
+          retention-days : 1
+
+  bake:
+    name            : 🧱 Bake
+    if              : ${{ github.event_name != 'pull_request' }}
+    needs           : probe
+    permissions     : { actions: write, contents: read }
+    runs-on         : *ubuntu
+    timeout-minutes : *sweep
+
+    steps:
+      - *checkout
+
+      - *provision-cargo
+
+      - &staged
+        name : Take the staged probe binaries
+        uses : actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with : { name: probe, path: dist }
+
+      - &executable
+        name : Make the staged binaries executable
+        run  : chmod +x dist/*
 
       - &interpreter
         name : Read the pinned interpreter
@@ -107,6 +137,7 @@ jobs:
       - name : Bake the baseline stage and the mutation set
         env:
           PROSE_DELTA_STAGE      : ${{ runner.temp }}/stage
+          PROSE_SETTLE_BIN       : ${{ github.workspace }}/dist
           PROSE_SETTLE_MUTATIONS : ${{ steps.mutations.outputs.cache-hit != 'true' && format('{0}/mutations', runner.temp) || '' }}
         run  : mise run rust:bake
 
@@ -140,6 +171,7 @@ jobs:
   settle:
     name            : ⚓ Settle
     if              : &pull-request ${{ github.event_name == 'pull_request' }}
+    needs           : probe
     runs-on         : *ubuntu
     timeout-minutes : *sweep
 
@@ -148,14 +180,20 @@ jobs:
 
       - *provision-cargo
 
+      - *staged
+
+      - *executable
+
       - *interpreter
 
       - name : Sweep the corpus at every width and axis
+        env  : { PROSE_SETTLE_BIN: "${{ github.workspace }}/dist" }
         run  : mise run rust:settle "${{ steps.python.outputs.corpus }}"
 
   mutations:
     name            : 🎨 Mutations
     if              : *pull-request
+    needs           : probe
     runs-on         : *ubuntu
     timeout-minutes : *sweep
 
@@ -163,6 +201,10 @@ jobs:
       - *checkout
 
       - *provision-cargo
+
+      - *staged
+
+      - *executable
 
       - *interpreter
 
@@ -174,12 +216,15 @@ jobs:
           path : *mutations-path
 
       - name : Format every mutation of the corpus
-        env  : { PROSE_SETTLE_MUTATIONS: "${{ runner.temp }}/mutations" }
+        env:
+          PROSE_SETTLE_BIN       : ${{ github.workspace }}/dist
+          PROSE_SETTLE_MUTATIONS : ${{ runner.temp }}/mutations
         run  : mise run rust:mutations "${{ steps.python.outputs.corpus }}" 600
 
   delta:
     name            : 🦋 Delta
     if              : *pull-request
+    needs           : probe
     runs-on         : *ubuntu
     timeout-minutes : *sweep
 
@@ -187,6 +232,10 @@ jobs:
       - *checkout
 
       - *provision-cargo
+
+      - *staged
+
+      - *executable
 
       - *interpreter
 
@@ -208,11 +257,12 @@ jobs:
         env:
           PROSE_DELTA_MARKDOWN : 'true'
           PROSE_DELTA_STAGE    : ${{ runner.temp }}/stage
+          PROSE_SETTLE_BIN     : ${{ github.workspace }}/dist
         run  : mise run rust:delta
 
   subsets:
     name            : ${{ matrix.label }}
-    needs           : plan
+    needs           : [plan, probe]
     runs-on         : *ubuntu
     timeout-minutes : *sweep
 
@@ -225,8 +275,13 @@ jobs:
 
       - *provision-cargo
 
+      - *staged
+
+      - *executable
+
       - name : Probe every rule alone and every pair touching the family
         env:
+          PROSE_SETTLE_BIN   : ${{ github.workspace }}/dist
           PROSE_SETTLE_PAIRS : ${{ matrix.pairs }}
           PROSE_SETTLE_RULES : ${{ matrix.rules }}
         run  : mise run rust:subsets
@@ -234,7 +289,7 @@ jobs:
   gate:
     name            : 🗞️ Brief
     if              : always()
-    needs           : [bake, delta, mutations, plan, settle, subsets]
+    needs           : [bake, delta, mutations, plan, probe, settle, subsets]
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 
@@ -249,6 +304,7 @@ jobs:
           DELTA     : ${{ needs.delta.result }}
           MUTATIONS : ${{ needs.mutations.result }}
           PLAN      : ${{ needs.plan.result }}
+          PROBE     : ${{ needs.probe.result }}
           SETTLE    : ${{ needs.settle.result }}
           SUBSETS   : ${{ needs.subsets.result }}
         run  : mise run gha:brief corpus

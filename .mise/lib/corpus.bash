@@ -15,7 +15,11 @@ scratch_dir() {
 }
 
 settle_corpus() {
-  local corpus
+  local corpus harness="$2"
   corpus=$(corpus_root "$1") || return
-  PROSE_SETTLE_CORPUS="$corpus" cargo test --locked "${@:2}"
+  if [[ -n "${PROSE_SETTLE_BIN:-}" ]]; then
+    PROSE_SETTLE_CORPUS="$corpus" "$PROSE_SETTLE_BIN/$harness"
+  else
+    PROSE_SETTLE_CORPUS="$corpus" cargo test --locked --profile probe --test "$harness"
+  fi
 }

@@ -1,0 +1,22 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias       = "forge"
+#MISE description = "Stage the probe binary and the sweep harnesses in a directory a later job runs them from"
+
+source "$MISE_PROJECT_ROOT/.mise/lib/delta.bash"
+
+dist="${1:-dist}"
+mkdir -p "$dist"
+
+cp "$(built_binary probe)" "$dist/prose"
+
+cargo test \
+  --locked \
+  --message-format json-render-diagnostics \
+  --no-run \
+  --profile probe \
+  --test corpus \
+  --test settle \
+  | jq -r 'select(.executable != null) | "\(.target.name) \(.executable)"' \
+  | while read -r name path; do cp "$path" "$dist/$name"; done
+
+printf '\nstaged in %s: %s\n' "$dist" "$(ls "$dist" | tr '\n' ' ')"

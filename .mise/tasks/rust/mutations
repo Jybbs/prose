@@ -45,10 +45,12 @@ budget="${2:-60}"
 binary=$(built_binary)
 
 mutations="${PROSE_SETTLE_MUTATIONS:-}"
-if [[ ! -d "$mutations" ]]; then
+if [[ ! -f "$mutations/.generated" ]]; then
   mutations="${mutations:-$(scratch_dir mutations)}"
   mutate_corpus "$corpus" "$mutations" "$budget"
+  touch "$mutations/.generated"
 fi
+rm -f "$mutations/.generated"
 
 while IFS= read -r variant; do
   mutation_pass "$variant"
