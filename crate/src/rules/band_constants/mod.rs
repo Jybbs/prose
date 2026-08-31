@@ -19,7 +19,7 @@ use crate::{
     config::Config,
     primitives::{
         imports::defers_annotations,
-        orderer::{any_sibling_shares_line, assembled_cell_edits, member_blocks},
+        orderer::{any_sibling_shares_line, member_blocks},
         sections::Sections,
     },
     rule::{Rule, RuleId},
@@ -32,6 +32,7 @@ mod plan;
 
 pub(crate) use self::plan::Carry;
 
+#[derive(Debug)]
 pub(crate) struct BandConstants {
     code_width: usize,
     first_party: Vec<String>,
@@ -118,20 +119,12 @@ impl Rule for BandConstants {
         if body.is_empty() {
             return Vec::new();
         }
-        let bander = Bander {
+        Bander {
             defer_annotations: defers_annotations(body),
             rule: self,
             source,
-        };
-        let layout = bander.band_layout(body, source.module_range());
-        assembled_cell_edits(
-            source,
-            &layout.blocks,
-            &layout.rendered,
-            &layout.order,
-            layout.forced(),
-            |i| bander.band_gap(&layout, body, i),
-        )
+        }
+        .band_edits(body, source.module_range())
     }
 
     fn id(&self) -> RuleId {

@@ -25,6 +25,7 @@ mod signals;
 use literals::{call_argument_literals, returns_value};
 use signals::SignalSet;
 
+#[derive(Debug)]
 pub(crate) struct SignatureAnnotations;
 
 impl SignatureAnnotations {

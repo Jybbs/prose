@@ -11,8 +11,7 @@ use super::PruneInertImports;
 use crate::{
     primitives::{
         binding::{BindingAnalysis, BindingKind},
-        slot_holding,
-        slots::slot_positions,
+        slots::{slot_holding, slot_positions},
         walk::for_each_annotation,
     },
     rules::band_constants::BandConstants,

@@ -10,7 +10,7 @@ use ruff_python_parser::parse_module;
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
-    primitives::{decorator::is_decorated, scope::sub_bodies, slot_holding},
+    primitives::{decorator::is_decorated, scope::sub_bodies, slots::item_holding},
     source::Source,
 };
 
@@ -109,9 +109,7 @@ fn splice_reparse<T, E>(
 /// The statement of `body` whose own range covers `range`, `None`
 /// where no single statement does.
 fn statement_covering(body: &[Stmt], range: TextRange) -> Option<&Stmt> {
-    slot_holding(body, range.start())
-        .map(|slot| &body[slot])
-        .filter(|stmt| range.end() <= stmt.end())
+    item_holding(body, range.start()).filter(|stmt| range.end() <= stmt.end())
 }
 
 /// The window `covering` reparses within, its own range or the whole

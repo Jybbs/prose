@@ -34,7 +34,7 @@ use crate::{
         layout::{is_layoutable, requires_expand},
         padding::Stranding,
         reserve::{Columns, Reservations},
-        slot_holding,
+        slots::item_holding,
         walk::filter_map_over_exprs,
     },
     suppression::SuppressionMap,
@@ -503,6 +503,16 @@ impl Source {
             .flatten()
     }
 
+    /// Parses Python source from an in-memory string, carrying `name`
+    /// the way a file-backed source carries its path.
+    ///
+    /// # Errors
+    ///
+    /// Returns the parse error the module parser draws from the text.
+    pub fn parse_named(text: String, name: &str) -> Result<Self, ParseError> {
+        Self::build_module(text, name, PySourceType::default())
+    }
+
     /// Parses `text` as a plain module, handing back the tree a probe
     /// rebuild clones rather than re-parsing per subset.
     pub(crate) fn parsed_module(text: &str) -> Result<Parsed<ModModule>, ParseError> {
@@ -680,6 +690,28 @@ impl Source {
     }
 }
 
+/// Clones the text, parsed tree, and comment indexes, leaving each lazy
+/// cache to fill on the copy's own first read.
+impl Clone for Source {
+    fn clone(&self) -> Self {
+        Self {
+            binding_analysis: OnceLock::new(),
+            cell_numbers: self.cell_numbers.clone(),
+            cell_offsets: self.cell_offsets.clone(),
+            columns: OnceLock::new(),
+            comment_ranges: self.comment_ranges.clone(),
+            expandable_literals: OnceLock::new(),
+            file: self.file.clone(),
+            line_ending: self.line_ending,
+            paren_followers: OnceLock::new(),
+            parsed: self.parsed.clone(),
+            source_type: self.source_type,
+            stranded_padding: OnceLock::new(),
+            suppression: self.suppression.clone(),
+        }
+    }
+}
+
 /// Parses Python source from an in-memory string.
 ///
 /// The resulting `Source` carries the synthetic name `<source>` for
@@ -688,7 +720,7 @@ impl FromStr for Source {
     type Err = ParseError;
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
-        Self::build_module(text.to_owned(), "<source>", PySourceType::default())
+        Self::parse_named(text.to_owned(), "<source>")
     }
 }
 
@@ -739,9 +771,7 @@ fn splits_statements(offset: TextSize, body: &[Stmt], text: &str) -> bool {
 /// Returns the statement of `body` that `offset` falls strictly inside,
 /// or `None` when `offset` sits at a statement's own start or between two.
 fn statement_spanning(offset: TextSize, body: &[Stmt]) -> Option<&Stmt> {
-    slot_holding(body, offset)
-        .map(|slot| &body[slot])
-        .filter(|stmt| stmt.start() < offset && offset < stmt.end())
+    item_holding(body, offset).filter(|stmt| stmt.start() < offset && offset < stmt.end())
 }
 
 #[cfg(test)]
@@ -884,6 +914,17 @@ mod tests {
     fn changed_from_returns_text_when_it_differs() {
         let s = Source::from_str("x = 1\n").expect("parses");
         assert_eq!(s.changed_from("y = 2\n"), Some("x = 1\n"));
+    }
+
+    #[test]
+    fn clone_carries_the_text_tree_and_suppression() {
+        let source = parse("# prose: off\nx = 1\n");
+
+        let copy = source.clone();
+
+        assert_eq!(copy.text(), source.text());
+        assert_eq!(copy.ast().body.len(), source.ast().body.len());
+        assert!(copy.suppression_map().file_is_suppressed());
     }
 
     #[test]
@@ -1138,6 +1179,15 @@ mod tests {
     fn parse_error_returns_ruff_parse_error() {
         let result: Result<Source, ParseError> = Source::from_str("def foo(");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_named_carries_the_name_a_file_backed_source_would() {
+        let named =
+            Source::parse_named("x = 1\n".to_owned(), "probe.py").expect("a named source parses");
+
+        assert_eq!(named.source_file().name(), "probe.py");
+        assert_eq!(parse("x = 1\n").source_file().name(), "<source>");
     }
 
     #[rstest]

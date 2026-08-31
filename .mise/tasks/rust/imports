@@ -1,0 +1,14 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias       = "imports"
+#MISE description = "Import each module of a corpus before and after formatting to catch a rewrite that breaks it"
+
+export PROSE_IMPORTS_MODULE="${1:-${PROSE_IMPORTS_MODULE:-}}"
+export PROSE_IMPORTS_PYTHON="${PROSE_IMPORTS_PYTHON:-$(command -v python)}"
+
+cargo test \
+  --locked \
+  --profile probe \
+  --test imports \
+  -- \
+  --ignored \
+  --nocapture

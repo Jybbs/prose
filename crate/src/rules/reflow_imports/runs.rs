@@ -28,6 +28,7 @@ use crate::{
 /// `band-constants` heads, forecast by a rule seated ahead of both
 /// whose drop of a comment-led statement then lands on the import the
 /// comment reads over.
+#[derive(Debug)]
 pub(crate) struct Folds {
     bands: Option<BandConstants>,
     merges: bool,

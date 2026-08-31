@@ -1,0 +1,9 @@
+## 🪻 Prose Corpus
+
+{{ check_mark }} Corpus sweep of {{ commit_link }} on `{{ ref }}`.
+
+| Job | Status |
+|---|---|
+{% for sweep in sweeps %}
+| {{ sweep.name }} | {{ sweep.mark }} |
+{% endfor %}

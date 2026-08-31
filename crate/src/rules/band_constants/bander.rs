@@ -5,6 +5,7 @@
 
 use std::borrow::Cow;
 
+use ruff_diagnostics::Edit;
 use ruff_python_ast::{Stmt, helpers::is_compound_statement};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
@@ -16,7 +17,7 @@ use super::{
 use crate::{
     primitives::{
         comments::TRAILING_GAP,
-        orderer::{any_sibling_shares_line, assemble_or_borrow, rendered_member_blocks},
+        orderer::{Assembly, any_sibling_shares_line, rendered_member_blocks},
         scope::{scoped_body, splice_compound_arms},
         sections::Sections,
     },
@@ -39,14 +40,47 @@ impl<'a> Bander<'a> {
     /// falling back to `Cow::Borrowed` over `source.slice(span)`.
     fn band_body(&self, body: &'a [Stmt], outer: TextRange) -> (Cow<'a, str>, TextRange) {
         let layout = self.band_layout(body, outer);
-        assemble_or_borrow(
-            self.source,
-            &layout.blocks,
-            &layout.rendered,
-            &layout.order,
-            layout.forced(),
-            |i| self.band_gap(&layout, body, i),
-        )
+        layout
+            .assembly
+            .or_borrow(self.source, layout.forced(), |i| {
+                self.band_gap(&layout, body, i)
+            })
+    }
+
+    /// The divider [`banded_gap`] places after new-order slot `i` of
+    /// `layout`, `None` when no band applies or the ranks abut with no gap.
+    fn band_gap(&self, layout: &BandLayout<'_>, body: &[Stmt], i: usize) -> Option<&'static str> {
+        layout.band.as_ref().and_then(|b| {
+            banded_gap(
+                b,
+                body,
+                &self.rule.first_party,
+                self.rule.group_imports,
+                self.source.line_ending(),
+                layout.assembly.order[i],
+                layout.assembly.order[i + 1],
+            )
+        })
+    }
+
+    /// Renders `body`, builds the module band over it, and moves each
+    /// carried comment onto the member it binds to, leaving the assembly
+    /// to the caller. The section partition walls each notebook cell, so
+    /// a band never crosses one.
+    fn band_layout(&self, body: &'a [Stmt], outer: TextRange) -> BandLayout<'a> {
+        let mut assembly = rendered_member_blocks(self.source, body, outer, |stmt, block| {
+            self.band_stmt(stmt, block)
+        });
+        let band = (!any_sibling_shares_line(self.source, body))
+            .then(|| {
+                let sections = Sections::of(self.source, &assembly.blocks);
+                self.band_module_constants(body, &assembly.blocks, &sections, &mut assembly.order)
+            })
+            .flatten();
+        if let Some(b) = &band {
+            apply_band_comments(self.source, body, b, &mut assembly.rendered);
+        }
+        BandLayout { assembly, band }
     }
 
     /// Builds the hoist plan over `body` and applies it to `order`,
@@ -84,69 +118,30 @@ impl<'a> Bander<'a> {
         Cow::Borrowed(self.source.slice(block))
     }
 
-    /// The divider [`banded_gap`] places after new-order slot `i` of
-    /// `layout`, `None` when no band applies or the ranks abut with no gap.
-    pub(super) fn band_gap(
-        &self,
-        layout: &BandLayout<'_>,
-        body: &[Stmt],
-        i: usize,
-    ) -> Option<&'static str> {
-        layout.band.as_ref().and_then(|b| {
-            banded_gap(
-                b,
-                body,
-                &self.rule.first_party,
-                self.rule.group_imports,
-                self.source.line_ending(),
-                layout.order[i],
-                layout.order[i + 1],
-            )
-        })
-    }
-
-    /// Renders `body`, builds the module band over it, and moves each
-    /// carried comment onto the member it binds to, leaving the assembly
-    /// to the caller. The section partition walls each notebook cell, so
-    /// a band never crosses one.
-    pub(super) fn band_layout(&self, body: &'a [Stmt], outer: TextRange) -> BandLayout<'a> {
-        let (blocks, mut rendered) =
-            rendered_member_blocks(self.source, body, outer, |stmt, block| {
-                self.band_stmt(stmt, block)
-            });
-        let mut order: Vec<usize> = (0..body.len()).collect();
-        let band = (!any_sibling_shares_line(self.source, body))
-            .then(|| {
-                let sections = Sections::of(self.source, &blocks);
-                self.band_module_constants(body, &blocks, &sections, &mut order)
+    /// One fix group per banded body, or one per notebook cell,
+    /// assembled from the layout the band settles over `body`.
+    pub(super) fn band_edits(&self, body: &'a [Stmt], outer: TextRange) -> Vec<Vec<Edit>> {
+        let layout = self.band_layout(body, outer);
+        layout
+            .assembly
+            .cell_edits(self.source, layout.forced(), |i| {
+                self.band_gap(&layout, body, i)
             })
-            .flatten();
-        if let Some(b) = &band {
-            apply_band_comments(self.source, body, b, &mut rendered);
-        }
-        BandLayout {
-            band,
-            blocks,
-            order,
-            rendered,
-        }
     }
 }
 
-/// The banding layout of a module body: its member blocks, their
-/// rendered text, the new-order permutation, and the applied band. The
-/// combined [`Bander::band_body`] and the per-cell notebook emit read it.
-pub(super) struct BandLayout<'a> {
+/// The banding layout of a module body, its assembly beside the band
+/// applied over it. The combined [`Bander::band_body`] and the per-cell
+/// [`Bander::band_edits`] read it.
+struct BandLayout<'a> {
+    assembly: Assembly<'a>,
     band: Option<Banding>,
-    pub(super) blocks: Vec<TextRange>,
-    pub(super) order: Vec<usize>,
-    pub(super) rendered: Vec<Cow<'a, str>>,
 }
 
 impl BandLayout<'_> {
     /// True when the band opens a tier blank, forcing an owned assembly
     /// so the spacing lands even when the order is already settled.
-    pub(super) fn forced(&self) -> bool {
+    fn forced(&self) -> bool {
         self.band.as_ref().is_some_and(Banding::stratifies)
     }
 }
@@ -253,7 +248,10 @@ mod tests {
             .forecast(&source, body, source.module_range(), false)
             .expect("the body bands");
         assert_eq!(
-            bander.band_layout(body, source.module_range()).order,
+            bander
+                .band_layout(body, source.module_range())
+                .assembly
+                .order,
             forecast.order
         );
     }

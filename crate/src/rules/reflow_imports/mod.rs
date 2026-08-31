@@ -49,6 +49,7 @@ const MEMBER_SEPARATOR: &str = ", ";
 /// beside the gap it holds ahead of `import`.
 pub(super) type Packing = Vec<(Range<usize>, usize)>;
 
+#[derive(Debug)]
 pub(crate) struct ReflowImports {
     align_settings: Option<aligner::Settings>,
     bands: Option<BandConstants>,
