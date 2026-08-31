@@ -15,7 +15,7 @@ file_delta() {
 }
 
 format_tagged() {
-  local side="$1" binary="$2" width="$3" status=0 unstable
+  local side="$1" binary="$2" width="$3" status=0
   local record="$stage/.git/$side-$width"
   staged reset --hard -q pristine
   printf 'code-line-length = %s\n' "$width" > "$stage/prose.toml"
@@ -28,9 +28,6 @@ format_tagged() {
   (( $(jq '.files_visited' "$record.json") > 0 )) || fail_width "visited no file"
   staged commit --allow-empty -am "$side at width $width" -q
   staged tag "$side-$width"
-  unstable=$(jq -r '.unstable // [] | length' "$record.json")
-  (( unstable == 0 )) \
-    || echo "  $side is unstable on $unstable of the files at this width, stderr at $record.log"
 }
 
 report() {

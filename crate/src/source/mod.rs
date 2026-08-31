@@ -36,7 +36,7 @@ use crate::{
 
 mod cells;
 mod tables;
-mod trace;
+pub(crate) mod trace;
 
 /// Owned wrapper around a parsed Python source file.
 ///

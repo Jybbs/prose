@@ -21,6 +21,7 @@ use super::{
 use crate::{
     cache::{Anchor, CacheEntry, CacheEntryRef, NotebookCells, NotebookCellsRef, Rewrite},
     cli::exit_status::ExitStatus,
+    diagnostics::{Diagnostic, fired_rules},
     source::Source,
     unstable::UnstableRewrite,
     walker::{self, Found},
@@ -386,6 +387,25 @@ fn marked_report(
         .map(Box::new)
 }
 
+/// The settle report a `format` run makes over `formatted`, its output
+/// for `original`, re-applying only the rules whose format diagnostics
+/// `diagnostics` carries.
+fn narrowed_report(
+    resolved: &Resolved,
+    original: &str,
+    formatted: &Source,
+    diagnostics: &[Diagnostic],
+) -> Option<Box<UnstableRewrite>> {
+    UnstableRewrite::detect_narrowed(
+        &resolved.pipeline,
+        &resolved.config,
+        original,
+        formatted,
+        &fired_rules(diagnostics),
+    )
+    .map(Box::new)
+}
+
 /// Routes a source text to the notebook or module pipeline path under
 /// its diagnostic `name`.
 fn process_source(
@@ -456,7 +476,7 @@ fn run_and_assemble(
                 if proven {
                     marked_report(resolved, file.source_text(), &formatted)
                 } else {
-                    settle_report(resolved, file.source_text(), &formatted)
+                    narrowed_report(resolved, file.source_text(), &formatted, &diagnostics)
                 }
             })
             .flatten();
@@ -484,7 +504,8 @@ fn run_pipeline(source: Source, resolved: &Resolved, pass: Pass, marker: Marker)
     })
 }
 
-/// The settle report over `formatted`, the run's output for `original`.
+/// The settle report `check --validate` makes over `formatted`, the
+/// run's output for `original`, re-applying every enabled rule.
 fn settle_report(
     resolved: &Resolved,
     original: &str,

@@ -1,8 +1,7 @@
 //! Tests over the pipeline, one file per surface they cover.
 
 use std::{
-    assert_matches, env,
-    path::{Path, PathBuf},
+    assert_matches,
     sync::{Arc, Mutex},
 };
 
@@ -23,7 +22,6 @@ use crate::{
         FUTURE_LEAD, GroupSentinelRule, assert_send_sync, breaks_compile, breaks_parse,
         never_settles, notebook, parse, range, rewrites_x_to_y, self_overlapping,
     },
-    walker::{self, Found},
 };
 
 mod carry;
@@ -31,6 +29,7 @@ mod diagnose;
 mod registry;
 mod run;
 mod run_as_written;
+mod second_pass;
 mod unsettled;
 
 /// Test-only lint-only rule that returns the range list supplied

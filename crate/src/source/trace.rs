@@ -1,5 +1,6 @@
-//! Reports each table build and each carry across a reparse to stderr
-//! while `PROSE_CARRY_TRACE` is set, one tab-separated line per event.
+//! Reports each table build, each carry across a reparse, and each rule
+//! a settle check re-applies to stderr while `PROSE_CARRY_TRACE` is
+//! set, one tab-separated line per event.
 
 use std::{
     env,
@@ -61,6 +62,13 @@ pub(super) fn built(table: &'static str) {
 pub(super) fn carried(rule: RuleId, table: &'static str, outcome: Outcome) {
     if *ENABLED {
         eprintln!("carry\t{rule}\t{table}\t{outcome}");
+    }
+}
+
+/// Reports that a settle check under `pass` re-applied `rule`.
+pub(crate) fn reapplied(pass: &'static str, rule: RuleId) {
+    if *ENABLED {
+        eprintln!("second\t{pass}\t{rule}");
     }
 }
 

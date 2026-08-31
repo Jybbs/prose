@@ -65,3 +65,30 @@ fn unsettled_skips_a_rule_whose_edits_splice_back_to_the_same_text() {
 
     assert!(pipeline.unsettled(&source).is_empty());
 }
+
+#[test]
+fn unsettled_among_answers_empty_where_no_rule_fired() {
+    let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
+    let source = parse("x = 1\n");
+
+    assert!(
+        pipeline
+            .unsettled_among(&source, &BTreeSet::new())
+            .is_empty()
+    );
+}
+
+#[test]
+fn unsettled_among_reapplies_only_the_rules_that_fired() {
+    let pipeline = Pipeline::from_rules(vec![
+        Box::new(never_settles("widener")),
+        Box::new(never_settles("other-widener")),
+    ]);
+    let source = parse("x = 1\n");
+    let fired = BTreeSet::from([RuleId::from("other-widener")]);
+
+    assert_eq!(
+        pipeline.unsettled_among(&source, &fired),
+        vec![RuleId::from("other-widener")],
+    );
+}

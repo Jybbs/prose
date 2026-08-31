@@ -215,6 +215,24 @@ pub(crate) fn never_settles(id: &'static str) -> GroupSentinelRule {
 /// `Ipynb` counterpart to [`parse`]. The cells concatenate through the
 /// synthetic separator `ruff_notebook` inserts, so the returned source
 /// carries real cell boundaries.
+/// Every Python module and notebook under the tree
+/// `PROSE_SETTLE_CORPUS` names, the fixture tree absent it, ascending
+/// by path.
+pub(crate) fn corpus_inputs() -> Vec<std::path::PathBuf> {
+    let root = std::env::var_os("PROSE_SETTLE_CORPUS").map_or_else(
+        || Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"),
+        std::path::PathBuf::from,
+    );
+    let mut inputs: Vec<_> = crate::walker::walk(&[root])
+        .filter_map(|found| match found.expect("the corpus walks") {
+            crate::walker::Found::Formattable(path, _) => Some(path),
+            crate::walker::Found::PassedLink(_) => None,
+        })
+        .collect();
+    inputs.sort();
+    inputs
+}
+
 pub(crate) fn notebook(cells: &[&str]) -> Source {
     Source::from_notebook(&notebook_document(cells), "<nb>").expect("notebook source builds")
 }

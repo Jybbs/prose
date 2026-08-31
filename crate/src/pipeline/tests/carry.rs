@@ -2,23 +2,7 @@
 //! fresh read builds, over each corpus input.
 
 use super::*;
-
-/// Every Python module and notebook under the tree
-/// `PROSE_SETTLE_CORPUS` names, the fixture tree absent it,
-/// ascending by path.
-fn corpus_inputs() -> Vec<PathBuf> {
-    let root = env::var_os("PROSE_SETTLE_CORPUS").map_or_else(
-        || Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"),
-        PathBuf::from,
-    );
-    walker::walk(&[root])
-        .filter_map(|found| match found.expect("the corpus walks") {
-            Found::Formattable(path, _) => Some(path),
-            Found::PassedLink(_) => None,
-        })
-        .sorted()
-        .collect()
-}
+use crate::testing::corpus_inputs;
 
 #[test]
 fn carried_binding_tables_match_the_ones_a_fresh_read_builds() {

@@ -9,7 +9,10 @@
 //! a line's width, a group's member order, or a statement's position
 //! ahead of every rule that reads one. The settle check re-applies the
 //! enabled rules to a completed run's output and names every rule
-//! still editing it.
+//! still editing it, a `format` run re-applying only the rules that
+//! edited on its first pass.
+
+use std::collections::BTreeSet;
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_python_ast::PythonVersion;
@@ -127,6 +130,30 @@ impl Pipeline {
         self.rules.len()
     }
 
+    /// The rules `keep` admits whose edits would still rewrite `source`,
+    /// each application reported to the trace under `pass`, empty under
+    /// a file-level `# prose: off`. A rule whose surviving groups do not
+    /// splice, or splice back to the same text, is left out.
+    fn still_editing(
+        &self,
+        source: &Source,
+        pass: &'static str,
+        keep: impl Fn(RuleId) -> bool,
+    ) -> Vec<RuleId> {
+        if source.suppression_map().file_is_suppressed() {
+            return Vec::new();
+        }
+        self.rules
+            .iter()
+            .filter(|rule| keep(rule.id()))
+            .filter_map(|rule| {
+                crate::source::trace::reapplied(pass, rule.id());
+                let (_, text, _) = woven_groups(&**rule, source)?;
+                (text != source.text()).then(|| rule.id())
+            })
+            .collect()
+    }
+
     /// Collects every rule's diagnostics against `source` without
     /// applying edits or reparsing between rules, so each range stays
     /// valid against the original buffer. Format rules contribute one
@@ -222,16 +249,17 @@ impl Pipeline {
     /// whose surviving groups do not splice, or splice back to the same
     /// text, is left out.
     pub fn unsettled(&self, source: &Source) -> Vec<RuleId> {
-        if source.suppression_map().file_is_suppressed() {
-            return Vec::new();
-        }
-        self.rules
-            .iter()
-            .filter_map(|rule| {
-                let (_, text, _) = woven_groups(&**rule, source)?;
-                (text != source.text()).then(|| rule.id())
-            })
-            .collect()
+        self.still_editing(source, "full", |_| true)
+    }
+
+    /// The rules among `fired` whose edits would still rewrite `source`,
+    /// the second pass a `format` run makes over its own output,
+    /// re-applying the rules that edited on the first pass rather than
+    /// every enabled rule. A rule silent on the first pass is left to
+    /// the full [`unsettled`](Self::unsettled) walk that `check
+    /// --validate` and the settle sweeps run.
+    pub(crate) fn unsettled_among(&self, source: &Source, fired: &BTreeSet<RuleId>) -> Vec<RuleId> {
+        self.still_editing(source, "narrowed", |id| fired.contains(&id))
     }
 }
 
