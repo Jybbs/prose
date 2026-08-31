@@ -14,7 +14,8 @@ mod tally;
 pub(crate) use diff::{EXCERPT, excerpt, unified_diff};
 pub(crate) use sweep::{
     Absorbing, CORPUS, Slot, WIDTHS, WIDTHS_VAR, corpus, env_list, note_verified, pointed_corpus,
-    report_verified, setting, swept, unread, verifying, widths_or,
+    python_files, report_verified, setting, swept, unread, verifying, watch_for_a_runaway,
+    widths_or,
 };
 pub(crate) use tally::{Hit, SHOWN, Tally};
 
