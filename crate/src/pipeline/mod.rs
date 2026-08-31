@@ -88,7 +88,7 @@ impl Pipeline {
             if let Some(collected) = diagnostics.as_deref_mut() {
                 collected.extend(format_diagnostics(&**rule, groups));
             }
-            reparse_or_reject(&source, new_text, rule_id, map, gate)
+            reparse_or_reject(source, new_text, rule_id, &map, gate)
         })
     }
 
@@ -226,7 +226,8 @@ impl Pipeline {
         self.rules
             .iter()
             .filter_map(|rule| {
-                let (_, text, _) = woven_groups(&**rule, source)?;
+                let groups = surviving_groups(&**rule, source)?;
+                let text = apply_edits(source.text(), groups.concat())?;
                 (text != source.text()).then(|| rule.id())
             })
             .collect()
@@ -252,24 +253,14 @@ fn format_diagnostics(rule: &dyn Rule, groups: Vec<Vec<Edit>>) -> impl Iterator<
         .map(move |group| Diagnostic::format(rule_id, group, message.to_owned()))
 }
 
-/// Splices a rule's concatenated edits into `source`, returning the
-/// woven text and, for a notebook, the `SourceMap` of cell-offset
-/// deltas. An ordinary module skips the map.
-fn weave_groups(source: &Source, edits: Vec<Edit>) -> Option<(String, Option<SourceMap>)> {
-    if source.is_notebook() {
-        apply_edits_mapped(source.text(), edits).map(|(text, map)| (text, Some(map)))
-    } else {
-        apply_edits(source.text(), edits).map(|text| (text, None))
-    }
-}
-
 /// Applies `rule` to `source` and weaves its surviving fix groups into
 /// new text, returning `None` when no group survives or the edits do not
-/// apply.
-fn woven_groups(
-    rule: &dyn Rule,
-    source: &Source,
-) -> Option<(Vec<Vec<Edit>>, String, Option<SourceMap>)> {
+/// apply. The `SourceMap` pairs each edited offset with the one the
+/// woven text holds it at, the deltas both the notebook cell slide and
+/// the incremental splice read.
+/// The fix groups `rule` holds against `source`, `None` where none
+/// survive the suppression filter.
+fn surviving_groups(rule: &dyn Rule, source: &Source) -> Option<Vec<Vec<Edit>>> {
     let groups = prepared_groups(rule, source);
     if groups.is_empty() {
         return None;
@@ -279,7 +270,12 @@ fn woven_groups(
         "rule `{}` emitted a duplicate edit, the signature of a walk reaching one node twice",
         rule.id(),
     );
-    let (new_text, map) = weave_groups(source, groups.concat())?;
+    Some(groups)
+}
+
+fn woven_groups(rule: &dyn Rule, source: &Source) -> Option<(Vec<Vec<Edit>>, String, SourceMap)> {
+    let groups = surviving_groups(rule, source)?;
+    let (new_text, map) = apply_edits_mapped(source.text(), groups.concat())?;
     Some((groups, new_text, map))
 }
 

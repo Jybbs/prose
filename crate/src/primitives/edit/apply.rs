@@ -10,21 +10,22 @@ use crate::source::Source;
 
 use super::*;
 
-/// Splices `edits` into `text` and returns the resulting string, or
-/// `None` when the sorted edits overlap.
-///
-/// Sorts edits by start-then-end (via `Edit`'s `Ord` impl) and weaves
-/// them in one forward pass, linear in the source length regardless of
-/// how many edits apply. Declines with `None` rather than slicing an
-/// inverted range, leaving the caller to keep the source unchanged.
+/// Splices `edits` into `text` and returns the resulting string, the
+/// shape a caller reading no offsets takes.
 pub(crate) fn apply_edits(text: &str, mut edits: Vec<Edit>) -> Option<String> {
     edits.sort_unstable();
     weave(text, TextRange::up_to(text.text_len()), &edits, None)
 }
 
-/// Splices `edits` into `text` as [`apply_edits`] does, also returning
-/// a [`SourceMap`] of one start-and-end marker per applied edit pairing
-/// each original offset with its woven offset.
+/// Splices `edits` into `text` and returns the resulting string beside a
+/// [`SourceMap`] of one start-and-end marker per applied edit pairing
+/// each original offset with its woven offset, or `None` when the sorted
+/// edits overlap.
+///
+/// Sorts edits by start-then-end (via `Edit`'s `Ord` impl) and weaves
+/// them in one forward pass, linear in the source length regardless of
+/// how many edits apply. Declines with `None` rather than slicing an
+/// inverted range, leaving the caller to keep the source unchanged.
 pub(crate) fn apply_edits_mapped(text: &str, mut edits: Vec<Edit>) -> Option<(String, SourceMap)> {
     edits.sort_unstable();
     let mut source_map = SourceMap::default();

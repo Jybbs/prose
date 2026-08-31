@@ -88,6 +88,24 @@ pub(super) fn shifted(offset: TextSize, marker: &SourceMarker) -> TextSize {
     }
 }
 
+/// `offset` moved by the delta of the last marker at or before it, left
+/// where it is when no marker precedes it.
+pub(crate) fn shifted_past(offset: TextSize, markers: &[SourceMarker]) -> TextSize {
+    let Some(last) = markers.last() else {
+        return offset;
+    };
+    if last.source() <= offset {
+        return shifted(offset, last);
+    }
+    if markers[0].source() > offset {
+        return offset;
+    }
+    let upto = markers.partition_point(|marker| marker.source() <= offset);
+    markers[..upto]
+        .last()
+        .map_or(offset, |marker| shifted(offset, marker))
+}
+
 /// Shifts a single offset by the delta of the nearest marker at or
 /// before it, the per-boundary slide [`forward_offsets`] maps over a
 /// notebook's cell offsets. Markers sharing an interior offset's exact
@@ -98,10 +116,7 @@ pub(super) fn shifted(offset: TextSize, marker: &SourceMarker) -> TextSize {
 fn forward_offset(offset: TextSize, map: &SourceMap, is_final: bool) -> TextSize {
     let markers = map.markers();
     if is_final {
-        let upto = markers.partition_point(|marker| marker.source() <= offset);
-        return markers[..upto]
-            .last()
-            .map_or(offset, |m| shifted(offset, m));
+        return shifted_past(offset, markers);
     }
     let index = markers.partition_point(|marker| marker.source() < offset);
     if let Some(marker) = markers

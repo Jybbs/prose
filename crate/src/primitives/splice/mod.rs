@@ -17,7 +17,7 @@ use crate::{
 /// The narrowest window a splice over `range` reparses within, the
 /// innermost statement covering it or the whole module where none
 /// does.
-pub(super) fn reparse_window(source: &Source, range: TextRange) -> TextRange {
+pub(crate) fn reparse_window(source: &Source, range: TextRange) -> TextRange {
     window_of(source, covering_statement(&source.ast().body, range))
 }
 
@@ -86,12 +86,7 @@ fn covering_statement(body: &[Stmt], range: TextRange) -> Option<&Stmt> {
 /// that column, as `elif`, `else`, `except` and `finally` each do, and
 /// so does the `def` or `class` line under a decorator.
 fn slices_cleanly(stmt: &Stmt) -> bool {
-    !is_decorated(stmt)
-        && sub_bodies(stmt)
-            .iter()
-            .filter(|(body, _)| !body.is_empty())
-            .count()
-            <= 1
+    !is_decorated(stmt) && sub_bodies(stmt).len() <= 1
 }
 
 /// The statement of `body` whose own range covers `range`, `None`

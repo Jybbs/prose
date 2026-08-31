@@ -18,7 +18,7 @@ use ruff_source_file::{LineRanges, OneIndexed, SourceCode};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use rustc_hash::FxHashMap;
 
-use crate::rule::RuleId;
+use crate::{primitives::range::merged_spans, rule::RuleId};
 
 mod format_directive;
 mod lint_directive;
@@ -104,9 +104,9 @@ impl SuppressionMap {
         Self {
             file_suppressed,
             lints,
-            skip_spans: merge_spans(skip_spans),
+            skip_spans: merged_spans(skip_spans),
             skips,
-            spans: merge_spans(spans),
+            spans: merged_spans(spans),
         }
     }
 
@@ -217,18 +217,6 @@ fn directives(comment: &str) -> Directives {
         found.format = SuppressionKind::from_comment(comment).map(FormatDirective::Kind);
     }
     found
-}
-
-fn merge_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
-    spans.sort_unstable_by_key(Ranged::start);
-    spans.dedup_by(|next, prev| {
-        let overlaps = next.start() <= prev.end();
-        if overlaps {
-            *prev = prev.cover(*next);
-        }
-        overlaps
-    });
-    spans
 }
 
 /// The span a skip directive occupying `comment` suppresses.

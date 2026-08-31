@@ -1,13 +1,14 @@
-//! Edit-shaping primitives shared across rules. `apply_edits` splices
-//! a sorted edit list into a source string, the pipeline runner's
-//! transform between rules, and `apply_edits_mapped` pairs that string
-//! with a `SourceMap` of one marker per applied edit. `apply_inline_edits`
-//! folds a list of edits into a source range, returning `Cow::Borrowed`
-//! when no edit applies. Both decline overlapping edits, `apply_edits`
-//! with `None` and `apply_inline_edits` with `Cow::Borrowed`.
-//! `narrow_edit` trims a candidate replacement to its minimal divergent
-//! range against the source, and `insert_edit` keeps a rule's own
-//! accumulator in that sorted order as it emits.
+//! Edit-shaping primitives shared across rules. `apply_edits` splices a
+//! sorted edit list into a source string, and `apply_edits_mapped` pairs
+//! that string with a `SourceMap` of one marker per applied edit, the
+//! pipeline runner's transform between rules and the deltas its reparse
+//! reads. `apply_inline_edits` folds a list of edits into a source
+//! range, returning `Cow::Borrowed` when no edit applies. All three
+//! decline overlapping edits, the first two with `None` and
+//! `apply_inline_edits` with `Cow::Borrowed`. `narrow_edit` trims a
+//! candidate replacement to its minimal divergent range against the
+//! source, and `insert_edit` keeps a rule's own accumulator in that
+//! sorted order as it emits.
 
 use std::borrow::Cow;
 
@@ -20,7 +21,7 @@ mod apply;
 mod offsets;
 
 pub(crate) use apply::{apply_edits, apply_edits_mapped, apply_inline_edits, splice_bodies};
-pub(crate) use offsets::{forward_offsets, narrowed_replacement};
+pub(crate) use offsets::{forward_offsets, narrowed_replacement, shifted_past};
 
 /// True when any element of `parts` is `Cow::Owned`, the signal a
 /// rewrite produced fresh content rather than a borrow of the source.

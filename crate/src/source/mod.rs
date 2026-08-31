@@ -1,5 +1,7 @@
 //! Source-text wrapper bundling parsed AST, token stream, and line index.
 
+mod reparse;
+
 use std::{
     borrow::{Borrow, Cow},
     path::Path,
@@ -41,15 +43,16 @@ use crate::{
 
 /// Owned wrapper around a parsed Python source file.
 ///
-/// Holds the source text, the parsed AST, the token stream, a lazy
-/// line index, the `CommentRanges` and `SuppressionMap` indexes built
-/// during parsing, and the `BindingAnalysis`, alignment-column, and
-/// stranded-padding walks each built on first read. `source_type` is
+/// Holds the source text, the syntax tree, the token stream, a lazy
+/// line index, the `CommentRanges` and `SuppressionMap` indexes derived
+/// from that token stream, and the `BindingAnalysis`, alignment-column,
+/// and stranded-padding walks each built on first read. `source_type` is
 /// the parse mode and `line_ending` the sequence the text breaks its
 /// lines with, leaving `cell_offsets` and `cell_numbers` to carry a
 /// notebook's cell boundaries and positions, empty for a module.
 #[derive(Debug)]
 pub struct Source {
+    ast: ModModule,
     binding_analysis: OnceLock<Box<BindingAnalysis>>,
     cell_numbers: Box<[OneIndexed]>,
     cell_offsets: CellOffsets,
@@ -59,10 +62,10 @@ pub struct Source {
     file: SourceFile,
     line_ending: LineEnding,
     paren_followers: OnceLock<FxHashSet<TextSize>>,
-    parsed: Parsed<ModModule>,
     source_type: PySourceType,
     stranded_padding: OnceLock<Box<(Stranding, Vec<Edit>)>>,
     suppression: Box<SuppressionMap>,
+    tokens: Tokens,
 }
 
 impl Source {
@@ -99,8 +102,8 @@ impl Source {
         )
     }
 
-    /// Wraps an already-parsed module in its indexes, the shared tail of
-    /// every constructor.
+    /// Wraps an already-parsed module in its indexes, splitting the
+    /// tree from the token stream this source then owns separately.
     fn from_parsed(
         text: String,
         name: impl Into<Box<str>>,
@@ -108,18 +111,43 @@ impl Source {
         cell_offsets: CellOffsets,
         parsed: Parsed<ModModule>,
     ) -> Self {
+        let tokens = parsed.tokens().clone();
+        let comment_ranges = CommentRanges::from(&tokens);
+        Self::from_parts(
+            text,
+            name,
+            source_type,
+            cell_offsets,
+            parsed.into_syntax(),
+            tokens,
+            comment_ranges,
+        )
+    }
+
+    /// Wraps a tree and its token stream in the indexes derived from
+    /// them, the shared tail of every constructor and of the
+    /// incremental splice.
+    fn from_parts(
+        text: String,
+        name: impl Into<Box<str>>,
+        source_type: PySourceType,
+        cell_offsets: CellOffsets,
+        ast: ModModule,
+        tokens: Tokens,
+        comment_ranges: CommentRanges,
+    ) -> Self {
         let line_ending = find_newline(&text).map_or(LineEnding::Lf, |(_, ending)| ending);
         let file = SourceFileBuilder::new(name, text).finish();
-        let comment_ranges = CommentRanges::from(parsed.tokens());
-        let first_code_offset = parsed.syntax().body.first().map(Ranged::start);
+        let first_code_offset = ast.body.first().map(Ranged::start);
         let suppression = Box::new(SuppressionMap::from_comments(
             &file.to_source_code(),
             &comment_ranges,
-            parsed.tokens(),
+            &tokens,
             first_code_offset,
             &cell_offsets,
         ));
         Self {
+            ast,
             binding_analysis: OnceLock::new(),
             cell_numbers: Box::default(),
             cell_offsets,
@@ -129,10 +157,10 @@ impl Source {
             file,
             line_ending,
             paren_followers: OnceLock::new(),
-            parsed,
             source_type,
             stranded_padding: OnceLock::new(),
             suppression,
+            tokens,
         }
     }
 
@@ -216,7 +244,7 @@ impl Source {
     }
 
     pub fn ast(&self) -> &ModModule {
-        self.parsed.syntax()
+        &self.ast
     }
 
     /// Returns the binding-analysis table, building it on the first
@@ -648,7 +676,7 @@ impl Source {
 
     /// Borrows the token stream produced during parsing.
     pub fn tokens(&self) -> &Tokens {
-        self.parsed.tokens()
+        &self.tokens
     }
 
     /// Yields the tokens overlapping `range`, opening at the nearest

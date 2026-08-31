@@ -1,7 +1,6 @@
 //! The pipeline's reparse- and compile-failure path and its error type.
 
 use ruff_diagnostics::SourceMap;
-use ruff_notebook::CellOffsets;
 use ruff_python_ast::{PySourceType, PythonVersion};
 use ruff_python_parser::{ParseError, ParseOptions, parse, semantic_errors::SemanticSyntaxError};
 use ruff_source_file::OneIndexed;
@@ -36,24 +35,31 @@ pub enum PipelineError {
 
 /// Reparses `new_text`, sliding the source's cell offsets through `map`
 /// so a notebook keeps current boundaries, and tags each failure with
-/// the `rule` whose edits produced it. A cell the source split cleanly is
-/// checked on its own through [`reject_split_cell`], and the semantic
+/// the `rule` whose edits produced it.
+///
+/// A splice reparses only the statements the edits reached and answers
+/// `None` where it declines, leaving the whole-file parse below. That
+/// path takes every notebook, so the cell check sits on it. The semantic
 /// check runs only when `gate` carries the version to evaluate against.
 pub(super) fn reparse_or_reject(
-    source: &Source,
+    source: Source,
     new_text: String,
     rule: RuleId,
-    map: Option<SourceMap>,
+    map: &SourceMap,
     gate: Option<PythonVersion>,
 ) -> Result<Source, PipelineError> {
     let limit = new_text.text_len();
-    let cell_offsets = map.map_or_else(CellOffsets::default, |m| {
-        forward_offsets(source.cell_offsets(), &m, limit)
-    });
-    let next = source
-        .reparse_carrying(new_text, cell_offsets)
-        .map_err(|source| PipelineError::Reparse { rule, source })?;
-    reject_split_cell(source, &next, rule)?;
+    let cell_offsets = forward_offsets(source.cell_offsets(), map, limit);
+    let next = match source.splice_of(&new_text, map) {
+        Some(splice) => source.spliced(new_text, cell_offsets, map, splice),
+        None => {
+            let parsed = source
+                .reparse_carrying(new_text, cell_offsets)
+                .map_err(|source| PipelineError::Reparse { rule, source })?;
+            reject_split_cell(&source, &parsed, rule)?;
+            parsed
+        }
+    };
     if let Some(version) = gate
         && let Some(error) = first_semantic_error(&next, version)
     {

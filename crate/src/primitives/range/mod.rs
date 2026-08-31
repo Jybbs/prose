@@ -1,5 +1,6 @@
 //! Parenthesis-aware source ranges for expression nodes, the extent a
-//! slice of ranged items covers, and the spans a deletion takes out of a
+//! slice of ranged items covers, the merge of a span list into its
+//! disjoint runs, and the spans a deletion takes out of a
 //! comma-separated list.
 
 use std::ops::Range;
@@ -33,6 +34,20 @@ pub(crate) fn dropped_member_spans(
         .filter(|run| rejected[run.start] && run.len() < members.len())
         .map(|run| member_deletion_span(members, run))
         .collect()
+}
+
+/// `spans` sorted, with every overlapping or touching pair folded into
+/// the span covering both.
+pub(crate) fn merged_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
+    spans.sort_unstable_by_key(Ranged::start);
+    spans.dedup_by(|next, prev| {
+        let meets = next.start() <= prev.end();
+        if meets {
+            *prev = prev.cover(*next);
+        }
+        meets
+    });
+    spans
 }
 
 /// Returns the paren-aware range of `function`'s return annotation,
