@@ -21,8 +21,10 @@ fn settle_report_holds_the_first_editing_rule_as_its_witness() {
 
 #[test]
 fn settle_report_names_a_rule_whose_fix_never_lands() {
+    let overlapping = self_overlapping();
+    let overlapping_id = overlapping.id();
     let pipeline = Pipeline::from_rules(vec![
-        Box::new(self_overlapping()),
+        Box::new(overlapping),
         Box::new(GroupSentinelRule {
             groups: vec![vec![Edit::range_replacement("x".to_owned(), range(0, 1))]],
             id: RuleId::from("rewrite-x-to-x"),
@@ -35,7 +37,7 @@ fn settle_report_names_a_rule_whose_fix_never_lands() {
     assert!(report.editing.is_empty());
     assert_eq!(
         report.unlanded,
-        vec![self_overlapping().id(), RuleId::from("rewrite-x-to-x")]
+        vec![overlapping_id, RuleId::from("rewrite-x-to-x")]
     );
     assert!(report.witness.is_none());
 }

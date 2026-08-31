@@ -33,10 +33,13 @@ use rustc_hash::FxHashMap;
 
 use common::{
     Absorbing, CORPUS, Hit, Slot, Tally, WIDTHS, WIDTHS_VAR, corpus, note_verified, pointed_corpus,
-    report_verified, setting, swept, verifying, watch_for_a_runaway, widths_or,
+    report_verified, setting, swept, unread, verifying, widths_or,
 };
 
 mod common;
+
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 /// The environment variable choosing how a scoped run claims its pairs.
 const PAIRS_VAR: &str = "PROSE_SETTLE_PAIRS";
@@ -48,9 +51,6 @@ const RULES_VAR: &str = "PROSE_SETTLE_RULES";
 /// The environment variable taking one share of the pairs as `k/n`,
 /// the `k`th of `n` counted from one.
 const SHARD_VAR: &str = "PROSE_SETTLE_SHARD";
-
-#[global_allocator]
-static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 /// One rule's run over one buffer.
 #[derive(Clone)]
@@ -177,13 +177,6 @@ struct Probes {
     width: usize,
 }
 
-/// A rule run on its own, constructed against the selection its
-/// pipeline resolved.
-struct Single {
-    pipeline: Pipeline,
-    rule: RuleId,
-}
-
 impl Probes {
     fn build(width: usize) -> Self {
         let config = Config {
@@ -261,6 +254,13 @@ impl Probes {
     }
 }
 
+/// A rule run on its own, constructed against the selection its
+/// pipeline resolved.
+struct Single {
+    pipeline: Pipeline,
+    rule: RuleId,
+}
+
 /// How this run claims its pairs, [`PAIRS_VAR`] naming the shape and
 /// `touching` standing where it is absent.
 fn claim() -> Claim {
@@ -306,14 +306,14 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
     };
     let mut broken: BTreeSet<RuleId> = BTreeSet::new();
     for (&rule, &seat) in &probes.solo {
-        let label = format!("`{rule}` alone {}", probes.budget);
+        let label = || format!("`{rule}` alone {}", probes.budget);
         let defect = match memo.apply(seat, &text) {
             Applied::Same => continue,
-            Applied::Rejected(error) => Some(format!("{label} was rejected: {error}")),
+            Applied::Rejected(error) => Some(format!("{} was rejected: {error}", label())),
             Applied::Changed(once) => {
                 let left = memo.editing(&[seat], &once);
                 (!left.is_empty())
-                    .then(|| format!("{label} leaves {} editing", render_slugs(&left)))
+                    .then(|| format!("{} leaves {} editing", label(), render_slugs(&left)))
             }
         };
         if let Some(defect) = defect {
@@ -330,8 +330,8 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         if broken.contains(&earlier) || broken.contains(&later) {
             continue;
         }
-        let label = format!("`{earlier}` then `{later}` {}", probes.budget);
-        let reversed_label = format!("`{later}` then `{earlier}` {}", probes.budget);
+        let clause =
+            |first: RuleId, then: RuleId| format!("`{first}` then `{then}` {}", probes.budget);
         let file = |tally: &mut Tally, defect: String| {
             tally.record_hit(defect, path, probes.hit(path, &pair));
         };
@@ -344,7 +344,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
             Err(error) => {
                 file(
                     &mut findings.unsettled,
-                    format!("{label} was rejected: {error}"),
+                    format!("{} was rejected: {error}", clause(earlier, later)),
                 );
                 continue;
             }
@@ -356,7 +356,11 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         if !left.is_empty() {
             file(
                 &mut findings.unsettled,
-                format!("{label} leaves {} editing", render_slugs(&left)),
+                format!(
+                    "{} leaves {} editing",
+                    clause(earlier, later),
+                    render_slugs(&left)
+                ),
             );
             continue;
         }
@@ -365,7 +369,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
             Err(error) => {
                 file(
                     &mut findings.unsettled,
-                    format!("{reversed_label} was rejected: {error}"),
+                    format!("{} was rejected: {error}", clause(later, earlier)),
                 );
                 continue;
             }
@@ -511,8 +515,6 @@ fn claim_of_rejects_an_unknown_shape(#[case] named: &str) {
 #[cfg_attr(coverage, ignore = "the sweep runs uninstrumented in its own row")]
 fn every_rule_subset_settles_and_declares_its_seating() {
     let files = corpus();
-    assert!(!files.is_empty(), "the corpus holds no `.py` files");
-    watch_for_a_runaway();
     let lengths = lengths();
     let mut findings = Findings::default();
     for &length in &lengths {
@@ -526,16 +528,7 @@ fn every_rule_subset_settles_and_declares_its_seating() {
         findings.absorb(swept(&files, |path| probe(&probes, path)));
     }
     report_verified("chained pairs against the two-rule fold");
-    let unread = match findings.skipped.len() {
-        0 => String::new(),
-        n => {
-            eprintln!(
-                "the probe could not read {n} of the {} files under the corpus root",
-                files.len()
-            );
-            format!(" and {n} the probe could not read")
-        }
-    };
+    let unread = unread(findings.skipped.len(), files.len(), "probe");
     let report = format!(
         "{}{}",
         findings.unsettled.render("unsettled subsets"),

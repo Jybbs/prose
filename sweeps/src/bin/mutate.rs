@@ -30,22 +30,28 @@ use std::{
 
 use bumpalo::Bump;
 use clap::Parser;
+use ignore::WalkBuilder;
 use itertools::Itertools;
 use libcst_native::{
-    ClassDef, Codegen, CodegenState, Comment, EmptyLine, ImportFrom, Module, SimpleStatementLine,
-    SimpleWhitespace, Statement, Suite, TrailingWhitespace, WithLeadingLines, parse_module,
+    ClassDef, Codegen, CodegenState, Comment, CompoundStatement, EmptyLine, Expression, ImportFrom,
+    Module, NameOrAttribute, SimpleStatementLine, SimpleWhitespace, SmallStatement, Statement,
+    Suite, TrailingWhitespace, WithLeadingLines, parse_module,
 };
-use rand::{RngExt, SeedableRng, rngs::StdRng, seq::IndexedRandom, seq::SliceRandom};
+use rand::{
+    RngExt, SeedableRng,
+    rngs::StdRng,
+    seq::{IndexedRandom, SliceRandom, index},
+};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use ruff_python_ast::{Expr, token::TokenKind, visitor::source_order::SourceOrderVisitor};
+use ruff_python_ast::{
+    Expr,
+    token::TokenKind,
+    visitor::source_order::{SourceOrderVisitor, walk_body, walk_expr},
+};
 use ruff_python_parser::parse_module as parse_ruff;
+use ruff_python_stdlib::keyword::is_keyword;
 use ruff_text_size::{Ranged, TextRange};
-
-/// How many nodes a sampling mutation touches.
-const SAMPLE: usize = 8;
-
-/// One mutation's rewrite of a module's text, `None` where it does not apply.
-type Mutation = fn(&str, &mut StdRng) -> Option<String>;
+use rustc_hash::FxHashMap;
 
 /// Every mutation this generator writes, each named by the subdirectory it
 /// lands in.
@@ -58,6 +64,9 @@ const MUTATIONS: [(&str, Mutation); 7] = [
     ("suppressed", suppressed),
     ("widened", widened),
 ];
+
+/// How many nodes a sampling mutation touches.
+const SAMPLE: usize = 8;
 
 /// Writes parseable mutations of a corpus, one subdirectory per mutation.
 #[derive(Parser)]
@@ -86,15 +95,17 @@ impl<'a> SourceOrderVisitor<'a> for Arguments {
             self.ranges
                 .extend(call.arguments.args.iter().map(Ranged::range));
         }
-        ruff_python_ast::visitor::source_order::walk_expr(self, expr);
+        walk_expr(self, expr);
     }
 }
+
+/// One mutation's rewrite of a module's text, `None` where it does not apply.
+type Mutation = fn(&str, &mut StdRng) -> Option<String>;
 
 /// Returns `module` with a comment line leading a sample of its statements,
 /// each at that statement's own indent.
 fn commented(text: &str, rng: &mut StdRng) -> Option<String> {
-    let module = parse_module(text, None).ok()?;
-    let mut module = module;
+    let mut module = parse_module(text, None).ok()?;
     let picks = sample(module.body.len(), rng);
     if picks.is_empty() {
         return None;
@@ -119,17 +130,17 @@ fn crlf(text: &str, _rng: &mut StdRng) -> Option<String> {
 /// takes in the first seat of a body.
 fn is_docstring(statement: &Statement) -> bool {
     matches!(statement, Statement::Simple(line) if line.body.len() == 1
-        && matches!(&line.body[0], libcst_native::SmallStatement::Expr(expr)
-            if matches!(expr.value, libcst_native::Expression::SimpleString(_)
-                | libcst_native::Expression::ConcatenatedString(_))))
+        && matches!(&line.body[0], SmallStatement::Expr(expr)
+            if matches!(expr.value, Expression::SimpleString(_)
+                | Expression::ConcatenatedString(_))))
 }
 
 /// True where `statement` is a `from __future__ import ...`, which the
 /// grammar admits only ahead of every other statement.
 fn is_future(statement: &Statement) -> bool {
     matches!(statement, Statement::Simple(line) if line.body.iter().any(|small|
-        matches!(small, libcst_native::SmallStatement::ImportFrom(ImportFrom { module: Some(name), .. })
-            if matches!(name, libcst_native::NameOrAttribute::N(n) if n.value == "__future__"))))
+        matches!(small, SmallStatement::ImportFrom(ImportFrom { module: Some(name), .. })
+            if matches!(name, NameOrAttribute::N(n) if n.value == "__future__"))))
 }
 
 /// A comment line carrying `text`.
@@ -140,25 +151,51 @@ fn led(text: &'static str) -> EmptyLine<'static> {
     }
 }
 
+fn main() {
+    let args = Args::parse();
+    let started = Instant::now();
+    let budget = Duration::from_secs_f64(args.budget);
+    let files: Vec<PathBuf> = walk(&args.corpus);
+    let (reached, written) = files
+        .par_iter()
+        .map(|path| {
+            if started.elapsed() > budget {
+                return (0, 0);
+            }
+            (
+                1,
+                mutated(path, &args.corpus, &args.destination, &args.seed),
+            )
+        })
+        .reduce(|| (0, 0), |held, next| (held.0 + next.0, held.1 + next.1));
+    if reached < files.len() {
+        println!(
+            "the {}s budget ran out after {reached} of {} files",
+            args.budget,
+            files.len()
+        );
+    }
+    let _ = fs_err::create_dir_all(&args.destination);
+    let _ = fs_err::File::create(args.destination.join(".generated"));
+    println!("{written} variants written");
+}
+
 /// Returns `module` with each class body's members reordered behind its
 /// docstring.
 fn members(text: &str, rng: &mut StdRng) -> Option<String> {
     let mut module = parse_module(text, None).ok()?;
     let mut moved = false;
     for statement in &mut module.body {
-        let Statement::Compound(libcst_native::CompoundStatement::ClassDef(ClassDef {
+        let Statement::Compound(CompoundStatement::ClassDef(ClassDef {
             body: Suite::IndentedBlock(block),
             ..
         })) = statement
         else {
             continue;
         };
-        let pinned = usize::from(block.body.first().is_some_and(is_docstring));
-        if block.body.len() - pinned < 2 {
-            continue;
-        }
-        block.body[pinned..].shuffle(rng);
-        moved = true;
+        moved |= reordered(&mut block.body, rng, |slot, held| {
+            slot == 0 && is_docstring(held)
+        });
     }
     moved.then(|| render(&module))
 }
@@ -200,7 +237,7 @@ fn mutated(path: &Path, corpus: &Path, destination: &Path, seed: &str) -> usize 
 fn parenthesized(text: &str, rng: &mut StdRng) -> Option<String> {
     let parsed = parse_ruff(text).ok()?;
     let mut found = Arguments { ranges: Vec::new() };
-    ruff_python_ast::visitor::source_order::walk_body(&mut found, &parsed.syntax().body);
+    walk_body(&mut found, &parsed.syntax().body);
     let picks = sample(found.ranges.len(), rng);
     if picks.is_empty() {
         return None;
@@ -235,6 +272,26 @@ fn render(module: &Module) -> String {
     state.to_string()
 }
 
+/// Reorders `body`, holding every statement `pin` names ahead of the rest
+/// in the order they were written, and reports whether anything moved.
+fn reordered(
+    body: &mut Vec<Statement>,
+    rng: &mut StdRng,
+    pin: impl Fn(usize, &Statement) -> bool,
+) -> bool {
+    let (mut pinned, mut movable): (Vec<_>, Vec<_>) = body
+        .drain(..)
+        .enumerate()
+        .partition(|(slot, statement)| pin(*slot, statement));
+    let moved = movable.len() >= 2;
+    if moved {
+        movable.shuffle(rng);
+    }
+    pinned.append(&mut movable);
+    *body = pinned.into_iter().map(|(_, statement)| statement).collect();
+    moved
+}
+
 /// A wider or narrower spelling of `name`, or `None` where the result is not
 /// an identifier the grammar reads as one.
 fn respelled<'b>(arena: &'b Bump, name: &str, rng: &mut StdRng) -> Option<&'b str> {
@@ -247,14 +304,13 @@ fn respelled<'b>(arena: &'b Bump, name: &str, rng: &mut StdRng) -> Option<&'b st
         && !candidate.is_empty()
         && !candidate.starts_with(|c: char| c.is_ascii_digit())
         && candidate.chars().all(|c| c.is_alphanumeric() || c == '_')
-        && !ruff_python_stdlib::keyword::is_keyword(&candidate);
+        && !is_keyword(&candidate);
     usable.then(|| &*arena.alloc_str(&candidate))
 }
 
 /// The slots a sampling mutation picks out of `count` candidates.
 fn sample(count: usize, rng: &mut StdRng) -> Vec<usize> {
-    let slots: Vec<usize> = (0..count).collect();
-    let mut picked: Vec<usize> = slots.sample(rng, SAMPLE.min(count)).copied().collect();
+    let mut picked = index::sample(rng, count, SAMPLE.min(count)).into_vec();
     picked.sort_unstable();
     picked
 }
@@ -273,21 +329,10 @@ fn seeded(seed: &str, relative: &Path) -> StdRng {
 /// seats ahead of the shuffle.
 fn shuffled(text: &str, rng: &mut StdRng) -> Option<String> {
     let mut module = parse_module(text, None).ok()?;
-    let (mut pinned, mut movable): (Vec<_>, Vec<_>) =
-        module
-            .body
-            .drain(..)
-            .enumerate()
-            .partition(|(slot, statement)| {
-                is_future(statement) || (*slot == 0 && is_docstring(statement))
-            });
-    if movable.len() < 2 {
-        return None;
-    }
-    movable.shuffle(rng);
-    pinned.append(&mut movable);
-    module.body = pinned.into_iter().map(|(_, statement)| statement).collect();
-    Some(render(&module))
+    reordered(&mut module.body, rng, |slot, held| {
+        is_future(held) || (slot == 0 && is_docstring(held))
+    })
+    .then(|| render(&module))
 }
 
 /// Returns `module` with a `# prose: off` region wrapped around one top-level
@@ -330,6 +375,20 @@ fn suppressed(text: &str, rng: &mut StdRng) -> Option<String> {
     Some(render(&module))
 }
 
+/// Every `.py` file under `root`, in a stable order. The walk carries no
+/// standard filter, so a hidden directory and an ignored one both enter
+/// the corpus.
+fn walk(root: &Path) -> Vec<PathBuf> {
+    WalkBuilder::new(root)
+        .standard_filters(false)
+        .build()
+        .flatten()
+        .map(ignore::DirEntry::into_path)
+        .filter(|path| path.extension().is_some_and(|ext| ext == "py"))
+        .sorted()
+        .collect()
+}
+
 /// Returns `text` with a sample of its identifiers lengthened or shortened,
 /// shifting every column their width feeds.
 fn widened(text: &str, rng: &mut StdRng) -> Option<String> {
@@ -347,7 +406,7 @@ fn widened(text: &str, rng: &mut StdRng) -> Option<String> {
         return None;
     }
     let picks = sample(distinct.len(), rng);
-    let mut renames: rustc_hash::FxHashMap<&str, &str> = rustc_hash::FxHashMap::default();
+    let mut renames: FxHashMap<&str, &str> = FxHashMap::default();
     for slot in picks {
         let name = distinct[slot];
         if let Some(candidate) = respelled(&arena, name, rng) {
@@ -369,55 +428,4 @@ fn widened(text: &str, rng: &mut StdRng) -> Option<String> {
     }
     out.push_str(&text[cursor..]);
     Some(out)
-}
-
-fn main() {
-    let args = Args::parse();
-    let started = Instant::now();
-    let budget = Duration::from_secs_f64(args.budget);
-    let files: Vec<PathBuf> = walk(&args.corpus);
-    let written: usize = files
-        .par_iter()
-        .map(|path| {
-            if started.elapsed() > budget {
-                return 0;
-            }
-            mutated(path, &args.corpus, &args.destination, &args.seed)
-        })
-        .sum();
-    let reached = files
-        .iter()
-        .take_while(|_| started.elapsed() <= budget)
-        .count();
-    if reached < files.len() {
-        println!(
-            "the {}s budget ran out after {reached} of {} files",
-            args.budget,
-            files.len()
-        );
-    }
-    let _ = fs_err::create_dir_all(&args.destination);
-    let _ = fs_err::File::create(args.destination.join(".generated"));
-    println!("{written} variants written");
-}
-
-/// Every `.py` file under `root`, in a stable order.
-fn walk(root: &Path) -> Vec<PathBuf> {
-    let mut found = Vec::new();
-    let mut stack = vec![root.to_owned()];
-    while let Some(dir) = stack.pop() {
-        let Ok(entries) = fs_err::read_dir(&dir) else {
-            continue;
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                stack.push(path);
-            } else if path.extension().is_some_and(|ext| ext == "py") {
-                found.push(path);
-            }
-        }
-    }
-    found.sort();
-    found
 }

@@ -7,7 +7,7 @@ corpus_root() {
 
 mutate_corpus() {
   printf '\nMutating the corpus under a %ss budget\n' "$3"
-  cargo run --quiet --release --locked -p prose_sweeps --bin mutate -- "$@"
+  sweeps_run mutate "$@"
 }
 
 scratch_dir() {
@@ -17,5 +17,11 @@ scratch_dir() {
 settle_corpus() {
   local corpus
   corpus=$(corpus_root "$1") || return
-  PROSE_SETTLE_CORPUS="$corpus" cargo test --locked "${@:2}"
+  PROSE_SETTLE_CORPUS="$corpus" cargo test --locked --profile probe "${@:2}"
+}
+
+sweeps_run() {
+  local bin="$1"
+  shift
+  cargo run --quiet --profile probe --locked -p prose_sweeps --bin "$bin" -- "$@"
 }

@@ -1181,6 +1181,15 @@ mod tests {
         assert!(result.is_err());
     }
 
+    #[test]
+    fn parse_named_carries_the_name_a_file_backed_source_would() {
+        let named =
+            Source::parse_named("x = 1\n".to_owned(), "probe.py").expect("a named source parses");
+
+        assert_eq!(named.source_file().name(), "probe.py");
+        assert_eq!(parse("x = 1\n").source_file().name(), "<source>");
+    }
+
     #[rstest]
     #[case("class C:\n    pass\n", "class C:")]
     #[case("class C:  # eol\n    pass\n", "class C:")]

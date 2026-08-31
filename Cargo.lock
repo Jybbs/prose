@@ -1550,6 +1550,7 @@ dependencies = [
  "bumpalo",
  "clap",
  "fs-err",
+ "ignore",
  "itertools",
  "libcst",
  "rand 0.10.2",

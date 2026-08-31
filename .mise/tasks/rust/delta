@@ -32,9 +32,7 @@ fi
 format_widths head "$head_bin"
 
 printf '\n'
-cargo run --quiet --release --locked -p prose_sweeps --bin delta -- \
-  "$stage" \
-  $(delta_widths)
+sweeps_run delta "$stage" $(delta_widths)
 
 printf '\neach width survives as a tag pair in the stage, read one with\n'
 printf '  git -C %s diff base-<width> head-<width> [-- <path>]\n' "$stage"

@@ -9,7 +9,7 @@
 //! that reads one. The settle check re-applies the enabled rules to a
 //! completed run's output and names every rule still editing it.
 
-use std::ops::Range;
+use std::{ops::Range, slice};
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_python_ast::PythonVersion;
@@ -145,6 +145,15 @@ impl Pipeline {
     /// alike.
     pub fn fingerprint(&self) -> String {
         format!("{:?}", self.rules)
+    }
+
+    /// One fingerprint per carried rule, in registration order, each
+    /// equal to what the rule's own single-rule pipeline renders.
+    pub fn fingerprints(&self) -> Vec<String> {
+        self.rules
+            .iter()
+            .map(|rule| format!("{:?}", slice::from_ref(rule)))
+            .collect()
     }
 
     /// Rewrites `source` through every enabled rule, skipping the
@@ -352,17 +361,6 @@ fn format_diagnostics(rule: &dyn Rule, groups: Vec<Vec<Edit>>) -> impl Iterator<
         .map(move |group| Diagnostic::format(rule_id, group, message.to_owned()))
 }
 
-/// Splices a rule's concatenated edits into `source`, returning the
-/// woven text and, for a notebook, the `SourceMap` of cell-offset
-/// deltas. An ordinary module skips the map.
-fn weave_groups(source: &Source, edits: Vec<Edit>) -> Option<(String, Option<SourceMap>)> {
-    if source.is_notebook() {
-        apply_edits_mapped(source.text(), edits).map(|(text, map)| (text, Some(map)))
-    } else {
-        apply_edits(source.text(), edits).map(|text| (text, None))
-    }
-}
-
 /// Weaves `rule`'s `groups` into `source`, checking first that no two
 /// of its edits repeat.
 fn weave_distinct(
@@ -376,6 +374,17 @@ fn weave_distinct(
         rule.id(),
     );
     weave_groups(source, groups.concat())
+}
+
+/// Splices a rule's concatenated edits into `source`, returning the
+/// woven text and, for a notebook, the `SourceMap` of cell-offset
+/// deltas. An ordinary module skips the map.
+fn weave_groups(source: &Source, edits: Vec<Edit>) -> Option<(String, Option<SourceMap>)> {
+    if source.is_notebook() {
+        apply_edits_mapped(source.text(), edits).map(|(text, map)| (text, Some(map)))
+    } else {
+        apply_edits(source.text(), edits).map(|text| (text, None))
+    }
 }
 
 /// Applies `rule` to `source` and weaves its surviving fix groups into

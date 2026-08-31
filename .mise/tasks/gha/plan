@@ -67,10 +67,15 @@ def corpus():
     carrying whole families partitions the rules, so each row claims the
     pairs its own family opens and no pair is probed twice.
     """
-    slugs = [] if environ.get("GITHUB_EVENT_NAME") == "push" else scoped(changed())
-    meta  = badges()
-    rows  = []
-    for family, members in families().items():
+    slugs   = [] if environ.get("GITHUB_EVENT_NAME") == "push" else scoped(changed())
+    meta    = badges()
+    catalog = families()
+    rows    = []
+
+    if unnamed := catalog.keys() - meta.keys():
+        raise SystemExit(f"::error::FAMILY_META carries no badge for {', '.join(sorted(unnamed))}")
+
+    for family, members in catalog.items():
         held = [slug for slug in members if slug in slugs] if slugs else members
         if held:
             badge, label = meta[family]

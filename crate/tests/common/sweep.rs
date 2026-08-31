@@ -4,9 +4,10 @@ use std::{
     cmp::Reverse,
     collections::BTreeMap,
     env,
-    io::Write,
+    io::{self, Write},
     num::NonZeroUsize,
     path::{Path, PathBuf},
+    process,
     sync::{
         Mutex, MutexGuard, PoisonError,
         atomic::{AtomicUsize, Ordering},
@@ -73,26 +74,13 @@ impl Drop for Slot {
     }
 }
 
-/// The `.py` files under the corpus root, largest first with the path
-/// breaking ties, so a parallel sweep's tail is one file long and a
-/// failure names the same file across runs. [`CORPUS`] points a sweep
-/// at a directory other than the fixture tree. The walk carries no
-/// standard filter, so a hidden directory and an ignored one both enter
-/// the sweep rather than leaving it short without saying so.
+/// The `.py` files a sweep reads, with the runaway watchdog opened and
+/// an empty corpus failing the sweep outright.
 pub(crate) fn corpus() -> Vec<PathBuf> {
-    let root = pointed_corpus()
-        .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
-    WalkBuilder::new(root)
-        .standard_filters(false)
-        .build()
-        .flatten()
-        .map(ignore::DirEntry::into_path)
-        .filter(|path| path.extension().is_some_and(|ext| ext == "py"))
-        .sorted_by_cached_key(|path| {
-            let size = fs_err::metadata(path).map_or(0, |data| data.len());
-            (Reverse(size), path.clone())
-        })
-        .collect()
+    let files = walked();
+    assert!(!files.is_empty(), "the corpus holds no `.py` files");
+    watch_for_a_runaway();
+    files
 }
 
 /// The values `var` carries as a space-separated list, `defaults` where
@@ -143,36 +131,19 @@ pub(crate) fn swept<F: Absorbing>(
         })
 }
 
+/// The clause a report carries for the files a sweep could not read,
+/// naming the count on stderr as it goes.
+pub(crate) fn unread(count: usize, total: usize, what: &str) -> String {
+    if count == 0 {
+        return String::new();
+    }
+    eprintln!("the {what} could not read {count} of the {total} files under the corpus root");
+    format!(" and {count} the {what} could not read")
+}
+
 /// Whether [`VERIFY_VAR`] is set.
 pub(crate) fn verifying() -> bool {
     setting(VERIFY_VAR).is_some()
-}
-
-/// Ends the process once a probe outruns [`BUDGET`], naming what it was
-/// reading. A rule that fails to terminate cannot be unwound from the
-/// thread running it, and it grows until the machine reaches an
-/// out-of-memory kill, so a sweep stops itself first.
-pub(crate) fn watch_for_a_runaway() {
-    thread::spawn(|| {
-        loop {
-            thread::sleep(Duration::from_secs(1));
-            let overrun = registry()
-                .values()
-                .find(|(since, _)| since.elapsed() > BUDGET)
-                .map(|(_, label)| label.clone());
-            if let Some(label) = overrun {
-                let mut stderr = std::io::stderr();
-                let _ = writeln!(
-                    stderr,
-                    "the sweep stopped itself, since {label} has run past {} seconds and is \
-                     treated as non-terminating",
-                    BUDGET.as_secs(),
-                );
-                let _ = stderr.flush();
-                std::process::exit(101);
-            }
-        }
-    });
 }
 
 /// The line lengths this run sweeps, [`WIDTHS_VAR`] overriding
@@ -190,4 +161,53 @@ pub(crate) fn widths_or(defaults: &[usize]) -> Vec<usize> {
 /// never carries a panic's poison.
 fn registry() -> MutexGuard<'static, BTreeMap<usize, (Instant, String)>> {
     IN_FLIGHT.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// The `.py` files under the corpus root, largest first with the path
+/// breaking ties, so a parallel sweep's tail is one file long and a
+/// failure names the same file across runs. [`CORPUS`] points a sweep
+/// at a directory other than the fixture tree. The walk carries no
+/// standard filter, so a hidden directory and an ignored one both enter
+/// the sweep rather than leaving it short without saying so.
+fn walked() -> Vec<PathBuf> {
+    let root = pointed_corpus()
+        .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
+    WalkBuilder::new(root)
+        .standard_filters(false)
+        .build()
+        .flatten()
+        .map(ignore::DirEntry::into_path)
+        .filter(|path| path.extension().is_some_and(|ext| ext == "py"))
+        .sorted_by_cached_key(|path| {
+            let size = fs_err::metadata(path).map_or(0, |data| data.len());
+            (Reverse(size), path.clone())
+        })
+        .collect()
+}
+
+/// Ends the process once a probe outruns [`BUDGET`], naming what it was
+/// reading. A rule that fails to terminate cannot be unwound from the
+/// thread running it, and it grows until the machine reaches an
+/// out-of-memory kill, so a sweep stops itself first.
+fn watch_for_a_runaway() {
+    thread::spawn(|| {
+        loop {
+            thread::sleep(Duration::from_secs(1));
+            let overrun = registry()
+                .values()
+                .find(|(since, _)| since.elapsed() > BUDGET)
+                .map(|(_, label)| label.clone());
+            if let Some(label) = overrun {
+                let mut stderr = io::stderr();
+                let _ = writeln!(
+                    stderr,
+                    "the sweep stopped itself, since {label} has run past {} seconds and is \
+                     treated as non-terminating",
+                    BUDGET.as_secs(),
+                );
+                let _ = stderr.flush();
+                process::exit(101);
+            }
+        }
+    });
 }

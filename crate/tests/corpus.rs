@@ -4,7 +4,7 @@
 //! every file's output. A run that panics or is rejected is recorded
 //! against its file rather than ending the sweep, and a file passing
 //! `BUDGET` stops the sweep and names itself. Each width in [`WIDTHS`]
-//! runs once per axis in [`AXES`], one budget varied and the rest at
+//! runs once per axis in [`Axis::ALL`], one budget varied and the rest at
 //! their defaults.
 
 use std::{
@@ -25,15 +25,11 @@ use prose::{
 };
 
 use common::{
-    Absorbing, CORPUS, EXCERPT, Hit, SHOWN, Slot, Tally, WIDTHS, WIDTHS_VAR, corpus, env_list,
-    excerpt, note_verified, report_verified, swept, verifying, watch_for_a_runaway, widths_or,
+    Absorbing, CORPUS, Hit, Slot, Tally, WIDTHS, WIDTHS_VAR, corpus, env_list, excerpt,
+    note_verified, report_verified, swept, unread, verifying, widths_or,
 };
 
 mod common;
-
-/// The axes the sweep crosses with every width absent [`AXES_VAR`],
-/// each varying the budget it names.
-const AXES: &[Axis] = &[Axis::Code, Axis::Docstring, Axis::Fallback, Axis::Import];
 
 /// The environment variable narrowing the axes by name.
 const AXES_VAR: &str = "PROSE_SETTLE_AXES";
@@ -63,6 +59,10 @@ enum Axis {
 }
 
 impl Axis {
+    /// Every axis the sweep crosses with each width absent [`AXES_VAR`],
+    /// each varying the budget it names.
+    const ALL: [Self; 4] = [Self::Code, Self::Docstring, Self::Fallback, Self::Import];
+
     /// The phrase a finding and a `Slot` label name this axis and
     /// width by.
     fn clause(self, width: usize) -> String {
@@ -175,11 +175,7 @@ impl Plan {
             for &width in widths {
                 let config = axis.config(width);
                 let pipeline = Pipeline::with_defaults(&config);
-                let prints: Vec<String> = Pipeline::with_defaults(&config)
-                    .split()
-                    .into_iter()
-                    .map(|(_, single)| single.fingerprint())
-                    .collect();
+                let prints = pipeline.fingerprints();
                 if slices.iter().any(|held| held.prints == prints) {
                     continue;
                 }
@@ -240,21 +236,16 @@ struct Slice {
     width: usize,
 }
 
-/// The axes this run sweeps, [`AXES_VAR`] narrowing [`AXES`] as a
+/// The axes this run sweeps, [`AXES_VAR`] narrowing [`Axis::ALL`] as a
 /// space-separated list of `code`, `docstring`, `import`, and
 /// `fallback`.
 fn axes() -> Vec<Axis> {
-    env_list(AXES_VAR, AXES, |name| {
-        *AXES
+    env_list(AXES_VAR, &Axis::ALL, |name| {
+        *Axis::ALL
             .iter()
             .find(|axis| axis.name() == name)
             .unwrap_or_else(|| panic!("{AXES_VAR} names an unknown axis: {name}"))
     })
-}
-
-/// `count` lines reading `word 1` through `word count`.
-fn numbered(word: &str, count: usize) -> String {
-    (1..=count).map(|n| format!("{word} {n}\n")).collect()
 }
 
 /// Runs one slice's fold over `entry` from seat `from`, records the
@@ -434,8 +425,6 @@ fn verify_unlanded(
 #[cfg_attr(coverage, ignore = "the sweep runs uninstrumented in its own row")]
 fn every_width_settles_and_applies_what_it_reports() {
     let files = corpus();
-    assert!(!files.is_empty(), "the corpus holds no `.py` files");
-    watch_for_a_runaway();
     let previous = panic::take_hook();
     panic::set_hook(Box::new(|info| {
         let at = info
@@ -460,16 +449,7 @@ fn every_width_settles_and_applies_what_it_reports() {
     let findings = swept(&files, |path| sweep(&plan, path));
     panic::set_hook(previous);
     report_verified("probes against their reference runs");
-    let unread = match findings.skipped {
-        0 => String::new(),
-        n => {
-            eprintln!(
-                "the sweep could not read {n} of the {} files under the corpus root",
-                files.len()
-            );
-            format!(" and {n} the sweep could not read")
-        }
-    };
+    let unread = unread(findings.skipped, files.len(), "sweep");
     let report = format!(
         "{}{}{}{}",
         findings.panicked.render("runs that panicked"),
@@ -487,145 +467,4 @@ fn every_width_settles_and_applies_what_it_reports() {
         widths.len(),
         axes.len(),
     );
-}
-
-#[test]
-fn excerpt_counts_both_the_lines_and_the_hunks_past_its_cap() {
-    let before = numbered("line", 60);
-    let after: String = (1..=60)
-        .map(|n| {
-            if n <= 30 || n == 55 {
-                format!("row {n}\n")
-            } else {
-                format!("line {n}\n")
-            }
-        })
-        .collect();
-
-    let shown = excerpt("before", "after", &before, &after);
-
-    assert!(shown.ends_with(" more lines and 1 more hunks"), "{shown}");
-}
-
-#[test]
-fn excerpt_counts_the_lines_past_its_cap() {
-    let before = numbered("line", 40);
-    let after = numbered("row", 40);
-
-    let shown = excerpt("before", "after", &before, &after);
-
-    assert_eq!(shown.lines().count(), 2 + EXCERPT + 1, "{shown}");
-    assert!(shown.ends_with(" more lines"), "{shown}");
-}
-
-#[test]
-fn excerpt_ends_on_the_hunk_when_nothing_is_cut() {
-    let before = numbered("line", 10);
-    let after = before.replace("line 2\n", "line two\n");
-
-    let shown = excerpt("before", "after", &before, &after);
-
-    assert!(!shown.contains("..."), "{shown}");
-    assert_eq!(shown.lines().count(), 2 + 7, "{shown}");
-}
-
-#[test]
-fn excerpt_is_empty_when_the_texts_match() {
-    assert!(excerpt("before", "after", "x = 1\n", "x = 1\n").is_empty());
-}
-
-#[test]
-fn excerpt_shows_the_first_hunk_and_counts_the_rest() {
-    let before = numbered("line", 60);
-    let after = before
-        .replace("line 2\n", "line two\n")
-        .replace("line 50\n", "line fifty\n");
-
-    let shown = excerpt("first pass", "second pass", &before, &after);
-
-    assert!(
-        shown.starts_with("--- first pass\n+++ second pass\n@@"),
-        "{shown}"
-    );
-    assert!(shown.contains("-line 2\n+line two\n"), "{shown}");
-    assert!(shown.ends_with("... and 1 more hunks"), "{shown}");
-}
-
-#[test]
-fn tally_names_a_defect_once_across_clauses_and_keeps_the_earliest_example() {
-    let hit = |label: &str, width| Hit {
-        clause: Some((label.to_owned(), width)),
-        ..Hit::default()
-    };
-    let mut tally = Tally::default();
-    tally.record_hit(
-        "still editing".to_owned(),
-        Path::new("b.py"),
-        hit("code", 88),
-    );
-    tally.record_hit(
-        "still editing".to_owned(),
-        Path::new("a.py"),
-        hit("import", 60),
-    );
-    tally.record_hit(
-        "still editing".to_owned(),
-        Path::new("a.py"),
-        hit("code", 40),
-    );
-
-    let rendered = tally.render("defects");
-
-    assert_eq!(tally.len(), 1);
-    assert!(
-        rendered.contains("still editing (2 files, e.g. a.py at code 40)"),
-        "{rendered}"
-    );
-    assert!(
-        rendered.contains("reached at code 40, 88 and import 60"),
-        "{rendered}"
-    );
-}
-
-#[test]
-fn tally_render_caps_the_defects_it_prints_and_counts_the_rest() {
-    let mut tally = Tally::default();
-    for n in 0..=SHOWN {
-        tally.record_hit(format!("defect {n:02}"), Path::new("a.py"), Hit::default());
-    }
-
-    let rendered = tally.render("defects");
-
-    assert!(
-        rendered.contains(&format!("defect {:02}", SHOWN - 1)),
-        "{rendered}"
-    );
-    assert!(
-        !rendered.contains(&format!("defect {SHOWN:02}")),
-        "{rendered}"
-    );
-    assert!(rendered.ends_with("... and 1 more"), "{rendered}");
-}
-
-#[test]
-fn tally_render_carries_the_example_repro_and_detail() {
-    let mut tally = Tally::default();
-    let hit = Hit {
-        detail: Some("--- a\n+++ b".to_owned()),
-        repro: Some("cargo test".to_owned()),
-        ..Hit::default()
-    };
-    tally.record_hit("still editing".to_owned(), Path::new("a.py"), hit);
-
-    let rendered = tally.render("defects");
-
-    assert!(
-        rendered.contains("still editing (1 file, e.g. a.py)"),
-        "{rendered}"
-    );
-    assert!(
-        rendered.contains("\n    reproduce with cargo test"),
-        "{rendered}"
-    );
-    assert!(rendered.ends_with("\n    --- a\n    +++ b"), "{rendered}");
 }

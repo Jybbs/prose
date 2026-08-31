@@ -13,7 +13,8 @@ if [[ -n "$restored" ]]; then
   if [[ "$baked" == "$base" ]] \
     || { git fetch --depth=1 -q origin "$baked" \
       && git diff --quiet "$baked" "$base" -- \
-        .mise/lib Cargo.lock Cargo.toml crate/Cargo.toml crate/src; }; then
+        .mise/config.toml .mise/lib .mise/tasks/rust/bake \
+        Cargo.lock Cargo.toml crate/Cargo.toml crate/src; }; then
     printf 'the stage baked at %s serves %s\n' "$baked" "$base"
     exit 0
   fi

@@ -22,6 +22,16 @@ use tabled::{builder::Builder, settings::Style};
 /// How many files a movement line names before it counts the rest.
 const SHOWN: usize = 3;
 
+/// Renders the delta between a stage's base and head cycles.
+#[derive(Parser)]
+struct Args {
+    /// The stage holding both cycles' tags and records.
+    stage: PathBuf,
+    /// The widths to report, one section apiece.
+    #[arg(required = true)]
+    widths: Vec<String>,
+}
+
 /// One tagged cycle's summary record and the files each rule fired on.
 struct Cycle {
     counts: BTreeMap<String, usize>,
@@ -106,8 +116,7 @@ impl Report {
                 format!("{delta:+}"),
             ]);
         }
-        let mut built = table.build();
-        indented(&built.with(Style::blank()).to_string())
+        indented(&table.build().with(Style::blank()).to_string())
     }
 
     /// Git's own diffstat between the two tags, capped at five files.
@@ -171,7 +180,7 @@ impl Report {
                     "{} {verb} on {} file{plural} ({})",
                     slug,
                     files.len(),
-                    self.named(files)
+                    Self::named(files)
                 )
             })
             .join("\n");
@@ -179,7 +188,7 @@ impl Report {
     }
 
     /// Lists the first [`SHOWN`] of `files` and counts the rest.
-    fn named(&self, files: &[String]) -> String {
+    fn named(files: &[String]) -> String {
         let names = files.iter().take(SHOWN).join(", ");
         match files.len().saturating_sub(SHOWN) {
             0 => names,
@@ -212,16 +221,6 @@ impl Report {
             indented(&notes)
         }
     }
-}
-
-/// Renders the delta between a stage's base and head cycles.
-#[derive(Parser)]
-struct Args {
-    /// The stage holding both cycles' tags and records.
-    stage: PathBuf,
-    /// The widths to report, one section apiece.
-    #[arg(required = true)]
-    widths: Vec<String>,
 }
 
 /// Runs `git` with `args`, failing rather than reporting empty output when

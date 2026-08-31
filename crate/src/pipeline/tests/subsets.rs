@@ -24,11 +24,26 @@ fn fingerprint_reads_a_sibling_flag_off_the_selection(
 }
 
 #[test]
+fn fingerprints_match_what_each_split_pipeline_renders() {
+    let config = Config::default();
+    let selected = ["align-equals", "band-constants", "group-imports"].map(RuleId::from);
+
+    let prints = Pipeline::with_filters(&config, &selected, &[]).fingerprints();
+
+    let split = Pipeline::with_filters(&config, &selected, &[])
+        .split()
+        .into_iter()
+        .map(|(_, single)| single.fingerprint())
+        .collect_vec();
+    assert_eq!(prints, split);
+}
+
+#[test]
 fn format_matches_the_text_half_of_run() {
     let pipeline = Pipeline::with_defaults(&Config::default());
     let text = "import sys\nimport os\n\n\n\n\nx  =  1\n";
-    let formatted = pipeline.format(text.parse().unwrap()).unwrap();
-    let (ran, _) = pipeline.run(text.parse().unwrap()).unwrap();
+    let formatted = pipeline.format(parse(text)).unwrap();
+    let (ran, _) = pipeline.run(parse(text)).unwrap();
     assert_eq!(formatted.text(), ran.text());
 }
 
@@ -63,7 +78,7 @@ fn format_span_leaves_a_file_suppressed_source_alone() {
 fn format_span_segments_compose_to_the_full_fold() {
     let pipeline = Pipeline::with_defaults(&Config::default());
     let text = "import sys\nimport os\n\n\n\n\ny  =  2\n";
-    let source: Source = text.parse().unwrap();
+    let source = parse(text);
     let copy = source.clone();
     let full = pipeline.format(source).unwrap();
     let seam = pipeline.len() / 2;

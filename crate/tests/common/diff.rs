@@ -32,6 +32,9 @@ pub(crate) fn excerpt(from: &str, to: &str, before: &str, after: &str) -> String
     }
 }
 
+/// The whole unified diff from `expected` to `actual`, headed by those
+/// two words, which a divergence check prints in full rather than
+/// excerpting.
 pub(crate) fn unified_diff(expected: &str, actual: &str) -> String {
     TextDiff::from_lines(expected, actual)
         .unified_diff()

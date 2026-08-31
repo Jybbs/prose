@@ -34,6 +34,8 @@ tagline: deterministic rule runner
 
 `fingerprint(&self) -> String` renders every carried rule's settings, equal for two pipelines whose rules resolved alike, so a consumer holding many single-rule pipelines can share the ones that would behave the same.
 
+`fingerprints(&self) -> Vec<String>` renders one fingerprint per carried rule in registration order, each equal to what that rule's own single-rule pipeline renders, so a consumer comparing two selections seat by seat reads them without splitting either.
+
 ### Execution
 
 `run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError>` walks the registered rules in their canonical order. Each rule applies its edits, the pipeline reparses, and the new *Source* feeds the next rule, with the final text and every emitted diagnostic returned to the caller. Suppression is applied transparently inside `run`, with every `# fmt: off` block, `# fmt: skip` marker, and `# prose: ignore[<rule>]` directive consulted at the edit-emission boundary so suppressed fix groups and lint diagnostics never reach the returned vector. A fix group drops whole as soon as one of its edits falls under a directive, leaving a rule's co-dependent edits either all applied or all withheld.

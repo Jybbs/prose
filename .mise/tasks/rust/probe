@@ -1,8 +1,9 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "probe"
-#MISE description = "Build the probe binary and the corpus harnesses the settle, subset, and delta sweeps run on"
+#MISE description = "Build the probe binary, the sweep generators, and the corpus harnesses the settle, subset, and delta sweeps run on"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/delta.bash"
 
 built_binary probe > /dev/null
+cargo build --locked --profile probe -p prose_sweeps --bins
 cargo test --locked --no-run --profile probe --test corpus --test settle
