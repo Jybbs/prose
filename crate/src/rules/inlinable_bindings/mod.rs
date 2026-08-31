@@ -2,14 +2,12 @@
 //! value inlines at the read for free. Lint-only, emits no edits.
 //!
 //! A candidate is declined where no replacement text resolves, where
-//! the value spans rows, where the read sits inside a guarded region
-//! the write sits outside of, and where the swap carries the read's row
-//! past `code_line_length`. `guards` names those regions, covering
-//! every arm a loop, a `try`, a `with`, or a nested `def` opens, a
-//! comprehension outside its first iterable, and a lambda's body.
-//! Names matching `allow_pattern`, a function declaring `global` or
-//! `nonlocal`, and every write kind but `Assignment` and `Walrus` stay
-//! outside the surface.
+//! the value spans rows, where the read sits inside a region `guards`
+//! names that the write sits outside of, and where the swap carries
+//! the read's row past `code_line_length`. Names matching
+//! `allow_pattern`, names a `del` statement targets, a function
+//! declaring `global` or `nonlocal`, and every write kind but
+//! `Assignment` and `Walrus` stay outside the surface.
 
 use ruff_python_ast::statement_visitor::StatementVisitor;
 

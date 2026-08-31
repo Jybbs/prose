@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/del_spares_the_name_module_wide/input.py
+---
+def release(source):
+    handle = source.open()
+    del handle
+
+
+def rebuild(source):
+    handle = source.build()
+    return handle.name

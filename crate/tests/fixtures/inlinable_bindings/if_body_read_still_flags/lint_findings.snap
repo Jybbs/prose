@@ -15,6 +15,6 @@ input_file: crate/tests/fixtures/inlinable_bindings/if_body_read_still_flags/inp
       "column": 5,
       "row": 2
     },
-    "message": "`total` is assigned and used once. Consider inlining `sum(data)`"
+    "message": "`total` is read once and inlining its value costs nothing. Consider inlining `sum(data)`"
   }
 ]

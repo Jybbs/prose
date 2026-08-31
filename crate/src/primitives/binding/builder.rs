@@ -574,12 +574,10 @@ impl Builder {
                 .iter()
                 .any(|&member| self.bindings[member.0 as usize].read_offsets.len() > 1);
             for (index, &member) in group.members.iter().enumerate() {
-                let kind = if reused {
-                    UnpackKind::Exempt
-                } else if group.suggestible {
+                let kind = if !reused && group.suggestible {
                     UnpackKind::Suggested(group.value, index)
                 } else {
-                    UnpackKind::Bare
+                    UnpackKind::Unresolved
                 };
                 unpack_targets.insert(member, kind);
             }

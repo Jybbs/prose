@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
+source: crate/tests/integration.rs
 expression: json
-input_file: tests/fixtures/composition/align_run_then_flag_once_used/input.py
+input_file: crate/tests/fixtures/composition/align_run_then_flag_once_used/input.py
 ---
 [
   {
@@ -15,7 +15,7 @@ input_file: tests/fixtures/composition/align_run_then_flag_once_used/input.py
       "column": 5,
       "row": 2
     },
-    "message": "`base` is assigned and used once. Consider inlining `data * 2`"
+    "message": "`base` is read once and inlining its value costs nothing. Consider inlining `data * 2`"
   },
   {
     "code": "inlinable-bindings",
@@ -28,7 +28,7 @@ input_file: tests/fixtures/composition/align_run_then_flag_once_used/input.py
       "column": 5,
       "row": 5
     },
-    "message": "`result` is assigned and used once. Consider inlining `used_twice + offset`"
+    "message": "`result` is read once and inlining its value costs nothing. Consider inlining `used_twice + offset`"
   },
   {
     "code": "inlinable-bindings",
@@ -41,6 +41,6 @@ input_file: tests/fixtures/composition/align_run_then_flag_once_used/input.py
       "column": 5,
       "row": 4
     },
-    "message": "`used_twice` is assigned and used once. Consider inlining `data + offset`"
+    "message": "`used_twice` is read once and inlining its value costs nothing. Consider inlining `data + offset`"
   }
 ]

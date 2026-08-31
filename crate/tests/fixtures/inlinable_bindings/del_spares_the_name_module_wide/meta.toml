@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A `del` in One Function Spares the Name Across the Module"
+
+description = '''
+`handle` in `rebuild` is written once and read once, and nothing deletes it. **It still goes unreported**, because `release` deletes a binding of the same name and the table answers the deletion question per module rather than per binding, and removing the `del` reports both bindings.
+'''

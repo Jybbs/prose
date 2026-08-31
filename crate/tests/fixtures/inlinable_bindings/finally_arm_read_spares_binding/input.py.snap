@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/finally_arm_read_spares_binding/input.py
+---
+def close(path, fallback):
+    default = fallback or {}
+    try:
+        return read(path)
+    finally:
+        record(default)

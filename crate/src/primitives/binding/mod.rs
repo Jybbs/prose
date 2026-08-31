@@ -302,15 +302,13 @@ pub(crate) enum BindingKind {
 /// Disposition of a multi-name unpack target for `inlinable-bindings`.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub(crate) enum UnpackKind {
-    /// Flagged with no subscript rewrite, because the right-hand side
-    /// is a call or a starred target shifts the indices.
-    Bare,
-    /// A sibling target reads more than once, so removing this target
-    /// would split the unpack into an indexed read.
-    Exempt,
     /// Flagged with a subscript rewrite: the right-hand-side range and
     /// this target's index.
     Suggested(TextRange, usize),
+    /// No subscript rewrite resolves, because a sibling target reads
+    /// more than once, the right-hand side is a call, or a starred
+    /// target shifts the indices.
+    Unresolved,
 }
 
 /// One named binding in some scope, with every observed write and read.
@@ -720,22 +718,22 @@ mod tests {
     #[case::reused_sibling(
         "head, tail = pair\nuse(tail)\nuse(tail)\nuse(head)\n",
         "head",
-        Some(UnpackKind::Exempt)
+        Some(UnpackKind::Unresolved)
     )]
     #[case::call_value(
         "name, value = lookup()\nuse(name)\nuse(value)\n",
         "name",
-        Some(UnpackKind::Bare)
+        Some(UnpackKind::Unresolved)
     )]
     #[case::starred_target(
         "head, *rest = items\nuse(head)\nuse(rest)\n",
         "head",
-        Some(UnpackKind::Bare)
+        Some(UnpackKind::Unresolved)
     )]
     #[case::nested_unpack(
         "(a, b), c = pair\nuse(a)\nuse(b)\nuse(c)\n",
         "a",
-        Some(UnpackKind::Bare)
+        Some(UnpackKind::Unresolved)
     )]
     #[case::direct_assignment("x = 1\nuse(x)\n", "x", None)]
     #[case::single_name_unpack("(only,) = pair\nuse(only)\n", "only", None)]

@@ -15,6 +15,6 @@ input_file: crate/tests/fixtures/inlinable_bindings/loop_local_read_still_flags/
       "column": 9,
       "row": 3
     },
-    "message": "`scaled` is assigned and used once. Consider inlining `row.value * 2`"
+    "message": "`scaled` is read once and inlining its value costs nothing. Consider inlining `row.value * 2`"
   }
 ]

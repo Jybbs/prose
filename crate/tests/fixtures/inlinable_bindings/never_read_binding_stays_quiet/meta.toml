@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Binding Never Read Stays Quiet"
+
+description = '''
+`scratch` is written once and read nowhere, so there is no read for its value to drop into. **The binding stays unreported**, this rule speaking only to a binding whose one read the value could stand in for rather than to one nothing consumes.
+'''

@@ -15,6 +15,6 @@ input_file: crate/tests/fixtures/inlinable_bindings/lambda_default_read_still_fl
       "column": 5,
       "row": 2
     },
-    "message": "`sep` is assigned and used once. Consider inlining `\", \"`"
+    "message": "`sep` is read once and inlining its value costs nothing. Consider inlining `\", \"`"
   }
 ]

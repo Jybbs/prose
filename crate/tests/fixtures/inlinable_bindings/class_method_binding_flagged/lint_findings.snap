@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
+source: crate/tests/integration.rs
 expression: json
-input_file: tests/fixtures/inlinable_bindings/class_method_binding_flagged/input.py
+input_file: crate/tests/fixtures/inlinable_bindings/class_method_binding_flagged/input.py
 ---
 [
   {
@@ -15,6 +15,6 @@ input_file: tests/fixtures/inlinable_bindings/class_method_binding_flagged/input
       "column": 9,
       "row": 3
     },
-    "message": "`normalized` is assigned and used once. Consider inlining `transform(payload)`"
+    "message": "`normalized` is read once and inlining its value costs nothing. Consider inlining `transform(payload)`"
   }
 ]

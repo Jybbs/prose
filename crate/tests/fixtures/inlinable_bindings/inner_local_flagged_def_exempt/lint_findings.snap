@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
+source: crate/tests/integration.rs
 expression: json
-input_file: tests/fixtures/inlinable_bindings/inner_local_flagged_def_exempt/input.py
+input_file: crate/tests/fixtures/inlinable_bindings/inner_local_flagged_def_exempt/input.py
 ---
 [
   {
@@ -15,6 +15,6 @@ input_file: tests/fixtures/inlinable_bindings/inner_local_flagged_def_exempt/inp
       "column": 9,
       "row": 3
     },
-    "message": "`x` is assigned and used once. Consider inlining `compute()`"
+    "message": "`x` is read once and inlining its value costs nothing. Consider inlining `compute()`"
   }
 ]

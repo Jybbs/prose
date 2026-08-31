@@ -15,6 +15,6 @@ input_file: crate/tests/fixtures/inlinable_bindings/annotated_assignment_names_i
       "column": 5,
       "row": 2
     },
-    "message": "`parsed` is assigned and used once. Consider inlining `int(raw)`"
+    "message": "`parsed` is read once and inlining its value costs nothing. Consider inlining `int(raw)`"
   }
 ]

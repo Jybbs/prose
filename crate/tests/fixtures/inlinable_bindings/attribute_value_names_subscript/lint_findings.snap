@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
+source: crate/tests/integration.rs
 expression: json
-input_file: tests/fixtures/inlinable_bindings/attribute_value_names_subscript/input.py
+input_file: crate/tests/fixtures/inlinable_bindings/attribute_value_names_subscript/input.py
 ---
 [
   {
@@ -15,7 +15,7 @@ input_file: tests/fixtures/inlinable_bindings/attribute_value_names_subscript/in
       "column": 5,
       "row": 2
     },
-    "message": "`x` is assigned and used once. Consider inlining `point.coords[0]`"
+    "message": "`x` is read once and inlining its value costs nothing. Consider inlining `point.coords[0]`"
   },
   {
     "code": "inlinable-bindings",
@@ -28,6 +28,6 @@ input_file: tests/fixtures/inlinable_bindings/attribute_value_names_subscript/in
       "column": 8,
       "row": 2
     },
-    "message": "`y` is assigned and used once. Consider inlining `point.coords[1]`"
+    "message": "`y` is read once and inlining its value costs nothing. Consider inlining `point.coords[1]`"
   }
 ]

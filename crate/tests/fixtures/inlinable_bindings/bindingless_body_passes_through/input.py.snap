@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/inlinable_bindings/bindingless_body_passes_through/input.py
+---
+def main() -> None:
+    pass

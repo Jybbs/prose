@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/while_test_read_spares_binding/input.py
+---
+def drain(source):
+    limit = compute()
+    while source.next() < limit:
+        source.pop()

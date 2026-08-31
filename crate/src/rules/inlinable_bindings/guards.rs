@@ -1,7 +1,7 @@
 //! The regions of a function body whose interior repeats, runs under a
 //! guard, or opens a scope of its own.
 
-use ruff_python_ast::{Expr, Stmt};
+use ruff_python_ast::{ExceptHandler, Expr, Stmt};
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::primitives::{
@@ -12,34 +12,41 @@ use crate::primitives::{
 
 /// Every span in `body` that repeats its interior, guards it, or opens
 /// a scope for it, covering every arm a loop, a `try`, a `with`, or a
-/// nested `def` opens, a comprehension outside its first iterable, and
-/// a lambda's body.
+/// nested `def` opens, a `while` test, an `except` clause's type
+/// expression, a comprehension outside its first iterable, and a
+/// lambda's body.
 pub(super) fn guarded_regions(body: &[Stmt]) -> Vec<TextRange> {
-    let mut regions: Vec<TextRange> = filter_map_over_stmts(body, guarded_arms)
+    filter_map_over_stmts(body, guarded_arms)
         .into_iter()
+        .chain(filter_map_over_exprs(body, Descent::Into, guarded_spans))
         .flatten()
-        .collect();
-    regions.extend(
-        filter_map_over_exprs(body, Descent::Into, guarded_spans)
-            .into_iter()
-            .flatten(),
-    );
-    regions
+        .collect()
 }
 
 /// The span of each arm `stmt` guards, `None` for a statement that
-/// guards none. An `if` and a `match` guard no arm here.
+/// guards none. An `if` and a `match` guard no arm here. A `while`
+/// test re-runs on each pass and an `except` clause's type expression
+/// runs only once a raise reaches it, so both join the arm bodies.
 fn guarded_arms(stmt: &Stmt) -> Option<Vec<TextRange>> {
-    matches!(
-        stmt,
-        Stmt::For(_) | Stmt::FunctionDef(_) | Stmt::Try(_) | Stmt::While(_) | Stmt::With(_)
-    )
-    .then(|| {
+    let deferred = match stmt {
+        Stmt::For(_) | Stmt::FunctionDef(_) | Stmt::With(_) => Vec::new(),
+        Stmt::Try(node) => node
+            .handlers
+            .iter()
+            .filter_map(|ExceptHandler::ExceptHandler(handler)| {
+                handler.type_.as_deref().map(Ranged::range)
+            })
+            .collect(),
+        Stmt::While(node) => vec![node.test.range()],
+        _ => return None,
+    };
+    Some(
         sub_bodies(stmt)
             .into_iter()
             .map(|(body, _)| blocks_span(body))
-            .collect()
-    })
+            .chain(deferred)
+            .collect(),
+    )
 }
 
 /// The spans of `expr` that run per item or on a later call, `None` for
@@ -85,7 +92,7 @@ mod tests {
         "def f():\n    for i in xs:\n        g(i)\n    else:\n        h()\n",
         2
     )]
-    #[case::while_body("def f():\n    while go:\n        g()\n", 1)]
+    #[case::while_test_and_body("def f():\n    while go:\n        g()\n", 2)]
     #[case::nested_def("def f():\n    def inner():\n        g()\n    return inner\n", 1)]
     #[case::lambda_body("def f():\n    return lambda: g()\n", 1)]
     #[case::dict_comprehension("def f():\n    return {k: v for k in xs}\n", 2)]
@@ -117,11 +124,11 @@ mod tests {
     }
 
     #[test]
-    fn guarded_regions_splits_a_try_into_one_span_per_arm() {
+    fn guarded_regions_splits_a_try_into_its_arms_and_clause() {
         let source = parse(
             "def f():\n    try:\n        a()\n    except E:\n        b()\n    else:\n        c()\n    finally:\n        d()\n",
         );
-        assert_eq!(guarded_regions(&first_def(&source).body).len(), 4);
+        assert_eq!(guarded_regions(&first_def(&source).body).len(), 5);
     }
 
     #[test]

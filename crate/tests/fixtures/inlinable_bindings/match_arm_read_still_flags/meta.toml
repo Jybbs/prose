@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Read Inside a `match` Arm Still Flags"
+
+description = '''
+`total` is written above the `match` and read once inside one of its arms, the shape a loop or a `try` arm would spare. **The binding is reported**, because a `case` arm runs at most once and holds no computation the enclosing scope had not already reached, the same reading an `if` branch takes.
+'''

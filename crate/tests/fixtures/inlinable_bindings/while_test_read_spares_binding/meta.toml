@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Read Inside a `while` Test Spares the Binding"
+
+description = '''
+`limit` is written above the `while` and read once in its test, which Python re-evaluates before every pass. **The binding stays unreported**, because standing `compute()` in at the read would run it once per iteration rather than once per call, the same disposition a read in the loop body takes.
+'''

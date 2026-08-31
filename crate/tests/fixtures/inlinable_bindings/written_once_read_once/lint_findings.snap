@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
+source: crate/tests/integration.rs
 expression: json
-input_file: tests/fixtures/inlinable_bindings/written_once_read_once/input.py
+input_file: crate/tests/fixtures/inlinable_bindings/written_once_read_once/input.py
 ---
 [
   {
@@ -15,6 +15,6 @@ input_file: tests/fixtures/inlinable_bindings/written_once_read_once/input.py
       "column": 5,
       "row": 2
     },
-    "message": "`x` is assigned and used once. Consider inlining `expensive(arg)`"
+    "message": "`x` is read once and inlining its value costs nothing. Consider inlining `expensive(arg)`"
   }
 ]

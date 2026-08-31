@@ -36,13 +36,13 @@ impl Visitor<'_> {
             return None;
         };
         let name = self.analysis.binding_name(binding);
-        if self.allow_pattern.matches(name) {
+        if self.allow_pattern.matches(name) || self.analysis.is_deleted(name) {
             return None;
         }
         let write = self.analysis.first_write_offset(binding);
         if guards
             .iter()
-            .any(|guard| guard.contains(read) && !guard.contains(write))
+            .any(|guard| guard.contains(read) != guard.contains(write))
         {
             return None;
         }
@@ -53,7 +53,9 @@ impl Visitor<'_> {
         Some(Diagnostic::lint(
             self.rule,
             TextRange::at(write, TextSize::of(name)),
-            format!("`{name}` is assigned and used once. Consider inlining `{value}`"),
+            format!(
+                "`{name}` is read once and inlining its value costs nothing. Consider inlining `{value}`"
+            ),
         ))
     }
 
@@ -84,8 +86,8 @@ impl Visitor<'_> {
     /// spans rows.
     fn replacement(&self, binding: BindingId, write: TextSize) -> Option<String> {
         let (value, index) = match self.analysis.unpack_target(binding) {
-            Some(UnpackKind::Bare | UnpackKind::Exempt) => return None,
             Some(UnpackKind::Suggested(range, index)) => (range, Some(index)),
+            Some(UnpackKind::Unresolved) => return None,
             None => (self.analysis.assignment_value_range(write)?, None),
         };
         if self.source.contains_line_break(value) {
