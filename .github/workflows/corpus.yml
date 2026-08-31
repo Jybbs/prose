@@ -206,8 +206,7 @@ jobs:
 
       - name : Format the head at every width against the baseline
         env:
-          PROSE_DELTA_MARKDOWN : 'true'
-          PROSE_DELTA_STAGE    : ${{ runner.temp }}/stage
+          PROSE_DELTA_STAGE : ${{ runner.temp }}/stage
         run  : mise run rust:delta
 
   subsets:

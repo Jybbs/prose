@@ -33,7 +33,6 @@ format_widths head "$head_bin"
 
 printf '\n'
 cargo run --quiet --release --locked -p prose_sweeps --bin delta -- \
-  ${PROSE_DELTA_MARKDOWN:+--markdown} \
   "$stage" \
   $(delta_widths)
 

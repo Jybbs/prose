@@ -58,36 +58,24 @@ impl Cycle {
     }
 }
 
-/// The two cycles one width compares, rendered as terminal text or as the
-/// Markdown a step summary takes.
+/// The two cycles one width compares, rendered as terminal text.
 struct Report {
     base: Cycle,
     head: Cycle,
-    markdown: bool,
     stage: PathBuf,
     width: String,
 }
 
 impl Report {
     /// Reads both sides of one width out of the stage.
-    fn read(stage: &Path, width: &str, markdown: bool) -> Result<Self, Box<dyn Error>> {
+    fn read(stage: &Path, width: &str) -> Result<Self, Box<dyn Error>> {
         let side = |name: &str| stage.join(".git").join(format!("{name}-{width}.ndjson"));
         Ok(Self {
             base: Cycle::read(&side("base"))?,
             head: Cycle::read(&side("head"))?,
-            markdown,
             stage: stage.to_owned(),
             width: width.to_owned(),
         })
-    }
-
-    /// Renders `text` as inline code in Markdown, bare otherwise.
-    fn code(&self, text: &str) -> String {
-        if self.markdown {
-            format!("`{text}`")
-        } else {
-            text.to_owned()
-        }
     }
 
     /// Tables the rules whose firing count moved, largest move first.
@@ -106,23 +94,20 @@ impl Report {
             .sorted_by(|a, b| b.3.abs().cmp(&a.3.abs()).then_with(|| a.0.cmp(b.0)))
             .collect_vec();
         if moved.is_empty() {
-            return self.lines("every rule fired the same number of times");
+            return indented("every rule fired the same number of times");
         }
         let mut table = Builder::default();
         table.push_record(["Rule", "Base", "Head", "Delta"]);
         for (slug, before, after, delta) in moved {
             table.push_record([
-                self.code(slug),
+                slug.clone(),
                 before.to_string(),
                 after.to_string(),
                 format!("{delta:+}"),
             ]);
         }
         let mut built = table.build();
-        if self.markdown {
-            return format!("{}\n\n", built.with(Style::markdown()));
-        }
-        self.lines(&built.with(Style::blank()).to_string())
+        indented(&built.with(Style::blank()).to_string())
     }
 
     /// Git's own diffstat between the two tags, capped at five files.
@@ -142,24 +127,7 @@ impl Report {
         } else {
             &trimmed
         };
-        if self.markdown {
-            return Ok(format!("```\n{shown}\n```\n\n"));
-        }
-        Ok(self.lines(shown))
-    }
-
-    /// Renders `text` as a bullet list in Markdown, indented lines otherwise.
-    fn lines(&self, text: &str) -> String {
-        let marker = if self.markdown { "- " } else { "  " };
-        let body: String = text
-            .lines()
-            .map(|line| format!("{marker}{line}\n"))
-            .collect();
-        if self.markdown {
-            format!("{body}\n")
-        } else {
-            body
-        }
+        Ok(indented(shown))
     }
 
     /// Names the files each rule newly fires on or no longer fires on.
@@ -193,7 +161,7 @@ impl Report {
             })
             .collect_vec();
         if moves.is_empty() {
-            return self.lines("every rule fires on the same files");
+            return indented("every rule fires on the same files");
         }
         let rendered = moves
             .iter()
@@ -201,22 +169,18 @@ impl Report {
                 let plural = if files.len() > 1 { "s" } else { "" };
                 format!(
                     "{} {verb} on {} file{plural} ({})",
-                    self.code(slug),
+                    slug,
                     files.len(),
                     self.named(files)
                 )
             })
             .join("\n");
-        self.lines(&rendered)
+        indented(&rendered)
     }
 
     /// Lists the first [`SHOWN`] of `files` and counts the rest.
     fn named(&self, files: &[String]) -> String {
-        let names = files
-            .iter()
-            .take(SHOWN)
-            .map(|name| self.code(name))
-            .join(", ");
+        let names = files.iter().take(SHOWN).join(", ");
         match files.len().saturating_sub(SHOWN) {
             0 => names,
             rest => format!("{names}, and {rest} more"),
@@ -226,11 +190,7 @@ impl Report {
     /// Renders the width's heading, count table, movements, stability, and
     /// diffstat.
     fn render(&self) -> Result<String, Box<dyn Error>> {
-        let heading = if self.markdown {
-            format!("### Width {}\n\n", self.width)
-        } else {
-            format!("width {}\n", self.width)
-        };
+        let heading = format!("width {}\n", self.width);
         Ok(heading + &self.counts() + &self.movements() + &self.stability() + &self.diffstat()?)
     }
 
@@ -249,7 +209,7 @@ impl Report {
         if notes.is_empty() {
             String::new()
         } else {
-            self.lines(&notes)
+            indented(&notes)
         }
     }
 }
@@ -257,9 +217,6 @@ impl Report {
 /// Renders the delta between a stage's base and head cycles.
 #[derive(Parser)]
 struct Args {
-    /// Render the shape a step summary takes.
-    #[arg(long)]
-    markdown: bool,
     /// The stage holding both cycles' tags and records.
     stage: PathBuf,
     /// The widths to report, one section apiece.
@@ -283,30 +240,15 @@ fn git(args: &[&str]) -> Result<String, Box<dyn Error>> {
     Ok(String::from_utf8(run.stdout)?)
 }
 
-/// Names the baseline the stage was baked from and the head it was read
-/// against.
-fn heading(stage: &Path) -> Result<String, Box<dyn Error>> {
-    let baseline = fs_err::read_to_string(stage.join(".git").join("baseline"))?;
-    let head = git(&["describe", "--always", "--dirty"])?;
-    Ok(format!(
-        "## 🦋 Delta\n\nBaseline `{}` against head `{}`.\n\n",
-        baseline.trim(),
-        head.trim()
-    ))
+/// Renders `text` as indented lines.
+fn indented(text: &str) -> String {
+    text.lines().map(|line| format!("  {line}\n")).collect()
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    let mut text = String::new();
     for width in &args.widths {
-        text += &Report::read(&args.stage, width, args.markdown)?.render()?;
-    }
-    if args.markdown {
-        text = heading(&args.stage)? + &text;
-    }
-    match std::env::var("GITHUB_STEP_SUMMARY") {
-        Ok(path) if args.markdown => fs_err::write(path, text)?,
-        _ => print!("{text}"),
+        print!("{}", Report::read(&args.stage, width)?.render()?);
     }
     Ok(())
 }
