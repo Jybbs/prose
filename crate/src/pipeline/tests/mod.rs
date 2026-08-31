@@ -12,14 +12,14 @@ use ruff_text_size::{TextRange, TextSize};
 use super::*;
 use crate::{
     config::Config,
-    diagnostics::Severity,
+    diagnostics::{Severity, fired_rules},
     primitives::edit::singleton_groups,
     rules::{
         align_colons::AlignColons, align_equals::AlignEquals,
         alphabetize_siblings::AlphabetizeSiblings,
     },
     testing::{
-        FUTURE_LEAD, GroupSentinelRule, assert_send_sync, breaks_compile, breaks_parse,
+        FUTURE_LEAD, GroupSentinelRule, PrefixRule, assert_send_sync, breaks_compile, breaks_parse,
         never_settles, notebook, parse, range, rewrites_x_to_y, self_overlapping,
     },
 };

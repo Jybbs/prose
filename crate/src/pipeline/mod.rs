@@ -19,7 +19,7 @@ use ruff_python_ast::PythonVersion;
 use ruff_text_size::Ranged;
 
 use crate::{
-    diagnostics::Diagnostic,
+    diagnostics::{Diagnostic, fired_rules},
     primitives::edit::apply_edits_mapped,
     rule::{Rule, RuleId},
     source::Source,
@@ -212,7 +212,10 @@ impl Pipeline {
 
     /// Rewrites `source` and returns it beside the diagnostics
     /// [`diagnose`](Self::diagnose) collects against the buffer as
-    /// written, the pair a structured `format` reports.
+    /// written, the pair a structured `format` reports, and the rules
+    /// the fold fired, the set a narrowed settle check re-applies, which
+    /// a rule applicable only once an upstream rule has rewritten joins
+    /// where the as-written diagnostics leave it out.
     ///
     /// One walk over the rules serves both halves, in that the fold
     /// opens at the first rule the diagnose pass found editing and
@@ -234,12 +237,14 @@ impl Pipeline {
     pub(crate) fn run_as_written(
         &self,
         source: Source,
-    ) -> Result<(Source, Vec<Diagnostic>), PipelineError> {
+    ) -> Result<(Source, Vec<Diagnostic>, BTreeSet<RuleId>), PipelineError> {
         let (diagnostics, edits_at) = self.diagnosed(&source);
         let Some(first) = edits_at else {
-            return Ok((source, diagnostics));
+            return Ok((source, diagnostics, BTreeSet::new()));
         };
-        Ok((self.fold_rules(source, None, first)?, diagnostics))
+        let mut fold = Vec::new();
+        let formatted = self.fold_rules(source, Some(&mut fold), first)?;
+        Ok((formatted, diagnostics, fired_rules(&fold)))
     }
 
     /// The enabled rules whose edits would still rewrite `source`,

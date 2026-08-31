@@ -92,7 +92,7 @@ The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives
 
 <template #related>
 
-- [[source]] is the value the pipeline reads and re-emits, reparsed between rules so each downstream pass reads a settled AST, with the tables the rule between leaves standing carried into the new value.
+- [[source]] is the value the pipeline reads and re-emits, reparsed between rules so each downstream pass reads a settled AST, with the binding table carried into the new value behind a rule that keeps every binding.
 - [[rule-id]] is the handle each rule registers under, consumed by the pipeline's deterministic ordering and surfaced through `known_ids`.
 - [[suppression-map]] filters the pipeline's emitted edits and lint diagnostics, dropping suppressed entries before they surface to the caller.
 - [[binding-analysis]] builds on first read, carries across a reparse where the rule between keeps every binding, and feeds rules whose questions are binding-shaped.
