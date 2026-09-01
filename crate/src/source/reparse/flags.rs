@@ -13,38 +13,17 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextRange};
 
-/// Whether a buffer's names can reach past ASCII at all, read once so a
-/// token of an all-ASCII buffer skips the per-name scan.
-#[derive(Clone, Copy, PartialEq)]
-pub(super) enum Naming {
-    Ascii,
-    Wide,
-}
-
-impl Naming {
-    pub(super) fn of(text: &str) -> Self {
-        if text.is_ascii() {
-            Self::Ascii
-        } else {
-            Self::Wide
-        }
-    }
-}
-
 /// `token` rewritten over `range`. `text` is the buffer `token`'s own
 /// range indexes.
-pub(super) fn retargeted(token: Token, named: Naming, text: &str, range: TextRange) -> Token {
-    Token::new(token.kind(), range, flags_of(token, named, text))
+pub(super) fn retargeted(token: Token, text: &str, range: TextRange) -> Token {
+    Token::new(token.kind(), range, flags_of(token, text))
 }
 
 /// The flags `token` carries, read from its string flags where it is a
 /// string and from its own text where it is a name.
-fn flags_of(token: Token, named: Naming, text: &str) -> TokenFlags {
+fn flags_of(token: Token, text: &str) -> TokenFlags {
     let Some(string) = token.string_flags() else {
-        let wide_name = named == Naming::Wide
-            && token.kind() == TokenKind::Name
-            && !text[token.range()].is_ascii();
-        return if wide_name {
+        return if token.kind() == TokenKind::Name && !text[token.range()].is_ascii() {
             TokenFlags::NON_ASCII_NAME
         } else {
             TokenFlags::empty()
@@ -74,21 +53,20 @@ fn prefix_flags(prefix: AnyStringPrefix) -> TokenFlags {
         Regular(StringLiteralPrefix::Unicode) => TokenFlags::UNICODE_STRING,
         Regular(_) => TokenFlags::empty(),
     };
-    match prefix {
-        Bytes(ByteStringPrefix::Raw { uppercase_r: true })
-        | Format(FStringPrefix::Raw { uppercase_r: true })
-        | Template(TStringPrefix::Raw { uppercase_r: true })
-        | Regular(StringLiteralPrefix::Raw { uppercase: true }) => {
-            family | TokenFlags::RAW_STRING_UPPERCASE
+    let raw = match prefix {
+        Bytes(ByteStringPrefix::Raw { uppercase_r: upper })
+        | Format(FStringPrefix::Raw { uppercase_r: upper })
+        | Template(TStringPrefix::Raw { uppercase_r: upper })
+        | Regular(StringLiteralPrefix::Raw { uppercase: upper }) => {
+            if upper {
+                TokenFlags::RAW_STRING_UPPERCASE
+            } else {
+                TokenFlags::RAW_STRING_LOWERCASE
+            }
         }
-        Bytes(ByteStringPrefix::Raw { uppercase_r: false })
-        | Format(FStringPrefix::Raw { uppercase_r: false })
-        | Template(TStringPrefix::Raw { uppercase_r: false })
-        | Regular(StringLiteralPrefix::Raw { uppercase: false }) => {
-            family | TokenFlags::RAW_STRING_LOWERCASE
-        }
-        _ => family,
-    }
+        _ => TokenFlags::empty(),
+    };
+    family | raw
 }
 
 #[cfg(test)]
@@ -114,6 +92,9 @@ byte_raw_upper = Rb"bytes"
 formatted = f"{plain}"
 formatted_raw = rf"{plain}"
 formatted_raw_upper = Rf"{plain}"
+templated = t"{plain}"
+templated_raw = rt"{plain}"
+templated_raw_upper = Rt"{plain}"
 spec = f"{plain:>{raw}}"
 ünïcode_name = 1
 "#;
@@ -130,12 +111,7 @@ spec = f"{plain:>{raw}}"
                     .is_some_and(StringFlags::is_triple_quoted)
             })
             .expect("the sample carries a triple-quoted string");
-        let moved = retargeted(
-            *string,
-            Naming::of(FLAVORS),
-            FLAVORS,
-            TextRange::new(0.into(), 1.into()),
-        );
+        let moved = retargeted(*string, FLAVORS, TextRange::new(0.into(), 1.into()));
 
         assert_eq!(moved.range(), TextRange::new(0.into(), 1.into()));
         assert_eq!(moved.string_flags(), string.string_flags());
@@ -147,7 +123,7 @@ spec = f"{plain:>{raw}}"
         let mut checked = 0;
         for token in parsed.tokens().iter() {
             assert_eq!(
-                retargeted(*token, Naming::of(FLAVORS), FLAVORS, token.range()),
+                retargeted(*token, FLAVORS, token.range()),
                 *token,
                 "token at {:?} lost a flag",
                 token.range(),

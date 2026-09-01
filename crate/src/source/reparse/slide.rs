@@ -3,8 +3,6 @@
 
 use std::cell::RefCell;
 
-use rustc_hash::FxHashMap;
-
 use ruff_python_ast::{
     self as ast, Alias, Arguments, BytesLiteral, Comprehension, Decorator, ExceptHandler, Expr,
     FString, Identifier, InterpolatedStringElement, Keyword, MatchCase, ModModule, Parameter,
@@ -19,6 +17,7 @@ use ruff_python_ast::{
     },
 };
 use ruff_text_size::{Ranged, TextRange};
+use rustc_hash::FxHashMap;
 
 use super::deltas::Deltas;
 
@@ -92,10 +91,8 @@ impl<'map> Slide<'map> {
     /// Slides `module`'s own range and every range beneath it, grafting
     /// each window's statement in as the walk reaches it.
     pub(super) fn over_module(&self, module: &mut ModModule) {
-        module.range = self.deltas.slide(module.range);
-        for stmt in &mut module.body {
-            self.visit_stmt(stmt);
-        }
+        module.range = self.slide(module.range);
+        self.visit_body(&mut module.body);
         debug_assert!(
             self.grafts.borrow().is_empty(),
             "every window came from a statement the slide reaches",

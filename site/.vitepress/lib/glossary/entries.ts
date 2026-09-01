@@ -514,9 +514,11 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'reparse': {
     aliases    : ['reparses', 'reparsing'],
-    definition : 'Reparse names the `Source::reparse` step the `Pipeline` runs between rules. '
-               + 'Each rule reads a settled AST built from the post-rewrite text, so no rule '
-               + 'observes another rule\'s half-applied state.',
+    definition : 'Reparse names the step the `Pipeline` runs between rules to rebuild the '
+               + '`Source` over a rule\'s output, splicing in only the statements that rule '
+               + 'edited where it can and parsing the whole file where it cannot. Each rule '
+               + 'reads a settled AST either way, so no rule observes another rule\'s '
+               + 'half-applied state.',
     families   : ['engine'],
     href       : '/primitives/pipeline'
   },

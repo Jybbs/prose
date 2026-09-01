@@ -91,14 +91,10 @@ pub(super) fn shifted(offset: TextSize, marker: &SourceMarker) -> TextSize {
 /// `offset` moved by the delta of the last marker at or before it, left
 /// where it is when no marker precedes it.
 pub(crate) fn shifted_past(offset: TextSize, markers: &[SourceMarker]) -> TextSize {
-    let Some(last) = markers.last() else {
-        return offset;
-    };
-    if last.source() <= offset {
+    if let Some(last) = markers.last()
+        && last.source() <= offset
+    {
         return shifted(offset, last);
-    }
-    if markers[0].source() > offset {
-        return offset;
     }
     let upto = markers.partition_point(|marker| marker.source() <= offset);
     markers[..upto]

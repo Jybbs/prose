@@ -14,17 +14,17 @@ use crate::{
     source::Source,
 };
 
+/// The narrowest window a splice over `range` reparses within, `None`
+/// where no single statement covers it and the module is the window.
+pub(crate) fn covering_window(source: &Source, range: TextRange) -> Option<TextRange> {
+    covering_statement(&source.ast().body, range).map(Ranged::range)
+}
+
 /// The narrowest window a splice over `range` reparses within, the
 /// innermost statement covering it or the whole module where none
 /// does.
-pub(crate) fn reparse_window(source: &Source, range: TextRange) -> TextRange {
-    window_of(source, covering_statement(&source.ast().body, range))
-}
-
-/// The window `covering` reparses within, its own range or the whole
-/// module where no statement covers the splice.
-fn window_of(source: &Source, covering: Option<&Stmt>) -> TextRange {
-    covering.map_or_else(|| source.module_range(), Ranged::range)
+pub(super) fn reparse_window(source: &Source, range: TextRange) -> TextRange {
+    covering_window(source, range).unwrap_or_else(|| source.module_range())
 }
 
 /// Reports whether splicing `replacement` into `outer` at `inner`
@@ -48,7 +48,7 @@ pub(crate) fn splice_parses<T, E>(
 pub(crate) fn splice_preserves_tree(source: &Source, range: TextRange, replacement: &str) -> bool {
     let body = &source.ast().body;
     let covering = covering_statement(body, range);
-    let window = window_of(source, covering);
+    let window = covering.map_or_else(|| source.module_range(), Ranged::range);
     let before = covering.map_or(body.as_slice(), std::slice::from_ref);
     let Ok(reparsed) = splice_reparse(source, window, range, replacement, parse_module) else {
         return false;
@@ -60,16 +60,25 @@ pub(crate) fn splice_preserves_tree(source: &Source, range: TextRange, replaceme
         .map(ComparableStmt::from))
 }
 
+/// The statement of `body` whose own range covers `range`, `None`
+/// where no single statement does.
+fn covering_in_body(body: &[Stmt], range: TextRange) -> Option<&Stmt> {
+    let after = body.partition_point(|stmt| stmt.start() <= range.start());
+    body[..after]
+        .last()
+        .filter(|stmt| range.end() <= stmt.end())
+}
+
 /// The innermost statement whose own range covers `range` and whose
 /// slice reparses on its own, descending through the sub-bodies each
 /// covering statement opens. `None` where no module-body statement
 /// covers it.
 fn covering_statement(body: &[Stmt], range: TextRange) -> Option<&Stmt> {
-    let mut covering = statement_covering(body, range)?;
+    let mut covering = covering_in_body(body, range)?;
     let mut window = covering;
     while let Some(inner) = sub_bodies(covering)
         .into_iter()
-        .find_map(|(nested, _)| statement_covering(nested, range))
+        .find_map(|(nested, _)| covering_in_body(nested, range))
     {
         covering = inner;
         if slices_cleanly(inner) {
@@ -87,15 +96,6 @@ fn covering_statement(body: &[Stmt], range: TextRange) -> Option<&Stmt> {
 /// so does the `def` or `class` line under a decorator.
 fn slices_cleanly(stmt: &Stmt) -> bool {
     !is_decorated(stmt) && sub_bodies(stmt).len() <= 1
-}
-
-/// The statement of `body` whose own range covers `range`, `None`
-/// where no single statement does.
-fn statement_covering(body: &[Stmt], range: TextRange) -> Option<&Stmt> {
-    let after = body.partition_point(|stmt| stmt.start() <= range.start());
-    body[..after]
-        .last()
-        .filter(|stmt| range.end() <= stmt.end())
 }
 
 /// Splices `replacement` into `outer` at `inner` and returns the parsed
@@ -129,7 +129,7 @@ mod tests {
     const NESTED_PAREN: &str = "x = 1\ndef f():\n    return (1)\n";
 
     /// A module whose grouping parenthesis pair sits inside its first
-    /// statement, the boundary `statement_covering`'s partition point
+    /// statement, the boundary `covering_in_body`'s partition point
     /// resolves at index zero.
     const LEADING_PAREN: &str = "def f():\n    return (1)\nx = 1\n";
 

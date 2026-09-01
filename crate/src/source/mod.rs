@@ -112,7 +112,6 @@ impl Source {
         parsed: Parsed<ModModule>,
     ) -> Self {
         let tokens = parsed.tokens().clone();
-        let comment_ranges = CommentRanges::from(&tokens);
         Self::from_parts(
             text,
             name,
@@ -120,7 +119,6 @@ impl Source {
             cell_offsets,
             parsed.into_syntax(),
             tokens,
-            comment_ranges,
         )
     }
 
@@ -134,8 +132,8 @@ impl Source {
         cell_offsets: CellOffsets,
         ast: ModModule,
         tokens: Tokens,
-        comment_ranges: CommentRanges,
     ) -> Self {
+        let comment_ranges = CommentRanges::from(&tokens);
         let line_ending = find_newline(&text).map_or(LineEnding::Lf, |(_, ending)| ending);
         let file = SourceFileBuilder::new(name, text).finish();
         let first_code_offset = ast.body.first().map(Ranged::start);

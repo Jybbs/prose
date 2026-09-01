@@ -4,7 +4,7 @@ use ruff_python_trivia::leading_indentation;
 use ruff_text_size::TextRange;
 
 use crate::{
-    primitives::{range::merged_spans, splice::reparse_window},
+    primitives::{range::merged_spans, splice::covering_window},
     source::Source,
 };
 
@@ -22,12 +22,8 @@ pub(super) fn covering(
     source: &Source,
     replaced: impl Iterator<Item = TextRange>,
 ) -> Option<Vec<TextRange>> {
-    let module = source.module_range();
     let windows: Vec<TextRange> = replaced
-        .map(|range| {
-            let window = reparse_window(source, range);
-            (window != module).then_some(window)
-        })
+        .map(|range| covering_window(source, range))
         .collect::<Option<_>>()?;
     Some(merged_spans(windows))
 }
@@ -62,16 +58,6 @@ mod tests {
         assert!(covering(&source, [range(0, 11)].into_iter()).is_none());
     }
 
-    #[test]
-    fn covering_folds_two_edits_inside_one_statement_into_one_window() {
-        let source = parse("x = 1\ny = 2\n");
-
-        assert_eq!(
-            covering(&source, [range(0, 1), range(4, 5)].into_iter()),
-            Some(vec![range(0, 5)]),
-        );
-    }
-
     #[rstest]
     #[case::two_statements_apart(&[(4, 5), (10, 11)], &[(0, 5), (6, 11)])]
     #[case::two_edits_in_one_statement(&[(0, 1), (4, 5)], &[(0, 5)])]
@@ -85,16 +71,6 @@ mod tests {
         let want: Vec<TextRange> = expected.iter().map(|&(a, b)| range(a, b)).collect();
 
         assert_eq!(covering(&source, spans), Some(want));
-    }
-
-    #[test]
-    fn covering_narrows_to_the_statement_holding_each_edit() {
-        let source = parse("x = 1\ny = 2\n");
-
-        assert_eq!(
-            covering(&source, [range(4, 5), range(10, 11)].into_iter()),
-            Some(vec![range(0, 5), range(6, 11)]),
-        );
     }
 
     #[test]

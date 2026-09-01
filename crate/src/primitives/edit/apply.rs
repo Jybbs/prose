@@ -6,12 +6,12 @@ use std::borrow::Cow;
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_text_size::{Ranged, TextLen, TextRange};
 
+use super::*;
 use crate::source::Source;
 
-use super::*;
-
 /// Splices `edits` into `text` and returns the resulting string, the
-/// shape a caller reading no offsets takes.
+/// shape a caller reading no offsets takes. Declines with `None` on
+/// overlapping edits, as [`apply_edits_mapped`] does.
 pub(crate) fn apply_edits(text: &str, mut edits: Vec<Edit>) -> Option<String> {
     edits.sort_unstable();
     weave(text, TextRange::up_to(text.text_len()), &edits, None)

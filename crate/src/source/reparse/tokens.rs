@@ -2,15 +2,11 @@
 
 use ruff_python_ast::{
     Stmt,
-    token::{Token, TokenKind, Tokens},
+    token::{Token, Tokens},
 };
-use ruff_python_trivia::CommentRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use super::{
-    deltas::Deltas,
-    flags::{Naming, retargeted},
-};
+use super::{deltas::Deltas, flags::retargeted};
 
 /// One window's held span and the statement and tokens its reparse
 /// produced, the statement's own range being where it landed.
@@ -32,15 +28,12 @@ pub(super) fn spliced(
     held_text: &str,
     deltas: &Deltas,
     windows: &[Reparsed],
-) -> (Tokens, CommentRanges) {
-    let named = Naming::of(held_text);
+) -> Tokens {
     let fresh: usize = windows.iter().map(|window| window.fresh.len()).sum();
     let mut merged = Vec::with_capacity(held.len() + fresh);
-    let opens = windows
-        .first()
-        .map_or(TextSize::new(u32::MAX), |window| window.held.start());
-    let still =
-        held.partition_point(|token| token.end() <= opens && deltas.holds_still(token.range()));
+    let still = windows.first().map_or(held.len(), |window| {
+        held.partition_point(|token| token.end() <= window.held.start())
+    });
     merged.extend_from_slice(&held[..still]);
     let mut next = 0;
     for token in &held[still..] {
@@ -61,24 +54,19 @@ pub(super) fn spliced(
         merged.push(if slid == token.range() {
             *token
         } else {
-            retargeted(*token, named, held_text, slid)
+            retargeted(*token, held_text, slid)
         });
     }
     for window in &windows[next..] {
         merged.extend(opening_before(&window.fresh, window.stmt.end()));
     }
-    let comments: Vec<TextRange> = merged
-        .iter()
-        .filter(|token| token.kind() == TokenKind::Comment)
-        .map(Ranged::range)
-        .collect();
     debug_assert!(
-        comments
+        merged
             .windows(2)
             .all(|pair| pair[0].start() <= pair[1].start()),
-        "the merged comment index ascends, as its binary search reads it",
+        "the merged token stream ascends, as its binary searches read it",
     );
-    (Tokens::new(merged), CommentRanges::new(comments))
+    Tokens::new(merged)
 }
 
 /// The tokens of `fresh` that open before `end`.
@@ -93,9 +81,7 @@ fn opening_before(fresh: &Tokens, end: TextSize) -> impl Iterator<Item = Token> 
 /// produces again. A zero-width token at the window's start is not,
 /// being the `Dedent` run closing a block the reparse never opened.
 fn reparsed(window: TextRange, range: TextRange) -> bool {
-    range.start() >= window.start()
-        && range.start() < window.end()
-        && !(range.is_empty() && range.start() == window.start())
+    window.contains(range.start()) && !(range.is_empty() && range.start() == window.start())
 }
 
 #[cfg(test)]

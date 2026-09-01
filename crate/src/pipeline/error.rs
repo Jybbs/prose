@@ -33,13 +33,13 @@ pub enum PipelineError {
     },
 }
 
-/// Reparses `new_text`, sliding the source's cell offsets through `map`
-/// so a notebook keeps current boundaries, and tags each failure with
-/// the `rule` whose edits produced it.
+/// Reparses `new_text` and tags each failure with the `rule` whose
+/// edits produced it.
 ///
 /// A splice reparses only the statements the edits reached and answers
 /// `None` where it declines, leaving the whole-file parse below. That
-/// path takes every notebook, so the cell check sits on it. The semantic
+/// path takes every notebook, so both the slide that keeps a notebook's
+/// cell boundaries current and the cell check sit on it. The semantic
 /// check runs only when `gate` carries the version to evaluate against.
 pub(super) fn reparse_or_reject(
     source: Source,
@@ -48,11 +48,10 @@ pub(super) fn reparse_or_reject(
     map: &SourceMap,
     gate: Option<PythonVersion>,
 ) -> Result<Source, PipelineError> {
-    let limit = new_text.text_len();
-    let cell_offsets = forward_offsets(source.cell_offsets(), map, limit);
     let next = match source.splice_of(&new_text, map) {
-        Some(splice) => source.spliced(new_text, cell_offsets, map, splice),
+        Some(splice) => source.spliced(new_text, map, splice),
         None => {
+            let cell_offsets = forward_offsets(source.cell_offsets(), map, new_text.text_len());
             let parsed = source
                 .reparse_carrying(new_text, cell_offsets)
                 .map_err(|source| PipelineError::Reparse { rule, source })?;

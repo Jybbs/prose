@@ -19,7 +19,7 @@ pub(crate) enum BodyScope {
 
 /// The `(body, outer)` pairs a statement opens, inline up to the four
 /// arms every shape but a long `try`, `if` chain, or `match` carries.
-pub(crate) type SubBodies<'a> = SmallVec<[(&'a [Stmt], TextRange); 4]>;
+type SubBodies<'a> = SmallVec<[(&'a [Stmt], TextRange); 4]>;
 
 /// Returns the body and scope a class or function definition opens.
 /// `None` for every other statement.

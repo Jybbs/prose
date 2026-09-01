@@ -24,22 +24,23 @@ impl<'map> Deltas<'map> {
         shifted_past(offset, self.markers)
     }
 
-    /// One span per marker pair, each end read through `end`.
+    /// One span per marker pair, both endpoints read through `side`,
+    /// which picks the buffer the spans are measured against.
     fn spans<F: Fn(&SourceMarker) -> TextSize>(
         &self,
-        end: F,
+        side: F,
     ) -> impl Iterator<Item = TextRange> + use<'_, 'map, F> {
         self.markers
             .chunks_exact(2)
-            .map(move |pair| TextRange::new(end(&pair[0]), end(&pair[1])))
+            .map(move |pair| TextRange::new(side(&pair[0]), side(&pair[1])))
     }
 
     /// True where nothing in `range` moves, the span closing before the
-    /// first edit.
+    /// first edit or the map carrying no edit at all.
     pub(super) fn holds_still(&self, range: TextRange) -> bool {
         self.markers
             .first()
-            .is_some_and(|first| range.end() <= first.source())
+            .is_none_or(|first| range.end() <= first.source())
     }
 
     /// The spans the edits replaced, ascending, in the buffer they were

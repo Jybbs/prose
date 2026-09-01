@@ -1,6 +1,6 @@
 ---
 consumedBy: [aligner, binding-analysis, colon-targets, docstring, edit, orderer, pipeline, suppression-map, walker, wasm]
-consumes: []
+consumes: [edit]
 layer: base
 stability: public
 summary: "Owned wrapper bundling the original text, AST, tokens, line index, and supporting tables. Every rule reads through this value."
@@ -48,9 +48,9 @@ Methods covering the common *"where does this offset land?"* and *"what does the
 
 ### Mutation
 
-Between rules the pipeline rebuilds the *Source* over the mutated text, taking the narrowest rebuild those edits allow. `splice_of` finds the innermost statement covering each edit and reparses only those windows, splicing the fresh statements and tokens into the tree and token stream the value already holds and sliding every range past the edits by the delta they describe. Across the standard library that reads **32%** of the bytes a whole-file parse reads.
+Between rules the pipeline rebuilds the *Source* over the mutated text, taking the narrowest rebuild those edits allow. `splice_of` finds the innermost statement covering each edit and reparses only those windows, splicing the fresh statements and tokens into the tree and token stream the value already holds and sliding every range past the edits by the delta they describe. Across the standard library the statements a rule edits hold **32%** of the bytes their modules carry, and every decline below puts a whole-file parse back on top of that floor.
 
-`reparse_carrying(text: String, cell_offsets: CellOffsets) -> Result<Self, ParseError>` is the whole-file path beneath it, returning a fresh *Source* over the mutated text and carrying a notebook's cell boundaries forward across the rule. A splice hands the work down to it wherever it declines, which covers an edit no single statement contains, a window whose new text does not parse or lands as more than the one statement filling it, a window whose closing indent moved, and every notebook. Both are `pub(crate)`, leaving reparsing inside the crate, and both yield a value equal to a parse of the same text, an equality a debug build asserts after every splice.
+`reparse_carrying(text: String, cell_offsets: CellOffsets) -> Result<Self, ParseError>` is the whole-file path beneath it, returning a fresh *Source* over the mutated text and carrying a notebook's cell boundaries forward across the rule. A splice hands the work down to it wherever it declines, which covers an edit no single statement contains, a window whose new text does not parse or lands as more than the one statement filling it, a window whose closing indent moved, an edit writing text no window reads, and every notebook. Both are `pub(crate)`, leaving reparsing inside the crate, and both yield a value equal to a parse of the same text, an equality a debug build asserts after every splice.
 
 ### Errors
 

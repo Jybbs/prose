@@ -55,6 +55,29 @@ impl Pipeline {
         self
     }
 
+    /// The diagnostics [`diagnose`](Self::diagnose) collects, paired
+    /// with the seat of the first rule holding a fix group against
+    /// `source`, or `None` where no rule holds one. A fold over this
+    /// same buffer reaches its first edit at that seat, so every rule
+    /// ahead of it re-derives a result this pass already has, and a
+    /// `None` leaves that fold nothing to apply.
+    fn diagnosed(&self, source: &Source) -> (Vec<Diagnostic>, Option<usize>) {
+        if source.suppression_map().file_is_suppressed() {
+            return (Vec::new(), None);
+        }
+        let mut diagnostics = Vec::new();
+        let mut edits_at = None;
+        for (seat, rule) in self.rules.iter().enumerate() {
+            let groups = prepared_groups(&**rule, source);
+            if !groups.is_empty() {
+                edits_at.get_or_insert(seat);
+            }
+            diagnostics.extend(format_diagnostics(&**rule, groups));
+        }
+        diagnostics.extend(settled_lints(&self.rules, source));
+        (diagnostics, edits_at)
+    }
+
     /// Folds each rule's edits into `source` in registration order from
     /// the `first` seat onward, reparsing between rules and extending
     /// `diagnostics` with each rule's format findings when the caller
@@ -110,29 +133,6 @@ impl Pipeline {
     /// [`run`](Self::run) filters them.
     pub fn diagnose(&self, source: &Source) -> Vec<Diagnostic> {
         self.diagnosed(source).0
-    }
-
-    /// The diagnostics [`diagnose`](Self::diagnose) collects, paired
-    /// with the seat of the first rule holding a fix group against
-    /// `source`, or `None` where no rule holds one. A fold over this
-    /// same buffer reaches its first edit at that seat, so every rule
-    /// ahead of it re-derives a result this pass already has, and a
-    /// `None` leaves that fold nothing to apply.
-    fn diagnosed(&self, source: &Source) -> (Vec<Diagnostic>, Option<usize>) {
-        if source.suppression_map().file_is_suppressed() {
-            return (Vec::new(), None);
-        }
-        let mut diagnostics = Vec::new();
-        let mut edits_at = None;
-        for (seat, rule) in self.rules.iter().enumerate() {
-            let groups = prepared_groups(&**rule, source);
-            if !groups.is_empty() {
-                edits_at.get_or_insert(seat);
-            }
-            diagnostics.extend(format_diagnostics(&**rule, groups));
-        }
-        diagnostics.extend(settled_lints(&self.rules, source));
-        (diagnostics, edits_at)
     }
 
     /// Returns every registered rule's id in a stable order.
@@ -253,11 +253,6 @@ fn format_diagnostics(rule: &dyn Rule, groups: Vec<Vec<Edit>>) -> impl Iterator<
         .map(move |group| Diagnostic::format(rule_id, group, message.to_owned()))
 }
 
-/// Applies `rule` to `source` and weaves its surviving fix groups into
-/// new text, returning `None` when no group survives or the edits do not
-/// apply. The `SourceMap` pairs each edited offset with the one the
-/// woven text holds it at, the deltas both the notebook cell slide and
-/// the incremental splice read.
 /// The fix groups `rule` holds against `source`, `None` where none
 /// survive the suppression filter.
 fn surviving_groups(rule: &dyn Rule, source: &Source) -> Option<Vec<Vec<Edit>>> {
@@ -273,6 +268,11 @@ fn surviving_groups(rule: &dyn Rule, source: &Source) -> Option<Vec<Vec<Edit>>> 
     Some(groups)
 }
 
+/// Applies `rule` to `source` and weaves its surviving fix groups into
+/// new text, returning `None` when no group survives or the edits do not
+/// apply. The `SourceMap` pairs each edited offset with the one the
+/// woven text holds it at, the deltas both the notebook cell slide and
+/// the incremental splice read.
 fn woven_groups(rule: &dyn Rule, source: &Source) -> Option<(Vec<Vec<Edit>>, String, SourceMap)> {
     let groups = surviving_groups(rule, source)?;
     let (new_text, map) = apply_edits_mapped(source.text(), groups.concat())?;

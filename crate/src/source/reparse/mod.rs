@@ -50,10 +50,13 @@ impl Source {
             .into_iter()
             .map(|held| (held, deltas.slide(held)))
             .collect();
-        if !deltas
-            .written()
-            .all(|written| covered.iter().any(|(_, slid)| slid.contains_range(written)))
-        {
+        let covers = |written: TextRange| {
+            let after = covered.partition_point(|(_, slid)| slid.start() <= written.start());
+            covered[..after]
+                .last()
+                .is_some_and(|(_, slid)| slid.contains_range(written))
+        };
+        if !deltas.written().all(covers) {
             return None;
         }
         let options = ParseOptions::from(self.source_type);
@@ -79,32 +82,27 @@ impl Source {
 
     /// This source rewritten as `text`, with `splice`'s statements
     /// grafted in and everything outside a window slid past the edits.
-    pub(crate) fn spliced(
-        self,
-        text: String,
-        cell_offsets: CellOffsets,
-        map: &SourceMap,
-        splice: Splice,
-    ) -> Self {
+    ///
+    /// [`splice_of`](Self::splice_of) declines every notebook, so this
+    /// path carries no cell boundaries and no cell numbering.
+    pub(crate) fn spliced(self, text: String, map: &SourceMap, splice: Splice) -> Self {
         let deltas = Deltas::new(map);
         let name = self.file.name().to_owned();
-        let (spliced, comments) = tokens::spliced(&self.tokens, self.text(), &deltas, &splice.0);
+        let spliced = tokens::spliced(&self.tokens, self.text(), &deltas, &splice.0);
         let mut ast = self.ast;
         let grafts = splice
             .0
             .into_iter()
             .map(|window| (window.stmt.range(), window.stmt));
         Slide::new(&deltas, grafts).over_module(&mut ast);
-        let mut next = Self::from_parts(
+        let next = Self::from_parts(
             text,
             name,
             self.source_type,
-            cell_offsets,
+            CellOffsets::default(),
             ast,
             spliced,
-            comments,
         );
-        next.cell_numbers = self.cell_numbers;
         debug_assert!(
             next.matches_a_fresh_parse(),
             "the spliced tree and token stream differ from a parse of the same text",
@@ -130,7 +128,7 @@ mod tests {
         let (woven, map) = apply_edits_mapped(text, edits).expect("the edits weave");
         let source = parse(text);
         let splice = source.splice_of(&woven, &map)?;
-        Some(source.spliced(woven, CellOffsets::default(), &map, splice))
+        Some(source.spliced(woven, &map, splice))
     }
 
     #[test]
@@ -140,6 +138,20 @@ mod tests {
         let (woven, map) = apply_edits_mapped(source.text(), vec![edit]).expect("the edits weave");
 
         assert!(source.splice_of(&woven, &map).is_none());
+    }
+
+    #[test]
+    fn spliced_declines_a_window_its_edit_emptied() {
+        let edit = Edit::range_deletion(range(0, 5));
+
+        assert!(splice("x = 1\ny = 2\n", vec![edit]).is_none());
+    }
+
+    #[test]
+    fn spliced_declines_a_window_its_statement_does_not_fill() {
+        let edit = Edit::range_replacement("x = 1 ".to_owned(), range(0, 5));
+
+        assert!(splice("x = 1\ny = 2\n", vec![edit]).is_none());
     }
 
     #[test]
@@ -190,6 +202,22 @@ mod tests {
         "a = 1\nb = f\"{a:>{a}}\"\n",
         range(4, 5),
         "111"
+    )]
+    #[case::a_module_of_one_statement_with_no_trailing_newline("x = 1", range(4, 5), "11")]
+    #[case::global_and_nonlocal_slid_past_the_edit(
+        "x = 1\ndef outer():\n    global x\n    y = 0\n    def inner():\n        nonlocal y\n        y = 2\n",
+        range(4, 5),
+        "11"
+    )]
+    #[case::match_patterns_slid_past_the_edit(
+        "x = 1\nmatch x:\n    case [1, *rest]:\n        pass\n    case {\"k\": v, **extra}:\n        pass\n    case other:\n        pass\n",
+        range(4, 5),
+        "11"
+    )]
+    #[case::type_parameters_slid_past_the_edit(
+        "x = 1\ndef f[T, *Ts, **P](a: T) -> T:\n    return a\n",
+        range(4, 5),
+        "11"
     )]
     fn spliced_rewrites_the_edited_statement(
         #[case] text: &str,

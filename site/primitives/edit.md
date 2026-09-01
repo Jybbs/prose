@@ -1,5 +1,5 @@
 ---
-consumedBy: [aligner, docstring, orderer, pipeline]
+consumedBy: [aligner, docstring, orderer, pipeline, source]
 consumes: [source]
 layer: base
 stability: internal
@@ -18,7 +18,7 @@ tagline: rewrite unit
 
 `Edit` itself is `pub` *(re-exported from `ruff_diagnostics`)*, and the `Diagnostic` type a rule emits through the pipeline carries an `Option<Vec<Edit>>` in its `fix` field, visible in every [**output format**](/reference/output-formats) the CLI emits *(json, github, sarif)*. A downstream consumer reading the json output sees every edit's range and content in the `fix.edits[]` array.
 
-The edit-shaping helpers *(`apply_edits`, `apply_inline_edits`, `narrow_edit`)* live at `crate/src/primitives/edit/` and are `pub(crate)`. The helpers move to `pub` at `1.0` alongside the `Rule` trait, so a downstream rule can splice edits into source the same way the bundled rules do.
+The edit-shaping helpers *(`apply_edits`, `apply_edits_mapped`, `apply_inline_edits`, `narrow_edit`)* live at `crate/src/primitives/edit/` and are `pub(crate)`. The helpers move to `pub` at `1.0` alongside the `Rule` trait, so a downstream rule can splice edits into source the same way the bundled rules do.
 
 ## The Shape
 
@@ -33,11 +33,15 @@ Edits span newlines freely, so a rule rewriting a multi-line construct emits one
 
 ## Internal Surface
 
-Three helpers at `crate/src/primitives/edit/` cover the common shaping needs.
+The helpers at `crate/src/primitives/edit/` cover the common shaping needs.
 
 ### `apply_edits(text, edits) -> Option<String>`
 
-Splices a sorted edit list into a source string, serving as the [[pipeline]]'s transform between rules. Linear in source length regardless of edit count, since the function walks the list once. When the sorted edits overlap, it returns `None` rather than splicing them, so the pipeline keeps that rule's source unchanged and the overlapping group degrades to a skipped reformat on that span.
+Splices a sorted edit list into a source string, the shape a caller reading no offsets takes. Linear in source length regardless of edit count, since the function walks the list once. When the sorted edits overlap, it returns `None` rather than splicing them, so the caller keeps its source unchanged and the overlapping group degrades to a skipped reformat on that span. The [[pipeline]]'s `unsettled` reads it to ask whether a rule would still rewrite a buffer a run has already settled.
+
+### `apply_edits_mapped(text, edits) -> Option<(String, SourceMap)>`
+
+Weaves the same list and pairs the woven string with a `SourceMap` carrying one start-and-end marker per applied edit, each pairing an original offset with the offset the woven text holds it at. This is the [[pipeline]]'s transform between rules, because those markers are the deltas [[source]] reads to reparse only the statements a rule edited and to slide every range past them. Overlapping edits decline exactly as they do above.
 
 ### `apply_inline_edits(source, range, edits) -> Cow<'src, str>`
 
@@ -51,7 +55,7 @@ Trims a candidate replacement to its minimal divergent range against the source.
 
 The [[pipeline]] applies each rule's edits sequentially, reparsing between rules so the next rule reads against a settled AST. Two rules emitting edits to overlapping ranges within the same pass would conflict, but the pipeline structure prevents this, because each rule sees the rewritten source from previous rules and the second rule's edits land against the first rule's output rather than against the original.
 
-Within one rule, the applicator guards against overlapping edits in every build. When a rule's sorted edits overlap, `apply_edits` declines with `None` and `apply_inline_edits` returns the borrowed source slice, so the pipeline leaves that span unreformatted and the run continues rather than aborting or corrupting the output. The guard is a floor rather than a license, in that a rule emitting overlapping edits is still a rule-authoring bug whose affected construct silently goes unformatted, so test every new rule against fixture sources that exercise its edge cases and keep each rule's edits non-overlapping by construction.
+Within one rule, the applicator guards against overlapping edits in every build. When a rule's sorted edits overlap, `apply_edits` and `apply_edits_mapped` decline with `None` and `apply_inline_edits` returns the borrowed source slice, so the pipeline leaves that span unreformatted and the run continues rather than aborting or corrupting the output. The guard is a floor rather than a license, in that a rule emitting overlapping edits is still a rule-authoring bug whose affected construct silently goes unformatted, so test every new rule against fixture sources that exercise its edge cases and keep each rule's edits non-overlapping by construction.
 
 ## Build Pattern
 
