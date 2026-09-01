@@ -31,6 +31,8 @@ impl MiscasedConstants {
     pub(crate) const MESSAGE: &'static str =
         "Module constant is not SCREAMING_CASE. Rename it to the SCREAMING_CASE form";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             allow_pattern: config.rules.miscased_constants.allow_pattern.clone(),
@@ -89,8 +91,10 @@ mod tests {
     use ruff_diagnostics::Applicability;
 
     use super::*;
-    use crate::diagnostics::Severity;
-    use crate::testing::{notebook, parse};
+    use crate::{
+        diagnostics::Severity,
+        testing::{notebook, parse},
+    };
 
     fn rule() -> MiscasedConstants {
         MiscasedConstants::from_config(&Config::default())

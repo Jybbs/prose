@@ -6,25 +6,18 @@ use std::borrow::Cow;
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_text_size::{Ranged, TextLen, TextRange};
 
+use super::*;
 use crate::source::Source;
 
-use super::*;
-
-/// Splices `edits` into `text` and returns the resulting string, or
-/// `None` when the sorted edits overlap.
+/// Splices `edits` into `text` and returns the resulting string beside
+/// a [`SourceMap`] of one start-and-end marker per applied edit pairing
+/// each original offset with its woven offset, or `None` when the
+/// sorted edits overlap.
 ///
 /// Sorts edits by start-then-end (via `Edit`'s `Ord` impl) and weaves
 /// them in one forward pass, linear in the source length regardless of
 /// how many edits apply. Declines with `None` rather than slicing an
 /// inverted range, leaving the caller to keep the source unchanged.
-pub(crate) fn apply_edits(text: &str, mut edits: Vec<Edit>) -> Option<String> {
-    edits.sort_unstable();
-    weave(text, TextRange::up_to(text.text_len()), &edits, None)
-}
-
-/// Splices `edits` into `text` as [`apply_edits`] does, also returning
-/// a [`SourceMap`] of one start-and-end marker per applied edit pairing
-/// each original offset with its woven offset.
 pub(crate) fn apply_edits_mapped(text: &str, mut edits: Vec<Edit>) -> Option<(String, SourceMap)> {
     edits.sort_unstable();
     let mut source_map = SourceMap::default();
@@ -144,11 +137,16 @@ mod tests {
     use std::assert_matches;
 
     use super::*;
-    use crate::testing::{parse, range, replacement};
+    use crate::testing::{parse, range, replacement, woven};
+
+    /// The text `edits` weave into `text`, `None` where they overlap.
+    fn text_of(text: &str, edits: Vec<Edit>) -> Option<String> {
+        apply_edits_mapped(text, edits).map(|(text, _)| text)
+    }
 
     #[test]
-    fn apply_edits_declines_overlapping_edits() {
-        let out = apply_edits(
+    fn apply_edits_mapped_declines_overlapping_edits() {
+        let out = text_of(
             "abcdef",
             vec![replacement("X", 0, 3), replacement("Y", 2, 4)],
         );
@@ -157,8 +155,8 @@ mod tests {
     }
 
     #[test]
-    fn apply_edits_handles_insertions_and_deletions() {
-        let out = apply_edits(
+    fn apply_edits_mapped_handles_insertions_and_deletions() {
+        let out = text_of(
             "abcd",
             vec![
                 Edit::insertion("<".to_owned(), 0u32.into()),
@@ -170,8 +168,8 @@ mod tests {
     }
 
     #[test]
-    fn apply_edits_handles_multiple_non_overlapping_edits() {
-        let out = apply_edits(
+    fn apply_edits_mapped_handles_multiple_non_overlapping_edits() {
+        let out = text_of(
             "abcdef",
             vec![replacement("X", 0, 1), replacement("Y", 4, 5)],
         );
@@ -180,8 +178,8 @@ mod tests {
     }
 
     #[test]
-    fn apply_edits_keeps_adjacent_edits() {
-        let out = apply_edits(
+    fn apply_edits_mapped_keeps_adjacent_edits() {
+        let out = text_of(
             "abcdef",
             vec![replacement("X", 0, 2), replacement("Y", 2, 4)],
         );
@@ -190,19 +188,8 @@ mod tests {
     }
 
     #[test]
-    fn apply_edits_mapped_declines_overlapping_edits() {
-        let out = apply_edits_mapped(
-            "abcdef",
-            vec![replacement("X", 0, 3), replacement("Y", 2, 4)],
-        );
-
-        assert!(out.is_none());
-    }
-
-    #[test]
     fn apply_edits_mapped_pairs_each_edit_with_its_woven_offset() {
-        let (text, map) =
-            apply_edits_mapped("abcdef", vec![replacement("XX", 1, 2)]).expect("woven");
+        let (text, map) = woven("abcdef", vec![replacement("XX", 1, 2)]);
 
         assert_eq!(text, "aXXcdef");
         let markers = map.markers();
@@ -214,8 +201,8 @@ mod tests {
     }
 
     #[test]
-    fn apply_edits_sorts_unsorted_input() {
-        let out = apply_edits(
+    fn apply_edits_mapped_sorts_unsorted_input() {
+        let out = text_of(
             "abcdef",
             vec![replacement("Y", 4, 5), replacement("X", 0, 1)],
         );

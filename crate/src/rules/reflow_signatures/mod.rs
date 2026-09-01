@@ -45,6 +45,8 @@ impl ReflowSignatures {
     pub(crate) const MESSAGE: &'static str =
         "normalize function signature to one-line or one-per-line shape";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             reorders: config.reorders(),

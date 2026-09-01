@@ -1,11 +1,15 @@
 //! The report over a rewrite whose settle check names rules.
 //!
 //! A run that rewrote a file re-applies its enabled rules to the output
-//! it produced. Where any still edits, the rewrite is a defect in Prose
-//! rather than in the file beneath it, and this module builds the record
-//! the CLI and the language server both render: the narrowed rule
-//! subset that reproduces it, the configuration the run resolved, the
-//! output it wrote, and what a second pass turns that output into.
+//! it produced, a `format` run re-applying the rules that edited on the
+//! first pass and `check --validate` every enabled rule. Where any
+//! still edits, the rewrite is a defect in Prose rather than in the
+//! file beneath it, and this module builds the record the CLI and the
+//! language server both render: the narrowed rule subset that
+//! reproduces it, the configuration the run resolved, the output it
+//! wrote, and what a second pass turns that output into.
+
+use std::collections::BTreeSet;
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -44,14 +48,13 @@ impl UnstableRewrite {
         original: &str,
         formatted: &Source,
     ) -> Option<Self> {
-        let editing = pipeline.unsettled(formatted);
-        if editing.is_empty() {
-            return None;
-        }
-        let rules = subset(pipeline, formatted, || {
-            narrowed(pipeline, config, original, &editing)
-        });
-        Some(Self::over(pipeline, config, formatted, rules))
+        Self::from_editing(
+            pipeline,
+            config,
+            original,
+            formatted,
+            pipeline.unsettled(formatted),
+        )
     }
 
     /// The report for a probe hit on the own-output ledger, where
@@ -72,6 +75,42 @@ impl UnstableRewrite {
         }
         let rules = subset(pipeline, formatted, || {
             editing_subset(&editing, &source, filtered(config))
+        });
+        Some(Self::over(pipeline, config, formatted, rules))
+    }
+
+    /// The report a `format` run or the editor makes over `formatted`,
+    /// its output for `original`, re-applying through
+    /// [`Pipeline::unsettled_among`] only `fired`, the rules that edited
+    /// on the first pass. `None` where those rules leave `formatted`
+    /// settled, a rule silent on the first pass being left to the full
+    /// walk [`detect`](Self::detect) runs.
+    pub(crate) fn detect_narrowed(
+        pipeline: &Pipeline,
+        config: &Config,
+        original: &str,
+        formatted: &Source,
+        fired: &BTreeSet<RuleId>,
+    ) -> Option<Self> {
+        let editing = pipeline.unsettled_among(formatted, fired);
+        Self::from_editing(pipeline, config, original, formatted, editing)
+    }
+
+    /// The report over `formatted` where `editing` names a rule, `None`
+    /// where it is empty, the subset narrowing to a rule alone or a rule
+    /// pair where one reproduces and falling back to the whole selection.
+    fn from_editing(
+        pipeline: &Pipeline,
+        config: &Config,
+        original: &str,
+        formatted: &Source,
+        editing: Vec<RuleId>,
+    ) -> Option<Self> {
+        if editing.is_empty() {
+            return None;
+        }
+        let rules = subset(pipeline, formatted, || {
+            narrowed(pipeline, config, original, &editing)
         });
         Some(Self::over(pipeline, config, formatted, rules))
     }
@@ -197,7 +236,10 @@ mod tests {
     use std::num::NonZeroUsize;
 
     use super::*;
-    use crate::testing::{breaks_parse, never_settles, notebook, parse, prefix_rule};
+    use crate::{
+        diagnostics::fired_rules,
+        testing::{breaks_parse, never_settles, notebook, parse, prefix_rule},
+    };
 
     /// What `widening()` writes over `SOURCE`, standing in for the
     /// bytes a prior write-back run marked as its own output.
@@ -217,6 +259,49 @@ mod tests {
 
     fn widening() -> Pipeline {
         Pipeline::from_rules(vec![Box::new(never_settles("widener"))])
+    }
+
+    #[test]
+    fn detect_narrowed_leaves_a_rule_silent_on_the_first_pass_to_the_full_walk() {
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(prefix_rule("edits-q", "q", "qq")),
+            Box::new(prefix_rule("settles-once", "x", "q")),
+        ]);
+        let config = Config::default();
+        let (formatted, diagnostics) = pipeline.run(parse(SOURCE)).expect("runs");
+
+        assert!(UnstableRewrite::detect(&pipeline, &config, SOURCE, &formatted).is_some());
+        assert!(
+            UnstableRewrite::detect_narrowed(
+                &pipeline,
+                &config,
+                SOURCE,
+                &formatted,
+                &fired_rules(&diagnostics),
+            )
+            .is_none(),
+            "`edits-q` emitted nothing on the first pass, so the narrowed pass leaves it to the full walk",
+        );
+    }
+
+    #[test]
+    fn detect_narrowed_reports_a_rule_that_fired_and_still_edits() {
+        let pipeline = downstream();
+        let config = Config::default();
+        let (formatted, diagnostics) = pipeline.run(parse(SOURCE)).expect("runs");
+
+        let full = UnstableRewrite::detect(&pipeline, &config, SOURCE, &formatted)
+            .expect("`widens-downstream` leaves the output unsettled");
+        let narrowed = UnstableRewrite::detect_narrowed(
+            &pipeline,
+            &config,
+            SOURCE,
+            &formatted,
+            &fired_rules(&diagnostics),
+        )
+        .expect("`widens-downstream` fired on the first pass and still edits");
+
+        assert_eq!(narrowed, full);
     }
 
     #[test]

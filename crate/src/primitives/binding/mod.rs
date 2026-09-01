@@ -28,6 +28,7 @@ use serde::Serialize;
 use smallvec::SmallVec;
 
 mod builder;
+mod forward;
 mod module_scan;
 mod names;
 
@@ -40,7 +41,7 @@ pub(crate) use names::{
 };
 
 /// Module-wide binding-resolution table.
-#[derive(Debug, Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct BindingAnalysis {
     #[serde(skip)]
     assignment_values: FxHashMap<TextSize, TextRange>,
@@ -365,7 +366,7 @@ pub(crate) enum UnpackKind {
 /// `first_unconditional_write` holds the earliest write not nested in a
 /// conditional branch (`if`/`for`/`while`/`try`/`match`), or `None` when
 /// every write is conditional.
-#[derive(Debug, Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 struct Binding {
     annotation_read: bool,
     attributes: BTreeSet<Name>,
@@ -380,7 +381,7 @@ struct Binding {
 }
 
 /// One lexical scope plus its binding table keyed by name.
-#[derive(Debug, Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 struct Scope {
     bindings: BTreeMap<Name, BindingId>,
     #[serde(skip)]

@@ -42,6 +42,8 @@ impl ReflowParentheses {
     pub(crate) const MESSAGE: &'static str =
         "reflow a redundant grouping parenthesis pair against the line budget";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),

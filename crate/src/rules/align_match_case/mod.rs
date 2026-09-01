@@ -11,16 +11,16 @@
 use ruff_diagnostics::Edit;
 use ruff_python_ast::statement_visitor::StatementVisitor;
 
-mod walk;
-
-use walk::Visitor;
-
 use crate::{
     config::Config,
     primitives::{INDENT_STEP, aligner, colon_targets},
     rule::{Rule, RuleId},
     source::Source,
 };
+
+mod walk;
+
+use walk::Visitor;
 
 #[derive(Debug)]
 pub(crate) struct AlignMatchCase {
@@ -30,6 +30,8 @@ pub(crate) struct AlignMatchCase {
 
 impl AlignMatchCase {
     pub(crate) const MESSAGE: &'static str = "align match-case colons";
+
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

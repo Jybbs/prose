@@ -23,6 +23,8 @@ pub(crate) struct StripStrandedPadding {
 impl StripStrandedPadding {
     pub(crate) const MESSAGE: &'static str = "drop padding that lines up with nothing";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             stranding: config.stranded_padding(),

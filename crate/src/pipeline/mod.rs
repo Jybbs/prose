@@ -4,21 +4,24 @@
 //! ranges. The pipeline splices the edits of a batch of consecutive
 //! rules into a fresh buffer in one pass, then reparses and confirms
 //! the result still compiles before handing the new `Source` to the
-//! next batch. Registration order follows the data dependency, seating
-//! every rule that mutates a line's width, a group's member order, or
-//! a statement's position ahead of every rule that reads one, and a
-//! rule joins a batch only beside rules the registry declares it
-//! independent of. The settle check re-applies the enabled rules to a
-//! completed run's output and names every rule still editing it.
+//! next batch, carrying into it the tables every member declares its
+//! edits leave standing. Registration order follows the data
+//! dependency, seating every rule that mutates a line's width, a
+//! group's member order, or a statement's position ahead of every rule
+//! that reads one, and a rule joins a batch only beside rules the
+//! registry declares it independent of. The settle check re-applies
+//! the enabled rules to a completed run's output and names every rule
+//! still editing it, a `format` run re-applying only the rules that
+//! edited on its first pass.
 
-use std::{ops::Range, slice};
+use std::{collections::BTreeSet, ops::Range, slice};
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::PythonVersion;
 
 use crate::{
-    diagnostics::Diagnostic,
+    diagnostics::{Diagnostic, fired_rules},
     rule::{Rule, RuleId, independent},
     source::Source,
 };
@@ -168,19 +171,32 @@ impl Pipeline {
         batch.close(source, gate, replays)
     }
 
-    /// The settle walk both [`settle_report`](Self::settle_report) and
-    /// [`unsettled`](Self::unsettled) read, weaving the first editing
-    /// rule's text as the witness only when `witness` asks for it.
-    fn settle_walk(&self, source: &Source, witness: bool) -> SettleReport {
+    /// The settle walk [`settle_report`](Self::settle_report),
+    /// [`unsettled`](Self::unsettled), and
+    /// [`unsettled_among`](Self::unsettled_among) read, narrowed to the
+    /// rules `keep` admits, each rule's probe reported to the trace
+    /// under `pass`, weaving the first editing rule's text as the
+    /// witness only when `witness` asks for it.
+    fn settle_walk(
+        &self,
+        source: &Source,
+        pass: &'static str,
+        keep: impl Fn(RuleId) -> bool,
+        witness: bool,
+    ) -> SettleReport {
         let mut report = SettleReport::default();
         if source.suppression_map().file_is_suppressed() {
             return report;
         }
         for rule in &self.rules {
+            let rule_id = rule.id();
+            if !keep(rule_id) {
+                continue;
+            }
+            crate::source::trace::reapplied(pass, rule_id);
             let Some(spliceable) = Spliceable::of(&**rule, source) else {
                 continue;
             };
-            let rule_id = rule.id();
             if !spliceable.lands() || !spliceable.rewrites(source) {
                 report.unlanded.push(rule_id);
                 continue;
@@ -312,7 +328,10 @@ impl Pipeline {
 
     /// Rewrites `source` and returns it beside the diagnostics
     /// [`diagnose`](Self::diagnose) collects against the buffer as
-    /// written, the pair a structured `format` reports.
+    /// written, the pair a structured `format` reports, and the rules
+    /// the fold fired, the set a narrowed settle check re-applies, which
+    /// a rule applicable only once an upstream rule has rewritten joins
+    /// where the as-written diagnostics leave it out.
     ///
     /// One walk over the rules serves both halves, in that the fold
     /// opens at the first rule the diagnose pass found editing and
@@ -334,15 +353,14 @@ impl Pipeline {
     pub(crate) fn run_as_written(
         &self,
         source: Source,
-    ) -> Result<(Source, Vec<Diagnostic>), PipelineError> {
+    ) -> Result<(Source, Vec<Diagnostic>, BTreeSet<RuleId>), PipelineError> {
         let (diagnostics, edits_at) = self.diagnosed(&source);
         let Some(first) = edits_at else {
-            return Ok((source, diagnostics));
+            return Ok((source, diagnostics, BTreeSet::new()));
         };
-        Ok((
-            self.fold_rules(source, None, first..self.rules.len())?,
-            diagnostics,
-        ))
+        let mut fold = Vec::new();
+        let formatted = self.fold_rules(source, Some(&mut fold), first..self.rules.len())?;
+        Ok((formatted, diagnostics, fired_rules(&fold)))
     }
 
     /// What one walk over `source` reads for the settle check, so the
@@ -351,7 +369,7 @@ impl Pipeline {
     /// this pipeline carries, so a `--select` run answers for that
     /// subset alone, and a file-level `# prose: off` answers empty.
     pub fn settle_report(&self, source: &Source) -> SettleReport {
-        self.settle_walk(source, true)
+        self.settle_walk(source, "full", |_| true, true)
     }
 
     /// One pipeline per rule this pipeline carries, in order, each
@@ -376,7 +394,18 @@ impl Pipeline {
     /// not splice, or splice back to the same text, is left out, and
     /// [`settle_report`](Self::settle_report) names those separately.
     pub fn unsettled(&self, source: &Source) -> Vec<RuleId> {
-        self.settle_walk(source, false).editing
+        self.settle_walk(source, "full", |_| true, false).editing
+    }
+
+    /// The rules among `fired` whose edits would still rewrite `source`,
+    /// the second pass a `format` run makes over its own output,
+    /// re-applying the rules that edited on the first pass rather than
+    /// every enabled rule. A rule silent on the first pass is left to
+    /// the full [`settle_report`](Self::settle_report) walk that `check
+    /// --validate` and the settle sweeps run.
+    pub(crate) fn unsettled_among(&self, source: &Source, fired: &BTreeSet<RuleId>) -> Vec<RuleId> {
+        self.settle_walk(source, "narrowed", |id| fired.contains(&id), false)
+            .editing
     }
 }
 

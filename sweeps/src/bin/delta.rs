@@ -36,7 +36,6 @@ struct Args {
 struct Cycle {
     counts: BTreeMap<String, usize>,
     fired: FxHashMap<String, BTreeSet<String>>,
-    unstable: usize,
 }
 
 impl Cycle {
@@ -46,13 +45,11 @@ impl Cycle {
         let mut cycle = Self {
             counts: BTreeMap::new(),
             fired: FxHashMap::default(),
-            unstable: 0,
         };
         for line in fs_err::read_to_string(path)?.lines() {
             let record: Value = serde_json::from_str(line)?;
             if record.get("kind").and_then(Value::as_str) == Some("summary") {
                 cycle.counts = serde_json::from_value(record["rules_fired"].clone())?;
-                cycle.unstable = record["unstable"].as_array().map_or(0, Vec::len);
             } else if let (Some(code), Some(file)) = (
                 record.get("code").and_then(Value::as_str),
                 record.get("filename").and_then(Value::as_str),
@@ -196,30 +193,10 @@ impl Report {
         }
     }
 
-    /// Renders the width's heading, count table, movements, stability, and
-    /// diffstat.
+    /// Renders the width's heading, count table, movements, and diffstat.
     fn render(&self) -> Result<String, Box<dyn Error>> {
         let heading = format!("width {}\n", self.width);
-        Ok(heading + &self.counts() + &self.movements() + &self.stability() + &self.diffstat()?)
-    }
-
-    /// Names a side whose summary carries unstable entries at this width.
-    fn stability(&self) -> String {
-        let notes = [("base", &self.base), ("head", &self.head)]
-            .into_iter()
-            .filter(|(_, cycle)| cycle.unstable > 0)
-            .map(|(side, cycle)| {
-                format!(
-                    "{side} is unstable on {} of the files at this width",
-                    cycle.unstable
-                )
-            })
-            .join("\n");
-        if notes.is_empty() {
-            String::new()
-        } else {
-            indented(&notes)
-        }
+        Ok(heading + &self.counts() + &self.movements() + &self.diffstat()?)
     }
 }
 

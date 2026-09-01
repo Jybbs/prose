@@ -2,6 +2,7 @@
 //! pipeline, and classify the outcome.
 
 use std::{
+    collections::BTreeSet,
     io::{self, Read, Write},
     path::{Path, PathBuf},
     string::FromUtf8Error,
@@ -21,6 +22,8 @@ use super::{
 use crate::{
     cache::{Anchor, CacheEntry, CacheEntryRef, NotebookCells, NotebookCellsRef, Rewrite},
     cli::exit_status::ExitStatus,
+    diagnostics::fired_rules,
+    rule::RuleId,
     source::Source,
     unstable::UnstableRewrite,
     walker::{self, Found},
@@ -309,7 +312,7 @@ fn diagnose_only(
     let file = source.source_file().clone();
     let (diagnostics, unstable) = if validate {
         match resolved.pipeline.run_as_written(source) {
-            Ok((formatted, diagnostics)) => {
+            Ok((formatted, diagnostics, _)) => {
                 let unstable = has_format_change(&diagnostics)
                     .then(|| settle_report(resolved, file.source_text(), &formatted))
                     .flatten();
@@ -386,6 +389,25 @@ fn marked_report(
         .map(Box::new)
 }
 
+/// The settle report a `format` run makes over `formatted`, its output
+/// for `original`, re-applying only `fired`, the rules the run's fold
+/// applied.
+fn narrowed_report(
+    resolved: &Resolved,
+    original: &str,
+    formatted: &Source,
+    fired: &BTreeSet<RuleId>,
+) -> Option<Box<UnstableRewrite>> {
+    UnstableRewrite::detect_narrowed(
+        &resolved.pipeline,
+        &resolved.config,
+        original,
+        formatted,
+        fired,
+    )
+    .map(Box::new)
+}
+
 /// Routes a source text to the notebook or module pipeline path under
 /// its diagnostic `name`.
 fn process_source(
@@ -425,10 +447,16 @@ fn run_and_assemble(
     let file = source.source_file().clone();
     let run = match pass.anchor() {
         Anchor::AsWritten => resolved.pipeline.run_as_written(source),
-        Anchor::Rewritten => resolved.pipeline.run(source),
+        Anchor::Rewritten => resolved
+            .pipeline
+            .run(source)
+            .map(|(formatted, diagnostics)| {
+                let fired = fired_rules(&diagnostics);
+                (formatted, diagnostics, fired)
+            }),
     };
     match run {
-        Ok((formatted, diagnostics)) => {
+        Ok((formatted, diagnostics, fired)) => {
             let rewrite = rewrite(&formatted, &file);
             if let Rewrite::Changed(kind) = &rewrite
                 && formatted.is_notebook()
@@ -456,7 +484,7 @@ fn run_and_assemble(
                 if proven {
                     marked_report(resolved, file.source_text(), &formatted)
                 } else {
-                    settle_report(resolved, file.source_text(), &formatted)
+                    narrowed_report(resolved, file.source_text(), &formatted, &fired)
                 }
             })
             .flatten();
@@ -484,7 +512,8 @@ fn run_pipeline(source: Source, resolved: &Resolved, pass: Pass, marker: Marker)
     })
 }
 
-/// The settle report over `formatted`, the run's output for `original`.
+/// The settle report `check --validate` makes over `formatted`, the
+/// run's output for `original`, re-applying every enabled rule.
 fn settle_report(
     resolved: &Resolved,
     original: &str,

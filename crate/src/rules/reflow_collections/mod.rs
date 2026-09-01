@@ -58,6 +58,8 @@ pub(crate) struct ReflowCollections {
 impl ReflowCollections {
     pub(crate) const MESSAGE: &'static str = "lay out collection literal against the line budget";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.reflow_collections;
         Self {

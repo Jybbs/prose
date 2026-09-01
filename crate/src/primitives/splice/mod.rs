@@ -125,20 +125,6 @@ mod tests {
     use super::*;
     use crate::testing::{parse, range};
 
-    /// A module whose second statement wraps a grouping parenthesis
-    /// pair inside its body, so the descent runs one level past the
-    /// module body.
-    const NESTED_PAREN: &str = "x = 1\ndef f():\n    return (1)\n";
-
-    /// A module whose grouping parenthesis pair sits inside its first
-    /// statement, the boundary `statement_covering`'s partition point
-    /// resolves at index zero.
-    const LEADING_PAREN: &str = "def f():\n    return (1)\nx = 1\n";
-
-    /// A module whose grouping parenthesis pair sits two suites deep,
-    /// so the descent runs past the `def` and then past the `if`.
-    const TWICE_NESTED_PAREN: &str = "def f():\n    if x:\n        return (1)\n";
-
     /// A class whose decorated method carries a grouping parenthesis
     /// pair in its signature, putting the pair inside a statement whose
     /// `def` line sits at the column its decorator holds.
@@ -149,6 +135,20 @@ mod tests {
     /// statement whose `else` sits at the column the `if` holds.
     const ELSE_CLAUSE_PAREN: &str =
         "def f():\n    if (x):\n        pass\n    else:\n        pass\n";
+
+    /// A module whose grouping parenthesis pair sits inside its first
+    /// statement, the boundary `statement_covering`'s partition point
+    /// resolves at index zero.
+    const LEADING_PAREN: &str = "def f():\n    return (1)\nx = 1\n";
+
+    /// A module whose second statement wraps a grouping parenthesis
+    /// pair inside its body, so the descent runs one level past the
+    /// module body.
+    const NESTED_PAREN: &str = "x = 1\ndef f():\n    return (1)\n";
+
+    /// A module whose grouping parenthesis pair sits two suites deep,
+    /// so the descent runs past the `def` and then past the `if`.
+    const TWICE_NESTED_PAREN: &str = "def f():\n    if x:\n        return (1)\n";
 
     /// The `(1)` span inside `text`, its opener the last in the module
     /// since the `def` header carries the first.
@@ -175,6 +175,18 @@ mod tests {
     }
 
     #[rstest]
+    #[case::decorated_definition(DECORATED_DEF_PAREN)]
+    #[case::second_clause(ELSE_CLAUSE_PAREN)]
+    fn covering_statement_declines_a_statement_whose_slice_would_not_reparse(#[case] text: &str) {
+        let source = parse(text);
+
+        let stmt = covering_statement(&source.ast().body, paren_pair(text))
+            .expect("the module statement covers it");
+
+        assert_eq!(stmt.range(), source.ast().body[0].range());
+    }
+
+    #[rstest]
     #[case(NESTED_PAREN, 1)]
     #[case(LEADING_PAREN, 0)]
     #[case(TWICE_NESTED_PAREN, 0)]
@@ -188,18 +200,6 @@ mod tests {
             covering_statement(&source.ast().body, paren_pair(text)).expect("the return covers it");
 
         assert_eq!(stmt.range(), innermost_return(&source, index));
-    }
-
-    #[rstest]
-    #[case::decorated_definition(DECORATED_DEF_PAREN)]
-    #[case::second_clause(ELSE_CLAUSE_PAREN)]
-    fn covering_statement_declines_a_statement_whose_slice_would_not_reparse(#[case] text: &str) {
-        let source = parse(text);
-
-        let stmt = covering_statement(&source.ast().body, paren_pair(text))
-            .expect("the module statement covers it");
-
-        assert_eq!(stmt.range(), source.ast().body[0].range());
     }
 
     #[test]

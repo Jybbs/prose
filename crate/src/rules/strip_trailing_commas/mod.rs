@@ -25,6 +25,8 @@ pub(crate) struct StripTrailingCommas;
 impl StripTrailingCommas {
     pub(crate) const MESSAGE: &'static str = "strip trailing comma";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

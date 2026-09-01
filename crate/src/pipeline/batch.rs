@@ -7,11 +7,7 @@ use ruff_python_ast::PythonVersion;
 use ruff_text_size::Ranged;
 
 use super::{PipelineError, error::reparse_or_reject, filter::prepared_groups};
-use crate::{
-    primitives::edit::{apply_edits, apply_edits_mapped},
-    rule::Rule,
-    source::Source,
-};
+use crate::{primitives::edit::apply_edits_mapped, rule::Rule, source::Source};
 
 /// The rules whose fix groups splice into one buffer in a single pass,
 /// each read against the buffer the batch opened on.
@@ -25,10 +21,12 @@ pub(super) struct Batch<'a> {
 
 impl<'a> Batch<'a> {
     /// Weaves every member's edits into `source` and reparses once,
-    /// `source` itself for an empty batch. A rejected splice of several
-    /// members either replays them one at a time, so the failure names
-    /// the rule whose own edits produce it, or surfaces as
-    /// [`PipelineError::Batch`] naming them all.
+    /// `source` itself for an empty batch, carrying into the result the
+    /// binding table where every member declares its edits leave it
+    /// standing. A rejected splice of several members either replays
+    /// them one at a time, so the failure names the rule whose own
+    /// edits produce it, or surfaces as [`PipelineError::Batch`] naming
+    /// them all.
     fn splice(
         self,
         source: Source,
@@ -39,7 +37,18 @@ impl<'a> Batch<'a> {
             return Ok(source);
         };
         let (text, map) = weave_edits(&source, self.edits);
-        match reparse_or_reject(&source, text, first.id(), map, gate) {
+        match reparse_or_reject(&source, text, first.id(), &map, gate) {
+            Ok(mut next) => {
+                let declining = self
+                    .members
+                    .iter()
+                    .map(|&(_, rule)| rule)
+                    .find(|rule| !rule.preserves_bindings());
+                let (rule, preserves) =
+                    declining.map_or((first.id(), true), |rule| (rule.id(), false));
+                next.inherit(source, &map, rule, preserves);
+                Ok(next)
+            }
             Err(_) if !rest.is_empty() && !replays => Err(PipelineError::Batch {
                 rules: self.members.iter().map(|(_, rule)| rule.id()).collect(),
             }),
@@ -61,7 +70,7 @@ impl<'a> Batch<'a> {
                 );
                 replayed
             }
-            spliced => spliced,
+            rejected => rejected,
         }
     }
 
@@ -160,13 +169,7 @@ fn overlapping<'e>(sorted: impl IntoIterator<Item = &'e Edit>) -> bool {
 }
 
 /// Splices the sorted, non-overlapping `edits` into `source`, returning
-/// the woven text and, for a notebook, the `SourceMap` of cell-offset
-/// deltas. An ordinary module skips the map.
-fn weave_edits(source: &Source, edits: Vec<Edit>) -> (String, Option<SourceMap>) {
-    let woven = if source.is_notebook() {
-        apply_edits_mapped(source.text(), edits).map(|(text, map)| (text, Some(map)))
-    } else {
-        apply_edits(source.text(), edits).map(|text| (text, None))
-    };
-    woven.expect("invariant: sorted edits with no overlap weave")
+/// the woven text beside the `SourceMap` of the weave.
+fn weave_edits(source: &Source, edits: Vec<Edit>) -> (String, SourceMap) {
+    apply_edits_mapped(source.text(), edits).expect("invariant: sorted edits with no overlap weave")
 }

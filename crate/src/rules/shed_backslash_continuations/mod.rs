@@ -12,9 +12,8 @@ use ruff_text_size::TextRange;
 mod gaps;
 mod render;
 
-use render::{join_edits, join_text, joined_width, stripped_edit, wrap_edits};
-
 use gaps::{Gap, continuation_gaps, ends_atom, shares_a_run, stripped_gap};
+use render::{join_edits, join_text, joined_width, stripped_edit, wrap_edits};
 
 use crate::{
     config::Config,
@@ -35,6 +34,8 @@ pub(crate) struct ShedBackslashContinuations {
 
 impl ShedBackslashContinuations {
     pub(crate) const MESSAGE: &'static str = "shed a backslash line continuation";
+
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

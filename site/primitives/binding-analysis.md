@@ -61,13 +61,13 @@ The supporting types `BindingId`, `ScopeId`, `BindingKind`, `ScopeKind`, `Unpack
 
 ## Build Pattern
 
-`BindingAnalysis::new(module: &ModModule)` runs the resolution pass once during [[source]] construction. The pass walks the AST in source order, tracks every introduction and shadow per lexical scope, and indexes writes and reads by offset. The result is owned by the enclosing [[source]] and handed to consuming rules as `&BindingAnalysis`.
+`BindingAnalysis::new(module: &ModModule)` runs the resolution pass on the first read of `binding_analysis()`, so a run whose rules never read it never pays the walk. The pass walks the AST in source order, tracks every introduction and shadow per lexical scope, and indexes writes and reads by offset. The result is owned by the enclosing [[source]] and handed to consuming rules as `&BindingAnalysis`.
 
-A fresh analysis is built each time [[source]] is constructed or reparsed, so the offsets a rule reads always match the *Source* it's running against. Inside one rule's `apply` the table is immutable, and across rules the pipeline reparses, which rebuilds the analysis against the new text, so a rule that depends on a previous rule's edits sees a fresh table reflecting the rewritten source.
+Across a reparse the table travels with the *Source* rather than rebuilding, every offset it holds moved through the `SourceMap` of the applied edits, so the offsets a rule reads always match the text it runs against. A rule whose edits change a binding, or an edit that replaced a token the table names, leaves the next read to rebuild the table against the new text. Inside one rule's `apply` the table is immutable.
 
 ## Re-Using This Primitive
 
-[[single-use-variables]] is the first rule to consume the table, counting writes and reads per binding to surface candidates for inlining. Future rules with binding-shaped questions (*unused imports, shadowing detection, ahead-of-use references, dead-store analysis*) reach for the same primitive without re-walking. The single-walk-per-source guarantee is what makes adding new binding-shaped rules cheap.
+[[single-use-variables]] is the first rule to consume the table, counting writes and reads per binding to surface candidates for inlining. Future rules with binding-shaped questions (*unused imports, shadowing detection, ahead-of-use references, dead-store analysis*) reach for the same primitive without re-walking. The walk runs once per source and again only past a rule whose edits change a binding, which is what makes adding new binding-shaped rules cheap.
 
 The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives on the [[source]] page. The consumption path runs indirectly through diagnostics emitted by binding-aware rules rather than through direct method calls, and at `1.0` the readers open up so a downstream rule can query the table itself.
 

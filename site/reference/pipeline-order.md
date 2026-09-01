@@ -22,7 +22,7 @@ Each rule's edits shape the source the next rule reads. Three kinds of dependenc
 
 [[strip-trailing-commas]] runs before alignment so the trailing-comma decision is settled when alignment math measures member widths. Padding a line that's about to lose its trailing comma would land at the wrong column.
 
-The pipeline reparses between batches, so a rule that depends on a token surface earlier in the order sees that surface in the AST it walks, whereas a rule the registry declares independent of every rule in the current batch reads the buffer that batch opened on and lands its edits in the same splice. The cost is one parse per batch rather than one per editing rule.
+The pipeline reparses between batches, so a rule that depends on a token surface earlier in the order sees that surface in the AST it walks, whereas a rule the registry declares independent of every rule in the current batch reads the buffer that batch opened on and lands its edits in the same splice. The cost is one parse per batch rather than one per editing rule, and the binding analysis carries across that parse rather than rebuilding where every member of the batch keeps every binding, whereas the layout forecasts rebuild behind any batch that edits.
 
 ## Every Subset Settles
 

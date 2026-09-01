@@ -14,7 +14,7 @@ use ruff_text_size::{TextLen, TextRange, TextSize};
 use super::*;
 use crate::{
     config::Config,
-    diagnostics::Severity,
+    diagnostics::{Severity, fired_rules},
     primitives::edit::singleton_groups,
     rules::{
         align_colons::AlignColons, align_equals::AlignEquals,
@@ -29,9 +29,11 @@ use crate::{
 
 mod as_written;
 mod batch;
+mod carry;
 mod diagnose;
 mod registry;
 mod run;
+mod second_pass;
 mod settle;
 mod subsets;
 
@@ -142,6 +144,10 @@ impl Rule for TextCapturingRule {
 
     fn message(&self) -> &'static str {
         "test rule"
+    }
+
+    fn preserves_bindings(&self) -> bool {
+        false
     }
 }
 

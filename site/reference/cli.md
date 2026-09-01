@@ -62,7 +62,7 @@ Reports violations without modifying source, returning the canonical [**Exit Cod
 | `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count line, dropping the anchor and color. An [**unstable-output notice**](#unstable-output) survives it |
 | `--stdin` | bool | off | Read source from stdin instead of the filesystem |
 | `--stdin-filename` | path | unset | Treat stdin as this path, its extension selecting the source type. A `.ipynb` name reads stdin as a notebook |
-| `--validate` | bool | off | Confirm each file's would-be rewrite re-parses and settles, surfacing an unparseable rule output or an [**unstable one**](#unstable-output) as a config error |
+| `--validate` | bool | off | Confirm each file's would-be rewrite re-parses and settles under every enabled rule, where `format` re-applies only the rules that edited, surfacing an unparseable rule output or an [**unstable one**](#unstable-output) as a config error |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules |
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules |
 | `PATH...` | one or more paths, or `-` | required when not `--stdin` | Files or directories to check, or `-` to read source from stdin |

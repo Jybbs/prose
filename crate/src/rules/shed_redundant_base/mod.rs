@@ -28,6 +28,8 @@ impl ShedRedundantBase {
     pub(crate) const MESSAGE: &'static str =
         "shed a redundant `object` base or empty class parentheses";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

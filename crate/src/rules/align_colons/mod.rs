@@ -32,6 +32,8 @@ pub(crate) struct AlignColons {
 impl AlignColons {
     pub(crate) const MESSAGE: &'static str = "align consecutive `:` separators";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let type_settings = aligner::Settings::from(&config.rules.align_colons);
         Self {

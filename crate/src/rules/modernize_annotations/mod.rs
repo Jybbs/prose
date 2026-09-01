@@ -36,6 +36,8 @@ impl ModernizeAnnotations {
     pub(crate) const MESSAGE: &'static str =
         "modernize a legacy `typing` annotation to its builtin or PEP 604 form";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let facets = &config.rules.modernize_annotations;
         let targets = |version: PythonVersion| {
@@ -44,8 +46,8 @@ impl ModernizeAnnotations {
                 .is_some_and(|target| target >= version)
         };
         Self {
-            generics: facets.rewrite_generics && targets(PythonVersion::PY39),
             folds: Folds::from_config(config),
+            generics: facets.rewrite_generics && targets(PythonVersion::PY39),
             unions: facets.rewrite_unions && targets(PythonVersion::PY310),
         }
     }

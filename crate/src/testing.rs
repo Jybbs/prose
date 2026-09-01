@@ -5,7 +5,7 @@ use std::{
     path::Path,
 };
 
-use ruff_diagnostics::Edit;
+use ruff_diagnostics::{Edit, SourceMap};
 use ruff_notebook::{Notebook, NotebookIndex};
 use ruff_python_ast::{Expr, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_text_size::{TextLen, TextRange, TextSize};
@@ -17,7 +17,7 @@ use crate::{
     pipeline::Pipeline,
     primitives::{
         aligner,
-        edit::apply_edits,
+        edit::apply_edits_mapped,
         tiering::{Evaluated, call_reachable, eval_time_refs_of},
     },
     rule::{Rule, RuleId},
@@ -65,6 +65,10 @@ impl Rule for GroupSentinelRule {
     fn message(&self) -> &'static str {
         "group test rule"
     }
+
+    fn preserves_bindings(&self) -> bool {
+        false
+    }
 }
 
 /// A rule emitting `edit` only while the buffer's text opens with
@@ -94,6 +98,10 @@ impl Rule for GuardedRule {
     fn message(&self) -> &'static str {
         "guarded test rule"
     }
+
+    fn preserves_bindings(&self) -> bool {
+        false
+    }
 }
 
 /// Builds an alignment `Member` whose pre-operator whitespace is `gap`,
@@ -116,7 +124,9 @@ pub(crate) fn align_member(gap: TextRange, line_start: u32, width: usize) -> ali
 }
 
 pub(crate) fn applied_text(source: &Source, edits: Vec<Edit>) -> String {
-    apply_edits(source.text(), edits).expect("non-overlapping edits")
+    apply_edits_mapped(source.text(), edits)
+        .expect("non-overlapping edits")
+        .0
 }
 
 pub(crate) fn assert_send_sync<T: Send + Sync>() {}
@@ -204,6 +214,24 @@ pub(crate) fn never_settles(id: &'static str) -> GroupSentinelRule {
 /// `Ipynb` counterpart to [`parse`]. The cells concatenate through the
 /// synthetic separator `ruff_notebook` inserts, so the returned source
 /// carries real cell boundaries.
+/// Every Python module and notebook under the tree
+/// `PROSE_SETTLE_CORPUS` names, the fixture tree absent it, ascending
+/// by path.
+pub(crate) fn corpus_inputs() -> Vec<std::path::PathBuf> {
+    let root = std::env::var_os("PROSE_SETTLE_CORPUS").map_or_else(
+        || Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"),
+        std::path::PathBuf::from,
+    );
+    let mut inputs: Vec<_> = crate::walker::walk(&[root])
+        .filter_map(|found| match found.expect("the corpus walks") {
+            crate::walker::Found::Formattable(path, _) => Some(path),
+            crate::walker::Found::PassedLink(_) => None,
+        })
+        .collect();
+    inputs.sort();
+    inputs
+}
+
 pub(crate) fn notebook(cells: &[&str]) -> Source {
     Source::from_notebook(&notebook_document(cells), "<nb>").expect("notebook source builds")
 }
@@ -258,6 +286,12 @@ pub(crate) fn self_overlapping() -> GroupSentinelRule {
         groups: vec![vec![replacement("Y", 0, 3), replacement("Z", 2, 5)]],
         id: RuleId::from("self-overlapping"),
     }
+}
+
+/// The text `edits` weave into `text`, beside the `SourceMap` of the
+/// weave.
+pub(crate) fn woven(text: &str, edits: Vec<Edit>) -> (String, SourceMap) {
+    apply_edits_mapped(text, edits).expect("the edits weave")
 }
 
 pub(crate) fn write_dotconfig_prose_toml(dir: &Path, contents: &str) {

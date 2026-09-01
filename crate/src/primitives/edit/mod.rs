@@ -1,13 +1,16 @@
-//! Edit-shaping primitives shared across rules. `apply_edits` splices
-//! a sorted edit list into a source string, the pipeline runner's
-//! transform between rules, and `apply_edits_mapped` pairs that string
-//! with a `SourceMap` of one marker per applied edit. `apply_inline_edits`
+//! Edit-shaping primitives shared across rules. `apply_edits_mapped`
+//! splices a sorted edit list into a source string, the pipeline
+//! runner's transform between rules, pairing that string with a
+//! `SourceMap` of one marker per applied edit. `apply_inline_edits`
 //! folds a list of edits into a source range, returning `Cow::Borrowed`
-//! when no edit applies. Both decline overlapping edits, `apply_edits`
-//! with `None` and `apply_inline_edits` with `Cow::Borrowed`.
-//! `narrow_edit` trims a candidate replacement to its minimal divergent
-//! range against the source, and `insert_edit` keeps a rule's own
-//! accumulator in that sorted order as it emits.
+//! when no edit applies. Both decline overlapping edits,
+//! `apply_edits_mapped` with `None` and `apply_inline_edits` with
+//! `Cow::Borrowed`.
+//! `narrowed_replacement` trims a candidate replacement to its minimal
+//! divergent range against the source, and `insert_edit` keeps a rule's own
+//! accumulator in that sorted order as it emits. The `forward_*`
+//! functions move an offset, a range, an edit list, or a notebook's
+//! cell boundaries through the `SourceMap` of an applied edit set.
 
 use std::borrow::Cow;
 
@@ -19,8 +22,8 @@ use crate::{primitives::sorted_slot, source::Source};
 mod apply;
 mod offsets;
 
-pub(crate) use apply::{apply_edits, apply_edits_mapped, apply_inline_edits, splice_bodies};
-pub(crate) use offsets::{forward_offsets, narrowed_replacement};
+pub(crate) use apply::{apply_edits_mapped, apply_inline_edits, splice_bodies};
+pub(crate) use offsets::{forward_offsets, forward_range, forward_start, narrowed_replacement};
 
 /// True when any element of `parts` is `Cow::Owned`, the signal a
 /// rewrite produced fresh content rather than a borrow of the source.
@@ -82,7 +85,6 @@ fn replacement_or_deletion(range: TextRange, content: String) -> Edit {
 
 #[cfg(test)]
 mod tests {
-
     use rstest::rstest;
 
     use super::*;

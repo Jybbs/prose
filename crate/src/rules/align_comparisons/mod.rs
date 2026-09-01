@@ -28,6 +28,8 @@ pub(crate) struct AlignComparisons {
 impl AlignComparisons {
     pub(crate) const MESSAGE: &'static str = "align consecutive comparison operators";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             settings: config.align_settings(&config.rules.align_comparisons, config.code_width()),

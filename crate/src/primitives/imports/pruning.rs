@@ -185,7 +185,7 @@ mod tests {
     use ruff_text_size::Ranged;
 
     use super::*;
-    use crate::{primitives::edit::apply_edits, testing::parse};
+    use crate::testing::{applied_text, parse};
 
     /// The import runs of `source`'s module body as written.
     fn merge_runs(source: &Source) -> Vec<Vec<usize>> {
@@ -244,7 +244,7 @@ mod tests {
         let stmt = &source.ast().body[0];
         let names = &stmt.as_import_from_stmt().expect("a from-import").names;
         let edits = prune_import_aliases(&source, stmt.range(), names, true, |_| false);
-        let pruned = apply_edits(source.text(), edits).expect("the deletion stands alone");
+        let pruned = applied_text(&source, edits);
         assert_eq!(pruned, "# local imports\nfrom pkg import b\n");
     }
 
@@ -306,7 +306,7 @@ mod tests {
         let edits = prune_import_aliases(&source, stmt.range(), names, false, |i| {
             !dropped.contains(&i)
         });
-        let pruned = apply_edits(source.text(), edits).expect("the deletions do not overlap");
+        let pruned = applied_text(&source, edits);
         assert_eq!(pruned, expected);
     }
 
@@ -359,7 +359,7 @@ mod tests {
         let groups = prune_import_statements(&source, body, &drops, |slot, survives| {
             fold_landing(&source, body, &runs, &[], true, slot, survives)
         });
-        let pruned = apply_edits(source.text(), groups.concat()).expect("the edits weave");
+        let pruned = applied_text(&source, groups.concat());
         assert_eq!(pruned, expected);
     }
 }
