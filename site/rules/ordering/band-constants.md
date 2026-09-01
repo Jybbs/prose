@@ -17,9 +17,21 @@ layout  : doc
 
 The rule relocates a constant into its band, and each band orders by `(tier, subcategory, name)`, clustering the type aliases ahead of the `SCREAMING_CASE` constants and those ahead of the remaining module state. A constant reading another band member climbs an evaluation tier, and each tier opens its own blank-separated sub-band so derived values read apart from the primitives they build on. A tier holding a single constant folds tight below the tier above and aligns with it through [[align-equals]]. `max-tiers` caps how many tiers open a sub-band.
 
-Only an evaluation-time reference binds the order, covering a right-hand side, a decorator, a default argument, a base class, and a non-deferred annotation, so a constant a function reads inside its body still joins the leading band. A reassigned name, a value naming an unresolved reference, a line under a suppression directive or a `# prose: keep` marker, a row a `\` line join continues, and every constant in a reference cycle all pin where the author left them.
+Only an evaluation-time reference binds the order, covering a right-hand side, a decorator, a default argument, a base class, and a non-deferred annotation, so a constant a function reads inside its body still joins the leading band. Several shapes pin a constant where the author left it:
 
-A constant also pins wherever banding it would change which object a name resolves to while the module runs. That covers a constant whose own name shadows a builtin some definition above it already read, a value reaching through an attribute or a subscript into a name a definition above it reads at evaluation time, and a value resolving a name against a builtin or an earlier module-scope write that a definition below it rebinds, where a write inside a branch, an import a guard wraps, and a `global` write from a call the module makes each count as that earlier binding. Each case resolves one object before the move and a different one after, without raising, so the constant holds its slot instead.
+- A reassigned name.
+- A value naming an unresolved reference.
+- A line under a suppression directive or a `# prose: keep` marker.
+- A row a `\` line join continues.
+- Every constant in a reference cycle.
+
+A constant also pins wherever banding it would change which object a name resolves to while the module runs. That covers:
+
+1. A constant whose own name shadows a builtin some definition above it already read.
+2. A value reaching through an attribute or a subscript into a name a definition above it reads at evaluation time.
+3. A value resolving a name against a builtin or an earlier module-scope write that a definition below it rebinds, where a write inside a branch, an import a guard wraps, and a `global` write from a call the module makes each count as that earlier binding.
+
+Each case resolves one object before the move and a different one after, without raising, so the constant holds its slot instead.
 
 Only an inert value bands. An inert value reads names and builds a result (*a literal, a name, an attribute or subscript read, a display or operator expression, or a `lambda`*), whereas an effectful value carries a call, a comprehension, or an `await` and moving it would reorder that work. `RANDOM_SEED = 42` hoists into the leading band whereas `wide_trainer = L.Trainer(**trainer_kwargs)` holds its place.
 

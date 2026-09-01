@@ -19,7 +19,16 @@ Module-level `def` and `class` carry two blank lines before them and two after, 
 
 Inside function bodies the rule leaves blank-line discipline alone, since the in-body rhythm remains a per-author choice.
 
-A description-shaped own-line comment block above a statement binds tight against the following statement, reading the comment as a description of the statement it precedes, and it binds whether or not the author left a blank line between the two, so the reordering rules move the comment with the statement it heads. A block that holds its own line instead keeps one blank line below it to read as a divider, covering a decorative rule of `=`, `-`, `*`, `_`, `#`, `~`, `─`, `━`, or `═`, a Markdown-style heading opening with two or more `#`, a suppression directive, or a tool pragma. The canonical above-gap is measured from the topmost comment in the block either way. A block opening the file settles differently, clearing the run above it entirely and capping the run below at one blank line, seated where the block holds its own line or where the author already left one, so a module leading with a license header keeps the separation it was written with and a module leading with a banner gains one.
+A description-shaped own-line comment block above a statement binds tight against the following statement, reading the comment as a description of the statement it precedes, and it binds whether or not the author left a blank line between the two, so the reordering rules move the comment with the statement it heads. A block that holds its own line instead keeps one blank line below it to read as a divider, with the canonical above-gap measured from the topmost comment in the block either way.
+
+A block counts as a divider where it takes one of these shapes:
+
+- A decorative rule of `=`, `-`, `*`, `_`, `#`, `~`, `─`, `━`, or `═`.
+- A Markdown-style heading opening with two or more `#`.
+- A suppression directive.
+- A tool pragma.
+
+A block opening the file settles differently, clearing the run above it entirely and capping the run below at one blank line, seated where the block holds its own line or where the author already left one, so a module leading with a license header keeps the separation it was written with and a module leading with a banner gains one.
 
 On the import surface this rule reads an order [[group-imports]] and [[alphabetize-siblings]] have already settled, lands the blank-line separators between groups, and leaves [[align-imports]] to align the `import` keyword afterward. The [**Pipeline Order**](/reference/pipeline-order) reference lists where each sits.
 

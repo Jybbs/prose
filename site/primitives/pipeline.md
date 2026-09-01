@@ -80,7 +80,13 @@ pub enum PipelineError {
 }
 ```
 
-Every variant names the rule whose output failed. A `Reparse` error means a rule produced syntactically invalid Python, a `Compile` error means the output parses yet fails the semantic-syntax check Python's own `compile` applies, and a `Cell` error means a notebook cell that parsed on its own before the rule ran no longer does, naming that cell by its position in the notebook. All three are rule-authoring bugs rather than consumer-recoverable conditions. The intermediate `Source` is dropped either way, leaving no partial output for the caller to inspect.
+Every variant names the rule whose output failed:
+
+- A `Cell` error means a notebook cell that parsed on its own before the rule ran no longer does, naming that cell by its position in the notebook.
+- A `Compile` error means the output parses yet fails the semantic-syntax check Python's own `compile` applies.
+- A `Reparse` error means a rule produced syntactically invalid Python.
+
+All three are rule-authoring bugs rather than consumer-recoverable conditions. The intermediate `Source` is dropped either way, leaving no partial output for the caller to inspect.
 
 ## Determinism
 

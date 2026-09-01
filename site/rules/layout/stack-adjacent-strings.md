@@ -16,7 +16,11 @@ A run the enclosing brackets already carry breaks in place, each later literal l
 
 The rule only ever breaks a run, so a run already written one literal per line holds that shape whatever its width, backslash-continued and parenthesized alike. A run spanning several lines with two literals still sharing one normalizes to one per line whatever the width, the ragged seam being the defect rather than the line count.
 
-A run standing as a body's leading expression keeps its line however wide, parenthesizing it leaving a docstring that no longer reads as one. A run holding a triple-quoted part that spans lines holds too, moving that part carrying its opening line away from the interior the source pinned, and a comment anywhere inside the enclosing pair pins the run as well.
+A run holds its line however wide in each of the following shapes:
+
+1. A run standing as a body's leading expression, parenthesizing it leaving a docstring that no longer reads as one.
+2. A run holding a triple-quoted part that spans lines, moving that part carrying its opening line away from the interior the source pinned.
+3. A run carrying a comment anywhere inside the enclosing pair, the comment pinning the run in place.
 
 Bytes runs and runs mixing an f-string or t-string with a plain literal all break the same way, since each is one implicitly concatenated expression. The break falls between the parts and never inside one, so a replacement field keeps its own text untouched. A run held in a docstring slot and a line no break can bring within budget both reach [[line-overflow]].
 
