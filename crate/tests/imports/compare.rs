@@ -12,15 +12,26 @@ use crate::{
 /// that name.
 const MISSING: &str = "no plain constant";
 
-/// Finds the modules the rewrite breaks.
-///
-/// Returns the breaks, the count of modules comparable at all, and the ones a
-/// run left no record for.
+/// How one width's candidates divide, the breaks found among the comparable
+/// ones beside the names the verdict reads.
+pub(crate) struct Partition {
+    /// Every module the rewrite breaks.
+    pub(crate) breaks: Vec<Break>,
+    /// How many modules the original tree ran cleanly.
+    pub(crate) comparable: usize,
+    /// The modules the original tree did not run cleanly, which a run
+    /// therefore never judges.
+    pub(crate) uncomparable: Vec<String>,
+    /// The modules a run left no record for.
+    pub(crate) unmeasured: Vec<String>,
+}
+
+/// Finds the modules the rewrite breaks, and how the rest divide.
 pub(crate) fn compare(
     after: &BTreeMap<String, Outcome>,
     before: &BTreeMap<String, Outcome>,
     modules: &[String],
-) -> (Vec<Break>, usize, Vec<String>) {
+) -> Partition {
     let comparable: Vec<_> = modules
         .iter()
         .filter(|module| {
@@ -46,14 +57,27 @@ pub(crate) fn compare(
             })
         })
         .collect();
-    let unmeasured = modules
+    let unmeasured: Vec<_> = modules
         .iter()
         .filter(|module| {
             kind(before, module) == Kind::Unmeasured || kind(after, module) == Kind::Unmeasured
         })
         .cloned()
         .collect();
-    (breaks, comparable.len(), unmeasured)
+    let uncomparable = modules
+        .iter()
+        .filter(|module| {
+            !matches!(kind(before, module), Kind::Ok | Kind::Unmeasured)
+                && kind(after, module) != Kind::Unmeasured
+        })
+        .cloned()
+        .collect();
+    Partition {
+        breaks,
+        comparable: comparable.len(),
+        uncomparable,
+        unmeasured,
+    }
 }
 
 /// Says why one run counts as broken beside another and the name it turns on,

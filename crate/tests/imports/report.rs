@@ -22,7 +22,7 @@ use crate::{
 pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
     let (raising, timeouts) = tallied(carried, found);
     let uncomparable = if found.unmeasured.is_empty() {
-        found.uncomparable().to_string()
+        found.uncomparable.len().to_string()
     } else {
         "unmeasured".to_owned()
     };

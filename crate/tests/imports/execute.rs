@@ -21,8 +21,11 @@ use crate::{
 /// How often the harness asks whether a run has finished.
 const POLL: Duration = Duration::from_millis(20);
 
-/// How many seconds one module may run for absent [`TIMEOUT_VAR`].
-const TIMEOUT: f64 = 30.0;
+/// How many seconds one module may run for absent [`TIMEOUT_VAR`]. Every
+/// module of the pinned interpreter's library that imports at all lands
+/// well inside this, leaving the deadline to catch the ones that open an
+/// event loop and never return.
+const TIMEOUT: f64 = 5.0;
 
 /// The environment variable bounding one module's run, in seconds.
 pub(crate) const TIMEOUT_VAR: &str = "PROSE_IMPORTS_TIMEOUT";

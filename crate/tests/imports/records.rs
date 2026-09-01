@@ -76,6 +76,9 @@ pub(crate) struct Width {
     pub(crate) label: String,
     /// How many modules the format run could not read, parse, or write.
     pub(crate) refused: usize,
+    /// The modules the original tree did not run cleanly, which a run
+    /// therefore never judges.
+    pub(crate) uncomparable: Vec<String>,
     /// The modules a run left no record for.
     pub(crate) unmeasured: Vec<String>,
 }
@@ -87,11 +90,5 @@ impl Width {
             .iter()
             .filter(|brk| brk.formatted.kind == Kind::Timeout)
             .count()
-    }
-
-    /// How many candidates the original tree did not run cleanly, the
-    /// unmeasured ones aside.
-    pub(crate) fn uncomparable(&self) -> usize {
-        self.candidates - self.comparable - self.unmeasured.len()
     }
 }

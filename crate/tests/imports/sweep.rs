@@ -2,7 +2,12 @@
 //! every module the formatter rewrote from both trees, and each break
 //! confirmed and attributed.
 
-use std::{collections::BTreeMap, num::NonZeroUsize, path::Path, sync::Mutex};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    num::NonZeroUsize,
+    path::Path,
+    sync::Mutex,
+};
 
 use itertools::{Either, Itertools};
 use prose::{config::Config, pipeline::Pipeline};
@@ -91,7 +96,11 @@ impl Sweep {
 
     /// Sweeps the corpus at one width, running every module the formatter
     /// rewrote from both trees and confirming each break by a second run.
-    pub(crate) fn sweep(&self, width: Option<NonZeroUsize>) -> Width {
+    pub(crate) fn sweep(
+        &self,
+        width: Option<NonZeroUsize>,
+        skip: Option<&BTreeSet<String>>,
+    ) -> Width {
         let label = width.map_or_else(|| DEFAULT_LABEL.to_owned(), |width| width.to_string());
         let config = width.map_or_else(Config::default, |width| Config {
             code_line_length: Some(width),
@@ -99,16 +108,29 @@ impl Sweep {
         });
         let formatted = self.runner.stage.copy(&format!("formatted-{label}"));
         let run = format_tree(&formatted, &Pipeline::with_defaults(&config));
-        let modules =
-            setting(MODULE_VAR).map_or_else(|| candidates(&run.rewritten), |only| vec![only]);
+        let modules = setting(MODULE_VAR).map_or_else(
+            || {
+                let found = candidates(&run.rewritten);
+                match skip {
+                    Some(held) => found
+                        .into_iter()
+                        .filter(|module| !held.contains(module))
+                        .collect(),
+                    None => found,
+                }
+            },
+            |only| vec![only],
+        );
         let after = self.outcomes(&modules, &formatted);
         let before = self.originals(&modules);
-        let (suspects, comparable, unmeasured) = compare(&after, &before, &modules);
-        let verdicts: Vec<_> = suspects
+        let partition = compare(&after, &before, &modules);
+        let verdicts: Vec<_> = partition
+            .breaks
             .par_iter()
             .map(|brk| self.confirm(brk, &formatted))
             .collect();
-        let (mut breaks, flaky): (Vec<_>, Vec<_>) = suspects
+        let (mut breaks, flaky): (Vec<_>, Vec<_>) = partition
+            .breaks
             .into_iter()
             .zip(verdicts)
             .partition_map(|(brk, holds)| {
@@ -129,11 +151,12 @@ impl Sweep {
         Width {
             breaks,
             candidates: modules.len(),
-            comparable,
+            comparable: partition.comparable,
             flaky,
             label,
             refused: run.refused,
-            unmeasured,
+            uncomparable: partition.uncomparable,
+            unmeasured: partition.unmeasured,
         }
     }
 }

@@ -26,7 +26,7 @@ use crate::{
     fixes::{drops, holds_word, reaches, rewritten},
     format::{edit_rows, row_of},
     outcome::{Kind, Outcome, relative_to},
-    ratchet::{Baseline, Carried, bake, judge},
+    ratchet::{Baseline, Carried, bake, dropped, judge, skipping},
     records::{Break, EditRows, Frame, Width},
     report::render,
     sweep::DEFAULT_LABEL,
@@ -84,6 +84,7 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
         flaky: Vec::new(),
         label: "default".to_owned(),
         refused: 0,
+        uncomparable: vec!["blocked.py".to_owned()],
         unmeasured: Vec::new(),
     };
     let baked = env::temp_dir().join(format!("prose-imports-baseline.{}", process::id()));
@@ -93,12 +94,16 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
     )
     .expect("the baked break set parses");
     assert_eq!(
-        held["default"],
+        held.breaks["default"],
         [Carried {
             file: "re/_parser.py".to_owned(),
             reason: "leaves `X` unbound".to_owned(),
         }]
         .into()
+    );
+    assert_eq!(
+        held.uncomparable["default"],
+        ["blocked.py".to_owned()].into()
     );
 }
 
@@ -127,6 +132,7 @@ fn a_break_the_report_names_carries_its_frame_reason_and_repro() {
         flaky: Vec::new(),
         label: DEFAULT_LABEL.to_owned(),
         refused: 1,
+        uncomparable: Vec::new(),
         unmeasured: Vec::new(),
     };
     let shown = render(&["kept.py".to_owned()].into(), &found);
@@ -273,6 +279,7 @@ fn a_timing_out_break_counts_as_a_module_rather_than_a_defect() {
         flaky: Vec::new(),
         label: DEFAULT_LABEL.to_owned(),
         refused: 0,
+        uncomparable: Vec::new(),
         unmeasured: Vec::new(),
     };
     assert_eq!(found.timing_out(), 2);
@@ -385,12 +392,13 @@ fn comparing_sorts_each_module_into_broken_comparable_or_unmeasured() {
         ),
     ]
     .into();
-    let (breaks, comparable, unmeasured) = compare(&after, &before, &modules);
-    assert_eq!(comparable, 2);
-    assert_eq!(unmeasured, ["lost.py".to_owned()]);
-    assert_eq!(breaks.len(), 1);
-    assert_eq!(breaks[0].module, "gone.py");
-    assert_eq!(breaks[0].reason, "leaves `b` unbound");
+    let found = compare(&after, &before, &modules);
+    assert_eq!(found.comparable, 2);
+    assert_eq!(found.unmeasured, ["lost.py".to_owned()]);
+    assert_eq!(found.uncomparable, Vec::<String>::new());
+    assert_eq!(found.breaks.len(), 1);
+    assert_eq!(found.breaks[0].module, "gone.py");
+    assert_eq!(found.breaks[0].reason, "leaves `b` unbound");
 }
 
 #[test]
@@ -514,6 +522,7 @@ fn the_flaky_list_caps_at_the_shown_limit() {
         flaky: (0..SHOWN + 3).map(|n| format!("m{n}.py")).collect(),
         label: DEFAULT_LABEL.to_owned(),
         refused: 0,
+        uncomparable: Vec::new(),
         unmeasured: Vec::new(),
     };
     let shown = render(&BTreeSet::new(), &found);
@@ -577,20 +586,29 @@ fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
         flaky: Vec::new(),
         label: "default".to_owned(),
         refused: 0,
+        uncomparable: vec!["a.py".to_owned(), "b.py".to_owned()],
         unmeasured: vec!["u.py".to_owned()],
     };
-    let held: Baseline = [(
-        "default".to_owned(),
-        [Carried {
-            file: "re/_parser.py".to_owned(),
-            reason: "leaves `X` unbound".to_owned(),
-        }]
+    let held = Baseline {
+        breaks: [(
+            "default".to_owned(),
+            [Carried {
+                file: "re/_parser.py".to_owned(),
+                reason: "leaves `X` unbound".to_owned(),
+            }]
+            .into(),
+        )]
         .into(),
-    )]
-    .into();
+        uncomparable: [("default".to_owned(), ["a.py".to_owned()].into())].into(),
+    };
     assert_eq!(judge(&found, &held), ["m.py".to_owned()].into());
-    assert_eq!(judge(&found, &Baseline::new()), BTreeSet::new());
-    assert_eq!(found.uncomparable(), 2);
+    assert_eq!(judge(&found, &Baseline::default()), BTreeSet::new());
+    assert_eq!(found.uncomparable.len(), 2);
+    assert_eq!(dropped(&found, &held), ["b.py".to_owned()].into());
+    assert_eq!(
+        skipping(&held, "default"),
+        Some(&["a.py".to_owned()].into())
+    );
 }
 
 #[test]
@@ -602,6 +620,7 @@ fn the_summary_block_holds_every_count_in_one_column() {
         flaky: Vec::new(),
         label: DEFAULT_LABEL.to_owned(),
         refused: 0,
+        uncomparable: vec!["a.py".to_owned(), "b.py".to_owned(), "c.py".to_owned()],
         unmeasured: Vec::new(),
     };
     assert_eq!(

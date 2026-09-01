@@ -20,8 +20,17 @@ const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 /// The environment variable naming a break set an earlier run wrote.
 const BASELINE_VAR: &str = "PROSE_IMPORTS_BASELINE";
 
-/// The breaks a run left at each frame, keyed by width label.
-pub(crate) type Baseline = BTreeMap<String, BTreeSet<Carried>>;
+/// What one run recorded for a later run to ratchet against, the breaks
+/// it left beside the modules it could not compare, each keyed by width
+/// label.
+#[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+pub(crate) struct Baseline {
+    /// The breaks a run left at each frame.
+    pub(crate) breaks: BTreeMap<String, BTreeSet<Carried>>,
+    /// The modules whose original tree did not run cleanly, which a
+    /// later run skips rather than measuring again.
+    pub(crate) uncomparable: BTreeMap<String, BTreeSet<String>>,
+}
 
 /// The file and reason one break is known by across runs, which is what a
 /// baseline carries per break.
@@ -38,15 +47,26 @@ pub(crate) fn bake(path: &Path, widths: &[Width]) {
     if let Some(parent) = path.parent() {
         fs_err::create_dir_all(parent).expect("create the break set's directory");
     }
-    let baked: Baseline = widths
-        .iter()
-        .map(|found| {
-            (
-                found.label.clone(),
-                found.breaks.iter().map(carried).collect(),
-            )
-        })
-        .collect();
+    let baked = Baseline {
+        breaks: widths
+            .iter()
+            .map(|found| {
+                (
+                    found.label.clone(),
+                    found.breaks.iter().map(carried).collect(),
+                )
+            })
+            .collect(),
+        uncomparable: widths
+            .iter()
+            .map(|found| {
+                (
+                    found.label.clone(),
+                    found.uncomparable.iter().cloned().collect(),
+                )
+            })
+            .collect(),
+    };
     let rendered = serde_json::to_string_pretty(&baked).expect("render the break set");
     fs_err::write(path, rendered + "\n").expect("write the break set");
 }
@@ -59,7 +79,7 @@ pub(crate) fn baking() -> Option<PathBuf> {
 /// The break set [`BASELINE_VAR`] names, empty where the variable is unset.
 pub(crate) fn baseline() -> Baseline {
     let Some(named) = setting(BASELINE_VAR) else {
-        return Baseline::new();
+        return Baseline::default();
     };
     let held = fs_err::read_to_string(Path::new(&named)).expect("read the baseline");
     serde_json::from_str(&held).expect("parse the baseline")
@@ -68,7 +88,7 @@ pub(crate) fn baseline() -> Baseline {
 /// The broken modules of one width whose frame file and reason the baseline
 /// already holds.
 pub(crate) fn judge(found: &Width, held: &Baseline) -> BTreeSet<String> {
-    let Some(known) = held.get(&found.label) else {
+    let Some(known) = held.breaks.get(&found.label) else {
         return BTreeSet::new();
     };
     found
@@ -77,6 +97,25 @@ pub(crate) fn judge(found: &Width, held: &Baseline) -> BTreeSet<String> {
         .filter(|brk| known.contains(&carried(brk)))
         .map(|brk| brk.module.clone())
         .collect()
+}
+
+/// The modules of one width the original tree no longer runs cleanly
+/// that the baseline does not already list, meaning the sweep just lost
+/// coverage it used to have.
+pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
+    let known = held.uncomparable.get(&found.label);
+    found
+        .uncomparable
+        .iter()
+        .filter(|module| known.is_none_or(|held| !held.contains(*module)))
+        .cloned()
+        .collect()
+}
+
+/// The modules a baseline already proved uncomparable at `label`, which
+/// a judging run skips rather than paying to measure again.
+pub(crate) fn skipping<'a>(held: &'a Baseline, label: &str) -> Option<&'a BTreeSet<String>> {
+    held.uncomparable.get(label)
 }
 
 /// The file and reason a baseline holds one break by.

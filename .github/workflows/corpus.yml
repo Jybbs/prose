@@ -135,7 +135,7 @@ jobs:
       - name : Save the break set
         uses : actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          key  : corpus-breaks-${{ steps.python.outputs.version }}-${{ github.sha }}
+          key  : corpus-breaks-v2-${{ steps.python.outputs.version }}-${{ github.sha }}
           path : &breaks-dir ${{ runner.temp }}/breaks
 
       - name : Drop the stages and break sets this bake replaces
@@ -144,7 +144,7 @@ jobs:
           SHA      : ${{ github.sha }}
           VERSION  : ${{ steps.python.outputs.version }}
         run  : |
-          for kind in stage breaks; do
+          for kind in stage breaks-v2; do
             PREFIX="corpus-$kind-$VERSION-" KEPT="corpus-$kind-$VERSION-$SHA" \
               gh api "repos/$GITHUB_REPOSITORY/actions/caches?per_page=100" \
                 --jq '.actions_caches[]
@@ -230,6 +230,7 @@ jobs:
   imports:
     name            : 🪟 Imports
     if              : *pull-request
+    outputs         : { armed: "${{ steps.breaks.outputs.cache-matched-key != '' }}" }
     runs-on         : *ubuntu
     timeout-minutes : *sweep
 
@@ -244,9 +245,9 @@ jobs:
         id   : breaks
         uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          key          : corpus-breaks-${{ steps.python.outputs.version }}-${{ env.BASE }}
+          key          : corpus-breaks-v2-${{ steps.python.outputs.version }}-${{ env.BASE }}
           path         : *breaks-dir
-          restore-keys : corpus-breaks-${{ steps.python.outputs.version }}-
+          restore-keys : corpus-breaks-v2-${{ steps.python.outputs.version }}-
 
       - name : Import every rewritten module against the baked break set
         env  : { PROSE_IMPORTS_BASELINE: *breaks-path }
@@ -255,7 +256,7 @@ jobs:
 
       - name : Report a break set no bake has written yet
         if   : ${{ steps.breaks.outputs.cache-matched-key == '' }}
-        run  : echo "::notice::no baked break set for this interpreter, so the ratchet has nothing to read"
+        run  : echo "::warning::no baked break set for this interpreter, so the ratchet asserted nothing on this run"
 
   subsets:
     name            : ${{ matrix.label }}
@@ -294,6 +295,7 @@ jobs:
         env:
           BAKE      : ${{ needs.bake.result }}
           DELTA     : ${{ needs.delta.result }}
+          ARMED     : ${{ needs.imports.outputs.armed }}
           IMPORTS   : ${{ needs.imports.result }}
           MUTATIONS : ${{ needs.mutations.result }}
           PLAN      : ${{ needs.plan.result }}
