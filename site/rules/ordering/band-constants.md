@@ -1,5 +1,5 @@
 ---
-caption : "Hoists module-level constants into a leading band below the imports and a trailing band beneath the definitions."
+caption : "Hoists module-level constants into a leading band below the imports and a trailing band beneath the definitions, ordering each band it seats."
 related : [alphabetize-siblings, group-imports, space-statements, align-equals, miscased-constants, reassigned-constants]
 layout  : doc
 ---
@@ -8,7 +8,7 @@ layout  : doc
 
 <RuleLayout rule="band_constants">
 
-`band-constants` gathers module-level constants into two bands, a leading band directly below the imports and a trailing band beneath the definitions, so a module reads top to bottom as its imports, its leading constants, its definitions, then the constants derived from them.
+`band-constants` gathers module-level constants into two bands and orders what it gathers, a leading band directly below the imports and a trailing band beneath the definitions, so a module reads top to bottom as its imports, its leading constants, its definitions, then the constants derived from them.
 
 | Band | Holds |
 |---|---|
@@ -16,6 +16,8 @@ layout  : doc
 | Trailing | a constant that names a function or class defined later in the module |
 
 The rule relocates a constant into its band, and each band orders by `(tier, subcategory, name)`, clustering the type aliases ahead of the `SCREAMING_CASE` constants and those ahead of the remaining module state. A constant reading another band member climbs an evaluation tier, and each tier opens its own blank-separated sub-band so derived values read apart from the primitives they build on. A tier holding a single constant folds tight below the tier above and aligns with it through [[align-equals]]. `max-tiers` caps how many tiers open a sub-band.
+
+A band carries its own order, where [[group-imports]] relocates an import into its section and leaves the order within it to [[alphabetize-siblings]]. The split follows what each order costs to get wrong, in that import siblings reorder freely whereas a constant's slot binds every reference to it, so the move is only safe under the evaluation analysis this rule already runs.
 
 Only an evaluation-time reference binds the order, covering a right-hand side, a decorator, a default argument, a base class, and a non-deferred annotation, so a constant a function reads inside its body still joins the leading band. Several shapes pin a constant where the author left it:
 
