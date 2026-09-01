@@ -99,18 +99,44 @@ impl<'a, 'src> SectionRuns<'a, 'src> {
     }
 }
 
-/// The `section` split ahead of every fenced slot inside it, so no
-/// permutation seats a member across one. `fences` is in slot order.
+/// The `section` split around every fenced slot inside it, so no
+/// permutation seats a member across one. `fences` is in slot order,
+/// and each fence lands in a run of its own rather than sorting among
+/// the definitions below it.
 pub(super) fn fenced_runs(section: &Range<usize>, fences: &[usize]) -> Vec<Range<usize>> {
     iter::once(section.start)
         .chain(
             fences
                 .iter()
                 .copied()
-                .filter(|fence| section.contains(fence) && *fence > section.start),
+                .filter(|fence| section.contains(fence))
+                .flat_map(|fence| [fence, fence + 1]),
         )
         .chain(iter::once(section.end))
+        .dedup()
         .tuple_windows()
         .map(|(start, end)| start..end)
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case::unfenced(0..4, vec![], vec![0..4])]
+    #[case::fence_inside(0..4, vec![2], vec![0..2, 2..3, 3..4])]
+    #[case::fence_opening(0..4, vec![0], vec![0..1, 1..4])]
+    #[case::fence_closing(0..4, vec![3], vec![0..3, 3..4])]
+    #[case::adjacent_fences(0..4, vec![1, 2], vec![0..1, 1..2, 2..3, 3..4])]
+    #[case::fence_outside(2..4, vec![0], vec![2..4])]
+    fn fenced_runs_seats_every_fence_in_a_run_of_its_own(
+        #[case] section: Range<usize>,
+        #[case] fences: Vec<usize>,
+        #[case] expected: Vec<Range<usize>>,
+    ) {
+        assert_eq!(fenced_runs(&section, &fences), expected);
+    }
 }
