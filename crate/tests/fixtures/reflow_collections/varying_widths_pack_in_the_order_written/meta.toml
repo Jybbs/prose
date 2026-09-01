@@ -3,5 +3,7 @@ previewable = false
 title       = "Pack Varying Widths in the Order Written"
 
 description = '''
-The `__all__` list alternates wide strings with two-character ones, and with no sort reaching it the expansion packs each row at the widths it carries in that order, so the six entries flow across two balanced rows of three rather than filling the first row to the budget.
+The `__all__` list alternates thirty-character strings with two-character ones, and no sort reaches it here.
+
+The expansion packs each row at **the widths the entries carry in their written order**, which puts three entries on each of two balanced rows rather than filling the first row to the budget and leaving a short one behind it.
 '''

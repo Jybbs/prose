@@ -3,5 +3,7 @@ previewable = false
 title       = "A Lone Exploded Keyword Still Buffers Its `=`"
 
 description = '''
-`handler` is the only keyword in the exploded `register` call, so there is no column for it to join. Its `=` still takes a single space on each side, because a keyword standing alone on its line reads as `name = value` rather than staying tight.
+`handler` is the only keyword in the exploded `register` call, so there is no column for it to join.
+
+Its `=` **still takes a single space on each side**, because a keyword standing alone on its line reads as `name = value` rather than staying tight the way a packed argument does.
 '''

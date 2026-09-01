@@ -3,5 +3,5 @@ previewable = false
 title       = "A Plain Docstring Reframes Then Expands"
 
 description = '''
-`summarize`'s docstring sits in a plain `"..."` pair rather than triple quotes. **`frame-docstrings` requotes it to `"""` and `expand-docstrings` then rewrites it to the multi-line shape**, the reframe running first so the requoted one-liner expands in the same pass.
+`summarize`'s docstring sits in a plain `"..."` pair rather than triple quotes. **`frame-docstrings` requotes it to `"""` and `expand-docstrings` then rewrites it to the multi-line shape**, the reframe running first so the requoted one-liner expands.
 '''

@@ -19,6 +19,7 @@ use crate::{
     source::Source,
 };
 
+#[derive(Debug)]
 pub(crate) struct StripTrailingCommas;
 
 impl StripTrailingCommas {

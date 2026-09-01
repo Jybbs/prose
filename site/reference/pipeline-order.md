@@ -42,6 +42,6 @@ Lint-only rules *(the entries above with the 🧶 badge)* never rewrite, so they
 
 ## Internal Surface
 
-The data driving this page comes from parsing the `register_rules!` macro at `crate/src/rule/mod.rs` at build time, so the order on the page is always the order the binary actually runs. The [[pipeline]] primitive page covers the `Pipeline::with_defaults`, `Pipeline::with_filters`, and `Pipeline::for_rule` constructors that pick subsets out of this canonical list.
+The data driving this page comes from running `prose rules --output-format json` at build time, so the order on the page is always the order the binary actually runs. The [[pipeline]] primitive page covers the `Pipeline::with_defaults`, `Pipeline::with_filters`, and `Pipeline::for_rule` constructors that pick subsets out of this canonical list.
 
 For the per-rule canonical case and the surrounding behavior of each entry, click the rule's chip above. For the deterministic gate that consumers compile against, see the [**Exit Codes**](/reference/exit-codes) reference.

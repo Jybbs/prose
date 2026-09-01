@@ -3,5 +3,7 @@ previewable = false
 title       = "Nested Classes Sort and Align Independently Per Scope"
 
 description = '''
-`Order` wraps the inner `LineItem` class, each carrying its fields, `total`/`customer_id`/`placed_on` and `sku`/`price`/`quantity`, and its methods in arbitrary order. **The pipeline alphabetizes the fields and reorders the methods at every nesting depth, aligning the `:` and `=` declaration columns within each scope independently**, landing `customer_id`, `placed_on`, `total` in `Order` and `price`, `quantity`, `sku` in `LineItem`, and settling the blank-line cushion between methods.
+`Order` wraps an inner `LineItem` class, and both carry fields and methods written in arbitrary order.
+
+**Every rule runs at each nesting depth independently.** `Order`'s fields alphabetize to `customer_id`, `placed_on`, `total` and `LineItem`'s to `price`, `quantity`, `sku`, with each class settling its own `:` and `=` columns rather than sharing one across both. The methods reorder within each scope too, and the blank-line cushion between members settles throughout.
 '''

@@ -34,6 +34,7 @@ mod quote;
 
 use self::{numeric::canonical_number, prefix::canonical_prefix, quote::requoted};
 
+#[derive(Debug)]
 pub(crate) struct NormalizeLiterals {
     unify_numerics: bool,
     unify_prefixes: bool,

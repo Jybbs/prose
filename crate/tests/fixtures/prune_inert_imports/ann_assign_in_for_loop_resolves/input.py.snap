@@ -1,8 +1,9 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/unused_future_annotations/ann_assign_in_for_loop_resolves/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/ann_assign_in_for_loop_resolves/input.py
 ---
+from __future__ import annotations
 
 
 class Item:

@@ -3,5 +3,7 @@ previewable = false
 title       = "A Comment Pins a Comprehension at Its Source Shape"
 
 description = '''
-The `squares` comprehension would fit on one line, but the comment trailing `value * value` has no place in the joined form, so collapsing would drop it. The comment therefore pins the comprehension at its source line breaks.
+Nothing here moves. The `squares` comprehension would fit on one line comfortably.
+
+The comment trailing `value * value` has **no place in the joined form**, so collapsing the comprehension would silently drop it. The comment therefore pins the comprehension at the line breaks the source gave it.
 '''

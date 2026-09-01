@@ -3,5 +3,7 @@ previewable = false
 title       = "A Conditional Arm Inherits the Enclosing Pin"
 
 description = '''
-`Posting` is pinned by `@dataclass`, whose generated constructor takes the fields in declaration order, and the `if TYPE_CHECKING:` arm sits inside that same class body. The `url` and `company` pair under the conditional therefore **holds its slots** just like `title` above it, and nothing sorts even though `company` alphabetizes first.
+Nothing in `Posting` moves. `@dataclass` generates a constructor taking the fields in declaration order, which pins the class body.
+
+The `if TYPE_CHECKING:` arm sits inside that same body, so **the pin reaches into it**. `url` and `company` hold their slots exactly as `title` does above them, even though `company` would alphabetize first.
 '''

@@ -3,5 +3,7 @@ previewable = false
 title       = "A Bound Comment Trails Its Constant Inside a Compound Arm"
 
 description = '''
-Banding runs inside each module-scope compound arm, so the constants under `if True:` sort in place, `ALPHA_CAP = 2` climbing above `ZETA_CAP = 1`. The comment `# the ceiling the retry loop honors` binds backward to `ZETA_CAP` from the line below it, so it folds onto the constant's line as a trailing note at the arm's own indent and moves with it.
+`band-constants` runs inside each module-scope compound statement as well as at the top level, so the two constants under `if True:` sort among themselves and `ALPHA_CAP` moves above `ZETA_CAP`.
+
+The comment sits directly below `ZETA_CAP` and describes it, so it folds up onto that constant's line as a trailing note **at the arm's own indent**, and it travels with the constant when the sort moves it.
 '''

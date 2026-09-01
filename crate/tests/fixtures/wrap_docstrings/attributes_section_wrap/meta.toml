@@ -3,5 +3,7 @@ previewable = true
 title       = "Class Docstrings Wrap the Same Way as Function Docstrings"
 
 description = '''
-`Posting`'s class docstring holds an `Attributes:` section whose `title` entry overruns the budget. **The entry wraps with the same hanging-column shape a function `Args:` entry takes**, because the walker visits every body whose first statement is a string literal, so class and function docstrings reshape identically.
+`Posting`'s class docstring holds an `Attributes:` section whose `title` entry overruns the budget.
+
+**The entry wraps with the same hanging-column shape a function's `Args:` entry takes.** Every body whose first statement is a string literal is visited, so class and function docstrings reshape identically.
 '''

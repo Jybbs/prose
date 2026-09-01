@@ -3,5 +3,7 @@ previewable = true
 title       = "Tight Keywords Are Measured With Both Inserted Spaces"
 
 description = '''
-Each keyword in `configure` sits flush against its `=`, so joining the aligned column means gaining a space on both sides of the operator, and the fit test counts both. Padded to `verbose`'s column, `label`'s row would sit exactly at the `code-line-length` cap of 40 without the value-side space and one past it with it, so `label` keeps a single-space `=` while `verbose` and `dry` align beneath it.
+Each keyword in `configure` sits flush against its `=`, so joining an aligned column means gaining a space on both sides of the operator, and the fit test counts **both**.
+
+Padded out to `verbose`'s column, `label`'s row would sit exactly at the 40-column budget without the value-side space and one column past it once that space is included. `label` therefore keeps a single-space `=` while `verbose` and `dry` align beneath it.
 '''

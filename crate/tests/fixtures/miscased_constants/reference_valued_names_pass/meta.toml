@@ -3,5 +3,7 @@ previewable = true
 title       = "A Value That Names an Existing Object Is a Bare Alias"
 
 description = '''
-The bare name `Turtle`, the subscript `list[float]`, and the attribute `TarFile.open` each refer to an object that already exists, the shape a PEP 484 type alias takes, so none of the three assignments is flagged. The rule reads the value rather than the target, which spares the lowercase `opener` alongside the PascalCase `Pen`.
+The bare name `Turtle`, the subscript `list[float]`, and the attribute `TarFile.open` each refer to an object that already exists, which is the shape a PEP 484 type alias takes.
+
+None of the three assignments is flagged. The rule reads **the value rather than the target**, which is what spares the lowercase `opener` alongside the PascalCase `Pen`.
 '''

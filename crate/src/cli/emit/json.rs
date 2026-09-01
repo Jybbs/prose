@@ -77,7 +77,7 @@ mod tests {
     use crate::cli::emit::emitted;
     use crate::diagnostics::Diagnostic;
     use crate::source::Source;
-    use crate::testing::{format_diagnostic, parse, range};
+    use crate::testing::{format_diagnostic, parse, range, replacement};
 
     fn diag() -> Diagnostic {
         format_diagnostic(range(0, 1))
@@ -139,8 +139,8 @@ mod tests {
         let source = parse("x = 1\ny = 2\n");
         let diag = Diagnostic {
             fix: Some(Fix::safe_edits(
-                Edit::range_replacement("a".to_owned(), range(0, 1)),
-                [Edit::range_replacement("b".to_owned(), range(6, 7))],
+                replacement("a", 0, 1),
+                [replacement("b", 6, 7)],
             )),
             ..format_diagnostic(range(0, 7))
         };

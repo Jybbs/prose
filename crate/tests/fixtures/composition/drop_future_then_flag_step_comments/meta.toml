@@ -3,5 +3,5 @@ previewable = false
 title       = "Drop Future Import, Then Flag Step-Narration Comments"
 
 description = '''
-`process` narrates its own steps with `# 1. Filter empties.` and `# 2. Sort ascending.`, the comment shape `step-narration` flags rather than rewrites, so both stay in the output. `prune-inert-imports` removes `from __future__ import annotations` in the same run, and **each diagnostic's range is computed against the file after that removal**, so the reported positions still land on the comments.
+`process` narrates its own steps with `# 1. Filter empties.` and `# 2. Sort ascending.`, the comment shape `step-narration` flags rather than rewrites, so both stay in the output. `prune-inert-imports` removes `from __future__ import annotations` alongside them, and **each diagnostic's range is computed against the file after that removal**, so the reported positions still land on the comments.
 '''

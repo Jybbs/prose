@@ -3,4 +3,4 @@ source: crate/tests/integration.rs
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/band_constants/shadowed_builtin_pins_above_its_definition/input.py
 ---
-band-constants@23..64
+band-constants@21..64

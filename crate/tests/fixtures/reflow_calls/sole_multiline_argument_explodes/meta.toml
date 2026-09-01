@@ -4,5 +4,7 @@ previewable = true
 title       = "A Sole Multi-Line Argument Explodes the Call Around It"
 
 description = '''
-`gather` carries one argument, the dict bound to `mapping=`, and that dict spans rows. The call explodes around it rather than opening on the calling row and closing `}` and `)` together, so the `(` ends its row, the dict block indents one step, and the `)` takes a row of its own.
+`gather` carries a single argument, the dict bound to `mapping=`, and that dict spans rows.
+
+**The call explodes around it** rather than opening on the calling row and closing `}` and `)` together. The `(` ends its row, the dict block indents one step, and the `)` takes a row of its own.
 '''

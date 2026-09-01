@@ -79,7 +79,7 @@ pub struct ParseRuleIdError(String);
 ///
 /// Rules must be `Send + Sync` so that the pipeline can run across
 /// files in parallel without moving the rule list per worker.
-pub(crate) trait Rule: Send + Sync {
+pub(crate) trait Rule: fmt::Debug + Send + Sync {
     /// Computes the edits this rule would apply to `source`,
     /// partitioned into fix groups. Each inner `Vec` is one fix that
     /// the pipeline maps to a single diagnostic, and the edits across

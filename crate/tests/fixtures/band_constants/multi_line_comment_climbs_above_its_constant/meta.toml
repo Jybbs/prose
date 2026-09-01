@@ -3,5 +3,7 @@ previewable = false
 title       = "A Multi-Line Comment Climbs Above Its Constant"
 
 description = '''
-The two-line comment block below `DEFAULT_EPSILON` binds backward to that constant just as a single-line comment would, but two lines cannot join the assignment as a trailing comment, so the block climbs above `DEFAULT_EPSILON` instead. The sorted band still packs as one contiguous run beneath it, `MAX_INT` and `PENALTY_TYPES` following without a blank.
+The two-line comment block below `DEFAULT_EPSILON` describes that constant, exactly as a single-line comment would.
+
+Two lines cannot fold onto the assignment as a trailing note, so the block **moves above `DEFAULT_EPSILON` instead** and travels with it through the sort. The three constants still pack as one run beneath the block, `MAX_INT` and `PENALTY_TYPES` following without a blank line.
 '''

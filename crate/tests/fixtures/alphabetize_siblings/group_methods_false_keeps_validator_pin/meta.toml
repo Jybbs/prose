@@ -3,5 +3,7 @@ previewable = false
 title       = "A Validator Pin Holds Even With Method Grouping Off"
 
 description = '''
-`group-methods = false` changes only how methods sort, not whether a class's methods are pinned, so the pin a `@field_validator` puts on `Posting` still holds. `display` and `check_name` keep their source order, while the two fields sort by name, `name` ahead of `title`.
+`group-methods = false` changes only how methods sort. It does not change whether a class's methods are pinned at all.
+
+`@field_validator` still pins `Posting`'s methods, so `display` and `check_name` **keep their source order**. The two fields are untouched by that pin and sort by name, moving `name` ahead of `title`.
 '''

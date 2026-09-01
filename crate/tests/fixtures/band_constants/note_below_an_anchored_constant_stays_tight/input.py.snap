@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/note_below_an_anchored_constant_stays_tight/input.py
+---
+def helper():
+    return 1
+
+
+RAW = compute()
+# documents RAW
+
+SCALED = RAW
+ALPHA = 2
+ZETA = 1

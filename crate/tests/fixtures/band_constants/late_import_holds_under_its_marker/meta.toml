@@ -1,0 +1,9 @@
+[docs]
+previewable = true
+title       = "A Late Import Holds Under Its Marker"
+
+description = '''
+Both `mmm` and `aaa` are imports written below the `VALUE = 1` constant. `mmm` **moves up to join `import zzz`** at the top of the file, which is what happens to any import found below a constant.
+
+`aaa` stays exactly where the author wrote it, because of the `# noqa: E402` trailing it. `E402` is the standard code for a module-level import placed below the top of a file, so a marker naming that code records the position as deliberate and **the import keeps its line**.
+'''

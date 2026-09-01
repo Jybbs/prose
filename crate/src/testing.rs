@@ -18,7 +18,7 @@ use crate::{
     primitives::{
         aligner,
         edit::apply_edits,
-        tiering::{Evaluated, call_reachable},
+        tiering::{Evaluated, call_reachable, eval_time_refs_of},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -47,6 +47,7 @@ impl Write for FailingWriter {
 
 /// Test-only rule that returns the fix groups supplied at
 /// construction.
+#[derive(Debug)]
 pub(crate) struct GroupSentinelRule {
     pub(crate) groups: Vec<Vec<Edit>>,
     pub(crate) id: RuleId,
@@ -70,6 +71,7 @@ impl Rule for GroupSentinelRule {
 /// replacing that buffer's first byte with `writes`. A `writes` that
 /// keeps the opening matching `reads` edits its own output forever,
 /// and one that breaks the match settles after a single edit.
+#[derive(Debug)]
 pub(crate) struct PrefixRule {
     pub(crate) id: RuleId,
     pub(crate) reads: &'static str,
@@ -153,7 +155,7 @@ pub(crate) fn evaluated<'src>(source: &'src Source, body: &'src [Stmt]) -> Evalu
     Evaluated::of(
         body,
         &call_reachable(source.binding_analysis(), body),
-        false,
+        eval_time_refs_of(body, false),
     )
 }
 
@@ -196,7 +198,7 @@ pub(crate) fn format_diagnostic(range: TextRange) -> Diagnostic {
 /// over its own output grows the line and edits again.
 pub(crate) fn never_settles(id: &'static str) -> GroupSentinelRule {
     GroupSentinelRule {
-        groups: vec![vec![Edit::range_replacement("yy".to_owned(), range(0, 1))]],
+        groups: vec![vec![replacement("yy", 0, 1)]],
         id: RuleId::from(id),
     }
 }
@@ -223,6 +225,11 @@ pub(crate) fn range(start: u32, end: u32) -> TextRange {
     TextRange::new(start.into(), end.into())
 }
 
+/// An edit replacing the `start..end` span with `content`.
+pub(crate) fn replacement(content: &str, start: u32, end: u32) -> Edit {
+    Edit::range_replacement(content.to_owned(), range(start, end))
+}
+
 pub(crate) fn run_rule(slug: &str, src: &str) -> String {
     let pipeline = Pipeline::for_rule(slug, &Config::default()).expect("rule is registered");
     pipeline
@@ -237,10 +244,7 @@ pub(crate) fn run_rule(slug: &str, src: &str) -> String {
 /// ranges, a group the splice declines to apply.
 pub(crate) fn self_overlapping() -> GroupSentinelRule {
     GroupSentinelRule {
-        groups: vec![vec![
-            Edit::range_replacement("Y".to_owned(), range(0, 3)),
-            Edit::range_replacement("Z".to_owned(), range(2, 5)),
-        ]],
+        groups: vec![vec![replacement("Y", 0, 3), replacement("Z", 2, 5)]],
         id: RuleId::from("self-overlapping"),
     }
 }

@@ -3,5 +3,7 @@ previewable = false
 title       = "A Second Note Climbs When the Line Is Already Full"
 
 description = '''
-The comment below `ZETA_CAP` binds upward to it, yet the constant's line already ends in a trailing note, forcing the fit check to measure from the end of that note rather than from the end of the code. Appending a second note would run the line past the budget, so `# and a second note bound from below` climbs above `ZETA_CAP` instead and travels with it when `ALPHA_CAP` sorts first.
+`ZETA_CAP` already ends in a trailing note, and the comment below it describes that same constant.
+
+Adding the second note to that line measures from the end of the existing note rather than from the end of the code, which runs the line past the budget. The second comment **moves above `ZETA_CAP` instead**, and travels with it when `ALPHA_CAP` sorts to the top.
 '''

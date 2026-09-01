@@ -3,5 +3,5 @@ previewable = false
 title       = "A File Without the Directive Passes Through Unchanged"
 
 description = '''
-`os` is imported and then read through `os.getcwd()` inside `main`. **The import passes through unchanged** because the binding table sees a live reference to `os`, giving `prune-inert-imports` nothing to prune.
+`os` is imported and then read through `os.getcwd()` inside `main`. **The import passes through unchanged** because the binding table holds a live reference to `os`, giving `prune-inert-imports` nothing to prune.
 '''

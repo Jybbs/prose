@@ -3,5 +3,7 @@ previewable = true
 title       = "Alignment to a Code Token Beats the Hang Guess"
 
 description = '''
-A continuation row sitting on the column of a name on the opening row follows that name leftward even where the column is also an indent step past the row, since alignment to a code token reads as intent where a coincidental hang does not.
+The redundant grouping pair is shed, which moves everything inside it one column to the left.
+
+The continuation row was sitting on the column where the second operand starts on the opening row, and **a row aligned to a code token follows that token**, so it moves one column left as well. A row whose indent merely happened to fall an indent step in would have been left where it was.
 '''

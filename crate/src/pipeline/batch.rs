@@ -48,7 +48,7 @@ impl<'a> Batch<'a> {
                     .members
                     .iter()
                     .try_fold(source, |source, &(seat, rule)| {
-                        let Some(spliceable) = Spliceable::of(rule, &source) else {
+                        let Some(spliceable) = Spliceable::landing(rule, &source) else {
                             return Ok(source);
                         };
                         let mut alone = Self::default();
@@ -105,10 +105,16 @@ pub(super) struct Spliceable {
 }
 
 impl Spliceable {
+    /// [`of`](Self::of) narrowed to a rule whose edits weave, the
+    /// reading a fold takes because it leaves an overlapping rule
+    /// unapplied.
+    pub(super) fn landing(rule: &dyn Rule, source: &Source) -> Option<Self> {
+        Self::of(rule, source).filter(Self::lands)
+    }
+
     /// `rule`'s surviving fix groups over `source`, `None` where none
-    /// survives or two of their edits overlap, the overlap the weave
-    /// declines by leaving the rule unapplied. A byte-identical
-    /// duplicate is the signature of a walk reaching one node twice.
+    /// survives. A byte-identical duplicate among their edits is the
+    /// signature of a walk reaching one node twice.
     pub(super) fn of(rule: &dyn Rule, source: &Source) -> Option<Self> {
         let groups = prepared_groups(rule, source);
         if groups.is_empty() {
@@ -121,7 +127,13 @@ impl Spliceable {
             "rule `{}` emitted a duplicate edit, the signature of a walk reaching one node twice",
             rule.id(),
         );
-        (!overlapping(&edits)).then_some(Self { edits, groups })
+        Some(Self { edits, groups })
+    }
+
+    /// True where no two of the edits overlap, the overlap the weave
+    /// declines.
+    pub(super) fn lands(&self) -> bool {
+        !overlapping(&self.edits)
     }
 
     /// True where any edit changes the text it covers in `source`.
@@ -129,6 +141,11 @@ impl Spliceable {
         self.edits
             .iter()
             .any(|edit| edit.content().unwrap_or_default() != source.slice(edit))
+    }
+
+    /// The text the edits weave into `source`.
+    pub(super) fn woven(self, source: &Source) -> String {
+        weave_edits(source, self.edits).0
     }
 }
 

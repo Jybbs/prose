@@ -3,5 +3,9 @@ previewable = true
 title       = "What `Literal` and `Annotated` Are Allowed to Contain"
 
 description = '''
-A subscript holding an integer, a bool, or a bytes string cannot be a type expression, so `first_level = LEVELS[1]`, `default_flag = OPTIONS[True]`, and `raw_codec = CODECS[b"gzip"]` read as data lookups and each is flagged for a SCREAMING_CASE rename. `Literal` is the one construct whose subscript does hold such values, which keeps `Literal[1, 2, 3]`, `Literal[True]`, `Literal[-1]`, and `Literal[b"gzip"]` recognized as types. PEP 593 allows every `Annotated` argument after the first to be arbitrary metadata, so the `Field(gt=0)` call does not disqualify `Positive`, and the `[int, str]` parameter list of `Handler`, the `...` of `AnyHandler`, and the empty `tuple[()]` of `Empty` all pass as written.
+A subscript holding an integer, a bool, or a bytes string cannot be a type expression, so `first_level = LEVELS[1]`, `default_flag = OPTIONS[True]`, and `raw_codec = CODECS[b"gzip"]` all read as data lookups and each draws a `SCREAMING_CASE` rename.
+
+**`Literal` is the one construct whose subscript genuinely does hold such values**, which is what keeps `Literal[1, 2, 3]`, `Literal[True]`, `Literal[-1]`, and `Literal[b"gzip"]` recognized as types.
+
+PEP 593 allows every `Annotated` argument after the first to be arbitrary metadata, so the `Field(gt=0)` call does not disqualify `Positive`. The `[int, str]` parameter list of `Handler`, the `...` of `AnyHandler`, and the empty `tuple[()]` of `Empty` all pass as written too.
 '''

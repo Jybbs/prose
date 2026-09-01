@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/band_constants/pragma_pinned_constant_holds_its_gap/input.py
+---
+band-constants@0..18

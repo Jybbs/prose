@@ -3,5 +3,7 @@ previewable = true
 title       = "A Comment Fused onto Its Code Is Pushed Two Columns Clear"
 
 description = '''
-The comment on `value = 1` opens with no whitespace at all between the `1` and the `#`, so the two-column floor before a trailing comment arrives as an insertion rather than a rewrite of an existing gap. The `# right` opener already carries its single space, leaving that insertion as the only edit the comment takes.
+The comment on `value = 1` opens with no whitespace at all between the `1` and the `#`.
+
+The two-column minimum before a trailing comment therefore arrives as **an insertion rather than a rewrite of an existing gap**. The `# right` opener already carries its single space, which leaves that insertion as the only edit the comment takes.
 '''

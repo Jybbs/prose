@@ -3,5 +3,7 @@ previewable = true
 title       = "A Single Entry Wraps at the Stripped Head"
 
 description = '''
-`strip-stranded-padding` drops the padding before the lone entry's `:`, so the wrap breaks the description and hangs its continuation at the width the stripped head leaves, one column narrower than the head as written, while the head itself is emitted as written for the strip's own edit to settle.
+`strip-stranded-padding` removes the space before the lone entry's `:`, since a single entry has no sibling column to line up with. `wrap-docstrings` breaks the description at the 40-column budget and hangs the continuation under the start of the text.
+
+The wrap is measured against **the head as the strip will leave it**, one column narrower than `timeout : ` reads in the source. Both rules therefore agree on where the continuation lands, rather than one wrapping to a column the other is about to move.
 '''

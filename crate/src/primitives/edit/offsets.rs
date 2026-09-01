@@ -122,7 +122,7 @@ fn forward_offset(offset: TextSize, map: &SourceMap, is_final: bool) -> TextSize
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::{notebook, range};
+    use crate::testing::{notebook, range, replacement};
 
     #[test]
     fn forward_offset_keeps_a_boundary_before_an_insertion_at_it() {
@@ -141,11 +141,8 @@ mod tests {
 
     #[test]
     fn forward_offset_lands_a_boundary_inside_a_replacement_at_its_start() {
-        let (text, map) = apply_edits_mapped(
-            "abcdef",
-            vec![Edit::range_replacement("X".to_owned(), range(1, 5))],
-        )
-        .expect("woven");
+        let (text, map) =
+            apply_edits_mapped("abcdef", vec![replacement("X", 1, 5)]).expect("woven");
 
         assert_eq!(text, "aXf");
         assert_eq!(
@@ -168,11 +165,7 @@ mod tests {
 
     #[test]
     fn forward_offset_leaves_an_offset_past_a_length_preserving_edit() {
-        let (text, map) = apply_edits_mapped(
-            "abc",
-            vec![Edit::range_replacement("X".to_owned(), range(0, 1))],
-        )
-        .expect("woven");
+        let (text, map) = apply_edits_mapped("abc", vec![replacement("X", 0, 1)]).expect("woven");
 
         assert_eq!(text, "Xbc");
         assert_eq!(

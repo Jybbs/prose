@@ -3,5 +3,7 @@ previewable = true
 title       = "Comments Attached to a `def` Keep Their Blank-Above"
 
 description = '''
-`# describes second` reads as `second`'s leading block, so the four blank lines that drifted in below it **collapse to none**, binding the comment tight against `def second():`. The two blanks above the comment already match the module-def canonical and stay.
+`# describes second` reads as `second`'s leading block, so it belongs tight against the definition it describes.
+
+The four blank lines that had drifted in below it **collapse to none**, binding the comment directly onto `def second():`. The two blanks above the comment already match the canonical gap between module-level definitions and stay as they are.
 '''

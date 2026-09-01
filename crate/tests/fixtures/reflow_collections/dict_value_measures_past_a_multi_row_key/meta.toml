@@ -3,5 +3,7 @@ previewable = true
 title       = "A Dict Value Measures Past a Multi-Row Key"
 
 description = '''
-The key overflows the budget and expands to one component per row, and the value then fits from the column where its `:` lands on the key's closing row, rather than from the sum of the key's rows read as one impossibly wide line.
+The tuple key crosses the 40-column budget and expands to one component per row.
+
+Its value is then measured **from the column where the `:` lands on the key's closing row**, which leaves ample room for `(1, 2)`. Reading the key's rows as one joined line instead would have made the entry look impossibly wide and expanded the value along with it.
 '''

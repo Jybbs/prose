@@ -1,0 +1,22 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/opaque_base_fences_the_run/input.py
+---
+from vendor import Generic
+
+
+def zzz_helper():
+    return 1
+
+
+class Widget(Generic[str]):
+    pass
+
+
+def aaa_build():
+    return 3
+
+
+def yyy_render():
+    return 2

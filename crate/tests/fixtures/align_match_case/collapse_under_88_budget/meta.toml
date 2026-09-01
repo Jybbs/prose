@@ -3,5 +3,7 @@ previewable = true
 title       = "A Widest Pattern past `max-shift` Gates the Group"
 
 description = '''
-Five arms each hold a single assignment, and **an arm collapses only when its one-line form fits the 88-column budget**. `"under_88_columns"` and `"exactly_88_columns"` fold onto their `case` lines and align their `:`, whereas `"longer_pattern_name"` would land on 89 columns, `"kind_with_descriptive_long_label"` runs far wider, and the `if some_long_predicate_check(event.kind)` guard counts toward the measure too, so those three stay multi-line.
+Five arms each hold a single assignment, and **an arm collapses onto its `case` line only when the one-line form fits the 88-column budget**.
+
+`"under_88_columns"` and `"exactly_88_columns"` fold and align their `:`. `"longer_pattern_name"` would land on 89 columns and `"kind_with_descriptive_long_label"` runs far wider, so both stay multi-line. The `if some_long_predicate_check(event.kind)` guard counts toward its arm's measure too, which keeps that last arm multi-line as well.
 '''

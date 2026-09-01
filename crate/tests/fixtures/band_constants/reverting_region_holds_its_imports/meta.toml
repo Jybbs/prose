@@ -3,5 +3,7 @@ previewable = false
 title       = "A Reverting Region Holds Its Imports"
 
 description = '''
-`@HANDLER` runs when `target` executes and reads the constant that `HANDLER = decorate` binds, so banding the run would seat the decorator above the name it reads. The whole region **reverts to its source order**, and the imports heading that same region revert with it, `zlib` holding above `abc` where a region that banded would have sorted the pair.
+Nothing in this file moves, imports included. `@HANDLER` runs when `target` executes and reads the constant that `HANDLER = decorate` binds, so reordering would place the decorator above the name it needs.
+
+The whole region **reverts to its source order** rather than risk that, and the imports at the head of the same region revert along with it. `zlib` stays above `abc`, where a region that did reorder would have sorted the pair.
 '''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Enum Members Numbered by Position Hold Their Order"
+
+description = '''
+`Boundary` values its members through `auto`, which counts the members written ahead of it, and `ParameterKind` numbers each member in a `__new__` reading `len(cls.__members__)`. Both **hold the order their author wrote**, because sorting either one would rewrite what every member holds. An enumeration spelling each value out carries no such tie and still sorts.
+'''

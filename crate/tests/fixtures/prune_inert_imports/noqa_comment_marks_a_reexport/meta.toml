@@ -1,0 +1,9 @@
+[docs]
+previewable = true
+title       = "A `noqa` Comment Marks a Re-Export"
+
+description = '''
+Nothing reads `dumps`, `loads`, `pack`, or `Any`, so every one of these imports is a drop candidate.
+
+**The first two statements hold.** `# noqa: F401` names the code an unread import is reported under, and a bare `# noqa` covers every code. The `# noqa: E501` on the `typing` line names an unrelated code and marks nothing, so **`Any` drops**.
+'''

@@ -3,5 +3,7 @@ previewable = true
 title       = "An Index Into Data Is Not a Parametrized Type"
 
 description = '''
-The slice `[1:]`, the dunder `[__name__]`, and the bare integers `[0]` and `[-1]` never appear inside a type's parameters, so each subscript reads as an index into data and `alt_path_sep`, `oldmod`, `first_sep`, and `last_sep` are all flagged with `SCREAMING_CASE` renames. The check reads only the code in front of it, with no import map and no type inference, yet `dict[str, int]`, `Literal["read", "write"]`, and the signed `Literal[-1]` still pass as the types they are.
+The slice `[1:]`, the dunder `[__name__]`, and the bare integers `[0]` and `[-1]` never appear inside a type's parameters, so each of those subscripts reads as **an index into data**. `alt_path_sep`, `oldmod`, `first_sep`, and `last_sep` all draw `SCREAMING_CASE` renames.
+
+The check reads only the code in front of it, with no import map and no type inference. Even so, `dict[str, int]`, `Literal["read", "write"]`, and the signed `Literal[-1]` still pass as the types they are.
 '''

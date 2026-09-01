@@ -3,5 +3,7 @@ previewable = true
 title       = "An Authored Break Moves Its Operators to Lead Each Row"
 
 description = '''
-The author already broke this pair and left each `and` trailing the row above it. The rewrite carries the same render an unbroken pair would take, so every operator moves to the head of the row its operand opens and the reader finds each one in the same column rather than at three different row ends.
+The author already broke this pair and left each `and` trailing the row above it.
+
+The rewrite renders it **exactly as it would render an unbroken pair**, so every operator moves to the head of the row its operand opens. The reader finds all three in one column rather than at three different row ends.
 '''

@@ -19,6 +19,7 @@ on:
       - Cargo.lock
       - Cargo.toml
       - crate/Cargo.toml
+      - sweeps/Cargo.toml
       - wasm/Cargo.toml
 
   workflow_dispatch:
@@ -71,6 +72,9 @@ jobs:
           - command    : mise run rust:upload
             name       : ☂️ Coverage
             shared-key : prose-coverage
+          - command    : mise run rust:probe
+            name       : 🔦 Probe
+            shared-key : prose-probe
 
     steps:
       - *checkout

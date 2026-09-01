@@ -3,5 +3,7 @@ previewable = false
 title       = "A Heading and a Bound Comment Both Travel"
 
 description = '''
-`# the tunable solver knobs` heads the band, and the comment below `BETA_DECAY` binds upward to that constant because a blank line separates it from `ALPHA_DECAY`. When the sort seats `ALPHA_DECAY` first, the heading stays at the head of the band while `# the decay the scheduler honors` travels with `BETA_DECAY`, landing as a trailing comment on its line, so neither placement overwrites the other.
+Two comments are in play here and each attaches to something different. `# the tunable solver knobs` heads the whole group, while `# the decay the scheduler honors` attaches upward to `BETA_DECAY`, because a blank line separates it from `ALPHA_DECAY` below it.
+
+Sorting puts `ALPHA_DECAY` first. The heading **stays at the head of the group**, and the second comment travels with `BETA_DECAY` and lands as a trailing note on its line, so neither comment displaces the other.
 '''

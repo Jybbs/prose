@@ -3,5 +3,7 @@ previewable = false
 title       = "A Spread Entry Keeps Its Trailing Comment"
 
 description = '''
-Sorting swaps `"zulu"` and `"alpha"` while `**base` pins in source position at the tail, every entry keeping its trailing `#` comment. The spread has no key, yet its separator `,` still lands after the `base` value span and ahead of `# spread`, the same placement a keyed entry gets.
+Sorting swaps `"zulu"` and `"alpha"` while `**base` pins in source position at the tail, and every entry keeps its own trailing `#` comment.
+
+The spread carries no key, yet **its separating `,` still lands after the `base` value and ahead of `# spread`**, exactly where a keyed entry would put it.
 '''

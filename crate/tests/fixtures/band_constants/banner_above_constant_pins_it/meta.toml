@@ -3,5 +3,7 @@ previewable = false
 title       = "A Banner Above a Constant Pins It In Place"
 
 description = '''
-The `# =========================` line reads as a section divider rather than a note on any one statement. `CACHE_SIZE = 256` would otherwise hoist above `render` into the leading band, whereas moving it would tear the constant out of the section the banner opens, so it stays pinned beneath the divider.
+Nothing in this file moves. `CACHE_SIZE = 256` would ordinarily be hoisted above `render` to join the other constants at the top of the module.
+
+It stays where it was written, because the `# =========================` line above it reads as a section divider rather than as a note about any one statement. Hoisting the constant would **lift it out of the section that divider opens**, so the hoist is declined.
 '''

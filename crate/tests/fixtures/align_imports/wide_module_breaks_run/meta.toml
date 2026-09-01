@@ -3,5 +3,7 @@ previewable = false
 title       = "A Wide Module Breaks the `from`-Import Run"
 
 description = '''
-Aligning all six lines would shift every `import` keyword out past `collections.abc.mapping_helpers.namespaced`, farther than `max-shift` allows, so the wide module **breaks the run in reading order** and its own `import` stays a single space from the module. The three imports above the break, `io`, `re`, and `os`, are equally wide and need no padding, whereas below it `sys` pads to match `os.path`.
+Aligning all six lines would shift every `import` keyword out past `collections.abc.mapping_helpers.namespaced`, farther than `max-shift` allows.
+
+The wide module therefore **breaks the run in reading order**, and its own `import` stays a single space from the module name. The three imports above the break are equally wide and need no padding at all, while below it `sys` pads out to match `os.path`.
 '''

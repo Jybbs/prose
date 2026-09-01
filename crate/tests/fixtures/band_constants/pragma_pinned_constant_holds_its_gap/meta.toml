@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pragma-Pinned Constant Holds Its Gap When the Band Re-Emits"
+
+description = '''
+`# noqa` anchors in place and pins `LIMIT = 3` beneath it, so the constant stands outside the reference analysis, whereas `ALPHA` and `ZETA` sort above it. **The gap holding the pragma stays as the source wrote it** while the band re-emits, because only a constant the analysis anchored spaces as a band member.
+'''

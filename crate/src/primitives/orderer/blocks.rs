@@ -7,6 +7,7 @@ use ruff_python_trivia::{CommentRanges, PythonWhitespace};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
+use super::assemble::Assembly;
 use crate::{primitives::comments::bound_block_start, source::Source};
 
 /// [`block_range`] for every slot of `items`, the marker-free counterpart
@@ -42,23 +43,29 @@ pub(crate) fn opens_its_line(source: &Source, offset: TextSize) -> bool {
         .is_empty()
 }
 
-/// Member blocks for every slot of `items`, each paired with the text
-/// `render` produces for it, the `(blocks, rendered)` split a recursive
-/// body rewriter folds its descendant rewrites into.
+/// The [`Assembly`] over every slot of `items`, each member block
+/// paired with the text `render` produces for it and the order seeded
+/// to source order, which a recursive body rewriter folds its
+/// descendant rewrites into before permuting.
 pub(crate) fn rendered_member_blocks<'src, T: Ranged>(
     source: &'src Source,
     items: &'src [T],
     outer: TextRange,
     mut render: impl FnMut(&'src T, TextRange) -> Cow<'src, str>,
-) -> (Vec<TextRange>, Vec<Cow<'src, str>>) {
-    items
+) -> Assembly<'src> {
+    let (blocks, rendered) = items
         .iter()
         .enumerate()
         .map(|(i, item)| {
             let block = member_block(source, items, i, outer);
             (block, render(item, block))
         })
-        .unzip()
+        .unzip();
+    Assembly {
+        blocks,
+        order: (0..items.len()).collect(),
+        rendered,
+    }
 }
 
 /// Lower bound of the backward comment scan for `items[i]`, the latest
