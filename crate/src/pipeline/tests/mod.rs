@@ -1,4 +1,5 @@
-//! Tests over the pipeline, one file per surface they cover.
+//! Pipeline tests, one file per surface they cover, with the sentinel
+//! rules and helpers they share held here.
 
 use std::{
     assert_matches,
@@ -6,6 +7,7 @@ use std::{
 };
 
 use itertools::Itertools;
+use rstest::rstest;
 use ruff_diagnostics::Edit;
 use ruff_text_size::{TextRange, TextSize};
 
@@ -24,16 +26,18 @@ use crate::{
     },
 };
 
+mod as_written;
 mod carry;
 mod diagnose;
 mod registry;
 mod run;
-mod run_as_written;
 mod second_pass;
-mod unsettled;
+mod settle;
+mod subsets;
 
 /// Test-only lint-only rule that returns the range list supplied
 /// at construction and never produces edits.
+#[derive(Debug)]
 struct LintSentinelRule {
     id: RuleId,
     ranges: Vec<TextRange>,
@@ -65,6 +69,7 @@ impl Rule for LintSentinelRule {
 /// Test-only lint-only rule that locates `needle` in the source it
 /// is handed and emits one lint over it, so its range tracks the
 /// buffer the rule actually reads rather than a fixed offset.
+#[derive(Debug)]
 struct NeedleLintRule {
     id: RuleId,
     needle: &'static str,
@@ -92,6 +97,7 @@ impl Rule for NeedleLintRule {
 
 /// Test-only rule that records its own id into a shared log and
 /// never produces edits.
+#[derive(Debug)]
 struct SentinelRule {
     id: RuleId,
     log: Arc<Mutex<Vec<&'static str>>>,
@@ -114,6 +120,7 @@ impl Rule for SentinelRule {
 
 /// Test-only rule that captures `source.text()` at apply time and
 /// returns the edit list supplied at construction.
+#[derive(Debug)]
 struct TextCapturingRule {
     edits: Vec<Edit>,
     id: RuleId,

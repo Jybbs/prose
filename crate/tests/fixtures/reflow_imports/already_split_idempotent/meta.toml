@@ -3,5 +3,5 @@ previewable = false
 title       = "Already-Split Output Round-Trips with No Edit"
 
 description = '''
-Both `from pkg.sub import` statements already sit in repeated-prefix form, and each fits the `import-line-length` budget of `40`, so the run **passes through unchanged**. A second pass over the rule's own output lands exactly where the first did.
+Both `from pkg.sub import` statements already sit in repeated-prefix form, and each fits the `import-line-length` budget of `40`, so the run **passes through unchanged**.
 '''

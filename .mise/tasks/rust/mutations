@@ -1,0 +1,61 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias       = "mutations"
+#MISE description = "Check every mutation of a corpus for output a second run would change, generating the set under a budget where the named directory is absent"
+
+source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
+source "$MISE_PROJECT_ROOT/.mise/lib/delta.bash"
+
+mutation_pass() {
+  local variant="$1" log name record seen status=0 unstable
+  name=$(basename "$variant")
+  log="$mutations/$name.log"
+  record="$mutations/$name.json"
+  "$binary" check --no-cache --output-format json --validate "$variant" 2> "$log" \
+    | jq -c 'select(.kind == "summary" and .schema_version == 1)' \
+    > "$record" || status=$?
+  (( status <= 4 )) || { echo "$name exited $status, stderr at $log" >&2; exit 1; }
+  read -r seen unstable < <(jq -r '"\(.files_visited) \(.unstable | length)"' "$record")
+  printf '\n%s: %s of %s variants rewrite to output a second run would change\n' \
+    "$name" "$unstable" "$seen"
+  (( unstable == 0 )) || second_pass "$name" "$record" "$unstable"
+}
+
+second_pass() {
+  local name="$1" record="$2" unstable="$3" file first rules shown=8
+  while IFS=$'\t' read -r file rules; do
+    first="$file.first-pass"
+    cp "$file" "$file.as-written"
+    "$binary" format --no-cache --quiet "$file" 2> /dev/null || true
+    cp "$file" "$first"
+    "$binary" format --no-cache --quiet "$file" 2> /dev/null || true
+    printf '\n  %s, where a second pass leaves %s editing:\n' \
+      "${file#"$mutations/$name/"}" "$rules"
+    diff --label 'first pass' --label 'second pass' -u "$first" "$file" \
+      > "$first.diff" || true
+    sed -n '3,26{s/^/    /;p;}' "$first.diff"
+    mv "$file.as-written" "$file"
+    rm "$first" "$first.diff"
+  done < <(jq --argjson n "$shown" -r '
+    .unstable[:$n][]
+    | [.file, (.rules | map("`\(.)`") | join(", "))]
+    | @tsv' "$record")
+  (( unstable <= shown )) \
+    || printf '\n  ... and %s more, listed in %s\n' "$(( unstable - shown ))" "$record"
+}
+
+corpus=$(corpus_root "${1:-}")
+budget="${2:-60}"
+binary=$(built_binary)
+
+mutations="${PROSE_SETTLE_MUTATIONS:-}"
+if [[ -z "$mutations" || ! -f "$mutations/.generated" ]]; then
+  mutations="${mutations:-$(scratch_dir mutations)}"
+  mutate_corpus "$corpus" "$mutations" "$budget"
+fi
+rm -f "$mutations/.generated"
+
+while IFS= read -r variant; do
+  mutation_pass "$variant"
+done < <(find "$mutations" -mindepth 1 -maxdepth 1 -type d | sort)
+
+printf '\neach mutation survives as written under %s\n' "$mutations"

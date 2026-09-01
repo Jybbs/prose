@@ -30,7 +30,12 @@ A conversion and a format spec both pass through unchanged, in that an f-string 
 
 The rewrite lands only where both forms render the same text, so several shapes stay as written.
 
-A bare right-hand side under `%` holds, because `value` may be holding a one-element tuple that `%` unpacks and a replacement field does not. A `%d`, `%i`, or `%u` holds, because it truncates a float where `{:d}` raises, and a `%c` holds because it maps an ordinal. A width or precision on `%s` holds, since the width renders `None` where `{:8}` raises and the precision cuts rendered text where `{:.3}` measures the value itself.
+The `%` operator carries semantics a replacement field does not reproduce, so these templates hold:
+
+1. A bare right-hand side, because `value` may be holding a one-element tuple that `%` unpacks and a replacement field does not.
+2. A `%d`, `%i`, or `%u`, because it truncates a float where `{:d}` raises.
+3. A `%c`, because it maps an ordinal.
+4. A width or precision on `%s`, since the width renders `None` where `{:8}` raises and the precision cuts rendered text where `{:.3}` measures the value itself.
 
 An argument no field reads holds the whole call, because dropping it would drop its evaluation, and an argument two fields read holds whenever evaluating it runs code, since the call evaluates it once where the fields would twice.
 

@@ -22,6 +22,7 @@ mod walk;
 
 use walk::Visitor;
 
+#[derive(Debug)]
 pub(crate) struct AlignMatchCase {
     code_line_length: usize,
     settings: aligner::Settings,

@@ -58,4 +58,7 @@ The invocation shapes below cover almost every run, with an additional shape for
 
 ## See Also
 
-For the integration surfaces that hook `prose format` / `prose check` into the editor save event, the git staging boundary, and the CI gate, see [**Integrations**](/integrations/). For the rule catalog *Prose* actually runs, see [**Rules**](/rules/). For the primitive surface a downstream Rust caller links against, see [**Primitives**](/primitives/). To watch the formatter run live in the browser, seeded from the fixture corpus, see the [**Sandbox**](/sandbox/).
+- [**Integrations**](/integrations/) covers the surfaces that hook `prose format` / `prose check` into the editor save event, the git staging boundary, and the CI gate.
+- [**Rules**](/rules/) covers the rule catalog *Prose* actually runs.
+- [**Primitives**](/primitives/) covers the primitive surface a downstream Rust caller links against.
+- [**Sandbox**](/sandbox/) runs the formatter live in the browser, seeded from the fixture corpus.

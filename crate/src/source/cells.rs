@@ -9,7 +9,7 @@ use ruff_source_file::{LineRanges, OneIndexed};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::Source;
-use crate::primitives::last_at_or_before;
+use crate::primitives::slots::item_holding;
 
 impl Source {
     /// Builds the concatenated source of a parsed notebook, attaching its
@@ -141,9 +141,7 @@ fn splits_statements(offset: TextSize, body: &[Stmt], text: &str) -> bool {
 /// Returns the statement of `body` that `offset` falls strictly inside,
 /// or `None` when `offset` sits at a statement's own start or between two.
 fn statement_spanning(offset: TextSize, body: &[Stmt]) -> Option<&Stmt> {
-    last_at_or_before(body, offset, Ranged::start)
-        .map(|i| &body[i])
-        .filter(|stmt| stmt.start() < offset && offset < stmt.end())
+    item_holding(body, offset).filter(|stmt| stmt.start() < offset && offset < stmt.end())
 }
 
 #[cfg(test)]

@@ -1,0 +1,9 @@
+[docs]
+previewable = true
+title       = "A Hoisted Import Settles the Directive in One Run"
+
+description = '''
+`convert` names `Sequence` in its annotations while `from collections.abc import Sequence` is written below it, which is exactly the situation the directive exists to allow.
+
+`band-constants` moves that import up above the definition. Once relocated, the binding **counts as written ahead of the annotations naming it**, so the annotations would now resolve without help and `from __future__ import annotations` drops.
+'''

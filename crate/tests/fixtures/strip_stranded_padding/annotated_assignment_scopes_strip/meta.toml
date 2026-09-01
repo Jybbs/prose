@@ -3,5 +3,5 @@ previewable = true
 title       = "Stranded Padding around an Annotated Assignment Strips at Any Scope"
 
 description = '''
-`_handlers   : Dict[Text, Callable] = {}` sits at module scope and `timeout   : int = 30` sits inside `configure`, each the lone annotated assignment in its group, so `align-colons` never claims a shared column for its pre-`:` padding. `strip-stranded-padding` **strips that padding down to `name:`** at both scopes, since no other row remains to align with.
+`_handlers   : Dict[Text, Callable] = {}` sits at module scope and `timeout   : int = 30` sits inside `configure`, each the lone annotated assignment in its group, so `align-colons` sets no shared column for its pre-`:` padding. `strip-stranded-padding` **strips that padding down to `name:`** at both scopes, since no other row remains to align with.
 '''

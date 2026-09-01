@@ -1,0 +1,9 @@
+[docs]
+previewable = true
+title       = "A Builtin Read Holds Above the Line That Rebinds It"
+
+description = '''
+Nothing here moves. `X = list` reads the builtin, and the very next line rebinds `list` to a list of its own.
+
+Sorting the group would be free to place that rebinding above the read, which would hand `X` the new list instead of the builtin. Rather than risk it, **the whole region keeps its source order**, so `ZETA` and `ALPHA` stay unsorted alongside it. A builtin and a module dunder are both bound before the module body runs, and both are read the same way here.
+'''

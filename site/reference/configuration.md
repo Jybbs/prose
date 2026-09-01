@@ -89,7 +89,12 @@ Every rule is either auto-fix or lint, and that split decides what a diagnostic 
 
 ## Key Naming
 
-Every key follows one shape so its name predicts its kind. A boolean key reads affirmatively and defaults to `true`, so `key = true` states the behavior that is on. The master switch each rule carries is `enabled`, and a facet gating one pass of its rule takes a verb-led name for the action it governs (*`sort-docstring-entries`, `exempt-aliased`*). No key takes a negative form (*`no-*`, `disable-*`, `skip-*`*) or a polarity-ambiguous bare noun, leaving `false` to always read as *"off."* A parameter key carrying an int, an enum, or a list is a noun for the quantity or set it holds (*`max-shift`, `max-attributes`, `first-party`, `allow`*), because the key names a value rather than gating a behavior.
+Every key follows one shape so its name predicts its kind:
+
+- A boolean key reads affirmatively and defaults to `true`, so `key = true` states the behavior that is on.
+- The master switch each rule carries is `enabled`, and a facet gating one pass of its rule takes a verb-led name for the action it governs (*`sort-docstring-entries`, `exempt-aliased`*).
+- No key takes a negative form (*`no-*`, `disable-*`, `skip-*`*) or a polarity-ambiguous bare noun, leaving `false` to always read as *"off."*
+- A parameter key carrying an int, an enum, or a list is a noun for the quantity or set it holds (*`max-shift`, `max-attributes`, `first-party`, `allow`*), because the key names a value rather than gating a behavior.
 
 ## Docstring Budgets
 

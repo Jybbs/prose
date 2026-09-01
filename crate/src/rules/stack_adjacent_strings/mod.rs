@@ -31,6 +31,7 @@ mod layout;
 use layout::Layout;
 pub(crate) use layout::concatenated_run;
 
+#[derive(Debug)]
 pub(crate) struct StackAdjacentStrings {
     code_line_length: usize,
     reservations: reserve::Reservations,

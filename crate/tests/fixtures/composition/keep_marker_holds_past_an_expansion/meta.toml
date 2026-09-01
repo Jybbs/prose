@@ -4,5 +4,7 @@ previewable = true
 title       = "A Keep Marker Holds Past an Expansion"
 
 description = '''
-A `# prose: keep` comment binds to the line holding the dict's `{` or its `}`, so the expansion that carries the comment onto the closing line leaves the dict pinned against [[alphabetize-siblings]] and the entries keep their source order and their separators.
+`# prose: keep` attaches to the line holding either the dict's `{` or its `}`.
+
+The dict expands, which carries the marker down onto the closing line, and it still counts there. The dict is therefore **held against `alphabetize-siblings`**, so `"b"` stays ahead of `"a"` and the entries keep both their source order and their separators.
 '''

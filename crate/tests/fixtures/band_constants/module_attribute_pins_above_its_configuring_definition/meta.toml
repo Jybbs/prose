@@ -3,5 +3,7 @@ previewable = true
 title       = "A Constant Reading a Configured Module Attribute Pins Above Its Definition"
 
 description = '''
-`LEVEL = logging.root.level` reads state that `Configure` sets when its body runs, so seating the constant above that class would read the level before `logging.basicConfig` had set it. **`LEVEL` holds its source slot** while `TABLE = dict` bands freely past `helper`, its builtin naming nothing the module configures.
+`LEVEL = logging.root.level` reads state that `class Configure` sets when its body runs, since the class calls `logging.basicConfig` at definition time.
+
+Moving `LEVEL` above that class would read the level before it had been configured, so **`LEVEL` holds its source position**. `TABLE = dict` names a builtin and observes nothing the module configures, so it moves up freely past `helper`.
 '''

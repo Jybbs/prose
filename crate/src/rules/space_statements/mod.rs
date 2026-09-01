@@ -36,6 +36,7 @@ mod policy;
 
 use policy::canonical_blanks;
 
+#[derive(Debug)]
 pub(crate) struct SpaceStatements {
     first_party: Vec<String>,
     group_imports: bool,

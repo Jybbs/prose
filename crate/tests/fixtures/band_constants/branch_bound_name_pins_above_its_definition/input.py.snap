@@ -10,8 +10,6 @@ else:
 
 
 DEFAULT = Selector
-
-
 TABLE = dict
 
 

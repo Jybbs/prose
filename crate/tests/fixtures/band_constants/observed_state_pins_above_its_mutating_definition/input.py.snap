@@ -9,4 +9,6 @@ TRACE = []
 
 class Setup:
     TRACE.append(1)
+
+
 FIRST = TRACE[0]

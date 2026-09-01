@@ -33,6 +33,7 @@ use render::{closing_parameter, rendered_parts};
 use terms::Shape;
 pub(crate) use terms::{Expansion, Terms};
 
+#[derive(Debug)]
 pub(crate) struct ReflowSignatures {
     reorders: Reorders,
     reservations: reserve::Reservations,

@@ -3,5 +3,7 @@ previewable = false
 title       = "A Bound Comment Re-Emits an Already-Settled Band"
 
 description = '''
-The three constants already sit in band order, so the sort alone would rewrite nothing. The comment `# the convergence floor the solver stops at` binds to `DEFAULT_EPSILON` from the line below it, and folding it up into a trailing comment on the constant's own line forces the band to re-emit, clearing the blank line so all three constants stand together.
+The three constants are already in sorted order, so sorting by itself would rewrite nothing here.
+
+The comment on the second line sits directly below `DEFAULT_EPSILON` and describes it, so it folds up onto that constant's own line as a trailing note. **That fold is the edit that rewrites the group**, and rewriting it also closes the blank line, leaving all three constants standing together.
 '''

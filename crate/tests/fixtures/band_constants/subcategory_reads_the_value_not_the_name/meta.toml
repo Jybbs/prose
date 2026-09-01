@@ -3,5 +3,7 @@ previewable = true
 title       = "The Sub-Band Reads the Value, Not the Name"
 
 description = '''
-`opener = TarFile.open` points at an attribute that already exists, so it bands as an alias despite its lowercase name, whereas `Config = {"debug": True}` constructs a fresh dict and bands as module state despite its PascalCase. The value settles the sub-band, so `opener` leads, `MAX` follows as a constant, and `Config` trails, the name's casing playing no part.
+Which cluster a binding joins is decided by **its value, not by how its name is spelled**.
+
+`opener = TarFile.open` points at something that already exists, so it counts as an alias despite its lowercase name. `Config = {"debug": True}` builds a fresh dict, so it counts as module state despite its PascalCase. `opener` therefore leads, `MAX` follows as a plain constant, and `Config` trails.
 '''

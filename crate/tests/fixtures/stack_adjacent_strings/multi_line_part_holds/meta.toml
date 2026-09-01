@@ -3,5 +3,7 @@ previewable = true
 title       = "A Run Carrying a Part with Its Own Break Stays Put"
 
 description = '''
-`message`'s run holds a triple-quoted part that already spans two lines next to a plain literal, `"and the trailing clause"`. `stack-adjacent-strings` **leaves the run as written**, because moving the triple-quoted part would place its opening line away from the interior the source already pinned it to.
+Nothing here moves. `message`'s run holds a triple-quoted part already spanning two lines, sitting beside the plain literal `"and the trailing clause"`.
+
+The run is **left exactly as written**, because moving the triple-quoted part would place its opening line away from the interior the source has already pinned it against.
 '''

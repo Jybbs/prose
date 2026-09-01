@@ -156,6 +156,7 @@ mod tests {
 
     /// A rule editing nothing and declaring its edits leave every
     /// binding standing where `.0` is true.
+    #[derive(Debug)]
     struct Declaring(bool);
 
     impl Rule for Declaring {

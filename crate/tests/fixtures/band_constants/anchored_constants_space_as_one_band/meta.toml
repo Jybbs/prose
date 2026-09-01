@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Two Anchored Constants Space as One Band"
+
+description = '''
+`RAW = compute()` anchors on its call and `SCALED = RAW` anchors with it, whereas `ALPHA` and `ZETA` sort into the leading band beneath them. **Every anchored constant reads as a member of the band beside it**, so the blank line between `RAW` and `SCALED` closes and the four constants render as one tight column.
+'''

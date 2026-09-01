@@ -1,50 +1,47 @@
 //! Corpus sweep at every configured line length: the text the formatter
 //! writes leaves no rule rewriting it and no reported fix unapplied.
-//! [`Pipeline::unsettled`] reports the first defect and the diagnostic
-//! pass alone reports the second, so the sweep reads both over every
-//! file. A run that panics or is rejected is recorded against its file
-//! rather than ending the sweep, and a file passing `BUDGET` stops the
-//! sweep and names itself. Each width in [`WIDTHS`] runs once per axis
-//! in [`AXES`], one budget varied and the rest at their defaults.
-//! `PROSE_SETTLE_CORPUS` points the sweep at another directory,
-//! `PROSE_SETTLE_WIDTHS` overrides the width set, and
-//! `PROSE_SETTLE_AXES` narrows the axes by name.
+//! [`Pipeline::settle_report`] reads both defects off one walk over
+//! every file's output. A run that panics or is rejected is recorded
+//! against its file rather than ending the sweep, and a file passing
+//! `BUDGET` stops the sweep and names itself. Each width in [`WIDTHS`]
+//! runs once per axis in [`Axis::ALL`], one budget varied and the rest at
+//! their defaults.
 
 use std::{
     cell::RefCell,
-    collections::BTreeMap,
-    io::Write,
+    collections::{BTreeMap, BTreeSet},
     num::NonZeroUsize,
     panic::{self, AssertUnwindSafe},
     path::Path,
-    sync::{
-        Mutex, PoisonError,
-        atomic::{AtomicUsize, Ordering},
-    },
-    thread,
-    time::{Duration, Instant},
 };
 
 use itertools::Itertools;
 use prose::{
     config::Config,
     diagnostics::Severity,
-    pipeline::{Pipeline, PipelineError},
-    rule::render_slugs,
+    pipeline::{Pipeline, PipelineError, SettleReport},
+    rule::{RuleId, render_slugs},
     source::Source,
 };
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use common::{CORPUS, Tally, WIDTHS, WIDTHS_VAR, corpus, env_list, pointed_corpus, widths_or};
+use common::{
+    Absorbing, CORPUS, Hit, Slot, Tally, WIDTHS, WIDTHS_VAR, corpus, env_list, excerpt,
+    note_verified, report_verified, swept, unread, verifying, widths_or,
+};
 
 mod common;
 
-/// The axes the sweep crosses with every width absent [`AXES_VAR`],
-/// each varying the budget it names.
-const AXES: [Axis; 4] = [Axis::Code, Axis::Docstring, Axis::Fallback, Axis::Import];
-
 /// The environment variable narrowing the axes by name.
 const AXES_VAR: &str = "PROSE_SETTLE_AXES";
+
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
+thread_local! {
+    /// The defect line the silent hook last rendered for a panic, read
+    /// back by the probe that caught it.
+    static PANIC: RefCell<Option<String>> = const { RefCell::new(None) };
+}
 
 /// The budget an axis varies at each width, every other budget held at
 /// its default.
@@ -62,15 +59,14 @@ enum Axis {
 }
 
 impl Axis {
+    /// Every axis the sweep crosses with each width absent [`AXES_VAR`],
+    /// each varying the budget it names.
+    const ALL: [Self; 4] = [Self::Code, Self::Docstring, Self::Fallback, Self::Import];
+
     /// The phrase a finding and a `Slot` label name this axis and
     /// width by.
     fn clause(self, width: usize) -> String {
-        match self {
-            Self::Code => format!("code width {width}"),
-            Self::Docstring => format!("docstring width {width}"),
-            Self::Fallback => format!("code width {width} with import-line-length unset"),
-            Self::Import => format!("import width {width}"),
-        }
+        format!("{} {width}", self.label())
     }
 
     /// The default configuration with this axis's budget at `width`.
@@ -97,6 +93,16 @@ impl Axis {
         }
     }
 
+    /// The phrase naming this axis ahead of a width.
+    fn label(self) -> &'static str {
+        match self {
+            Self::Code => "code width",
+            Self::Docstring => "docstring width",
+            Self::Fallback => "code width (import-line-length unset)",
+            Self::Import => "import width",
+        }
+    }
+
     /// The [`AXES_VAR`] token naming this axis.
     fn name(self) -> &'static str {
         match self {
@@ -107,13 +113,11 @@ impl Axis {
         }
     }
 
-    /// The command sweeping this axis at `width` alone, carrying the
-    /// corpus override when the run took one.
-    fn repro(self, width: usize) -> String {
-        let corpus =
-            pointed_corpus().map_or_else(String::new, |dir| format!("{CORPUS}={} ", dir.display()));
+    /// The command sweeping `path` alone on this axis at `width`.
+    fn repro(self, width: usize, path: &Path) -> String {
         format!(
-            "{corpus}{AXES_VAR}={} {WIDTHS_VAR}={width} cargo test --test corpus",
+            "{CORPUS}={} {AXES_VAR}={} {WIDTHS_VAR}={width} cargo test --test corpus",
+            path.display(),
             self.name(),
         )
     }
@@ -124,10 +128,10 @@ impl Axis {
 struct Findings {
     /// Runs that panicked, keyed by the message.
     panicked: Tally,
-    /// Files the corpus held that the sweep could not read.
-    skipped: usize,
     /// Runs the pipeline rejected.
     rejected: Tally,
+    /// Files the corpus held that the sweep could not read.
+    skipped: usize,
     /// Outputs carrying a reported fix the run never applied.
     unapplied: Tally,
     /// Outputs a rule still rewrites.
@@ -135,231 +139,317 @@ struct Findings {
 }
 
 impl Findings {
-    fn absorb(&mut self, other: Self) {
-        self.panicked.absorb(other.panicked);
-        self.skipped += other.skipped;
-        self.rejected.absorb(other.rejected);
-        self.unapplied.absorb(other.unapplied);
-        self.unsettled.absorb(other.unsettled);
-    }
-
     fn total(&self) -> usize {
         self.panicked.len() + self.rejected.len() + self.unapplied.len() + self.unsettled.len()
     }
 }
 
-/// The wall clock one file may take before the sweep treats its run as
-/// non-terminating.
-const BUDGET: Duration = Duration::from_mins(1);
-
-/// The files probes are reading right now, keyed by an opening order the
-/// watchdog reads back.
-static IN_FLIGHT: Mutex<BTreeMap<usize, (Instant, String)>> = Mutex::new(BTreeMap::new());
-
-/// One probe's entry in `IN_FLIGHT`, cleared however the probe leaves.
-struct Slot(usize);
-
-impl Slot {
-    fn open(clause: &str, path: &Path) -> Self {
-        static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let id = NEXT.fetch_add(1, Ordering::Relaxed);
-        let label = format!("{} at {clause}", path.display());
-        registry().insert(id, (Instant::now(), label));
-        Self(id)
+impl Absorbing for Findings {
+    fn absorb(&mut self, other: Self) {
+        self.panicked.absorb(other.panicked);
+        self.rejected.absorb(other.rejected);
+        self.skipped += other.skipped;
+        self.unapplied.absorb(other.unapplied);
+        self.unsettled.absorb(other.unsettled);
     }
 }
 
-impl Drop for Slot {
-    fn drop(&mut self) {
-        registry().remove(&self.0);
+/// Every slice one sweep runs, with the checkpoint depths each must
+/// record for the slices resuming behind it.
+struct Plan {
+    slices: Vec<Slice>,
+    stops: Vec<Vec<usize>>,
+}
+
+impl Plan {
+    /// Builds the slices `axes` and `widths` cross, the `code` axis
+    /// leading so a budget-narrowed slice finds its trunk. A pipeline
+    /// matching an earlier one drops as a duplicate, every other slice
+    /// attaches behind the earliest earlier slice sharing its longest
+    /// run of leading seat fingerprints, and the slice matching the
+    /// shipped default keeps the lint pass.
+    fn build(axes: &[Axis], widths: &[usize]) -> Self {
+        let default_print = Pipeline::with_defaults(&Config::default()).fingerprint();
+        let mut slices: Vec<Slice> = Vec::new();
+        for &axis in axes {
+            for &width in widths {
+                let config = axis.config(width);
+                let pipeline = Pipeline::with_defaults(&config);
+                let prints = pipeline.fingerprints();
+                if slices.iter().any(|held| held.prints == prints) {
+                    continue;
+                }
+                let mut cut = 0;
+                let mut parent = None;
+                for (seat, held) in slices.iter().enumerate() {
+                    let shared = held
+                        .prints
+                        .iter()
+                        .zip(&prints)
+                        .take_while(|(a, b)| a == b)
+                        .count();
+                    if shared > cut {
+                        cut = shared;
+                        parent = Some(seat);
+                    }
+                }
+                debug_assert!(
+                    parent.is_none_or(|seat| slices[seat].cut < cut),
+                    "invariant: a slice resumes behind its parent's own entry",
+                );
+                slices.push(Slice {
+                    axis,
+                    cut,
+                    lint: pipeline.fingerprint() == default_print,
+                    parent,
+                    pipeline,
+                    prints,
+                    width,
+                });
+            }
+        }
+        let mut stops = vec![BTreeSet::new(); slices.len()];
+        for slice in &slices {
+            if let Some(parent) = slice.parent {
+                stops[parent].insert(slice.cut);
+            }
+        }
+        Self {
+            stops: stops
+                .into_iter()
+                .map(|depths| depths.into_iter().collect())
+                .collect(),
+            slices,
+        }
     }
 }
 
-thread_local! {
-    /// Where the silent hook last saw a panic raised, read back by the
-    /// probe that caught it so a finding names the line as well as the
-    /// message.
-    static PANIC_SITE: RefCell<Option<String>> = const { RefCell::new(None) };
+/// One fold of the sweep, entered behind the `cut` leading seats of
+/// `parent`'s fold where one exists.
+struct Slice {
+    axis: Axis,
+    cut: usize,
+    lint: bool,
+    parent: Option<usize>,
+    pipeline: Pipeline,
+    prints: Vec<String>,
+    width: usize,
 }
 
-/// The axes this run sweeps, [`AXES_VAR`] narrowing [`AXES`] as a
+/// The axes this run sweeps, [`AXES_VAR`] narrowing [`Axis::ALL`] as a
 /// space-separated list of `code`, `docstring`, `import`, and
 /// `fallback`.
 fn axes() -> Vec<Axis> {
-    env_list(AXES_VAR, &AXES, |name| match name {
-        "code" => Axis::Code,
-        "docstring" => Axis::Docstring,
-        "fallback" => Axis::Fallback,
-        "import" => Axis::Import,
-        other => panic!("{AXES_VAR} names an unknown axis: {other}"),
+    env_list(AXES_VAR, &Axis::ALL, |name| {
+        *Axis::ALL
+            .iter()
+            .find(|axis| axis.name() == name)
+            .unwrap_or_else(|| panic!("{AXES_VAR} names an unknown axis: {name}"))
     })
 }
 
-/// The message a caught panic carried, `"panicked"` for a payload of
-/// neither string type.
-fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
-    payload
-        .downcast_ref::<String>()
-        .cloned()
-        .or_else(|| payload.downcast_ref::<&str>().map(|s| (*s).to_owned()))
-        .unwrap_or_else(|| "panicked".to_owned())
+/// Runs one slice's fold over `entry` from seat `from`, records the
+/// stop texts its dependents resume from, and files what the output
+/// leaves behind, the run wrapped so a panic files against the file it
+/// read. Returns the recorded stops, `None` where the fold failed.
+fn probe(
+    slice: &Slice,
+    stops: &[usize],
+    entry: Source,
+    from: usize,
+    path: &Path,
+    findings: &mut Findings,
+) -> Option<BTreeMap<usize, String>> {
+    let hit = |detail: Option<String>| Hit {
+        clause: Some((slice.axis.label().to_owned(), slice.width)),
+        detail,
+        repro: Some(slice.axis.repro(slice.width, path)),
+    };
+    let slot = Slot::open(format!(
+        "{} at {}",
+        path.display(),
+        slice.axis.clause(slice.width)
+    ));
+    let recorded = RefCell::new(BTreeMap::new());
+    let ran = panic::catch_unwind(AssertUnwindSafe(|| {
+        let mut current = entry;
+        let mut opened = from;
+        for &stop in stops {
+            current = slice.pipeline.format_span(current, opened..stop)?;
+            recorded
+                .borrow_mut()
+                .insert(stop, current.text().to_owned());
+            opened = stop;
+        }
+        let formatted = slice
+            .pipeline
+            .format_span(current, opened..slice.prints.len())?;
+        if slice.lint {
+            let _ = slice.pipeline.diagnose(&formatted);
+        }
+        let report = slice.pipeline.settle_report(&formatted);
+        Ok::<_, PipelineError>((formatted, report))
+    }));
+    drop(slot);
+    let Ok(outcome) = ran else {
+        let defect = PANIC
+            .with(RefCell::take)
+            .unwrap_or_else(|| "the run panicked".to_owned());
+        findings.panicked.record_hit(defect, path, hit(None));
+        return None;
+    };
+    let (
+        formatted,
+        SettleReport {
+            editing,
+            unlanded,
+            witness,
+        },
+    ) = match outcome {
+        Ok(pair) => pair,
+        Err(error) => {
+            findings
+                .rejected
+                .record_hit(format!("the run was rejected: {error}"), path, hit(None));
+            return None;
+        }
+    };
+    if verifying() {
+        verify_resumed(slice, &formatted, path);
+        verify_unlanded(&slice.pipeline, &formatted, &editing, &unlanded, path);
+    }
+    if !editing.is_empty() {
+        let detail = witness.map(|(rule, second)| {
+            excerpt(
+                "formatted",
+                &format!("`{rule}` on a second pass"),
+                formatted.text(),
+                &second,
+            )
+        });
+        findings.unsettled.record_hit(
+            format!("{} rewrites the output", render_slugs(&editing)),
+            path,
+            hit(detail),
+        );
+    }
+    if !unlanded.is_empty() {
+        findings.unapplied.record_hit(
+            format!(
+                "{} reports a fix the output never took",
+                render_slugs(&unlanded)
+            ),
+            path,
+            hit(None),
+        );
+    }
+    Some(recorded.into_inner())
 }
 
-/// Formats `path` under `pipeline` and records what the output leaves
-/// behind, the run wrapped so a panic files against the file it read.
-fn probe(pipeline: &Pipeline, clause: &str, repro: &str, path: &Path) -> Findings {
+/// Sweeps every slice of `plan` over the file at `path`, each fold
+/// resuming behind its parent's recorded text parsed under the file's
+/// own name and a slice whose parent failed folding from the top on
+/// its own.
+fn sweep(plan: &Plan, path: &Path) -> Findings {
     let mut findings = Findings::default();
     let Ok(source) = Source::from_path(path) else {
         findings.skipped += 1;
         return findings;
     };
-    let slot = Slot::open(clause, path);
-    let ran = panic::catch_unwind(AssertUnwindSafe(|| {
-        let (formatted, _) = pipeline.run(source)?;
-        let editing = pipeline.unsettled(&formatted);
-        let unlanded: Vec<_> = pipeline
-            .diagnose(&formatted)
-            .into_iter()
-            .filter(|d| d.severity == Severity::Format && d.fix.is_some())
-            .map(|d| d.rule)
-            .filter(|rule| !editing.contains(rule))
-            .unique()
-            .collect();
-        Ok::<_, PipelineError>((editing, unlanded))
-    }));
-    drop(slot);
-    let outcome = match ran {
-        Ok(outcome) => outcome,
-        Err(payload) => {
-            let site = PANIC_SITE.with(RefCell::take);
-            let at = site.map_or_else(String::new, |site| format!(" at {site}"));
-            findings.panicked.record_at(
-                format!(
-                    "at {clause}, the run panicked{at}: {}",
-                    panic_message(&*payload)
-                ),
-                path,
-                Some(repro),
-            );
-            return findings;
-        }
-    };
-    let (editing, unlanded) = match outcome {
-        Ok(pair) => pair,
-        Err(error) => {
-            findings.rejected.record_at(
-                format!("at {clause}, the run was rejected: {error}"),
-                path,
-                Some(repro),
-            );
-            return findings;
-        }
-    };
-    if !editing.is_empty() {
-        findings.unsettled.record_at(
-            format!(
-                "at {clause}, {} rewrites the output",
-                render_slugs(&editing)
+    let name = path.display().to_string();
+    let mut recorded: Vec<Option<BTreeMap<usize, String>>> = Vec::with_capacity(plan.slices.len());
+    for (seat, slice) in plan.slices.iter().enumerate() {
+        let (entry, from) = match slice.parent.map(|parent| &recorded[parent]) {
+            Some(Some(stops)) => (
+                Source::parse_named(stops[&slice.cut].clone(), &name)
+                    .expect("invariant: a recorded checkpoint reparses"),
+                slice.cut,
             ),
+            _ => (source.clone(), 0),
+        };
+        recorded.push(probe(
+            slice,
+            &plan.stops[seat],
+            entry,
+            from,
             path,
-            Some(repro),
-        );
-    }
-    if !unlanded.is_empty() {
-        findings.unapplied.record_at(
-            format!(
-                "at {clause}, {} reports a fix the output never took",
-                render_slugs(&unlanded)
-            ),
-            path,
-            Some(repro),
-        );
+            &mut findings,
+        ));
     }
     findings
 }
 
-/// The in-flight registry. The lock is never held across a run, so it
-/// never carries a panic's poison.
-fn registry() -> std::sync::MutexGuard<'static, BTreeMap<usize, (Instant, String)>> {
-    IN_FLIGHT.lock().unwrap_or_else(PoisonError::into_inner)
+/// Formats `path` through the slice's whole fold as one run and panics
+/// where the resumed fold's text differs.
+fn verify_resumed(slice: &Slice, formatted: &Source, path: &Path) {
+    let full = Source::from_path(path)
+        .ok()
+        .and_then(|source| slice.pipeline.format(source).ok());
+    assert_eq!(
+        full.as_ref().map(Source::text),
+        Some(formatted.text()),
+        "resumed fold differs at {} on {}",
+        slice.axis.clause(slice.width),
+        path.display(),
+    );
+    note_verified();
 }
 
-/// Ends the process once a probe outruns `BUDGET`, naming the file it
-/// was reading. A rule that fails to terminate cannot be unwound from
-/// the thread running it, and it grows until the machine reaches an
-/// out-of-memory kill, so the sweep stops itself first.
-fn watch_for_a_runaway() {
-    thread::spawn(|| {
-        loop {
-            thread::sleep(Duration::from_secs(1));
-            let overrun = registry()
-                .values()
-                .find(|(since, _)| since.elapsed() > BUDGET)
-                .map(|(_, label)| label.clone());
-            if let Some(label) = overrun {
-                let mut stderr = std::io::stderr();
-                let _ = writeln!(
-                    stderr,
-                    "the sweep stopped itself, since {label} has run past {} seconds and is \
-                     treated as non-terminating",
-                    BUDGET.as_secs(),
-                );
-                let _ = stderr.flush();
-                std::process::exit(101);
-            }
-        }
-    });
+/// Reads the unlanded set off the diagnose pass and panics where it
+/// differs from what `settle_report` read off one walk.
+fn verify_unlanded(
+    pipeline: &Pipeline,
+    formatted: &Source,
+    editing: &[RuleId],
+    unlanded: &[RuleId],
+    path: &Path,
+) {
+    let old_unlanded: Vec<_> = pipeline
+        .diagnose(formatted)
+        .into_iter()
+        .filter(|d| d.severity == Severity::Format && d.fix.is_some())
+        .map(|d| d.rule)
+        .filter(|rule| !editing.contains(rule))
+        .unique()
+        .collect();
+    assert_eq!(
+        old_unlanded,
+        unlanded,
+        "unlanded set differs on {}",
+        path.display()
+    );
+    note_verified();
 }
 
 #[test]
 #[cfg_attr(coverage, ignore = "the sweep runs uninstrumented in its own row")]
 fn every_width_settles_and_applies_what_it_reports() {
     let files = corpus();
-    assert!(!files.is_empty(), "the corpus holds no `.py` files");
-    watch_for_a_runaway();
     let previous = panic::take_hook();
     panic::set_hook(Box::new(|info| {
-        let site = info
+        let at = info
             .location()
-            .map(|at| format!("{}:{}", at.file(), at.line()));
-        PANIC_SITE.with(|cell| cell.replace(site));
+            .map_or_else(String::new, |site| format!(" at {site}"));
+        let message = info.payload_as_str().unwrap_or("panicked");
+        PANIC.with(|cell| cell.replace(Some(format!("the run panicked{at}: {message}"))));
     }));
     let axes = axes();
-    let widths = widths_or(&WIDTHS);
-    let mut findings = Findings::default();
-    for &width in &widths {
-        for &axis in &axes {
-            let pipeline = Pipeline::with_defaults(&axis.config(width));
-            let clause = axis.clause(width);
-            let repro = axis.repro(width);
-            findings.absorb(
-                files
-                    .par_iter()
-                    .map(|path| probe(&pipeline, &clause, &repro, path))
-                    .reduce(Findings::default, |mut held, next| {
-                        held.absorb(next);
-                        held
-                    }),
-            );
-        }
-    }
+    let widths = widths_or(WIDTHS);
+    let plan = Plan::build(&axes, &widths);
+    eprintln!(
+        "{} slices, {} resumed behind a parent, at {} widths on {} axes",
+        plan.slices.len(),
+        plan.slices
+            .iter()
+            .filter(|slice| slice.parent.is_some())
+            .count(),
+        widths.len(),
+        axes.len(),
+    );
+    let findings = swept(&files, |path| sweep(&plan, path));
     panic::set_hook(previous);
-    // Every configuration walks the same file list, so the skips divide
-    // back to the count of files no configuration could read.
-    let unreadable = findings.skipped / (widths.len() * axes.len());
-    let unread = match unreadable {
-        0 => String::new(),
-        n => {
-            let mut stderr = std::io::stderr();
-            let _ = writeln!(
-                stderr,
-                "the sweep could not read {n} of the {} files under the corpus root",
-                files.len()
-            );
-            let _ = stderr.flush();
-            format!(" and {n} the sweep could not read")
-        }
-    };
+    report_verified("probes against their reference runs");
+    let unread = unread(findings.skipped, files.len(), "sweep");
     let report = format!(
         "{}{}{}{}",
         findings.panicked.render("runs that panicked"),

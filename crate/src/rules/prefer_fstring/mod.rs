@@ -31,6 +31,7 @@ mod spec;
 /// The release f-strings landed in.
 const FSTRING_FLOOR: PythonVersion = PythonVersion { major: 3, minor: 6 };
 
+#[derive(Debug)]
 pub(crate) struct PreferFstring {
     code_line_length: usize,
     percent: bool,

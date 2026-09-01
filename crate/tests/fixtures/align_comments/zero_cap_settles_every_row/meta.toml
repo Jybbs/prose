@@ -3,5 +3,5 @@ previewable = true
 title       = "A `0` Cap Settles Every Row on the Two-Space Floor"
 
 description = '''
-Setting `max-shift = 0` forbids any shift, so no comment may move to meet another and `seed()`, `flush_all()`, and `warm_now()` each stand alone. The rule reduces to a settle pass, taking the hand-set column back down to the two spaces PEP 8 prescribes.
+Setting `max-shift = 0` forbids any shift, so no comment may move to meet another and `seed()`, `flush_all()`, and `warm_now()` each stand alone. The rule only settles, taking the hand-set column back down to the two spaces PEP 8 prescribes.
 '''

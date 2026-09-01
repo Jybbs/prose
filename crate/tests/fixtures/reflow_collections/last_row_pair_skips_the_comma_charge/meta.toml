@@ -1,7 +1,9 @@
 [docs]
 previewable = true
-title       = "A Last Row Nothing Follows Skips the Comma Charge"
+title       = "A Last Row Nothing Follows Counts No Comma"
 
 description = '''
-The list expands and packs each row at the widths its entries carry in source order, and the final row is charged no separator because nothing follows it, so the two widest checksums share that row where charging a comma would have split them.
+The list expands and packs each row at the widths its entries carry in source order.
+
+The final row holds both twelve-digit checksums at exactly the 30-column budget, which fits only because **nothing follows that row, so it carries no trailing comma**. Counting a separator there would have taken it one column over and split the pair.
 '''

@@ -1,4 +1,5 @@
-//! Tests over `Pipeline::run_as_written`.
+//! As-written-surface tests over the replay pass, which folds from the
+//! first seat a diagnose pass found editing.
 
 use super::*;
 

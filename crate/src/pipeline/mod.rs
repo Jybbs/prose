@@ -12,7 +12,7 @@
 //! still editing it, a `format` run re-applying only the rules that
 //! edited on its first pass.
 
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, ops::Range, slice};
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_python_ast::PythonVersion;
@@ -83,15 +83,18 @@ impl Pipeline {
         (diagnostics, edits_at)
     }
 
-    /// Folds each rule's edits into `source` in registration order from
-    /// the `first` seat onward, reparsing between rules and extending
+    /// Folds each rule's edits into `source` in registration order
+    /// across `seats`, reparsing between rules and extending
     /// `diagnostics` with each rule's format findings when the caller
     /// supplies one.
     ///
-    /// `first` is the seat a [`diagnosed`](Self::diagnosed) pass over
-    /// this same buffer found editing before any other, leaving every
-    /// rule ahead of it with no fix group for this fold to re-derive. A
-    /// caller with the whole roster to fold passes zero.
+    /// `seats` bounds the fold to the rules seated in that range.
+    /// [`run_as_written`](Self::run_as_written) opens at the first seat
+    /// a [`diagnosed`](Self::diagnosed) pass found editing, leaving
+    /// every rule ahead of it with no fix group for this fold to
+    /// re-derive, and [`format_span`](Self::format_span) resumes behind
+    /// a prefix another fold produced. The compile gate reads the
+    /// segment's entry source.
     ///
     /// # Errors
     ///
@@ -101,10 +104,10 @@ impl Pipeline {
         &self,
         source: Source,
         mut diagnostics: Option<&mut Vec<Diagnostic>>,
-        first: usize,
+        seats: Range<usize>,
     ) -> Result<Source, PipelineError> {
         let gate = compile_gate(&source, self.target_version);
-        self.rules[first..].iter().try_fold(source, |source, rule| {
+        self.rules[seats].iter().try_fold(source, |source, rule| {
             let Some((groups, new_text, map)) = woven_groups(&**rule, &source) else {
                 return Ok(source);
             };
@@ -130,30 +133,6 @@ impl Pipeline {
         self.rules.len()
     }
 
-    /// The rules `keep` admits whose edits would still rewrite `source`,
-    /// each application reported to the trace under `pass`, empty under
-    /// a file-level `# prose: off`. A rule whose surviving groups do not
-    /// splice, or splice back to the same text, is left out.
-    fn still_editing(
-        &self,
-        source: &Source,
-        pass: &'static str,
-        keep: impl Fn(RuleId) -> bool,
-    ) -> Vec<RuleId> {
-        if source.suppression_map().file_is_suppressed() {
-            return Vec::new();
-        }
-        self.rules
-            .iter()
-            .filter(|rule| keep(rule.id()))
-            .filter_map(|rule| {
-                crate::source::trace::reapplied(pass, rule.id());
-                let (_, text, _) = woven_groups(&**rule, source)?;
-                (text != source.text()).then(|| rule.id())
-            })
-            .collect()
-    }
-
     /// Collects every rule's diagnostics against `source` without
     /// applying edits or reparsing between rules, so each range stays
     /// valid against the original buffer. Format rules contribute one
@@ -162,6 +141,57 @@ impl Pipeline {
     /// [`run`](Self::run) filters them.
     pub fn diagnose(&self, source: &Source) -> Vec<Diagnostic> {
         self.diagnosed(source).0
+    }
+
+    /// A rendering of every rule's settings, equal for two pipelines
+    /// whose rules were constructed against selections they read
+    /// alike.
+    pub fn fingerprint(&self) -> String {
+        format!("{:?}", self.rules)
+    }
+
+    /// One fingerprint per carried rule, in registration order, each
+    /// equal to what the rule's own single-rule pipeline renders.
+    pub fn fingerprints(&self) -> Vec<String> {
+        self.rules
+            .iter()
+            .map(|rule| format!("{:?}", slice::from_ref(rule)))
+            .collect()
+    }
+
+    /// Rewrites `source` through every enabled rule, skipping the
+    /// diagnostics [`run`](Self::run) collects and the lint pass it
+    /// closes on.
+    ///
+    /// # Errors
+    ///
+    /// Returns whichever `PipelineError` a rule's output draws from the
+    /// reparse between rules.
+    pub fn format(&self, source: Source) -> Result<Source, PipelineError> {
+        if source.suppression_map().file_is_suppressed() {
+            return Ok(source);
+        }
+        self.fold_rules(source, None, 0..self.rules.len())
+    }
+
+    /// Rewrites `source` through the rules seated in `seats`, resuming
+    /// behind a prefix whose output the caller already holds. The
+    /// compile gate reads the segment's entry source.
+    ///
+    /// # Errors
+    ///
+    /// Returns whichever `PipelineError` a rule's output draws from the
+    /// reparse between rules.
+    ///
+    /// # Panics
+    ///
+    /// Panics when `seats` reaches past the rule count.
+    pub fn format_span(
+        &self,
+        source: Source,
+        seats: Range<usize>,
+    ) -> Result<Source, PipelineError> {
+        self.fold_rules(source, None, seats)
     }
 
     /// Returns every registered rule's id in a stable order.
@@ -205,7 +235,7 @@ impl Pipeline {
             return Ok((source, Vec::new()));
         }
         let mut diagnostics = Vec::new();
-        let source = self.fold_rules(source, Some(&mut diagnostics), 0)?;
+        let source = self.fold_rules(source, Some(&mut diagnostics), 0..self.rules.len())?;
         diagnostics.extend(settled_lints(&self.rules, &source));
         Ok((source, diagnostics))
     }
@@ -243,29 +273,105 @@ impl Pipeline {
             return Ok((source, diagnostics, BTreeSet::new()));
         };
         let mut fold = Vec::new();
-        let formatted = self.fold_rules(source, Some(&mut fold), first)?;
+        let formatted = self.fold_rules(source, Some(&mut fold), first..self.rules.len())?;
         Ok((formatted, diagnostics, fired_rules(&fold)))
     }
 
+    /// What one walk over `source` reads for the settle check, so the
+    /// rules still editing and the rules reporting a fix the weave
+    /// never lands come off the same fix groups. Reads whichever subset
+    /// this pipeline carries, so a `--select` run answers for that
+    /// subset alone, and a file-level `# prose: off` answers empty.
+    pub fn settle_report(&self, source: &Source) -> SettleReport {
+        self.settle_report_among(source, "full", |_| true)
+    }
+
+    /// The [`settle_report`](Self::settle_report) walk narrowed to the
+    /// rules `keep` admits, each rule's probe reported to the trace
+    /// under `pass`.
+    fn settle_report_among(
+        &self,
+        source: &Source,
+        pass: &'static str,
+        keep: impl Fn(RuleId) -> bool,
+    ) -> SettleReport {
+        let mut report = SettleReport::default();
+        if source.suppression_map().file_is_suppressed() {
+            return report;
+        }
+        for rule in &self.rules {
+            let rule_id = rule.id();
+            if !keep(rule_id) {
+                continue;
+            }
+            crate::source::trace::reapplied(pass, rule_id);
+            let groups = prepared_groups(&**rule, source);
+            if groups.is_empty() {
+                continue;
+            }
+            match weave_distinct(&**rule, source, &groups) {
+                Some((text, _)) if text != source.text() => {
+                    report.editing.push(rule_id);
+                    report.witness.get_or_insert((rule_id, text));
+                }
+                _ => report.unlanded.push(rule_id),
+            }
+        }
+        report
+    }
+
+    /// One pipeline per rule this pipeline carries, in order, each
+    /// holding its rule as this pipeline constructed it, so a rule that
+    /// reads a sibling's flag keeps the answer this selection gave it.
+    pub fn split(self) -> Vec<(RuleId, Self)> {
+        let target_version = self.target_version;
+        self.rules
+            .into_iter()
+            .map(|rule| {
+                (
+                    rule.id(),
+                    Self {
+                        rules: vec![rule],
+                        target_version,
+                    },
+                )
+            })
+            .collect()
+    }
+
     /// The enabled rules whose edits would still rewrite `source`,
-    /// empty once the run has settled. Reads whichever subset this
-    /// pipeline carries, so a `--select` run answers for that subset
-    /// alone, and a file-level `# prose: off` answers empty. A rule
-    /// whose surviving groups do not splice, or splice back to the same
-    /// text, is left out.
+    /// empty once the run has settled. A rule whose surviving groups do
+    /// not splice, or splice back to the same text, is left out, and
+    /// [`settle_report`](Self::settle_report) names those separately.
     pub fn unsettled(&self, source: &Source) -> Vec<RuleId> {
-        self.still_editing(source, "full", |_| true)
+        self.settle_report(source).editing
     }
 
     /// The rules among `fired` whose edits would still rewrite `source`,
     /// the second pass a `format` run makes over its own output,
     /// re-applying the rules that edited on the first pass rather than
     /// every enabled rule. A rule silent on the first pass is left to
-    /// the full [`unsettled`](Self::unsettled) walk that `check
+    /// the full [`settle_report`](Self::settle_report) walk that `check
     /// --validate` and the settle sweeps run.
     pub(crate) fn unsettled_among(&self, source: &Source, fired: &BTreeSet<RuleId>) -> Vec<RuleId> {
-        self.still_editing(source, "narrowed", |id| fired.contains(&id))
+        self.settle_report_among(source, "narrowed", |id| fired.contains(&id))
+            .editing
     }
+}
+
+/// What a settle check reads off one walk over a completed run's
+/// output.
+#[derive(Debug, Default)]
+pub struct SettleReport {
+    /// The enabled rules whose edits still rewrite the buffer, in
+    /// registration order.
+    pub editing: Vec<RuleId>,
+    /// The enabled rules holding a fix group that splices back to the
+    /// same text or does not apply, in registration order.
+    pub unlanded: Vec<RuleId>,
+    /// The first editing rule and the text its edits weave, the
+    /// rewrite a report shows.
+    pub witness: Option<(RuleId, String)>,
 }
 
 /// True when no two edits across `groups` match on both range and
@@ -287,6 +393,21 @@ fn format_diagnostics(rule: &dyn Rule, groups: Vec<Vec<Edit>>) -> impl Iterator<
         .map(move |group| Diagnostic::format(rule_id, group, message.to_owned()))
 }
 
+/// Weaves `rule`'s `groups` into `source`, checking first that no two
+/// of its edits repeat.
+fn weave_distinct(
+    rule: &dyn Rule,
+    source: &Source,
+    groups: &[Vec<Edit>],
+) -> Option<(String, SourceMap)> {
+    debug_assert!(
+        distinct_edits(groups),
+        "rule `{}` emitted a duplicate edit, the signature of a walk reaching one node twice",
+        rule.id(),
+    );
+    apply_edits_mapped(source.text(), groups.concat())
+}
+
 /// Applies `rule` to `source` and weaves its surviving fix groups into
 /// new text beside the `SourceMap` of the weave, returning `None` when
 /// no group survives or the edits do not apply.
@@ -295,12 +416,7 @@ fn woven_groups(rule: &dyn Rule, source: &Source) -> Option<(Vec<Vec<Edit>>, Str
     if groups.is_empty() {
         return None;
     }
-    debug_assert!(
-        distinct_edits(&groups),
-        "rule `{}` emitted a duplicate edit, the signature of a walk reaching one node twice",
-        rule.id(),
-    );
-    let (new_text, map) = apply_edits_mapped(source.text(), groups.concat())?;
+    let (new_text, map) = weave_distinct(rule, source, &groups)?;
     Some((groups, new_text, map))
 }
 

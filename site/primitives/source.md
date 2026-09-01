@@ -23,6 +23,9 @@ The constructors cover the common shapes:
 
 1. `Source::from_path(path) -> Result<Self, SourceError>` reads the file at `path`, parses it as Python, and returns the wrapped value. The on-disk filename is preserved for diagnostic emission. The parser is `ruff_python_parser` at the pinned crate tag, so a downstream that already depends on the same `ruff_*` workspace sees an AST whose types match its own.
 2. `Source::from_str(text: &str) -> Result<Self, ParseError>` parses an in-memory string, returning a *Source* whose synthetic filename is `<source>`. Reach for it in stdin mode, language-server buffers, test fixtures, and any other shape where the text exists in memory rather than on disk.
+3. `Source::parse_named(text: String, name: &str) -> Result<Self, ParseError>` parses an in-memory string the way `from_str` does while carrying `name` the way a file-backed value carries its path, so a diagnostic drawn from text held in memory still names the file it came from. A corpus sweep reading a checkpoint back reaches for it, since the buffer is in memory and the reported defect has to name the file on disk.
+
+*Source* also implements `Clone`, which copies the text, the parsed tree, and the comment indexes while leaving each lazy cache to fill on the copy's own first read, so a consumer folding one buffer several ways pays for the parse once and for each derived table only where it reads one.
 
 A Python file the parser cannot recover surfaces as `SourceError::Parse(...)` from `from_path` or `ParseError` from `from_str`, with no partial *Source* returned. Syntax-invalid input never produces a half-built *Source*, so the caller always gets either an error or a fully-parsed value.
 

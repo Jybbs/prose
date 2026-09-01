@@ -36,6 +36,7 @@ mod walk;
 
 use walk::Visitor;
 
+#[derive(Debug)]
 pub(crate) struct SingleUseVariables {
     allow_pattern: AllowPattern,
 }

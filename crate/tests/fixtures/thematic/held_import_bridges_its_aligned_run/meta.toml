@@ -3,5 +3,7 @@ previewable = false
 title       = "A Held Import Bridges Its Run without Joining the Column"
 
 description = '''
-The middle import carries `# prose: skip[align-imports]`, so the forecast **steps over that row rather than closing the run at it**. The imports still sort and partition into their groups, and the held row keeps the two spaces its author wrote ahead of the comment.
+The middle import carries `# prose: skip[align-imports]`, which takes it out of the alignment.
+
+The forecast **steps over that row rather than closing the run at it**, so `package.alpha` and `package.zeta_rendering` still share one column across the gap. The imports sort and partition into their groups as usual, and the held row keeps the two spaces its author wrote ahead of the comment.
 '''

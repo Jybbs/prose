@@ -27,6 +27,7 @@ use crate::{
     source::Source,
 };
 
+#[derive(Debug)]
 pub(crate) struct ShedBackslashContinuations {
     code_line_length: usize,
 }

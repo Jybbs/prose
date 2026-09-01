@@ -3,5 +3,7 @@ previewable = true
 title       = "A Sequence of Pairs Inside `dict()` Becomes a Dict Literal"
 
 description = '''
-`dict([(1, "one"), (2, "two")])` and `dict(((3, "three"), (4, "four")))` each hold a sequence of two-member tuples, and each tuple drops its parentheses and trades its comma for a `:`, so `codes` and `ranges` land on the dict literals `{1: "one", 2: "two"}` and `{3: "three", 4: "four"}` instead of the `dict()` call.
+`dict([(1, "one"), (2, "two")])` and `dict(((3, "three"), (4, "four")))` each hold a sequence of two-member tuples.
+
+Each tuple **drops its parentheses and trades its comma for a `:`**, so `codes` and `ranges` land on the dict literals `{1: "one", 2: "two"}` and `{3: "three", 4: "four"}` rather than keeping the `dict()` call wrapped around them.
 '''

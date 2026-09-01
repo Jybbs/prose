@@ -3,5 +3,7 @@ previewable = true
 title       = "Overflow Dict Expands Around Modernized Union Values"
 
 description = '''
-`PRIMARY` overflows its line with values written as `Optional` and `Union`, and `target-version = "3.10"` permits the modern union syntax. **`modernize-annotations` rewrites each value to `|` form first, then the dict expands, its keys sort so `"delta_long"` precedes `"gamma"`, and `align-colons` pads the `:` column against the rewritten widths**, with `from typing import Optional, Union` dropping once nothing reads either name.
+`PRIMARY` overflows its line, and its values are written in the older `Optional` and `Union` forms. `target-version = "3.10"` allows the modern `|` syntax.
+
+`modernize-annotations` rewrites each value to `|` form **first**, so everything downstream measures the shorter text. The dict then expands, its keys sort so `"delta_long"` comes before `"gamma"`, and `align-colons` pads the `:` column against the rewritten widths. With nothing left reading either name, `from typing import Optional, Union` drops entirely.
 '''

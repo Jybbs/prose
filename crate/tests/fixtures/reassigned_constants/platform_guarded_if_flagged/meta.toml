@@ -3,5 +3,7 @@ previewable = false
 title       = "Platform-Guarded If Bodies Stay Module-Level"
 
 description = '''
-`DEFAULT_BACKEND` is assigned `"memory"` at module level and reassigned to `"registry"` inside the `if sys.platform == "win32"` guard. A top-level `if` body still executes at module scope, which is why the walker descends into `if` / `for` / `try` bodies, so **both writes count as module-scope writes and the constant is flagged**.
+`DEFAULT_BACKEND` is assigned `"memory"` at module level and reassigned to `"registry"` inside the `if sys.platform == "win32"` guard.
+
+A top-level `if` body **still executes at module scope**, which is why the walk descends into `if`, `for`, and `try` bodies. Both writes therefore count as module-scope writes, and the constant is flagged as reassigned.
 '''

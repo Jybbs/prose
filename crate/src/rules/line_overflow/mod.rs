@@ -26,7 +26,7 @@ use crate::{
     primitives::{
         docstring::{body_docstring, docstring_slots},
         inline::display_width,
-        last_at_or_before,
+        slots::{item_holding, slot_holding},
         walk::walk_stmt,
     },
     rule::{Rule, RuleId},
@@ -36,6 +36,7 @@ use crate::{
 
 mod split;
 
+#[derive(Debug)]
 pub(crate) struct LineOverflow {
     code_line_length: usize,
     import_line_length: usize,
@@ -143,8 +144,7 @@ impl<'a> Spans<'a> {
     /// to the import budget. Import statements never nest, so the last
     /// range opening at or before `line` is the only candidate.
     fn in_import(&self, line: TextRange) -> bool {
-        last_at_or_before(&self.imports, line.start(), Ranged::start)
-            .is_some_and(|i| self.imports[i].contains_range(line))
+        item_holding(&self.imports, line.start()).is_some_and(|import| import.contains_range(line))
     }
 
     /// Orders both collected range lists by start and fills [`Self::reach`],
@@ -221,8 +221,7 @@ impl<'a> Spans<'a> {
     /// True when a still-collapsible construct meets `line`, which
     /// leaves the line to the layout rule that shortens it.
     fn reshapes(&self, line: TextRange) -> bool {
-        last_at_or_before(&self.reshapeable, line.end(), Ranged::start)
-            .is_some_and(|i| self.reach[i] >= line.start())
+        slot_holding(&self.reshapeable, line.end()).is_some_and(|i| self.reach[i] >= line.start())
     }
 
     /// The single-part string literal on `line` whose span crosses the

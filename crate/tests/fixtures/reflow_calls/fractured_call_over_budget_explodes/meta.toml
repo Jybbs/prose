@@ -4,5 +4,7 @@ previewable = false
 title       = "A Fractured Call Whose Joined Row Overflows Explodes"
 
 description = '''
-The fractured `ValueError` call is measured as if rejoined, and that measure counts both the column the call starts at and the `from underlying_cause_error` trailing it. The joined row would overflow the limit, so the fracture explodes to one argument per line rather than keeping the break the author wrote, the `from` clause following the closing `)`.
+The fractured `ValueError` call is measured as though it had been rejoined, and that measure counts both the column the call starts at and the `from underlying_cause_error` trailing it.
+
+The joined row would overflow the budget, so **the call explodes to one argument per line** rather than keeping the break the author wrote. The `from` clause follows the closing `)`.
 '''

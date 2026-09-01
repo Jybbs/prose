@@ -25,6 +25,7 @@ mod walk;
 
 use walk::{Run, Visitor};
 
+#[derive(Debug)]
 pub(crate) struct AlignEquals {
     settings: aligner::Settings,
 }

@@ -3,5 +3,7 @@ previewable = false
 title       = "Skip on a Wrapped Signature Holds the Parameter List Open"
 
 description = '''
-A `# fmt: skip` trailing `render`'s wrapped `def` header **spans the whole signature**, so `reflow-signatures` leaves the exploded `width` parameter and its trailing comma exactly as written rather than condensing the one-parameter signature onto a single line.
+A `# fmt: skip` trailing `render`'s wrapped `def` header **spans the whole signature**, from the opening `(` through to the closing `)`.
+
+The exploded `width` parameter and its trailing comma are left exactly as written, rather than the one-parameter signature being condensed back onto a single line.
 '''

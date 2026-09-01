@@ -21,6 +21,7 @@ use crate::{
     source::Source,
 };
 
+#[derive(Debug)]
 pub(crate) struct AlignColons {
     docstring_settings: aligner::Settings,
     reservations: reserve::Reservations,

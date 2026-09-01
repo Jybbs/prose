@@ -21,6 +21,7 @@ use crate::{
 
 const OBJECT: &str = "object";
 
+#[derive(Debug)]
 pub(crate) struct ShedRedundantBase;
 
 impl ShedRedundantBase {

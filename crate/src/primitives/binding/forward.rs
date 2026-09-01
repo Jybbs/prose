@@ -1,7 +1,7 @@
 //! Carries a binding table across a reparse, moving every offset and
 //! range it holds to where the woven text carries it.
 
-use std::mem;
+use std::{mem, sync::OnceLock};
 
 use ruff_diagnostics::SourceMap;
 use ruff_text_size::TextSize;
@@ -38,6 +38,7 @@ impl BindingAnalysis {
             .into_iter()
             .map(|(start, scope)| Some((forward_start(start, map)?, scope)))
             .collect::<Option<_>>()?;
+        self.module_reads = OnceLock::new();
         Some(self)
     }
 }
@@ -93,5 +94,24 @@ mod tests {
         );
 
         assert_eq!(carried.expect("every token survives"), fresh);
+    }
+
+    #[test]
+    fn forwarded_rebuilds_the_module_reads_a_first_pass_filled() {
+        let before = "import os\n\n\nvalue = os.getcwd()\n";
+        let source = parse(before);
+        let (after, map) = woven(source.text(), vec![Edit::range_deletion(range(10, 12))]);
+        let table = BindingAnalysis::new(source.ast());
+        table.module_names_read_within(&[range(0, before.len() as u32)]);
+
+        let carried = table.forwarded(&map).expect("every token survives");
+        let fresh = BindingAnalysis::new(parse(&after).ast());
+
+        assert_eq!(carried, fresh);
+        let moved = [range(0, after.len() as u32)];
+        assert_eq!(
+            carried.module_names_read_within(&moved),
+            fresh.module_names_read_within(&moved),
+        );
     }
 }

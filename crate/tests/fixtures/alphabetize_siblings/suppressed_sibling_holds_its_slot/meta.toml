@@ -3,5 +3,7 @@ previewable = false
 title       = "A Suppressed Sibling Holds Its Slot While the Rest Sort"
 
 description = '''
-The suppression region over `middle` holds that definition at its own slot, and `apple` and `zebra` **still trade places around it**, because the sort edits the siblings it moves rather than the whole run spanning the held one.
+The `# prose: off` region holds `middle` at its own slot.
+
+`apple` and `zebra` **still trade places around it**, because the sort edits only the siblings it actually moves rather than rewriting the whole run that spans the held one.
 '''

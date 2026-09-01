@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Backslash-Split Operands Skip the Phantom Column"
+title       = "Backslash-Split Operands Share No Baseline"
 
 description = '''
-The chain splits across a backslash continuation, so `filename in breaks` starts after `result = ` while `lineno in breaks[filename]` starts at the continuation indent. **The two members fail the shared-baseline check** because their left edges occupy different screen columns, so neither `in` is padded and the source passes through unchanged.
+The chain splits across a backslash continuation, so `filename in breaks` starts after `result = ` while `lineno in breaks[filename]` starts at the continuation indent. **The two members do not share a baseline** because their left edges occupy different screen columns, so neither `in` is padded and the source passes through unchanged.
 '''

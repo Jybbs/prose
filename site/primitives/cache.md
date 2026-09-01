@@ -25,7 +25,15 @@ At `1.0` the cache surface stabilizes for downstream consumers integrating the p
 
 ## Key Shape
 
-The cache key is the **BLAKE3** digest of inputs concatenated in order: the canonical TOML serialization of the active `Config`, the resolved rule selection the pipeline runs, the *Prose* version from `CARGO_PKG_VERSION`, a private `CACHE_FORMAT_VERSION` constant, and the file's own source bytes. The anchor naming which buffer the entry's diagnostics resolve against enters ahead of all of them, as the `Hasher::new_derive_key` context the digest opens under, so no arrangement of the remaining inputs can carry one anchor's key into the other's space.
+The cache key is the **BLAKE3** digest of inputs concatenated in order:
+
+1. The canonical TOML serialization of the active `Config`.
+2. The resolved rule selection the pipeline runs.
+3. The *Prose* version from `CARGO_PKG_VERSION`.
+4. A private `CACHE_FORMAT_VERSION` constant.
+5. The file's own source bytes.
+
+The anchor naming which buffer the entry's diagnostics resolve against enters ahead of all of them, as the `Hasher::new_derive_key` context the digest opens under, so no arrangement of the remaining inputs can carry one anchor's key into the other's space.
 
 A change to any one input produces a different key, so a config tweak invalidates only the entries it semantically affects, a `--select` or `--ignore` run keys apart from a full one, and a *Prose* release invalidates the entire cache. The `CACHE_FORMAT_VERSION` input lets the on-disk entry shape bump independently of the user-facing version, leaving a release that does not change the entry shape free to carry its existing cache forward.
 

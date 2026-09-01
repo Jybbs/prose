@@ -6,6 +6,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use itertools::Itertools;
+use std::sync::OnceLock;
+
 use ruff_python_ast::{
     CmpOp, ExceptHandler, Expr, ExprCompare, ExprDictComp, ExprGenerator, ExprLambda, ExprList,
     ExprListComp, ExprNamed, ExprSetComp, ExprTuple, Identifier, MatchCase, Operator, Parameters,
@@ -607,6 +609,7 @@ impl Builder {
             deleted: self.deleted,
             function_scope_at: self.function_scope_at,
             global_writes: self.global_writes,
+            module_reads: OnceLock::new(),
             scopes: self.scopes,
             unpack_targets,
         }

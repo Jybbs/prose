@@ -27,6 +27,7 @@ mod walk;
 
 use walk::Walker;
 
+#[derive(Debug)]
 pub(crate) struct ShedSuperArgs;
 
 impl ShedSuperArgs {

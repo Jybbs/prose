@@ -37,6 +37,7 @@ use crate::{
 mod measure;
 mod render;
 
+#[derive(Debug)]
 pub(crate) struct ReflowCalls {
     expands_literals: bool,
     one_row: one_row::Settings<'static>,

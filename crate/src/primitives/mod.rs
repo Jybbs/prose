@@ -53,16 +53,6 @@ pub(crate) fn group_map<K: Eq + std::hash::Hash, V>(
         })
 }
 
-/// The index of the last of `items` whose `key` is at or before `at`,
-/// `None` where every key sits past it.
-pub(crate) fn last_at_or_before<T, K: Ord>(
-    items: &[T],
-    at: K,
-    key: impl Fn(&T) -> K,
-) -> Option<usize> {
-    items.partition_point(|item| key(item) <= at).checked_sub(1)
-}
-
 /// Byte offset of the first `:` in `s` that sits at paren-and-bracket
 /// depth zero, reading the walrus `:=` as one operator rather than as a
 /// colon. `None` when every colon is nested or `s` carries none.
@@ -97,18 +87,6 @@ mod tests {
         let grouped = group_map([(1, "a"), (2, "b"), (1, "c")]);
         assert_eq!(grouped[&1], vec!["a", "c"]);
         assert_eq!(grouped[&2], vec!["b"]);
-    }
-
-    #[rstest]
-    #[case::before_every_key(0, None)]
-    #[case::at_a_key(3, Some(0))]
-    #[case::between_keys(5, Some(0))]
-    #[case::past_every_key(9, Some(2))]
-    fn last_at_or_before_answers_the_last_key_not_past_the_point(
-        #[case] at: u32,
-        #[case] expected: Option<usize>,
-    ) {
-        assert_eq!(last_at_or_before(&[3, 6, 7], at, |&key| key), expected);
     }
 
     #[rstest]

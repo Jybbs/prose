@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Trailing Band Seats Tight below an Anchored Constant"
+
+description = '''
+`LIMIT = compute()` runs a call as it binds, so the rule anchors it in place, whereas `FIRST` and `SECOND` each name `base` and sort into the trailing band beneath it. **The anchored constant spaces as a member of that band**, so the pair below it seats tight rather than keeping the two blank lines the sort moved past.
+'''

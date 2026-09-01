@@ -1,6 +1,7 @@
 //! The per-alias decision the rule reaches over a module's imports, the
 //! drops it applies and the reports a package `__init__` holds back.
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
@@ -11,15 +12,19 @@ use super::{
     future::annotations_are_inert,
     inventory::{ImportNode, is_star},
     is_package_init,
-    reexports::Reexports,
+    reexports::{Reexports, reexports_a_private_member},
 };
 use crate::{
     diagnostics::Diagnostic,
-    primitives::{binding::BindingAnalysis, imports::Dropping},
+    primitives::{binding::BindingAnalysis, comments::noqa_names, imports::Dropping},
     rule::RuleId,
     rules::reflow_imports::Folds,
     source::Source,
 };
+
+/// The code `flake8` and its successors report an unread import under,
+/// which a `noqa` naming it marks as deliberate.
+const REEXPORT_CODE: &str = "F401";
 
 /// The alias drops the rule applies, one entry per pruned statement,
 /// beside the unreferenced bindings a package `__init__.py` holds.
@@ -47,6 +52,10 @@ impl<'a> Plan<'a> {
         }
         let analysis = source.binding_analysis();
         let reexports = Reexports::of(body);
+        let noqa_held: FxHashSet<usize> = nodes
+            .iter()
+            .positions(|(slot, _)| noqa_names(source, &body[*slot], REEXPORT_CODE))
+            .collect();
         let package_init = is_package_init(source);
         let annotated = if rule.unreferenced {
             annotation_names(source.ast())
@@ -57,9 +66,9 @@ impl<'a> Plan<'a> {
             && nodes
                 .iter()
                 .any(|(_, node)| node.future_annotations().is_some())
-            && annotations_are_inert(source, rule.target_version, rule.sorts_definitions);
+            && annotations_are_inert(rule, source);
         let repeats = if rule.duplicates {
-            repeat_writes(&nodes, &reexports)
+            repeat_writes(&nodes, &reexports, &noqa_held)
         } else {
             FxHashSet::default()
         };
@@ -67,6 +76,9 @@ impl<'a> Plan<'a> {
         let mut dropped: Vec<Vec<usize>> = vec![Vec::new(); nodes.len()];
         let mut reports = Vec::new();
         for (statement, (_, node)) in nodes.iter().enumerate() {
+            if noqa_held.contains(&statement) {
+                continue;
+            }
             let directive = node.future_annotations();
             for (index, alias) in node.names().iter().enumerate() {
                 let bound = node.bound(alias);
@@ -78,6 +90,8 @@ impl<'a> Plan<'a> {
                     None
                 } else if node.is_future() {
                     (directive_is_inert && directive == Some(index)).then_some(Candidacy::Inert)
+                } else if reexports_a_private_member(node) {
+                    None
                 } else {
                     is_unreferenced(analysis, bound, &repeats, &annotated)
                         .then_some(Candidacy::Unreferenced)
@@ -170,18 +184,20 @@ fn is_unreferenced(
 
 /// The write offset of every alias repeating a binding an earlier
 /// import already made. An alias the re-export surface holds keeps its
-/// binding, so its offset stays out.
+/// binding, as does one on a statement a `noqa` comment trails, so
+/// neither offset stays in.
 fn repeat_writes(
     nodes: &[(usize, ImportNode<'_>)],
     reexports: &Reexports<'_>,
+    noqa_held: &FxHashSet<usize>,
 ) -> FxHashSet<TextSize> {
     let mut bound_sources = FxHashSet::default();
     let mut repeats = FxHashSet::default();
-    for (_, node) in nodes {
+    for (statement, (_, node)) in nodes.iter().enumerate() {
         for alias in node.names() {
             let bound = node.bound(alias);
             let unseen = bound_sources.insert((bound, node.source(alias)));
-            if !unseen && !reexports.holds(alias, bound) {
+            if !unseen && !noqa_held.contains(&statement) && !reexports.holds(alias, bound) {
                 repeats.insert(alias.range.start());
             }
         }

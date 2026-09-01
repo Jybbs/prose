@@ -3,5 +3,5 @@ previewable = false
 title       = "A Banded Module Is a Fixed Point"
 
 description = '''
-The module already sits in canonical band order, `BASE` and `DERIVED = BASE + 1` leading, `consume` in the middle, and `HANDLER = consume` trailing beneath the definition it reads. **The whole file passes through untouched**, so a second pass leaves the layout identical.
+The module already sits in canonical band order, `BASE` and `DERIVED = BASE + 1` leading, `consume` in the middle, and `HANDLER = consume` trailing beneath the definition it reads. **The whole file passes through untouched**.
 '''

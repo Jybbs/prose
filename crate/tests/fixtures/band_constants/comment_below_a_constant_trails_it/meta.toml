@@ -3,5 +3,7 @@ previewable = true
 title       = "A Comment Below a Constant Trails It"
 
 description = '''
-The blank line under `# the convergence floor the solver stops at` binds the comment upward to `DEFAULT_EPSILON` rather than down to `MAX_INT`. As the band sorts `DEFAULT_EPSILON` to the top and `PENALTY_TYPES` to the bottom, the comment folds onto its own constant's line as a **trailing note** instead of stranding above whichever constant sorts in beneath it.
+The blank line below the comment separates it from `MAX_INT`, so it attaches upward to `DEFAULT_EPSILON` instead.
+
+Sorting then moves `DEFAULT_EPSILON` to the top of the group and `PENALTY_TYPES` to the bottom. The comment folds onto its own constant's line as a **trailing note**, which keeps the two together rather than leaving it stranded above whichever constant sorts into its old place.
 '''

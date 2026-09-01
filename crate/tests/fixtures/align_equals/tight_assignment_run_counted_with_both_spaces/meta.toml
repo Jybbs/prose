@@ -3,5 +3,7 @@ previewable = true
 title       = "A Tight Statement Run Is Measured With Both Inserted Spaces"
 
 description = '''
-Aligning these flush `name=value` assignments gives each `=` a space on both sides, and the fit check measures every row with both spaces counted. Padded to `verbose`'s column, `label`'s row would sit exactly at the `code-line-length` cap of 35 without the value-side space and one past it with it, so `label` partitions out at a single space while `verbose` and `dry` align.
+Aligning these flush `name=value` assignments gives each `=` a space on both sides, and the fit check measures every row with **both** of those spaces counted.
+
+Padded out to `verbose`'s column, `label`'s row would sit exactly at the 35-column budget without the value-side space and one column past it once that space is included. `label` therefore partitions out at a single space, while `verbose` and `dry` align beneath it.
 '''

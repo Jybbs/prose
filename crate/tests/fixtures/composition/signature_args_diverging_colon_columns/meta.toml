@@ -3,5 +3,7 @@ previewable = false
 title       = "Signature and Args Colons Align as Independent Columns"
 
 description = '''
-The signature's parameters `destination`, `contents`, and `overwrite` are named differently from the docstring's `Args:` entries `dst`, `body`, and `force`. **`align-colons` treats the two as independent groups, each aligning its own `:` column, and `wrap-docstrings` wraps the `Args:` descriptions at that section's own hanging column** rather than the wider column the signature's longer names produce.
+The signature names its parameters `destination`, `contents`, and `overwrite`, while the docstring's `Args:` section names them `dst`, `body`, and `force`.
+
+**`align-colons` treats the two as independent groups**, so each aligns a `:` column of its own. `wrap-docstrings` then wraps the `Args:` descriptions at that section's own hanging column rather than at the much wider column the signature's longer names would produce.
 '''

@@ -22,6 +22,7 @@ use crate::{
     source::Source,
 };
 
+#[derive(Debug)]
 pub(crate) struct AlignImports {
     settings: aligner::Settings,
 }

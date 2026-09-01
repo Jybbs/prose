@@ -43,6 +43,7 @@ mod render;
 
 const CANONICAL_SEPARATOR: usize = 2;
 
+#[derive(Debug)]
 pub(crate) struct ReflowCollections {
     code_line_length: usize,
     explode: bool,

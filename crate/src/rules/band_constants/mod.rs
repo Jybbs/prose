@@ -6,27 +6,16 @@
 //! analysis and emitting one fix group per banded body, or one per cell
 //! over a notebook.
 
-use std::borrow::Cow;
-
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{PythonVersion, Stmt, helpers::is_compound_statement};
-use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextRange};
+use ruff_python_ast::{PythonVersion, Stmt};
+use ruff_text_size::TextRange;
 
-use self::{
-    analysis::module_band_plan,
-    plan::{Banding, ImportBand, banded_gap},
-};
+use self::{analysis::module_band_plan, bander::Bander, plan::ImportBand};
 use crate::{
     config::Config,
     primitives::{
-        comments::TRAILING_GAP,
         imports::defers_annotations,
-        orderer::{
-            any_sibling_shares_line, assemble_or_borrow, assembled_cell_edits, member_blocks,
-            rendered_member_blocks,
-        },
-        scope::{scoped_body, splice_compound_arms},
+        orderer::{any_sibling_shares_line, member_blocks},
         sections::Sections,
     },
     rule::{Rule, RuleId},
@@ -34,10 +23,12 @@ use crate::{
 };
 
 mod analysis;
+mod bander;
 mod plan;
 
 pub(crate) use self::plan::Carry;
 
+#[derive(Debug)]
 pub(crate) struct BandConstants {
     code_width: usize,
     first_party: Vec<String>,
@@ -65,17 +56,19 @@ impl BandConstants {
         }
     }
 
-    /// The import bands the rule sorts over `body`, forecast for a rule
-    /// seated ahead of it, beside every comment the banding carries onto
-    /// another member. A band holds the imports of one region once the
-    /// hoist seats every constant between two of them below the run.
-    /// `None` when a sibling shares a line or the plan declines the
-    /// body.
-    pub(crate) fn import_bands(
+    /// The order the rule seats `body` in, forecast for a rule seated
+    /// ahead of it, beside the import bands it sorts and every comment
+    /// the banding carries onto another member. A band holds the
+    /// imports of one region once the hoist seats every constant
+    /// between two of them below the run, and an annotation reads as
+    /// deferred while `defer_annotations`. `None` when a sibling shares
+    /// a line or the plan declines the body.
+    pub(crate) fn forecast(
         &self,
         source: &Source,
         body: &[Stmt],
         outer: TextRange,
+        defer_annotations: bool,
     ) -> Option<Bands> {
         if any_sibling_shares_line(source, body) {
             return None;
@@ -83,27 +76,10 @@ impl BandConstants {
         let blocks = member_blocks(source, body, outer);
         let sections = Sections::of(source, &blocks);
         let order: Vec<usize> = (0..body.len()).collect();
-        let (imports, carries) = module_band_plan(
-            source,
-            body,
-            &blocks,
-            self.code_width,
-            defers_annotations(&source.ast().body),
-            self.group_subcategories,
-            self.target_version,
-        )?
-        .import_bands(
-            body,
-            &sections,
-            &self.first_party,
-            self.group_imports,
-            &order,
-        )?;
-        Some(Bands {
-            blocks,
-            carries,
-            imports,
-        })
+        Some(
+            module_band_plan(source, body, &blocks, self, defer_annotations)?
+                .forecast(body, blocks, &sections, self, &order),
+        )
     }
 }
 
@@ -113,20 +89,12 @@ impl Rule for BandConstants {
         if body.is_empty() {
             return Vec::new();
         }
-        let bander = Bander {
+        Bander {
             defer_annotations: defers_annotations(body),
             rule: self,
             source,
-        };
-        let layout = bander.band_layout(body, source.module_range());
-        assembled_cell_edits(
-            source,
-            &layout.blocks,
-            &layout.rendered,
-            &layout.order,
-            layout.forced(),
-            |i| bander.band_gap(&layout, body, i),
-        )
+        }
+        .band_edits(body, source.module_range())
     }
 
     fn id(&self) -> RuleId {
@@ -134,188 +102,14 @@ impl Rule for BandConstants {
     }
 }
 
-/// The import bands forecast over one body beside the body's member
-/// blocks and the comments the banding carries between members.
+/// The seating forecast over one body: its member blocks, the comments
+/// the banding carries between members, the import bands it sorts, and
+/// the body indices in the order the band seats them.
 pub(crate) struct Bands {
     pub(crate) blocks: Vec<TextRange>,
     pub(crate) carries: Vec<Carry>,
     pub(crate) imports: Vec<ImportBand>,
-}
-
-/// The banding layout of a module body: its member blocks, their
-/// rendered text, the new-order permutation, and the applied band. The
-/// combined [`Bander::band_body`] and the per-cell notebook emit read it.
-struct BandLayout<'a> {
-    band: Option<Banding>,
-    blocks: Vec<TextRange>,
-    order: Vec<usize>,
-    rendered: Vec<Cow<'a, str>>,
-}
-
-impl BandLayout<'_> {
-    /// True when the band opens a tier blank, forcing an owned assembly
-    /// so the spacing lands even when the order is already settled.
-    fn forced(&self) -> bool {
-        self.band.as_ref().is_some_and(Banding::stratifies)
-    }
-}
-
-/// Invariant banding context threaded through the recursion.
-struct Bander<'a> {
-    defer_annotations: bool,
-    rule: &'a BandConstants,
-    source: &'a Source,
-}
-
-impl<'a> Bander<'a> {
-    /// Bands a module-scope body, returning the rewritten text alongside
-    /// the block-extent span it covers. Each member's text folds in any
-    /// banded module-scope compound arm beneath it, so a banded arm splices
-    /// into its parent member rather than emitting on its own. The text is
-    /// `Cow::Owned` when the band reorders or a descendant arm rewrites,
-    /// falling back to `Cow::Borrowed` over `source.slice(span)`.
-    fn band_body(&self, body: &'a [Stmt], outer: TextRange) -> (Cow<'a, str>, TextRange) {
-        let layout = self.band_layout(body, outer);
-        assemble_or_borrow(
-            self.source,
-            &layout.blocks,
-            &layout.rendered,
-            &layout.order,
-            layout.forced(),
-            |i| self.band_gap(&layout, body, i),
-        )
-    }
-
-    /// The divider [`banded_gap`] places after new-order slot `i` of
-    /// `layout`, `None` when no band applies or the ranks abut with no gap.
-    fn band_gap(&self, layout: &BandLayout<'_>, body: &[Stmt], i: usize) -> Option<&'static str> {
-        layout.band.as_ref().and_then(|b| {
-            banded_gap(
-                b,
-                body,
-                &self.rule.first_party,
-                self.rule.group_imports,
-                self.source.line_ending(),
-                layout.order[i],
-                layout.order[i + 1],
-            )
-        })
-    }
-
-    /// Renders `body`, builds the module band over it, and moves each
-    /// carried comment onto the member it binds to, leaving the assembly
-    /// to the caller. The section partition walls each notebook cell, so
-    /// a band never crosses one.
-    fn band_layout(&self, body: &'a [Stmt], outer: TextRange) -> BandLayout<'a> {
-        let (blocks, mut rendered) =
-            rendered_member_blocks(self.source, body, outer, |stmt, block| {
-                self.band_stmt(stmt, block)
-            });
-        let mut order: Vec<usize> = (0..body.len()).collect();
-        let band = (!any_sibling_shares_line(self.source, body))
-            .then(|| {
-                let sections = Sections::of(self.source, &blocks);
-                self.band_module_constants(body, &blocks, &sections, &mut order)
-            })
-            .flatten();
-        if let Some(b) = &band {
-            apply_band_comments(self.source, body, b, &mut rendered);
-        }
-        BandLayout {
-            band,
-            blocks,
-            order,
-            rendered,
-        }
-    }
-
-    /// Builds the hoist plan over `body` and applies it to `order`,
-    /// seating the leading band beneath the import run each section opens.
-    /// Returns the [`Banding`] when the members relocated soundly.
-    fn band_module_constants(
-        &self,
-        body: &'a [Stmt],
-        blocks: &[TextRange],
-        sections: &Sections,
-        order: &mut Vec<usize>,
-    ) -> Option<Banding> {
-        let rule = self.rule;
-        module_band_plan(
-            self.source,
-            body,
-            blocks,
-            rule.code_width,
-            self.defer_annotations,
-            rule.group_subcategories,
-            rule.target_version,
-        )?
-        .apply(
-            body,
-            sections,
-            &rule.first_party,
-            rule.group_imports,
-            rule.max_tiers,
-            order,
-        )
-    }
-
-    /// Folds a banded compound arm into `block`. A class or function
-    /// definition leaves module scope, so its body holds no band and the
-    /// block stays a borrow. A compound statement recurses into each arm
-    /// with the inherited module scope. Any other statement is verbatim.
-    fn band_stmt(&self, stmt: &'a Stmt, block: TextRange) -> Cow<'a, str> {
-        if scoped_body(stmt).is_none() && is_compound_statement(stmt) {
-            return splice_compound_arms(self.source, stmt, block, &[], |body, outer| {
-                self.band_body(body, outer)
-            });
-        }
-        Cow::Borrowed(self.source.slice(block))
-    }
-}
-
-/// Settles every comment the band moves or re-seats. The first pass
-/// closes the blank run under a comment run still heading its own
-/// member, so a banded block re-reads with the attachment it was
-/// assembled from rather than binding backward onto whichever member
-/// the band seats above it. The second drops the comment and the blank
-/// run beneath it from the text of the member whose block folded them
-/// in, that block opening on the comment itself, and the third prepends
-/// or trails it on the carrier's text.
-fn apply_band_comments<'src>(
-    source: &'src Source,
-    body: &[Stmt],
-    band: &Banding,
-    rendered: &mut [Cow<'src, str>],
-) {
-    for (&idx, comment) in &band.attached {
-        let newline = source.newline_str();
-        let head = usize::from(comment.end() - comment.start());
-        let own_line = usize::from(source.text().line_start(body[idx].start()) - comment.start());
-        if own_line <= head + newline.len() {
-            continue;
-        }
-        let text = std::mem::take(&mut rendered[idx]);
-        rendered[idx] = Cow::Owned(format!("{}{newline}{}", &text[..head], &text[own_line..]));
-    }
-    for carry in &band.carries {
-        let own_line = source.text().line_start(body[carry.absorbs].start());
-        let held = usize::from(own_line - carry.comment.start());
-        rendered[carry.absorbs] = match std::mem::take(&mut rendered[carry.absorbs]) {
-            Cow::Borrowed(text) => Cow::Borrowed(&text[held..]),
-            Cow::Owned(mut text) => Cow::Owned(text.split_off(held)),
-        };
-    }
-    for carry in &band.carries {
-        let comment = source.slice(carry.comment);
-        let carried = &rendered[carry.carrier];
-        rendered[carry.carrier] = Cow::Owned(if carry.trails {
-            // The block reaches back to its line start, so its indent
-            // belongs to a line of its own rather than to a trailing slot.
-            format!("{carried}{TRAILING_GAP}{}", comment.trim_start())
-        } else {
-            format!("{comment}{}{carried}", source.newline_str())
-        });
-    }
+    pub(crate) order: Vec<usize>,
 }
 
 #[cfg(test)]
@@ -323,37 +117,34 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::{primitives::orderer::member_blocks, testing::parse};
+    use crate::testing::parse;
 
-    #[test]
-    fn band_module_constants_hoists_an_import_below_a_definition() {
+    /// `rule`'s forecast over the whole module body of `source`.
+    fn module_forecast(
+        rule: &BandConstants,
+        source: &Source,
+        defer_annotations: bool,
+    ) -> Option<Bands> {
+        rule.forecast(
+            source,
+            &source.ast().body,
+            source.module_range(),
+            defer_annotations,
+        )
+    }
+
+    #[rstest]
+    #[case::deferred_annotation_frees_the_observed_site(true, vec![2, 1, 0])]
+    #[case::eager_annotation_anchors_the_observed_site(false, vec![0, 1, 2])]
+    fn forecast_reads_annotations_as_eager_unless_deferred(
+        #[case] defer_annotations: bool,
+        #[case] order: Vec<usize>,
+    ) {
         let source =
-            parse("def helper(value):\n    return value\n\n\nimport os\n\n\nCONFIG = helper\n");
-        let body = &source.ast().body;
-        let blocks = member_blocks(&source, body, source.module_range());
-        let mut order: Vec<usize> = (0..body.len()).collect();
-        let rule = BandConstants {
-            code_width: 88,
-            first_party: Vec::new(),
-            group_imports: true,
-            group_subcategories: true,
-            max_tiers: Some(2),
-            target_version: None,
-        };
-        let bander = Bander {
-            defer_annotations: false,
-            rule: &rule,
-            source: &source,
-        };
-        let sections = Sections::of(&source, &blocks);
-        bander
-            .band_module_constants(body, &blocks, &sections, &mut order)
-            .expect("a definition before an import bands without panicking");
-        assert_eq!(
-            order,
-            vec![1, 0, 2],
-            "the import hoists above the def and CONFIG pools below it",
-        );
+            parse("def f(x: Foo.Bar):\n    pass\n\n\nY = Foo.Bar\n\n\nfrom m import Foo\n");
+        let rule = BandConstants::from_config(&Config::default());
+        let bands = module_forecast(&rule, &source, defer_annotations).expect("the body bands");
+        assert_eq!(bands.order, order);
     }
 
     #[rstest]
@@ -361,13 +152,13 @@ mod tests {
     #[case::sort_reseats_the_head("from .p import a\nfrom ..q import b\n", Some((vec![0, 1], 1)))]
     #[case::pinned_anchor_splits_the_band("from p import a\nprint(a)\nfrom q import b\n", Some((vec![0], 0)))]
     #[case::shared_line_declines("from p import a; from q import b\n", None)]
-    fn import_bands_reads_the_band_the_hoist_seats(
+    fn forecast_reads_the_band_the_hoist_seats(
         #[case] src: &str,
         #[case] first: Option<(Vec<usize>, usize)>,
     ) {
         let source = parse(src);
         let rule = BandConstants::from_config(&Config::default());
-        let bands = rule.import_bands(&source, &source.ast().body, source.module_range());
+        let bands = module_forecast(&rule, &source, false);
         assert_eq!(
             bands.and_then(|bands| {
                 bands
@@ -388,7 +179,7 @@ mod tests {
         "# heads the run\nfrom ..q import b\nfrom .p import a\n",
         None
     )]
-    fn import_bands_reads_the_comment_the_banding_carries(
+    fn forecast_reads_the_comment_the_banding_carries(
         #[case] src: &str,
         #[case] first: Option<(usize, usize, bool)>,
     ) {
@@ -397,7 +188,7 @@ mod tests {
             code_width: 40,
             ..BandConstants::from_config(&Config::default())
         };
-        let bands = rule.import_bands(&source, &source.ast().body, source.module_range());
+        let bands = module_forecast(&rule, &source, false);
         assert_eq!(
             bands.and_then(|bands| {
                 bands
@@ -407,5 +198,29 @@ mod tests {
             }),
             first,
         );
+    }
+
+    #[rstest]
+    #[case::inert_constant_leads(
+        "def convert(value: Alias) -> Alias:\n    return value\n\n\nAlias = int\n",
+        vec![1, 0]
+    )]
+    #[case::import_leads(
+        "def convert(value: Sequence) -> Sequence:\n    return value\n\n\nfrom collections.abc import Sequence\n",
+        vec![1, 0]
+    )]
+    #[case::effectful_constant_pins("def convert(value: Alias) -> Alias:\n    return value\n\n\nAlias = build()\n", vec![0, 1])]
+    #[case::trailing_constant_declines_under_its_reader(
+        "def convert(value: Alias) -> Alias:\n    return value\n\n\nAlias = convert\n",
+        vec![0, 1]
+    )]
+    fn forecast_seats_the_body_as_the_band_lays_it_out(
+        #[case] src: &str,
+        #[case] order: Vec<usize>,
+    ) {
+        let source = parse(src);
+        let rule = BandConstants::from_config(&Config::default());
+        let bands = module_forecast(&rule, &source, false).expect("the body bands");
+        assert_eq!(bands.order, order);
     }
 }

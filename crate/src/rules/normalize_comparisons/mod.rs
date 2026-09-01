@@ -28,6 +28,7 @@ use lint::boolean_lint;
 use plan::{Plan, Test};
 use render::{edits, identity_op, negating_parent, reflected};
 
+#[derive(Debug)]
 pub(crate) struct NormalizeComparisons {
     identity: bool,
     negation: bool,

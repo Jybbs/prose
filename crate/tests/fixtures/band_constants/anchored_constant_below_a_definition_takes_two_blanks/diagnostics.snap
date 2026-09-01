@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/band_constants/anchored_constant_below_a_definition_takes_two_blanks/input.py
+---
+band-constants@27..63
