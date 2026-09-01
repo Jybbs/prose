@@ -16,7 +16,10 @@
 //! the nearest non-comprehension scope, and class-scope names are
 //! invisible to nested functions and comprehensions.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::OnceLock,
+};
 
 use ruff_python_ast::{ModModule, Stmt, name::Name, visitor::Visitor};
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -50,6 +53,8 @@ pub struct BindingAnalysis {
     function_scope_at: FxHashMap<TextSize, ScopeId>,
     #[serde(skip)]
     global_writes: BTreeMap<Name, Vec<TextSize>>,
+    #[serde(skip)]
+    module_reads: OnceLock<Vec<(TextSize, Name)>>,
     scopes: Vec<Scope>,
     #[serde(skip)]
     unpack_targets: FxHashMap<BindingId, UnpackKind>,
@@ -198,19 +203,45 @@ impl BindingAnalysis {
     /// `ranges`, which ascend and never overlap, one set per range.
     pub(crate) fn module_names_read_within(&self, ranges: &[TextRange]) -> Vec<FxHashSet<&str>> {
         let mut read = vec![FxHashSet::default(); ranges.len()];
-        let reads = self.scopes[0].bindings.iter().flat_map(|(name, &id)| {
-            self.binding(id)
-                .read_offsets
-                .iter()
-                .map(move |&offset| (name.as_str(), offset))
-        });
-        for (name, offset) in reads {
-            let slot = ranges.partition_point(|range| range.end() <= offset);
-            if ranges.get(slot).is_some_and(|range| range.contains(offset)) {
-                read[slot].insert(name);
+        let (Some(first), Some(last)) = (ranges.first(), ranges.last()) else {
+            return read;
+        };
+        let reads = self.module_reads();
+        let from = reads.partition_point(|&(offset, _)| offset < first.start());
+        for (offset, name) in &reads[from..] {
+            if *offset >= last.end() {
+                break;
+            }
+            let slot = ranges.partition_point(|range| range.end() <= *offset);
+            if ranges
+                .get(slot)
+                .is_some_and(|range| range.contains(*offset))
+            {
+                read[slot].insert(name.as_str());
             }
         }
         read
+    }
+
+    /// Every module-scope read as its offset beside the name read, in
+    /// offset order. Built on first use, so a caller asking about one
+    /// body's ranges walks the reads inside that span rather than every
+    /// read the file holds.
+    fn module_reads(&self) -> &[(TextSize, Name)] {
+        self.module_reads.get_or_init(|| {
+            let mut reads: Vec<(TextSize, Name)> = self.scopes[0]
+                .bindings
+                .iter()
+                .flat_map(|(name, &id)| {
+                    self.binding(id)
+                        .read_offsets
+                        .iter()
+                        .map(move |&offset| (offset, name.clone()))
+                })
+                .collect();
+            reads.sort_unstable_by_key(|&(offset, _)| offset);
+            reads
+        })
     }
 
     /// Returns `true` when the module reads the module-scope binding for

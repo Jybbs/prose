@@ -11,9 +11,8 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{
-    class_graph::permute_class_assigns,
-    members::{class_orders_members, class_pins_methods, function_key},
-    module_graph::permute_module_defs,
+    enums::{Enumerations, class_orders_members},
+    section_runs::{SectionRuns, fenced_runs},
 };
 use crate::{
     primitives::{
@@ -26,7 +25,10 @@ use crate::{
         },
         scope::{BodyScope, scoped_body, splice_compound_arms},
         sections::Sections,
-        tiering::{CallReach, Evaluated, call_reachable, consults_call_graph, permute_defs},
+        tiering::{
+            CallReach, Evaluated, call_reachable, consults_call_graph, definition_names,
+            eval_time_refs_of, fenced_slots,
+        },
     },
     source::Source,
 };
@@ -41,16 +43,19 @@ pub(super) struct BodyLayout<'a> {
 }
 
 /// Context threaded through the body-rewrite recursion, every field
-/// invariant but `keyword_fields_from`, which each class header refreshes
-/// for its own body.
+/// invariant but `keyword_fields_from` and `orders_members`, which each
+/// class header refreshes for its own body and for every arm nested
+/// inside it.
 #[derive(Clone, Copy)]
 pub(super) struct RewriteCtx<'a> {
     pub(super) defer_annotations: bool,
+    pub(super) enumerations: &'a Enumerations<'a>,
     pub(super) first_party: &'a [String],
     pub(super) group_imports: bool,
     pub(super) group_methods: bool,
     pub(super) keyword_fields_from: TextSize,
     pub(super) leaf_edits: &'a [Edit],
+    pub(super) orders_members: bool,
     pub(super) sort_definitions: bool,
     pub(super) source: &'a Source,
 }
@@ -64,7 +69,6 @@ pub(super) fn body_layout<'a>(
     body: &'a [Stmt],
     outer: TextRange,
     scope: BodyScope,
-    orders_members: bool,
 ) -> BodyLayout<'a> {
     let RewriteCtx {
         defer_annotations,
@@ -72,6 +76,7 @@ pub(super) fn body_layout<'a>(
         group_imports,
         group_methods,
         keyword_fields_from,
+        orders_members,
         sort_definitions,
         source,
         ..
@@ -89,74 +94,42 @@ pub(super) fn body_layout<'a>(
         let in_class = scope == BodyScope::Class;
         if scope != BodyScope::Function {
             let holds = |stmt: &Stmt| !in_class && is_decorated(stmt);
-            let reachable = if consults_call_graph(body, defer_annotations) {
+            let refs = eval_time_refs_of(body, defer_annotations);
+            let defined = definition_names(body);
+            let reachable = if consults_call_graph(body, &refs, &defined) {
                 call_reachable(source.binding_analysis(), body)
             } else {
                 CallReach::default()
             };
-            let evaluated = Evaluated::of(body, &reachable, defer_annotations);
+            let evaluated = Evaluated::of(body, &reachable, refs);
             let evaluation = evaluated.evaluation();
+            let fences = fenced_slots(body, &defined);
+            let prepared: Vec<SectionRuns<'_, 'a>> = sections
+                .ranges()
+                .iter()
+                .flat_map(|section| fenced_runs(section, &fences))
+                .map(|section| {
+                    SectionRuns::of(
+                        body,
+                        section,
+                        evaluation,
+                        in_class,
+                        group_methods,
+                        orders_members,
+                        sort_definitions,
+                    )
+                })
+                .collect();
             // A permutation reverted for a reference that a later
             // permutation relocates becomes legal once that one lands, so
             // the section's permutations run to a fixed point rather than
-            // leaving the rest of the sort to a second pass.
+            // leaving the rest of the sort to a second pass. Each run
+            // tiers once ahead of the loop, only the arrangement changing
+            // per pass.
             for _ in 0..body.len().max(1) {
                 let settled = order.clone();
-                for section in sections.ranges() {
-                    // A class body keeps a pass per family, the method sort
-                    // carrying its own pinned-field gate, whereas module
-                    // scope sorts its classes and functions as one banded
-                    // run.
-                    if in_class {
-                        if sort_definitions {
-                            permute_defs(
-                                &mut order,
-                                body,
-                                section.clone(),
-                                evaluation,
-                                holds,
-                                |s| {
-                                    s.as_class_def_stmt().map(|c| {
-                                        let name = c.name.as_str();
-                                        (name, name)
-                                    })
-                                },
-                                |tier, key| (tier, key),
-                            );
-                        }
-                        if !orders_members {
-                            permute_class_assigns(
-                                &mut order,
-                                body,
-                                section.clone(),
-                                evaluation,
-                                keyword_fields_from,
-                            );
-                        }
-                        if sort_definitions && !class_pins_methods(&body[section.clone()]) {
-                            permute_defs(
-                                &mut order,
-                                body,
-                                section.clone(),
-                                evaluation,
-                                holds,
-                                |s| {
-                                    s.as_function_def_stmt()
-                                        .map(|f| (f.name.as_str(), function_key(f, group_methods)))
-                                },
-                                |tier, key| (tier, key),
-                            );
-                        }
-                    } else if sort_definitions {
-                        permute_module_defs(
-                            &mut order,
-                            body,
-                            section.clone(),
-                            evaluation,
-                            holds,
-                            group_methods,
-                        );
-                    }
+                for section in &prepared {
+                    section.permute(&mut order, body, holds, keyword_fields_from);
                 }
                 if order == settled {
                     break;
@@ -219,9 +192,8 @@ fn rewrite_body<'a>(
     body: &'a [Stmt],
     outer: TextRange,
     scope: BodyScope,
-    orders_members: bool,
 ) -> (Cow<'a, str>, TextRange) {
-    let layout = body_layout(ctx, body, outer, scope, orders_members);
+    let layout = body_layout(ctx, body, outer, scope);
     layout
         .assembly
         .or_borrow(ctx.source, !layout.import_run_slots.is_empty(), |i| {
@@ -239,7 +211,7 @@ fn rewrite_compound<'a>(
     scope: BodyScope,
 ) -> Cow<'a, str> {
     splice_compound_arms(ctx.source, stmt, block, ctx.leaf_edits, |body, outer| {
-        rewrite_body(ctx, body, outer, scope, false)
+        rewrite_body(ctx, body, outer, scope)
     })
 }
 
@@ -266,9 +238,9 @@ fn rewrite_stmt<'a>(
     }
     let ctx = stmt.as_class_def_stmt().map_or(ctx, |class| RewriteCtx {
         keyword_fields_from: keyword_field_start(class),
+        orders_members: class_orders_members(class, ctx.enumerations),
         ..ctx
     });
-    let orders_members = stmt.as_class_def_stmt().is_some_and(class_orders_members);
-    let (body_text, body_span) = rewrite_body(ctx, body, stmt.range(), scope, orders_members);
+    let (body_text, body_span) = rewrite_body(ctx, body, stmt.range(), scope);
     splice_bodies(ctx.source, block, [(body_text, body_span)], ctx.leaf_edits)
 }

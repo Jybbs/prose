@@ -18,7 +18,7 @@ use crate::{
     primitives::{
         aligner,
         edit::apply_edits,
-        tiering::{Evaluated, call_reachable},
+        tiering::{Evaluated, call_reachable, eval_time_refs_of},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -155,7 +155,7 @@ pub(crate) fn evaluated<'src>(source: &'src Source, body: &'src [Stmt]) -> Evalu
     Evaluated::of(
         body,
         &call_reachable(source.binding_analysis(), body),
-        false,
+        eval_time_refs_of(body, false),
     )
 }
 

@@ -4,6 +4,8 @@
 
 use std::{collections::VecDeque, slice};
 
+use itertools::Itertools;
+
 use ruff_python_ast::{
     Expr, Stmt, StmtClassDef, StmtFunctionDef,
     helpers::any_over_body,
@@ -56,33 +58,39 @@ pub(crate) fn call_reachable<'src>(
     }));
     let mut queue: VecDeque<&str> = reads.keys().copied().collect();
     while let Some(callee) = queue.pop_front() {
-        let reached = std::mem::take(
-            reads
-                .get_mut(callee)
-                .expect("invariant: every queued name is a definition"),
-        );
         for &caller in callers.get(callee).into_iter().flatten() {
-            let set = reads.entry(caller).or_default();
+            let [Some(reached), Some(set)] = reads.get_disjoint_mut([callee, caller]) else {
+                continue;
+            };
             let before = set.len();
-            set.extend(&reached);
+            set.extend(reached.iter().copied());
             if set.len() > before {
                 queue.push_back(caller);
             }
         }
-        reads.insert(callee, reached);
     }
     reads
 }
 
-/// Every name `stmt` calls, an attribute or subscript call contributing
-/// the name its chain roots in.
+/// The chain a name roots that `expr` runs, covering a call and a
+/// subscript alike, since `__class_getitem__` runs a class body the way
+/// `__call__` does. `None` for every other expression.
+fn invoked(expr: &Expr) -> Option<&Expr> {
+    match expr {
+        Expr::Call(call) => Some(&call.func),
+        Expr::Subscript(subscript) => Some(&subscript.value),
+        _ => None,
+    }
+}
+
+/// Every name `stmt` runs, an attribute or subscript chain contributing
+/// the name it roots in, each name once. A subscripted callee roots the
+/// same name twice, once for the subscript and once for the call.
 pub(super) fn called_names(stmt: &Stmt) -> Vec<&str> {
     struct Calls<'src>(Vec<&'src str>);
     impl<'src> AstVisitor<'src> for Calls<'src> {
         fn visit_expr(&mut self, expr: &'src Expr) {
-            if let Expr::Call(call) = expr
-                && let Some(name) = root_name(&call.func)
-            {
+            if let Some(name) = invoked(expr).and_then(root_name) {
                 self.0.push(name);
             }
             walk_expr(self, expr);
@@ -90,15 +98,14 @@ pub(super) fn called_names(stmt: &Stmt) -> Vec<&str> {
     }
     let mut calls = Calls(Vec::new());
     calls.visit_stmt(stmt);
-    calls.0
+    calls.0.into_iter().unique().collect()
 }
 
-/// True where `stmt` calls anything a name roots.
+/// True where `stmt` runs anything a name roots.
 pub(super) fn calls_a_name(stmt: &Stmt) -> bool {
-    any_over_body(
-        slice::from_ref(stmt),
-        |expr| matches!(expr, Expr::Call(call) if root_name(&call.func).is_some()),
-    )
+    any_over_body(slice::from_ref(stmt), |expr| {
+        invoked(expr).and_then(root_name).is_some()
+    })
 }
 
 #[cfg(test)]
