@@ -12,6 +12,7 @@ use ruff_text_size::{Ranged, TextRange};
 
 use super::{
     BandConstants,
+    analysis::module_band_plan,
     plan::{Banding, banded_gap},
 };
 use crate::{
@@ -54,8 +55,7 @@ impl<'a> Bander<'a> {
             banded_gap(
                 b,
                 body,
-                &self.rule.first_party,
-                self.rule.group_imports,
+                self.rule,
                 self.source.line_ending(),
                 layout.assembly.order[i],
                 layout.assembly.order[i + 1],
@@ -93,16 +93,8 @@ impl<'a> Bander<'a> {
         sections: &Sections,
         order: &mut Vec<usize>,
     ) -> Option<Banding> {
-        let rule = self.rule;
-        rule.plan(self.source, body, blocks, self.defer_annotations)?
-            .apply(
-                body,
-                sections,
-                &rule.first_party,
-                rule.group_imports,
-                rule.max_tiers,
-                order,
-            )
+        module_band_plan(self.source, body, blocks, self.rule, self.defer_annotations)?
+            .apply(body, sections, self.rule, order)
     }
 
     /// Folds a banded compound arm into `block`. A class or function
@@ -205,14 +197,7 @@ mod tests {
         let body = &source.ast().body;
         let blocks = member_blocks(&source, body, source.module_range());
         let mut order: Vec<usize> = (0..body.len()).collect();
-        let rule = BandConstants {
-            code_width: 88,
-            first_party: Vec::new(),
-            group_imports: true,
-            group_subcategories: true,
-            max_tiers: Some(2),
-            target_version: None,
-        };
+        let rule = BandConstants::from_config(&Config::default());
         let bander = Bander {
             defer_annotations: false,
             rule: &rule,

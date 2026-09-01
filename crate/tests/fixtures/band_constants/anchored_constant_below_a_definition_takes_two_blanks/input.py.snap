@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/anchored_constant_below_a_definition_takes_two_blanks/input.py
+---
+def helper():
+    return 1
+
+
+LIMIT = compute()
+ALPHA = 2
+ZETA = 1

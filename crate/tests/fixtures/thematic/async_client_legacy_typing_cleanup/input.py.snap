@@ -15,7 +15,8 @@ Interval      = int | float
 Payload       = dict[Text, Any]
 POLL_INTERVAL = 2.5
 
-Handler        = Callable[[Payload], Awaitable[None]]
+Handler = Callable[[Payload], Awaitable[None]]
+
 log            = logging.getLogger("atlas.client")
 BACKOFF_CAPS   = {"default": 30.0}
 RETRY_STATUSES = [429, 500, 502, 503]

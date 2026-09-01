@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/band_constants/trailing_band_seats_tight_below_an_anchored_constant/input.py
+---
+band-constants@45..66

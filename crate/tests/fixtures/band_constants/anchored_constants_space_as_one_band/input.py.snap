@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/anchored_constants_space_as_one_band/input.py
+---
+def helper():
+    return 1
+
+
+RAW = compute()
+SCALED = RAW
+ALPHA = 2
+ZETA = 1

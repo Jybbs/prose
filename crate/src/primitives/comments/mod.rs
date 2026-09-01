@@ -4,8 +4,9 @@
 //! place on a section marker, a suppression directive, or a tool
 //! pragma, and binds to the member otherwise, whatever blank line sits
 //! between the two. The trailing-comment gap the banding and spacing
-//! rules seat lives here too, beside the [`Settling`] a measuring rule
-//! reads a trailing comment at the width of.
+//! rules seat lives here too, with the width a comment takes behind
+//! it, beside the [`Settling`] a measuring rule reads a trailing
+//! comment at the width of.
 
 use ruff_python_trivia::{CommentRanges, PythonWhitespace, is_pragma_comment};
 use ruff_source_file::LineRanges;
@@ -202,6 +203,12 @@ pub(crate) fn trailing_comment(source: &Source, offset: TextSize) -> Option<Text
         .iter()
         .find(|comment| !CommentRanges::is_own_line(comment.start(), source.text()))
         .copied()
+}
+
+/// The columns `comment` occupies as a trailing comment, its own indent
+/// dropped and the trailing gap counted ahead of it.
+pub(crate) fn trailing_width(source: &Source, comment: TextRange) -> usize {
+    display_width(TRAILING_GAP) + display_width(source.slice(comment).trim_start())
 }
 
 #[cfg(test)]

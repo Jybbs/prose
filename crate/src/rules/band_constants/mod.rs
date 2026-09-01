@@ -10,11 +10,7 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::{PythonVersion, Stmt};
 use ruff_text_size::TextRange;
 
-use self::{
-    analysis::module_band_plan,
-    bander::Bander,
-    plan::{BandPlan, ImportBand},
-};
+use self::{analysis::module_band_plan, bander::Bander, plan::ImportBand};
 use crate::{
     config::Config,
     primitives::{
@@ -58,27 +54,6 @@ impl BandConstants {
         }
     }
 
-    /// The hoist plan over `body`, an annotation reading as deferred
-    /// while `defer_annotations`. `None` when a constant band's
-    /// reference graph carries a cycle.
-    fn plan<'src>(
-        &self,
-        source: &'src Source,
-        body: &'src [Stmt],
-        blocks: &[TextRange],
-        defer_annotations: bool,
-    ) -> Option<BandPlan<'src>> {
-        module_band_plan(
-            source,
-            body,
-            blocks,
-            self.code_width,
-            defer_annotations,
-            self.group_subcategories,
-            self.target_version,
-        )
-    }
-
     /// The order the rule seats `body` in, forecast for a rule seated
     /// ahead of it, beside the import bands it sorts and every comment
     /// the banding carries onto another member. A band holds the
@@ -100,15 +75,8 @@ impl BandConstants {
         let sections = Sections::of(source, &blocks);
         let order: Vec<usize> = (0..body.len()).collect();
         Some(
-            self.plan(source, body, &blocks, defer_annotations)?
-                .forecast(
-                    body,
-                    blocks,
-                    &sections,
-                    &self.first_party,
-                    self.group_imports,
-                    &order,
-                ),
+            module_band_plan(source, body, &blocks, self, defer_annotations)?
+                .forecast(body, blocks, &sections, self, &order),
         )
     }
 }

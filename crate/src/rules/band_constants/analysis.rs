@@ -6,7 +6,7 @@
 //! documents.
 
 use ruff_python_ast::helpers::is_dunder;
-use ruff_python_ast::{Expr, PythonVersion, Stmt, StmtClassDef, StmtFunctionDef};
+use ruff_python_ast::{Expr, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextRange};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -22,11 +22,10 @@ use crate::{
             is_explicit_type_alias, is_screaming_case, module_bound_names, single_name_assignment,
         },
         comments::{
-            TRAILING_GAP, anchors_in_place, has_keep_marker, leading_comment_block, noqa_names,
+            anchors_in_place, has_keep_marker, leading_comment_block, noqa_names, trailing_width,
         },
         effect::value_is_effectful,
         group_map,
-        inline::display_width,
         tiering::{eval_refs, eval_time_refs_of, observed_refs, tier_levels},
     },
     source::Source,
@@ -68,20 +67,21 @@ impl<'src> ConstSite<'src> {
 
 /// Builds the module-scope hoist plan, ranking each statement and
 /// pairing each banded member with the comment it carries onto another
-/// member's line. Returns `None` when a constant band's reference graph
-/// carries a cycle.
+/// member's line, recording the constants the analysis pins and those a
+/// detached heading leads. Returns `None` when a constant band's
+/// reference graph carries a cycle.
 pub(super) fn module_band_plan<'src>(
     source: &'src Source,
     body: &'src [Stmt],
     blocks: &[TextRange],
-    code_width: usize,
+    rule: &BandConstants,
     defer_annotations: bool,
-    group_subcategories: bool,
-    target_version: Option<PythonVersion>,
 ) -> Option<BandPlan<'src>> {
     let analysis = source.binding_analysis();
-    let aliases = group_subcategories.then(|| AliasContext::new(body, analysis));
-    let builtins_minor = target_version.unwrap_or_default().minor;
+    let aliases = rule
+        .group_subcategories
+        .then(|| AliasContext::new(body, analysis));
+    let builtins_minor = rule.target_version.unwrap_or_default().minor;
     let notebook = source.is_notebook();
     let is_builtin = |name: &str| is_python_builtin(name, builtins_minor, notebook);
     let suppression = source.suppression_map();
@@ -125,7 +125,7 @@ pub(super) fn module_band_plan<'src>(
         if !pinned
             && let Some(block) = leading_comment_block(source, blocks[idx].start(), stmt.start())
         {
-            match backward_carry(source, body, blocks, idx, block, code_width) {
+            match backward_carry(source, body, blocks, idx, block, rule.code_width) {
                 Some(carry) => carries.push(carry),
                 None => {
                     attached.insert(idx, block);
@@ -315,10 +315,26 @@ pub(super) fn module_band_plan<'src>(
     for carry in carries.extract_if(.., |carry| !ranks.contains_key(&carry.carrier)) {
         attached.insert(carry.absorbs, carry.comment);
     }
+    let anchored: FxHashSet<usize> = (0..n)
+        .filter(|&s| anchored[s])
+        .map(|s| sites[s].idx)
+        .collect();
+    let detached = anchored
+        .iter()
+        .copied()
+        .filter(|&idx| {
+            attached.get(&idx).is_some_and(|&block| {
+                stands_off_the_member_above(source, blocks, idx, block)
+                    && stands_off_its_member(source, body, idx, block)
+            })
+        })
+        .collect();
     attached.retain(|idx, _| ranks.contains_key(idx));
     Some(BandPlan {
+        anchored,
         attached,
         carries,
+        detached,
         edges,
         keys,
         ranks,
@@ -341,8 +357,8 @@ fn backward_carry(
     code_width: usize,
 ) -> Option<Carry> {
     let prev = idx.checked_sub(1)?;
-    if !source.consecutive_lines(blocks[prev].end(), block.start())
-        || source.consecutive_lines(block.end(), body[idx].start())
+    if stands_off_the_member_above(source, blocks, idx, block)
+        || !stands_off_its_member(source, body, idx, block)
     {
         return None;
     }
@@ -354,7 +370,7 @@ fn backward_carry(
             && !source.contains_line_break(&body[prev])
             && !source.column_overflows(
                 blocks[prev].end(),
-                display_width(TRAILING_GAP) + display_width(source.slice(block).trim_start()),
+                trailing_width(source, block),
                 code_width,
             ),
     })
@@ -401,6 +417,24 @@ fn propagate(state: &mut [bool], dependents: &FxHashMap<usize, Vec<usize>>) {
 /// statement or a `TypeAlias`-annotated assignment reads as an alias, a
 /// `SCREAMING_CASE` name as a constant, a remaining value that names an
 /// existing object as an alias, and everything else as module state.
+/// True when a blank line stands between `block` and `body[idx]`, the
+/// member the run heads.
+fn stands_off_its_member(source: &Source, body: &[Stmt], idx: usize, block: TextRange) -> bool {
+    !source.consecutive_lines(block.end(), body[idx].start())
+}
+
+/// True when a blank line stands between `block` and the member above
+/// `body[idx]`, which holds for a run opening the body.
+fn stands_off_the_member_above(
+    source: &Source,
+    blocks: &[TextRange],
+    idx: usize,
+    block: TextRange,
+) -> bool {
+    idx.checked_sub(1)
+        .is_none_or(|prev| !source.consecutive_lines(blocks[prev].end(), block.start()))
+}
+
 fn subcategory_of(
     stmt: &Stmt,
     name: &str,
@@ -424,6 +458,7 @@ mod tests {
 
     use super::*;
     use crate::{
+        config::Config,
         primitives::orderer::member_blocks,
         testing::{notebook, parse},
     };
@@ -440,7 +475,13 @@ mod tests {
     fn plan_of(source: &Source) -> Option<BandPlan<'_>> {
         let body = &source.ast().body;
         let blocks = member_blocks(source, body, source.module_range());
-        module_band_plan(source, body, &blocks, 88, false, true, None)
+        module_band_plan(
+            source,
+            body,
+            &blocks,
+            &BandConstants::from_config(&Config::default()),
+            false,
+        )
     }
 
     #[test]

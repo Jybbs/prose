@@ -10,8 +10,6 @@ except ImportError:
 
 
 REGISTRY = OrderedDict
-
-
 TABLE = dict
 
 
