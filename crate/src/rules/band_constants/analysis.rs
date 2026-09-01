@@ -5,6 +5,7 @@
 //! own-line comment binds to the member above or below it that it
 //! documents.
 
+use ruff_python_ast::helpers::is_dunder;
 use ruff_python_ast::{Expr, PythonVersion, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextRange};
@@ -18,8 +19,7 @@ use crate::{
     primitives::{
         alias::{AliasContext, value_is_alias},
         binding::{
-            bare_import_bound_name, from_import_bound_name, is_explicit_type_alias,
-            is_screaming_case, single_name_assignment,
+            is_explicit_type_alias, is_screaming_case, module_bound_names, single_name_assignment,
         },
         comments::{
             TRAILING_GAP, anchors_in_place, has_keep_marker, leading_comment_block, noqa_names,
@@ -142,14 +142,8 @@ pub(super) fn module_band_plan<'src>(
                     ranks.insert(idx, BandRank::Definition);
                 }
             }
-            Stmt::Import(node) => {
-                imports.extend(node.names.iter().map(bare_import_bound_name));
-                if !pinned {
-                    ranks.insert(idx, BandRank::Import);
-                }
-            }
-            Stmt::ImportFrom(node) => {
-                imports.extend(node.names.iter().map(from_import_bound_name));
+            Stmt::Import(_) | Stmt::ImportFrom(_) => {
+                imports.extend(module_bound_names(stmt));
                 if !pinned {
                     ranks.insert(idx, BandRank::Import);
                 }
@@ -283,12 +277,16 @@ pub(super) fn module_band_plan<'src>(
             ranks.insert(sites[s].idx, rank);
         }
     }
-    let mut edges: Vec<(usize, usize)> = Vec::new();
+    // A dunder and a builtin are both bound before the module body
+    // runs, so a read above a statement rebinding one reads the earlier
+    // value and the edge records which side the source seated it on.
+    let mut edges: Vec<(usize, usize, bool)> = Vec::new();
+    let prebound = |name: &str| is_dunder(name) || is_builtin(name);
     let site_edge = |from: usize, name: &str| {
         site_at
             .get(name)
             .filter(|&&dep| !anchored[dep])
-            .map(|&dep| (from, sites[dep].idx))
+            .map(|&dep| (from, sites[dep].idx, prebound(name)))
     };
     for (s, site) in sites.iter().enumerate() {
         if anchored[s] {
@@ -296,7 +294,7 @@ pub(super) fn module_band_plan<'src>(
         }
         for (name, _) in site.foreign_refs() {
             if let Some(&def) = def_at.get(name) {
-                edges.push((site.idx, def));
+                edges.push((site.idx, def, prebound(name)));
             } else {
                 edges.extend(site_edge(site.idx, name));
             }
@@ -314,13 +312,9 @@ pub(super) fn module_band_plan<'src>(
     // anchored member reverts to heading the member whose block folds it
     // in, so the run travels as that member's own heading rather than
     // holding a shape the reassembled text reads back as a carry.
-    carries.retain(|carry| {
-        let banded = ranks.contains_key(&carry.carrier);
-        if !banded {
-            attached.insert(carry.absorbs, carry.comment);
-        }
-        banded
-    });
+    for carry in carries.extract_if(.., |carry| !ranks.contains_key(&carry.carrier)) {
+        attached.insert(carry.absorbs, carry.comment);
+    }
     attached.retain(|idx, _| ranks.contains_key(idx));
     Some(BandPlan {
         attached,

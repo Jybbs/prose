@@ -1,8 +1,9 @@
 //! The gate deciding whether `from __future__ import annotations` is
 //! inert. It clears when the target version defers annotation
-//! evaluation per PEP 749, or when every name every annotation reads is
-//! bound ahead of that annotation, which a module carrying no
-//! annotation at all satisfies with nothing to check.
+//! evaluation per PEP 749, or when the module declares no annotation of
+//! its own and every name every annotation reads is bound ahead of that
+//! annotation, which a module carrying no annotation at all satisfies
+//! with nothing to check.
 
 use ruff_python_ast::{Expr, PythonVersion, Stmt, helpers::any_over_expr};
 use ruff_text_size::{Ranged, TextSize};
@@ -11,6 +12,7 @@ use super::PruneInertImports;
 use crate::{
     primitives::{
         binding::{BindingAnalysis, BindingKind},
+        scope::sub_bodies,
         slots::{slot_holding, slot_positions},
         walk::for_each_annotation,
     },
@@ -91,8 +93,24 @@ impl<'a> Resolution<'a> {
 pub(super) fn annotations_are_inert(rule: &PruneInertImports, source: &Source) -> bool {
     rule.target_version
         .is_some_and(PythonVersion::defers_annotations)
-        || Resolution::of(source, rule.folds.bands(), rule.sorts_definitions)
-            .holds_every_annotation()
+        || (!annotates_module_scope(&source.ast().body)
+            && Resolution::of(source, rule.folds.bands(), rule.sorts_definitions)
+                .holds_every_annotation())
+}
+
+/// True where a statement running at module scope declares an
+/// annotation, walking each compound arm and stopping at a definition,
+/// whose annotations land on its own object. The directive decides
+/// whether such an annotation writes `__annotations__` into the module
+/// namespace as a string, so dropping it takes the binding away.
+fn annotates_module_scope(body: &[Stmt]) -> bool {
+    body.iter().any(|stmt| match stmt {
+        Stmt::AnnAssign(_) => true,
+        Stmt::ClassDef(_) | Stmt::FunctionDef(_) => false,
+        _ => sub_bodies(stmt)
+            .iter()
+            .any(|(nested, _)| annotates_module_scope(nested)),
+    })
 }
 
 /// True when a module-level `def` or `class` writes `name`.

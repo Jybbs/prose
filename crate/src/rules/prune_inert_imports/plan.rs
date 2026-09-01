@@ -1,6 +1,7 @@
 //! The per-alias decision the rule reaches over a module's imports, the
 //! drops it applies and the reports a package `__init__` holds back.
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
@@ -53,9 +54,7 @@ impl<'a> Plan<'a> {
         let reexports = Reexports::of(body);
         let noqa_held: FxHashSet<usize> = nodes
             .iter()
-            .enumerate()
-            .filter(|(_, (slot, _))| noqa_names(source, &body[*slot], REEXPORT_CODE))
-            .map(|(statement, _)| statement)
+            .positions(|(slot, _)| noqa_names(source, &body[*slot], REEXPORT_CODE))
             .collect();
         let package_init = is_package_init(source);
         let annotated = if rule.unreferenced {
@@ -83,19 +82,20 @@ impl<'a> Plan<'a> {
             let directive = node.future_annotations();
             for (index, alias) in node.names().iter().enumerate() {
                 let bound = node.bound(alias);
-                let candidacy =
-                    if reexports.holds(alias, bound) || reexports_a_private_member(node, alias) {
-                        None
-                    } else if repeats.contains(&alias.range.start()) {
-                        Some(Candidacy::Inert)
-                    } else if !rule.unreferenced || is_star(alias) {
-                        None
-                    } else if node.is_future() {
-                        (directive_is_inert && directive == Some(index)).then_some(Candidacy::Inert)
-                    } else {
-                        is_unreferenced(analysis, bound, &repeats, &annotated)
-                            .then_some(Candidacy::Unreferenced)
-                    };
+                let candidacy = if reexports.holds(alias, bound) {
+                    None
+                } else if repeats.contains(&alias.range.start()) {
+                    Some(Candidacy::Inert)
+                } else if !rule.unreferenced || is_star(alias) {
+                    None
+                } else if node.is_future() {
+                    (directive_is_inert && directive == Some(index)).then_some(Candidacy::Inert)
+                } else if reexports_a_private_member(node) {
+                    None
+                } else {
+                    is_unreferenced(analysis, bound, &repeats, &annotated)
+                        .then_some(Candidacy::Unreferenced)
+                };
                 match candidacy {
                     Some(Candidacy::Unreferenced) if package_init => reports.push(Report {
                         name: bound,

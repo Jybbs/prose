@@ -21,14 +21,14 @@ A repeat matches on both the name it binds and the path it names, so `import os`
 
 ## What Holds Its Line
 
-Both facets read the same three re-export markers, so a repeated self-alias survives `drop-duplicates`:
+Both facets read the same re-export markers, so a repeated self-alias survives `drop-duplicates`:
 
 1. A name listed in `__all__`.
 2. The PEP 484 redundant-alias form `from x import y as y`.
-3. A `noqa` comment trailing the import, either bare or naming `F401`, which holds every name that statement binds.
+3. A `noqa` comment trailing the import, either bare or naming `F401`, which holds every name that statement binds. The marker opens a comment rather than sitting in its prose, so a stacked `# type: ignore  # noqa: F401` counts whereas a sentence mentioning the word does not, and a statement spanning several rows carries it on the row it opens or the row it closes.
 4. A name taken from a module whose own name marks it private (*`from _ssl import OPENSSL_VERSION`*), which is how a public module re-exports its implementation. A dunder module such as `__future__` is excluded, its names carrying compiler meaning rather than a surface.
 
-The third marker is the only one a reader writes in a comment rather than in code, and it is what the wider ecosystem puts on a re-export no static read can see. *Prose* reads it here alone, so a `noqa` still suppresses nothing else and no other rule consults it.
+The `noqa` marker is the only one a reader writes in a comment rather than in code, and it is what the wider ecosystem puts on a re-export no static read can see. [[band-constants]] reads the same comment for `E402`, which pins an import to the row its author gave it. Those two readings are the whole of it, so a `noqa` opens nothing out of a rewrite or a lint anywhere else in *Prose*.
 
 <Fixture rule="prune_inert_imports" case="self_alias_marks_a_reexport" />
 
@@ -54,9 +54,10 @@ A package `__init__.py` reports an unreferenced import rather than dropping it, 
 
 `from __future__ import annotations` drops wherever the directive carries no runtime weight:
 
-1. The module carries no annotation at all.
-2. `target-version` is 3.14 or higher, wherein PEP 749 defers evaluation.
-3. Every annotated name resolves to an unconditional module-scope binding written before it.
+1. `target-version` is 3.14 or higher, wherein PEP 749 defers evaluation.
+2. No annotation runs at module scope, and every annotated name resolves to an unconditional module-scope binding written before it.
+
+An annotation running at module scope holds the directive whatever its names resolve to, because the directive is what writes that annotation into the module's `__annotations__`, so dropping it takes a name out of the namespace the module presents. An annotation on a `def` or inside a `class` body lands on that object instead, leaving the directive free to drop.
 
 Where [[alphabetize-siblings]] sorts definitions in the same pipeline, a name a module-level class or function binds counts as unresolved whichever side of the annotation it sits on, since the sort reseats definitions after this rule has run, so a directive covering such a reference stays in whichever order the sort writes. Where [[band-constants]] runs in the same pipeline, a binding it hoists above the annotation naming it, a constant into the leading band or an import into the import run, counts as written before that annotation, reading the module as the band seats it once the directive is gone.
 

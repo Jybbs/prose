@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Late Import Holds Under Its Marker"
+
+description = '''
+Both late imports sit below a constant, and `mmm` **bands up into the import run** the way any import does. `aaa` carries the `noqa` naming `E402`, the code the wider ecosystem reports a module-level import placed below the top of a file under, so its author has already said the position is deliberate and **it holds the row it was written on**.
+'''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "References Defined Before Their Annotation Resolve Eagerly"
+title       = "A Module Annotation Holds the Directive Even Where Every Name Resolves"
 
 description = '''
-Every annotation in the file names `Node`, and the `class Node` definition sits above the first annotation that reads it. **Eager evaluation would succeed even on Python 3.13**, where annotations evaluate at definition time, so the `from __future__ import annotations` directive changes nothing and is removed.
+Every annotation in the file names `Node`, and the `class Node` definition sits above the first annotation reading it, so **eager evaluation would resolve on any version**. The directive still holds, in that `root: Node = Node()` runs at module scope and its annotation reaches `__annotations__` only while the directive stands, leaving a dropped directive to take a name out of the module's namespace.
 '''

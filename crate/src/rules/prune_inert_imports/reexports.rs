@@ -59,6 +59,12 @@ impl<'a> Reexports<'a> {
     }
 }
 
+/// What one module-scope statement contributes to `__all__`.
+enum DunderAll<'a> {
+    Names(Vec<&'a str>),
+    Unreadable,
+}
+
 /// True where `node` takes a name out of a module its own name marks
 /// private, the convention a public module re-exports its
 /// implementation through. A dunder module such as `__future__` is not
@@ -66,23 +72,10 @@ impl<'a> Reexports<'a> {
 /// surface to re-export. Nothing in the importing module needs to
 /// read such a name for it to be part of that module's surface, so an
 /// unread one reads as re-exported rather than as dead.
-pub(super) fn reexports_a_private_member(node: &ImportNode<'_>, alias: &Alias) -> bool {
-    if matches!(node, ImportNode::Bare(_)) {
-        return false;
-    }
-    let source = node.source(alias);
-    let segments = source.segments();
-    segments
-        .len()
-        .checked_sub(1)
-        .and_then(|member| segments[..member].last())
+pub(super) fn reexports_a_private_member(node: &ImportNode<'_>) -> bool {
+    node.module()
+        .map(|source| source.rsplit_once('.').map_or(source, |(_, last)| last))
         .is_some_and(|module| module.starts_with('_') && !is_dunder(module))
-}
-
-/// What one module-scope statement contributes to `__all__`.
-enum DunderAll<'a> {
-    Names(Vec<&'a str>),
-    Unreadable,
 }
 
 /// What `stmt` writes to `__all__`, `None` for a statement leaving it
@@ -183,5 +176,24 @@ mod tests {
         let body = &source.ast().body;
         let alias = &body[0].as_import_from_stmt().expect("a from import").names[0];
         assert_eq!(Reexports::of(body).holds(alias, "loads"), holds);
+    }
+
+    #[rstest]
+    #[case::private_module("from _ssl import OPENSSL_VERSION\n", true)]
+    #[case::private_submodule("from pkg._impl import thing\n", true)]
+    #[case::relative_private("from ._impl import thing\n", true)]
+    #[case::parent_relative_private("from .._impl import thing\n", true)]
+    #[case::public_module("from pkg.impl import thing\n", false)]
+    #[case::public_leaf_of_private("from _pkg.sub import thing\n", false)]
+    #[case::dunder_module("from __future__ import annotations\n", false)]
+    #[case::dots_only("from . import thing\n", false)]
+    #[case::bare_import("import _socket\n", false)]
+    fn reexports_a_private_member_reads_the_module_the_names_come_from(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let node = ImportNode::of(&source.ast().body[0]).expect("an import statement");
+        assert_eq!(reexports_a_private_member(&node), expected);
     }
 }

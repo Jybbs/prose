@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Builtin Read Holds Above the Line That Rebinds It"
+
+description = '''
+`X = list` resolves against the builtin, and the line below it rebinds `list` to a list of its own. Seating that rebind above the read would hand `X` the new value, so **the region holds its source order** rather than banding, `ZETA` and `ALPHA` staying put alongside it. A builtin and a module dunder are both bound before the body runs, and the rule reads them the same way.
+'''

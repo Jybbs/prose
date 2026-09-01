@@ -4,7 +4,7 @@ Directive shapes opt code out of *Prose*'s rewrites or lints at the file, block,
 
 Any other directive shape *(`# pylint: disable`, `# type: ignore`, `# pyright: ignore`, the wider Python-tooling pragma surface)* is invisible to *Prose*. The walker treats them as ordinary comments and the rules ignore them, so they coexist with the directives below without further wiring.
 
-`# noqa` is the one foreign shape a rule reads, and it suppresses nothing even there. [[prune-inert-imports]] takes a bare `# noqa` or one naming `F401` on an import as a marker that the statement re-exports what it binds, alongside the `__all__` listing and the PEP 484 `from x import y as y` form it already reads. No other rule consults it, and it opens nothing out of a rewrite or a lint.
+`# noqa` is the one foreign shape a rule reads, and it suppresses nothing even there. [[prune-inert-imports]] takes a bare `# noqa` or one naming `F401` on an import, read where the marker opens a comment rather than where the word appears in prose, as a marker that the statement re-exports what it binds, alongside the `__all__` listing and the PEP 484 `from x import y as y` form it already reads, and [[band-constants]] takes one naming `E402` as a marker that the import holds the row its author gave it. Those two readings are the whole of it, and neither opens anything out of a rewrite or a lint.
 
 ## Directives
 

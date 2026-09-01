@@ -22,6 +22,7 @@ Only an evaluation-time reference binds the order, covering a right-hand side, a
 - A reassigned name.
 - A value naming an unresolved reference.
 - A line under a suppression directive or a `# prose: keep` marker.
+- An import a trailing `noqa` comment marks, either bare or naming `E402`, the code the wider ecosystem reports a late import under.
 - A row a `\` line join continues.
 - Every constant in a reference cycle.
 
