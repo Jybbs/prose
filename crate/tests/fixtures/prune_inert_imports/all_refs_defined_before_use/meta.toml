@@ -3,5 +3,7 @@ previewable = false
 title       = "A Module Annotation Holds the Directive Even Where Every Name Resolves"
 
 description = '''
-Every annotation in the file names `Node`, and the `class Node` definition sits above the first annotation reading it, so **eager evaluation would resolve on any version**. The directive still holds, in that `root: Node = Node()` runs at module scope and its annotation reaches `__annotations__` only while the directive stands, leaving a dropped directive to take a name out of the module's namespace.
+Nothing in this file changes, and the reason is worth spelling out. Every annotation names `Node`, and `class Node` is defined above the first annotation that reads it, so the annotations would resolve fine even without the directive.
+
+*Prose* keeps `from __future__ import annotations` regardless, because `root: Node = Node()` carries an annotation at module scope. With the directive in place, Python records that annotation in the module's `__annotations__`, and **without it `__annotations__` is never created at all**. Dropping the import would take a readable name out of the module, which is a change in behavior rather than a cleanup.
 '''

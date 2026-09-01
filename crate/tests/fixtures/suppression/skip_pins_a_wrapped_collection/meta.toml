@@ -3,5 +3,7 @@ previewable = false
 title       = "Skip on a Wrapped Collection Keeps It Exploded"
 
 description = '''
-A `# fmt: skip` trailing `items`'s multi-line list **spans every line between its `[` and `]`**, so `reflow-collections` leaves `1` and `2` exploded one per line rather than rejoining them onto one line where they would otherwise fit.
+A `# fmt: skip` trailing `items`'s multi-line list **spans every line between its `[` and `]`**, not just the line the comment itself sits on.
+
+`1` and `2` therefore stay exploded one per line, where rejoining them onto a single line would otherwise fit comfortably.
 '''

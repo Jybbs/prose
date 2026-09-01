@@ -4,12 +4,14 @@ sandbox     = true
 title       = "Service Module Runs the Import, Constant, Dataclass, and Signature Pipeline"
 
 description = '''
-This service module opens with unsorted imports and a loose constant pool (`MAX_RETRIES`, `timeout`, `DEFAULT_TAGS`), then a `@dataclass` `ServiceConfig` with unsorted annotated fields and interleaved methods, and closes on an over-wide `build_request` function whose body reaches the bare `os` import through the single attribute `os.getcwd()`. The rewrites land together:
+This service module opens with unsorted imports and a loose pool of constants, then a `@dataclass` `ServiceConfig` with unsorted annotated fields and interleaved methods, and closes on an over-wide `build_request` function whose body reaches the bare `os` import through the single attribute `os.getcwd()`.
 
-1. The imports group and align, and the constants band.
-2. `ServiceConfig`'s `region`, `endpoint`, `id`, and `labels` fields hold their positional order while their `:` and `=` columns align.
-3. Its methods regroup into `__post_init__`, `_key`, then `describe`.
-4. `build_request`'s signature and its returned dict explode one entry per line.
+The rewrites land together:
 
-The bare `os` import surfaces a lint.
+1. The imports group and align, and the constants gather and sort.
+2. `ServiceConfig`'s `region`, `endpoint`, `id`, and `labels` fields **hold their positional order**, since `@dataclass` binds them positionally, while their `:` and `=` columns still align.
+3. Its methods regroup into `__post_init__`, then `_key`, then `describe`.
+4. `build_request`'s signature and its returned dict each explode one entry per line.
+
+The bare `os` import surfaces a lint, the module reaching it through a single attribute only.
 '''

@@ -3,5 +3,7 @@ previewable = false
 title       = "Inner Local Flagged While the `def` Stays Exempt"
 
 description = '''
-`x` inside `inner` **is flagged** as single-use, while `inner` itself, bound once by `def inner` and read once in `return inner`, is not. `single-use-variables` only reports assignments and walrus bindings, and a `def` is neither, so the function binding falls outside what the rule tracks even though it is bound once and read once like the names the rule does report.
+`x` inside `inner` **is flagged** as single-use. `inner` itself is bound once by its `def` and read once in `return inner`, yet it is not.
+
+The rule reports assignments and walrus bindings only, and **a `def` is neither**. The function binding falls outside what the rule tracks, even though it is bound once and read once exactly like the names the rule does report.
 '''

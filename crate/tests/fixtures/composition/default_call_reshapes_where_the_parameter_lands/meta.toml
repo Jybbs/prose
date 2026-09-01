@@ -3,5 +3,7 @@ previewable = true
 title       = "A Default Call Reshapes Where the Parameter Lands"
 
 description = '''
-`reflow-signatures` lays the signature out one parameter per line and reshapes the call inside the default where that parameter lands, while `reflow-calls` leaves the parameters of a signature it can see will expand alone, so the nested call measures against its exploded row and the `=` buffer.
+`reflow-signatures` lays the signature out one parameter per line, which moves `parameter_x` to an indent of four. The call inside its default is then reshaped from **where the parameter actually lands**, rather than from the column it occupied in the source.
+
+`reflow-calls` leaves the parameters of a signature it can see will expand, so nothing measures them twice. `align-equals` adds the buffer around the nested `keyword_name =`, and the inner call is measured against that exploded row with the buffer counted in.
 '''

@@ -3,5 +3,7 @@ previewable = false
 title       = "A Comment on the Last Member Holds the Group"
 
 description = '''
-The `__slots__` tuple opens mid-row, `"name"` trailing the `(`, so a sort here would swap the string texts in place while each row's trailing text stayed where it is. The `# private to the descriptor` comment on `"_field_type"` would end up attached to whichever member landed on that row, so the group holds its source order, a comment on the last member blocking the sort as surely as one mid-group.
+Nothing here moves. The `__slots__` tuple opens mid-row with `"name"` trailing the `(`, so a sort would swap the string texts in place while each row's trailing text stayed put.
+
+That would leave `# private to the descriptor` attached to whichever member landed on that row instead of to `"_field_type"`. The group holds its source order, and **a comment on the last member blocks the sort just as surely as one in the middle**.
 '''

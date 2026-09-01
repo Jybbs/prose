@@ -3,5 +3,7 @@ previewable = false
 title       = "A Method Holds Below the Attribute Whose Name It Shadows"
 
 description = '''
-`span` sorts ahead of `zoom` by name, and moving it would carry it above `limits`, whose value reads the module-level `span` class the moment the `class` statement executes. A method named `span` binds that name inside the class body, so seating it first would leave `limits` reading the method instead of the class and raising `AttributeError` on a function that has no `__slots__`. The run **holds as written**, because a member stays on whichever side of a binding it reads the source seated it on, and a method is a binding like any other.
+Nothing in `window` moves, and the reason is a name collision that is easy to miss.
+
+`limits = span.__slots__` reads the module-level `span` class the moment the `class window:` statement executes. A method named `span` binds that same name inside the class body, so sorting the method above `limits` would leave `limits` reading the method rather than the class and **raise `AttributeError` on a function that has no `__slots__`**. A member stays on whichever side of a binding it reads the source put it on, and a method is a binding like any other.
 '''

@@ -4,5 +4,7 @@ previewable = true
 title       = "An Exploded Keyword Ending on the Cap Keeps Its Tail"
 
 description = '''
-A nested call whose region ends exactly at its row's end still counts the columns the enclosing row writes after it, here the comma the keyword gains once [[alphabetize-siblings]] moves it first, so it explodes.
+`alphabetize-siblings` moves `aa=` ahead of `bb=`, which gives the `aa` row a trailing comma it did not carry while it was last.
+
+A nested call ending exactly at the end of its row still counts **whatever the enclosing row writes after it**, and that new comma is enough to cross the 40-column budget. The `g(...)` call inside the lambda therefore explodes.
 '''

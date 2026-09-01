@@ -3,5 +3,7 @@ previewable = false
 title       = "A Sibling Call Measures the Row Its Neighbor's Join Leaves"
 
 description = '''
-Joining the first call's fractured list carries the `maybe` call onto the same row, so the length trigger reads `maybe` at the column the join lands it at and explodes it.
+Joining the first call's fractured argument list pulls the `maybe` call up onto the same row.
+
+The length check then reads `maybe` **at the column that join lands it at**, not at the column it occupied in the source. At that column it crosses the 100-column budget, so it explodes.
 '''

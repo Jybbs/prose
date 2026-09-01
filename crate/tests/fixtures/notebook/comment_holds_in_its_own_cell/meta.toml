@@ -3,5 +3,7 @@ previewable = false
 title       = "A Trailing Comment Holds in the Cell That Carries It"
 
 description = '''
-The first cell closes on the standalone `# Sampling knobs` comment, and the second opens on the constants it describes. `band-constants` folds a comment up with the constant beneath it, but the fold stops at the cell boundary, so the comment stays where the author typed it while `BATCH` and `WINDOW` sort between themselves in their own cell.
+The first cell closes on the standalone `# Sampling knobs` comment, and the second opens on the constants that comment describes.
+
+A comment normally folds up onto the constant beneath it, but **the fold stops at the cell boundary**. The comment stays in the cell the author typed it in, while `BATCH` and `WINDOW` sort between themselves in theirs.
 '''

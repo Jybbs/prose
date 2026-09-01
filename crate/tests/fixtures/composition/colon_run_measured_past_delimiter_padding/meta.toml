@@ -4,5 +4,7 @@ previewable = true
 title       = "A Colon Run Measures Past the Delimiter Padding a Later Rule Drops"
 
 description = '''
-The stranded space before one key's closing parenthesis goes once [[strip-stranded-padding]] runs, and [[align-colons]] reads each row at that settled width, so the run aligns rather than skipping its column on a breach the padding never reaches.
+One key in the dict carries a stranded space before its closing parenthesis, and `strip-stranded-padding` removes it.
+
+`align-colons` reads each row at **the width it settles to once that removal lands**. Reading the padded width instead would make the row look like it breached the 40-column budget, and the run would have skipped its shared column over a breach that never actually happens.
 '''

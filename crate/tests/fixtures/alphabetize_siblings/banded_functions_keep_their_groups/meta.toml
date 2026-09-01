@@ -3,5 +3,7 @@ previewable = false
 title       = "Banded Functions Keep the Dunder, Private, Public Order"
 
 description = '''
-`Factory` sorts below `_helper` and `__getattr__` even though `F` precedes `_` in byte order, because the function band keys on the same dunder, private, and public groups the methods take, and the name only breaks ties inside a group. `Widget` bands above all three.
+`Widget` is a class, so it groups above all three functions whatever its name.
+
+Among the functions the order is by group before name. Dunder names come first, then a single leading underscore, then everything else, which lands `__getattr__`, `_helper`, and `Factory` in that order. **The name only breaks ties inside a group**, which is why `Factory` sorts last despite `F` coming before `_` in byte order.
 '''

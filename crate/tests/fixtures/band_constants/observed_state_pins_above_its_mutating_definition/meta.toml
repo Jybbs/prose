@@ -3,5 +3,7 @@ previewable = true
 title       = "A Constant Observing Mutated State Pins Above Its Definition"
 
 description = '''
-`FIRST = TRACE[0]` reads the list's contents rather than binding the list, and `class Setup` appends to `TRACE` while its body executes. Seating the constant in the leading band would read `TRACE` before that class body runs, so **`FIRST` holds its source slot** while `LABEL = "ready"` bands freely past `Setup`, its value observing nothing.
+`FIRST = TRACE[0]` reads what is inside the list rather than binding the list itself, and `class Setup` appends to `TRACE` while its body executes.
+
+Moving `FIRST` up to the top would read `TRACE` before that class body had run, so **`FIRST` holds its source position** just below the class. `LABEL = "ready"` observes nothing, so it moves up freely past `Setup`.
 '''

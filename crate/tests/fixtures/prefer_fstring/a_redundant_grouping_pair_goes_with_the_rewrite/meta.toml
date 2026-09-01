@@ -3,5 +3,7 @@ previewable = true
 title       = "A Redundant Grouping Pair Goes With the Rewrite"
 
 description = '''
-The parentheses around `"%s" % (value,)` group a binary expression, whereas the f-string that replaces it is a single atom needing no grouping. The rewrite widens the replaced span to include those parentheses, so the line lands as `label = f"{value}"` rather than leaving a redundant pair for a later rule.
+The parentheses around `"%s" % (value,)` group a binary expression. The f-string that replaces it is a single atom, so it needs no grouping at all.
+
+The rewrite **widens the replaced span to take those parentheses with it**, so the line lands as `label = f"{value}"` rather than leaving a redundant pair behind for a later rule to shed.
 '''

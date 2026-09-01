@@ -3,5 +3,7 @@ previewable = false
 title       = "Top-Level Classes Reorder and Gain Two-Blank Cushions"
 
 description = '''
-`Zebra`, `Alpha`, and `Mango` are defined back to back with no spacing between them. **`alphabetize-siblings` reorders the declarations so `Alpha` leads and `space-statements` settles the canonical two-blank-line cushion** between top-level definitions, also opening each class body with a blank line under its header.
+`Zebra`, `Alpha`, and `Mango` are written back to back with no blank lines between them.
+
+`alphabetize-siblings` reorders the three so `Alpha` leads, and `space-statements` then opens **the standard two blank lines** between top-level definitions. It also opens a single blank line under each class header.
 '''

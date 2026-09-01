@@ -4,5 +4,7 @@ previewable = true
 title       = "A Reorder Measures Against the Widest Source Row"
 
 description = '''
-The sorted rows run no wider than the widest row the source holds, so [[alphabetize-siblings]] lands the reorder, and the buffer [[align-equals]] seats around the keyword left alone on its row afterward does not reopen that reading.
+Sorting the keywords produces rows no wider than the widest row already present in the source, so `alphabetize-siblings` is free to reorder them.
+
+`align-equals` afterwards opens a buffer around the `=` of `option_strings`, the keyword left alone on its row. **That buffer does not reopen the width question**, since the reorder was already settled against the source's own widest row.
 '''

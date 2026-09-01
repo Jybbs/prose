@@ -3,5 +3,9 @@ previewable = true
 title       = "Singleton and Multi-Member Groups Compose inside One File"
 
 description = '''
-`Solo.only_field`, `single_dict`'s one entry, and `lone_param`'s `x` are each the lone member in their group, and **`strip-stranded-padding` strips their pre-`:` padding while `Pair`'s `first` and `second` and `paired_dict`'s two entries stay padded across separate lines for `align-colons`**. `two_params`'s `first` and `second` squash two members onto the same line, and the rule strips their padding too, because a same-line `:` has no column to align against.
+`Solo.only_field`, `single_dict`'s one entry, and `lone_param`'s `x` are each the only member in their group, so there is no sibling column for them to line up with. **Their pre-`:` padding is stripped.**
+
+`Pair`'s `first` and `second`, and `paired_dict`'s two entries, each have a sibling on a separate line, so their padding stays for `align-colons` to use.
+
+`two_params` squashes `first` and `second` onto one line. Their padding is stripped too, because **a `:` sharing a line with another has no column to align against**.
 '''

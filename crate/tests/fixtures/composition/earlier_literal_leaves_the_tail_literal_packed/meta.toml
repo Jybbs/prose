@@ -3,5 +3,7 @@ previewable = true
 title       = "An Earlier Literal Leaves the Tail Literal Packed"
 
 description = '''
-The tuple inside `isinstance` overflows first, so the row's overflow relays to it and the `(None, "", [])` tuple after `in` never explodes. The call's row tail therefore counts at its full width rather than only up to that tuple's `(`, `isinstance(` explodes with its tuple laid out inside, and the trailing tuple stays on one row where it fits.
+Two tuples sit on the same over-budget row. The one inside `isinstance` comes first, so it is the one the overflow is handed to, and it is the one that expands.
+
+That leaves the rest of the row counting at **its full width** rather than only up to the second tuple's `(`. `isinstance(` explodes with its tuple laid out inside, and the `(None, "", [])` tuple after `in` stays on one row, where it already fits.
 '''

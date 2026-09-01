@@ -3,5 +3,7 @@ previewable = true
 title       = "Single-Quoted Docstrings Canonicalize to Triple Quotes"
 
 description = '''
-`summarize`'s docstring sits in single quotes as `'A single-quoted summary.'` **It re-delimits to the canonical `"""` form**, because the rule matches a docstring by its position in the def and emits `"""` whatever quotes the source carried.
+`summarize`'s docstring is written in single quotes as `'A single-quoted summary.'`.
+
+**It re-delimits to the canonical `"""` form.** The rule identifies a docstring by its position as the first statement in the definition rather than by the quotes it happens to carry, and it always emits `"""`.
 '''

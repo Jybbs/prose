@@ -1,7 +1,9 @@
 [docs]
 previewable = false
-title       = "Bracketed Generics in Arg Types Do Not Fool the Detector"
+title       = "Bracketed Generics in Arg Types Keep the Outer Colon"
 
 description = '''
-Each `Args:` entry of `index` pairs its name with a parenthesized type holding a bracketed generic, `List[Tuple[int, str]]`, `Dict[str, int]`, and `Dict[str, str]`. The detector tracks both `()` and `[]` nesting while scanning an entry, so **alignment anchors on the `:` after each closing paren** rather than on any punctuation inside the type.
+Each `Args:` entry of `index` pairs its name with a parenthesized type that itself holds a bracketed generic, such as `List[Tuple[int, str]]`.
+
+`align-colons` tracks both `()` and `[]` nesting while scanning an entry, so **it anchors on the `:` after each closing paren** rather than on any punctuation inside the type. The names, the types, and the colons settle into three shared columns.
 '''

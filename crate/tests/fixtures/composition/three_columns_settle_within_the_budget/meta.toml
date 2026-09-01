@@ -3,5 +3,7 @@ previewable = true
 title       = "Three Alignment Columns Settle Within One Budget"
 
 description = '''
-**`align-colons`, `align-equals`, and `align-comments` each pad the same three rows**, and each checks the added padding against the `code-line-length` budget of 72. Every rule measures the line's settled form rather than the intermediate text, so the `:`, the `=`, and the `#` note all reach their columns and the widest row, the `retries` line, lands under the cap.
+Three alignment rules pad the same three rows here, and each checks its own added padding against the 72-column budget.
+
+Every one of them measures **the line's settled form** rather than the intermediate text the rule before it left behind. That is what lets the `:`, the `=`, and the `#` note all reach their columns, with the widest row, `retries`, still landing under the budget.
 '''

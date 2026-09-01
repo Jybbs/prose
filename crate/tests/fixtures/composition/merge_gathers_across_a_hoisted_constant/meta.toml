@@ -4,5 +4,7 @@ previewable = true
 title       = "A Merge Gathers Across a Hoisted Constant"
 
 description = '''
-[[band-constants]] will hoist the constant below the imports, so [[reflow-imports]] reads the two `pkg` statements as one band and gathers them onto the first line ahead of the hoist rather than waiting for the constant to move.
+`LIMIT = 3` sits between the two `pkg` imports in the source, which would ordinarily keep them apart.
+
+`band-constants` is about to move that constant below the imports, and `reflow-imports` **reads that move before it happens**. It treats the two `pkg` statements as already adjacent and gathers them onto one line, rather than waiting for a second pass once the constant has actually moved.
 '''

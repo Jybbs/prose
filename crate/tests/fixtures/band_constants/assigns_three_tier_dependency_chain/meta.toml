@@ -3,5 +3,7 @@ previewable = true
 title       = "Module-Level Assignment Runs Sort within Dependency Tiers"
 
 description = '''
-`DIAMETER` reads `RADIUS`, and `AREA` reads both `PI` and `DIAMETER`, giving the run three dependency tiers. **Each tier reorders without crossing into another**, so `PI` and `RADIUS` alphabetize at the top while the default `max-tiers` folds the two derived constants into one sub-band below a blank line, `DIAMETER` staying above the `AREA` that reads it.
+The four constants form a dependency chain three levels deep. `PI` and `RADIUS` read nothing, `DIAMETER` reads `RADIUS`, and `AREA` reads both `PI` and `DIAMETER`.
+
+Sorting happens **within each level and never across one**, so `PI` and `RADIUS` alphabetize together at the top. The default `max-tiers` setting then folds the two derived constants into a single group below a blank line rather than giving each a group of its own, with `DIAMETER` still standing above the `AREA` that reads it.
 '''

@@ -3,5 +3,7 @@ previewable = false
 title       = "A Packed-Line Dict Inside a Call Keeps Source Order"
 
 description = '''
-The dict passed to `build` packs `"wp": 1` and `"lt": 2` onto one physical line, so the reorder does not fire, the same reason a top-level packed dict holds its order, in that entries sharing a line leave no separate block per entry to move. The closing `}` runs straight into the call's `)`, and that trailing shape survives untouched.
+Nothing here moves. The dict passed to `build` packs `"wp": 1` and `"lt": 2` onto one physical line, which is the same situation a packed dict at top level is in.
+
+Entries sharing a line leave **no separate block per entry to move**, so the reorder does not fire. The closing `}` runs straight into the call's `)`, and that trailing shape survives untouched.
 '''

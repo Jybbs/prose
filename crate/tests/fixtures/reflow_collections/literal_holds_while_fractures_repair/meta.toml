@@ -3,5 +3,7 @@ previewable = true
 title       = "A Literal Holds Its Break While Fractures Repair"
 
 description = '''
-`held_list`, laid out by its author as a bracketed column, holds its break and re-expands to the canonical packed layout. The multi-line `registry` subscript and the broken tuple key in `repaired_collection_key` instead rejoin onto one line whatever `keep-multiline-literals` holds, because neither carries an entry boundary for a break to sit on, leaving each to read as a fracture rather than an authored column.
+`held_list` was laid out by its author as a bracketed column, so it **holds its break** and re-expands to the canonical packed layout.
+
+The multi-line `registry` subscript and the broken tuple key in `repaired_collection_key` both rejoin onto one line instead, whatever `keep-multiline-literals` is set to. Neither carries an entry boundary for a break to sit on, so each reads as a fracture rather than as a column the author built.
 '''

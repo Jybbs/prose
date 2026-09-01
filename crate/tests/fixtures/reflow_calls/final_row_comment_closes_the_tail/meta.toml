@@ -3,5 +3,7 @@ previewable = true
 title       = "A Final Row Comment Closes the Tail"
 
 description = '''
-A trailing comment on the module's last row, one no line terminator follows, closes the tail measure the same way a comment on any other row does, so the comment's width never counts toward whether the call ahead of it joins.
+The trailing comment sits on the module's very last row, with no line terminator after it.
+
+**That closes the tail measure exactly as a comment on any other row would**, so the comment's own width never counts toward whether the call ahead of it may rejoin. The call joins onto one line and the comment follows it, even though the finished row runs past the 57-column budget.
 '''

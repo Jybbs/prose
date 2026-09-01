@@ -3,5 +3,7 @@ previewable = false
 title       = "A Padded Entry Holds Where Its Rebuild Fits"
 
 description = '''
-The entry carries padding around its `:` that `strip-stranded-padding` removes, so the row settles **three columns** narrower than the author wrote it. Reading the source spelling alone would explode the dict across three rows and reading the rebuilt spelling alone would hold a row too wide to keep, so the expand test reads the narrower of the two and the entry keeps the row it was written on.
+The entry carries padding around its `:` that `strip-stranded-padding` removes, so the row settles **three columns narrower** than the author wrote it.
+
+That gap matters because the two spellings disagree about whether the dict fits. Measured as written it is too wide and would explode across three rows, and measured as rebuilt it fits on one. The expand test reads **the narrower of the two**, so the entry keeps the single row it was written on.
 '''

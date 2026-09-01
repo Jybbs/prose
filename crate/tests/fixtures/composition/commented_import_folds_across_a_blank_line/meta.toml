@@ -4,5 +4,7 @@ previewable = true
 title       = "A Commented Import Folds Across a Blank Line"
 
 description = '''
-[[reflow-imports]] merges across the blank line, so the unread lead is a statement the merge folds into its surviving sibling and [[prune-inert-imports]] gives its line to that sibling, the blank line leaving with the sibling's former line so the comment heads the import it read over.
+`from pkg import a` is unread and sits directly under the `# Local imports` comment, with a blank line separating it from its `pkg` sibling.
+
+`reflow-imports` merges the two statements across that blank line, so dropping `a` lets `from pkg import b` **take the line `a` had**, and the blank line leaves along with `b`'s old position. The comment ends up heading the import it was describing all along.
 '''

@@ -3,5 +3,7 @@ previewable = false
 title       = "An Already-Parenthesized Value Takes No Second Pair"
 
 description = '''
-`bundle`'s signature resolves each positional to a keyword, so the exploded call reads `entries=(row for row in rows)` and `marker=(seen := 1)`. Both a generator and a `:=` expression must sit in parentheses after the `=`, and since each already arrives with a pair in the source, the rewrite keeps that pair rather than adding a second.
+`bundle`'s signature resolves each positional to a keyword name, so the exploded call reads `entries=(row for row in rows)` and `marker=(seen := 1)`.
+
+Both a generator expression and a `:=` expression must sit in parentheses when used as a keyword value. Each one **already arrives with a pair in the source**, so the rewrite keeps that pair rather than wrapping a second one around it.
 '''

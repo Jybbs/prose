@@ -3,5 +3,7 @@ previewable = true
 title       = "Decorated Functions Hold Their Slot and Their Positionals"
 
 description = '''
-`test_add`, `test_thing`, and `copy` each sit under a decorator that binds values positionally, `pytest.mark.parametrize` matching `"a, b"` to the parameters, `hypothesis.given` passing its strategies by position, and the stacked `click.argument` calls filling `source` and `dest` in order. Every definition **holds its source slot**, because applying a decorator runs a call whose order a reorder would change, and every signature **holds its positional order**, so `test_add(b, a)` and `copy(dest, source)` stay exactly as written.
+All three definitions sit under decorators that bind values by position. `pytest.mark.parametrize` matches `"a, b"` to the parameters, `hypothesis.given` passes its strategies in order, and the stacked `click.argument` calls fill `source` and `dest` in the order they appear.
+
+Every definition **holds its source slot**, because applying a decorator runs a call whose order a reorder would change. Every signature **holds its positional order** as well, so `test_add(b, a)` and `copy(dest, source)` stay exactly as written despite both sorting the other way by name.
 '''

@@ -4,5 +4,7 @@ previewable = true
 title       = "A Grouped Keyword Value Opens One Column Past Its Pair"
 
 description = '''
-[[reflow-calls]] names the walrus argument `anchor` and wraps it in the grouping pair that a named expression needs, so the value opens one column further right than the bare `=` gap [[align-equals]] seats. Counting that column is what explodes the nested `len` call.
+`reflow-calls` gives the walrus argument its parameter name `anchor`, and a named expression used as a keyword value needs parentheses of its own, so the value gains a wrapping pair.
+
+That pair opens the value **one column further right** than the plain `=` gap `align-equals` sets. Counting that extra column is what takes the row past the 30-column budget and explodes the nested `len` call.
 '''

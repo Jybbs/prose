@@ -3,5 +3,7 @@ previewable = true
 title       = "A Banded Class Keeps the Directive That Deferred Its Reference"
 
 description = '''
-`prune-inert-imports` runs ahead of the sort and reads `Node` as a name `alphabetize-siblings` can reseat, so **the `from __future__ import annotations` directive stays** even though the banded order leaves `visit` reading `Node` below its definition.
+`from __future__ import annotations` is kept, even though the file that comes out has `class Node` standing above the `visit` that reads it.
+
+`prune-inert-imports` runs before `alphabetize-siblings`, so at the moment it decides, `visit` still sits above the class. It reads `Node` as a name the sort is free to move either way and **keeps the directive rather than betting on where the sort will land**.
 '''

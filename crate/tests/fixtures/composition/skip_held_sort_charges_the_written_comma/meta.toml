@@ -3,5 +3,7 @@ previewable = true
 title       = "A Skipped Sort Measures the Comma as Written"
 
 description = '''
-`reflow-collections` forecasts which entry `alphabetize-siblings` leaves last so the comma it measures matches the one the sort writes, and a `# prose: skip[alphabetize-siblings]` directive over the dict turns that forecast off with the sort, leaving every entry measured with the comma it carries.
+`reflow-collections` normally forecasts which entry `alphabetize-siblings` will leave last, so the comma it measures matches the one the sort is going to write.
+
+The `# prose: skip[alphabetize-siblings]` over this dict turns the sort off, and **the forecast turns off with it**. Every entry is then measured with the comma it already carries, which is why `"bb"` counts a trailing comma and breaks after its `:` instead of being measured as the last entry.
 '''

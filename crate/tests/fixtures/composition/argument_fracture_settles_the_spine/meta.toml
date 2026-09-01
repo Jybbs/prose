@@ -4,5 +4,7 @@ previewable = false
 title       = "A Fracture Inside an Argument Breaks the Chain"
 
 description = '''
-The chain on `registry` arrives with a fracture inside `compute(alpha, beta)`, the break sitting mid-argument rather than between links. A chain segment runs from one dot to the next and so covers the whole argument list, meaning the nested break counts as a break in the link itself and the chain settles into its stacked shape. `.filter(flag)` and `.render()` stack beneath `.lookup` on an aligned `.` column, while the fractured `compute` call rejoins onto one line.
+The chain arrives already broken across two lines, but the break sits inside `compute(alpha, beta)` rather than between two links of the chain.
+
+A chain segment runs from one dot to the next, so it covers the whole argument list, which means a break anywhere inside that list **counts as a break in the link itself**. The chain therefore stacks, with `.filter(flag)` and `.render()` beneath `.lookup` on a shared `.` column, while the `compute` call that was fractured rejoins onto one line.
 '''

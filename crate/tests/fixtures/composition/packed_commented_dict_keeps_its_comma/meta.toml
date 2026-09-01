@@ -4,5 +4,7 @@ previewable = true
 title       = "A Packed Commented Dict Keeps Its Comma"
 
 description = '''
-A multi-line dict packing entries onto a shared row with a comment on its `{` row holds its order under [[alphabetize-siblings]], because the comment holds [[reflow-collections]] off splitting that row and a packed row never reorders. [[reflow-collections]] therefore reads the comma the first entry carries now rather than the one a sort would leave, and expands its over-wide value rather than leaving the row past the cap.
+The `# note` comment on the `{` row holds `reflow-collections` off splitting that row, and a packed row is never reordered, so the dict keeps its source order under `alphabetize-siblings`.
+
+The first entry is therefore measured with **the comma it carries now** rather than one a sort would have moved. Its value is too wide for the 40-column budget, so that value expands while `"a": 1, "b": 2` stay packed together on their shared row.
 '''

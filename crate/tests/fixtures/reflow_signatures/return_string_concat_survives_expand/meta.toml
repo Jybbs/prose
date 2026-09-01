@@ -3,5 +3,7 @@ previewable = false
 title       = "An Implicit String-Concatenation Return Keeps Its Parentheses When Parameters Expand"
 
 description = '''
-`assemble_result`'s four parameters make the inline header overflow `code-line-length`, so `reflow-signatures` expands them one per line. The return annotation's parentheses wrap two adjacent string literals, `"module.PrimaryEnvelope"` and `"[str]"`, joined by implicit concatenation into one expression, and **those parentheses pass through intact**, since dropping them would break the concatenation and leave output that fails to parse.
+`assemble_result`'s four parameters make the inline header overflow `code-line-length`, so they expand one per line.
+
+The return annotation's parentheses wrap two adjacent string literals joined by implicit concatenation into a single expression. **Those parentheses pass through intact**, because dropping them would break the concatenation and leave output that does not parse.
 '''

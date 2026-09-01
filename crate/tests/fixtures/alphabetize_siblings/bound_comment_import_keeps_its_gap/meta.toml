@@ -3,5 +3,7 @@ previewable = false
 title       = "A Bound Comment Holds the Gap Above Its Import"
 
 description = '''
-Collapsing bare imports would normally pull `zlib` up against its neighbors, but the `# compression helpers` comment binds to `import zlib`, and an import whose block opens on a bound comment keeps the source gap above that comment. The sort still runs around the held block, swapping `os` ahead of `time`.
+Collapsing the bare imports would ordinarily pull `import zlib` up against its neighbours.
+
+The `# compression helpers` comment attaches to `zlib`, and **an import whose block opens on a bound comment keeps the blank line above that comment**. The sort still runs around the held block, so `os` and `time` swap into alphabetical order above it.
 '''

@@ -3,5 +3,7 @@ previewable = true
 title       = "Keyword Form Keeps the Chain Pair"
 
 description = '''
-`stack-method-chains` wraps the positional argument in a grouping pair and stacks its links, and the keyword form `reflow-calls` renders keeps that pair around the row-spanning value, so the stacked chain holds its shape through the `=` alignment rather than re-wrapping.
+`stack-method-chains` wraps the positional argument in a grouping pair and stacks `.text.replace(...)` beneath `tokenizer.read()`.
+
+`reflow-calls` then renders that argument in keyword form as `env_var = ...`, and **it keeps the pair around the value** because the value spans rows. The stacked chain holds its shape through the `=` alignment instead of being re-wrapped.
 '''

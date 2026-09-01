@@ -3,5 +3,7 @@ previewable = true
 title       = "Keyword Arguments at Call Sites Sort"
 
 description = '''
-Keyword arguments at a call site **alphabetize within the segments a `**` unpacking bounds**. Every keyword in the `Posting` call sorts in one run from `company=` to `url=` because no unpacking divides it, whereas the `**overrides` in the `combine` call splits the list into two segments, `first=1` and `second=2` sorting ahead of it while `fourth=4` and `third=3` sort behind it, never crossing the boundary.
+Keyword arguments at a call site **alphabetize within the segments a `**` unpacking bounds**.
+
+Nothing divides the `Posting` call, so all five keywords sort as one run from `company=` through `url=`. The `combine` call is different, since `**overrides` splits it in two. `first=1` and `second=2` sort ahead of the unpacking while `fourth=4` and `third=3` sort behind it, and no keyword crosses that boundary.
 '''

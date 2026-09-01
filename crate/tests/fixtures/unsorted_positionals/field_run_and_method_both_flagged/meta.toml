@@ -3,5 +3,7 @@ previewable = true
 title       = "A Field Run and a Method Draw Separate Reports"
 
 description = '''
-`Report` is a `@dataclass`, so `width` and `height` feed its generated constructor as one positional run, and the `render` method ends that run rather than counting against it. The method's own parameters, `target` and `source`, form a second run out of alphabetical order, so the class gets **two diagnostics that name different constructs**, one on the fields and one on the parameter list.
+`Report` is a `@dataclass`, so `width` and `height` feed its generated constructor as one positional run, and `height` sorting ahead of `width` puts that run out of order.
+
+The `render` method **ends the field run rather than counting against it**, and its own `target` and `source` parameters form a second run, also out of order. The class therefore draws **two diagnostics naming different constructs**, one on the fields and one on the parameter list.
 '''

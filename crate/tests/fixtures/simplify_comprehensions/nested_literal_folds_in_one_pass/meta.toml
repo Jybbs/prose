@@ -3,5 +3,7 @@ previewable = true
 title       = "A Copy Over a Literal Reaches That Literal"
 
 description = '''
-`values` copies the list literal `[1, 2]`, so the comprehension collapses straight to `[1, 2]` with no `list(...)` left standing. `nested` copies a comprehension over `cells` that would itself resolve to `list(cells)`, so the outer copy and that inner resolution fold together, landing directly on `list(cells)` instead of first producing `list(list(cells))`, which nothing downstream would clean up.
+`values` copies the list literal `[1, 2]`, so the comprehension collapses straight to `[1, 2]` with no `list(...)` call left standing.
+
+`nested` copies a comprehension over `cells` that would itself resolve to `list(cells)`. **The outer copy and that inner resolution fold together in one pass**, landing directly on `list(cells)` rather than first producing `list(list(cells))`, which nothing downstream would clean up.
 '''

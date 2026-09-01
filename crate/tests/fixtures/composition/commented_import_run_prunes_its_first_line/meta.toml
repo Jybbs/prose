@@ -4,5 +4,7 @@ previewable = true
 title       = "A Commented Import Run Prunes Its First Line"
 
 description = '''
-[[reflow-imports]] will fold the unread first line into its same-module sibling, so the comment heading the run leads the merged line once the first goes and [[prune-inert-imports]] moves the sibling onto that line rather than holding the first until the merge has landed.
+`from .pgen2 import token` is the first line of the `# Local imports` run, and nothing in the module reads it.
+
+`reflow-imports` folds that line into its same-module sibling, so once it goes the comment heads `from .pgen2 import driver` instead. `prune-inert-imports` **moves the sibling onto the vacated line** rather than waiting for the merge to land first, which keeps a real import under the comment at every step.
 '''

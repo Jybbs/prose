@@ -3,5 +3,7 @@ previewable = true
 title       = "An Over-Budget Positional Call Explodes Positionally"
 
 description = '''
-`compute` is not defined in this module, so its positionals cannot bind to parameter names. The line still overflows the cap, so the call explodes positionally, `alpha_value` through `gamma_value` each on their own row with the closing `)` back at the statement's indent, leaving no configuration in which an over-cap call stays inline.
+`compute` is not defined in this module, so its positionals cannot be bound to parameter names.
+
+The row still overflows the 40-column budget, so **the call explodes positionally instead**, with `alpha_value` through `gamma_value` each on a row of its own and the closing `)` back at the statement's indent. There is no configuration in which an over-budget call simply stays inline.
 '''

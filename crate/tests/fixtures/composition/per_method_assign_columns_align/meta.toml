@@ -3,5 +3,7 @@ previewable = false
 title       = "Each Method's Assignment Run Aligns on Its Own `=`"
 
 description = '''
-`render` and `configure` arrive out of order, each opening with three assignments. `alphabetize-siblings` puts `configure` first and `space-statements` inserts a blank line between the methods, and **each body aligns its own `=` column independently**, so `configure`'s pads to `port_id` and `retries` while `render`'s pads to the wider `markup_text`.
+`render` and `configure` arrive out of order, and each opens with three assignments.
+
+`alphabetize-siblings` puts `configure` first and `space-statements` opens a blank line between the two methods. **Each body then aligns its own `=` column independently**, so `configure`'s pads out to `port_id` and `retries` while `render`'s pads to the wider `markup_text`.
 '''

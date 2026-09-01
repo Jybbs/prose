@@ -4,5 +4,7 @@ previewable = true
 title       = "The Reservation Closes Its Run Where the Aligner Does"
 
 description = '''
-The [[align-equals]] reservation builds its runs the way the rule itself does, so the statement whose value spans rows closes the run after it and the rows below settle to their own narrow column rather than the wider one above. [[reflow-collections]] then joins the tuple onto the cap rather than exploding it from a column the aligner never seats.
+`align-equals` builds its runs exactly as it will when it comes to align them, so the `cmd %= (...)` statement, whose value spans rows, closes the run above it.
+
+The two assignments below therefore settle to **a narrow column of their own** rather than the wider one `fds_to_pass` and `main_kws["authkey_r"]` set. `reflow-collections` reads that same run boundary and joins the tuple to the 80-column budget, instead of exploding it from a column the aligner was never going to use.
 '''

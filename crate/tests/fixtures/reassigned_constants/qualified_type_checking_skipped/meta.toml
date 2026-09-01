@@ -3,5 +3,7 @@ previewable = true
 title       = "Dotted `typing.TYPE_CHECKING`-Style Names Stay Quiet"
 
 description = '''
-The guard spells its name as the attribute-qualified `typing.TYPE_CHECKING` rather than the bare `TYPE_CHECKING`. The walker matches the dotted form too, so **the block is skipped exactly as a bare-name guard's block is** and the `DEFAULT_BACKEND` write inside it never counts as a module-scope write.
+Nothing here is flagged. The guard spells its name as the attribute-qualified `typing.TYPE_CHECKING` rather than the bare `TYPE_CHECKING`.
+
+**The dotted form is matched too**, so the block is skipped exactly as a bare-name guard's block would be, and the `DEFAULT_BACKEND` write inside it never counts as a module-scope write.
 '''

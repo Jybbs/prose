@@ -4,5 +4,7 @@ previewable = true
 title       = "A Relocated Block Remeasures the Calls Inside It"
 
 description = '''
-[[reflow-calls]] explodes `tuple` at the indent the row holds before the tuple around it expands, and [[reflow-collections]] moves that block one step deeper and measures the `_mapdict_values` call at the column it lands at, exploding it there.
+`reflow-calls` explodes `tuple(` at the indent its row holds before anything around it has moved.
+
+`reflow-collections` then expands the tuple surrounding it, which pushes that whole block one indent step deeper. The `_mapdict_values` call inside is **re-measured at the column it lands at**, not at the one it started from, and at that deeper column it no longer fits the 40-column budget, so it explodes as well.
 '''

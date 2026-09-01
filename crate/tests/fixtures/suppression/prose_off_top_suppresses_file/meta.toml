@@ -3,5 +3,7 @@ previewable = false
 title       = "File-Top Prose Off Opts the Whole Source Out"
 
 description = '''
-`# prose: off` at the top of the source **opts every line below it out of every rule**, so `x`, `foo`, and `bar_baz` stay unsorted and unaligned, `config`'s unsorted keys and trailing comma stay as written, and `helper`'s `b, a` parameter order stays in place, however many rules would otherwise fire.
+`# prose: off` at the top of the file opts every line below it out of every rule, so nothing here changes.
+
+`x`, `foo`, and `bar_baz` stay unsorted and unaligned, `config` keeps both its unsorted keys and its trailing comma, and `helper` keeps its `b, a` parameter order. **However many rules would otherwise fire, none of them reaches past the directive.**
 '''

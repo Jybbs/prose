@@ -3,5 +3,7 @@ previewable = false
 title       = "A Trailing-Band Splitter Leaves Its Imports Sorted"
 
 description = '''
-`RESULT = make` sits between `import b` and `import a`, splitting the import run in two. Because it names the `make` definition, the constant pools down into the trailing band, and **the two imports it had split merge into sorted order**, landing as `import a` then `import b` at the top of the module.
+`RESULT = make` sits between `import b` and `import a`, splitting the import run in two.
+
+It names the `make` definition, so it moves down below the definitions with the other derived constants. **The two imports it had been separating then merge into one run and sort**, landing as `import a` then `import b` at the top of the module.
 '''

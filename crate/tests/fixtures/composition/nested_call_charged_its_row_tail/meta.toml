@@ -4,5 +4,7 @@ previewable = true
 title       = "A Nested Call Counts the Text Trailing It Inside Its Value"
 
 description = '''
-The `call` argument holds two calls joined by `+`, and the first one measures the `+ self._options(` trailing it on the row, so it explodes rather than leaving the tuple for [[reflow-collections]] to break and the span trigger to explode it afterward.
+The argument to `self.tk.call` is two calls joined by `+`, and the first of them is measured **including the `+ self._options(` that trails it on the same row**.
+
+Counting that tail is what explodes `_flatten(` directly. Measuring the call alone would have left the row for `reflow-collections` to break at the tuple first, and the call would then have exploded on a later pass anyway.
 '''
