@@ -197,7 +197,7 @@ mod tests {
     use std::num::NonZeroUsize;
 
     use super::*;
-    use crate::testing::{PrefixRule, breaks_parse, never_settles, notebook, parse};
+    use crate::testing::{breaks_parse, never_settles, notebook, parse, prefix_rule};
 
     /// What `widening()` writes over `SOURCE`, standing in for the
     /// bytes a prior write-back run marked as its own output.
@@ -209,18 +209,10 @@ mod tests {
     /// on its own output, and whose third never fires.
     fn downstream() -> Pipeline {
         Pipeline::from_rules(vec![
-            Box::new(prefix("settles-once", "x", "q")),
-            Box::new(prefix("widens-downstream", "q", "qq")),
-            Box::new(prefix("never-fires", "zzz", "z")),
+            Box::new(prefix_rule("settles-once", "x", "q")),
+            Box::new(prefix_rule("widens-downstream", "q", "qq")),
+            Box::new(prefix_rule("never-fires", "zzz", "z")),
         ])
-    }
-
-    fn prefix(id: &'static str, reads: &'static str, writes: &'static str) -> PrefixRule {
-        PrefixRule {
-            id: RuleId::from(id),
-            reads,
-            writes,
-        }
     }
 
     fn widening() -> Pipeline {

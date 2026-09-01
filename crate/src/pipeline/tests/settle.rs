@@ -25,10 +25,7 @@ fn settle_report_names_a_rule_whose_fix_never_lands() {
     let overlapping_id = overlapping.id();
     let pipeline = Pipeline::from_rules(vec![
         Box::new(overlapping),
-        Box::new(GroupSentinelRule {
-            groups: vec![vec![Edit::range_replacement("x".to_owned(), range(0, 1))]],
-            id: RuleId::from("rewrite-x-to-x"),
-        }),
+        sentinel("rewrite-x-to-x", vec![replacement("x", 0, 1)]),
     ]);
     let source = parse("x = 1\n");
 
@@ -112,10 +109,10 @@ fn unsettled_skips_a_rule_whose_edits_fall_in_a_suppressed_block() {
 
 #[test]
 fn unsettled_skips_a_rule_whose_edits_splice_back_to_the_same_text() {
-    let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-        groups: vec![vec![Edit::range_replacement("x".to_owned(), range(0, 1))]],
-        id: RuleId::from("rewrite-x-to-x"),
-    })]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-x-to-x",
+        vec![replacement("x", 0, 1)],
+    )]);
     let source = parse("x = 1\n");
 
     assert!(pipeline.unsettled(&source).is_empty());

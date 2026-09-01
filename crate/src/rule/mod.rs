@@ -60,6 +60,10 @@ use crate::{
     source::Source,
 };
 
+mod independence;
+
+pub use independence::independent;
+
 /// Returned when a string fails to match any registered rule slug.
 /// Carries the offending input so callers can surface it verbatim.
 #[derive(Debug, Error)]

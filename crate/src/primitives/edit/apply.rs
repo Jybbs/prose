@@ -144,16 +144,13 @@ mod tests {
     use std::assert_matches;
 
     use super::*;
-    use crate::testing::{parse, range};
+    use crate::testing::{parse, range, replacement};
 
     #[test]
     fn apply_edits_declines_overlapping_edits() {
         let out = apply_edits(
             "abcdef",
-            vec![
-                Edit::range_replacement("X".to_owned(), range(0, 3)),
-                Edit::range_replacement("Y".to_owned(), range(2, 4)),
-            ],
+            vec![replacement("X", 0, 3), replacement("Y", 2, 4)],
         );
 
         assert_matches!(out, None);
@@ -176,10 +173,7 @@ mod tests {
     fn apply_edits_handles_multiple_non_overlapping_edits() {
         let out = apply_edits(
             "abcdef",
-            vec![
-                Edit::range_replacement("X".to_owned(), range(0, 1)),
-                Edit::range_replacement("Y".to_owned(), range(4, 5)),
-            ],
+            vec![replacement("X", 0, 1), replacement("Y", 4, 5)],
         );
 
         assert_eq!(out, Some("XbcdYf".to_owned()));
@@ -189,10 +183,7 @@ mod tests {
     fn apply_edits_keeps_adjacent_edits() {
         let out = apply_edits(
             "abcdef",
-            vec![
-                Edit::range_replacement("X".to_owned(), range(0, 2)),
-                Edit::range_replacement("Y".to_owned(), range(2, 4)),
-            ],
+            vec![replacement("X", 0, 2), replacement("Y", 2, 4)],
         );
 
         assert_eq!(out, Some("XYef".to_owned()));
@@ -202,10 +193,7 @@ mod tests {
     fn apply_edits_mapped_declines_overlapping_edits() {
         let out = apply_edits_mapped(
             "abcdef",
-            vec![
-                Edit::range_replacement("X".to_owned(), range(0, 3)),
-                Edit::range_replacement("Y".to_owned(), range(2, 4)),
-            ],
+            vec![replacement("X", 0, 3), replacement("Y", 2, 4)],
         );
 
         assert!(out.is_none());
@@ -213,11 +201,8 @@ mod tests {
 
     #[test]
     fn apply_edits_mapped_pairs_each_edit_with_its_woven_offset() {
-        let (text, map) = apply_edits_mapped(
-            "abcdef",
-            vec![Edit::range_replacement("XX".to_owned(), range(1, 2))],
-        )
-        .expect("woven");
+        let (text, map) =
+            apply_edits_mapped("abcdef", vec![replacement("XX", 1, 2)]).expect("woven");
 
         assert_eq!(text, "aXXcdef");
         let markers = map.markers();
@@ -232,10 +217,7 @@ mod tests {
     fn apply_edits_sorts_unsorted_input() {
         let out = apply_edits(
             "abcdef",
-            vec![
-                Edit::range_replacement("Y".to_owned(), range(4, 5)),
-                Edit::range_replacement("X".to_owned(), range(0, 1)),
-            ],
+            vec![replacement("Y", 4, 5), replacement("X", 0, 1)],
         );
 
         assert_eq!(out, Some("XbcdYf".to_owned()));
@@ -247,10 +229,7 @@ mod tests {
         let result = apply_inline_edits(
             &source,
             range(0, 6),
-            &[
-                Edit::range_replacement("X".to_owned(), range(0, 3)),
-                Edit::range_replacement("Y".to_owned(), range(2, 4)),
-            ],
+            &[replacement("X", 0, 3), replacement("Y", 2, 4)],
         );
 
         assert_matches!(result, Cow::Borrowed("abcdef"));
@@ -262,10 +241,7 @@ mod tests {
         let result = apply_inline_edits(
             &source,
             range(0, 6),
-            &[
-                Edit::range_replacement("X".to_owned(), range(0, 2)),
-                Edit::range_replacement("Y".to_owned(), range(2, 4)),
-            ],
+            &[replacement("X", 0, 2), replacement("Y", 2, 4)],
         );
 
         assert_matches!(result, Cow::Owned(text) if text == "XYef");

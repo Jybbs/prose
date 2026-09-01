@@ -67,24 +67,21 @@ impl Rule for GroupSentinelRule {
     }
 }
 
-/// A rule editing only a buffer whose text opens with `reads`,
-/// replacing that buffer's first byte with `writes`. A `writes` that
-/// keeps the opening matching `reads` edits its own output forever,
-/// and one that breaks the match settles after a single edit.
+/// A rule emitting `edit` only while the buffer's text opens with
+/// `guard`. An `edit` that keeps the opening matching `guard` edits its
+/// own output forever, and one that breaks the match settles after a
+/// single edit.
 #[derive(Debug)]
-pub(crate) struct PrefixRule {
+pub(crate) struct GuardedRule {
+    pub(crate) edit: Edit,
+    pub(crate) guard: &'static str,
     pub(crate) id: RuleId,
-    pub(crate) reads: &'static str,
-    pub(crate) writes: &'static str,
 }
 
-impl Rule for PrefixRule {
+impl Rule for GuardedRule {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        if source.text().starts_with(self.reads) {
-            vec![vec![Edit::range_replacement(
-                self.writes.to_owned(),
-                range(0, 1),
-            )]]
+        if source.text().starts_with(self.guard) {
+            vec![vec![self.edit.clone()]]
         } else {
             Vec::new()
         }
@@ -95,7 +92,7 @@ impl Rule for PrefixRule {
     }
 
     fn message(&self) -> &'static str {
-        "prefix test rule"
+        "guarded test rule"
     }
 }
 
@@ -198,7 +195,7 @@ pub(crate) fn format_diagnostic(range: TextRange) -> Diagnostic {
 /// over its own output grows the line and edits again.
 pub(crate) fn never_settles(id: &'static str) -> GroupSentinelRule {
     GroupSentinelRule {
-        groups: vec![vec![Edit::range_replacement("yy".to_owned(), range(0, 1))]],
+        groups: vec![vec![replacement("yy", 0, 1)]],
         id: RuleId::from(id),
     }
 }
@@ -221,8 +218,27 @@ pub(crate) fn parse(src: &str) -> Source {
     src.parse().expect("test source parses")
 }
 
+/// A [`GuardedRule`] replacing the buffer's first byte with `writes`
+/// while its text opens with `reads`.
+pub(crate) fn prefix_rule(
+    id: &'static str,
+    reads: &'static str,
+    writes: &'static str,
+) -> GuardedRule {
+    GuardedRule {
+        edit: replacement(writes, 0, 1),
+        guard: reads,
+        id: RuleId::from(id),
+    }
+}
+
 pub(crate) fn range(start: u32, end: u32) -> TextRange {
     TextRange::new(start.into(), end.into())
+}
+
+/// An edit replacing the `start..end` span with `content`.
+pub(crate) fn replacement(content: &str, start: u32, end: u32) -> Edit {
+    Edit::range_replacement(content.to_owned(), range(start, end))
 }
 
 pub(crate) fn run_rule(slug: &str, src: &str) -> String {
@@ -239,10 +255,7 @@ pub(crate) fn run_rule(slug: &str, src: &str) -> String {
 /// ranges, a group the splice declines to apply.
 pub(crate) fn self_overlapping() -> GroupSentinelRule {
     GroupSentinelRule {
-        groups: vec![vec![
-            Edit::range_replacement("Y".to_owned(), range(0, 3)),
-            Edit::range_replacement("Z".to_owned(), range(2, 5)),
-        ]],
+        groups: vec![vec![replacement("Y", 0, 3), replacement("Z", 2, 5)]],
         id: RuleId::from("self-overlapping"),
     }
 }

@@ -9,11 +9,17 @@ use ruff_text_size::TextLen;
 use thiserror::Error;
 
 use super::validity::first_semantic_error;
-use crate::{primitives::edit::forward_offsets, rule::RuleId, source::Source};
+use crate::{
+    primitives::edit::forward_offsets,
+    rule::{RuleId, render_slugs},
+    source::Source,
+};
 
 /// Failure modes surfaced by the pipeline itself.
 #[derive(Debug, Error)]
 pub enum PipelineError {
+    #[error("rules {} spliced into one buffer produced output the pipeline rejected", render_slugs(.rules))]
+    Batch { rules: Vec<RuleId> },
     #[error("rule `{rule}` left notebook cell {cell} unparseable")]
     Cell {
         cell: OneIndexed,
@@ -93,6 +99,18 @@ mod tests {
 
     fn rule() -> RuleId {
         RuleId::from("breaks-parse")
+    }
+
+    #[test]
+    fn batch_error_names_every_member() {
+        let error = PipelineError::Batch {
+            rules: vec![RuleId::from("normalize-literals"), rule()],
+        };
+
+        assert_eq!(
+            error.to_string(),
+            "rules `normalize-literals`, `breaks-parse` spliced into one buffer produced output the pipeline rejected",
+        );
     }
 
     #[test]
