@@ -27,7 +27,7 @@ use crate::{
     fixes::{drops, holds_word, reaches, rewritten},
     format::{edit_rows, row_of},
     outcome::{Kind, Outcome, relative_to},
-    ratchet::{Baseline, Carried, bake, dropped, judge, skipping},
+    ratchet::{Baseline, Carried, VERSION, bake, dropped, judge, skipping},
     records::{Break, EditRows, Frame, Width},
     report::render,
     sweep::DEFAULT_LABEL,
@@ -109,6 +109,7 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
         held.uncomparable["default"],
         ["blocked.py".to_owned()].into()
     );
+    assert_eq!(held.version, VERSION);
 }
 
 #[test]
@@ -117,6 +118,17 @@ fn a_break_reporting_no_loaded_modules_falls_back_to_its_own() {
     assert_eq!(brk.loaded(), ["m.py"]);
     brk.formatted.loaded = vec!["a.py".to_owned(), "b.py".to_owned()];
     assert_eq!(brk.loaded(), ["a.py", "b.py"]);
+}
+
+#[test]
+fn a_break_set_baked_at_an_older_generation_carries_nothing_forward() {
+    let held: Baseline = serde_json::from_str(
+        r#"{"default":[{"file":"re/_parser.py","reason":"leaves `X` unbound"}]}"#,
+    )
+    .expect("a set from an older generation parses");
+    assert_ne!(held.version, VERSION);
+    assert!(held.breaks.is_empty(), "{:?}", held.breaks);
+    assert!(held.uncomparable.is_empty(), "{:?}", held.uncomparable);
 }
 
 #[test]
@@ -637,6 +649,7 @@ fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
         )]
         .into(),
         uncomparable: [("default".to_owned(), ["a.py".to_owned()].into())].into(),
+        version: VERSION,
     };
     assert_eq!(judge(&found, &held), ["m.py".to_owned()].into());
     assert_eq!(judge(&found, &Baseline::default()), BTreeSet::new());

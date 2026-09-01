@@ -14,11 +14,18 @@ use crate::{
     records::{Break, Width},
 };
 
+/// The environment variable naming a file the armed state is written to.
+const ARMED_VAR: &str = "PROSE_IMPORTS_ARMED";
+
 /// The environment variable naming a file the break set is written to.
 const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
 /// The environment variable naming a break set an earlier run wrote.
 const BASELINE_VAR: &str = "PROSE_IMPORTS_BASELINE";
+
+/// The generation a baked set is written and read at, raised by every
+/// change to what a set carries or to the key one break is held by.
+pub(crate) const VERSION: u32 = 1;
 
 /// What one run recorded for a later run to ratchet against, the breaks
 /// it left beside the modules it could not compare, each keyed by width
@@ -31,6 +38,9 @@ pub(crate) struct Baseline {
     /// The modules whose original tree did not run cleanly, which a
     /// later run skips rather than measuring again.
     pub(crate) uncomparable: BTreeMap<String, BTreeSet<String>>,
+    /// The generation the set was baked at, `0` for one written before
+    /// the field existed.
+    pub(crate) version: u32,
 }
 
 /// The module, file, and reason one break is known by across runs, which
@@ -72,6 +82,7 @@ pub(crate) fn bake(path: &Path, widths: &[Width]) {
                 )
             })
             .collect(),
+        version: VERSION,
     };
     let rendered = serde_json::to_string_pretty(&baked).expect("render the break set");
     fs_err::write(path, rendered + "\n").expect("write the break set");
@@ -82,13 +93,15 @@ pub(crate) fn baking() -> Option<PathBuf> {
     setting(BAKE_VAR).map(PathBuf::from)
 }
 
-/// The break set [`BASELINE_VAR`] names, empty where the variable is unset.
-pub(crate) fn baseline() -> Baseline {
-    let Some(named) = setting(BASELINE_VAR) else {
-        return Baseline::default();
-    };
-    let held = fs_err::read_to_string(Path::new(&named)).expect("read the baseline");
-    serde_json::from_str(&held).expect("parse the baseline")
+/// The break set [`BASELINE_VAR`] names, `None` where the variable is
+/// unset, no file sits at the path it names, or what sits there was not
+/// baked at [`VERSION`].
+pub(crate) fn baseline() -> Option<Baseline> {
+    let named = setting(BASELINE_VAR)?;
+    let held = fs_err::read_to_string(Path::new(&named)).ok()?;
+    serde_json::from_str::<Baseline>(&held)
+        .ok()
+        .filter(|read| read.version == VERSION)
 }
 
 /// The broken modules of one width whose module, frame file, and reason
@@ -119,6 +132,14 @@ pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
         .filter(|module| !known.contains(*module))
         .cloned()
         .collect()
+}
+
+/// Writes whether the run ratcheted against a baseline to the file
+/// [`ARMED_VAR`] names, nothing where the variable is unset.
+pub(crate) fn record_armed(armed: bool) {
+    if let Some(named) = setting(ARMED_VAR) {
+        fs_err::write(Path::new(&named), format!("{armed}\n")).expect("write the armed state");
+    }
 }
 
 /// The modules a baseline already proved uncomparable at `label`, which

@@ -18,9 +18,13 @@
 //! standard library it runs, `PROSE_IMPORTS_MODULE` narrows it to one module,
 //! `PROSE_SETTLE_WIDTHS` adds widths beside the default,
 //! `PROSE_IMPORTS_TIMEOUT` bounds one module's run, `PROSE_IMPORTS_BAKE`
-//! writes the break set, and `PROSE_IMPORTS_BASELINE` names one an earlier
+//! writes the break set, `PROSE_IMPORTS_BASELINE` names one an earlier
 //! run wrote, so only a break it does not carry fails the run or reaches
-//! the report.
+//! the report, and `PROSE_IMPORTS_ARMED` names a file the run writes its
+//! armed state into.
+//!
+//! A set carries the generation it was baked at, and one baked at any
+//! other reads as no baseline rather than as an empty one.
 //!
 //! A baked set carries the modules the original tree did not run cleanly
 //! beside the breaks, which a judging run skips rather than paying to
@@ -51,7 +55,7 @@ use std::{collections::BTreeSet, iter, num::NonZeroUsize};
 use crate::{
     common::{setting, watch_for_a_runaway, widths_or},
     corpus::interpreter,
-    ratchet::{bake, baking, baseline, dropped, judge, skipping},
+    ratchet::{VERSION, bake, baking, baseline, dropped, judge, record_armed, skipping},
     report::render,
     sweep::{PYTHON_VAR, Sweep, label},
 };
@@ -68,8 +72,11 @@ fn every_rewritten_module_still_imports() {
     watch_for_a_runaway();
     let python = setting(PYTHON_VAR).unwrap_or_else(|| PYTHON.to_owned());
     let corpus = interpreter(&python);
-    let held = baseline();
+    let ratcheting = baseline();
+    let armed = ratcheting.is_some();
     let baked = baking();
+    record_armed(armed);
+    let held = ratcheting.unwrap_or_default();
     let widths = iter::once(None).chain(widths_or(&[]).into_iter().map(NonZeroUsize::new));
     let sweep = Sweep::new(&corpus, python.clone());
     eprintln!(
@@ -109,6 +116,13 @@ fn every_rewritten_module_still_imports() {
     if let Some(path) = baked {
         bake(&path, &found);
         eprintln!("break set baked into {}", path.display());
+        return;
+    }
+    if !armed {
+        eprintln!(
+            "\nno break set baked at generation {VERSION} reached this run, so the ratchet \
+             asserted nothing. A bake on the default branch writes one the next run reads.",
+        );
         return;
     }
     assert!(
