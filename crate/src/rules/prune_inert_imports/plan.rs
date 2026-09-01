@@ -11,7 +11,7 @@ use super::{
     future::annotations_are_inert,
     inventory::{ImportNode, is_star},
     is_package_init,
-    reexports::Reexports,
+    reexports::{Reexports, noqa_holds_imports},
 };
 use crate::{
     diagnostics::Diagnostic,
@@ -47,6 +47,12 @@ impl<'a> Plan<'a> {
         }
         let analysis = source.binding_analysis();
         let reexports = Reexports::of(body);
+        let noqa_held: FxHashSet<usize> = nodes
+            .iter()
+            .enumerate()
+            .filter(|(_, (slot, _))| noqa_holds_imports(source, &body[*slot]))
+            .map(|(statement, _)| statement)
+            .collect();
         let package_init = is_package_init(source);
         let annotated = if rule.unreferenced {
             annotation_names(source.ast())
@@ -59,7 +65,7 @@ impl<'a> Plan<'a> {
                 .any(|(_, node)| node.future_annotations().is_some())
             && annotations_are_inert(rule, source);
         let repeats = if rule.duplicates {
-            repeat_writes(&nodes, &reexports)
+            repeat_writes(&nodes, &reexports, &noqa_held)
         } else {
             FxHashSet::default()
         };
@@ -67,6 +73,9 @@ impl<'a> Plan<'a> {
         let mut dropped: Vec<Vec<usize>> = vec![Vec::new(); nodes.len()];
         let mut reports = Vec::new();
         for (statement, (_, node)) in nodes.iter().enumerate() {
+            if noqa_held.contains(&statement) {
+                continue;
+            }
             let directive = node.future_annotations();
             for (index, alias) in node.names().iter().enumerate() {
                 let bound = node.bound(alias);
@@ -170,18 +179,20 @@ fn is_unreferenced(
 
 /// The write offset of every alias repeating a binding an earlier
 /// import already made. An alias the re-export surface holds keeps its
-/// binding, so its offset stays out.
+/// binding, as does one on a statement a `noqa` comment trails, so
+/// neither offset stays in.
 fn repeat_writes(
     nodes: &[(usize, ImportNode<'_>)],
     reexports: &Reexports<'_>,
+    noqa_held: &FxHashSet<usize>,
 ) -> FxHashSet<TextSize> {
     let mut bound_sources = FxHashSet::default();
     let mut repeats = FxHashSet::default();
-    for (_, node) in nodes {
+    for (statement, (_, node)) in nodes.iter().enumerate() {
         for alias in node.names() {
             let bound = node.bound(alias);
             let unseen = bound_sources.insert((bound, node.source(alias)));
-            if !unseen && !reexports.holds(alias, bound) {
+            if !unseen && !noqa_held.contains(&statement) && !reexports.holds(alias, bound) {
                 repeats.insert(alias.range.start());
             }
         }

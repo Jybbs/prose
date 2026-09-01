@@ -21,7 +21,13 @@ A repeat matches on both the name it binds and the path it names, so `import os`
 
 ## What Holds Its Line
 
-Both facets read the same two re-export markers, a name listed in `__all__` and the PEP 484 redundant-alias form `from x import y as y`, so a repeated self-alias survives `drop-duplicates`.
+Both facets read the same three re-export markers, so a repeated self-alias survives `drop-duplicates`:
+
+1. A name listed in `__all__`.
+2. The PEP 484 redundant-alias form `from x import y as y`.
+3. A `noqa` comment trailing the import, either bare or naming `F401`, which holds every name that statement binds.
+
+The third marker is the only one a reader writes in a comment rather than in code, and it is what the wider ecosystem puts on a re-export no static read can see. *Prose* reads it here alone, so a `noqa` still suppresses nothing else and no other rule consults it.
 
 <Fixture rule="prune_inert_imports" case="self_alias_marks_a_reexport" />
 
