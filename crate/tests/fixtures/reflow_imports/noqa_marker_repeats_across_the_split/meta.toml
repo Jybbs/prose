@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `noqa` Marker Repeats across the Split"
+
+description = '''
+With `import-line-length` set to `40`, `from pkg import alpha, beta, gamma, delta` overflows and splits. The trailing `# noqa: F401` marker **repeats on every row the split writes**, so each name it covered still carries it and a rule reading the marker holds the same set of names it held before the split.
+'''

@@ -4,13 +4,19 @@
 //! reaches, an import kept for its re-export or held at its position.
 
 use ruff_python_ast::Stmt;
-use ruff_text_size::Ranged;
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::trailing_comment;
 use crate::source::Source;
 
 /// The marker a suppression comment opens with, matched case-insensitively.
 const NOQA: &str = "noqa";
+
+/// The range of a `noqa` comment trailing `offset`'s line, `None` where
+/// that line carries no trailing comment or one naming no marker.
+pub(crate) fn noqa_marker(source: &Source, offset: TextSize) -> Option<TextRange> {
+    trailing_comment(source, offset).filter(|range| marker_end(source.slice(*range)).is_some())
+}
 
 /// True where a `noqa` comment trails `stmt`, either bare or naming
 /// `code`, the bare form covering every code. A statement spanning

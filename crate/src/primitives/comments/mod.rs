@@ -23,7 +23,7 @@ mod noqa;
 
 pub(crate) use banners::is_banner_block;
 use banners::is_marker_line;
-pub(crate) use noqa::noqa_names;
+pub(crate) use noqa::{noqa_marker, noqa_names};
 
 /// The characters whose appearance directly after a comment's hash run
 /// leaves the opener untouched, covering the shebang, the quoted and
