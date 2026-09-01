@@ -32,6 +32,7 @@ mod render;
 
 use plan::{Candidate, candidates, outermost_calls};
 
+#[derive(Debug)]
 pub(crate) struct ReflowParentheses {
     code_line_length: usize,
     reflows_calls: bool,

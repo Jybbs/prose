@@ -3,5 +3,7 @@ previewable = true
 title       = "A Dict Lookup Draws the Rename, a Literal Does Not"
 
 description = '''
-`SETTINGS["db"]` and `Literal["read"]` are the same subscript shape, so the rule resolves each base against the file. `SETTINGS` is assigned a dict literal one line above, making `database` a data lookup that is flagged with the suggested `DATABASE` rename, whereas nothing in the file binds `Literal`, so `Mode` counts as a type alias and passes.
+`SETTINGS["db"]` and `Literal["read"]` are the same subscript shape, so the rule has to resolve each base against the rest of the file to tell the two apart.
+
+`SETTINGS` is assigned a dict literal one line above, which makes `database` **a lookup into data** and draws a `DATABASE` rename. Nothing in the file binds `Literal`, so `Mode` reads as a type alias and passes untouched.
 '''

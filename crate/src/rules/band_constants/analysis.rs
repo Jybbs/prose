@@ -5,6 +5,7 @@
 //! own-line comment binds to the member above or below it that it
 //! documents.
 
+use ruff_python_ast::helpers::is_dunder;
 use ruff_python_ast::{Expr, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextRange};
@@ -18,16 +19,22 @@ use crate::{
     primitives::{
         alias::{AliasContext, value_is_alias},
         binding::{
-            bare_import_bound_name, from_import_bound_name, is_explicit_type_alias,
-            is_screaming_case, single_name_assignment,
+            is_explicit_type_alias, is_screaming_case, module_bound_names, single_name_assignment,
         },
-        comments::{anchors_in_place, has_keep_marker, leading_comment_block, trailing_width},
+        comments::{
+            anchors_in_place, has_keep_marker, leading_comment_block, noqa_names, trailing_width,
+        },
         effect::value_is_effectful,
         group_map,
         tiering::{eval_refs, eval_time_refs_of, observed_refs, tier_levels},
     },
     source::Source,
 };
+
+/// The code `flake8` and its successors report an import placed below
+/// the top of a file under, which a `noqa` naming it marks as
+/// deliberate, so the statement holds the slot the author gave it.
+const POSITION_CODE: &str = "E402";
 
 /// A module-scope single-name assignment considered for hoisting,
 /// carrying its body index, target name, subcategory, the load-context
@@ -103,6 +110,7 @@ pub(super) fn module_band_plan<'src>(
         });
         let const_target = const_binding(stmt);
         let pinned = suppression.suppresses(stmt, BandConstants::SLUG)
+            || noqa_names(source, stmt, POSITION_CODE)
             || source.continues_a_logical_line(stmt.start())
             || gap_comment.is_some_and(|block| {
                 const_target.is_none()
@@ -134,14 +142,8 @@ pub(super) fn module_band_plan<'src>(
                     ranks.insert(idx, BandRank::Definition);
                 }
             }
-            Stmt::Import(node) => {
-                imports.extend(node.names.iter().map(bare_import_bound_name));
-                if !pinned {
-                    ranks.insert(idx, BandRank::Import);
-                }
-            }
-            Stmt::ImportFrom(node) => {
-                imports.extend(node.names.iter().map(from_import_bound_name));
+            Stmt::Import(_) | Stmt::ImportFrom(_) => {
+                imports.extend(module_bound_names(stmt));
                 if !pinned {
                     ranks.insert(idx, BandRank::Import);
                 }
@@ -275,12 +277,16 @@ pub(super) fn module_band_plan<'src>(
             ranks.insert(sites[s].idx, rank);
         }
     }
-    let mut edges: Vec<(usize, usize)> = Vec::new();
+    // A dunder and a builtin are both bound before the module body
+    // runs, so a read above a statement rebinding one reads the earlier
+    // value and the edge records which side the source seated it on.
+    let mut edges: Vec<(usize, usize, bool)> = Vec::new();
+    let prebound = |name: &str| is_dunder(name) || is_builtin(name);
     let site_edge = |from: usize, name: &str| {
         site_at
             .get(name)
             .filter(|&&dep| !anchored[dep])
-            .map(|&dep| (from, sites[dep].idx))
+            .map(|&dep| (from, sites[dep].idx, prebound(name)))
     };
     for (s, site) in sites.iter().enumerate() {
         if anchored[s] {
@@ -288,7 +294,7 @@ pub(super) fn module_band_plan<'src>(
         }
         for (name, _) in site.foreign_refs() {
             if let Some(&def) = def_at.get(name) {
-                edges.push((site.idx, def));
+                edges.push((site.idx, def, prebound(name)));
             } else {
                 edges.extend(site_edge(site.idx, name));
             }
@@ -306,13 +312,9 @@ pub(super) fn module_band_plan<'src>(
     // anchored member reverts to heading the member whose block folds it
     // in, so the run travels as that member's own heading rather than
     // holding a shape the reassembled text reads back as a carry.
-    carries.retain(|carry| {
-        let banded = ranks.contains_key(&carry.carrier);
-        if !banded {
-            attached.insert(carry.absorbs, carry.comment);
-        }
-        banded
-    });
+    for carry in carries.extract_if(.., |carry| !ranks.contains_key(&carry.carrier)) {
+        attached.insert(carry.absorbs, carry.comment);
+    }
     let anchored: FxHashSet<usize> = (0..n)
         .filter(|&s| anchored[s])
         .map(|s| sites[s].idx)
@@ -321,10 +323,9 @@ pub(super) fn module_band_plan<'src>(
         .iter()
         .copied()
         .filter(|&idx| {
-            attached.get(&idx).is_some_and(|block| {
-                idx.checked_sub(1)
-                    .is_none_or(|prev| !source.consecutive_lines(blocks[prev].end(), block.start()))
-                    && !source.consecutive_lines(block.end(), body[idx].start())
+            attached.get(&idx).is_some_and(|&block| {
+                stands_off_the_member_above(source, blocks, idx, block)
+                    && stands_off_its_member(source, body, idx, block)
             })
         })
         .collect();
@@ -356,8 +357,8 @@ fn backward_carry(
     code_width: usize,
 ) -> Option<Carry> {
     let prev = idx.checked_sub(1)?;
-    if !source.consecutive_lines(blocks[prev].end(), block.start())
-        || source.consecutive_lines(block.end(), body[idx].start())
+    if stands_off_the_member_above(source, blocks, idx, block)
+        || !stands_off_its_member(source, body, idx, block)
     {
         return None;
     }
@@ -416,6 +417,24 @@ fn propagate(state: &mut [bool], dependents: &FxHashMap<usize, Vec<usize>>) {
 /// statement or a `TypeAlias`-annotated assignment reads as an alias, a
 /// `SCREAMING_CASE` name as a constant, a remaining value that names an
 /// existing object as an alias, and everything else as module state.
+/// True when a blank line stands between `block` and `body[idx]`, the
+/// member the run heads.
+fn stands_off_its_member(source: &Source, body: &[Stmt], idx: usize, block: TextRange) -> bool {
+    !source.consecutive_lines(block.end(), body[idx].start())
+}
+
+/// True when a blank line stands between `block` and the member above
+/// `body[idx]`, which holds for a run opening the body.
+fn stands_off_the_member_above(
+    source: &Source,
+    blocks: &[TextRange],
+    idx: usize,
+    block: TextRange,
+) -> bool {
+    idx.checked_sub(1)
+        .is_none_or(|prev| !source.consecutive_lines(blocks[prev].end(), block.start()))
+}
+
 fn subcategory_of(
     stmt: &Stmt,
     name: &str,
@@ -439,6 +458,7 @@ mod tests {
 
     use super::*;
     use crate::{
+        config::Config,
         primitives::orderer::member_blocks,
         testing::{notebook, parse},
     };
@@ -455,7 +475,13 @@ mod tests {
     fn plan_of(source: &Source) -> Option<BandPlan<'_>> {
         let body = &source.ast().body;
         let blocks = member_blocks(source, body, source.module_range());
-        module_band_plan(source, body, &blocks, &BandConstants::default(), false)
+        module_band_plan(
+            source,
+            body,
+            &blocks,
+            &BandConstants::from_config(&Config::default()),
+            false,
+        )
     }
 
     #[test]

@@ -1,8 +1,10 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "An Aligned Line Declines at the Width Seated Padding Leaves"
+title       = "An Aligned Line Skips Its Column at the Width Seated Padding Leaves"
 
 description = '''
-[[strip-stranded-padding]] seats a space after each colon in the dict, widening the row by three columns, and [[align-equals]] reads that settled width before choosing its column, declining the pad that would carry the row past the budget.
+`strip-stranded-padding` puts a space after each `:` in the dict, which widens that row by three columns.
+
+`align-equals` reads **the width the row will have once that edit lands**, not the width it has in the source. Padding `_openers` and `CHECK_DELAY` onto a shared `=` column would take the row past the 40-column budget, so the two are left unaligned.
 '''

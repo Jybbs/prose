@@ -3,5 +3,7 @@ previewable = false
 title       = "A Divider-Shaped Comment in a Dict Holds Its Entry"
 
 description = '''
-The `# --- group ---` comment between `"d"` and `"c"` is shaped like a section divider, but a dict carries no sections, so it reads as an ordinary own-line comment attached to the entry below it. Sorting moves `"c": 2` above `"d": 1`, and the comment travels with `"c"` rather than being dropped or left behind.
+`# --- group ---` is shaped like a section divider, but a dict has no sections for it to divide, so it reads as an ordinary own-line comment attached to the entry below it.
+
+Sorting moves `"c": 2` above `"d": 1`, and **the comment travels with `"c"`** rather than being dropped or left stranded above the entry that took its old place.
 '''

@@ -11,59 +11,80 @@ use std::ops::Range;
 
 use ruff_python_ast::Stmt;
 use ruff_text_size::{Ranged, TextSize};
+use rustc_hash::FxHashMap;
 
 use crate::primitives::{
     binding::{ann_assign_with_named_field, is_classvar, single_name_target},
     constructor::classify_field,
     orderer::permute_in_place,
-    tiering::{Evaluation, def_run_tier_keys, permute_or_repair},
+    tiering::{Evaluation, Strands, def_run_tier_keys},
 };
 
-/// Sorts a section's constant and data-field families through one tiered
-/// dependency graph, rewriting `order` in place. Tiering and the
-/// soundness check scope to `range`, so a marker-divided section sorts on
-/// its own. A field starting below `keyword_fields_from` holds its slot
-/// while the constants around it still sort. Leaves `order` untouched
-/// when fewer than two members reorder, a name repeats, the reference
-/// graph cycles, or the sorted order would strand a reader.
-pub(super) fn permute_class_assigns<'src>(
-    order: &mut [usize],
-    body: &'src [Stmt],
+/// One class body's assignment run prepared for permutation, holding the
+/// tier keys of both families beside the binder graph a repair reads.
+/// Both are fixed for the run, so a caller permuting the same range on
+/// every pass of a fixed-point loop builds them once rather than per
+/// pass.
+pub(super) struct ClassAssigns<'a, 'src> {
+    keys: FxHashMap<TextSize, (usize, &'src str)>,
     range: Range<usize>,
-    evaluation: Evaluation<'_, 'src>,
-    keyword_fields_from: TextSize,
-) {
-    let Some(tier_keys) = def_run_tier_keys(&body[range.clone()], evaluation, |stmt| {
-        class_assign_member(stmt).map(|(name, _)| (name, name))
-    }) else {
-        return;
-    };
-    if tier_keys.len() < 2 {
-        return;
+    strands: Strands<'a, 'src>,
+}
+
+impl<'a, 'src> ClassAssigns<'a, 'src> {
+    /// Prepares the constant and data-field families within `range`,
+    /// `None` where fewer than two members reorder, a name repeats, or
+    /// the reference graph cycles.
+    pub(super) fn of(
+        body: &'src [Stmt],
+        range: Range<usize>,
+        evaluation: Evaluation<'a, 'src>,
+    ) -> Option<Self> {
+        let keys = def_run_tier_keys(&body[range.clone()], evaluation, |stmt| {
+            class_assign_member(stmt).map(|(name, _)| (name, name))
+        })?;
+        if keys.len() < 2 {
+            return None;
+        }
+        let strands = Strands::of(body, &range, evaluation, |stmt| {
+            class_assign_member(stmt).map(|(name, _)| name)
+        });
+        Some(Self {
+            keys,
+            range,
+            strands,
+        })
     }
-    permute_or_repair(
-        order,
-        body,
-        &range,
-        evaluation,
-        |stmt| class_assign_member(stmt).map(|(name, _)| name),
-        |order, pinned| {
-            let fields_moved = permute_in_place(order, body, range.clone(), |stmt| {
-                if stmt.start() < keyword_fields_from || pinned.contains(&stmt.start()) {
-                    return None;
-                }
-                let (default, _) = classify_field(stmt)?;
-                let (tier, name) = tier_keys[&stmt.start()];
-                Some((tier, default, name))
+
+    /// Permutes both families of this run's slots of `order`, the fields
+    /// first and the constants after, leaving `order` untouched where the
+    /// sorted order would strand a reader. A field starting below
+    /// `keyword_fields_from` holds its slot while the constants around it
+    /// still sort.
+    pub(super) fn permute(
+        &self,
+        order: &mut [usize],
+        body: &'src [Stmt],
+        keyword_fields_from: TextSize,
+    ) {
+        self.strands
+            .permute_or_repair(order, self.range.len(), |order, pinned| {
+                let fields_moved = permute_in_place(order, body, self.range.clone(), |stmt| {
+                    if stmt.start() < keyword_fields_from || pinned.contains(&stmt.start()) {
+                        return None;
+                    }
+                    let (default, _) = classify_field(stmt)?;
+                    let (tier, name) = self.keys[&stmt.start()];
+                    Some((tier, default, name))
+                });
+                let constants_moved = permute_in_place(order, body, self.range.clone(), |stmt| {
+                    class_assign_member(stmt)
+                        .filter(|&(_, is_const)| is_const && !pinned.contains(&stmt.start()))
+                        .map(|_| self.keys[&stmt.start()])
+                });
+                fields_moved || constants_moved
             });
-            let constants_moved = permute_in_place(order, body, range.clone(), |stmt| {
-                class_assign_member(stmt)
-                    .filter(|&(_, is_const)| is_const && !pinned.contains(&stmt.start()))
-                    .map(|_| tier_keys[&stmt.start()])
-            });
-            fields_moved || constants_moved
-        },
-    );
+    }
 }
 
 /// Classifies a class-body statement as a single-name assignment,
@@ -95,13 +116,9 @@ mod tests {
         let body = &class.body;
         let mut order: Vec<usize> = (0..body.len()).collect();
         let evaluated = evaluated(&source, body);
-        permute_class_assigns(
-            &mut order,
-            body,
-            0..body.len(),
-            evaluated.evaluation(),
-            keyword_field_start(class),
-        );
+        if let Some(run) = ClassAssigns::of(body, 0..body.len(), evaluated.evaluation()) {
+            run.permute(&mut order, body, keyword_field_start(class));
+        }
         order
     }
 

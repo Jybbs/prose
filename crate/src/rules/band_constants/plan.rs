@@ -2,8 +2,7 @@
 //! section's slots into imports, leading constants, definitions, then
 //! trailing constants, declining when the assembled order would seat an
 //! eager reference ahead of its definition. [`banded_gap`] decides the
-//! blank between two seated members, an anchored constant reading as a
-//! member of the band beside it.
+//! blank between two seated bands.
 
 use itertools::Itertools;
 use ruff_python_ast::Stmt;
@@ -11,12 +10,11 @@ use ruff_source_file::LineEnding;
 use ruff_text_size::TextRange;
 use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet};
 
-use super::BandConstants;
+use super::{BandConstants, Bands};
 use crate::primitives::{
     blanks::{blank_gap, module_blank_lines},
     group_map,
     imports::{import_blank_lines, import_sort_key},
-    orderer::is_identity,
     sections::Sections,
 };
 
@@ -83,18 +81,18 @@ impl Banding {
 
 /// The module-scope hoist plan: a band rank per banded statement, the
 /// intra-band `(tier, subcategory, name)` key per banded constant, the
-/// eager-reference edges the order keeps backward, the comment run each
+/// eager-reference edges the order keeps backward, each flagged where
+/// its referent rebinds a name bound before the module body runs, the
+/// comment run each
 /// member's block folds in ahead of its code, and the comment each
 /// carries onto another member's line. A statement absent from `ranks`
-/// is pinned, `anchored` naming the constants the reference analysis
-/// pinned among them and `detached` those a heading comment leads with
-/// a blank line on each side of it.
+/// is a pinned anchor.
 pub(super) struct BandPlan<'src> {
     pub(super) anchored: FxHashSet<usize>,
     pub(super) attached: FxHashMap<usize, TextRange>,
     pub(super) carries: Vec<Carry>,
     pub(super) detached: FxHashSet<usize>,
-    pub(super) edges: Vec<(usize, usize)>,
+    pub(super) edges: Vec<(usize, usize, bool)>,
     pub(super) keys: FxHashMap<usize, (usize, Subcategory, &'src str)>,
     pub(super) ranks: FxHashMap<usize, BandRank>,
 }
@@ -103,8 +101,8 @@ impl BandPlan<'_> {
     /// Appends `region`'s body indices to the drained order, the import
     /// run sorted to the front, the leading constants below it, the
     /// definitions in incoming order, the trailing constants last. The
-    /// import run sorts by group then name when the rule groups imports,
-    /// flat otherwise, and is recorded as one import band. Both constant
+    /// import run sorts by group then name when `grouped`, flat otherwise,
+    /// and is recorded as one import band. Both constant
     /// bands sort by `(tier, subcategory, name)`. Records a `(from, to)`
     /// shift for every sorted band whose head member changed. Clears
     /// `region`.
@@ -116,6 +114,9 @@ impl BandPlan<'_> {
         drained: &mut Drained,
     ) {
         let incoming = std::mem::take(region);
+        if incoming.is_empty() {
+            return;
+        }
         let mut bands = group_map(incoming.iter().map(|&idx| (self.ranks[&idx], idx)));
         let mut take = |rank| bands.remove(&rank).unwrap_or_default();
         let mut imports = take(BandRank::Import);
@@ -131,19 +132,16 @@ impl BandPlan<'_> {
         });
         leading.sort_by_key(|idx| self.keys[idx]);
         trailing.sort_by_key(|idx| self.keys[idx]);
-        let banded = [&imports[..], &leading, &definitions, &trailing].concat();
-        let holds = self.region_holds_its_references(&banded);
-        let head = if holds {
-            imports.first()
-        } else {
-            slots.first()
-        };
-        if let Some(&sorted_head) = head {
-            drained.imports.push(ImportBand { slots, sorted_head });
-        }
-        if !holds {
+        let banded = [imports.as_slice(), &leading, &definitions, &trailing].concat();
+        if !self.region_holds_its_references(&banded) {
+            if let Some(&sorted_head) = slots.first() {
+                drained.imports.push(ImportBand { slots, sorted_head });
+            }
             drained.banded.extend(incoming);
             return;
+        }
+        if let Some(&sorted_head) = imports.first() {
+            drained.imports.push(ImportBand { slots, sorted_head });
         }
         let sorted_heads = heads([&imports, &leading, &trailing]);
         drained.shifts.extend(
@@ -156,19 +154,27 @@ impl BandPlan<'_> {
         drained.banded.extend(banded);
     }
 
-    /// Drains `body` into the banded order section by section, a
+    /// Drains `order` into the banded order section by section, a
     /// section marker and a pinned anchor each closing the running
     /// region, a region whose reorder would seat an eager reference
-    /// ahead of its referent draining in its incoming order instead.
-    fn drained(&self, body: &[Stmt], sections: &Sections, rule: &BandConstants) -> Drained {
+    /// ahead of its referent draining in its incoming order instead,
+    /// and moves each comment heading a band's source-order head onto
+    /// the member the sort seated first.
+    fn drained(
+        &mut self,
+        body: &[Stmt],
+        sections: &Sections,
+        rule: &BandConstants,
+        order: &[usize],
+    ) -> Drained {
         let mut drained = Drained {
-            banded: Vec::with_capacity(body.len()),
+            banded: Vec::with_capacity(order.len()),
             imports: Vec::new(),
             shifts: Vec::new(),
         };
         let mut region = Vec::new();
-        for idx in 0..body.len() {
-            if sections.is_boundary(idx) {
+        for (slot, &idx) in order.iter().enumerate() {
+            if sections.is_boundary(slot) {
                 self.drain_region(body, rule, &mut region, &mut drained);
             }
             if self.ranks.contains_key(&idx) {
@@ -179,24 +185,34 @@ impl BandPlan<'_> {
             }
         }
         self.drain_region(body, rule, &mut region, &mut drained);
+        self.relocate_heads(&drained.shifts);
         drained
     }
 
-    /// True when `banded` seats every eager reference whose two ends
-    /// both sit inside this region behind its referent. An edge reaching
-    /// outside the region imposes nothing.
+    /// True when `banded` seats every eager reference behind its
+    /// referent, and keeps a reference to a name bound before the body
+    /// runs on the side the source seated it on, a reader written above
+    /// such a rebind staying above it and one written below staying
+    /// below. Every other name is unbound until its statement runs, so
+    /// hoisting it above a reader only ever resolves a reference. An
+    /// edge reaching outside the region imposes nothing.
     fn region_holds_its_references(&self, banded: &[usize]) -> bool {
         let seat: FxHashMap<usize, usize> = banded
             .iter()
             .enumerate()
             .map(|(seat, &idx)| (idx, seat))
             .collect();
-        self.edges
-            .iter()
-            .all(|&(from, to)| match (seat.get(&from), seat.get(&to)) {
-                (Some(referrer), Some(referent)) => referent < referrer,
+        self.edges.iter().all(|&(referrer, referent, prebound)| {
+            match (seat.get(&referrer), seat.get(&referent)) {
+                (Some(&seated_referrer), Some(&seated_referent)) if prebound => {
+                    (referent < referrer) == (seated_referent < seated_referrer)
+                }
+                (Some(&seated_referrer), Some(&seated_referent)) => {
+                    seated_referent < seated_referrer
+                }
                 _ => true,
-            })
+            }
+        })
     }
 
     /// Moves each comment heading a band's source-order head onto the
@@ -215,21 +231,13 @@ impl BandPlan<'_> {
         }
     }
 
-    /// The drained body with every band heading moved onto the member
-    /// the sort seated first.
-    fn settled(&mut self, body: &[Stmt], sections: &Sections, rule: &BandConstants) -> Drained {
-        let drained = self.drained(body, sections, rule);
-        self.relocate_heads(&drained.shifts);
-        drained
-    }
-
-    /// Applies the plan, draining each section's slots into imports,
-    /// leading constants, definitions, then trailing constants. A comment
-    /// heading a band's source-order head moves to whichever member the
-    /// sort seats first, so it heads the band still. Returns the
-    /// [`Banding`] when the plan is sound and the assembled order reseats
-    /// a member, moves a comment onto another member, or opens a tier
-    /// blank line, writing that order into `order`. Leaves `order`
+    /// Applies the plan to `order`, draining each section's slots into
+    /// imports, leading constants, definitions, then trailing constants.
+    /// A comment heading a band's source-order head moves to whichever
+    /// member the sort seats first, so it heads the band still. Returns
+    /// the [`Banding`] when the plan is sound and the assembled order
+    /// differs from `order`, moves a comment onto another member, or opens
+    /// a tier blank line, rewriting `order` in place. Leaves `order`
     /// untouched otherwise.
     pub(super) fn apply(
         mut self,
@@ -238,7 +246,7 @@ impl BandPlan<'_> {
         rule: &BandConstants,
         order: &mut Vec<usize>,
     ) -> Option<Banding> {
-        let Drained { banded, .. } = self.settled(body, sections, rule);
+        let Drained { banded, .. } = self.drained(body, sections, rule, order);
         let tiers: FxHashMap<usize, usize> = self
             .keys
             .iter()
@@ -262,22 +270,32 @@ impl BandPlan<'_> {
             tier_sizes,
             tiers,
         };
-        (!is_identity(&banded) || !banding.carries.is_empty() || banding.stratifies()).then(|| {
+        (banded != *order || !banding.carries.is_empty() || banding.stratifies()).then(|| {
             *order = banded;
             banding
         })
     }
 
-    /// Every import band the drained body seats beside every comment the
-    /// banding carries onto another member.
-    pub(super) fn import_bands(
+    /// The seating forecast over `body`: `blocks`, the comments the
+    /// banding carries onto another member, every import band it seats,
+    /// and the order the band seats `body` in.
+    pub(super) fn forecast(
         mut self,
         body: &[Stmt],
+        blocks: Vec<TextRange>,
         sections: &Sections,
         rule: &BandConstants,
-    ) -> (Vec<ImportBand>, Vec<Carry>) {
-        let Drained { imports, .. } = self.settled(body, sections, rule);
-        (imports, self.carries)
+        order: &[usize],
+    ) -> Bands {
+        let Drained {
+            banded, imports, ..
+        } = self.drained(body, sections, rule, order);
+        Bands {
+            blocks,
+            carries: self.carries,
+            imports,
+            order: banded,
+        }
     }
 }
 
@@ -335,11 +353,11 @@ struct Drained {
 /// blank line at a tier boundary whose higher tier is a sub-band of two
 /// or more members, a lone nested constant folding tight into the tier
 /// above instead, and one above an anchored constant a detached heading
-/// leads. Every other pair takes the count [`import_blank_lines`] or
-/// [`module_blank_lines`] declares, one blank line standing in wherever
-/// that policy holds no opinion, rendered in `ending`. `None` falls back
-/// to the source gap, the case for a pinned statement outside the
-/// constant analysis on either side.
+/// leads. An import run keeps one blank line between canonical groups.
+/// Every other pair takes the count [`module_blank_lines`] declares, one
+/// blank line standing in wherever that policy holds no opinion,
+/// rendered in `ending`. `None` falls back to the source gap, the case
+/// for a pinned statement outside the constant analysis on either side.
 pub(super) fn banded_gap(
     band: &Banding,
     body: &[Stmt],
@@ -368,22 +386,22 @@ pub(super) fn banded_gap(
 
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
-
     use super::*;
     use crate::{
-        primitives::orderer::member_blocks, rules::band_constants::analysis::module_band_plan,
-        source::Source, testing::parse,
+        config::Config, primitives::orderer::member_blocks,
+        rules::band_constants::analysis::module_band_plan, source::Source, testing::parse,
     };
 
-    /// The banding `source` produces under the default rule alongside the
-    /// order it rewrote.
+    /// The banding `source` produces alongside the order it rewrote.
     fn banded(source: &Source) -> (Banding, Vec<usize>) {
         let body = &source.ast().body;
         let blocks = member_blocks(source, body, source.module_range());
         let sections = Sections::of(source, &blocks);
-        let rule = BandConstants::default();
         let mut order: Vec<usize> = (0..body.len()).collect();
+        let rule = BandConstants {
+            max_tiers: None,
+            ..BandConstants::from_config(&Config::default())
+        };
         let banding = module_band_plan(source, body, &blocks, &rule, false)
             .expect("acyclic module plans")
             .apply(body, &sections, &rule, &mut order)
@@ -413,74 +431,5 @@ mod tests {
         assert_eq!(carry.absorbs, 0, "ZETA's block still covers the comment");
         assert_eq!(carry.carrier, 1, "ALPHA heads the band after the sort");
         assert!(!carry.trails, "a heading opens the band on its own line");
-    }
-
-    #[rstest]
-    #[case::anchored_then_leading(
-        "def f():\n    pass\n\n\nLIMIT = compute()\n\n\nZETA = 1\nALPHA = 2\n",
-        1,
-        3,
-        Some("\n")
-    )]
-    #[case::definition_then_anchored(
-        "def f():\n    pass\n\n\nLIMIT = compute()\n\n\nZETA = 1\nALPHA = 2\n",
-        0,
-        1,
-        Some("\n\n\n")
-    )]
-    #[case::anchored_then_trailing(
-        "def base():\n    return 1\n\n\nLIMIT = compute()\n\n\nSECOND = base\nFIRST = base\n",
-        1,
-        3,
-        Some("\n")
-    )]
-    #[case::sub_band_then_anchored(
-        "def base():\n    return 1\n\n\nSECOND = base\nFIRST = base\nDERIVED_A = FIRST + SECOND\nDERIVED_B = FIRST * SECOND\nLIMIT = compute()\n",
-        4,
-        5,
-        Some("\n\n")
-    )]
-    #[case::anchored_then_anchored(
-        "def f():\n    pass\n\n\nRAW = compute()\n\nSCALED = RAW\nZETA = 1\nALPHA = 2\n",
-        1,
-        2,
-        Some("\n")
-    )]
-    #[case::detached_heading_below_a_leading(
-        "ZETA = 1\nALPHA = 2\n\n\n# the ceiling the scheduler reads\n\nLIMIT = compute()\n",
-        0,
-        2,
-        Some("\n\n")
-    )]
-    #[case::import_then_anchored(
-        "import os\n\n\nLEVEL = os.environ.get(\"X\")\n\n\ndef f():\n    pass\n\n\nZETA = 1\nALPHA = 2\n",
-        0,
-        1,
-        Some("\n\n")
-    )]
-    #[case::note_below_an_anchored_then_anchored(
-        "def f():\n    pass\n\n\nRAW = compute()\n# documents RAW\n\nSCALED = RAW\nZETA = 1\nALPHA = 2\n",
-        1,
-        2,
-        Some("\n")
-    )]
-    #[case::leading_then_pragma_pinned("ZETA = 1\nALPHA = 2\n\n# noqa\nLIMIT = 3\n", 0, 2, None)]
-    fn banded_gap_spaces_an_anchored_constant_as_a_band_member(
-        #[case] src: &str,
-        #[case] a: usize,
-        #[case] b: usize,
-        #[case] expected: Option<&str>,
-    ) {
-        let source = parse(src);
-        let (banding, _) = banded(&source);
-        let gap = banded_gap(
-            &banding,
-            &source.ast().body,
-            &BandConstants::default(),
-            source.line_ending(),
-            a,
-            b,
-        );
-        assert_eq!(gap, expected);
     }
 }

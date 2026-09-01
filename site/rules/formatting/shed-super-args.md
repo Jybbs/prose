@@ -10,7 +10,14 @@ layout  : doc
 
 A `super(Button, self)` call restates the enclosing class and the bound instance that the interpreter already resolves from the method it sits in. The reader parses two arguments to learn nothing the surrounding `def` did not already say, and the restatement goes stale the moment the class is renamed. `shed-super-args` deletes the arguments, leaving the `super()` form whose behavior is unchanged and whose intent reads at a glance.
 
-The rewrite fires only where the bare call resolves the same pair, so the first argument must name the one enclosing class *(or the `__class__` cell directly)* and the second must name the enclosing callable's first positional parameter, whether that reads `self`, `cls`, or a positional-only receiver. A call keeps its arguments where they name anything else, where a comprehension or a lambda taking no positional parameter stands between the call and its method, where an enclosing scope binds the class name to something other than the class, where the class is a `@dataclass(slots=True)` whose generated replacement the bare call's cell does not follow, where a comment sits inside the argument list, and where the module binds `super` or `__class__` itself.
+The rewrite fires only where the bare call resolves the same pair, so the first argument must name the one enclosing class *(or the `__class__` cell directly)* and the second must name the enclosing callable's first positional parameter, whether that reads `self`, `cls`, or a positional-only receiver. A call keeps its arguments wherever one of these holds:
+
+1. The arguments name anything else.
+2. A comprehension or a lambda taking no positional parameter stands between the call and its method.
+3. An enclosing scope binds the class name to something other than the class.
+4. The class is a `@dataclass(slots=True)` whose generated replacement the bare call's cell does not follow.
+5. A comment sits inside the argument list.
+6. The module binds `super` or `__class__` itself.
 
 Deleting the arguments pulls every token after them leftward, so a later line of the same statement that the author aligned against a column at or past those arguments moves with them, re-seated by the width the deleted span took so it keeps pointing at the column it was measured against. A line hanging one indent step under the statement keeps its depth, since nothing it was measured against moved. A row inside a multi-line string is the one continuation no move can re-seat without rewriting the string, so a call whose deletion would strand such a row keeps its arguments.
 

@@ -9,6 +9,7 @@
 #MISE   "crate/uv.lock",
 #MISE   "site/bun.lock",
 #MISE   "site/package.json",
+#MISE   "sweeps/Cargo.toml",
 #MISE   "wasm/Cargo.toml"
 #MISE ]
 

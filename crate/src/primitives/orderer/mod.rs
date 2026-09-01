@@ -18,9 +18,10 @@ pub(crate) use assemble::{
     Assembly, assemble_blocks, assemble_separated, reorder_separated, reorder_text,
 };
 pub(crate) use blocks::{block_ranges, member_blocks, opens_its_line, rendered_member_blocks};
-pub(crate) use permute::{is_identity, permute_full, permute_in_place, permute_runs};
+pub(crate) use permute::{permute_full, permute_in_place, permute_runs};
 
 use blocks::{last_member_has_comma, leading_attached_start, tail_end};
+use permute::is_identity;
 
 /// Slot indices `i` in `0..order.len() - 1` where the adjacent pair
 /// `(order[i], order[i + 1])` satisfies `pred`, the sorted `Vec<usize>` an

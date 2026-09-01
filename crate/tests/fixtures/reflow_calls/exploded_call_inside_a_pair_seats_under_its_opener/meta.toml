@@ -3,5 +3,7 @@ previewable = true
 title       = "An Exploded Call Inside a Pair Seats Under Its Opener"
 
 description = '''
-A call exploding inside a grouping pair hangs its argument row one step past the row its opener sits on and drops its closer back to that row's indent, whatever column the pair itself opened at.
+The `self.gggg…` call sits inside a grouping pair, and that pair opens at its own column part-way along its row.
+
+The call hangs its argument row **one indent step past the row its opener sits on** and drops its closer back to that row's indent. The column the pair itself opened at plays no part in either decision.
 '''

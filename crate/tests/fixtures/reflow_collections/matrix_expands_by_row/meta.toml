@@ -3,5 +3,7 @@ previewable = true
 title       = "A Matrix Literal Expands Each Row Independently"
 
 description = '''
-`small_matrix` fits the 88-character budget and stays fully inline. The wider `tall_matrix` overflows, so the outer list **expands row by row**, and each inner row like `[100, 200, 300]` fits at its own column and stays inline, producing the matrix-by-row layout rather than one cell per line.
+`small_matrix` fits the 88-column budget and stays fully inline.
+
+`tall_matrix` overflows, so the outer list **expands row by row**. Each inner row like `[100, 200, 300]` still fits at its own column and stays inline, which lays the matrix out one row per line rather than one cell per line.
 '''

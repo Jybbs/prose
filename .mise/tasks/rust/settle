@@ -1,39 +1,7 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "settle"
-#MISE description = "Sweep a corpus at every line length for rewrites a second pass would change and fixes the output never took, then sweep mutations of it"
+#MISE description = "Sweep a corpus at every line length for rewrites a second pass would change and fixes the output never took"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
-source "$MISE_PROJECT_ROOT/.mise/lib/delta.bash"
 
-mutation_pass() {
-  local variant="$1" log name seen status=0 unstable
-  name=$(basename "$variant")
-  log="$mutations/$name.log"
-  "$binary" format --no-cache --quiet "$variant" 2> "$log" || status=$?
-  (( status <= 4 )) || { echo "$name exited $status, stderr at $log" >&2; exit 1; }
-  seen=$(find "$variant" -name '*.py' | wc -l | tr -d ' ')
-  unstable=$(sed -n 's/^\([0-9][0-9]*\) files\{0,1\} would change on a second run\.$/\1/p' "$log")
-  unstable="${unstable:-0}"
-  printf '\n%s: %s of %s variants rewrite to output a second run would change\n' \
-    "$name" "$unstable" "$seen"
-  (( unstable == 0 )) || cat "$log"
-}
-
-corpus=$(corpus_root "${1:-}")
-budget="${2:-60}"
-mutate="$MISE_PROJECT_ROOT/.mise/lib/mutate.py"
-
-settle_corpus "$corpus" --test corpus
-
-binary=$(built_binary dev)
-mutations=$(mktemp -d "${TMPDIR:-/tmp}"/prose-mutations.XXXXXX)
-
-printf '\nMutating the corpus under a %ss budget\n' "$budget"
-"$mutate" "$corpus" "$mutations" "$budget"
-
-while IFS= read -r variant; do
-  mutation_pass "$variant"
-done < <(find "$mutations" -mindepth 1 -maxdepth 1 -type d | sort)
-
-printf '\neach mutation survives as formatted output under %s\n' "$mutations"
-printf 'regenerate the pre-format variants it ran on with: %s %s <destination> %s\n' "$mutate" "$corpus" "$budget"
+settle_corpus "${1:-}" --test corpus

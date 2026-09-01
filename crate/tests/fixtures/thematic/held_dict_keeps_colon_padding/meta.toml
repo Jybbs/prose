@@ -3,5 +3,5 @@ previewable = false
 title       = "A Held Dict Keeps Its Aligned Colon Column"
 
 description = '''
-`config`'s multi-line dict already carries `align-colons`-shaped padding and would fit the budget on one line, yet `keep-multiline-literals` holds it exactly where the author wrote it, only stripping its trailing comma. **The padded gap round-trips through the re-expansion**, so the `:` column the reader laid down for `alpha`, `beta`, and `gamma` survives rather than collapsing to `": "` and getting re-padded on the next pass.
+`config`'s multi-line dict already carries `align-colons`-shaped padding and would fit the budget on one line, yet `keep-multiline-literals` holds it exactly where the author wrote it, only stripping its trailing comma. **The padded gap round-trips through the re-expansion**, so the `:` column the reader laid down for `alpha`, `beta`, and `gamma` survives rather than collapsing to `": "` and getting re-padded.
 '''

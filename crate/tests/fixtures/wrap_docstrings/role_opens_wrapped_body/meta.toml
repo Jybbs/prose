@@ -3,5 +3,7 @@ previewable = true
 title       = "A Body Opening on a Role Still Wraps"
 
 description = '''
-This docstring's body opens with the `:class:` role naming `~ensemble.VotingClassifier`, a position where a field list could begin. The field-list test runs at that block boundary and fails on the role's closing backtick, so the line reads as prose and **the paragraph wraps to the budget like any other**.
+This docstring's body opens with the `:class:` role naming `~ensemble.VotingClassifier`, which is a position where a field list genuinely could begin.
+
+The field-list test runs at that block boundary and **fails on the role's closing backtick**, so the line reads as prose and the paragraph wraps to the budget like any other.
 '''

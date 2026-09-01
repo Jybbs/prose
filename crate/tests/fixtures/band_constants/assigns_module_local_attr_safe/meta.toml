@@ -3,5 +3,7 @@ previewable = false
 title       = "A Subscripted Constant Tiers within the Leading Band"
 
 description = '''
-`zebra = SETTINGS["timeout"]` indexes a fellow module constant, so `zebra` **stays below `SETTINGS` as the band sorts**. The blank line between them clears and the four bindings merge into one band, with `alpha = 1` and `beta = 2` slotting between the pair.
+`band-constants` gathers module-level constants into a single group and sorts them, so the blank line between `SETTINGS` and the three bindings below it clears and all four end up together.
+
+`zebra = SETTINGS["timeout"]` reads another constant in that same group, so **it is held below `SETTINGS`** wherever sorting would otherwise place it. `alpha` and `beta` read nothing and sort freely between the two.
 '''

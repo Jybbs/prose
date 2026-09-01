@@ -3,5 +3,7 @@ previewable = true
 title       = "An Over-Budget Chain Breaks One Operand Per Row"
 
 description = '''
-The condition sits on one row that crosses the `40` character budget, and the joined interior does not fit a row of its own either, so the pair opens its bracket alone, lands each operand on a row one indent step in, and closes on its own row ahead of the `:`.
+The condition sits on a single row that crosses the 40-column budget, and its interior does not fit on a row of its own either.
+
+The pair therefore opens its bracket alone, lands **each operand on its own row** one indent step in, and closes on a row of its own ahead of the `:`.
 '''

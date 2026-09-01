@@ -1,8 +1,17 @@
 [docs]
 previewable = false
 sandbox     = true
-title       = "Async Client Drops the Future Import and Modernizes Its Legacy Typing"
+title       = "Async Client Modernizes Its Legacy Typing"
 
 description = '''
-This async API client opens on a `from typing import …` line pulling in `Any`, `Dict`, `Optional`, `Callable`, `Awaitable`, `Mapping`, `Text`, `Tuple`, `Union`, `AsyncIterator`, `Iterable`, `List`, and `Sequence` alongside an unused `from __future__ import annotations`, then declares `Payload`, `Handler`, and `Interval` type aliases, a `poll` coroutine with an over-wide signature and keyword call, and a `consume` coroutine annotated through a quoted forward reference. **The unused future import falls away, the typing import splits, sorts, and drops the names the module no longer needs, `Optional` and `Union` surface as `|` unions, the constants band and align, and the wide `poll` signature, its `client.get` call, and the `DEFAULT_HEADERS` dict each explode one entry per line**, while `register`'s, `poll`'s, and `consume`'s half-annotated parameters and `decode`'s assign-once `parsed` each surface a lint.
+This is a full async API client run through the whole pipeline at once. It opens with `from __future__ import annotations` beside a single `from typing import …` line pulling in thirteen names, then declares three type aliases, a `poll` coroutine with an over-wide signature and call, and a `consume` coroutine annotated through a quoted forward reference.
+
+Most of it is rewritten in one pass:
+
+1. The typing import splits, sorts, and drops the names the module no longer needs.
+2. `Optional` and `Union` become `|` unions, since `target-version` is `3.10`.
+3. The constants group into dependency levels and align on a shared `=` column.
+4. The wide `poll` signature, its `client.get` call, and the `DEFAULT_HEADERS` dict each explode one entry per line.
+
+`from __future__ import annotations` is **kept**, because `_handlers: dict[Text, Callable] = {}` carries an annotation at module scope and only the directive writes that annotation into the module's `__annotations__`. Lints stand alongside the rewrites, on the half-annotated parameters of `register`, `poll`, and `consume`, and on `decode`'s assign-once `parsed`.
 '''

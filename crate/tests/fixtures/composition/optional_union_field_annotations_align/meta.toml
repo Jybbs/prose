@@ -3,5 +3,7 @@ previewable = false
 title       = "Optional and Union Field Annotations Align in Width Groups"
 
 description = '''
-`Endpoint`'s four fields carry `Optional` and `Union` annotations of differing widths. **Every `:` pads into one column one space past `fallback_host`, and every `=` into another one space past `Union[int, None]`**, so the short `host` takes ten spaces of padding while all four defaults still land in a single column.
+`Endpoint`'s four fields carry `Optional` and `Union` annotations of differing widths.
+
+**Every `:` pads to one column past the widest field name, `fallback_host`, and every `=` to one column past the widest annotation, `Union[int, None]`.** The short `host` takes ten spaces of padding as a result, and all four defaults still land in a single column.
 '''

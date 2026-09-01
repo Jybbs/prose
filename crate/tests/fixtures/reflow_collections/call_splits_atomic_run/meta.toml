@@ -3,5 +3,7 @@ previewable = true
 title       = "A Call Splits an Atomic Run into Flow Segments"
 
 description = '''
-Literals, names, attribute chains like `pkg.CONST`, and unary operands like `~mask` are all atomic, so `mixed_atomics` flows as one run across balanced lines. **A non-atomic call expression in the middle breaks its surrounding run into two independent flow segments**, so in `split_by_call` the call `lookup()` takes its own line and the strings before and after it each balance on their own.
+Literals, names, attribute chains like `pkg.CONST`, and unary operands like `~mask` all count as atomic, so `mixed_atomics` flows as one run across balanced rows.
+
+**A non-atomic expression in the middle breaks the run around it into two independent segments.** In `split_by_call` the call `lookup()` takes a row of its own, and the strings before and after it each balance separately.
 '''

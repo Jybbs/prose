@@ -3,5 +3,7 @@ previewable = true
 title       = "A Trailing Opener Settles Even Where It Shares a Column"
 
 description = '''
-The full-line block listing `--fast` and `--slow` keeps every indent inside it, because those three comments open at a column the author chose and nothing downstream moves them. The comments trailing `warm()` and `a_name_that_is_far_longer_here()` share a column with each other, yet each padded `#     ` opener still settles to one space, since a trailing hash sits wherever its code happens to end and [[align-comments]] moves it afterward.
+The full-line block listing `--fast` and `--slow` keeps every indent inside it, because those three comments open at a column the author chose and nothing downstream moves them.
+
+The comments trailing `warm()` and `a_name_that_is_far_longer_here()` share a column with each other, yet **each padded `#     ` opener still settles to a single space**. A trailing hash sits wherever its code happens to end, and `align-comments` is what moves it afterwards.
 '''

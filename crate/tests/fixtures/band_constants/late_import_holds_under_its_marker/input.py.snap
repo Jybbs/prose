@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/late_import_holds_under_its_marker/input.py
+---
+import mmm
+import zzz
+
+VALUE = 1
+
+import aaa  # noqa: E402
+
+print(aaa, mmm, zzz, VALUE)

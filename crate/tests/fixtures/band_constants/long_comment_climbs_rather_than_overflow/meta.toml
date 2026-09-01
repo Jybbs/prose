@@ -3,5 +3,7 @@ previewable = false
 title       = "A Long Comment Climbs Rather Than Overrun the Budget"
 
 description = '''
-The comment below `ZETA_WITH_A_RATHER_LONG_NAME` binds to that constant, and joining it inline as a trailing comment would push the line past the length budget. It climbs to the line above the constant instead, so when the sort seats `ALPHA_CAP` first the note still travels with the constant it documents, and the band never produces an over-long line for `line-overflow` to report.
+The comment below `ZETA_WITH_A_RATHER_LONG_NAME` describes that constant, so it has to travel with it when the sort moves `ALPHA_CAP` to the top.
+
+Folding it onto the constant's own line as a trailing note would push that line past the length budget. It **moves to the line above the constant instead**, which keeps the two together without ever producing an over-long line for `line-overflow` to report.
 '''

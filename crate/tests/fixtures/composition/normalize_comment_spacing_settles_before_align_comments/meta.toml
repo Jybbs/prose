@@ -3,5 +3,7 @@ previewable = false
 title       = "Comment Spacing Settles an Opener Before the Column Moves"
 
 description = '''
-**`normalize-comment-spacing` settles each opener first, then `align-comments` places the hash.** The comments on `warm()` and `a_name_that_is_far_longer_here()` share a column as written, but the spread between those two calls is wider than `max-shift` allows, so the run partitions and each hash lands at the two-space floor with its padded `#     ` opener collapsed to `# `. Because the opener is settled against the column the comment finally lands at rather than the authored one, a second pass changes nothing.
+Both comments are written at the same column with a padded `#     ` opener.
+
+`normalize-comment-spacing` collapses each opener to a single `# ` first. `align-comments` then tries to share a column, but the two call names differ in width by more than `max-shift` allows, so the run splits and **each hash lands at the two-space minimum instead**. Each opener is settled against the column its comment finally reaches rather than against the one it was written at.
 '''

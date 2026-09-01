@@ -35,6 +35,7 @@ use crate::{
 
 mod split;
 
+#[derive(Debug)]
 pub(crate) struct LineOverflow {
     code_line_length: usize,
     import_line_length: usize,

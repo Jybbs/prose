@@ -4,5 +4,7 @@ previewable = true
 title       = "A Stacked String Run Explodes the Argument List"
 
 description = '''
-`note=` carries an implicitly concatenated string run stacked across two rows, and an argument spanning rows explodes the call around it, so `alpha`, `note`, and `zeta` each take their own line with the run's continuation moving to the item column. Left inline, the run's second row would read as another argument sitting at a stray indent.
+`note=` carries an implicitly concatenated string run stacked across two rows, and an argument spanning rows explodes the call around it.
+
+`alpha`, `note`, and `zeta` each take a line of their own, with the run's continuation moving to the item column. Left inline, **that second row would read as another argument sitting at a stray indent**.
 '''

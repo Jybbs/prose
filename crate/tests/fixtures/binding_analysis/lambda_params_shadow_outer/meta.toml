@@ -3,5 +3,7 @@ previewable = false
 title       = "Lambda Parameters Shadow Outer Bindings"
 
 description = '''
-`f = lambda x: x` opens its own function scope, so the parameter `x` **binds there as a `Parameter` and shadows the module-level `x = 1`**. The lambda body's read counts against the parameter, leaving the module `x` with no reads at all.
+`f = lambda x: x` opens a function scope of its own, so the parameter `x` **binds there as a `Parameter` and shadows the module-level `x = 1`**.
+
+The read in the lambda body counts against that parameter, which leaves the module-level `x` recorded with no reads at all.
 '''

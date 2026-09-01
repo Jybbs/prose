@@ -3,5 +3,7 @@ previewable = true
 title       = "Inline End-of-Line Comments Stay Quiet"
 
 description = '''
-The trailing `# 1. trim whitespace` sits at the end of the `cleaned = payload.strip()` line rather than on a line of its own, and **only comments occupying their own line are checked**, so nothing is reported even though the text matches the numbered-step shape. The source passes through unchanged.
+Nothing is reported here. The `# 1. trim whitespace` comment sits at the end of the `cleaned = payload.strip()` line rather than on a line of its own.
+
+**Only comments occupying their own line are checked**, so this one is skipped even though its text matches the numbered-step shape exactly.
 '''

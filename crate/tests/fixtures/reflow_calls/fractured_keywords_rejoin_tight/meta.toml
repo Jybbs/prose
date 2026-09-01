@@ -4,5 +4,7 @@ previewable = true
 title       = "A Fractured Keyword List Rejoins Tight"
 
 description = '''
-`wrap(alpha, beta=2, **rest)` arrives fractured, with `**rest` pushed to a second line under the arguments. The joined form fits, so the call rejoins on one row, and the keyword keeps the tight `beta=2` shape a condensed call takes rather than gaining spaces around its `=`.
+`wrap(alpha, beta=2, **rest)` arrives fractured, with `**rest` pushed onto a second line.
+
+The joined form fits, so the call rejoins onto one row, and the keyword **keeps the tight `beta=2` spelling** a condensed call takes rather than gaining spaces around its `=`.
 '''

@@ -3,5 +3,7 @@ previewable = false
 title       = "A Function-Local Rebind Does Not Exempt the Module Constant"
 
 description = '''
-The module-level `max_retries = 5` is written once, and the `max_retries = count` inside `configure` binds a separate function-local name. The scope-aware check counts only module-scope writes as reassignments, so the constant still reads as written once and is flagged with the suggested `MAX_RETRIES` rename.
+The module-level `max_retries = 5` is written exactly once. The `max_retries = count` inside `configure` binds a separate, function-local name that merely shares its spelling.
+
+**Only module-scope writes count as reassignments here**, so the module constant still reads as written-once and draws its `MAX_RETRIES` rename. The local rebind is ignored entirely.
 '''

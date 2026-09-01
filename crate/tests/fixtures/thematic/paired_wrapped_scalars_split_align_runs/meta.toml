@@ -3,5 +3,7 @@ previewable = false
 title       = "Paired Wrapped Scalars Split the Alignment Runs"
 
 description = '''
-In `LABELS`, `bravo` and `charlie` hold long string values that wrap onto their own continuation lines, and each keeps its alphabetical slot among the scalars `alpha`, `delta`, `echo`, so a blank-line divider opens between `bravo` and `charlie` themselves rather than fencing the two together as one contiguous block. Each divider ends the `align-colons` run where it sits, leaving `alpha` unpadded above and only `delta` and `echo` below sharing a `:` column.
+`bravo` and `charlie` hold long string values that wrap onto their own continuation lines, and each keeps its alphabetical slot among the plain scalars `alpha`, `delta`, and `echo`.
+
+Because the two stay separated rather than being gathered together, **a blank-line divider opens between `bravo` and `charlie` themselves** instead of fencing the pair off as one block. Each divider ends the `align-colons` run where it sits, leaving `alpha` unpadded above and only `delta` and `echo` below sharing a `:` column.
 '''

@@ -18,7 +18,7 @@ use crate::{
 /// The terms this rule lays a signature out under, resolved from
 /// configuration, so a rule measuring a call inside a parameter reads
 /// the same decision about the signature around it.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct Terms {
     code_line_length: usize,
     expands_literals: bool,

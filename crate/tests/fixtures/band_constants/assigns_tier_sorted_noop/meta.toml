@@ -3,5 +3,5 @@ previewable = false
 title       = "Tier-and-Alphabetical Order Is Idempotent"
 
 description = '''
-`ALPHA` and `BRAVO` already alphabetize, and `CHARLIE = ALPHA + BRAVO` already sits below the two names it reads. The run **produces no edits**, so a second pass reads identical input and the rule is a no-op end to end.
+`ALPHA` and `BRAVO` already alphabetize, and `CHARLIE = ALPHA + BRAVO` already sits below the two names it reads. The run **produces no edits**, leaving the module exactly as written.
 '''

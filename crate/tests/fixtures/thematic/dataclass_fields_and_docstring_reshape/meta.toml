@@ -3,5 +3,7 @@ previewable = false
 title       = "Dataclass Fields Sort, Align, and Method Docstring Reshapes"
 
 description = '''
-`JobPosting`'s `@dataclass` fields, `title`, `salary_band`, `company`, `description`, `posted_on`, carry varying-width defaults and sit out of alphabetical order ahead of its `summary` method. **The pipeline holds the field order the generated constructor binds rather than sorting it, and aligns the annotation `:` and default `=` columns**, normalizes the blank-line cushion before `summary`, and reshapes its single-line docstring into multi-line form.
+`JobPosting` is a `@dataclass`, so its fields feed the generated constructor's signature and **their order is held rather than sorted**, even though they arrive out of alphabetical order.
+
+The annotation `:` and default `=` columns still align, the blank-line cushion before `summary` is normalized, and that method's single-line docstring is reshaped into multi-line form.
 '''

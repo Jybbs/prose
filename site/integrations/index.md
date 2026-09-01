@@ -8,7 +8,13 @@ Every integration on the pages below is a thin wrapper around `prose format` or 
 
 ## How the Boundaries Compose
 
-Three editing boundaries *(save, commit, merge)* are complementary rather than redundant. Run-on-save catches layout drift the instant it appears, leaving the working tree clean before the developer thinks about staging. The pre-commit hook catches the case where a save fires without the editor integration *(an upstream patch applied with `git apply`, a teammate's edit pulled in unformatted)*. The CI gate catches every remaining case, including pushes from contributors who run none of the local hooks. A project that wires all three runs the same `prose check` or `prose format` against the same [`[tool.prose]`](/reference/configuration) at every layer, so a rule disabled in one place is disabled everywhere.
+Three editing boundaries *(save, commit, merge)* are complementary rather than redundant, each catching what the layer before it lets through:
+
+1. Run-on-save catches layout drift the instant it appears, leaving the working tree clean before the developer thinks about staging.
+2. The pre-commit hook catches the case where a save fires without the editor integration *(an upstream patch applied with `git apply`, a teammate's edit pulled in unformatted)*.
+3. The CI gate catches every remaining case, including pushes from contributors who run none of the local hooks.
+
+A project that wires all three runs the same `prose check` or `prose format` against the same [`[tool.prose]`](/reference/configuration) at every layer, so a rule disabled in one place is disabled everywhere.
 
 ## See Also
 

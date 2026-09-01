@@ -25,6 +25,7 @@ mod typing_imports;
 use render::Renderer;
 use typing_imports::TypingImports;
 
+#[derive(Debug)]
 pub(crate) struct ModernizeAnnotations {
     folds: Folds,
     generics: bool,

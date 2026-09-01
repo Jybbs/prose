@@ -4,5 +4,7 @@ sandbox     = true
 title       = "Event Dispatch Splits Match Arms and Explodes a Keyword Call"
 
 description = '''
-`dispatch` matches on `event.kind`, its `"create"` arm carrying an over-wide `registry.create` call while `"update"` and `_` stay terse, and `summarize` holds a five-entry `totals` dict. **The `"create"` arm and its call explode one-per-line with sorted, column-aligned keywords while `"update"` and `_` collapse inline with their `:` padded to match, the `totals` dict sorts and expands one entry per line, and `summarize`'s single-line docstring reshapes to framed form**, with the assign-once `totals` flagged for inlining.
+`dispatch` matches on `event.kind`. Its `"create"` arm carries an over-wide `registry.create` call while `"update"` and `_` stay terse, and `summarize` holds a five-entry `totals` dict.
+
+The `"create"` arm and its call explode one per line, with the keywords sorted and settled onto a shared `=` column. `"update"` and `_` **stay collapsed inline with their `:` padded to match each other**, the `totals` dict sorts and expands one entry per line, and `summarize`'s single-line docstring reshapes to framed form. The assign-once `totals` is flagged for inlining.
 '''

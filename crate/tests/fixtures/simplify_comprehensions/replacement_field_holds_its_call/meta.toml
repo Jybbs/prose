@@ -3,5 +3,5 @@ previewable = false
 title       = "A Replacement Field Holds Its Call"
 
 description = '''
-`label`'s f-string replacement field holds `set([x for x in xs])` unchanged, because the pass that finds copying comprehensions does not walk inside an f-string's replacement fields. The identical expression in `plain = set([x for x in xs])` sits outside any string literal, so it does collapse, landing on `plain = set(xs)`.
+`label`'s f-string replacement field holds `set([x for x in xs])` unchanged, because the search for copying comprehensions does not walk inside an f-string's replacement fields. The identical expression in `plain = set([x for x in xs])` sits outside any string literal, so it does collapse, landing on `plain = set(xs)`.
 '''

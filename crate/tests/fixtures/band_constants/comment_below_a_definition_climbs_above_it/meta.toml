@@ -3,5 +3,7 @@ previewable = false
 title       = "A Comment Below a Definition Climbs Above It"
 
 description = '''
-`# documents render` sits directly below `render`'s body and binds backward to the definition. A definition spans lines, so trailing it would land the comment after a statement inside the body, and the comment takes the line above `def render(template):` instead, staying with the member it documents while `ALPHA_DECAY = 1` hoists into the leading band.
+`# documents render` sits directly below `render` and describes it, while `ALPHA_DECAY = 1` hoists above the definition to join the constants at the top of the module.
+
+A definition spans several lines, so folding the comment onto its line as a trailing note would land it after a statement inside the body. It **moves to the line above `def render(template):` instead**, which keeps it attached to what it documents.
 '''

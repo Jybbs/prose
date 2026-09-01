@@ -3,5 +3,7 @@ previewable = true
 title       = "An Inner `type` Call Holds Inside an Expanding Tuple"
 
 description = '''
-The tuple closing the `%` operand overflows, so `reflow-collections` expands it and seats its closer on the row its opener sits on, and `reflow-calls` breaks the `TypeError` closer onto its own row while leaving the `type` call inside alone, where the tail the expansion removes would otherwise have exploded it.
+The `%` tuple overflows the 60-column budget, so `reflow-collections` expands it to one element per row and moves its closing `)` onto a row of its own. `reflow-calls` then breaks the `TypeError` closer onto its own row as well.
+
+The `type(other).__qualname__` call inside **stays on one line**. It only crossed the budget because the two stacked closers sat at the end of its row, and expanding the tuple takes that tail away.
 '''

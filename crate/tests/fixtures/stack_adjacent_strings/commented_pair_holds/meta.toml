@@ -3,5 +3,7 @@ previewable = true
 title       = "A Comment inside the Parentheses Pins the Run"
 
 description = '''
-The `# keep the seam here` comment sits inside the parentheses enclosing `message`'s run, so `stack-adjacent-strings` **holds the run at its source shape** rather than breaking it, because rewriting the pair would carry the comment onto a different line.
+Nothing here moves. The `# keep the seam here` comment sits inside the parentheses enclosing `message`'s string run.
+
+The run is **held at its source shape**, because rewriting the pair would carry the comment onto a different line from the one its author put it on.
 '''

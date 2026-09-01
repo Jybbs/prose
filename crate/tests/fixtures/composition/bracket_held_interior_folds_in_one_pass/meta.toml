@@ -4,5 +4,7 @@ previewable = true
 title       = "A Pair Whose Breaks a Nested Bracket Holds Joins in One Pass"
 
 description = '''
-The grouping pair around the comparison holds none of its breaks, the `find` call's own parentheses do, so [[reflow-parentheses]] folds the interior onto one row and drops the pair in the same pass, leaving [[reflow-calls]] a call already on the row it fits.
+The grouping pair around the comparison holds none of the line breaks, since the `find` call's own parentheses hold them instead.
+
+`reflow-parentheses` can therefore fold the interior onto one row and drop the redundant pair in a single pass, which leaves `reflow-calls` **a call that already fits its row** and nothing further to do.
 '''

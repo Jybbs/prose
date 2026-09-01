@@ -1,6 +1,6 @@
 [docs]
 previewable = false
-title       = "Async Function Annotations Are Recognized"
+title       = "Async Function Annotations Are Read Too"
 
 description = '''
 The return annotation on `async def fetch() -> Result` counts the same as one on a plain `def`, the `async` marker changing nothing about how annotations are found. `Result` is defined above the function, so the annotation would survive eager evaluation and **the directive is removed**.

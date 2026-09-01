@@ -19,8 +19,10 @@ use crate::{
     source::Source,
 };
 
-/// The member blocks of one body, their rendered text, and the new-order
-/// permutation an assembly writes them in.
+/// The member blocks of one body, the text rendered for each, and the
+/// slot order they assemble in, the three every assembly reads
+/// together. A rewriting rule builds one through
+/// [`rendered_member_blocks`] and permutes `order` before assembling.
 pub(crate) struct Assembly<'src> {
     pub(crate) blocks: Vec<TextRange>,
     pub(crate) order: Vec<usize>,
@@ -28,30 +30,10 @@ pub(crate) struct Assembly<'src> {
 }
 
 impl<'src> Assembly<'src> {
-    /// The assembled text beside the span it covers, borrowed from
-    /// `source` when no block rewrote and the order is identity, unless
-    /// `forced` holds. `gap` overrides the source gap after each slot.
-    pub(crate) fn assemble(
-        &self,
-        source: &'src Source,
-        forced: bool,
-        gap: impl FnMut(usize) -> Option<&'src str>,
-    ) -> (Cow<'src, str>, TextRange) {
-        assemble_or_borrow(
-            source,
-            &self.blocks,
-            &self.rendered,
-            &self.order,
-            forced,
-            gap,
-        )
-    }
-
     /// One fix group per notebook cell the blocks span and one for an
     /// ordinary module, each holding the [`piecewise_edits`] of its own
-    /// slots. A group whose pieces all match the source is dropped, and a
-    /// module whose blocks all borrow at identity order emits nothing
-    /// unless `forced`.
+    /// slots. `order` never crosses a cell boundary, and a group whose
+    /// pieces all match the source is dropped.
     pub(crate) fn cell_edits(
         &self,
         source: &'src Source,
@@ -78,6 +60,32 @@ impl<'src> Assembly<'src> {
                 (!edits.is_empty()).then_some(edits)
             })
             .collect()
+    }
+
+    /// The assembled text with `gap`, returned alongside the span it
+    /// covers. Short-circuits to a borrow of the source span when no
+    /// child rewrote and `order` is identity, unless `forced` holds, the
+    /// signal a gap override reshapes spacing without reordering.
+    pub(crate) fn or_borrow(
+        &self,
+        source: &'src Source,
+        forced: bool,
+        gap: impl FnMut(usize) -> Option<&'src str>,
+    ) -> (Cow<'src, str>, TextRange) {
+        let span = blocks_span(&self.blocks);
+        if !forced && !any_owned(&self.rendered) && is_identity(&self.order) {
+            return (Cow::Borrowed(source.slice(span)), span);
+        }
+        (
+            Cow::Owned(assemble_blocks(
+                source,
+                &self.blocks,
+                &self.rendered,
+                &self.order,
+                gap,
+            )),
+            span,
+        )
     }
 }
 
@@ -235,31 +243,13 @@ where
             (block, render_block(i, block))
         })
         .unzip();
-    let mut order: Vec<usize> = (0..items.len()).collect();
-    permute_full(&mut order, items, classify);
-    assemble_or_borrow(source, &blocks, &rendered, &order, false, |_| None)
-}
-
-/// Assembles `rendered` in `order` with `gap`, returning the covered
-/// span alongside the text. Short-circuits to a borrow of the source
-/// span when no child rewrote and `order` is identity, unless `forced`
-/// holds, the signal a gap override reshapes spacing without reordering.
-fn assemble_or_borrow<'src>(
-    source: &'src Source,
-    blocks: &[TextRange],
-    rendered: &[Cow<'src, str>],
-    order: &[usize],
-    forced: bool,
-    gap: impl FnMut(usize) -> Option<&'src str>,
-) -> (Cow<'src, str>, TextRange) {
-    let span = blocks_span(blocks);
-    if !forced && !any_owned(rendered) && is_identity(order) {
-        return (Cow::Borrowed(source.slice(span)), span);
-    }
-    (
-        Cow::Owned(assemble_blocks(source, blocks, rendered, order, gap)),
-        span,
-    )
+    let mut assembly = Assembly {
+        blocks,
+        order: (0..items.len()).collect(),
+        rendered,
+    };
+    permute_full(&mut assembly.order, items, classify);
+    assembly.or_borrow(source, false, |_| None)
 }
 
 /// One narrowed edit per piece of [`walk_assembly`] that differs from

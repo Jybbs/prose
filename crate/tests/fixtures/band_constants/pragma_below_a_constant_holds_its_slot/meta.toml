@@ -3,5 +3,7 @@ previewable = false
 title       = "A Pragma Below a Constant Holds Its Slot"
 
 description = '''
-`# type: ignore` annotates whichever line it sits on, so it is inert on a line of its own yet would take effect if the band carried it onto a constant's line as a trailing comment. The pragma therefore pins where the source put it, and `ALPHA_CAP` holds below it rather than sorting above `ZETA_CAP`, leaving the file unchanged.
+Nothing in this file moves. `# type: ignore` applies to whichever line it sits on, which makes it harmless on a line of its own.
+
+Folding it onto a constant's line as a trailing note would **turn it into a live pragma on that constant**, so it stays exactly where the source put it. `ALPHA_CAP` then holds below it instead of sorting above `ZETA_CAP`.
 '''

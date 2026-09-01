@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Member of a Private Module Reads as a Re-Export"
+
+description = '''
+Nothing reads `OPENSSL_VERSION`, `_DEFAULT_CIPHERS`, or `namedtuple`. **The two `_ssl` imports hold**, a public module taking names out of its underscore-named implementation being how the standard library re-exports, whereas `namedtuple` comes from a public module and **drops**. `__future__` is excluded from the marker despite its underscores, so **the unused directive still drops**.
+'''

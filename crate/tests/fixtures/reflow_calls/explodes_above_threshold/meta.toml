@@ -4,5 +4,7 @@ previewable = true
 title       = "Explode a Call Above the Argument Threshold"
 
 description = '''
-`connect(h, p, t, u)` passes four positionals, past the threshold, and `connect` is defined in the same module. The call explodes to one argument per line, each positional gaining its name from the resolved signature to read `host=h` through `user=u`, and the closing `)` drops to the indent of the line the call starts on.
+`connect(h, p, t, u)` passes four positionals, which is past the threshold, and `connect` is defined in the same module so its signature can be read.
+
+The call explodes to one argument per line, and **each positional gains its parameter name** from that resolved signature, so the rows read `host=h` through `user=u`. The closing `)` drops to the indent of the row the call starts on.
 '''

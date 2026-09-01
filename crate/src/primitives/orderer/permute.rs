@@ -3,12 +3,6 @@
 
 use std::ops::Range;
 
-/// True when `order` is the identity permutation `0..order.len()`, the
-/// signal a reorder left every slot in source position.
-pub(crate) fn is_identity(order: &[usize]) -> bool {
-    order.iter().copied().eq(0..order.len())
-}
-
 /// Convenience wrapper for `permute_in_place` over the full `items`
 /// span. Shared by every caller that sorts the entire slice rather
 /// than a sub-run.
@@ -68,6 +62,12 @@ where
     runs.into_iter().fold(false, |permuted, run| {
         permuted | permute_in_place(order, items, run, &mut classify)
     })
+}
+
+/// True when `order` is the identity permutation `0..order.len()`, the
+/// signal a reorder left every slot in source position.
+pub(super) fn is_identity(order: &[usize]) -> bool {
+    order.iter().copied().eq(0..order.len())
 }
 
 #[cfg(test)]

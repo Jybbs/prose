@@ -3,5 +3,7 @@ previewable = false
 title       = "A Single-Row Argument List Is Measured as the Author Spaced It"
 
 description = '''
-The inner list carries no gap after its comma and keeps that spacing, so the length trigger reads the width the row actually holds rather than the normalized one-row form, which would charge a column no rewrite ever adds.
+Nothing here moves. The inner `Vec(0,0)` calls carry no space after their commas, and they keep that spacing.
+
+The length check therefore reads **the width the row actually holds**, not a normalized one-row form. Measuring the normalized version would count columns no rewrite ever adds, and would explode a row that fits the 60-column budget exactly as written.
 '''
