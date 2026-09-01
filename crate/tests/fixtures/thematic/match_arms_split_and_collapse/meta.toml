@@ -3,5 +3,11 @@ previewable = false
 title       = "Match Arms Split or Collapse by Budget, Kwargs Sort"
 
 description = '''
-`dispatch`'s three named cases, `create`, `update`, `delete`, each call an over-budget `Counter(...)` inline, with the `case _` fallback already padded to align its `:` with them, and a module-level `SETTINGS` dict holds one key while `required_only` returns a one-item set with a trailing comma. **`reflow-calls` explodes each `Counter(...)` call to one keyword per line while `alphabetize-siblings` sorts its `action`, `source`, `timestamp` keywords, `strip-trailing-commas` drops the dangling commas from `SETTINGS` and `{name,}`, and `SETTINGS` rejoins onto one line since one entry is too few to hold**, and once the three cases turn multi-line, `align-match-case` no longer groups `case _` with them, so its padding collapses to a single flush space. A second pass leaves the result stable.
+`dispatch`'s three named cases, `create`, `update`, `delete`, each call an over-budget `Counter(...)` inline, with the `case _` fallback already padded to align its `:` with them, and a module-level `SETTINGS` dict holds one key while `required_only` returns a one-item set with a trailing comma. The rewrites land together:
+
+1. `reflow-calls` explodes each `Counter(...)` call to one keyword per line, and `alphabetize-siblings` sorts its `action`, `source`, and `timestamp` keywords.
+2. `strip-trailing-commas` drops the dangling commas from `SETTINGS` and `{name,}`.
+3. `SETTINGS` rejoins onto one line, one entry being too few to hold.
+
+Once the three cases turn multi-line, `align-match-case` no longer groups `case _` with them, so its padding collapses to a single flush space.
 '''

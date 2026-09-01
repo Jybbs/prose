@@ -3,5 +3,5 @@ previewable = true
 title       = "A Signature Measures the Stripped Padding"
 
 description = '''
-`reflow-signatures` measures the one-line form at the width it settles to once `strip-stranded-padding` drops the colon padding inside a parameter, so a signature that fits only after the strip stays on one line rather than exploding on one pass and re-joining on the next.
+`reflow-signatures` measures the one-line form at the width it settles to once `strip-stranded-padding` drops the colon padding inside a parameter, so a signature that fits only after the strip stays on one line rather than exploding and re-joining.
 '''

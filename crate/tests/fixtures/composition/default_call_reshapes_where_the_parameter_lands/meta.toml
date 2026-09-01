@@ -3,5 +3,5 @@ previewable = true
 title       = "A Default Call Reshapes Where the Parameter Lands"
 
 description = '''
-`reflow-signatures` lays the signature out one parameter per line and reshapes the call inside the default where that parameter lands, while `reflow-calls` leaves the parameters of a signature it can see will expand alone, so the nested call measures against its exploded row and the `=` buffer in one pass.
+`reflow-signatures` lays the signature out one parameter per line and reshapes the call inside the default where that parameter lands, while `reflow-calls` leaves the parameters of a signature it can see will expand alone, so the nested call measures against its exploded row and the `=` buffer.
 '''

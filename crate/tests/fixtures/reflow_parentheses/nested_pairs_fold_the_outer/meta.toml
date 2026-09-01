@@ -3,5 +3,5 @@ previewable = true
 title       = "A Wrapped Pair Counts the Pairs Nested Inside It"
 
 description = '''
-`ready = (` wraps two nested groupings, `(server.up)` and `(cache.warm)`, each carrying its own redundant parentheses, inside an outer grouping split across lines. With the budget set to `34` characters, the fold test already counts those two sets of parentheses as shed, so the whole expression fits and folds in the same pass to `ready = server.up and cache.warm` rather than waiting for a later one.
+`ready = (` wraps two nested groupings, `(server.up)` and `(cache.warm)`, each carrying its own redundant parentheses, inside an outer grouping split across lines. With the budget set to `34` characters, the fold test already counts those two sets of parentheses as shed, so the whole expression fits and folds to `ready = server.up and cache.warm`.
 '''

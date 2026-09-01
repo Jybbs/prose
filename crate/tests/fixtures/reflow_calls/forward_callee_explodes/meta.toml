@@ -3,5 +3,5 @@ previewable = false
 title       = "Resolve a Callee Defined Below the Call"
 
 description = '''
-`parse_str` calls `ints_to_rgba` before that function's `def` appears, the definition sitting lower in the file. **Signature resolution reads the completed module bindings rather than only the lines above the call**, so the four-positional call explodes to `red_channel=red_channel` through `alpha_channel=alpha_channel` on the first pass instead of waiting for a reorder to move the definition up.
+`parse_str` calls `ints_to_rgba` before that function's `def` appears, the definition sitting lower in the file. **Signature resolution reads the completed module bindings rather than only the lines above the call**, so the four-positional call explodes to `red_channel=red_channel` through `alpha_channel=alpha_channel` rather than waiting for a reorder to move the definition up.
 '''

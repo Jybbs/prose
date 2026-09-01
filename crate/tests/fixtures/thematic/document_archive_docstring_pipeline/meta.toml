@@ -4,5 +4,12 @@ sandbox     = true
 title       = "Document Archive Reframes, Wraps, and Expands Docstrings Across the Whole Module"
 
 description = '''
-This persistence module opens on a mis-framed module docstring with an over-long summary paragraph, then unsorted interleaved imports, a constant pool split around its function definitions, an over-wide `write_document` signature, and single-line docstrings on `write_document`, `purge`, and `CatalogStore`. **The module docstring and `purge`'s `Args:` docstring reframe onto their own `"""` lines and wrap at the budget, the `Args:` entries align their `:` column, the single-line docstrings expand to framed form, the imports group, sort, and align, the constants `ARCHIVE_ROOT`, `ENCODING`, `MANIFEST_NAME` band, `write_document`'s signature explodes one-per-line, and `purge`'s bare `-> None` strips**, while `json` and `hashlib` each surface a lint for reaching through a single attribute, `write_document`'s out-of-order parameters stay in place but flagged, and `purge`'s assign-once `cutoff` is flagged for inlining.
+This persistence module opens on a mis-framed module docstring with an over-long summary paragraph, then unsorted interleaved imports, a constant pool split around its function definitions, an over-wide `write_document` signature, and single-line docstrings on `write_document`, `purge`, and `CatalogStore`. The rewrites land together:
+
+1. The module docstring and `purge`'s `Args:` docstring reframe onto their own `"""` lines and wrap at the budget, and the `Args:` entries align their `:` column.
+2. The single-line docstrings expand to framed form.
+3. The imports group, sort, and align, and the constants `ARCHIVE_ROOT`, `ENCODING`, and `MANIFEST_NAME` band.
+4. `write_document`'s signature explodes one parameter per line, and `purge`'s bare `-> None` strips.
+
+Lints stand alongside them, `json` and `hashlib` each reaching through a single attribute, `write_document`'s out-of-order parameters staying in place but flagged, and `purge`'s assign-once `cutoff` flagged for inlining.
 '''

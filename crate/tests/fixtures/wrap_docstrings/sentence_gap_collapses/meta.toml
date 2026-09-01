@@ -3,5 +3,5 @@ previewable = true
 title       = "A Two-Space Sentence Separator Collapses to One"
 
 description = '''
-The module docstring separates its two sentences with a double space after `disk.`, and every whitespace run between reflowed words **collapses to a single space**. Left alone, the run would survive mid-line and vanish only at a wrap point, making the paragraph measure a different length on each pass.
+The module docstring separates its two sentences with a double space after `disk.`, and every whitespace run between reflowed words **collapses to a single space**. Left alone, the run would survive mid-line and vanish only at a wrap point, leaving the paragraph's measured length to depend on where the wrap fell.
 '''

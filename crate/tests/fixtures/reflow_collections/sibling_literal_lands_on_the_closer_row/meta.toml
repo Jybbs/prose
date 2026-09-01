@@ -3,5 +3,5 @@ previewable = true
 title       = "A Sibling Literal Lands on the Closer Row"
 
 description = '''
-The second tuple measures at the column the first tuple's expansion leaves it, on the closer row at the statement's indent, rather than at the continuation column it was written under, so it packs beside the closer instead of expanding under a stale indent the next pass would move.
+The second tuple measures at the column the first tuple's expansion leaves it, on the closer row at the statement's indent, rather than at the continuation column it was written under, so it packs beside the closer instead of expanding under a stale indent.
 '''

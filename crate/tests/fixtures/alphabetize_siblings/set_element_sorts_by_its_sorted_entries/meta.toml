@@ -3,5 +3,5 @@ previewable = true
 title       = "A Set Element Sorts by Its Sorted Entries"
 
 description = '''
-A dict inside a set sorts its own entries in the same pass, and the set keys that element on the text the inner sort writes, so the element lands where its sorted form belongs rather than where its source text would have put it.
+A dict inside a set sorts its own entries, and the set keys that element on the text the inner sort writes, so the element lands where its sorted form belongs rather than where its source text would have put it.
 '''

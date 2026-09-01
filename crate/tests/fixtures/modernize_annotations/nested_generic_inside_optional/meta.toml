@@ -4,5 +4,5 @@ previewable = true
 title       = "A Legacy Annotation Comes Back in Its Modern Form"
 
 description = '''
-`x`'s annotation stacks both legacy spellings, wherein `typing.List[int]` sits inside `typing.Optional[...]`. One pass settles both, the inner generic becoming `list[int]` and the `Optional` wrapper becoming the PEP 604 `| None`, so `x` lands as `list[int] | None`. Nothing reads `typing` once the rewrites land, so `import typing` is removed too.
+`x`'s annotation stacks both legacy spellings, wherein `typing.List[int]` sits inside `typing.Optional[...]`. Both settle together, the inner generic becoming `list[int]` and the `Optional` wrapper becoming the PEP 604 `| None`, so `x` lands as `list[int] | None`. Nothing reads `typing` once the rewrites land, so `import typing` is removed too.
 '''

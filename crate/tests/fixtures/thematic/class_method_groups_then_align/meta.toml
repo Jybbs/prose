@@ -3,5 +3,5 @@ previewable = false
 title       = "Method Regrouping Then Field Column Alignment on a Class"
 
 description = '''
-In `Posting`, methods sort into the canonical dunder, property, private, then public groups, landing `__init__`, `__repr__`, `name`, `_internal`, and `update` in that order, while the annotated fields `company`, `description`, `salary`, `title` and both import runs alphabetize at the module top. **`align-colons` and `align-equals` then settle the field-declaration `:` and `=` columns**, and a second pipeline pass produces no further change.
+In `Posting`, methods sort into the canonical dunder, property, private, then public groups, landing `__init__`, `__repr__`, `name`, `_internal`, and `update` in that order, while the annotated fields `company`, `description`, `salary`, `title` and both import runs alphabetize at the module top. **`align-colons` and `align-equals` then settle the field-declaration `:` and `=` columns**.
 '''

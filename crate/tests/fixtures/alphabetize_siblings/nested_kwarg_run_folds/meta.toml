@@ -3,5 +3,5 @@ previewable = false
 title       = "A Nested Keyword Run Folds into Its Outer Call"
 
 description = '''
-Both keyword runs sort in one pass, `g`'s arguments reordering to `c=2, d=1` while `foo`'s `b=2, a=3` become `a=3, b=2`. The inner run folds into the outer call's edit rather than emitting a second edit overlapping it, and `z=g(...)` holds its first slot because its value is a call whose evaluation order a move would change.
+Both keyword runs sort, `g`'s arguments reordering to `c=2, d=1` while `foo`'s `b=2, a=3` become `a=3, b=2`. The inner run folds into the outer call's edit rather than emitting a second edit overlapping it, and `z=g(...)` holds its first slot because its value is a call whose evaluation order a move would change.
 '''

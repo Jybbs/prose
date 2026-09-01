@@ -3,5 +3,5 @@ previewable = true
 title       = "A Call Measures the Stripped Padding"
 
 description = '''
-`reflow-calls` measures a single-row argument list at the width it settles to once `strip-stranded-padding` drops the delimiter padding inside it, so a call whose padded text crosses the budget by exactly that padding stays on one row rather than exploding on one pass and rejoining on the next.
+`reflow-calls` measures a single-row argument list at the width it settles to once `strip-stranded-padding` drops the delimiter padding inside it, so a call whose padded text crosses the budget by exactly that padding stays on one row rather than exploding and rejoining.
 '''

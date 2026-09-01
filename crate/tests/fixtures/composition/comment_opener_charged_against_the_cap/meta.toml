@@ -4,5 +4,5 @@ previewable = true
 title       = "An Alignment Run Measures a Comment at the Width It Settles To"
 
 description = '''
-The first row's comment opens tight against its hash run, which [[normalize-comment-spacing]] later settles to one space. [[align-equals]] charges that column before choosing its own, so the run declines a shared column that would carry the row past the budget rather than taking it and having the next pass withdraw it.
+The first row's comment opens tight against its hash run, which [[normalize-comment-spacing]] later settles to one space. [[align-equals]] charges that column before choosing its own, so the run declines a shared column that would carry the row past the budget rather than taking it and having to withdraw it.
 '''

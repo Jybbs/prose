@@ -3,5 +3,5 @@ previewable = true
 title       = "Padded Attribute Keys and Their Descriptions Settle in One Pass"
 
 description = '''
-The `Attributes:` entries for `command` and `command_message` both run past the docstring budget unwrapped. **`align-colons` pads both `:` one space past `command_message` with no line cap applied, and `wrap-docstrings` then reflows each description within `docstring-line-length`, hanging the wrapped lines from the padded column**, so both entries reach their final shape on the first pass rather than drifting across two more.
+The `Attributes:` entries for `command` and `command_message` both run past the docstring budget unwrapped. **`align-colons` pads both `:` one space past `command_message` with no line cap applied, and `wrap-docstrings` then reflows each description within `docstring-line-length`, hanging the wrapped lines from the padded column**, so both entries reach their final shape rather than drifting.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Sibling Call Measures the Row Its Neighbor's Join Leaves"
 
 description = '''
-Joining the first call's fractured list carries the `maybe` call onto the same row, so the length trigger reads `maybe` at the column the join lands it at and explodes it in the same pass.
+Joining the first call's fractured list carries the `maybe` call onto the same row, so the length trigger reads `maybe` at the column the join lands it at and explodes it.
 '''

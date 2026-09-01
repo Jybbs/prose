@@ -4,5 +4,5 @@ previewable = true
 title       = "A Band Heading Survives Its Unread Head"
 
 description = '''
-[[band-constants]] sorts the import band and reseats the comment heading it on whichever import the sort puts first, so [[prune-inert-imports]] gives the unread head's line to the next import of the band in the same pass rather than holding it under a comment the sort would lift off it.
+[[band-constants]] sorts the import band and reseats the comment heading it on whichever import the sort puts first, so [[prune-inert-imports]] gives the unread head's line to the next import of the band rather than holding it under a comment the sort would lift off it.
 '''

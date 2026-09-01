@@ -45,7 +45,13 @@ A package `__init__.py` reports an unreferenced import rather than dropping it, 
 
 ## The `__future__` Directive
 
-`from __future__ import annotations` drops on three branches, where the module carries no annotation, where `target-version` is 3.14 or higher and PEP 749 defers evaluation, and where every annotated name resolves to an unconditional module-scope binding written before it. Where [[alphabetize-siblings]] sorts definitions in the same pipeline, a name a module-level class or function binds counts as unresolved whichever side of the annotation it sits on, since the sort reseats definitions after this rule has run, so a directive covering such a reference stays in whichever order the sort writes. Where [[band-constants]] runs in the same pipeline, a binding it hoists above the annotation naming it, a constant into the leading band or an import into the import run, counts as written before that annotation, reading the module as the band seats it once the directive is gone, so the directive drops on the run that hoists rather than the one after.
+`from __future__ import annotations` drops wherever the directive carries no runtime weight:
+
+1. The module carries no annotation at all.
+2. `target-version` is 3.14 or higher, wherein PEP 749 defers evaluation.
+3. Every annotated name resolves to an unconditional module-scope binding written before it.
+
+Where [[alphabetize-siblings]] sorts definitions in the same pipeline, a name a module-level class or function binds counts as unresolved whichever side of the annotation it sits on, since the sort reseats definitions after this rule has run, so a directive covering such a reference stays in whichever order the sort writes. Where [[band-constants]] runs in the same pipeline, a binding it hoists above the annotation naming it, a constant into the leading band or an import into the import run, counts as written before that annotation, reading the module as the band seats it once the directive is gone.
 
 <Fixture rule="composition" case="hoisted_alias_settles_the_directive" />
 

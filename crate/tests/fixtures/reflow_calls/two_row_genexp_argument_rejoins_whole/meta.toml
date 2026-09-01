@@ -3,5 +3,5 @@ previewable = false
 title       = "A Two-Row Generator Argument Rejoins Whole"
 
 description = '''
-The `set` call arrives fractured, and its bare generator argument itself wraps across two rows, the `if` clause hanging below `f for f in fs`. The rejoin emits the argument list's one-row form, and that row fits, so the generator's interior break folds in the same edit rather than waiting on a later collection pass.
+The `set` call arrives fractured, and its bare generator argument itself wraps across two rows, the `if` clause hanging below `f for f in fs`. The rejoin emits the argument list's one-row form, and that row fits, so the generator's interior break folds in the same edit.
 '''
