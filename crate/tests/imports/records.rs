@@ -76,6 +76,9 @@ pub(crate) struct Width {
     pub(crate) label: String,
     /// How many modules the format run could not read, parse, or write.
     pub(crate) refused: usize,
+    /// The modules whose only divergence is a name a recorded fix
+    /// deliberately dropped, which is the rule doing its work.
+    pub(crate) pruned: Vec<String>,
     /// The modules the original tree did not run cleanly, which a run
     /// therefore never judges.
     pub(crate) uncomparable: Vec<String>,

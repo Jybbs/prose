@@ -11,15 +11,19 @@ use super::{
     future::annotations_are_inert,
     inventory::{ImportNode, is_star},
     is_package_init,
-    reexports::{Reexports, noqa_holds_imports},
+    reexports::{Reexports, reexports_a_private_member},
 };
 use crate::{
     diagnostics::Diagnostic,
-    primitives::{binding::BindingAnalysis, imports::Dropping},
+    primitives::{binding::BindingAnalysis, comments::noqa_names, imports::Dropping},
     rule::RuleId,
     rules::reflow_imports::Folds,
     source::Source,
 };
+
+/// The code `flake8` and its successors report an unread import under,
+/// which a `noqa` naming it marks as deliberate.
+const REEXPORT_CODE: &str = "F401";
 
 /// The alias drops the rule applies, one entry per pruned statement,
 /// beside the unreferenced bindings a package `__init__.py` holds.
@@ -50,7 +54,7 @@ impl<'a> Plan<'a> {
         let noqa_held: FxHashSet<usize> = nodes
             .iter()
             .enumerate()
-            .filter(|(_, (slot, _))| noqa_holds_imports(source, &body[*slot]))
+            .filter(|(_, (slot, _))| noqa_names(source, &body[*slot], REEXPORT_CODE))
             .map(|(statement, _)| statement)
             .collect();
         let package_init = is_package_init(source);
@@ -79,18 +83,19 @@ impl<'a> Plan<'a> {
             let directive = node.future_annotations();
             for (index, alias) in node.names().iter().enumerate() {
                 let bound = node.bound(alias);
-                let candidacy = if reexports.holds(alias, bound) {
-                    None
-                } else if repeats.contains(&alias.range.start()) {
-                    Some(Candidacy::Inert)
-                } else if !rule.unreferenced || is_star(alias) {
-                    None
-                } else if node.is_future() {
-                    (directive_is_inert && directive == Some(index)).then_some(Candidacy::Inert)
-                } else {
-                    is_unreferenced(analysis, bound, &repeats, &annotated)
-                        .then_some(Candidacy::Unreferenced)
-                };
+                let candidacy =
+                    if reexports.holds(alias, bound) || reexports_a_private_member(node, alias) {
+                        None
+                    } else if repeats.contains(&alias.range.start()) {
+                        Some(Candidacy::Inert)
+                    } else if !rule.unreferenced || is_star(alias) {
+                        None
+                    } else if node.is_future() {
+                        (directive_is_inert && directive == Some(index)).then_some(Candidacy::Inert)
+                    } else {
+                        is_unreferenced(analysis, bound, &repeats, &annotated)
+                            .then_some(Candidacy::Unreferenced)
+                    };
                 match candidacy {
                     Some(Candidacy::Unreferenced) if package_init => reports.push(Report {
                         name: bound,

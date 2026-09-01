@@ -1,29 +1,18 @@
 //! The explicit re-export surface of a module, read from its
-//! module-scope `__all__` writes, from the PEP 484 `x as x` alias form,
-//! and from a `noqa` comment trailing an import statement.
+//! module-scope `__all__` writes and from the PEP 484 `x as x` alias
+//! form.
 
-use ruff_python_ast::{Alias, Expr, Stmt};
-use ruff_text_size::Ranged;
+use ruff_python_ast::{Alias, Expr, Stmt, helpers::is_dunder};
 use rustc_hash::FxHashSet;
 
-use super::inventory::is_self_alias;
-use crate::{
-    primitives::{
-        binding::{sequence_elts, single_name_assignment},
-        comments::trailing_comment,
-        scope::sub_bodies,
-        walk::any_over_stmts,
-    },
-    source::Source,
+use super::inventory::{ImportNode, is_self_alias};
+use crate::primitives::{
+    binding::{sequence_elts, single_name_assignment},
+    scope::sub_bodies,
+    walk::any_over_stmts,
 };
 
 const DUNDER_ALL: &str = "__all__";
-
-/// The code `flake8` and its successors report an unread import under.
-const F401: &str = "F401";
-
-/// The marker a suppression comment opens with, matched case-insensitively.
-const NOQA: &str = "noqa";
 
 /// The names a module marks for re-export.
 pub(super) struct Reexports<'a> {
@@ -70,31 +59,24 @@ impl<'a> Reexports<'a> {
     }
 }
 
-/// True where a `noqa` comment trails `stmt`, either bare or naming
-/// `F401`, which marks every unread name the statement binds deliberate.
-pub(super) fn noqa_holds_imports(source: &Source, stmt: &Stmt) -> bool {
-    trailing_comment(source, stmt.start()).is_some_and(|range| {
-        noqa_codes(source.slice(range)).is_some_and(|codes| {
-            codes.is_empty() || codes.iter().any(|code| code.eq_ignore_ascii_case(F401))
-        })
-    })
-}
-
-/// The codes a `noqa` comment names, empty for the bare form covering
-/// every code, `None` where the comment carries no `noqa` at all.
-fn noqa_codes(comment: &str) -> Option<Vec<&str>> {
-    let lowered = comment.to_ascii_lowercase();
-    let opened = lowered.find(NOQA)? + NOQA.len();
-    let Some(listed) = comment[opened..].trim_start().strip_prefix(':') else {
-        return Some(Vec::new());
-    };
-    Some(
-        listed
-            .split(',')
-            .map(str::trim)
-            .take_while(|code| code.chars().all(char::is_alphanumeric) && !code.is_empty())
-            .collect(),
-    )
+/// True where `node` takes a name out of a module its own name marks
+/// private, the convention a public module re-exports its
+/// implementation through. A dunder module such as `__future__` is not
+/// one of those, its names carrying compiler meaning rather than a
+/// surface to re-export. Nothing in the importing module needs to
+/// read such a name for it to be part of that module's surface, so an
+/// unread one reads as re-exported rather than as dead.
+pub(super) fn reexports_a_private_member(node: &ImportNode<'_>, alias: &Alias) -> bool {
+    if matches!(node, ImportNode::Bare(_)) {
+        return false;
+    }
+    let source = node.source(alias);
+    let segments = source.segments();
+    segments
+        .len()
+        .checked_sub(1)
+        .and_then(|member| segments[..member].last())
+        .is_some_and(|module| module.starts_with('_') && !is_dunder(module))
 }
 
 /// What one module-scope statement contributes to `__all__`.
@@ -201,33 +183,5 @@ mod tests {
         let body = &source.ast().body;
         let alias = &body[0].as_import_from_stmt().expect("a from import").names[0];
         assert_eq!(Reexports::of(body).holds(alias, "loads"), holds);
-    }
-
-    #[rstest]
-    #[case::bare("  # noqa", true)]
-    #[case::listed("  # noqa: F401", true)]
-    #[case::unspaced("  # noqa:F401", true)]
-    #[case::lowercase("  # noqa: f401", true)]
-    #[case::among_others("  # noqa: E501, F401", true)]
-    #[case::uppercase_marker("  # NOQA: F401", true)]
-    #[case::trailing_prose("  # noqa: F401 kept for re-export", true)]
-    #[case::other_code("  # noqa: E501", false)]
-    #[case::plain_comment("  # kept for re-export", false)]
-    #[case::no_comment("", false)]
-    fn a_noqa_comment_holds_every_name_its_import_binds(
-        #[case] comment: &str,
-        #[case] holds: bool,
-    ) {
-        let source = parse(&format!("from _sre import MAXREPEAT, MAXGROUPS{comment}\n"));
-        let stmt = &source.ast().body[0];
-        assert_eq!(noqa_holds_imports(&source, stmt), holds);
-    }
-
-    #[test]
-    fn a_noqa_on_one_import_leaves_its_neighbour_alone() {
-        let source = parse("import os  # noqa: F401\nimport sys\n");
-        let body = &source.ast().body;
-        assert!(noqa_holds_imports(&source, &body[0]));
-        assert!(!noqa_holds_imports(&source, &body[1]));
     }
 }

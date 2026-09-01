@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Dunder Read Holds Above the Line That Rebinds It"
+
+description = '''
+`__xname__ = __name__` reads the name the loader bound before the module ran, and the line below it rebinds `__name__` to `"decimal"`. Seating that rebind above the read would hand `__xname__` the new value, so **the region holds its source order** rather than banding, `ZETA` and `ALPHA` staying put alongside it. A constant naming something no earlier binding covers still hoists freely, since moving it up only ever resolves a reference.
+'''

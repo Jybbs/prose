@@ -34,6 +34,7 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
         row("breaks", &found.breaks.len()),
         row("timeouts", &found.timing_out()),
         row("flaky", &found.flaky.len()),
+        row("pruned", &found.pruned.len()),
     ];
     if !carried.is_empty() {
         lines.push(row("carried", &carried.len()));

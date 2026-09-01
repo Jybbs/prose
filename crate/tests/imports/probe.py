@@ -15,6 +15,9 @@ from sys import argv, modules, path
 
 FIELD = "\0"
 ROW   = "\x1e"
+TREE  = "<tree>"
+
+roots = []
 
 
 class Probe:
@@ -104,16 +107,22 @@ def constant(value: object) -> "str | None":
     """
     Spell a value where its `repr` holds across runs, `None` otherwise. An
     `int` or `str` subclass spells through its own `repr`, so an enum member
-    reads as the member.
+    reads as the member. Each tree root spells as `TREE`, so a value a module
+    derives from its own location reads the same from either tree.
 
     Args:
         value: The bound value to spell.
     """
     if value is None or isinstance(value, (int, str)):
         try:
-            return repr(value)
+            spelt = repr(value)
         except BaseException:
             return None
+
+        for root in roots:
+            spelt = spelt.replace(root, TREE)
+
+        return spelt
 
     if not isinstance(value, (frozenset, tuple)):
         return None
@@ -156,6 +165,7 @@ def main(located: str, name: str, record: str, trees: list):
                   library.
     """
     path[:0] = trees
+    roots.extend(trees)
 
     probe = Probe(located=located, name=name)
     probe.load()

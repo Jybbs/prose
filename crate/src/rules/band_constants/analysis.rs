@@ -21,7 +21,9 @@ use crate::{
             bare_import_bound_name, from_import_bound_name, is_explicit_type_alias,
             is_screaming_case, single_name_assignment,
         },
-        comments::{TRAILING_GAP, anchors_in_place, has_keep_marker, leading_comment_block},
+        comments::{
+            TRAILING_GAP, anchors_in_place, has_keep_marker, leading_comment_block, noqa_names,
+        },
         effect::value_is_effectful,
         group_map,
         inline::display_width,
@@ -29,6 +31,11 @@ use crate::{
     },
     source::Source,
 };
+
+/// The code `flake8` and its successors report an import placed below
+/// the top of a file under, which a `noqa` naming it marks as
+/// deliberate, so the statement holds the slot the author gave it.
+const POSITION_CODE: &str = "E402";
 
 /// A module-scope single-name assignment considered for hoisting,
 /// carrying its body index, target name, subcategory, the load-context
@@ -103,6 +110,7 @@ pub(super) fn module_band_plan<'src>(
         });
         let const_target = const_binding(stmt);
         let pinned = suppression.suppresses(stmt, BandConstants::SLUG)
+            || noqa_names(source, stmt, POSITION_CODE)
             || source.continues_a_logical_line(stmt.start())
             || gap_comment.is_some_and(|block| {
                 const_target.is_none()

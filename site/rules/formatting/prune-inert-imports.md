@@ -26,6 +26,7 @@ Both facets read the same three re-export markers, so a repeated self-alias surv
 1. A name listed in `__all__`.
 2. The PEP 484 redundant-alias form `from x import y as y`.
 3. A `noqa` comment trailing the import, either bare or naming `F401`, which holds every name that statement binds.
+4. A name taken from a module whose own name marks it private (*`from _ssl import OPENSSL_VERSION`*), which is how a public module re-exports its implementation. A dunder module such as `__future__` is excluded, its names carrying compiler meaning rather than a surface.
 
 The third marker is the only one a reader writes in a comment rather than in code, and it is what the wider ecosystem puts on a re-export no static read can see. *Prose* reads it here alone, so a `noqa` still suppresses nothing else and no other rule consults it.
 

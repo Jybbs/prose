@@ -4,7 +4,7 @@
 //! eager reference ahead of its definition. [`banded_gap`] decides the
 //! blank between two seated bands.
 
-use ruff_python_ast::Stmt;
+use ruff_python_ast::{Stmt, helpers::is_dunder};
 use ruff_source_file::LineEnding;
 use ruff_text_size::TextRange;
 use rustc_hash::FxHashMap;
@@ -166,21 +166,42 @@ impl BandPlan<'_> {
         drained
     }
 
-    /// True when `banded` seats every eager reference whose two ends
-    /// both sit inside this region behind its referent. An edge reaching
-    /// outside the region imposes nothing.
+    /// True when `banded` keeps every eager reference on the side of its
+    /// referent that the source seated it on, a reader written above a
+    /// binding staying above it and one written below staying below, so
+    /// a statement reading a name the module later rebinds still reads
+    /// the value it was written to read. An edge reaching outside the
+    /// region imposes nothing.
     fn region_holds_its_references(&self, banded: &[usize]) -> bool {
         let seat: FxHashMap<usize, usize> = banded
             .iter()
             .enumerate()
             .map(|(seat, &idx)| (idx, seat))
             .collect();
-        self.edges
-            .iter()
-            .all(|&(from, to)| match (seat.get(&from), seat.get(&to)) {
-                (Some(referrer), Some(referent)) => referent < referrer,
+        self.edges.iter().all(|&(referrer, referent)| {
+            match (seat.get(&referrer), seat.get(&referent)) {
+                (Some(&seated_referrer), Some(&seated_referent)) => {
+                    if self.rebinds_a_dunder(referent) {
+                        (referent < referrer) == (seated_referent < seated_referrer)
+                    } else {
+                        seated_referent < seated_referrer
+                    }
+                }
                 _ => true,
-            })
+            }
+        })
+    }
+
+    /// True where the statement at `idx` writes a dunder name. The
+    /// loader binds every module dunder before the body runs, so a
+    /// reader written above one reads the loader's value rather than
+    /// nothing, and seating the write above that reader changes what it
+    /// reads. Every other name is unbound until its statement runs, so
+    /// hoisting it above a reader only ever resolves a reference.
+    fn rebinds_a_dunder(&self, idx: usize) -> bool {
+        self.keys
+            .get(&idx)
+            .is_some_and(|(_, _, name)| is_dunder(name))
     }
 
     /// Moves each comment heading a band's source-order head onto the

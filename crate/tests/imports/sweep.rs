@@ -19,9 +19,10 @@ use crate::{
     compare::{compare, divergence},
     corpus::candidates,
     execute::Runner,
+    fixes::drops,
     format::format_tree,
     outcome::{Kind, Outcome},
-    records::{Break, Width},
+    records::{Break, Fixes, Width},
 };
 
 /// The label a sweep gives the width no `code-line-length` pinned.
@@ -51,6 +52,22 @@ impl Sweep {
             known: Mutex::new(BTreeMap::new()),
             runner: Runner::new(corpus, python),
         }
+    }
+
+    /// Reports whether a break is one module losing a name a recorded fix
+    /// deliberately dropped from that same module, which is a rule doing
+    /// its work rather than a rewrite breaking the code. A module that
+    /// reads the dropped name still raises and still counts.
+    fn deliberately_pruned(&self, brk: &Break, fixes: &Fixes) -> bool {
+        brk.formatted.kind == Kind::Ok
+            && brk.reason.ends_with("` unbound")
+            && brk.name.as_deref().is_some_and(|name| {
+                let text = fs_err::read_to_string(self.runner.stage.original.join(&brk.module))
+                    .unwrap_or_default();
+                fixes
+                    .get(&brk.module)
+                    .is_some_and(|listed| listed.iter().any(|(_, edits)| drops(edits, name, &text)))
+            })
     }
 
     /// Reports whether the original matches its own first run and a second
@@ -124,13 +141,19 @@ impl Sweep {
         let after = self.outcomes(&modules, &formatted);
         let before = self.originals(&modules);
         let partition = compare(&after, &before, &modules);
-        let verdicts: Vec<_> = partition
-            .breaks
+        let (suspects, pruned): (Vec<_>, Vec<_>) =
+            partition.breaks.into_iter().partition_map(|brk| {
+                if self.deliberately_pruned(&brk, &run.fixes) {
+                    Either::Right(brk.module)
+                } else {
+                    Either::Left(brk)
+                }
+            });
+        let verdicts: Vec<_> = suspects
             .par_iter()
             .map(|brk| self.confirm(brk, &formatted))
             .collect();
-        let (mut breaks, flaky): (Vec<_>, Vec<_>) = partition
-            .breaks
+        let (mut breaks, flaky): (Vec<_>, Vec<_>) = suspects
             .into_iter()
             .zip(verdicts)
             .partition_map(|(brk, holds)| {
@@ -154,6 +177,7 @@ impl Sweep {
             comparable: partition.comparable,
             flaky,
             label,
+            pruned,
             refused: run.refused,
             uncomparable: partition.uncomparable,
             unmeasured: partition.unmeasured,

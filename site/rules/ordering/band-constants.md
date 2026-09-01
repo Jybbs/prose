@@ -33,6 +33,8 @@ A constant also pins wherever banding it would change which object a name resolv
 
 Each case resolves one object before the move and a different one after, without raising, so the constant holds its slot instead.
 
+A statement reading a dunder the module later rebinds holds the whole region in source order, because the loader binds every module dunder before the body runs, so seating the rebind above the read would hand it the new value. Every other name is unbound until its own statement runs, leaving a hoist above a reader able only to resolve a reference rather than to change one.
+
 Only an inert value bands. An inert value reads names and builds a result (*a literal, a name, an attribute or subscript read, a display or operator expression, or a `lambda`*), whereas an effectful value carries a call, a comprehension, or an `await` and moving it would reorder that work. `RANDOM_SEED = 42` hoists into the leading band whereas `wide_trainer = L.Trainer(**trainer_kwargs)` holds its place.
 
 An own-line comment above a member travels with it wherever the rule seats it, and a comment on the line below documents that member instead and travels the other way. A banner (*`# --- Configuration ---`*), a suppression directive, a tool pragma (*`# noqa`*), and a comment opening at another indent each hold their slot and pin the member beneath, so a band never crosses a banner. A notebook carries the same reach as a module, with its cell boundary bounding the carry.
