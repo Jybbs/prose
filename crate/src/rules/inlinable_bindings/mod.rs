@@ -33,6 +33,8 @@ pub(crate) struct InlinableBindings {
 impl InlinableBindings {
     pub(crate) const MESSAGE: &'static str = "Flag a binding assigned and read once whose value inlines at the read without recomputing it, moving it under a guard, or crossing the line budget";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             allow_pattern: config.rules.inlinable_bindings.allow_pattern.clone(),

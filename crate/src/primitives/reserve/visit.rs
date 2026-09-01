@@ -109,7 +109,7 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
     }
 }
 
-/// The widening the collected runs seat on each lpub(super) ine under `settings`.
+/// The widening the collected runs seat on each line under `settings`.
 pub(super) fn widenings_over(
     source: &Source,
     settings: aligner::Settings,

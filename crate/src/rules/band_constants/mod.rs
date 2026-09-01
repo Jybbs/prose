@@ -42,6 +42,8 @@ impl BandConstants {
     pub(crate) const MESSAGE: &'static str =
         "band module constants into leading and trailing bands";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.band_constants;
         Self {

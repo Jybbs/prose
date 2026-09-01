@@ -18,6 +18,16 @@ use crate::{
     source::Source,
 };
 
+mod constancy;
+mod lint;
+mod plan;
+mod render;
+
+use constancy::constancy;
+use lint::boolean_lint;
+use plan::{Plan, Test};
+use render::{edits, identity_op, negating_parent, reflected};
+
 #[derive(Debug)]
 pub(crate) struct NormalizeComparisons {
     identity: bool,
@@ -27,6 +37,8 @@ pub(crate) struct NormalizeComparisons {
 
 impl NormalizeComparisons {
     pub(crate) const MESSAGE: &'static str = "normalize a comparison to state its check directly";
+
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let facets = &config.rules.normalize_comparisons;
@@ -108,16 +120,6 @@ impl Rule for NormalizeComparisons {
         })
     }
 }
-
-mod constancy;
-mod lint;
-mod plan;
-mod render;
-
-use constancy::constancy;
-use lint::boolean_lint;
-use plan::{Plan, Test};
-use render::{edits, identity_op, negating_parent, reflected};
 
 #[cfg(test)]
 mod tests {

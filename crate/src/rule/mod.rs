@@ -59,6 +59,10 @@ use crate::{
     source::Source,
 };
 
+mod independence;
+
+pub use independence::independent;
+
 /// Returned when a string fails to match any registered rule slug.
 /// Carries the offending input so callers can surface it verbatim.
 #[derive(Debug, Error)]
@@ -100,6 +104,16 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
     /// to the `MESSAGE` const on the rule registered under `self.id()`.
     fn message(&self) -> &'static str {
         message_for_id(self.id())
+    }
+
+    /// True where this rule's edits leave every binding its name, its
+    /// scope, and its writes and reads in their order, and every
+    /// assignment value its extent, so the `Source` built after them
+    /// inherits the binding table rather than rebuilding it. Defaults
+    /// to the `PRESERVES_BINDINGS` const on the rule registered under
+    /// `self.id()`.
+    fn preserves_bindings(&self) -> bool {
+        preserves_bindings_for_id(self.id())
     }
 }
 
@@ -228,6 +242,11 @@ const fn precedes(earlier: &str, later: &str) -> bool {
     }
 }
 
+/// The registry index of `id`, which every id outside a test carries.
+fn registered_index(id: RuleId) -> usize {
+    slug_index(id.as_str()).unwrap_or_else(|| unreachable!("rule id must be registered"))
+}
+
 /// Byte-wise equality on `&[u8]` usable from const contexts.
 const fn slug_bytes_equal(a: &[u8], b: &[u8]) -> bool {
     if a.len() != b.len() {
@@ -256,16 +275,18 @@ const fn slug_index(slug: &str) -> Option<usize> {
 }
 
 /// Generates [`KNOWN_IDS`], [`RuleConfigs`] with its bool-or-table
-/// `JsonSchema` impl, [`message_for_id`], [`Pipeline::for_rule`],
-/// [`Pipeline::with_defaults`], and [`Pipeline::with_filters`] from a
-/// registry table. Each row leads with the rule's kebab-case slug,
-/// then its `[tool.prose.rules]` field name, config sub-table type,
-/// rule struct, and the slugs it must run behind. The slug is the
-/// single source consumed by `RuleId::from_str`, the
-/// `[tool.prose.rules.<slug>]` section name, the
-/// `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
-/// Each rule's one-line imperative lives on its own type as
-/// `MESSAGE`, which [`message_for_id`] reads back per slug.
+/// `JsonSchema` impl, [`message_for_id`], [`preserves_bindings_for_id`],
+/// [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
+/// [`Pipeline::with_filters`] from a registry table. Each row leads
+/// with the rule's kebab-case slug, then its `[tool.prose.rules]`
+/// field name, config sub-table type, rule struct, and the slugs it
+/// must run behind. The slug is the single source consumed by
+/// `RuleId::from_str`, the `[tool.prose.rules.<slug>]` section name,
+/// the `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
+/// Each rule's one-line imperative lives on its own type as `MESSAGE`
+/// and whether its edits leave every binding standing as
+/// `PRESERVES_BINDINGS`, which [`message_for_id`] and
+/// [`preserves_bindings_for_id`] read back per slug.
 ///
 /// Row order is pipeline order.
 ///
@@ -285,6 +306,10 @@ macro_rules! register_rules {
 
         /// The slugs each rule runs behind, indexed alongside [`KNOWN_IDS`].
         const PIPELINE_DEPENDENCIES: &[&[&str]] = &[$(&[$($after),*]),*];
+
+        /// Whether each rule's edits leave every binding standing,
+        /// indexed alongside [`KNOWN_IDS`].
+        const PRESERVES_BINDINGS: &[bool] = &[$($ty::PRESERVES_BINDINGS),*];
 
         // Asserts each declared dependency names a rule seated earlier.
         $($(const _: () = assert!(
@@ -361,10 +386,13 @@ macro_rules! register_rules {
         /// Default backing for [`Rule::message`], the `MESSAGE` const
         /// on the rule registered under `id`.
         pub(crate) fn message_for_id(id: RuleId) -> &'static str {
-            match slug_index(id.as_str()) {
-                Some(index) => MESSAGES[index],
-                None => unreachable!("rule id must be registered"),
-            }
+            MESSAGES[registered_index(id)]
+        }
+
+        /// Default backing for [`Rule::preserves_bindings`], the
+        /// `PRESERVES_BINDINGS` const on the rule registered under `id`.
+        fn preserves_bindings_for_id(id: RuleId) -> bool {
+            PRESERVES_BINDINGS[registered_index(id)]
         }
 
         impl Pipeline {

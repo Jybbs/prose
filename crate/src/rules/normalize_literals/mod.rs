@@ -45,6 +45,8 @@ impl NormalizeLiterals {
     pub(crate) const MESSAGE: &'static str =
         "canonicalize literal quote, prefix, and numeric spelling";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rule = &config.rules.normalize_literals;
         Self {

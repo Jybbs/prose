@@ -30,6 +30,8 @@ pub(crate) struct AlignImports {
 impl AlignImports {
     pub(crate) const MESSAGE: &'static str = "align consecutive `import`s";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             settings: config.import_align_settings(),
@@ -86,14 +88,6 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
     }
 }
 
-/// Tags a statement with its import form and alignment member, or
-/// `None` for a statement that joins no alignment run.
-fn qualify(source: &Source, stmt: &Stmt) -> Option<(Form, aligner::Member)> {
-    qualify_from(source, stmt)
-        .map(|m| (Form::From, m))
-        .or_else(|| qualify_import_as(source, stmt).map(|m| (Form::As, m)))
-}
-
 /// Builds an alignment member for a `from M import N` statement,
 /// anchored at the `import` keyword. Returns `None` for any other
 /// statement shape and for multi-line imports whose continuation
@@ -105,6 +99,14 @@ pub(crate) fn qualify_from(source: &Source, stmt: &Stmt) -> Option<aligner::Memb
         return None;
     }
     aligner::line_anchored_member_at_kind(source, s.range.start(), s.range, TokenKind::Import)
+}
+
+/// Tags a statement with its import form and alignment member, or
+/// `None` for a statement that joins no alignment run.
+fn qualify(source: &Source, stmt: &Stmt) -> Option<(Form, aligner::Member)> {
+    qualify_from(source, stmt)
+        .map(|m| (Form::From, m))
+        .or_else(|| qualify_import_as(source, stmt).map(|m| (Form::As, m)))
 }
 
 /// Builds an alignment member for a single-name aliased import

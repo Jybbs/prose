@@ -25,10 +25,7 @@ fn settle_report_names_a_rule_whose_fix_never_lands() {
     let overlapping_id = overlapping.id();
     let pipeline = Pipeline::from_rules(vec![
         Box::new(overlapping),
-        Box::new(GroupSentinelRule {
-            groups: vec![vec![Edit::range_replacement("x".to_owned(), range(0, 1))]],
-            id: RuleId::from("rewrite-x-to-x"),
-        }),
+        sentinel("rewrite-x-to-x", vec![replacement("x", 0, 1)]),
     ]);
     let source = parse("x = 1\n");
 
@@ -54,6 +51,33 @@ fn settle_report_names_the_editing_rule_and_the_text_it_weaves() {
     assert_matches!(
         report.witness,
         Some((id, text)) if id == RuleId::from("widener") && text == "yy = 1\n"
+    );
+}
+
+#[test]
+fn unsettled_among_answers_empty_where_no_rule_fired() {
+    let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
+    let source = parse("x = 1\n");
+
+    assert!(
+        pipeline
+            .unsettled_among(&source, &BTreeSet::new())
+            .is_empty()
+    );
+}
+
+#[test]
+fn unsettled_among_reapplies_only_the_rules_that_fired() {
+    let pipeline = Pipeline::from_rules(vec![
+        Box::new(never_settles("widener")),
+        Box::new(never_settles("other-widener")),
+    ]);
+    let source = parse("x = 1\n");
+    let fired = BTreeSet::from([RuleId::from("other-widener")]);
+
+    assert_eq!(
+        pipeline.unsettled_among(&source, &fired),
+        vec![RuleId::from("other-widener")],
     );
 }
 
@@ -112,10 +136,10 @@ fn unsettled_skips_a_rule_whose_edits_fall_in_a_suppressed_block() {
 
 #[test]
 fn unsettled_skips_a_rule_whose_edits_splice_back_to_the_same_text() {
-    let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-        groups: vec![vec![Edit::range_replacement("x".to_owned(), range(0, 1))]],
-        id: RuleId::from("rewrite-x-to-x"),
-    })]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-x-to-x",
+        vec![replacement("x", 0, 1)],
+    )]);
     let source = parse("x = 1\n");
 
     assert!(pipeline.unsettled(&source).is_empty());

@@ -9,27 +9,31 @@ use std::{
 use itertools::Itertools;
 use rstest::rstest;
 use ruff_diagnostics::Edit;
-use ruff_text_size::{TextRange, TextSize};
+use ruff_text_size::{TextLen, TextRange, TextSize};
 
 use super::*;
 use crate::{
     config::Config,
-    diagnostics::Severity,
+    diagnostics::{Severity, fired_rules},
     primitives::edit::singleton_groups,
     rules::{
         align_colons::AlignColons, align_equals::AlignEquals,
         alphabetize_siblings::AlphabetizeSiblings,
     },
     testing::{
-        FUTURE_LEAD, GroupSentinelRule, assert_send_sync, breaks_compile, breaks_parse,
-        never_settles, notebook, parse, range, self_overlapping,
+        FUTURE_LEAD, GroupSentinelRule, GuardedRule, assert_send_sync, breaks_compile,
+        breaks_parse, never_settles, notebook, parse, prefix_rule, range, replacement,
+        self_overlapping,
     },
 };
 
 mod as_written;
+mod batch;
+mod carry;
 mod diagnose;
 mod registry;
 mod run;
+mod second_pass;
 mod settle;
 mod subsets;
 
@@ -141,6 +145,37 @@ impl Rule for TextCapturingRule {
     fn message(&self) -> &'static str {
         "test rule"
     }
+
+    fn preserves_bindings(&self) -> bool {
+        false
+    }
+}
+
+/// A text-capturing sentinel under `slug` holding `edits`, logging
+/// every buffer it reads into `seen`.
+fn capturing(
+    seen: &Arc<Mutex<Vec<String>>>,
+    slug: &'static str,
+    edits: Vec<Edit>,
+) -> Box<dyn Rule> {
+    Box::new(TextCapturingRule {
+        edits,
+        id: RuleId::from(slug),
+        seen: Arc::clone(seen),
+    })
+}
+
+/// The buffers a capture log holds, in the order the rules read them.
+fn captured(seen: &Arc<Mutex<Vec<String>>>) -> Vec<String> {
+    seen.lock().expect("seen mutex").clone()
+}
+
+/// A group sentinel under `slug` whose `edits` form one fix group.
+fn sentinel(slug: &'static str, edits: Vec<Edit>) -> Box<dyn Rule> {
+    Box::new(GroupSentinelRule {
+        groups: vec![edits],
+        id: RuleId::from(slug),
+    })
 }
 
 fn registered_slugs(pipeline: &Pipeline) -> Vec<&'static str> {

@@ -1,5 +1,7 @@
 //! `Diagnostic` and `Severity` definitions.
 
+use std::collections::BTreeSet;
+
 use ruff_diagnostics::{Edit, Fix};
 use ruff_text_size::{Ranged, TextRange};
 use serde::{Deserialize, Serialize};
@@ -85,4 +87,14 @@ impl Severity {
     pub(crate) fn is_lint(self) -> bool {
         matches!(self, Self::Lint)
     }
+}
+
+/// The rules whose fix groups survived a run, read off the
+/// `Severity::Format` diagnostics it emitted.
+pub(crate) fn fired_rules(diagnostics: &[Diagnostic]) -> BTreeSet<RuleId> {
+    diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.severity.is_format())
+        .map(|diagnostic| diagnostic.rule)
+        .collect()
 }

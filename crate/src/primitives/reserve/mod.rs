@@ -21,7 +21,7 @@ use rustc_hash::FxHashMap;
 use crate::{
     primitives::{
         aligner, call_keywords::module_call_params, equal_targets, inline::display_width, one_row,
-        walk,
+        slots::item_holding, walk,
     },
     rule::RuleId,
     source::Source,
@@ -43,7 +43,7 @@ pub(crate) struct Columns {
     /// The gap an aligned row holds ahead of its operator, `None` where
     /// the alignment rule is off.
     buffer: Option<usize>,
-    shifts: Vec<(TextRange, isize)>,
+    shifts: Vec<Shift>,
 }
 
 impl Columns {
@@ -51,13 +51,9 @@ impl Columns {
     /// reservation covers it. A reservation never spans a row, so the
     /// nearest one starting at or before `offset` is the only candidate.
     fn shift(&self, offset: TextSize) -> isize {
-        let slot = self
-            .shifts
-            .partition_point(|(range, _)| range.start() <= offset);
-        slot.checked_sub(1)
-            .map(|i| self.shifts[i])
-            .filter(|(range, _)| range.contains(offset))
-            .map_or(0, |(_, shift)| shift)
+        item_holding(&self.shifts, offset)
+            .filter(|shift| shift.span.contains(offset))
+            .map_or(0, |shift| shift.columns)
     }
 
     /// The column `offset` lands at, `fallback` moved by the shift the
@@ -161,11 +157,13 @@ impl Reservations {
                 aligner::operator_columns(source, &run.members, settings, &widenings, &joined);
             shifts.extend(placed.iter().zip(columns).filter_map(|(&placed, column)| {
                 let (start, at) = placed?;
-                let shift = (column + aligner::VALUE_OFFSET).cast_signed() - at.cast_signed();
-                Some((source.row_tail(start), shift))
+                Some(Shift {
+                    columns: (column + aligner::VALUE_OFFSET).cast_signed() - at.cast_signed(),
+                    span: source.row_tail(start),
+                })
             }));
         }
-        shifts.sort_unstable_by_key(|(range, _)| range.start());
+        shifts.sort_unstable_by_key(Ranged::start);
         Columns {
             buffer: Some(settings.buffer()),
             shifts,
@@ -182,6 +180,20 @@ impl Reservations {
             return aligner::Widenings::default();
         };
         widenings_over(source, settings, &self.collected(source))
+    }
+}
+
+/// One reservation's row-tail span and the columns the alignment shifts
+/// it by.
+#[derive(Clone, Copy, Debug)]
+struct Shift {
+    columns: isize,
+    span: TextRange,
+}
+
+impl Ranged for Shift {
+    fn range(&self) -> TextRange {
+        self.span
     }
 }
 

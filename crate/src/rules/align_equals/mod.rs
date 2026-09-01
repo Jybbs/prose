@@ -14,16 +14,16 @@
 use ruff_diagnostics::Edit;
 use ruff_python_ast::visitor::Visitor as AstVisitor;
 
-mod walk;
-
-use walk::{Run, Visitor};
-
 use crate::{
     config::Config,
     primitives::{aligner, equal_targets, walk::walk_stmt},
     rule::{Rule, RuleId},
     source::Source,
 };
+
+mod walk;
+
+use walk::{Run, Visitor};
 
 #[derive(Debug)]
 pub(crate) struct AlignEquals {
@@ -32,6 +32,8 @@ pub(crate) struct AlignEquals {
 
 impl AlignEquals {
     pub(crate) const MESSAGE: &'static str = "align consecutive `=` operators";
+
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

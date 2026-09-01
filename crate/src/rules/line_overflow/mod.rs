@@ -26,6 +26,7 @@ use crate::{
     primitives::{
         docstring::{body_docstring, docstring_slots},
         inline::display_width,
+        slots::{item_holding, slot_holding},
         walk::walk_stmt,
     },
     rule::{Rule, RuleId},
@@ -44,6 +45,8 @@ pub(crate) struct LineOverflow {
 
 impl LineOverflow {
     pub(crate) const MESSAGE: &'static str = "Flag a line over its length budget, offering the split form where a string literal can take the break";
+
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
@@ -131,6 +134,19 @@ struct Spans<'a> {
 }
 
 impl<'a> Spans<'a> {
+    /// True for an implicitly concatenated run `stack-adjacent-strings`
+    /// still breaks, which leaves out a run filling a docstring slot.
+    fn breakable_run(&self, expr: &Expr) -> bool {
+        concatenated_run(expr).is_some() && !self.docstrings.contains(&expr.range())
+    }
+
+    /// True when `line` sits inside an import statement, which answers
+    /// to the import budget. Import statements never nest, so the last
+    /// range opening at or before `line` is the only candidate.
+    fn in_import(&self, line: TextRange) -> bool {
+        item_holding(&self.imports, line.start()).is_some_and(|import| import.contains_range(line))
+    }
+
     /// Orders both collected range lists by start and fills [`Self::reach`],
     /// so the per-line lookups below binary search rather than scan.
     fn index(&mut self) {
@@ -144,29 +160,6 @@ impl<'a> Spans<'a> {
                 Some(*far)
             })
             .collect();
-    }
-
-    /// True when `line` sits inside an import statement, which answers
-    /// to the import budget. Import statements never nest, so the last
-    /// range opening at or before `line` is the only candidate.
-    fn in_import(&self, line: TextRange) -> bool {
-        let after = self.imports.partition_point(|r| r.start() <= line.start());
-        after > 0 && self.imports[after - 1].contains_range(line)
-    }
-
-    /// True when a still-collapsible construct meets `line`, which
-    /// leaves the line to the layout rule that shortens it.
-    fn reshapes(&self, line: TextRange) -> bool {
-        let after = self
-            .reshapeable
-            .partition_point(|r| r.start() <= line.end());
-        after > 0 && self.reach[after - 1] >= line.start()
-    }
-
-    /// True for an implicitly concatenated run `stack-adjacent-strings`
-    /// still breaks, which leaves out a run filling a docstring slot.
-    fn breakable_run(&self, expr: &Expr) -> bool {
-        concatenated_run(expr).is_some() && !self.docstrings.contains(&expr.range())
     }
 
     /// Records a leading docstring's whole range, the prose
@@ -225,6 +218,12 @@ impl<'a> Spans<'a> {
         }
     }
 
+    /// True when a still-collapsible construct meets `line`, which
+    /// leaves the line to the layout rule that shortens it.
+    fn reshapes(&self, line: TextRange) -> bool {
+        slot_holding(&self.reshapeable, line.end()).is_some_and(|i| self.reach[i] >= line.start())
+    }
+
     /// The single-part string literal on `line` whose span crosses the
     /// `cap` column.
     fn straddling(&self, line: TextRange, cap: usize) -> Option<&StringLiteral> {
@@ -256,13 +255,13 @@ impl<'a> Visitor<'a> for Spans<'a> {
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         match stmt {
-            Stmt::Import(i) => self.note_import(i.range(), i.names.len()),
-            Stmt::ImportFrom(i) => self.note_import(i.range(), i.names.len()),
             Stmt::ClassDef(cd) => self.note_docstring(&cd.body),
             Stmt::FunctionDef(fd) => {
                 self.note_signature(fd);
                 self.note_docstring(&fd.body);
             }
+            Stmt::Import(i) => self.note_import(i.range(), i.names.len()),
+            Stmt::ImportFrom(i) => self.note_import(i.range(), i.names.len()),
             Stmt::Match(m) => self.note_match(m),
             _ => {}
         }

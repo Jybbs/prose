@@ -1,7 +1,6 @@
 //! The pipeline's reparse- and compile-failure path and its error type.
 
 use ruff_diagnostics::SourceMap;
-use ruff_notebook::CellOffsets;
 use ruff_python_ast::{PySourceType, PythonVersion};
 use ruff_python_parser::{ParseError, ParseOptions, parse, semantic_errors::SemanticSyntaxError};
 use ruff_source_file::OneIndexed;
@@ -9,11 +8,17 @@ use ruff_text_size::TextLen;
 use thiserror::Error;
 
 use super::validity::first_semantic_error;
-use crate::{primitives::edit::forward_offsets, rule::RuleId, source::Source};
+use crate::{
+    primitives::edit::forward_offsets,
+    rule::{RuleId, render_slugs},
+    source::Source,
+};
 
 /// Failure modes surfaced by the pipeline itself.
 #[derive(Debug, Error)]
 pub enum PipelineError {
+    #[error("rules {} spliced into one buffer produced output the pipeline rejected", render_slugs(.rules))]
+    Batch { rules: Vec<RuleId> },
     #[error("rule `{rule}` left notebook cell {cell} unparseable")]
     Cell {
         cell: OneIndexed,
@@ -35,21 +40,20 @@ pub enum PipelineError {
 }
 
 /// Reparses `new_text`, sliding the source's cell offsets through `map`
-/// so a notebook keeps current boundaries, and tags each failure with
-/// the `rule` whose edits produced it. A cell the source split cleanly is
-/// checked on its own through [`reject_split_cell`], and the semantic
-/// check runs only when `gate` carries the version to evaluate against.
+/// so a notebook keeps current boundaries, and tagging each failure
+/// with `rule`. A cell the source split cleanly is checked on its own
+/// through [`reject_split_cell`], and the semantic check runs only when
+/// `gate` carries the version to evaluate against. The result carries
+/// no table until the caller's `inherit` fills one.
 pub(super) fn reparse_or_reject(
     source: &Source,
     new_text: String,
     rule: RuleId,
-    map: Option<SourceMap>,
+    map: &SourceMap,
     gate: Option<PythonVersion>,
 ) -> Result<Source, PipelineError> {
     let limit = new_text.text_len();
-    let cell_offsets = map.map_or_else(CellOffsets::default, |m| {
-        forward_offsets(source.cell_offsets(), &m, limit)
-    });
+    let cell_offsets = forward_offsets(source.cell_offsets(), map, limit);
     let next = source
         .reparse_carrying(new_text, cell_offsets)
         .map_err(|source| PipelineError::Reparse { rule, source })?;
@@ -93,6 +97,18 @@ mod tests {
 
     fn rule() -> RuleId {
         RuleId::from("breaks-parse")
+    }
+
+    #[test]
+    fn batch_error_names_every_member() {
+        let error = PipelineError::Batch {
+            rules: vec![RuleId::from("normalize-literals"), rule()],
+        };
+
+        assert_eq!(
+            error.to_string(),
+            "rules `normalize-literals`, `breaks-parse` spliced into one buffer produced output the pipeline rejected",
+        );
     }
 
     #[test]

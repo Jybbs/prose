@@ -30,6 +30,8 @@ pub(crate) struct SimplifyComprehensions;
 impl SimplifyComprehensions {
     pub(crate) const MESSAGE: &'static str = "collapse a redundant collection constructor";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }
