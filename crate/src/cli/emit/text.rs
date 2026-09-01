@@ -184,14 +184,14 @@ fn window(file: &SourceFile, range: TextRange) -> (TextRange, usize) {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-    use ruff_diagnostics::{Edit, Fix};
+    use ruff_diagnostics::Fix;
 
     use super::*;
     use crate::{
         cli::emit::{emitted, emitted_runs},
         diagnostics::Diagnostic,
         source::Source,
-        testing::{format_diagnostic, notebook, notebook_index, parse, range},
+        testing::{format_diagnostic, notebook, notebook_index, parse, range, replacement},
     };
 
     /// A two-cell notebook whose comment column aligns across the cell
@@ -250,8 +250,8 @@ mod tests {
             &source,
             &Diagnostic {
                 fix: Some(Fix::safe_edits(
-                    Edit::range_replacement("aaa".to_owned(), range(0, 1)),
-                    [Edit::range_replacement("bbb".to_owned(), range(6, 7))],
+                    replacement("aaa", 0, 1),
+                    [replacement("bbb", 6, 7)],
                 )),
                 ..format_diagnostic(range(0, 7))
             },

@@ -69,8 +69,9 @@ export const glossary: Record<string, GlossaryEntry> = {
   'AST': {
     aliases    : ['abstract syntax tree'],
     definition : 'An AST is the parsed-program tree produced by `ruff_python_parser`. *Prose* '
-               + 'bundles it inside `Source` and reparses it between rules so each rule reads '
-               + 'against the post-rewrite tree.',
+               + 'bundles it inside `Source` and reparses it between batches of independent '
+               + 'rules so each rule reads against the post-rewrite tree of every rule it '
+               + 'depends on.',
     families   : ['engine'],
     href       : '/primitives/source'
   },
@@ -104,8 +105,9 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'Pipeline': {
     aliases    : ['pipeline'],
-    definition : 'The `Pipeline` orchestrates the rule loop against a `Source`, reparses '
-               + 'between rules, and returns the final source plus diagnostics.',
+    definition : 'The `Pipeline` orchestrates the rule loop against a `Source`, splices each '
+               + 'batch of independent rules in one pass, reparses between batches, and '
+               + 'returns the final source plus diagnostics.',
     families   : ['engine'],
     href       : '/primitives/pipeline'
   },
@@ -372,6 +374,17 @@ export const glossary: Record<string, GlossaryEntry> = {
     href       : '/reference/configuration#top-level-keys'
   },
 
+  'independence table': {
+    aliases    : ['independent', 'independence', 'shares a splice'],
+    definition : 'The independence table beside the registry lists, per rule, the earlier rules '
+               + 'whose edits it may splice into one buffer with and parse once. A pair enters '
+               + 'it only where the subset probe found the batched splice matching the fold on '
+               + 'every file both rules edit and a reading of the later rule finds nothing it '
+               + 'measures among what the earlier rule rewrites.',
+    families   : ['engine'],
+    href       : '/reference/pipeline-order#independent-rules-share-a-parse'
+  },
+
   'kebab-case': {
     definition : 'Kebab-case is the lowercase-with-hyphens naming convention *Prose* uses for '
                + 'every rule slug (`align-equals`, `single-use-variables`). The form is '
@@ -516,9 +529,11 @@ export const glossary: Record<string, GlossaryEntry> = {
   'reparse': {
     aliases    : ['reparses', 'reparsing'],
     definition : 'Reparse names the `Source::reparse_carrying` step the `Pipeline` runs between '
-               + 'rules. Each rule reads a settled AST built from the post-rewrite text, so no '
-               + 'rule observes another rule\'s half-applied state, and the binding table '
-               + 'travels into the new `Source` behind a rule that keeps every binding.',
+               + 'batches of independent rules. Each rule reads a settled AST built from the '
+               + 'post-rewrite text of every rule it depends on, so no rule observes the '
+               + 'half-applied state of a rule whose rewrites it reads, and the binding table '
+               + 'travels into the new `Source` where every member of the batch keeps every '
+               + 'binding.',
     families   : ['engine'],
     href       : '/primitives/pipeline'
   },
@@ -535,7 +550,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'ruff_python_parser': {
     definition : '`ruff_python_parser` is the Astral parser crate *Prose* consumes to produce '
-               + 'the AST inside each `Source`. Reparsing between rules guarantees every rule '
+               + 'the AST inside each `Source`. Reparsing between batches guarantees every rule '
                + 'reads against the post-rewrite tree.',
     families   : ['engine']
   },

@@ -10,13 +10,15 @@ use thiserror::Error;
 use super::validity::first_semantic_error;
 use crate::{
     primitives::edit::forward_offsets,
-    rule::{Rule, RuleId},
+    rule::{RuleId, render_slugs},
     source::Source,
 };
 
 /// Failure modes surfaced by the pipeline itself.
 #[derive(Debug, Error)]
 pub enum PipelineError {
+    #[error("rules {} spliced into one buffer produced output the pipeline rejected", render_slugs(.rules))]
+    Batch { rules: Vec<RuleId> },
     #[error("rule `{rule}` left notebook cell {cell} unparseable")]
     Cell {
         cell: OneIndexed,
@@ -38,31 +40,29 @@ pub enum PipelineError {
 }
 
 /// Reparses `new_text`, sliding the source's cell offsets through `map`
-/// so a notebook keeps current boundaries, carrying into the result the
-/// tables `rule` declares its edits leave standing, and tagging each
-/// failure with `rule`. A cell the source split cleanly is checked on
-/// its own through [`reject_split_cell`], and the semantic check runs
-/// only when `gate` carries the version to evaluate against.
+/// so a notebook keeps current boundaries, and tagging each failure
+/// with `rule`. A cell the source split cleanly is checked on its own
+/// through [`reject_split_cell`], and the semantic check runs only when
+/// `gate` carries the version to evaluate against. The result carries
+/// no table until the caller's `inherit` fills one.
 pub(super) fn reparse_or_reject(
-    source: Source,
+    source: &Source,
     new_text: String,
-    rule: &dyn Rule,
+    rule: RuleId,
     map: &SourceMap,
     gate: Option<PythonVersion>,
 ) -> Result<Source, PipelineError> {
-    let id = rule.id();
     let limit = new_text.text_len();
     let cell_offsets = forward_offsets(source.cell_offsets(), map, limit);
-    let mut next = source
+    let next = source
         .reparse_carrying(new_text, cell_offsets)
-        .map_err(|source| PipelineError::Reparse { rule: id, source })?;
-    reject_split_cell(&source, &next, id)?;
+        .map_err(|source| PipelineError::Reparse { rule, source })?;
+    reject_split_cell(source, &next, rule)?;
     if let Some(version) = gate
         && let Some(error) = first_semantic_error(&next, version)
     {
-        return Err(PipelineError::Compile { error, rule: id });
+        return Err(PipelineError::Compile { error, rule });
     }
-    next.inherit(source, map, rule);
     Ok(next)
 }
 
@@ -97,6 +97,18 @@ mod tests {
 
     fn rule() -> RuleId {
         RuleId::from("breaks-parse")
+    }
+
+    #[test]
+    fn batch_error_names_every_member() {
+        let error = PipelineError::Batch {
+            rules: vec![RuleId::from("normalize-literals"), rule()],
+        };
+
+        assert_eq!(
+            error.to_string(),
+            "rules `normalize-literals`, `breaks-parse` spliced into one buffer produced output the pipeline rejected",
+        );
     }
 
     #[test]

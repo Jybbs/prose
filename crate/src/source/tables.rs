@@ -19,7 +19,7 @@ use crate::{
         padding::Stranding,
         reserve::{Columns, Reservations},
     },
-    rule::{Rule, RuleId},
+    rule::RuleId,
 };
 
 /// The label each table reports its builds and carries under.
@@ -71,17 +71,24 @@ impl Source {
         })
     }
 
-    /// Fills the binding table `previous` built where `rule` declares
-    /// its edits leave every binding standing, moved through `map` to
-    /// the positions this text carries, so the next read finds it in
-    /// place. A table an edit in `map` leaves nowhere to move, one of
-    /// whose offsets that edit replaced, is left for that read to
-    /// rebuild, as are the layout forecasts behind every rule.
-    pub(crate) fn inherit(&mut self, previous: Source, map: &SourceMap, rule: &dyn Rule) {
+    /// Fills the binding table `previous` built where `preserves` says
+    /// the splice's edits leave every binding standing, moved through
+    /// `map` to the positions this text carries, so the next read finds
+    /// it in place, the outcome reported under `rule`. A table an edit
+    /// in `map` leaves nowhere to move, one of whose offsets that edit
+    /// replaced, is left for that read to rebuild, as are the layout
+    /// forecasts behind every splice.
+    pub(crate) fn inherit(
+        &mut self,
+        previous: Source,
+        map: &SourceMap,
+        rule: RuleId,
+        preserves: bool,
+    ) {
         self.binding_analysis = inherited(
-            rule.id(),
+            rule,
             BINDINGS,
-            rule.preserves_bindings(),
+            preserves,
             previous.binding_analysis,
             |analysis| analysis.forwarded(map),
         );
@@ -154,25 +161,6 @@ mod tests {
         testing::{parse, range, woven},
     };
 
-    /// A rule editing nothing and declaring its edits leave every
-    /// binding standing where `.0` is true.
-    #[derive(Debug)]
-    struct Declaring(bool);
-
-    impl Rule for Declaring {
-        fn id(&self) -> RuleId {
-            RuleId::from("declaring")
-        }
-
-        fn message(&self) -> &'static str {
-            "declaring test rule"
-        }
-
-        fn preserves_bindings(&self) -> bool {
-            self.0
-        }
-    }
-
     /// `source` reparsed over the text `edits` weave into it, the
     /// binding table it built carried forward where `preserves`.
     fn reparsed_with(source: Source, edits: Vec<Edit>, preserves: bool) -> Source {
@@ -180,7 +168,7 @@ mod tests {
         let mut next = source
             .reparse_carrying(text, CellOffsets::default())
             .expect("reparses");
-        next.inherit(source, &map, &Declaring(preserves));
+        next.inherit(source, &map, RuleId::from("declaring"), preserves);
         next
     }
 

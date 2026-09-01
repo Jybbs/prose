@@ -170,7 +170,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{notebook, range, woven};
+    use crate::testing::{notebook, range, replacement, woven};
 
     /// The map of `edits` woven into `abcdef`.
     fn mapped(edits: Vec<Edit>) -> SourceMap {
@@ -201,10 +201,7 @@ mod tests {
 
     #[test]
     fn forward_offset_lands_a_boundary_inside_a_replacement_at_its_start() {
-        let (text, map) = woven(
-            "abcdef",
-            vec![Edit::range_replacement("X".to_owned(), range(1, 5))],
-        );
+        let (text, map) = woven("abcdef", vec![replacement("X", 1, 5)]);
 
         assert_eq!(text, "aXf");
         assert_eq!(
@@ -225,10 +222,7 @@ mod tests {
 
     #[test]
     fn forward_offset_leaves_an_offset_past_a_length_preserving_edit() {
-        let (text, map) = woven(
-            "abc",
-            vec![Edit::range_replacement("X".to_owned(), range(0, 1))],
-        );
+        let (text, map) = woven("abc", vec![replacement("X", 0, 1)]);
 
         assert_eq!(text, "Xbc");
         assert_eq!(

@@ -2,7 +2,10 @@
 //! fresh read builds, over each corpus input.
 
 use super::*;
-use crate::testing::corpus_inputs;
+use crate::{
+    pipeline::error::reparse_or_reject, primitives::edit::apply_edits_mapped,
+    testing::corpus_inputs,
+};
 
 #[test]
 fn carried_binding_tables_match_the_ones_a_fresh_read_builds() {
@@ -15,12 +18,15 @@ fn carried_binding_tables_match_the_ones_a_fresh_read_builds() {
         let gate = compile_gate(&source, pipeline.target_version);
         for rule in &pipeline.rules {
             source.binding_analysis();
-            let Some((_, new_text, map)) = woven_groups(&**rule, &source) else {
+            let Some(spliceable) = Spliceable::landing(&**rule, &source) else {
                 continue;
             };
-            let Ok(next) = reparse_or_reject(source, new_text, &**rule, &map, gate) else {
+            let (new_text, map) = apply_edits_mapped(source.text(), spliceable.edits)
+                .expect("a landing spliceable weaves");
+            let Ok(mut next) = reparse_or_reject(&source, new_text, rule.id(), &map, gate) else {
                 break;
             };
+            next.inherit(source, &map, rule.id(), rule.preserves_bindings());
             source = next;
             carried |= source.assert_carried_bindings_are_fresh(&format!(
                 "{} past `{}`",

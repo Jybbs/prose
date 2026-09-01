@@ -10,12 +10,8 @@ fn run_as_written_leaves_the_unedited_prefix_to_the_diagnose_pass() {
     // at the second. Its capture log holds the one read.
     let seen = Arc::new(Mutex::new(Vec::new()));
     let pipeline = Pipeline::from_rules(vec![
-        Box::new(TextCapturingRule {
-            edits: Vec::new(),
-            id: RuleId::from("reads-only"),
-            seen: Arc::clone(&seen),
-        }),
-        Box::new(rewrites_x_to_y()),
+        capturing(&seen, "reads-only", Vec::new()),
+        sentinel("rewrite-x-to-y", vec![replacement("y", 0, 1)]),
     ]);
 
     let (formatted, _, _) = pipeline
@@ -23,23 +19,15 @@ fn run_as_written_leaves_the_unedited_prefix_to_the_diagnose_pass() {
         .expect("the run succeeds");
 
     assert_eq!(formatted.text(), "y = 1\n");
-    assert_eq!(*seen.lock().expect("seen mutex"), ["x = 1\n"]);
+    assert_eq!(captured(&seen), ["x = 1\n"]);
 }
 
 #[test]
 fn run_as_written_names_the_rules_the_fold_fired_rather_than_the_as_written_ones() {
     let rules = || -> Vec<Box<dyn Rule>> {
         vec![
-            Box::new(PrefixRule {
-                id: RuleId::from("settles-once"),
-                reads: "x",
-                writes: "q",
-            }),
-            Box::new(PrefixRule {
-                id: RuleId::from("widens-downstream"),
-                reads: "q",
-                writes: "qq",
-            }),
+            Box::new(prefix_rule("settles-once", "x", "q")),
+            Box::new(prefix_rule("widens-downstream", "q", "qq")),
         ]
     };
     let both = BTreeSet::from([
@@ -66,7 +54,10 @@ fn run_as_written_names_the_rules_the_fold_fired_rather_than_the_as_written_ones
 
 #[test]
 fn run_as_written_passes_a_clean_rewrite() {
-    let pipeline = Pipeline::from_rules(vec![Box::new(rewrites_x_to_y())]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-x-to-y",
+        vec![replacement("y", 0, 1)],
+    )]);
     let source = parse("x = 1\n");
 
     assert!(pipeline.run_as_written(source).is_ok());
@@ -96,7 +87,7 @@ fn run_as_written_resolves_a_lint_range_against_the_original_buffer() {
     // `widen-x` moves the `1` one byte right, so the lint range the
     // rewritten buffer carries is 5..6 and the as-written one 4..5.
     let pipeline = Pipeline::from_rules(vec![
-        Box::new(never_settles("widen-x")),
+        sentinel("widen-x", vec![replacement("yy", 0, 1)]),
         Box::new(NeedleLintRule {
             id: RuleId::from("flag-one"),
             needle: "1",
@@ -117,7 +108,10 @@ fn run_as_written_resolves_a_lint_range_against_the_original_buffer() {
 
 #[test]
 fn run_as_written_returns_the_diagnostics_it_replayed() {
-    let pipeline = Pipeline::from_rules(vec![Box::new(rewrites_x_to_y())]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-x-to-y",
+        vec![replacement("y", 0, 1)],
+    )]);
 
     let (_, diagnostics, _) = pipeline
         .run_as_written(parse("x = 1\n"))
@@ -129,10 +123,10 @@ fn run_as_written_returns_the_diagnostics_it_replayed() {
 
 #[test]
 fn run_as_written_short_circuits_when_file_is_suppressed() {
-    let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-        groups: vec![vec![Edit::range_replacement("y".to_owned(), range(11, 12))]],
-        id: RuleId::from("rewrite-x-to-y"),
-    })]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-x-to-y",
+        vec![replacement("y", 11, 12)],
+    )]);
     let source = parse("# prose: off\nx = 1\n");
 
     let (formatted, diagnostics, _) = pipeline.run_as_written(source).expect("the run succeeds");
@@ -144,17 +138,13 @@ fn run_as_written_short_circuits_when_file_is_suppressed() {
 #[test]
 fn run_as_written_skips_the_replay_where_no_rule_edits() {
     let seen = Arc::new(Mutex::new(Vec::new()));
-    let pipeline = Pipeline::from_rules(vec![Box::new(TextCapturingRule {
-        edits: Vec::new(),
-        id: RuleId::from("reads-only"),
-        seen: Arc::clone(&seen),
-    })]);
+    let pipeline = Pipeline::from_rules(vec![capturing(&seen, "reads-only", Vec::new())]);
 
     pipeline
         .run_as_written(parse("x = 1\n"))
         .expect("the run succeeds");
 
-    assert_eq!(*seen.lock().expect("seen mutex"), ["x = 1\n"]);
+    assert_eq!(captured(&seen), ["x = 1\n"]);
 }
 
 #[test]
