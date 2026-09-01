@@ -47,6 +47,10 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
     rendered.push_str(&timeouts.render("times out"));
     for (heading, listed) in [
         ("flaky, a second run did not confirm it", &found.flaky),
+        (
+            "pruned, a recorded fix explains every name it lost",
+            &found.pruned,
+        ),
         ("unmeasured, a run left no record", &found.unmeasured),
     ] {
         if !listed.is_empty() {

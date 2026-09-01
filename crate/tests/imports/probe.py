@@ -85,7 +85,7 @@ class Probe:
             exc: The exception the module raised.
         """
         self.rows.append(("kind", "raised"))
-        self.rows.append(("raise", type(exc).__name__, str(exc)))
+        self.rows.append(("raise", type(exc).__name__, spelt(str(exc))))
 
         if missing := getattr(exc, "name_from", None) or getattr(exc, "name", None):
             self.rows.append(("missing", missing))
@@ -103,6 +103,21 @@ class Probe:
             sink.write(ROW.join(FIELD.join(row) for row in self.rows))
 
 
+def spelt(text: str) -> str:
+    """
+    Spell text with each tree root replaced by `TREE`, so a string a run
+    derives from its own location reads the same from either tree and
+    across runs, whose stage roots carry different process ids.
+
+    Args:
+        text: The text to spell.
+    """
+    for root in roots:
+        text = text.replace(root, TREE)
+
+    return text
+
+
 def constant(value: object) -> "str | None":
     """
     Spell a value where its `repr` holds across runs, `None` otherwise. An
@@ -115,14 +130,9 @@ def constant(value: object) -> "str | None":
     """
     if value is None or isinstance(value, (int, str)):
         try:
-            spelt = repr(value)
+            return spelt(repr(value))
         except BaseException:
             return None
-
-        for root in roots:
-            spelt = spelt.replace(root, TREE)
-
-        return spelt
 
     if not isinstance(value, (frozenset, tuple)):
         return None

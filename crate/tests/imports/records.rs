@@ -63,6 +63,7 @@ pub(crate) struct Frame {
 }
 
 /// One width's tallies and findings.
+#[derive(Default)]
 pub(crate) struct Width {
     /// Every module the rewrite breaks at this width.
     pub(crate) breaks: Vec<Break>,

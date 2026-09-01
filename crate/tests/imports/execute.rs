@@ -94,8 +94,12 @@ impl Runner {
         let Ok(mut child) = command.spawn() else {
             return Outcome::of(Kind::Unmeasured, "cannot be launched");
         };
-        let Some(status) = wait(&mut child, self.seconds) else {
-            return Outcome::of(Kind::Timeout, format!("times out after {}s", self.seconds));
+        let status = match wait(&mut child, self.seconds) {
+            Waited::Ended(status) => status,
+            Waited::Deadline => {
+                return Outcome::of(Kind::Timeout, format!("times out after {}s", self.seconds));
+            }
+            Waited::Lost => return Outcome::of(Kind::Unmeasured, "cannot be waited on"),
         };
         if let Ok(record) = fs_err::read_to_string(&record)
             && !record.is_empty()
@@ -148,18 +152,34 @@ fn locate(module: &str, trees: &[&Path]) -> Option<PathBuf> {
         .find(|path| path.exists())
 }
 
-/// The status a child ended on, `None` where the deadline killed it first.
-fn wait(child: &mut Child, seconds: f64) -> Option<ExitStatus> {
+/// How waiting on a child ended.
+#[derive(Debug)]
+pub(crate) enum Waited {
+    /// The deadline passed and the wait killed it.
+    Deadline,
+    /// The child ended on its own.
+    Ended(ExitStatus),
+    /// The wait itself failed, so the run measures nothing.
+    Lost,
+}
+
+/// How a child ended, the deadline killing it where it outran one and the
+/// wait reporting its own failure apart from that, so a child the harness
+/// loses does not read as a module that runs too long.
+pub(crate) fn wait(child: &mut Child, seconds: f64) -> Waited {
     let deadline = Instant::now() + Duration::from_secs_f64(seconds);
     loop {
-        match child.try_wait() {
-            Ok(Some(status)) => return Some(status),
-            Ok(None) if Instant::now() < deadline => thread::sleep(POLL),
-            Ok(None) | Err(_) => {
-                let _ = child.kill();
-                let _ = child.wait();
-                return None;
+        let ended = match child.try_wait() {
+            Ok(Some(status)) => return Waited::Ended(status),
+            Ok(None) if Instant::now() < deadline => {
+                thread::sleep(POLL);
+                continue;
             }
-        }
+            Ok(None) => Waited::Deadline,
+            Err(_) => Waited::Lost,
+        };
+        let _ = child.kill();
+        let _ = child.wait();
+        return ended;
     }
 }

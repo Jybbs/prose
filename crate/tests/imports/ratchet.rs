@@ -24,6 +24,7 @@ const BASELINE_VAR: &str = "PROSE_IMPORTS_BASELINE";
 /// it left beside the modules it could not compare, each keyed by width
 /// label.
 #[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(default)]
 pub(crate) struct Baseline {
     /// The breaks a run left at each frame.
     pub(crate) breaks: BTreeMap<String, BTreeSet<Carried>>,
@@ -32,12 +33,17 @@ pub(crate) struct Baseline {
     pub(crate) uncomparable: BTreeMap<String, BTreeSet<String>>,
 }
 
-/// The file and reason one break is known by across runs, which is what a
-/// baseline carries per break.
-#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+/// The module, file, and reason one break is known by across runs, which
+/// is what a baseline carries per break. The module is part of the key so
+/// a fresh module joining a known cascade fails the run rather than
+/// matching the entry a sibling already left.
+#[derive(Clone, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(default)]
 pub(crate) struct Carried {
     /// The file its frame names.
     pub(crate) file: String,
+    /// The module the rewrite broke.
+    pub(crate) module: String,
     /// Why the two runs differ.
     pub(crate) reason: String,
 }
@@ -85,8 +91,8 @@ pub(crate) fn baseline() -> Baseline {
     serde_json::from_str(&held).expect("parse the baseline")
 }
 
-/// The broken modules of one width whose frame file and reason the baseline
-/// already holds.
+/// The broken modules of one width whose module, frame file, and reason
+/// the baseline already holds.
 pub(crate) fn judge(found: &Width, held: &Baseline) -> BTreeSet<String> {
     let Some(known) = held.breaks.get(&found.label) else {
         return BTreeSet::new();
@@ -101,13 +107,16 @@ pub(crate) fn judge(found: &Width, held: &Baseline) -> BTreeSet<String> {
 
 /// The modules of one width the original tree no longer runs cleanly
 /// that the baseline does not already list, meaning the sweep just lost
-/// coverage it used to have.
+/// coverage it used to have. A baseline recording nothing at this width
+/// carries no coverage to lose, so it names none.
 pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
-    let known = held.uncomparable.get(&found.label);
+    let Some(known) = held.uncomparable.get(&found.label) else {
+        return BTreeSet::new();
+    };
     found
         .uncomparable
         .iter()
-        .filter(|module| known.is_none_or(|held| !held.contains(*module)))
+        .filter(|module| !known.contains(*module))
         .cloned()
         .collect()
 }
@@ -118,10 +127,11 @@ pub(crate) fn skipping<'a>(held: &'a Baseline, label: &str) -> Option<&'a BTreeS
     held.uncomparable.get(label)
 }
 
-/// The file and reason a baseline holds one break by.
+/// The module, file, and reason a baseline holds one break by.
 fn carried(brk: &Break) -> Carried {
     Carried {
         file: brk.frame.file.clone(),
+        module: brk.module.clone(),
         reason: brk.reason.clone(),
     }
 }

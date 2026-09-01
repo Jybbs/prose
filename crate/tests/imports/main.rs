@@ -53,7 +53,7 @@ use crate::{
     corpus::interpreter,
     ratchet::{bake, baking, baseline, dropped, judge, skipping},
     report::render,
-    sweep::{DEFAULT_LABEL, PYTHON_VAR, Sweep},
+    sweep::{PYTHON_VAR, Sweep, label},
 };
 
 /// The interpreter the sweep runs absent [`PYTHON_VAR`].
@@ -79,8 +79,7 @@ fn every_rewritten_module_still_imports() {
     );
     let found: Vec<_> = widths
         .map(|width| {
-            let label =
-                width.map_or_else(|| DEFAULT_LABEL.to_owned(), |width| width.get().to_string());
+            let label = label(width);
             sweep.sweep(
                 width,
                 baked.is_none().then(|| skipping(&held, &label)).flatten(),

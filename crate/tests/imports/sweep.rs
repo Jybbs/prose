@@ -16,7 +16,7 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use crate::{
     attribution::Attributor,
     common::setting,
-    compare::{compare, divergence},
+    compare::{compare, divergence, every_divergence_excused},
     corpus::candidates,
     execute::Runner,
     fixes::drops,
@@ -27,6 +27,12 @@ use crate::{
 
 /// The label a sweep gives the width no `code-line-length` pinned.
 pub(crate) const DEFAULT_LABEL: &str = "default";
+
+/// The label one width is keyed by, which the bake, the ratchet, and the
+/// report all read.
+pub(crate) fn label(width: Option<NonZeroUsize>) -> String {
+    width.map_or_else(|| DEFAULT_LABEL.to_owned(), |width| width.to_string())
+}
 
 /// The environment variable narrowing a run to one module.
 const MODULE_VAR: &str = "PROSE_IMPORTS_MODULE";
@@ -54,20 +60,25 @@ impl Sweep {
         }
     }
 
-    /// Reports whether a break is one module losing a name a recorded fix
-    /// deliberately dropped from that same module, which is a rule doing
-    /// its work rather than a rewrite breaking the code. A module that
-    /// reads the dropped name still raises and still counts.
+    /// Reports whether every divergence a break carries is one name a
+    /// recorded fix deliberately dropped from that same module, which is
+    /// a rule doing its work rather than a rewrite breaking the code.
+    /// Each excused name is struck from the original namespace and the
+    /// rest re-compared, so a second divergence the fix record does not
+    /// explain keeps the whole break. A module that reads a dropped name
+    /// still raises and still counts.
     fn deliberately_pruned(&self, brk: &Break, fixes: &Fixes) -> bool {
-        brk.formatted.kind == Kind::Ok
-            && brk.reason.ends_with("` unbound")
-            && brk.name.as_deref().is_some_and(|name| {
-                let text = fs_err::read_to_string(self.runner.stage.original.join(&brk.module))
-                    .unwrap_or_default();
-                fixes
-                    .get(&brk.module)
-                    .is_some_and(|listed| listed.iter().any(|(_, edits)| drops(edits, name, &text)))
-            })
+        if brk.formatted.kind != Kind::Ok {
+            return false;
+        }
+        let Some(listed) = fixes.get(&brk.module) else {
+            return false;
+        };
+        let text = fs_err::read_to_string(self.runner.stage.original.join(&brk.module))
+            .expect("the staged original holds every module the sweep ran");
+        every_divergence_excused(&brk.formatted, &brk.original, |name| {
+            listed.iter().any(|(_, edits)| drops(edits, name, &text))
+        })
     }
 
     /// Reports whether the original matches its own first run and a second
@@ -118,7 +129,7 @@ impl Sweep {
         width: Option<NonZeroUsize>,
         skip: Option<&BTreeSet<String>>,
     ) -> Width {
-        let label = width.map_or_else(|| DEFAULT_LABEL.to_owned(), |width| width.to_string());
+        let label = label(width);
         let config = width.map_or_else(Config::default, |width| Config {
             code_line_length: Some(width),
             ..Config::default()
