@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comprehension's Own Iterable Still Flags"
+
+description = '''
+`rows` is read once, as the comprehension's outermost iterable, which Python evaluates once before any iteration. **The binding is reported**, unlike a read in the comprehension's body, which runs once per item.
+'''

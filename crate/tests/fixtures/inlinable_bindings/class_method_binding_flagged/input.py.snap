@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/inlinable_bindings/class_method_binding_flagged/input.py
+---
+class Service:
+    def consume(self, payload):
+        normalized = transform(payload)
+        return normalized

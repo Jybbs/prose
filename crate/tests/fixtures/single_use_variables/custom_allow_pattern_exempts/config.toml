@@ -1,2 +1,0 @@
-[rules]
-single-use-variables = { allow-pattern = "tmp_*" }

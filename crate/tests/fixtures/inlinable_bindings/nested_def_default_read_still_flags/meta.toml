@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Nested `def` Parameter Default Still Flags"
+
+description = '''
+`cap` is read once, as the default of the nested `def`'s `limit` parameter, which Python evaluates where the `def` is written rather than on each later call. **The binding is reported**, the nested function guarding its body alone, the same split a lambda takes.
+'''

@@ -5,7 +5,7 @@ input_file: crate/tests/fixtures/suppression/skip_leaves_lint_diagnostics_alone/
 ---
 [
   {
-    "code": "single-use-variables",
+    "code": "inlinable-bindings",
     "end_location": {
       "column": 10,
       "row": 5
@@ -15,10 +15,10 @@ input_file: crate/tests/fixtures/suppression/skip_leaves_lint_diagnostics_alone/
       "column": 5,
       "row": 5
     },
-    "message": "`other` is assigned and used once. Consider inlining `compute()`"
+    "message": "`other` is read once and inlining its value costs nothing. Consider inlining `compute()`"
   },
   {
-    "code": "single-use-variables",
+    "code": "inlinable-bindings",
     "end_location": {
       "column": 10,
       "row": 2
@@ -28,6 +28,6 @@ input_file: crate/tests/fixtures/suppression/skip_leaves_lint_diagnostics_alone/
       "column": 5,
       "row": 2
     },
-    "message": "`value` is assigned and used once. Consider inlining `compute()`"
+    "message": "`value` is read once and inlining its value costs nothing. Consider inlining `compute()`"
   }
 ]

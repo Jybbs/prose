@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Walrus Outside a Condition Is Flagged"
-
-description = '''
-`total := len(items)` binds inside a `print` call rather than an `if`, `elif`, or `while` test, so the exemption for condition walruses does not apply. **`total` is flagged like any single-read binding** in `report`, because only a walrus bound directly in a branch or loop test gets treated as already consumed once.
-'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Starred Target Resolves No Replacement"
+
+description = '''
+`head` and `rest` in `head, *rest = items` are each read exactly once, in `wrap(head, rest)`, yet `*rest` shifts the positions of the names around it so a fixed `items[0]` subscript would no longer line up. No replacement text resolves for either target, **so neither is reported**.
+'''

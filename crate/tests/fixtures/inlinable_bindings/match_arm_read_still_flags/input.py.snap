@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/match_arm_read_still_flags/input.py
+---
+def route(kind, data):
+    total = sum(data)
+    match kind:
+        case "sum":
+            return total
+        case _:
+            return 0

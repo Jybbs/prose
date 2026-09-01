@@ -206,7 +206,7 @@ fn run_resolves_a_lint_range_against_the_settled_source() {
     // carrying the directive, so the ignore still matches.
     let pipeline = Pipeline::from_rules(vec![
         Box::new(NeedleLintRule {
-            id: RuleId::from("single-use-variables"),
+            id: RuleId::from("inlinable-bindings"),
             needle: "y = 2",
         }),
         sentinel(
@@ -214,13 +214,13 @@ fn run_resolves_a_lint_range_against_the_settled_source() {
             vec![Edit::insertion("a = 0\n".to_owned(), TextSize::new(0))],
         ),
     ]);
-    let source = parse("x = 1\ny = 2  # prose: ignore[single-use-variables]\n");
+    let source = parse("x = 1\ny = 2  # prose: ignore[inlinable-bindings]\n");
 
     let (result, diagnostics) = pipeline.run(source).expect("prepend run succeeds");
 
     assert_eq!(
         result.text(),
-        "a = 0\nx = 1\ny = 2  # prose: ignore[single-use-variables]\n",
+        "a = 0\nx = 1\ny = 2  # prose: ignore[inlinable-bindings]\n",
     );
     assert!(diagnostics.iter().all(|d| !d.severity.is_lint()));
 }

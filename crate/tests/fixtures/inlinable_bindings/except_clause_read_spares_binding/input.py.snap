@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/except_clause_read_spares_binding/input.py
+---
+def guarded(mod, payload):
+    expected = mod.Error
+    try:
+        return parse(payload)
+    except expected:
+        return None

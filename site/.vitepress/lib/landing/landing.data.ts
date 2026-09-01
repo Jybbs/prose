@@ -42,8 +42,8 @@ const SURFACE_BODIES: Record<RuleFamily, string> = {
              + 'explode to one entry per line. Each argument, key, or name lands on its own '
              + 'row, so the eye reads down the column and a later edit touches a single line.',
   lint       : 'Legacy union syntax, reassigned constants, step-narration comments, bare-import '
-             + 'patterns, and single-use bindings surface as diagnostics. The formatter never '
-             + 'rewrites these, because the fix belongs to the reader.',
+             + 'patterns, and bindings whose value inlines for free surface as diagnostics. The '
+             + 'formatter never rewrites these, because the fix belongs to the reader.',
   ordering   : 'Sibling entries sort into a predictable order. Imports, dictionary keys, and '
              + 'set members read top-to-bottom by name, so a reader looking for an entry '
              + 'already knows where it sits.'

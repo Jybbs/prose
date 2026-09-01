@@ -1,9 +1,0 @@
-[docs]
-previewable = false
-title       = "A Walrus in an If Test Is Exempt"
-
-description = '''
-`n := len(items)` binds inside the `if` test, and `n` is read again in `return n`.
-
-`n` is **not flagged**, because the `if` comparison already consumes the walrus value as its first use, which makes the later read a second one. Inlining it would recompute `len(items)` in both the test and the body.
-'''

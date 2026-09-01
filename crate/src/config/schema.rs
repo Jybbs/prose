@@ -233,6 +233,26 @@ pub struct ImportsConfig {
     pub first_party: Vec<String>,
 }
 
+/// Configuration for the `inlinable-bindings` rule.
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct InlinableBindingsConfig {
+    /// Binding names exempted from the lint, a glob matched against the
+    /// whole name.
+    #[schemars(extend("default" = Self::default().allow_pattern.as_str()))]
+    pub allow_pattern: AllowPattern,
+    pub enabled: bool,
+}
+
+impl Default for InlinableBindingsConfig {
+    fn default() -> Self {
+        Self {
+            allow_pattern: "_*".parse().expect("`_*` parses"),
+            enabled: true,
+        }
+    }
+}
+
 /// An inline-element budget read from a `max-<element>` key and shared
 /// across the layout rules. `Some(n)` caps the element count a construct
 /// holds inline, and `None` lifts the cap so width alone gates the
@@ -627,26 +647,6 @@ pub(crate) trait RuleToggle: Default {
     fn with_enabled(enabled: bool) -> Self;
 }
 
-/// Configuration for the `single-use-variables` rule.
-#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
-#[serde(default, rename_all = "kebab-case")]
-pub struct SingleUseVariablesConfig {
-    /// Binding names exempted from the lint, a glob matched against the
-    /// whole name.
-    #[schemars(extend("default" = Self::default().allow_pattern.as_str()))]
-    pub allow_pattern: AllowPattern,
-    pub enabled: bool,
-}
-
-impl Default for SingleUseVariablesConfig {
-    fn default() -> Self {
-        Self {
-            allow_pattern: "_*".parse().expect("`_*` parses"),
-            enabled: true,
-        }
-    }
-}
-
 /// Configuration for the `stack-method-chains` rule.
 #[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -711,6 +711,7 @@ impl_rule_toggle!(
     AlphabetizeSiblingsConfig,
     BandConstantsConfig,
     BareImportsConfig,
+    InlinableBindingsConfig,
     LineOverflowConfig,
     MiscasedConstantsConfig,
     ModernizeAnnotationsConfig,
@@ -723,6 +724,5 @@ impl_rule_toggle!(
     ReflowCollectionsConfig,
     ReflowImportsConfig,
     ReflowSignaturesConfig,
-    SingleUseVariablesConfig,
     StackMethodChainsConfig,
 );

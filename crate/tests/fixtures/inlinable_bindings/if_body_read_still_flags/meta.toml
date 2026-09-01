@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Read Inside an `if` Body Still Flags"
+
+description = '''
+`total` is written above the `if` and read once inside it, the shape a loop or a `try` arm would spare. **The binding is reported**, because an `if` branch runs at most once and holds no computation the enclosing scope had not already reached, so the inline changes neither how often `sum(data)` runs nor what protects it.
+'''

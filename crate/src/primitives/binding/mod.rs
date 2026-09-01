@@ -47,8 +47,6 @@ pub struct BindingAnalysis {
     assignment_values: FxHashMap<TextSize, TextRange>,
     bindings: Vec<Binding>,
     #[serde(skip)]
-    condition_test_walruses: FxHashSet<BindingId>,
-    #[serde(skip)]
     deleted: FxHashSet<Name>,
     #[serde(skip)]
     function_scope_at: FxHashMap<TextSize, ScopeId>,
@@ -298,6 +296,12 @@ impl BindingAnalysis {
             .is_some_and(|binding| binding.bare_read)
     }
 
+    /// Returns every offset at which `binding` is read, ascending. A
+    /// walrus target counts its own value as one of them.
+    pub(crate) fn read_offsets(&self, binding: BindingId) -> &[TextSize] {
+        &self.binding(binding).read_offsets
+    }
+
     /// Returns `true` when the local scope of `stmt` binds `name`.
     /// `stmt` must be a `Stmt::FunctionDef`, and any other statement
     /// yields `false`.
@@ -310,17 +314,6 @@ impl BindingAnalysis {
     /// is a multi-name tuple or list unpack target, `None` otherwise.
     pub(crate) fn unpack_target(&self, binding: BindingId) -> Option<UnpackKind> {
         self.unpack_targets.get(&binding).copied()
-    }
-
-    /// Returns the number of read events recorded for `binding`.
-    pub(crate) fn usage_count(&self, binding: BindingId) -> usize {
-        self.binding(binding).read_offsets.len()
-    }
-
-    /// Returns `true` when a walrus write of `binding` occurred in the
-    /// test of an `if`, `elif`, or `while`.
-    pub(crate) fn walrus_in_condition(&self, binding: BindingId) -> bool {
-        self.condition_test_walruses.contains(&binding)
     }
 }
 
@@ -345,18 +338,16 @@ pub(crate) enum BindingKind {
     With,
 }
 
-/// Disposition of a multi-name unpack target for the single-use lint.
+/// Disposition of a multi-name unpack target for `inlinable-bindings`.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub(crate) enum UnpackKind {
-    /// Flagged with no subscript rewrite, because the right-hand side
-    /// is a call or a starred target shifts the indices.
-    Bare,
-    /// A sibling target reads more than once, so removing this target
-    /// would split the unpack into an indexed read.
-    Exempt,
     /// Flagged with a subscript rewrite: the right-hand-side range and
     /// this target's index.
     Suggested(TextRange, usize),
+    /// No subscript rewrite resolves, because a sibling target reads
+    /// more than once, the right-hand side is a call, or a starred
+    /// target shifts the indices.
+    Unresolved,
 }
 
 /// One named binding in some scope, with every observed write and read.
@@ -481,7 +472,7 @@ mod tests {
             .expect("outer is the function scope under module");
         let helper = *outer.bindings.get("helper").expect("helper bound in outer");
         assert_eq!(
-            analysis.usage_count(helper),
+            analysis.read_offsets(helper).len(),
             1,
             "the forward call resolves to outer's local",
         );
@@ -786,22 +777,22 @@ mod tests {
     #[case::reused_sibling(
         "head, tail = pair\nuse(tail)\nuse(tail)\nuse(head)\n",
         "head",
-        Some(UnpackKind::Exempt)
+        Some(UnpackKind::Unresolved)
     )]
     #[case::call_value(
         "name, value = lookup()\nuse(name)\nuse(value)\n",
         "name",
-        Some(UnpackKind::Bare)
+        Some(UnpackKind::Unresolved)
     )]
     #[case::starred_target(
         "head, *rest = items\nuse(head)\nuse(rest)\n",
         "head",
-        Some(UnpackKind::Bare)
+        Some(UnpackKind::Unresolved)
     )]
     #[case::nested_unpack(
         "(a, b), c = pair\nuse(a)\nuse(b)\nuse(c)\n",
         "a",
-        Some(UnpackKind::Bare)
+        Some(UnpackKind::Unresolved)
     )]
     #[case::direct_assignment("x = 1\nuse(x)\n", "x", None)]
     #[case::single_name_unpack("(only,) = pair\nuse(only)\n", "only", None)]
@@ -819,7 +810,7 @@ mod tests {
     }
 
     #[test]
-    fn unpack_target_names_the_subscript_for_all_single_use() {
+    fn unpack_target_names_the_subscript_when_every_target_reads_once() {
         let source = parse("first, second = batch\nuse(first)\nuse(second)\n");
         let analysis = source.binding_analysis();
         let first = module_binding_id(analysis, "first");
@@ -846,21 +837,21 @@ mod tests {
     }
 
     #[rstest]
-    #[case::if_test("if (n := f()):\n    pass\n", true)]
-    #[case::elif_test("if a:\n    pass\nelif (n := f()):\n    pass\n", true)]
-    #[case::while_test("while (n := f()):\n    pass\n", true)]
-    #[case::assignment_value("x = (n := f())\n", false)]
-    #[case::comprehension_guard("ys = [x for x in xs if (n := x)]\n", false)]
-    #[case::body_assignment("if a:\n    n = 1\n", false)]
-    #[case::if_body("if a:\n    print(n := f())\n", false)]
-    fn walrus_in_condition_marks_only_condition_test_walruses(
-        #[case] src: &str,
-        #[case] expected: bool,
-    ) {
+    #[case::if_test("if (n := f()):\n    pass\n", 1)]
+    #[case::elif_test("if a:\n    pass\nelif (n := f()):\n    pass\n", 1)]
+    #[case::while_test("while (n := f()):\n    pass\n", 1)]
+    #[case::assignment_value("x = (n := f())\n", 1)]
+    #[case::comprehension_guard("ys = [x for x in xs if (n := x)]\n", 1)]
+    #[case::body_assignment("if a:\n    n = 1\n", 0)]
+    #[case::if_body("if a:\n    print(n := f())\n", 1)]
+    #[case::walrus_read_again("if (n := f()):\n    print(n)\n", 2)]
+    fn walrus_target_counts_its_own_value_as_a_read(#[case] src: &str, #[case] reads: usize) {
         let analysis = analyze(src);
         assert_eq!(
-            analysis.walrus_in_condition(module_binding_id(&analysis, "n")),
-            expected,
+            analysis
+                .read_offsets(module_binding_id(&analysis, "n"))
+                .len(),
+            reads,
         );
     }
 
@@ -885,30 +876,30 @@ mod tests {
                 .get(name.as_str())
                 .expect("inner shadows name");
             prop_assert_ne!(outer, inner);
-            prop_assert_eq!(analysis.usage_count(outer), 0);
-            prop_assert_eq!(analysis.usage_count(inner), 1);
+            prop_assert_eq!(analysis.read_offsets(outer).len(), 0);
+            prop_assert_eq!(analysis.read_offsets(inner).len(), 1);
         }
 
         #[test]
-        fn single_use_name_reports_usage_count_one(
+        fn name_read_once_reports_one_read_offset(
             tail in "[a-z0-9]{0,5}"
         ) {
             let name = format!("x{tail}");
             let program = format!("{name} = 1\nprint({name})\n");
             let analysis = analyze(&program);
             let id = module_binding_id(&analysis, &name);
-            prop_assert_eq!(analysis.usage_count(id), 1);
+            prop_assert_eq!(analysis.read_offsets(id).len(), 1);
         }
 
         #[test]
-        fn unread_name_reports_usage_count_zero(
+        fn unread_name_reports_no_read_offset(
             tail in "[a-z0-9]{0,5}"
         ) {
             let name = format!("x{tail}");
             let program = format!("{name} = 1\n");
             let analysis = analyze(&program);
             let id = module_binding_id(&analysis, &name);
-            prop_assert_eq!(analysis.usage_count(id), 0);
+            prop_assert_eq!(analysis.read_offsets(id).len(), 0);
         }
     }
 }

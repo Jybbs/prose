@@ -115,7 +115,7 @@ impl Rule for NormalizeComparisons {
         if !self.identity {
             return Vec::new();
         }
-        filter_map_over_exprs(&source.ast().body, |expr| {
+        filter_map_over_exprs(&source.ast().body, Descent::Over, |expr| {
             boolean_lint(Test::of(expr.as_compare_expr()?)?)
         })
     }

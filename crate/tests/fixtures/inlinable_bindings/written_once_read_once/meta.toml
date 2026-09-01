@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "Written Once and Read Once Draws the Diagnostic"
+
+description = '''
+`x` in `basic` is assigned once, from `expensive(arg)`, and read once, in `return x + 1`. `inlinable-bindings` flags the binding and suggests inlining `expensive(arg)` in place of `x`, without rewriting the source itself.
+'''

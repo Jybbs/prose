@@ -18,19 +18,6 @@ input_file: crate/tests/fixtures/thematic/event_dispatch_match_and_calls/input.p
     "message": "Bare import `logging` reaches 1 of its attributes. Rewrite as `from logging import ...` naming only the symbols this module uses"
   },
   {
-    "code": "single-use-variables",
-    "end_location": {
-      "column": 11,
-      "row": 27
-    },
-    "fix": null,
-    "location": {
-      "column": 5,
-      "row": 27
-    },
-    "message": "`totals` is assigned and used once. Consider inlining `{\n        \"created\" : 0,\n        \"deleted\" : 0,\n        \"failed\"  : 0,\n        \"skipped\" : 0,\n        \"updated\" : 0\n    }`"
-  },
-  {
     "code": "unsorted-positionals",
     "end_location": {
       "column": 40,

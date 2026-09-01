@@ -1,6 +1,0 @@
----
-source: tests/integration.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/single_use_variables/all_bindings_reused_no_edits/input.py
----
-

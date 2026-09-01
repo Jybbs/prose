@@ -29,7 +29,7 @@ use crate::{
         layout::{is_layoutable, requires_expand},
         padding::Stranding,
         reserve::{Columns, Reservations},
-        walk::filter_map_over_exprs,
+        walk::{Descent, filter_map_over_exprs},
     },
     suppression::SuppressionMap,
 };
@@ -247,7 +247,7 @@ impl Source {
     /// read.
     pub(crate) fn expandable_literals(&self) -> &[TextRange] {
         self.expandable_literals.get_or_init(|| {
-            filter_map_over_exprs(&self.ast().body, |expr| {
+            filter_map_over_exprs(&self.ast().body, Descent::Over, |expr| {
                 (is_layoutable(expr)
                     && requires_expand(expr)
                     && !self.intersects_comment(expr.range()))
@@ -614,10 +614,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        primitives::{
-            scope::sub_bodies,
-            walk::{Descent, filter_map_over_parented_exprs},
-        },
+        primitives::{scope::sub_bodies, walk::filter_map_over_parented_exprs},
         testing::{assert_send_sync, parse, range},
     };
 

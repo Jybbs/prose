@@ -80,7 +80,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['binding analysis', 'binding map', 'name bindings', 'binding', 'bindings'],
     definition : '`BindingAnalysis` is a per-`Source` table indexing every write and read of '
                + 'every name in every lexical scope, built on first read and carried across a '
-               + 'reparse by a rule that keeps every binding. The `single-use-variables` rule '
+               + 'reparse by a rule that keeps every binding. The `inlinable-bindings` rule '
                + 'consumes it.',
     families   : ['engine', 'lint'],
     href       : '/primitives/binding-analysis'
@@ -227,7 +227,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : 'A comprehension is one of Python\'s `[x for x in xs]`, `{k: v for ...}`, or '
                + '`{x for ...}` literal forms that build a list, dict, or set inline. '
                + '`reflow-collections` joins them back onto one line when they fit, and their '
-               + 'bound targets sit outside `single-use-variables`.',
+               + 'bound targets sit outside `inlinable-bindings`.',
     families   : ['layout', 'lint'],
     href       : 'https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions'
   },
@@ -387,7 +387,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'kebab-case': {
     definition : 'Kebab-case is the lowercase-with-hyphens naming convention *Prose* uses for '
-               + 'every rule slug (`align-equals`, `single-use-variables`). The form is '
+               + 'every rule slug (`align-equals`, `inlinable-bindings`). The form is '
                + 'canonical across CLI flags, config tables, suppression directives, and '
                + 'diagnostic output.',
     families   : ['engine', 'cli'],

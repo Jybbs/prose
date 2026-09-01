@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/inlinable_bindings/every_unpack_target_subscripted/input.py
+---
+def split(batch):
+    first, second = batch
+    return combine(first, second)

@@ -1,5 +1,5 @@
 ---
-consumedBy: [alphabetize-siblings, band-constants, bare-imports, miscased-constants, modernize-annotations, prune-inert-imports, reassigned-constants, shed-redundant-base, shed-super-args, simplify-comprehensions, single-use-variables]
+consumedBy: [alphabetize-siblings, band-constants, bare-imports, inlinable-bindings, miscased-constants, modernize-annotations, prune-inert-imports, reassigned-constants, shed-redundant-base, shed-super-args, simplify-comprehensions]
 consumes: [source]
 layer: analysis
 stability: internal
@@ -19,12 +19,12 @@ The *BindingAnalysis* type itself is `pub` and re-exported at the crate root as 
 
 A downstream consumer can:
 
-- Pass a [[source]] into [**`Pipeline::run`**](/primitives/pipeline) and read diagnostics emitted by binding-aware rules like [[single-use-variables]].
+- Pass a [[source]] into [**`Pipeline::run`**](/primitives/pipeline) and read diagnostics emitted by binding-aware rules like [[inlinable-bindings]].
 - Observe that the *BindingAnalysis* type exists and is reachable through `source.binding_analysis()`.
 
 A downstream consumer cannot:
 
-- Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `binds_name`, `first_write_offset`, `is_bound_before`, `is_defined_before`, `is_deleted`, `module_attribute_count`, `module_binding_kinds`, `module_function_reads`, `module_names_read_within`, `module_reads_as_data`, `module_reassigned`, `module_reassigned_without`, `module_usage_count`, `module_used_bare`, `scope_binds`, `unpack_target`, `usage_count`, or `walrus_in_condition` on the returned reference. Every reader is `pub(crate)`.
+- Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `binds_name`, `first_write_offset`, `is_bound_before`, `is_defined_before`, `is_deleted`, `module_attribute_count`, `module_binding_kinds`, `module_function_reads`, `module_names_read_within`, `module_reads_as_data`, `module_reassigned`, `module_reassigned_without`, `module_usage_count`, `module_used_bare`, `read_offsets`, `scope_binds`, or `unpack_target` on the returned reference. Every reader is `pub(crate)`.
 - Implement a custom rule that consumes the binding table. The `Rule` trait is `pub(crate)`.
 
 The methods stabilize toward `1.0`, where every reader becomes `pub` and the `Rule` trait opens so downstream consumers can implement project-specific binding-aware rules.
@@ -34,7 +34,7 @@ The methods stabilize toward `1.0`, where every reader becomes `pub` and the `Ru
 For consumers reading this from within the *Prose* crate (*or for readers curious about the surface that will widen at `1.0`*), the table indexes per binding:
 
 - `assignment_count(binding: BindingId) -> usize` counts every write site, including the introducing assignment.
-- `assignment_value_range(offset: TextSize) -> Option<TextRange>` returns the source range of the value bound at a direct `name = value` or `name: T = value` write, which [[single-use-variables]] reads to name the inline candidate, and `None` for a tuple or list target.
+- `assignment_value_range(offset: TextSize) -> Option<TextRange>` returns the source range of the value bound at a direct `name = value` or `name: T = value` write, which [[inlinable-bindings]] reads to name the inline candidate, and `None` for a tuple or list target.
 - `binding_kinds(binding: BindingId) -> &[BindingKind]` returns each kind that produced this binding *(a single binding may carry several kinds when shadowing or augmented assignment is involved)*.
 - `binding_name(binding: BindingId) -> &str` returns the bound name.
 - `bindings_in_scope(stmt: &Stmt) -> impl Iterator<Item = BindingId>` lists every binding introduced in the lexical scope that contains the statement.
@@ -42,7 +42,7 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `first_write_offset(binding: BindingId) -> TextSize` returns the offset of the first write.
 - `is_bound_before(name: &str, offset: TextSize) -> bool` reports whether a module-scope write of a name sits before an offset, a write nested in a conditional branch included where `is_defined_before` counts the unconditional writes alone, which [[band-constants]] reads to pin a constant whose value names a definition below it that would rebind an earlier write.
 - `is_defined_before(name: &str, offset: TextSize) -> bool` is the inverse-lookup convenience used by [[prune-inert-imports]] when checking that every name appearing in an annotation resolves to an unconditional binding introduced earlier *(a name written only inside a conditional branch like `if`, `for`, `while`, `try`, or `match` reads as runtime-unavailable)*, and read by [[shed-redundant-base]] to hold a header whose `object` base a module-scope write rebound ahead of the class.
-- `is_deleted(name: &str) -> bool` reports whether a `del` statement anywhere in the module names a binding, which [[prune-inert-imports]] reads to hold an import whose `del` would otherwise be left raising `NameError`.
+- `is_deleted(name: &str) -> bool` reports whether a `del` statement anywhere in the module names a binding, which [[prune-inert-imports]] reads to hold an import whose `del` would otherwise be left raising `NameError`, and [[inlinable-bindings]] reads to hold a binding whose inline would strand one.
 - `module_attribute_count(name: &str) -> usize` counts the distinct attributes read off a module-scope name *(`os.environ` and `os.getcwd` count as two)*, which [[bare-imports]] reads to weigh how widely a bare import reaches.
 - `module_binding_kinds(name: &str) -> &[BindingKind]` returns the write kinds recorded against a module-scope name, empty where the name is unbound there.
 - `module_function_reads(name: &str) -> Option<&[TextSize]>` returns the read offsets of a module-scope name bound exactly once as a function definition, which [[reflow-calls]] uses through `module_call_params` to resolve the signature a module-function call binds, so it names the call's positional arguments when exploding it.
@@ -52,12 +52,11 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `module_reassigned_without(name: &str, dropped: impl Fn(TextSize) -> bool) -> bool` answers what `module_reassigned` answers once every write `dropped` names is removed, which [[prune-inert-imports]] reads so a repeat it is already dropping stops counting as the rebind that would otherwise hold the first binding.
 - `module_usage_count(name: &str) -> usize` counts every read recorded against a module-scope name, which [[modernize-annotations]] weighs against the reads its own rewrite consumed and [[prune-inert-imports]] reads directly to decide whether an import binding still has a reader.
 - `module_used_bare(name: &str) -> bool` reports whether a module-scope name is ever read without an attribute access *(the namespace object itself is used)*, which [[bare-imports]] reads before suggesting a `from` import.
+- `read_offsets(binding: BindingId) -> &[TextSize]` returns every offset at which a binding is read, ascending, which [[inlinable-bindings]] reads to locate the single read it measures the inline against. A walrus target counts its own value as one of them.
 - `scope_binds(stmt: &Stmt, name: &str) -> bool` reports whether the local scope of a `def` binds a name, which [[shed-super-args]] reads to hold a call whose first argument names a local rather than the enclosing class.
-- `unpack_target(binding: BindingId) -> Option<UnpackKind>` returns the unpack disposition of a binding whose sole write is a multi-name tuple or list target, which [[single-use-variables]] reads to choose between exempting the target and naming a subscript rewrite.
-- `usage_count(binding: BindingId) -> usize` counts every read site.
-- `walrus_in_condition(binding: BindingId) -> bool` reports whether a binding's walrus write lands in the test of an `if`, `elif`, or `while`, which [[single-use-variables]] reads to exempt that assign-and-test walrus from the lint.
+- `unpack_target(binding: BindingId) -> Option<UnpackKind>` returns the unpack disposition of a binding whose sole write is a multi-name tuple or list target, which [[inlinable-bindings]] reads to choose between naming a subscript rewrite and withholding the finding.
 
-The supporting types `BindingId`, `ScopeId`, `BindingKind`, `ScopeKind`, `UnpackKind`, `Binding`, and `Scope` are also `pub(crate)` today. `BindingKind` enumerates the categories of write event the table records: `Assignment`, `AugAssign`, `ClassDef`, `Comprehension`, `ExceptHandler`, `For`, `FunctionDef`, `Import`, `Parameter`, `Walrus`, `With`. `ScopeKind` covers `Class`, `Comprehension`, `Function`, `Module`, matching Python's lexical-scope categories. `UnpackKind` covers `Bare`, `Exempt`, and `Suggested`, the dispositions `unpack_target` reports for a multi-name unpack target.
+The supporting types `BindingId`, `ScopeId`, `BindingKind`, `ScopeKind`, `UnpackKind`, `Binding`, and `Scope` are also `pub(crate)` today. `BindingKind` enumerates the categories of write event the table records: `Assignment`, `AugAssign`, `ClassDef`, `Comprehension`, `ExceptHandler`, `For`, `FunctionDef`, `Import`, `Parameter`, `Walrus`, `With`. `ScopeKind` covers `Class`, `Comprehension`, `Function`, `Module`, matching Python's lexical-scope categories. `UnpackKind` covers `Suggested` and `Unresolved`, the dispositions `unpack_target` reports for a multi-name unpack target.
 
 ## Build Pattern
 
@@ -67,14 +66,14 @@ Across a reparse the table travels with the *Source* rather than rebuilding, eve
 
 ## Re-Using This Primitive
 
-[[single-use-variables]] is the first rule to consume the table, counting writes and reads per binding to surface candidates for inlining. Future rules with binding-shaped questions (*unused imports, shadowing detection, ahead-of-use references, dead-store analysis*) reach for the same primitive without re-walking. The walk runs once per source and again only past a rule whose edits change a binding, which is what makes adding new binding-shaped rules cheap.
+[[inlinable-bindings]] is the first rule to consume the table, counting writes and reads per binding to surface candidates for inlining. Future rules with binding-shaped questions (*unused imports, shadowing detection, ahead-of-use references, dead-store analysis*) reach for the same primitive without re-walking. The walk runs once per source and again only past a rule whose edits change a binding, which is what makes adding new binding-shaped rules cheap.
 
 The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives on the [[source]] page. The consumption path runs indirectly through diagnostics emitted by binding-aware rules rather than through direct method calls, and at `1.0` the readers open up so a downstream rule can query the table itself.
 
 <template #related>
 
 - [[source]] is the input the analysis builds against, with every binding's offset landing inside the source's text.
-- [[single-use-variables]] is the canonical consumer.
+- [[inlinable-bindings]] is the canonical consumer.
 - [[edit]] is the output shape binding-aware rules emit, with each edit's range named against an offset the analysis indexes.
 - [[pipeline]] drives the rule run that calls into the analysis.
 - [[rule-id]] is the handle each rule registers under in the pipeline's ordering.

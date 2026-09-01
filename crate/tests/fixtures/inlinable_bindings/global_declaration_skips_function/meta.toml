@@ -1,0 +1,9 @@
+[docs]
+previewable = true
+title       = "A `global` Declaration Skips the Whole Function"
+
+description = '''
+`updater` declares `global counter`, and that **skips the whole function** rather than just the `global` line.
+
+`next_value` is never considered, even though on its own it is written once and read once. Deciding whether `counter` reaches a second use would mean following the binding out to module scope, so the rule steps back from the entire body instead.
+'''

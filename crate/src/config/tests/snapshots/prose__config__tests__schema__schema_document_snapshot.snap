@@ -1,5 +1,5 @@
 ---
-source: crate/src/config/schema_tests.rs
+source: crate/src/config/tests/schema.rs
 expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
 ---
 {
@@ -147,6 +147,21 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "type": "string"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "InlinableBindingsConfig": {
+      "description": "Configuration for the `inlinable-bindings` rule.",
+      "properties": {
+        "allow-pattern": {
+          "default": "_*",
+          "description": "Binding names exempted from the lint, a glob matched against the\nwhole name.",
+          "type": "string"
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -637,6 +652,20 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
+        "inlinable-bindings": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/InlinableBindingsConfig"
+            }
+          ],
+          "default": {
+            "allow-pattern": "_*",
+            "enabled": true
+          }
+        },
         "line-overflow": {
           "anyOf": [
             {
@@ -921,20 +950,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
-        "single-use-variables": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "$ref": "#/$defs/SingleUseVariablesConfig"
-            }
-          ],
-          "default": {
-            "allow-pattern": "_*",
-            "enabled": true
-          }
-        },
         "space-statements": {
           "anyOf": [
             {
@@ -1053,21 +1068,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "default": {
             "enabled": true
           }
-        }
-      },
-      "type": "object"
-    },
-    "SingleUseVariablesConfig": {
-      "description": "Configuration for the `single-use-variables` rule.",
-      "properties": {
-        "allow-pattern": {
-          "default": "_*",
-          "description": "Binding names exempted from the lint, a glob matched against the\nwhole name.",
-          "type": "string"
-        },
-        "enabled": {
-          "default": true,
-          "type": "boolean"
         }
       },
       "type": "object"
@@ -1220,6 +1220,10 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "group-imports": {
           "enabled": true
         },
+        "inlinable-bindings": {
+          "allow-pattern": "_*",
+          "enabled": true
+        },
         "line-overflow": {
           "enabled": true,
           "suggest-string-splits": true
@@ -1302,10 +1306,6 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true
         },
         "simplify-comprehensions": {
-          "enabled": true
-        },
-        "single-use-variables": {
-          "allow-pattern": "_*",
           "enabled": true
         },
         "space-statements": {

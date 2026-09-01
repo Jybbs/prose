@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/overflowing_inline_spares_binding/input.py
+---
+def archive(record, archive_root):
+    digest = hashlib.sha256(record.encode()).hexdigest()
+    return archive_root / "documents" / f"{digest}.json"

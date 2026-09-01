@@ -24,11 +24,11 @@ use thiserror::Error;
 use crate::{
     config::{
         AlignmentConfig, AlphabetizeSiblingsConfig, BandConstantsConfig, BareImportsConfig, Config,
-        LineOverflowConfig, MiscasedConstantsConfig, ModernizeAnnotationsConfig,
-        NormalizeComparisonsConfig, NormalizeLiteralsConfig, PreferFstringConfig,
-        PruneInertImportsConfig, ReassignedConstantsConfig, ReflowCallsConfig,
+        InlinableBindingsConfig, LineOverflowConfig, MiscasedConstantsConfig,
+        ModernizeAnnotationsConfig, NormalizeComparisonsConfig, NormalizeLiteralsConfig,
+        PreferFstringConfig, PruneInertImportsConfig, ReassignedConstantsConfig, ReflowCallsConfig,
         ReflowCollectionsConfig, ReflowImportsConfig, ReflowSignaturesConfig,
-        SingleUseVariablesConfig, StackMethodChainsConfig, ToggleOnly, rule_schema,
+        StackMethodChainsConfig, ToggleOnly, rule_schema,
     },
     diagnostics::Diagnostic,
     pipeline::Pipeline,
@@ -39,8 +39,8 @@ use crate::{
         alphabetize_siblings::AlphabetizeSiblings, band_constants::BandConstants,
         bare_imports::BareImports, expand_docstrings::ExpandDocstrings,
         frame_docstrings::FrameDocstrings, group_imports::GroupImports,
-        line_overflow::LineOverflow, miscased_constants::MiscasedConstants,
-        modernize_annotations::ModernizeAnnotations,
+        inlinable_bindings::InlinableBindings, line_overflow::LineOverflow,
+        miscased_constants::MiscasedConstants, modernize_annotations::ModernizeAnnotations,
         normalize_comment_spacing::NormalizeCommentSpacing,
         normalize_comparisons::NormalizeComparisons, normalize_literals::NormalizeLiterals,
         prefer_fstring::PreferFstring, prune_inert_imports::PruneInertImports,
@@ -50,12 +50,11 @@ use crate::{
         restated_types::RestatedTypes, shed_backslash_continuations::ShedBackslashContinuations,
         shed_redundant_base::ShedRedundantBase, shed_super_args::ShedSuperArgs,
         signature_annotations::SignatureAnnotations,
-        simplify_comprehensions::SimplifyComprehensions, single_use_variables::SingleUseVariables,
-        space_statements::SpaceStatements, stack_adjacent_strings::StackAdjacentStrings,
-        stack_method_chains::StackMethodChains, step_narration::StepNarration,
-        strip_none_return::StripNoneReturn, strip_stranded_padding::StripStrandedPadding,
-        strip_trailing_commas::StripTrailingCommas, unsorted_positionals::UnsortedPositionals,
-        wrap_docstrings::WrapDocstrings,
+        simplify_comprehensions::SimplifyComprehensions, space_statements::SpaceStatements,
+        stack_adjacent_strings::StackAdjacentStrings, stack_method_chains::StackMethodChains,
+        step_narration::StepNarration, strip_none_return::StripNoneReturn,
+        strip_stranded_padding::StripStrandedPadding, strip_trailing_commas::StripTrailingCommas,
+        unsorted_positionals::UnsortedPositionals, wrap_docstrings::WrapDocstrings,
     },
     source::Source,
 };
@@ -491,7 +490,7 @@ register_rules! {
     "miscased-constants":           miscased_constants:           MiscasedConstantsConfig    => MiscasedConstants          => [],
     "reassigned-constants":         reassigned_constants:         ReassignedConstantsConfig  => ReassignedConstants        => [],
     "step-narration":               step_narration:               ToggleOnly                 => StepNarration              => [],
-    "single-use-variables":         single_use_variables:         SingleUseVariablesConfig   => SingleUseVariables         => [],
+    "inlinable-bindings":           inlinable_bindings:           InlinableBindingsConfig    => InlinableBindings          => [],
     "unsorted-positionals":         unsorted_positionals:         ToggleOnly                 => UnsortedPositionals        => [],
     "signature-annotations":        signature_annotations:        ToggleOnly                 => SignatureAnnotations       => [],
     "restated-types":               restated_types:               ToggleOnly                 => RestatedTypes              => ["frame-docstrings", "expand-docstrings", "wrap-docstrings"],
@@ -528,7 +527,7 @@ mod tests {
 
     #[rstest]
     fn is_valid_slug_accepts_canonical_kebab_shapes(
-        #[values("a", "a-b", "abc123", "single-use-variables")] valid: &str,
+        #[values("a", "a-b", "abc123", "inlinable-bindings")] valid: &str,
     ) {
         assert!(is_valid_slug(valid.as_bytes()));
     }

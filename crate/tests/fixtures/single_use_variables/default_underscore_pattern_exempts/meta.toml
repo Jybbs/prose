@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Underscore-Prefixed Names Are Exempt by Default"
-
-description = '''
-`_hidden` in `explainer` is bound once and read once, the same shape `single-use-variables` normally flags, but its name matches the default `allow-pattern`, `_*`, **so it is exempt without any configuration**. A leading underscore is the project's default signal for a deliberately single-use name.
-'''

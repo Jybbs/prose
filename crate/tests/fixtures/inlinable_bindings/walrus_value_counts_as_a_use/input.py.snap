@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/inlinable_bindings/walrus_value_counts_as_a_use/input.py
+---
+def report(items):
+    print(total := len(items))
+    return total

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Write Inside a `with` Body Spares a Read Below It"
+
+description = '''
+`data` is written inside the `with` body and read once after the block closes. **The binding stays unreported**, because standing `handle.read()` in at the read would run it against a file the context manager has already closed. A guard holding one of the write and the read without the other declines either way round.
+'''

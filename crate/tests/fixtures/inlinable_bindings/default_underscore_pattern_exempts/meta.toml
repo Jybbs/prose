@@ -1,0 +1,9 @@
+[docs]
+previewable = false
+title       = "Underscore-Prefixed Names Are Exempt by Default"
+
+description = '''
+`_hidden` in `explainer` is bound once and read once, the same shape the rule normally flags, but its name matches the default `allow-pattern`, `_*`.
+
+**It is exempt without any configuration.** A leading underscore is the project's default signal for a name the author means to leave standing, so the rule reads it as deliberate rather than as a candidate for inlining.
+'''

@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/nested_def_default_read_still_flags/input.py
+---
+def factory():
+    cap = compute()
+
+    def inner(limit=cap):
+        return limit
+
+    return inner

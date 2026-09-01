@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Starred Target Flags Without a Suggestion"
-
-description = '''
-`head` and `rest` in `head, *rest = items` are each read exactly once, in `wrap(head, rest)`, so `single-use-variables` flags both. **Neither message names a value to inline**, because `*rest` shifts the positions of the names around it and a fixed `items[0]` subscript would no longer line up.
-'''

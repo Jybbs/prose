@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/loop_local_read_still_flags/input.py
+---
+def totals(rows):
+    for row in rows:
+        scaled = row.value * 2
+        yield scaled + 1

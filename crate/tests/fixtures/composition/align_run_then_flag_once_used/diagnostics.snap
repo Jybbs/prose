@@ -4,6 +4,6 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/align_run_then_flag_once_used/input.py
 ---
 align-equals@35..116
-single-use-variables@109..115
-single-use-variables@31..35
-single-use-variables@78..88
+inlinable-bindings@109..115
+inlinable-bindings@31..35
+inlinable-bindings@78..88
