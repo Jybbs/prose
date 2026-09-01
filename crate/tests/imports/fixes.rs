@@ -42,10 +42,9 @@ pub(crate) fn rewritten(edits: &[EditRows], text: &str) -> (String, String) {
         .map(|edit| (edit.range.start, edit.range.end, edit.content.as_str()))
         .sorted()
         .collect();
-    let (Some(first), Some(last)) = (
-        spans.iter().map(|(start, ..)| *start).min(),
-        spans.iter().map(|(_, end, _)| *end).max(),
-    ) else {
+    let (Some(&(first, ..)), Some(last)) =
+        (spans.first(), spans.iter().map(|(_, end, _)| *end).max())
+    else {
         return (String::new(), String::new());
     };
     if last > text.len() {

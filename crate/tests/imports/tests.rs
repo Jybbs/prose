@@ -3,12 +3,13 @@
 //! than failing.
 
 use std::{
+    assert_matches,
     collections::{BTreeMap, BTreeSet},
     env,
     ops::Range,
     os::unix::process::ExitStatusExt,
     path::Path,
-    process::{self, ExitStatus},
+    process::{self, Command, ExitStatus},
 };
 
 use itertools::Itertools;
@@ -19,14 +20,14 @@ use similar::TextDiff;
 use crate::{
     bindings::binding_rows,
     common::SHOWN,
-    compare::{compare, divergence},
+    compare::{compare, divergence, every_divergence_excused},
     corpus::{candidates, excluded},
     diff::{hunk, mapped_rows},
-    execute::{ending, module_name},
+    execute::{Waited, ending, module_name, wait},
     fixes::{drops, holds_word, reaches, rewritten},
     format::{edit_rows, row_of},
     outcome::{Kind, Outcome, relative_to},
-    ratchet::{Baseline, Carried, bake, judge},
+    ratchet::{Baseline, Carried, VERSION, bake, dropped, judge, skipping},
     records::{Break, EditRows, Frame, Width},
     report::render,
     sweep::DEFAULT_LABEL,
@@ -75,16 +76,19 @@ fn edit(content: &str, range: Range<usize>, text: &str) -> EditRows {
     }
 }
 
+/// A module binding at every compound-statement arm, with a function,
+/// a class, and a parameter binding names it does not.
+const NESTED_SCOPES: &str = "import os.path as osp\nfrom re import compile as rc\n\n\ndef f(a):\n    inner = 1\n\n\nclass K:\n    attr = 2\n\n\ntry:\n    t = 1\nexcept ValueError:\n    e = 2\n\nfor i in y:\n    pass\n";
+
 #[test]
 fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
     let found = Width {
         breaks: vec![broken("m.py", "re/_parser.py", "leaves `X` unbound")],
         candidates: 1,
         comparable: 1,
-        flaky: Vec::new(),
         label: "default".to_owned(),
-        refused: 0,
-        unmeasured: Vec::new(),
+        uncomparable: vec!["blocked.py".to_owned()],
+        ..Width::default()
     };
     let baked = env::temp_dir().join(format!("prose-imports-baseline.{}", process::id()));
     bake(&baked, &[found]);
@@ -93,13 +97,19 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
     )
     .expect("the baked break set parses");
     assert_eq!(
-        held["default"],
+        held.breaks["default"],
         [Carried {
             file: "re/_parser.py".to_owned(),
+            module: "m.py".to_owned(),
             reason: "leaves `X` unbound".to_owned(),
         }]
         .into()
     );
+    assert_eq!(
+        held.uncomparable["default"],
+        ["blocked.py".to_owned()].into()
+    );
+    assert_eq!(held.version, VERSION);
 }
 
 #[test]
@@ -108,6 +118,17 @@ fn a_break_reporting_no_loaded_modules_falls_back_to_its_own() {
     assert_eq!(brk.loaded(), ["m.py"]);
     brk.formatted.loaded = vec!["a.py".to_owned(), "b.py".to_owned()];
     assert_eq!(brk.loaded(), ["a.py", "b.py"]);
+}
+
+#[test]
+fn a_break_set_baked_at_an_older_generation_carries_nothing_forward() {
+    let held: Baseline = serde_json::from_str(
+        r#"{"default":[{"file":"re/_parser.py","reason":"leaves `X` unbound"}]}"#,
+    )
+    .expect("a set from an older generation parses");
+    assert_ne!(held.version, VERSION);
+    assert!(held.breaks.is_empty(), "{:?}", held.breaks);
+    assert!(held.uncomparable.is_empty(), "{:?}", held.uncomparable);
 }
 
 #[test]
@@ -124,10 +145,9 @@ fn a_break_the_report_names_carries_its_frame_reason_and_repro() {
         breaks: vec![brk],
         candidates: 4,
         comparable: 3,
-        flaky: Vec::new(),
         label: DEFAULT_LABEL.to_owned(),
         refused: 1,
-        unmeasured: Vec::new(),
+        ..Width::default()
     };
     let shown = render(&["kept.py".to_owned()].into(), &found);
     assert!(shown.contains("  carried          1"), "{shown}");
@@ -270,10 +290,8 @@ fn a_timing_out_break_counts_as_a_module_rather_than_a_defect() {
         breaks: vec![timed("a.py"), timed("b.py")],
         candidates: 2,
         comparable: 2,
-        flaky: Vec::new(),
         label: DEFAULT_LABEL.to_owned(),
-        refused: 0,
-        unmeasured: Vec::new(),
+        ..Width::default()
     };
     assert_eq!(found.timing_out(), 2);
     let shown = render(&BTreeSet::new(), &found);
@@ -327,19 +345,25 @@ fn binding_rows_are_empty_for_a_module_that_does_not_parse() {
     assert_eq!(binding_rows("def (\n"), BTreeMap::new());
 }
 
-#[test]
-fn binding_rows_reach_tuple_and_starred_targets() {
+#[rstest]
+fn binding_rows_reach_tuple_and_starred_targets(
+    #[values("STRICT", "CONFORM", "head", "rest", "a", "b")] name: &str,
+) {
     let rows = binding_rows("STRICT, CONFORM = boundary()\nhead, *rest = xs\n[a, b] = pair\n");
-    for name in ["STRICT", "CONFORM", "head", "rest", "a", "b"] {
-        assert!(rows.contains_key(name), "{name} binds at module level");
-    }
+    assert!(rows.contains_key(name), "{name} binds at module level");
+}
+
+#[rstest]
+fn binding_rows_skip_a_nested_scope(#[values("inner", "attr", "a")] absent: &str) {
+    assert!(
+        !binding_rows(NESTED_SCOPES).contains_key(absent),
+        "{absent} binds in a nested scope"
+    );
 }
 
 #[test]
-fn binding_rows_walk_compound_statements_and_skip_nested_scopes() {
-    let rows = binding_rows(
-        "import os.path as osp\nfrom re import compile as rc\n\n\ndef f(a):\n    inner = 1\n\n\nclass K:\n    attr = 2\n\n\ntry:\n    t = 1\nexcept ValueError:\n    e = 2\n\nfor i in y:\n    pass\n",
-    );
+fn binding_rows_walk_compound_statements() {
+    let rows = binding_rows(NESTED_SCOPES);
     assert_eq!(rows.get("osp"), Some(&(1..2)));
     assert_eq!(rows.get("rc"), Some(&(2..3)));
     assert_eq!(rows.get("f"), Some(&(5..6)));
@@ -347,12 +371,6 @@ fn binding_rows_walk_compound_statements_and_skip_nested_scopes() {
     assert_eq!(rows.get("t"), Some(&(14..15)));
     assert_eq!(rows.get("e"), Some(&(16..17)));
     assert_eq!(rows.get("i"), Some(&(18..20)));
-    for absent in ["inner", "attr", "a"] {
-        assert!(
-            !rows.contains_key(absent),
-            "{absent} binds in a nested scope"
-        );
-    }
 }
 
 #[test]
@@ -385,12 +403,37 @@ fn comparing_sorts_each_module_into_broken_comparable_or_unmeasured() {
         ),
     ]
     .into();
-    let (breaks, comparable, unmeasured) = compare(&after, &before, &modules);
-    assert_eq!(comparable, 2);
-    assert_eq!(unmeasured, ["lost.py".to_owned()]);
-    assert_eq!(breaks.len(), 1);
-    assert_eq!(breaks[0].module, "gone.py");
-    assert_eq!(breaks[0].reason, "leaves `b` unbound");
+    let found = compare(&after, &before, &modules);
+    assert_eq!(found.comparable, 2);
+    assert_eq!(found.unmeasured, ["lost.py".to_owned()]);
+    assert_eq!(found.uncomparable, Vec::<String>::new());
+    assert_eq!(found.breaks.len(), 1);
+    assert_eq!(found.breaks[0].module, "gone.py");
+    assert_eq!(found.breaks[0].reason, "leaves `b` unbound");
+}
+
+#[test]
+fn dropped_names_a_module_the_baseline_does_not_list() {
+    let found = Width {
+        label: DEFAULT_LABEL.to_owned(),
+        uncomparable: vec!["fresh.py".to_owned(), "known.py".to_owned()],
+        ..Width::default()
+    };
+    let held = Baseline {
+        uncomparable: [(DEFAULT_LABEL.to_owned(), ["known.py".to_owned()].into())].into(),
+        ..Baseline::default()
+    };
+    assert_eq!(dropped(&found, &held), ["fresh.py".to_owned()].into());
+}
+
+#[test]
+fn dropped_names_nothing_where_the_baseline_records_no_width() {
+    let found = Width {
+        label: DEFAULT_LABEL.to_owned(),
+        uncomparable: vec!["blocked.py".to_owned()],
+        ..Width::default()
+    };
+    assert_eq!(dropped(&found, &Baseline::default()), BTreeSet::new());
 }
 
 #[test]
@@ -417,6 +460,23 @@ fn entry_points_leave_the_walk(
     relative: &str,
 ) {
     assert!(excluded(relative));
+}
+
+#[rstest]
+#[case::every_name_excused(&["c"], &["a", "b"], true)]
+#[case::one_name_unexplained(&["c"], &["a"], false)]
+#[case::a_divergence_of_another_shape(&["a", "z"], &["a", "z"], false)]
+fn every_divergence_excused_strikes_one_name_at_a_time(
+    #[case] bound_after: &[&str],
+    #[case] excused: &[&str],
+    #[case] holds: bool,
+) {
+    let original = bound(&["a", "b", "c"], &[]);
+    let formatted = bound(bound_after, &[]);
+    assert_eq!(
+        every_divergence_excused(&formatted, &original, |name| excused.contains(&name)),
+        holds
+    );
 }
 
 #[test]
@@ -508,13 +568,11 @@ fn rows_map_back_through_an_equal_a_replaced_and_an_inserted_block() {
 #[test]
 fn the_flaky_list_caps_at_the_shown_limit() {
     let found = Width {
-        breaks: Vec::new(),
         candidates: SHOWN + 3,
         comparable: SHOWN + 3,
         flaky: (0..SHOWN + 3).map(|n| format!("m{n}.py")).collect(),
         label: DEFAULT_LABEL.to_owned(),
-        refused: 0,
-        unmeasured: Vec::new(),
+        ..Width::default()
     };
     let shown = render(&BTreeSet::new(), &found);
     assert!(
@@ -574,35 +632,43 @@ fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
         breaks: vec![broken("m.py", "re/_parser.py", "leaves `X` unbound")],
         candidates: 10,
         comparable: 7,
-        flaky: Vec::new(),
         label: "default".to_owned(),
-        refused: 0,
+        uncomparable: vec!["a.py".to_owned(), "b.py".to_owned()],
         unmeasured: vec!["u.py".to_owned()],
+        ..Width::default()
     };
-    let held: Baseline = [(
-        "default".to_owned(),
-        [Carried {
-            file: "re/_parser.py".to_owned(),
-            reason: "leaves `X` unbound".to_owned(),
-        }]
+    let held = Baseline {
+        breaks: [(
+            "default".to_owned(),
+            [Carried {
+                file: "re/_parser.py".to_owned(),
+                module: "m.py".to_owned(),
+                reason: "leaves `X` unbound".to_owned(),
+            }]
+            .into(),
+        )]
         .into(),
-    )]
-    .into();
+        uncomparable: [("default".to_owned(), ["a.py".to_owned()].into())].into(),
+        version: VERSION,
+    };
     assert_eq!(judge(&found, &held), ["m.py".to_owned()].into());
-    assert_eq!(judge(&found, &Baseline::new()), BTreeSet::new());
-    assert_eq!(found.uncomparable(), 2);
+    assert_eq!(judge(&found, &Baseline::default()), BTreeSet::new());
+    assert_eq!(found.uncomparable.len(), 2);
+    assert_eq!(dropped(&found, &held), ["b.py".to_owned()].into());
+    assert_eq!(
+        skipping(&held, "default"),
+        Some(&["a.py".to_owned()].into())
+    );
 }
 
 #[test]
 fn the_summary_block_holds_every_count_in_one_column() {
     let found = Width {
-        breaks: Vec::new(),
         candidates: 12,
         comparable: 9,
-        flaky: Vec::new(),
         label: DEFAULT_LABEL.to_owned(),
-        refused: 0,
-        unmeasured: Vec::new(),
+        uncomparable: vec!["a.py".to_owned(), "b.py".to_owned(), "c.py".to_owned()],
+        ..Width::default()
     };
     assert_eq!(
         render(&BTreeSet::new(), &found),
@@ -612,9 +678,25 @@ fn the_summary_block_holds_every_count_in_one_column() {
             "  uncomparable     3\n",
             "  breaks           0\n",
             "  timeouts         0\n",
-            "  flaky            0",
+            "  flaky            0\n",
+            "  pruned           0",
         )
     );
+}
+
+#[test]
+fn wait_kills_a_child_that_outruns_its_deadline() {
+    let mut child = Command::new("sleep")
+        .arg("30")
+        .spawn()
+        .expect("sleep spawns");
+    assert_matches!(wait(&mut child, 0.05), Waited::Deadline);
+}
+
+#[test]
+fn wait_reads_a_child_that_ends_on_its_own() {
+    let mut child = Command::new("true").spawn().expect("true spawns");
+    assert_matches!(wait(&mut child, 5.0), Waited::Ended(_));
 }
 
 #[test]

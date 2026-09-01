@@ -3,5 +3,7 @@ previewable = true
 title       = "A Call Right-Hand Side Flags Without a Suggestion"
 
 description = '''
-`name, value = lookup()` unpacks a call result, and each target is read exactly once in `render(name, value)`. Rewriting the reads as `lookup()[0]` and `lookup()[1]` would run the call twice, so the lint flags both targets without naming a subscript rewrite, which it reserves for a plain-name or attribute right-hand side.
+`name, value = lookup()` unpacks a call result, and each target is read exactly once in `render(name, value)`.
+
+Both targets are flagged, but **neither finding names a rewrite**. Replacing the reads with `lookup()[0]` and `lookup()[1]` would run the call twice, so the subscript suggestion is reserved for a plain-name or attribute right-hand side, where re-reading costs nothing.
 '''

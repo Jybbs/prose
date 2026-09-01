@@ -10,7 +10,11 @@ The canonical invocation is `prose format path/to/project`, which walks the dire
 prose format path/to/project
 ```
 
-Three variants cover the surrounding cases. `prose check` is the CI shape, doing the same walk against the same rules but reporting diagnostics to stdout and gating on the exit code without touching files. `prose format --diff` is the previewing shape, emitting a unified diff to stdout in lieu of writing changes. `prose check --stdin` *(also `prose format --stdin`, or the `-` positional shorthand on either subcommand)* takes one file's contents on stdin and routes diagnostics or rewrites to stdout, which is the shape an editor wires into a save hook.
+Three variants cover the surrounding cases:
+
+1. `prose check` is the CI shape, doing the same walk against the same rules but reporting diagnostics to stdout and gating on the exit code without touching files.
+2. `prose format --diff` is the previewing shape, emitting a unified diff to stdout in lieu of writing changes.
+3. `prose check --stdin` *(also `prose format --stdin`, or the `-` positional shorthand on either subcommand)* takes one file's contents on stdin and routes diagnostics or rewrites to stdout, which is the shape an editor wires into a save hook.
 
 ```bash
 prose check path/to/project

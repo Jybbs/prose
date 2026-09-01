@@ -3,5 +3,5 @@ previewable = true
 title       = "Already-Aligned Source Is Left Alone"
 
 description = '''
-The `and` chain over `foo`, `bar`, and `qux` already places each `==` one space past the widest left side, so the group is **idempotent** under the rule. No edit is emitted and the source passes through unchanged.
+The `and` chain over `foo`, `bar`, and `qux` already places each `==` one space past the widest left side, so **no edit is emitted** and the source passes through unchanged.
 '''

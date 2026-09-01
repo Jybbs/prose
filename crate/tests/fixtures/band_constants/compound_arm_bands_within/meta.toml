@@ -3,5 +3,7 @@ previewable = false
 title       = "A Band Forms Inside a Module-Scope Compound Arm"
 
 description = '''
-Constant banding descends into the arms of a top-level compound statement, so `SCALE = factor` inside the `if FEATURE:` block moves below the `factor` definition it names, forming the arm's trailing band exactly as the module body would. The descent stops at class and function boundaries, leaving `factor`'s own body untouched.
+`band-constants` descends into the arms of a top-level compound statement, so the body of `if FEATURE:` is grouped exactly the way the module body would be.
+
+`SCALE = factor` names a function, which places it in the group that sits below the definitions, so it **moves down past the `factor` definition it reads**. The descent stops at class and function boundaries, leaving `factor`'s own body alone.
 '''

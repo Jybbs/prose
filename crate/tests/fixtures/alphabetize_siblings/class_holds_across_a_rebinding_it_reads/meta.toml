@@ -3,5 +3,7 @@ previewable = false
 title       = "A Class Holds Across a Rebinding of the Constant It Reads"
 
 description = '''
-`Alpha` sorts ahead of `Zebra` by name, and moving it would carry it above the second `SCALE` assignment, whose value each class body evaluates the moment the `class` statement executes. Sorting would leave each class reading the other's value, a change no error reports because both arrangements still import. The run **holds as written**, because a member stays on whichever side of a binding it reads the source seated it on, so a reader neither rises above the binding that introduces a name nor crosses a rebinding placed after it.
+Nothing in this file moves, and the reason is worth spelling out because no error would ever report it.
+
+`SCALE` is assigned twice, and each class body reads it the moment its own `class` statement executes, so `Zebra.V` is `2` and `Alpha.V` is `100`. Sorting `Alpha` above `Zebra` would carry it above the second assignment and silently swap those two values. **A member stays on whichever side of a binding it reads the source put it on**, so it neither rises above the binding that introduces a name nor crosses a rebinding written after it.
 '''

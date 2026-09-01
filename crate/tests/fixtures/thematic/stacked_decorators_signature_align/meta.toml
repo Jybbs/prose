@@ -3,5 +3,7 @@ previewable = false
 title       = "Stacked Decorators Keep, Docstring Reshapes, Cushions Normalize"
 
 description = '''
-Three stacked decorators, `@memoize`, `@trace`, `@functools.lru_cache(maxsize=128)`, sit above `lookup`, whose docstring opener and closer each share a prose line rather than sitting alone. **The pipeline lifts the docstring's `"""` delimiters onto their own lines, wraps the prose, and normalizes the blank-line cushions** around `memoize` and `trace`. `lookup`'s single-line signature carries no multi-line columns to align, so it passes through unchanged.
+Three stacked decorators sit above `lookup`, and its docstring is written with both the opening and closing `"""` sharing a line with prose rather than standing alone.
+
+**The `"""` delimiters lift onto lines of their own and the prose wraps at the budget**, while the blank-line cushions around `memoize` and `trace` normalize to two lines. `lookup`'s signature stays on one line and carries no multi-line columns to align, so it passes through unchanged.
 '''

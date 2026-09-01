@@ -3,5 +3,5 @@ previewable = true
 title       = "A Repeat of an Unread Name Drops Both Lines"
 
 description = '''
-The module imports `os` twice and reads it nowhere. **One walk drops the repeat and the first binding together**, because the reassignment the repeat records stops counting once the repeat itself is a drop, leaving nothing for a second run to find.
+The module imports `os` twice and reads it nowhere. **One walk drops the repeat and the first binding together**, because the reassignment the repeat records stops counting once the repeat itself is a drop.
 '''

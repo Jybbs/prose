@@ -1,7 +1,9 @@
 [docs]
 previewable = false
-title       = "A Parameter Default Joins and the Run Declines the Column"
+title       = "A Parameter Default Joins and the Run Skips the Column"
 
 description = '''
-`a`'s fractured list default rejoins on one line at the column its row writes. The reservation `reflow-collections` reads measures that row at its joined width, finds the column `bbbbbbbbbbbbbb` would set carries it past the budget, and reserves no shift, so the list joins where it stands and `align-equals` declines the column rather than breaking the list to take the padding.
+`a`'s list default is written across two lines and rejoins onto one.
+
+Measured at that joined width, padding the `=` out to the column `bbbbbbbbbbbbbb` would set takes the row past the 44-column budget, so **`align-equals` reserves no padding at all**. `reflow-collections` reads that decision before it joins, so the list joins where it stands and the `=` stays tight, rather than the list breaking apart just to make room for padding.
 '''

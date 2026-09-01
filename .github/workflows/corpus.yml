@@ -14,10 +14,12 @@ on:
       - .mise/config.toml
       - .mise/lib/**
       - .mise/tasks/gha/baseline
+      - .mise/tasks/gha/brief
       - .mise/tasks/gha/plan
       - .mise/tasks/rust/bake
       - .mise/tasks/rust/delta
       - .mise/tasks/rust/imports
+      - .mise/tasks/rust/mutations
       - .mise/tasks/rust/probe
       - .mise/tasks/rust/settle
       - .mise/tasks/rust/subsets
@@ -139,14 +141,16 @@ jobs:
           path : &breaks-dir ${{ runner.temp }}/breaks
 
       - name : Drop the stages and break sets this bake replaces
+        if   : ${{ github.ref == 'refs/heads/main' }}
         env:
           GH_TOKEN : ${{ github.token }}
           SHA      : ${{ github.sha }}
           VERSION  : ${{ steps.python.outputs.version }}
         run  : |
+          set -o pipefail
           for kind in stage breaks; do
             PREFIX="corpus-$kind-$VERSION-" KEPT="corpus-$kind-$VERSION-$SHA" \
-              gh api "repos/$GITHUB_REPOSITORY/actions/caches?per_page=100" \
+              gh api --paginate "repos/$GITHUB_REPOSITORY/actions/caches?per_page=100" \
                 --jq '.actions_caches[]
                       | select(.key | startswith(env.PREFIX))
                       | select(.key != env.KEPT)
@@ -230,6 +234,7 @@ jobs:
   imports:
     name            : 🪟 Imports
     if              : *pull-request
+    outputs         : { armed: "${{ steps.ratchet.outputs.armed }}" }
     runs-on         : *ubuntu
     timeout-minutes : *sweep
 
@@ -249,13 +254,17 @@ jobs:
           restore-keys : corpus-breaks-${{ steps.python.outputs.version }}-
 
       - name : Import every rewritten module against the baked break set
-        env  : { PROSE_IMPORTS_BASELINE: *breaks-path }
-        if   : ${{ steps.breaks.outputs.cache-matched-key != '' }}
-        run  : mise run imports
+        id   : ratchet
+        env:
+          PROSE_IMPORTS_ARMED    : ${{ runner.temp }}/armed
+          PROSE_IMPORTS_BASELINE : *breaks-path
+        run  : |
+          mise run imports
+          echo "armed=$(cat "$PROSE_IMPORTS_ARMED")" >> "$GITHUB_OUTPUT"
 
-      - name : Report a break set no bake has written yet
-        if   : ${{ steps.breaks.outputs.cache-matched-key == '' }}
-        run  : echo "::notice::no baked break set for this interpreter, so the ratchet has nothing to read"
+      - name : Report a run no baked break set armed
+        if   : ${{ steps.ratchet.outputs.armed != 'true' }}
+        run  : echo "::warning::no baked break set reached this run at the current generation, so the ratchet asserted nothing"
 
   subsets:
     name            : ${{ matrix.label }}
@@ -294,6 +303,7 @@ jobs:
         env:
           BAKE      : ${{ needs.bake.result }}
           DELTA     : ${{ needs.delta.result }}
+          ARMED     : ${{ needs.imports.outputs.armed }}
           IMPORTS   : ${{ needs.imports.result }}
           MUTATIONS : ${{ needs.mutations.result }}
           PLAN      : ${{ needs.plan.result }}

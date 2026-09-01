@@ -3,5 +3,7 @@ previewable = false
 title       = "A Section Marker Holds a Constant Band In Its Own Section"
 
 description = '''
-Module-scope constant banding stops at a section marker, so `ZILCH = 1` stays in its own section above the `# --- Imports ---` divider. The imports below sort within theirs, `import abc` moving ahead of `import zoo`, and the band never hoists a member across the marker that divides them.
+`# --- Imports ---` reads as a section divider, and constant grouping stops at one.
+
+`ZILCH = 1` therefore stays in its own section above the divider rather than being drawn down to the imports. The imports below sort within their own section, so `import abc` moves ahead of `import zoo`, and **nothing crosses the divider in either direction**.
 '''

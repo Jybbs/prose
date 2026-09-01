@@ -3,5 +3,7 @@ previewable = true
 title       = "Rows Past the Closer Follow Their Anchor"
 
 description = '''
-The shed closer moves the text after it on its row, and a later row aligned to that text follows it by the same columns, so the second argument stays aligned under its own opener.
+Shedding the closer moves the text that follows it along the same row.
+
+A later row aligned to that text **follows it by the same number of columns**, so the second argument stays lined up under its own opener rather than being left behind at the column the opener used to sit at.
 '''

@@ -3,5 +3,7 @@ previewable = false
 title       = "A Comprehension Reading Its Own Target Holds No Sort Back"
 
 description = '''
-The comprehension binds `name` and reads it in the same statement, so it is its own binder. `alpha` and `zebra` **still trade places around it**, because a statement is exempt from the binding rule on a name it binds at its own slot, where a statement can never seat itself ahead of itself.
+The comprehension binds `name` and reads it within the same statement, so it is the only thing binding that name.
+
+A statement is exempt from the ordering rule for any name it binds at its own slot, since nothing can need to sort ahead of itself. `NAMES` therefore holds nothing back, and **`alpha` and `zebra` trade places freely around it**.
 '''

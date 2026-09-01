@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_imports/noqa_marker_repeats_across_the_split/input.py
+---
+from pkg import alpha, beta, gamma  # noqa: F401
+from pkg import delta  # noqa: F401

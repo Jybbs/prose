@@ -3,5 +3,7 @@ previewable = false
 title       = "Assignments Under if TYPE_CHECKING Are Left Alone"
 
 description = '''
-`DEFAULT_BACKEND` is assigned inside `if TYPE_CHECKING:`, a block that runs under a type checker and never at runtime. A binding there is type-system-only rather than a runtime constant, so the walker skips the block and **the rule leaves the write alone**.
+Nothing here is flagged. `DEFAULT_BACKEND` is assigned inside `if TYPE_CHECKING:`, a block that runs under a type checker and never at runtime.
+
+A binding there is **type-system-only rather than a runtime constant**, so the block is skipped entirely and the write is left alone.
 '''

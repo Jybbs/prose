@@ -4,5 +4,7 @@ previewable = true
 title       = "A Packed Commented Set Keeps Its Comma"
 
 description = '''
-A multi-line set packing elements onto shared rows with a comment inside holds its order under [[alphabetize-siblings]], so [[reflow-collections]] reads the comma each element carries now rather than the one a sort would leave, and the over-wide element expands rather than sitting past the cap.
+The `# note` comment sitting inside the set holds its order under `alphabetize-siblings`, so no element moves.
+
+`reflow-collections` therefore reads **the comma each element carries as written** rather than the one a sort would have left behind. The single element too wide for the 40-column budget expands onto rows of its own, and the packed rows around it keep both their commas and their places.
 '''

@@ -3,6 +3,8 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/input.py
 ---
+from __future__ import annotations
+
 import asyncio
 import json
 import logging

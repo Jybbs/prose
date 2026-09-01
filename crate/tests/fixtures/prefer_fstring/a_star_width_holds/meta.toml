@@ -3,5 +3,5 @@ previewable = false
 title       = "A Star Width Holds"
 
 description = '''
-The `*` in `"%*f"` reads its field width from the argument list, so `width` is consumed as the width rather than as the value the `f` conversion renders. A single replacement field offers no slot for that extra argument, so the line holds.
+The `*` in `"%*f"` reads its field width from the argument list, so `width` is consumed as the width rather than as the value the `f` conversion renders. A single replacement field has no slot for that extra argument, so the line holds.
 '''

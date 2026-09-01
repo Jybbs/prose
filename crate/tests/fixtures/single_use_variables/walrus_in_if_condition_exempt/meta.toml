@@ -3,5 +3,7 @@ previewable = false
 title       = "A Walrus in an If Test Is Exempt"
 
 description = '''
-`n := len(items)` binds inside the `if` test in `first`, and `n` is read again in `return n`. **`single-use-variables` does not flag `n`**, because the `if` comparison already consumes the walrus value as its first use, so the later read is a second use, and inlining would recompute `len(items)` in both the test and the body.
+`n := len(items)` binds inside the `if` test, and `n` is read again in `return n`.
+
+`n` is **not flagged**, because the `if` comparison already consumes the walrus value as its first use, which makes the later read a second one. Inlining it would recompute `len(items)` in both the test and the body.
 '''

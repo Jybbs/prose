@@ -3,5 +3,5 @@ previewable = false
 title       = "An Own-Line Comment Rides Its Constant Into the Leading Band"
 
 description = '''
-The comment `# the request ceiling shared across workers` sits a blank line above `MAX_WORKERS = 8`, and it binds to that constant rather than to the surrounding file. When `band-constants` hoists `MAX_WORKERS` above `configure`, the comment moves with it **on the first pass**, landing tight against its constant with two blanks before the `def`, so nothing remains for a second format to relocate.
+The comment `# the request ceiling shared across workers` sits a blank line above `MAX_WORKERS = 8`, and it binds to that constant rather than to the surrounding file. When `band-constants` hoists `MAX_WORKERS` above `configure`, **the comment moves with it**, landing tight against its constant with two blanks before the `def`, so nothing remains for a second format to relocate.
 '''

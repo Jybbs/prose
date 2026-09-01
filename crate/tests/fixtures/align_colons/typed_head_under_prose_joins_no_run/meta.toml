@@ -3,5 +3,7 @@ previewable = false
 title       = "A Head Below a Paragraph Joins No Run"
 
 description = '''
-The lines `handler (Callable):` and `codec (bytes):` sit directly under the opening summary paragraph with no blank line between, so `wrap-docstrings` reads them as part of that paragraph rather than as heads. The aligner leaves them alone, because padding a column there would build a table the paragraph reflow would collapse.
+Nothing here moves. The lines `handler (Callable):` and `codec (bytes):` sit directly under the opening summary paragraph with no blank line between them.
+
+`wrap-docstrings` reads them as **part of that paragraph rather than as entry heads**, so `align-colons` leaves them alone. Padding a column there would build a table the paragraph reflow would then collapse.
 '''

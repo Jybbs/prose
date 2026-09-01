@@ -3,5 +3,7 @@ previewable = false
 title       = "A Multi-Line String Pins a Comprehension at Its Source Shape"
 
 description = '''
-Each element of `banners` is a triple-quoted string whose text spans lines, so folding the comprehension's soft-wraps onto one line would respace the string's interior. The multi-line string therefore pins the comprehension at its source shape, leaving `for title in section_titles` on its own line.
+Nothing here moves. Each element of `banners` is a triple-quoted string whose text spans lines.
+
+Folding the comprehension's soft wraps onto one line would **respace the string's own interior**, changing the value it holds. The multi-line string therefore pins the comprehension at its source shape, leaving `for title in section_titles` on a line of its own.
 '''

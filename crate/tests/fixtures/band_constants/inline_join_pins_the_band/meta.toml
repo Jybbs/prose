@@ -3,5 +3,7 @@ previewable = false
 title       = "Line-Packed Statements Pin the Band"
 
 description = '''
-`TRAIL = make; LEAD = 1` packs two statements onto one physical line with a `;`, and banding reorders whole statements, so it cannot pull the pair apart. `LEAD = 1` names a literal and would hoist into the leading band while `TRAIL = make` reads the `make` definition and would trail, yet the shared line pins both in place and the file is left unchanged.
+Nothing in this file moves. `TRAIL = make; LEAD = 1` packs two statements onto one physical line with a `;`.
+
+Taken separately the two would travel in opposite directions, since `LEAD = 1` names a literal and would hoist to the top while `TRAIL = make` reads the `make` definition and would sink below it. Reordering works on whole statements and **cannot split a shared line**, so both stay exactly where they are.
 '''

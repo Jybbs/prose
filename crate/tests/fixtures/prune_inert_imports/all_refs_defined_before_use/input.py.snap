@@ -1,8 +1,9 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/unused_future_annotations/all_refs_defined_before_use/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/all_refs_defined_before_use/input.py
 ---
+from __future__ import annotations
 
 
 class Node:

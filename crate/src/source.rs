@@ -34,6 +34,7 @@ use crate::{
         layout::{is_layoutable, requires_expand},
         padding::Stranding,
         reserve::{Columns, Reservations},
+        slots::item_holding,
         walk::filter_map_over_exprs,
     },
     suppression::SuppressionMap,
@@ -719,7 +720,7 @@ impl FromStr for Source {
     type Err = ParseError;
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
-        Self::build_module(text.to_owned(), "<source>", PySourceType::default())
+        Self::parse_named(text.to_owned(), "<source>")
     }
 }
 
@@ -770,8 +771,7 @@ fn splits_statements(offset: TextSize, body: &[Stmt], text: &str) -> bool {
 /// Returns the statement of `body` that `offset` falls strictly inside,
 /// or `None` when `offset` sits at a statement's own start or between two.
 fn statement_spanning(offset: TextSize, body: &[Stmt]) -> Option<&Stmt> {
-    let after = body.partition_point(|stmt| stmt.start() < offset);
-    body[..after].last().filter(|stmt| offset < stmt.end())
+    item_holding(body, offset).filter(|stmt| stmt.start() < offset && offset < stmt.end())
 }
 
 #[cfg(test)]

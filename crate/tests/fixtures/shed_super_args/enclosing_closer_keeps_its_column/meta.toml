@@ -3,5 +3,7 @@ previewable = true
 title       = "An Enclosing Closer Keeps Its Column"
 
 description = '''
-The shed moves only the rows aligned to text it shifted, so the continuation under the first argument follows that argument leftward while the closing `)` of the enclosing call, which hangs from its own opener, stays where it was written.
+Shedding `Invoice, self` from the `super` call shortens the row and pulls the text after it leftward.
+
+**Only rows aligned to text that actually moved follow it.** The continuation under the first argument shifts left with that argument, while the closing `)` of the enclosing `wrap(` call hangs from its own opener and stays exactly where it was written.
 '''

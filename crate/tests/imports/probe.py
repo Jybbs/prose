@@ -15,6 +15,9 @@ from sys import argv, modules, path
 
 FIELD = "\0"
 ROW   = "\x1e"
+TREE  = "<tree>"
+
+roots = []
 
 
 class Probe:
@@ -82,7 +85,7 @@ class Probe:
             exc: The exception the module raised.
         """
         self.rows.append(("kind", "raised"))
-        self.rows.append(("raise", type(exc).__name__, str(exc)))
+        self.rows.append(("raise", type(exc).__name__, spelt(str(exc))))
 
         if missing := getattr(exc, "name_from", None) or getattr(exc, "name", None):
             self.rows.append(("missing", missing))
@@ -100,18 +103,34 @@ class Probe:
             sink.write(ROW.join(FIELD.join(row) for row in self.rows))
 
 
+def spelt(text: str) -> str:
+    """
+    Spell text with each tree root replaced by `TREE`, so a string a run
+    derives from its own location reads the same from either tree and
+    across runs, whose stage roots carry different process ids.
+
+    Args:
+        text: The text to spell.
+    """
+    for root in roots:
+        text = text.replace(root, TREE)
+
+    return text
+
+
 def constant(value: object) -> "str | None":
     """
     Spell a value where its `repr` holds across runs, `None` otherwise. An
     `int` or `str` subclass spells through its own `repr`, so an enum member
-    reads as the member.
+    reads as the member. Each tree root spells as `TREE`, so a value a module
+    derives from its own location reads the same from either tree.
 
     Args:
         value: The bound value to spell.
     """
     if value is None or isinstance(value, (int, str)):
         try:
-            return repr(value)
+            return spelt(repr(value))
         except BaseException:
             return None
 
@@ -156,6 +175,7 @@ def main(located: str, name: str, record: str, trees: list):
                   library.
     """
     path[:0] = trees
+    roots.extend(trees)
 
     probe = Probe(located=located, name=name)
     probe.load()

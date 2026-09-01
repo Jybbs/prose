@@ -4,5 +4,7 @@ previewable = true
 title       = "A Flat Literal Measures at the Width Its Padding Settles To"
 
 description = '''
-[[strip-stranded-padding]] drops the delimiter padding in the first dict and seats a space after each colon in the second, so [[reflow-collections]] measures both at those settled widths, leaving the first on its row and expanding the second.
+`strip-stranded-padding` touches both dicts, though in opposite directions. It removes the spaces inside the braces of the first and adds a space after each `:` in the second.
+
+`reflow-collections` measures each literal at **the width it settles to once those edits land**. The first ends up narrow enough to stay on its row, and the second ends up wide enough to cross the 40-column budget, so only the second expands.
 '''

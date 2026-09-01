@@ -4,11 +4,13 @@
 //! eager reference ahead of its definition. [`banded_gap`] decides the
 //! blank between two seated bands.
 
+use itertools::Itertools;
 use ruff_python_ast::Stmt;
 use ruff_source_file::LineEnding;
 use ruff_text_size::TextRange;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxBuildHasher, FxHashMap};
 
+use super::Bands;
 use crate::primitives::{
     blanks::{blank_gap, module_blank_lines},
     group_map,
@@ -58,14 +60,16 @@ impl Banding {
 
 /// The module-scope hoist plan: a band rank per banded statement, the
 /// intra-band `(tier, subcategory, name)` key per banded constant, the
-/// eager-reference edges the order keeps backward, the comment run each
+/// eager-reference edges the order keeps backward, each flagged where
+/// its referent rebinds a name bound before the module body runs, the
+/// comment run each
 /// member's block folds in ahead of its code, and the comment each
 /// carries onto another member's line. A statement absent from `ranks`
 /// is a pinned anchor.
 pub(super) struct BandPlan<'src> {
     pub(super) attached: FxHashMap<usize, TextRange>,
     pub(super) carries: Vec<Carry>,
-    pub(super) edges: Vec<(usize, usize)>,
+    pub(super) edges: Vec<(usize, usize, bool)>,
     pub(super) keys: FxHashMap<usize, (usize, Subcategory, &'src str)>,
     pub(super) ranks: FxHashMap<usize, BandRank>,
 }
@@ -88,6 +92,9 @@ impl BandPlan<'_> {
         drained: &mut Drained,
     ) {
         let incoming = std::mem::take(region);
+        if incoming.is_empty() {
+            return;
+        }
         let mut bands = group_map(incoming.iter().map(|&idx| (self.ranks[&idx], idx)));
         let mut take = |rank| bands.remove(&rank).unwrap_or_default();
         let mut imports = take(BandRank::Import);
@@ -103,11 +110,7 @@ impl BandPlan<'_> {
         });
         leading.sort_by_key(|idx| self.keys[idx]);
         trailing.sort_by_key(|idx| self.keys[idx]);
-        let mut banded = Vec::with_capacity(incoming.len());
-        banded.extend(&imports);
-        banded.extend(&leading);
-        banded.extend(&definitions);
-        banded.extend(&trailing);
+        let banded = [imports.as_slice(), &leading, &definitions, &trailing].concat();
         if !self.region_holds_its_references(&banded) {
             if let Some(&sorted_head) = slots.first() {
                 drained.imports.push(ImportBand { slots, sorted_head });
@@ -132,9 +135,11 @@ impl BandPlan<'_> {
     /// Drains `order` into the banded order section by section, a
     /// section marker and a pinned anchor each closing the running
     /// region, a region whose reorder would seat an eager reference
-    /// ahead of its referent draining in its incoming order instead.
+    /// ahead of its referent draining in its incoming order instead,
+    /// and moves each comment heading a band's source-order head onto
+    /// the member the sort seated first.
     fn drained(
-        &self,
+        &mut self,
         body: &[Stmt],
         sections: &Sections,
         first_party: &[String],
@@ -159,24 +164,34 @@ impl BandPlan<'_> {
             }
         }
         self.drain_region(body, first_party, grouped, &mut region, &mut drained);
+        self.relocate_heads(&drained.shifts);
         drained
     }
 
-    /// True when `banded` seats every eager reference whose two ends
-    /// both sit inside this region behind its referent. An edge reaching
-    /// outside the region imposes nothing.
+    /// True when `banded` seats every eager reference behind its
+    /// referent, and keeps a reference to a name bound before the body
+    /// runs on the side the source seated it on, a reader written above
+    /// such a rebind staying above it and one written below staying
+    /// below. Every other name is unbound until its statement runs, so
+    /// hoisting it above a reader only ever resolves a reference. An
+    /// edge reaching outside the region imposes nothing.
     fn region_holds_its_references(&self, banded: &[usize]) -> bool {
         let seat: FxHashMap<usize, usize> = banded
             .iter()
             .enumerate()
             .map(|(seat, &idx)| (idx, seat))
             .collect();
-        self.edges
-            .iter()
-            .all(|&(from, to)| match (seat.get(&from), seat.get(&to)) {
-                (Some(referrer), Some(referent)) => referent < referrer,
+        self.edges.iter().all(|&(referrer, referent, prebound)| {
+            match (seat.get(&referrer), seat.get(&referent)) {
+                (Some(&seated_referrer), Some(&seated_referent)) if prebound => {
+                    (referent < referrer) == (seated_referent < seated_referrer)
+                }
+                (Some(&seated_referrer), Some(&seated_referent)) => {
+                    seated_referent < seated_referrer
+                }
                 _ => true,
-            })
+            }
+        })
     }
 
     /// Moves each comment heading a band's source-order head onto the
@@ -212,9 +227,7 @@ impl BandPlan<'_> {
         max_tiers: Option<usize>,
         order: &mut Vec<usize>,
     ) -> Option<Banding> {
-        let Drained { banded, shifts, .. } =
-            self.drained(body, sections, first_party, grouped, order);
-        self.relocate_heads(&shifts);
+        let Drained { banded, .. } = self.drained(body, sections, first_party, grouped, order);
         let tiers: FxHashMap<usize, usize> = self
             .keys
             .iter()
@@ -227,10 +240,7 @@ impl BandPlan<'_> {
             .collect();
         let tier_sizes = tiers
             .iter()
-            .fold(FxHashMap::default(), |mut sizes, (&idx, &tier)| {
-                *sizes.entry((self.ranks[&idx], tier)).or_insert(0) += 1;
-                sizes
-            });
+            .counts_by_with_hasher(|(&idx, &tier)| (self.ranks[&idx], tier), FxBuildHasher);
         let banding = Banding {
             attached: self.attached,
             carries: self.carries,
@@ -244,21 +254,27 @@ impl BandPlan<'_> {
         })
     }
 
-    /// Every import band the drained `order` seats beside every comment
-    /// the banding carries onto another member.
-    pub(super) fn import_bands(
+    /// The seating forecast over `body`: `blocks`, the comments the
+    /// banding carries onto another member, every import band it seats,
+    /// and the order the band seats `body` in.
+    pub(super) fn forecast(
         mut self,
         body: &[Stmt],
+        blocks: Vec<TextRange>,
         sections: &Sections,
         first_party: &[String],
         grouped: bool,
         order: &[usize],
-    ) -> Option<(Vec<ImportBand>, Vec<Carry>)> {
+    ) -> Bands {
         let Drained {
-            imports, shifts, ..
+            banded, imports, ..
         } = self.drained(body, sections, first_party, grouped, order);
-        self.relocate_heads(&shifts);
-        Some((imports, self.carries))
+        Bands {
+            blocks,
+            carries: self.carries,
+            imports,
+            order: banded,
+        }
     }
 }
 

@@ -95,8 +95,7 @@ mod tests {
     /// Parses `src` under a package `__init__.py` name, which is what
     /// the re-export hold keys off.
     fn parse_init(src: &str) -> Source {
-        Source::build_module(src.to_owned(), "pkg/__init__.py", PySourceType::Python)
-            .expect("test source parses")
+        Source::parse_named(src.to_owned(), "pkg/__init__.py").expect("test source parses")
     }
 
     fn rule() -> PruneInertImports {
@@ -112,10 +111,9 @@ mod tests {
 
     #[test]
     fn a_main_module_prunes_like_any_other_file() {
-        let source = Source::build_module(
+        let source = Source::parse_named(
             "import numpy as np\n\nvalue = 1\n".to_owned(),
             "pkg/__main__.py",
-            PySourceType::Python,
         )
         .expect("test source parses");
 

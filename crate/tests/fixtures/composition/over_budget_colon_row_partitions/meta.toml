@@ -3,5 +3,7 @@ previewable = false
 title       = "An Over-Budget Colon Row Partitions Out of the Run"
 
 description = '''
-Both entries of `x` fit inline, but padding `"b"`'s `:` out to the wider `"aaaaaaaaaaaaa"` column would push its row past `code-line-length`. **`align-colons` partitions the over-budget row out of the run unpadded**, the same break an outlier past `max-shift` takes, and the lone `"aaaaaaaaaaaaa"` left behind forms no group, so the dict keeps tight `:` spacing everywhere rather than padding past the cap.
+Both entries of `x` already fit on their own lines, but padding `"b"`'s `:` out to match the wider `"aaaaaaaaaaaaa"` would push that row past `code-line-length`.
+
+**The over-budget row is dropped from the run and left unpadded**, which is the same treatment an outlier past `max-shift` gets. That leaves `"aaaaaaaaaaaaa"` on its own, and a single entry forms no group, so the dict ends up with tight `:` spacing throughout rather than padding past the budget.
 '''

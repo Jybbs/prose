@@ -3,5 +3,7 @@ previewable = true
 title       = "A Bare Right-Hand Side Holds"
 
 description = '''
-The right-hand side of `%` is the bare name `value` rather than a tuple literal, so nothing in the source pins down its runtime type. If `value` holds a one-element tuple, `%` unpacks it and renders the element, whereas `f"{value}"` would render the tuple itself, so the line holds to avoid changing what prints.
+Nothing here changes. The right-hand side of `%` is the bare name `value` rather than a tuple literal, so nothing in the source pins down what it holds at runtime.
+
+If `value` turns out to be a one-element tuple, `%` unpacks it and renders the element, whereas `f"{value}"` would render the tuple itself. **The line holds rather than risk changing what prints.**
 '''

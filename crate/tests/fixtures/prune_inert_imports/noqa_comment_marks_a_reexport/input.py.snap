@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/noqa_comment_marks_a_reexport/input.py
+---
+from json import dumps, loads  # noqa: F401
+from struct import pack  # noqa
+
+value = 1

@@ -22,7 +22,7 @@ use crate::{
 pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
     let (raising, timeouts) = tallied(carried, found);
     let uncomparable = if found.unmeasured.is_empty() {
-        found.uncomparable().to_string()
+        found.uncomparable.len().to_string()
     } else {
         "unmeasured".to_owned()
     };
@@ -34,6 +34,7 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
         row("breaks", &found.breaks.len()),
         row("timeouts", &found.timing_out()),
         row("flaky", &found.flaky.len()),
+        row("pruned", &found.pruned.len()),
     ];
     if !carried.is_empty() {
         lines.push(row("carried", &carried.len()));
@@ -46,6 +47,10 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
     rendered.push_str(&timeouts.render("times out"));
     for (heading, listed) in [
         ("flaky, a second run did not confirm it", &found.flaky),
+        (
+            "pruned, a recorded fix explains every name it lost",
+            &found.pruned,
+        ),
         ("unmeasured, a run left no record", &found.unmeasured),
     ] {
         if !listed.is_empty() {

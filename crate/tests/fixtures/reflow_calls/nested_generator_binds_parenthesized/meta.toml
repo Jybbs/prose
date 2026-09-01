@@ -3,5 +3,5 @@ previewable = false
 title       = "A Nested Call's Generator Takes Its Own Grouping Pair"
 
 description = '''
-The line overflows the width cap, so `outer` explodes and the `inner` call inside it explodes in the same pass, each argument binding to its resolved parameter name. The bare generator passed to `inner` becomes the named argument `beta=`, and a named generator argument must sit in parentheses, so it gains its own pair.
+The line overflows the width cap, so `outer` explodes and the `inner` call inside it explodes as well, each argument binding to its resolved parameter name. The bare generator passed to `inner` becomes the named argument `beta=`, and a named generator argument must sit in parentheses, so it gains its own pair.
 '''

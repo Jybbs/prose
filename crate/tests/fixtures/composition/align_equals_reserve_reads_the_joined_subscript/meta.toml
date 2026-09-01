@@ -3,5 +3,5 @@ previewable = false
 title       = "A Reserved Column Reads an Assigned Subscript at Its Joined Width"
 
 description = '''
-`HEADER_VALIDATORS`'s subscript fits back on one line at the `=` column the source wrote, and `align-equals` would shift that `=` rightward to clear the longer `_VALID_HEADER_VALUE_RE_BYTE`. The reservation measures the row at the width the rejoin leaves it, finds the shared column would carry it past the budget, and declines the column, so `reflow-collections` joins the subscript at its own column and `align-equals` leaves the row at its own width rather than breaking the subscript to take the padding.
+`HEADER_VALIDATORS`'s subscript fits back on one line at the `=` column the source wrote, and `align-equals` would shift that `=` rightward to clear the longer `_VALID_HEADER_VALUE_RE_BYTE`. Measured at the width the rejoin leaves it, the row runs past the budget under that shared column, so `align-equals` reserves no shift. `reflow-collections` joins the subscript at its own column and `align-equals` leaves the row at its own width rather than breaking the subscript to take the padding.
 '''

@@ -48,9 +48,13 @@ Splices the reordered children into a final string the rule can emit as a single
 
 The comma-aware counterpart to `assemble_blocks` for one-member-per-line groups. It splits each block into code, separator comma, and trailing comment at `value_ends`, then re-emits the comma after the value and before the comment per slot, so the comment stays with its member. Non-last slots always carry a comma, the new-last slot matches `source_last_has_comma`, and a blank line follows every slot in `divider_slots`. [[alphabetize-siblings]]'s dict and leaf reorders share it.
 
-### `assemble_or_borrow(source, blocks, rendered, order, forced, gap)`
+### `Assembly { blocks, order, rendered }`
 
-The borrow-aware finalizer over `assemble_blocks`, returning the assembled text alongside the block-extent span it covers. It short-circuits to `Cow::Borrowed(source.slice(span))` when no child rewrote and `order` is the identity permutation, so a no-op reorder pays no allocation, and assembles owned otherwise. `forced` overrides the short-circuit for a caller whose `gap` reshapes spacing without reordering, the case of an import run collapsing its blank lines in place. `reorder_text` and the recursive body rewriters in [[alphabetize-siblings]] and [[band-constants]] all finalize through it.
+The three a finalizer reads together, one member block per slot, the text rendered for each, and the slot order they assemble in. `rendered_member_blocks(source, items, outer, render)` builds one with the order seeded to source order, which a recursive body rewriter folds its descendant rewrites into and permutes before assembling, and both finalizers below are methods on it.
+
+`assembly.or_borrow(source, forced, gap)` is the borrow-aware finalizer over `assemble_blocks`, returning the assembled text alongside the block-extent span it covers. It short-circuits to `Cow::Borrowed(source.slice(span))` when no child rewrote and `order` is the identity permutation, so a no-op reorder pays no allocation, and assembles owned otherwise. `forced` overrides the short-circuit for a caller whose `gap` reshapes spacing without reordering, the case of an import run collapsing its blank lines in place. `reorder_text` and the recursive body rewriters in [[alphabetize-siblings]] and [[band-constants]] all finalize through it.
+
+`assembly.cell_edits(source, forced, gap)` is the fix-group finalizer those same two rules emit from, splitting the assembly into one group per notebook cell the blocks span and one group for an ordinary module, each holding the narrowed edits of its own slots. It reads `forced` the way `or_borrow` does, and a group whose pieces all reproduce the source drops rather than emitting.
 
 ### Block-Geometry Helpers
 

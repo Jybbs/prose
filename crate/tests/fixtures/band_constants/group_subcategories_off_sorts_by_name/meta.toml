@@ -3,5 +3,7 @@ previewable = false
 title       = "group-subcategories = false Sorts by Tier and Name Alone"
 
 description = '''
-`Zeta = int` is a type alias, which the default subcategory grouping clusters ahead of a plain constant like `ALPHA = 1`. Setting `group-subcategories = false` turns that clustering off, so the band sorts by tier and name alone and `ALPHA` moves above `Zeta`.
+`Zeta = int` is a type alias, and by default type aliases cluster ahead of plain constants like `ALPHA = 1`, so `Zeta` would normally come first.
+
+Setting `group-subcategories = false` turns that clustering off. The constants are then ordered **by dependency level and name alone**, which puts `ALPHA` above `Zeta`.
 '''

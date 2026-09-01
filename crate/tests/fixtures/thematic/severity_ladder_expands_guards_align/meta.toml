@@ -4,5 +4,15 @@ sandbox     = true
 title       = "Severity Ladder Tables Expand and Guard Comparisons Align"
 
 description = '''
-This alerting module declares its `SEVERITY_LADDER` and `PAGE_CHANNELS` tables inline with dangling commas, leaves its constant pool unsorted and unaligned, and threads a guard chain in `within_budget` whose `<` and `<=` operators drift out of column. **The tables explode one entry per line with `:` and `=` aligned, the constants band and sort, the guard chain's `<` and `<=` settle into one shared column, the redundant parentheses around `classify`'s `if` condition shed, and the over-wide `notify` call splits with its kwargs sorted**, while the rebound `LATENCY_CEILING_MS`, the bare `import math`, and the numbered step comments in `classify` each surface a lint.
+This alerting module declares its `SEVERITY_LADDER` and `PAGE_CHANNELS` tables inline with dangling commas, leaves its constants unsorted and unaligned, and threads a guard chain through `within_budget` whose `<` and `<=` operators drift out of column.
+
+The rewrites land together:
+
+1. The tables explode one entry per line with `:` and `=` aligned.
+2. The constants gather and sort.
+3. The guard chain's `<` and `<=` settle into one shared column.
+4. The redundant parentheses around `classify`'s `if` condition shed.
+5. The over-wide `notify` call splits with its keywords sorted.
+
+Lints stand alongside those rewrites, on the rebound `LATENCY_CEILING_MS`, on the bare `import math`, and on the numbered step comments in `classify`.
 '''

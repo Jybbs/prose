@@ -3,5 +3,7 @@ previewable = false
 title       = "Continuation Past the Hanging Column Rejoins Its Description"
 
 description = '''
-The `payload` entry's second line sits deeper than the hanging column the wrap uses. **It rejoins the description and reflows at the hanging column**, and the `target` entry below opens its own paragraph. The hand-indented continuation carries no blank line above it, so it reads as description rather than as a verbatim block.
+The `payload` entry's second line sits deeper than the hanging column the wrap would use.
+
+**It rejoins the description and reflows at the hanging column**, and the `target` entry below opens a paragraph of its own. The hand-indented continuation carries no blank line above it, which is what makes it read as description rather than as a verbatim block.
 '''

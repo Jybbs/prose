@@ -10,7 +10,7 @@ use ruff_python_parser::parse_module;
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
-    primitives::{decorator::is_decorated, scope::sub_bodies},
+    primitives::{decorator::is_decorated, scope::sub_bodies, slots::item_holding},
     source::Source,
 };
 
@@ -19,12 +19,6 @@ use crate::{
 /// does.
 pub(super) fn reparse_window(source: &Source, range: TextRange) -> TextRange {
     window_of(source, covering_statement(&source.ast().body, range))
-}
-
-/// The window `covering` reparses within, its own range or the whole
-/// module where no statement covers the splice.
-fn window_of(source: &Source, covering: Option<&Stmt>) -> TextRange {
-    covering.map_or_else(|| source.module_range(), Ranged::range)
 }
 
 /// Reports whether splicing `replacement` into `outer` at `inner`
@@ -94,15 +88,6 @@ fn slices_cleanly(stmt: &Stmt) -> bool {
             <= 1
 }
 
-/// The statement of `body` whose own range covers `range`, `None`
-/// where no single statement does.
-fn statement_covering(body: &[Stmt], range: TextRange) -> Option<&Stmt> {
-    let after = body.partition_point(|stmt| stmt.start() <= range.start());
-    body[..after]
-        .last()
-        .filter(|stmt| range.end() <= stmt.end())
-}
-
 /// Splices `replacement` into `outer` at `inner` and returns the parsed
 /// result, the shared body under [`splice_parses`] and
 /// [`splice_preserves_tree`].
@@ -119,6 +104,18 @@ fn splice_reparse<T, E>(
         source.slice(TextRange::new(inner.end(), outer.end())),
     );
     parse(&candidate)
+}
+
+/// The statement of `body` whose own range covers `range`, `None`
+/// where no single statement does.
+fn statement_covering(body: &[Stmt], range: TextRange) -> Option<&Stmt> {
+    item_holding(body, range.start()).filter(|stmt| range.end() <= stmt.end())
+}
+
+/// The window `covering` reparses within, its own range or the whole
+/// module where no statement covers the splice.
+fn window_of(source: &Source, covering: Option<&Stmt>) -> TextRange {
+    covering.map_or_else(|| source.module_range(), Ranged::range)
 }
 
 #[cfg(test)]

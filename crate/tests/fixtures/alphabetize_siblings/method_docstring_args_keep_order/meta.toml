@@ -3,5 +3,7 @@ previewable = true
 title       = "Method Docstring Parameter Entries Keep Their Order"
 
 description = '''
-`update`'s positional parameters are pinned, and the docstring follows the signature, so the `Args:` entries **mirror the held order**, `target` then `source` exactly as declared. The `Raises:` section names exceptions rather than parameters, so it still sorts, `KeyError` moving ahead of `ValueError`.
+`update`'s positional parameters are pinned, and the docstring's `Args:` entries follow the signature, so they **mirror that held order** as `target` then `source`, exactly as declared.
+
+The `Raises:` section names exceptions rather than parameters, so nothing pins it and it still sorts, moving `KeyError` ahead of `ValueError`.
 '''

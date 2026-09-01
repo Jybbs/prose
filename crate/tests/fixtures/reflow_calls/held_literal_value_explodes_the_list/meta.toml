@@ -4,5 +4,7 @@ previewable = true
 title       = "A Held Literal Explodes the Argument List Around It"
 
 description = '''
-The `mapping=` dict arrives laid out across rows, with `alpha=1` and `zeta=2` packed onto the lines its braces open and close. A held multi-line argument explodes the list around it, so each sibling moves to its own row, and since the call is inside both the argument cap and the line limit, the row break alone is what fires the explode.
+The `mapping=` dict arrives laid out across several rows, with `alpha=1` and `zeta=2` packed onto the lines its braces open and close.
+
+**A multi-line argument explodes the list around it**, so each sibling moves onto a row of its own. The call sits inside both the argument cap and the line budget, so the row break alone is what fires the explode.
 '''

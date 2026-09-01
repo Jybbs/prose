@@ -1,7 +1,15 @@
-//! Slot arithmetic over a member list, the runs adjacent members form
-//! and the inverse of a reordering.
+//! Slot arithmetic over a member list, the runs adjacent members form,
+//! the inverse of a reordering, and the member an offset falls in.
 
 use std::ops::Range;
+
+use ruff_text_size::{Ranged, TextSize};
+
+/// The item of `items` whose start is at or before `offset`, `None`
+/// ahead of the first item.
+pub(crate) fn item_holding<T: Ranged>(items: &[T], offset: TextSize) -> Option<&T> {
+    slot_holding(items, offset).map(|slot| &items[slot])
+}
 
 /// Slot ranges of each run of two or more adjacent items that each
 /// satisfy `qualifies`, an item failing it bounding the runs on either
@@ -13,6 +21,14 @@ pub(crate) fn runs_where<T>(
     slot_runs(items, |a, b| qualifies(a) && qualifies(b))
         .filter(|run| run.len() >= 2)
         .collect()
+}
+
+/// The slot of the `items` entry whose start is at or before `offset`,
+/// `None` ahead of the first item.
+pub(crate) fn slot_holding<T: Ranged>(items: &[T], offset: TextSize) -> Option<usize> {
+    items
+        .partition_point(|item| item.start() <= offset)
+        .checked_sub(1)
 }
 
 /// Inverts `order` into the slot each item index occupies, the reverse
@@ -44,12 +60,48 @@ pub(crate) fn slot_runs<T>(
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
+    use crate::testing::parse;
+
+    /// A comment ahead of two statements, the first starting at 7 and
+    /// the second at 14.
+    const LEAD_COMMENT: &str = "# lead\nx = 1\n\ny = 2\n";
+
+    #[rstest]
+    #[case::ahead_of_the_first_item(0, None)]
+    #[case::inside_an_item(10, Some(7))]
+    #[case::past_the_last_item(20, Some(14))]
+    fn item_holding_reads_the_item_its_slot_names(#[case] offset: u32, #[case] start: Option<u32>) {
+        let source = parse(LEAD_COMMENT);
+        assert_eq!(
+            item_holding(&source.ast().body, TextSize::new(offset)).map(Ranged::start),
+            start.map(TextSize::new)
+        );
+    }
 
     #[test]
     fn runs_where_bounds_runs_at_each_failing_item() {
         let items = [1, 1, 0, 1, 1, 1];
         assert_eq!(runs_where(&items, |&n| n == 1), vec![0..2, 3..6]);
+    }
+
+    #[rstest]
+    #[case::ahead_of_the_first_statement(0, None)]
+    #[case::statement_start(7, Some(0))]
+    #[case::inside_a_statement(10, Some(0))]
+    #[case::between_statements(13, Some(0))]
+    #[case::past_the_last_statement(20, Some(1))]
+    fn slot_holding_reads_the_statement_starting_at_or_before_the_offset(
+        #[case] offset: u32,
+        #[case] expected: Option<usize>,
+    ) {
+        let source = parse(LEAD_COMMENT);
+        assert_eq!(
+            slot_holding(&source.ast().body, TextSize::new(offset)),
+            expected
+        );
     }
 
     #[test]
