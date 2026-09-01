@@ -14,10 +14,12 @@ on:
       - .mise/config.toml
       - .mise/lib/**
       - .mise/tasks/gha/baseline
+      - .mise/tasks/gha/brief
       - .mise/tasks/gha/plan
       - .mise/tasks/rust/bake
       - .mise/tasks/rust/delta
       - .mise/tasks/rust/imports
+      - .mise/tasks/rust/mutations
       - .mise/tasks/rust/probe
       - .mise/tasks/rust/settle
       - .mise/tasks/rust/subsets
@@ -135,18 +137,20 @@ jobs:
       - name : Save the break set
         uses : actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          key  : corpus-breaks-v2-${{ steps.python.outputs.version }}-${{ github.sha }}
+          key  : corpus-breaks-${{ steps.python.outputs.version }}-${{ github.sha }}
           path : &breaks-dir ${{ runner.temp }}/breaks
 
       - name : Drop the stages and break sets this bake replaces
+        if   : ${{ github.ref == 'refs/heads/main' }}
         env:
           GH_TOKEN : ${{ github.token }}
           SHA      : ${{ github.sha }}
           VERSION  : ${{ steps.python.outputs.version }}
         run  : |
-          for kind in stage breaks-v2; do
+          set -o pipefail
+          for kind in stage breaks; do
             PREFIX="corpus-$kind-$VERSION-" KEPT="corpus-$kind-$VERSION-$SHA" \
-              gh api "repos/$GITHUB_REPOSITORY/actions/caches?per_page=100" \
+              gh api --paginate "repos/$GITHUB_REPOSITORY/actions/caches?per_page=100" \
                 --jq '.actions_caches[]
                       | select(.key | startswith(env.PREFIX))
                       | select(.key != env.KEPT)
@@ -245,9 +249,9 @@ jobs:
         id   : breaks
         uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          key          : corpus-breaks-v2-${{ steps.python.outputs.version }}-${{ env.BASE }}
+          key          : corpus-breaks-${{ steps.python.outputs.version }}-${{ env.BASE }}
           path         : *breaks-dir
-          restore-keys : corpus-breaks-v2-${{ steps.python.outputs.version }}-
+          restore-keys : corpus-breaks-${{ steps.python.outputs.version }}-
 
       - name : Import every rewritten module against the baked break set
         env  : { PROSE_IMPORTS_BASELINE: *breaks-path }

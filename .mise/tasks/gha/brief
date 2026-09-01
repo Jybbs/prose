@@ -12,9 +12,11 @@ Subcommands:
              GitHub-runner defaults. Exits 0 when `CHECK` is success.
     corpus   Render the Corpus gate summary. Reads the result of every
              job the corpus workflow's gate depends on, each under its
-             upper-cased job id, plus the GitHub-runner defaults. Exits
-             0 when every one of them that ran is a success, the delta
-             reporting without gating.
+             upper-cased job id, plus `ARMED` for whether the imports
+             ratchet read a baked break set, plus the GitHub-runner
+             defaults. Exits 0 when every one of them that ran is a
+             success, the delta reporting without gating and an unarmed
+             ratchet degrading the summary without failing it.
     deploy   Render the Deploy gate summary. Reads `CHECKS`, `PRESS`,
              `DEPLOY`, and `URL` plus the GitHub-runner defaults. Exits
              0 when every one of them is success.
@@ -39,6 +41,9 @@ from pathlib import Path
 from sys     import argv
 from tomllib import loads
 from yaml    import safe_load
+
+DELTA   = "delta"
+IMPORTS = "imports"
 
 
 def failed(*signals: str) -> bool:
@@ -90,14 +95,35 @@ class Summary:
         else:
             print(text, end = "")
 
-    def _gate(self, name: str, *signals: str, **context):
+    def _gate(self, name: str, *signals: str, degraded: bool = False, **context):
         """
         Render the `name` template and exit with the verdict of the
-        `signals` env vars.
+        `signals` env vars. A degraded run passes and says so, its
+        headline reading the way its rows do.
         """
         verdict = failed(*signals)
-        self._emit(name, check_mark = "❌" if verdict else "✅", **context)
+        mark    = "❌" if verdict else "⚠️" if degraded else "✅"
+
+        self._emit(name, check_mark = mark, **context)
         raise SystemExit(verdict)
+
+    @staticmethod
+    def _row(jobs: dict, job: str) -> dict:
+        """
+        The mark and the name one corpus row shows, the imports row
+        reading as unarmed where it succeeded against no baked break set.
+
+        Args:
+            jobs : The workflow's job table.
+            job  : The job id whose row to build.
+        """
+        result = environ[job.upper()]
+        name   = jobs[job]["name"].split("${{")[0].strip() or job.capitalize()
+
+        if job == IMPORTS and result == "success" and environ.get("ARMED") != "true":
+            return {"mark": "⚠️", "name": f"{name} (no baked break set, nothing asserted)"}
+
+        return {"mark": {"skipped": "➖", "success": "✅"}.get(result, "❌"), "name": name}
 
     def ci(self):
         """
@@ -113,51 +139,14 @@ class Summary:
         """
         jobs   = safe_load(Path(".github/workflows/corpus.yml").read_text(encoding="utf-8"))["jobs"]
         needed = jobs["gate"]["needs"]
+        sweeps = [self._row(jobs, job) for job in needed]
 
         self._gate(
             "corpus",
-            *[job.upper() for job in needed if job != "delta" and environ[job.upper()] != "skipped"],
-            sweeps = [
-                {
-                    "mark" : self._mark(job),
-                    "name" : self._sweep_name(jobs, job)
-                }
-                for job in needed
-            ]
+            *[job.upper() for job in needed if job != DELTA and environ[job.upper()] != "skipped"],
+            degraded = any(row["mark"] == "⚠️" for row in sweeps),
+            sweeps   = sweeps
         )
-
-    @staticmethod
-    def _mark(job: str) -> str:
-        """
-        The mark one corpus job shows, the imports row reading as unarmed
-        where it succeeded against no baked break set.
-
-        Args:
-            job: The job id whose result to mark.
-        """
-        result = environ[job.upper()]
-
-        if job == "imports" and result == "success" and environ.get("ARMED") != "true":
-            return "⚠️"
-
-        return {"skipped": "➖", "success": "✅"}.get(result, "❌")
-
-    @staticmethod
-    def _sweep_name(jobs: dict, job: str) -> str:
-        """
-        The name one corpus row shows, the imports row naming the missing
-        break set where the ratchet asserted nothing.
-
-        Args:
-            jobs : The workflow's job table.
-            job  : The job id whose row to name.
-        """
-        name = jobs[job]["name"].split("${{")[0].strip() or job.capitalize()
-
-        if job == "imports" and environ[job.upper()] == "success" and environ.get("ARMED") != "true":
-            return f"{name} (no baked break set, nothing asserted)"
-
-        return name
 
     def deploy(self):
         """
