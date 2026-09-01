@@ -113,19 +113,51 @@ class Summary:
         """
         jobs   = safe_load(Path(".github/workflows/corpus.yml").read_text(encoding="utf-8"))["jobs"]
         needed = jobs["gate"]["needs"]
-        marks  = {"skipped": "➖", "success": "✅"}
 
         self._gate(
             "corpus",
             *[job.upper() for job in needed if job != "delta" and environ[job.upper()] != "skipped"],
             sweeps = [
                 {
-                    "mark" : marks.get(environ[job.upper()], "❌"),
-                    "name" : jobs[job]["name"].split("${{")[0].strip() or job.capitalize()
+                    "mark" : self._mark(job),
+                    "name" : self._sweep_name(jobs, job)
                 }
                 for job in needed
             ]
         )
+
+    @staticmethod
+    def _mark(job: str) -> str:
+        """
+        The mark one corpus job shows, the imports row reading as unarmed
+        where it succeeded against no baked break set.
+
+        Args:
+            job: The job id whose result to mark.
+        """
+        result = environ[job.upper()]
+
+        if job == "imports" and result == "success" and environ.get("ARMED") != "true":
+            return "⚠️"
+
+        return {"skipped": "➖", "success": "✅"}.get(result, "❌")
+
+    @staticmethod
+    def _sweep_name(jobs: dict, job: str) -> str:
+        """
+        The name one corpus row shows, the imports row naming the missing
+        break set where the ratchet asserted nothing.
+
+        Args:
+            jobs : The workflow's job table.
+            job  : The job id whose row to name.
+        """
+        name = jobs[job]["name"].split("${{")[0].strip() or job.capitalize()
+
+        if job == "imports" and environ[job.upper()] == "success" and environ.get("ARMED") != "true":
+            return f"{name} (no baked break set, nothing asserted)"
+
+        return name
 
     def deploy(self):
         """
