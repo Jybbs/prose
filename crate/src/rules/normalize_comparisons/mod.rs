@@ -18,6 +18,7 @@ use crate::{
     source::Source,
 };
 
+#[derive(Debug)]
 pub(crate) struct NormalizeComparisons {
     identity: bool,
     negation: bool,

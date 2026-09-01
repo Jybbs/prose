@@ -3,5 +3,7 @@ previewable = true
 title       = "Rows Hanging Inside a Nested Bracket Hold"
 
 description = '''
-The rows below an opener that ends its row hang from that row rather than aligning to anything the shed moves, so they keep their column even where it coincides with the column directly past the shed opener.
+The rows below an opener that ends its own row hang from that row rather than aligning to anything the shed moves.
+
+They therefore **keep their column**, even where that column happens to coincide with the one directly past the shed opener. A coincidence of columns is not evidence of alignment.
 '''

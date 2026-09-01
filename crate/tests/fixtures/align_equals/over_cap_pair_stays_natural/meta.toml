@@ -1,6 +1,6 @@
 [docs]
 previewable = false
-title       = "An Over-Cap Pair Declines to Align"
+title       = "An Over-Cap Pair Stays Unaligned"
 
 description = '''
 `ttl` is three characters wide and `maximum_connection_backoff_seconds` thirty-four, a spread wider than `max-shift` permits. Each seeds its own width band, so **neither pads toward the other**, and both keep the natural single space before `=`.

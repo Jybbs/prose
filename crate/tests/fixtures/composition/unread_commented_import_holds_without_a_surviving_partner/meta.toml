@@ -4,5 +4,7 @@ previewable = true
 title       = "An Unread Commented Import Holds Without a Surviving Partner"
 
 description = '''
-The second import carries no comment and drops, so the first has no sibling left for [[reflow-imports]] to fold it into and [[prune-inert-imports]] holds it under its comment rather than leaving the comment over nothing.
+Both imports are unread, and `from pkg import a` is the line the `# Local imports` comment heads.
+
+`from pkg import b` carries no comment and drops. With it gone there is no sibling left for `reflow-imports` to fold `a` into, so **`a` is held under its comment** instead of dropping too, since dropping it would leave the comment standing over nothing.
 '''

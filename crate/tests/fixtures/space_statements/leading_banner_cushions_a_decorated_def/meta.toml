@@ -3,5 +3,7 @@ previewable = false
 title       = "A Leading Banner Cushions a Decorated Definition"
 
 description = '''
-The `# Section: Handlers` banner opens the file directly above `@decorator`. The divider blank seats **above the `@decorator` line rather than between it and `def handle():`**, because a decorated definition's range opens at its first decorator.
+The `# Section: Handlers` banner opens the file directly above `@decorator`.
+
+The divider blank seats **above the `@decorator` line rather than between it and `def handle():`**, because a decorated definition's range opens at its first decorator rather than at the `def`.
 '''

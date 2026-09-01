@@ -9,39 +9,47 @@ use std::ops::Range;
 use ruff_python_ast::Stmt;
 
 use super::members::function_key;
-use crate::primitives::tiering::{Evaluation, permute_defs};
+use crate::primitives::tiering::{DefRun, Evaluation};
 
 /// The band a module-level definition sorts into, a class ahead of a
 /// function.
 #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
-enum Band {
+pub(super) enum Band {
     Class,
     Function,
 }
 
-/// Sorts a section's module-level definitions through one tiered
-/// dependency graph, rewriting `order` in place. A member `holds`
-/// selects keeps its source slot, and a member the permutation would
-/// seat across a binding it evaluates holds its slot while the rest of
-/// the run still sorts. Leaves `order` untouched when a name repeats or
-/// the reference graph cycles.
-pub(super) fn permute_module_defs<'src>(
-    order: &mut [usize],
+/// A section's module-level definitions, tiered as one run.
+pub(super) type ModuleDefs<'a, 'src> = DefRun<'a, 'src, (Band, u8, &'src str)>;
+
+/// Prepares a section's module-level definitions as one tiered run, so a
+/// caller permuting it on every pass of a fixed-point loop tiers it once.
+/// `None` where a name repeats or the reference graph cycles.
+pub(super) fn module_def_run<'a, 'src>(
     body: &'src [Stmt],
     range: Range<usize>,
-    evaluation: Evaluation<'_, 'src>,
-    holds: impl Fn(&'src Stmt) -> bool,
+    evaluation: Evaluation<'a, 'src>,
     group_methods: bool,
+) -> Option<ModuleDefs<'a, 'src>> {
+    DefRun::of(body, range, evaluation, |stmt| {
+        banded_member(stmt, group_methods)
+    })
+}
+
+/// Permutes a prepared module-definition run, rewriting `order` in place
+/// with the classes seating above the functions and each band tiering
+/// through the graph the whole run shares. A member `holds` selects keeps
+/// its source slot, and a member the permutation would seat across a
+/// binding it evaluates holds its slot while the rest of the run sorts.
+pub(super) fn permute_module_run<'src>(
+    run: &ModuleDefs<'_, 'src>,
+    order: &mut [usize],
+    body: &'src [Stmt],
+    holds: impl Fn(&'src Stmt) -> bool,
 ) {
-    permute_defs(
-        order,
-        body,
-        range,
-        evaluation,
-        holds,
-        |stmt| banded_member(stmt, group_methods),
-        |tier, (band, group, name)| (band, tier, group, name),
-    );
+    run.permute(order, body, holds, |tier, (band, group, name)| {
+        (band, tier, group, name)
+    });
 }
 
 /// The name a module-level definition binds beside its band, method
@@ -69,26 +77,21 @@ mod tests {
     use super::*;
     use crate::testing::{evaluated, parse};
 
-    /// The new-order permutation `permute_module_defs` produces over
+    /// The new-order permutation a prepared module run produces over
     /// `src`, holding nothing and grouping the functions.
     fn module_order(src: &str) -> Vec<usize> {
         let source = parse(src);
         let body = &source.ast().body;
         let mut order: Vec<usize> = (0..body.len()).collect();
         let evaluated = evaluated(&source, body);
-        permute_module_defs(
-            &mut order,
-            body,
-            0..body.len(),
-            evaluated.evaluation(),
-            |_| false,
-            true,
-        );
+        if let Some(run) = module_def_run(body, 0..body.len(), evaluated.evaluation(), true) {
+            permute_module_run(&run, &mut order, body, |_| false);
+        }
         order
     }
 
     #[test]
-    fn permute_module_defs_declines_a_reference_cycle() {
+    fn module_defs_declines_a_reference_cycle() {
         let src = indoc! {"
             class Zed(Alpha):
                 pass
@@ -103,7 +106,7 @@ mod tests {
     }
 
     #[test]
-    fn permute_module_defs_holds_a_class_reading_a_function_as_it_binds() {
+    fn module_defs_holds_a_class_reading_a_function_as_it_binds() {
         let src = indoc! {"
             def make_base():
                 return object
@@ -122,7 +125,27 @@ mod tests {
     }
 
     #[test]
-    fn permute_module_defs_seats_a_derived_class_in_the_class_band() {
+    fn module_defs_holds_a_function_a_subscripted_base_reaches() {
+        let src = indoc! {"
+            class Generic:
+                def __class_getitem__(cls, item):
+                    return zzz_dispatch(item)
+
+            def zzz_dispatch(item):
+                return object
+
+            class Widget(Generic[str]):
+                pass
+        "};
+        assert_eq!(
+            module_order(src),
+            vec![0, 1, 2],
+            "subscripting Generic runs its body, which reads zzz_dispatch, so it holds above"
+        );
+    }
+
+    #[test]
+    fn module_defs_seats_a_derived_class_in_the_class_band() {
         let src = indoc! {"
             def render():
                 pass
@@ -144,7 +167,50 @@ mod tests {
     }
 
     #[test]
-    fn permute_module_defs_sorts_the_function_band_by_method_group() {
+    fn module_defs_settles_a_subscripted_base_across_repeat_passes() {
+        let src = indoc! {"
+            class Generic:
+                def __class_getitem__(cls, item):
+                    return zzz_dispatch(item)
+
+            def zzz_dispatch(item):
+                return object
+
+            class Widget(Generic[str]):
+                pass
+        "};
+        let source = parse(src);
+        let body = &source.ast().body;
+        let mut order: Vec<usize> = (0..body.len()).collect();
+        let evaluated = evaluated(&source, body);
+        for pass in 0..3 {
+            let run = module_def_run(body, 0..body.len(), evaluated.evaluation(), true)
+                .expect("the run tiers");
+            permute_module_run(&run, &mut order, body, |_| false);
+            assert_eq!(order, vec![0, 1, 2], "pass {pass} strands zzz_dispatch");
+        }
+    }
+
+    #[test]
+    fn module_defs_sorts_past_a_plain_imported_base() {
+        let src = indoc! {"
+            from vendor import Base
+
+            def zzz_dispatch(item):
+                return object
+
+            class Widget(Base):
+                pass
+        "};
+        assert_eq!(
+            module_order(src),
+            vec![0, 2, 1],
+            "a base naming no call runs nothing, so the class still bands above the function"
+        );
+    }
+
+    #[test]
+    fn module_defs_sorts_the_function_band_by_method_group() {
         let src = indoc! {"
             def Factory():
                 pass

@@ -19,7 +19,6 @@ modernize-annotations@59..125
 modernize-annotations@618..619
 modernize-annotations@739..756
 modernize-annotations@907..936
-prune-inert-imports@0..35
 prune-inert-imports@138..164
 reflow-calls@1055..1147
 reflow-collections@496..605

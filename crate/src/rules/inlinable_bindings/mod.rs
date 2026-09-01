@@ -24,6 +24,7 @@ mod walk;
 
 use self::walk::Visitor;
 
+#[derive(Debug)]
 pub(crate) struct InlinableBindings {
     allow_pattern: AllowPattern,
     code_line_length: usize,
@@ -68,6 +69,10 @@ mod tests {
     use super::*;
     use crate::{diagnostics::Severity, testing::parse};
 
+    fn rule() -> InlinableBindings {
+        InlinableBindings::from_config(&Config::default())
+    }
+
     #[rstest]
     #[case::lands_on_the_cap("ab(cdefg)", true)]
     #[case::lands_one_past_the_cap("ab(cdefgh)", false)]
@@ -97,8 +102,7 @@ mod tests {
     #[test]
     fn diagnostic_shape_pins_severity_no_fix_and_range_over_name() {
         let source = parse("def f():\n    x = 1\n    return x\n");
-        let rule = InlinableBindings::from_config(&Config::default());
-        let diagnostics = rule.lint(&source);
+        let diagnostics = rule().lint(&source);
         let only = diagnostics.first().expect("one diagnostic");
 
         assert_eq!(only.severity, Severity::Lint);
@@ -111,8 +115,7 @@ mod tests {
     #[test]
     fn message_carries_inlined_value_from_nested_block() {
         let source = parse("def f():\n    if cond:\n        y = g() + 1\n        return y\n");
-        let rule = InlinableBindings::from_config(&Config::default());
-        let diagnostics = rule.lint(&source);
+        let diagnostics = rule().lint(&source);
         let only = diagnostics.first().expect("one diagnostic");
 
         assert!(only.message.ends_with("Consider inlining `g() + 1`"));

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Anchored Constant below an Import Takes One Blank Line"
+
+description = '''
+`LEVEL = os.environ.get("X")` anchors on its call two blank lines under `import os`, and `ALPHA` and `ZETA` sort beneath it. **The anchored constant takes the one blank line the module policy seats after an import run**, closing the second the source held.
+'''

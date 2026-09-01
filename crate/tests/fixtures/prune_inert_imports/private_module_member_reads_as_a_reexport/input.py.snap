@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/private_module_member_reads_as_a_reexport/input.py
+---
+from _ssl import OPENSSL_VERSION
+from _ssl import _DEFAULT_CIPHERS
+
+value = 1

@@ -31,6 +31,7 @@ use crate::{
     source::Source,
 };
 
+#[derive(Debug)]
 pub(crate) struct StackAdjacentStrings {
     code_line_length: usize,
     reservations: reserve::Reservations,

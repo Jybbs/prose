@@ -3,5 +3,7 @@ previewable = true
 title       = "A Constant Reading a Branch-Bound Name Pins Above Its Definition"
 
 description = '''
-`DEFAULT = Selector` resolves against the branch that bound `Selector`, because the module's own `class Selector` binds further down the file. A write inside an `if` counts as that earlier binding, so **`DEFAULT` holds its source slot** while `TABLE = dict` bands freely past `helper`, its builtin standing unshadowed.
+`DEFAULT = Selector` reads a name the `if __debug__` branch above already bound, even though the module also defines `class Selector` further down the file.
+
+A write inside an `if` arm counts as a real binding, so the `Selector` that `DEFAULT` reads is the branch's rather than the class. Moving `DEFAULT` would change which of the two it sees, so **it holds its source position**. `TABLE = dict` reads a builtin that nothing in the module shadows, so it moves up freely past `helper`.
 '''

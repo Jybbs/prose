@@ -74,7 +74,7 @@ export function lintShorthand(input: ShorthandInput): Shorthand | null {
         : null
     case 'inlinable-bindings': {
       // `flagged` spans the binding name, leaving the inlined value to come
-      // from inlinable_bindings's "Consider inlining `<value>`" message.
+      // from the rule's "Consider inlining `<value>`" message.
       const inlined = /Consider inlining `([^`]+)`/.exec(message)?.[1]
       return flagged && inlined
         ? replacement(flagged, truncate(inlined))

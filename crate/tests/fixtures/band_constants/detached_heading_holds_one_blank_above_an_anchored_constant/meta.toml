@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Detached Heading Holds One Blank Line above an Anchored Constant"
+
+description = '''
+`# the ceiling the scheduler reads` stands a blank line off `LIMIT = compute()`, and `LIMIT` anchors on its call while `ALPHA` and `ZETA` sort above it. **The band opens one blank line above the detached heading** rather than seating it tight under `ZETA`, the separation a tier boundary opens, so the heading stays the anchored constant's own on every later run.
+'''

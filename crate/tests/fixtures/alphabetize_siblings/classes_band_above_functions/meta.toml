@@ -3,5 +3,7 @@ previewable = true
 title       = "Classes Band Above Functions at Module Scope"
 
 description = '''
-`render`, `Widget`, `build`, and `Gadget` interleave the two kinds at module scope. **The classes band above the functions and each band sorts by name**, so the module reads `Gadget`, `Widget`, `build`, `render` rather than an order that sorts each kind on its own and keeps the interleaving.
+`render`, `Widget`, `build`, and `Gadget` are written with the two kinds interleaved.
+
+**The classes group above the functions, and each group then sorts by name.** The module reads `Gadget`, `Widget`, `build`, `render`, rather than keeping the interleaving and merely sorting each kind where it already sat.
 '''

@@ -10,7 +10,15 @@ layout  : doc
 
 `miscased-constants` surfaces a module-level assignment binding a fixed value under a name PEP 8 would write in `SCREAMING_CASE`, so a public global reading as `max_retries` stops implying mutable state where nothing writes it again. It completes the pair [[reassigned-constants]] opened, one rule per half of the casing contract, and it reports without rewriting, because renaming a module constant breaks every importer outside the file.
 
-A name draws the report when it runs longer than one character, carries no leading underscore, is not already `SCREAMING_CASE`, and binds a value the module never reassigns. Five shapes stay quiet. A call-produced global is effectful (*`logger = get_logger(__name__)`, `app = build()`*), a leading underscore marks deliberate module-private state (*`_cache = {}`*), a dunder such as `__version__` takes the same exemption, a single-character name reads as a matrix or a scalar by mathematical convention, and a lambda binds a callable. Notebooks are skipped whole, a cell's top-level assignments being working variables.
+A name draws the report when it runs longer than one character, carries no leading underscore, is not already `SCREAMING_CASE`, and binds a value the module never reassigns. Several shapes stay quiet:
+
+1. A call-produced global is effectful (*`logger = get_logger(__name__)`, `app = build()`*).
+2. A leading underscore marks deliberate module-private state (*`_cache = {}`*).
+3. A dunder such as `__version__` takes the same exemption.
+4. A single-character name reads as a matrix or a scalar by mathematical convention.
+5. A lambda binds a callable.
+
+Notebooks are skipped whole, a cell's top-level assignments being working variables.
 
 A type alias is never renamed, `SCREAMING_CASE` being the one casing an alias must not take. The rule tells the two apart by the value rather than the name, so a value pointing at something already built is an alias (*`Pen = Turtle`, `open = TarFile.open`, `Interval = Union[int, float]`*), with PEP 604's `Interval = int | float` reading the same way down both sides. A value that builds something new is a constant and still draws the rename, covering a literal, an f-string, a collection display, and an arithmetic expression.
 

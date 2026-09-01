@@ -16,7 +16,10 @@
 //! the nearest non-comprehension scope, and class-scope names are
 //! invisible to nested functions and comprehensions.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::OnceLock,
+};
 
 use ruff_python_ast::{ModModule, Stmt, name::Name, visitor::Visitor};
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -48,6 +51,8 @@ pub struct BindingAnalysis {
     function_scope_at: FxHashMap<TextSize, ScopeId>,
     #[serde(skip)]
     global_writes: BTreeMap<Name, Vec<TextSize>>,
+    #[serde(skip)]
+    module_reads: OnceLock<Vec<(TextSize, Name)>>,
     scopes: Vec<Scope>,
     #[serde(skip)]
     unpack_targets: FxHashMap<BindingId, UnpackKind>,
@@ -117,6 +122,14 @@ impl BindingAnalysis {
             .any(|scope| scope.bindings.contains_key(name))
     }
 
+    /// Returns the offset of the earliest unconditional module-scope
+    /// write of `name`, `None` when every write sits in a conditional
+    /// branch (`if`/`for`/`while`/`try`/`match`) or `name` is unbound at
+    /// module scope.
+    pub(crate) fn first_unconditional_write(&self, name: &str) -> Option<TextSize> {
+        self.module_binding(name)?.first_unconditional_write
+    }
+
     /// Returns the offset of the earliest recorded write of `binding`.
     pub(crate) fn first_write_offset(&self, binding: BindingId) -> TextSize {
         self.binding(binding).write_offsets[0]
@@ -141,8 +154,7 @@ impl BindingAnalysis {
     /// write at an offset strictly less than `offset`. A write nested in
     /// a conditional branch (`if`/`for`/`while`/`try`/`match`) is excluded.
     pub(crate) fn is_defined_before(&self, name: &str, offset: TextSize) -> bool {
-        self.module_binding(name)
-            .and_then(|binding| binding.first_unconditional_write)
+        self.first_unconditional_write(name)
             .is_some_and(|first| first < offset)
     }
 
@@ -189,19 +201,45 @@ impl BindingAnalysis {
     /// `ranges`, which ascend and never overlap, one set per range.
     pub(crate) fn module_names_read_within(&self, ranges: &[TextRange]) -> Vec<FxHashSet<&str>> {
         let mut read = vec![FxHashSet::default(); ranges.len()];
-        let reads = self.scopes[0].bindings.iter().flat_map(|(name, &id)| {
-            self.binding(id)
-                .read_offsets
-                .iter()
-                .map(move |&offset| (name.as_str(), offset))
-        });
-        for (name, offset) in reads {
-            let slot = ranges.partition_point(|range| range.end() <= offset);
-            if ranges.get(slot).is_some_and(|range| range.contains(offset)) {
-                read[slot].insert(name);
+        let (Some(first), Some(last)) = (ranges.first(), ranges.last()) else {
+            return read;
+        };
+        let reads = self.module_reads();
+        let from = reads.partition_point(|&(offset, _)| offset < first.start());
+        for (offset, name) in &reads[from..] {
+            if *offset >= last.end() {
+                break;
+            }
+            let slot = ranges.partition_point(|range| range.end() <= *offset);
+            if ranges
+                .get(slot)
+                .is_some_and(|range| range.contains(*offset))
+            {
+                read[slot].insert(name.as_str());
             }
         }
         read
+    }
+
+    /// Every module-scope read as its offset beside the name read, in
+    /// offset order. Built on first use, so a caller asking about one
+    /// body's ranges walks the reads inside that span rather than every
+    /// read the file holds.
+    fn module_reads(&self) -> &[(TextSize, Name)] {
+        self.module_reads.get_or_init(|| {
+            let mut reads: Vec<(TextSize, Name)> = self.scopes[0]
+                .bindings
+                .iter()
+                .flat_map(|(name, &id)| {
+                    self.binding(id)
+                        .read_offsets
+                        .iter()
+                        .map(move |&offset| (offset, name.clone()))
+                })
+                .collect();
+            reads.sort_unstable_by_key(|&(offset, _)| offset);
+            reads
+        })
     }
 
     /// Returns `true` when the module reads the module-scope binding for
@@ -436,6 +474,26 @@ mod tests {
             analysis.read_offsets(helper).len(),
             1,
             "the forward call resolves to outer's local",
+        );
+    }
+
+    #[rstest]
+    #[case::unconditional_write("Helper = int\n", "Helper", Some(0))]
+    #[case::unconditional_after_conditional(
+        "if flag:\n    Helper = str\nHelper = int\n",
+        "Helper",
+        Some(26)
+    )]
+    #[case::conditional_only_write("if flag:\n    Helper = int\n", "Helper", None)]
+    #[case::undefined_name("x = 1\n", "y", None)]
+    fn first_unconditional_write_reads_the_earliest_unconditional_offset(
+        #[case] src: &str,
+        #[case] name: &str,
+        #[case] expected: Option<u32>,
+    ) {
+        assert_eq!(
+            analyze(src).first_unconditional_write(name),
+            expected.map(TextSize::new)
         );
     }
 
@@ -751,7 +809,7 @@ mod tests {
     }
 
     #[test]
-    fn unpack_target_names_the_subscript_for_all_single_use() {
+    fn unpack_target_names_the_subscript_when_every_target_reads_once() {
         let source = parse("first, second = batch\nuse(first)\nuse(second)\n");
         let analysis = source.binding_analysis();
         let first = module_binding_id(analysis, "first");
@@ -822,7 +880,7 @@ mod tests {
         }
 
         #[test]
-        fn single_use_name_reports_one_read_offset(
+        fn name_read_once_reports_one_read_offset(
             tail in "[a-z0-9]{0,5}"
         ) {
             let name = format!("x{tail}");

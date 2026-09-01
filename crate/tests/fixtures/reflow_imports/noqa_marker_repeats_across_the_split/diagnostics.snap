@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_imports/noqa_marker_repeats_across_the_split/input.py
+---
+reflow-imports@34..35

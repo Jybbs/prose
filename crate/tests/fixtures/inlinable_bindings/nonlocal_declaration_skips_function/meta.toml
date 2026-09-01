@@ -3,5 +3,7 @@ previewable = false
 title       = "A `nonlocal` Declaration Skips the Function"
 
 description = '''
-`inner` declares `nonlocal counter`, so `inlinable-bindings` **skips the whole function** rather than reasoning about `bumped` on its own, because tracking whether `counter` is truly single-use would mean following the binding out along the closure chain to `outer`. The exemption covers the entire body of `inner`, not just the `nonlocal` line.
+`inner` declares `nonlocal counter`, and that **skips the whole function** rather than just the `nonlocal` line.
+
+`bumped` is never considered, even though on its own it is written once and read once. Deciding whether `counter` reaches a second use would mean following the binding out along the closure chain into `outer`, so the rule steps back from the entire body instead.
 '''

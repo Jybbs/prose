@@ -3,5 +3,7 @@ previewable = false
 title       = "Already-Canonical Spacing Round-Trips Unchanged"
 
 description = '''
-Every gap here already matches the canonical spacing, so the source **round-trips with no edit**. Two blanks separate the module-level defs, one blank sits between `first` and `second`, `Posting`'s docstring touches its class header, one blank separates `Sized`'s header from `capacity`, and one blank precedes the `match` opening `beta`'s body.
+Every gap in this file already matches the canonical spacing, so it **round-trips with no edit at all**.
+
+Two blank lines separate the module-level definitions, one blank sits between `first` and `second`, `Posting`'s docstring touches its class header directly, one blank separates `Sized`'s header from `capacity`, and one blank precedes the `match` opening `beta`'s body.
 '''

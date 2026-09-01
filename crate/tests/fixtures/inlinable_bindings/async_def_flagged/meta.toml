@@ -1,6 +1,6 @@
 [docs]
 previewable = true
-title       = "Async Function Bodies Are Recognized the Same Way"
+title       = "Async Function Bodies Are Reported the Same Way"
 
 description = '''
 `payload` is written once from `await get(url)` and read once in the `return`, the exact shape this lint reports. Its position inside an `async def` is **flagged the same way** a plain `def` body would be, because the rule treats both function kinds as the same scope, leaving `await`-driven code no exemption.

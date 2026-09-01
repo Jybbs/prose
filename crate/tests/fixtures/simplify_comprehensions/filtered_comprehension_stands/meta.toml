@@ -3,5 +3,7 @@ previewable = true
 title       = "A Filtered or Chained Comprehension Stands"
 
 description = '''
-`active`'s comprehension carries an `if row.live` guard, and `nested`'s carries two `for` clauses chaining over two levels. Neither reads as a plain copy of a single iterable, so `simplify-comprehensions` leaves both comprehensions exactly as written.
+Nothing here changes. `active`'s comprehension carries an `if row.live` guard, and `nested`'s carries two `for` clauses chaining over two levels.
+
+Neither reads as **a plain copy of a single iterable**, which is the only shape this rule collapses, so both comprehensions are left exactly as written.
 '''

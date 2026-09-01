@@ -4,5 +4,7 @@ previewable = true
 title       = "A Call After a Relaid Closer Hangs From the Opener's Row"
 
 description = '''
-The tuple target breaks before its closing parenthesis, and [[reflow-collections]] seats that closer at the indent of the row its opener sits on. [[reflow-calls]] reads the same row when it explodes the call after the closer, so the exploded rows hang from the statement rather than from the continuation row the source wrote.
+The tuple on the left of the `=` breaks before its closing parenthesis, and `reflow-collections` moves that closer to the indent of the row its opener sits on, which here is the statement's own indent.
+
+`reflow-calls` then explodes the `type(...)` call that follows the closer, measuring from **that same row** rather than from the continuation row the source had written. The exploded arguments therefore hang from the statement's indent.
 '''

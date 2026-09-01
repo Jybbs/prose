@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/hoisted_import_settles_the_directive/input.py
+---
+band-constants@35..133
+prune-inert-imports@0..35

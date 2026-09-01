@@ -4,5 +4,7 @@ previewable = true
 title       = "A Source-Order Keyword Measures Its Buffer and Its Separator"
 
 description = '''
-The method call cannot take keyword form, so it explodes in source order, and each keyword value still measures from the column the [[align-equals]] buffer settles it at and charges the comma closing its row, so the `outline` value explodes in the same pass rather than the next one.
+`screen._drawpoly` is a method call whose signature the rule cannot resolve, so it cannot rename the positionals and explodes the arguments in source order instead.
+
+Each keyword value is still measured **from the column the `align-equals` buffer settles it at**, counting the comma that closes its own row. Those two together take the `outline` value past the 40-column budget, so it explodes while the shorter keywords stay on their rows.
 '''

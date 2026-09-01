@@ -3,5 +3,5 @@ previewable = false
 title       = "A Nested Reorder Folds into Its Enclosing Edit"
 
 description = '''
-The dict keys and the set stored under `"z"` both sort in one pass, `"k": 1` moving ahead of `"z"` while `{"b", "a"}` becomes `{"a", "b"}`. The set's reorder folds into the dict's edit rather than emitting a second overlapping edit, so the value text that moves already carries the sorted set.
+The dict keys and the set stored under `"z"` both sort, `"k": 1` moving ahead of `"z"` while `{"b", "a"}` becomes `{"a", "b"}`. The set's reorder folds into the dict's edit rather than emitting a second overlapping edit, so the value text that moves already carries the sorted set.
 '''

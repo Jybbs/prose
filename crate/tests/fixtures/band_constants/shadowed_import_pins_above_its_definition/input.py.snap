@@ -6,8 +6,6 @@ input_file: crate/tests/fixtures/band_constants/shadowed_import_pins_above_its_d
 from collections import OrderedDict
 
 REGISTRY = OrderedDict
-
-
 TABLE = dict
 
 

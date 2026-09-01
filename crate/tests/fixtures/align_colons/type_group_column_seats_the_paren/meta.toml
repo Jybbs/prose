@@ -3,5 +3,5 @@ previewable = true
 title       = "A Docstring Entry's Type Group Takes a Column of Its Own"
 
 description = '''
-Each `Attributes:` entry of `Session` opens its parenthesized type on one shared column, `host` and `cipher` padded out to the width of `retry_budget`. The `:` column then settles past the widest `name (type)` pair, and both columns resolve in the same pass, so the colon measures the widths the type-group padding produces rather than the ones the source wrote.
+Each `Attributes:` entry of `Session` opens its parenthesized type on one shared column, `host` and `cipher` padded out to the width of `retry_budget`. The `:` column then settles past the widest `name (type)` pair, so the colon measures the widths the type-group padding produces rather than the ones the source wrote.
 '''

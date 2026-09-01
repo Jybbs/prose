@@ -3,5 +3,7 @@ previewable = true
 title       = "A Padded Member Measures on Its Settled Row"
 
 description = '''
-The list is written with padding inside its brackets, so `strip-stranded-padding` reports both delimiter columns, though the expansion rebuilds the bracket interior and carries them away before that strip lands. The member call lands on its own row at the literal's indent, where that padding sits nowhere ahead of it, so its `(` measures from the row the expansion leaves rather than from the source row, and the call explodes in the same pass that moves it.
+The list is written with padding just inside its brackets, so `strip-stranded-padding` reports both of those columns. The expansion rebuilds the bracket interior and carries that padding away before the strip ever lands.
+
+The first member call ends up alone on its own row at the literal's indent, where none of that padding sits ahead of it. Its `(` is therefore measured **from the row the expansion leaves**, not from the row the source wrote, and at that column the call is over budget and explodes as it moves.
 '''

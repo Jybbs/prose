@@ -23,6 +23,7 @@ use crate::{
     source::Source,
 };
 
+#[derive(Debug)]
 pub(crate) struct FrameDocstrings;
 
 impl FrameDocstrings {

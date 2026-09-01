@@ -3,5 +3,7 @@ previewable = true
 title       = "A Call Right-Hand Side Resolves No Replacement"
 
 description = '''
-`name, value = lookup()` unpacks a call result, and each target is read exactly once in `render(name, value)`. Rewriting the reads as `lookup()[0]` and `lookup()[1]` would run the call a second time, so no replacement text resolves and **neither target is reported**, every finding carrying the expression that would stand in the binding's place.
+`name, value = lookup()` unpacks a call result, and each target is read exactly once in `render(name, value)`.
+
+**Neither target is reported.** Rewriting the reads as `lookup()[0]` and `lookup()[1]` would run the call a second time, so no replacement text resolves, and every finding carries the expression that would stand in the binding's place.
 '''

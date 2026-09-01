@@ -3,5 +3,7 @@ previewable = true
 title       = "Aliases, Constants, and Module State Cluster within a Band"
 
 description = '''
-The band mixes three kinds of entry, the type aliases `Handler` and `Interval`, the `SCREAMING_CASE` constants `DEFAULT` and `MAX`, and the lowercase module state `setting` and `threshold`. Each kind clusters together, aliases first, then constants, then state, alphabetized within each group.
+The bindings here are of three different kinds. `Handler` and `Interval` are type aliases, `DEFAULT` and `MAX` are `SCREAMING_CASE` constants, and `setting` and `threshold` are lowercase module state.
+
+Each kind **clusters with its own**, in that order, and the members alphabetize inside each cluster. The aliases lead, the constants follow, and the module state comes last.
 '''

@@ -3,5 +3,7 @@ previewable = false
 title       = "A Future Import Holds the Front"
 
 description = '''
-`from __future__ import annotations` **stays on the file's first line, above the leading band**, because Python requires a `__future__` import before any other statement. `TIMEOUT = 30` still hoists into the band beneath it, a safe move in that `fetch` reads `TIMEOUT` only when called rather than while the module loads.
+`from __future__ import annotations` **stays on the file's first line**, because Python requires a `__future__` import to come before any other statement.
+
+`TIMEOUT = 30` moves up to sit just beneath it. That move is safe because `fetch` reads `TIMEOUT` only when the function is called, not while the module is loading, so the constant does not have to appear before the definition.
 '''

@@ -3,5 +3,7 @@ previewable = true
 title       = "A Run Filling a Docstring Slot Stays as Written"
 
 description = '''
-The two adjacent string literals in `handler`'s body sit in the function's docstring slot, its first statement, so `stack-adjacent-strings` **keeps the run on one line however wide it runs**. Wrapping it in parentheses would leave a value that no longer reads as a docstring.
+Nothing here moves. The two adjacent string literals in `handler`'s body sit in the docstring slot, as the function's first statement.
+
+The run is **kept on one line however wide it runs**. Wrapping it in parentheses would leave a value that no longer reads as a docstring at all.
 '''

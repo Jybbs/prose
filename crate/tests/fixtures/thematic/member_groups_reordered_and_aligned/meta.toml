@@ -3,5 +3,7 @@ previewable = false
 title       = "Service Class Members Regroup and Field Columns Align"
 
 description = '''
-`CacheService` declares its `capacity`, `timeout`, `backend_name` fields out of order alongside a `size` property, a `_initialize_store` private helper, and the public `evict` and `get` methods. **The methods reorder into the canonical dunder, property, private, then public groups**, landing `size`, then `_initialize_store`, then `evict` and `get`, the fields alphabetize to `backend_name`, `capacity`, `timeout`, their `:` and `=` columns align, and member spacing normalizes.
+`CacheService` declares its `capacity`, `timeout`, and `backend_name` fields out of order, alongside a `size` property, a `_initialize_store` private helper, and the public `evict` and `get` methods.
+
+**The methods reorder into the standard groups**, so the `size` property comes first, then the private `_initialize_store`, then `evict` and `get` in alphabetical order. The fields alphabetize to `backend_name`, `capacity`, `timeout`, their `:` and `=` columns align, and the spacing between members normalizes.
 '''

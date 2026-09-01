@@ -1,7 +1,9 @@
 //! The regions of a function body whose interior repeats, runs under a
 //! guard, or opens a scope of its own.
 
-use ruff_python_ast::{ExceptHandler, Expr, Stmt};
+use ruff_python_ast::{
+    ExceptHandler, Expr, ExprDictComp, ExprGenerator, ExprListComp, ExprSetComp, Stmt,
+};
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::primitives::{
@@ -56,11 +58,11 @@ fn guarded_arms(stmt: &Stmt) -> Option<Vec<TextRange>> {
 /// the spans returned.
 fn guarded_spans(expr: &Expr) -> Option<Vec<TextRange>> {
     let generators = match expr {
-        Expr::DictComp(comp) => &comp.generators,
-        Expr::Generator(comp) => &comp.generators,
+        Expr::DictComp(ExprDictComp { generators, .. })
+        | Expr::Generator(ExprGenerator { generators, .. })
+        | Expr::ListComp(ExprListComp { generators, .. })
+        | Expr::SetComp(ExprSetComp { generators, .. }) => generators,
         Expr::Lambda(lambda) => return Some(vec![lambda.body.range()]),
-        Expr::ListComp(comp) => &comp.generators,
-        Expr::SetComp(comp) => &comp.generators,
         _ => return None,
     };
     let Some(first) = generators.first() else {

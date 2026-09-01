@@ -3,5 +3,7 @@ previewable = true
 title       = "A Tuple Call Argument Explodes and Re-Indents in One Pass"
 
 description = '''
-The one-line `configure` call carries a tuple too wide to keep, so `reflow-collections` explodes it and `reflow-calls` re-indents the pieces under the `coords` keyword. `alphabetize-siblings` sorts `more`, `name`, and `other` while `coords` keeps its source position, because its tuple runs calls like `compute_alpha_coordinate()` and an entry whose value runs code never moves, and `align-equals` pads each `=` into one column. **The tuple elements land one indent step deeper than the keyword rows and the tuple's `)` closes at the keyword column**, the same shape a `list` or `dict` argument takes.
+The `coords` tuple is too wide to keep on one line, so `reflow-collections` explodes it and `reflow-calls` re-indents the pieces beneath the keyword.
+
+`alphabetize-siblings` sorts `more`, `name`, and `other`, but `coords` **keeps its source position**, because its tuple calls functions like `compute_alpha_coordinate()` and an entry whose value runs code is never moved. `align-equals` pads each `=` into one column, and the tuple elements land one indent step deeper than the keyword rows with the tuple's `)` closing back at the keyword column, exactly as a `list` or `dict` argument would.
 '''

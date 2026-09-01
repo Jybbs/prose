@@ -1,7 +1,9 @@
 [docs]
 previewable = false
-title       = "A Loop-Body Annotation Resolves, So the Import Is Removed"
+title       = "A Loop-Body Annotation Runs at Module Scope and Holds the Directive"
 
 description = '''
-The annotated assignment `y: Item` sits inside a `for` loop body, and a nested annotation still counts when the file is checked for annotations to resolve. `Item` resolves to the class defined above the loop, so **the annotation would survive eager evaluation and the `from __future__ import annotations` directive is removed**.
+Nothing here changes. The annotated assignment `y: Item` sits inside a `for` loop body, and a nested annotation still counts when the file is checked.
+
+`Item` resolves to the class written above the loop, so eager evaluation would succeed and the directive looks unnecessary. It is kept anyway, because **a `for` loop body runs at module scope** and its annotation reaches `__annotations__` only while the directive stands.
 '''

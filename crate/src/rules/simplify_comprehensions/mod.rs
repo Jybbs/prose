@@ -24,6 +24,7 @@ mod render;
 
 use self::{constructor::Constructor, plan::plan_for, render::edits_for};
 
+#[derive(Debug)]
 pub(crate) struct SimplifyComprehensions;
 
 impl SimplifyComprehensions {

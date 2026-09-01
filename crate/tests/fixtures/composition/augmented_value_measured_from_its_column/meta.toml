@@ -4,5 +4,5 @@ previewable = true
 title       = "An Augmented Assignment's Value Measures From Its Own Column"
 
 description = '''
-The `border +=` row sits in a run with `padx +=`, and [[reflow-calls]] reads the value's column from the row's own indent rather than one column short, so the nested `widget.cget` call explodes in the same pass.
+The `border +=` row sits in a run with `padx +=`, and [[reflow-calls]] reads the value's column from the row's own indent rather than one column short, so the nested `widget.cget` call explodes.
 '''

@@ -4,5 +4,5 @@ previewable = true
 title       = "A Dict Value Fits Against the Canonical Separator"
 
 description = '''
-[[reflow-collections]] measures a dict value from the canonical `": "` past its key rather than from the padding the key carries, the column [[align-colons]] pads only where the cap allows and [[strip-stranded-padding]] otherwise collapses. The value the sort leaves last rejoins onto the cap in the same pass, whatever padding the source wrote.
+[[reflow-collections]] measures a dict value from the canonical `": "` past its key rather than from the padding the key carries, the column [[align-colons]] pads only where the cap allows and [[strip-stranded-padding]] otherwise collapses. The value the sort leaves last rejoins onto the cap, whatever padding the source wrote.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Already-Aligned Commented Dict Emits Zero Edits"
 
 description = '''
-Every entry of `config` carries a trailing `#` comment, and the `:` column already sits at the width set by `"timeout"`, the widest key. **A commented dict that is already aligned is idempotent under the rule**, so the output matches the input byte-for-byte.
+Every entry of `config` carries a trailing `#` comment, and the `:` column already sits at the width set by `"timeout"`, the widest key. **A commented dict that is already aligned needs no edit**, so the output matches the input.
 '''

@@ -3,5 +3,7 @@ previewable = true
 title       = "A Row That Fills the Budget Splits on Its Closing Comma"
 
 description = '''
-The three items land one per line even though the two atomics would fill a row exactly, because a one-per-line segment follows the flow segment and closes its last row with a comma the packer charges, taking that row one column past the budget.
+`queued_record_ids` and `pending_batch_key` would share a row at exactly the 40-column budget, so at a glance they look like they should pack together.
+
+They do not, because `resolve(key)` is a call and lands on a line of its own, which means the row above it has to close with a comma. **That comma counts toward the budget** and takes the row to 41 columns, so all three items end up one per line.
 '''

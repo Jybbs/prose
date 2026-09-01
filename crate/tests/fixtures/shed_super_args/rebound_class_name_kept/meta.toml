@@ -3,5 +3,7 @@ previewable = false
 title       = "A Local Name Shadowing the Class Keeps the Call Written"
 
 description = '''
-`Child.total(self, Child)` names its own second parameter `Child`, shadowing the class name in the method's own scope. `super(Child, self)` stays written, because that first argument reads the parameter's binding rather than the enclosing class.
+Nothing here moves. `Child.total` names its own second parameter `Child`, which shadows the class name inside the method's scope.
+
+`super(Child, self)` therefore **reads the parameter's binding rather than the enclosing class**, so shedding the arguments would change what the call resolves to. The explicit form stays written.
 '''

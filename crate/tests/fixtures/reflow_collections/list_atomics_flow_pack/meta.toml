@@ -3,5 +3,5 @@ previewable = true
 title       = "Lists Follow the Same Expansion Threshold as Dicts"
 
 description = '''
-`short_list` fits the 88-character budget and stays inline, whereas `long_list` overflows and expands. **Inside the expanded form, atomic items flow across as few balanced lines as fit** under `code-line-length` and the `max-atomics` cap, so the seven city strings land on one packed row. `held_list`, written one item per line, holds its break and flow-packs to `2, 3, 5, 7, 11` the same way rather than joining back inline.
+`short_list` fits the 88-character budget and stays inline, whereas `long_list` overflows and expands. **Inside the expanded form, atomic items flow across as few balanced lines as fit** under `code-line-length` and the `max-atomics` cap, so the seven city strings land on one packed row. `held_list`, written one item per line, holds its break and packs onto one interior row as `2, 3, 5, 7, 11` the same way rather than joining back inline.
 '''

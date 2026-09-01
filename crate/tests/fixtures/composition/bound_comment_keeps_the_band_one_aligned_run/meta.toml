@@ -3,5 +3,7 @@ previewable = true
 title       = "A Bound Comment Keeps the Band One Aligned Run"
 
 description = '''
-`band-constants` binds the convergence-floor comment to `DEFAULT_EPSILON` above it and carries it onto that constant's line as the band packs. `align-equals` then settles `DEFAULT_EPSILON`, `MAX_INT`, and `PENALTY_TYPES` onto **one shared `=` column**, so the documented constant stays in the run rather than dropping out of it at a comment line.
+The comment describes `DEFAULT_EPSILON` above it, so `band-constants` folds it onto that constant's line as a trailing note while packing the group.
+
+`align-equals` then settles all three constants onto **one shared `=` column**. Had the comment stayed on a line of its own it would have split the run in two, and the documented constant would have dropped out of the alignment.
 '''

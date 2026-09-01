@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/pragma_pinned_constant_holds_its_gap/input.py
+---
+ALPHA = 2
+ZETA = 1
+
+# noqa
+LIMIT = 3

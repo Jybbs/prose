@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/anchored_binding_keeps_the_directive/input.py
+---
+prune-inert-imports@36..46

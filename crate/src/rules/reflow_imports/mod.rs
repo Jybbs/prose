@@ -24,6 +24,7 @@ use crate::{
     config::Config,
     primitives::{
         aligner,
+        comments::noqa_marker,
         edit::{apply_inline_edits, narrowed_replacement, whole_line_deletion},
         imports::IMPORT_KEYWORD_WIDTH,
         inline::display_width,
@@ -49,6 +50,7 @@ const MEMBER_SEPARATOR: &str = ", ";
 /// beside the gap it holds ahead of `import`.
 pub(super) type Packing = Vec<(Range<usize>, usize)>;
 
+#[derive(Debug)]
 pub(crate) struct ReflowImports {
     align_settings: Option<aligner::Settings>,
     bands: Option<BandConstants>,
@@ -180,9 +182,11 @@ impl<'a> Layout<'a> {
     }
 
     /// The edit rewriting `node` to carry `names` on `rows`, the head
-    /// repeated on each row ahead of its gap and `import`. `None` when
-    /// the statement does not open its own line or already reads that
-    /// way.
+    /// repeated on each row ahead of its gap and `import`. A `noqa`
+    /// marker closing the statement repeats on every row but the last,
+    /// which keeps the one already trailing it in the source. `None`
+    /// when the statement does not open its own line or already reads
+    /// that way.
     fn packed_edit(
         &self,
         node: &StmtImportFrom,
@@ -190,7 +194,7 @@ impl<'a> Layout<'a> {
         rows: &[(Range<usize>, Cow<'a, str>)],
     ) -> Option<Edit> {
         let head = import_head(node);
-        let rows: Vec<String> = rows
+        let mut rows: Vec<String> = rows
             .iter()
             .map(|(range, gap)| {
                 format!(
@@ -199,6 +203,14 @@ impl<'a> Layout<'a> {
                 )
             })
             .collect();
+        if let Some(marker) = noqa_marker(self.source, node.end())
+            && let Some((_, opening)) = rows.split_last_mut()
+        {
+            let carried = self.source.slice(TextRange::new(node.end(), marker.end()));
+            for row in opening {
+                row.push_str(carried);
+            }
+        }
         self.joined_rows_edit(node, &rows)
     }
 

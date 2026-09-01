@@ -3,5 +3,7 @@ previewable = false
 title       = "An Import Run Sorts When Constant-Banding Consolidates It"
 
 description = '''
-`y = 1` splits the two imports, and banding moves it below them, joining the pair into one run. **That consolidated run sorts in the same pass**, `from a import x` landing above `from b import x` immediately rather than one pass behind the move that joined them.
+`y = 1` sits between the two imports and splits them into two separate runs.
+
+Moving that constant below the imports brings the pair together as one run, and **a run that has just been joined is then sorted**, so `from a import x` lands above `from b import x`.
 '''

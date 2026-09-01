@@ -3,7 +3,10 @@
 //! write and read it meets, and resolving each deferred read against the
 //! completed scope chain.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::OnceLock,
+};
 
 use itertools::Itertools;
 use ruff_python_ast::{
@@ -588,6 +591,7 @@ impl Builder {
             deleted: self.deleted,
             function_scope_at: self.function_scope_at,
             global_writes: self.global_writes,
+            module_reads: OnceLock::new(),
             scopes: self.scopes,
             unpack_targets,
         }
