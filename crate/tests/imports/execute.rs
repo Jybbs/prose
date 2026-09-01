@@ -41,16 +41,35 @@ pub(crate) struct Runner {
 }
 
 impl Runner {
-    /// Builds the runner, copying the corpus into a fresh stage.
+    /// Builds the runner, copying the corpus into a fresh stage and
+    /// compiling it ahead of the runs that read it.
     pub(crate) fn new(corpus: &Path, python: String) -> Self {
-        Self {
+        let runner = Self {
             python,
             seconds: setting(TIMEOUT_VAR).map_or(TIMEOUT, |held| {
                 held.parse()
                     .unwrap_or_else(|_| panic!("`{TIMEOUT_VAR}` is a number of seconds"))
             }),
             stage: Stage::new(corpus),
-        }
+        };
+        runner.precompile(&runner.stage.original);
+        runner
+    }
+
+    /// Compiles every module of `tree` to bytecode ahead of the runs, so a
+    /// run reads a cached `.pyc` rather than compiling the module and its
+    /// whole import chain from source. A module that fails to compile is
+    /// left for its own run to compile.
+    pub(crate) fn precompile(&self, tree: &Path) {
+        let _ = Command::new(&self.python)
+            .arg("-m")
+            .arg("compileall")
+            .arg("-q")
+            .arg("-j0")
+            .arg(tree)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
     }
 
     /// Runs one module of `trees` in a fresh interpreter and returns what it

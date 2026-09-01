@@ -136,6 +136,7 @@ impl Sweep {
         });
         let formatted = self.runner.stage.copy(&format!("formatted-{label}"));
         let run = format_tree(&formatted, &Pipeline::with_defaults(&config));
+        self.runner.precompile(&formatted);
         let modules = setting(MODULE_VAR).map_or_else(
             || {
                 let found = candidates(&run.rewritten);
