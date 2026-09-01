@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Dunder Names like `__all__` Are Recognized as Runtime Sentinels"
+title       = "Dunder Names like `__all__` Read as Runtime Sentinels"
 
 description = '''
-`__version__`, `__all__`, and `__author__` each lead with an underscore, so none of them match the `SCREAMING_CASE` pattern the rule looks for. **The rule leaves them untouched and emits no diagnostic for any of them**, dunder names carrying their own semantics distinct from a reassigned constant.
+`__version__`, `__all__`, and `__author__` each lead with an underscore, so none of them match the `SCREAMING_CASE` pattern the rule tests against. **The rule leaves them untouched and emits no diagnostic for any of them**, dunder names carrying their own semantics distinct from a reassigned constant.
 '''

@@ -3,5 +3,7 @@ previewable = true
 title       = "A Tab-Indented Continuation Holds"
 
 description = '''
-A continuation row sitting on the anchor's column would follow the shed paren one column left, but its indent is written with a tab, whose width is not a column count an indent deletion can express, so the row keeps its indentation as written.
+Shedding the redundant pair moves the opening row one column to the left, and the continuation row would ordinarily follow it.
+
+It does not, because its indent is written with a tab. **A tab carries no fixed column count**, so no single-column deletion expresses moving the row left by one, and it keeps the indentation the source gave it.
 '''

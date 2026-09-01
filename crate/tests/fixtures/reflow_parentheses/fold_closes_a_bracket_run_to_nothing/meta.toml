@@ -3,5 +3,5 @@ previewable = false
 title       = "A Fold Closes a Run Against a Bracket to Nothing"
 
 description = '''
-The interior joins onto one row, and the two soft wraps inside `helper(` sit directly against its brackets rather than between two tokens. Each closes to nothing rather than to a space, so the joined call reads `helper(arg)` and leaves no padding for [[strip-stranded-padding]] to take back on a later pass.
+The interior joins onto one row, and the two soft wraps inside `helper(` sit directly against its brackets rather than between two tokens. Each closes to nothing rather than to a space, so the joined call reads `helper(arg)` and leaves no padding for [[strip-stranded-padding]] to take back.
 '''

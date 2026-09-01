@@ -20,6 +20,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use self::{
     dict::dict_sort_key,
+    enums::Enumerations,
     leaves::{collect_docstring_entry_edits, collect_leaf_edits},
     rewrite::{RewriteCtx, body_layout, import_gap},
 };
@@ -30,10 +31,7 @@ use crate::{
         comments::has_keep_marker,
         effect::value_is_effectful,
         imports::defers_annotations,
-        orderer::{
-            any_sibling_shares_line, assembled_cell_edits, opens_its_line, permute_runs,
-            swap_span_commented,
-        },
+        orderer::{any_sibling_shares_line, opens_its_line, permute_runs, swap_span_commented},
         scope::BodyScope,
         slots::runs_where,
         tokens::{CLOSERS, OPENERS},
@@ -44,11 +42,14 @@ use crate::{
 
 mod class_graph;
 mod dict;
+mod enums;
 mod leaves;
 mod members;
 mod module_graph;
 mod rewrite;
+mod section_runs;
 
+#[derive(Debug)]
 pub(crate) struct AlphabetizeSiblings {
     code_width: usize,
     first_party: Vec<String>,
@@ -94,25 +95,25 @@ impl Rule for AlphabetizeSiblings {
             leaf_edits.extend(collect_docstring_entry_edits(source));
             leaf_edits.sort_unstable();
         }
+        let enumerations = Enumerations::of(body);
         let ctx = RewriteCtx {
             defer_annotations: defers_annotations(body),
+            enumerations: &enumerations,
             first_party: &self.first_party,
             group_imports: self.group_imports,
             group_methods: self.group_methods,
             keyword_fields_from: TextSize::default(),
             leaf_edits: &leaf_edits,
+            orders_members: false,
             sort_definitions: self.sort_definitions,
             source,
         };
         let layout = body_layout(ctx, body, source.module_range(), BodyScope::Module);
-        assembled_cell_edits(
-            source,
-            &layout.blocks,
-            &layout.rendered,
-            &layout.order,
-            !layout.import_run_slots.is_empty(),
-            |i| import_gap(source, &layout.import_run_slots, i),
-        )
+        layout
+            .assembly
+            .cell_edits(source, !layout.import_run_slots.is_empty(), |i| {
+                import_gap(source, &layout.import_run_slots, i)
+            })
     }
 
     fn id(&self) -> RuleId {

@@ -15,8 +15,7 @@ mod blocks;
 mod permute;
 
 pub(crate) use assemble::{
-    assemble_blocks, assemble_or_borrow, assemble_separated, assembled_cell_edits,
-    reorder_separated, reorder_text,
+    Assembly, assemble_blocks, assemble_separated, reorder_separated, reorder_text,
 };
 pub(crate) use blocks::{block_ranges, member_blocks, opens_its_line, rendered_member_blocks};
 pub(crate) use permute::{permute_full, permute_in_place, permute_runs};

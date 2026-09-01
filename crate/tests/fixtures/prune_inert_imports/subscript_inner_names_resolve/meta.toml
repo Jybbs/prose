@@ -3,5 +3,7 @@ previewable = false
 title       = "Subscripted Generic Inner Names Resolve"
 
 description = '''
-`x: Container[Item]` is a subscripted annotation, so `prune-inert-imports` reads both names inside it, `Container` and `Item`, rather than the outer one alone. **Each is defined by a `class` written above the annotation, so evaluating it eagerly would resolve, and the `from __future__ import annotations` directive is removed** as carrying nothing the module needs.
+`x: Container[Item]` is a subscripted annotation, so **both names inside it are read**, `Container` as well as `Item`, rather than the outer one alone.
+
+Each is defined by a `class` written above the annotation, so evaluating it eagerly would resolve. The directive is still kept, because the annotation runs at module scope and reaches `__annotations__` only while it stands.
 '''

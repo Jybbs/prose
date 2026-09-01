@@ -18,7 +18,7 @@ use crate::{
     primitives::{
         aligner,
         edit::apply_edits,
-        tiering::{Evaluated, call_reachable},
+        tiering::{Evaluated, call_reachable, eval_time_refs_of},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -47,6 +47,7 @@ impl Write for FailingWriter {
 
 /// Test-only rule that returns the fix groups supplied at
 /// construction.
+#[derive(Debug)]
 pub(crate) struct GroupSentinelRule {
     pub(crate) groups: Vec<Vec<Edit>>,
     pub(crate) id: RuleId,
@@ -70,6 +71,7 @@ impl Rule for GroupSentinelRule {
 /// replacing that buffer's first byte with `writes`. A `writes` that
 /// keeps the opening matching `reads` edits its own output forever,
 /// and one that breaks the match settles after a single edit.
+#[derive(Debug)]
 pub(crate) struct PrefixRule {
     pub(crate) id: RuleId,
     pub(crate) reads: &'static str,
@@ -153,7 +155,7 @@ pub(crate) fn evaluated<'src>(source: &'src Source, body: &'src [Stmt]) -> Evalu
     Evaluated::of(
         body,
         &call_reachable(source.binding_analysis(), body),
-        false,
+        eval_time_refs_of(body, false),
     )
 }
 

@@ -12,8 +12,6 @@ class Configure:
 
 
 LEVEL = logging.root.level
-
-
 TABLE = dict
 
 

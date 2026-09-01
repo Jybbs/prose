@@ -1,6 +1,6 @@
 [docs]
 previewable = true
-title       = "A Raw Interpolated String Collapses Its Prefix and Weighs Its Quotes"
+title       = "A Raw Interpolated String Collapses Its Prefix and Settles Its Quotes"
 
 description = '''
 `pattern`'s `RF` collapses to lowercase raw-first `rf`, and its delimiters swap to `"` because no bare `"` sits in its literal text. `guarded` holds as written, since a raw string can neither gain nor lose a backslash and the `"q"` it carries would need one after the swap.

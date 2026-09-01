@@ -3,5 +3,7 @@ previewable = false
 title       = "A Cross-Group Import Run Sorts as the Band Consolidates It"
 
 description = '''
-`from . import shared` and `import os` arrive separated by the constant `x = 1`, so the two imports start out split across the module. **Banding gathers both to the top, and they sort into their canonical groups so the bare `import os` lands ahead of the relative `from . import shared`**, with the standard blank line between the groups and `x = 1` following below.
+`from . import shared` and `import os` start out separated by the constant `x = 1`, so the two imports are split across the module.
+
+Moving that constant down gathers both imports to the top, and once they are together they **sort into their standard groups**, so the plain `import os` lands ahead of the relative `from . import shared` with a blank line between the two. `x = 1` follows below.
 '''

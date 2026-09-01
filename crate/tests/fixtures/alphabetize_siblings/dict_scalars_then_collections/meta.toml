@@ -3,5 +3,9 @@ previewable = true
 title       = "Dict Entries Partition by Their Value's AST Kind"
 
 description = '''
-Every dict here **partitions its entries by the value's AST kind**, scalar values like `"author"` and `"version"` sorting ahead of collection values like `"config"` and `"deps"` however many lines each takes. Blank dividers fence the block-shaped entries only once two share a dict, which is why `"settings"` separates its `"logging"` and `"network"` blocks while `mixed` leaves its lone `"config"` block undivided. A `**defaults` spread pins in source position, as does `"metadata"` because its value calls `load_metadata()`, and the partition repeats at every nesting level, `"format"` sorting below `"stderr"` and `"stdout"` inside `"logging"`.
+Every dict here **partitions its entries by the kind of value they hold**, with scalar values sorting ahead of collection values however many lines each one takes. In `mixed` that puts `"author"`, `"name"`, and `"version"` first, with `"config"`, `"deps"`, `"metadata"`, and `"tags"` following.
+
+Two entries pin where they were written. `**defaults` in `with_spread` holds its source position, and so does `"metadata"` in `single_line_only`, because its value calls `load_metadata()` and an entry whose value runs code is never moved.
+
+Blank dividers open around block-shaped entries only once a dict holds two of them, which is why `"settings"` separates its `"logging"` and `"network"` blocks while `mixed` leaves its single `"config"` block undivided. The partition repeats at every nesting level, so `"format"` sorts below `"stderr"` and `"stdout"` inside `"logging"`.
 '''

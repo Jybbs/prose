@@ -3,5 +3,7 @@ previewable = false
 title       = "A Trailing Comment Holds a Roster on Its Row"
 
 description = '''
-The `sys` roster would fit the column `tkinter.font` sets if its widest name were all its last row carried, but that row also keeps the trailing comment, which overruns the cap at any column. [[reflow-imports]] measures the roster by that last row, so **the statement holds the single row it already occupies** and stays out of the column [[align-imports]] seats the rows beneath it in, while the `tkinter` roster packs to that shared column.
+The `sys` roster would fit the column `tkinter.font` sets if its widest name were all its last row had to carry, but that row also holds a trailing comment, which overruns the 40-column budget at any column at all.
+
+`reflow-imports` measures the roster by that last row, so **the statement keeps the single row it already occupies** and stays out of the shared column entirely. The `tkinter` roster carries no comment, so it packs to that column across three rows.
 '''

@@ -26,6 +26,7 @@ use crate::{
     primitives::{
         docstring::{body_docstring, docstring_slots},
         inline::display_width,
+        slots::item_holding,
         walk::walk_stmt,
     },
     rule::{Rule, RuleId},
@@ -35,6 +36,7 @@ use crate::{
 
 mod split;
 
+#[derive(Debug)]
 pub(crate) struct LineOverflow {
     code_line_length: usize,
     import_line_length: usize,
@@ -149,8 +151,7 @@ impl<'a> Spans<'a> {
     /// to the import budget. Import statements never nest, so the last
     /// range opening at or before `line` is the only candidate.
     fn in_import(&self, line: TextRange) -> bool {
-        let after = self.imports.partition_point(|r| r.start() <= line.start());
-        after > 0 && self.imports[after - 1].contains_range(line)
+        item_holding(&self.imports, line.start()).is_some_and(|import| import.contains_range(line))
     }
 
     /// True when a still-collapsible construct meets `line`, which

@@ -3,5 +3,7 @@ previewable = false
 title       = "A Derived Class Stays in the Class Band"
 
 description = '''
-`Widget` names `Gadget` as its base, so it tiers behind `Gadget` inside the class band rather than sinking below `build` and `render`, and the module reads its two classes first with `Gadget` ahead of the `Widget` that reads it.
+`Widget` names `Gadget` as its base, so it has to stay below the class it reads.
+
+That constraint is satisfied **inside the class group** rather than by pushing `Widget` down past the functions. The module reads its two classes first, with `Gadget` ahead of the `Widget` that inherits from it, and `build` and `render` following below.
 '''

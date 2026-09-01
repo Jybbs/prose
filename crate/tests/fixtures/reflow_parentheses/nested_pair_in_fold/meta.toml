@@ -3,5 +3,5 @@ previewable = false
 title       = "A Nested Pair Sheds Inside a Fold"
 
 description = '''
-`ready = (` wraps a multi-line grouping whose first line, `(server.up)`, carries its own redundant parentheses. The inner parentheses shed in the same pass as the outer fold, reflowing the whole condition to `ready = server.up and cache.warm`.
+`ready = (` wraps a multi-line grouping whose first line, `(server.up)`, carries its own redundant parentheses. The inner parentheses shed with the outer fold, reflowing the whole condition to `ready = server.up and cache.warm`.
 '''

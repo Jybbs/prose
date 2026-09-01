@@ -3,5 +3,5 @@ previewable = false
 title       = "Multi-Level Nested Dict Expands and Aligns Per Depth"
 
 description = '''
-`DEPLOY`'s long single-line dict nests through `services`, `api`, `endpoints`, `headers`, `gateway`, `worker`, and `telemetry`, exercising expansion, sorting, scalar-before-collection partitioning, and per-group `:` alignment together. **At every depth the sort, the partition's blank-line divider, and the per-group `:` alignment are all visible**, and a second pass leaves the result unchanged.
+`DEPLOY`'s long single-line dict nests through `services`, `api`, `endpoints`, `headers`, `gateway`, `worker`, and `telemetry`, exercising expansion, sorting, scalar-before-collection partitioning, and per-group `:` alignment together. **At every depth the sort, the partition's blank-line divider, and the per-group `:` alignment are all visible**.
 '''

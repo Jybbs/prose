@@ -3,5 +3,5 @@ previewable = false
 title       = "Already-Aligned Input Emits Zero Edits"
 
 description = '''
-The `CAPITALS` dict, the `User` class body, and the `register` signature with its `Args` docstring section each already hold their `:` column at its target width. **Already-aligned input is idempotent under the rule**, so no gap changes and the output matches the input byte-for-byte.
+The `CAPITALS` dict, the `User` class body, and the `register` signature with its `Args` docstring section each already hold their `:` column at its target width. **Already-aligned input needs no edit**, so no gap changes and the output matches the input.
 '''

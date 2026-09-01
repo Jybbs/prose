@@ -10,7 +10,7 @@ use ruff_python_parser::parse_module;
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
-    primitives::{decorator::is_decorated, scope::sub_bodies},
+    primitives::{decorator::is_decorated, scope::sub_bodies, slots::item_holding},
     source::Source,
 };
 
@@ -63,10 +63,7 @@ pub(crate) fn splice_preserves_tree(source: &Source, range: TextRange, replaceme
 /// The statement of `body` whose own range covers `range`, `None`
 /// where no single statement does.
 fn covering_in_body(body: &[Stmt], range: TextRange) -> Option<&Stmt> {
-    let after = body.partition_point(|stmt| stmt.start() <= range.start());
-    body[..after]
-        .last()
-        .filter(|stmt| range.end() <= stmt.end())
+    item_holding(body, range.start()).filter(|stmt| range.end() <= stmt.end())
 }
 
 /// The innermost statement whose own range covers `range` and whose

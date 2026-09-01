@@ -3,5 +3,5 @@ previewable = true
 title       = "Literal-Only Call Sites Suggest the Parameter Type"
 
 description = '''
-`total`'s only parameter, `count`, carries no annotation, and both call sites, `total(3)` and `total(7)`, bind an `int` literal to it by position. `signature-annotations` matches each call back to `total`'s parameters and offers a display-only `count: int` suggestion, never inserted automatically.
+`total`'s only parameter, `count`, carries no annotation, and both call sites, `total(3)` and `total(7)`, bind an `int` literal to it by position. `signature-annotations` matches each call back to `total`'s parameters and reports a display-only `count: int` suggestion, never inserted automatically.
 '''

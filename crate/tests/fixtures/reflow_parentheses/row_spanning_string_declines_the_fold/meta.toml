@@ -1,7 +1,9 @@
 [docs]
 previewable = false
-title       = "A Row-Spanning String Declines the Fold"
+title       = "A Row-Spanning String Stops the Fold"
 
 description = '''
-The interior is an operator chain, so the shape test admits it, but one operand holds a string spanning two rows and closing the soft wraps would respace that string's own interior. The fold therefore declines on the string rather than on the shape, and because the string's break is not a logical one the pair reads as holding no break of its own, so it sheds and leaves the rows where the author put them.
+The interior is an operator chain, so the shape test passes and the fold looks available.
+
+It stops anyway, because one operand holds a string spanning two rows and closing the soft wraps would **respace that string's own interior**. The fold therefore stops on the string rather than on the shape. That string's break is not a logical one, so the pair reads as holding no break of its own, sheds, and leaves the rows where the author put them.
 '''

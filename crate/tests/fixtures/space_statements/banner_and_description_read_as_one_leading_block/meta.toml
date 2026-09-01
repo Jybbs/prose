@@ -3,5 +3,7 @@ previewable = false
 title       = "A Banner and a Description Read as One Leading Block"
 
 description = '''
-The `# Section: Configuration` banner and the `# describes the sink` line below it sit either side of a blank, and the leading block still runs from the first own-line comment to the last. **The banner and the description classify as one anchoring span**, so a divider blank seats between `# describes the sink` and the `import os` it was written against.
+The `# Section: Configuration` banner and the `# describes the sink` line below it are separated by a blank line, yet the leading block still runs from the first own-line comment through to the last.
+
+**The banner and the description classify together as one anchoring span**, so the divider blank seats between `# describes the sink` and the `import os` it was written against, rather than between the two comments.
 '''

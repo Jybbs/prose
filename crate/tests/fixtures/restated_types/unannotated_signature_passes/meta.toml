@@ -3,5 +3,5 @@ previewable = true
 title       = "An Unannotated Signature Leaves the Docstring Types Alone"
 
 description = '''
-`dial`'s signature carries no annotations at all, though its docstring's `Args:` entries claim `host (str)` and `timeout (float)`. **Both entries stay silent**, because an unannotated parameter leaves the docstring as the only place its type is written, with nothing for the rule to weigh it against.
+`dial`'s signature carries no annotations at all, though its docstring's `Args:` entries claim `host (str)` and `timeout (float)`. **Both entries stay silent**, because an unannotated parameter leaves the docstring as the only place its type is written, with nothing for the rule to check it against.
 '''

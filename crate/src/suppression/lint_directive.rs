@@ -11,7 +11,7 @@ use crate::rule::RuleId;
 /// The rule set one `# prose: ignore` or `# prose: skip[<id>]`
 /// directive records, indexed per line for `ignore` and per skip span
 /// for `skip`.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(super) enum RuleEntry {
     /// Bare `# prose: ignore`. Suppresses every rule on the line.
     All,

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Chain Inside a Broken Chain's Link Breaks Where It Lands"
 
 description = '''
-Breaking the outer chain moves the `relative_to` link to the hang column, and the chain inside its argument trips from there, so it breaks in the same text rather than on a later pass.
+Breaking the outer chain moves the `relative_to` link to the hang column, and the chain inside its argument trips from there, so it breaks in the same text.
 '''

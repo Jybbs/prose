@@ -29,6 +29,16 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
 name = "annotate-snippets"
+version = "0.11.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "710e8eae58854cdc1790fcb56cca04d712a17be849eeb81da2a724bf4bae2bc4"
+dependencies = [
+ "anstyle",
+ "unicode-width",
+]
+
+[[package]]
+name = "annotate-snippets"
 version = "0.12.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f211a51805bc641f3ad5b7664c77d2547af685cc33b4cd8d31964027a46f13f1"
@@ -244,6 +254,12 @@ name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
+
+[[package]]
+name = "bytecount"
+version = "0.6.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "175812e0be2bccb6abe50bb8d566126198344f707e304f45c648fd8f2cc0365e"
 
 [[package]]
 name = "byteorder"
@@ -784,6 +800,7 @@ dependencies = [
  "js-sys",
  "libc",
  "r-efi 6.0.0",
+ "rand_core 0.10.1",
  "wasm-bindgen",
 ]
 
@@ -1051,6 +1068,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 
 [[package]]
+name = "libcst"
+version = "1.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6aea7143e4a0ed59b87a1ee71e198500889f8b005311136be15e84c97a6fcd8d"
+dependencies = [
+ "annotate-snippets 0.11.5",
+ "libcst_derive",
+ "memchr",
+ "paste",
+ "peg",
+ "regex",
+ "thiserror",
+]
+
+[[package]]
+name = "libcst_derive"
+version = "1.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0903173ea316c34a44d0497161e04d9210af44f5f5e89bf2f55d9a254c9a0e8d"
+dependencies = [
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
 name = "libmimalloc-sys"
 version = "0.1.49"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1202,6 +1244,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "papergrid"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0984e668274d34691bc2b262ef0d115de5fa9973bcdee7ae32213f93099153e"
+dependencies = [
+ "bytecount",
+ "fnv",
+ "unicode-width",
+]
+
+[[package]]
 name = "parking_lot"
 version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1225,6 +1278,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "paste"
+version = "1.0.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
+
+[[package]]
 name = "path-slash"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1235,6 +1294,33 @@ name = "pathdiff"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df94ce210e5bc13cb6651479fa48d14f601d9858cfe0467f43ae157023b938d3"
+
+[[package]]
+name = "peg"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0aad070be5b63aa72103f2fcdd70a83adbd5e90112ce5b574171ff1c65501773"
+dependencies = [
+ "peg-macros",
+ "peg-runtime",
+]
+
+[[package]]
+name = "peg-macros"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddd8ef6825cae95355031ae26a99b616a2a21f22ba2de0197c43dfb05acbe7ee"
+dependencies = [
+ "peg-runtime",
+ "proc-macro2",
+ "quote",
+]
+
+[[package]]
+name = "peg-runtime"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7011d97b484a5ebdc4b1fdb3b12d5e4bbbea56e9d22b688f2e79e04b65a7d8a6"
 
 [[package]]
 name = "phf"
@@ -1406,7 +1492,7 @@ dependencies = [
 name = "prose"
 version = "0.8.3"
 dependencies = [
- "annotate-snippets",
+ "annotate-snippets 0.12.16",
  "anstream",
  "anstyle",
  "anstyle-query",
@@ -1455,6 +1541,27 @@ dependencies = [
  "thiserror",
  "toml",
  "unicode-width",
+]
+
+[[package]]
+name = "prose_sweeps"
+version = "0.0.0"
+dependencies = [
+ "bumpalo",
+ "clap",
+ "fs-err",
+ "ignore",
+ "itertools",
+ "libcst",
+ "rand 0.10.2",
+ "rayon",
+ "ruff_python_ast",
+ "ruff_python_parser",
+ "ruff_python_stdlib",
+ "ruff_text_size",
+ "rustc-hash",
+ "serde_json",
+ "tabled",
 ]
 
 [[package]]
@@ -1545,6 +1652,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7f5fa3a058cd35567ef9bfa5e75732bee0f9e4c55fa90477bef2dfcdbc4be80"
 dependencies = [
  "chacha20",
+ "getrandom 0.4.3",
  "rand_core 0.10.1",
 ]
 
@@ -2398,6 +2506,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tabled"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5dc662e6da844ad6e428ad16b57967c9d33c82e16bb1c258326c0c078605dff"
+dependencies = [
+ "papergrid",
+ "testing_table",
+]
+
+[[package]]
 name = "tempfile"
 version = "3.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2415,6 +2533,15 @@ name = "termtree"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f50febec83f5ee1df3015341d8bd429f2d1cc62bcba7ea2076759d315084683"
+
+[[package]]
+name = "testing_table"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f8daae29995a24f65619e19d8d31dea5b389f3d853d8bf297bbf607cd0014cc"
+dependencies = [
+ "unicode-width",
+]
 
 [[package]]
 name = "textwrap"

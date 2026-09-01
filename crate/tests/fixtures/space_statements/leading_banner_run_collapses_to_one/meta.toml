@@ -3,5 +3,7 @@ previewable = false
 title       = "A Banner's Long Run Collapses to One Blank"
 
 description = '''
-Three blank lines separate the `# Section: Configuration` banner from `import os`. **The run below a leading block caps at one blank line**, so the three collapse to the single divider a banner seats.
+Three blank lines separate the `# Section: Configuration` banner from `import os`.
+
+**The run below a leading block caps at one blank line**, so the three collapse down to the single divider a banner seats.
 '''

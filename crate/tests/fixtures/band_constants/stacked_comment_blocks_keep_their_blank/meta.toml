@@ -3,5 +3,7 @@ previewable = false
 title       = "Stacked Comment Blocks Keep the Blank Between Them"
 
 description = '''
-`# per-attempt ceiling, in milliseconds` forward-attaches to `ATTEMPT_MS`, whereas `# the retry envelope the loader reads` stands apart as a heading for the whole band. When the band hoists above `load` and opens a blank between its literal and derived tiers, the blank between the two comment blocks **survives the hoist**, so the heading and the bound note stay distinct however often the file is formatted.
+Two comment blocks stand above the constants and they mean different things. `# per-attempt ceiling, in milliseconds` describes `ATTEMPT_MS` directly, while `# the retry envelope the loader reads` is held apart by a blank line and heads the whole group.
+
+The constants hoist above `load`, and a blank line opens between the plain literals and the two derived from them. The blank line between the two comment blocks **survives that hoist**, which is what keeps the heading and the bound note distinct however many times the file is formatted.
 '''

@@ -16,8 +16,8 @@ use ruff_notebook::CellOffsets;
 use ruff_python_parser::{ParseOptions, parse_cells_unchecked};
 use ruff_text_size::{Ranged, TextRange};
 
-use self::{deltas::Deltas, slide::Slide, tokens::Reparsed};
-use crate::source::Source;
+use self::{deltas::Deltas, slide::Slide, tokens::Reparsed, window::Window};
+use crate::{primitives::slots::item_holding, source::Source};
 
 /// The reparse of each window a rule's edits fell inside.
 pub(crate) struct Splice(Vec<Reparsed>);
@@ -46,22 +46,23 @@ impl Source {
             return None;
         }
         let deltas = Deltas::new(map);
-        let covered: Vec<(TextRange, TextRange)> = window::covering(self, deltas.replaced())?
+        let covered: Vec<Window> = window::covering(self, deltas.replaced())?
             .into_iter()
-            .map(|held| (held, deltas.slide(held)))
+            .map(|held| Window {
+                held,
+                slid: deltas.slide(held),
+            })
             .collect();
         let covers = |written: TextRange| {
-            let after = covered.partition_point(|(_, slid)| slid.start() <= written.start());
-            covered[..after]
-                .last()
-                .is_some_and(|(_, slid)| slid.contains_range(written))
+            item_holding(&covered, written.start())
+                .is_some_and(|window| window.slid.contains_range(written))
         };
         if !deltas.written().all(covers) {
             return None;
         }
         let options = ParseOptions::from(self.source_type);
         let mut windows = Vec::with_capacity(covered.len());
-        for (held, slid) in covered {
+        for Window { held, slid } in covered {
             let parsed = parse_cells_unchecked(text, [slid], &options);
             if !parsed.has_valid_syntax() {
                 return None;

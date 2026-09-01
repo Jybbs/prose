@@ -3,5 +3,5 @@ previewable = false
 title       = "A Comprehension Argument Joins or Holds Its Re-Indent"
 
 description = '''
-The comprehension under `items` fits once collapsed, so `[value for value in source]` joins onto its keyword line whole. The one under `rows` would overflow if joined, so it keeps the keyword-column indent `reflow-calls` gives it with its `for` and `if` lines stacked, and both shapes settle in one forward pass.
+The comprehension under `items` fits once collapsed, so `[value for value in source]` joins onto its keyword line whole. The one under `rows` would overflow if joined, so it keeps the keyword-column indent `reflow-calls` gives it with its `for` and `if` lines stacked, and both shapes settle together.
 '''

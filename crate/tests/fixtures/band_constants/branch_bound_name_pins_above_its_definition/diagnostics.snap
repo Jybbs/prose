@@ -3,4 +3,4 @@ source: crate/tests/integration.rs
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/band_constants/branch_bound_name_pins_above_its_definition/input.py
 ---
-band-constants@85..126
+band-constants@83..126

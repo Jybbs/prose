@@ -4,5 +4,7 @@ previewable = true
 title       = "A Band Heading Survives Its Unread Head"
 
 description = '''
-[[band-constants]] sorts the import band and reseats the comment heading it on whichever import the sort puts first, so [[prune-inert-imports]] gives the unread head's line to the next import of the band in the same pass rather than holding it under a comment the sort would lift off it.
+`from .pgen2 import token` is unread, and it is the line the `# Local imports` comment sits above.
+
+`band-constants` sorts the import band and carries the comment onto whichever import ends up first, so when `prune-inert-imports` drops `token` the surviving `from ..pgen2 import driver` **takes the vacated line** with the heading still above it. The comment is never left stranded over the gap the drop would otherwise leave.
 '''

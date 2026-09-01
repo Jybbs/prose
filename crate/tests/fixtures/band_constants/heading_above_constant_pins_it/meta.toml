@@ -3,5 +3,7 @@ previewable = false
 title       = "A Heading Above a Constant Pins It In Place"
 
 description = '''
-The `### theme colors` comment reads as a section divider rather than an ordinary note, and a constant beneath a divider is pinned to its section. `PALETTE` therefore stays under the heading instead of hoisting across it into the leading band above `build_palette`, leaving the file unchanged.
+Nothing in this file moves. `PALETTE` would ordinarily hoist above `build_palette` to join the constants at the top of the module.
+
+The `### theme colors` line above it reads as a section heading rather than an ordinary note, and a constant sitting beneath a heading belongs to that section. Hoisting `PALETTE` would **carry it out of its own section**, so it stays where it was written.
 '''

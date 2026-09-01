@@ -3,5 +3,7 @@ previewable = true
 title       = "A Wide Module Breaks the `import … as` Run"
 
 description = '''
-Padding `os` and `re` all the way out to `collections_with_a_very_long_module_name` would push their `as` keywords far from the modules they alias, so the wide import **breaks the run** instead, under the same width-spread limit that governs `from`-imports. `datetime`, `os`, and `re` align their `as` within the surviving sub-run, whereas the wide line and the lone `import json as j` below it keep their single spaces.
+Padding `os` and `re` all the way out to `collections_with_a_very_long_module_name` would push their `as` keywords far from the modules they alias.
+
+The wide import therefore **breaks the run**, under the same width-spread limit that governs `from`-imports. `datetime`, `os`, and `re` align their `as` within the surviving sub-run, while the wide line and the lone `import json as j` below it keep their single spaces.
 '''

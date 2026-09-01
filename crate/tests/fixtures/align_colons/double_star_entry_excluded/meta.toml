@@ -3,5 +3,7 @@ previewable = true
 title       = "Unpacking Entries Break the Alignment Run"
 
 description = '''
-The `overrides` dict mixes keyed entries with a `**defaults` unpacking. The unpacking carries no key and no `:` of its own, so it **drops out of the alignment group**, while `"host"`, `"user_agent"`, and `"proxy"` align on one shared column that reaches across the `**defaults` line.
+The `overrides` dict mixes keyed entries with a `**defaults` unpacking.
+
+The unpacking carries no key and no `:` of its own, so it **drops out of the alignment group**. `"host"`, `"user_agent"`, and `"proxy"` still share one column, and that column reaches across the `**defaults` line rather than stopping at it.
 '''

@@ -3,5 +3,7 @@ previewable = false
 title       = "Trailing Comment After the Colon Does Not Pin"
 
 description = '''
-`render`'s trailing `# entry point` comment sits after the `:`, outside the `(...)` parameter list. Because a comment only pins the signature when it falls between `(` and `)`, `reflow-signatures` still expands `render`'s five parameters past `max-params`, and the comment stays put on the `):` line.
+`render`'s trailing `# entry point` comment sits after the `:`, which puts it **outside the `(...)` parameter list**.
+
+A comment pins the signature only when it falls between `(` and `)`, so this one pins nothing. The five parameters still expand past `max-params`, and the comment stays where it was, now trailing the `):` line.
 '''

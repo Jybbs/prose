@@ -3,5 +3,5 @@ previewable = false
 title       = "A Forward Call Explodes Before Its Callee Sorts Above"
 
 description = '''
-`parse` calls `build(r, g, b, a)` before `build` is defined, and `reflow-calls` resolves that callee from the completed module bindings anyway. **The four-argument call explodes to keyword form, each positional matched to its parameter so `r` becomes `red=r`, and the keywords sort alphabetically in the same pass** that `alphabetize-siblings` moves `build` above `parse`, leaving the file settled after one run.
+`parse` calls `build(r, g, b, a)` before `build` is defined, and `reflow-calls` resolves that callee from the completed module bindings anyway. **The four-argument call explodes to keyword form, each positional matched to its parameter so `r` becomes `red=r`, and the keywords sort alphabetically** while `alphabetize-siblings` moves `build` above `parse`.
 '''

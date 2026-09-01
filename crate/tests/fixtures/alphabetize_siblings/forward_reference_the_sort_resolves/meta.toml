@@ -3,5 +3,7 @@ previewable = true
 title       = "A Deferred Forward Reference Lets the Class Band Above Its Reader"
 
 description = '''
-`visit` names `Node` in its annotations above the `class Node` that defines it, which `from __future__ import annotations` defers past definition time. The reference therefore pins nothing and **`Node` bands above `visit`**, leaving every annotation resolved in the order the rule writes.
+`visit` names `Node` in its annotations while the `class Node` defining it sits below, and `from __future__ import annotations` defers those annotations past definition time.
+
+Because the reference never runs when the definitions execute, **it constrains nothing**, and `Node` is free to sort above `visit`. Every annotation still resolves in the order the rule writes.
 '''

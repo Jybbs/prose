@@ -3,5 +3,7 @@ previewable = false
 title       = "A Skip Between Two Bands Holds Each Side"
 
 description = '''
-The `# prose: skip[band-constants]` on `PINNED` closes the region around it, leaving a band on either side. **Each band sorts on its own**, `MIDDLE` rising above `ZEBRA` before the pin and `ALPHA` above `BETA` after it, because the rule edits each band it rewrites rather than the whole body between them.
+`# prose: skip[band-constants]` on the `PINNED` assignment breaks the constants into two separate groups, one above it and one below.
+
+**Each group sorts on its own.** `MIDDLE` rises above `ZEBRA` before the pin and `ALPHA` above `BETA` after it, and nothing crosses the pinned statement, since the rule rewrites each group it touches rather than the whole span between them.
 '''

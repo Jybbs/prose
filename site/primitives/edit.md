@@ -37,7 +37,7 @@ The helpers at `crate/src/primitives/edit/` cover the common shaping needs.
 
 ### `apply_edits(text, edits) -> Option<String>`
 
-Splices a sorted edit list into a source string, the shape a caller reading no offsets takes. Linear in source length regardless of edit count, since the function walks the list once. When the sorted edits overlap, it returns `None` rather than splicing them, so the caller keeps its source unchanged and the overlapping group degrades to a skipped reformat on that span. The [[pipeline]]'s `unsettled` reads it to ask whether a rule would still rewrite a buffer a run has already settled.
+Splices a sorted edit list into a source string, the shape a caller reading no offsets takes. Linear in source length regardless of edit count, since the function walks the list once. When the sorted edits overlap, it returns `None` rather than splicing them, so the caller keeps its source unchanged and the overlapping group degrades to a skipped reformat on that span. The [[pipeline]]'s `settle_report` reads it to ask whether a rule would still rewrite a buffer a run has already settled.
 
 ### `apply_edits_mapped(text, edits) -> Option<(String, SourceMap)>`
 

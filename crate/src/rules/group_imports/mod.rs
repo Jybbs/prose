@@ -24,6 +24,7 @@ use crate::{
     source::Source,
 };
 
+#[derive(Debug)]
 pub(crate) struct GroupImports {
     first_party: Vec<String>,
 }

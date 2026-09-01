@@ -3,5 +3,7 @@ previewable = true
 title       = "A Call Inside an Expanding Literal Waits for the Layout"
 
 description = '''
-A list a keyword carries overflows its row, so `reflow-collections` expands it, and `reflow-calls` leaves the call inside that list alone rather than exploding it against a tail the expansion removes, the call reshaping where its entry lands and staying inline there.
+The list that the `cccc` keyword carries overflows the 40-column budget, so `reflow-collections` expands it.
+
+`reflow-calls` **leaves the `fn(100, 1000)` call inside that list alone**. Exploding it would measure against a tail the expansion is about to remove, so the call instead reshapes around wherever its entry lands and stays on one line there.
 '''

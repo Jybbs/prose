@@ -3,5 +3,7 @@ previewable = true
 title       = "A Flush Assignment Run Aligns and Spaces Its Values"
 
 description = '''
-`x=1`, `yy=2`, and `zzz=3` arrive with no space around any `=`. The rule pads each name out to the column one space past `zzz` and inserts the one-space value-side buffer, so every row reads as `name = value` with the `=` stacked.
+`x=1`, `yy=2`, and `zzz=3` arrive with no space around any `=`.
+
+Each name pads out to the column one space past `zzz`, and a one-space buffer opens on the value side as well, so **every row reads as `name = value`** with the `=` stacked in a single column.
 '''

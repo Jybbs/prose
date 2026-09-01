@@ -53,6 +53,15 @@ impl<'a> ImportNode<'a> {
         matches!(self, Self::From(node) if is_future(node))
     }
 
+    /// The module a `from`-import takes its names out of, `None` for a
+    /// bare import and for the dot-only relative form.
+    pub(super) fn module(&self) -> Option<&'a str> {
+        match self {
+            Self::Bare(_) => None,
+            Self::From(node) => node.module.as_deref(),
+        }
+    }
+
     pub(super) fn names(&self) -> &'a [Alias] {
         match self {
             Self::Bare(node) => &node.names,

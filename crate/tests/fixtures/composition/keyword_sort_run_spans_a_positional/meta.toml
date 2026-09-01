@@ -4,5 +4,7 @@ previewable = true
 title       = "A Keyword Sort Run Spans a Positional Argument"
 
 description = '''
-The forecast that [[reflow-calls]] reads groups the keywords into the same runs [[alphabetize-siblings]] sorts within, bounded by a `**` unpacking rather than by a positional argument, which pins in place inside a run instead, so the keyword the sort would move first is charged the comma it would gain and its value explodes in the same pass. The sort then holds the group, since a value spanning rows never swaps slices in place, and the positional row stays where it was written.
+Keywords sort within runs bounded by a `**` unpacking, and a positional argument like `*args` opens no such boundary, so it **stays pinned inside a run** rather than splitting it in two.
+
+`reflow-calls` measures the keyword the sort would move first with the comma it would gain, and that takes it past the 40-column budget, so its `lambda` value explodes. Once a value spans several rows the sort will not swap it in place, so the group holds and `*args` stays exactly where it was written.
 '''

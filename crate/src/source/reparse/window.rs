@@ -1,12 +1,27 @@
 //! The statement windows a rule's edits fall inside.
 
 use ruff_python_trivia::leading_indentation;
-use ruff_text_size::TextRange;
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     primitives::{range::merged_spans, splice::covering_window},
     source::Source,
 };
+
+/// A window's span in the buffer the source holds and the span the
+/// woven text holds it at.
+pub(super) struct Window {
+    pub(super) held: TextRange,
+    pub(super) slid: TextRange,
+}
+
+/// Ranges a window by where the woven text holds it, the buffer a
+/// search over the written spans reads.
+impl Ranged for Window {
+    fn range(&self) -> TextRange {
+        self.slid
+    }
+}
 
 /// The leading whitespace of the last physical line `range` covers in
 /// `text`, the indent the `Dedent` run past the window counts down from.

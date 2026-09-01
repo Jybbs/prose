@@ -3,5 +3,5 @@ previewable = false
 title       = "Already-Formatted Source With Every Directive Is Idempotent"
 
 description = '''
-Every directive appears in already-formatted source, wherein `bar_baz`, `foo`, and `x` are padded to a shared `=` column, a `# fmt: off` block holds unaligned assignments, and `skipped = 4` carries a `# fmt: skip`. A fresh pass produces **no further edits**, because the suppressed spans stay as written and the aligned runs already sit at their group widths.
+Every directive appears in already-formatted source, wherein `bar_baz`, `foo`, and `x` are padded to a shared `=` column, a `# fmt: off` block holds unaligned assignments, and `skipped = 4` carries a `# fmt: skip`. The file produces **no edits**, because the suppressed spans stay as written and the aligned runs already sit at their group widths.
 '''

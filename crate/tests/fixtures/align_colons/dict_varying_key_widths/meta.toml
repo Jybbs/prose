@@ -4,5 +4,7 @@ previewable = true
 title       = "Varying Dict Keys Align on the Widest Column"
 
 description = '''
-The keys of `capitals` vary in width, from `"USA"` up to `"France"`. Every `:` aligns on the column set by the widest key, so the literal reads as two clean columns, keys on the left and values on the right.
+The keys of `capitals` vary in width, from `"USA"` up to `"France"`.
+
+Every `:` aligns on the column the widest key sets, so the literal **reads as two clean columns**, keys on the left and values on the right.
 '''

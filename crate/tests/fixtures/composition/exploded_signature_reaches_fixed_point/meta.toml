@@ -3,5 +3,5 @@ previewable = true
 title       = "An Exploded Signature Settles at Its Fixed Point"
 
 description = '''
-`compose` arrives already exploded, one parameter per line, with a trailing `,` after `verbose: bool`. **`strip-trailing-commas` removes that comma, and the stripped signature is a shape both rules leave alone**, in that `reflow-signatures` already emits this exploded form, so a second pass produces byte-identical output.
+`compose` arrives already exploded, one parameter per line, with a trailing `,` after `verbose: bool`. **`strip-trailing-commas` removes that comma, and the stripped signature is a shape both rules leave alone**, in that `reflow-signatures` already emits this exploded form.
 '''

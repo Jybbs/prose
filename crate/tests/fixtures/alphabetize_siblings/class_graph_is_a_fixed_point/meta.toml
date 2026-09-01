@@ -3,5 +3,5 @@ previewable = false
 title       = "A Tiered Class Graph Is a Fixed Point"
 
 description = '''
-`height` and `width` already sit in name order, and `HALF` already trails the `width` its value reads, so the dependency-aware sort finds nothing to move. A body that settled on one pass **stays settled** on the next, the idempotence the pipeline guarantees, and the output equals the input byte-for-byte.
+`height` and `width` already sit in name order, and `HALF` already trails the `width` its value reads, so the dependency-aware sort **finds nothing to move** and the output equals the input.
 '''

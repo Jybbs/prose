@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/band_constants/late_import_holds_under_its_marker/input.py
+---
+band-constants@7..33

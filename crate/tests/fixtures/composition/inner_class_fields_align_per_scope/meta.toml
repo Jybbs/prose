@@ -3,5 +3,7 @@ previewable = false
 title       = "Nested Class Fields Sort and Align Per Scope"
 
 description = '''
-`Order` and its nested `LineItem` each declare three annotated fields out of order. **Sorting and alignment run independently within each scope**, so `customer_id`, `placed_on`, and `total` sort and share `:` and `=` columns inside `Order`, while `price`, `quantity`, and `sku` sort against separate columns of their own inside `LineItem`.
+`Order` and its nested `LineItem` each declare three annotated fields out of order.
+
+**Sorting and alignment run independently inside each class.** `customer_id`, `placed_on`, and `total` sort and share one pair of `:` and `=` columns inside `Order`, while `price`, `quantity`, and `sku` sort against a separate pair of columns of their own inside `LineItem`.
 '''

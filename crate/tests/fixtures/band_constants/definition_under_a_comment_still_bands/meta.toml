@@ -3,5 +3,5 @@ previewable = true
 title       = "A Comment Between Members Does Not Hold the Band Back"
 
 description = '''
-The free-standing comment `# the reference implementation both transforms share` sits between `_Norm` and `fft`, and `__all__` still hoists from the bottom of the module into the leading band beside `_Norm`. The comment forward-attaches to the definition it heads and travels down with `fft`, so **whatever sits between two members leaves the hoist intact**.
+The free-standing comment `# the reference implementation both transforms share` sits between `_Norm` and `fft`, and `__all__` still hoists from the bottom of the module into the leading band beside `_Norm`. The comment binds forward to the definition it heads and travels down with `fft`, so **whatever sits between two members leaves the hoist intact**.
 '''

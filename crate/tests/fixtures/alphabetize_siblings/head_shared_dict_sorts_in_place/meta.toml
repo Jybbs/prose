@@ -3,5 +3,7 @@ previewable = false
 title       = "A Head-Shared Dict Sorts in Place"
 
 description = '''
-The dict's first entry, `'name': opt_name`, shares its row with the `{`, so no whole row can move without dragging `options.append({` along. The sort instead swaps the entry texts in place, `'default': def_str` moving into the first slot while every separator, every indent, and the closing `})` on its own line stay exactly where the source put them.
+The dict's first entry, `'name': opt_name`, shares its row with the opening `{`, so no whole row can move without dragging `options.append({` along with it.
+
+The sort therefore **swaps the entry texts in place** rather than moving rows. `'default': def_str` takes the first slot, while every separator, every indent, and the closing `})` on its own line stay exactly where the source put them.
 '''

@@ -29,6 +29,7 @@ mod wrapping;
 use paragraph::Paragraph;
 use wrapping::spliced_continuations;
 
+#[derive(Debug)]
 pub(crate) struct WrapDocstrings {
     pub(super) description_width: usize,
     pub(super) section_width: usize,

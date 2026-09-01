@@ -14,7 +14,7 @@ use super::{Layout, MEMBER_SEPARATOR, Packing, own_line_indent, runs::MergeRuns}
 use crate::{
     primitives::{
         aligner,
-        comments::TRAILING_GAP,
+        comments::trailing_width,
         imports::{
             IMPORT_KEYWORD_WIDTH, import_blank_lines, import_group, import_sort_key, is_import,
         },
@@ -53,9 +53,8 @@ impl Carried {
             carried.unheaded.insert(carry.absorbs);
             let carrier = seat_of(carry.carrier);
             if carry.trails {
-                let width = display_width(TRAILING_GAP)
-                    + display_width(source.slice(carry.comment).trim_start());
-                *carried.trailed.entry(carrier).or_default() += width;
+                *carried.trailed.entry(carrier).or_default() +=
+                    trailing_width(source, carry.comment);
             } else {
                 carried.headed.insert(carrier);
             }

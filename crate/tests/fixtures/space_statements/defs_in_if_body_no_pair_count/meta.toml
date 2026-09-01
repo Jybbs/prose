@@ -3,5 +3,7 @@ previewable = false
 title       = "Defs inside an If Body Don't Pair-Count"
 
 description = '''
-`alpha` and `beta` sit directly against each other inside the `if FEATURE_X:` body, and **no blank lines are inserted between them**. The walker descends into the if body to find nested classes and functions, yet it applies no canonical count at the if-body indentation, so the source passes through unchanged.
+`alpha` and `beta` sit directly against each other inside the `if FEATURE_X:` body, and **no blank lines are inserted between them**.
+
+The walk does descend into the `if` body to find nested classes and functions, but it applies no canonical blank-line count at that indentation, so the source passes through unchanged.
 '''

@@ -38,4 +38,7 @@ The install path needs Python **{{ $frontmatter.requiresPython }} or newer**, wh
 
 ## Next Steps
 
-The [**Quick Start**](/usage/quick-start) chapter walks through the first `prose format` and `prose check` invocations. The [**Ruff**](/integrations/ruff) integration page covers the `ruff format && prose format` recipe for projects that pair the two. The [**Configuration**](/reference/configuration) reference enumerates every per-rule facet. For shell completions, see [**Shell Completions**](/integrations/shell-completions) under Integrations.
+- The [**Quick Start**](/usage/quick-start) chapter walks through the first `prose format` and `prose check` invocations.
+- The [**Ruff**](/integrations/ruff) integration page covers the `ruff format && prose format` recipe for projects that pair the two.
+- The [**Configuration**](/reference/configuration) reference enumerates every per-rule facet.
+- For shell completions, see [**Shell Completions**](/integrations/shell-completions) under Integrations.
