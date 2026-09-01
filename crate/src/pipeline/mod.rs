@@ -168,6 +168,31 @@ impl Pipeline {
         batch.close(source, gate, replays)
     }
 
+    /// The settle walk both [`settle_report`](Self::settle_report) and
+    /// [`unsettled`](Self::unsettled) read, weaving the first editing
+    /// rule's text as the witness only when `witness` asks for it.
+    fn settle_walk(&self, source: &Source, witness: bool) -> SettleReport {
+        let mut report = SettleReport::default();
+        if source.suppression_map().file_is_suppressed() {
+            return report;
+        }
+        for rule in &self.rules {
+            let Some(spliceable) = Spliceable::of(&**rule, source) else {
+                continue;
+            };
+            let rule_id = rule.id();
+            if !spliceable.lands() || !spliceable.rewrites(source) {
+                report.unlanded.push(rule_id);
+                continue;
+            }
+            report.editing.push(rule_id);
+            if witness && report.witness.is_none() {
+                report.witness = Some((rule_id, spliceable.woven(source)));
+            }
+        }
+        report
+    }
+
     #[cfg(test)]
     fn is_empty(&self) -> bool {
         self.rules.is_empty()
@@ -326,25 +351,7 @@ impl Pipeline {
     /// this pipeline carries, so a `--select` run answers for that
     /// subset alone, and a file-level `# prose: off` answers empty.
     pub fn settle_report(&self, source: &Source) -> SettleReport {
-        let mut report = SettleReport::default();
-        if source.suppression_map().file_is_suppressed() {
-            return report;
-        }
-        for rule in &self.rules {
-            let Some(spliceable) = Spliceable::of(&**rule, source) else {
-                continue;
-            };
-            let rule_id = rule.id();
-            if !spliceable.lands() || !spliceable.rewrites(source) {
-                report.unlanded.push(rule_id);
-                continue;
-            }
-            report.editing.push(rule_id);
-            if report.witness.is_none() {
-                report.witness = Some((rule_id, spliceable.woven(source)));
-            }
-        }
-        report
+        self.settle_walk(source, true)
     }
 
     /// One pipeline per rule this pipeline carries, in order, each
@@ -369,7 +376,7 @@ impl Pipeline {
     /// not splice, or splice back to the same text, is left out, and
     /// [`settle_report`](Self::settle_report) names those separately.
     pub fn unsettled(&self, source: &Source) -> Vec<RuleId> {
-        self.settle_report(source).editing
+        self.settle_walk(source, false).editing
     }
 }
 

@@ -2,7 +2,7 @@
 //! once, read off the subset probe's evidence and what each rule's
 //! `apply` measures.
 
-use super::{PIPELINE_DEPENDENCIES, precedes, slug_bytes_equal, slug_index};
+use super::{KNOWN_IDS, PIPELINE_DEPENDENCIES, precedes, slug_bytes_equal, slug_index};
 
 /// The earlier rules each rule shares a splice and a parse with, keyed
 /// by the later rule's slug. A pair is listed only where the subset
@@ -168,7 +168,6 @@ const INDEPENDENCE: &[(&str, &[&str])] = &[
     (
         "reflow-imports",
         &[
-            "normalize-literals",
             "strip-none-return",
             "strip-trailing-commas",
             "normalize-comparisons",
@@ -194,26 +193,11 @@ const INDEPENDENCE: &[(&str, &[&str])] = &[
             "reflow-signatures",
         ],
     ),
-    (
-        "alphabetize-siblings",
-        &["strip-none-return", "shed-redundant-base"],
-    ),
+    ("alphabetize-siblings", &["shed-redundant-base"]),
     (
         "space-statements",
         &[
-            "normalize-literals",
-            "strip-none-return",
-            "strip-trailing-commas",
-            "normalize-comparisons",
             "shed-redundant-base",
-            "simplify-comprehensions",
-            "frame-docstrings",
-            "expand-docstrings",
-            "shed-super-args",
-            "stack-method-chains",
-            "reflow-calls",
-            "reflow-signatures",
-            "reflow-collections",
             "stack-adjacent-strings",
             "align-match-case",
         ],
@@ -221,58 +205,20 @@ const INDEPENDENCE: &[(&str, &[&str])] = &[
     (
         "align-imports",
         &[
-            "normalize-literals",
-            "strip-none-return",
-            "strip-trailing-commas",
-            "normalize-comparisons",
-            "reflow-parentheses",
             "shed-redundant-base",
-            "simplify-comprehensions",
-            "frame-docstrings",
-            "expand-docstrings",
-            "shed-super-args",
-            "stack-method-chains",
-            "reflow-calls",
-            "reflow-signatures",
-            "reflow-collections",
             "stack-adjacent-strings",
             "align-match-case",
         ],
     ),
     (
         "align-colons",
-        &[
-            "strip-none-return",
-            "normalize-comparisons",
-            "shed-redundant-base",
-            "shed-super-args",
-            "stack-method-chains",
-            "space-statements",
-            "align-imports",
-        ],
+        &["shed-redundant-base", "space-statements", "align-imports"],
     ),
     (
         "wrap-docstrings",
         &[
-            "shed-backslash-continuations",
-            "prune-inert-imports",
-            "strip-none-return",
-            "strip-trailing-commas",
-            "normalize-comparisons",
-            "reflow-parentheses",
             "shed-redundant-base",
-            "simplify-comprehensions",
-            "group-imports",
-            "shed-super-args",
-            "stack-method-chains",
-            "reflow-calls",
-            "reflow-signatures",
-            "reflow-collections",
-            "stack-adjacent-strings",
             "align-match-case",
-            "reflow-imports",
-            "band-constants",
-            "alphabetize-siblings",
             "space-statements",
             "align-imports",
         ],
@@ -280,11 +226,7 @@ const INDEPENDENCE: &[(&str, &[&str])] = &[
     (
         "align-equals",
         &[
-            "strip-none-return",
-            "normalize-comparisons",
             "shed-redundant-base",
-            "frame-docstrings",
-            "expand-docstrings",
             "space-statements",
             "align-imports",
             "wrap-docstrings",
@@ -294,12 +236,10 @@ const INDEPENDENCE: &[(&str, &[&str])] = &[
         "align-comparisons",
         &[
             "prune-inert-imports",
-            "strip-none-return",
             "shed-redundant-base",
             "frame-docstrings",
             "expand-docstrings",
             "group-imports",
-            "reflow-signatures",
             "reflow-imports",
             "band-constants",
             "alphabetize-siblings",
@@ -310,18 +250,7 @@ const INDEPENDENCE: &[(&str, &[&str])] = &[
     ),
     (
         "strip-stranded-padding",
-        &[
-            "prune-inert-imports",
-            "strip-none-return",
-            "shed-redundant-base",
-            "frame-docstrings",
-            "expand-docstrings",
-            "group-imports",
-            "reflow-imports",
-            "band-constants",
-            "space-statements",
-            "wrap-docstrings",
-        ],
+        &["shed-redundant-base", "wrap-docstrings"],
     ),
     (
         "normalize-comment-spacing",
@@ -359,7 +288,9 @@ const INDEPENDENCE: &[(&str, &[&str])] = &[
 ];
 
 // Asserts each independence entry names a registered later rule, each
-// earlier rule seated ahead of it, and none its dependency column names.
+// earlier rule seated ahead of it, and none the later rule reaches
+// through its dependency column, directly or through the column of a
+// rule that column names.
 const _: () = {
     let mut i = 0;
     while i < INDEPENDENCE.len() {
@@ -374,8 +305,8 @@ const _: () = {
                 "an independent rule must be registered ahead of the rule sharing its splice",
             );
             assert!(
-                !names_slug(PIPELINE_DEPENDENCIES[seat], earlier[j]),
-                "a rule cannot share a splice with a rule its dependency column names",
+                !reaches(seat, earlier[j]),
+                "a rule cannot share a splice with a rule it runs behind",
             );
             j += 1;
         }
@@ -392,14 +323,32 @@ pub fn independent(later: &str, earlier: &str) -> bool {
         .is_some_and(|(_, shared)| shared.contains(&earlier))
 }
 
-/// Returns `true` when `slugs` holds `slug`.
-const fn names_slug(slugs: &[&str], slug: &str) -> bool {
-    let mut i = 0;
-    while i < slugs.len() {
-        if slug_bytes_equal(slugs[i].as_bytes(), slug.as_bytes()) {
-            return true;
+/// Whether the rule at `seat` reaches `slug` through its dependency
+/// column, directly or through the column of a rule that column names.
+/// The const counterpart of [`runs_behind`](super::runs_behind).
+const fn reaches(seat: usize, slug: &str) -> bool {
+    let mut seen = [false; KNOWN_IDS.len()];
+    let mut pending = [0usize; KNOWN_IDS.len()];
+    let mut depth = 1;
+    pending[0] = seat;
+    seen[seat] = true;
+    while depth > 0 {
+        depth -= 1;
+        let column = PIPELINE_DEPENDENCIES[pending[depth]];
+        let mut i = 0;
+        while i < column.len() {
+            if slug_bytes_equal(column[i].as_bytes(), slug.as_bytes()) {
+                return true;
+            }
+            if let Some(next) = slug_index(column[i])
+                && !seen[next]
+            {
+                seen[next] = true;
+                pending[depth] = next;
+                depth += 1;
+            }
+            i += 1;
         }
-        i += 1;
     }
     false
 }
@@ -421,17 +370,5 @@ mod tests {
         #[case] expected: bool,
     ) {
         assert_eq!(independent(later, earlier), expected);
-    }
-
-    #[rstest]
-    #[case(&["align-colons", "align-equals"], "align-equals", true)]
-    #[case(&["align-colons", "align-equals"], "align-imports", false)]
-    #[case(&[], "align-equals", false)]
-    fn names_slug_matches_only_a_listed_slug(
-        #[case] slugs: &[&str],
-        #[case] slug: &str,
-        #[case] expected: bool,
-    ) {
-        assert_eq!(names_slug(slugs, slug), expected);
     }
 }

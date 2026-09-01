@@ -81,7 +81,24 @@ fn format_span_segments_compose_to_the_full_fold() {
     // on, and the two agree only where the registry's independence
     // declarations hold.
     let pipeline = Pipeline::with_defaults(&Config::default());
-    let text = "import sys\nimport os\n\n\n\n\ny  =  2\n";
+    let text = concat!(
+        "import os, sys\n",
+        "from typing import List, Optional\n",
+        "\n\n\n\n",
+        "def f(xs: List[int], y: Optional[str] = None) -> Optional[int]:\n",
+        "    'doc'\n",
+        "    d = {\"a\": 1, \"b\": 2,}\n",
+        "    msg = \"hello %s\" % y\n",
+        "    s = \"one\" \"two\"\n",
+        "    if y == None:\n",
+        "        return None\n",
+        "    match xs:\n",
+        "        case [1]:\n",
+        "            return 1\n",
+        "        case _:\n",
+        "            return 0\n",
+        "y  =  2\n",
+    );
     let full = pipeline.format(parse(text)).unwrap();
 
     for seam in 0..=pipeline.len() {

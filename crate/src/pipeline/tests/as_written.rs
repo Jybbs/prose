@@ -11,10 +11,7 @@ fn run_as_written_leaves_the_unedited_prefix_to_the_diagnose_pass() {
     let seen = Arc::new(Mutex::new(Vec::new()));
     let pipeline = Pipeline::from_rules(vec![
         capturing(&seen, "reads-only", Vec::new()),
-        Box::new(GroupSentinelRule {
-            groups: vec![vec![replacement("y", 0, 1)]],
-            id: RuleId::from("rewrite-x-to-y"),
-        }),
+        sentinel("rewrite-x-to-y", vec![replacement("y", 0, 1)]),
     ]);
 
     let (formatted, _) = pipeline
@@ -27,10 +24,10 @@ fn run_as_written_leaves_the_unedited_prefix_to_the_diagnose_pass() {
 
 #[test]
 fn run_as_written_passes_a_clean_rewrite() {
-    let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-        groups: vec![vec![replacement("y", 0, 1)]],
-        id: RuleId::from("rewrite-x-to-y"),
-    })]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-x-to-y",
+        vec![replacement("y", 0, 1)],
+    )]);
     let source = parse("x = 1\n");
 
     assert!(pipeline.run_as_written(source).is_ok());
@@ -60,10 +57,7 @@ fn run_as_written_resolves_a_lint_range_against_the_original_buffer() {
     // `widen-x` moves the `1` one byte right, so the lint range the
     // rewritten buffer carries is 5..6 and the as-written one 4..5.
     let pipeline = Pipeline::from_rules(vec![
-        Box::new(GroupSentinelRule {
-            groups: vec![vec![replacement("yy", 0, 1)]],
-            id: RuleId::from("widen-x"),
-        }),
+        sentinel("widen-x", vec![replacement("yy", 0, 1)]),
         Box::new(NeedleLintRule {
             id: RuleId::from("flag-one"),
             needle: "1",
@@ -84,10 +78,10 @@ fn run_as_written_resolves_a_lint_range_against_the_original_buffer() {
 
 #[test]
 fn run_as_written_returns_the_diagnostics_it_replayed() {
-    let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-        groups: vec![vec![replacement("y", 0, 1)]],
-        id: RuleId::from("rewrite-x-to-y"),
-    })]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-x-to-y",
+        vec![replacement("y", 0, 1)],
+    )]);
 
     let (_, diagnostics) = pipeline
         .run_as_written(parse("x = 1\n"))
@@ -99,10 +93,10 @@ fn run_as_written_returns_the_diagnostics_it_replayed() {
 
 #[test]
 fn run_as_written_short_circuits_when_file_is_suppressed() {
-    let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-        groups: vec![vec![replacement("y", 11, 12)]],
-        id: RuleId::from("rewrite-x-to-y"),
-    })]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-x-to-y",
+        vec![replacement("y", 11, 12)],
+    )]);
     let source = parse("# prose: off\nx = 1\n");
 
     let (formatted, diagnostics) = pipeline.run_as_written(source).expect("the run succeeds");

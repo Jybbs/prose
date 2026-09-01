@@ -21,8 +21,9 @@ use crate::{
         alphabetize_siblings::AlphabetizeSiblings,
     },
     testing::{
-        FUTURE_LEAD, GroupSentinelRule, PrefixRule, assert_send_sync, breaks_compile, breaks_parse,
-        never_settles, notebook, parse, range, replacement, self_overlapping,
+        FUTURE_LEAD, GroupSentinelRule, GuardedRule, assert_send_sync, breaks_compile,
+        breaks_parse, never_settles, notebook, parse, prefix_rule, range, replacement,
+        self_overlapping,
     },
 };
 
@@ -161,6 +162,14 @@ fn capturing(
 /// The buffers a capture log holds, in the order the rules read them.
 fn captured(seen: &Arc<Mutex<Vec<String>>>) -> Vec<String> {
     seen.lock().expect("seen mutex").clone()
+}
+
+/// A group sentinel under `slug` whose `edits` form one fix group.
+fn sentinel(slug: &'static str, edits: Vec<Edit>) -> Box<dyn Rule> {
+    Box::new(GroupSentinelRule {
+        groups: vec![edits],
+        id: RuleId::from(slug),
+    })
 }
 
 fn registered_slugs(pipeline: &Pipeline) -> Vec<&'static str> {

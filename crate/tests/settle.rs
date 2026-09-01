@@ -28,7 +28,7 @@ use std::{
 use itertools::Itertools;
 use prose::{
     config::Config,
-    pipeline::{Pipeline, Sharing},
+    pipeline::{Pipeline, PipelineError, Sharing},
     rule::{RuleId, independent, render_slugs, runs_behind},
     source::Source,
 };
@@ -276,7 +276,6 @@ impl Probes {
         let claim = claim();
         let in_scope = |rule: &RuleId| scope.as_ref().is_none_or(|set| set.contains(rule));
         let reporting_agreement = pointed_corpus().is_some();
-        let taken = |slot: &usize| slot % shares == share;
         let mut singles = Vec::new();
         let mut seats = FxHashMap::default();
         let mut seat = |rule: RuleId, pipeline: Pipeline| -> usize {
@@ -302,9 +301,9 @@ impl Probes {
                 Claim::Owned => in_scope(earlier),
                 Claim::Touching => in_scope(earlier) || in_scope(later),
             })
-            .enumerate()
-            .filter(|(slot, _)| taken(slot))
-            .map(|(_, pair @ [earlier, later])| {
+            .skip(share)
+            .step_by(shares)
+            .map(|pair @ [earlier, later]| {
                 let [(_, first), (_, second)] = seated(&config, pair);
                 let declared = independent(later.as_str(), earlier.as_str());
                 Pair {
@@ -321,9 +320,8 @@ impl Probes {
             .iter()
             .copied()
             .filter(in_scope)
-            .enumerate()
-            .filter(|(slot, _)| taken(slot))
-            .map(|(_, rule)| rule)
+            .skip(share)
+            .step_by(shares)
             .collect();
         Self {
             budget: format!("at `code-line-length` {width}"),
@@ -559,14 +557,19 @@ fn shard_of(spec: Option<&str>) -> (usize, usize) {
     (k - 1, n)
 }
 
+/// The text `pipeline` folds `text` into, `None` where the buffer does
+/// not parse.
+fn folded_text(pipeline: &Pipeline, text: &str) -> Option<Result<String, PipelineError>> {
+    text.parse::<Source>()
+        .ok()
+        .map(|source| pipeline.format(source).map(|out| out.text().to_owned()))
+}
+
 /// True where `spliced` leaves `text` as the `chained` run did. A run
 /// `spliced` rejects, and a buffer it cannot parse, both count as a
 /// divergence.
 fn spliced_matches(spliced: &Pipeline, text: &str, chained: &str) -> bool {
-    text.parse::<Source>()
-        .ok()
-        .and_then(|source| spliced.format(source).ok())
-        .is_some_and(|out| out.text() == chained)
+    matches!(folded_text(spliced, text), Some(Ok(out)) if out == chained)
 }
 
 /// A pipeline carrying exactly `rules`, bypassing each one's `enabled`
@@ -585,10 +588,7 @@ fn verify_pair(
     chained: &Result<Rc<str>, Rc<str>>,
 ) {
     let (folded, [earlier, later], seats) = (&probe.folded, probe.rules, probe.seats);
-    let old = text
-        .parse::<Source>()
-        .ok()
-        .map(|source| folded.format(source).map(|out| out.text().to_owned()));
+    let old = folded_text(folded, text);
     match (chained, old) {
         (Ok(new), Some(Ok(old))) => assert!(
             **new == *old,

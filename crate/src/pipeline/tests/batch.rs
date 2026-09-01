@@ -3,33 +3,6 @@
 
 use super::*;
 
-/// Test-only rule that emits `edit` only while the buffer opens with
-/// `guard`.
-#[derive(Debug)]
-struct GuardedRule {
-    edit: Edit,
-    guard: &'static str,
-    id: RuleId,
-}
-
-impl Rule for GuardedRule {
-    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        if source.text().starts_with(self.guard) {
-            vec![vec![self.edit.clone()]]
-        } else {
-            Vec::new()
-        }
-    }
-
-    fn id(&self) -> RuleId {
-        self.id
-    }
-
-    fn message(&self) -> &'static str {
-        "guarded test rule"
-    }
-}
-
 #[test]
 fn from_rules_seats_each_rule_beside_the_earlier_seats_it_shares_a_splice_with() {
     let seated = |slug: &'static str| -> Box<dyn Rule> {
@@ -38,27 +11,17 @@ fn from_rules_seats_each_rule_beside_the_earlier_seats_it_shares_a_splice_with()
             id: RuleId::from(slug),
         })
     };
+    // The registry declares `normalize-literals` independent of
+    // `shed-backslash-continuations`, and `strip-none-return`
+    // independent of both, so each seat names every earlier seat it
+    // shares a splice with and none seated ahead of it.
     let pipeline = Pipeline::from_rules(vec![
-        seated("strip-trailing-commas"),
-        seated("bare-imports"),
-        seated("align-equals"),
+        seated("shed-backslash-continuations"),
+        seated("normalize-literals"),
+        seated("strip-none-return"),
     ]);
 
-    let seats = |later: &str, earlier: &[&str]| -> Vec<usize> {
-        earlier
-            .iter()
-            .positions(|slug| independent(later, slug))
-            .collect()
-    };
-
-    assert_eq!(
-        pipeline.shares,
-        [
-            vec![],
-            seats("bare-imports", &["strip-trailing-commas"]),
-            seats("align-equals", &["strip-trailing-commas", "bare-imports"]),
-        ],
-    );
+    assert_eq!(pipeline.shares, [vec![], vec![0], vec![0, 1]]);
 }
 
 #[test]
@@ -154,16 +117,8 @@ fn run_drops_a_rule_whose_edits_vanish_once_the_batch_closes() {
     // and the spliced buffer no longer opens with `x`, so its re-read
     // emits nothing.
     let pipeline = Pipeline::from_rules(vec![
-        Box::new(PrefixRule {
-            id: RuleId::from("rewrite-x-to-y"),
-            reads: "x",
-            writes: "y",
-        }),
-        Box::new(PrefixRule {
-            id: RuleId::from("rewrite-x-to-z"),
-            reads: "x",
-            writes: "z",
-        }),
+        Box::new(prefix_rule("rewrite-x-to-y", "x", "y")),
+        Box::new(prefix_rule("rewrite-x-to-z", "x", "z")),
     ])
     .sharing(Sharing::Always);
 
@@ -181,10 +136,7 @@ fn run_flags_a_replay_that_passes_where_its_batch_was_rejected() {
     // sees `x = 1` and emits nothing, so the declared pair has read
     // each other's rewrite on this buffer.
     let pipeline = Pipeline::from_rules(vec![
-        Box::new(GroupSentinelRule {
-            groups: vec![vec![replacement("x = 1", 0, 34)]],
-            id: RuleId::from("normalize-literals"),
-        }),
+        sentinel("normalize-literals", vec![replacement("x = 1", 0, 34)]),
         Box::new(GuardedRule {
             edit: replacement("from __future__ import division", 35, 44),
             guard: "from __future__",
@@ -197,14 +149,8 @@ fn run_flags_a_replay_that_passes_where_its_batch_was_rejected() {
 #[test]
 fn run_forwards_a_notebook_through_one_batched_splice() {
     let pipeline = Pipeline::from_rules(vec![
-        Box::new(GroupSentinelRule {
-            groups: vec![vec![replacement("xx", 0, 1)]],
-            id: RuleId::from("widen-x"),
-        }),
-        Box::new(GroupSentinelRule {
-            groups: vec![vec![replacement("yy", 7, 8)]],
-            id: RuleId::from("widen-y"),
-        }),
+        sentinel("widen-x", vec![replacement("xx", 0, 1)]),
+        sentinel("widen-y", vec![replacement("yy", 7, 8)]),
     ])
     .sharing(Sharing::Always);
     let source = notebook(&["x = 1\n", "y = 2\n"]);
@@ -221,13 +167,13 @@ fn run_names_every_rule_of_a_batch_the_gate_rejects_under_always() {
     // buffer that parses and fails to compile, which the probe's
     // sharing reports as the batch rather than replaying.
     let pipeline = Pipeline::from_rules(vec![
-        Box::new(GroupSentinelRule {
-            groups: vec![vec![Edit::insertion(
+        sentinel(
+            "append-x",
+            vec![Edit::insertion(
                 "x = 1\n".to_owned(),
                 FUTURE_LEAD.text_len(),
-            )]],
-            id: RuleId::from("append-x"),
-        }),
+            )],
+        ),
         Box::new(breaks_compile()),
     ])
     .sharing(Sharing::Always);
@@ -243,10 +189,7 @@ fn run_names_every_rule_of_a_batch_the_gate_rejects_under_always() {
 fn run_names_every_rule_of_a_batch_the_reparse_rejects_under_always() {
     let pipeline = Pipeline::from_rules(vec![
         Box::new(breaks_parse()),
-        Box::new(GroupSentinelRule {
-            groups: vec![vec![replacement("z", 6, 7)]],
-            id: RuleId::from("rewrite-y-to-z"),
-        }),
+        sentinel("rewrite-y-to-z", vec![replacement("z", 6, 7)]),
     ])
     .sharing(Sharing::Always);
 
@@ -263,13 +206,13 @@ fn run_names_the_rule_whose_output_a_declared_batch_replay_fails_to_compile() {
     // appending one, so the batch splices into one buffer that fails
     // the gate and the replay names the demoting rule alone.
     let pipeline = Pipeline::from_rules(vec![
-        Box::new(GroupSentinelRule {
-            groups: vec![vec![Edit::insertion(
+        sentinel(
+            "normalize-literals",
+            vec![Edit::insertion(
                 "x = 1\n".to_owned(),
                 FUTURE_LEAD.text_len(),
-            )]],
-            id: RuleId::from("normalize-literals"),
-        }),
+            )],
+        ),
         Box::new(GroupSentinelRule {
             groups: breaks_compile().groups,
             id: RuleId::from("strip-trailing-commas"),
@@ -289,10 +232,7 @@ fn run_names_the_rule_whose_splice_a_declared_batch_replay_rejects() {
             groups: breaks_parse().groups,
             id: RuleId::from("normalize-literals"),
         }),
-        Box::new(GroupSentinelRule {
-            groups: vec![vec![replacement("z", 6, 7)]],
-            id: RuleId::from("strip-trailing-commas"),
-        }),
+        sentinel("strip-trailing-commas", vec![replacement("z", 6, 7)]),
     ]);
 
     assert_matches!(
