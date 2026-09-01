@@ -3,5 +3,5 @@ previewable = true
 title       = "A Row That Fills the Budget Splits on Its Closing Comma"
 
 description = '''
-The three items land one per line even though the two atomics would fill a row exactly, because a one-per-line segment follows the flow segment and closes its last row with a comma the packer charges, taking that row one column past the budget.
+The three items land one per line even though the two atomics would fill a row exactly, because a one-per-line segment follows the flow segment and closes its last row with a comma the packer counts, taking that row one column past the budget.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "Indent Is Measured From the Enclosing Block"
 
 description = '''
-Collections inside the `build_config` body and the `Defaults` class compute their indent from the **opening bracket's line, not the module top level**. `short_local` and `SHORT_PRIMES` stay inline at their depth, the seven-entry `long_local` expands one entry per line, and the over-wide `LONG_PRIMES` flow-packs its integers at the item indent.
+Collections inside the `build_config` body and the `Defaults` class compute their indent from the **opening bracket's line, not the module top level**. `short_local` and `SHORT_PRIMES` stay inline at their depth, the seven-entry `long_local` expands one entry per line, and the over-wide `LONG_PRIMES` packs its integers across rows at the item indent.
 '''

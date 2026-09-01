@@ -3,5 +3,5 @@ previewable = false
 title       = "An Inner Comment Pins the Multi-Line Shape"
 
 description = '''
-A literal holding a comment anywhere in its range is **left expanded to preserve author prose the collapse would drop**, so `own_line_comment_between_entries`, `trailing_comment_on_entry`, `comment_before_close`, and the `registry` subscript under `comment_pins_subscript` all keep their multi-line shapes. The comment on `trailing_comment_expands` sits after the closing `]`, outside the range, so that over-wide list still expands and flow-packs its strings.
+A literal holding a comment anywhere in its range is **left expanded to preserve author prose the collapse would drop**, so `own_line_comment_between_entries`, `trailing_comment_on_entry`, `comment_before_close`, and the `registry` subscript under `comment_pins_subscript` all keep their multi-line shapes. The comment on `trailing_comment_expands` sits after the closing `]`, outside the range, so that over-wide list still expands and packs its strings across rows.
 '''
