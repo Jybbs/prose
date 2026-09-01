@@ -234,7 +234,7 @@ jobs:
   imports:
     name            : 🪟 Imports
     if              : *pull-request
-    outputs         : { armed: "${{ steps.breaks.outputs.cache-matched-key != '' }}" }
+    outputs         : { armed: "${{ steps.ratchet.outputs.armed }}" }
     runs-on         : *ubuntu
     timeout-minutes : *sweep
 
@@ -254,13 +254,17 @@ jobs:
           restore-keys : corpus-breaks-${{ steps.python.outputs.version }}-
 
       - name : Import every rewritten module against the baked break set
-        env  : { PROSE_IMPORTS_BASELINE: *breaks-path }
-        if   : ${{ steps.breaks.outputs.cache-matched-key != '' }}
-        run  : mise run imports
+        id   : ratchet
+        env:
+          PROSE_IMPORTS_ARMED    : ${{ runner.temp }}/armed
+          PROSE_IMPORTS_BASELINE : *breaks-path
+        run  : |
+          mise run imports
+          echo "armed=$(cat "$PROSE_IMPORTS_ARMED")" >> "$GITHUB_OUTPUT"
 
-      - name : Report a break set no bake has written yet
-        if   : ${{ steps.breaks.outputs.cache-matched-key == '' }}
-        run  : echo "::warning::no baked break set for this interpreter, so the ratchet asserted nothing on this run"
+      - name : Report a run no baked break set armed
+        if   : ${{ steps.ratchet.outputs.armed != 'true' }}
+        run  : echo "::warning::no baked break set reached this run at the current generation, so the ratchet asserted nothing"
 
   subsets:
     name            : ${{ matrix.label }}
