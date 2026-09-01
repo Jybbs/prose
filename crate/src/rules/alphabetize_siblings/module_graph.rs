@@ -122,6 +122,92 @@ mod tests {
     }
 
     #[test]
+    fn permute_module_defs_holds_a_function_a_subscripted_base_reaches() {
+        let src = indoc! {"
+            class Generic:
+                def __class_getitem__(cls, item):
+                    return zzz_dispatch(item)
+
+            def zzz_dispatch(item):
+                return object
+
+            class Widget(Generic[str]):
+                pass
+        "};
+        assert_eq!(
+            module_order(src),
+            vec![0, 1, 2],
+            "subscripting Generic runs its body, which reads zzz_dispatch, so it holds above"
+        );
+    }
+
+    #[test]
+    fn permute_module_defs_settles_a_subscripted_base_across_repeat_passes() {
+        let src = indoc! {"
+            class Generic:
+                def __class_getitem__(cls, item):
+                    return zzz_dispatch(item)
+
+            def zzz_dispatch(item):
+                return object
+
+            class Widget(Generic[str]):
+                pass
+        "};
+        let source = parse(src);
+        let body = &source.ast().body;
+        let mut order: Vec<usize> = (0..body.len()).collect();
+        let evaluated = evaluated(&source, body);
+        for pass in 0..3 {
+            permute_module_defs(
+                &mut order,
+                body,
+                0..body.len(),
+                evaluated.evaluation(),
+                |_| false,
+                true,
+            );
+            assert_eq!(order, vec![0, 1, 2], "pass {pass} strands zzz_dispatch");
+        }
+    }
+
+    #[test]
+    fn permute_module_defs_holds_every_definition_under_an_opaque_base() {
+        let src = indoc! {"
+            from vendor import Generic
+
+            def zzz_dispatch(item):
+                return object
+
+            class Widget(Generic[str]):
+                pass
+        "};
+        assert_eq!(
+            module_order(src),
+            vec![0, 1, 2],
+            "subscripting an imported base runs code reaching any binding, so nothing crosses it"
+        );
+    }
+
+    #[test]
+    fn permute_module_defs_sorts_past_a_plain_imported_base() {
+        let src = indoc! {"
+            from vendor import Base
+
+            def zzz_dispatch(item):
+                return object
+
+            class Widget(Base):
+                pass
+        "};
+        assert_eq!(
+            module_order(src),
+            vec![0, 2, 1],
+            "a base naming no call runs nothing, so the class still bands above the function"
+        );
+    }
+
+    #[test]
     fn permute_module_defs_seats_a_derived_class_in_the_class_band() {
         let src = indoc! {"
             def render():

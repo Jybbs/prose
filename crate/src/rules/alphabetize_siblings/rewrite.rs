@@ -12,7 +12,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{
     class_graph::permute_class_assigns,
-    members::{class_pins_methods, function_key},
+    members::{class_orders_members, class_pins_methods, function_key},
     module_graph::permute_module_defs,
 };
 use crate::{
@@ -26,7 +26,7 @@ use crate::{
         },
         scope::{BodyScope, scoped_body, splice_compound_arms},
         sections::Sections,
-        tiering::{CallReach, Evaluated, call_reachable, calls_a_name, permute_defs},
+        tiering::{CallReach, Evaluated, call_reachable, consults_call_graph, permute_defs},
     },
     source::Source,
 };
@@ -64,6 +64,7 @@ pub(super) fn body_layout<'a>(
     body: &'a [Stmt],
     outer: TextRange,
     scope: BodyScope,
+    orders_members: bool,
 ) -> BodyLayout<'a> {
     let RewriteCtx {
         defer_annotations,
@@ -88,12 +89,7 @@ pub(super) fn body_layout<'a>(
         let in_class = scope == BodyScope::Class;
         if scope != BodyScope::Function {
             let holds = |stmt: &Stmt| !in_class && is_decorated(stmt);
-            // Only a non-definition statement consults the call graph,
-            // so a body holding definitions alone builds none.
-            let consults_calls = body.iter().any(|stmt| {
-                !matches!(stmt, Stmt::FunctionDef(_) | Stmt::ClassDef(_)) && calls_a_name(stmt)
-            });
-            let reachable = if consults_calls {
+            let reachable = if consults_call_graph(body, defer_annotations) {
                 call_reachable(source.binding_analysis(), body)
             } else {
                 CallReach::default()
@@ -128,13 +124,15 @@ pub(super) fn body_layout<'a>(
                                 |tier, key| (tier, key),
                             );
                         }
-                        permute_class_assigns(
-                            &mut order,
-                            body,
-                            section.clone(),
-                            evaluation,
-                            keyword_fields_from,
-                        );
+                        if !orders_members {
+                            permute_class_assigns(
+                                &mut order,
+                                body,
+                                section.clone(),
+                                evaluation,
+                                keyword_fields_from,
+                            );
+                        }
                         if sort_definitions && !class_pins_methods(&body[section.clone()]) {
                             permute_defs(
                                 &mut order,
@@ -221,8 +219,9 @@ fn rewrite_body<'a>(
     body: &'a [Stmt],
     outer: TextRange,
     scope: BodyScope,
+    orders_members: bool,
 ) -> (Cow<'a, str>, TextRange) {
-    let layout = body_layout(ctx, body, outer, scope);
+    let layout = body_layout(ctx, body, outer, scope, orders_members);
     layout
         .assembly
         .or_borrow(ctx.source, !layout.import_run_slots.is_empty(), |i| {
@@ -240,7 +239,7 @@ fn rewrite_compound<'a>(
     scope: BodyScope,
 ) -> Cow<'a, str> {
     splice_compound_arms(ctx.source, stmt, block, ctx.leaf_edits, |body, outer| {
-        rewrite_body(ctx, body, outer, scope)
+        rewrite_body(ctx, body, outer, scope, false)
     })
 }
 
@@ -269,6 +268,7 @@ fn rewrite_stmt<'a>(
         keyword_fields_from: keyword_field_start(class),
         ..ctx
     });
-    let (body_text, body_span) = rewrite_body(ctx, body, stmt.range(), scope);
+    let orders_members = stmt.as_class_def_stmt().is_some_and(class_orders_members);
+    let (body_text, body_span) = rewrite_body(ctx, body, stmt.range(), scope, orders_members);
     splice_bodies(ctx.source, block, [(body_text, body_span)], ctx.leaf_edits)
 }

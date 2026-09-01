@@ -16,10 +16,10 @@ mod refs;
 mod strands;
 mod tiers;
 
-use reach::called_names;
-pub(crate) use reach::{CallReach, call_reachable, calls_a_name};
-use refs::eval_time_refs;
+pub(crate) use reach::{CallReach, call_reachable};
+use reach::{called_names, calls_a_name};
 pub(crate) use refs::{eval_refs, observed_refs, walk_lambda_defaults};
+use refs::{eval_time_invocations_of, eval_time_refs};
 pub(crate) use strands::permute_or_repair;
 pub(crate) use tiers::tier_levels;
 
@@ -40,7 +40,7 @@ impl<'src> Evaluated<'src> {
     ) -> Self {
         let refs = eval_time_refs_of(body, defer_annotations);
         Self {
-            names: evaluated_names_of(body, reachable, &refs),
+            names: evaluated_names_of(body, reachable, &refs, defer_annotations),
             refs,
         }
     }
@@ -173,6 +173,31 @@ pub(crate) fn permute_defs<'src, K: Copy, R: Ord>(
     );
 }
 
+/// True where some statement of `body` reaches another definition's body
+/// at evaluation time, so the run needs the call graph. A non-definition
+/// reaches one by calling a name, and a definition reaches one where its
+/// own evaluation surface, a base list or a decorator or a default, names
+/// a sibling definition.
+pub(crate) fn consults_call_graph(body: &[Stmt], defer_annotations: bool) -> bool {
+    let defined: FxHashSet<&str> = body.iter().filter_map(definition_name).collect();
+    body.iter().any(|stmt| match stmt {
+        Stmt::FunctionDef(_) | Stmt::ClassDef(_) => eval_time_refs(stmt, defer_annotations)
+            .iter()
+            .any(|name| defined.contains(name)),
+        _ => calls_a_name(stmt),
+    })
+}
+
+/// The name a module-level definition binds, `None` for any other
+/// statement.
+fn definition_name(stmt: &Stmt) -> Option<&str> {
+    match stmt {
+        Stmt::ClassDef(class) => Some(class.name.as_str()),
+        Stmt::FunctionDef(func) => Some(func.name.as_str()),
+        _ => None,
+    }
+}
+
 /// Every module-scope name evaluating each statement of `body` reads,
 /// keyed by start offset: its own evaluation-time references, widened
 /// by the reach of every definition those references name where the
@@ -182,7 +207,9 @@ fn evaluated_names_of<'src>(
     body: &'src [Stmt],
     reachable: &CallReach<'src>,
     refs: &FxHashMap<TextSize, Vec<&'src str>>,
+    defer_annotations: bool,
 ) -> FxHashMap<TextSize, Vec<&'src str>> {
+    let defined: Vec<&str> = body.iter().filter_map(definition_name).collect();
     body.iter()
         .map(|stmt| {
             let own = refs
@@ -195,6 +222,7 @@ fn evaluated_names_of<'src>(
                 called = called_names(stmt);
                 &called
             };
+            let opaque = runs_opaque_code(stmt, &defined, defer_annotations);
             let names = own
                 .iter()
                 .copied()
@@ -204,11 +232,35 @@ fn evaluated_names_of<'src>(
                         .flatten()
                         .copied(),
                 )
+                .chain(
+                    opaque
+                        .then_some(defined.iter().copied())
+                        .into_iter()
+                        .flatten(),
+                )
                 .unique()
                 .collect();
             (stmt.range().start(), names)
         })
         .collect()
+}
+
+/// True where a class's base list runs a call or a subscript this
+/// module cannot read, its chain rooting outside `defined` or in
+/// something other than a name. A metaclass and a `__class_getitem__`
+/// hook both run at class creation and reach module bindings the base
+/// list never names, so the caller reads such a class as evaluating
+/// every definition of the body.
+fn runs_opaque_code(stmt: &Stmt, defined: &[&str], defer_annotations: bool) -> bool {
+    let Stmt::ClassDef(class) = stmt else {
+        return false;
+    };
+    class.arguments.iter().any(|arguments| {
+        arguments
+            .iter_source_order()
+            .flat_map(|argument| eval_time_invocations_of(argument.value(), defer_annotations))
+            .any(|root| root.is_none_or(|name| !defined.contains(&name)))
+    })
 }
 
 /// Indexes each name to its position, or `None` when a name repeats. A

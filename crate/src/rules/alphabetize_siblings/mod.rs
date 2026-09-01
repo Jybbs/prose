@@ -102,7 +102,7 @@ impl Rule for AlphabetizeSiblings {
             sort_definitions: self.sort_definitions,
             source,
         };
-        let layout = body_layout(ctx, body, source.module_range(), BodyScope::Module);
+        let layout = body_layout(ctx, body, source.module_range(), BodyScope::Module, false);
         layout
             .assembly
             .cell_edits(source, !layout.import_run_slots.is_empty(), |i| {

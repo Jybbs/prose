@@ -51,6 +51,69 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
     }
 }
 
+/// Accumulates the root name of every call and subscript an evaluation
+/// surface runs, pruning the bodies `EvalRefVisitor` prunes. A chain
+/// rooting in anything other than a name records `None`.
+struct InvokedRootVisitor<'src> {
+    defer_annotations: bool,
+    roots: Vec<Option<&'src str>>,
+}
+
+impl<'src> AstVisitor<'src> for InvokedRootVisitor<'src> {
+    fn visit_annotation(&mut self, annotation: &'src Expr) {
+        if !self.defer_annotations {
+            self.visit_expr(annotation);
+        }
+    }
+
+    fn visit_expr(&mut self, expr: &'src Expr) {
+        match expr {
+            Expr::Lambda(lambda) => walk_lambda_defaults(self, lambda),
+            Expr::Call(call) => {
+                self.roots.push(root_name(&call.func));
+                walk_expr(self, expr);
+            }
+            Expr::Subscript(subscript) => {
+                self.roots.push(root_name(&subscript.value));
+                walk_expr(self, expr);
+            }
+            _ => walk_expr(self, expr),
+        }
+    }
+
+    fn visit_stmt(&mut self, stmt: &'src Stmt) {
+        match stmt {
+            Stmt::AnnAssign(ann) => {
+                self.visit_annotation(&ann.annotation);
+                if let Some(value) = &ann.value {
+                    self.visit_expr(value);
+                }
+            }
+            Stmt::FunctionDef(func) => {
+                for decorator in &func.decorator_list {
+                    self.visit_expr(&decorator.expression);
+                }
+                walk_parameters(self, &func.parameters);
+                if let Some(returns) = &func.returns {
+                    self.visit_annotation(returns);
+                }
+            }
+            _ => walk_stmt(self, stmt),
+        }
+    }
+}
+
+/// The root name of every call and subscript `expr` runs, `None` where
+/// the chain roots in anything other than a name.
+pub(super) fn eval_time_invocations_of(expr: &Expr, defer_annotations: bool) -> Vec<Option<&str>> {
+    let mut visitor = InvokedRootVisitor {
+        defer_annotations,
+        roots: Vec::new(),
+    };
+    visitor.visit_expr(expr);
+    visitor.roots
+}
+
 /// Accumulates the names an expression reads through a subscript or an
 /// attribute, pruning lambda bodies.
 struct ObservedRefVisitor<'src> {

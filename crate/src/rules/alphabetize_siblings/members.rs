@@ -1,7 +1,7 @@
 //! Class-body member classifiers. Reports the method group and names
 //! the decorator condition that pins a method run.
 
-use ruff_python_ast::{Stmt, StmtFunctionDef, helpers::is_dunder};
+use ruff_python_ast::{Expr, Stmt, StmtClassDef, StmtFunctionDef, helpers::is_dunder};
 
 use crate::primitives::{
     binding::ann_assign_with_named_field, decorator::decorator_simple_name,
@@ -20,6 +20,56 @@ pub(super) fn class_pins_methods(body: &[Stmt]) -> bool {
             .iter()
             .filter_map(Stmt::as_function_def_stmt)
             .any(pins_positional_params)
+}
+
+/// The bases whose class body numbers its members by declaration
+/// order, read by the last segment of a dotted name.
+const ORDERED_BASES: &[&str] = &[
+    "Enum", "EnumMeta", "EnumType", "Flag", "IntEnum", "IntFlag", "ReprEnum", "StrEnum",
+];
+
+/// True where `class` is an enumeration whose member values come from
+/// the order they are written in, either through `auto` or through a
+/// `__new__` numbering them as it runs, so a reorder rewrites what each
+/// member holds. An enumeration spelling every value out sorts freely,
+/// its members meaning the same wherever they sit.
+pub(super) fn class_orders_members(class: &StmtClassDef) -> bool {
+    let enumeration = class.arguments.iter().any(|arguments| {
+        arguments
+            .iter_source_order()
+            .filter_map(|argument| root_segment(argument.value()))
+            .any(|named| ORDERED_BASES.contains(&named))
+    });
+    enumeration && class.body.iter().any(numbers_by_position)
+}
+
+/// True where one class-body statement makes a member's value depend on
+/// where it sits, being a `__new__` the enumeration runs per member or
+/// an assignment calling `auto`.
+fn numbers_by_position(stmt: &Stmt) -> bool {
+    match stmt {
+        Stmt::FunctionDef(func) => func.name.as_str() == "__new__",
+        Stmt::AnnAssign(ann) => ann.value.as_deref().is_some_and(calls_auto),
+        Stmt::Assign(assign) => calls_auto(&assign.value),
+        _ => false,
+    }
+}
+
+/// True where `value` calls `auto`, whose result counts from the
+/// members declared ahead of it.
+fn calls_auto(value: &Expr) -> bool {
+    matches!(value, Expr::Call(call) if root_segment(&call.func) == Some("auto"))
+}
+
+/// The last segment of a name or dotted chain, `None` for any other
+/// expression.
+fn root_segment(expr: &Expr) -> Option<&str> {
+    match expr {
+        Expr::Attribute(attr) => Some(attr.attr.as_str()),
+        Expr::Name(name) => Some(name.id.as_str()),
+        Expr::Subscript(subscript) => root_segment(&subscript.value),
+        _ => None,
+    }
 }
 
 /// The method group `f` sorts under and its name, the group `0` for

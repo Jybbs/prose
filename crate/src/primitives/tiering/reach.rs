@@ -94,7 +94,7 @@ pub(super) fn called_names(stmt: &Stmt) -> Vec<&str> {
 }
 
 /// True where `stmt` calls anything a name roots.
-pub(crate) fn calls_a_name(stmt: &Stmt) -> bool {
+pub(super) fn calls_a_name(stmt: &Stmt) -> bool {
     any_over_body(
         slice::from_ref(stmt),
         |expr| matches!(expr, Expr::Call(call) if root_name(&call.func).is_some()),
