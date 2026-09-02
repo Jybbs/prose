@@ -376,11 +376,12 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'independence table': {
     aliases    : ['independent', 'independence', 'shares a splice'],
-    definition : 'The independence table beside the registry lists, per rule, the earlier rules '
-               + 'whose edits it may splice into one buffer with and parse once. A pair enters '
-               + 'it only where the subset probe found the batched splice matching the fold on '
-               + 'every file both rules edit and a reading of the later rule finds nothing it '
-               + 'measures among what the earlier rule rewrites.',
+    definition : 'The registry gives each rule a shared-splice column beside its dependency '
+               + 'column, listing the earlier rules whose edits it may splice into one buffer '
+               + 'with and parse once. A pair enters that column only where the subset probe '
+               + 'found the batched splice matching the fold on every file both rules edit and '
+               + 'a reading of the later rule finds nothing it measures among what the earlier '
+               + 'rule rewrites.',
     families   : ['engine'],
     href       : '/reference/pipeline-order#independent-rules-share-a-parse'
   },
