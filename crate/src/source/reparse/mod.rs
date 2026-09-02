@@ -19,7 +19,7 @@ use ruff_text_size::{Ranged, TextLen, TextRange};
 
 use self::{deltas::Deltas, slide::Slide, tokens::Reparsed, window::Window};
 use crate::{
-    primitives::{reserve::Weave, slots::item_holding},
+    primitives::{range::overlaps, reserve::Weave, slots::item_holding, splice::enclosing_window},
     rules::RuleId,
     source::Source,
 };
@@ -63,10 +63,13 @@ impl Source {
     /// A splice declines a window whose new text does not parse, a
     /// nested window landing as anything but the one statement filling
     /// it, an edit writing text no window reads, and a notebook, whose
-    /// cell boundaries a splice would have to recut. A module-body
-    /// window lands as any count of statements, none included, and a
-    /// window whose end moved to another depth hands the levels it
-    /// moved to the `Dedent` run past it.
+    /// cell boundaries a splice would have to recut. A lone window that
+    /// does not reparse widens once to the statement around it, since
+    /// an edit writing a second logical line leaves its own statement
+    /// no longer standing alone. A module-body window lands as any
+    /// count of statements, none included, and a window whose end moved
+    /// to another depth hands the levels it moved to the `Dedent` run
+    /// past it.
     pub(crate) fn splice_of(&self, text: &str, map: &SourceMap) -> Option<Splice> {
         if self.is_notebook() {
             return None;
@@ -87,30 +90,74 @@ impl Source {
             return None;
         }
         let options = ParseOptions::from(self.source_type);
+        let spans: Vec<TextRange> = covered.iter().map(|window| window.held).collect();
         covered
-            .into_iter()
-            .map(|Window { held, slid }| {
-                let parsed = parse_cells_unchecked(text, [slid], &options);
-                let run = window::module_level(self, held);
-                let filled = matches!(&parsed.syntax().body[..], [only] if only.range() == slid);
-                if !parsed.has_valid_syntax() || !(run || filled) {
-                    return None;
-                }
-                let fresh = parsed.tokens().before(slid.end()).to_vec();
-                let delta =
-                    window::net_indent(&fresh) - window::net_indent(self.tokens().in_range(held));
-                let stmts: Vec<Stmt> = parsed.into_syntax().body.into_iter().collect();
-                Some(Reparsed {
-                    delta,
-                    fresh,
-                    held,
-                    run,
-                    slid,
-                    stmts,
-                })
+            .iter()
+            .map(|&Window { held, slid }| {
+                self.reparsed_window(text, held, slid, &options)
+                    .or_else(|| self.widened_window(text, held, &spans, &deltas, &options))
             })
             .collect::<Option<Vec<_>>>()
             .map(Splice)
+    }
+
+    /// The reparse of the innermost statement around `held` whose own
+    /// slid text reparses, widening outward one statement at a time.
+    /// `None` where the widening reaches the module body without
+    /// reparsing, or where it would swallow another window, whose own
+    /// reparse would then land twice.
+    fn widened_window(
+        &self,
+        text: &str,
+        held: TextRange,
+        spans: &[TextRange],
+        deltas: &Deltas,
+        options: &ParseOptions,
+    ) -> Option<Reparsed> {
+        let mut range = held;
+        while let Some(outer) = enclosing_window(self, range) {
+            if spans
+                .iter()
+                .any(|span| *span != held && overlaps(*span, &[outer]))
+            {
+                return None;
+            }
+            range = outer;
+            let window = self.reparsed_window(text, range, deltas.slide_window(range), options);
+            if window.is_some() {
+                return window;
+            }
+        }
+        None
+    }
+
+    /// The reparse of one window, `None` where its slid text does not
+    /// parse or lands as anything but the one statement filling a
+    /// nested window.
+    fn reparsed_window(
+        &self,
+        text: &str,
+        held: TextRange,
+        slid: TextRange,
+        options: &ParseOptions,
+    ) -> Option<Reparsed> {
+        let parsed = parse_cells_unchecked(text, [slid], options);
+        let run = window::module_level(self, held);
+        let filled = matches!(&parsed.syntax().body[..], [only] if only.range() == slid);
+        if !parsed.has_valid_syntax() || !(run || filled) {
+            return None;
+        }
+        let fresh = parsed.tokens().before(slid.end()).to_vec();
+        let delta = window::net_indent(&fresh) - window::net_indent(self.tokens().in_range(held));
+        let stmts: Vec<Stmt> = parsed.into_syntax().body.into_iter().collect();
+        Some(Reparsed {
+            delta,
+            fresh,
+            held,
+            run,
+            slid,
+            stmts,
+        })
     }
 
     /// This source rewritten as `text`, with `splice`'s statements
@@ -263,15 +310,11 @@ mod tests {
     }
 
     #[rstest]
-    #[case::a_nested_window_its_statement_does_not_fill(
-        "def f():\n    x = 1\n",
-        replacement("x = 1 ", 13, 18)
-    )]
-    #[case::a_nested_window_reparsing_to_two_statements(
-        "def f():\n    x = 1\n",
-        replacement("x = 1\n    y = 2", 13, 18)
-    )]
     #[case::a_window_whose_new_text_does_not_parse("x = 1\ny = 2\n", replacement("x = (", 0, 5))]
+    #[case::a_nested_window_whose_widened_text_does_not_parse(
+        "def f():\n    x = 1\n",
+        replacement("x = (", 13, 18)
+    )]
     fn spliced_declines_an_edit_no_window_carries(#[case] text: &str, #[case] edit: Edit) {
         assert!(splice(text, vec![edit]).is_none());
     }
@@ -318,6 +361,31 @@ mod tests {
         replacement("x = 1", 13, 32)
     )]
     fn spliced_reparses_a_run_of_module_siblings(#[case] text: &str, #[case] edit: Edit) {
+        let (rewritten, _) = woven(text, vec![edit.clone()]);
+
+        let next = splice(text, vec![edit]).expect("the splice applies");
+
+        assert_eq!(next.text(), rewritten);
+        assert!(next.matches_a_fresh_parse());
+    }
+
+    #[rstest]
+    #[case::a_statement_no_longer_filling_its_window(
+        "def f():\n    x = 1\n",
+        replacement("x = 1 ", 13, 18)
+    )]
+    #[case::a_statement_reparsing_to_two(
+        "def f():\n    x = 1\n",
+        replacement("x = 1\n    y = 2", 13, 18)
+    )]
+    #[case::an_import_split_into_two(
+        "def f():\n    import typing, operator\n",
+        replacement("import typing\n    import operator", 13, 36)
+    )]
+    fn spliced_widens_a_lone_window_reparsing_to_more_than_its_statement(
+        #[case] text: &str,
+        #[case] edit: Edit,
+    ) {
         let (rewritten, _) = woven(text, vec![edit.clone()]);
 
         let next = splice(text, vec![edit]).expect("the splice applies");

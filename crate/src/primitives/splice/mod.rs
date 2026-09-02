@@ -66,6 +66,29 @@ fn covering_in_body(body: &[Stmt], range: TextRange) -> Option<&Stmt> {
     item_holding(body, range.start()).filter(|stmt| range.end() <= stmt.end())
 }
 
+/// The innermost statement whose own range holds `range` with room to
+/// spare, so a window whose own slice does not reparse can widen to the
+/// statement around it. `None` where the module body holds `range`
+/// directly.
+pub(crate) fn enclosing_window(source: &Source, range: TextRange) -> Option<TextRange> {
+    let mut body: &[Stmt] = &source.ast().body;
+    let mut enclosing = None;
+    while let Some(stmt) = covering_in_body(body, range) {
+        if stmt.range() == range {
+            break;
+        }
+        enclosing = Some(stmt.range());
+        let Some((nested, _)) = sub_bodies(stmt)
+            .into_iter()
+            .find(|(nested, _)| covering_in_body(nested, range).is_some())
+        else {
+            break;
+        };
+        body = nested;
+    }
+    enclosing
+}
+
 /// The innermost statement whose own range covers `range` and whose
 /// slice reparses on its own, descending through the sub-bodies each
 /// covering statement opens. `None` where no module-body statement
