@@ -23,6 +23,32 @@ use crate::{primitives::slots::item_holding, rules::RuleId, source::Source};
 /// The reparse of each window a rule's edits fell inside.
 pub(crate) struct Splice(Vec<Reparsed>);
 
+/// `range` moved to where the woven text `map` describes holds it, the
+/// way the slide moves a statement a splice leaves standing, collapsed
+/// to an empty range where the edits swallowed it whole.
+#[cfg(test)]
+pub(crate) fn slid_range(map: &SourceMap, range: TextRange) -> TextRange {
+    let deltas = Deltas::new(map);
+    let (start, end) = (
+        deltas.shift_before(range.start()),
+        deltas.shift(range.end()),
+    );
+    TextRange::new(start.min(end), end)
+}
+
+#[cfg(test)]
+impl Splice {
+    /// Each window's span in the buffer the source holds, ascending.
+    pub(crate) fn held(&self) -> Vec<TextRange> {
+        self.0.iter().map(|window| window.held).collect()
+    }
+
+    /// Each window's span in the woven text, ascending.
+    pub(crate) fn slid(&self) -> Vec<TextRange> {
+        self.0.iter().map(|window| window.slid).collect()
+    }
+}
+
 impl Source {
     /// True where this source's tree and token stream equal those a
     /// whole-file parse of its own text produces, every range included.
@@ -111,6 +137,8 @@ impl Source {
         let deltas = Deltas::new(map);
         let spliced = tokens::spliced(&self.tokens, self.text(), &deltas, &splice.0);
         let stranded = std::mem::take(&mut self.stranded_padding);
+        let columns = std::mem::take(&mut self.columns);
+        let held: Vec<TextRange> = splice.0.iter().map(|window| window.held).collect();
         let windows: Vec<TextRange> = splice.0.iter().map(|window| window.slid).collect();
         let mut ast = self.ast;
         let (runs, nested): (Vec<Reparsed>, Vec<Reparsed>) =
@@ -136,6 +164,7 @@ impl Source {
             spliced,
         );
         next.rebuild_stranded_padding(stranded, map, &windows, rule);
+        next.rebuild_columns(columns, map, &held, &windows, rule);
         debug_assert!(
             next.matches_a_fresh_parse(),
             "the spliced tree and token stream differ from a parse of the same text",

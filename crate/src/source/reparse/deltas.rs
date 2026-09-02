@@ -21,7 +21,7 @@ impl<'map> Deltas<'map> {
 
     /// `offset` moved by the delta of the last marker at or before it,
     /// left where it is when no marker precedes it.
-    fn shift(&self, offset: TextSize) -> TextSize {
+    pub(super) fn shift(&self, offset: TextSize) -> TextSize {
         shifted_past(offset, self.markers)
     }
 

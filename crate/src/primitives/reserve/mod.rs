@@ -11,17 +11,30 @@
 //! is reserved for a value inside an f-string or t-string replacement
 //! field.
 
+use std::hash::BuildHasher;
+
+use ruff_diagnostics::SourceMap;
 use ruff_python_ast::{
     AnyNodeRef, Expr, InterpolatedStringElement, Stmt,
-    visitor::{Visitor, walk_body, walk_expr},
+    comparable::ComparableParameters,
+    visitor::{Visitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use rustc_hash::FxHashMap;
+#[cfg(test)]
+use rustc_hash::FxHashSet;
+use rustc_hash::{FxBuildHasher, FxHashMap};
 
 use crate::{
     primitives::{
-        aligner, call_keywords::module_call_params, equal_targets, inline::display_width, one_row,
-        slots::item_holding, walk,
+        aligner,
+        call_keywords::{CallTargets, module_call_params},
+        edit::{forward_range, forward_start},
+        equal_targets,
+        inline::display_width,
+        one_row,
+        range::overlaps,
+        slots::item_holding,
+        walk,
     },
     rules::RuleId,
     source::Source,
@@ -43,7 +56,17 @@ pub(crate) struct Columns {
     /// The gap an aligned row holds ahead of its operator, `None` where
     /// the alignment rule is off.
     buffer: Option<usize>,
+    /// The statement each run formed inside, indexed by the run each
+    /// shift names, the module itself for a module-body run.
+    runs: Vec<TextRange>,
     shifts: Vec<Shift>,
+    /// Each in-module call's callee offset and the hash of the
+    /// parameters it resolves to, ascending, the map every joined
+    /// width read, so a rebuild can tell whether that map still holds.
+    targets: Vec<(TextSize, u64)>,
+    /// The widening each run's members seat on their lines, keyed by
+    /// the run.
+    widenings: Vec<(usize, aligner::Widening)>,
 }
 
 impl Columns {
@@ -79,6 +102,117 @@ impl Columns {
         self.buffer
             .map(|buffer| indent + name_width + buffer + aligner::VALUE_OFFSET)
     }
+
+    /// Each run as its scope, its shifts, and its widenings, ascending,
+    /// the form two tables compare in whatever order their runs were
+    /// numbered.
+    #[cfg(test)]
+    fn canonical(&self) -> Vec<CanonicalRun> {
+        let mut runs: Vec<_> = self
+            .runs
+            .iter()
+            .enumerate()
+            .map(|(run, &scope)| {
+                let mut shifts: Vec<(TextRange, isize)> = self
+                    .shifts
+                    .iter()
+                    .filter(|shift| shift.run == run)
+                    .map(|shift| (shift.span, shift.columns))
+                    .collect();
+                shifts.sort_unstable_by_key(|&(span, _)| span.start());
+                let mut widenings: Vec<aligner::Widening> = self
+                    .widenings
+                    .iter()
+                    .filter(|&&(owner, _)| owner == run)
+                    .map(|&(_, entry)| entry)
+                    .collect();
+                widenings.sort_unstable_by_key(|&(line, gap, _)| (line, gap.start()));
+                (scope, shifts, widenings)
+            })
+            .collect();
+        runs.sort_unstable_by_key(|(scope, shifts, _)| {
+            (scope.start(), shifts.first().map(|&(span, _)| span.start()))
+        });
+        runs
+    }
+
+    /// The table an alignment rule that is off leaves, reserving no
+    /// column.
+    fn unreserved() -> Self {
+        Self {
+            buffer: None,
+            runs: Vec::new(),
+            shifts: Vec::new(),
+            targets: Vec::new(),
+            widenings: Vec::new(),
+        }
+    }
+
+    /// The shifts of this table a splice over `map` cannot carry into
+    /// `fresh`, the table a fresh read of the spliced source builds. A
+    /// run whose scope a `held` window reaches is re-formed rather than
+    /// carried, its scope moved through `slide` to name the fresh run
+    /// that replaces it, as is a fresh run a `slid` window reaches.
+    /// Every other shift is carried through `map`, and an escape is a
+    /// carried shift `fresh` holds at another column or not at all, or
+    /// a fresh shift outside every re-formed run that no carried shift
+    /// lands on. Each names its span and what went wrong.
+    #[cfg(test)]
+    pub(crate) fn escapes(
+        &self,
+        fresh: &Columns,
+        map: &SourceMap,
+        held: &[TextRange],
+        slid: &[TextRange],
+        slide: impl Fn(TextRange) -> TextRange,
+    ) -> Vec<String> {
+        let reformed: FxHashSet<TextRange> = self
+            .runs
+            .iter()
+            .filter(|scope| overlaps(**scope, held))
+            .map(|&scope| slide(scope))
+            .collect();
+        let mut escapes = Vec::new();
+        let mut landed = FxHashSet::default();
+        for shift in &self.shifts {
+            if overlaps(self.runs[shift.run], held) {
+                continue;
+            }
+            let Some(span) = forward_range(shift.span, map) else {
+                escapes.push(format!(
+                    "{:?} replaced by an edit outside its run's scope",
+                    shift.span
+                ));
+                continue;
+            };
+            landed.insert(span);
+            match fresh
+                .shifts
+                .binary_search_by_key(&span.start(), Ranged::start)
+            {
+                Ok(at) if fresh.shifts[at].span == span => {
+                    if fresh.shifts[at].columns != shift.columns {
+                        escapes.push(format!(
+                            "{span:?} moved from {} to {} columns",
+                            shift.columns, fresh.shifts[at].columns
+                        ));
+                    }
+                }
+                _ => escapes.push(format!("{span:?} carried where the fresh table holds none")),
+            }
+        }
+        for shift in &fresh.shifts {
+            let scope = fresh.runs[shift.run];
+            if reformed.contains(&scope) || overlaps(scope, slid) || landed.contains(&shift.span) {
+                continue;
+            }
+            escapes.push(format!(
+                "{:?} fresh where no carried shift lands",
+                shift.span
+            ));
+        }
+        escapes
+    }
 }
 
 /// The alignment a layout rule measures against, resolved from
@@ -107,13 +241,21 @@ impl Reservations {
         }
     }
 
-    /// Walks `source` collecting the runs the reserved rule builds.
-    fn collected<'a>(&self, source: &'a Source) -> ReserveVisitor<'a> {
+    /// Walks `source` collecting the runs the reserved rule builds,
+    /// descending only into the statements a `windows` span reaches
+    /// where one is given.
+    fn collected<'a>(
+        &self,
+        source: &'a Source,
+        windows: Option<&'a [TextRange]>,
+    ) -> ReserveVisitor<'a> {
         let mut visitor = ReserveVisitor {
             rule: self.rule,
             runs: Vec::new(),
             source,
+            stmt: source.module_range(),
             values: FxHashMap::default(),
+            windows,
         };
         visitor.visit_body(&source.ast().body);
         visitor
@@ -125,15 +267,93 @@ impl Reservations {
     /// the alignment does not move.
     pub(crate) fn columns(self, source: &Source) -> Columns {
         let Some(settings) = self.settings else {
-            return Columns {
-                buffer: None,
-                shifts: Vec::new(),
-            };
+            return Columns::unreserved();
         };
-        let visitor = self.collected(source);
         let targets = module_call_params(source);
-        let one_row = self.one_row.against(&targets);
-        let widenings = widenings_over(source, settings, &visitor);
+        let visitor = self.collected(source, None);
+        self.formed(source, settings, &visitor, Carried::default(), &targets)
+    }
+
+    /// `carried`, the table the source before a splice held, moved
+    /// through `map` past that splice: every run whose scope no `held`
+    /// window reaches keeps its shifts and widenings, forwarded, and
+    /// the runs the windows reached re-form over this source by walking
+    /// the statements a `slid` window reaches. `None` where the
+    /// module's call targets no longer hold outside the windows or an
+    /// edit replaced a carried span, leaving a fresh build to the next
+    /// read.
+    pub(crate) fn rebuilt(
+        self,
+        source: &Source,
+        carried: &Columns,
+        map: &SourceMap,
+        held: &[TextRange],
+        slid: &[TextRange],
+    ) -> Option<Columns> {
+        let Some(settings) = self.settings else {
+            return Some(Columns::unreserved());
+        };
+        let targets = module_call_params(source);
+        if !targets_hold(&carried.targets, &targets, map, held, slid) {
+            return None;
+        }
+        let mut forwarded = Carried::default();
+        let mut slots: Vec<Option<usize>> = vec![None; carried.runs.len()];
+        for (run, &scope) in carried.runs.iter().enumerate() {
+            if overlaps(scope, held) {
+                continue;
+            }
+            slots[run] = Some(forwarded.runs.len());
+            forwarded.runs.push(forward_range(scope, map)?);
+        }
+        for shift in &carried.shifts {
+            let Some(run) = slots[shift.run] else {
+                continue;
+            };
+            forwarded.shifts.push(Shift {
+                columns: shift.columns,
+                run,
+                span: forward_range(shift.span, map)?,
+            });
+        }
+        for &(run, (line, gap, delta)) in &carried.widenings {
+            let Some(run) = slots[run] else {
+                continue;
+            };
+            let line = forward_start(line, map)?;
+            forwarded
+                .widenings
+                .push((run, (line, forward_range(gap, map)?, delta)));
+        }
+        let visitor = self.collected(source, Some(slid));
+        Some(self.formed(source, settings, &visitor, forwarded, &targets))
+    }
+
+    /// The table `carried` grows into once `visitor`'s runs form on top
+    /// of it: each run's scope, widening entries, and shifts, every
+    /// joined width read against `targets`.
+    fn formed(
+        self,
+        source: &Source,
+        settings: aligner::Settings,
+        visitor: &ReserveVisitor,
+        carried: Carried,
+        targets: &CallTargets,
+    ) -> Columns {
+        let Carried {
+            mut runs,
+            mut shifts,
+            mut widenings,
+        } = carried;
+        let base = runs.len();
+        for (index, run) in visitor.runs.iter().enumerate() {
+            runs.push(run.scope);
+            let entries = aligner::widening_entries(source, settings, run.members.iter().copied());
+            widenings.extend(entries.into_iter().map(|entry| (base + index, entry)));
+        }
+        let seated =
+            aligner::Widenings::from_entries(widenings.iter().map(|&(_, entry)| entry).collect());
+        let one_row = self.one_row.against(targets);
         let place = |member: aligner::Member| {
             let start = member.rewritten_value_gap(source)?.end();
             Some((start, source.column_of(start)))
@@ -145,8 +365,7 @@ impl Reservations {
             let form = one_row.rejoined(source, expr, parent, column, tail)?;
             Some(column + display_width(&form) + tail)
         };
-        let mut shifts = Vec::new();
-        for run in &visitor.runs {
+        for (index, run) in visitor.runs.iter().enumerate() {
             if run.candidate && !aligner::is_alignment_candidate(&run.members) {
                 continue;
             }
@@ -154,11 +373,12 @@ impl Reservations {
                 run.members.iter().map(|&m| place(m)).collect();
             let joined: Vec<Option<usize>> = placed.iter().map(|&at| joined(at?)).collect();
             let columns =
-                aligner::operator_columns(source, &run.members, settings, &widenings, &joined);
+                aligner::operator_columns(source, &run.members, settings, &seated, &joined);
             shifts.extend(placed.iter().zip(columns).filter_map(|(&placed, column)| {
                 let (start, at) = placed?;
                 Some(Shift {
                     columns: (column + aligner::VALUE_OFFSET).cast_signed() - at.cast_signed(),
+                    run: base + index,
                     span: source.row_tail(start),
                 })
             }));
@@ -166,7 +386,10 @@ impl Reservations {
         shifts.sort_unstable_by_key(Ranged::start);
         Columns {
             buffer: Some(settings.buffer()),
+            runs,
             shifts,
+            targets: hashed(targets),
+            widenings,
         }
     }
 
@@ -179,15 +402,85 @@ impl Reservations {
         let Some(settings) = self.settings else {
             return aligner::Widenings::default();
         };
-        widenings_over(source, settings, &self.collected(source))
+        widenings_over(source, settings, &self.collected(source, None))
     }
 }
 
-/// One reservation's row-tail span and the columns the alignment shifts
-/// it by.
-#[derive(Clone, Copy, Debug)]
+/// One run as its scope, its shifts as span and columns, and its
+/// widenings, the form [`Columns::canonical`] lists.
+#[cfg(test)]
+type CanonicalRun = (TextRange, Vec<(TextRange, isize)>, Vec<aligner::Widening>);
+
+/// Two tables are equal where they reserve the same columns over the
+/// same runs, whatever order their runs were numbered in.
+#[cfg(test)]
+impl PartialEq for Columns {
+    fn eq(&self, other: &Self) -> bool {
+        self.buffer == other.buffer
+            && self.targets == other.targets
+            && self.canonical() == other.canonical()
+    }
+}
+
+/// The runs, shifts, and widenings a rebuild carries past a splice,
+/// which a fresh build starts empty.
+#[derive(Default)]
+struct Carried {
+    runs: Vec<TextRange>,
+    shifts: Vec<Shift>,
+    widenings: Vec<(usize, aligner::Widening)>,
+}
+
+/// Each of `targets` as its callee offset and the hash of the
+/// parameters it resolves to, ascending by offset.
+fn hashed(targets: &CallTargets) -> Vec<(TextSize, u64)> {
+    let hasher = FxBuildHasher;
+    let mut hashed: Vec<(TextSize, u64)> = targets
+        .iter()
+        .map(|(&offset, &params)| (offset, hasher.hash_one(ComparableParameters::from(params))))
+        .collect();
+    hashed.sort_unstable_by_key(|&(offset, _)| offset);
+    hashed
+}
+
+/// True where the call targets a splice over `map` leaves outside its
+/// windows are the ones `carried` recorded, so every joined width read
+/// against them still holds: each carried target outside a `held`
+/// window forwards to a fresh one resolving the same parameters, and
+/// no fresh target outside a `slid` window is new.
+fn targets_hold(
+    carried: &[(TextSize, u64)],
+    fresh: &CallTargets,
+    map: &SourceMap,
+    held: &[TextRange],
+    slid: &[TextRange],
+) -> bool {
+    let inside = |offset: TextSize, windows: &[TextRange]| {
+        item_holding(windows, offset).is_some_and(|window| window.contains(offset))
+    };
+    let mut expected: FxHashMap<TextSize, u64> = FxHashMap::default();
+    for &(offset, hash) in carried {
+        if inside(offset, held) {
+            continue;
+        }
+        let Some(offset) = forward_start(offset, map) else {
+            return false;
+        };
+        expected.insert(offset, hash);
+    }
+    hashed(fresh)
+        .into_iter()
+        .filter(|&(offset, _)| !inside(offset, slid))
+        .all(|(offset, hash)| expected.remove(&offset) == Some(hash))
+        && expected.is_empty()
+}
+
+/// One reservation's row-tail span, the columns the alignment shifts
+/// it by, and the run it belongs to.
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct Shift {
     columns: isize,
+    run: usize,
     span: TextRange,
 }
 

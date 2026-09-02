@@ -102,6 +102,48 @@ impl Source {
         })
     }
 
+    /// Fills the column table over this text from the one `previous`
+    /// holds, every run no `held` window reached moved through `map`
+    /// and the runs the windows reached re-formed over the statements a
+    /// `slid` window reaches, the outcome reported under `rule`. The
+    /// slot is left empty where `previous` holds no table or the
+    /// reservation declines the carry, leaving a fresh build to the
+    /// next read.
+    pub(crate) fn rebuild_columns(
+        &mut self,
+        previous: OnceLock<Box<(Reservations, Columns)>>,
+        map: &SourceMap,
+        held: &[TextRange],
+        slid: &[TextRange],
+        rule: RuleId,
+    ) {
+        let was_held = previous.get().is_some();
+        let rebuilt = previous.into_inner().and_then(|table| {
+            let (reservations, columns) = *table;
+            reservations
+                .rebuilt(self, &columns, map, held, slid)
+                .map(|columns| Box::new((reservations, columns)))
+        });
+        trace::carried(
+            rule,
+            COLUMNS,
+            Outcome::of(true, was_held, rebuilt.is_some()),
+        );
+        self.columns = rebuilt.map_or_else(OnceLock::new, OnceLock::from);
+    }
+
+    /// Panics where the column table a splice rebuilt into this source
+    /// differs from the one a fresh read builds, naming `site` in the
+    /// message, and returns whether it held one to compare.
+    #[cfg(test)]
+    pub(crate) fn assert_rebuilt_columns_are_fresh(&self, site: &str) -> bool {
+        self.columns.get().is_some_and(|rebuilt| {
+            let fresh = rebuilt.0.columns(self);
+            assert_fresh(&rebuilt.1, &fresh, site, "column table rebuilt", "rebuilt");
+            true
+        })
+    }
+
     /// Fills the padding walk over this text from the one `previous`
     /// holds, every entry outside `windows` moved through `map` and the
     /// entries inside them walked afresh, `windows` being the spans a

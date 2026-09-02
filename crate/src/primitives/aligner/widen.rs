@@ -13,7 +13,33 @@ use crate::{primitives::inline::display_width, source::Source};
 /// entries of the other members sharing a member's line. No entry goes
 /// below zero.
 #[derive(Default)]
-pub(crate) struct Widenings(Vec<(TextSize, TextRange, isize)>);
+pub(crate) struct Widenings(Vec<Widening>);
+
+/// One member's line start, its gap, and the widening it seats on
+/// that line.
+pub(crate) type Widening = (TextSize, TextRange, isize);
+
+/// The widening entry each of `members` seats on its own line under
+/// `settings`, the gap ahead of the token brought to the settings'
+/// buffer and the post-operator gap brought to one space, zero entries
+/// dropped.
+pub(crate) fn widening_entries(
+    source: &Source,
+    settings: Settings,
+    members: impl Iterator<Item = Member>,
+) -> Vec<Widening> {
+    members
+        .filter_map(|m| {
+            let gap_part =
+                settings.buffer.cast_signed() - display_width(source.slice(m.gap)).cast_signed();
+            let value_part = m
+                .rewritten_value_gap(source)
+                .map_or(0, |g| 1 - display_width(source.slice(g)).cast_signed());
+            let delta = (gap_part + value_part).max(0);
+            (delta != 0).then_some((m.line_start, m.gap, delta))
+        })
+        .collect()
+}
 
 impl Widenings {
     /// Builds the widening entries for `members` under `settings`,
@@ -23,17 +49,12 @@ impl Widenings {
         settings: Settings,
         members: impl Iterator<Item = Member>,
     ) -> Self {
-        let mut entries: Vec<(TextSize, TextRange, isize)> = members
-            .filter_map(|m| {
-                let gap_part = settings.buffer.cast_signed()
-                    - display_width(source.slice(m.gap)).cast_signed();
-                let value_part = m
-                    .rewritten_value_gap(source)
-                    .map_or(0, |g| 1 - display_width(source.slice(g)).cast_signed());
-                let delta = (gap_part + value_part).max(0);
-                (delta != 0).then_some((m.line_start, m.gap, delta))
-            })
-            .collect();
+        Self::from_entries(widening_entries(source, settings, members))
+    }
+
+    /// `entries`, each a member's line, gap, and widening, ordered by
+    /// line and gap.
+    pub(crate) fn from_entries(mut entries: Vec<Widening>) -> Self {
         entries.sort_unstable_by_key(|&(line, gap, _)| (line, gap.start()));
         Self(entries)
     }

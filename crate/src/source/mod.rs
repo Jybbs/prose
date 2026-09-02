@@ -25,6 +25,8 @@ mod brackets;
 mod cells;
 mod lines;
 mod reparse;
+#[cfg(test)]
+pub(crate) use reparse::slid_range;
 mod tables;
 pub(crate) mod trace;
 
