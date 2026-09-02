@@ -30,7 +30,7 @@ impl<'a> AstVisitor<'a> for LiteralCollector<'a> {
             && let Some(params) = resolve_call_params(call, &self.resolved)
             && let Some(keywords) = keyword_args(self.source, call, Some(params))
         {
-            let bound = self.map.entry(params.range().start()).or_default();
+            let bound = self.map.entry(params.start()).or_default();
             for arg in keywords.args {
                 bound.entry(arg.name).or_default().push(arg.value);
             }

@@ -59,9 +59,9 @@ impl<'a, 'src, K: Copy> DefRun<'a, 'src, K> {
             .permute_or_repair(order, self.range.len(), |order, pinned| {
                 permute_in_place(order, body, self.range.clone(), |stmt| {
                     self.keys
-                        .get(&stmt.range().start())
+                        .get(&stmt.start())
                         .copied()
-                        .filter(|_| !holds(stmt) && !pinned.contains(&stmt.range().start()))
+                        .filter(|_| !holds(stmt) && !pinned.contains(&stmt.start()))
                         .map(|(tier, key)| rank(tier, key))
                 })
             });
@@ -113,7 +113,7 @@ pub(crate) fn def_run_tier_keys<'src, K: Copy>(
         members
             .into_iter()
             .zip(tiers)
-            .map(|((stmt, _, key), tier)| (stmt.range().start(), (tier, key)))
+            .map(|((stmt, _, key), tier)| (stmt.start(), (tier, key)))
             .collect(),
     )
 }
@@ -414,7 +414,7 @@ mod tests {
             class_member,
         )
         .expect("self-reference does not decline");
-        assert_eq!(keys[&body[0].range().start()].0, 0);
+        assert_eq!(keys[&body[0].start()].0, 0);
     }
 
     #[test]
@@ -427,7 +427,7 @@ mod tests {
             class_member,
         )
         .expect("acyclic run tiers");
-        let tier = |i: usize| keys[&body[i].range().start()].0;
+        let tier = |i: usize| keys[&body[i].start()].0;
         assert_eq!(tier(0), 0, "Beta has no dependency");
         assert_eq!(tier(1), 1, "Alpha depends on Beta");
     }

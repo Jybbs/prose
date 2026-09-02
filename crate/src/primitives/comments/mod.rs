@@ -208,7 +208,7 @@ pub(crate) fn trailing_comment(source: &Source, offset: TextSize) -> Option<Text
 /// The columns `comment` occupies as a trailing comment, its own indent
 /// dropped and the trailing gap counted ahead of it.
 pub(crate) fn trailing_width(source: &Source, comment: TextRange) -> usize {
-    display_width(TRAILING_GAP) + display_width(source.slice(comment).trim_start())
+    TRAILING_GAP.len() + display_width(source.slice(comment).trim_start())
 }
 
 #[cfg(test)]

@@ -4,7 +4,9 @@
 //! it.
 
 use ruff_python_ast::token::{Token, TokenKind, Tokens};
-use ruff_text_size::{Ranged, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
+
+use crate::source::Source;
 
 /// The characters a bracket closes with, the char-level counterpart to
 /// [`is_closer`].
@@ -52,6 +54,14 @@ pub(crate) fn open_brackets<'t>(tokens: impl IntoIterator<Item = &'t Token>) -> 
     open
 }
 
+/// The tokens of `source` opening inside `range`, a token straddling
+/// its start left out.
+pub(crate) fn tokens_within(source: &Source, range: TextRange) -> impl Iterator<Item = &Token> {
+    source
+        .tokens_overlapping(range)
+        .filter(move |token| range.contains(token.start()))
+}
+
 /// Returns `true` when the `[` at `offset` subscripts the expression
 /// ahead of it rather than opening a list, read off the nearest code
 /// token before it: a closer, a name, a literal, or a soft keyword used
@@ -77,7 +87,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{at, parse};
 
     #[rstest]
     #[case(TokenKind::Rpar, true)]
@@ -125,8 +135,9 @@ mod tests {
         #[case] expected: bool,
     ) {
         let source = parse(src);
-        let offset = TextSize::try_from(src.find('[').expect("the source holds a `[`"))
-            .expect("the offset fits");
-        assert_eq!(opens_subscript(source.tokens(), offset), expected);
+        assert_eq!(
+            opens_subscript(source.tokens(), at(src, "[").start()),
+            expected
+        );
     }
 }

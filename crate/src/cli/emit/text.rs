@@ -184,7 +184,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        cli::emit::{emitted, emitted_runs},
+        cli::emit::{emitted_runs, emitted_string},
         diagnostics::Diagnostic,
         source::Source,
         testing::{format_diagnostic, notebook, notebook_index, parse, range, replacement},
@@ -208,13 +208,12 @@ mod tests {
     }
 
     fn render_to_string(source: &Source, diag: &Diagnostic) -> String {
-        let buf = emitted(
+        emitted_string(
             &Text::new(false),
             source.source_file(),
             std::slice::from_ref(diag),
             &EmitterSummary::default(),
-        );
-        String::from_utf8(buf).expect("utf-8")
+        )
     }
 
     #[test]

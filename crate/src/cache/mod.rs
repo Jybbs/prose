@@ -57,6 +57,13 @@ mod tests {
         }
     }
 
+    /// A fresh temp dir beside a 100 MiB cache rooted inside it.
+    fn cached() -> (TempDir, Cache) {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        (tmp, cache)
+    }
+
     fn entry(formatted: &str) -> CacheEntry {
         CacheEntry {
             // The rule must be a registered slug, because `RuleId`
@@ -75,8 +82,8 @@ mod tests {
     /// entry-shaped file.
     fn generation_beside(cache: &Cache, name: &str) -> std::path::PathBuf {
         let dir = cache.store.join(name);
-        std::fs::create_dir_all(&dir).expect("creates");
-        std::fs::write(dir.join("cafebabe"), b"an earlier build's entry").expect("writes");
+        fs_err::create_dir_all(&dir).expect("creates");
+        fs_err::write(dir.join("cafebabe"), b"an earlier build's entry").expect("writes");
         dir
     }
 
@@ -231,8 +238,7 @@ mod tests {
 
     #[test]
     fn clean_clears_every_entry_and_returns_report() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let key = key(b"x = 1\n", CONFIG_A, rules());
         insert(&cache, &key, &entry("y = 1\n"));
         let report = cache.clean().expect("cleans");
@@ -243,8 +249,7 @@ mod tests {
 
     #[test]
     fn clean_returns_zeros_on_empty_cache() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let report = cache.clean().expect("cleans");
         assert_eq!(report.entries, 0);
         assert_eq!(report.bytes, 0);
@@ -252,8 +257,7 @@ mod tests {
 
     #[test]
     fn compact_evicts_below_the_low_water_mark() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         for i in 0..10 {
             insert(
                 &cache,
@@ -274,8 +278,7 @@ mod tests {
     }
     #[test]
     fn compact_evicts_until_under_cap() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let key_old = key(b"x = 1\n", CONFIG_A, rules());
         let key_new = key(b"y = 2\n", CONFIG_A, rules());
         insert(&cache, &key_old, &entry("a = 1\n"));
@@ -294,8 +297,7 @@ mod tests {
 
     #[test]
     fn compact_holds_a_generation_touched_inside_the_grace_window() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let live = generation_beside(&cache, "live");
 
         let report = cache.compact();
@@ -306,8 +308,7 @@ mod tests {
 
     #[test]
     fn compact_holds_one_entry_at_the_smallest_cap() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         insert(
             &cache,
             &key(b"x = 1\n", CONFIG_A, rules()),
@@ -331,8 +332,7 @@ mod tests {
     }
     #[test]
     fn compact_prunes_a_generation_past_the_grace_window() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let dead = generation_beside(&cache, "dead");
         age(&dead);
 
@@ -344,10 +344,9 @@ mod tests {
 
     #[test]
     fn compact_removes_an_entry_left_directly_in_the_store() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let flat = cache.store.join("deadbeef");
-        std::fs::write(&flat, b"a pre-generation entry").expect("writes");
+        fs_err::write(&flat, b"a pre-generation entry").expect("writes");
 
         let report = cache.compact();
 
@@ -357,8 +356,7 @@ mod tests {
 
     #[test]
     fn compact_returns_zeros_when_under_cap() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let key = key(b"x = 1\n", CONFIG_A, rules());
         insert(&cache, &key, &entry("y = 1\n"));
         let report = cache.compact();
@@ -368,8 +366,7 @@ mod tests {
 
     #[test]
     fn info_counts_entries_across_generations() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         insert(
             &cache,
             &key(b"x = 1\n", CONFIG_A, rules()),
@@ -382,8 +379,7 @@ mod tests {
 
     #[test]
     fn info_counts_entries_and_byte_total() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         insert(
             &cache,
             &key(b"x = 1\n", CONFIG_A, rules()),
@@ -403,8 +399,7 @@ mod tests {
 
     #[test]
     fn info_reports_zeros_on_empty_cache() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let info = cache.info();
         assert_eq!(info.entries, 0);
         assert_eq!(info.bytes, 0);
@@ -414,8 +409,7 @@ mod tests {
 
     #[test]
     fn info_skips_tmp_sidecars() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         fs_err::write(cache.root.join("orphan.123.tmp"), b"in flight").expect("writes");
         let info = cache.info();
         assert_eq!(info.entries, 0);
@@ -424,8 +418,7 @@ mod tests {
 
     #[test]
     fn info_and_compact_leave_the_own_output_ledger_alone() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         cache.record_own_output(&key(b"x = 1\n", CONFIG_A, rules()));
 
         assert_eq!(cache.info().entries, 0);
@@ -435,8 +428,7 @@ mod tests {
 
     #[test]
     fn own_output_marker_round_trips_across_instances() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (tmp, cache) = cached();
         let marked = key(b"y = 1\n", CONFIG_A, rules());
         let unmarked = key(b"z = 2\n", CONFIG_A, rules());
         cache.record_own_output(&marked);
@@ -465,8 +457,7 @@ mod tests {
 
     #[test]
     fn insert_leaves_no_tmp_sidecar_on_success() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let key = key(b"x = 1\n", CONFIG_A, rules());
         insert(&cache, &key, &entry("y = 1\n"));
         let tmp_count = fs_err::read_dir(&cache.root)
@@ -479,8 +470,7 @@ mod tests {
 
     #[test]
     fn insert_then_lookup_round_trips_a_notebook_rewrite() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let key = key(b"nb", CONFIG_A, rules());
         let original = CacheEntry {
             diagnostics: Vec::new(),
@@ -501,8 +491,7 @@ mod tests {
 
     #[test]
     fn insert_then_lookup_round_trips_a_settle_report() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let key = key(b"x = 1\n", CONFIG_A, rules());
         let original = CacheEntry {
             unstable: Some(Box::new(UnstableRewrite {
@@ -520,8 +509,7 @@ mod tests {
 
     #[test]
     fn insert_then_lookup_round_trips_a_skipped_rewrite() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let key = key(b"x = 1\n", CONFIG_A, rules());
         let original = CacheEntry {
             diagnostics: Vec::new(),
@@ -535,8 +523,7 @@ mod tests {
 
     #[test]
     fn insert_then_lookup_round_trips_the_entry() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let key = key(b"x = 1\n", CONFIG_A, rules());
         let original = entry("y = 1\n");
         insert(&cache, &key, &original);
@@ -546,8 +533,7 @@ mod tests {
 
     #[test]
     fn lookup_returns_none_for_corrupt_entry() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let key = key(b"x = 1\n", CONFIG_A, rules());
         fs_err::write(cache.path_for(&key), b"not postcard bytes").expect("writes");
         assert!(cache.lookup(&key).is_none());
@@ -555,8 +541,7 @@ mod tests {
 
     #[test]
     fn lookup_returns_none_for_missing_entry() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 100);
+        let (_tmp, cache) = cached();
         let key = key(b"x = 1\n", CONFIG_A, rules());
         assert!(cache.lookup(&key).is_none());
     }

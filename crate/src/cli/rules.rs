@@ -6,6 +6,7 @@ use serde::Serialize;
 
 use super::{
     args::{RulesArgs, RulesFormat},
+    emit::write_json_line,
     exit_status::ExitStatus,
 };
 use crate::{
@@ -38,8 +39,7 @@ pub(crate) fn list<W: Write>(args: &RulesArgs, mut stdout: W) -> anyhow::Result<
         .collect();
     match args.output_format {
         RulesFormat::Json => {
-            serde_json::to_writer(&mut stdout, &rules).map_err(io::Error::from)?;
-            writeln!(stdout)?;
+            write_json_line(&mut stdout, &rules)?;
         }
         RulesFormat::Table => write_table(&mut stdout, &rules)?,
     }

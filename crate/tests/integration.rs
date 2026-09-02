@@ -8,7 +8,7 @@
 
 mod common;
 
-use std::fmt::Write;
+use std::{fmt::Write, path::Path};
 
 use itertools::Itertools;
 use prose::{diagnostics::Diagnostic, pipeline::Pipeline, source::Source};
@@ -100,6 +100,21 @@ fn assert_settles(pipeline: &Pipeline, output: &str, domain: &str, case: &str, u
     );
 }
 
+/// The domain, case, sidecar options, and default pipeline for `path`,
+/// `None` for an `identity` fixture the full-pipeline sweeps pass over.
+fn sweepable(path: &Path) -> Option<(&str, &str, common::HarnessOptions, Pipeline)> {
+    let domain = common::domain_name(path);
+    (domain != "identity").then(|| {
+        let (config, harness) = common::fixture_inputs(path);
+        (
+            domain,
+            common::case_name(path),
+            harness,
+            Pipeline::with_defaults(&config),
+        )
+    })
+}
+
 /// Renders a formatted notebook as its per-cell source joined by a
 /// `# --- cell N ---` banner, so a snapshot shows the cell structure the
 /// concatenated buffer hides. The banner numbers each cell after the
@@ -159,14 +174,9 @@ fn render(diagnostics: &[Diagnostic]) -> String {
 #[test]
 fn crlf_input_holds_its_endings_and_settles() {
     insta::glob!("fixtures/**/input.py", |path| {
-        let domain = common::domain_name(path);
-        let case = common::case_name(path);
-        if domain == "identity" {
+        let Some((domain, case, _, pipeline)) = sweepable(path) else {
             return;
-        }
-
-        let (config, _) = common::fixture_inputs(path);
-        let pipeline = Pipeline::with_defaults(&config);
+        };
         let lf = fs_err::read_to_string(path).unwrap_or_else(|e| panic!("read fixture: {e}"));
         let source = crlf(&lf);
         let (first, _) = pipeline
@@ -183,14 +193,9 @@ fn crlf_input_holds_its_endings_and_settles() {
 #[test]
 fn pipeline_is_idempotent() {
     insta::glob!("fixtures/**/input.py", |path| {
-        let domain = common::domain_name(path);
-        let case = common::case_name(path);
-        if domain == "identity" {
+        let Some((domain, case, _, pipeline)) = sweepable(path) else {
             return;
-        }
-
-        let (config, _) = common::fixture_inputs(path);
-        let pipeline = Pipeline::with_defaults(&config);
+        };
         let source = Source::from_path(path).expect("fixture input reads and parses as Python");
         let (first, _) = pipeline
             .run(source)
@@ -202,12 +207,9 @@ fn pipeline_is_idempotent() {
 #[test]
 fn prose_is_stable_after_ruff() {
     insta::glob!("fixtures/**/input.py", |path| {
-        let domain = common::domain_name(path);
-        let case = common::case_name(path);
-        if domain == "identity" {
+        let Some((domain, case, harness, pipeline)) = sweepable(path) else {
             return;
-        }
-        let (config, harness) = common::fixture_inputs(path);
+        };
         if harness.skip_ruff_coexistence {
             return;
         }
@@ -222,7 +224,6 @@ fn prose_is_stable_after_ruff() {
             })
             .into_code();
 
-        let pipeline = Pipeline::with_defaults(&config);
         let format = |text: &str| {
             pipeline
                 .run(

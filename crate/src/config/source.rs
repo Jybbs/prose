@@ -35,10 +35,9 @@ impl ConfigSource {
         notices: &NoticeDedup,
     ) -> Result<Option<Self>, ConfigError> {
         let mut on_notice = |n: ConfigNotice<'_>| notices.emit(n);
-        match walk_prose_table(from, &mut on_notice)? {
-            Some((anchor, table)) => Ok(Some(Self::build(anchor, table, &mut on_notice)?)),
-            None => Ok(None),
-        }
+        walk_prose_table(from, &mut on_notice)?
+            .map(|(anchor, table)| Self::build(anchor, table, &mut on_notice))
+            .transpose()
     }
 
     /// Reads `[tool.prose]` from `bytes`'s leading PEP 723 block as the
@@ -137,7 +136,7 @@ mod tests {
         let tmp = TempDir::new().expect("tempdir");
         write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 120\n");
         let nested = tmp.path().join("pkg/inner");
-        std::fs::create_dir_all(&nested).expect("nested dirs create");
+        fs_err::create_dir_all(&nested).expect("nested dirs create");
 
         let source = discover(&nested).expect("loads").expect("a source");
 

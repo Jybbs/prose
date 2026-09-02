@@ -390,14 +390,17 @@ mod tests {
         }
     }
 
-    #[test]
-    fn a_merge_leaves_a_statement_sharing_its_line_with_code() {
-        let source = parse(
-            "from pkg import alpha
-from pkg import beta; x = 1
-",
-        );
-        assert!(tight_rule().apply(&source).is_empty());
+    #[rstest]
+    fn a_statement_the_layout_holds_is_left_untouched(
+        #[values(
+            "from pkg import alpha\nfrom pkg import beta; x = 1\n",
+            "from pkg import (\n    alpha,\n    beta,\n    gamma,\n)\n",
+            "x = 1; import os, sys\n",
+            "x = 1; from pkg import alpha, beta, gamma\n"
+        )]
+        src: &str,
+    ) {
+        assert!(tight_rule().apply(&parse(src)).is_empty());
     }
 
     #[rstest]
@@ -434,23 +437,5 @@ from pkg import beta; x = 1
             .expect("first statement is a from-import");
 
         assert_eq!(import_keyword_gap(&source, node), expected);
-    }
-
-    #[test]
-    fn multi_line_import_is_left_untouched() {
-        let source = parse("from pkg import (\n    alpha,\n    beta,\n    gamma,\n)\n");
-        assert!(tight_rule().apply(&source).is_empty());
-    }
-
-    #[test]
-    fn semicolon_joined_bare_import_is_left_untouched() {
-        let source = parse("x = 1; import os, sys\n");
-        assert!(tight_rule().apply(&source).is_empty());
-    }
-
-    #[test]
-    fn semicolon_joined_import_is_left_untouched() {
-        let source = parse("x = 1; from pkg import alpha, beta, gamma\n");
-        assert!(tight_rule().apply(&source).is_empty());
     }
 }

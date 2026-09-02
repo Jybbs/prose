@@ -59,7 +59,6 @@ fn load_absent_prose_section_returns_defaults() {
 fn load_empty_prose_toml_returns_defaults_and_stops_walk() {
     let tmp = TempDir::new().expect("tempdir");
     let nested = tmp.path().join("child");
-    std::fs::create_dir_all(&nested).expect("nested dirs create");
     write_prose_toml(&nested, "");
     write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
 
@@ -73,7 +72,7 @@ fn load_from_a_file_path_walks_from_its_directory() {
     let tmp = TempDir::new().expect("tempdir");
     write_prose_toml(tmp.path(), "code-line-length = 120\n");
     let file = tmp.path().join("mod.py");
-    std::fs::write(&file, "x = 1\n").expect("writes");
+    fs_err::write(&file, "x = 1\n").expect("writes");
 
     let config = Config::load(&file).expect("loads");
 
@@ -137,8 +136,6 @@ fn load_per_rule_max_shift_overrides_are_independent() {
 fn load_picks_nearest_ancestor_when_multiple_configs_exist() {
     let tmp = TempDir::new().expect("tempdir");
     let nested = tmp.path().join("a/b");
-    std::fs::create_dir_all(&nested).expect("nested dirs create");
-
     write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
     write_pyproject(&nested, "[tool.prose]\ncode-line-length = 120\n");
 
@@ -151,7 +148,6 @@ fn load_picks_nearest_ancestor_when_multiple_configs_exist() {
 fn load_picks_nearest_prose_toml_over_ancestor_pyproject() {
     let tmp = TempDir::new().expect("tempdir");
     let nested = tmp.path().join("child");
-    std::fs::create_dir_all(&nested).expect("nested dirs create");
     write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
     write_prose_toml(&nested, "code-line-length = 120\n");
 
@@ -293,7 +289,7 @@ fn load_unknown_key_routes_through_default_warn_callback() {
 #[test]
 fn load_unreadable_config_returns_io_error() {
     let tmp = TempDir::new().expect("tempdir");
-    std::fs::create_dir(tmp.path().join("prose.toml")).expect("dir at config path");
+    fs_err::create_dir(tmp.path().join("prose.toml")).expect("dir at config path");
 
     assert_matches!(Config::load(tmp.path()), Err(ConfigError::Io(_)));
 }
@@ -302,7 +298,6 @@ fn load_unreadable_config_returns_io_error() {
 fn load_walks_past_sectionless_pyproject_to_ancestor_prose_toml() {
     let tmp = TempDir::new().expect("tempdir");
     let nested = tmp.path().join("child");
-    std::fs::create_dir_all(&nested).expect("nested dirs create");
     write_pyproject(&nested, "[project]\nname = \"x\"\n");
     write_prose_toml(tmp.path(), "code-line-length = 120\n");
 
@@ -315,7 +310,7 @@ fn load_walks_past_sectionless_pyproject_to_ancestor_prose_toml() {
 fn load_walks_up_to_ancestor_directory() {
     let tmp = TempDir::new().expect("tempdir");
     let nested = tmp.path().join("a/b/c");
-    std::fs::create_dir_all(&nested).expect("nested dirs create");
+    fs_err::create_dir_all(&nested).expect("nested dirs create");
     write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 120\n");
 
     let config = Config::load(&nested).expect("loads");

@@ -11,9 +11,7 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{TextRange, TextSize};
 
 use super::{
-    Cap, Member, Settings, Widenings,
-    holds::{is_alignment_candidate, shares_column},
-    members::line_gap_before,
+    Cap, Member, Settings, Widenings, holds::is_alignment_candidate, members::line_gap_before,
 };
 use crate::{
     config::MaxShift,
@@ -96,8 +94,7 @@ pub(crate) fn settled_tail(
     settings: Settings,
     code_end: TextSize,
 ) -> usize {
-    let tail =
-        display_width(source.slice(TextRange::new(code_end, source.text().line_end(code_end))));
+    let tail = display_width(source.slice(source.row_tail(code_end)));
     settings.cap.map_or(tail, |cap| {
         tail.saturating_add_signed(-comment_slack(source, member, cap.settling))
     })
@@ -255,9 +252,9 @@ fn group_paddings<'m>(
 fn is_forecast_candidate(members: &[Member], joined: &[Option<usize>]) -> bool {
     members.len() >= 2
         && members.windows(2).enumerate().all(|(i, pair)| {
-            shares_column(pair, |m| m.baseline)
-                || (pair[0].baseline == pair[1].baseline
-                    && joined.get(i + 1).is_some_and(Option::is_some))
+            pair[0].baseline == pair[1].baseline
+                && (pair[0].line_start != pair[1].line_start
+                    || joined.get(i + 1).is_some_and(Option::is_some))
         })
 }
 
@@ -448,7 +445,7 @@ mod tests {
             let line_start = TextSize::of(&text);
             text.push_str(&"x".repeat(width));
             let gap_start = TextSize::of(&text);
-            text.push_str(&" ".repeat(gap_chars));
+            text.extend(std::iter::repeat_n(' ', gap_chars));
             let gap_end = TextSize::of(&text);
             text.push_str("= 0\n");
             members.push(align_member(
@@ -483,9 +480,7 @@ mod tests {
     }
 
     fn sorted_summaries(edits: &[Edit]) -> Vec<(u32, u32, String)> {
-        let mut out: Vec<_> = edits.iter().map(summary).collect();
-        out.sort();
-        out
+        edits.iter().map(summary).sorted().collect()
     }
 
     /// Pulls a sortable `(start, end, content)` tuple out of an `Edit`.

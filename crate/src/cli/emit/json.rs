@@ -74,7 +74,7 @@ mod tests {
     use serde_json::{Value, json};
 
     use super::*;
-    use crate::cli::emit::emitted;
+    use crate::cli::emit::emitted_string;
     use crate::diagnostics::Diagnostic;
     use crate::source::Source;
     use crate::testing::{format_diagnostic, parse, range, replacement};
@@ -92,8 +92,7 @@ mod tests {
     }
 
     fn emit_text(source: &Source, diagnostics: &[Diagnostic], summary: &EmitterSummary) -> String {
-        let buf = emitted(&Json, source.source_file(), diagnostics, summary);
-        String::from_utf8(buf).expect("utf-8")
+        emitted_string(&Json, source.source_file(), diagnostics, summary)
     }
 
     fn parse_records(text: &str) -> Vec<Value> {

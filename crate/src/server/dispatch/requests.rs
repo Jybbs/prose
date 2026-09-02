@@ -54,21 +54,23 @@ pub(super) fn handle_request(
                     notices.offer(connection, uri, &doc.text, &rewrite)
                 })
         }
-        Err(ExtractError::MethodMismatch(request)) => send(
-            connection,
-            Message::Response(Response::new_err(
-                request.id,
-                ErrorCode::MethodNotFound as i32,
-                format!("unsupported request `{}`", request.method),
-            )),
-        ),
-        Err(ExtractError::JsonError { method, error }) => send(
-            connection,
-            Message::Response(Response::new_err(
-                id,
-                ErrorCode::InvalidParams as i32,
-                format!("malformed `{method}` request: {error}"),
-            )),
-        ),
+        Err(error) => {
+            let (id, code, message) = match error {
+                ExtractError::MethodMismatch(request) => (
+                    request.id,
+                    ErrorCode::MethodNotFound,
+                    format!("unsupported request `{}`", request.method),
+                ),
+                ExtractError::JsonError { method, error } => (
+                    id,
+                    ErrorCode::InvalidParams,
+                    format!("malformed `{method}` request: {error}"),
+                ),
+            };
+            send(
+                connection,
+                Message::Response(Response::new_err(id, code as i32, message)),
+            )
+        }
     }
 }

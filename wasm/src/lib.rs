@@ -2,7 +2,9 @@
 
 use std::{collections::BTreeSet, error::Error};
 
-use prose::{config::Config, findings::lint_records_json, pipeline::Pipeline, source::Source};
+use prose::{
+    config::Config, findings::lint_records_json, pipeline::Pipeline, rule::RuleId, source::Source,
+};
 use wasm_bindgen::prelude::*;
 
 /// The output of [`format`]: the rewritten source, the effective
@@ -61,8 +63,9 @@ fn try_format(config_toml: &str, source: &str) -> Result<FormatResult, Box<dyn E
         formatted: formatted.text().to_owned(),
         unstable_rules: pipeline
             .unsettled(&formatted)
-            .into_iter()
-            .map(|rule| rule.as_str().to_owned())
+            .iter()
+            .map(RuleId::as_str)
+            .map(String::from)
             .collect(),
     })
 }

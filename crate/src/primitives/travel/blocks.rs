@@ -41,9 +41,8 @@ pub(crate) fn block_shift(
 /// strictly inside a string token that itself spans rows. Shifting such
 /// a row would pad the string's own interior, so a move holds it.
 pub(crate) fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
-    let rows = source.line_index(range.end()).get() - source.line_index(range.start()).get() + 1;
-    let mut frozen = vec![false; rows];
     let head = source.line_index(range.start()).get();
+    let mut frozen = vec![false; source.line_index(range.end()).get() - head + 1];
     for token in source.tokens_overlapping(range) {
         if !matches!(
             token.kind(),
@@ -54,11 +53,9 @@ pub(crate) fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
         }
         let opens = source.line_index(token.start()).get();
         let closes = source.line_index(token.end()).get();
-        for row in (opens + 1)..=closes {
-            if let Some(slot) = row.checked_sub(head).and_then(|r| frozen.get_mut(r)) {
-                *slot = true;
-            }
-        }
+        let hi = (closes + 1).saturating_sub(head).min(frozen.len());
+        let lo = (opens + 1).saturating_sub(head).min(hi);
+        frozen[lo..hi].fill(true);
     }
     frozen
 }

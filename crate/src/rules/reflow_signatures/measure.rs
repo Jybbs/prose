@@ -28,7 +28,7 @@ impl Expansion<'_> {
     /// beneath it, leaving a subscript slice holding none to overflow
     /// the row whole.
     pub(super) fn inline_fits(&self, fd: &StmtFunctionDef, text: &str) -> bool {
-        let start = fd.parameters.range().start();
+        let start = fd.parameters.start();
         let slack_before = |offset: TextSize| -> isize {
             fd.parameters
                 .iter()

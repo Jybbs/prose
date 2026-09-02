@@ -1,6 +1,9 @@
 //! `prose cache` subcommand handlers and their shared helpers.
 
-use std::{io::Write, time::SystemTime};
+use std::{
+    io::{self, Write},
+    time::SystemTime,
+};
 
 use anyhow::Context;
 
@@ -11,16 +14,12 @@ use crate::{
 };
 
 pub(crate) fn clean<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {
-    match Cache::open().and_then(|c| c.clean()) {
-        Ok(report) => {
-            write_report(stdout, report)?;
-            Ok(ExitStatus::Clean)
-        }
-        Err(err) => {
-            eprintln!("error: {err}");
-            Ok(ExitStatus::ConfigError)
-        }
-    }
+    let report = match or_status(Cache::open().and_then(|c| c.clean())) {
+        Ok(report) => report,
+        Err(status) => return Ok(status),
+    };
+    write_report(stdout, report)?;
+    Ok(ExitStatus::Clean)
 }
 
 pub(crate) fn compact<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {
@@ -28,7 +27,7 @@ pub(crate) fn compact<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {
         Ok(c) => c,
         Err(s) => return Ok(s),
     };
-    let cache = match open_or_status() {
+    let cache = match or_status(Cache::open()) {
         Ok(c) => c
             .with_max_entries(config.cache.max_entries)
             .with_max_size_mib(config.cache.max_size_mib),
@@ -39,14 +38,19 @@ pub(crate) fn compact<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {
 }
 
 pub(crate) fn info<W: Write>(mut stdout: W) -> anyhow::Result<ExitStatus> {
-    let cache = match open_or_status() {
+    let cache = match or_status(Cache::open()) {
         Ok(c) => c,
         Err(s) => return Ok(s),
     };
     let info = cache.info();
-    writeln!(stdout, "path: {}", info.path.display()).context("writing stdout")?;
-    writeln!(stdout, "entries: {}", info.entries).context("writing stdout")?;
-    writeln!(stdout, "bytes: {}", info.bytes).context("writing stdout")?;
+    writeln!(
+        stdout,
+        "path: {}\nentries: {}\nbytes: {}",
+        info.path.display(),
+        info.entries,
+        info.bytes
+    )
+    .context("writing stdout")?;
     if let Some(t) = info.oldest_mtime {
         writeln!(stdout, "oldest: {}", relative_age(t)).context("writing stdout")?;
     }
@@ -56,8 +60,10 @@ pub(crate) fn info<W: Write>(mut stdout: W) -> anyhow::Result<ExitStatus> {
     Ok(ExitStatus::Clean)
 }
 
-fn open_or_status() -> Result<Cache, ExitStatus> {
-    Cache::open().map_err(|e| {
+/// `result`'s value, or the status a failed cache operation exits with
+/// once its error is reported.
+fn or_status<T>(result: io::Result<T>) -> Result<T, ExitStatus> {
+    result.map_err(|e| {
         eprintln!("error: {e}");
         ExitStatus::ConfigError
     })

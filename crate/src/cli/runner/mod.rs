@@ -22,7 +22,7 @@ use super::{
 };
 use crate::{
     cache::{Anchor, Cache, Rewrite},
-    cli::emit::Text,
+    cli::emit::{EmitterSummary, Run, Text},
     config::Config,
     diagnostics::Diagnostic,
     unstable::UnstableRewrite,
@@ -64,6 +64,20 @@ enum FileOutcome {
 }
 
 impl FileOutcome {
+    /// The emitter run this outcome renders through, `None` for a file
+    /// that failed.
+    fn run(&self) -> Option<Run<'_>> {
+        match self {
+            Self::Done {
+                diagnostics,
+                file,
+                notebook_index,
+                ..
+            } => Some(Run::new(file, diagnostics, notebook_index.as_deref())),
+            Self::Failed(_) => None,
+        }
+    }
+
     /// The source file and settle report this outcome carries, `None`
     /// for a settled rewrite and for a file that failed.
     fn unstable(&self) -> Option<(&SourceFile, &UnstableRewrite)> {
@@ -262,10 +276,24 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
     if emits {
         emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
     }
-    let status = finish(&outcomes, setup.cache.is_some(), setup.verbose, pass)
+    let status = close_run(&outcomes, &summary, &setup, present, pass, &mut stderr)
         .max(unstable_status(&outcomes));
-    render_summary(&mut stderr, present, &outcomes, &summary, pass);
     Ok(status)
+}
+
+/// Closes a run, rendering its summary onto `stderr` and resolving the
+/// status it exits with.
+fn close_run<E: Write>(
+    outcomes: &[FileOutcome],
+    summary: &EmitterSummary,
+    setup: &RunSetup,
+    present: &Presentation,
+    pass: Pass,
+    stderr: &mut E,
+) -> ExitStatus {
+    let status = finish(outcomes, setup.cache.is_some(), setup.verbose, pass);
+    render_summary(stderr, present, outcomes, summary, pass);
+    status
 }
 
 /// Runs `format`, writing formatted source and undecorated diffs to the
@@ -389,14 +417,14 @@ fn format_paths_diff<O: Write, E: Write>(
     )?;
     writer.flush().context("flushing stdout")?;
     let summary = emitter_summary(&outcomes);
-    let status = finish(
+    Ok(close_run(
         &outcomes,
-        setup.cache.is_some(),
-        setup.verbose,
+        &summary,
+        setup,
+        present,
         Pass::Preview,
-    );
-    render_summary(stderr, present, &outcomes, &summary, Pass::Preview);
-    Ok(status)
+        stderr,
+    ))
 }
 
 fn format_paths_rewrite<O: RawStream + AsLockedWrite, E: Write>(
@@ -413,9 +441,7 @@ fn format_paths_rewrite<O: RawStream + AsLockedWrite, E: Write>(
     if !format.is_text() {
         emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
     }
-    let status = finish(&outcomes, setup.cache.is_some(), setup.verbose, pass);
-    render_summary(stderr, present, &outcomes, &summary, pass);
-    Ok(status)
+    Ok(close_run(&outcomes, &summary, setup, present, pass, stderr))
 }
 
 fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
@@ -565,7 +591,7 @@ mod tests {
     fn fixture(source: &str) -> (TempDir, PathBuf) {
         let tmp = TempDir::new().expect("tempdir");
         let file = tmp.path().join("a.py");
-        std::fs::write(&file, source).expect("writes");
+        fs_err::write(&file, source).expect("writes");
         (tmp, file)
     }
 
@@ -641,11 +667,10 @@ mod tests {
         let tmp = TempDir::new().expect("tempdir");
         let broken = tmp.path().join("broken");
         let plain = tmp.path().join("plain");
-        std::fs::create_dir_all(&broken).expect("dirs create");
-        std::fs::create_dir_all(&plain).expect("dirs create");
+        fs_err::create_dir_all(&plain).expect("dirs create");
         write_pyproject(&broken, "[this is not valid TOML");
-        std::fs::write(broken.join("a.py"), "x = 1\n").expect("writes");
-        std::fs::write(plain.join("b.py"), "x = 1\n").expect("writes");
+        fs_err::write(broken.join("a.py"), "x = 1\n").expect("writes");
+        fs_err::write(plain.join("b.py"), "x = 1\n").expect("writes");
 
         let mut args = check_args(vec![broken.join("a.py"), plain.join("b.py")], false);
         args.common.output_format = OutputFormat::Json;
@@ -826,7 +851,7 @@ mod tests {
         let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
 
         assert_eq!(status, ExitStatus::Clean);
-        let contents = std::fs::read_to_string(&file).expect("reads");
+        let contents = fs_err::read_to_string(&file).expect("reads");
         assert_eq!(contents, "x = 1\n");
     }
 
@@ -851,7 +876,7 @@ mod tests {
         let status = run_format(format_args(vec![file.clone()], false, false));
 
         assert_eq!(status, ExitStatus::Clean);
-        let after = std::fs::read_to_string(&file).expect("reads");
+        let after = fs_err::read_to_string(&file).expect("reads");
         assert_eq!(after, UNALIGNED);
     }
 
@@ -948,16 +973,16 @@ mod tests {
         let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
 
         assert_eq!(status, ExitStatus::Clean);
-        let after = std::fs::read_to_string(&file).expect("reads");
+        let after = fs_err::read_to_string(&file).expect("reads");
         assert_ne!(after, UNALIGNED);
     }
 
     #[test]
     fn format_writes_return_config_error_when_target_is_readonly() {
         let (tmp, file) = fixture(UNALIGNED);
-        let mut perms = std::fs::metadata(&file).expect("metadata").permissions();
+        let mut perms = fs_err::metadata(&file).expect("metadata").permissions();
         perms.set_readonly(true);
-        std::fs::set_permissions(&file, perms).expect("set_permissions");
+        fs_err::set_permissions(&file, perms).expect("set_permissions");
 
         let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
 

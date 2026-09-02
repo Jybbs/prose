@@ -5,10 +5,14 @@
 //! interstitial text between adjacent items stays in source
 //! position.
 
+use ruff_python_ast::token::TokenKind;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
 
-use crate::{primitives::inline::display_width, source::Source};
+use crate::{
+    primitives::{inline::display_width, range::blocks_span, tokens::tokens_within},
+    source::Source,
+};
 
 mod assemble;
 mod blocks;
@@ -56,7 +60,7 @@ pub(crate) fn reordered_lines_fit(
     budget: usize,
 ) -> bool {
     let text = source.text();
-    let outer = TextRange::new(text.line_start(span.start()), text.line_end(span.end()));
+    let outer = text.lines_range(span);
     let head = source.slice(TextRange::new(outer.start(), span.start()));
     let tail = source.slice(TextRange::new(span.end(), outer.end()));
     let cap = source
@@ -90,6 +94,27 @@ pub(crate) fn swap_span_commented<T: Ranged>(source: &Source, items: &[T]) -> bo
         return false;
     };
     source.intersects_comment(TextRange::new(first.start(), tail_end(source, last.end())))
+}
+
+/// True where a leaf group over `items` holds its order as laid out:
+/// `swapped` where the group packs members onto shared rows, opens
+/// mid-row, or carries code in a gap, spanning lines, with a comment
+/// inside the swap span.
+pub(crate) fn swap_span_holds<T: Ranged>(source: &Source, items: &[T], swapped: bool) -> bool {
+    swapped
+        && items.len() > 1
+        && source.contains_line_break(blocks_span(items))
+        && swap_span_commented(source, items)
+}
+
+/// True when a gap between two consecutive members of `items` carries
+/// a token of its own past the separators and comments inside it, the
+/// shape a positional argument sitting between two keywords takes.
+pub(crate) fn gaps_carry_code<T: Ranged>(source: &Source, items: &[T]) -> bool {
+    items.windows(2).any(|pair| {
+        tokens_within(source, TextRange::new(pair[0].end(), pair[1].start()))
+            .any(|token| !token.kind().is_trivia() && token.kind() != TokenKind::Comma)
+    })
 }
 
 #[cfg(test)]

@@ -3,15 +3,13 @@
 //! exploded closing `)` drops to, and whether a literal holding a call
 //! is one `reflow-collections` expands once its row lands.
 
-use std::borrow::Cow;
-
 use ruff_python_ast::{Expr, ExprCall, helpers::any_over_expr, token::TokenKind};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use super::Exploder;
 use crate::primitives::{
-    edit::apply_inline_edits,
+    edit::{apply_inline_edits, placed_head},
     inline::{end_column, indent_width, last_line, settled_width},
     layout::requires_expand,
     tokens::{is_closer, is_opener},
@@ -24,7 +22,7 @@ impl<'a> Exploder<'a> {
     /// walk, a `reserved` offset starts from the column `align_equals`
     /// shifts its row to.
     fn placed_column(&self, offset: TextSize, reserved: bool) -> usize {
-        let placed = self.placed_head(offset);
+        let placed = placed_head(self.source, &self.edits, offset, self.region.start());
         let row_start = self.source.text().line_start(offset).max(
             offset
                 .checked_sub(last_line(&placed).text_len())
@@ -44,18 +42,6 @@ impl<'a> Exploder<'a> {
             return column;
         }
         self.reservations.column(offset, || column)
-    }
-
-    /// The text ahead of `offset` on its logical line, clipped to this
-    /// walk's region and rendered with the edits the walk emitted so
-    /// far.
-    fn placed_head(&self, offset: TextSize) -> Cow<'a, str> {
-        let start = self
-            .source
-            .logical_line_start(offset)
-            .start()
-            .max(self.region.start());
-        apply_inline_edits(self.source, TextRange::new(start, offset), &self.edits)
     }
 
     /// An offset on the row whose indent the row carrying `offset`
@@ -139,7 +125,7 @@ impl<'a> Exploder<'a> {
         {
             return indent;
         }
-        let placed = self.placed_head(anchor);
+        let placed = placed_head(self.source, &self.edits, anchor, self.region.start());
         indent_width(last_line(&placed))
     }
 

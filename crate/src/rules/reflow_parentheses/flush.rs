@@ -6,7 +6,10 @@ use std::borrow::Cow;
 use ruff_diagnostics::Edit;
 use ruff_text_size::TextRange;
 
-use crate::{primitives::edit::joins_an_identifier, source::Source};
+use crate::{
+    primitives::edit::{joins_an_identifier, joins_before},
+    source::Source,
+};
 
 /// The sides of a pair that touch an identifier character, the keyword
 /// written flush against its paren, where the pair's removal leaves a
@@ -18,11 +21,12 @@ pub(super) struct Flush {
 
 impl Flush {
     pub(super) fn of(source: &Source, pair: TextRange) -> Self {
-        let text = source.text();
-        let touches = |c: Option<char>| c.is_some_and(joins_an_identifier);
         Self {
-            after: touches(text[pair.end().to_usize()..].chars().next()),
-            before: touches(text[..pair.start().to_usize()].chars().next_back()),
+            after: source.text()[pair.end().to_usize()..]
+                .chars()
+                .next()
+                .is_some_and(joins_an_identifier),
+            before: joins_before(source, pair.start()),
         }
     }
 

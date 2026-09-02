@@ -27,6 +27,10 @@ const CARRIAGE_RETURN_MODULE: &str = concat!(
     "    return VALUES\r",
 );
 
+/// The `check` invocation the cache tests replay, its JSON output the
+/// shape a byte-for-byte comparison reads.
+const CHECK_JSON: [&str; 3] = ["check", "--output-format", "json"];
+
 /// A two-entry dict literal `reflow-collections` collapses, the shape
 /// that net-shrinks the rewritten buffer.
 const COLLAPSING_DICT: &str = "d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n";
@@ -215,20 +219,17 @@ fn assert_patch_keeps_escape(assert: &Assert) {
 /// seed's selection never replays under the query's.
 fn assert_reselect_misses(seed_filter: &[&str], query_filter: &[&str], path: &Path) {
     let (mut seed, cache_dir) = prose_isolated();
-    let _ = seed
-        .args(["check", "--output-format", "json"])
-        .args(seed_filter)
-        .arg(path)
-        .assert();
+    let _ = seed.args(CHECK_JSON).args(seed_filter).arg(path).assert();
 
     let warm = prose()
-        .args(["check", "--output-format", "json"])
+        .args(CHECK_JSON)
         .args(query_filter)
         .arg(path)
         .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert();
     let cold = prose()
-        .args(["check", "--no-cache", "--output-format", "json"])
+        .args(CHECK_JSON)
+        .arg("--no-cache")
         .args(query_filter)
         .arg(path)
         .assert();
@@ -284,13 +285,9 @@ fn assert_warm_diff_matches_cold(name: &str, source: &str) {
 /// run reproduces the cold stdout byte for byte, and returns it.
 fn assert_warm_run_matches_cold(paths: &[&Path]) -> String {
     let (mut cold_cmd, cache_dir) = prose_isolated();
-    let cold = cold_cmd
-        .args(["check", "--output-format", "json"])
-        .args(paths)
-        .assert()
-        .code(1);
+    let cold = cold_cmd.args(CHECK_JSON).args(paths).assert().code(1);
     let warm = prose()
-        .args(["check", "--output-format", "json"])
+        .args(CHECK_JSON)
         .args(paths)
         .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
@@ -314,7 +311,7 @@ fn cache_bytes(dir: &Path) -> u64 {
 /// Runs `check` with the JSON emitter over a fresh fixture holding
 /// `source`, returning the summary line the run closed with.
 fn check_json_summary(name: &str, source: &str, code: i32) -> serde_json::Value {
-    let assert = run_fixture(name, source, &["check", "--output-format", "json"]).code(code);
+    let assert = run_fixture(name, source, &CHECK_JSON).code(code);
     summary_line(stdout_utf8(&assert))
 }
 
@@ -349,6 +346,15 @@ fn lsp_session(bodies: &[&str]) -> String {
 
 fn prose() -> Command {
     Command::cargo_bin("prose").expect("prose binary")
+}
+
+/// Pads `dir` with four half-megabyte entries named the way a cache key
+/// is.
+fn pad_with_entries(dir: &Path) {
+    let filler = vec![b'x'; 512 * 1024];
+    for slot in 0..4_u32 {
+        fs_err::write(dir.join(format!("{slot:064x}")), &filler).expect("writes");
+    }
 }
 
 fn prose_isolated() -> (Command, TempDir) {
@@ -477,10 +483,7 @@ fn cache_evicts_back_under_its_cap_once_a_run_ends() {
     let (dir, path) = fixture("a.py", UNALIGNED);
     write_pyproject(dir.path(), "[tool.prose.cache]\nmax-size-mib = 1\n");
     let (mut cmd, cache_dir) = prose_isolated();
-    let filler = vec![b'x'; 512 * 1024];
-    for slot in 0..4_u32 {
-        fs_err::write(cache_dir.path().join(format!("{slot:064x}")), &filler).expect("writes");
-    }
+    pad_with_entries(cache_dir.path());
 
     cmd.current_dir(dir.path())
         .arg("check")
@@ -590,6 +593,7 @@ fn cache_misses_a_diff_run_landing_on_a_check_entry() {
     assert_stderr_has(&assert, "0 hits, 1 misses");
     assert_stdout_has(&assert, "@@");
 }
+
 #[rstest]
 #[case::narrow_select_after_full_set(&[], &["--select", "alphabetize-siblings"])]
 #[case::ignore_after_full_set(&[], &["--ignore", "align-equals"])]
@@ -654,10 +658,7 @@ fn cache_write_back_storing_nothing_leaves_an_over_cap_directory_alone() {
         .find(|entry| entry.path().is_dir())
         .expect("a generation directory")
         .path();
-    let filler = vec![b'x'; 512 * 1024];
-    for slot in 0..4_u32 {
-        fs_err::write(generation.join(format!("{slot:064x}")), &filler).expect("writes");
-    }
+    pad_with_entries(&generation);
     let padded = cache_bytes(&generation);
     fs_err::write(&path, UNALIGNED).expect("restores the unformatted bytes");
 
@@ -845,7 +846,8 @@ fn check_resolves_each_files_config_from_its_own_project() {
     let (suppressed, flagged) = sibling_projects(&parent, UNALIGNED);
 
     let assert = prose()
-        .args(["check", "--no-cache", "--output-format", "json"])
+        .args(CHECK_JSON)
+        .arg("--no-cache")
         .args([&suppressed, &flagged])
         .assert()
         .code(1);
@@ -1293,11 +1295,6 @@ fn help_exits_clean() {
 }
 
 #[test]
-fn no_args_prints_help_and_exits_clean() {
-    prose().assert().success();
-}
-
-#[test]
 fn module_format_holds_each_line_ending_of_a_mixed_source() {
     let (_dir, path) = fixture("mod.py", MIXED_ENDING_MODULE);
     let (once, second) = format_twice(&path);
@@ -1377,6 +1374,11 @@ fn module_format_settles_on_crlf_input() {
         !stderr_utf8(&second).contains("second run"),
         "a CRLF module settles without an unstable-output report",
     );
+}
+
+#[test]
+fn no_args_prints_help_and_exits_clean() {
+    prose().assert().success();
 }
 
 #[test]

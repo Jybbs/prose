@@ -14,6 +14,22 @@ use crate::{
     source::Source,
 };
 
+/// Writes each of `items` through `write` into `out`, `", "` between
+/// them, stopping at the first item reaching no one-row form.
+pub(super) fn write_joined<T>(
+    out: &mut String,
+    items: impl IntoIterator<Item = T>,
+    mut write: impl FnMut(&mut String, T) -> Option<()>,
+) -> Option<()> {
+    for (i, item) in items.into_iter().enumerate() {
+        if i > 0 {
+            out.push_str(", ");
+        }
+        write(out, item)?;
+    }
+    Some(())
+}
+
 /// Serializes an expression tree onto one row, each method writing into
 /// the caller's buffer and answering `None` where its subtree reaches no
 /// one-row form.
@@ -184,10 +200,7 @@ impl<'a> Writer<'a> {
     /// leaves.
     fn write_dict(&self, out: &mut String, d: &ExprDict, parent: AnyNodeRef) -> Option<()> {
         out.push('{');
-        for (i, item) in d.iter().enumerate() {
-            if i > 0 {
-                out.push_str(", ");
-            }
+        write_joined(out, d.iter(), |out, item| {
             match &item.key {
                 Some(key) => {
                     self.write(out, key, parent)?;
@@ -195,8 +208,8 @@ impl<'a> Writer<'a> {
                 }
                 None => out.push_str("**"),
             }
-            self.write_child(out, &item.value, parent)?;
-        }
+            self.write_child(out, &item.value, parent)
+        })?;
         out.push('}');
         Some(())
     }
@@ -214,12 +227,7 @@ impl<'a> Writer<'a> {
     ) -> Option<()> {
         let (open, close) = brackets.unzip();
         out.extend(open);
-        for (i, e) in elts.iter().enumerate() {
-            if i > 0 {
-                out.push_str(", ");
-            }
-            self.write_child(out, e, parent)?;
-        }
+        write_joined(out, elts, |out, e| self.write_child(out, e, parent))?;
         if trailing_comma {
             out.push(',');
         }

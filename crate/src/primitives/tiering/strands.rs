@@ -41,7 +41,7 @@ impl<'a, 'src> Strands<'a, 'src> {
                 slots().flat_map(|(stmt, at)| bound_names(stmt).map(move |name| (name, at))),
             ),
             pinnable: slots()
-                .filter_map(|(stmt, at)| member_name(stmt).map(|_| (at, stmt.range().start())))
+                .filter_map(|(stmt, at)| member_name(stmt).map(|_| (at, stmt.start())))
                 .collect(),
             readers: slots()
                 .map(|(stmt, at)| (at, evaluation.names(stmt)))

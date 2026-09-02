@@ -133,15 +133,17 @@ impl BandPlan<'_> {
         leading.sort_by_key(|idx| self.keys[idx]);
         trailing.sort_by_key(|idx| self.keys[idx]);
         let banded = [imports.as_slice(), &leading, &definitions, &trailing].concat();
-        if !self.region_holds_its_references(&banded) {
-            if let Some(&sorted_head) = slots.first() {
-                drained.imports.push(ImportBand { slots, sorted_head });
-            }
+        let holds = self.region_holds_its_references(&banded);
+        if let Some(&sorted_head) = if holds {
+            imports.first()
+        } else {
+            slots.first()
+        } {
+            drained.imports.push(ImportBand { slots, sorted_head });
+        }
+        if !holds {
             drained.banded.extend(incoming);
             return;
-        }
-        if let Some(&sorted_head) = imports.first() {
-            drained.imports.push(ImportBand { slots, sorted_head });
         }
         let sorted_heads = heads([&imports, &leading, &trailing]);
         drained.shifts.extend(

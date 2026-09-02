@@ -63,7 +63,19 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{first_class, first_def, parse};
+    use crate::{
+        primitives::scope::scoped_body,
+        testing::{first_class, first_def, parse},
+    };
+
+    /// The canonical blank count between `src`'s leading compound
+    /// header and the first statement of its body under `scope`.
+    fn header_blanks(src: &str, scope: BodyScope) -> Option<u32> {
+        let s = parse(src);
+        let header = &s.ast().body[0];
+        let (body, _) = scoped_body(header).expect("a compound header");
+        canonical_blanks(header, &body[0], scope, &[], true)
+    }
 
     #[test]
     fn canonical_blanks_class_docstring_predecessor_returns_one() {
@@ -93,17 +105,9 @@ mod tests {
 
     #[test]
     fn canonical_blanks_class_header_to_docstring_returns_zero() {
-        let s = parse("class C:\n    '''doc'''\n    pass\n");
-        let class = first_class(&s);
         assert_eq!(
-            canonical_blanks(
-                &s.ast().body[0],
-                &class.body[0],
-                BodyScope::Class,
-                &[],
-                true
-            ),
-            Some(0),
+            header_blanks("class C:\n    '''doc'''\n    pass\n", BodyScope::Class),
+            Some(0)
         );
     }
 
@@ -118,18 +122,7 @@ mod tests {
         )]
         src: &str,
     ) {
-        let s = parse(src);
-        let class = first_class(&s);
-        assert_eq!(
-            canonical_blanks(
-                &s.ast().body[0],
-                &class.body[0],
-                BodyScope::Class,
-                &[],
-                true
-            ),
-            Some(1),
-        );
+        assert_eq!(header_blanks(src, BodyScope::Class), Some(1));
     }
 
     #[rstest]
@@ -146,18 +139,7 @@ mod tests {
         )]
         src: &str,
     ) {
-        let s = parse(src);
-        let func = first_def(&s);
-        assert_eq!(
-            canonical_blanks(
-                &s.ast().body[0],
-                &func.body[0],
-                BodyScope::Function,
-                &[],
-                true
-            ),
-            Some(1),
-        );
+        assert_eq!(header_blanks(src, BodyScope::Function), Some(1));
     }
 
     #[rstest]
@@ -170,18 +152,7 @@ mod tests {
         )]
         src: &str,
     ) {
-        let s = parse(src);
-        let func = first_def(&s);
-        assert_eq!(
-            canonical_blanks(
-                &s.ast().body[0],
-                &func.body[0],
-                BodyScope::Function,
-                &[],
-                true
-            ),
-            None,
-        );
+        assert_eq!(header_blanks(src, BodyScope::Function), None);
     }
 
     #[test]

@@ -48,13 +48,10 @@ impl UnstableRewrite {
         original: &str,
         formatted: &Source,
     ) -> Option<Self> {
-        Self::from_editing(
-            pipeline,
-            config,
-            original,
-            formatted,
-            pipeline.unsettled(formatted),
-        )
+        let editing = pipeline.unsettled(formatted);
+        Self::from_editing(pipeline, config, formatted, &editing, || {
+            narrowed(pipeline, config, original, &editing)
+        })
     }
 
     /// The report for a probe hit on the own-output ledger, where
@@ -70,13 +67,9 @@ impl UnstableRewrite {
     ) -> Option<Self> {
         let source = original.parse::<Source>().ok()?;
         let editing = pipeline.unsettled(&source);
-        if editing.is_empty() {
-            return None;
-        }
-        let rules = subset(pipeline, formatted, || {
+        Self::from_editing(pipeline, config, formatted, &editing, || {
             editing_subset(&editing, &source, filtered(config))
-        });
-        Some(Self::over(pipeline, config, formatted, rules))
+        })
     }
 
     /// The report a `format` run or the editor makes over `formatted`,
@@ -93,26 +86,29 @@ impl UnstableRewrite {
         fired: &BTreeSet<RuleId>,
     ) -> Option<Self> {
         let editing = pipeline.unsettled_among(formatted, fired);
-        Self::from_editing(pipeline, config, original, formatted, editing)
+        Self::from_editing(pipeline, config, formatted, &editing, || {
+            narrowed(pipeline, config, original, &editing)
+        })
     }
 
     /// The report over `formatted` where `editing` names a rule, `None`
-    /// where it is empty, the subset narrowing to a rule alone or a rule
-    /// pair where one reproduces and falling back to the whole selection.
+    /// where it is empty, under the subset `narrow` names or the whole
+    /// selection where it names none.
     fn from_editing(
         pipeline: &Pipeline,
         config: &Config,
-        original: &str,
         formatted: &Source,
-        editing: Vec<RuleId>,
+        editing: &[RuleId],
+        narrow: impl FnOnce() -> Option<Vec<RuleId>>,
     ) -> Option<Self> {
-        if editing.is_empty() {
-            return None;
-        }
-        let rules = subset(pipeline, formatted, || {
-            narrowed(pipeline, config, original, &editing)
-        });
-        Some(Self::over(pipeline, config, formatted, rules))
+        (!editing.is_empty()).then(|| {
+            Self::over(
+                pipeline,
+                config,
+                formatted,
+                subset(pipeline, formatted, narrow),
+            )
+        })
     }
 
     /// The record over `formatted` under the reproducing `rules`.

@@ -62,19 +62,18 @@ mod tests {
 
     use super::*;
     use crate::{
-        cli::emit::{UnstableEntry, emitted, emitted_runs},
+        cli::emit::{UnstableEntry, emitted_runs, emitted_string},
         rule::RuleId,
         testing::{FailingWriter, format_diagnostic, parse, range},
     };
 
     fn emit_to_string(file: &SourceFile, diag: &Diagnostic) -> String {
-        let buf = emitted(
+        emitted_string(
             &Github,
             file,
             std::slice::from_ref(diag),
             &EmitterSummary::default(),
-        );
-        String::from_utf8(buf).expect("utf-8")
+        )
     }
 
     #[test]

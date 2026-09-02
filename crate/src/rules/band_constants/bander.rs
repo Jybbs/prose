@@ -152,9 +152,9 @@ fn apply_band_comments<'src>(
     band: &Banding,
     rendered: &mut [Cow<'src, str>],
 ) {
+    let newline = source.newline_str();
     for (&idx, comment) in &band.attached {
-        let newline = source.newline_str();
-        let head = usize::from(comment.end() - comment.start());
+        let head = comment.len().to_usize();
         let own_line = usize::from(source.text().line_start(body[idx].start()) - comment.start());
         if own_line <= head + newline.len() {
             continue;

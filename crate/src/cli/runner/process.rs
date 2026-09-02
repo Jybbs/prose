@@ -76,6 +76,19 @@ pub(super) fn drive(
     run_and_assemble(source, resolved, pass, index, marker, rewrite)
 }
 
+/// The outcome of a file whose text failed to parse as `name`.
+pub(super) fn parse_failure(name: &str, e: impl std::fmt::Display) -> FileOutcome {
+    failed(
+        ExitStatus::ParseError,
+        format_args!("parse error in `{name}`: {e}"),
+    )
+}
+
+/// Reports a symlink the walk passed over.
+fn passed_link(path: &Path) {
+    eprintln!("note: passed over the symlink {}", path.display());
+}
+
 pub(super) fn failed(status: ExitStatus, e: impl std::fmt::Display) -> FileOutcome {
     eprintln!("error: {e}");
     FileOutcome::Failed(status)
@@ -183,7 +196,7 @@ where
         .filter_map(|entry| match entry {
             Ok(Found::Formattable(path, source_type)) => Some(handle(&path, source_type)),
             Ok(Found::PassedLink(path)) => {
-                eprintln!("note: passed over the symlink {}", path.display());
+                passed_link(&path);
                 None
             }
             Err(e) => Some(walk_error(e)),
@@ -366,7 +379,7 @@ where
     match entry {
         Ok(Found::Formattable(path, source_type)) => handle(&path, source_type).map(Some),
         Ok(Found::PassedLink(path)) => {
-            eprintln!("note: passed over the symlink {}", path.display());
+            passed_link(&path);
             Ok(None)
         }
         Err(e) => Ok(Some((walk_error(e), Vec::new()))),
@@ -418,10 +431,7 @@ fn process_source(
     }
     match Source::build_module(text, name.as_str(), source_type) {
         Ok(source) => run_pipeline(source, resolved, pass, marker),
-        Err(e) => failed(
-            ExitStatus::ParseError,
-            format_args!("parse error in `{name}`: {e}"),
-        ),
+        Err(e) => parse_failure(&name, e),
     }
 }
 

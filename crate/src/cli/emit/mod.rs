@@ -90,7 +90,10 @@ fn diagnostics<'a>(
     })
 }
 
-fn write_json_line<T: Serialize>(writer: &mut dyn Write, value: &T) -> io::Result<()> {
+pub(in crate::cli) fn write_json_line<T: Serialize>(
+    writer: &mut dyn Write,
+    value: &T,
+) -> io::Result<()> {
     serde_json::to_writer(&mut *writer, value)?;
     writer.write_all(b"\n")
 }
@@ -103,6 +106,16 @@ fn emitted(
     summary: &EmitterSummary,
 ) -> Vec<u8> {
     emitted_runs(emitter, &[Run::new(file, diagnostics, None)], summary)
+}
+
+#[cfg(test)]
+fn emitted_string(
+    emitter: &dyn Emitter,
+    file: &SourceFile,
+    diagnostics: &[Diagnostic],
+    summary: &EmitterSummary,
+) -> String {
+    String::from_utf8(emitted(emitter, file, diagnostics, summary)).expect("utf-8")
 }
 
 #[cfg(test)]

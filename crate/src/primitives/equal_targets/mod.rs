@@ -5,10 +5,13 @@
 //! alignment edits, and the `reserve` primitive consumes them to predict
 //! the column `align_equals` shifts a value to for both layout rules.
 
+use itertools::Itertools;
 use ruff_python_ast::{
     AnyNodeRef, AnyParameterRef, ArgOrKeyword, ExprCall, ExprRef, Stmt, token::TokenKind,
 };
+use ruff_source_file::OneIndexed;
 use ruff_text_size::{Ranged, TextRange, TextSize};
+use rustc_hash::FxHashSet;
 
 use crate::{primitives::aligner, rule::RuleId, source::Source};
 
@@ -78,10 +81,11 @@ pub(crate) fn keyword_groups(
     if !source.contains_line_break(call.arguments.range()) {
         return Vec::new();
     }
-    let arg_lines: Vec<_> = call
+    let shared_lines: FxHashSet<OneIndexed> = call
         .arguments
         .iter_source_order()
         .map(|a| source.line_index(a.start()))
+        .duplicates()
         .collect();
     aligner::adjacent_member_groups(
         source,
@@ -91,8 +95,7 @@ pub(crate) fn keyword_groups(
             let Some(member) = keyword(source, arg) else {
                 return aligner::Slot::Break;
             };
-            let line = source.line_index(member.line_start);
-            if arg_lines.iter().filter(|&&l| l == line).count() > 1 {
+            if shared_lines.contains(&source.line_index(member.line_start)) {
                 return aligner::Slot::Break;
             }
             member.slot(source, rule)

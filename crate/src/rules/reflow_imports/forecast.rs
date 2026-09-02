@@ -65,9 +65,10 @@ impl Carried {
 
 /// What a seat packs onto its rows.
 #[derive(Clone)]
-enum Packs<'a> {
-    /// The roster the rule packs to the seat's column.
-    Roster(Vec<&'a str>),
+enum Packs {
+    /// The display width of each member of the roster the rule packs
+    /// to the seat's column.
+    Roster(Vec<usize>),
     /// The last row of a packed roster, holding these of its members,
     /// spilled beneath a carried comment at the width `Seat::width`
     /// names.
@@ -85,7 +86,7 @@ enum Packs<'a> {
 #[derive(Clone)]
 struct Seat<'a> {
     member: aligner::Member,
-    packs: Packs<'a>,
+    packs: Packs,
     splits: bool,
     stmt: &'a Stmt,
     tail: usize,
@@ -121,11 +122,10 @@ impl Seat<'_> {
     /// `range` at the width they packed to, opening the run a carried
     /// comment seats beneath the rows above it.
     fn spill(&self, source: &Source, range: Range<usize>) -> Self {
-        let Packs::Roster(names) = &self.packs else {
+        let Packs::Roster(widths) = &self.packs else {
             unreachable!("invariant: a seat spills a row of its roster");
         };
-        let widths: Vec<usize> = names.iter().map(|name| display_width(name)).collect();
-        let content = self.content(&widths, &range);
+        let content = self.content(widths, &range);
         Self {
             member: self.member,
             packs: Packs::Spilled(range),
@@ -300,7 +300,9 @@ impl<'a> Layout<'a> {
         Seat {
             member,
             splits: headed && roster.is_some(),
-            packs: roster.map_or(Packs::Written, Packs::Roster),
+            packs: roster.map_or(Packs::Written, |names| {
+                Packs::Roster(names.iter().map(|name| display_width(name)).collect())
+            }),
             stmt,
             tail,
             width: (trailed > 0).then(|| {
@@ -323,13 +325,9 @@ impl<'a> Layout<'a> {
         let elastic: Vec<Option<usize>> = seats
             .iter()
             .map(|seat| match &seat.packs {
-                Packs::Roster(names) => {
-                    let widest = names
-                        .iter()
-                        .map(|name| display_width(name))
-                        .max()
-                        .unwrap_or(0);
-                    let last = names.last().map_or(0, |name| display_width(name)) + seat.tail;
+                Packs::Roster(widths) => {
+                    let widest = widths.iter().copied().max().unwrap_or(0);
+                    let last = widths.last().copied().unwrap_or(0) + seat.tail;
                     Some(seat.row_width(source, widest.max(last)))
                 }
                 Packs::Spilled(_) | Packs::Written => seat.width,
@@ -342,17 +340,16 @@ impl<'a> Layout<'a> {
         for (index, ((seat, column), width)) in seats.iter().zip(columns).zip(elastic).enumerate() {
             let first = rows.len();
             match &seat.packs {
-                Packs::Roster(names) => {
-                    let widths: Vec<usize> = names.iter().map(|name| display_width(name)).collect();
+                Packs::Roster(widths) => {
                     let ranges = pack(
-                        &widths,
+                        widths,
                         column + IMPORT_KEYWORD_WIDTH,
                         MEMBER_SEPARATOR.len(),
                         budget,
                     );
                     for range in &ranges {
                         rows.push(seat.member);
-                        joined.push(Some(seat.row_width(source, seat.content(&widths, range))));
+                        joined.push(Some(seat.row_width(source, seat.content(widths, range))));
                     }
                     packed.push((index, ranges, first..rows.len()));
                 }

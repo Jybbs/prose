@@ -60,21 +60,15 @@ pub(super) fn rewrite_dict_text(
     if d.len() < 2 || has_keep_marker(source, d) {
         return None;
     }
+    // A multi-line dict packing entries onto a shared row has no
+    // one-item-per-line decomposition for a block reorder, and a first
+    // entry trailing the `{` with a comment in the span would land that
+    // comment against the wrong entry, so either holds the source order.
+    if dict_holds_as_laid_out(source, &d.items) {
+        return None;
+    }
     let multi_line = source.contains_line_break(blocks_span(&d.items));
-    // The block model decomposes one item per line. A multi-line dict that
-    // packs entries onto a shared physical line has no such decomposition, so a
-    // block reorder would reflow it. Decline, leaving it in source order.
-    if multi_line && any_sibling_shares_line(source, &d.items) {
-        return None;
-    }
-    // A first entry trailing the `{` on its row has no whole row to move, so
-    // the reorder swaps bare entry slices in place, the separators and
-    // indents kept in the verbatim gaps. A comment anywhere in the span
-    // would land against the wrong entry, holding the group instead.
     let head_shared = multi_line && !opens_its_line(source, d.items[0].start());
-    if head_shared && swap_span_commented(source, &d.items) {
-        return None;
-    }
     // Widen each item to its value's paren-aware end, so a parenthesized
     // value keeps its closing parens inside the block rather than shedding
     // them into the separator tail.
@@ -155,6 +149,16 @@ fn partition_divider_slots(
         return Vec::new();
     }
     adjacent_slots(order, |_, a, b| spans_lines(a) || spans_lines(b))
+}
+
+/// True where a dict over `items` holds its order as laid out: a
+/// multi-line dict packing entries onto a shared row, or one whose
+/// first entry trails the `{` on its row with a comment in the span.
+pub(super) fn dict_holds_as_laid_out(source: &Source, items: &[DictItem]) -> bool {
+    items.len() > 1
+        && source.contains_line_break(blocks_span(items))
+        && (any_sibling_shares_line(source, items)
+            || (!opens_its_line(source, items[0].start()) && swap_span_commented(source, items)))
 }
 
 #[cfg(test)]

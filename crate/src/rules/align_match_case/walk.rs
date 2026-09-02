@@ -9,7 +9,6 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::*;
-use crate::primitives::inline::display_width;
 
 pub(super) struct Visitor<'a> {
     pub(super) code_line_length: usize,
@@ -47,7 +46,7 @@ impl Visitor<'_> {
         let source = self.walker.source;
         let pre_colon_end = colon_targets::match_case_pre_colon_end(case);
         let lhs_width = source.width_between(case.start(), pre_colon_end);
-        let body_width = display_width(source.slice(body_first.range()));
+        let body_width = source.width_between(body_first.start(), body_first.end());
         source.column_overflows(
             case.start(),
             lhs_width + 3 + body_width,
@@ -119,44 +118,4 @@ enum CaseOutcome {
     Align(aligner::Member, TextRange),
     Disqualify,
     Split(Edit),
-}
-
-#[cfg(test)]
-mod tests {
-    use rstest::rstest;
-
-    use super::*;
-    use crate::testing::parse;
-
-    /// Parses `src` as a module and tests whether its first top-level
-    /// statement would qualify a `match` arm.
-    fn collapsible(src: &str) -> bool {
-        !is_compound_statement(&parse(src).ast().body[0])
-    }
-
-    #[rstest]
-    #[case("x = 1\n", true)]
-    #[case("x: int = 1\n", true)]
-    #[case("x += 1\n", true)]
-    #[case("x\n", true)]
-    #[case("return x\n", true)]
-    #[case("raise ValueError\n", true)]
-    #[case("pass\n", true)]
-    #[case("break\n", true)]
-    #[case("continue\n", true)]
-    #[case("import x\n", true)]
-    #[case("from m import x\n", true)]
-    #[case("del x\n", true)]
-    #[case("global x\n", true)]
-    #[case("assert x\n", true)]
-    #[case("type X = int\n", true)]
-    #[case("if x:\n    y\n", false)]
-    #[case("for i in xs:\n    y\n", false)]
-    #[case("with x():\n    y\n", false)]
-    #[case("match x:\n    case _:\n        y\n", false)]
-    #[case("class C:\n    pass\n", false)]
-    #[case("def f():\n    pass\n", false)]
-    fn collapsible_admits_only_a_simple_statement(#[case] src: &str, #[case] expected: bool) {
-        assert_eq!(collapsible(src), expected, "{src}");
-    }
 }

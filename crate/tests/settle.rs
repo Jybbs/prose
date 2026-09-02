@@ -22,7 +22,6 @@ use std::{
     num::NonZeroUsize,
     path::Path,
     rc::Rc,
-    str::FromStr,
 };
 
 use itertools::Itertools;
@@ -519,7 +518,7 @@ fn scope_of(named: Option<&str>) -> Option<BTreeSet<RuleId>> {
             .split([' ', ','])
             .filter(|slug| !slug.is_empty())
             .map(|slug| {
-                RuleId::from_str(slug)
+                slug.parse::<RuleId>()
                     .unwrap_or_else(|_| panic!("{RULES_VAR} names an unknown rule: {slug}"))
             })
             .collect()
@@ -691,8 +690,8 @@ fn scope_of_splits_on_spaces_and_commas(#[case] named: &str) {
     assert_eq!(
         named,
         BTreeSet::from([
-            RuleId::from_str("align-equals").unwrap(),
-            RuleId::from_str("band-constants").unwrap(),
+            "align-equals".parse::<RuleId>().unwrap(),
+            "band-constants".parse::<RuleId>().unwrap(),
         ])
     );
 }

@@ -70,11 +70,8 @@ pub fn run() -> ExitCode {
     }
     let raw_stdout = io::stdout().lock();
     let stdout_tty = raw_stdout.is_terminal();
-    let color = color_for(cli.color, &raw_stdout);
-    let stdout = with_color(raw_stdout, color);
-    let raw_stderr = io::stderr();
-    let stderr_color = color_for(cli.color, &raw_stderr);
-    let stderr = with_color(raw_stderr, stderr_color);
+    let (stdout, color) = stream_for(cli.color, raw_stdout);
+    let (stderr, stderr_color) = stream_for(cli.color, io::stderr());
     let present = Presentation {
         color,
         quiet: command_quiet(&cli.command),
@@ -167,16 +164,19 @@ fn color_for<S: RawStream>(choice: ColorChoice, raw: &S) -> bool {
     }
 }
 
-/// Wraps `raw` for the run's color decision. A color run keeps the
-/// translation a legacy Windows console needs, and a plain run passes
-/// its bytes through, because every writer branches on the same
-/// decision and emits no escape for the stream to scan for.
-fn with_color<S: RawStream>(raw: S, color: bool) -> AutoStream<S> {
-    if color {
+/// `raw` wrapped for the color decision `choice` resolves to on it,
+/// beside that decision. A color run keeps the translation a legacy
+/// Windows console needs, and a plain run passes its bytes through,
+/// because every writer branches on the same decision and emits no
+/// escape for the stream to scan for.
+fn stream_for<S: RawStream>(choice: ColorChoice, raw: S) -> (AutoStream<S>, bool) {
+    let color = color_for(choice, &raw);
+    let stream = if color {
         AutoStream::always(raw)
     } else {
         AutoStream::always_ansi(raw)
-    }
+    };
+    (stream, color)
 }
 
 #[cfg(test)]

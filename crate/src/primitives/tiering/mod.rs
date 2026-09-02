@@ -68,18 +68,20 @@ impl<'a, 'src> Evaluation<'a, 'src> {
     /// Every module-scope name evaluating `stmt` reads, empty for a
     /// statement outside the body the cache was built over.
     fn names(self, stmt: &Stmt) -> &'a [&'src str] {
-        self.names
-            .get(&stmt.range().start())
-            .map_or(&[], Vec::as_slice)
+        lookup(self.names, stmt)
     }
 
     /// The evaluation-time references of `stmt`, empty for a statement
     /// outside the body the cache was built over.
     fn refs_of(self, stmt: &Stmt) -> &'a [&'src str] {
-        self.refs
-            .get(&stmt.range().start())
-            .map_or(&[], Vec::as_slice)
+        lookup(self.refs, stmt)
     }
+}
+
+/// The names `map` holds for `stmt`, empty for a statement outside the
+/// body the map was built over.
+fn lookup<'a, 'src>(map: &'a FxHashMap<TextSize, Vec<&'src str>>, stmt: &Stmt) -> &'a [&'src str] {
+    map.get(&stmt.start()).map_or(&[], Vec::as_slice)
 }
 
 /// True where some statement of `body` reaches another definition's body
@@ -94,7 +96,7 @@ pub(crate) fn consults_call_graph(
 ) -> bool {
     body.iter().any(|stmt| match stmt {
         Stmt::FunctionDef(_) | Stmt::ClassDef(_) => refs
-            .get(&stmt.range().start())
+            .get(&stmt.start())
             .is_some_and(|names| names.iter().any(|name| defined.contains(name))),
         _ => calls_a_name(stmt),
     })
@@ -117,7 +119,7 @@ pub(crate) fn eval_time_refs_of(
                 .into_iter()
                 .unique()
                 .collect();
-            (stmt.range().start(), refs)
+            (stmt.start(), refs)
         })
         .collect()
 }
@@ -144,9 +146,7 @@ fn evaluated_names_of<'src>(
 ) -> FxHashMap<TextSize, Vec<&'src str>> {
     body.iter()
         .map(|stmt| {
-            let own = refs
-                .get(&stmt.range().start())
-                .map_or(&[][..], Vec::as_slice);
+            let own = lookup(refs, stmt);
             let called;
             let runs: &[&str] = if reachable.is_empty()
                 || matches!(stmt, Stmt::FunctionDef(_) | Stmt::ClassDef(_))
@@ -167,7 +167,7 @@ fn evaluated_names_of<'src>(
                 )
                 .unique()
                 .collect();
-            (stmt.range().start(), names)
+            (stmt.start(), names)
         })
         .collect()
 }

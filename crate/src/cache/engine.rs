@@ -127,8 +127,7 @@ impl Cache {
             {
                 continue;
             }
-            report.absorb(sweep(&path));
-            let _ = fs_err::remove_dir(&path);
+            sweep_dir(&mut report, &path);
         }
         report
     }
@@ -186,8 +185,7 @@ impl Cache {
             let entry = entry?;
             let path = entry.path();
             if entry.file_type().is_ok_and(|t| t.is_dir()) {
-                report.absorb(sweep(&path));
-                let _ = fs_err::remove_dir(&path);
+                sweep_dir(&mut report, &path);
                 continue;
             }
             let bytes = entry.metadata().map_or(0, |m| m.len());
@@ -357,6 +355,13 @@ fn cache_root() -> Option<PathBuf> {
     std::env::var_os("PROSE_CACHE_DIR")
         .map(PathBuf::from)
         .or_else(|| dirs::cache_dir().map(|d| d.join("prose")))
+}
+
+/// Sweeps the entries under `dir` into `report` and removes the
+/// directory itself where the sweep left it empty.
+fn sweep_dir(report: &mut CleanReport, dir: &Path) {
+    report.absorb(sweep(dir));
+    let _ = fs_err::remove_dir(dir);
 }
 
 /// The entries directly under `dir`, none where it cannot be read.

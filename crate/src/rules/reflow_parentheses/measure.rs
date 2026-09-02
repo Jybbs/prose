@@ -57,25 +57,25 @@ impl Shedder<'_> {
         let placed = |to: TextSize| self.column_through(TextRange::new(row_start, to));
         let indent = self.source.line_indent_width(offset);
         let mut shift = 0;
+        let row = placed(offset);
         for call in self
             .calls
             .iter()
             .filter(|call| row_start <= call.start() && call.end() <= offset)
         {
-            if placed(offset) - shift < self.code_line_length {
+            if row.saturating_sub(shift) < self.code_line_length {
                 break;
             }
             shift = placed(call.end()).saturating_sub(indent + 1);
         }
-        column - shift
+        column.saturating_sub(shift)
     }
 
     /// The columns `pair`'s own row carries past its closing paren,
     /// narrowed by the parentheses this pass sheds along that stretch.
     fn tail_width(&self, pair: TextRange, candidates: &[Candidate]) -> usize {
-        let text = self.source.text();
-        let tail = TextRange::new(pair.end(), text.line_end(pair.end()));
-        display_width(&text[tail]).saturating_sub(shed_columns(tail, candidates))
+        let tail = self.source.row_tail(pair.end());
+        display_width(self.source.slice(tail)).saturating_sub(shed_columns(tail, candidates))
     }
 
     /// True when joining `candidate` leaves its line inside the budget

@@ -30,6 +30,13 @@ pub(crate) struct Assembly<'src> {
 }
 
 impl<'src> Assembly<'src> {
+    /// True where the assembly reproduces the source it was read from,
+    /// nothing forcing a rewrite, no block re-rendered, and the order
+    /// the identity.
+    fn reproduces_source(&self, forced: bool) -> bool {
+        !forced && !any_owned(&self.rendered) && is_identity(&self.order)
+    }
+
     /// One fix group per notebook cell the blocks span and one for an
     /// ordinary module, each holding the [`piecewise_edits`] of its own
     /// slots. `order` never crosses a cell boundary, and a group whose
@@ -40,11 +47,7 @@ impl<'src> Assembly<'src> {
         forced: bool,
         mut gap: impl FnMut(usize) -> Option<&'src str>,
     ) -> Vec<Vec<Edit>> {
-        if !source.is_notebook()
-            && !forced
-            && !any_owned(&self.rendered)
-            && is_identity(&self.order)
-        {
+        if !source.is_notebook() && self.reproduces_source(forced) {
             return Vec::new();
         }
         slot_runs(&self.blocks, |a, b| source.same_cell(a.start(), b.start()))
@@ -73,7 +76,7 @@ impl<'src> Assembly<'src> {
         gap: impl FnMut(usize) -> Option<&'src str>,
     ) -> (Cow<'src, str>, TextRange) {
         let span = blocks_span(&self.blocks);
-        if !forced && !any_owned(&self.rendered) && is_identity(&self.order) {
+        if self.reproduces_source(forced) {
             return (Cow::Borrowed(source.slice(span)), span);
         }
         (
@@ -288,7 +291,7 @@ fn walk_assembly<'src>(
     for i in run.clone() {
         let block = blocks[i];
         piece(block, &rendered[order[i]]);
-        let Some(next) = blocks.get(i + 1).filter(|_| i + 1 < run.end) else {
+        let Some(next) = (i + 1 < run.end).then(|| blocks[i + 1]) else {
             continue;
         };
         let span = TextRange::new(block.end(), next.start());

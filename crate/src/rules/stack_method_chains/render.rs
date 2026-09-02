@@ -41,7 +41,7 @@ pub(super) fn broken(
                 }
             }
             Some(link) => {
-                out.push_str(&" ".repeat(pad));
+                out.extend(std::iter::repeat_n(' ', pad));
                 out.push_str(&segment(1 + head.len() + link, item + pad, item + pad));
             }
         },

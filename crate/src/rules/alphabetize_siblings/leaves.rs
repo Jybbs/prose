@@ -13,7 +13,6 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Alias, Expr, ExprCall, ExprDict, ExprLambda, ExprSet, Identifier, Parameters, Stmt, StmtAssign,
     StmtDelete,
-    token::TokenKind,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -28,8 +27,9 @@ use crate::{
         edit::{apply_inline_edits, insert_edit, narrowed_replacement},
         effect::value_is_effectful,
         orderer::{
-            any_sibling_shares_line, opens_its_line, permute_full, reorder_separated, reorder_text,
-            reordered_lines_fit, swap_relocates_spanning, swap_span_commented,
+            any_sibling_shares_line, gaps_carry_code, opens_its_line, permute_full,
+            reorder_separated, reorder_text, reordered_lines_fit, swap_relocates_spanning,
+            swap_span_holds,
         },
         params::classify_param,
         walk::walk_stmt,
@@ -134,7 +134,7 @@ impl<'a> LeafCollector<'a> {
         T: Ranged,
         S: Ord,
     {
-        let [first, .., last] = items else {
+        let [first, .., _] = items else {
             return;
         };
         let source = self.source;
@@ -148,10 +148,7 @@ impl<'a> LeafCollector<'a> {
         let head_shared = !opens_its_line(source, first.start());
         let swapped =
             any_sibling_shares_line(source, items) || head_shared || gaps_carry_code(source, items);
-        if swapped
-            && source.contains_line_break(TextRange::new(first.start(), last.end()))
-            && swap_span_commented(source, items)
-        {
+        if swap_span_holds(source, items, swapped) {
             return;
         }
         let render = |_: usize, block| apply_inline_edits(source, block, &self.edits);
@@ -270,20 +267,6 @@ fn entry_key<'e>(name: &'e str, signature: Option<&[&str]>) -> (usize, &'e str) 
         .map_or((usize::MAX, name), |i| (i, ""))
 }
 
-/// True when a gap between two consecutive members of `items` carries
-/// a token of its own past the separators and comments inside it, the
-/// shape a positional argument sitting between two keywords takes.
-fn gaps_carry_code<T: Ranged>(source: &Source, items: &[T]) -> bool {
-    items.windows(2).any(|pair| {
-        let gap = TextRange::new(pair[0].end(), pair[1].start());
-        source.tokens_overlapping(gap).any(|token| {
-            gap.contains(token.start())
-                && !token.kind().is_trivia()
-                && token.kind() != TokenKind::Comma
-        })
-    })
-}
-
 /// Returns the parameter names in the order the rule leaves the
 /// signature: positional-only and positional-or-keyword in source
 /// order, then `*args`, then the keyword-only block sorted, then
@@ -309,19 +292,13 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{applied_text, parse};
+    use crate::testing::{applied_text, at, parse};
 
     /// The source with every docstring-entry reorder applied.
     fn entry_sorted_text(src: &str) -> String {
         let source = parse(src);
         let edits = collect_docstring_entry_edits(&source);
         applied_text(&source, edits)
-    }
-
-    /// The byte offset of `needle` within `text`.
-    fn offset_of(text: &str, needle: &str) -> usize {
-        text.find(needle)
-            .unwrap_or_else(|| panic!("{needle} present"))
     }
 
     #[rstest]
@@ -354,7 +331,7 @@ mod tests {
     "})]
     fn collect_docstring_entry_edits_mirrors_source_order_signature(#[case] src: &str) {
         let text = entry_sorted_text(src);
-        let pos = |needle: &str| offset_of(&text, needle);
+        let pos = |needle: &str| at(&text, needle).start();
         assert!(
             pos("b: two") < pos("a: one"),
             "parameter entries mirror the un-reordered signature"
@@ -379,7 +356,7 @@ mod tests {
                 \"\"\"
         "};
         let text = entry_sorted_text(src);
-        let pos = |needle: &str| offset_of(&text, needle);
+        let pos = |needle: &str| at(&text, needle).start();
         assert!(
             pos("zebra:") < pos("apple:"),
             "the vararg mirrors ahead of the kwarg, both in signature order"
@@ -400,7 +377,7 @@ mod tests {
                     \"\"\"
         "};
         let text = entry_sorted_text(src);
-        let pos = |needle: &str| offset_of(&text, needle);
+        let pos = |needle: &str| at(&text, needle).start();
         assert!(
             pos("target:") < pos("source:") && pos("source:") < pos("retries:"),
             "parameter entries mirror the signature and the stale entry sinks"

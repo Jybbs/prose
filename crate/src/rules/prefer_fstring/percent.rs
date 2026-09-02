@@ -5,6 +5,7 @@ use std::{borrow::Cow, slice, str::FromStr};
 use ruff_python_ast::{DictItem, Expr, ExprBinOp, ExprDict, Operator};
 use ruff_python_literal::cformat::{CFormatPart, CFormatSpec, CFormatString};
 use ruff_python_stdlib::identifiers::is_identifier;
+use rustc_hash::FxHashMap;
 
 use crate::{
     primitives::effect::value_is_effectful,
@@ -83,7 +84,7 @@ fn bind_dict<'src>(
     specs: &[&CFormatSpec],
     dict: &ExprDict,
 ) -> Option<Vec<Cow<'src, str>>> {
-    let mut entries: Vec<(&str, &Expr)> = Vec::with_capacity(dict.items.len());
+    let mut entries: FxHashMap<&str, &Expr> = FxHashMap::default();
     for DictItem { key, value } in &dict.items {
         let name = key.as_ref()?.as_string_literal_expr()?.value.to_str();
         let reads = specs
@@ -92,22 +93,15 @@ fn bind_dict<'src>(
             .count();
         if !is_identifier(name)
             || reads == 0
-            || entries.iter().any(|(seen, _)| *seen == name)
             || (reads > 1 && value_is_effectful(value))
+            || entries.insert(name, value).is_some()
         {
             return None;
         }
-        entries.push((name, value));
     }
     let ordered = specs
         .iter()
-        .map(|spec| {
-            let key = spec.mapping_key.as_deref()?;
-            entries
-                .iter()
-                .find(|(name, _)| *name == key)
-                .map(|(_, value)| *value)
-        })
+        .map(|spec| entries.get(spec.mapping_key.as_deref()?).copied())
         .collect::<Option<Vec<&Expr>>>()?;
     rendered_fields(source, ordered)
 }

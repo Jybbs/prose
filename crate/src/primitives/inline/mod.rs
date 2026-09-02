@@ -101,6 +101,28 @@ pub(crate) fn settled_width(
     width.saturating_add_signed(-padding::slack(source, padding, range))
 }
 
+/// The display width `range` settles to once the padding rule drops the
+/// delimiter padding and colon padding inside it.
+pub(crate) fn settled_slice_width(source: &Source, padding: &[Edit], range: TextRange) -> usize {
+    settled_width(source, padding, range, display_width(source.slice(range)))
+}
+
+/// The display width `text` settles to: the settled width of `range`
+/// where `text` is that source slice as written, and its own width for
+/// a rewrite, which carries no padding.
+pub(crate) fn settled_text_width(
+    source: &Source,
+    padding: &[Edit],
+    text: &str,
+    range: TextRange,
+) -> usize {
+    if source.slice(range) == text {
+        settled_slice_width(source, padding, range)
+    } else {
+        display_width(text)
+    }
+}
+
 /// Yields the `(start, len)` byte span of each whitespace run in `text`
 /// that spans a line break.
 pub(crate) fn soft_wrap_runs(text: &str) -> impl Iterator<Item = (usize, usize)> + '_ {

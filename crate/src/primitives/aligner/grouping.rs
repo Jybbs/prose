@@ -192,13 +192,13 @@ fn flush_run<M>(groups: &mut Vec<Vec<M>>, current: &mut Vec<M>) {
 /// One flag per item, set where the item shares a source row with the
 /// sibling on either side of it.
 fn shared_rows<T: Ranged>(source: &Source, items: &[T]) -> Vec<bool> {
-    let touches = |a: &T, b: &T| source.same_line(a.range().end(), b.range().start());
-    items
-        .iter()
-        .enumerate()
-        .map(|(i, item)| {
-            i.checked_sub(1).is_some_and(|p| touches(&items[p], item))
-                || items.get(i + 1).is_some_and(|next| touches(item, next))
+    let touching: Vec<bool> = items
+        .windows(2)
+        .map(|pair| source.same_line(pair[0].end(), pair[1].start()))
+        .collect();
+    (0..items.len())
+        .map(|i| {
+            i.checked_sub(1).is_some_and(|p| touching[p]) || touching.get(i).is_some_and(|&t| t)
         })
         .collect()
 }

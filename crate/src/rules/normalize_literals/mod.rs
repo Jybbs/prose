@@ -203,10 +203,9 @@ impl<'a> Normalizer<'a> {
     fn string(&mut self, token: &Token) {
         let flags = token.unwrap_string_flags();
         let range = token.range();
-        let body = TextRange::new(
-            range.start() + flags.opener_len(),
-            range.end() - flags.closer_len(),
-        );
+        let body = range
+            .add_start(flags.opener_len())
+            .sub_end(flags.closer_len());
         let source_body = self.source.slice(body);
         let requote = self
             .quotes_reach(range)

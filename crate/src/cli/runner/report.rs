@@ -51,22 +51,7 @@ pub(super) fn emit_outcomes<W: Write>(
     writer: &mut W,
     summary: &EmitterSummary,
 ) -> anyhow::Result<()> {
-    let view: Vec<Run<'_>> = outcomes
-        .iter()
-        .filter_map(|o| match o {
-            FileOutcome::Done {
-                diagnostics,
-                file,
-                notebook_index,
-                ..
-            } => Some(Run::new(
-                file,
-                diagnostics.as_slice(),
-                notebook_index.as_deref(),
-            )),
-            FileOutcome::Failed(_) => None,
-        })
-        .collect();
+    let view: Vec<Run<'_>> = outcomes.iter().filter_map(FileOutcome::run).collect();
     match format {
         OutputFormat::Github => Github.emit(writer, &view, summary),
         OutputFormat::Json => Json.emit(writer, &view, summary),
@@ -81,17 +66,10 @@ pub(super) fn emit_outcomes<W: Write>(
 /// report leaves out, which is the same set
 /// [`emit_outcomes`](self::emit_outcomes) filters away.
 pub(super) fn render_text_block(text: &Text, outcome: &FileOutcome) -> anyhow::Result<Vec<u8>> {
-    let FileOutcome::Done {
-        diagnostics,
-        file,
-        notebook_index,
-        ..
-    } = outcome
-    else {
-        return Ok(Vec::new());
-    };
-    text.render_run(&Run::new(file, diagnostics, notebook_index.as_deref()))
-        .context("rendering diagnostics")
+    outcome.run().map_or_else(
+        || Ok(Vec::new()),
+        |run| text.render_run(&run).context("rendering diagnostics"),
+    )
 }
 
 pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {

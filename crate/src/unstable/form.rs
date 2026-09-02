@@ -102,9 +102,8 @@ mod tests {
 
         let declared: Vec<&str> = FORM
             .lines()
-            .filter_map(|line| line.trim().strip_prefix("id"))
-            .filter_map(|rest| rest.split(':').nth(1))
-            .map(str::trim)
+            .filter_map(|line| line.trim().strip_prefix("id")?.split_once(':'))
+            .map(|(_, value)| value.trim())
             .collect();
         let url = report_url(&rewrite("a = 1\n", "b = 2\n", "x = 1\n"), "a = 1\n");
 

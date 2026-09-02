@@ -260,7 +260,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         write_prose_toml(dir.path(), "code-line-length = 100\n");
         let doc = dir.path().join("mod.py");
-        std::fs::write(&doc, "x = 1\n").expect("writes");
+        fs_err::write(&doc, "x = 1\n").expect("writes");
         let file = doc_uri(&doc);
 
         let mut cache = ConfigCache::new(true);

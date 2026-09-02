@@ -3,10 +3,7 @@
 //! write and read it meets, and resolving each deferred read against the
 //! completed scope chain.
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::OnceLock,
-};
+use std::{collections::BTreeSet, sync::OnceLock};
 
 use indexmap::IndexMap;
 use itertools::Itertools;
@@ -38,7 +35,7 @@ pub(super) struct Builder {
     deferred_reads: Vec<DeferredRead>,
     deleted: FxHashSet<Name>,
     function_scope_at: FxHashMap<TextSize, ScopeId>,
-    global_writes: BTreeMap<Name, Vec<TextSize>>,
+    global_writes: FxHashMap<Name, Vec<TextSize>>,
     runtime_offsets: FxHashSet<TextSize>,
     scope_stack: Vec<ScopeId>,
     scopes: Vec<Scope>,
@@ -56,7 +53,7 @@ impl Builder {
             deferred_reads: Vec::new(),
             deleted: FxHashSet::default(),
             function_scope_at: FxHashMap::default(),
-            global_writes: BTreeMap::new(),
+            global_writes: FxHashMap::default(),
             runtime_offsets: FxHashSet::default(),
             scope_stack: Vec::new(),
             scopes: Vec::new(),
@@ -145,7 +142,7 @@ impl Builder {
         f: &mut impl FnMut(&mut Self, &str, TextSize),
     ) {
         match target {
-            Expr::Name(name) => f(self, name.id.as_str(), name.range().start()),
+            Expr::Name(name) => f(self, name.id.as_str(), name.start()),
             Expr::Tuple(ExprTuple { elts, .. }) | Expr::List(ExprList { elts, .. }) => {
                 for element in elts {
                     self.for_each_target_name(element, f);
@@ -230,7 +227,7 @@ impl Builder {
         if let Expr::Name(name) = expr
             && name.ctx.is_load()
         {
-            self.runtime_offsets.insert(name.range().start());
+            self.runtime_offsets.insert(name.start());
         }
     }
 
@@ -246,7 +243,7 @@ impl Builder {
             kind,
             parent,
             bindings: IndexMap::default(),
-            globals: BTreeSet::new(),
+            globals: FxHashSet::default(),
         });
         self.scope_stack.push(id);
         id
@@ -257,7 +254,7 @@ impl Builder {
     }
 
     fn record_identifier(&mut self, identifier: &Identifier, kind: BindingKind) {
-        self.record_write(identifier.as_str(), identifier.range().start(), kind);
+        self.record_write(identifier.as_str(), identifier.start(), kind);
     }
 
     fn record_parameters(&mut self, parameters: &Parameters) {
@@ -339,13 +336,9 @@ impl Builder {
             .copied()
             .find(|&id| !matches!(self.scopes[id.0 as usize].kind, ScopeKind::Comprehension))
             .expect("invariant: module scope is always present");
-        let binding = self.record_write_in(
-            scope,
-            name.id.as_str(),
-            name.range().start(),
-            BindingKind::Walrus,
-        );
-        self.record_resolved_read(binding, name.range().start(), None);
+        let binding =
+            self.record_write_in(scope, name.id.as_str(), name.start(), BindingKind::Walrus);
+        self.record_resolved_read(binding, name.start(), None);
     }
 
     fn record_write(&mut self, name: &str, offset: TextSize, kind: BindingKind) -> BindingId {
@@ -406,8 +399,7 @@ impl Builder {
         }
         if let Expr::Name(name) = node.target.as_ref() {
             if let Some(value) = &node.value {
-                self.assignment_values
-                    .insert(name.range().start(), value.range());
+                self.assignment_values.insert(name.start(), value.range());
             }
             self.record_target(&node.target, BindingKind::Assignment);
         }
@@ -418,7 +410,7 @@ impl Builder {
         for target in &node.targets {
             if let Expr::Name(name) = target {
                 self.assignment_values
-                    .insert(name.range().start(), node.value.range());
+                    .insert(name.start(), node.value.range());
             }
             match target {
                 Expr::Tuple(ExprTuple { elts, .. }) | Expr::List(ExprList { elts, .. }) => {
@@ -431,13 +423,9 @@ impl Builder {
 
     fn visit_aug_assign(&mut self, node: &StmtAugAssign) {
         if let Some(name) = node.target.as_name_expr() {
-            self.record_read(name.id.as_str(), name.range().start());
+            self.record_read(name.id.as_str(), name.start());
             self.visit_expr(&node.value);
-            self.record_write(
-                name.id.as_str(),
-                name.range().start(),
-                BindingKind::AugAssign,
-            );
+            self.record_write(name.id.as_str(), name.start(), BindingKind::AugAssign);
         } else {
             self.visit_expr(&node.value);
             walk_expr(self, &node.target);
@@ -499,14 +487,14 @@ impl Builder {
     fn visit_import(&mut self, node: &StmtImport) {
         for alias in &node.names {
             let bound = bare_import_bound_name(alias);
-            self.record_write(bound, alias.range().start(), BindingKind::Import);
+            self.record_write(bound, alias.start(), BindingKind::Import);
         }
     }
 
     fn visit_import_from(&mut self, node: &StmtImportFrom) {
         for alias in &node.names {
             let bound = from_import_bound_name(alias);
-            self.record_write(bound, alias.range().start(), BindingKind::Import);
+            self.record_write(bound, alias.start(), BindingKind::Import);
         }
     }
 
@@ -607,15 +595,13 @@ impl<'a> Visitor<'a> for Builder {
         match expr {
             Expr::Name(name) => {
                 if name.ctx.is_load() {
-                    self.record_read(name.id.as_str(), name.range().start());
+                    self.record_read(name.id.as_str(), name.start());
                 }
             }
             Expr::Attribute(attr) => match attr.value.as_ref() {
-                Expr::Name(name) if name.ctx.is_load() => self.record_attribute_read(
-                    name.id.as_str(),
-                    name.range().start(),
-                    attr.attr.as_str(),
-                ),
+                Expr::Name(name) if name.ctx.is_load() => {
+                    self.record_attribute_read(name.id.as_str(), name.start(), attr.attr.as_str())
+                }
                 _ => walk_expr(self, expr),
             },
             Expr::Named(named) => self.record_walrus(named),
@@ -658,7 +644,7 @@ impl<'a> Visitor<'a> for Builder {
             Stmt::ClassDef(node) => self.enter_class(node),
             Stmt::Delete(node) => self.visit_delete(node),
             Stmt::For(node) => self.visit_for(node),
-            Stmt::FunctionDef(node) => self.enter_function(node, stmt.range().start()),
+            Stmt::FunctionDef(node) => self.enter_function(node, stmt.start()),
             Stmt::Global(node) => self.visit_global(node),
             Stmt::Nonlocal(_) => {}
             Stmt::If(node) => self.visit_if(node),

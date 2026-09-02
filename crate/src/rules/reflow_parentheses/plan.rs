@@ -17,7 +17,7 @@ use crate::{
         fracture::outermost,
         inline::{carries_a_continuation, folded_line_form},
         splice::splice_preserves_tree,
-        tokens::{is_closer, is_opener},
+        tokens::{is_closer, is_opener, tokens_within},
         walk::{Descent, ParentedProbe, filter_map_over_exprs, walk_parented_exprs},
     },
     source::Source,
@@ -86,19 +86,16 @@ impl<'src> ParentedProbe<'src> for Probe<'src> {
 /// `inner` itself opens and `shed` reports this pass leaves standing.
 pub(super) fn breaks_held_inside(source: &Source, inner: TextRange, shed: Sheds) -> bool {
     let mut depth = 0_usize;
-    source
-        .tokens_overlapping(inner)
-        .filter(|token| inner.contains(token.start()))
-        .all(|token| {
-            if !shed(token.range()) {
-                if is_opener(token.kind()) {
-                    depth += 1;
-                } else if is_closer(token.kind()) {
-                    depth = depth.saturating_sub(1);
-                }
+    tokens_within(source, inner).all(|token| {
+        if !shed(token.range()) {
+            if is_opener(token.kind()) {
+                depth += 1;
+            } else if is_closer(token.kind()) {
+                depth = depth.saturating_sub(1);
             }
-            depth > 0 || token.kind() != TokenKind::NonLogicalNewline
-        })
+        }
+        depth > 0 || token.kind() != TokenKind::NonLogicalNewline
+    })
 }
 
 /// Every grouping pair the module carries a candidate for, ascending by

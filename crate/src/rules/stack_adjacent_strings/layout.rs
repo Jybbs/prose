@@ -28,8 +28,7 @@ impl<'a> Layout<'a> {
     fn breaks_in_place(&self, span: TextRange, ancestors: &[AnyNodeRef]) -> bool {
         let statement = ancestors
             .iter()
-            .rev()
-            .find(|node| node.is_statement())
+            .rfind(|node| node.is_statement())
             .expect("an expression is visited inside a statement");
         let head = TextRange::new(statement.start(), span.start());
         open_brackets(self.source.tokens().in_range(head))

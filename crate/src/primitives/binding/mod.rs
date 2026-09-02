@@ -16,10 +16,7 @@
 //! the nearest non-comprehension scope, and class-scope names are
 //! invisible to nested functions and comprehensions.
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::OnceLock,
-};
+use std::{collections::BTreeSet, sync::OnceLock};
 
 use indexmap::IndexMap;
 use ruff_python_ast::{ModModule, Stmt, name::Name, visitor::Visitor};
@@ -52,7 +49,7 @@ pub struct BindingAnalysis {
     #[serde(skip)]
     function_scope_at: FxHashMap<TextSize, ScopeId>,
     #[serde(skip)]
-    global_writes: BTreeMap<Name, Vec<TextSize>>,
+    global_writes: FxHashMap<Name, Vec<TextSize>>,
     #[serde(skip)]
     module_reads: OnceLock<Vec<(TextSize, Name)>>,
     scopes: Vec<Scope>,
@@ -110,7 +107,7 @@ impl BindingAnalysis {
         stmt: &Stmt,
     ) -> impl Iterator<Item = BindingId> + use<'_> {
         self.function_scope_at
-            .get(&stmt.range().start())
+            .get(&stmt.start())
             .copied()
             .into_iter()
             .flat_map(move |s| self.scopes[s.0 as usize].bindings.values().copied())
@@ -208,10 +205,10 @@ impl BindingAnalysis {
         };
         let reads = self.module_reads();
         let from = reads.partition_point(|&(offset, _)| offset < first.start());
-        for (offset, name) in &reads[from..] {
-            if *offset >= last.end() {
-                break;
-            }
+        for (offset, name) in reads[from..]
+            .iter()
+            .take_while(|&&(offset, _)| offset < last.end())
+        {
             let slot = ranges.partition_point(|range| range.end() <= *offset);
             if ranges
                 .get(slot)
@@ -377,7 +374,7 @@ struct Binding {
 struct Scope {
     bindings: IndexMap<Name, BindingId, FxBuildHasher>,
     #[serde(skip)]
-    globals: BTreeSet<Name>,
+    globals: FxHashSet<Name>,
     kind: ScopeKind,
     parent: Option<ScopeId>,
 }

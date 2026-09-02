@@ -109,10 +109,14 @@ impl Summary {
     }
 
     fn tinted(&self) -> String {
-        match self {
-            Self::Clean => celadon(&self.message()),
-            _ => apricot(&self.message()),
-        }
+        paint(
+            &self.message(),
+            if matches!(self, Self::Clean) {
+                CELADON
+            } else {
+                APRICOT
+            },
+        )
     }
 }
 
@@ -141,14 +145,6 @@ pub(super) fn report(
 
 pub(super) fn ube(text: &str) -> String {
     paint(text, UBE)
-}
-
-fn apricot(text: &str) -> String {
-    paint(text, APRICOT)
-}
-
-fn celadon(text: &str) -> String {
-    paint(text, CELADON)
 }
 
 fn paint(text: &str, color: (RgbColor, AnsiColor)) -> String {

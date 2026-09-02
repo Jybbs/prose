@@ -15,9 +15,9 @@ use super::Exploder;
 use crate::primitives::{
     call_keywords::{CallKeywords, keyword_args, resolve_call_params},
     edit::apply_inline_edits,
-    inline::{display_width, end_column, opening_width, settled_width},
+    inline::{display_width, end_column, opening_width, settled_slice_width, settled_width},
     layout::{Separator, explode_parens, is_fractured, item_indent},
-    tokens::{is_opener, opens_subscript},
+    tokens::{is_opener, opens_subscript, tokens_within},
     travel::{Landing, Travel, block_shift, shifted_block, spans_a_string_part},
 };
 
@@ -176,10 +176,9 @@ impl<'a> Exploder<'a> {
     /// subscript's `[` never does.
     fn first_breaking_opener(&self, range: TextRange) -> Option<TextSize> {
         let literals = self.source.expandable_literals();
-        self.source
-            .tokens_overlapping(range)
+        tokens_within(self.source, range)
             .find(|token| {
-                if !range.contains(token.start()) || !is_opener(token.kind()) {
+                if !is_opener(token.kind()) {
                     return false;
                 }
                 if token.kind() == TokenKind::Lsqb
@@ -203,9 +202,11 @@ impl<'a> Exploder<'a> {
             return true;
         }
         let column = self.source.column_of(range.start());
-        let width = self.settled_width(range, display_width(self.source.slice(range)));
-        let tail_range = self.source.row_tail(range.end());
-        let tail = self.settled_width(tail_range, self.source.tail_width(tail_range));
+        let width = settled_slice_width(self.source, self.padding, range);
+        let tail = self.settled_width(
+            self.source.row_tail(range.end()),
+            self.source.row_tail_width(range.end()),
+        );
         !self.one_row.fits(column + width + tail)
     }
 
@@ -330,8 +331,7 @@ impl<'a> Exploder<'a> {
         if self.source.contains_line_break(arguments.range()) {
             display_width(form)
         } else {
-            let range = arguments.range();
-            self.settled_width(range, display_width(self.source.slice(range)))
+            settled_slice_width(self.source, self.padding, arguments.range())
         }
     }
 
@@ -348,7 +348,7 @@ impl<'a> Exploder<'a> {
             return None;
         }
         let count_trips = self.one_row.count_explodes(self.source, call);
-        let tail = self.row_tail(arguments.range().end());
+        let tail = self.row_tail(arguments.end());
         let form = self
             .one_row
             .arguments_form(self.source, arguments)

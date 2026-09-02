@@ -19,7 +19,7 @@ use ruff_python_ast::{AnyNodeRef, ArgOrKeyword, Arguments, Expr};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use self::{
-    dict::dict_sort_key,
+    dict::{dict_holds_as_laid_out, dict_sort_key},
     enums::Enumerations,
     leaves::{collect_docstring_entry_edits, collect_leaf_edits},
     rewrite::{RewriteCtx, body_layout, import_gap},
@@ -31,7 +31,9 @@ use crate::{
         comments::has_keep_marker,
         effect::value_is_effectful,
         imports::defers_annotations,
-        orderer::{any_sibling_shares_line, opens_its_line, permute_runs, swap_span_commented},
+        orderer::{
+            any_sibling_shares_line, gaps_carry_code, opens_its_line, permute_runs, swap_span_holds,
+        },
         scope::BodyScope,
         slots::runs_where,
         tokens::{CLOSERS, OPENERS},
@@ -203,22 +205,8 @@ impl Reorders {
     /// set, list, or tuple packing entries or opening mid-row with a
     /// comment in the span.
     pub(crate) fn holds_as_laid_out(self, source: &Source, node: AnyNodeRef) -> bool {
-        fn packed<T: Ranged>(source: &Source, items: &[T]) -> (bool, bool, bool) {
-            let [first, .., last] = items else {
-                return (false, false, false);
-            };
-            let span = TextRange::new(first.start(), last.end());
-            (
-                source.contains_line_break(span),
-                any_sibling_shares_line(source, items),
-                !opens_its_line(source, first.start()) && swap_span_commented(source, items),
-            )
-        }
         match node {
-            AnyNodeRef::ExprDict(dict) => {
-                let (multi_line, shares, mid_row_commented) = packed(source, &dict.items);
-                multi_line && (shares || mid_row_commented)
-            }
+            AnyNodeRef::ExprDict(dict) => dict_holds_as_laid_out(source, &dict.items),
             AnyNodeRef::ExprList(list) => held_leaves(source, &list.elts),
             AnyNodeRef::ExprSet(set) => held_leaves(source, &set.elts),
             AnyNodeRef::ExprTuple(tuple) => held_leaves(source, &tuple.elts),
@@ -236,8 +224,7 @@ impl Reorders {
         node: AnyNodeRef,
         parent: AnyNodeRef,
     ) -> Option<TextRange> {
-        let sorted = self.sorted(source, node, parent)?;
-        Some(sorted.ranges[*sorted.order.last()?])
+        Some(self.sorted(source, node, parent)?.last)
     }
 
     /// The index of the row the sort leaves last among keyword `rows`,
@@ -275,23 +262,24 @@ impl Reorders {
     }
 }
 
-/// The sort over one node's entries: the source index landing in each
-/// slot, and every entry's range in source order.
+/// The sort over one node's entries: the range of the entry the sort
+/// leaves last, and the source index landing in each slot.
 struct Sorted {
+    last: TextRange,
     order: Vec<usize>,
-    ranges: Vec<TextRange>,
 }
 
 /// True when a leaf group over `items` holds its order as laid out: one
 /// packing members onto shared rows or opening mid-row, spanning lines,
 /// with a comment inside the swap span.
 fn held_leaves<T: Ranged>(source: &Source, items: &[T]) -> bool {
-    let [first, .., last] = items else {
+    let Some(first) = items.first() else {
         return false;
     };
-    (any_sibling_shares_line(source, items) || !opens_its_line(source, first.start()))
-        && source.contains_line_break(TextRange::new(first.start(), last.end()))
-        && swap_span_commented(source, items)
+    let swapped = any_sibling_shares_line(source, items)
+        || !opens_its_line(source, first.start())
+        || gaps_carry_code(source, items);
+    swap_span_holds(source, items, swapped)
 }
 
 /// `ranged`'s source text read the way a later join writes it onto one
@@ -331,9 +319,10 @@ fn sorted_entries<'a, T: Ranged, K: Ord>(
     key: impl FnMut(&'a T) -> Option<K>,
 ) -> Option<Sorted> {
     let keys: Vec<Option<K>> = items.iter().map(key).collect();
+    let order = sorted_order(&keys, runs)?;
     Some(Sorted {
-        order: sorted_order(&keys, runs)?,
-        ranges: items.iter().map(Ranged::range).collect(),
+        last: items[*order.last()?].range(),
+        order,
     })
 }
 
@@ -363,7 +352,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{applied_text, first_value, parse};
+    use crate::testing::{applied_text, at, first_value, parse};
 
     #[test]
     fn apply_skips_dict_key_reorder_when_config_disables_it() {
@@ -397,14 +386,9 @@ mod tests {
         let source = parse(src);
         let edits = rule.apply(&source).into_iter().flatten().collect();
         let text = applied_text(&source, edits);
-        let args_section_end = text.find("\"\"\"\n    pass").expect("closer follows args");
-        let args_section = &text[..args_section_end];
-        let bar_pos = args_section.find("bar: two").expect("bar still present");
-        let alpha_pos = args_section
-            .find("alpha: one")
-            .expect("alpha still present");
+        let args_section = &text[..at(&text, "\"\"\"\n    pass").start().to_usize()];
         assert!(
-            bar_pos < alpha_pos,
+            at(args_section, "bar: two").start() < at(args_section, "alpha: one").start(),
             "docstring entries should keep source order when sort-docstring-entries is off",
         );
     }

@@ -75,44 +75,46 @@ impl Rule for LineOverflow {
         spans.visit_body(&source.ast().body);
         spans.index();
         let floor = self.code_line_length.min(self.import_line_length);
-        let mut diagnostics = Vec::new();
-        for line in source.text().universal_newlines() {
-            let range = line.range();
-            let width = display_width(line.as_str());
-            if width <= floor {
-                continue;
-            }
-            let cap = if spans.in_import(range) {
-                self.import_line_length
-            } else {
-                self.code_line_length
-            };
-            if width <= cap || spans.reshapes(range) {
-                continue;
-            }
-            let report = format!("Line is {width} columns, over the {cap}-column budget");
-            let lit = spans.straddling(range, cap);
-            diagnostics.push(
-                match lit.and_then(|lit| split::concatenation(source, lit, cap)) {
-                    Some(edit) if self.suggest_string_splits => Diagnostic::suggestion(
-                        self.id(),
-                        range,
-                        format!("{report}, with a legal reshape at the string literal"),
-                        edit,
-                    ),
-                    Some(_) => Diagnostic::lint(self.id(), range, report),
-                    None if lit.is_some_and(|lit| split::has_interior_break(source, lit)) => {
-                        Diagnostic::lint(self.id(), range, report)
-                    }
-                    None => Diagnostic::lint(
-                        self.id(),
-                        range,
-                        format!("{report}, with no legal reshape"),
-                    ),
-                },
-            );
-        }
-        diagnostics
+        source
+            .text()
+            .universal_newlines()
+            .filter_map(|line| {
+                let range = line.range();
+                let width = display_width(line.as_str());
+                if width <= floor {
+                    return None;
+                }
+                let cap = if spans.in_import(range) {
+                    self.import_line_length
+                } else {
+                    self.code_line_length
+                };
+                if width <= cap || spans.reshapes(range) {
+                    return None;
+                }
+                let report = format!("Line is {width} columns, over the {cap}-column budget");
+                let lit = spans.straddling(range, cap);
+                Some(
+                    match lit.and_then(|lit| split::concatenation(source, lit, cap)) {
+                        Some(edit) if self.suggest_string_splits => Diagnostic::suggestion(
+                            self.id(),
+                            range,
+                            format!("{report}, with a legal reshape at the string literal"),
+                            edit,
+                        ),
+                        Some(_) => Diagnostic::lint(self.id(), range, report),
+                        None if lit.is_some_and(|lit| split::has_interior_break(source, lit)) => {
+                            Diagnostic::lint(self.id(), range, report)
+                        }
+                        None => Diagnostic::lint(
+                            self.id(),
+                            range,
+                            format!("{report}, with no legal reshape"),
+                        ),
+                    },
+                )
+            })
+            .collect()
     }
 }
 

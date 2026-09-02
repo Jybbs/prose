@@ -51,12 +51,32 @@ pub(crate) fn joins_an_identifier(c: char) -> bool {
 /// `text` carrying a leading space where the character before `start`
 /// would otherwise run into it, as `return[x for x in xs]` does.
 pub(crate) fn padded(source: &Source, start: TextSize, text: String) -> String {
-    let merges = text.starts_with(joins_an_identifier)
-        && source.text()[..start.to_usize()]
-            .chars()
-            .next_back()
-            .is_some_and(joins_an_identifier);
-    if merges { format!(" {text}") } else { text }
+    if text.starts_with(joins_an_identifier) && joins_before(source, start) {
+        format!(" {text}")
+    } else {
+        text
+    }
+}
+
+/// True where the character ahead of `offset` joins an identifier, so
+/// text opening with one placed there runs into it.
+pub(crate) fn joins_before(source: &Source, offset: TextSize) -> bool {
+    source.text()[..offset.to_usize()]
+        .chars()
+        .next_back()
+        .is_some_and(joins_an_identifier)
+}
+
+/// The text ahead of `offset` on its logical line, clipped to `floor`
+/// and rendered with `edits` applied.
+pub(crate) fn placed_head<'a>(
+    source: &'a Source,
+    edits: &[Edit],
+    offset: TextSize,
+    floor: TextSize,
+) -> Cow<'a, str> {
+    let start = source.logical_line_start(offset).start().max(floor);
+    apply_inline_edits(source, TextRange::new(start, offset), edits)
 }
 
 /// The edit rewriting `range` to `n` copies of `unit`, a deletion when

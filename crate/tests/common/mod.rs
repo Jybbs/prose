@@ -17,7 +17,7 @@ pub(crate) use sweep::{
     python_files, report_verified, setting, swept, unread, verifying, watch_for_a_runaway,
     widths_or,
 };
-pub(crate) use tally::{Hit, SHOWN, Tally};
+pub(crate) use tally::{Hit, SHOWN, Tally, remainder};
 
 /// Per-fixture flags read from the sidecar TOML's `[harness]` table,
 /// independent of the prose config the rule itself consumes.
@@ -60,9 +60,7 @@ pub(crate) fn case_name(path: &Path) -> &str {
 
 pub(crate) fn domain_name(path: &Path) -> &str {
     path.parent()
-        .and_then(Path::parent)
-        .and_then(Path::file_name)
-        .and_then(OsStr::to_str)
+        .map(case_name)
         .expect("fixture path has a domain directory")
 }
 

@@ -15,6 +15,14 @@ use itertools::Itertools;
 /// the remainder as a count.
 pub(crate) const SHOWN: usize = 30;
 
+/// The clause a capped listing closes on, empty where nothing was cut.
+pub(crate) fn remainder(total: usize) -> String {
+    match total.saturating_sub(SHOWN) {
+        0 => String::new(),
+        rest => format!("\n  ... and {rest} more"),
+    }
+}
+
 /// What one hit of a defect carries past its wording and its file.
 #[derive(Default)]
 pub(crate) struct Hit {
@@ -74,12 +82,7 @@ impl Tally {
             .take(SHOWN)
             .map(|(defect, site)| site.render(defect))
             .format("\n");
-        let rest = self.0.len().saturating_sub(SHOWN);
-        let tail = if rest > 0 {
-            format!("\n  ... and {rest} more")
-        } else {
-            String::new()
-        };
+        let tail = remainder(self.0.len());
         format!("\n{heading} ({}):\n{shown}{tail}", self.0.len())
     }
 }

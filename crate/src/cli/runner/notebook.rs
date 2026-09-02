@@ -9,7 +9,7 @@ use ruff_source_file::SourceFileBuilder;
 
 use super::{
     FileOutcome, Pass,
-    process::{Marker, drive, failed},
+    process::{Marker, drive, failed, parse_failure},
     resolve::Resolved,
 };
 use crate::{cache::Rewrite, cli::exit_status::ExitStatus, source::Source};
@@ -50,10 +50,7 @@ pub(super) fn process(text: String, name: String, resolved: &Resolved, pass: Pas
     }
     match Source::from_notebook(&notebook, name.as_str()) {
         Ok(source) => run(source, notebook, resolved, pass),
-        Err(e) => failed(
-            ExitStatus::ParseError,
-            format_args!("parse error in `{name}`: {e}"),
-        ),
+        Err(e) => parse_failure(&name, e),
     }
 }
 
