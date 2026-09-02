@@ -21,7 +21,7 @@ Every rule reads the source file through one shared value. *Source* bundles the 
 
 The constructors cover the common shapes:
 
-1. `Source::from_path(path) -> Result<Self, SourceError>` reads the file at `path`, parses it as Python, and returns the wrapped value. The on-disk filename is preserved for diagnostic emission. The parser is `ruff_python_parser` at the pinned crate tag, so a downstream that already depends on the same `ruff_*` workspace sees an AST whose types match its own.
+1. `Source::from_path(path) -> Result<Self, SourceError>` reads the file at `path`, parses it as Python, and returns the wrapped value. The on-disk filename is preserved for diagnostic emission. The parser is `ruff_python_parser` at the pinned crate version, so a downstream that already depends on the same `ruff_*` workspace sees an AST whose types match its own.
 2. `Source::from_str(text: &str) -> Result<Self, ParseError>` parses an in-memory string, returning a *Source* whose synthetic filename is `<source>`. Reach for it in stdin mode, language-server buffers, test fixtures, and any other shape where the text exists in memory rather than on disk.
 3. `Source::parse_named(text: String, name: &str) -> Result<Self, ParseError>` parses an in-memory string the way `from_str` does while carrying `name` the way a file-backed value carries its path, so a diagnostic drawn from text held in memory still names the file it came from. A corpus sweep reading a checkpoint back reaches for it, since the buffer is in memory and the reported defect has to name the file on disk.
 
