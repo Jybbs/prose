@@ -8,10 +8,11 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{deltas::Deltas, flags::retargeted};
 
-/// One window's held span and the statement and tokens its reparse
-/// produced, the statement's own range being where it landed.
+/// One window's held span, the statement its reparse produced, and the
+/// tokens of that reparse the merge reads, the statement's own range
+/// being where it landed.
 pub(super) struct Reparsed {
-    pub(super) fresh: Tokens,
+    pub(super) fresh: Vec<Token>,
     pub(super) held: TextRange,
     pub(super) stmt: Stmt,
 }
@@ -41,7 +42,7 @@ pub(super) fn spliced(
             .get(next)
             .filter(|window| window.held.end() <= token.start())
         {
-            merged.extend(opening_before(&window.fresh, window.stmt.end()));
+            merged.extend_from_slice(&window.fresh);
             next += 1;
         }
         if windows
@@ -58,7 +59,7 @@ pub(super) fn spliced(
         });
     }
     for window in &windows[next..] {
-        merged.extend(opening_before(&window.fresh, window.stmt.end()));
+        merged.extend_from_slice(&window.fresh);
     }
     debug_assert!(
         merged
@@ -69,12 +70,15 @@ pub(super) fn spliced(
     Tokens::new(merged)
 }
 
-/// The tokens of `fresh` that open before `end`.
-fn opening_before(fresh: &Tokens, end: TextSize) -> impl Iterator<Item = Token> + use<'_> {
+/// The tokens of `fresh` that open before `end`, the only ones the
+/// merge reads, so a window keeps just these rather than a copy of its
+/// whole parse.
+pub(super) fn opening_before(fresh: &Tokens, end: TextSize) -> Vec<Token> {
     fresh
         .iter()
-        .take_while(move |token| token.start() < end)
+        .take_while(|token| token.start() < end)
         .copied()
+        .collect()
 }
 
 /// True where a token over `range` is one `window`'s own reparse

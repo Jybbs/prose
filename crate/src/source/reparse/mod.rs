@@ -60,6 +60,13 @@ impl Source {
         if !deltas.written().all(covers) {
             return None;
         }
+        let holds_its_indent = |window: &Window| {
+            window::closing_indent(self.text(), window.held)
+                == window::closing_indent(text, window.slid)
+        };
+        if !covered.iter().all(holds_its_indent) {
+            return None;
+        }
         let options = ParseOptions::from(self.source_type);
         let mut windows = Vec::with_capacity(covered.len());
         for Window { held, slid } in covered {
@@ -67,15 +74,11 @@ impl Source {
             if !parsed.has_valid_syntax() {
                 return None;
             }
-            let fresh = parsed.tokens().clone();
-            let mut body = parsed.into_syntax().body;
-            let stmt = body.pop()?;
-            if !body.is_empty()
-                || stmt.range() != slid
-                || window::closing_indent(self.text(), held) != window::closing_indent(text, slid)
-            {
+            if !matches!(parsed.syntax().body.as_slice(), [only] if only.range() == slid) {
                 return None;
             }
+            let fresh = tokens::opening_before(parsed.tokens(), slid.end());
+            let stmt = parsed.into_syntax().body.pop()?;
             windows.push(Reparsed { fresh, held, stmt });
         }
         Some(Splice(windows))
