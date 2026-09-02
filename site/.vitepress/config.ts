@@ -38,7 +38,7 @@ const crate                = paths.crateDir(import.meta.url)
 const rulesDirectory       = paths.rulesDir(import.meta.url)
 const proseVersion         = version.readCargoVersion(crate)
 const requiresPython       = version.readRequiresPython(crate)
-const ruffTag              = version.readRuffTag(crate)
+const ruffRelease          = version.readRuffRelease(crate)
 const ruleDiscovery        = discoverRules(rulesDirectory)
 const ruleIndex            = discoverRuleIndex(rulesDirectory)
 const discoveredRules      = ruleDiscovery.rules
@@ -119,7 +119,7 @@ export default defineConfig({
     pageData.frontmatter ||= {}
     pageData.frontmatter.proseVersion   = proseVersion
     pageData.frontmatter.requiresPython = requiresPython
-    pageData.frontmatter.ruffVersion    = ruffTag
+    pageData.frontmatter.ruffVersion    = ruffRelease
     pageData.frontmatter.head ??= []
     pageData.frontmatter.head.push([
       'link',

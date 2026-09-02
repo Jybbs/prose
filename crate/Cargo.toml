@@ -10,6 +10,9 @@ repository.workspace   = true
 rust-version.workspace = true
 version                = "0.8.3"
 
+[package.metadata.ruff]
+release = "0.15.22"
+
 [[bin]]
 name              = "prose"
 required-features = ["native"]
