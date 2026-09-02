@@ -44,15 +44,7 @@ const INDEPENDENCE: &[(&str, &[&str])] = &[
             "strip-trailing-commas",
         ],
     ),
-    (
-        "reflow-parentheses",
-        &[
-            "normalize-literals",
-            "prune-inert-imports",
-            "strip-none-return",
-            "strip-trailing-commas",
-        ],
-    ),
+    ("reflow-parentheses", &["prune-inert-imports"]),
     (
         "shed-redundant-base",
         &[
@@ -132,11 +124,7 @@ const INDEPENDENCE: &[(&str, &[&str])] = &[
     (
         "reflow-calls",
         &[
-            "normalize-literals",
             "prune-inert-imports",
-            "strip-none-return",
-            "strip-trailing-commas",
-            "shed-redundant-base",
             "frame-docstrings",
             "expand-docstrings",
             "group-imports",
@@ -145,24 +133,17 @@ const INDEPENDENCE: &[(&str, &[&str])] = &[
     (
         "reflow-signatures",
         &[
-            "normalize-literals",
             "prune-inert-imports",
-            "strip-trailing-commas",
             "shed-redundant-base",
-            "simplify-comprehensions",
             "frame-docstrings",
             "expand-docstrings",
             "group-imports",
-            "shed-super-args",
         ],
     ),
     (
         "reflow-collections",
         &[
-            "normalize-literals",
             "prune-inert-imports",
-            "strip-trailing-commas",
-            "shed-redundant-base",
             "frame-docstrings",
             "expand-docstrings",
             "group-imports",
