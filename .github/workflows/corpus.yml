@@ -9,13 +9,15 @@ env:
 
 on:
   pull_request:
-    paths:
+    paths: &watched
+      - .github/actions/**
       - .github/workflows/corpus.yml
       - .mise/config.toml
       - .mise/lib/**
       - .mise/tasks/gha/baseline
       - .mise/tasks/gha/brief
       - .mise/tasks/gha/plan
+      - .mise/tasks/gha/prune
       - .mise/tasks/rust/bake
       - .mise/tasks/rust/delta
       - .mise/tasks/rust/imports
@@ -35,19 +37,7 @@ on:
   push:
     branches:
       - main
-    paths:
-      - .github/actions/**
-      - .github/workflows/corpus.yml
-      - .mise/config.toml
-      - .mise/lib/**
-      - .mise/tasks/rust/bake
-      - .mise/tasks/rust/imports
-      - Cargo.lock
-      - Cargo.toml
-      - crate/Cargo.toml
-      - crate/src/**
-      - crate/tests/common/**
-      - crate/tests/imports/**
+    paths: *watched
 
   workflow_dispatch:
 
@@ -78,8 +68,8 @@ jobs:
 
   bake:
     name            : 🧱 Bake
-    if              : ${{ github.event_name != 'pull_request' }}
-    permissions     : { actions: write, contents: read }
+    if              : &push ${{ github.event_name != 'pull_request' }}
+    permissions     : &prune-caches { actions: write, contents: read }
     runs-on         : *ubuntu
     timeout-minutes : &sweep 30
 
@@ -94,70 +84,77 @@ jobs:
           shared-key : prose-probe
 
       - &interpreter
-        name : Read the pinned interpreter
+        name : Key the caches to the pinned interpreter
         id   : python
         run  : |
           mise x -- python -c '
           import sys, sysconfig
+          version = sys.version.split()[0]
           print("corpus=" + sysconfig.get_paths()["stdlib"])
-          print("version=" + sys.version.split()[0])
+          for kind in ("breaks", "mutations", "stage"):
+              print(f"{kind}=corpus-{kind}-{version}-")
           ' >> "$GITHUB_OUTPUT"
 
       - name : Look up the mutation set
         id   : mutations
-        uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses : &cache-restore actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          key         : &mutations-key corpus-mutations-${{ steps.python.outputs.version }}-${{ hashFiles('sweeps/src/bin/mutate.rs', 'sweeps/Cargo.toml') }}
+          key         : &mutations-key ${{ steps.python.outputs.mutations }}${{ hashFiles('sweeps/src/bin/mutate.rs', 'sweeps/Cargo.toml') }}
           lookup-only : true
-          path        : &mutations-path ${{ runner.temp }}/mutations
+          path        : &mutations-dir ${{ runner.temp }}/mutations
 
       - name : Bake the baseline stage and the mutation set
         env:
-          PROSE_DELTA_STAGE      : ${{ runner.temp }}/stage
+          PROSE_DELTA_STAGE      : &stage-dir ${{ runner.temp }}/stage
           PROSE_SETTLE_MUTATIONS : ${{ steps.mutations.outputs.cache-hit != 'true' && format('{0}/mutations', runner.temp) || '' }}
         run  : mise run rust:bake
 
       - name : Save the baseline stage
-        uses : actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses : &cache-save actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          key  : corpus-stage-${{ steps.python.outputs.version }}-${{ github.sha }}
+          key  : ${{ steps.python.outputs.stage }}${{ github.sha }}
           path : ${{ runner.temp }}/stage/.git
 
       - name : Save the mutation set
         if   : ${{ steps.mutations.outputs.cache-hit != 'true' }}
-        uses : actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses : *cache-save
         with:
           key  : *mutations-key
-          path : *mutations-path
+          path : *mutations-dir
+
+      - name : Drop the stages this bake replaces
+        if   : &main ${{ github.ref == 'refs/heads/main' }}
+        env  : { GH_TOKEN: "${{ github.token }}", PREFIX: "${{ steps.python.outputs.stage }}" }
+        run  : mise run gha:prune
+
+  breaks:
+    name            : 🧱 Breaks
+    if              : *push
+    permissions     : *prune-caches
+    runs-on         : *ubuntu
+    timeout-minutes : *sweep
+
+    steps:
+      - *checkout
+
+      - *provision-cargo
+
+      - *interpreter
 
       - name : Bake the break set every rewritten module imports against
         env  : { PROSE_IMPORTS_BAKE: &breaks-path "${{ runner.temp }}/breaks/set.json" }
         run  : mise run imports
 
       - name : Save the break set
-        uses : actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses : *cache-save
         with:
-          key  : corpus-breaks-${{ steps.python.outputs.version }}-${{ github.sha }}
+          key  : ${{ steps.python.outputs.breaks }}${{ github.sha }}
           path : &breaks-dir ${{ runner.temp }}/breaks
 
-      - name : Drop the stages and break sets this bake replaces
-        if   : ${{ github.ref == 'refs/heads/main' }}
-        env:
-          GH_TOKEN : ${{ github.token }}
-          SHA      : ${{ github.sha }}
-          VERSION  : ${{ steps.python.outputs.version }}
-        run  : |
-          set -o pipefail
-          for kind in stage breaks; do
-            PREFIX="corpus-$kind-$VERSION-" KEPT="corpus-$kind-$VERSION-$SHA" \
-              gh api --paginate "repos/$GITHUB_REPOSITORY/actions/caches?per_page=100" \
-                --jq '.actions_caches[]
-                      | select(.key | startswith(env.PREFIX))
-                      | select(.key != env.KEPT)
-                      | .id' \
-              | xargs -r -I {} gh api --method DELETE \
-                "repos/$GITHUB_REPOSITORY/actions/caches/{}"
-          done
+      - name : Drop the break sets this bake replaces
+        if   : *main
+        env  : { GH_TOKEN: "${{ github.token }}", PREFIX: "${{ steps.python.outputs.breaks }}" }
+        run  : mise run gha:prune
 
   settle:
     name            : ⚓ Settle
@@ -189,14 +186,13 @@ jobs:
       - *interpreter
 
       - name : Restore the mutation set
-        id   : mutations
-        uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses : *cache-restore
         with:
           key  : *mutations-key
-          path : *mutations-path
+          path : *mutations-dir
 
       - name : Format every mutation of the corpus
-        env  : { PROSE_SETTLE_MUTATIONS: "${{ runner.temp }}/mutations" }
+        env  : { PROSE_SETTLE_MUTATIONS: *mutations-dir }
         run  : mise run rust:mutations "${{ steps.python.outputs.corpus }}" 600
 
   delta:
@@ -214,21 +210,20 @@ jobs:
 
       - name : Restore the baseline stage
         id   : stage
-        uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses : *cache-restore
         with:
-          key          : corpus-stage-${{ steps.python.outputs.version }}-${{ env.BASE }}
+          key          : ${{ steps.python.outputs.stage }}${{ env.BASE }}
           path         : ${{ runner.temp }}/stage/.git
-          restore-keys : corpus-stage-${{ steps.python.outputs.version }}-
+          restore-keys : ${{ steps.python.outputs.stage }}
 
       - name : Serve or rebake the baseline
         env:
           RESTORED : ${{ steps.stage.outputs.cache-matched-key }}
-          STAGE    : ${{ runner.temp }}/stage
+          STAGE    : *stage-dir
         run  : mise run gha:baseline
 
       - name : Format the head at every width against the baseline
-        env:
-          PROSE_DELTA_STAGE : ${{ runner.temp }}/stage
+        env  : { PROSE_DELTA_STAGE: *stage-dir }
         run  : mise run rust:delta
 
   imports:
@@ -246,12 +241,11 @@ jobs:
       - *interpreter
 
       - name : Restore the baked break set
-        id   : breaks
-        uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses : *cache-restore
         with:
-          key          : corpus-breaks-${{ steps.python.outputs.version }}-${{ env.BASE }}
+          key          : ${{ steps.python.outputs.breaks }}${{ env.BASE }}
           path         : *breaks-dir
-          restore-keys : corpus-breaks-${{ steps.python.outputs.version }}-
+          restore-keys : ${{ steps.python.outputs.breaks }}
 
       - name : Import every rewritten module against the baked break set
         id   : ratchet
@@ -290,7 +284,7 @@ jobs:
   gate:
     name            : 🗞️ Brief
     if              : always()
-    needs           : [bake, delta, imports, mutations, plan, settle, subsets]
+    needs           : [bake, breaks, delta, imports, mutations, plan, settle, subsets]
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 
@@ -302,6 +296,7 @@ jobs:
       - name : Summarize and gate
         env:
           BAKE      : ${{ needs.bake.result }}
+          BREAKS    : ${{ needs.breaks.result }}
           DELTA     : ${{ needs.delta.result }}
           ARMED     : ${{ needs.imports.outputs.armed }}
           IMPORTS   : ${{ needs.imports.result }}
