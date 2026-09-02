@@ -133,7 +133,14 @@ impl<'map> Slide<'map> {
             .collect();
         self.visit_body(&mut module.body);
         let runs = self.runs.take();
-        for (slots, stmts) in slots.into_iter().zip(runs).rev() {
+        for (slots, mut stmts) in slots.into_iter().zip(runs).rev() {
+            if slots.len() == 1
+                && stmts.len() == 1
+                && let Some(stmt) = stmts.pop()
+            {
+                module.body[slots.start] = stmt;
+                continue;
+            }
             let tail: Vec<Stmt> = module.body.drain(slots.end..).collect();
             module.body.truncate(slots.start);
             module.body.extend(stmts);
