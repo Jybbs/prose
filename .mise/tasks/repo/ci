@@ -6,6 +6,7 @@
 #MISE   "rust:check",
 #MISE   "rust:cruft",
 #MISE   "rust:lint",
+#MISE   "rust:test",
 #MISE   "rust:unused",
 #MISE   "site:cruft",
 #MISE   "site:links",
