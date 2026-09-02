@@ -17,7 +17,7 @@ use ruff_python_parser::{ParseOptions, parse_cells_unchecked};
 use ruff_text_size::{Ranged, TextRange};
 
 use self::{deltas::Deltas, slide::Slide, tokens::Reparsed, window::Window};
-use crate::{primitives::slots::item_holding, source::Source};
+use crate::{primitives::slots::item_holding, rule::RuleId, source::Source};
 
 /// The reparse of each window a rule's edits fell inside.
 pub(crate) struct Splice(Vec<Reparsed>);
@@ -89,18 +89,30 @@ impl Source {
     /// table takes the slot before this call and one replaying a
     /// rejected batch rebuilds from the entry buffer.
     ///
+    /// The padding walk moves with it, every entry outside the windows
+    /// slid and the entries inside them walked afresh, the outcome
+    /// reported under `rule`.
+    ///
     /// [`splice_of`](Self::splice_of) declines every notebook, so this
     /// path carries no cell boundaries and no cell numbering.
-    pub(crate) fn spliced(self, text: String, map: &SourceMap, splice: Splice) -> Self {
+    pub(crate) fn spliced(
+        mut self,
+        text: String,
+        map: &SourceMap,
+        splice: Splice,
+        rule: RuleId,
+    ) -> Self {
         let deltas = Deltas::new(map);
         let spliced = tokens::spliced(&self.tokens, self.text(), &deltas, &splice.0);
+        let stranded = std::mem::take(&mut self.stranded_padding);
+        let windows: Vec<TextRange> = splice.0.iter().map(|window| window.stmt.range()).collect();
         let mut ast = self.ast;
         let grafts = splice
             .0
             .into_iter()
             .map(|window| (window.stmt.range(), window.stmt));
         Slide::new(&deltas, grafts).over_module(&mut ast);
-        let next = Self::from_parts(
+        let mut next = Self::from_parts(
             text,
             self.file.name(),
             self.source_type,
@@ -108,6 +120,7 @@ impl Source {
             ast,
             spliced,
         );
+        next.rebuild_stranded_padding(stranded, map, &windows, rule);
         debug_assert!(
             next.matches_a_fresh_parse(),
             "the spliced tree and token stream differ from a parse of the same text",
@@ -123,6 +136,7 @@ mod tests {
 
     use super::*;
     use crate::{
+        primitives::padding::Stranding,
         rule::RuleId,
         testing::{parse, range, replacement, woven},
     };
@@ -133,7 +147,7 @@ mod tests {
         let (rewritten, map) = woven(text, edits);
         let source = parse(text);
         let splice = source.splice_of(&rewritten, &map)?;
-        Some(source.spliced(rewritten, &map, splice))
+        Some(source.spliced(rewritten, &map, splice, RuleId::from("align-equals")))
     }
 
     #[test]
@@ -144,10 +158,41 @@ mod tests {
         let bindings = source.take_binding_analysis();
         let splice = source.splice_of(&text, &map).expect("the splice applies");
 
-        let mut next = source.spliced(text, &map, splice);
+        let mut next = source.spliced(text, &map, splice, RuleId::from("align-equals"));
         next.inherit(bindings, &map, RuleId::from("align-equals"), true);
 
         assert!(next.assert_carried_bindings_are_fresh("the spliced source"));
+    }
+
+    #[rstest]
+    #[case::a_gap_the_reparsed_statement_drops(
+        "x = call( 1 )\ny = [ 2 ]\n",
+        replacement("call(1)", 4, 13)
+    )]
+    #[case::a_gap_the_reparsed_statement_adds(
+        "x = call(1)\ny = [ 2 ]\n",
+        replacement("call( 1 )", 4, 11)
+    )]
+    #[case::a_gap_slid_past_the_window("x = 1\ny = [ 2 ]\n", replacement("11", 4, 5))]
+    #[case::a_gap_ahead_of_the_window("x = [ 1 ]\ny = 2\n", replacement("22", 14, 15))]
+    fn a_spliced_source_rebuilds_the_padding_walk_over_its_windows(
+        #[case] text: &str,
+        #[case] edit: Edit,
+    ) {
+        let stranding = Stranding::new(RuleId::from("strip-stranded-padding"), true);
+        let (rewritten, map) = woven(text, vec![edit]);
+        let source = parse(text);
+        assert!(
+            !source.stranded_padding(stranding).is_empty(),
+            "the case holds padding to carry"
+        );
+        let splice = source
+            .splice_of(&rewritten, &map)
+            .expect("the splice applies");
+
+        let next = source.spliced(rewritten, &map, splice, RuleId::from("reflow-calls"));
+
+        assert!(next.assert_rebuilt_padding_is_fresh("the spliced source"));
     }
 
     #[test]

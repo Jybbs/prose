@@ -7,7 +7,7 @@
 //! columns those edits take off one span.
 
 use ruff_diagnostics::Edit;
-use ruff_text_size::Ranged;
+use ruff_text_size::{Ranged, TextRange};
 
 mod gaps;
 
@@ -44,6 +44,15 @@ impl Stranding {
     /// inside a bracket delimiter is deleted, a row the rule's skip
     /// directive holds keeping every gap it carries.
     pub(crate) fn edits(self, source: &Source) -> Vec<Edit> {
+        self.edits_within(source, &[source.module_range()])
+    }
+
+    /// The edits of [`edits`](Self::edits) that fall inside one of
+    /// `windows`, ascending and disjoint, walking only the statements
+    /// and docstrings a window reaches. Over the module range this is
+    /// every edit; over a splice's windows it is the entries a reparse
+    /// there could have changed.
+    pub(crate) fn edits_within(self, source: &Source, windows: &[TextRange]) -> Vec<Edit> {
         if !self.enabled {
             return Vec::new();
         }
@@ -52,12 +61,21 @@ impl Stranding {
             rule: self.rule,
             source,
         };
-        emitter.walk(source);
-        emitter.edits.extend(
-            delimiter_padding_gaps(source, source.module_range())
-                .filter(|gap| !aligner::is_held(source, self.rule, gap.start()))
-                .map(Edit::range_deletion),
-        );
+        emitter.walk_within(source, windows);
+        for window in windows {
+            emitter.edits.extend(
+                delimiter_padding_gaps(source, *window)
+                    .filter(|gap| !aligner::is_held(source, self.rule, gap.start()))
+                    .map(Edit::range_deletion),
+            );
+        }
+        let inside = |edit: &Edit| {
+            let at = windows.partition_point(|window| window.end() < edit.end());
+            windows
+                .get(at)
+                .is_some_and(|window| window.contains_range(edit.range()))
+        };
+        emitter.edits.retain(inside);
         emitter.edits.sort_by_key(Ranged::start);
         emitter.edits
     }

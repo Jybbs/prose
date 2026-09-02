@@ -57,7 +57,7 @@ pub(super) fn reparse_or_reject(
     gate: Option<PythonVersion>,
 ) -> Result<Source, PipelineError> {
     let next = match source.splice_of(&new_text, map) {
-        Some(splice) => source.spliced(new_text, map, splice),
+        Some(splice) => source.spliced(new_text, map, splice, rule),
         None => {
             let cell_offsets = forward_offsets(source.cell_offsets(), map, new_text.text_len());
             let next = source

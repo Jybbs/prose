@@ -1,6 +1,7 @@
-//! The tables a source builds on first read, and the binding table a
+//! The tables a source builds on first read, the binding table a
 //! reparse carries across, moved through the weave's `SourceMap` to
-//! the positions the new text carries.
+//! the positions the new text carries, and the padding walk a splice
+//! rebuilds over the statements it reparsed alone.
 
 use std::{
     borrow::{Borrow, Cow},
@@ -8,6 +9,7 @@ use std::{
 };
 
 use ruff_diagnostics::{Edit, SourceMap};
+use ruff_text_size::{Ranged, TextRange};
 
 use super::{
     Source,
@@ -16,6 +18,8 @@ use super::{
 use crate::{
     primitives::{
         binding::BindingAnalysis,
+        colon_targets::reaches,
+        edit::forward_range,
         padding::Stranding,
         reserve::{Columns, Reservations},
     },
@@ -97,6 +101,62 @@ impl Source {
         std::mem::take(&mut self.binding_analysis)
     }
 
+    /// Panics where the padding walk a splice rebuilt into this source
+    /// differs from the one a fresh read builds, naming `site` in the
+    /// message, and returns whether it held one to compare.
+    #[cfg(test)]
+    pub(crate) fn assert_rebuilt_padding_is_fresh(&self, site: &str) -> bool {
+        let Some(rebuilt) = self.stranded_padding.get() else {
+            return false;
+        };
+        let fresh = rebuilt.0.edits(self);
+        assert!(
+            rebuilt.1 == fresh,
+            "the padding walk rebuilt into {site} differs from a fresh build:\n{}",
+            {
+                let (fresh, rebuilt) = (format!("{fresh:#?}"), format!("{:#?}", rebuilt.1));
+                similar::TextDiff::from_lines(fresh.as_str(), rebuilt.as_str())
+                    .unified_diff()
+                    .header("fresh", "rebuilt")
+                    .to_string()
+            },
+        );
+        true
+    }
+
+    /// Fills the padding walk over this text from the one `previous`
+    /// holds, every entry outside `windows` moved through `map` and the
+    /// entries inside them walked afresh, `windows` being the spans a
+    /// splice reparsed in this text, ascending. The union equals a fresh
+    /// walk while no entry outside a window changes, the property the
+    /// containment test re-proves over the corpus. An entry an edit
+    /// replaced sat inside a window, since every edit does, so it drops
+    /// for the walk there to re-derive. The slot is left empty where
+    /// `previous` holds no walk, the outcome reported under `rule`.
+    pub(crate) fn rebuild_stranded_padding(
+        &mut self,
+        previous: OnceLock<Box<(Stranding, Vec<Edit>)>>,
+        map: &SourceMap,
+        windows: &[TextRange],
+        rule: RuleId,
+    ) {
+        let held = previous.get().is_some();
+        let rebuilt = previous.into_inner().map(|held| {
+            let (stranding, edits) = *held;
+            let mut carried: Vec<Edit> = edits
+                .iter()
+                .filter_map(|edit| forward_range(edit.range(), map).map(|range| (edit, range)))
+                .filter(|(_, range)| !reaches(*range, windows))
+                .map(|(edit, range)| relocated(edit, range))
+                .collect();
+            carried.extend(stranding.edits_within(self, windows));
+            carried.sort_by_key(Ranged::start);
+            Box::new((stranding, carried))
+        });
+        trace::carried(rule, STRANDED, Outcome::of(true, held, rebuilt.is_some()));
+        self.stranded_padding = rebuilt.map_or_else(OnceLock::new, OnceLock::from);
+    }
+
     /// Returns the edits `stranding` emits over this source, walking the
     /// tree on the first read where the reparse before it carried none.
     /// Every rule of a run measures against the same padding rule and
@@ -106,6 +166,16 @@ impl Source {
         keyed(&self.stranded_padding, STRANDED, stranding, |stranding| {
             stranding.edits(self)
         })
+    }
+}
+
+/// `edit` over `range` instead of its own, keeping its shape as an
+/// insertion, a deletion, or a replacement.
+fn relocated(edit: &Edit, range: TextRange) -> Edit {
+    match edit.content() {
+        Some(content) if range.is_empty() => Edit::insertion(content.to_owned(), range.start()),
+        Some(content) => Edit::range_replacement(content.to_owned(), range),
+        None => Edit::range_deletion(range),
     }
 }
 
