@@ -17,7 +17,8 @@ pub(crate) use gaps::{delimiter_padding_width, slack};
 use crate::{
     primitives::{
         aligner,
-        colon_targets::{self, ColonEmitter},
+        colon_targets::ColonEmitter,
+        range::covers,
         tokens::{is_delimiter_padding, is_interpolated_string_start},
     },
     rule::RuleId,
@@ -67,9 +68,7 @@ impl Stranding {
                 .filter(|gap| !aligner::is_held(source, self.rule, gap.start()))
                 .map(Edit::range_deletion)
         }));
-        emitter
-            .edits
-            .retain(|edit| colon_targets::covers(edit.range(), windows));
+        emitter.edits.retain(|edit| covers(edit.range(), windows));
         emitter.edits.sort_by_key(Ranged::start);
         emitter.edits
     }

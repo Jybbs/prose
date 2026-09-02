@@ -146,3 +146,11 @@ pub(crate) fn located(
         None => (start, end, None),
     }
 }
+
+/// `message` under its cell number for a notebook, bare for a module.
+pub(crate) fn cell_message(message: &str, cell: Option<OneIndexed>) -> String {
+    cell.map_or_else(
+        || message.to_owned(),
+        |cell| format!("cell {cell}: {message}"),
+    )
+}

@@ -94,9 +94,7 @@ mod tests {
     const FIRST: &str = "yy = 1\n";
 
     fn rendered(present: &Presentation, outcomes: &[FileOutcome]) -> String {
-        let mut buf = Vec::new();
-        render_reports(&mut buf, present, outcomes);
-        String::from_utf8(buf).expect("utf-8")
+        crate::testing::rendered(|buf| render_reports(buf, present, outcomes))
     }
 
     fn unsettled(name: &str, slug: &'static str) -> FileOutcome {

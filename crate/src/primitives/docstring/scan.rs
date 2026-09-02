@@ -72,22 +72,17 @@ impl LineScanner {
         }
         self.list_indent = None;
         if indent_chars >= self.body_indent_chars {
-            if is_list_marker(trimmed) {
-                self.list_indent = Some(indent_chars);
-                return LineScan::ListMarker;
-            }
-            if is_grid_table_line(trimmed) || is_section_underline(trimmed) {
-                return LineScan::VerbatimOpen;
-            }
-            if is_bracketed_literal(trimmed)
-                || is_comment_marker(trimmed)
-                || is_directive(trimmed)
-                || is_doctest_prompt(trimmed)
-                || (at_block_start && is_field_marker(trimmed))
-                || is_simple_table_rule(trimmed)
-            {
-                self.in_block = true;
-                return LineScan::VerbatimOpen;
+            match structure(trimmed, at_block_start) {
+                Some(Structure::Block) => {
+                    self.in_block = true;
+                    return LineScan::VerbatimOpen;
+                }
+                Some(Structure::List) => {
+                    self.list_indent = Some(indent_chars);
+                    return LineScan::ListMarker;
+                }
+                Some(Structure::Row) => return LineScan::VerbatimOpen,
+                None => {}
             }
         }
         LineScan::Body
@@ -127,6 +122,34 @@ pub(crate) struct ScannedLine<'a> {
     pub(crate) trimmed: &'a str,
 }
 
+/// The structure a body line at or past the body indent opens, `None`
+/// for prose. A list marker opens a continuation run, a table line or
+/// underline stands alone, and every other structure opens a verbatim
+/// block.
+enum Structure {
+    Block,
+    List,
+    Row,
+}
+
+fn structure(trimmed: &str, at_block_start: bool) -> Option<Structure> {
+    if is_list_marker(trimmed) {
+        Some(Structure::List)
+    } else if is_grid_table_line(trimmed) || is_section_underline(trimmed) {
+        Some(Structure::Row)
+    } else if is_bracketed_literal(trimmed)
+        || is_comment_marker(trimmed)
+        || is_directive(trimmed)
+        || is_doctest_prompt(trimmed)
+        || (at_block_start && is_field_marker(trimmed))
+        || is_simple_table_rule(trimmed)
+    {
+        Some(Structure::Block)
+    } else {
+        None
+    }
+}
+
 /// True where `rest` opens a structure a docstring walker reads
 /// verbatim rather than as prose, so a wrap putting `rest` at a row
 /// head would have the next pass parse that row as the structure. Reads
@@ -135,17 +158,7 @@ pub(crate) struct ScannedLine<'a> {
 /// pulling the break back word by word until the row head is prose.
 pub(crate) fn opens_structure(rest: &str) -> bool {
     let trimmed = rest.trim_whitespace_start();
-    is_bracketed_literal(trimmed)
-        || is_comment_marker(trimmed)
-        || is_directive(trimmed)
-        || is_doctest_prompt(trimmed)
-        || is_field_marker(trimmed)
-        || is_grid_table_line(trimmed)
-        || is_list_marker(trimmed)
-        || is_section_underline(trimmed)
-        || is_simple_table_rule(trimmed)
-        || opens_entry(trimmed)
-        || section_heading(trimmed).is_some()
+    structure(trimmed, true).is_some() || opens_entry(trimmed) || section_heading(trimmed).is_some()
 }
 
 /// True where a marker's remainder reads as the bare marker or opens

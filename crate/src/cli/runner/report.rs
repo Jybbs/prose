@@ -44,7 +44,7 @@ pub(super) fn emit_to_stdout<O: RawStream + AsLockedWrite>(
     }
 }
 
-pub(super) fn emit_outcomes<W: Write>(
+fn emit_outcomes<W: Write>(
     outcomes: &[FileOutcome],
     format: OutputFormat,
     present: &Presentation,

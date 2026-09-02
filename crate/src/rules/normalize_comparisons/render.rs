@@ -80,7 +80,7 @@ pub(super) fn negating_parent(parent: AnyNodeRef<'_>) -> Option<&ExprUnaryOp> {
 }
 
 /// The range of the lone lexer token spelling `op` inside `gap`.
-pub(super) fn operator_range(source: &Source, gap: TextRange, op: CmpOp) -> Option<TextRange> {
+fn operator_range(source: &Source, gap: TextRange, op: CmpOp) -> Option<TextRange> {
     let kind = opening_token_kind(op);
     source
         .tokens()

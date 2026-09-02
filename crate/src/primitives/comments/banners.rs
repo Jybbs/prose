@@ -21,7 +21,7 @@ fn is_heading_line(line: &str) -> bool {
 
 /// True when `line` reads as a section marker, a decorative rule line or
 /// a multi-hash heading.
-pub(super) fn is_marker_line(line: &str) -> bool {
+fn is_marker_line(line: &str) -> bool {
     is_rule_line(line) || is_heading_line(line)
 }
 

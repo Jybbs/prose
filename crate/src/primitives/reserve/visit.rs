@@ -39,11 +39,8 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
     /// a multi-line statement closes its run and a held one is
     /// transparent.
     fn visit_body(&mut self, body: &'a [Stmt]) {
-        let source = self.source;
         self.record(
-            aligner::line_adjacent_groups(source, body, self.rule, |stmt| {
-                equal_targets::assignment(source, stmt)
-            }),
+            equal_targets::assignment_groups(self.source, self.rule, body),
             false,
         );
         for stmt in body {
@@ -84,19 +81,8 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
     /// default closing the run after it.
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         if let Stmt::FunctionDef(def) = stmt {
-            let source = self.source;
-            let groups = aligner::adjacent_member_groups(
-                source,
-                def.parameters.iter_source_order(),
-                true,
-                |param| equal_targets::parameter(source, param).into(),
-            );
-            let rule = self.rule;
             self.record(
-                groups
-                    .into_iter()
-                    .map(|group| aligner::retain_unheld(source, rule, group))
-                    .collect(),
+                equal_targets::parameter_groups(self.source, self.rule, &def.parameters),
                 true,
             );
             for param in def.parameters.iter_non_variadic_params() {

@@ -16,6 +16,7 @@ use crate::{
     primitives::{
         fracture::outermost,
         inline::{carries_a_continuation, folded_line_form},
+        slots::starting_within,
         splice::splice_preserves_tree,
         tokens::{is_closer, is_opener, tokens_within},
         walk::{Descent, ParentedProbe, filter_map_over_exprs, walk_parented_exprs},
@@ -134,10 +135,7 @@ pub(super) fn shedding_inside<'c, 'src>(
     range: TextRange,
     candidates: &'c [Candidate<'src>],
 ) -> impl Iterator<Item = &'c Candidate<'src>> {
-    let from = candidates.partition_point(|other| other.pair.start() < range.start());
-    candidates[from..]
-        .iter()
-        .take_while(move |other| other.pair.start() < range.end())
+    starting_within(candidates, range, |other| other.pair.start())
         .filter(move |other| other.sheds && range.contains_range(other.pair))
 }
 

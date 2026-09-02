@@ -169,9 +169,7 @@ mod tests {
     /// The summary line as it reaches the stream, which strips nothing,
     /// so an escape here is one the caller would see.
     fn rendered(present: &Presentation, summary: &Summary) -> String {
-        let mut buf = Vec::new();
-        report(&mut buf, present, summary).expect("reports");
-        String::from_utf8(buf).expect("utf-8")
+        crate::testing::rendered(|buf| report(buf, present, summary).expect("reports"))
     }
 
     fn colored() -> Presentation {

@@ -19,7 +19,7 @@ use super::{Emitter, EmitterSummary, Run, UnstableEntry, diagnostics, write_json
 use crate::{
     diagnostics::Diagnostic,
     file_uri,
-    findings::{line_columns, located},
+    findings::{cell_message, line_columns, located},
     rule::render_slugs,
 };
 
@@ -89,10 +89,7 @@ fn sarif_result(
     diag: &Diagnostic,
 ) -> SarifResult {
     let (start, end, cell) = located(file, index, diag.range);
-    let message = match cell {
-        Some(cell) => format!("cell {cell}: {}", diag.message),
-        None => diag.message.clone(),
-    };
+    let message = cell_message(&diag.message, cell);
     let builder = SarifResult::builder()
         .rule_id(diag.rule.as_str())
         .level(ResultLevel::Warning)

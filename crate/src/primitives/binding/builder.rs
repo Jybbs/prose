@@ -255,10 +255,6 @@ impl Builder {
         id
     }
 
-    fn record_attribute_read(&mut self, name: &str, offset: TextSize, attribute: &str) {
-        self.record_use(name, offset, Some(attribute));
-    }
-
     fn record_identifier(&mut self, identifier: &Identifier, kind: BindingKind) {
         self.record_write(identifier.as_str(), identifier.start(), kind);
     }
@@ -267,10 +263,6 @@ impl Builder {
         for parameter in parameters.iter_source_order() {
             self.record_identifier(parameter.name(), BindingKind::Parameter);
         }
-    }
-
-    fn record_read(&mut self, name: &str, offset: TextSize) {
-        self.record_use(name, offset, None);
     }
 
     /// Records a read of `id` at `offset`, inserting into `read_offsets`
@@ -433,7 +425,7 @@ impl Builder {
 
     fn visit_aug_assign(&mut self, node: &StmtAugAssign) {
         if let Some(name) = node.target.as_name_expr() {
-            self.record_read(name.id.as_str(), name.start());
+            self.record_use(name.id.as_str(), name.start(), None);
             self.visit_expr(&node.value);
             self.record_write(name.id.as_str(), name.start(), BindingKind::AugAssign);
         } else {
@@ -605,12 +597,12 @@ impl<'a> Visitor<'a> for Builder {
         match expr {
             Expr::Name(name) => {
                 if name.ctx.is_load() {
-                    self.record_read(name.id.as_str(), name.start());
+                    self.record_use(name.id.as_str(), name.start(), None);
                 }
             }
             Expr::Attribute(attr) => match attr.value.as_ref() {
                 Expr::Name(name) if name.ctx.is_load() => {
-                    self.record_attribute_read(name.id.as_str(), name.start(), attr.attr.as_str())
+                    self.record_use(name.id.as_str(), name.start(), Some(attr.attr.as_str()))
                 }
                 _ => walk_expr(self, expr),
             },

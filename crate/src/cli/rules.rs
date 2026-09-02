@@ -64,9 +64,9 @@ mod tests {
     use super::*;
 
     fn render(output_format: RulesFormat) -> String {
-        let mut out = Vec::new();
-        list(&RulesArgs { output_format }, &mut out).expect("rules listing succeeds");
-        String::from_utf8(out).expect("utf8 output")
+        crate::testing::rendered(|out| {
+            list(&RulesArgs { output_format }, out).expect("rules listing succeeds");
+        })
     }
 
     #[test]

@@ -11,7 +11,7 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
-    primitives::{aligner, walk::walk_stmt},
+    primitives::{aligner, range::overlaps, walk::walk_stmt},
     rule::RuleId,
     source::Source,
 };
@@ -79,24 +79,6 @@ pub(crate) trait ColonEmitter {
     }
 }
 
-/// True where `range` sits wholly inside one of `windows`, ascending
-/// and disjoint.
-pub(crate) fn covers(range: TextRange, windows: &[TextRange]) -> bool {
-    let at = windows.partition_point(|window| window.end() < range.end());
-    windows
-        .get(at)
-        .is_some_and(|window| window.contains_range(range))
-}
-
-/// True where `range` overlaps one of `windows`, ascending and
-/// disjoint, by more than a shared endpoint.
-pub(crate) fn reaches(range: TextRange, windows: &[TextRange]) -> bool {
-    let at = windows.partition_point(|window| window.end() <= range.start());
-    windows
-        .get(at)
-        .is_some_and(|window| window.start() < range.end())
-}
-
 struct ContextVisitor<'a, E> {
     emitter: &'a mut E,
     source: &'a Source,
@@ -109,7 +91,7 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
             self.emitter.handle(&group);
         }
         for stmt in body {
-            if reaches(stmt.range(), self.windows) {
+            if overlaps(stmt.range(), self.windows) {
                 self.visit_stmt(stmt);
             }
         }

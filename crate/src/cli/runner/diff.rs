@@ -112,9 +112,9 @@ mod tests {
     const BEFORE: &str = "ab = 1\nx = 2\n";
 
     fn rendered(heading: Heading) -> String {
-        let mut buf = Vec::new();
-        write_diff(&mut buf, "sample.py", BEFORE, AFTER, heading).expect("writes");
-        String::from_utf8(buf).expect("utf-8")
+        crate::testing::rendered(|buf| {
+            write_diff(buf, "sample.py", BEFORE, AFTER, heading).expect("writes");
+        })
     }
 
     #[test]

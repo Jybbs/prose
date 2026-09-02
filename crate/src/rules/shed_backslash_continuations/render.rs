@@ -2,11 +2,9 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, find_node::covering_node, token::TokenKind};
-use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
 
 use super::*;
-use crate::primitives::inline::display_width;
 
 /// Replaces each gap in `run` with its join text, folding the physical
 /// lines the run continues onto one.
@@ -27,17 +25,6 @@ pub(super) fn join_text(token: TokenKind, next: TokenKind) -> &'static str {
         )
         || (matches!(next, TokenKind::Lpar | TokenKind::Lsqb) && ends_atom(token));
     if abuts { "" } else { " " }
-}
-
-/// The display width of the physical line `edits` fold `span` onto,
-/// measured from the opening line's first column through the closing
-/// line's last.
-pub(super) fn joined_width(source: &Source, span: TextRange, edits: &[Edit]) -> usize {
-    display_width(&apply_inline_edits(
-        source,
-        source.text().lines_range(span),
-        edits,
-    ))
 }
 
 /// Drops every backslash in `gap` along with the whitespace ahead of
@@ -76,7 +63,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::{primitives::inline::spliced_rows, testing::parse};
 
     #[rstest]
     #[case(TokenKind::Plus, TokenKind::Int, " ")]
@@ -98,14 +85,11 @@ mod tests {
     #[rstest]
     #[case("x = 1 + \\\n    2\n", "x = 1 + 2")]
     #[case("x = 1 + \\\n    2  # note\n", "x = 1 + 2  # note")]
-    fn joined_width_measures_the_line_the_run_produces(#[case] src: &str, #[case] expected: &str) {
+    fn join_edits_fold_the_run_onto_one_line(#[case] src: &str, #[case] expected: &str) {
         let source = parse(src);
         let gaps = continuation_gaps(&source);
         let edits = join_edits(&source, &gaps);
-        assert_eq!(
-            joined_width(&source, blocks_span(&gaps), &edits),
-            expected.len(),
-        );
+        assert_eq!(spliced_rows(&source, blocks_span(&gaps), &edits), expected);
     }
 
     #[test]

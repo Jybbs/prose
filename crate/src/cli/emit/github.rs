@@ -6,7 +6,11 @@ use ruff_notebook::NotebookIndex;
 use ruff_source_file::SourceFile;
 
 use super::{Emitter, EmitterSummary, Run, diagnostics};
-use crate::{diagnostics::Diagnostic, findings::located, rule::render_slugs};
+use crate::{
+    diagnostics::Diagnostic,
+    findings::{cell_message, located},
+    rule::render_slugs,
+};
 
 pub(crate) struct Github;
 
@@ -44,10 +48,7 @@ fn emit_one(
     );
     let (start, end, cell) = located(file, index, diag.range);
     let name = file.name();
-    let message = match cell {
-        Some(cell) => format!("cell {cell}: {}", diag.message),
-        None => diag.message.clone(),
-    };
+    let message = cell_message(&diag.message, cell);
     write!(
         writer,
         "::warning file={name},line={l},col={c}",

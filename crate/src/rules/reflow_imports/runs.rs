@@ -14,6 +14,7 @@ use super::own_line_indent;
 use crate::{
     config::Config,
     primitives::{
+        comments::comments_held_by,
         imports::{
             Dropping, ModuleKey, defers_annotations, fold_landing, import_runs, is_star,
             module_key, prune_import_statements, stands_alone,
@@ -253,11 +254,12 @@ fn gathers_cleanly(
         return true;
     }
     let blocks = runs.blocks(source, body, outer);
-    comments.iter().all(|comment| {
-        (*first + 1..*last)
-            .filter(|slot| !slots.contains(slot))
-            .any(|slot| blocks[slot].contains_range(*comment))
-    })
+    comments_held_by(
+        source,
+        span,
+        blocks,
+        (*first + 1..*last).filter(|slot| !slots.contains(slot)),
+    )
 }
 
 /// True when `node` can join a merged roster, being a single-line

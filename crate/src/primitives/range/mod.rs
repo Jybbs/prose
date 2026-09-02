@@ -52,6 +52,19 @@ pub(crate) fn merged_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
     spans
 }
 
+/// True where `range` sits wholly inside one of `spans`, ascending
+/// and disjoint.
+pub(crate) fn covers(range: TextRange, spans: &[TextRange]) -> bool {
+    let at = spans.partition_point(|span| span.end() < range.end());
+    spans.get(at).is_some_and(|span| span.contains_range(range))
+}
+
+/// True where `range` overlaps one of `spans`, ascending and disjoint,
+/// by at least one byte.
+pub(crate) fn overlaps(range: TextRange, spans: &[TextRange]) -> bool {
+    spans.binary_search_by(|span| span.ordering(range)).is_ok()
+}
+
 /// Returns the paren-aware range of `function`'s return annotation,
 /// recovered against the function def.
 pub(crate) fn return_annotation_range(

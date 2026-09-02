@@ -7,7 +7,8 @@
 
 use itertools::Itertools;
 use ruff_python_ast::{
-    AnyNodeRef, AnyParameterRef, ArgOrKeyword, ExprCall, ExprRef, Stmt, token::TokenKind,
+    AnyNodeRef, AnyParameterRef, ArgOrKeyword, ExprCall, ExprRef, Parameters, Stmt,
+    token::TokenKind,
 };
 use ruff_source_file::OneIndexed;
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -123,6 +124,31 @@ pub(crate) fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<a
         default.into(),
         with_default.into(),
     )
+}
+
+/// The line-adjacent assignment runs of `body`, a multi-line statement
+/// closing its run and a held one transparent.
+pub(crate) fn assignment_groups(
+    source: &Source,
+    rule: RuleId,
+    body: &[Stmt],
+) -> Vec<Vec<aligner::Member>> {
+    aligner::line_adjacent_groups(source, body, rule, |stmt| assignment(source, stmt))
+}
+
+/// The runs of `params`' annotated defaults, a multi-line default
+/// closing the run after it and every held row dropped.
+pub(crate) fn parameter_groups(
+    source: &Source,
+    rule: RuleId,
+    params: &Parameters,
+) -> Vec<Vec<aligner::Member>> {
+    aligner::adjacent_member_groups(source, params.iter_source_order(), true, |param| {
+        parameter(source, param).into()
+    })
+    .into_iter()
+    .map(|group| aligner::retain_unheld(source, rule, group))
+    .collect()
 }
 
 /// Builds an `=`-anchored member with `target` as the LHS span,

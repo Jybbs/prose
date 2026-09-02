@@ -630,15 +630,7 @@ mod tests {
 
     fn run_check_io<R: Read>(args: CheckArgs, stdin: R) -> (ExitStatus, Vec<u8>) {
         let mut stdout = Vec::new();
-        let status = check_with_io(
-            args,
-            false,
-            &Presentation::windowed(),
-            stdin,
-            AutoStream::never(&mut stdout),
-            io::sink(),
-        )
-        .expect("runs without anyhow");
+        let status = run_io(args, stdin, &mut stdout, check_with_io);
         (status, stdout)
     }
 
@@ -667,16 +659,34 @@ mod tests {
     /// Runs `format` against `stdin` through a stripping stdout.
     fn run_format_io<R: Read>(args: FormatArgs, stdin: R) -> (ExitStatus, Vec<u8>) {
         let mut stdout = Vec::new();
-        let status = format_with_io(
+        let status = run_io(args, stdin, &mut stdout, format_with_io);
+        (status, stdout)
+    }
+
+    /// Runs `run`, an entry point, over `args` and `stdin` with `stdout`
+    /// as its stripping stdout, returning its status.
+    fn run_io<'b, A, R: Read>(
+        args: A,
+        stdin: R,
+        stdout: &'b mut Vec<u8>,
+        run: impl FnOnce(
+            A,
+            bool,
+            &Presentation,
+            R,
+            AutoStream<&'b mut Vec<u8>>,
+            io::Sink,
+        ) -> anyhow::Result<ExitStatus>,
+    ) -> ExitStatus {
+        run(
             args,
             false,
             &Presentation::windowed(),
             stdin,
-            AutoStream::never(&mut stdout),
+            AutoStream::never(stdout),
             io::sink(),
         )
-        .expect("runs without anyhow");
-        (status, stdout)
+        .expect("runs without anyhow")
     }
 
     #[test]

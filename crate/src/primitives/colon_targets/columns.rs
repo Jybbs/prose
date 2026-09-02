@@ -8,6 +8,7 @@ use crate::{
     primitives::{
         aligner,
         docstring::{entry_runs, walk_docstrings},
+        range::overlaps,
     },
     source::Source,
 };
@@ -74,7 +75,7 @@ impl EntryColumns {
 pub(super) fn docstring_runs_within(source: &Source, windows: &[TextRange]) -> Vec<EntryColumns> {
     let mut literals = Vec::new();
     walk_docstrings(source, |_, lit| {
-        if super::reaches(lit.range(), windows) {
+        if overlaps(lit.range(), windows) {
             literals.push(lit);
         }
     });

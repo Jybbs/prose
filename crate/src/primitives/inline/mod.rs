@@ -9,12 +9,13 @@ use memchr::memchr;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::Expr;
 use ruff_python_trivia::leading_indentation;
-use ruff_source_file::UniversalNewlines;
+use ruff_source_file::{LineRanges, UniversalNewlines};
 use ruff_text_size::TextRange;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     primitives::{
+        edit::apply_inline_edits,
         padding,
         tokens::{CLOSERS, OPENERS},
         travel::spans_a_string_part,
@@ -94,6 +95,22 @@ pub(crate) fn opening_width(text: &str) -> usize {
 /// sits between two tokens rather than directly inside a bracket.
 pub(crate) fn run_closes_to_a_space(text: &str, begin: usize, len: usize) -> bool {
     !text[..begin].ends_with(OPENERS) && !text[begin + len..].starts_with(CLOSERS)
+}
+
+/// True where every row of [`spliced_rows`] sits inside `budget`.
+pub(crate) fn rows_within(source: &Source, span: TextRange, edits: &[Edit], budget: usize) -> bool {
+    spliced_rows(source, span, edits)
+        .universal_newlines()
+        .all(|row| display_width(row.as_str()) <= budget)
+}
+
+/// The whole physical rows `span` reaches, with `edits` applied.
+pub(crate) fn spliced_rows<'s>(
+    source: &'s Source,
+    span: TextRange,
+    edits: &[Edit],
+) -> Cow<'s, str> {
+    apply_inline_edits(source, source.text().lines_range(span), edits)
 }
 
 /// `width`, the display width `range` was measured at, less the padding

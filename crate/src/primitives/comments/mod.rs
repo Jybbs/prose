@@ -127,6 +127,26 @@ pub(super) fn comment_leads(source: &Source, item_start: TextSize) -> bool {
     leading_comment_block(source, text.line_start(above), line_start).is_some()
 }
 
+/// True where every comment inside `gap` sits inside the block of one
+/// of `slots`, the members a fold leaves standing between a pair it
+/// joins.
+pub(crate) fn comments_held_by(
+    source: &Source,
+    gap: TextRange,
+    blocks: &[TextRange],
+    slots: impl Iterator<Item = usize> + Clone,
+) -> bool {
+    source
+        .comment_ranges()
+        .comments_in_range(gap)
+        .iter()
+        .all(|comment| {
+            slots
+                .clone()
+                .any(|slot| blocks[slot].contains_range(*comment))
+        })
+}
+
 /// True when the line containing `literal`'s opening bracket or the one
 /// containing its closing bracket carries a trailing `# prose: keep`
 /// comment, the marker that pins a dict or a dunder list against entry

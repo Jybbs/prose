@@ -18,9 +18,9 @@ use super::{
 use crate::{
     primitives::{
         binding::BindingAnalysis,
-        colon_targets::reaches,
         edit::forward_range,
         padding::Stranding,
+        range::overlaps,
         reserve::{Columns, Reservations},
     },
     rule::RuleId,
@@ -37,16 +37,11 @@ impl Source {
     /// in the message, and returns whether it held one to compare.
     #[cfg(test)]
     pub(crate) fn assert_carried_bindings_are_fresh(&self, site: &str) -> bool {
-        let Some(carried) = self.binding_analysis.get() else {
-            return false;
-        };
-        let fresh = BindingAnalysis::new(self.ast());
-        assert!(
-            **carried == fresh,
-            "the binding table carried into {site} differs from a fresh build:\n{}",
-            table_diff(&fresh, carried, "carried"),
-        );
-        true
+        self.binding_analysis.get().is_some_and(|carried| {
+            let fresh = BindingAnalysis::new(self.ast());
+            assert_fresh(&**carried, &fresh, site, "binding table carried", "carried");
+            true
+        })
     }
 
     /// Returns the binding-analysis table, built on the first read
@@ -100,16 +95,11 @@ impl Source {
     /// message, and returns whether it held one to compare.
     #[cfg(test)]
     pub(crate) fn assert_rebuilt_padding_is_fresh(&self, site: &str) -> bool {
-        let Some(rebuilt) = self.stranded_padding.get() else {
-            return false;
-        };
-        let fresh = rebuilt.0.edits(self);
-        assert!(
-            rebuilt.1 == fresh,
-            "the padding walk rebuilt into {site} differs from a fresh build:\n{}",
-            table_diff(&fresh, &rebuilt.1, "rebuilt"),
-        );
-        true
+        self.stranded_padding.get().is_some_and(|rebuilt| {
+            let fresh = rebuilt.0.edits(self);
+            assert_fresh(&rebuilt.1, &fresh, site, "padding walk rebuilt", "rebuilt");
+            true
+        })
     }
 
     /// Fills the padding walk over this text from the one `previous`
@@ -135,7 +125,7 @@ impl Source {
                 .iter()
                 .filter_map(|edit| {
                     let range = forward_range(edit.range(), map)
-                        .filter(|range| !reaches(*range, windows))?;
+                        .filter(|range| !overlaps(*range, windows))?;
                     Some(relocated(edit, range))
                 })
                 .collect();
@@ -210,6 +200,24 @@ fn keyed<'a, K: Copy + PartialEq, B: ?Sized + ToOwned>(
     } else {
         Cow::Owned(build(&key))
     }
+}
+
+/// Panics where `held`, the `subject` a reparse carried into a source,
+/// differs from `fresh`, naming `site` in the message and `label` how
+/// `held` arrived.
+#[cfg(test)]
+fn assert_fresh<T: std::fmt::Debug + PartialEq>(
+    held: &T,
+    fresh: &T,
+    site: &str,
+    subject: &str,
+    label: &str,
+) {
+    assert!(
+        held == fresh,
+        "the {subject} into {site} differs from a fresh build:\n{}",
+        table_diff(fresh, held, label),
+    );
 }
 
 /// A unified diff of `fresh` against `held`, the message an assertion

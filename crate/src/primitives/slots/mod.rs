@@ -3,7 +3,7 @@
 
 use std::ops::Range;
 
-use ruff_text_size::{Ranged, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 /// The item of `items` whose start is at or before `offset`, `None`
 /// ahead of the first item.
@@ -56,6 +56,19 @@ pub(crate) fn slot_runs<T>(
         start = end;
         run
     })
+}
+
+/// The items of `items`, ascending by `start`, whose start falls
+/// inside `range`.
+pub(crate) fn starting_within<T>(
+    items: &[T],
+    range: TextRange,
+    start: impl Fn(&T) -> TextSize + Copy,
+) -> impl Iterator<Item = &T> {
+    let from = items.partition_point(|item| start(item) < range.start());
+    items[from..]
+        .iter()
+        .take_while(move |item| start(item) < range.end())
 }
 
 #[cfg(test)]

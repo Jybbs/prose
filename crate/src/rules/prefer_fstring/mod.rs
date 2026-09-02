@@ -8,14 +8,13 @@ use std::slice;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr, PythonVersion};
-use ruff_source_file::{LineRanges, UniversalNewlines};
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
     primitives::{
-        edit::{apply_inline_edits, narrowed_replacement, padded, singleton_groups},
-        inline::display_width,
+        edit::{narrowed_replacement, padded, singleton_groups},
+        inline::rows_within,
         walk::{Descent, filter_map_over_parented_exprs},
     },
     rule::{Rule, RuleId},
@@ -82,20 +81,7 @@ impl PreferFstring {
         };
         let rewrite = padded(source, span.start(), rewrite);
         let edit = narrowed_replacement(source, span, rewrite)?;
-        self.fits(source, span, &edit).then_some(edit)
-    }
-
-    /// True when every physical line `edit` lands on stays inside the
-    /// budget, measured over the lines `span` spans with the rewrite
-    /// spliced in.
-    fn fits(&self, source: &Source, span: TextRange, edit: &Edit) -> bool {
-        apply_inline_edits(
-            source,
-            source.text().lines_range(span),
-            slice::from_ref(edit),
-        )
-        .universal_newlines()
-        .all(|line| display_width(line.as_str()) <= self.code_line_length)
+        rows_within(source, span, slice::from_ref(&edit), self.code_line_length).then_some(edit)
     }
 }
 

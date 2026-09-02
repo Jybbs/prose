@@ -155,6 +155,6 @@ impl<'a> Visitor<'a> for Walker<'a> {
 /// `__class__` cell at any nesting, or the class's own name where
 /// `depth` counts one enclosing class, since a nested class binds its
 /// name outside the method's reach.
-pub(super) fn names_the_class(name: &str, class: &StmtClassDef, depth: usize) -> bool {
+fn names_the_class(name: &str, class: &StmtClassDef, depth: usize) -> bool {
     name == "__class__" || (depth == 1 && name == class.name.as_str())
 }

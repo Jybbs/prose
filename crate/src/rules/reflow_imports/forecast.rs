@@ -14,7 +14,7 @@ use super::{Layout, MEMBER_SEPARATOR, Packing, own_line_indent, runs::MergeRuns}
 use crate::{
     primitives::{
         aligner,
-        comments::trailing_width,
+        comments::{comments_held_by, trailing_width},
         imports::{
             IMPORT_KEYWORD_WIDTH, import_blank_lines, import_group, import_sort_key, is_import,
         },
@@ -264,15 +264,12 @@ impl<'a> Layout<'a> {
         ) == Some(0);
         if tight && (sorts || hoisted) {
             let gap = TextRange::new(blocks[above].end(), blocks[below].start());
-            return source
-                .comment_ranges()
-                .comments_in_range(gap)
-                .iter()
-                .all(|comment| {
-                    between.clone().any(|slot| {
-                        !is_import(&body[slot]) && blocks[slot].contains_range(*comment)
-                    })
-                });
+            return comments_held_by(
+                source,
+                gap,
+                blocks,
+                between.clone().filter(|slot| !is_import(&body[*slot])),
+            );
         }
         !hoisted
             && (above + 1..=below)

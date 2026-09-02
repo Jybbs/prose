@@ -121,7 +121,7 @@ pub(crate) fn swaps_in_place<T: Ranged>(source: &Source, items: &[T]) -> bool {
 /// True when a gap between two consecutive members of `items` carries
 /// a token of its own past the separators and comments inside it, the
 /// shape a positional argument sitting between two keywords takes.
-pub(crate) fn gaps_carry_code<T: Ranged>(source: &Source, items: &[T]) -> bool {
+fn gaps_carry_code<T: Ranged>(source: &Source, items: &[T]) -> bool {
     items.windows(2).any(|pair| {
         tokens_within(source, TextRange::new(pair[0].end(), pair[1].start()))
             .any(|token| !token.kind().is_trivia() && token.kind() != TokenKind::Comma)

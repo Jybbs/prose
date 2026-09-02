@@ -3,8 +3,11 @@
 //! `ConfigSource` serves every file under a project, computing each
 //! file's effective config by merging the overrides its path matches.
 
-use std::borrow::Cow;
-use std::path::{Path, PathBuf};
+use std::{
+    borrow::Cow,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use super::de::deserialize_prose;
 use super::load::{ConfigNotice, NoticeDedup, holding_dir, walk_prose_table};
@@ -113,6 +116,38 @@ impl ConfigSource {
     }
 }
 
+/// The outcome of walking one directory's ancestors for a project
+/// config.
+#[derive(Clone)]
+pub(crate) enum DirSource {
+    /// No ancestor carried a config, leaving a file here to draw its
+    /// script block.
+    Bare,
+    /// A config was found but failed to load, failing its files.
+    Failed,
+    /// The nearest ancestor config governing files under this directory.
+    Project(Arc<ConfigSource>),
+}
+
+impl DirSource {
+    /// Walks `dir`'s ancestors for a project config, handing a
+    /// present-but-broken one to `report` before answering `Failed`.
+    pub(crate) fn discover(
+        dir: &Path,
+        notices: &NoticeDedup,
+        report: impl FnOnce(ConfigError),
+    ) -> Self {
+        match ConfigSource::discover(dir, notices) {
+            Ok(Some(source)) => Self::Project(Arc::new(source)),
+            Ok(None) => Self::Bare,
+            Err(err) => {
+                report(err);
+                Self::Failed
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::assert_matches;
@@ -121,14 +156,10 @@ mod tests {
 
     use super::*;
     use crate::config::MaxShift;
-    use crate::testing::write_pyproject;
+    use crate::testing::{line_length, write_pyproject};
 
     fn discover(from: &Path) -> Result<Option<ConfigSource>, ConfigError> {
         ConfigSource::discover(from, &NoticeDedup::default())
-    }
-
-    fn line_length(config: &Config) -> Option<usize> {
-        config.code_line_length.map(std::num::NonZeroUsize::get)
     }
 
     #[test]

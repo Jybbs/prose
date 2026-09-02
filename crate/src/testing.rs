@@ -2,6 +2,7 @@
 
 use std::{
     io::{self, Write},
+    num::NonZeroUsize,
     path::{Path, PathBuf},
 };
 
@@ -235,6 +236,12 @@ pub(crate) fn formattable(paths: &[PathBuf]) -> Vec<PathBuf> {
         .collect()
 }
 
+/// The configured code line length, `None` where the config leaves it
+/// to the default.
+pub(crate) fn line_length(config: &Config) -> Option<usize> {
+    config.code_line_length.map(NonZeroUsize::get)
+}
+
 /// A rule replacing the source's first byte with `yy`, so every pass
 /// over its own output grows the line and edits again.
 pub(crate) fn never_settles(id: &'static str) -> GroupSentinelRule {
@@ -283,6 +290,13 @@ pub(crate) fn range(start: u32, end: u32) -> TextRange {
 /// An edit replacing the `start..end` span with `content`.
 pub(crate) fn replacement(content: &str, start: u32, end: u32) -> Edit {
     Edit::range_replacement(content.to_owned(), range(start, end))
+}
+
+/// The text `write` renders into a fresh buffer.
+pub(crate) fn rendered(write: impl FnOnce(&mut Vec<u8>)) -> String {
+    let mut buf = Vec::new();
+    write(&mut buf);
+    String::from_utf8(buf).expect("utf-8")
 }
 
 pub(crate) fn run_rule(slug: &str, src: &str) -> String {

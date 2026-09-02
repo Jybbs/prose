@@ -12,7 +12,7 @@ use rustc_hash::FxHashMap;
 
 use crate::{
     cache::{Anchor, CacheKeyPrefix},
-    config::{Config, ConfigSource, NoticeDedup, holding_dir},
+    config::{Config, ConfigSource, DirSource, NoticeDedup, holding_dir},
     pipeline::Pipeline,
     rule::RuleId,
 };
@@ -29,7 +29,7 @@ pub(super) struct ConfigResolver {
     ignore: Vec<RuleId>,
     notices: NoticeDedup,
     select: Vec<RuleId>,
-    sources: Mutex<FxHashMap<PathBuf, DirResolution>>,
+    sources: Mutex<FxHashMap<PathBuf, DirSource>>,
 }
 
 impl ConfigResolver {
@@ -86,18 +86,15 @@ impl ConfigResolver {
 
     /// The resolution governing the directory of `file`, walking its
     /// ancestors once and memoizing the outcome for its siblings.
-    fn dir_resolution(&self, file: &Path) -> DirResolution {
+    fn dir_resolution(&self, file: &Path) -> DirSource {
         self.sources
             .lock()
             .expect("resolver lock")
             .entry(holding_dir(file).to_path_buf())
-            .or_insert_with_key(|dir| match ConfigSource::discover(dir, &self.notices) {
-                Ok(Some(source)) => DirResolution::Project(Arc::new(source)),
-                Ok(None) => DirResolution::Bare,
-                Err(e) => {
+            .or_insert_with_key(|dir| {
+                DirSource::discover(dir, &self.notices, |e| {
                     eprintln!("error: loading config for `{}`: {e}", dir.display());
-                    DirResolution::Failed
-                }
+                })
             })
             .clone()
     }
@@ -126,9 +123,9 @@ impl ConfigResolver {
             .inspect_err(|e| eprintln!("error: cannot resolve `{}`: {e}", path.display()))
             .ok()?;
         match self.dir_resolution(&file) {
-            DirResolution::Failed => None,
-            DirResolution::Project(source) => Some(self.resolve_within(&source, &file)),
-            DirResolution::Bare => match ConfigSource::from_script(&file, bytes, &self.notices) {
+            DirSource::Failed => None,
+            DirSource::Project(source) => Some(self.resolve_within(&source, &file)),
+            DirSource::Bare => match ConfigSource::from_script(&file, bytes, &self.notices) {
                 Ok(Some(source)) => Some(self.resolve_within(&source, &file)),
                 Ok(None) => Some(Arc::clone(&self.default)),
                 Err(e) => {
@@ -180,17 +177,6 @@ impl Resolved {
     pub(super) fn over(pipeline: Pipeline) -> Self {
         Self::new(Config::default(), pipeline, Anchor::AsWritten)
     }
-}
-
-/// The outcome of walking one directory's ancestors for a project config.
-#[derive(Clone)]
-enum DirResolution {
-    /// No ancestor carried a config, leaving a file here to draw its script block.
-    Bare,
-    /// A config was found but failed to load, failing its files.
-    Failed,
-    /// The nearest ancestor config governing files under this directory.
-    Project(Arc<ConfigSource>),
 }
 
 fn build_resolved(

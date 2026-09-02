@@ -18,7 +18,10 @@ use ruff_source_file::{LineRanges, OneIndexed, SourceCode};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use rustc_hash::FxHashMap;
 
-use crate::{primitives::range::merged_spans, rule::RuleId};
+use crate::{
+    primitives::range::{merged_spans, overlaps},
+    rule::RuleId,
+};
 
 mod lint_directive;
 mod parse_common;
@@ -131,7 +134,7 @@ impl SuppressionMap {
     /// `# prose: skip` opens no region, so it does not report here and
     /// lint diagnostics on its line survive.
     pub(crate) fn intersects<R: Ranged>(&self, ranged: R) -> bool {
-        covers(&self.spans, ranged.range())
+        overlaps(ranged.range(), &self.spans)
     }
 
     /// Returns `true` when `line` carries a `# prose: ignore`
@@ -146,8 +149,8 @@ impl SuppressionMap {
     /// listing `rule`.
     pub(crate) fn suppresses<R: Ranged>(&self, ranged: R, rule: RuleId) -> bool {
         let range = ranged.range();
-        covers(&self.spans, range)
-            || covers(&self.skip_spans, range)
+        overlaps(range, &self.spans)
+            || overlaps(range, &self.skip_spans)
             || self
                 .skips
                 .iter()
@@ -178,12 +181,6 @@ fn cell_close_end(cell_offsets: &CellOffsets, source_text: &str, start: TextSize
     cell_offsets
         .containing_range(start)
         .map_or(source_text.text_len(), TextRange::end)
-}
-
-/// Returns `true` when `range` overlaps one of the sorted, merged
-/// `spans` by at least one byte.
-fn covers(spans: &[TextRange], range: TextRange) -> bool {
-    spans.binary_search_by(|s| s.ordering(range)).is_ok()
 }
 
 /// Parses `comment` once for the three directive slots. Each `#` chunk

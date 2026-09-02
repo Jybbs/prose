@@ -19,6 +19,7 @@ use crate::primitives::{
         display_width, end_column, opening_width, settled_slice_width, settled_width, spans_rows,
     },
     layout::{Separator, explode_parens, is_fractured, item_indent},
+    slots::starting_within,
     tokens::{is_opener, opens_subscript, tokens_within},
     travel::{Landing, Travel, block_shift, shifted_block, spans_a_string_part},
 };
@@ -64,12 +65,8 @@ impl<'a> Exploder<'a> {
     /// `offset` explodes, which relays the row's overflow to that
     /// literal and leaves the later ones in place.
     fn earlier_literal_explodes(&self, offset: TextSize) -> bool {
-        let row_start = self.source.text().line_start(offset);
-        let literals = self.source.expandable_literals();
-        let first = literals.partition_point(|literal| literal.start() < row_start);
-        literals[first..]
-            .iter()
-            .take_while(|literal| literal.start() < offset)
+        let row = TextRange::new(self.source.text().line_start(offset), offset);
+        starting_within(self.source.expandable_literals(), row, Ranged::start)
             .any(|literal| self.literal_explodes(*literal))
     }
 

@@ -20,9 +20,9 @@ mod tests {
     use crate::testing::FailingWriter;
 
     fn render() -> String {
-        let mut out = Vec::new();
-        print(&mut out).expect("schema emission succeeds");
-        String::from_utf8(out).expect("utf8 output")
+        crate::testing::rendered(|out| {
+            print(out).expect("schema emission succeeds");
+        })
     }
 
     #[test]
