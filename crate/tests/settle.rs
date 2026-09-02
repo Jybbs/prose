@@ -35,8 +35,8 @@ use rstest::rstest;
 use rustc_hash::FxHashMap;
 
 use common::{
-    Absorbing, CORPUS, Hit, Slot, Tally, WIDTHS, WIDTHS_VAR, corpus, note_verified, pointed_corpus,
-    report_verified, setting, swept, unread, verifying, widths_or,
+    Absorbing, CORPUS, Hit, Slot, Tally, WIDTHS, WIDTHS_VAR, corpus, env_list_of, note_verified,
+    pointed_corpus, report_verified, setting, swept, unread, verifying, widths_or,
 };
 
 mod common;
@@ -479,6 +479,9 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
             );
             continue;
         }
+        if runs_behind(later.as_str(), earlier.as_str()) {
+            continue;
+        }
         let reversed = match memo.chain([second, first], &text) {
             Ok(reversed) => reversed,
             Err(error) => {
@@ -489,9 +492,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
                 continue;
             }
         };
-        if runs_behind(later.as_str(), earlier.as_str())
-            || memo.editing(&seats, &reversed).is_empty()
-        {
+        if memo.editing(&seats, &reversed).is_empty() {
             continue;
         }
         file(
@@ -513,16 +514,11 @@ fn scope() -> Option<BTreeSet<RuleId>> {
 
 /// The rules `named` lists, separated by spaces or commas.
 fn scope_of(named: Option<&str>) -> Option<BTreeSet<RuleId>> {
-    named.map(|named| {
-        named
-            .split([' ', ','])
-            .filter(|slug| !slug.is_empty())
-            .map(|slug| {
-                slug.parse::<RuleId>()
-                    .unwrap_or_else(|_| panic!("{RULES_VAR} names an unknown rule: {slug}"))
-            })
-            .collect()
-    })
+    let parse = |slug: &str| {
+        slug.parse::<RuleId>()
+            .unwrap_or_else(|_| panic!("{RULES_VAR} names an unknown rule: {slug}"))
+    };
+    named.map(|named| env_list_of(named, parse).into_iter().collect())
 }
 
 /// The single-rule pipelines a selection of exactly `N` rules splits
@@ -629,10 +625,8 @@ fn claim_of_reads_the_owned_shape() {
 }
 
 #[rstest]
-#[case("both")]
-#[case("Owned")]
 #[should_panic(expected = "takes `owned` or `touching`")]
-fn claim_of_rejects_an_unknown_shape(#[case] named: &str) {
+fn claim_of_rejects_an_unknown_shape(#[values("both", "Owned", "OWNED")] named: &str) {
     let _ = claim_of(Some(named));
 }
 

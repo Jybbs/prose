@@ -23,7 +23,7 @@ use crate::{
     primitives::{
         call_keywords::{CallTargets, module_call_params},
         edit::{narrowed_replacement, placed_head, singleton_groups},
-        inline::{end_column, indent_width},
+        inline::{end_column, indent_width, last_line, spans_rows},
         layout::{is_collapsible, is_layoutable, requires_expand},
         one_row,
         padding::Stranding,
@@ -229,10 +229,11 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
         let (column, indent) =
             match placed_head(self.source, &self.edits, start, TextSize::default()) {
                 Cow::Owned(head) => {
-                    let indent = head.rsplit_once(['\n', '\r']).map_or_else(
-                        || self.source.line_indent_width(start),
-                        |(_, last)| indent_width(last),
-                    );
+                    let indent = if spans_rows(&head) {
+                        indent_width(last_line(&head))
+                    } else {
+                        self.source.line_indent_width(start)
+                    };
                     let column = self.reservations.column(start, || end_column(&head, 0));
                     (column, indent)
                 }

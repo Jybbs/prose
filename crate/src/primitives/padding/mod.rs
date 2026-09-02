@@ -17,7 +17,7 @@ pub(crate) use gaps::{delimiter_padding_width, slack};
 use crate::{
     primitives::{
         aligner,
-        colon_targets::ColonEmitter,
+        colon_targets::{self, ColonEmitter},
         tokens::{is_delimiter_padding, is_interpolated_string_start},
     },
     rule::RuleId,
@@ -62,20 +62,14 @@ impl Stranding {
             source,
         };
         emitter.walk_within(source, windows);
-        for window in windows {
-            emitter.edits.extend(
-                delimiter_padding_gaps(source, *window)
-                    .filter(|gap| !aligner::is_held(source, self.rule, gap.start()))
-                    .map(Edit::range_deletion),
-            );
-        }
-        let inside = |edit: &Edit| {
-            let at = windows.partition_point(|window| window.end() < edit.end());
-            windows
-                .get(at)
-                .is_some_and(|window| window.contains_range(edit.range()))
-        };
-        emitter.edits.retain(inside);
+        emitter.edits.extend(windows.iter().flat_map(|window| {
+            delimiter_padding_gaps(source, *window)
+                .filter(|gap| !aligner::is_held(source, self.rule, gap.start()))
+                .map(Edit::range_deletion)
+        }));
+        emitter
+            .edits
+            .retain(|edit| colon_targets::covers(edit.range(), windows));
         emitter.edits.sort_by_key(Ranged::start);
         emitter.edits
     }

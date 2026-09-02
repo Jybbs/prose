@@ -252,7 +252,7 @@ impl<'a> Settings<'a> {
     ) -> Option<Cow<'a, str>> {
         let range = expr.range();
         if !is_collapsible(expr)
-            || source.intersects_comment(range)
+            || !source.comment_ranges().comments_in_range(range).is_empty()
             || !source.contains_line_break(range)
         {
             return None;

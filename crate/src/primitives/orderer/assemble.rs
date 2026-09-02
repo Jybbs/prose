@@ -180,6 +180,9 @@ where
     S: Ord,
     F: FnMut(usize, TextRange) -> Cow<'src, str>,
 {
+    if items.is_empty() {
+        return (Cow::Borrowed(""), TextRange::default());
+    }
     let text = source.text();
     let (blocks, block_texts): (Vec<TextRange>, Vec<Cow<'src, str>>) = items
         .iter()

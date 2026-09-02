@@ -21,7 +21,7 @@ use crate::{
         alphabetize_siblings::AlphabetizeSiblings,
     },
     testing::{
-        FUTURE_LEAD, GroupSentinelRule, GuardedRule, assert_send_sync, breaks_compile,
+        FUTURE_LEAD, GroupSentinelRule, GuardedRule, assert_send_sync, at, breaks_compile,
         breaks_parse, never_settles, notebook, parse, prefix_rule, range, replacement,
         self_overlapping,
     },
@@ -87,8 +87,7 @@ impl Rule for NeedleLintRule {
     }
 
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {
-        let start = source.text().find(self.needle).expect("needle is present") as u32;
-        let found = range(start, start + self.needle.len() as u32);
+        let found = at(source.text(), self.needle);
         vec![Diagnostic::lint(self.id, found, self.message().to_owned())]
     }
 

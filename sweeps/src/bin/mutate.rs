@@ -300,7 +300,7 @@ fn respelled<'b>(arena: &'b Bump, name: &str, rng: &mut StdRng) -> Option<&'b st
     } else {
         let cut = name
             .char_indices()
-            .nth(name.chars().count().div_ceil(2).max(1))
+            .nth(name.chars().count().div_ceil(2))
             .map_or(name.len(), |(at, _)| at);
         name[..cut].to_owned()
     };

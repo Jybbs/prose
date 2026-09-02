@@ -1111,8 +1111,8 @@ fn format_diff_keeps_escape_bytes_in_a_plain_patch() {
 fn format_diff_off_tty_leaves_a_plain_patch() {
     let assert = run_fixture("unaligned.py", UNALIGNED, &["format", "--diff"]).code(1);
 
+    assert_stdout_has(&assert, "--- ");
     let stdout = stdout_utf8(&assert);
-    assert!(stdout.contains("--- "), "patch header missing: {stdout:?}");
     assert!(
         !stdout.contains('🧵'),
         "decoration leaked off a TTY: {stdout:?}"
@@ -1449,11 +1449,7 @@ fn notebook_check_text_renders_a_diagnostic_spanning_two_cells() {
 fn notebook_check_text_renders_a_non_last_cell_under_its_header() {
     let assert = run_fixture("nb.ipynb", FIRST_CELL_UNSORTED, &["check", "--no-cache"]).code(1);
 
-    let out = stdout_utf8(&assert);
-    assert!(
-        out.contains("cell 1"),
-        "non-last cell header missing: {out:?}"
-    );
+    assert_stdout_has(&assert, "cell 1");
 }
 
 #[test]

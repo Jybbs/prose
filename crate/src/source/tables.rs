@@ -44,13 +44,7 @@ impl Source {
         assert!(
             **carried == fresh,
             "the binding table carried into {site} differs from a fresh build:\n{}",
-            {
-                let (fresh, carried) = (format!("{fresh:#?}"), format!("{carried:#?}"));
-                similar::TextDiff::from_lines(fresh.as_str(), carried.as_str())
-                    .unified_diff()
-                    .header("fresh", "carried")
-                    .to_string()
-            },
+            table_diff(&fresh, carried, "carried"),
         );
         true
     }
@@ -113,13 +107,7 @@ impl Source {
         assert!(
             rebuilt.1 == fresh,
             "the padding walk rebuilt into {site} differs from a fresh build:\n{}",
-            {
-                let (fresh, rebuilt) = (format!("{fresh:#?}"), format!("{:#?}", rebuilt.1));
-                similar::TextDiff::from_lines(fresh.as_str(), rebuilt.as_str())
-                    .unified_diff()
-                    .header("fresh", "rebuilt")
-                    .to_string()
-            },
+            table_diff(&fresh, &rebuilt.1, "rebuilt"),
         );
         true
     }
@@ -145,12 +133,14 @@ impl Source {
             let (stranding, edits) = *held;
             let mut carried: Vec<Edit> = edits
                 .iter()
-                .filter_map(|edit| forward_range(edit.range(), map).map(|range| (edit, range)))
-                .filter(|(_, range)| !reaches(*range, windows))
-                .map(|(edit, range)| relocated(edit, range))
+                .filter_map(|edit| {
+                    let range = forward_range(edit.range(), map)
+                        .filter(|range| !reaches(*range, windows))?;
+                    Some(relocated(edit, range))
+                })
                 .collect();
             carried.extend(stranding.edits_within(self, windows));
-            carried.sort_by_key(Ranged::start);
+            carried.sort_unstable_by_key(Ranged::start);
             Box::new((stranding, carried))
         });
         trace::carried(rule, STRANDED, Outcome::of(true, held, rebuilt.is_some()));
@@ -220,6 +210,18 @@ fn keyed<'a, K: Copy + PartialEq, B: ?Sized + ToOwned>(
     } else {
         Cow::Owned(build(&key))
     }
+}
+
+/// A unified diff of `fresh` against `held`, the message an assertion
+/// over a table a reparse moved prints, `label` naming how `held`
+/// arrived.
+#[cfg(test)]
+fn table_diff(fresh: &impl std::fmt::Debug, held: &impl std::fmt::Debug, label: &str) -> String {
+    let (fresh, held) = (format!("{fresh:#?}"), format!("{held:#?}"));
+    similar::TextDiff::from_lines(fresh.as_str(), held.as_str())
+        .unified_diff()
+        .header("fresh", label)
+        .to_string()
 }
 
 #[cfg(test)]

@@ -58,16 +58,19 @@ fn run_batches_adjacent_edits_from_two_rules() {
     assert_eq!(captured(&seen), ["x = 1\n", "x = 1\n"]);
 }
 
-#[test]
-fn run_batches_declared_pairs_alone() {
-    // Neither sentinel is in the registry's independence table, so the
-    // second reads the first's rewrite under the default sharing, and
-    // the batch closes between them.
+/// Neither sentinel is in the registry's independence table, so the
+/// second reads the first's rewrite under either sharing and the batch
+/// closes between them.
+#[rstest]
+#[case::declared(Sharing::Declared)]
+#[case::never(Sharing::Never)]
+fn a_batch_closing_hands_the_downstream_rule_the_upstream_rewrite(#[case] sharing: Sharing) {
     let seen = Arc::new(Mutex::new(Vec::new()));
     let pipeline = Pipeline::from_rules(vec![
         capturing(&seen, "rewrite-x-to-y", vec![replacement("y", 0, 1)]),
         capturing(&seen, "downstream-observer", Vec::new()),
-    ]);
+    ])
+    .sharing(sharing);
 
     pipeline.run(parse("x = 1\n")).expect("both stages succeed");
 
@@ -239,18 +242,4 @@ fn run_names_the_rule_whose_splice_a_declared_batch_replay_rejects() {
         pipeline.run(parse("x = 1\ny = 2\n")),
         Err(PipelineError::Reparse { rule, .. }) if rule.as_str() == "normalize-literals"
     );
-}
-
-#[test]
-fn sharing_never_hands_a_downstream_rule_the_upstream_rewrite() {
-    let seen = Arc::new(Mutex::new(Vec::new()));
-    let pipeline = Pipeline::from_rules(vec![
-        capturing(&seen, "rewrite-x-to-y", vec![replacement("y", 0, 1)]),
-        capturing(&seen, "downstream-observer", Vec::new()),
-    ])
-    .sharing(Sharing::Never);
-
-    pipeline.run(parse("x = 1\n")).expect("both stages succeed");
-
-    assert_eq!(captured(&seen), ["x = 1\n", "y = 1\n"]);
 }

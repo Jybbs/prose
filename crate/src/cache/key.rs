@@ -2,9 +2,11 @@
 //! rule selection, and version inputs, domain-separated by the anchor
 //! naming which buffer the entry's diagnostics resolve against.
 
+use ruff_python_ast::PySourceType;
+
 use crate::rule::RuleId;
 
-pub(super) const CACHE_FORMAT_VERSION: &str = "8";
+pub(super) const CACHE_FORMAT_VERSION: &str = "9";
 
 /// How many hex characters of the generation digest name the directory.
 const GENERATION_LEN: usize = 16;
@@ -105,10 +107,20 @@ impl CacheKeyPrefix {
         Self(hasher)
     }
 
-    /// Completes the digest with one file's own source bytes.
+    /// Completes the digest with one file's own source bytes and the
+    /// source type the run reads them as, which decides between the
+    /// module and the notebook path.
     #[must_use]
-    pub fn key_for(&self, source_bytes: &[u8]) -> CacheKey {
+    pub fn key_for(&self, source_bytes: &[u8], source_type: PySourceType) -> CacheKey {
         let mut hasher = self.0.clone();
+        framed(
+            &mut hasher,
+            match source_type {
+                PySourceType::Python => b"python",
+                PySourceType::Stub => b"stub",
+                PySourceType::Ipynb => b"ipynb",
+            },
+        );
         framed(&mut hasher, source_bytes);
         CacheKey(hasher.finalize())
     }

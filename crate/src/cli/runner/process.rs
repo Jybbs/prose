@@ -17,7 +17,8 @@ use rustc_hash::FxHashMap;
 use tempfile::NamedTempFile;
 
 use super::{
-    FileOutcome, Pass, RunSetup, STDIN_NAME, has_format_change, notebook, resolve::Resolved,
+    FileOutcome, Pass, RunSetup, has_format_change, notebook, resolve::Resolved, stdin_name,
+    stdin_source_type,
 };
 use crate::{
     cache::{Anchor, CacheEntry, CacheEntryRef, NotebookCells, NotebookCellsRef, Rewrite},
@@ -109,7 +110,7 @@ pub(super) fn process_path(
     };
     let keyed = setup
         .cache_for(pass)
-        .map(|c| (c, resolved.key_prefix.key_for(&bytes)));
+        .map(|c| (c, resolved.key_prefix.key_for(&bytes, source_type)));
     let hit = keyed.as_ref().and_then(|(c, k)| c.lookup(k));
     let bytes = match hit {
         Some(entry) => match rehydrate(path, bytes, entry, pass) {
@@ -177,7 +178,11 @@ pub(super) fn process_path(
             && pass.write_back()
             && !source_type.is_ipynb()
         {
-            c.record_own_output(&resolved.key_prefix.key_for(kind.written().as_bytes()));
+            c.record_own_output(
+                &resolved
+                    .key_prefix
+                    .key_for(kind.written().as_bytes(), source_type),
+            );
         }
     }
     outcome
@@ -206,14 +211,14 @@ where
 
 pub(super) fn process_stdin(
     text: String,
-    source_type: PySourceType,
+    filename: Option<&Path>,
     resolved: &Resolved,
     pass: Pass,
 ) -> FileOutcome {
     process_source(
         text,
-        STDIN_NAME.to_owned(),
-        source_type,
+        stdin_name(filename),
+        stdin_source_type(filename),
         resolved,
         pass,
         Marker::Eager,
@@ -1052,7 +1057,6 @@ mod tests {
         assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
     }
 
-    #[cfg(unix)]
     #[rstest]
     #[case::changed_under_a_commit(Rewrite::text("y = 1\n".to_owned()), Pass::Rewrite, false)]
     #[case::changed_under_a_structured_commit(Rewrite::text("y = 1\n".to_owned()), Pass::Both, false)]
@@ -1068,6 +1072,7 @@ mod tests {
         assert_eq!(worth_storing(&rewrite, pass), stores);
     }
 
+    #[cfg(unix)]
     #[test]
     fn write_atomic_holds_the_original_where_no_temporary_can_land() {
         use std::{fs::Permissions, os::unix::fs::PermissionsExt};

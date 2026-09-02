@@ -67,8 +67,7 @@ pub(crate) trait ColonEmitter {
     where
         Self: Sized,
     {
-        let runs: Vec<_> = docstring_runs_within(source, windows);
-        for run in &runs {
+        for run in &docstring_runs_within(source, windows) {
             self.docstring_entries(run);
         }
         let mut visitor = ContextVisitor {
@@ -78,6 +77,15 @@ pub(crate) trait ColonEmitter {
         };
         visitor.visit_body(&source.ast().body);
     }
+}
+
+/// True where `range` sits wholly inside one of `windows`, ascending
+/// and disjoint.
+pub(crate) fn covers(range: TextRange, windows: &[TextRange]) -> bool {
+    let at = windows.partition_point(|window| window.end() < range.end());
+    windows
+        .get(at)
+        .is_some_and(|window| window.contains_range(range))
 }
 
 /// True where `range` overlaps one of `windows`, ascending and

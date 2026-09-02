@@ -10,11 +10,11 @@ use itertools::Itertools;
 use ruff_python_ast::{
     CmpOp, ExceptHandler, Expr, ExprCompare, ExprDictComp, ExprGenerator, ExprLambda, ExprList,
     ExprListComp, ExprNamed, ExprSetComp, ExprTuple, Identifier, MatchCase, Operator, Parameters,
-    Stmt, StmtAnnAssign, StmtAssign, StmtAugAssign, StmtClassDef, StmtDelete, StmtFor,
-    StmtFunctionDef, StmtGlobal, StmtIf, StmtImport, StmtImportFrom, StmtTry, StmtWhile, StmtWith,
-    UnaryOp,
+    Pattern, PatternMatchAs, PatternMatchMapping, PatternMatchStar, Stmt, StmtAnnAssign,
+    StmtAssign, StmtAugAssign, StmtClassDef, StmtDelete, StmtFor, StmtFunctionDef, StmtGlobal,
+    StmtIf, StmtImport, StmtImportFrom, StmtTry, StmtWhile, StmtWith, UnaryOp,
     name::Name,
-    visitor::{Visitor, walk_arguments, walk_expr, walk_parameters},
+    visitor::{Visitor, walk_arguments, walk_expr, walk_parameters, walk_pattern},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -404,11 +404,14 @@ impl Builder {
         if let Some(value) = &node.value {
             self.visit_expr(value);
         }
-        if let Expr::Name(name) = node.target.as_ref() {
-            if let Some(value) = &node.value {
-                self.assignment_values.insert(name.start(), value.range());
+        match node.target.as_ref() {
+            Expr::Name(name) => {
+                if let Some(value) = &node.value {
+                    self.assignment_values.insert(name.start(), value.range());
+                }
+                self.record_target(&node.target, BindingKind::Assignment);
             }
-            self.record_target(&node.target, BindingKind::Assignment);
+            target => walk_expr(self, target),
         }
     }
 
@@ -633,6 +636,24 @@ impl<'a> Visitor<'a> for Builder {
             },
             _ => walk_expr(self, expr),
         }
+    }
+
+    /// Records the name a capture pattern binds, which the upstream
+    /// walk reaches as an identifier rather than an expression.
+    fn visit_pattern(&mut self, pattern: &'a Pattern) {
+        match pattern {
+            Pattern::MatchAs(PatternMatchAs {
+                name: Some(name), ..
+            })
+            | Pattern::MatchStar(PatternMatchStar {
+                name: Some(name), ..
+            })
+            | Pattern::MatchMapping(PatternMatchMapping {
+                rest: Some(name), ..
+            }) => self.record_identifier(name, BindingKind::Assignment),
+            _ => {}
+        }
+        walk_pattern(self, pattern);
     }
 
     fn visit_match_case(&mut self, case: &'a MatchCase) {

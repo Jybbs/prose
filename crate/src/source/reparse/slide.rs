@@ -78,14 +78,20 @@ impl<'map> Slide<'map> {
         self.deltas.slide(range)
     }
 
+    /// Slides each of `ranges`, the fields a node list carries that the
+    /// walk does not reach on its own.
+    fn slide_ranges<'node>(&self, ranges: impl IntoIterator<Item = &'node mut TextRange>) {
+        for range in ranges {
+            *range = self.slide(*range);
+        }
+    }
+
     fn slide_name(&self, name: &mut Identifier) {
-        name.range = self.slide(name.range);
+        self.slide_ranges([&mut name.range]);
     }
 
     fn slide_names<'node>(&self, names: impl IntoIterator<Item = &'node mut Identifier>) {
-        for name in names {
-            self.slide_name(name);
-        }
+        self.slide_ranges(names.into_iter().map(|name| &mut name.range));
     }
 
     /// Slides `module`'s own range and every range beneath it, grafting
@@ -198,14 +204,14 @@ impl Transformer for Slide<'_> {
 
     fn visit_parameters(&self, parameters: &mut Parameters) {
         parameters.range = self.slide(parameters.range);
-        for arg in parameters
-            .posonlyargs
-            .iter_mut()
-            .chain(&mut parameters.args)
-            .chain(&mut parameters.kwonlyargs)
-        {
-            arg.range = self.slide(arg.range);
-        }
+        self.slide_ranges(
+            parameters
+                .posonlyargs
+                .iter_mut()
+                .chain(&mut parameters.args)
+                .chain(&mut parameters.kwonlyargs)
+                .map(|arg| &mut arg.range),
+        );
         walk_parameters(self, parameters);
     }
 
@@ -290,11 +296,7 @@ impl Transformer for Slide<'_> {
             | Stmt::Nonlocal(ast::StmtNonlocal { names, .. }) => self.slide_names(names),
             Stmt::If(ast::StmtIf {
                 elif_else_clauses, ..
-            }) => {
-                for clause in elif_else_clauses {
-                    clause.range = self.slide(clause.range);
-                }
-            }
+            }) => self.slide_ranges(elif_else_clauses.iter_mut().map(|clause| &mut clause.range)),
             Stmt::ImportFrom(ast::StmtImportFrom { module, .. }) => {
                 self.slide_names(module.as_mut());
             }

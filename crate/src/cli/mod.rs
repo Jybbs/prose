@@ -77,7 +77,7 @@ pub fn run() -> ExitCode {
     let (stderr, stderr_color) = stream_for(cli.color, io::stderr());
     let present = Presentation {
         color,
-        quiet: command_quiet(&cli.command),
+        quiet: cli.run_args().is_some_and(|args| args.quiet),
         stderr_color,
         stdout_tty,
     };
@@ -108,18 +108,6 @@ pub fn run() -> ExitCode {
         Command::Server(_) => unreachable!("Server dispatched before the stdout lock"),
     };
     finalize(result).into()
-}
-
-fn command_quiet(command: &Command) -> bool {
-    match command {
-        Command::Check(args) => args.common.quiet,
-        Command::Format(args) => args.common.quiet,
-        Command::Cache { .. }
-        | Command::Completions { .. }
-        | Command::Rules(_)
-        | Command::Schema
-        | Command::Server(_) => false,
-    }
 }
 
 fn finalize(result: anyhow::Result<ExitStatus>) -> ExitStatus {

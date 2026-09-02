@@ -29,6 +29,7 @@ use crate::{
         layout::{is_layoutable, requires_expand},
         padding::Stranding,
         reserve::{Columns, Reservations},
+        tokens::is_interpolated_string_start,
         walk::{Descent, filter_map_over_exprs},
     },
     suppression::SuppressionMap,
@@ -59,6 +60,7 @@ pub struct Source {
     comment_ranges: CommentRanges,
     expandable_literals: OnceLock<Vec<TextRange>>,
     file: SourceFile,
+    interpolation_spans: OnceLock<Vec<TextRange>>,
     line_ending: LineEnding,
     paren_followers: OnceLock<FxHashSet<TextSize>>,
     source_type: PySourceType,
@@ -131,6 +133,7 @@ impl Source {
             comment_ranges,
             expandable_literals: OnceLock::new(),
             file,
+            interpolation_spans: OnceLock::new(),
             line_ending,
             paren_followers: OnceLock::new(),
             source_type,
@@ -183,6 +186,32 @@ impl Source {
         source_type: PySourceType,
     ) -> Result<Self, ParseError> {
         Self::build(text, name, source_type, CellOffsets::default())
+    }
+
+    /// The count of f-strings and t-strings open at `offset`, read off
+    /// the ascending spans of every opener and closer pair, built on the
+    /// first read.
+    pub(crate) fn interpolation_depth_at(&self, offset: TextSize) -> usize {
+        let spans = self.interpolation_spans.get_or_init(|| {
+            let mut open = Vec::new();
+            let mut spans = Vec::new();
+            for token in self.tokens().iter() {
+                if is_interpolated_string_start(token.kind()) {
+                    open.push(token.start());
+                } else if token.kind().is_interpolated_string_end()
+                    && let Some(start) = open.pop()
+                {
+                    spans.push(TextRange::new(start, token.end()));
+                }
+            }
+            spans.sort_unstable_by_key(Ranged::start);
+            spans
+        });
+        spans
+            .iter()
+            .take_while(|span| span.start() <= offset)
+            .filter(|span| span.contains(offset))
+            .count()
     }
 
     /// The start offsets of the non-trivia tokens an `(` directly
@@ -258,6 +287,7 @@ impl Source {
         let Some(joined) = above
             .strip_suffix('\n')
             .map(|row| row.strip_suffix('\r').unwrap_or(row))
+            .or_else(|| above.strip_suffix('\r'))
         else {
             return false;
         };
@@ -361,12 +391,12 @@ impl Source {
     /// own end. A break inside a bracketed construct carries
     /// `NonLogicalNewline` and leaves the logical line open.
     pub fn logical_line_tail(&self, offset: TextSize) -> TextRange {
-        let module_end = self.module_range().end();
         let end = self
-            .first_token_offset_in_range(TextRange::new(offset, module_end), |token| {
-                token.kind() == TokenKind::Newline
-            })
-            .unwrap_or(module_end);
+            .tokens()
+            .after(offset)
+            .iter()
+            .find(|token| token.kind() == TokenKind::Newline)
+            .map_or_else(|| self.text().text_len(), Ranged::start);
         TextRange::new(offset, end)
     }
 
@@ -593,6 +623,7 @@ impl Clone for Source {
             comment_ranges: self.comment_ranges.clone(),
             expandable_literals: OnceLock::new(),
             file: self.file.clone(),
+            interpolation_spans: OnceLock::new(),
             line_ending: self.line_ending,
             paren_followers: OnceLock::new(),
             source_type: self.source_type,
@@ -684,13 +715,13 @@ mod tests {
 
     #[test]
     fn changed_from_returns_none_when_text_matches() {
-        let s = Source::from_str("x = 1\n").expect("parses");
+        let s = parse("x = 1\n");
         assert!(s.changed_from("x = 1\n").is_none());
     }
 
     #[test]
     fn changed_from_returns_text_when_it_differs() {
-        let s = Source::from_str("x = 1\n").expect("parses");
+        let s = parse("x = 1\n");
         assert_eq!(s.changed_from("y = 2\n"), Some("x = 1\n"));
     }
 
@@ -707,7 +738,7 @@ mod tests {
 
     #[test]
     fn comment_ranges_indexes_each_comment_in_the_source() {
-        let s = Source::from_str("# top\nx = 1  # trail\n").expect("parses");
+        let s = parse("# top\nx = 1  # trail\n");
         let ranges = s.comment_ranges();
         assert!(ranges.intersects(range(0, 1)));
         assert!(ranges.intersects(range(13, 14)));
@@ -733,6 +764,7 @@ mod tests {
     #[rstest]
     #[case::joined("\\\ny = 2\n", true)]
     #[case::joined_across_crlf("\\\r\ny = 2\r\n", true)]
+    #[case::joined_across_cr("\\\ry = 2\r", true)]
     #[case::plain_row("x = 1\ny = 2\n", false)]
     #[case::opening_row("y = 2\n", false)]
     #[case::comment_head("# leads\ny = 2\n", false)]
@@ -753,62 +785,32 @@ mod tests {
 
     #[test]
     fn empty_input_parses_as_empty_module() {
-        let s = Source::from_str("").expect("empty source parses");
+        let s = parse("");
         assert_eq!(s.text(), "");
         assert!(s.ast().body.is_empty());
     }
 
-    #[test]
-    fn first_token_offset_in_range_returns_first_match_when_multiple_satisfy() {
-        // Chained assignment carries two `=` tokens, and the helper
-        // must return the leftmost one, not just any match.
-        let s = Source::from_str("a = b = 1\n").expect("parses");
-        let offset = s
-            .first_token_offset_in_range(s.ast().body[0].range(), |t| t.kind() == TokenKind::Equal)
-            .expect("two `=` tokens, picks first");
-
-        assert_eq!(offset, TextSize::new(2));
+    #[rstest]
+    #[case::the_first_of_two_matches("a = b = 1\n", |t: &Token| t.kind() == TokenKind::Equal, Some(2))]
+    #[case::a_single_match("x = 1\n", |t: &Token| t.kind() == TokenKind::Equal, Some(2))]
+    #[case::no_match("x = 1\n", |t: &Token| t.kind() == TokenKind::Colon, None)]
+    #[case::a_predicate_family("x += 1\n", |t: &Token| t.kind().as_augmented_assign_operator().is_some(), Some(2))]
+    fn first_token_offset_in_range_returns_the_leftmost_match(
+        #[case] src: &str,
+        #[case] predicate: fn(&Token) -> bool,
+        #[case] expected: Option<u32>,
+    ) {
+        let s = parse(src);
+        let found = s.first_token_offset_in_range(s.ast().body[0].range(), predicate);
+        assert_eq!(found, expected.map(TextSize::new));
     }
 
     #[test]
     fn first_token_offset_in_range_returns_none_for_empty_range() {
-        let s = Source::from_str("x = 1\n").expect("parses");
+        let s = parse("x = 1\n");
         let empty = TextRange::empty(TextSize::new(0));
 
         assert!(s.first_token_offset_in_range(empty, |_| true).is_none());
-    }
-
-    #[test]
-    fn first_token_offset_in_range_returns_none_when_no_token_matches() {
-        let s = Source::from_str("x = 1\n").expect("parses");
-        let result = s
-            .first_token_offset_in_range(s.ast().body[0].range(), |t| t.kind() == TokenKind::Colon);
-
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn first_token_offset_in_range_returns_offset_for_single_match() {
-        let s = Source::from_str("x = 1\n").expect("parses");
-        let offset = s
-            .first_token_offset_in_range(s.ast().body[0].range(), |t| t.kind() == TokenKind::Equal)
-            .expect("one `=` token");
-
-        assert_eq!(offset, TextSize::new(2));
-    }
-
-    #[test]
-    fn first_token_offset_in_range_supports_predicate_compositions() {
-        // Mirrors how align_equals's aug-assign arm picks any token in
-        // the augmented-assign-operator family rather than a specific kind.
-        let s = Source::from_str("x += 1\n").expect("parses");
-        let offset = s
-            .first_token_offset_in_range(s.ast().body[0].range(), |t| {
-                t.kind().as_augmented_assign_operator().is_some()
-            })
-            .expect("`+=` is an aug-assign operator");
-
-        assert_eq!(offset, TextSize::new(2));
     }
 
     #[test]
@@ -851,26 +853,19 @@ mod tests {
     #[test]
     fn line_column_counts_characters_not_bytes() {
         let src = "αβγ";
-        let s = Source::from_str(src).expect("multibyte source parses");
+        let s = parse(src);
         assert_eq!(s.line_column(TextSize::new(6)), line_column(0, 3));
     }
 
-    #[test]
-    fn line_column_handles_unix_newlines() {
-        let src = "a\nb\nc\n";
-        let s = Source::from_str(src).expect("LF input parses");
-        assert_eq!(s.line_column(TextSize::new(0)), line_column(0, 0));
-        assert_eq!(s.line_column(TextSize::new(2)), line_column(1, 0));
-        assert_eq!(s.line_column(TextSize::new(4)), line_column(2, 0));
-    }
-
-    #[test]
-    fn line_column_handles_windows_newlines() {
-        let src = "a\r\nb\r\nc\r\n";
-        let s = Source::from_str(src).expect("CRLF input parses");
-        assert_eq!(s.line_column(TextSize::new(0)), line_column(0, 0));
-        assert_eq!(s.line_column(TextSize::new(3)), line_column(1, 0));
-        assert_eq!(s.line_column(TextSize::new(6)), line_column(2, 0));
+    #[rstest]
+    #[case::lf("a\nb\nc\n", &[(0, 0), (2, 1), (4, 2)])]
+    #[case::crlf("a\r\nb\r\nc\r\n", &[(0, 0), (3, 1), (6, 2)])]
+    #[case::cr("a\rb\rc\r", &[(0, 0), (2, 1), (4, 2)])]
+    fn line_column_reads_every_line_ending(#[case] src: &str, #[case] rows: &[(u32, usize)]) {
+        let s = parse(src);
+        for &(offset, line) in rows {
+            assert_eq!(s.line_column(TextSize::new(offset)), line_column(line, 0));
+        }
     }
 
     #[rstest]
@@ -963,7 +958,7 @@ mod tests {
 
     #[test]
     fn reparse_returns_parse_error_for_bad_replacement() {
-        let s = Source::from_str("x = 1\n").expect("original parses");
+        let s = parse("x = 1\n");
         let result = s.reparse_carrying("def foo(".to_owned(), CellOffsets::default());
         assert!(result.is_err());
     }
@@ -982,14 +977,14 @@ mod tests {
 
     #[test]
     fn single_character_input_parses() {
-        let s = Source::from_str("x").expect("single name parses");
+        let s = parse("x");
         assert_eq!(s.text(), "x");
         assert_eq!(s.ast().body.len(), 1);
     }
 
     #[test]
     fn slice_accepts_ast_nodes_via_ranged() {
-        let s = Source::from_str("x = 1\n").expect("assignment parses");
+        let s = parse("x = 1\n");
         let stmt = s.ast().body.first().expect("one statement");
         assert_eq!(s.slice(stmt), "x = 1");
     }
@@ -997,7 +992,7 @@ mod tests {
     #[test]
     fn slice_at_multibyte_boundary_returns_full_codepoint() {
         let src = "α = 1";
-        let s = Source::from_str(src).expect("multibyte source parses");
+        let s = parse(src);
         let alpha = s.slice(range(0, 2));
         assert_eq!(alpha, "α");
     }
@@ -1009,7 +1004,7 @@ mod tests {
 
     #[test]
     fn tokens_returns_non_empty_stream_for_non_empty_source() {
-        let s = Source::from_str("x = 1").expect("simple assignment parses");
+        let s = parse("x = 1");
         assert!(s.tokens().iter().next().is_some());
     }
 }

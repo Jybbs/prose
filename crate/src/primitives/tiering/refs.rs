@@ -41,6 +41,9 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
                 for decorator in &func.decorator_list {
                     self.visit_expr(&decorator.expression);
                 }
+                if let Some(type_params) = &func.type_params {
+                    self.visit_type_params(type_params);
+                }
                 walk_parameters(self, &func.parameters);
                 if let Some(returns) = &func.returns {
                     self.visit_annotation(returns);

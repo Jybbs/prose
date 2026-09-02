@@ -72,7 +72,23 @@ pub(crate) fn hung_block_through<'s>(
     indent: usize,
 ) -> Cow<'s, str> {
     let block = apply_inline_edits(source, range, edits);
-    let frozen = frozen_rows(source, range);
+    let mut frozen = frozen_rows(source, range);
+    let head = source.line_index(range.start()).get();
+    for edit in edits
+        .iter()
+        .rev()
+        .filter(|edit| range.contains_range(edit.range()))
+    {
+        if edit.content().is_some_and(spans_rows) {
+            return block;
+        }
+        let first = source.line_index(edit.start()).get() - head;
+        let last = source.line_index(edit.end()).get() - head;
+        if last > first {
+            let merged = frozen.drain(first + 1..=last).any(|held| held);
+            frozen[first] |= merged;
+        }
+    }
     let landing = Landing::own_row(range.start(), indent);
     let opens_a_bracket = block
         .universal_newlines()

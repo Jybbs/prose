@@ -4,7 +4,7 @@ use ruff_python_trivia::leading_indentation;
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
-    primitives::{range::merged_spans, splice::covering_window},
+    primitives::{inline::last_line, range::merged_spans, splice::covering_window},
     source::Source,
 };
 
@@ -26,8 +26,7 @@ impl Ranged for Window {
 /// The leading whitespace of the last physical line `range` covers in
 /// `text`, the indent the `Dedent` run past the window counts down from.
 pub(super) fn closing_indent(text: &str, range: TextRange) -> &str {
-    let slice = &text[range];
-    leading_indentation(slice.rsplit_once('\n').map_or(slice, |(_, tail)| tail))
+    leading_indentation(last_line(&text[range]))
 }
 
 /// The statement windows covering `replaced`, ascending and merged
@@ -53,6 +52,7 @@ mod tests {
     #[rstest]
     #[case::a_single_line_statement("x = 1\n", range(0, 5), "")]
     #[case::a_block_closing_deeper("def f():\n    y = 2\n", range(0, 18), "    ")]
+    #[case::a_block_closing_deeper_across_cr("def f():\r    y = 2\r", range(0, 18), "    ")]
     #[case::a_block_closing_deeper_still(
         "if a:\n    if b:\n        c = 1\n",
         range(0, 29),

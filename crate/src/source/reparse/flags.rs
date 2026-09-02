@@ -20,7 +20,8 @@ pub(super) fn retargeted(token: Token, text: &str, range: TextRange) -> Token {
 }
 
 /// The flags `token` carries, read from its string flags where it is a
-/// string and from its own text where it is a name.
+/// string and from its own text where it is a name. `UNCLOSED_STRING`
+/// is left out, since every stream the merge reads parsed.
 fn flags_of(token: Token, text: &str) -> TokenFlags {
     let Some(string) = token.string_flags() else {
         return if token.kind() == TokenKind::Name && !text[token.range()].is_ascii() {

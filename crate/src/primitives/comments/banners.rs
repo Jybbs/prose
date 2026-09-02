@@ -61,11 +61,6 @@ mod tests {
     use super::*;
     use crate::testing::parse;
 
-    fn gap_block(s: &Source) -> Option<TextRange> {
-        let body = &s.ast().body;
-        leading_comment_block(s, body[0].end(), body[1].start())
-    }
-
     #[rstest]
     #[case::rule_line(
         "x = 1\n# ========================\n# Section: helpers\n# ========================\ndef f(): pass\n",

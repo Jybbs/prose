@@ -67,7 +67,11 @@ impl PreferFstring {
             Expr::Call(call) if self.str_format => format_call::rewritten(source, call),
             _ => None,
         }?;
-        if source.intersects_comment(expr) {
+        if !source
+            .comment_ranges()
+            .comments_in_range(expr.range())
+            .is_empty()
+        {
             return None;
         }
         let grouped = source.paren_aware_range(expr.into(), parent);

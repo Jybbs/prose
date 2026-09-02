@@ -92,12 +92,9 @@ fn fixture_invocations(text: &str) -> impl Iterator<Item = (&str, &str)> {
     })
 }
 
-/// True when the rule at `module`, a single file or a directory of
-/// them, carries `needle` anywhere inside it.
+/// True when the rule's directory at `module` carries `needle`
+/// anywhere inside it.
 fn module_carries(module: &Path, needle: &str) -> bool {
-    if let Ok(source) = fs_err::read_to_string(module.with_extension("rs")) {
-        return source.contains(needle);
-    }
     WalkBuilder::new(module)
         .build()
         .flatten()
@@ -286,7 +283,7 @@ fn every_fixture_invocation_resolves() {
 }
 
 #[test]
-fn every_lint_emitting_rule_is_named_on_the_exit_code_page() {
+fn every_lint_emitting_rule_declares_it_on_its_page() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let rules = root.join("../site/rules");
     for slug in Pipeline::known_ids() {

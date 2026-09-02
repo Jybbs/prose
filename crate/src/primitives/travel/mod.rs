@@ -15,7 +15,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::{
     primitives::{
         edit::apply_inline_edits,
-        inline::indent_width,
+        inline::{indent_width, spans_rows},
         layout::item_indent,
         tokens::{CLOSERS, OPENERS, is_closer, is_opener},
     },

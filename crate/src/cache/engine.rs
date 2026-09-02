@@ -188,10 +188,7 @@ impl Cache {
                 sweep_dir(&mut report, &path);
                 continue;
             }
-            let bytes = entry.metadata().as_ref().map_or(0, on_disk);
-            if fs_err::remove_file(&path).is_ok() {
-                report.record(bytes);
-            }
+            remove_into(&mut report, &entry);
         }
         fs_err::create_dir_all(&self.root)?;
         Ok(report)
@@ -245,7 +242,7 @@ impl Cache {
             },
             |mut acc, (_, m)| {
                 acc.entries += 1;
-                acc.bytes += m.len();
+                acc.bytes += on_disk(&m);
                 if let Ok(t) = m.modified() {
                     acc.oldest_mtime = Some(acc.oldest_mtime.map_or(t, |o| o.min(t)));
                     acc.newest_mtime = acc.newest_mtime.max(Some(t));
@@ -418,10 +415,15 @@ fn stale(file: &fs_err::File, now: SystemTime) -> bool {
 fn sweep(dir: &Path) -> CleanReport {
     let mut report = CleanReport::default();
     for entry in dir_entries(dir) {
-        let bytes = entry.metadata().as_ref().map_or(0, on_disk);
-        if fs_err::remove_file(entry.path()).is_ok() {
-            report.record(bytes);
-        }
+        remove_into(&mut report, &entry);
     }
     report
+}
+
+/// Removes `entry`'s file, recording what it freed.
+fn remove_into(report: &mut CleanReport, entry: &DirEntry) {
+    let bytes = entry.metadata().as_ref().map_or(0, on_disk);
+    if fs_err::remove_file(entry.path()).is_ok() {
+        report.record(bytes);
+    }
 }

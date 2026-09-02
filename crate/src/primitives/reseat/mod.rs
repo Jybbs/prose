@@ -18,6 +18,7 @@ use crate::{
         INDENT_STEP,
         edit::insert_edit,
         inline::{display_width, indent_width},
+        range::blocks_span,
         tokens::{is_closer, is_opener, open_brackets, tokens_within},
         travel::{frozen_rows, is_movable},
     },
@@ -30,9 +31,10 @@ use crate::{
 /// start of the first row a removal touches to the end of its logical
 /// line, and empty `removals` reseat nothing.
 pub(crate) fn push_reseat_edits(source: &Source, removals: &[Edit], edits: &mut Vec<Edit>) {
-    let Some(span) = removals.iter().map(Ranged::range).reduce(TextRange::cover) else {
+    if removals.is_empty() {
         return;
-    };
+    }
+    let span = blocks_span(removals);
     let line = TextRange::new(
         source.text().line_start(span.start()),
         source.logical_line_tail(span.end()).end(),

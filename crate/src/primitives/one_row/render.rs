@@ -48,7 +48,11 @@ impl<'a> Writer<'a> {
     /// falling inside the range, and a later rule reopening it.
     fn blocked(&self, expr: &Expr, range: TextRange, hold: Column) -> bool {
         (hold == Column::Holds && self.settings.holds_its_column(self.source, expr))
-            || self.source.intersects_comment(range)
+            || !self
+                .source
+                .comment_ranges()
+                .comments_in_range(range)
+                .is_empty()
             || self.reopens(expr)
     }
 

@@ -86,15 +86,16 @@ pub(crate) fn corpus() -> Vec<PathBuf> {
 /// The values `var` carries as a space-separated list, `defaults` where
 /// it is unset.
 pub(crate) fn env_list<T: Clone>(var: &str, defaults: &[T], parse: impl Fn(&str) -> T) -> Vec<T> {
-    setting(var).map_or_else(
-        || defaults.to_vec(),
-        |set| {
-            set.split([' ', ','])
-                .filter(|part| !part.is_empty())
-                .map(&parse)
-                .collect()
-        },
-    )
+    setting(var).map_or_else(|| defaults.to_vec(), |set| env_list_of(&set, parse))
+}
+
+/// The values `set` lists, separated by spaces or commas, each read
+/// through `parse`.
+pub(crate) fn env_list_of<T>(set: &str, parse: impl Fn(&str) -> T) -> Vec<T> {
+    set.split([' ', ','])
+        .filter(|part| !part.is_empty())
+        .map(parse)
+        .collect()
 }
 
 /// Counts one probe verified against its reference reading.

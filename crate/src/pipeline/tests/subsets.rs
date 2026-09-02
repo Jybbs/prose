@@ -42,8 +42,10 @@ fn fingerprints_match_what_each_split_pipeline_renders() {
 fn format_matches_the_text_half_of_run() {
     let pipeline = Pipeline::with_defaults(&Config::default());
     let text = "import sys\nimport os\n\n\n\n\nx  =  1\n";
-    let formatted = pipeline.format(parse(text)).unwrap();
-    let (ran, _) = pipeline.run(parse(text)).unwrap();
+    let formatted = pipeline
+        .format(parse(text))
+        .expect("the format run succeeds");
+    let (ran, _) = pipeline.run(parse(text)).expect("the run succeeds");
     assert_eq!(formatted.text(), ran.text());
 }
 
@@ -99,11 +101,17 @@ fn format_span_segments_compose_to_the_full_fold() {
         "            return 0\n",
         "y  =  2\n",
     );
-    let full = pipeline.format(parse(text)).unwrap();
+    let full = pipeline
+        .format(parse(text))
+        .expect("the whole fold succeeds");
 
     for seam in 0..=pipeline.len() {
-        let head = pipeline.format_span(parse(text), 0..seam).unwrap();
-        let tail = pipeline.format_span(head, seam..pipeline.len()).unwrap();
+        let head = pipeline
+            .format_span(parse(text), 0..seam)
+            .expect("the head segment folds");
+        let tail = pipeline
+            .format_span(head, seam..pipeline.len())
+            .expect("the tail segment folds");
         assert_eq!(
             tail.text(),
             full.text(),

@@ -171,7 +171,7 @@ fn candidate<'src>(
     // `shed-backslash-continuations`, which runs ahead of this rule.
     if expr.is_named_expr()
         || (is_return_annotation(expr, parent) && source.contains_line_break(pair))
-        || source.intersects_comment(pair)
+        || !source.comment_ranges().comments_in_range(pair).is_empty()
         || carries_a_continuation(source.slice(pair))
     {
         return None;

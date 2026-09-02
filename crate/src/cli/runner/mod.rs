@@ -16,7 +16,7 @@ use ruff_python_ast::PySourceType;
 use ruff_source_file::SourceFile;
 
 use super::{
-    args::{CheckArgs, FormatArgs, OutputFormat, RuleFilter},
+    args::{CheckArgs, FormatArgs, OutputFormat, RuleFilter, RunArgs},
     exit_status::ExitStatus,
     output::Presentation,
 };
@@ -40,8 +40,7 @@ use process::{
     apply_rewrite, process_path, process_paths, process_stdin, read_stdin, stream_paths,
 };
 use report::{
-    emit_to_stdout, emitter_summary, finish, render_summary, render_text_block,
-    status_from_outcomes, unstable_status,
+    emit_to_stdout, emitter_summary, finish, render_summary, render_text_block, unstable_status,
 };
 use resolve::{ConfigResolver, Resolved};
 
@@ -240,7 +239,7 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
         validate: args.validate,
     };
     let setup = match build_run(
-        args.common.rules,
+        &args.common.rules,
         args.common.no_cache,
         pass.anchor(),
         verbose,
@@ -250,9 +249,12 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
     };
     let format = args.common.output_format;
     let (outcomes, emits) = if args.common.stdin {
-        let source_type = stdin_source_type(args.common.stdin_filename.as_deref());
+        let filename = args.common.stdin_filename.as_deref();
         let outcome = match read_stdin(stdin) {
-            Ok(text) => process_stdin(text, source_type, &setup.cwd, pass),
+            Ok(text) => {
+                let resolved = stdin_resolved(&setup, filename, &text);
+                process_stdin(text, filename, &resolved, pass)
+            }
             Err(outcome) => outcome,
         };
         (vec![outcome], true)
@@ -308,7 +310,7 @@ pub(crate) fn format_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
 ) -> anyhow::Result<ExitStatus> {
     let pass = format_pass(args.diff, args.common.output_format);
     let setup = match build_run(
-        args.common.rules,
+        &args.common.rules,
         args.common.no_cache,
         pass.anchor(),
         verbose,
@@ -317,13 +319,12 @@ pub(crate) fn format_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
         Err(s) => return Ok(s),
     };
     if args.common.stdin {
-        let source_type = stdin_source_type(args.common.stdin_filename.as_deref());
         return format_stdin(
-            read_stdin(stdin).map(|text| (text, source_type)),
+            read_stdin(stdin),
+            &args.common,
             pass,
-            args.common.output_format,
             present,
-            &setup.cwd,
+            &setup,
             stdout,
             &mut stderr,
         );
@@ -354,12 +355,12 @@ pub(crate) fn format_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
 /// effective config through the resolver. The `anchor` the run reads
 /// keys every prefix the resolver builds.
 fn build_run(
-    rules: RuleFilter,
+    rules: &RuleFilter,
     no_cache: bool,
     anchor: Anchor,
     verbose: bool,
 ) -> Result<RunSetup, ExitStatus> {
-    let resolver = ConfigResolver::new(rules.select, rules.ignore, anchor);
+    let resolver = ConfigResolver::new(rules.select.clone(), rules.ignore.clone(), anchor);
     let config = super::load_config_or_status(resolver.notices())?;
     let cache = open_cache(&config, no_cache);
     let cwd = resolver.seed(&config);
@@ -445,20 +446,22 @@ fn format_paths_rewrite<O: RawStream + AsLockedWrite, E: Write>(
 }
 
 fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
-    input: Result<(String, PySourceType), FileOutcome>,
+    input: Result<String, FileOutcome>,
+    common: &RunArgs,
     pass: Pass,
-    format: OutputFormat,
     present: &Presentation,
-    resolved: &Resolved,
+    setup: &RunSetup,
     writer: AutoStream<O>,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
+    let filename = common.stdin_filename.as_deref();
+    let format = common.output_format;
     let diff = matches!(pass, Pass::Preview);
     let (outcome, original) = match input {
-        Ok((text, source_type)) => (
-            process_stdin(text.clone(), source_type, resolved, pass),
-            text,
-        ),
+        Ok(text) => {
+            let resolved = stdin_resolved(setup, filename, &text);
+            (process_stdin(text.clone(), filename, &resolved, pass), text)
+        }
         Err(outcome) => (outcome, String::new()),
     };
     let outcomes = std::slice::from_ref(&outcome);
@@ -474,7 +477,7 @@ fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
                 let heading = diff_heading(present);
                 write_rewrite_diff(
                     &mut writer.into_inner(),
-                    STDIN_NAME,
+                    &stdin_name(filename),
                     &original,
                     kind,
                     notebook_index.as_deref(),
@@ -495,9 +498,23 @@ fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
             emit_to_stdout(outcomes, format, present, writer, &summary)?;
         }
     }
-    let status = status_from_outcomes(outcomes, pass.write_back());
-    render_summary(stderr, present, outcomes, &summary, pass);
-    Ok(status)
+    Ok(close_run(outcomes, &summary, setup, present, pass, stderr))
+}
+
+/// The resolution governing a stdin run: the config of the file
+/// `filename` names, so a named buffer draws the ancestors and
+/// overrides its on-disk twin would, and the working directory's for an
+/// unnamed one.
+fn stdin_resolved(setup: &RunSetup, filename: Option<&Path>, text: &str) -> Arc<Resolved> {
+    filename
+        .and_then(|path| setup.resolver.resolve(path, text.as_bytes()))
+        .unwrap_or_else(|| Arc::clone(&setup.cwd))
+}
+
+/// The name a stdin buffer reports under, the path `filename` names
+/// or the placeholder for an unnamed one.
+fn stdin_name(filename: Option<&Path>) -> String {
+    filename.map_or_else(|| STDIN_NAME.to_owned(), |path| path.display().to_string())
 }
 
 fn has_format_change(diagnostics: &[Diagnostic]) -> bool {

@@ -20,13 +20,11 @@ use rustc_hash::FxHashMap;
 
 use crate::{primitives::range::merged_spans, rule::RuleId};
 
-mod format_directive;
 mod lint_directive;
 mod parse_common;
 
-use format_directive::{FormatDirective, parse_format};
 use lint_directive::{RuleEntry, parse_ignore};
-use parse_common::after_prose_prefix;
+use parse_common::{after_prose_prefix, parse_entry};
 
 /// Sorted byte-range lists for the `# prose: off` regions and the bare
 /// `# prose: skip` spans, paired with the `# prose: skip[<id>]` per-rule
@@ -66,28 +64,27 @@ impl SuppressionMap {
         for range in comments {
             let comment = &source_text[range];
             let found = directives(comment);
-            if let Some(directive) = found.format {
-                let position = CommentLinePosition::for_range(range, source_text);
-                match directive {
-                    FormatDirective::Kind(SuppressionKind::Off) if position.is_own_line() => {
+            if let Some(kind) = found.region
+                && CommentLinePosition::for_range(range, source_text).is_own_line()
+            {
+                match kind {
+                    SuppressionKind::Off => {
                         open_off.get_or_insert_with(|| source_text.line_start(range.start()));
                     }
-                    FormatDirective::Kind(SuppressionKind::On) if position.is_own_line() => {
+                    SuppressionKind::On => {
                         spans.extend(open_off.take().map(|start| {
                             TextRange::new(start, source_text.line_start(range.start()))
-                        }));
+                        }))
                     }
-                    FormatDirective::Kind(SuppressionKind::Skip) => {
-                        skip_spans.push(skip_span(source_text, tokens, range));
-                    }
-                    FormatDirective::SkipRules(rules) => {
-                        skips.push((
-                            skip_span(source_text, tokens, range),
-                            RuleEntry::Specific(rules),
-                        ));
-                    }
-                    FormatDirective::Kind(_) => {}
+                    SuppressionKind::Skip => {}
                 }
+            }
+            match found.skip {
+                Some(RuleEntry::All) => skip_spans.push(skip_span(source_text, tokens, range)),
+                Some(entry @ RuleEntry::Specific(_)) => {
+                    skips.push((skip_span(source_text, tokens, range), entry));
+                }
+                None => {}
             }
             if let Some(entry) = found.lint {
                 let line = source.line_index(range.start());
@@ -161,8 +158,9 @@ impl SuppressionMap {
 /// The format and lint directives one comment carries.
 #[derive(Default)]
 struct Directives {
-    format: Option<FormatDirective>,
     lint: Option<RuleEntry>,
+    region: Option<SuppressionKind>,
+    skip: Option<RuleEntry>,
 }
 
 /// True when `comment` is a recognized format or lint directive, so it
@@ -170,7 +168,7 @@ struct Directives {
 /// rather than move with a sibling reorder.
 pub(crate) fn is_directive_comment(comment: &str) -> bool {
     let found = directives(comment);
-    found.format.is_some() || found.lint.is_some()
+    found.region.is_some() || found.skip.is_some() || found.lint.is_some()
 }
 
 /// The offset an unmatched `# prose: off` opened at `start` closes at:
@@ -188,37 +186,42 @@ fn covers(spans: &[TextRange], range: TextRange) -> bool {
     spans.binary_search_by(|s| s.ordering(range)).is_ok()
 }
 
-/// Parses `comment` once for both directive families. Each `#` chunk
-/// carrying the `prose:` prefix feeds whichever family its body names,
-/// a later `skip[<id>]` or `ignore[<id>]` chunk unioning its ids into
-/// the first, and the `# fmt:` and `# yapf:` aliases stand in where no
-/// `prose:` format directive is present. A comment carrying no `:`
-/// holds neither and skips the walk.
+/// Parses `comment` once for the three directive slots. Each `#` chunk
+/// carrying the `prose:` prefix feeds the slot its body names, the
+/// first `off` or `on` holding the region slot, a later `skip[<id>]`
+/// or `ignore[<id>]` chunk unioning its ids into the first and a bare
+/// one widening it, and the `# fmt:` and `# yapf:` aliases filling
+/// whichever slot no `prose:` directive took. A comment carrying no
+/// `:` holds nothing and skips the walk.
 fn directives(comment: &str) -> Directives {
     let mut found = Directives::default();
     if memchr(b':', comment.as_bytes()).is_none() {
         return found;
     }
     for body in comment.split('#').skip(1).filter_map(after_prose_prefix) {
-        if let Some(next) = parse_format(body) {
-            match (&mut found.format, next) {
-                (Some(FormatDirective::SkipRules(rules)), FormatDirective::SkipRules(more)) => {
-                    rules.extend(more);
+        match body {
+            "off" => {
+                found.region.get_or_insert(SuppressionKind::Off);
+            }
+            "on" => {
+                found.region.get_or_insert(SuppressionKind::On);
+            }
+            _ => {
+                if let Some(entry) = parse_entry(body, "skip") {
+                    found.skip.get_or_insert_default().merge(entry);
                 }
-                (
-                    slot @ Some(FormatDirective::SkipRules(_)),
-                    next @ FormatDirective::Kind(SuppressionKind::Skip),
-                ) => *slot = Some(next),
-                (Some(_), _) => {}
-                (slot @ None, next) => *slot = Some(next),
             }
         }
         if let Some(entry) = parse_ignore(body) {
             found.lint.get_or_insert_default().merge(entry);
         }
     }
-    if found.format.is_none() {
-        found.format = SuppressionKind::from_comment(comment).map(FormatDirective::Kind);
+    match SuppressionKind::from_comment(comment) {
+        Some(kind @ (SuppressionKind::Off | SuppressionKind::On)) if found.region.is_none() => {
+            found.region = Some(kind);
+        }
+        Some(SuppressionKind::Skip) if found.skip.is_none() => found.skip = Some(RuleEntry::All),
+        _ => {}
     }
     found
 }
@@ -253,7 +256,7 @@ mod tests {
     use rstest::rstest;
     use ruff_source_file::OneIndexed;
 
-    use super::{FormatDirective, SuppressionKind, directives, is_directive_comment};
+    use super::{SuppressionKind, directives, is_directive_comment};
     use crate::{
         rule::RuleId,
         rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
@@ -262,6 +265,12 @@ mod tests {
 
     fn line(zero_indexed: usize) -> OneIndexed {
         OneIndexed::from_zero_indexed(zero_indexed)
+    }
+
+    #[test]
+    fn a_listed_skip_beside_an_off_still_opens_the_region() {
+        let source = parse("# prose: skip[align-equals]  # prose: off\naa = 1\nb = 2\n");
+        assert!(source.suppression_map().file_is_suppressed());
     }
 
     #[test]
@@ -337,10 +346,7 @@ mod tests {
     #[test]
     fn first_format_directive_on_a_comment_wins() {
         let found = directives("# prose: off # prose: on");
-        assert_matches!(
-            found.format,
-            Some(FormatDirective::Kind(SuppressionKind::Off))
-        );
+        assert_matches!(found.region, Some(SuppressionKind::Off));
     }
 
     #[test]
@@ -439,15 +445,16 @@ mod tests {
     #[test]
     fn own_line_skip_at_end_of_file_stays_on_its_own_line() {
         let source = parse("x = 1\n# fmt: skip");
-        assert!(!source.suppression_map().intersects(range(0, 5)));
+        let map = source.suppression_map();
+        assert!(!map.suppresses(at(source.text(), "x = 1"), AlignEquals::SLUG));
     }
 
     #[test]
     fn own_line_skip_stays_on_its_own_line() {
         let source = parse("x = 1\n# fmt: skip\ny = 2\n");
         let map = source.suppression_map();
-        assert!(!map.intersects(at(source.text(), "x = 1")));
-        assert!(!map.intersects(at(source.text(), "y = 2")));
+        assert!(!map.suppresses(at(source.text(), "x = 1"), AlignEquals::SLUG));
+        assert!(!map.suppresses(at(source.text(), "y = 2"), AlignEquals::SLUG));
     }
 
     #[rstest]

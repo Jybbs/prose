@@ -42,9 +42,12 @@ fn emit_one(
         !diag.message.contains(['%', '\r', '\n']),
         "rule message must not carry workflow-command escape characters",
     );
-    let (start, end, _) = located(file, index, diag.range);
+    let (start, end, cell) = located(file, index, diag.range);
     let name = file.name();
-    let message = diag.message.as_str();
+    let message = match cell {
+        Some(cell) => format!("cell {cell}: {}", diag.message),
+        None => diag.message.clone(),
+    };
     write!(
         writer,
         "::warning file={name},line={l},col={c}",

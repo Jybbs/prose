@@ -75,7 +75,9 @@ impl Shedder<'_> {
     /// narrowed by the parentheses this pass sheds along that stretch.
     fn tail_width(&self, pair: TextRange, candidates: &[Candidate]) -> usize {
         let tail = self.source.row_tail(pair.end());
-        display_width(self.source.slice(tail)).saturating_sub(shed_columns(tail, candidates))
+        self.source
+            .tail_width(tail)
+            .saturating_sub(shed_columns(tail, candidates))
     }
 
     /// True when joining `candidate` leaves its line inside the budget

@@ -7,10 +7,8 @@ mod rule_args;
 mod server_args;
 mod validation;
 
-#[cfg(test)]
-pub(crate) use rule_args::RunArgs;
 pub(crate) use rule_args::{
-    CheckArgs, FormatArgs, OutputFormat, RuleFilter, RulesArgs, RulesFormat,
+    CheckArgs, FormatArgs, OutputFormat, RuleFilter, RulesArgs, RulesFormat, RunArgs,
 };
 pub(crate) use server_args::{ServerArgs, Transport};
 pub(crate) use validation::{
@@ -59,6 +57,22 @@ pub(crate) struct Cli {
     /// Print extra diagnostic information to stderr.
     #[arg(long, global = true)]
     pub(crate) verbose: bool,
+}
+
+impl Cli {
+    /// The run flags behind a `check` or `format` invocation, `None`
+    /// for every subcommand that takes none.
+    pub(crate) fn run_args(&self) -> Option<&RunArgs> {
+        match &self.command {
+            Command::Check(args) => Some(&args.common),
+            Command::Format(args) => Some(&args.common),
+            Command::Cache { .. }
+            | Command::Completions { .. }
+            | Command::Rules(_)
+            | Command::Schema
+            | Command::Server(_) => None,
+        }
+    }
 }
 
 #[derive(Debug, Subcommand)]

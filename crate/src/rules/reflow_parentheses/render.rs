@@ -55,9 +55,10 @@ impl Shedder<'_> {
     /// statement.
     fn statement_indent(&self, pair: TextRange) -> usize {
         let head = self.source.logical_line_start(pair.start());
-        let opens_at = tokens_within(self.source, head)
-            .find(|token| !token.kind().is_trivia())
-            .map_or(pair.start(), Ranged::start);
+        let opens_at = self
+            .source
+            .first_token_offset_in_range(head, |token| !token.kind().is_trivia())
+            .unwrap_or(pair.start());
         self.source.line_indent_width(opens_at)
     }
 

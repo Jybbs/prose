@@ -28,8 +28,8 @@ pub struct FormatResult {
 /// # Errors
 ///
 /// Throws a `JsError` when `config_toml` is not valid config TOML,
-/// when `source` does not parse as Python, or when a rule's output
-/// fails to re-parse.
+/// when `source` does not parse as Python, or when a rule's output is
+/// rejected by the reparse, the compile gate, or the batch splice.
 #[wasm_bindgen]
 pub fn format(config_toml: &str, source: &str) -> Result<FormatResult, JsError> {
     // `JsError` construction calls a wasm import that panics on a

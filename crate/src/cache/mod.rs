@@ -27,6 +27,7 @@ mod tests {
         time::{Duration, SystemTime},
     };
 
+    use ruff_python_ast::PySourceType;
     use tempfile::TempDir;
 
     use super::key::CACHE_FORMAT_VERSION;
@@ -50,6 +51,15 @@ mod tests {
             .set_modified(stale)
             .expect("backdates the directory");
     }
+    #[test]
+    fn key_for_separates_a_notebook_from_a_module_of_the_same_bytes() {
+        let prefix = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten);
+        assert_ne!(
+            prefix.key_for(b"x = 1\n", PySourceType::Python),
+            prefix.key_for(b"x = 1\n", PySourceType::Ipynb)
+        );
+    }
+
     fn cache_in(tmp: &TempDir, max_mib: u32) -> Cache {
         Cache {
             max_size_bytes: u64::from(max_mib) * 1024 * 1024,
@@ -112,7 +122,8 @@ mod tests {
         config_toml: &str,
         selection: impl IntoIterator<Item = RuleId>,
     ) -> CacheKey {
-        CacheKeyPrefix::new(config_toml, selection, Anchor::AsWritten).key_for(source_bytes)
+        CacheKeyPrefix::new(config_toml, selection, Anchor::AsWritten)
+            .key_for(source_bytes, PySourceType::Python)
     }
 
     fn rules() -> [RuleId; 2] {
@@ -128,7 +139,11 @@ mod tests {
             env!("CARGO_PKG_VERSION"),
             "1",
         )
-        .key_for(b"x = 1\n");
+        .key_for(
+            b"x = 1
+",
+            PySourceType::Python,
+        );
         let key_b = CacheKeyPrefix::with_versions(
             CONFIG_A,
             rules(),
@@ -136,7 +151,11 @@ mod tests {
             env!("CARGO_PKG_VERSION"),
             "2",
         )
-        .key_for(b"x = 1\n");
+        .key_for(
+            b"x = 1
+",
+            PySourceType::Python,
+        );
         assert_ne!(key_a, key_b);
     }
 
@@ -158,7 +177,11 @@ mod tests {
             "0.2.3",
             CACHE_FORMAT_VERSION,
         )
-        .key_for(b"x = 1\n");
+        .key_for(
+            b"x = 1
+",
+            PySourceType::Python,
+        );
         let key_b = CacheKeyPrefix::with_versions(
             CONFIG_A,
             rules(),
@@ -166,7 +189,11 @@ mod tests {
             "0.3.0",
             CACHE_FORMAT_VERSION,
         )
-        .key_for(b"x = 1\n");
+        .key_for(
+            b"x = 1
+",
+            PySourceType::Python,
+        );
         assert_ne!(key_a, key_b);
     }
 
@@ -191,12 +218,28 @@ mod tests {
         let as_written = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten);
         let rewritten = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::Rewritten);
         assert_ne!(
-            as_written.key_for(b"x = 1\n"),
-            rewritten.key_for(b"x = 1\n")
+            as_written.key_for(
+                b"x = 1
+",
+                PySourceType::Python
+            ),
+            rewritten.key_for(
+                b"x = 1
+",
+                PySourceType::Python
+            )
         );
         assert_eq!(
-            as_written.key_for(b"x = 1\n"),
-            CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten).key_for(b"x = 1\n"),
+            as_written.key_for(
+                b"x = 1
+",
+                PySourceType::Python
+            ),
+            CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten).key_for(
+                b"x = 1
+",
+                PySourceType::Python
+            ),
         );
     }
 

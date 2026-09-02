@@ -210,6 +210,14 @@ pub(crate) fn trailing_width(source: &Source, comment: TextRange) -> usize {
     TRAILING_GAP.len() + display_width(source.slice(comment).trim_start())
 }
 
+/// The comment block between the first two statements of `s`, the gap
+/// every block test reads.
+#[cfg(test)]
+fn gap_block(s: &Source) -> Option<TextRange> {
+    let body = &s.ast().body;
+    leading_comment_block(s, body[0].end(), body[1].start())
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -217,11 +225,6 @@ mod tests {
 
     use super::*;
     use crate::testing::{notebook, parse};
-
-    fn gap_block(s: &Source) -> Option<TextRange> {
-        let body = &s.ast().body;
-        leading_comment_block(s, body[0].end(), body[1].start())
-    }
 
     /// Both comment rules on, carried by slug.
     fn settling() -> Settling {

@@ -55,7 +55,12 @@ impl<'a> Layout<'a> {
         let pair = self
             .source
             .paren_aware_range(run.as_expression_ref(), parent);
-        if self.source.intersects_comment(pair) {
+        if !self
+            .source
+            .comment_ranges()
+            .comments_in_range(pair)
+            .is_empty()
+        {
             return;
         }
         let start = span.start();

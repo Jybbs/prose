@@ -9,6 +9,7 @@ use fluent_uri::pct_enc::{
     EString,
     encoder::{Data, Query},
 };
+use std::slice;
 
 use super::UnstableRewrite;
 use crate::rule::render_slugs;
@@ -30,7 +31,14 @@ pub(crate) fn report_url(rewrite: &UnstableRewrite, original: &str) -> String {
 /// field after it still lands.
 fn build(rewrite: &UnstableRewrite, original: &str, budget: usize) -> String {
     let slugs = rewrite.slugs();
-    let title = format!("Unstable output from {}", render_slugs(&rewrite.rules));
+    let title = match rewrite.rules.as_slice() {
+        [first, rest @ ..] if rest.len() > 1 => format!(
+            "Unstable output from {} and {} more rules",
+            render_slugs(slice::from_ref(first)),
+            rest.len(),
+        ),
+        rules => format!("Unstable output from {}", render_slugs(rules)),
+    };
     let fields = [
         ("title", title.as_str()),
         ("version", env!("CARGO_PKG_VERSION")),

@@ -112,7 +112,12 @@ impl<'a> Breaker<'a> {
         column: usize,
         indent: usize,
     ) -> Option<String> {
-        if self.source.intersects_comment(range) {
+        if !self
+            .source
+            .comment_ranges()
+            .comments_in_range(range)
+            .is_empty()
+        {
             return None;
         }
         let joins = self.rejoin.joins(self.source, expr);

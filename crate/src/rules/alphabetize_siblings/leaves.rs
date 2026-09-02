@@ -58,8 +58,12 @@ impl<'a> LeafCollector<'a> {
         }
     }
 
+    /// Sorts only the bare names, a subscript or attribute target
+    /// pinning where unbinding it out of order raises.
     fn emit_delete(&mut self, d: &'a StmtDelete) {
-        self.try_emit_inline_reorder(&d.targets, |t| Some(self.source.slice(t)));
+        self.try_emit_inline_reorder(&d.targets, |t| {
+            t.as_name_expr().map(|name| name.id.as_str())
+        });
     }
 
     fn emit_dict(&mut self, d: &'a ExprDict) {

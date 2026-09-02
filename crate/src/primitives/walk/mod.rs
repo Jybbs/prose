@@ -72,6 +72,10 @@ impl<'src, F: FnMut(&Expr) -> Option<T>, T> Visitor<'src> for ExprCollector<F, T
         walk_expr(self, expr);
     }
 
+    fn visit_stmt(&mut self, stmt: &'src Stmt) {
+        walk_stmt(self, stmt);
+    }
+
     fn visit_interpolated_string_element(&mut self, element: &'src InterpolatedStringElement) {
         if matches!(self.interpolations, Descent::Into) {
             visitor::walk_interpolated_string_element(self, element);
@@ -196,6 +200,14 @@ mod tests {
         assert_eq!(
             seen, 1,
             "the walk stops rather than visiting the second pass"
+        );
+    }
+
+    #[test]
+    fn filter_map_over_exprs_visits_an_elif_test_once() {
+        assert_eq!(
+            dict_sizes("if a:\n    pass\nelif {'b': 1}:\n    pass\n"),
+            vec![1]
         );
     }
 
