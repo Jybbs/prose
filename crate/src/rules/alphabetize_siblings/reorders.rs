@@ -167,13 +167,6 @@ struct Sorted {
     order: Vec<usize>,
 }
 
-/// True when a leaf group over `items` holds its order as laid out: one
-/// packing members onto shared rows or opening mid-row, spanning lines,
-/// with a comment inside the swap span.
-fn held_leaves<T: Ranged>(source: &Source, items: &[T]) -> bool {
-    swap_span_holds(source, items, swaps_in_place(source, items))
-}
-
 /// `ranged`'s source text read the way a later join writes it onto one
 /// row, per [`joined_text`], so a fractured element sorts where its
 /// joined form will.
@@ -201,6 +194,13 @@ pub(super) fn joined_text(slice: &str) -> Cow<'_, str> {
         out.push_str(word);
     }
     Cow::Owned(out)
+}
+
+/// True when a leaf group over `items` holds its order as laid out: one
+/// packing members onto shared rows or opening mid-row, spanning lines,
+/// with a comment inside the swap span.
+fn held_leaves<T: Ranged>(source: &Source, items: &[T]) -> bool {
+    swap_span_holds(source, items, swaps_in_place(source, items))
 }
 
 /// The sort of `items` under `key` over `runs`, `None` where fewer than

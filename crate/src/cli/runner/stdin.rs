@@ -65,6 +65,29 @@ pub(super) fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
     Ok(close_run(outcomes, &summary, setup, present, pass, stderr))
 }
 
+pub(super) fn process_stdin(
+    text: String,
+    filename: Option<&Path>,
+    resolved: &Resolved,
+    pass: Pass,
+) -> FileOutcome {
+    process_source(
+        text,
+        stdin_name(filename),
+        stdin_source_type(filename),
+        resolved,
+        pass,
+        Marker::Eager,
+    )
+}
+
+/// Reads stdin to a string, mapping a read failure to a config-error
+/// outcome.
+pub(super) fn read_stdin<R: Read>(stdin: R) -> Result<String, FileOutcome> {
+    io::read_to_string(stdin)
+        .map_err(|e| failed(ExitStatus::ConfigError, format_args!("reading stdin: {e}")))
+}
+
 /// The resolution governing a stdin run: the config of the file
 /// `filename` names, so a named buffer draws the ancestors and
 /// overrides its on-disk twin would, and the working directory's for an
@@ -91,27 +114,4 @@ fn stdin_source_type(filename: Option<&Path>) -> PySourceType {
     filename
         .and_then(PySourceType::try_from_path)
         .unwrap_or_default()
-}
-
-pub(super) fn process_stdin(
-    text: String,
-    filename: Option<&Path>,
-    resolved: &Resolved,
-    pass: Pass,
-) -> FileOutcome {
-    process_source(
-        text,
-        stdin_name(filename),
-        stdin_source_type(filename),
-        resolved,
-        pass,
-        Marker::Eager,
-    )
-}
-
-/// Reads stdin to a string, mapping a read failure to a config-error
-/// outcome.
-pub(super) fn read_stdin<R: Read>(stdin: R) -> Result<String, FileOutcome> {
-    io::read_to_string(stdin)
-        .map_err(|e| failed(ExitStatus::ConfigError, format_args!("reading stdin: {e}")))
 }

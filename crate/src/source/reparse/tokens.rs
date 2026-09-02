@@ -24,6 +24,38 @@ pub(super) struct Reparsed {
     pub(super) stmts: Vec<Stmt>,
 }
 
+/// The `Dedent` run the merge holds back until the code token it
+/// closes blocks ahead of, and the levels the window behind it moved
+/// its end, which that run closes in addition.
+#[derive(Default)]
+struct Dedents {
+    held: Vec<Token>,
+    owed: isize,
+}
+
+impl Dedents {
+    /// Appends the run at `at`, its count moved by the levels owed,
+    /// and clears both. A window's end never drops below its start and
+    /// the next code token never sits deeper than that start, so the
+    /// count never goes negative.
+    fn seat(&mut self, merged: &mut Vec<Token>, at: TextSize, held_text: &str) {
+        let count = self.held.len().cast_signed() + self.owed;
+        debug_assert!(
+            count >= 0,
+            "a window closes no fewer levels than its start opened"
+        );
+        let template = self.held.first().copied();
+        merged.extend((0..count.max(0)).map(|_| {
+            template.map_or_else(
+                || Token::new(TokenKind::Dedent, TextRange::empty(at), TokenFlags::empty()),
+                |dedent| retargeted(dedent, held_text, TextRange::empty(at)),
+            )
+        }));
+        self.held.clear();
+        self.owed = 0;
+    }
+}
+
 /// `held` with every token inside a window dropped, every token outside
 /// one slid past the edits, and each window's own tokens merged in.
 ///
@@ -87,38 +119,6 @@ pub(super) fn spliced(
         "the merged token stream ascends, as its binary searches read it",
     );
     Tokens::new(merged)
-}
-
-/// The `Dedent` run the merge holds back until the code token it
-/// closes blocks ahead of, and the levels the window behind it moved
-/// its end, which that run closes in addition.
-#[derive(Default)]
-struct Dedents {
-    held: Vec<Token>,
-    owed: isize,
-}
-
-impl Dedents {
-    /// Appends the run at `at`, its count moved by the levels owed,
-    /// and clears both. A window's end never drops below its start and
-    /// the next code token never sits deeper than that start, so the
-    /// count never goes negative.
-    fn seat(&mut self, merged: &mut Vec<Token>, at: TextSize, held_text: &str) {
-        let count = self.held.len().cast_signed() + self.owed;
-        debug_assert!(
-            count >= 0,
-            "a window closes no fewer levels than its start opened"
-        );
-        let template = self.held.first().copied();
-        merged.extend((0..count.max(0)).map(|_| {
-            template.map_or_else(
-                || Token::new(TokenKind::Dedent, TextRange::empty(at), TokenFlags::empty()),
-                |dedent| retargeted(dedent, held_text, TextRange::empty(at)),
-            )
-        }));
-        self.held.clear();
-        self.owed = 0;
-    }
 }
 
 /// Appends `window`'s fresh tokens, seating the held `Dedent` run ahead

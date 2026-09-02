@@ -24,16 +24,16 @@ pub(crate) fn classify_param(p: &ParameterWithDefault) -> Option<(u8, &str)> {
     Some((u8::from(p.default.is_some()), name))
 }
 
-/// True for the two names a method's leading positional slot binds.
-pub(crate) fn is_receiver_name(name: &str) -> bool {
-    matches!(name, "cls" | "self")
-}
-
 /// The parameter holding a signature's leading positional slot, the
 /// receiver a method binds. `None` where the leading slot is
 /// keyword-only or variadic.
 pub(crate) fn first_positional(parameters: &Parameters) -> Option<&ParameterWithDefault> {
     parameters.posonlyargs.first().or(parameters.args.first())
+}
+
+/// True for the two names a method's leading positional slot binds.
+pub(crate) fn is_receiver_name(name: &str) -> bool {
+    matches!(name, "cls" | "self")
 }
 
 /// The annotation and default sites of `param`, each beside the node

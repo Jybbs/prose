@@ -96,20 +96,20 @@ impl<'map> Slide<'map> {
         self.deltas.slide(range)
     }
 
-    /// Slides each of `ranges`, the fields a node list carries that the
-    /// walk does not reach on its own.
-    fn slide_ranges<'node>(&self, ranges: impl IntoIterator<Item = &'node mut TextRange>) {
-        for range in ranges {
-            *range = self.slide(*range);
-        }
-    }
-
     fn slide_name(&self, name: &mut Identifier) {
         self.slide_ranges([&mut name.range]);
     }
 
     fn slide_names<'node>(&self, names: impl IntoIterator<Item = &'node mut Identifier>) {
         self.slide_ranges(names.into_iter().map(|name| &mut name.range));
+    }
+
+    /// Slides each of `ranges`, the fields a node list carries that the
+    /// walk does not reach on its own.
+    fn slide_ranges<'node>(&self, ranges: impl IntoIterator<Item = &'node mut TextRange>) {
+        for range in ranges {
+            *range = self.slide(*range);
+        }
     }
 
     /// Slides `module`'s own range and every range beneath it, grafting

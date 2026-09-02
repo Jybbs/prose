@@ -20,32 +20,6 @@ use crate::primitives::{
 use super::Source;
 
 impl Source {
-    /// The count of f-strings and t-strings open at `offset`, read off
-    /// the ascending spans of every opener and closer pair, built on the
-    /// first read.
-    pub(crate) fn interpolation_depth_at(&self, offset: TextSize) -> usize {
-        let spans = self.interpolation_spans.get_or_init(|| {
-            let mut open = Vec::new();
-            let mut spans = Vec::new();
-            for token in self.tokens().iter() {
-                if is_interpolated_string_start(token.kind()) {
-                    open.push(token.start());
-                } else if token.kind().is_interpolated_string_end()
-                    && let Some(start) = open.pop()
-                {
-                    spans.push(TextRange::new(start, token.end()));
-                }
-            }
-            spans.sort_unstable_by_key(Ranged::start);
-            spans
-        });
-        spans
-            .iter()
-            .take_while(|span| span.start() <= offset)
-            .filter(|span| span.contains(offset))
-            .count()
-    }
-
     /// The start offsets of the non-trivia tokens an `(` directly
     /// precedes, built on the first read.
     fn paren_followers(&self) -> &FxHashSet<TextSize> {
@@ -99,6 +73,32 @@ impl Source {
             .iter()
             .find(|&t| predicate(t))
             .map(Token::start)
+    }
+
+    /// The count of f-strings and t-strings open at `offset`, read off
+    /// the ascending spans of every opener and closer pair, built on the
+    /// first read.
+    pub(crate) fn interpolation_depth_at(&self, offset: TextSize) -> usize {
+        let spans = self.interpolation_spans.get_or_init(|| {
+            let mut open = Vec::new();
+            let mut spans = Vec::new();
+            for token in self.tokens().iter() {
+                if is_interpolated_string_start(token.kind()) {
+                    open.push(token.start());
+                } else if token.kind().is_interpolated_string_end()
+                    && let Some(start) = open.pop()
+                {
+                    spans.push(TextRange::new(start, token.end()));
+                }
+            }
+            spans.sort_unstable_by_key(Ranged::start);
+            spans
+        });
+        spans
+            .iter()
+            .take_while(|span| span.start() <= offset)
+            .filter(|span| span.contains(offset))
+            .count()
     }
 
     /// Returns `expr`'s range widened to the explicit parentheses

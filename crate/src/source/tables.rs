@@ -44,12 +44,54 @@ impl Source {
         })
     }
 
+    /// Panics where the column table a splice carried into this source
+    /// completes to one differing from a fresh build, naming `site` in
+    /// the message, and returns whether it held one to compare.
+    #[cfg(test)]
+    pub(crate) fn assert_carried_columns_are_fresh(&self, site: &str) -> bool {
+        self.columns_carry.get().is_some_and(|carry| {
+            let completed = carry.0.completed(self, &carry.1);
+            let fresh = carry.0.columns(self);
+            assert_fresh(&completed, &fresh, site, "column table carried", "carried");
+            true
+        })
+    }
+
+    /// Panics where the padding walk a splice rebuilt into this source
+    /// differs from the one a fresh read builds, naming `site` in the
+    /// message, and returns whether it held one to compare.
+    #[cfg(test)]
+    pub(crate) fn assert_rebuilt_padding_is_fresh(&self, site: &str) -> bool {
+        self.stranded_padding.get().is_some_and(|rebuilt| {
+            let fresh = rebuilt.0.edits(self);
+            assert_fresh(&rebuilt.1, &fresh, site, "padding walk rebuilt", "rebuilt");
+            true
+        })
+    }
+
     /// Returns the binding-analysis table, built on the first read
     /// where the reparse before it carried none.
     pub fn binding_analysis(&self) -> &BindingAnalysis {
         self.binding_analysis.get_or_init(|| {
             trace::built(BINDINGS);
             Box::new(BindingAnalysis::new(self.ast()))
+        })
+    }
+
+    /// What a splice over this source carries of the column table
+    /// `previous` holds into the source it produces, per
+    /// [`Reservations::carry`], `None` where the slot is empty or the
+    /// reservation declines the carry.
+    pub(crate) fn carry_columns(
+        &self,
+        previous: OnceLock<Box<(Reservations, Columns)>>,
+        weave: &Weave,
+    ) -> Option<Box<(Reservations, Carry)>> {
+        previous.into_inner().and_then(|table| {
+            let (reservations, columns) = *table;
+            reservations
+                .carry(self, &columns, weave)
+                .map(|carry| Box::new((reservations, carry)))
         })
     }
 
@@ -71,61 +113,6 @@ impl Source {
         })
     }
 
-    /// Fills the binding table `bindings` holds where `preserves` says
-    /// the splice's edits leave every binding standing, moved through
-    /// `map` to the positions this text carries, so the next read finds
-    /// it in place, the outcome reported under `rule`. A table an edit
-    /// in `map` leaves nowhere to move, one of whose offsets that edit
-    /// replaced, is left for that read to rebuild, as are the layout
-    /// forecasts behind every splice.
-    pub(crate) fn inherit(
-        &mut self,
-        bindings: OnceLock<Box<BindingAnalysis>>,
-        map: &SourceMap,
-        rule: RuleId,
-        preserves: bool,
-    ) {
-        self.binding_analysis = inherited(rule, BINDINGS, preserves, bindings, |analysis| {
-            analysis.forwarded(map)
-        });
-    }
-
-    /// Takes the binding table out of this source's slot, leaving an
-    /// empty slot behind, so a caller holds the table across a reparse
-    /// that consumes the source it came from.
-    pub(crate) fn take_binding_analysis(&mut self) -> OnceLock<Box<BindingAnalysis>> {
-        std::mem::take(&mut self.binding_analysis)
-    }
-
-    /// Panics where the padding walk a splice rebuilt into this source
-    /// differs from the one a fresh read builds, naming `site` in the
-    /// message, and returns whether it held one to compare.
-    #[cfg(test)]
-    pub(crate) fn assert_rebuilt_padding_is_fresh(&self, site: &str) -> bool {
-        self.stranded_padding.get().is_some_and(|rebuilt| {
-            let fresh = rebuilt.0.edits(self);
-            assert_fresh(&rebuilt.1, &fresh, site, "padding walk rebuilt", "rebuilt");
-            true
-        })
-    }
-
-    /// What a splice over this source carries of the column table
-    /// `previous` holds into the source it produces, per
-    /// [`Reservations::carry`], `None` where the slot is empty or the
-    /// reservation declines the carry.
-    pub(crate) fn carry_columns(
-        &self,
-        previous: OnceLock<Box<(Reservations, Columns)>>,
-        weave: &Weave,
-    ) -> Option<Box<(Reservations, Carry)>> {
-        previous.into_inner().and_then(|table| {
-            let (reservations, columns) = *table;
-            reservations
-                .carry(self, &columns, weave)
-                .map(|carry| Box::new((reservations, carry)))
-        })
-    }
-
     /// Holds `carry` for the first read of the column table, the
     /// outcome reported under `rule` against whether the source before
     /// the splice held a table at all.
@@ -143,17 +130,23 @@ impl Source {
         );
     }
 
-    /// Panics where the column table a splice carried into this source
-    /// completes to one differing from a fresh build, naming `site` in
-    /// the message, and returns whether it held one to compare.
-    #[cfg(test)]
-    pub(crate) fn assert_carried_columns_are_fresh(&self, site: &str) -> bool {
-        self.columns_carry.get().is_some_and(|carry| {
-            let completed = carry.0.completed(self, &carry.1);
-            let fresh = carry.0.columns(self);
-            assert_fresh(&completed, &fresh, site, "column table carried", "carried");
-            true
-        })
+    /// Fills the binding table `bindings` holds where `preserves` says
+    /// the splice's edits leave every binding standing, moved through
+    /// `map` to the positions this text carries, so the next read finds
+    /// it in place, the outcome reported under `rule`. A table an edit
+    /// in `map` leaves nowhere to move, one of whose offsets that edit
+    /// replaced, is left for that read to rebuild, as are the layout
+    /// forecasts behind every splice.
+    pub(crate) fn inherit(
+        &mut self,
+        bindings: OnceLock<Box<BindingAnalysis>>,
+        map: &SourceMap,
+        rule: RuleId,
+        preserves: bool,
+    ) {
+        self.binding_analysis = inherited(rule, BINDINGS, preserves, bindings, |analysis| {
+            analysis.forwarded(map)
+        });
     }
 
     /// Fills the padding walk over this text from the one `previous`
@@ -201,16 +194,31 @@ impl Source {
             stranding.edits(self)
         })
     }
+
+    /// Takes the binding table out of this source's slot, leaving an
+    /// empty slot behind, so a caller holds the table across a reparse
+    /// that consumes the source it came from.
+    pub(crate) fn take_binding_analysis(&mut self) -> OnceLock<Box<BindingAnalysis>> {
+        std::mem::take(&mut self.binding_analysis)
+    }
 }
 
-/// `edit` over `range` instead of its own, keeping its shape as an
-/// insertion, a deletion, or a replacement.
-fn relocated(edit: &Edit, range: TextRange) -> Edit {
-    match edit.content() {
-        Some(content) if range.is_empty() => Edit::insertion(content.to_owned(), range.start()),
-        Some(content) => Edit::range_replacement(content.to_owned(), range),
-        None => Edit::range_deletion(range),
-    }
+/// Panics where `held`, the `subject` a reparse carried into a source,
+/// differs from `fresh`, naming `site` in the message and `label` how
+/// `held` arrived.
+#[cfg(test)]
+fn assert_fresh<T: std::fmt::Debug + PartialEq>(
+    held: &T,
+    fresh: &T,
+    site: &str,
+    subject: &str,
+    label: &str,
+) {
+    assert!(
+        held == fresh,
+        "the {subject} into {site} differs from a fresh build:\n{}",
+        table_diff(fresh, held, label),
+    );
 }
 
 /// `slot`'s table moved through `forward` where `rule` leaves it
@@ -256,22 +264,14 @@ fn keyed<'a, K: Copy + PartialEq, B: ?Sized + ToOwned>(
     }
 }
 
-/// Panics where `held`, the `subject` a reparse carried into a source,
-/// differs from `fresh`, naming `site` in the message and `label` how
-/// `held` arrived.
-#[cfg(test)]
-fn assert_fresh<T: std::fmt::Debug + PartialEq>(
-    held: &T,
-    fresh: &T,
-    site: &str,
-    subject: &str,
-    label: &str,
-) {
-    assert!(
-        held == fresh,
-        "the {subject} into {site} differs from a fresh build:\n{}",
-        table_diff(fresh, held, label),
-    );
+/// `edit` over `range` instead of its own, keeping its shape as an
+/// insertion, a deletion, or a replacement.
+fn relocated(edit: &Edit, range: TextRange) -> Edit {
+    match edit.content() {
+        Some(content) if range.is_empty() => Edit::insertion(content.to_owned(), range.start()),
+        Some(content) => Edit::range_replacement(content.to_owned(), range),
+        None => Edit::range_deletion(range),
+    }
 }
 
 /// A unified diff of `fresh` against `held`, the message an assertion

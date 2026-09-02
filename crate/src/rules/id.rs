@@ -74,13 +74,6 @@ impl Serialize for RuleId {
     }
 }
 
-/// Renders `rules` as a comma-separated list of backticked slugs.
-pub fn render_slugs(rules: &[RuleId]) -> impl Display + '_ {
-    rules
-        .iter()
-        .format_with(", ", |rule, f| f(&format_args!("`{rule}`")))
-}
-
 /// Returns `true` when `bytes` is a valid kebab-case slug. Non-empty,
 /// starts and ends with a lowercase ASCII letter or digit, contains
 /// only lowercase ASCII letters, digits, and dashes, and has no `--`
@@ -103,6 +96,13 @@ pub(super) const fn is_valid_slug(bytes: &[u8]) -> bool {
         i += 1;
     }
     !prev_was_dash
+}
+
+/// Renders `rules` as a comma-separated list of backticked slugs.
+pub fn render_slugs(rules: &[RuleId]) -> impl Display + '_ {
+    rules
+        .iter()
+        .format_with(", ", |rule, f| f(&format_args!("`{rule}`")))
 }
 
 #[cfg(test)]

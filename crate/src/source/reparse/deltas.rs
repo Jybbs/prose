@@ -19,12 +19,6 @@ impl<'map> Deltas<'map> {
         }
     }
 
-    /// `offset` moved by the delta of the last marker at or before it,
-    /// left where it is when no marker precedes it.
-    pub(super) fn shift(&self, offset: TextSize) -> TextSize {
-        shifted_past(offset, self.markers)
-    }
-
     /// One span per marker pair, both endpoints read through `side`,
     /// which picks the buffer the spans are measured against.
     fn spans<F: Fn(&SourceMarker) -> TextSize>(
@@ -51,9 +45,10 @@ impl<'map> Deltas<'map> {
         self.spans(SourceMarker::source)
     }
 
-    /// `range` moved to where the woven text holds it.
-    pub(super) fn slide(&self, range: TextRange) -> TextRange {
-        TextRange::new(self.shift(range.start()), self.shift(range.end()))
+    /// `offset` moved by the delta of the last marker at or before it,
+    /// left where it is when no marker precedes it.
+    pub(super) fn shift(&self, offset: TextSize) -> TextSize {
+        shifted_past(offset, self.markers)
     }
 
     /// `offset` moved by the delta of the last marker strictly before
@@ -68,6 +63,11 @@ impl<'map> Deltas<'map> {
             .map_or(offset, |marker| marker.dest() + (offset - marker.source()))
     }
 
+    /// `range` moved to where the woven text holds it.
+    pub(super) fn slide(&self, range: TextRange) -> TextRange {
+        TextRange::new(self.shift(range.start()), self.shift(range.end()))
+    }
+
     /// A statement's own span moved to where the woven text holds it,
     /// an insertion at its start landing ahead of it, since that text
     /// stands beside the statement rather than inside it. `None` where
@@ -76,15 +76,6 @@ impl<'map> Deltas<'map> {
     pub(super) fn slide_stmt(&self, range: TextRange) -> Option<TextRange> {
         let (start, end) = (self.shift(range.start()), self.shift(range.end()));
         (start <= end).then(|| TextRange::new(start, end))
-    }
-
-    /// A span over `held` moved to where the woven text holds it, an
-    /// insertion at its start landing inside it rather than ahead of
-    /// it, so the text the edits wrote there is the span's to reparse,
-    /// and a span the edits swallowed whole closing empty at its end.
-    pub(super) fn slide_window(&self, held: TextRange) -> TextRange {
-        let end = self.shift(held.end());
-        TextRange::new(self.shift_before(held.start()).min(end), end)
     }
 
     /// A token over `range` the reparse leaves standing, moved to where
@@ -97,6 +88,15 @@ impl<'map> Deltas<'map> {
         } else {
             TextRange::new(self.shift(range.start()), self.shift_before(range.end()))
         }
+    }
+
+    /// A span over `held` moved to where the woven text holds it, an
+    /// insertion at its start landing inside it rather than ahead of
+    /// it, so the text the edits wrote there is the span's to reparse,
+    /// and a span the edits swallowed whole closing empty at its end.
+    pub(super) fn slide_window(&self, held: TextRange) -> TextRange {
+        let end = self.shift(held.end());
+        TextRange::new(self.shift_before(held.start()).min(end), end)
     }
 
     /// The spans the edits wrote, ascending, in the woven text.

@@ -44,21 +44,6 @@ impl<'a> ReserveVisitor<'a> {
         self.values.insert(start, (value, parent));
     }
 
-    fn record(
-        &mut self,
-        groups: Vec<Vec<aligner::Member>>,
-        candidate: bool,
-        scope: TextRange,
-        body: bool,
-    ) {
-        self.runs.extend(groups.into_iter().map(|members| Run {
-            body,
-            candidate,
-            members,
-            scope,
-        }));
-    }
-
     /// Notes the value of each assignment in `body` against its
     /// statement.
     fn note_values(&mut self, body: &'a [Stmt]) {
@@ -74,6 +59,21 @@ impl<'a> ReserveVisitor<'a> {
                 _ => {}
             }
         }
+    }
+
+    fn record(
+        &mut self,
+        groups: Vec<Vec<aligner::Member>>,
+        candidate: bool,
+        scope: TextRange,
+        body: bool,
+    ) {
+        self.runs.extend(groups.into_iter().map(|members| Run {
+            body,
+            candidate,
+            members,
+            scope,
+        }));
     }
 }
 

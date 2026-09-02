@@ -7,6 +7,10 @@ use ruff_text_size::{TextRange, TextSize};
 use super::{Member, Settings};
 use crate::{primitives::inline::display_width, source::Source};
 
+/// One member's line start, its gap, and the widening it seats on
+/// that line.
+pub(crate) type Widening = (TextSize, TextRange, isize);
+
 /// The widening each collected member seats on its own line, the gap
 /// ahead of the token brought to the settings' buffer and the
 /// post-operator gap brought to one space. A line-cap check adds the
@@ -15,9 +19,38 @@ use crate::{primitives::inline::display_width, source::Source};
 #[derive(Default)]
 pub(crate) struct Widenings(Vec<Widening>);
 
-/// One member's line start, its gap, and the widening it seats on
-/// that line.
-pub(crate) type Widening = (TextSize, TextRange, isize);
+impl Widenings {
+    /// `entries`, each a member's line, gap, and widening, ordered by
+    /// line and gap.
+    pub(crate) fn from_entries(mut entries: Vec<Widening>) -> Self {
+        entries.sort_unstable_by_key(|&(line, gap, _)| (line, gap.start()));
+        Self(entries)
+    }
+
+    /// Builds the widening entries for `members` under `settings`,
+    /// dropping zero entries.
+    pub(crate) fn of(
+        source: &Source,
+        settings: Settings,
+        members: impl Iterator<Item = Member>,
+    ) -> Self {
+        Self::from_entries(widening_entries(source, settings, members))
+    }
+
+    /// The widening the other collected members seat on `member`'s
+    /// line, zero where none share it.
+    pub(crate) fn delta(&self, member: Member) -> isize {
+        let from = self
+            .0
+            .partition_point(|&(line, ..)| line < member.line_start);
+        self.0[from..]
+            .iter()
+            .take_while(|&&(line, ..)| line == member.line_start)
+            .filter(|&&(_, gap, _)| gap != member.gap)
+            .map(|&(.., delta)| delta)
+            .sum()
+    }
+}
 
 /// The widening entry each of `members` seats on its own line under
 /// `settings`, the gap ahead of the token brought to the settings'
@@ -39,39 +72,6 @@ pub(crate) fn widening_entries(
             (delta != 0).then_some((m.line_start, m.gap, delta))
         })
         .collect()
-}
-
-impl Widenings {
-    /// Builds the widening entries for `members` under `settings`,
-    /// dropping zero entries.
-    pub(crate) fn of(
-        source: &Source,
-        settings: Settings,
-        members: impl Iterator<Item = Member>,
-    ) -> Self {
-        Self::from_entries(widening_entries(source, settings, members))
-    }
-
-    /// `entries`, each a member's line, gap, and widening, ordered by
-    /// line and gap.
-    pub(crate) fn from_entries(mut entries: Vec<Widening>) -> Self {
-        entries.sort_unstable_by_key(|&(line, gap, _)| (line, gap.start()));
-        Self(entries)
-    }
-
-    /// The widening the other collected members seat on `member`'s
-    /// line, zero where none share it.
-    pub(crate) fn delta(&self, member: Member) -> isize {
-        let from = self
-            .0
-            .partition_point(|&(line, ..)| line < member.line_start);
-        self.0[from..]
-            .iter()
-            .take_while(|&&(line, ..)| line == member.line_start)
-            .filter(|&&(_, gap, _)| gap != member.gap)
-            .map(|&(.., delta)| delta)
-            .sum()
-    }
 }
 
 #[cfg(test)]

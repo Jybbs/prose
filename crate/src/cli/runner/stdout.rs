@@ -39,6 +39,16 @@ pub(super) fn emit_to_stdout<O: RawStream + AsLockedWrite>(
     }
 }
 
+/// The text block `outcome` renders to, empty for an outcome the
+/// report leaves out, which is the same set
+/// [`emit_outcomes`](self::emit_outcomes) filters away.
+pub(super) fn render_text_block(text: &Text, outcome: &FileOutcome) -> anyhow::Result<Vec<u8>> {
+    outcome.run().map_or_else(
+        || Ok(Vec::new()),
+        |run| text.render_run(&run).context("rendering diagnostics"),
+    )
+}
+
 fn emit_outcomes<W: Write>(
     outcomes: &[FileOutcome],
     format: OutputFormat,
@@ -55,16 +65,6 @@ fn emit_outcomes<W: Write>(
     }?;
     writer.flush().context("flushing stdout")?;
     Ok(())
-}
-
-/// The text block `outcome` renders to, empty for an outcome the
-/// report leaves out, which is the same set
-/// [`emit_outcomes`](self::emit_outcomes) filters away.
-pub(super) fn render_text_block(text: &Text, outcome: &FileOutcome) -> anyhow::Result<Vec<u8>> {
-    outcome.run().map_or_else(
-        || Ok(Vec::new()),
-        |run| text.render_run(&run).context("rendering diagnostics"),
-    )
 }
 
 #[cfg(test)]

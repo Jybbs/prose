@@ -22,11 +22,6 @@ use crate::{
 /// rendered, `None` for an entry that yields neither.
 type Landed = anyhow::Result<Option<(FileOutcome, Vec<u8>)>>;
 
-/// Reports a symlink the walk passed over.
-fn passed_link(path: &Path) {
-    eprintln!("note: passed over the symlink {}", path.display());
-}
-
 pub(super) fn process_paths<F>(paths: &[PathBuf], handle: F) -> Vec<FileOutcome>
 where
     F: Fn(&Path, PySourceType) -> FileOutcome + Send + Sync,
@@ -129,6 +124,11 @@ where
         }
         Err(e) => Ok(Some((walk_error(e), Vec::new()))),
     }
+}
+
+/// Reports a symlink the walk passed over.
+fn passed_link(path: &Path) {
+    eprintln!("note: passed over the symlink {}", path.display());
 }
 
 fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {

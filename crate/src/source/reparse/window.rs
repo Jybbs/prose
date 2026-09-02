@@ -24,35 +24,6 @@ impl Ranged for Window {
     }
 }
 
-/// The levels `tokens`, a window's own, open on balance, each `Indent`
-/// counting one up and each `Dedent` one down, so the window's end sits
-/// that many levels past its start. The lexer tracks indentation on
-/// logical lines alone, so a continuation line's whitespace never
-/// reaches the count.
-pub(super) fn net_indent(tokens: &[Token]) -> isize {
-    tokens
-        .iter()
-        .map(|token| match token.kind() {
-            TokenKind::Indent => 1,
-            TokenKind::Dedent => -1,
-            _ => 0,
-        })
-        .sum()
-}
-
-/// True for a token the lexer's indentation tracking reads a logical
-/// line from, leaving out the trivia and the indent tokens it emits.
-pub(super) fn is_code(kind: TokenKind) -> bool {
-    !matches!(
-        kind,
-        TokenKind::Comment
-            | TokenKind::Dedent
-            | TokenKind::Indent
-            | TokenKind::Newline
-            | TokenKind::NonLogicalNewline
-    )
-}
-
 /// The windows covering `replaced`, ascending and merged where two
 /// overlap or meet: the innermost statement covering a range, or the
 /// run of module-body siblings the range reaches where no single
@@ -74,6 +45,19 @@ pub(super) fn covering(
     )
 }
 
+/// True for a token the lexer's indentation tracking reads a logical
+/// line from, leaving out the trivia and the indent tokens it emits.
+pub(super) fn is_code(kind: TokenKind) -> bool {
+    !matches!(
+        kind,
+        TokenKind::Comment
+            | TokenKind::Dedent
+            | TokenKind::Indent
+            | TokenKind::Newline
+            | TokenKind::NonLogicalNewline
+    )
+}
+
 /// True where `held` is a window of the module body rather than of a
 /// statement nested in one, being a module-body sibling's own range or
 /// a run of them, which the reparse may fill with any count of
@@ -81,6 +65,22 @@ pub(super) fn covering(
 pub(super) fn module_level(source: &Source, held: TextRange) -> bool {
     let body = &source.ast().body;
     body.iter().any(|stmt| stmt.range() == held) || covering_window(source, held).is_none()
+}
+
+/// The levels `tokens`, a window's own, open on balance, each `Indent`
+/// counting one up and each `Dedent` one down, so the window's end sits
+/// that many levels past its start. The lexer tracks indentation on
+/// logical lines alone, so a continuation line's whitespace never
+/// reaches the count.
+pub(super) fn net_indent(tokens: &[Token]) -> isize {
+    tokens
+        .iter()
+        .map(|token| match token.kind() {
+            TokenKind::Indent => 1,
+            TokenKind::Dedent => -1,
+            _ => 0,
+        })
+        .sum()
 }
 
 /// The run of module-body siblings a range no single statement covers

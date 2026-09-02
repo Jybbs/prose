@@ -46,17 +46,17 @@ pub(super) fn drive(
     run_and_assemble(source, resolved, pass, index, marker, rewrite)
 }
 
+pub(super) fn failed(status: ExitStatus, e: impl std::fmt::Display) -> FileOutcome {
+    eprintln!("error: {e}");
+    FileOutcome::Failed(status)
+}
+
 /// The outcome of a file whose text failed to parse as `name`.
 pub(super) fn parse_failure(name: &str, e: impl std::fmt::Display) -> FileOutcome {
     failed(
         ExitStatus::ParseError,
         format_args!("parse error in `{name}`: {e}"),
     )
-}
-
-pub(super) fn failed(status: ExitStatus, e: impl std::fmt::Display) -> FileOutcome {
-    eprintln!("error: {e}");
-    FileOutcome::Failed(status)
 }
 
 pub(super) fn process_path(
@@ -150,6 +150,25 @@ pub(super) fn process_path(
         }
     }
     outcome
+}
+
+/// Routes a source text to the notebook or module pipeline path under
+/// its diagnostic `name`.
+pub(super) fn process_source(
+    text: String,
+    name: String,
+    source_type: PySourceType,
+    resolved: &Resolved,
+    pass: Pass,
+    marker: Marker,
+) -> FileOutcome {
+    if source_type.is_ipynb() {
+        return notebook::process(text, name, resolved, pass);
+    }
+    match Source::build_module(text, name.as_str(), source_type) {
+        Ok(source) => run_pipeline(source, resolved, pass, marker),
+        Err(e) => parse_failure(&name, e),
+    }
 }
 
 /// Rebuilds the outcome `entry` records against the file's own
@@ -256,25 +275,6 @@ fn narrowed_report(
         fired,
     )
     .map(Box::new)
-}
-
-/// Routes a source text to the notebook or module pipeline path under
-/// its diagnostic `name`.
-pub(super) fn process_source(
-    text: String,
-    name: String,
-    source_type: PySourceType,
-    resolved: &Resolved,
-    pass: Pass,
-    marker: Marker,
-) -> FileOutcome {
-    if source_type.is_ipynb() {
-        return notebook::process(text, name, resolved, pass);
-    }
-    match Source::build_module(text, name.as_str(), source_type) {
-        Ok(source) => run_pipeline(source, resolved, pass, marker),
-        Err(e) => parse_failure(&name, e),
-    }
 }
 
 /// Runs the pipeline and assembles the outcome, deferring the rewrite

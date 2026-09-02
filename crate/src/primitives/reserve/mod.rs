@@ -44,6 +44,15 @@ mod visit;
 
 use visit::{ReserveVisitor, widenings_over};
 
+/// The table a splice carries into the source it produced: the runs
+/// the edit could not reach, moved to where the woven text holds them,
+/// and the completion that forms the rest on the first read.
+#[derive(Clone, Debug)]
+pub(crate) struct Carry {
+    forwarded: Forwarded,
+    reform: Reform,
+}
+
 /// The columns each aligned value shifts by once the alignment
 /// settles, one entry per reservation ascending by start, each carrying
 /// the span from the value's own start to the end of its physical row.
@@ -64,111 +73,7 @@ pub(crate) struct Columns {
     widenings: Vec<(usize, aligner::Widening)>,
 }
 
-/// Where one run formed: the statement whose body holds a statement
-/// run or whose expressions hold a keyword or parameter run, the module
-/// range for a module-body run, and the rows its members span.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct Scope {
-    /// True for a run formed over a body's statements.
-    body: bool,
-    span: TextRange,
-    stmt: TextRange,
-}
-
-/// The slices a carried table's completion forms a body's runs over
-/// and the windows it descends into, both in the completed source.
-/// An entry pairs a body's owning statement, the module range at top
-/// level, with the span of the siblings whose runs the splice reached.
-#[derive(Clone, Debug)]
-pub(crate) struct Reform {
-    entries: Vec<(TextRange, TextRange)>,
-    windows: Vec<TextRange>,
-}
-
-impl Reform {
-    /// The index ranges of `body`, owned by `owner`, whose runs the
-    /// completion forms: every statement where a window covers the
-    /// owner whole, and otherwise the statements overlapping the spans
-    /// entered for the owner, each maximal stretch of them one slice.
-    fn slices(&self, owner: TextRange, body: &[Stmt]) -> Vec<Range<usize>> {
-        if covers(owner, &self.windows) {
-            return std::iter::once(0..body.len()).collect();
-        }
-        let spans: Vec<TextRange> = self
-            .entries
-            .iter()
-            .filter(|(key, _)| *key == owner)
-            .map(|&(_, span)| span)
-            .collect();
-        let mut slices: Vec<Range<usize>> = Vec::new();
-        for (index, stmt) in body.iter().enumerate() {
-            if !spans.iter().any(|span| span.ordering(stmt.range()).is_eq()) {
-                continue;
-            }
-            match slices.last_mut() {
-                Some(last) if last.end == index => last.end = index + 1,
-                _ => slices.push(index..index + 1),
-            }
-        }
-        slices
-    }
-}
-
-/// The geometry of one splice, as a carry reads it: the weave its
-/// edits describe, its windows in the buffer the source held and in the
-/// text it produced, and the slides moving a statement and a span past
-/// those edits.
-pub(crate) struct Weave<'a> {
-    pub(crate) held: &'a [TextRange],
-    pub(crate) map: &'a SourceMap,
-    pub(crate) slid: &'a [TextRange],
-    pub(crate) slide_span: &'a dyn Fn(TextRange) -> TextRange,
-    pub(crate) slide_stmt: &'a dyn Fn(TextRange) -> Option<TextRange>,
-}
-
-/// The table a splice carries into the source it produced: the runs
-/// the edit could not reach, moved to where the woven text holds them,
-/// and the completion that forms the rest on the first read.
-#[derive(Clone, Debug)]
-pub(crate) struct Carry {
-    forwarded: Forwarded,
-    reform: Reform,
-}
-
 impl Columns {
-    /// The columns the alignment moves `offset` by, zero where no
-    /// reservation covers it. A reservation never spans a row, so the
-    /// nearest one starting at or before `offset` is the only candidate.
-    fn shift(&self, offset: TextSize) -> isize {
-        item_holding(&self.shifts, offset)
-            .filter(|shift| shift.span.contains(offset))
-            .map_or(0, |shift| shift.columns)
-    }
-
-    /// The column `offset` lands at, `fallback` moved by the shift the
-    /// alignment applies to the row `offset` sits on.
-    pub(crate) fn column(&self, offset: TextSize, fallback: impl FnOnce() -> usize) -> usize {
-        fallback().saturating_add_signed(self.shift(offset))
-    }
-
-    /// The column `offset` lands at, falling back to the column its own
-    /// source line puts it at.
-    pub(crate) fn column_in(&self, source: &Source, offset: TextSize) -> usize {
-        self.column(offset, || source.column_of(offset))
-    }
-
-    /// The column the value of a keyword `name_width` wide lands at
-    /// once the alignment buffers it, the keyword sitting alone on its
-    /// row at `indent`. The value follows the name by the buffer, the
-    /// `=` itself, and the one-space value gap, which is the floor a
-    /// lone row settles at and the column a run resolving within the
-    /// line cap leaves it at. `None` where the alignment rule is off,
-    /// leaving the value where its row writes it.
-    pub(crate) fn keyword_value_column(&self, indent: usize, name_width: usize) -> Option<usize> {
-        self.buffer
-            .map(|buffer| indent + name_width + buffer + aligner::VALUE_OFFSET)
-    }
-
     /// Each run as its scope, its shifts, and its widenings, ascending,
     /// the form two tables compare in whatever order their runs were
     /// numbered.
@@ -202,6 +107,15 @@ impl Columns {
         runs
     }
 
+    /// The columns the alignment moves `offset` by, zero where no
+    /// reservation covers it. A reservation never spans a row, so the
+    /// nearest one starting at or before `offset` is the only candidate.
+    fn shift(&self, offset: TextSize) -> isize {
+        item_holding(&self.shifts, offset)
+            .filter(|shift| shift.span.contains(offset))
+            .map_or(0, |shift| shift.columns)
+    }
+
     /// The table an alignment rule that is off leaves, reserving no
     /// column.
     fn unreserved() -> Self {
@@ -211,6 +125,18 @@ impl Columns {
             shifts: Vec::new(),
             widenings: Vec::new(),
         }
+    }
+
+    /// The column `offset` lands at, `fallback` moved by the shift the
+    /// alignment applies to the row `offset` sits on.
+    pub(crate) fn column(&self, offset: TextSize, fallback: impl FnOnce() -> usize) -> usize {
+        fallback().saturating_add_signed(self.shift(offset))
+    }
+
+    /// The column `offset` lands at, falling back to the column its own
+    /// source line puts it at.
+    pub(crate) fn column_in(&self, source: &Source, offset: TextSize) -> usize {
+        self.column(offset, || source.column_of(offset))
     }
 
     /// The shifts of this table a splice over `map` cannot carry into
@@ -278,6 +204,66 @@ impl Columns {
         }
         escapes
     }
+
+    /// The column the value of a keyword `name_width` wide lands at
+    /// once the alignment buffers it, the keyword sitting alone on its
+    /// row at `indent`. The value follows the name by the buffer, the
+    /// `=` itself, and the one-space value gap, which is the floor a
+    /// lone row settles at and the column a run resolving within the
+    /// line cap leaves it at. `None` where the alignment rule is off,
+    /// leaving the value where its row writes it.
+    pub(crate) fn keyword_value_column(&self, indent: usize, name_width: usize) -> Option<usize> {
+        self.buffer
+            .map(|buffer| indent + name_width + buffer + aligner::VALUE_OFFSET)
+    }
+}
+
+/// Two tables are equal where they reserve the same columns over the
+/// same runs, whatever order their runs were numbered in.
+#[cfg(test)]
+impl PartialEq for Columns {
+    fn eq(&self, other: &Self) -> bool {
+        self.buffer == other.buffer && self.canonical() == other.canonical()
+    }
+}
+
+/// The slices a carried table's completion forms a body's runs over
+/// and the windows it descends into, both in the completed source.
+/// An entry pairs a body's owning statement, the module range at top
+/// level, with the span of the siblings whose runs the splice reached.
+#[derive(Clone, Debug)]
+pub(crate) struct Reform {
+    entries: Vec<(TextRange, TextRange)>,
+    windows: Vec<TextRange>,
+}
+
+impl Reform {
+    /// The index ranges of `body`, owned by `owner`, whose runs the
+    /// completion forms: every statement where a window covers the
+    /// owner whole, and otherwise the statements overlapping the spans
+    /// entered for the owner, each maximal stretch of them one slice.
+    fn slices(&self, owner: TextRange, body: &[Stmt]) -> Vec<Range<usize>> {
+        if covers(owner, &self.windows) {
+            return std::iter::once(0..body.len()).collect();
+        }
+        let spans: Vec<TextRange> = self
+            .entries
+            .iter()
+            .filter(|(key, _)| *key == owner)
+            .map(|&(_, span)| span)
+            .collect();
+        let mut slices: Vec<Range<usize>> = Vec::new();
+        for (index, stmt) in body.iter().enumerate() {
+            if !spans.iter().any(|span| span.ordering(stmt.range()).is_eq()) {
+                continue;
+            }
+            match slices.last_mut() {
+                Some(last) if last.end == index => last.end = index + 1,
+                _ => slices.push(index..index + 1),
+            }
+        }
+        slices
+    }
 }
 
 /// The alignment a layout rule measures against, resolved from
@@ -322,16 +308,78 @@ impl Reservations {
         visitor
     }
 
-    /// Maps each aligned value's start offset to the display column it
-    /// lands at once the run is aligned. A value the run leaves where it
-    /// sits maps to that same column, so a lookup is a no-op for a value
-    /// the alignment does not move.
-    pub(crate) fn columns(self, source: &Source) -> Columns {
-        let Some(settings) = self.settings else {
-            return Columns::unreserved();
+    /// The table `carried` grows into once `visitor`'s runs form on top
+    /// of it: each run's scope, widening entries, and shifts, every
+    /// joined width read against the module's call targets.
+    fn formed(
+        self,
+        source: &Source,
+        settings: aligner::Settings,
+        visitor: &ReserveVisitor,
+        carried: Forwarded,
+    ) -> Columns {
+        let Forwarded {
+            mut runs,
+            mut shifts,
+            mut widenings,
+        } = carried;
+        let base = runs.len();
+        for (index, run) in visitor.runs.iter().enumerate() {
+            let span = run
+                .members
+                .first()
+                .zip(run.members.last())
+                .map_or(run.scope, |(first, last)| {
+                    TextRange::new(first.line_start, last.gap.end())
+                });
+            runs.push(Scope {
+                body: run.body,
+                span,
+                stmt: run.scope,
+            });
+            let entries = aligner::widening_entries(source, settings, run.members.iter().copied());
+            widenings.extend(entries.into_iter().map(|entry| (base + index, entry)));
+        }
+        let seated =
+            aligner::Widenings::from_entries(widenings.iter().map(|&(_, entry)| entry).collect());
+        let targets = module_call_params(source);
+        let one_row = self.one_row.against(&targets);
+        let place = |member: aligner::Member| {
+            let start = member.rewritten_value_gap(source)?.end();
+            Some((start, source.column_of(start)))
         };
-        let visitor = self.collected(source, None);
-        self.formed(source, settings, &visitor, Forwarded::default())
+        let joined = |(start, column): (TextSize, usize)| {
+            let &(expr, parent) = visitor.values.get(&start)?;
+            let end = source.paren_aware_range(expr.into(), parent).end();
+            let tail = source.row_tail_width(end);
+            let form = one_row.rejoined(source, expr, parent, column, tail)?;
+            Some(column + display_width(&form) + tail)
+        };
+        for (index, run) in visitor.runs.iter().enumerate() {
+            if run.candidate && !aligner::is_alignment_candidate(&run.members) {
+                continue;
+            }
+            let placed: Vec<Option<(TextSize, usize)>> =
+                run.members.iter().map(|&m| place(m)).collect();
+            let joined: Vec<Option<usize>> = placed.iter().map(|&at| joined(at?)).collect();
+            let columns =
+                aligner::operator_columns(source, &run.members, settings, &seated, &joined);
+            shifts.extend(placed.iter().zip(columns).filter_map(|(&placed, column)| {
+                let (start, at) = placed?;
+                Some(Shift {
+                    columns: (column + aligner::VALUE_OFFSET).cast_signed() - at.cast_signed(),
+                    run: base + index,
+                    span: source.row_tail(start),
+                })
+            }));
+        }
+        shifts.sort_unstable_by_key(Ranged::start);
+        Columns {
+            buffer: Some(settings.buffer()),
+            runs,
+            shifts,
+            widenings,
+        }
     }
 
     /// What a splice over `held` carries of `carried`, the table
@@ -421,6 +469,18 @@ impl Reservations {
         })
     }
 
+    /// Maps each aligned value's start offset to the display column it
+    /// lands at once the run is aligned. A value the run leaves where it
+    /// sits maps to that same column, so a lookup is a no-op for a value
+    /// the alignment does not move.
+    pub(crate) fn columns(self, source: &Source) -> Columns {
+        let Some(settings) = self.settings else {
+            return Columns::unreserved();
+        };
+        let visitor = self.collected(source, None);
+        self.formed(source, settings, &visitor, Forwarded::default())
+    }
+
     /// The table `carry` completes to over `source`, the text the
     /// splice produced: the carried runs on top of the runs the
     /// completion forms.
@@ -430,80 +490,6 @@ impl Reservations {
         };
         let visitor = self.collected(source, Some(&carry.reform));
         self.formed(source, settings, &visitor, carry.forwarded.clone())
-    }
-
-    /// The table `carried` grows into once `visitor`'s runs form on top
-    /// of it: each run's scope, widening entries, and shifts, every
-    /// joined width read against the module's call targets.
-    fn formed(
-        self,
-        source: &Source,
-        settings: aligner::Settings,
-        visitor: &ReserveVisitor,
-        carried: Forwarded,
-    ) -> Columns {
-        let Forwarded {
-            mut runs,
-            mut shifts,
-            mut widenings,
-        } = carried;
-        let base = runs.len();
-        for (index, run) in visitor.runs.iter().enumerate() {
-            let span = run
-                .members
-                .first()
-                .zip(run.members.last())
-                .map_or(run.scope, |(first, last)| {
-                    TextRange::new(first.line_start, last.gap.end())
-                });
-            runs.push(Scope {
-                body: run.body,
-                span,
-                stmt: run.scope,
-            });
-            let entries = aligner::widening_entries(source, settings, run.members.iter().copied());
-            widenings.extend(entries.into_iter().map(|entry| (base + index, entry)));
-        }
-        let seated =
-            aligner::Widenings::from_entries(widenings.iter().map(|&(_, entry)| entry).collect());
-        let targets = module_call_params(source);
-        let one_row = self.one_row.against(&targets);
-        let place = |member: aligner::Member| {
-            let start = member.rewritten_value_gap(source)?.end();
-            Some((start, source.column_of(start)))
-        };
-        let joined = |(start, column): (TextSize, usize)| {
-            let &(expr, parent) = visitor.values.get(&start)?;
-            let end = source.paren_aware_range(expr.into(), parent).end();
-            let tail = source.row_tail_width(end);
-            let form = one_row.rejoined(source, expr, parent, column, tail)?;
-            Some(column + display_width(&form) + tail)
-        };
-        for (index, run) in visitor.runs.iter().enumerate() {
-            if run.candidate && !aligner::is_alignment_candidate(&run.members) {
-                continue;
-            }
-            let placed: Vec<Option<(TextSize, usize)>> =
-                run.members.iter().map(|&m| place(m)).collect();
-            let joined: Vec<Option<usize>> = placed.iter().map(|&at| joined(at?)).collect();
-            let columns =
-                aligner::operator_columns(source, &run.members, settings, &seated, &joined);
-            shifts.extend(placed.iter().zip(columns).filter_map(|(&placed, column)| {
-                let (start, at) = placed?;
-                Some(Shift {
-                    columns: (column + aligner::VALUE_OFFSET).cast_signed() - at.cast_signed(),
-                    run: base + index,
-                    span: source.row_tail(start),
-                })
-            }));
-        }
-        shifts.sort_unstable_by_key(Ranged::start);
-        Columns {
-            buffer: Some(settings.buffer()),
-            runs,
-            shifts,
-            widenings,
-        }
     }
 
     /// The widening the reserved rule seats on each line, empty where
@@ -519,19 +505,33 @@ impl Reservations {
     }
 }
 
+/// Where one run formed: the statement whose body holds a statement
+/// run or whose expressions hold a keyword or parameter run, the module
+/// range for a module-body run, and the rows its members span.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct Scope {
+    /// True for a run formed over a body's statements.
+    body: bool,
+    span: TextRange,
+    stmt: TextRange,
+}
+
+/// The geometry of one splice, as a carry reads it: the weave its
+/// edits describe, its windows in the buffer the source held and in the
+/// text it produced, and the slides moving a statement and a span past
+/// those edits.
+pub(crate) struct Weave<'a> {
+    pub(crate) held: &'a [TextRange],
+    pub(crate) map: &'a SourceMap,
+    pub(crate) slid: &'a [TextRange],
+    pub(crate) slide_span: &'a dyn Fn(TextRange) -> TextRange,
+    pub(crate) slide_stmt: &'a dyn Fn(TextRange) -> Option<TextRange>,
+}
+
 /// One run as its scope, its shifts as span and columns, and its
 /// widenings, the form [`Columns::canonical`] lists.
 #[cfg(test)]
 type CanonicalRun = (TextRange, Vec<(TextRange, isize)>, Vec<aligner::Widening>);
-
-/// Two tables are equal where they reserve the same columns over the
-/// same runs, whatever order their runs were numbered in.
-#[cfg(test)]
-impl PartialEq for Columns {
-    fn eq(&self, other: &Self) -> bool {
-        self.buffer == other.buffer && self.canonical() == other.canonical()
-    }
-}
 
 /// The runs, shifts, and widenings a carry moves past a splice, which
 /// a fresh build starts empty.
@@ -540,6 +540,21 @@ struct Forwarded {
     runs: Vec<Scope>,
     shifts: Vec<Shift>,
     widenings: Vec<(usize, aligner::Widening)>,
+}
+
+/// One reservation's row-tail span, the columns the alignment shifts
+/// it by, and the run it belongs to.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Shift {
+    columns: isize,
+    run: usize,
+    span: TextRange,
+}
+
+impl Ranged for Shift {
+    fn range(&self) -> TextRange {
+        self.span
+    }
 }
 
 /// Appends to `entries`, for `body` owned by `owner` and each body
@@ -591,21 +606,6 @@ fn reform_entries(
             }
         }
         index += 1;
-    }
-}
-
-/// One reservation's row-tail span, the columns the alignment shifts
-/// it by, and the run it belongs to.
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct Shift {
-    columns: isize,
-    run: usize,
-    span: TextRange,
-}
-
-impl Ranged for Shift {
-    fn range(&self) -> TextRange {
-        self.span
     }
 }
 
