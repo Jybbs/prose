@@ -8,7 +8,7 @@ use ruff_text_size::{Ranged, TextRange};
 
 use super::{Layout, terms::Expansion};
 use crate::primitives::{
-    inline::{end_column, opening_width},
+    inline::{end_column, opening_width, spans_rows},
     layout::{Separator, explode_parens},
     params::parameter_sites,
     range::return_annotation_range,
@@ -100,7 +100,7 @@ impl Layout<'_> {
                 item: param.start(),
             };
             let rest = self.source.slice(TextRange::new(held.end(), param.end()));
-            let site_tail = opening_width(rest) + if rest.contains('\n') { 0 } else { tail };
+            let site_tail = opening_width(rest) + if spans_rows(rest) { 0 } else { tail };
             match self.reshaper.reshaped(expr, held, landing, site_tail) {
                 Some(text) => {
                     reshaped = true;

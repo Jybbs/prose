@@ -6,7 +6,7 @@
 //! position.
 
 use ruff_python_ast::token::TokenKind;
-use ruff_source_file::LineRanges;
+use ruff_source_file::{LineRanges, UniversalNewlines};
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
@@ -65,12 +65,12 @@ pub(crate) fn reordered_lines_fit(
     let tail = source.slice(TextRange::new(span.end(), outer.end()));
     let cap = source
         .slice(outer)
-        .lines()
-        .map(display_width)
+        .universal_newlines()
+        .map(|line| display_width(line.as_str()))
         .fold(budget, usize::max);
     format!("{head}{assembled}{tail}")
-        .lines()
-        .all(|line| display_width(line) <= cap)
+        .universal_newlines()
+        .all(|line| display_width(line.as_str()) <= cap)
 }
 
 /// True when `order` moves a member whose range spans lines, the
@@ -105,6 +105,17 @@ pub(crate) fn swap_span_holds<T: Ranged>(source: &Source, items: &[T], swapped: 
         && items.len() > 1
         && source.contains_line_break(blocks_span(items))
         && swap_span_commented(source, items)
+}
+
+/// True when a group over `items` swaps member slices in place rather
+/// than reordering one-per-line blocks: one packing members onto shared
+/// rows, opening mid-row, or carrying code in its gaps.
+pub(crate) fn swaps_in_place<T: Ranged>(source: &Source, items: &[T]) -> bool {
+    items.first().is_some_and(|first| {
+        any_sibling_shares_line(source, items)
+            || !opens_its_line(source, first.start())
+            || gaps_carry_code(source, items)
+    })
 }
 
 /// True when a gap between two consecutive members of `items` carries

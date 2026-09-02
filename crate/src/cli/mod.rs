@@ -44,7 +44,7 @@ mod schema;
 
 use args::{
     CacheAction, Cli, Command, normalize_stdin_dash, report_clap_error,
-    validate_diff_format_combination,
+    validate_diff_format_combination, validate_stdin_filename,
 };
 use exit_status::ExitStatus;
 use output::Presentation;
@@ -62,6 +62,9 @@ pub fn run() -> ExitCode {
     if let Some(err) = validate_diff_format_combination(&cli) {
         return report_clap_error(err);
     }
+    if let Some(err) = validate_stdin_filename(&cli) {
+        return report_clap_error(err);
+    }
     // The server owns stdin and stdout end to end, so it dispatches
     // before the shared stdout lock below, which its writer thread would
     // otherwise deadlock against.
@@ -70,7 +73,7 @@ pub fn run() -> ExitCode {
     }
     let raw_stdout = io::stdout().lock();
     let stdout_tty = raw_stdout.is_terminal();
-    let (stdout, color) = stream_for(cli.color, raw_stdout);
+    let (mut stdout, color) = stream_for(cli.color, raw_stdout);
     let (stderr, stderr_color) = stream_for(cli.color, io::stderr());
     let present = Presentation {
         color,
@@ -89,8 +92,13 @@ pub fn run() -> ExitCode {
             runner::check_with_io(args, verbose, &present, io::stdin(), stdout, stderr)
         }
         Command::Completions { shell } => {
-            generate(shell, &mut Cli::command(), "prose", &mut io::stdout());
-            Ok(ExitStatus::Clean)
+            let mut script = Vec::new();
+            generate(shell, &mut Cli::command(), "prose", &mut script);
+            stdout
+                .write_all(&script)
+                .and_then(|()| stdout.flush())
+                .context("writing stdout")
+                .map(|()| ExitStatus::Clean)
         }
         Command::Format(args) => {
             runner::format_with_io(args, verbose, &present, io::stdin(), stdout, stderr)

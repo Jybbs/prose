@@ -31,9 +31,8 @@ use crate::{
         comments::has_keep_marker,
         effect::value_is_effectful,
         imports::defers_annotations,
-        orderer::{
-            any_sibling_shares_line, gaps_carry_code, opens_its_line, permute_runs, swap_span_holds,
-        },
+        inline::spans_rows,
+        orderer::{permute_runs, swap_span_holds, swaps_in_place},
         scope::BodyScope,
         slots::runs_where,
         tokens::{CLOSERS, OPENERS},
@@ -273,13 +272,7 @@ struct Sorted {
 /// packing members onto shared rows or opening mid-row, spanning lines,
 /// with a comment inside the swap span.
 fn held_leaves<T: Ranged>(source: &Source, items: &[T]) -> bool {
-    let Some(first) = items.first() else {
-        return false;
-    };
-    let swapped = any_sibling_shares_line(source, items)
-        || !opens_its_line(source, first.start())
-        || gaps_carry_code(source, items);
-    swap_span_holds(source, items, swapped)
+    swap_span_holds(source, items, swaps_in_place(source, items))
 }
 
 /// `ranged`'s source text read the way a later join writes it onto one
@@ -294,7 +287,7 @@ fn joined_key(source: &Source, ranged: impl Ranged) -> Cow<'_, str> {
 /// comma ahead of a closer. A single-line slice passes through
 /// borrowed.
 fn joined_text(slice: &str) -> Cow<'_, str> {
-    if !slice.contains('\n') {
+    if !spans_rows(slice) {
         return Cow::Borrowed(slice);
     }
     let mut out = String::with_capacity(slice.len());

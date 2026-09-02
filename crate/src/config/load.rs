@@ -117,6 +117,11 @@ impl NoticeDedup {
 
 /// The directory-relative path of every recognized config form, the
 /// set the server's file watcher registers against.
+/// The directory holding `file`, or `file` itself at a root.
+pub(crate) fn holding_dir(file: &Path) -> &Path {
+    file.parent().unwrap_or(file)
+}
+
 pub(crate) fn config_rel_paths() -> [&'static str; ConfigForm::PRECEDENCE.len()] {
     ConfigForm::PRECEDENCE.map(ConfigForm::rel_path)
 }

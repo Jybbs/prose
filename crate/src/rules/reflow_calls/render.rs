@@ -15,7 +15,9 @@ use super::Exploder;
 use crate::primitives::{
     call_keywords::{CallKeywords, keyword_args, resolve_call_params},
     edit::apply_inline_edits,
-    inline::{display_width, end_column, opening_width, settled_slice_width, settled_width},
+    inline::{
+        display_width, end_column, opening_width, settled_slice_width, settled_width, spans_rows,
+    },
     layout::{Separator, explode_parens, is_fractured, item_indent},
     tokens::{is_opener, opens_subscript, tokens_within},
     travel::{Landing, Travel, block_shift, shifted_block, spans_a_string_part},
@@ -234,14 +236,14 @@ impl<'a> Exploder<'a> {
         );
         // Only the tail's opening row closes the value's last row, a pair
         // closing on a later row taking the row's comma with it.
-        let appended = if tail.contains('\n') {
+        let appended = if spans_rows(tail) {
             opening_width(tail)
         } else {
             display_width(tail) + slot.tail
         };
         // A value opening its own row below the pair's opener drops an
         // exploded closer to that row's indent rather than the argument's.
-        let opens_own_row = head.contains('\n');
+        let opens_own_row = spans_rows(head);
         let opening_indent = if opens_own_row {
             end_column(head, slot.indent)
         } else {

@@ -17,7 +17,7 @@ use super::{
 use crate::{
     primitives::{
         INDENT_STEP,
-        inline::{display_width, end_column, settled_text_width},
+        inline::{display_width, end_column, settled_text_width, spans_rows},
         layout::item_indent,
         travel::{Landing, placed_block},
     },
@@ -268,7 +268,7 @@ impl<'a> Layouter<'a> {
                         let has_more = idx + 1 < total;
                         let separator = entry_tail(last, ranges[idx], usize::from(has_more));
                         let inline = &texts[idx];
-                        let row_overflows = !inline.contains('\n')
+                        let row_overflows = !spans_rows(inline)
                             && item_indent + widths[idx] + separator > self.code_line_length;
                         let hung = dict_items
                             .filter(|_| row_overflows && self.wrap_dict_entries)

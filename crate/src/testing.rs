@@ -7,7 +7,7 @@ use std::{
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_notebook::{Notebook, NotebookIndex};
-use ruff_python_ast::{Expr, Stmt, StmtClassDef, StmtFunctionDef};
+use ruff_python_ast::{Expr, PySourceType, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_text_size::{TextLen, TextRange, TextSize};
 use serde_json::{Value, json};
 
@@ -112,9 +112,7 @@ impl Rule for GuardedRule {
 /// for a row that needs one.
 pub(crate) fn align_member(gap: TextRange, line_start: u32, width: usize) -> aligner::Member {
     aligner::Member {
-        baseline: (gap.start() - TextSize::new(line_start))
-            .to_usize()
-            .saturating_sub(width),
+        baseline: (gap.start() - TextSize::new(line_start)).to_usize() - width,
         gap,
         line_start: TextSize::new(line_start),
         op_width: 0,
@@ -170,7 +168,13 @@ pub(crate) fn corpus_inputs() -> Vec<PathBuf> {
         || Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"),
         PathBuf::from,
     );
-    let mut inputs = formattable(&[root]);
+    let mut inputs: Vec<PathBuf> = ignore::WalkBuilder::new(root)
+        .standard_filters(false)
+        .build()
+        .flatten()
+        .map(ignore::DirEntry::into_path)
+        .filter(|path| path.is_file() && PySourceType::try_from_path(path).is_some())
+        .collect();
     inputs.sort();
     inputs
 }

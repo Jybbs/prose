@@ -88,8 +88,7 @@ pub(super) fn stripped_gap(source: &Source, gap: TextRange) -> String {
     let opens_line = source.text().is_at_start_of_line(gap.start());
     source
         .slice(gap)
-        .split('\n')
-        .map(|segment| segment.strip_suffix('\r').unwrap_or(segment))
+        .split(['\r', '\n'])
         .with_position()
         .filter_map(|(position, segment)| {
             let stripped = segment.strip_suffix('\\').map_or(segment, str::trim_end);

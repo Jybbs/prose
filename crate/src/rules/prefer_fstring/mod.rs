@@ -8,7 +8,7 @@ use std::slice;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr, PythonVersion};
-use ruff_source_file::LineRanges;
+use ruff_source_file::{LineRanges, UniversalNewlines};
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
@@ -90,8 +90,8 @@ impl PreferFstring {
             source.text().lines_range(span),
             slice::from_ref(edit),
         )
-        .lines()
-        .all(|line| display_width(line) <= self.code_line_length)
+        .universal_newlines()
+        .all(|line| display_width(line.as_str()) <= self.code_line_length)
     }
 }
 

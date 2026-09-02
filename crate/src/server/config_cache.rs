@@ -11,7 +11,7 @@ use lsp_types::Uri;
 use rustc_hash::FxHashMap;
 
 use super::conversion;
-use crate::config::{Config, ConfigSource, NoticeDedup};
+use crate::config::{Config, ConfigSource, NoticeDedup, holding_dir};
 
 /// Resolves the configuration governing each document, memoizing each
 /// directory's project source only when a watcher can invalidate the
@@ -49,7 +49,7 @@ impl ConfigCache {
         let Some(path) = conversion::to_path(uri) else {
             return Config::default();
         };
-        let dir = path.parent().unwrap_or(&path).to_path_buf();
+        let dir = holding_dir(&path).to_path_buf();
         let config = if self.enabled {
             self.by_dir
                 .entry(dir)

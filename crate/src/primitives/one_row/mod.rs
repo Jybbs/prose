@@ -20,7 +20,7 @@ use crate::{
         call_keywords::CallTargets,
         edit::apply_inline_edits,
         fracture::{self, outermost},
-        inline::{display_width, settled_slice_width, settled_text_width},
+        inline::{display_width, settled_slice_width, settled_text_width, spans_rows},
         layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
         params::parameter_sites,
     },
@@ -234,7 +234,7 @@ impl<'a> Settings<'a> {
             })
             .collect::<Option<Vec<_>>>()?;
         let text = apply_inline_edits(source, range, &outermost(joins));
-        (!text.contains('\n')).then(|| text.into_owned())
+        (!spans_rows(&text)).then(|| text.into_owned())
     }
 
     /// `expr`'s one-row form where the layout rules rejoin it onto its

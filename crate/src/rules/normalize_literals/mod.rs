@@ -32,7 +32,11 @@ mod numeric;
 mod prefix;
 mod quote;
 
-use self::{numeric::canonical_number, prefix::canonical_prefix, quote::requoted};
+use self::{
+    numeric::canonical_number,
+    prefix::canonical_prefix,
+    quote::{requoted, requoted_with},
+};
 
 #[derive(Debug)]
 pub(crate) struct NormalizeLiterals {
@@ -111,7 +115,13 @@ impl<'a> Normalizer<'a> {
             .collect();
         let requote = self
             .interpolations_clear(&frame, closer)
-            .then(|| requoted(&middles, frame.flags))
+            .then(|| {
+                let closer_abuts = frame
+                    .middles
+                    .last()
+                    .is_some_and(|middle| middle.end() == closer.start());
+                requoted_with(&middles, frame.flags, closer_abuts)
+            })
             .flatten();
         let prefix = self.prefix_text(frame.opener, frame.flags);
         let delimiter = requote

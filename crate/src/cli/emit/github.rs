@@ -2,10 +2,11 @@
 
 use std::io::{self, Write};
 
+use ruff_notebook::NotebookIndex;
 use ruff_source_file::SourceFile;
 
 use super::{Emitter, EmitterSummary, Run, diagnostics};
-use crate::{diagnostics::Diagnostic, findings::line_columns, rule::render_slugs};
+use crate::{diagnostics::Diagnostic, findings::located, rule::render_slugs};
 
 pub(crate) struct Github;
 
@@ -16,8 +17,8 @@ impl Emitter for Github {
         runs: &[Run<'_>],
         summary: &EmitterSummary,
     ) -> io::Result<()> {
-        for (file, _index, diag) in diagnostics(runs) {
-            emit_one(writer, file, diag)?;
+        for (file, index, diag) in diagnostics(runs) {
+            emit_one(writer, file, index, diag)?;
         }
         for entry in &summary.unstable {
             writeln!(
@@ -31,12 +32,17 @@ impl Emitter for Github {
     }
 }
 
-fn emit_one(writer: &mut dyn Write, file: &SourceFile, diag: &Diagnostic) -> io::Result<()> {
+fn emit_one(
+    writer: &mut dyn Write,
+    file: &SourceFile,
+    index: Option<&NotebookIndex>,
+    diag: &Diagnostic,
+) -> io::Result<()> {
     debug_assert!(
         !diag.message.contains(['%', '\r', '\n']),
         "rule message must not carry workflow-command escape characters",
     );
-    let (start, end) = line_columns(file, diag.range);
+    let (start, end, _) = located(file, index, diag.range);
     let name = file.name();
     let message = diag.message.as_str();
     write!(

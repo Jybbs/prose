@@ -138,7 +138,11 @@ pub(crate) fn assemble_separated(
     for (slot, &idx) in order.iter().enumerate() {
         let block_text = &block_texts[idx];
         let tail_len = (blocks[idx].end() - value_ends[idx]).to_usize();
-        let (code, tail) = block_text.split_at(block_text.len() - tail_len);
+        let split = block_text
+            .len()
+            .checked_sub(tail_len)
+            .expect("a rendered block keeps its comma tail");
+        let (code, tail) = block_text.split_at(split);
         let (separator, comment) = tail.split_at(tail.find('#').unwrap_or(tail.len()));
         out.push_str(code);
         let is_last = slot + 1 == order.len();

@@ -26,7 +26,7 @@ use crate::{
     fixes::{drops, holds_word, reaches, rewritten},
     format::{edit_rows, row_of},
     outcome::{Kind, Outcome, relative_to},
-    ratchet::{Baseline, Carried, VERSION, bake, dropped, judge, skipping},
+    ratchet::{Baseline, Carried, VERSION, bake, baseline_at, dropped, judge, skipping},
     records::{Break, EditRows, Frame, Width},
     report::render,
     sweep::DEFAULT_LABEL,
@@ -125,13 +125,17 @@ fn a_break_reporting_no_loaded_modules_falls_back_to_its_own() {
 
 #[test]
 fn a_break_set_baked_at_an_older_generation_carries_nothing_forward() {
-    let held: Baseline = serde_json::from_str(
-        r#"{"default":[{"file":"re/_parser.py","reason":"leaves `X` unbound"}]}"#,
-    )
-    .expect("a set from an older generation parses");
-    assert_ne!(held.version, VERSION);
-    assert!(held.breaks.is_empty(), "{:?}", held.breaks);
-    assert!(held.uncomparable.is_empty(), "{:?}", held.uncomparable);
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("breaks.json");
+    let baked = |version: u32| {
+        format!(
+            r#"{{"breaks":{{"default":[{{"file":"re/_parser.py","module":"re","reason":"leaves `X` unbound"}}]}},"uncomparable":{{}},"version":{version}}}"#
+        )
+    };
+    fs_err::write(&path, baked(VERSION)).expect("writes");
+    assert!(baseline_at(&path).is_some_and(|held| !held.breaks.is_empty()));
+    fs_err::write(&path, baked(VERSION - 1)).expect("writes");
+    assert!(baseline_at(&path).is_none());
 }
 
 #[test]
@@ -586,7 +590,7 @@ fn the_flaky_list_caps_at_the_shown_limit() {
         "{shown}"
     );
     assert!(shown.contains("... and 3 more"), "{shown}");
-    assert!(!shown.contains("m32.py"), "{shown}");
+    assert!(!shown.contains(&format!("m{SHOWN}.py")), "{shown}");
 }
 
 #[test]

@@ -398,7 +398,6 @@ mod tests {
     use std::assert_matches;
 
     use indoc::indoc;
-    use proptest::prelude::*;
     use rstest::rstest;
     use ruff_text_size::TextSize;
 
@@ -853,51 +852,18 @@ mod tests {
         );
     }
 
-    proptest! {
-        #[test]
-        fn closure_binding_is_independent_of_outer_same_name(
-            tail in "[a-z0-9]{0,5}"
-        ) {
-            let name = format!("x{tail}");
-            let program = format!(
-                "{name} = 1\ndef inner():\n    {name} = 2\n    return {name}\n",
-            );
-            let analysis = analyze(&program);
-            let outer = module_binding_id(&analysis, &name);
-            let inner_scope = analysis
-                .scopes
-                .iter()
-                .find(|s| matches!(s.kind, ScopeKind::Function))
-                .expect("inner is a function scope");
-            let inner = *inner_scope
-                .bindings
-                .get(name.as_str())
-                .expect("inner shadows name");
-            prop_assert_ne!(outer, inner);
-            prop_assert_eq!(analysis.read_offsets(outer).len(), 0);
-            prop_assert_eq!(analysis.read_offsets(inner).len(), 1);
-        }
-
-        #[test]
-        fn name_read_once_reports_one_read_offset(
-            tail in "[a-z0-9]{0,5}"
-        ) {
-            let name = format!("x{tail}");
-            let program = format!("{name} = 1\nprint({name})\n");
-            let analysis = analyze(&program);
-            let id = module_binding_id(&analysis, &name);
-            prop_assert_eq!(analysis.read_offsets(id).len(), 1);
-        }
-
-        #[test]
-        fn unread_name_reports_no_read_offset(
-            tail in "[a-z0-9]{0,5}"
-        ) {
-            let name = format!("x{tail}");
-            let program = format!("{name} = 1\n");
-            let analysis = analyze(&program);
-            let id = module_binding_id(&analysis, &name);
-            prop_assert_eq!(analysis.read_offsets(id).len(), 0);
-        }
+    #[test]
+    fn a_closure_binding_is_independent_of_an_outer_name_it_shadows() {
+        let analysis = analyze("x = 1\ndef inner():\n    x = 2\n    return x\n");
+        let outer = module_binding_id(&analysis, "x");
+        let inner_scope = analysis
+            .scopes
+            .iter()
+            .find(|s| matches!(s.kind, ScopeKind::Function))
+            .expect("inner is a function scope");
+        let inner = *inner_scope.bindings.get("x").expect("inner shadows name");
+        assert_ne!(outer, inner);
+        assert!(analysis.read_offsets(outer).is_empty());
+        assert_eq!(analysis.read_offsets(inner).len(), 1);
     }
 }

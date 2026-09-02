@@ -107,8 +107,8 @@ impl Shedder<'_> {
     pub(super) fn push_fold_edits(&mut self, inner: TextRange) {
         let text = self.source.slice(inner);
         for (begin, len) in soft_wrap_runs(text) {
-            let start = inner.start() + TextSize::try_from(begin).expect("offset fits u32");
-            let end = start + TextSize::try_from(len).expect("run length fits u32");
+            let start = inner.start() + text[..begin].text_len();
+            let end = start + text[begin..begin + len].text_len();
             let span = TextRange::new(start, end);
             insert_edit(
                 &mut self.edits,

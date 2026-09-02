@@ -205,6 +205,10 @@ fn directives(comment: &str) -> Directives {
                 (Some(FormatDirective::SkipRules(rules)), FormatDirective::SkipRules(more)) => {
                     rules.extend(more);
                 }
+                (
+                    slot @ Some(FormatDirective::SkipRules(_)),
+                    next @ FormatDirective::Kind(SuppressionKind::Skip),
+                ) => *slot = Some(next),
                 (Some(_), _) => {}
                 (slot @ None, next) => *slot = Some(next),
             }
@@ -258,6 +262,14 @@ mod tests {
 
     fn line(zero_indexed: usize) -> OneIndexed {
         OneIndexed::from_zero_indexed(zero_indexed)
+    }
+
+    #[test]
+    fn a_bare_skip_after_a_listed_one_widens_to_every_rule() {
+        let source = parse("x = 1  # prose: skip[align-equals]  # prose: skip\n");
+        let map = source.suppression_map();
+        assert!(map.suppresses(range(0, 5), AlignEquals::SLUG));
+        assert!(map.suppresses(range(0, 5), AlphabetizeSiblings::SLUG));
     }
 
     #[rstest]

@@ -252,13 +252,7 @@ impl BandPlan<'_> {
         let tiers: FxHashMap<usize, usize> = self
             .keys
             .iter()
-            .map(|(&idx, &(tier, ..))| {
-                (
-                    idx,
-                    rule.max_tiers
-                        .map_or(tier, |cap| tier.min(cap.saturating_sub(1))),
-                )
-            })
+            .map(|(&idx, &(tier, ..))| (idx, rule.max_tiers.map_or(tier, |cap| tier.min(cap - 1))))
             .collect();
         let tier_sizes = tiers
             .iter()

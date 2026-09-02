@@ -291,7 +291,7 @@ fn close_run<E: Write>(
     pass: Pass,
     stderr: &mut E,
 ) -> ExitStatus {
-    let status = finish(outcomes, setup.cache.is_some(), setup.verbose, pass);
+    let status = finish(outcomes, setup.cache.is_some(), setup.verbose, pass, stderr);
     render_summary(stderr, present, outcomes, summary, pass);
     status
 }

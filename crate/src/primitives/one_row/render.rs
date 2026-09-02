@@ -10,7 +10,11 @@ use ruff_text_size::TextRange;
 
 use super::{Column, Settings, walk::Joiner};
 use crate::{
-    primitives::{edit::apply_inline_edits, fracture::outermost, inline::folded_line_form},
+    primitives::{
+        edit::apply_inline_edits,
+        fracture::outermost,
+        inline::{folded_line_form, spans_rows},
+    },
     source::Source,
 };
 
@@ -68,7 +72,7 @@ impl<'a> Writer<'a> {
             return None;
         }
         let joined = apply_inline_edits(self.source, range, &outermost(joiner.edits));
-        (!joined.contains('\n')).then_some(joined)
+        (!spans_rows(&joined)).then_some(joined)
     }
 
     /// `expr` rewritten from its children onto one row, `None` where
@@ -76,7 +80,7 @@ impl<'a> Writer<'a> {
     fn rebuilt(&self, expr: &Expr) -> Option<Cow<'a, str>> {
         let mut out = String::new();
         self.write(&mut out, expr, expr.into())?;
-        (!out.contains('\n')).then_some(Cow::Owned(out))
+        (!spans_rows(&out)).then_some(Cow::Owned(out))
     }
 
     /// True where a later rule reopens `expr` whatever its current
@@ -263,9 +267,8 @@ impl<'a> Writer<'a> {
         if self.blocked(expr, range, hold) {
             return None;
         }
-        let slice = self.source.slice(range);
-        if !slice.contains('\n') {
-            return Some(Cow::Borrowed(slice));
+        if !self.source.contains_line_break(range) {
+            return Some(Cow::Borrowed(self.source.slice(range)));
         }
         self.rebuilt(expr)
     }

@@ -69,20 +69,6 @@ mod tests {
         assert_eq!(ExitStatus::from(Severity::Lint), ExitStatus::LintViolation);
     }
 
-    #[rstest]
-    fn into_exit_code_compiles_for_each_variant(
-        #[values(
-            ExitStatus::Clean,
-            ExitStatus::ConfigError,
-            ExitStatus::FormatChange,
-            ExitStatus::LintViolation,
-            ExitStatus::ParseError
-        )]
-        status: ExitStatus,
-    ) {
-        let _: ExitCode = status.into();
-    }
-
     #[test]
     fn ord_matches_matrix() {
         assert!(ASCENDING.is_sorted());

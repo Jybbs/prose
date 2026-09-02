@@ -3,8 +3,8 @@
 //!
 //! The search runs each rule alone first and each rule pair after,
 //! returning the first subset whose own output a second pass changes. A
-//! pair is built in registration order, the order
-//! [`Pipeline::with_filters`] seats whichever subset it is handed.
+//! pair is built in candidate order, the editing rules leading, which
+//! [`Pipeline::with_filters`] reads as a set rather than as a seating.
 
 use itertools::Itertools;
 use ruff_python_ast::ModModule;

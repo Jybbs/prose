@@ -27,9 +27,8 @@ use crate::{
         edit::{apply_inline_edits, insert_edit, narrowed_replacement},
         effect::value_is_effectful,
         orderer::{
-            any_sibling_shares_line, gaps_carry_code, opens_its_line, permute_full,
-            reorder_separated, reorder_text, reordered_lines_fit, swap_relocates_spanning,
-            swap_span_holds,
+            permute_full, reorder_separated, reorder_text, reordered_lines_fit,
+            swap_relocates_spanning, swap_span_holds, swaps_in_place,
         },
         params::classify_param,
         walk::walk_stmt,
@@ -134,9 +133,9 @@ impl<'a> LeafCollector<'a> {
         T: Ranged,
         S: Ord,
     {
-        let [first, .., _] = items else {
+        if items.len() < 2 {
             return;
-        };
+        }
         let source = self.source;
         // A group sharing lines, opening mid-row, or carrying code in
         // its gaps swaps member slices through `reorder_text`, keeping
@@ -145,9 +144,7 @@ impl<'a> LeafCollector<'a> {
         // routes through `reorder_separated` so each trailing comment
         // travels with its member, and a swap widening past the budget
         // and the widest source row holds the group.
-        let head_shared = !opens_its_line(source, first.start());
-        let swapped =
-            any_sibling_shares_line(source, items) || head_shared || gaps_carry_code(source, items);
+        let swapped = swaps_in_place(source, items);
         if swap_span_holds(source, items, swapped) {
             return;
         }

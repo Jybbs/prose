@@ -9,7 +9,7 @@
 //! comment at the width of.
 
 use ruff_python_trivia::{CommentRanges, PythonWhitespace, is_pragma_comment};
-use ruff_source_file::LineRanges;
+use ruff_source_file::{LineRanges, UniversalNewlines};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::{
@@ -23,7 +23,6 @@ mod banners;
 mod noqa;
 
 pub(crate) use banners::is_banner_block;
-use banners::is_marker_line;
 pub(crate) use noqa::{noqa_marker, noqa_names};
 
 /// The characters whose appearance directly after a comment's hash run
@@ -88,11 +87,11 @@ impl Settling {
 /// member below it, carrying a section marker, a suppression directive,
 /// or a tool pragma on any of its lines.
 pub(crate) fn anchors_in_place(source: &Source, block: TextRange) -> bool {
-    source
-        .slice(block)
-        .lines()
-        .map(str::trim_start)
-        .any(|line| is_marker_line(line) || is_directive_comment(line) || is_pragma_comment(line))
+    is_banner_block(source, block)
+        || source.slice(block).universal_newlines().any(|line| {
+            let line = line.as_str().trim_start();
+            is_directive_comment(line) || is_pragma_comment(line)
+        })
 }
 
 /// The start of the block binding to the member at `item_start`, the

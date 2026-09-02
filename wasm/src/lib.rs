@@ -3,7 +3,8 @@
 use std::{collections::BTreeSet, error::Error};
 
 use prose::{
-    config::Config, findings::lint_records_json, pipeline::Pipeline, rule::RuleId, source::Source,
+    config::Config, diagnostics::Severity, findings::lint_records_json, pipeline::Pipeline,
+    rule::RuleId, source::Source,
 };
 use wasm_bindgen::prelude::*;
 
@@ -55,7 +56,11 @@ fn try_format(config_toml: &str, source: &str) -> Result<FormatResult, Box<dyn E
     let config = Config::from_prose_toml_str(config_toml)?;
     let pipeline = Pipeline::with_defaults(&config);
     let (formatted, diagnostics) = pipeline.run(source.parse::<Source>()?)?;
-    let fired: BTreeSet<&str> = diagnostics.iter().map(|diag| diag.rule.as_str()).collect();
+    let fired: BTreeSet<&str> = diagnostics
+        .iter()
+        .filter(|diag| diag.severity == Severity::Format)
+        .map(|diag| diag.rule.as_str())
+        .collect();
     Ok(FormatResult {
         config: config.to_toml(),
         diagnostics: lint_records_json(formatted.source_file(), &diagnostics).unwrap_or_default(),

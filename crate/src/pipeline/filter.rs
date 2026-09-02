@@ -13,7 +13,10 @@ pub(super) fn prepared_groups(rule: &dyn Rule, source: &Source) -> Vec<Vec<Edit>
     let mut groups = rule.apply(source);
     let rule_id = rule.id();
     let suppression = source.suppression_map();
-    groups.retain(|g| !g.is_empty() && !g.iter().any(|e| suppression.suppresses(e, rule_id)));
+    let suppressed = suppression.has_format_suppression();
+    groups.retain(|g| {
+        !g.is_empty() && (!suppressed || !g.iter().any(|e| suppression.suppresses(e, rule_id)))
+    });
     groups
 }
 

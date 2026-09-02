@@ -74,6 +74,9 @@ impl Builder {
         for decorator in &class.decorator_list {
             self.visit_expr(&decorator.expression);
         }
+        if let Some(type_params) = &class.type_params {
+            self.in_annotation(|b| b.visit_type_params(type_params));
+        }
         if let Some(arguments) = &class.arguments {
             walk_arguments(self, arguments);
         }
@@ -111,6 +114,9 @@ impl Builder {
     fn enter_function(&mut self, function: &StmtFunctionDef, stmt_start: TextSize) {
         for decorator in &function.decorator_list {
             self.visit_expr(&decorator.expression);
+        }
+        if let Some(type_params) = &function.type_params {
+            self.in_annotation(|b| b.visit_type_params(type_params));
         }
         walk_parameters(self, &function.parameters);
         if let Some(returns) = &function.returns {
@@ -348,6 +354,7 @@ impl Builder {
                 .entry(name.into())
                 .or_default()
                 .push(offset);
+            return self.record_write_in(ScopeId(0), name, offset, kind);
         }
         self.record_write_in(scope, name, offset, kind)
     }

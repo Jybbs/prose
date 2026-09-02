@@ -12,9 +12,11 @@ use crate::{primitives::slots::slot_runs, source::Source};
 
 /// Total source extent covered by `blocks`. Requires non-empty input.
 pub(crate) fn blocks_span<T: Ranged>(blocks: &[T]) -> TextRange {
-    blocks[0]
-        .range()
-        .cover(blocks.last().expect("non-empty blocks").range())
+    blocks
+        .iter()
+        .map(Ranged::range)
+        .reduce(TextRange::cover)
+        .expect("non-empty blocks")
 }
 
 /// The spans deleting every member of a comma-separated list that
@@ -101,30 +103,17 @@ mod tests {
     }
 
     #[rstest]
+    #[case(0..1, 0, 6)]
+    #[case(1..2, 6, 12)]
+    #[case(2..3, 10, 16)]
     #[case(0..2, 0, 12)]
     #[case(1..3, 4, 16)]
-    fn member_deletion_span_steps_over_a_run(
+    fn member_deletion_span_takes_the_separator_on_the_surviving_side(
         #[case] run: Range<usize>,
         #[case] start: u32,
         #[case] end: u32,
     ) {
         let members = [range(0, 4), range(6, 10), range(12, 16)];
         assert_eq!(member_deletion_span(&members, run), range(start, end));
-    }
-
-    #[rstest]
-    #[case(0, 0, 6)]
-    #[case(1, 6, 12)]
-    #[case(2, 10, 16)]
-    fn member_deletion_span_takes_the_separator_on_the_surviving_side(
-        #[case] index: usize,
-        #[case] start: u32,
-        #[case] end: u32,
-    ) {
-        let members = [range(0, 4), range(6, 10), range(12, 16)];
-        assert_eq!(
-            member_deletion_span(&members, index..index + 1),
-            range(start, end),
-        );
     }
 }

@@ -188,7 +188,7 @@ impl Cache {
                 sweep_dir(&mut report, &path);
                 continue;
             }
-            let bytes = entry.metadata().map_or(0, |m| m.len());
+            let bytes = entry.metadata().as_ref().map_or(0, on_disk);
             if fs_err::remove_file(&path).is_ok() {
                 report.record(bytes);
             }
@@ -276,7 +276,7 @@ impl Cache {
 
     /// Returns the entry stored at `key` if present and well-formed,
     /// bumping the entry's mtime where the recorded one has aged past
-    /// [`MTIME_GRANULARITY`]. Eviction orders by mtime at day
+    /// [`MTIME_GRANULARITY`]. Eviction orders by mtime at hour
     /// granularity at most, so a bump per hit would write an inode on
     /// every read of an edit loop to sharpen an order nothing reads
     /// that finely.
@@ -418,7 +418,7 @@ fn stale(file: &fs_err::File, now: SystemTime) -> bool {
 fn sweep(dir: &Path) -> CleanReport {
     let mut report = CleanReport::default();
     for entry in dir_entries(dir) {
-        let bytes = entry.metadata().map_or(0, |m| m.len());
+        let bytes = entry.metadata().as_ref().map_or(0, on_disk);
         if fs_err::remove_file(entry.path()).is_ok() {
             report.record(bytes);
         }

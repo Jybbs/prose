@@ -155,7 +155,7 @@ fn apply_band_comments<'src>(
     let newline = source.newline_str();
     for (&idx, comment) in &band.attached {
         let head = comment.len().to_usize();
-        let own_line = usize::from(source.text().line_start(body[idx].start()) - comment.start());
+        let own_line = (source.text().line_start(body[idx].start()) - comment.start()).to_usize();
         if own_line <= head + newline.len() {
             continue;
         }
@@ -164,7 +164,7 @@ fn apply_band_comments<'src>(
     }
     for carry in &band.carries {
         let own_line = source.text().line_start(body[carry.absorbs].start());
-        let held = usize::from(own_line - carry.comment.start());
+        let held = (own_line - carry.comment.start()).to_usize();
         rendered[carry.absorbs] = match std::mem::take(&mut rendered[carry.absorbs]) {
             Cow::Borrowed(text) => Cow::Borrowed(&text[held..]),
             Cow::Owned(mut text) => Cow::Owned(text.split_off(held)),
@@ -178,7 +178,7 @@ fn apply_band_comments<'src>(
             // belongs to a line of its own rather than to a trailing slot.
             format!("{carried}{TRAILING_GAP}{}", comment.trim_start())
         } else {
-            format!("{comment}{}{carried}", source.newline_str())
+            format!("{comment}{newline}{carried}")
         });
     }
 }

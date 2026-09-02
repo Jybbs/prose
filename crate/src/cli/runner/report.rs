@@ -1,7 +1,7 @@
 //! Outcome aggregation: summaries, exit-status derivation, and
 //! diagnostic emission.
 
-use std::io::{self, BufWriter, Write};
+use std::io::{BufWriter, Write};
 
 use anstream::{
     AutoStream,
@@ -107,14 +107,15 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
         )
 }
 
-pub(super) fn finish(
+pub(super) fn finish<E: Write>(
     outcomes: &[FileOutcome],
     cache_enabled: bool,
     verbose: bool,
     pass: Pass,
+    stderr: &mut E,
 ) -> ExitStatus {
     if verbose {
-        report_verbose(outcomes, cache_enabled, &mut io::stderr());
+        report_verbose(outcomes, cache_enabled, stderr);
     }
     status_from_outcomes(outcomes, pass.write_back())
 }
@@ -262,7 +263,7 @@ fn unstable_remainder(outcomes: &[FileOutcome]) -> Option<Summary> {
 
 #[cfg(test)]
 mod tests {
-    use std::assert_matches;
+    use std::{assert_matches, io};
 
     use rstest::rstest;
     use ruff_diagnostics::{Edit, Fix};

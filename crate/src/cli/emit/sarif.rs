@@ -6,6 +6,7 @@ use std::{
 };
 
 use ruff_diagnostics::Edit;
+use ruff_notebook::NotebookIndex;
 use ruff_source_file::{LineColumn, SourceFile};
 use ruff_text_size::Ranged;
 use serde_sarif::sarif::{
@@ -15,7 +16,11 @@ use serde_sarif::sarif::{
 };
 
 use super::{Emitter, EmitterSummary, Run, diagnostics, write_json_line};
-use crate::{diagnostics::Diagnostic, file_uri, findings::line_columns};
+use crate::{
+    diagnostics::Diagnostic,
+    file_uri,
+    findings::{line_columns, located},
+};
 
 pub(crate) struct Sarif;
 
@@ -74,8 +79,12 @@ fn sarif_fix(file: &SourceFile, edits: &[Edit]) -> Fix {
         .build()
 }
 
-fn sarif_result(file: &SourceFile, diag: &Diagnostic) -> SarifResult {
-    let (start, end) = line_columns(file, diag.range);
+fn sarif_result(
+    file: &SourceFile,
+    index: Option<&NotebookIndex>,
+    diag: &Diagnostic,
+) -> SarifResult {
+    let (start, end, _) = located(file, index, diag.range);
     let builder = SarifResult::builder()
         .rule_id(diag.rule.as_str())
         .level(ResultLevel::Warning)
@@ -104,7 +113,7 @@ fn sarif_run(runs: &[Run<'_>]) -> SarifRun {
         .map(|id| ReportingDescriptor::builder().id(id.as_str()).build())
         .collect();
     let results: Vec<SarifResult> = diagnostics(runs)
-        .map(|(file, _index, diag)| sarif_result(file, diag))
+        .map(|(file, index, diag)| sarif_result(file, index, diag))
         .collect();
     SarifRun::builder()
         .tool(

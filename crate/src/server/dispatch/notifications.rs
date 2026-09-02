@@ -62,13 +62,8 @@ pub(super) fn handle_notification(
             text_document,
             mut content_changes,
         }) => {
-            if let Some(change) = content_changes.pop() {
-                documents.set(
-                    text_document.uri.clone(),
-                    change.text,
-                    text_document.version,
-                );
-            }
+            let text = content_changes.pop().map(|change| change.text);
+            documents.update(&text_document.uri, text, text_document.version);
             return publish(connection, documents, configs, &text_document.uri, encoding);
         }
         Err(notification) => notification,

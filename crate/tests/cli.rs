@@ -87,6 +87,25 @@ const CRLF_CELLS: &str = r#"{
   "nbformat_minor": 5
 }"#;
 
+/// The CRLF module as `format` rewrites it, every seam the rewrite
+/// writes carrying the source's own ending.
+const CRLF_FORMATTED: &str = concat!(
+    "import os\r\n",
+    "import sys\r\n",
+    "\r\n",
+    "from pathlib import Path\r\n",
+    "\r\n",
+    "VALUES = {\"a\": 2, \"b\": 1}\r\n",
+    "\r\n",
+    "\r\n",
+    "def alpha() -> dict:\r\n",
+    "    return VALUES\r\n",
+    "\r\n",
+    "\r\n",
+    "def beta() -> tuple:\r\n",
+    "    return Path, sys, os\r\n",
+);
+
 /// A CRLF module whose imports regroup, whose dict entries sort, and
 /// whose definitions band, so the rewrite writes a separator of its own
 /// at each of those seams. Every definition carries a return annotation,
@@ -1329,25 +1348,7 @@ fn module_format_preserves_crlf_line_endings() {
     let (assert, after) = rewrite_fixture("mod.py", CRLF_MODULE, &["format", "--no-cache"]);
     assert.success();
 
-    assert_eq!(
-        after,
-        concat!(
-            "import os\r\n",
-            "import sys\r\n",
-            "\r\n",
-            "from pathlib import Path\r\n",
-            "\r\n",
-            "VALUES = {\"a\": 2, \"b\": 1}\r\n",
-            "\r\n",
-            "\r\n",
-            "def alpha() -> dict:\r\n",
-            "    return VALUES\r\n",
-            "\r\n",
-            "\r\n",
-            "def beta() -> tuple:\r\n",
-            "    return Path, sys, os\r\n",
-        ),
-    );
+    assert_eq!(after, CRLF_FORMATTED);
 }
 
 #[test]
@@ -1356,11 +1357,7 @@ fn module_format_preserves_lone_carriage_returns() {
         rewrite_fixture("mod.py", CARRIAGE_RETURN_MODULE, &["format", "--no-cache"]);
     assert.success();
 
-    assert!(
-        !after.contains('\n'),
-        "no line feed reaches a CR-only module"
-    );
-    assert_eq!(after.matches('\r').count(), 14);
+    assert_eq!(after, CRLF_FORMATTED.replace("\r\n", "\r"));
 }
 
 #[test]
@@ -1702,6 +1699,7 @@ fn verbose_flag_with_no_cache_reports_bypassed() {
 }
 
 #[test]
-fn version_exits_clean() {
-    prose().arg("--version").assert().success();
+fn version_prints_the_crate_version() {
+    let assert = prose().arg("--version").assert().success();
+    assert_stdout_has(&assert, env!("CARGO_PKG_VERSION"));
 }

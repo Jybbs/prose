@@ -12,7 +12,7 @@ use rustc_hash::FxHashMap;
 
 use crate::{
     cache::{Anchor, CacheKeyPrefix},
-    config::{Config, ConfigSource, NoticeDedup},
+    config::{Config, ConfigSource, NoticeDedup, holding_dir},
     pipeline::Pipeline,
     rule::RuleId,
 };
@@ -90,7 +90,7 @@ impl ConfigResolver {
         self.sources
             .lock()
             .expect("resolver lock")
-            .entry(file.parent().unwrap_or(file).to_path_buf())
+            .entry(holding_dir(file).to_path_buf())
             .or_insert_with_key(|dir| match ConfigSource::discover(dir, &self.notices) {
                 Ok(Some(source)) => DirResolution::Project(Arc::new(source)),
                 Ok(None) => DirResolution::Bare,

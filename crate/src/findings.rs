@@ -131,7 +131,7 @@ pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Optio
 /// absolute cell holding it. A notebook translates the positions to
 /// cell-relative coordinates through the index, where a module leaves
 /// them absolute with no cell.
-fn located(
+pub(crate) fn located(
     file: &SourceFile,
     index: Option<&NotebookIndex>,
     range: TextRange,

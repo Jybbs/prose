@@ -10,7 +10,7 @@ use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use super::Exploder;
 use crate::primitives::{
     edit::{apply_inline_edits, placed_head},
-    inline::{end_column, indent_width, last_line, settled_width},
+    inline::{end_column, indent_width, last_line, settled_width, spans_rows},
     layout::requires_expand,
     tokens::{is_closer, is_opener},
 };
@@ -35,7 +35,7 @@ impl<'a> Exploder<'a> {
             row,
             end_column(&placed, self.origin_column),
         );
-        if placed.contains('\n') {
+        if spans_rows(&placed) {
             column = column.saturating_add_signed(self.line_shift);
         }
         if self.indent.is_some() || !reserved {
@@ -135,6 +135,6 @@ impl<'a> Exploder<'a> {
     /// to in a module walk.
     pub(super) fn open_paren_column(&self, call: &ExprCall) -> usize {
         let callee = apply_inline_edits(self.source, call.func.range(), &self.edits);
-        self.placed_column(call.arguments.start(), !callee.contains('\n'))
+        self.placed_column(call.arguments.start(), !spans_rows(&callee))
     }
 }

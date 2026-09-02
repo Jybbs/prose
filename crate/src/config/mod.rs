@@ -52,7 +52,7 @@ pub(crate) use de::deserialize_rule;
 use de::{deserialize_optional_cap, deserialize_prose, serialize_optional_cap};
 pub(crate) use json_schema::rule_schema;
 use load::{ConfigNotice, emit_notice, prose_table_from_str, walk_prose_table};
-pub(crate) use load::{NoticeDedup, config_rel_paths};
+pub(crate) use load::{NoticeDedup, config_rel_paths, holding_dir};
 pub use schema::*;
 pub(crate) use source::ConfigSource;
 

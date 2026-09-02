@@ -3,7 +3,7 @@
 use std::io::Write;
 
 use anyhow::Context;
-use itertools::izip;
+use itertools::Itertools;
 use ruff_notebook::NotebookIndex;
 
 use crate::{
@@ -89,7 +89,12 @@ fn write_notebook_diff<W: Write>(
     index: &NotebookIndex,
     heading: Heading,
 ) -> anyhow::Result<()> {
-    for (before, after, cell_start) in izip!(&rewrite.before, &rewrite.after, index.iter()) {
+    for ((before, after), cell_start) in rewrite
+        .before
+        .iter()
+        .zip_eq(&rewrite.after)
+        .zip_eq(index.iter())
+    {
         if before == after {
             continue;
         }

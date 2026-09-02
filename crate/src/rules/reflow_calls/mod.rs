@@ -129,7 +129,7 @@ impl<'a> Reshaper<'a> {
         tail: usize,
     ) -> Option<String> {
         let block = self.source.slice(range);
-        let travel = if block.contains('\n') {
+        let travel = if self.source.contains_line_break(range) {
             if spans_a_string_part(self.source, expr) {
                 return None;
             }

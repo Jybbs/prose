@@ -72,8 +72,6 @@ fn dir_name(path: &Path) -> String {
         .to_owned()
 }
 
-/// The `(rule, case)` pair of every `<Fixture…>` tag in `text` that
-/// carries both attributes.
 /// The entries of `dir` that `keep` admits, ascending by path.
 fn entries(dir: &Path, keep: impl Fn(&Path) -> bool) -> Vec<PathBuf> {
     fs_err::read_dir(dir)
@@ -85,6 +83,8 @@ fn entries(dir: &Path, keep: impl Fn(&Path) -> bool) -> Vec<PathBuf> {
         .collect()
 }
 
+/// The `(rule, case)` pair of every `<Fixture…>` tag in `text` that
+/// carries both attributes.
 fn fixture_invocations(text: &str) -> impl Iterator<Item = (&str, &str)> {
     text.match_indices("<Fixture").filter_map(|(at, _)| {
         let (tag, _) = text[at..].split_once('>')?;

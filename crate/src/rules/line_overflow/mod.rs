@@ -142,11 +142,11 @@ impl<'a> Spans<'a> {
         concatenated_run(expr).is_some() && !self.docstrings.contains(&expr.range())
     }
 
-    /// True when `line` sits inside an import statement, which answers
-    /// to the import budget. Import statements never nest, so the last
-    /// range opening at or before `line` is the only candidate.
+    /// True when `line` meets an import statement, which answers to the
+    /// import budget. Import statements never nest, so the last range
+    /// opening at or before `line`'s end is the only candidate.
     fn in_import(&self, line: TextRange) -> bool {
-        item_holding(&self.imports, line.start()).is_some_and(|import| import.contains_range(line))
+        item_holding(&self.imports, line.end()).is_some_and(|import| import.end() >= line.start())
     }
 
     /// Orders both collected range lists by start and fills [`Self::reach`],

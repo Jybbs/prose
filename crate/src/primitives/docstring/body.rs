@@ -7,7 +7,7 @@ use ruff_python_trivia::{has_leading_content, leading_indentation};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
 
-use crate::source::Source;
+use crate::{primitives::inline::spans_rows, source::Source};
 
 /// Body slice between a triple-quoted docstring's opener and closer,
 /// paired with the source range that slice covers and whether the
@@ -22,7 +22,7 @@ pub(crate) struct DocstringBody<'a> {
 impl DocstringBody<'_> {
     /// True when the body spans more than one line.
     pub(crate) fn is_multiline(&self) -> bool {
-        self.text.contains('\n')
+        spans_rows(self.text)
     }
 }
 

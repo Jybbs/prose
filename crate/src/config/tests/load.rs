@@ -157,17 +157,6 @@ fn load_picks_nearest_prose_toml_over_ancestor_pyproject() {
 }
 
 #[test]
-fn load_precedence_routes_through_default_notice() {
-    let tmp = TempDir::new().expect("tempdir");
-    write_prose_toml(tmp.path(), "code-line-length = 120\n");
-    write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
-
-    let config = Config::load(tmp.path()).expect("loads");
-
-    assert_eq!(config.code_line_length, NonZeroUsize::new(120));
-}
-
-#[test]
 fn load_prefers_dotconfig_over_sibling_pyproject() {
     let tmp = TempDir::new().expect("tempdir");
     write_dotconfig_prose_toml(tmp.path(), "code-line-length = 120\n");

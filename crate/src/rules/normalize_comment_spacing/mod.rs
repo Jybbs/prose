@@ -6,9 +6,10 @@
 //! where the run is followed by `!`, `'`, `:`, or `|`, and where no text
 //! follows the run at all, leaving the trailing gap settled either way.
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_trivia::CommentRanges;
-use ruff_text_size::{TextLen, TextRange};
+use ruff_text_size::{Ranged, TextLen, TextRange};
 
 use crate::{
     config::Config,
@@ -64,11 +65,11 @@ fn columnar_runs(source: &Source) -> Vec<bool> {
     let ranges = source.comment_ranges();
     let text = source.text();
     let mut flags = vec![false; ranges.len()];
-    for (i, pair) in ranges.windows(2).enumerate() {
-        let [above, below] = [pair[0].start(), pair[1].start()];
+    for (i, (above, below)) in ranges.iter().map(Ranged::start).tuple_windows().enumerate() {
         if CommentRanges::is_own_line(above, text)
             && CommentRanges::is_own_line(below, text)
             && source.consecutive_lines(above, below)
+            && source.same_cell(above, below)
             && source.column_of(above) == source.column_of(below)
         {
             flags[i] = true;

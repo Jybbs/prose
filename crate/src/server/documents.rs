@@ -30,6 +30,22 @@ impl DocumentStore {
         self.docs.insert(uri, Document { text, version });
     }
 
+    /// Stamps `version` onto `uri`'s document, replacing its text where
+    /// the change carried one, and opens the document where the change
+    /// carries text for one not yet tracked.
+    pub(super) fn update(&mut self, uri: &Uri, text: Option<String>, version: i32) {
+        match (self.docs.get_mut(uri), text) {
+            (Some(doc), text) => {
+                if let Some(text) = text {
+                    doc.text = text;
+                }
+                doc.version = version;
+            }
+            (None, Some(text)) => self.set(uri.clone(), text, version),
+            (None, None) => {}
+        }
+    }
+
     /// Returns every tracked URI, for republishing after a config change.
     pub(super) fn uris(&self) -> Vec<Uri> {
         self.docs.keys().cloned().collect()

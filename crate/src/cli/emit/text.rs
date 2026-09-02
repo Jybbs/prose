@@ -4,7 +4,6 @@
 use std::io::{self, Write};
 
 use annotate_snippets::{AnnotationKind, Level, Patch, Renderer, Snippet};
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use ruff_diagnostics::Fix;
 use ruff_notebook::NotebookIndex;
 use ruff_source_file::{OneIndexed, SourceFile};
@@ -66,19 +65,15 @@ impl Text {
 }
 
 impl Emitter for Text {
-    /// Renders each run on the rayon pool, then writes the buffers back
-    /// in source order, which rayon's indexed `collect` preserves.
+    /// Renders each run and writes it in source order.
     fn emit(
         &self,
         writer: &mut dyn Write,
         runs: &[Run<'_>],
         _summary: &EmitterSummary,
     ) -> io::Result<()> {
-        let blocks: Vec<Vec<u8>> = runs
-            .par_iter()
-            .map(|run| self.render_run(run))
-            .collect::<io::Result<_>>()?;
-        blocks.iter().try_for_each(|block| writer.write_all(block))
+        runs.iter()
+            .try_for_each(|run| writer.write_all(&self.render_run(run)?))
     }
 }
 
@@ -104,8 +99,13 @@ fn cell_slice(
     range: TextRange,
 ) -> Option<(OneIndexed, OneIndexed, TextRange)> {
     let code = file.to_source_code();
-    let first = index.cell(code.line_column(range.start()).line)?;
-    let last = index.cell(code.line_column(range.end()).line)?;
+    let first = index.cell(code.line_index(range.start()))?;
+    let last_byte = if range.is_empty() {
+        range.start()
+    } else {
+        range.end() - TextSize::from(1)
+    };
+    let last = index.cell(code.line_index(last_byte))?;
     let mut start = None;
     let mut end = file.source_text().text_len();
     for cell_start in index.iter() {

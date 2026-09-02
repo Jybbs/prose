@@ -9,6 +9,7 @@ use memchr::memchr;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::Expr;
 use ruff_python_trivia::leading_indentation;
+use ruff_source_file::UniversalNewlines;
 use ruff_text_size::TextRange;
 use unicode_width::UnicodeWidthStr;
 
@@ -23,7 +24,9 @@ use crate::{
 
 /// True where a row of `slice` ends on a backslash continuation.
 pub(crate) fn carries_a_continuation(slice: &str) -> bool {
-    slice.lines().any(|line| line.trim_end().ends_with('\\'))
+    slice
+        .universal_newlines()
+        .any(|line| line.as_str().trim_end().ends_with('\\'))
 }
 
 /// The display width of `text`, its byte length where every byte is
@@ -39,10 +42,8 @@ pub(crate) fn display_width(text: &str) -> usize {
 /// The column `text` ends at when its opening line starts at `indent`,
 /// measured past the last line break `text` carries.
 pub(crate) fn end_column(text: &str, indent: usize) -> usize {
-    text.rsplit_once('\n').map_or_else(
-        || indent + display_width(text),
-        |(_, last)| display_width(last),
-    )
+    let last = last_line(text);
+    display_width(last) + if last.len() == text.len() { indent } else { 0 }
 }
 
 /// `slice`'s single-line form reachable by folding whitespace alone:
@@ -56,7 +57,7 @@ pub(crate) fn folded_line_form<'s>(
     expr: &Expr,
     slice: &'s str,
 ) -> Option<Cow<'s, str>> {
-    if !slice.contains('\n') {
+    if !spans_rows(slice) {
         return Some(Cow::Borrowed(slice));
     }
     (is_operator_tree(expr)
@@ -75,12 +76,17 @@ pub(crate) fn indent_width(line: &str) -> usize {
 /// The text past the last line break in `text`, `text` itself where it
 /// carries none.
 pub(crate) fn last_line(text: &str) -> &str {
-    text.rsplit_once('\n').map_or(text, |(_, last)| last)
+    text.rsplit_once(['\n', '\r'])
+        .map_or(text, |(_, last)| last)
 }
 
 /// The display width of `text`'s opening line.
 pub(crate) fn opening_width(text: &str) -> usize {
-    display_width(text.lines().next().unwrap_or_default())
+    display_width(
+        text.universal_newlines()
+            .next()
+            .map_or("", |line| line.as_str()),
+    )
 }
 
 /// True where the whitespace run covering `[begin, begin + len)` of
@@ -126,7 +132,12 @@ pub(crate) fn settled_text_width(
 /// Yields the `(start, len)` byte span of each whitespace run in `text`
 /// that spans a line break.
 pub(crate) fn soft_wrap_runs(text: &str) -> impl Iterator<Item = (usize, usize)> + '_ {
-    whitespace_runs(text).filter(move |&(begin, len)| text[begin..begin + len].contains('\n'))
+    whitespace_runs(text).filter(move |&(begin, len)| spans_rows(&text[begin..begin + len]))
+}
+
+/// True where `text` spans more than one row under any line ending.
+pub(crate) fn spans_rows(text: &str) -> bool {
+    text.contains(['\n', '\r'])
 }
 
 /// Yields the `(start, len)` byte span of each maximal whitespace run
@@ -165,9 +176,9 @@ fn collapse_soft_wraps(text: &str) -> String {
 /// chain link takes.
 fn hangs_a_chain_link(slice: &str) -> bool {
     slice
-        .lines()
+        .universal_newlines()
         .skip(1)
-        .any(|line| line.trim_start().starts_with('.'))
+        .any(|line| line.as_str().trim_start().starts_with('.'))
 }
 
 /// True for an expression whose own node joins operands with an

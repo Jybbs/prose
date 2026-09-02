@@ -15,6 +15,7 @@ pub(crate) use rule_args::{
 pub(crate) use server_args::{ServerArgs, Transport};
 pub(crate) use validation::{
     normalize_stdin_dash, report_clap_error, validate_diff_format_combination,
+    validate_stdin_filename,
 };
 
 /// Matrix appended to `prose --help` via `after_long_help`.
@@ -288,6 +289,15 @@ mod tests {
             .expect("parses");
         let err = validate_diff_format_combination(&cli).expect("validation surfaces error");
         assert_eq!(err.kind(), ErrorKind::InvalidValue);
+        assert_eq!(clap_error_status(err.kind()), ExitStatus::ConfigError);
+    }
+
+    #[test]
+    fn clap_error_status_routes_stdin_filename_without_stdin_to_config_error() {
+        let cli = Cli::try_parse_from(["prose", "check", "--stdin-filename", "nb.ipynb", "src"])
+            .expect("parses");
+        let err = validate_stdin_filename(&cli).expect("validation surfaces error");
+        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
         assert_eq!(clap_error_status(err.kind()), ExitStatus::ConfigError);
     }
 

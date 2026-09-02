@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 
 use super::de::deserialize_prose;
-use super::load::{ConfigNotice, NoticeDedup, walk_prose_table};
+use super::load::{ConfigNotice, NoticeDedup, holding_dir, walk_prose_table};
 use super::merge::merge_tables;
 use super::overrides::{Override, take_overrides};
 use super::{Config, ConfigError, script};
@@ -55,7 +55,7 @@ impl ConfigSource {
         let Some(table) = script::extract_prose_table(bytes)? else {
             return Ok(None);
         };
-        let anchor = file.parent().unwrap_or(file).to_path_buf();
+        let anchor = holding_dir(file).to_path_buf();
         Ok(Some(Self::build(anchor, table, &mut |n| notices.emit(n))?))
     }
 

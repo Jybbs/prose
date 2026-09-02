@@ -229,7 +229,7 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
         let (column, indent) =
             match placed_head(self.source, &self.edits, start, TextSize::default()) {
                 Cow::Owned(head) => {
-                    let indent = head.rsplit_once('\n').map_or_else(
+                    let indent = head.rsplit_once(['\n', '\r']).map_or_else(
                         || self.source.line_indent_width(start),
                         |(_, last)| indent_width(last),
                     );

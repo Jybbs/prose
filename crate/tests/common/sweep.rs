@@ -88,7 +88,12 @@ pub(crate) fn corpus() -> Vec<PathBuf> {
 pub(crate) fn env_list<T: Clone>(var: &str, defaults: &[T], parse: impl Fn(&str) -> T) -> Vec<T> {
     setting(var).map_or_else(
         || defaults.to_vec(),
-        |set| set.split_whitespace().map(&parse).collect(),
+        |set| {
+            set.split([' ', ','])
+                .filter(|part| !part.is_empty())
+                .map(&parse)
+                .collect()
+        },
     )
 }
 

@@ -7,7 +7,10 @@ use super::*;
 /// True when any line in the comment block reads as a section marker,
 /// either a decorative rule line or a multi-hash heading.
 pub(crate) fn is_banner_block(source: &Source, block: TextRange) -> bool {
-    source.slice(block).lines().any(is_marker_line)
+    source
+        .slice(block)
+        .universal_newlines()
+        .any(|line| is_marker_line(&line))
 }
 
 /// True when `line` opens with two or more `#`, the Markdown-style
