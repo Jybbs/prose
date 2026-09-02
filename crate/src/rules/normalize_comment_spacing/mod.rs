@@ -17,7 +17,7 @@ use crate::{
         aligner::{line_gap_before, space_padding_edit},
         comments::{TRAILING_GAP, settled_opener},
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

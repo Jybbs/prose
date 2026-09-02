@@ -20,7 +20,7 @@ use crate::{
     diagnostics::Diagnostic,
     file_uri,
     findings::{cell_message, line_columns, located},
-    rule::render_slugs,
+    rules::render_slugs,
 };
 
 /// The rule id an unstable-output result reports under.

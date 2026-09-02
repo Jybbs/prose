@@ -14,7 +14,7 @@ use std::collections::BTreeSet;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{config::Config, pipeline::Pipeline, rule::RuleId, source::Source};
+use crate::{config::Config, pipeline::Pipeline, rules::RuleId, source::Source};
 
 mod form;
 mod narrow;

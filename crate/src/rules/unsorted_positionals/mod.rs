@@ -21,7 +21,7 @@ use crate::{
         range::blocks_span,
         walk::filter_map_over_stmts,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

@@ -34,7 +34,7 @@ mod tests {
     use super::*;
     use crate::{
         diagnostics::Diagnostic,
-        rule::RuleId,
+        rules::RuleId,
         rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
         testing::{format_diagnostic, range},
         unstable::UnstableRewrite,

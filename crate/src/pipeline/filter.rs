@@ -4,7 +4,7 @@
 use ruff_diagnostics::Edit;
 use ruff_text_size::Ranged;
 
-use crate::{diagnostics::Diagnostic, rule::Rule, source::Source};
+use crate::{diagnostics::Diagnostic, rules::Rule, source::Source};
 
 /// Applies `rule` to `source` and returns its fix groups with the
 /// suppressed and empty ones removed. A group is dropped whole as soon

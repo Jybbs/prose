@@ -9,8 +9,7 @@ pub mod diagnostics;
 pub mod findings;
 pub mod pipeline;
 mod primitives;
-pub mod rule;
-mod rules;
+pub mod rules;
 pub mod source;
 pub(crate) mod suppression;
 #[cfg(test)]

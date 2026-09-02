@@ -21,7 +21,7 @@ use crate::{
         range::covers,
         tokens::{is_delimiter_padding, is_interpolated_string_start},
     },
-    rule::RuleId,
+    rules::RuleId,
     source::Source,
 };
 

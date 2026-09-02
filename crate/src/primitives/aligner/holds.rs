@@ -7,7 +7,7 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::TextSize;
 
 use super::Member;
-use crate::{rule::RuleId, source::Source};
+use crate::{rules::RuleId, source::Source};
 
 /// Returns `true` when `members` form a multi-row group whose aligned
 /// tokens sit on distinct source lines at a shared display-column

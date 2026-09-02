@@ -29,8 +29,8 @@ use crate::{
         slots::{item_holding, slot_holding},
         walk::walk_stmt,
     },
-    rule::{Rule, RuleId},
     rules::stack_adjacent_strings::concatenated_run,
+    rules::{Rule, RuleId},
     source::Source,
 };
 

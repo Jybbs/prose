@@ -12,7 +12,7 @@ use ruff_text_size::{TextRange, TextSize};
 use crate::{
     config::{AlignmentConfig, MaxShift},
     primitives::{comments::Settling, padding::Stranding},
-    rule::RuleId,
+    rules::RuleId,
     source::Source,
 };
 

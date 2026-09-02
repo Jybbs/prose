@@ -1,24 +1,14 @@
-//! Rule abstraction, identifier types, and the registry that ties
-//! concrete rule structs to the pipeline orchestrator.
-//!
-//! Each concrete rule lives under `crate::rules`. The [`Rule`] trait
-//! and the [`RuleId`] newtype defined here are the canonical handles.
-//! The `register_rules!` macro emits [`KNOWN_IDS`], [`RuleConfigs`],
-//! [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
-//! [`Pipeline::with_filters`] from a registry table.
+//! The registry tying each rule struct to the pipeline: the [`Rule`]
+//! trait, the `register_rules!` table that emits [`KNOWN_IDS`],
+//! [`RuleConfigs`], and the `Pipeline` constructors, and the
+//! dependency reads over that table.
 
-use std::{
-    borrow::Cow,
-    fmt::{self, Display},
-    str::FromStr,
-};
+use std::{borrow::Cow, fmt, str::FromStr};
 
-use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use schemars::{JsonSchema, Schema, SchemaGenerator, json_schema};
 use serde::{Deserialize, Serialize};
 use serde_json::Map;
-use thiserror::Error;
 
 use crate::{
     config::{
@@ -58,16 +48,10 @@ use crate::{
     source::Source,
 };
 
-mod independence;
-
-pub use independence::independent;
-use independence::reaches;
-
-/// Returned when a string fails to match any registered rule slug.
-/// Carries the offending input so callers can surface it verbatim.
-#[derive(Debug, Error)]
-#[error("unknown rule id `{0}`")]
-pub struct ParseRuleIdError(String);
+use super::{
+    id::{RuleId, is_valid_slug},
+    independence::reaches,
+};
 
 /// Every rule in Prose implements this trait and nothing more.
 ///
@@ -117,73 +101,10 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
     }
 }
 
-/// Stable, parseable rule identifier wrapping a kebab-case slug.
-/// Returned by [`Rule::id`] and parsed from CLI / pragma input via
-/// [`FromStr`]. The canonical handle in `--select` / `--ignore`,
-/// `# prose: ignore[...]`, JSON `"rule"` fields, and `github`
-/// annotations.
-#[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct RuleId(&'static str);
-
-impl RuleId {
-    pub const fn as_str(&self) -> &'static str {
-        self.0
-    }
-}
-
-impl fmt::Debug for RuleId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.0)
-    }
-}
-
-impl<'de> Deserialize<'de> for RuleId {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let s = String::deserialize(deserializer)?;
-        s.parse().map_err(serde::de::Error::custom)
-    }
-}
-
-impl fmt::Display for RuleId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.0)
-    }
-}
-
-#[cfg(test)]
-impl From<&'static str> for RuleId {
-    fn from(slug: &'static str) -> Self {
-        Self(slug)
-    }
-}
-
-impl FromStr for RuleId {
-    type Err = ParseRuleIdError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        slug_index(s)
-            .map(|i| KNOWN_IDS[i])
-            .ok_or_else(|| ParseRuleIdError(s.to_owned()))
-    }
-}
-
-impl Serialize for RuleId {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(self.0)
-    }
-}
-
 /// The slugs the rule named `slug` must run behind, empty for a rule
 /// that settles wherever it sits and for an unknown slug.
 pub fn dependencies_of(slug: &str) -> &'static [&'static str] {
     slug_index(slug).map_or(&[], |i| PIPELINE_DEPENDENCIES[i])
-}
-
-/// Renders `rules` as a comma-separated list of backticked slugs.
-pub fn render_slugs(rules: &[RuleId]) -> impl Display + '_ {
-    rules
-        .iter()
-        .format_with(", ", |rule, f| f(&format_args!("`{rule}`")))
 }
 
 /// Whether `later`'s dependency column reaches `earlier`, directly or
@@ -195,35 +116,11 @@ pub fn runs_behind(later: &str, earlier: &str) -> bool {
     slug_index(later).is_some_and(|seat| reaches(seat, earlier))
 }
 
-/// Returns `true` when `bytes` is a valid kebab-case slug. Non-empty,
-/// starts and ends with a lowercase ASCII letter or digit, contains
-/// only lowercase ASCII letters, digits, and dashes, and has no `--`
-/// substring.
-const fn is_valid_slug(bytes: &[u8]) -> bool {
-    let mut i = 0;
-    let mut prev_was_dash = true;
-    while i < bytes.len() {
-        let b = bytes[i];
-        if b == b'-' {
-            if prev_was_dash {
-                return false;
-            }
-            prev_was_dash = true;
-        } else if b.is_ascii_lowercase() || b.is_ascii_digit() {
-            prev_was_dash = false;
-        } else {
-            return false;
-        }
-        i += 1;
-    }
-    !prev_was_dash
-}
-
 /// Returns `true` when `earlier` is registered before `later`, and
 /// `false` when either is absent from the registry. Answers about the
 /// registry's own order rather than the declared column [`runs_behind`]
 /// walks, and takes its pair in the opposite order.
-const fn precedes(earlier: &str, later: &str) -> bool {
+pub(super) const fn precedes(earlier: &str, later: &str) -> bool {
     match (slug_index(earlier), slug_index(later)) {
         (Some(a), Some(b)) => a < b,
         _ => false,
@@ -236,7 +133,7 @@ fn registered_index(id: RuleId) -> usize {
 }
 
 /// Byte-wise equality on `&[u8]` usable from const contexts.
-const fn slug_bytes_equal(a: &[u8], b: &[u8]) -> bool {
+pub(super) const fn slug_bytes_equal(a: &[u8], b: &[u8]) -> bool {
     if a.len() != b.len() {
         return false;
     }
@@ -251,7 +148,7 @@ const fn slug_bytes_equal(a: &[u8], b: &[u8]) -> bool {
 }
 
 /// The registry index of `slug`, or `None` when it is absent.
-const fn slug_index(slug: &str) -> Option<usize> {
+pub(super) const fn slug_index(slug: &str) -> Option<usize> {
     let mut i = 0;
     while i < KNOWN_IDS.len() {
         if slug_bytes_equal(KNOWN_IDS[i].as_str().as_bytes(), slug.as_bytes()) {
@@ -293,7 +190,7 @@ macro_rules! register_rules {
         const MESSAGES: &[&str] = &[$($ty::MESSAGE),*];
 
         /// The slugs each rule runs behind, indexed alongside [`KNOWN_IDS`].
-        const PIPELINE_DEPENDENCIES: &[&[&str]] = &[$(&[$($after),*]),*];
+        pub(super) const PIPELINE_DEPENDENCIES: &[&[&str]] = &[$(&[$($after),*]),*];
 
         /// Whether each rule's edits leave every binding standing,
         /// indexed alongside [`KNOWN_IDS`].
@@ -514,20 +411,6 @@ mod tests {
     }
 
     #[rstest]
-    fn is_valid_slug_accepts_canonical_kebab_shapes(
-        #[values("a", "a-b", "abc123", "inlinable-bindings")] valid: &str,
-    ) {
-        assert!(is_valid_slug(valid.as_bytes()));
-    }
-
-    #[rstest]
-    fn is_valid_slug_rejects_invalid_shapes(
-        #[values("", "-foo", "foo-", "a--b", "Foo", "abc!")] invalid: &str,
-    ) {
-        assert!(!is_valid_slug(invalid.as_bytes()));
-    }
-
-    #[rstest]
     #[case("reflow-collections", "align-equals", true)]
     #[case("align-equals", "reflow-collections", false)]
     #[case("align-equals", "not-a-rule", false)]
@@ -538,59 +421,6 @@ mod tests {
         #[case] expected: bool,
     ) {
         assert_eq!(precedes(earlier, later), expected);
-    }
-
-    #[test]
-    fn rule_id_display_and_debug_print_bare_slug() {
-        let id = RuleId("align-equals");
-        assert_eq!(format!("{id}"), "align-equals");
-        assert_eq!(format!("{id:?}"), "align-equals");
-    }
-
-    #[rstest]
-    fn rule_id_from_str_rejects_a_retired_slug(
-        #[values(
-            "alphabetize",
-            "blank-lines",
-            "call-layout",
-            "chain-layout",
-            "collection-layout",
-            "comment-spacing",
-            "docstring-expand",
-            "docstring-frame",
-            "docstring-wrap",
-            "import-layout",
-            "legacy-union-syntax",
-            "shed-parentheses",
-            "signature-layout",
-            "strip-align-padding",
-            "unused-future-annotations"
-        )]
-        retired: &str,
-    ) {
-        let err = retired
-            .parse::<RuleId>()
-            .expect_err("a retired slug resolves against nothing");
-        assert_eq!(err.0, retired);
-        assert!(Pipeline::for_rule(retired, &Config::default()).is_none());
-    }
-
-    #[rstest]
-    fn rule_id_from_str_rejects_an_unregistered_slug(
-        #[values("not-a-rule", "PROSE-align-equals")] input: &str,
-    ) {
-        let err = input
-            .parse::<RuleId>()
-            .expect_err("unregistered slug is rejected");
-        assert_eq!(err.0, input);
-    }
-
-    #[test]
-    fn rule_id_round_trips_through_display_and_from_str() {
-        for id in KNOWN_IDS {
-            let parsed: RuleId = id.to_string().parse().expect("known id parses");
-            assert_eq!(parsed, *id);
-        }
     }
 
     #[test]

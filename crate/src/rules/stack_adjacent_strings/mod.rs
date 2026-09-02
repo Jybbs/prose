@@ -22,7 +22,7 @@ use crate::{
         tokens::open_brackets,
         walk::{Descent, ParentedProbe, walk_parented_exprs},
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

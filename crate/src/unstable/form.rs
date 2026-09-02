@@ -12,7 +12,7 @@ use fluent_uri::pct_enc::{
 use std::slice;
 
 use super::UnstableRewrite;
-use crate::rule::render_slugs;
+use crate::rules::render_slugs;
 
 const TEMPLATE: &str = "unstable-output.yml";
 
@@ -75,7 +75,7 @@ fn encoded(value: &str) -> EString<Query> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rule::RuleId;
+    use crate::rules::RuleId;
 
     fn rewrite(first: &str, second: &str, config_toml: &str) -> UnstableRewrite {
         UnstableRewrite {

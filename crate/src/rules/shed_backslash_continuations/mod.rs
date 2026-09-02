@@ -24,7 +24,7 @@ use crate::{
         splice::splice_preserves_tree,
         tokens::{is_closer, is_opener},
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

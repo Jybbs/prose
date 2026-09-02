@@ -15,7 +15,7 @@ use ruff_text_size::TextRange;
 use crate::{
     config::Config,
     primitives::{aligner, comments::TRAILING_GAP},
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

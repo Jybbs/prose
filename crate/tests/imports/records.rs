@@ -4,7 +4,7 @@
 
 use std::{collections::BTreeMap, ops::Range};
 
-use prose::rule::RuleId;
+use prose::rules::RuleId;
 
 use crate::outcome::{Kind, Outcome};
 

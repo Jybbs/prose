@@ -13,7 +13,7 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::{params::first_positional, walk::filter_map_over_stmts},
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

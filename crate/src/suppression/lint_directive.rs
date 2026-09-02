@@ -5,7 +5,7 @@
 use rustc_hash::FxHashSet;
 
 use super::parse_common::parse_entry;
-use crate::rule::RuleId;
+use crate::rules::RuleId;
 
 /// The rule set one `# prose: ignore` or `# prose: skip[<id>]`
 /// directive records, indexed per line for `ignore` and per skip span

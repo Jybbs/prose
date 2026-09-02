@@ -28,7 +28,7 @@ use crate::{
         edit::{repeat_edit, singleton_groups},
         scope::{BodyScope, scoped_body},
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

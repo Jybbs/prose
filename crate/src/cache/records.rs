@@ -9,7 +9,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
     diagnostics::{Diagnostic, Severity},
-    rule::{RuleId, message_for_id},
+    rules::{RuleId, message_for_id},
     unstable::UnstableRewrite,
 };
 

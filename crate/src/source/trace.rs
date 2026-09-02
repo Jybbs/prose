@@ -8,7 +8,7 @@ use std::{
     sync::LazyLock,
 };
 
-use crate::rule::RuleId;
+use crate::rules::RuleId;
 
 /// True where `PROSE_CARRY_TRACE` is set in the environment.
 static ENABLED: LazyLock<bool> = LazyLock::new(|| env::var_os("PROSE_CARRY_TRACE").is_some());

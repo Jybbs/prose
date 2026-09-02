@@ -20,7 +20,7 @@ use rustc_hash::FxHashMap;
 
 use crate::{
     primitives::range::{merged_spans, overlaps},
-    rule::RuleId,
+    rules::RuleId,
 };
 
 mod lint_directive;
@@ -255,7 +255,7 @@ mod tests {
 
     use super::{SuppressionKind, directives, is_directive_comment};
     use crate::{
-        rule::RuleId,
+        rules::RuleId,
         rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
         testing::{at, notebook, parse, range},
     };

@@ -9,7 +9,7 @@ use super::{Emitter, EmitterSummary, Run, diagnostics};
 use crate::{
     diagnostics::Diagnostic,
     findings::{cell_message, located},
-    rule::render_slugs,
+    rules::render_slugs,
 };
 
 pub(crate) struct Github;
@@ -73,7 +73,7 @@ mod tests {
     use super::*;
     use crate::{
         cli::emit::{UnstableEntry, emitted_runs, emitted_string},
-        rule::RuleId,
+        rules::RuleId,
         testing::{FailingWriter, format_diagnostic, parse, range},
     };
 

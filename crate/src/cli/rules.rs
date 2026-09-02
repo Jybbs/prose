@@ -11,7 +11,7 @@ use super::{
 };
 use crate::{
     pipeline::Pipeline,
-    rule::{dependencies_of, message_for_id},
+    rules::{dependencies_of, message_for_id},
 };
 
 /// One registered rule, carrying its one-based pipeline position and

@@ -14,7 +14,7 @@ use crate::{
     cache::{Anchor, CacheKeyPrefix},
     config::{Config, ConfigSource, DirSource, NoticeDedup, holding_dir},
     pipeline::Pipeline,
-    rule::RuleId,
+    rules::RuleId,
 };
 
 /// Resolves the config governing each input file by walking its

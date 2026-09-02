@@ -12,7 +12,7 @@ use crate::{
     primitives::{
         edit::singleton_groups, range::return_annotation_range, walk::filter_map_over_stmts,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

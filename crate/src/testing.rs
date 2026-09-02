@@ -21,7 +21,7 @@ use crate::{
         edit::apply_edits_mapped,
         tiering::{Evaluated, call_reachable, eval_time_refs_of},
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
     walker::{Found, walk},
 };

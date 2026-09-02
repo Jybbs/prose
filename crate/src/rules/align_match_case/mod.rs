@@ -14,7 +14,7 @@ use ruff_python_ast::statement_visitor::StatementVisitor;
 use crate::{
     config::Config,
     primitives::{INDENT_STEP, aligner, colon_targets},
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

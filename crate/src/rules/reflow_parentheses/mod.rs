@@ -20,7 +20,7 @@ use crate::{
         fracture::outermost,
         reseat::push_reseat_edits,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

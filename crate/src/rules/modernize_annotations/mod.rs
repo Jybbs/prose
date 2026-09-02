@@ -14,8 +14,8 @@ use crate::{
         edit::{narrowed_replacement, singleton_groups},
         walk::{Descent, ParentedProbe, walk_parented_exprs},
     },
-    rule::{Rule, RuleId},
     rules::reflow_imports::Folds,
+    rules::{Rule, RuleId},
     source::Source,
 };
 

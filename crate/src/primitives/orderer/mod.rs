@@ -17,12 +17,12 @@ use crate::{
 mod assemble;
 mod blocks;
 mod permute;
+mod separated;
 
-pub(crate) use assemble::{
-    Assembly, assemble_blocks, assemble_separated, reorder_separated, reorder_text,
-};
+pub(crate) use assemble::{Assembly, assemble_blocks, reorder_text};
 pub(crate) use blocks::{block_ranges, member_blocks, opens_its_line, rendered_member_blocks};
 pub(crate) use permute::{permute_full, permute_in_place, permute_runs};
+pub(crate) use separated::{assemble_separated, reorder_separated};
 
 use blocks::{last_member_has_comma, leading_attached_start, tail_end};
 use permute::is_identity;

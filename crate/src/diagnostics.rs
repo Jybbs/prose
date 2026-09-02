@@ -6,7 +6,7 @@ use ruff_diagnostics::{Edit, Fix};
 use ruff_text_size::{Ranged, TextRange};
 use serde::{Deserialize, Serialize};
 
-use crate::rule::RuleId;
+use crate::rules::RuleId;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Diagnostic {

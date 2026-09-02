@@ -20,7 +20,7 @@ use crate::{
         scope::sub_bodies,
         sections::Sections,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

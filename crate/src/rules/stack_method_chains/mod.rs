@@ -30,7 +30,7 @@ use crate::{
             walk_parented_exprs,
         },
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

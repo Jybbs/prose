@@ -14,7 +14,7 @@ use crate::{
         edit::{apply_inline_edits, insert_edit},
         inline::display_width,
     },
-    rule::RuleId,
+    rules::RuleId,
     source::Source,
 };
 

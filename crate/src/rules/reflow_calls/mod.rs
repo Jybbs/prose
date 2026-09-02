@@ -29,7 +29,7 @@ use crate::{
         travel::{Landing, block_shift, shifted_block, spans_a_string_part},
         walk::walk_stmt,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     rules::{alphabetize_siblings::Reorders, reflow_signatures},
     source::Source,
 };

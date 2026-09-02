@@ -6,7 +6,7 @@ use ruff_python_ast::Stmt;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::holds::is_held;
-use crate::{rule::RuleId, source::Source};
+use crate::{rules::RuleId, source::Source};
 
 /// The disposition of one item walked by [`adjacent_member_groups`].
 pub(crate) enum Slot<M> {

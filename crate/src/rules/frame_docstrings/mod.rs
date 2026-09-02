@@ -19,7 +19,7 @@ use crate::{
         edit::narrowed_replacement,
         quoting::{TRIPLE_QUOTE, abuts_triple_closer},
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

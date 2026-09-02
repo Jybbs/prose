@@ -18,7 +18,7 @@ use crate::{
         inline::indent_width, params::first_positional, reseat::push_reseat_edits,
         travel::frozen_rows, walk::walk_stmt,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

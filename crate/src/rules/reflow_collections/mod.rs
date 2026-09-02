@@ -31,8 +31,8 @@ use crate::{
         travel::Landing,
         walk::{Descent, ParentedProbe, filter_map_over_exprs, walk_parented_exprs},
     },
-    rule::{Rule, RuleId},
     rules::alphabetize_siblings::Reorders,
+    rules::{Rule, RuleId},
     source::Source,
 };
 

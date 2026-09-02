@@ -4,7 +4,7 @@ use std::{collections::BTreeSet, error::Error};
 
 use prose::{
     config::Config, diagnostics::Severity, findings::lint_records_json, pipeline::Pipeline,
-    rule::RuleId, source::Source,
+    rules::RuleId, source::Source,
 };
 use wasm_bindgen::prelude::*;
 

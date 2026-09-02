@@ -10,7 +10,7 @@ use thiserror::Error;
 use super::validity::first_semantic_error;
 use crate::{
     primitives::edit::forward_offsets,
-    rule::{RuleId, render_slugs},
+    rules::{RuleId, render_slugs},
     source::Source,
 };
 

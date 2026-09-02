@@ -23,7 +23,7 @@ use crate::{
         aligner, call_keywords::module_call_params, equal_targets, inline::display_width, one_row,
         slots::item_holding, walk,
     },
-    rule::RuleId,
+    rules::RuleId,
     source::Source,
 };
 

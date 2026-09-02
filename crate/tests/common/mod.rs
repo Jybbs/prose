@@ -4,7 +4,7 @@
 
 use std::{ffi::OsStr, io::ErrorKind, path::Path};
 
-use prose::{config::Config, pipeline::Pipeline, rule::RuleId};
+use prose::{config::Config, pipeline::Pipeline, rules::RuleId};
 use serde::Deserialize;
 
 mod diff;

@@ -16,7 +16,7 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::walk::{Descent, filter_map_over_exprs, filter_map_over_parented_exprs},
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

@@ -9,7 +9,7 @@ use ruff_python_trivia::{
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

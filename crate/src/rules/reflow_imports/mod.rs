@@ -31,8 +31,8 @@ use crate::{
         layout::pack,
         scope::{scoped_body, sub_bodies},
     },
-    rule::{Rule, RuleId},
     rules::band_constants::BandConstants,
+    rules::{Rule, RuleId},
     source::Source,
 };
 

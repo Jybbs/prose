@@ -18,7 +18,7 @@ use crate::{
         orderer::{any_sibling_shares_line, member_blocks},
         sections::Sections,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

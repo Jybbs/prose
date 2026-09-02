@@ -17,7 +17,7 @@ use ruff_python_parser::{ParseOptions, parse_cells_unchecked};
 use ruff_text_size::{Ranged, TextRange};
 
 use self::{deltas::Deltas, slide::Slide, tokens::Reparsed, window::Window};
-use crate::{primitives::slots::item_holding, rule::RuleId, source::Source};
+use crate::{primitives::slots::item_holding, rules::RuleId, source::Source};
 
 /// The reparse of each window a rule's edits fell inside.
 pub(crate) struct Splice(Vec<Reparsed>);
@@ -135,7 +135,7 @@ mod tests {
     use super::*;
     use crate::{
         primitives::padding::Stranding,
-        rule::RuleId,
+        rules::RuleId,
         testing::{parse, range, replacement, woven},
     };
 

@@ -17,7 +17,7 @@ use crate::{
         inline::rows_within,
         walk::{Descent, filter_map_over_parented_exprs},
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

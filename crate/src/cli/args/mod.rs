@@ -116,7 +116,7 @@ mod tests {
     use super::validation::clap_error_status;
     use super::*;
     use crate::cli::exit_status::ExitStatus;
-    use crate::rule::RuleId;
+    use crate::rules::RuleId;
 
     macro_rules! command_args {
         ($cli:expr, $variant:ident) => {{

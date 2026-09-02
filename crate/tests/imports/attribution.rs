@@ -9,7 +9,7 @@ use std::{
     slice::from_ref,
 };
 
-use prose::{config::Config, pipeline::Pipeline, rule::render_slugs};
+use prose::{config::Config, pipeline::Pipeline, rules::render_slugs};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use similar::TextDiff;
 

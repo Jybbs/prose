@@ -22,7 +22,7 @@ use ruff_python_ast::PythonVersion;
 
 use crate::{
     diagnostics::{Diagnostic, fired_rules},
-    rule::{Rule, RuleId, independent},
+    rules::{Rule, RuleId, independent},
     source::Source,
 };
 
@@ -280,9 +280,9 @@ impl Pipeline {
 
     /// Returns every registered rule's id in a stable order.
     /// Surfaces the same registry that
-    /// [`RuleId::from_str`](crate::rule::RuleId) consults.
+    /// [`RuleId::from_str`](crate::rules::RuleId) consults.
     pub fn known_ids() -> &'static [RuleId] {
-        crate::rule::KNOWN_IDS
+        crate::rules::KNOWN_IDS
     }
 
     /// This pipeline's enabled rule ids in registration order, the

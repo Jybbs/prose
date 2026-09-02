@@ -15,7 +15,7 @@ use crate::{
         docstring::{indent_prefix, rewrite_docstrings, triple_quoted_body},
         edit::narrowed_replacement,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

@@ -18,7 +18,7 @@ use crate::{
         binding::{ModuleAssignment, is_explicit_type_alias, is_screaming_case},
         effect::value_is_effectful,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

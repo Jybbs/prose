@@ -8,7 +8,7 @@ use ruff_source_file::SourceFile;
 use ruff_text_size::Ranged;
 
 use super::{PipelineError, error::reparse_or_reject, filter::prepared_groups};
-use crate::{primitives::edit::apply_edits_mapped, rule::Rule, source::Source};
+use crate::{primitives::edit::apply_edits_mapped, rules::Rule, source::Source};
 
 /// The rules whose fix groups splice into one buffer in a single pass,
 /// each read against the buffer the batch opened on.

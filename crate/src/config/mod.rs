@@ -29,7 +29,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-pub use crate::rule::RuleConfigs;
+pub use crate::rules::RuleConfigs;
 use crate::{
     primitives::{aligner, comments, fracture, one_row, padding, reserve},
     rules::{

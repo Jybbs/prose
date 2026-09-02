@@ -2,7 +2,7 @@
 //! once, read off the subset probe's evidence and what each rule's
 //! `apply` measures.
 
-use super::{KNOWN_IDS, PIPELINE_DEPENDENCIES, precedes, slug_bytes_equal, slug_index};
+use super::registry::{KNOWN_IDS, PIPELINE_DEPENDENCIES, precedes, slug_bytes_equal, slug_index};
 
 /// The earlier rules each rule shares a splice and a parse with, keyed
 /// by the later rule's slug. A pair is listed only where the subset

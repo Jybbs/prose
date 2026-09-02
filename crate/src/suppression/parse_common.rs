@@ -5,7 +5,7 @@ use ruff_python_trivia::PythonWhitespace;
 use rustc_hash::FxHashSet;
 
 use super::lint_directive::RuleEntry;
-use crate::rule::RuleId;
+use crate::rules::RuleId;
 
 /// Strips the leading `prose:` marker from `after_hash` and returns
 /// the trimmed body. Returns `None` for any other shape.

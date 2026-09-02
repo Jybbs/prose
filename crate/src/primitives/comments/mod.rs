@@ -14,7 +14,7 @@ use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::{
     primitives::{aligner::is_held, blanks::whitespace_start_before, inline::display_width},
-    rule::RuleId,
+    rules::RuleId,
     source::Source,
     suppression::is_directive_comment,
 };

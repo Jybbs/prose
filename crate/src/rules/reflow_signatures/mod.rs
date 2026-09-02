@@ -20,7 +20,7 @@ use crate::{
         splice::splice_parses,
         walk::filter_map_over_stmts,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     rules::{alphabetize_siblings::Reorders, reflow_calls::Reshaper},
     source::Source,
 };

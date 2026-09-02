@@ -4,7 +4,7 @@
 
 use ruff_python_ast::PySourceType;
 
-use crate::rule::RuleId;
+use crate::rules::RuleId;
 
 pub(super) const CACHE_FORMAT_VERSION: &str = "9";
 

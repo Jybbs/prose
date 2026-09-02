@@ -9,7 +9,7 @@ use ruff_notebook::NotebookIndex;
 use ruff_source_file::SourceFile;
 use serde::Serialize;
 
-use crate::{diagnostics::Diagnostic, rule::RuleId};
+use crate::{diagnostics::Diagnostic, rules::RuleId};
 
 mod github;
 mod json;

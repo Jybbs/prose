@@ -362,7 +362,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        rule::RuleId,
+        rules::RuleId,
         testing::{align_member, parse, range},
     };
 

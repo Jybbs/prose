@@ -21,7 +21,7 @@ use crate::{
         comments::noqa_names,
         imports::{Dropping, is_star},
     },
-    rule::RuleId,
+    rules::RuleId,
     rules::reflow_imports::Folds,
     source::Source,
 };

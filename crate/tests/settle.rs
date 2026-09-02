@@ -28,7 +28,7 @@ use itertools::Itertools;
 use prose::{
     config::Config,
     pipeline::{Pipeline, PipelineError, Sharing},
-    rule::{RuleId, independent, render_slugs, runs_behind},
+    rules::{RuleId, independent, render_slugs, runs_behind},
     source::Source,
 };
 use rstest::rstest;

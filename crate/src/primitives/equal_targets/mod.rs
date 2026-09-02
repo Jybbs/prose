@@ -14,7 +14,7 @@ use ruff_source_file::OneIndexed;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
-use crate::{primitives::aligner, rule::RuleId, source::Source};
+use crate::{primitives::aligner, rules::RuleId, source::Source};
 
 /// Returns the alignment member for an annotated `x: int = 1`, plain
 /// `x = 1`, or augmented `x += 1` statement, measuring the left-hand

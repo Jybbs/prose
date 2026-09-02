@@ -24,7 +24,7 @@ use crate::{
         docstring::docstring_slots, edit::narrowed_replacement,
         tokens::is_interpolated_string_start,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

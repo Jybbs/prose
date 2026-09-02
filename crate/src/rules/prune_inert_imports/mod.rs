@@ -19,8 +19,8 @@ use ruff_python_ast::PythonVersion;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    rule::{Rule, RuleId},
     rules::reflow_imports::Folds,
+    rules::{Rule, RuleId},
     source::Source,
 };
 

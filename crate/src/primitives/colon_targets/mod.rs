@@ -12,7 +12,7 @@ use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     primitives::{aligner, range::overlaps, walk::walk_stmt},
-    rule::RuleId,
+    rules::RuleId,
     source::Source,
 };
 

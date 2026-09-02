@@ -23,7 +23,7 @@ use crate::{
         range::overlaps,
         reserve::{Columns, Reservations},
     },
-    rule::RuleId,
+    rules::RuleId,
 };
 
 /// The label each table reports its builds and carries under.
