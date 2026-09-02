@@ -68,12 +68,23 @@ impl<'map> Deltas<'map> {
             .map_or(offset, |marker| marker.dest() + (offset - marker.source()))
     }
 
-    /// A window over `held` moved to where the woven text holds it, an
-    /// insertion at the window's start landing inside it rather than
-    /// ahead of it, so the text the edits wrote there is the window's
-    /// to reparse.
+    /// A statement's own span moved to where the woven text holds it,
+    /// an insertion at its start landing ahead of it, since that text
+    /// stands beside the statement rather than inside it. `None` where
+    /// an edit swallowed the statement's opening, leaving it nowhere to
+    /// stand.
+    pub(super) fn slide_stmt(&self, range: TextRange) -> Option<TextRange> {
+        let (start, end) = (self.shift(range.start()), self.shift(range.end()));
+        (start <= end).then(|| TextRange::new(start, end))
+    }
+
+    /// A span over `held` moved to where the woven text holds it, an
+    /// insertion at its start landing inside it rather than ahead of
+    /// it, so the text the edits wrote there is the span's to reparse,
+    /// and a span the edits swallowed whole closing empty at its end.
     pub(super) fn slide_window(&self, held: TextRange) -> TextRange {
-        TextRange::new(self.shift_before(held.start()), self.shift(held.end()))
+        let end = self.shift(held.end());
+        TextRange::new(self.shift_before(held.start()).min(end), end)
     }
 
     /// A token over `range` the reparse leaves standing, moved to where

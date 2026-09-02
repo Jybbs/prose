@@ -16,7 +16,7 @@ use crate::{
     primitives::{
         binding::BindingAnalysis,
         padding::Stranding,
-        reserve::{Columns, Reservations},
+        reserve::{Carry, Columns, Reservations},
     },
     suppression::SuppressionMap,
 };
@@ -47,6 +47,7 @@ pub struct Source {
     cell_numbers: Box<[OneIndexed]>,
     cell_offsets: CellOffsets,
     columns: OnceLock<Box<(Reservations, Columns)>>,
+    columns_carry: OnceLock<Box<(Reservations, Carry)>>,
     comment_ranges: CommentRanges,
     expandable_literals: OnceLock<Vec<TextRange>>,
     file: SourceFile,
@@ -120,6 +121,7 @@ impl Source {
             cell_numbers: Box::default(),
             cell_offsets,
             columns: OnceLock::new(),
+            columns_carry: OnceLock::new(),
             comment_ranges,
             expandable_literals: OnceLock::new(),
             file,
@@ -291,6 +293,7 @@ impl Clone for Source {
             cell_numbers: self.cell_numbers.clone(),
             cell_offsets: self.cell_offsets.clone(),
             columns: OnceLock::new(),
+            columns_carry: OnceLock::new(),
             comment_ranges: self.comment_ranges.clone(),
             expandable_literals: OnceLock::new(),
             file: self.file.clone(),

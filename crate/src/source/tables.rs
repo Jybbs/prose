@@ -21,7 +21,7 @@ use crate::{
         edit::forward_range,
         padding::Stranding,
         range::overlaps,
-        reserve::{Columns, Reservations},
+        reserve::{Carry, Columns, Reservations, Weave},
     },
     rules::RuleId,
 };
@@ -54,13 +54,20 @@ impl Source {
     }
 
     /// Returns the columns `reservations` shifts each aligned value to,
-    /// walking the tree on the first read where the reparse before it
-    /// carried none. Every rule of a run measures against the same
-    /// reservation and reads the walk back, whereas a read carrying a
-    /// different one walks for itself.
+    /// completing the table a splice carried in where it holds one for
+    /// this reservation and walking the tree otherwise, on the first
+    /// read. Every rule of a run measures against the same reservation
+    /// and reads the walk back, whereas a read carrying a different one
+    /// walks for itself.
     pub(crate) fn columns(&self, reservations: Reservations) -> Cow<'_, Columns> {
         keyed(&self.columns, COLUMNS, reservations, |reservations| {
-            reservations.columns(self)
+            self.columns_carry
+                .get()
+                .filter(|carry| carry.0 == *reservations)
+                .map_or_else(
+                    || reservations.columns(self),
+                    |carry| carry.0.completed(self, &carry.1),
+                )
         })
     }
 
@@ -102,44 +109,49 @@ impl Source {
         })
     }
 
-    /// Fills the column table over this text from the one `previous`
-    /// holds, every run no `held` window reached moved through `map`
-    /// and the runs the windows reached re-formed over the statements a
-    /// `slid` window reaches, the outcome reported under `rule`. The
-    /// slot is left empty where `previous` holds no table or the
-    /// reservation declines the carry, leaving a fresh build to the
-    /// next read.
-    pub(crate) fn rebuild_columns(
-        &mut self,
+    /// What a splice over this source carries of the column table
+    /// `previous` holds into the source it produces, per
+    /// [`Reservations::carry`], `None` where the slot is empty or the
+    /// reservation declines the carry.
+    pub(crate) fn carry_columns(
+        &self,
         previous: OnceLock<Box<(Reservations, Columns)>>,
-        map: &SourceMap,
-        held: &[TextRange],
-        slid: &[TextRange],
-        rule: RuleId,
-    ) {
-        let was_held = previous.get().is_some();
-        let rebuilt = previous.into_inner().and_then(|table| {
+        weave: &Weave,
+    ) -> Option<Box<(Reservations, Carry)>> {
+        previous.into_inner().and_then(|table| {
             let (reservations, columns) = *table;
             reservations
-                .rebuilt(self, &columns, map, held, slid)
-                .map(|columns| Box::new((reservations, columns)))
-        });
+                .carry(self, &columns, weave)
+                .map(|carry| Box::new((reservations, carry)))
+        })
+    }
+
+    /// Holds `carry` for the first read of the column table, the
+    /// outcome reported under `rule` against whether the source before
+    /// the splice held a table at all.
+    pub(crate) fn hold_columns_carry(
+        &mut self,
+        carry: Option<Box<(Reservations, Carry)>>,
+        held: bool,
+        rule: RuleId,
+    ) {
+        self.columns_carry = carry.map_or_else(OnceLock::new, OnceLock::from);
         trace::carried(
             rule,
             COLUMNS,
-            Outcome::of(true, was_held, rebuilt.is_some()),
+            Outcome::of(true, held, self.columns_carry.get().is_some()),
         );
-        self.columns = rebuilt.map_or_else(OnceLock::new, OnceLock::from);
     }
 
-    /// Panics where the column table a splice rebuilt into this source
-    /// differs from the one a fresh read builds, naming `site` in the
-    /// message, and returns whether it held one to compare.
+    /// Panics where the column table a splice carried into this source
+    /// completes to one differing from a fresh build, naming `site` in
+    /// the message, and returns whether it held one to compare.
     #[cfg(test)]
-    pub(crate) fn assert_rebuilt_columns_are_fresh(&self, site: &str) -> bool {
-        self.columns.get().is_some_and(|rebuilt| {
-            let fresh = rebuilt.0.columns(self);
-            assert_fresh(&rebuilt.1, &fresh, site, "column table rebuilt", "rebuilt");
+    pub(crate) fn assert_carried_columns_are_fresh(&self, site: &str) -> bool {
+        self.columns_carry.get().is_some_and(|carry| {
+            let completed = carry.0.completed(self, &carry.1);
+            let fresh = carry.0.columns(self);
+            assert_fresh(&completed, &fresh, site, "column table carried", "carried");
             true
         })
     }

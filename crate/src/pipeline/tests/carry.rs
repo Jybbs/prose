@@ -46,7 +46,7 @@ fn carried_binding_tables_match_the_ones_a_fresh_read_builds() {
             let site = format!("{} past `{}`", path.display(), rule.id());
             carried |= source.assert_carried_bindings_are_fresh(&site);
             rebuilt |= source.assert_rebuilt_padding_is_fresh(&site);
-            columns |= source.assert_rebuilt_columns_are_fresh(&site);
+            columns |= source.assert_carried_columns_are_fresh(&site);
         }
     }
     assert!(

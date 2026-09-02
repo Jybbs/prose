@@ -11,28 +11,28 @@
 //! is reserved for a value inside an f-string or t-string replacement
 //! field.
 
-use std::hash::BuildHasher;
+use std::ops::Range;
 
 use ruff_diagnostics::SourceMap;
 use ruff_python_ast::{
     AnyNodeRef, Expr, InterpolatedStringElement, Stmt,
-    comparable::ComparableParameters,
     visitor::{Visitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
+use rustc_hash::FxHashMap;
 #[cfg(test)]
 use rustc_hash::FxHashSet;
-use rustc_hash::{FxBuildHasher, FxHashMap};
 
 use crate::{
     primitives::{
         aligner,
-        call_keywords::{CallTargets, module_call_params},
+        call_keywords::module_call_params,
         edit::{forward_range, forward_start},
         equal_targets,
         inline::display_width,
         one_row,
-        range::overlaps,
+        range::{covers, overlaps},
+        scope::sub_bodies,
         slots::item_holding,
         walk,
     },
@@ -56,17 +56,83 @@ pub(crate) struct Columns {
     /// The gap an aligned row holds ahead of its operator, `None` where
     /// the alignment rule is off.
     buffer: Option<usize>,
-    /// The statement each run formed inside, indexed by the run each
-    /// shift names, the module itself for a module-body run.
-    runs: Vec<TextRange>,
+    /// Each run's scope, indexed by the run each shift names.
+    runs: Vec<Scope>,
     shifts: Vec<Shift>,
-    /// Each in-module call's callee offset and the hash of the
-    /// parameters it resolves to, ascending, the map every joined
-    /// width read, so a rebuild can tell whether that map still holds.
-    targets: Vec<(TextSize, u64)>,
     /// The widening each run's members seat on their lines, keyed by
     /// the run.
     widenings: Vec<(usize, aligner::Widening)>,
+}
+
+/// Where one run formed: the statement whose body holds a statement
+/// run or whose expressions hold a keyword or parameter run, the module
+/// range for a module-body run, and the rows its members span.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct Scope {
+    /// True for a run formed over a body's statements.
+    body: bool,
+    span: TextRange,
+    stmt: TextRange,
+}
+
+/// The slices a carried table's completion forms a body's runs over
+/// and the windows it descends into, both in the completed source.
+/// An entry pairs a body's owning statement, the module range at top
+/// level, with the span of the siblings whose runs the splice reached.
+#[derive(Clone, Debug)]
+pub(crate) struct Reform {
+    entries: Vec<(TextRange, TextRange)>,
+    windows: Vec<TextRange>,
+}
+
+impl Reform {
+    /// The index ranges of `body`, owned by `owner`, whose runs the
+    /// completion forms: every statement where a window covers the
+    /// owner whole, and otherwise the statements overlapping the spans
+    /// entered for the owner, each maximal stretch of them one slice.
+    fn slices(&self, owner: TextRange, body: &[Stmt]) -> Vec<Range<usize>> {
+        if covers(owner, &self.windows) {
+            return std::iter::once(0..body.len()).collect();
+        }
+        let spans: Vec<TextRange> = self
+            .entries
+            .iter()
+            .filter(|(key, _)| *key == owner)
+            .map(|&(_, span)| span)
+            .collect();
+        let mut slices: Vec<Range<usize>> = Vec::new();
+        for (index, stmt) in body.iter().enumerate() {
+            if !spans.iter().any(|span| span.ordering(stmt.range()).is_eq()) {
+                continue;
+            }
+            match slices.last_mut() {
+                Some(last) if last.end == index => last.end = index + 1,
+                _ => slices.push(index..index + 1),
+            }
+        }
+        slices
+    }
+}
+
+/// The geometry of one splice, as a carry reads it: the weave its
+/// edits describe, its windows in the buffer the source held and in the
+/// text it produced, and the slides moving a statement and a span past
+/// those edits.
+pub(crate) struct Weave<'a> {
+    pub(crate) held: &'a [TextRange],
+    pub(crate) map: &'a SourceMap,
+    pub(crate) slid: &'a [TextRange],
+    pub(crate) slide_span: &'a dyn Fn(TextRange) -> TextRange,
+    pub(crate) slide_stmt: &'a dyn Fn(TextRange) -> Option<TextRange>,
+}
+
+/// The table a splice carries into the source it produced: the runs
+/// the edit could not reach, moved to where the woven text holds them,
+/// and the completion that forms the rest on the first read.
+#[derive(Clone, Debug)]
+pub(crate) struct Carry {
+    forwarded: Forwarded,
+    reform: Reform,
 }
 
 impl Columns {
@@ -112,7 +178,7 @@ impl Columns {
             .runs
             .iter()
             .enumerate()
-            .map(|(run, &scope)| {
+            .map(|(run, scope)| {
                 let mut shifts: Vec<(TextRange, isize)> = self
                     .shifts
                     .iter()
@@ -127,7 +193,7 @@ impl Columns {
                     .map(|&(_, entry)| entry)
                     .collect();
                 widenings.sort_unstable_by_key(|&(line, gap, _)| (line, gap.start()));
-                (scope, shifts, widenings)
+                (scope.stmt, shifts, widenings)
             })
             .collect();
         runs.sort_unstable_by_key(|(scope, shifts, _)| {
@@ -143,7 +209,6 @@ impl Columns {
             buffer: None,
             runs: Vec::new(),
             shifts: Vec::new(),
-            targets: Vec::new(),
             widenings: Vec::new(),
         }
     }
@@ -169,13 +234,13 @@ impl Columns {
         let reformed: FxHashSet<TextRange> = self
             .runs
             .iter()
-            .filter(|scope| overlaps(**scope, held))
-            .map(|&scope| slide(scope))
+            .filter(|scope| overlaps(scope.stmt, held))
+            .map(|scope| slide(scope.stmt))
             .collect();
         let mut escapes = Vec::new();
         let mut landed = FxHashSet::default();
         for shift in &self.shifts {
-            if overlaps(self.runs[shift.run], held) {
+            if overlaps(self.runs[shift.run].stmt, held) {
                 continue;
             }
             let Some(span) = forward_range(shift.span, map) else {
@@ -202,7 +267,7 @@ impl Columns {
             }
         }
         for shift in &fresh.shifts {
-            let scope = fresh.runs[shift.run];
+            let scope = fresh.runs[shift.run].stmt;
             if reformed.contains(&scope) || overlaps(scope, slid) || landed.contains(&shift.span) {
                 continue;
             }
@@ -242,20 +307,16 @@ impl Reservations {
     }
 
     /// Walks `source` collecting the runs the reserved rule builds,
-    /// descending only into the statements a `windows` span reaches
-    /// where one is given.
-    fn collected<'a>(
-        &self,
-        source: &'a Source,
-        windows: Option<&'a [TextRange]>,
-    ) -> ReserveVisitor<'a> {
+    /// over the whole tree or, given `reform`, over the slices and
+    /// windows a carried table's completion names.
+    fn collected<'a>(&self, source: &'a Source, reform: Option<&'a Reform>) -> ReserveVisitor<'a> {
         let mut visitor = ReserveVisitor {
+            reform,
             rule: self.rule,
             runs: Vec::new(),
             source,
             stmt: source.module_range(),
             values: FxHashMap::default(),
-            windows,
         };
         visitor.visit_body(&source.ast().body);
         visitor
@@ -269,42 +330,65 @@ impl Reservations {
         let Some(settings) = self.settings else {
             return Columns::unreserved();
         };
-        let targets = module_call_params(source);
         let visitor = self.collected(source, None);
-        self.formed(source, settings, &visitor, Carried::default(), &targets)
+        self.formed(source, settings, &visitor, Forwarded::default())
     }
 
-    /// `carried`, the table the source before a splice held, moved
-    /// through `map` past that splice: every run whose scope no `held`
-    /// window reaches keeps its shifts and widenings, forwarded, and
-    /// the runs the windows reached re-form over this source by walking
-    /// the statements a `slid` window reaches. `None` where the
-    /// module's call targets no longer hold outside the windows or an
-    /// edit replaced a carried span, leaving a fresh build to the next
-    /// read.
-    pub(crate) fn rebuilt(
-        self,
-        source: &Source,
-        carried: &Columns,
-        map: &SourceMap,
-        held: &[TextRange],
-        slid: &[TextRange],
-    ) -> Option<Columns> {
-        let Some(settings) = self.settings else {
-            return Some(Columns::unreserved());
+    /// What a splice over `held` carries of `carried`, the table
+    /// `source`, the text before the splice, held: every run the edit
+    /// could not reach, moved through `map` and the slides, and the
+    /// completion forming the rest. A statement run stays where its
+    /// rows sit outside the neighborhood of the siblings a window
+    /// reaches, that neighborhood being one sibling either side widened
+    /// to the full extent of any run it cuts, and a keyword or
+    /// parameter run stays where no window reaches its statement.
+    /// `None` where an edit replaced a carried row or swallowed a
+    /// carried run's opening, leaving a fresh build to the first read.
+    pub(crate) fn carry(&self, source: &Source, carried: &Columns, weave: &Weave) -> Option<Carry> {
+        let &Weave {
+            held,
+            map,
+            slid,
+            slide_span,
+            slide_stmt,
+        } = weave;
+        let module = source.module_range();
+        let mut entries = Vec::new();
+        reform_entries(
+            &source.ast().body,
+            module,
+            held,
+            &carried.runs,
+            &mut entries,
+        );
+        let dropped = |scope: &Scope| {
+            if scope.body {
+                entries
+                    .iter()
+                    .any(|&(owner, span)| owner == scope.stmt && span.ordering(scope.span).is_eq())
+            } else {
+                overlaps(scope.stmt, held)
+            }
         };
-        let targets = module_call_params(source);
-        if !targets_hold(&carried.targets, &targets, map, held, slid) {
-            return None;
-        }
-        let mut forwarded = Carried::default();
+        let slide_owner = |stmt: TextRange| {
+            if stmt == module {
+                Some(slide_span(stmt))
+            } else {
+                slide_stmt(stmt)
+            }
+        };
+        let mut forwarded = Forwarded::default();
         let mut slots: Vec<Option<usize>> = vec![None; carried.runs.len()];
-        for (run, &scope) in carried.runs.iter().enumerate() {
-            if overlaps(scope, held) {
+        for (run, scope) in carried.runs.iter().enumerate() {
+            if dropped(scope) {
                 continue;
             }
             slots[run] = Some(forwarded.runs.len());
-            forwarded.runs.push(forward_range(scope, map)?);
+            forwarded.runs.push(Scope {
+                body: scope.body,
+                span: forward_range(scope.span, map)?,
+                stmt: slide_owner(scope.stmt)?,
+            });
         }
         for shift in &carried.shifts {
             let Some(run) = slots[shift.run] else {
@@ -325,35 +409,65 @@ impl Reservations {
                 .widenings
                 .push((run, (line, forward_range(gap, map)?, delta)));
         }
-        let visitor = self.collected(source, Some(slid));
-        Some(self.formed(source, settings, &visitor, forwarded, &targets))
+        Some(Carry {
+            forwarded,
+            reform: Reform {
+                entries: entries
+                    .into_iter()
+                    .map(|(owner, span)| Some((slide_owner(owner)?, slide_span(span))))
+                    .collect::<Option<Vec<_>>>()?,
+                windows: slid.to_vec(),
+            },
+        })
+    }
+
+    /// The table `carry` completes to over `source`, the text the
+    /// splice produced: the carried runs on top of the runs the
+    /// completion forms.
+    pub(crate) fn completed(self, source: &Source, carry: &Carry) -> Columns {
+        let Some(settings) = self.settings else {
+            return Columns::unreserved();
+        };
+        let visitor = self.collected(source, Some(&carry.reform));
+        self.formed(source, settings, &visitor, carry.forwarded.clone())
     }
 
     /// The table `carried` grows into once `visitor`'s runs form on top
     /// of it: each run's scope, widening entries, and shifts, every
-    /// joined width read against `targets`.
+    /// joined width read against the module's call targets.
     fn formed(
         self,
         source: &Source,
         settings: aligner::Settings,
         visitor: &ReserveVisitor,
-        carried: Carried,
-        targets: &CallTargets,
+        carried: Forwarded,
     ) -> Columns {
-        let Carried {
+        let Forwarded {
             mut runs,
             mut shifts,
             mut widenings,
         } = carried;
         let base = runs.len();
         for (index, run) in visitor.runs.iter().enumerate() {
-            runs.push(run.scope);
+            let span = run
+                .members
+                .first()
+                .zip(run.members.last())
+                .map_or(run.scope, |(first, last)| {
+                    TextRange::new(first.line_start, last.gap.end())
+                });
+            runs.push(Scope {
+                body: run.body,
+                span,
+                stmt: run.scope,
+            });
             let entries = aligner::widening_entries(source, settings, run.members.iter().copied());
             widenings.extend(entries.into_iter().map(|entry| (base + index, entry)));
         }
         let seated =
             aligner::Widenings::from_entries(widenings.iter().map(|&(_, entry)| entry).collect());
-        let one_row = self.one_row.against(targets);
+        let targets = module_call_params(source);
+        let one_row = self.one_row.against(&targets);
         let place = |member: aligner::Member| {
             let start = member.rewritten_value_gap(source)?.end();
             Some((start, source.column_of(start)))
@@ -388,7 +502,6 @@ impl Reservations {
             buffer: Some(settings.buffer()),
             runs,
             shifts,
-            targets: hashed(targets),
             widenings,
         }
     }
@@ -416,63 +529,69 @@ type CanonicalRun = (TextRange, Vec<(TextRange, isize)>, Vec<aligner::Widening>)
 #[cfg(test)]
 impl PartialEq for Columns {
     fn eq(&self, other: &Self) -> bool {
-        self.buffer == other.buffer
-            && self.targets == other.targets
-            && self.canonical() == other.canonical()
+        self.buffer == other.buffer && self.canonical() == other.canonical()
     }
 }
 
-/// The runs, shifts, and widenings a rebuild carries past a splice,
-/// which a fresh build starts empty.
-#[derive(Default)]
-struct Carried {
-    runs: Vec<TextRange>,
+/// The runs, shifts, and widenings a carry moves past a splice, which
+/// a fresh build starts empty.
+#[derive(Clone, Debug, Default)]
+struct Forwarded {
+    runs: Vec<Scope>,
     shifts: Vec<Shift>,
     widenings: Vec<(usize, aligner::Widening)>,
 }
 
-/// Each of `targets` as its callee offset and the hash of the
-/// parameters it resolves to, ascending by offset.
-fn hashed(targets: &CallTargets) -> Vec<(TextSize, u64)> {
-    let hasher = FxBuildHasher;
-    let mut hashed: Vec<(TextSize, u64)> = targets
-        .iter()
-        .map(|(&offset, &params)| (offset, hasher.hash_one(ComparableParameters::from(params))))
-        .collect();
-    hashed.sort_unstable_by_key(|&(offset, _)| offset);
-    hashed
-}
-
-/// True where the call targets a splice over `map` leaves outside its
-/// windows are the ones `carried` recorded, so every joined width read
-/// against them still holds: each carried target outside a `held`
-/// window forwards to a fresh one resolving the same parameters, and
-/// no fresh target outside a `slid` window is new.
-fn targets_hold(
-    carried: &[(TextSize, u64)],
-    fresh: &CallTargets,
-    map: &SourceMap,
+/// Appends to `entries`, for `body` owned by `owner` and each body
+/// beneath a statement a `held` window reaches, the span of the
+/// siblings whose statement runs the splice can change: each maximal
+/// stretch of reached siblings with one sibling either side, widened
+/// to the extent of any run of `runs` that stretch cuts.
+fn reform_entries(
+    body: &[Stmt],
+    owner: TextRange,
     held: &[TextRange],
-    slid: &[TextRange],
-) -> bool {
-    let inside = |offset: TextSize, windows: &[TextRange]| {
-        item_holding(windows, offset).is_some_and(|window| window.contains(offset))
+    runs: &[Scope],
+    entries: &mut Vec<(TextRange, TextRange)>,
+) {
+    let reached: Vec<bool> = body
+        .iter()
+        .map(|stmt| overlaps(stmt.range(), held))
+        .collect();
+    let joined = |a: &Stmt, b: &Stmt| {
+        runs.iter().any(|run| {
+            run.body
+                && run.stmt == owner
+                && run.span.ordering(a.range()).is_eq()
+                && run.span.ordering(b.range()).is_eq()
+        })
     };
-    let mut expected: FxHashMap<TextSize, u64> = FxHashMap::default();
-    for &(offset, hash) in carried {
-        if inside(offset, held) {
+    let mut index = 0;
+    while index < body.len() {
+        if !reached[index] {
+            index += 1;
             continue;
         }
-        let Some(offset) = forward_start(offset, map) else {
-            return false;
-        };
-        expected.insert(offset, hash);
+        let first = index;
+        while index + 1 < body.len() && reached[index + 1] {
+            index += 1;
+        }
+        let mut lo = first.saturating_sub(1);
+        let mut hi = (index + 1).min(body.len() - 1);
+        while lo > 0 && joined(&body[lo - 1], &body[lo]) {
+            lo -= 1;
+        }
+        while hi + 1 < body.len() && joined(&body[hi], &body[hi + 1]) {
+            hi += 1;
+        }
+        entries.push((owner, TextRange::new(body[lo].start(), body[hi].end())));
+        for stmt in &body[first..=index] {
+            for (nested, _) in sub_bodies(stmt) {
+                reform_entries(nested, stmt.range(), held, runs, entries);
+            }
+        }
+        index += 1;
     }
-    hashed(fresh)
-        .into_iter()
-        .filter(|&(offset, _)| !inside(offset, slid))
-        .all(|(offset, hash)| expected.remove(&offset) == Some(hash))
-        && expected.is_empty()
 }
 
 /// One reservation's row-tail span, the columns the alignment shifts

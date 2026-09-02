@@ -18,7 +18,11 @@ use ruff_python_parser::{ParseOptions, parse_cells_unchecked};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use self::{deltas::Deltas, slide::Slide, tokens::Reparsed, window::Window};
-use crate::{primitives::slots::item_holding, rules::RuleId, source::Source};
+use crate::{
+    primitives::{reserve::Weave, slots::item_holding},
+    rules::RuleId,
+    source::Source,
+};
 
 /// The share of the woven text, in percent, past which the windows a
 /// splice would reparse cost more than the whole-file parse they stand
@@ -39,12 +43,7 @@ pub(crate) struct Splice(Vec<Reparsed>);
 /// to an empty range where the edits swallowed it whole.
 #[cfg(test)]
 pub(crate) fn slid_range(map: &SourceMap, range: TextRange) -> TextRange {
-    let deltas = Deltas::new(map);
-    let (start, end) = (
-        deltas.shift_before(range.start()),
-        deltas.shift(range.end()),
-    );
-    TextRange::new(start.min(end), end)
+    Deltas::new(map).slide_window(range)
 }
 
 #[cfg(test)]
@@ -164,8 +163,19 @@ impl Source {
         );
         let stranded = std::mem::take(&mut self.stranded_padding);
         let columns = std::mem::take(&mut self.columns);
+        let held_columns = columns.get().is_some();
         let held: Vec<TextRange> = splice.0.iter().map(|window| window.held).collect();
         let windows: Vec<TextRange> = splice.0.iter().map(|window| window.slid).collect();
+        let carry = self.carry_columns(
+            columns,
+            &Weave {
+                held: &held,
+                map,
+                slid: &windows,
+                slide_span: &|range| deltas.slide_window(range),
+                slide_stmt: &|range| deltas.slide_stmt(range),
+            },
+        );
         let mut ast = self.ast;
         let (runs, nested): (Vec<Reparsed>, Vec<Reparsed>) =
             splice.0.into_iter().partition(|window| window.run);
@@ -190,7 +200,7 @@ impl Source {
             spliced,
         );
         next.rebuild_stranded_padding(stranded, map, &windows, rule);
-        next.rebuild_columns(columns, map, &held, &windows, rule);
+        next.hold_columns_carry(carry, held_columns, rule);
         debug_assert!(
             next.matches_a_fresh_parse(),
             "the spliced tree and token stream differ from a parse of the same text",

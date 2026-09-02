@@ -11,6 +11,9 @@ use crate::primitives::range::overlaps;
 /// holds a statement run or whose expressions hold a keyword or
 /// parameter run, the module itself for a module-body run.
 pub(super) struct Run {
+    /// True for a run formed over a body's statements, false for one
+    /// formed over a statement's keywords or parameters.
+    pub(super) body: bool,
     pub(super) candidate: bool,
     pub(super) members: Vec<aligner::Member>,
     pub(super) scope: TextRange,
@@ -25,11 +28,12 @@ pub(super) struct ReserveVisitor<'a> {
     /// The statement the walk is inside, the scope a keyword or
     /// parameter run forms over, the module ahead of any.
     pub(super) stmt: TextRange,
+    /// The completion of a carried table, the walk forming a body's
+    /// runs over the slices it names and descending into the statements
+    /// its windows reach alone, or `None` for a walk over the whole
+    /// tree.
+    pub(super) reform: Option<&'a Reform>,
     pub(super) values: FxHashMap<TextSize, (&'a Expr, AnyNodeRef<'a>)>,
-    /// The spans a splice reparsed, the walk descending into the
-    /// statements one reaches alone, or `None` for a walk over the
-    /// whole tree.
-    pub(super) windows: Option<&'a [TextRange]>,
 }
 
 impl<'a> ReserveVisitor<'a> {
@@ -40,22 +44,24 @@ impl<'a> ReserveVisitor<'a> {
         self.values.insert(start, (value, parent));
     }
 
-    fn record(&mut self, groups: Vec<Vec<aligner::Member>>, candidate: bool, scope: TextRange) {
+    fn record(
+        &mut self,
+        groups: Vec<Vec<aligner::Member>>,
+        candidate: bool,
+        scope: TextRange,
+        body: bool,
+    ) {
         self.runs.extend(groups.into_iter().map(|members| Run {
+            body,
             candidate,
             members,
             scope,
         }));
     }
-}
 
-impl<'a> Visitor<'a> for ReserveVisitor<'a> {
-    fn visit_body(&mut self, body: &'a [Stmt]) {
-        self.record(
-            equal_targets::assignment_groups(self.source, self.rule, body),
-            false,
-            self.stmt,
-        );
+    /// Notes the value of each assignment in `body` against its
+    /// statement.
+    fn note_values(&mut self, body: &'a [Stmt]) {
         for stmt in body {
             match stmt {
                 Stmt::Assign(a) => self.note(&a.value, stmt.into()),
@@ -68,11 +74,36 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
                 _ => {}
             }
         }
+    }
+}
+
+impl<'a> Visitor<'a> for ReserveVisitor<'a> {
+    fn visit_body(&mut self, body: &'a [Stmt]) {
+        let owner = self.stmt;
+        let Some(reform) = self.reform else {
+            self.record(
+                equal_targets::assignment_groups(self.source, self.rule, body),
+                false,
+                owner,
+                true,
+            );
+            self.note_values(body);
+            for stmt in body {
+                self.visit_stmt(stmt);
+            }
+            return;
+        };
+        for slice in reform.slices(owner, body) {
+            self.record(
+                equal_targets::assignment_groups(self.source, self.rule, &body[slice.clone()]),
+                false,
+                owner,
+                true,
+            );
+            self.note_values(&body[slice]);
+        }
         for stmt in body {
-            if self
-                .windows
-                .is_none_or(|windows| overlaps(stmt.range(), windows))
-            {
+            if overlaps(stmt.range(), &reform.windows) {
                 self.visit_stmt(stmt);
             }
         }
@@ -84,6 +115,7 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
                 equal_targets::keyword_groups(self.source, self.rule, call, true),
                 false,
                 self.stmt,
+                false,
             );
             for keyword in &call.arguments.keywords {
                 self.note(&keyword.value, keyword.into());
@@ -102,6 +134,7 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
                 equal_targets::parameter_groups(self.source, self.rule, &def.parameters),
                 true,
                 stmt.range(),
+                false,
             );
             for param in def.parameters.iter_non_variadic_params() {
                 if let Some(default) = param.default.as_deref() {
