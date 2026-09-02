@@ -1,39 +1,48 @@
 //! Runs the enabled rules against a source file in deterministic order.
 //!
 //! Each rule returns a `Vec<Edit>` and a `Vec<TextRange>` of lint
-//! ranges. The pipeline sorts and applies the edits into a fresh
-//! buffer, then reparses and confirms the result still compiles before
-//! handing the new `Source` to the next rule. Registration order follows
-//! the data dependency, seating every rule that mutates a line's width,
-//! a group's member order, or a statement's position ahead of every rule
-//! that reads one. The settle check re-applies the enabled rules to a
-//! completed run's output and names every rule still editing it.
+//! ranges. The pipeline splices the edits of a batch of consecutive
+//! rules into a fresh buffer in one pass, then reparses and confirms
+//! the result still compiles before handing the new `Source` to the
+//! next batch, carrying into it the tables every member declares its
+//! edits leave standing. Registration order follows the data
+//! dependency, seating every rule that mutates a line's width, a
+//! group's member order, or a statement's position ahead of every rule
+//! that reads one, and a rule joins a batch only beside rules the
+//! registry declares it independent of. The settle check re-applies
+//! the enabled rules to a completed run's output and names every rule
+//! still editing it, a `format` run re-applying only the rules that
+//! edited on its first pass.
 
-use std::{ops::Range, slice};
+use std::{collections::BTreeSet, ops::Range, slice};
 
-use ruff_diagnostics::{Edit, SourceMap};
+use itertools::Itertools;
+use ruff_diagnostics::Edit;
 use ruff_python_ast::PythonVersion;
-use ruff_text_size::Ranged;
 
 use crate::{
-    diagnostics::Diagnostic,
-    primitives::edit::{apply_edits, apply_edits_mapped},
-    rule::{Rule, RuleId},
+    diagnostics::{Diagnostic, fired_rules},
+    rule::{Rule, RuleId, independent},
     source::Source,
 };
 
+mod batch;
 mod error;
 mod filter;
 mod validity;
 
+use batch::{Batch, Spliceable};
 pub use error::PipelineError;
-use error::reparse_or_reject;
 use filter::{prepared_groups, settled_lints};
 use validity::compile_gate;
 
 /// Ordered sequence of enabled rules, run against each source file.
 pub struct Pipeline {
     rules: Vec<Box<dyn Rule>>,
+    /// The earlier seats each seat's rule shares a splice with under
+    /// [`Sharing::Declared`].
+    shares: Vec<Vec<usize>>,
+    sharing: Sharing,
     target_version: PythonVersion,
 }
 
@@ -44,10 +53,30 @@ impl Pipeline {
     }
 
     pub(crate) fn from_rules(rules: Vec<Box<dyn Rule>>) -> Self {
+        let shares = rules
+            .iter()
+            .enumerate()
+            .map(|(seat, rule)| {
+                let later = rule.id();
+                rules[..seat]
+                    .iter()
+                    .positions(|earlier| independent(later.as_str(), earlier.id().as_str()))
+                    .collect()
+            })
+            .collect();
         Self {
             rules,
+            shares,
+            sharing: Sharing::default(),
             target_version: PythonVersion::default(),
         }
+    }
+
+    /// Sets which rules a run lets share a splice and a parse.
+    #[must_use]
+    pub fn sharing(mut self, sharing: Sharing) -> Self {
+        self.sharing = sharing;
+        self
     }
 
     /// Sets the Python version the compile gate evaluates against.
@@ -70,10 +99,10 @@ impl Pipeline {
         let mut diagnostics = Vec::new();
         let mut edits_at = None;
         for (seat, rule) in self.rules.iter().enumerate() {
-            let Some(groups) = surviving_groups(&**rule, source) else {
-                continue;
-            };
-            edits_at.get_or_insert(seat);
+            let groups = prepared_groups(&**rule, source);
+            if !groups.is_empty() {
+                edits_at.get_or_insert(seat);
+            }
             diagnostics.extend(format_diagnostics(&**rule, groups));
         }
         diagnostics.extend(settled_lints(&self.rules, source));
@@ -81,9 +110,11 @@ impl Pipeline {
     }
 
     /// Folds each rule's edits into `source` in registration order
-    /// across `seats`, reparsing between rules and extending
-    /// `diagnostics` with each rule's format findings when the caller
-    /// supplies one.
+    /// across `seats`, splicing a batch of rules in one pass and
+    /// reparsing between batches, and extending `diagnostics` with each
+    /// rule's format findings when the caller supplies one. A batch
+    /// closes ahead of a rule whose edits overlap one it holds, and
+    /// ahead of a rule the run's [`Sharing`] keeps out of it.
     ///
     /// `seats` bounds the fold to the rules seated in that range.
     /// [`run_as_written`](Self::run_as_written) opens at the first seat
@@ -96,28 +127,86 @@ impl Pipeline {
     /// # Errors
     ///
     /// Returns whichever `PipelineError` a rule's output draws from
-    /// [`reparse_or_reject`].
+    /// [`reparse_or_reject`](error::reparse_or_reject).
     fn fold_rules(
         &self,
-        source: Source,
+        mut source: Source,
         mut diagnostics: Option<&mut Vec<Diagnostic>>,
         seats: Range<usize>,
     ) -> Result<Source, PipelineError> {
         let gate = compile_gate(&source, self.target_version);
-        self.rules[seats].iter().try_fold(source, |source, rule| {
-            let rule_id = rule.id();
-            let Some((groups, new_text, map)) = woven_groups(&**rule, &source) else {
-                return Ok(source);
+        let replays = self.sharing == Sharing::Declared;
+        let opens = seats.start;
+        let mut batch = Batch::default();
+        for (offset, rule) in self.rules[seats].iter().enumerate() {
+            let seat = opens + offset;
+            let joins = match self.sharing {
+                Sharing::Always => true,
+                Sharing::Declared => batch.shares_with(&self.shares[seat]),
+                Sharing::Never => false,
             };
+            if !joins {
+                source = batch.close(source, gate, replays)?;
+            }
+            let Some(mut spliceable) = Spliceable::landing(&**rule, &source) else {
+                continue;
+            };
+            if batch.conflicts_with(&spliceable.edits) {
+                source = batch.close(source, gate, replays)?;
+                let Some(reread) = Spliceable::landing(&**rule, &source) else {
+                    continue;
+                };
+                spliceable = reread;
+            }
             debug_assert!(
-                new_text != source.text(),
-                "rule `{rule_id}` emitted edits that produced identical text",
+                spliceable.rewrites(&source),
+                "rule `{}` emitted edits that produced identical text",
+                rule.id(),
             );
             if let Some(collected) = diagnostics.as_deref_mut() {
-                collected.extend(format_diagnostics(&**rule, groups));
+                collected.extend(format_diagnostics(&**rule, spliceable.groups));
             }
-            reparse_or_reject(source, new_text, rule_id, &map, gate)
-        })
+            batch.push(seat, &**rule, spliceable.edits);
+        }
+        batch.close(source, gate, replays)
+    }
+
+    /// The settle walk [`settle_report`](Self::settle_report),
+    /// [`unsettled`](Self::unsettled), and
+    /// [`unsettled_among`](Self::unsettled_among) read, narrowed to the
+    /// rules `keep` admits, each rule's probe reported to the trace
+    /// under `pass`, weaving the first editing rule's text as the
+    /// witness only when `witness` asks for it.
+    fn settle_walk(
+        &self,
+        source: &Source,
+        pass: &'static str,
+        keep: impl Fn(RuleId) -> bool,
+        witness: bool,
+    ) -> SettleReport {
+        let mut report = SettleReport::default();
+        if source.suppression_map().file_is_suppressed() {
+            return report;
+        }
+        for rule in &self.rules {
+            let rule_id = rule.id();
+            if !keep(rule_id) {
+                continue;
+            }
+            crate::source::trace::reapplied(pass, rule_id);
+            let Some(spliceable) = Spliceable::of(&**rule, source) else {
+                continue;
+            };
+            if !spliceable.lands() || !spliceable.rewrites(source) {
+                report.unlanded.push(rule_id);
+                continue;
+            }
+            report.editing.push(rule_id);
+            if witness && report.witness.is_none() {
+                report.witness = Some((rule_id, spliceable.woven(source)));
+            }
+        }
+        report
     }
 
     #[cfg(test)]
@@ -239,7 +328,10 @@ impl Pipeline {
 
     /// Rewrites `source` and returns it beside the diagnostics
     /// [`diagnose`](Self::diagnose) collects against the buffer as
-    /// written, the pair a structured `format` reports.
+    /// written, the pair a structured `format` reports, and the rules
+    /// the fold fired, the set a narrowed settle check re-applies, which
+    /// a rule applicable only once an upstream rule has rewritten joins
+    /// where the as-written diagnostics leave it out.
     ///
     /// One walk over the rules serves both halves, in that the fold
     /// opens at the first rule the diagnose pass found editing and
@@ -261,15 +353,14 @@ impl Pipeline {
     pub(crate) fn run_as_written(
         &self,
         source: Source,
-    ) -> Result<(Source, Vec<Diagnostic>), PipelineError> {
+    ) -> Result<(Source, Vec<Diagnostic>, BTreeSet<RuleId>), PipelineError> {
         let (diagnostics, edits_at) = self.diagnosed(&source);
         let Some(first) = edits_at else {
-            return Ok((source, diagnostics));
+            return Ok((source, diagnostics, BTreeSet::new()));
         };
-        Ok((
-            self.fold_rules(source, None, first..self.rules.len())?,
-            diagnostics,
-        ))
+        let mut fold = Vec::new();
+        let formatted = self.fold_rules(source, Some(&mut fold), first..self.rules.len())?;
+        Ok((formatted, diagnostics, fired_rules(&fold)))
     }
 
     /// What one walk over `source` reads for the settle check, so the
@@ -278,41 +369,22 @@ impl Pipeline {
     /// this pipeline carries, so a `--select` run answers for that
     /// subset alone, and a file-level `# prose: off` answers empty.
     pub fn settle_report(&self, source: &Source) -> SettleReport {
-        let mut report = SettleReport::default();
-        if source.suppression_map().file_is_suppressed() {
-            return report;
-        }
-        for rule in &self.rules {
-            let Some(groups) = surviving_groups(&**rule, source) else {
-                continue;
-            };
-            let rule_id = rule.id();
-            match apply_edits(source.text(), groups.concat()) {
-                Some(text) if text != source.text() => {
-                    report.editing.push(rule_id);
-                    report.witness.get_or_insert((rule_id, text));
-                }
-                _ => report.unlanded.push(rule_id),
-            }
-        }
-        report
+        self.settle_walk(source, "full", |_| true, true)
     }
 
     /// One pipeline per rule this pipeline carries, in order, each
     /// holding its rule as this pipeline constructed it, so a rule that
     /// reads a sibling's flag keeps the answer this selection gave it.
     pub fn split(self) -> Vec<(RuleId, Self)> {
-        let target_version = self.target_version;
+        let (sharing, target_version) = (self.sharing, self.target_version);
         self.rules
             .into_iter()
             .map(|rule| {
-                (
-                    rule.id(),
-                    Self {
-                        rules: vec![rule],
-                        target_version,
-                    },
-                )
+                let rule_id = rule.id();
+                let alone = Self::from_rules(vec![rule])
+                    .sharing(sharing)
+                    .targeting(Some(target_version));
+                (rule_id, alone)
             })
             .collect()
     }
@@ -322,7 +394,18 @@ impl Pipeline {
     /// not splice, or splice back to the same text, is left out, and
     /// [`settle_report`](Self::settle_report) names those separately.
     pub fn unsettled(&self, source: &Source) -> Vec<RuleId> {
-        self.settle_report(source).editing
+        self.settle_walk(source, "full", |_| true, false).editing
+    }
+
+    /// The rules among `fired` whose edits would still rewrite `source`,
+    /// the second pass a `format` run makes over its own output,
+    /// re-applying the rules that edited on the first pass rather than
+    /// every enabled rule. A rule silent on the first pass is left to
+    /// the full [`settle_report`](Self::settle_report) walk that `check
+    /// --validate` and the settle sweeps run.
+    pub(crate) fn unsettled_among(&self, source: &Source, fired: &BTreeSet<RuleId>) -> Vec<RuleId> {
+        self.settle_walk(source, "narrowed", |id| fired.contains(&id), false)
+            .editing
     }
 }
 
@@ -341,14 +424,24 @@ pub struct SettleReport {
     pub witness: Option<(RuleId, String)>,
 }
 
-/// True when no two edits across `groups` match on both range and
-/// content. A byte-identical duplicate is the signature of a walk
-/// reaching one node twice, whereas two differing edits over one span
-/// are the overlap the weave declines on its own.
-fn distinct_edits(groups: &[Vec<Edit>]) -> bool {
-    let mut edits: Vec<&Edit> = groups.iter().flatten().collect();
-    edits.sort_by_key(|edit| (edit.start(), edit.end()));
-    edits.windows(2).all(|pair| pair[0] != pair[1])
+/// Which rules a run lets share a splice and a parse with the editing
+/// rules ahead of them.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum Sharing {
+    /// Every rule, so a run reparses only where a rule's edits overlap
+    /// one already batched, the reading the subset probe takes of a
+    /// pair to test whether its edits are independent. A batch the
+    /// reparse rejects surfaces as [`PipelineError::Batch`] rather
+    /// than replaying.
+    Always,
+    /// The rules the registry's independence table declares, every
+    /// other rule reading the tree the batch ahead of it left.
+    #[default]
+    Declared,
+    /// No rule, so every editing rule reads the tree the rule ahead of
+    /// it left, the fold the subset probe measures a batched pair
+    /// against.
+    Never,
 }
 
 /// The format diagnostics `rule`'s surviving fix groups emit, one per
@@ -358,32 +451,6 @@ fn format_diagnostics(rule: &dyn Rule, groups: Vec<Vec<Edit>>) -> impl Iterator<
     groups
         .into_iter()
         .map(move |group| Diagnostic::format(rule_id, group, message.to_owned()))
-}
-
-/// The fix groups `rule` holds against `source`, `None` where none
-/// survive the suppression filter.
-fn surviving_groups(rule: &dyn Rule, source: &Source) -> Option<Vec<Vec<Edit>>> {
-    let groups = prepared_groups(rule, source);
-    if groups.is_empty() {
-        return None;
-    }
-    debug_assert!(
-        distinct_edits(&groups),
-        "rule `{}` emitted a duplicate edit, the signature of a walk reaching one node twice",
-        rule.id(),
-    );
-    Some(groups)
-}
-
-/// Applies `rule` to `source` and weaves its surviving fix groups into
-/// new text, returning `None` when no group survives or the edits do not
-/// apply. The `SourceMap` pairs each edited offset with the one the
-/// woven text holds it at, the deltas both the notebook cell slide and
-/// the incremental splice read.
-fn woven_groups(rule: &dyn Rule, source: &Source) -> Option<(Vec<Vec<Edit>>, String, SourceMap)> {
-    let groups = surviving_groups(rule, source)?;
-    let (new_text, map) = apply_edits_mapped(source.text(), groups.concat())?;
-    Some((groups, new_text, map))
 }
 
 #[cfg(test)]

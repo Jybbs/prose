@@ -51,6 +51,8 @@ pub(crate) struct StackMethodChains {
 impl StackMethodChains {
     pub(crate) const MESSAGE: &'static str = "break a long method chain to one link per line";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.stack_method_chains;
         Self {

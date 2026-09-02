@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/lambda_default_read_still_flags/input.py
+---
+def joiner(parts):
+    sep = ", "
+    return lambda row, s=sep: s.join(row)

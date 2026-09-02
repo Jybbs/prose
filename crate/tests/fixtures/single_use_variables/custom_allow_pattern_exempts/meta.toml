@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Custom `allow-pattern` Exempts Matching Names"
-
-description = '''
-Setting `allow-pattern = "tmp_*"` **replaces** the default `_*` pattern, so `single-use-variables` exempts any name starting with `tmp_` instead of an underscore. `tmp_value` in `consume` matches the configured pattern and is bound once and read once without being reported.
-'''

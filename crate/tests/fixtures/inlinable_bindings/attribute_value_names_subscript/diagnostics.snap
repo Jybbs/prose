@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/inlinable_bindings/attribute_value_names_subscript/input.py
+---
+inlinable-bindings@22..23
+inlinable-bindings@25..26

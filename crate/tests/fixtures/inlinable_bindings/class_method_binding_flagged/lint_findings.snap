@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/inlinable_bindings/class_method_binding_flagged/input.py
+---
+[
+  {
+    "code": "inlinable-bindings",
+    "end_location": {
+      "column": 19,
+      "row": 3
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 3
+    },
+    "message": "`normalized` is read once and inlining its value costs nothing. Consider inlining `transform(payload)`"
+  }
+]

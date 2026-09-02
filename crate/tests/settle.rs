@@ -8,8 +8,12 @@
 //! run one at a time in the caller's order, each constructed against
 //! the pair's own selection, and every single-rule run over a buffer is
 //! made once per file and shared by each subset whose rule carries the
-//! same settings. The fixture tree runs the sweep at every line length
-//! the harness carries, because a subset that settles at one
+//! same settings. A pair the registry declares independent also runs
+//! as one pipeline splicing both rules into a single buffer, and fails
+//! on any file where that run differs from the chained one, whereas a
+//! pointed sweep reports which undeclared pairs agree on every file
+//! they edit together. The fixture tree runs the sweep at every line
+//! length the harness carries, because a subset that settles at one
 //! `code-line-length` can still edit its own output at another.
 
 use std::{
@@ -24,8 +28,8 @@ use std::{
 use itertools::Itertools;
 use prose::{
     config::Config,
-    pipeline::Pipeline,
-    rule::{RuleId, render_slugs, runs_behind},
+    pipeline::{Pipeline, PipelineError, Sharing},
+    rule::{RuleId, independent, render_slugs, runs_behind},
     source::Source,
 };
 use rstest::rstest;
@@ -51,6 +55,38 @@ const RULES_VAR: &str = "PROSE_SETTLE_RULES";
 /// The environment variable taking one share of the pairs as `k/n`,
 /// the `k`th of `n` counted from one.
 const SHARD_VAR: &str = "PROSE_SETTLE_SHARD";
+
+/// How often one undeclared pair's spliced run matched its chained one
+/// over the files both rules edited.
+#[derive(Default)]
+struct Agreement {
+    agreed: usize,
+    diverged: usize,
+    /// The first file the two differed on.
+    example: Option<String>,
+}
+
+impl Agreement {
+    fn absorb(&mut self, other: Self) {
+        self.agreed += other.agreed;
+        self.diverged += other.diverged;
+        if self.example.is_none() {
+            self.example = other.example;
+        }
+    }
+
+    /// Counts one file's verdict, holding the first divergent file as
+    /// the example.
+    fn record(&mut self, agrees: bool, path: &Path) {
+        if agrees {
+            self.agreed += 1;
+        } else {
+            self.diverged += 1;
+            self.example
+                .get_or_insert_with(|| path.display().to_string());
+        }
+    }
+}
 
 /// One rule's run over one buffer.
 #[derive(Clone)]
@@ -78,6 +114,12 @@ enum Claim {
 /// the same shape across many files reports once.
 #[derive(Default)]
 struct Findings {
+    /// Declared-independent pairs whose spliced run differs from their
+    /// chained one.
+    divergent: Tally,
+    /// How each undeclared pair's spliced run compared, gathered only
+    /// for the pointed sweep that prints it.
+    sharing: BTreeMap<[RuleId; 2], Agreement>,
     /// Files the corpus held that the probe could not read, named once
     /// however many widths reached them.
     skipped: BTreeSet<String>,
@@ -88,13 +130,45 @@ struct Findings {
 }
 
 impl Findings {
+    /// The undeclared pairs by how they agreed, one line apiece, for a
+    /// pointed sweep to print.
+    fn render_sharing(&self) -> String {
+        let (agreeing, diverging): (Vec<_>, Vec<_>) = self
+            .sharing
+            .iter()
+            .partition(|(_, agreement)| agreement.diverged == 0);
+        let line = |(pair, agreement): &(&[RuleId; 2], &Agreement)| {
+            let [earlier, later] = pair;
+            let example = agreement
+                .example
+                .as_deref()
+                .map_or_else(String::new, |file| format!(", e.g. {file}"));
+            format!(
+                "  `{earlier}` then `{later}`: {} of {} runs agree{example}",
+                agreement.agreed,
+                agreement.agreed + agreement.diverged,
+            )
+        };
+        format!(
+            "\nundeclared pairs whose spliced run matches their chained one ({}):\n{}\n\nundeclared pairs whose spliced run diverges from their chained one ({}):\n{}\n",
+            agreeing.len(),
+            agreeing.iter().map(line).format("\n"),
+            diverging.len(),
+            diverging.iter().map(line).format("\n"),
+        )
+    }
+
     fn total(&self) -> usize {
-        self.undeclared.len() + self.unsettled.len()
+        self.divergent.len() + self.undeclared.len() + self.unsettled.len()
     }
 }
 
 impl Absorbing for Findings {
     fn absorb(&mut self, other: Self) {
+        self.divergent.absorb(other.divergent);
+        for (pair, agreement) in other.sharing {
+            self.sharing.entry(pair).or_default().absorb(agreement);
+        }
         self.skipped.extend(other.skipped);
         self.undeclared.absorb(other.undeclared);
         self.unsettled.absorb(other.unsettled);
@@ -153,19 +227,33 @@ impl Memo<'_> {
     }
 }
 
+/// One ordered rule pair's probes, built once per budget and shared
+/// across the corpus.
+struct Pair {
+    /// Whether the registry declares the pair independent, so `folded`
+    /// splices both rules into one buffer.
+    declared: bool,
+    /// Both rules in one pipeline, under the sharing a run ships.
+    folded: Pipeline,
+    rules: [RuleId; 2],
+    /// The seats in [`Probes::singles`] of the two rules as this pair
+    /// constructs them.
+    seats: [usize; 2],
+    /// The pair spliced into one buffer whatever the registry
+    /// declares, held for the agreement a pointed sweep reports and
+    /// absent for every other run.
+    spliced: Option<Pipeline>,
+}
+
 /// Every pipeline one budget's sweep runs, built once and shared across
 /// the corpus rather than rebuilt per file.
 struct Probes {
     /// The `code-line-length` clause every defect this budget files
     /// carries.
     budget: String,
-    /// The configuration every pipeline this run holds resolved
-    /// against.
-    config: Config,
-    /// The pairs this run probes, each in registry order beside the
-    /// seats in `singles` of its two rules as the pair constructs them,
-    /// narrowed by [`RULES_VAR`] and [`SHARD_VAR`].
-    pairs: Vec<([RuleId; 2], [usize; 2])>,
+    /// The pairs this run probes, in registry order, narrowed by
+    /// [`RULES_VAR`] and [`SHARD_VAR`].
+    pairs: Vec<Pair>,
     /// The rules whose solo verdict this run reports, narrowed the same
     /// way.
     reported: BTreeSet<RuleId>,
@@ -187,7 +275,7 @@ impl Probes {
         let (share, shares) = shard();
         let claim = claim();
         let in_scope = |rule: &RuleId| scope.as_ref().is_none_or(|set| set.contains(rule));
-        let taken = |slot: &usize| slot % shares == share;
+        let reporting_agreement = pointed_corpus().is_some();
         let mut singles = Vec::new();
         let mut seats = FxHashMap::default();
         let mut seat = |rule: RuleId, pipeline: Pipeline| -> usize {
@@ -213,24 +301,30 @@ impl Probes {
                 Claim::Owned => in_scope(earlier),
                 Claim::Touching => in_scope(earlier) || in_scope(later),
             })
-            .enumerate()
-            .filter(|(slot, _)| taken(slot))
-            .map(|(_, pair)| {
+            .skip(share)
+            .step_by(shares)
+            .map(|pair @ [earlier, later]| {
                 let [(_, first), (_, second)] = seated(&config, pair);
-                (pair, [seat(pair[0], first), seat(pair[1], second)])
+                let declared = independent(later.as_str(), earlier.as_str());
+                Pair {
+                    declared,
+                    folded: subset(&config, &pair),
+                    rules: pair,
+                    seats: [seat(earlier, first), seat(later, second)],
+                    spliced: (!declared && reporting_agreement)
+                        .then(|| subset(&config, &pair).sharing(Sharing::Always)),
+                }
             })
             .collect();
         let reported = Pipeline::known_ids()
             .iter()
             .copied()
             .filter(in_scope)
-            .enumerate()
-            .filter(|(slot, _)| taken(slot))
-            .map(|(_, rule)| rule)
+            .skip(share)
+            .step_by(shares)
             .collect();
         Self {
             budget: format!("at `code-line-length` {width}"),
-            config,
             pairs,
             reported,
             singles,
@@ -326,7 +420,9 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         }
     }
 
-    for &(pair @ [earlier, later], seats @ [first, second]) in &probes.pairs {
+    for probe in &probes.pairs {
+        let (declared, pair @ [earlier, later], seats @ [first, second]) =
+            (probe.declared, probe.rules, probe.seats);
         if broken.contains(&earlier) || broken.contains(&later) {
             continue;
         }
@@ -337,7 +433,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         };
         let chained = memo.chain(seats, &text);
         if verifying() {
-            verify_pair(&mut memo, probes, path, &text, pair, seats, &chained);
+            verify_pair(&mut memo, path, &text, probe, &chained);
         }
         let forward = match chained {
             Ok(forward) => forward,
@@ -351,6 +447,26 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         };
         if forward == text {
             continue;
+        }
+        if memo.editing(&seats, &text).len() == 2 {
+            let agrees = |spliced: &Pipeline| spliced_matches(spliced, &text, &forward);
+            if declared {
+                if !agrees(&probe.folded) {
+                    file(
+                        &mut findings.divergent,
+                        format!(
+                            "`{later}` spliced beside `{earlier}` differs from its chained run {}",
+                            probes.budget
+                        ),
+                    );
+                }
+            } else if let Some(spliced) = &probe.spliced {
+                findings
+                    .sharing
+                    .entry(pair)
+                    .or_default()
+                    .record(agrees(spliced), path);
+            }
         }
         let left = memo.editing(&seats, &forward);
         if !left.is_empty() {
@@ -441,28 +557,38 @@ fn shard_of(spec: Option<&str>) -> (usize, usize) {
     (k - 1, n)
 }
 
+/// The text `pipeline` folds `text` into, `None` where the buffer does
+/// not parse.
+fn folded_text(pipeline: &Pipeline, text: &str) -> Option<Result<String, PipelineError>> {
+    text.parse::<Source>()
+        .ok()
+        .map(|source| pipeline.format(source).map(|out| out.text().to_owned()))
+}
+
+/// True where `spliced` leaves `text` as the `chained` run did. A run
+/// `spliced` rejects, and a buffer it cannot parse, both count as a
+/// divergence.
+fn spliced_matches(spliced: &Pipeline, text: &str, chained: &str) -> bool {
+    matches!(folded_text(spliced, text), Some(Ok(out)) if out == chained)
+}
+
 /// A pipeline carrying exactly `rules`, bypassing each one's `enabled`
 /// flag the way a `--select` run does.
 fn subset(config: &Config, rules: &[RuleId]) -> Pipeline {
     Pipeline::with_filters(config, rules, &[])
 }
 
-/// Folds `pair` over `text` and panics where the fold's text or its
-/// still-editing set differs from the `chained` single-rule runs.
+/// Folds `probe`'s pair over `text` and panics where the fold's text or
+/// its still-editing set differs from the `chained` single-rule runs.
 fn verify_pair(
     memo: &mut Memo,
-    probes: &Probes,
     path: &Path,
     text: &Rc<str>,
-    pair @ [earlier, later]: [RuleId; 2],
-    seats: [usize; 2],
+    probe: &Pair,
     chained: &Result<Rc<str>, Rc<str>>,
 ) {
-    let folded = subset(&probes.config, &pair);
-    let old = text
-        .parse::<Source>()
-        .ok()
-        .map(|source| folded.format(source).map(|out| out.text().to_owned()));
+    let (folded, [earlier, later], seats) = (&probe.folded, probe.rules, probe.seats);
+    let old = folded_text(folded, text);
     match (chained, old) {
         (Ok(new), Some(Ok(old))) => assert!(
             **new == *old,
@@ -528,11 +654,17 @@ fn every_rule_subset_settles_and_declares_its_seating() {
         findings.absorb(swept(&files, |path| probe(&probes, path)));
     }
     report_verified("chained pairs against the two-rule fold");
+    if pointed_corpus().is_some() {
+        eprintln!("{}", findings.render_sharing());
+    }
     let unread = unread(findings.skipped.len(), files.len(), "probe");
     let report = format!(
-        "{}{}",
+        "{}{}{}",
         findings.unsettled.render("unsettled subsets"),
         findings.undeclared.render("undeclared seatings"),
+        findings
+            .divergent
+            .render("declared independence the chained run contradicts"),
     );
     assert!(
         report.is_empty(),

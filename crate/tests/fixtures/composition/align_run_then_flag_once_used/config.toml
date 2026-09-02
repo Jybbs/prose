@@ -1,2 +1,2 @@
 [harness]
-rules = ["align-equals", "single-use-variables"]
+rules = ["align-equals", "inlinable-bindings"]

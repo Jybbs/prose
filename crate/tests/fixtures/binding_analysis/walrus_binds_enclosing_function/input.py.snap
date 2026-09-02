@@ -37,6 +37,7 @@ bindings:
       - Walrus
     name: n
     read_offsets:
+      - 30
       - 68
     runtime_read: false
     scope: 1

@@ -66,6 +66,8 @@ pub(crate) struct ReflowImports {
 impl ReflowImports {
     pub(crate) const MESSAGE: &'static str = "lay out an import block one module per line";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let align = &config.rules.align_imports;
         let rules = &config.rules.reflow_imports;

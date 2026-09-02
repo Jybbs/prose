@@ -30,6 +30,8 @@ impl FrameDocstrings {
     pub(crate) const MESSAGE: &'static str =
         "canonicalize docstring quotes and frame the opener and closer on their own lines";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

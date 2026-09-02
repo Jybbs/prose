@@ -11,7 +11,7 @@ tagline: canonical rule slug
 
 <PrimitiveLayout primitive="rule-id">
 
-Every rule needs a stable identifier the rest of the system can route off. The CLI's `--select` and `--ignore` flags parse names, the `[rules]` table keys into names, suppression directives reference names inside `# prose: ignore[<name>]`, and diagnostic output routes by name. *RuleId* is the single canonical handle: a newtype wrapping a kebab-case slug *(`"align-equals"`, `"single-use-variables"`)* with equality, hashing, parsing, and the registry lookup that the [[pipeline]] drives off.
+Every rule needs a stable identifier the rest of the system can route off. The CLI's `--select` and `--ignore` flags parse names, the `[rules]` table keys into names, suppression directives reference names inside `# prose: ignore[<name>]`, and diagnostic output routes by name. *RuleId* is the single canonical handle: a newtype wrapping a kebab-case slug *(`"align-equals"`, `"inlinable-bindings"`)* with equality, hashing, parsing, and the registry lookup that the [[pipeline]] drives off.
 
 ## Public Surface
 
@@ -35,7 +35,7 @@ Snake-case input *(`align_equals`)* is normalized to the canonical kebab form be
 
 ## Registry Pattern
 
-Each concrete rule lives under `prose::rules` (*a `pub(crate)` module today*). The registry macro in `crate/src/rule.rs` emits a single source of truth that drives every consumer:
+Each concrete rule lives under `prose::rules` (*a `pub(crate)` module today*). The registry macro in `crate/src/rule/mod.rs` emits a single source of truth that drives every consumer:
 
 - A `KNOWN_IDS: &[RuleId]` constant carrying every registered slug in canonical order.
 - The pipeline constructors (`for_rule`, `with_defaults`, `with_filters`) that dispatch on slug.

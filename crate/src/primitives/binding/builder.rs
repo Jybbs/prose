@@ -3,11 +3,12 @@
 //! write and read it meets, and resolving each deferred read against the
 //! completed scope chain.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::OnceLock,
+};
 
 use itertools::Itertools;
-use std::sync::OnceLock;
-
 use ruff_python_ast::{
     CmpOp, ExceptHandler, Expr, ExprCompare, ExprDictComp, ExprGenerator, ExprLambda, ExprList,
     ExprListComp, ExprNamed, ExprSetComp, ExprTuple, Identifier, MatchCase, Operator, Parameters,
@@ -32,8 +33,6 @@ pub(super) struct Builder {
     annotation_offsets: FxHashSet<TextSize>,
     assignment_values: FxHashMap<TextSize, TextRange>,
     bindings: Vec<Binding>,
-    condition_test_depth: usize,
-    condition_test_walruses: FxHashSet<BindingId>,
     conditional_depth: usize,
     deferred_reads: Vec<DeferredRead>,
     deleted: FxHashSet<Name>,
@@ -52,8 +51,6 @@ impl Builder {
             annotation_offsets: FxHashSet::default(),
             assignment_values: FxHashMap::default(),
             bindings: Vec::new(),
-            condition_test_depth: 0,
-            condition_test_walruses: FxHashSet::default(),
             conditional_depth: 0,
             deferred_reads: Vec::new(),
             deleted: FxHashSet::default(),
@@ -166,15 +163,6 @@ impl Builder {
         self.annotation_depth += 1;
         f(self);
         self.annotation_depth -= 1;
-    }
-
-    /// Runs `f` with condition-test depth raised, so a `:=` reached
-    /// while visiting an `if`/`elif`/`while` test records into
-    /// `condition_test_walruses`.
-    fn in_condition_test(&mut self, f: impl FnOnce(&mut Self)) {
-        self.condition_test_depth += 1;
-        f(self);
-        self.condition_test_depth -= 1;
     }
 
     /// Runs `f` with writes marked conditional, so a name bound only
@@ -358,9 +346,7 @@ impl Builder {
             name.range().start(),
             BindingKind::Walrus,
         );
-        if self.condition_test_depth > 0 {
-            self.condition_test_walruses.insert(binding);
-        }
+        self.record_resolved_read(binding, name.range().start(), None);
     }
 
     fn record_write(&mut self, name: &str, offset: TextSize, kind: BindingKind) -> BindingId {
@@ -460,11 +446,10 @@ impl Builder {
     }
 
     /// Visits `test` as the condition of an `if`, `elif`, or `while`,
-    /// its bare name a runtime read and any walrus inside it a
-    /// condition-test walrus.
+    /// recording its bare name as a runtime read.
     fn visit_condition_test(&mut self, test: &Expr) {
         self.mark_runtime_read(test);
-        self.in_condition_test(|b| b.visit_expr(test));
+        self.visit_expr(test);
     }
 
     /// Records each name a `del` unbinds, which is neither a read nor a
@@ -592,12 +577,10 @@ impl Builder {
                 .iter()
                 .any(|&member| self.bindings[member.0 as usize].read_offsets.len() > 1);
             for (index, &member) in group.members.iter().enumerate() {
-                let kind = if reused {
-                    UnpackKind::Exempt
-                } else if group.suggestible {
+                let kind = if !reused && group.suggestible {
                     UnpackKind::Suggested(group.value, index)
                 } else {
-                    UnpackKind::Bare
+                    UnpackKind::Unresolved
                 };
                 unpack_targets.insert(member, kind);
             }
@@ -605,7 +588,6 @@ impl Builder {
         BindingAnalysis {
             assignment_values: self.assignment_values,
             bindings: self.bindings,
-            condition_test_walruses: self.condition_test_walruses,
             deleted: self.deleted,
             function_scope_at: self.function_scope_at,
             global_writes: self.global_writes,

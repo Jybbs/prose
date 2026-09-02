@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/inlinable_bindings/never_read_binding_stays_quiet/input.py
+---
+

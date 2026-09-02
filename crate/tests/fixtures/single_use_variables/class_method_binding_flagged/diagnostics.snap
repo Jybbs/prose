@@ -1,6 +1,0 @@
----
-source: tests/integration.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/single_use_variables/class_method_binding_flagged/input.py
----
-single-use-variables@55..65

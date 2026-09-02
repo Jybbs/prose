@@ -58,6 +58,8 @@ pub(crate) struct ReflowCollections {
 impl ReflowCollections {
     pub(crate) const MESSAGE: &'static str = "lay out collection literal against the line budget";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.reflow_collections;
         Self {
@@ -81,7 +83,7 @@ impl Rule for ReflowCollections {
         // so the per-node check is a containment scan rather than a re-walk.
         let count_cap = self.one_row.dict_entry_cap();
         let tripping_dicts = count_cap.map_or_else(Vec::new, |cap| {
-            filter_map_over_exprs(body, |expr| {
+            filter_map_over_exprs(body, Descent::Over, |expr| {
                 expr.as_dict_expr()
                     .filter(|dict| dict.len() > cap)
                     .map(Ranged::range)

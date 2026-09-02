@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/inlinable_bindings/comprehension_iterable_read_still_flags/input.py
+---
+inlinable-bindings@26..30

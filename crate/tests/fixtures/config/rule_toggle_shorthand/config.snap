@@ -214,7 +214,7 @@ Config {
         step_narration: ToggleOnly {
             enabled: true,
         },
-        single_use_variables: SingleUseVariablesConfig {
+        inlinable_bindings: InlinableBindingsConfig {
             allow_pattern: AllowPattern(
                 "_*",
             ),

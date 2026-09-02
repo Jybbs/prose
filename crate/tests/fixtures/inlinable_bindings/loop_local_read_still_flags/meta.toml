@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Write and Read Inside One Loop Still Flags"
+
+description = '''
+`scaled` is written and read inside the same `for` body, so the inline leaves the multiplication running exactly as often as it already does. **The binding is reported**, the loop mattering only where the write sits outside it.
+'''

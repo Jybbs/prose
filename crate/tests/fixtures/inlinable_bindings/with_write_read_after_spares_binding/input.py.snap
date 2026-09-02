@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/with_write_read_after_spares_binding/input.py
+---
+def digest(path):
+    with open(path) as handle:
+        data = handle.read()
+    return summarize(data)

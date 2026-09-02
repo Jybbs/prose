@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Reused Sibling Exempts Its Unpack Partner"
-
-description = '''
-`head` in `settle` is read once, in `return head + tail`, but its unpack partner `tail` is read twice, once in `record(tail)` and again in the same return. **`single-use-variables` does not flag `head`** because removing it would split `head, tail = pair` into an indexed read plus a one-name remainder, a shape worse than the tuple unpack it replaces.
-'''

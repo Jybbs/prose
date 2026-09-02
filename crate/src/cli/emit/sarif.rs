@@ -120,14 +120,14 @@ fn sarif_run(runs: &[Run<'_>]) -> SarifRun {
 
 #[cfg(test)]
 mod tests {
-    use ruff_diagnostics::{Edit, Fix};
+    use ruff_diagnostics::Fix;
     use ruff_source_file::SourceFileBuilder;
     use serde_json::Value;
 
     use super::*;
     use crate::{
         cli::emit::emitted,
-        testing::{format_diagnostic, parse, range},
+        testing::{format_diagnostic, parse, range, replacement},
     };
 
     fn diag() -> Diagnostic {
@@ -189,8 +189,8 @@ mod tests {
         let source = parse("x = 1\ny = 2\n");
         let diag = Diagnostic {
             fix: Some(Fix::safe_edits(
-                Edit::range_replacement("a".to_owned(), range(0, 1)),
-                [Edit::range_replacement("b".to_owned(), range(6, 7))],
+                replacement("a", 0, 1),
+                [replacement("b", 6, 7)],
             )),
             ..format_diagnostic(range(0, 7))
         };

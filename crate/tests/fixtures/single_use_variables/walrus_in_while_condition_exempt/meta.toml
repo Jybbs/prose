@@ -1,9 +1,0 @@
-[docs]
-previewable = false
-title       = "A Walrus in a While Test Is Exempt"
-
-description = '''
-`chunk := reader.read()` binds inside the `while` test, and `chunk` is read again in `handle(chunk)`.
-
-`chunk` is **not flagged**, because the `while` comparison already consumes the walrus value on every iteration, which makes the body's read a second one. Inlining it would recompute `reader.read()` in both the condition and the body.
-'''

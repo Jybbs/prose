@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/inlinable_bindings/annotated_assignment_names_its_value/input.py
+---
+inlinable-bindings@20..26

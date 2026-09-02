@@ -45,6 +45,8 @@ pub(crate) struct SpaceStatements {
 impl SpaceStatements {
     pub(crate) const MESSAGE: &'static str = "normalize the gap between adjacent statements";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             first_party: config.first_party(),

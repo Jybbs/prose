@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/inlinable_bindings/lambda_body_read_spares_binding/input.py
+---
+def factory():
+    helper = compute()
+    return lambda x: x * helper

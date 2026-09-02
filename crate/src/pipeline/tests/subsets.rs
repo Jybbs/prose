@@ -76,15 +76,40 @@ fn format_span_leaves_a_file_suppressed_source_alone() {
 
 #[test]
 fn format_span_segments_compose_to_the_full_fold() {
+    // A seam falling inside a batch splits it, so the rules behind the
+    // seam read a reparsed buffer rather than the one the batch opened
+    // on, and the two agree only where the registry's independence
+    // declarations hold.
     let pipeline = Pipeline::with_defaults(&Config::default());
-    let text = "import sys\nimport os\n\n\n\n\ny  =  2\n";
-    let source = parse(text);
-    let copy = source.clone();
-    let full = pipeline.format(source).unwrap();
-    let seam = pipeline.len() / 2;
-    let head = pipeline.format_span(copy, 0..seam).unwrap();
-    let tail = pipeline.format_span(head, seam..pipeline.len()).unwrap();
-    assert_eq!(tail.text(), full.text());
+    let text = concat!(
+        "import os, sys\n",
+        "from typing import List, Optional\n",
+        "\n\n\n\n",
+        "def f(xs: List[int], y: Optional[str] = None) -> Optional[int]:\n",
+        "    'doc'\n",
+        "    d = {\"a\": 1, \"b\": 2,}\n",
+        "    msg = \"hello %s\" % y\n",
+        "    s = \"one\" \"two\"\n",
+        "    if y == None:\n",
+        "        return None\n",
+        "    match xs:\n",
+        "        case [1]:\n",
+        "            return 1\n",
+        "        case _:\n",
+        "            return 0\n",
+        "y  =  2\n",
+    );
+    let full = pipeline.format(parse(text)).unwrap();
+
+    for seam in 0..=pipeline.len() {
+        let head = pipeline.format_span(parse(text), 0..seam).unwrap();
+        let tail = pipeline.format_span(head, seam..pipeline.len()).unwrap();
+        assert_eq!(
+            tail.text(),
+            full.text(),
+            "segments split at seat {seam} differ from the whole fold",
+        );
+    }
 }
 
 #[test]

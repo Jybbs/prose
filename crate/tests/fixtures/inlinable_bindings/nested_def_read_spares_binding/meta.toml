@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Read Inside a Nested `def` Spares the Binding"
+
+description = '''
+`limit` is written in `factory` and read once inside `check`, which runs on each later call rather than where the binding sits. **The binding stays unreported**, since inlining would move `config.limit()` into the closure and change both when it runs and what `check` captures.
+'''

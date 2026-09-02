@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/inlinable_bindings/class_method_binding_flagged/input.py
+---
+inlinable-bindings@55..65

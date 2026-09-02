@@ -26,6 +26,7 @@ bare-imports                 = { allow = ["scipy", "torch"], enabled = false, ex
 expand-docstrings            = false
 frame-docstrings             = false
 group-imports                = false
+inlinable-bindings           = { allow-pattern = "tmp_*", enabled = false }
 line-overflow                = { enabled = false, suggest-string-splits = false }
 miscased-constants           = { allow-pattern = "_*", enabled = false }
 modernize-annotations        = { enabled = false, rewrite-generics = false, rewrite-unions = false }
@@ -38,15 +39,14 @@ reassigned-constants         = { allow = ["LOG_LEVEL"], enabled = false }
 reflow-calls                 = { enabled = false, max-args = 6 }
 reflow-collections           = { enabled = false, explode = false, keep-multiline-literals = false, max-atomics = 3, max-dict-entries = 5, wrap-dict-entries = false }
 reflow-imports               = { enabled = false, merge-members = false, split-multi-module = false }
+reflow-parentheses           = false
 reflow-signatures            = { enabled = false, max-params = false }
 restated-types               = false
 shed-backslash-continuations = false
-reflow-parentheses             = false
 shed-redundant-base          = false
 shed-super-args              = false
 signature-annotations        = false
 simplify-comprehensions      = false
-single-use-variables         = { allow-pattern = "tmp_*", enabled = false }
 space-statements             = false
 stack-adjacent-strings       = false
 stack-method-chains          = { enabled = false, max-links = 4, max-shift = 8 }

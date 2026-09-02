@@ -8,11 +8,17 @@ use ruff_text_size::TextLen;
 use thiserror::Error;
 
 use super::validity::first_semantic_error;
-use crate::{primitives::edit::forward_offsets, rule::RuleId, source::Source};
+use crate::{
+    primitives::edit::forward_offsets,
+    rule::{RuleId, render_slugs},
+    source::Source,
+};
 
 /// Failure modes surfaced by the pipeline itself.
 #[derive(Debug, Error)]
 pub enum PipelineError {
+    #[error("rules {} spliced into one buffer produced output the pipeline rejected", render_slugs(.rules))]
+    Batch { rules: Vec<RuleId> },
     #[error("rule `{rule}` left notebook cell {cell} unparseable")]
     Cell {
         cell: OneIndexed,
@@ -33,14 +39,16 @@ pub enum PipelineError {
     },
 }
 
-/// Reparses `new_text` and tags each failure with the `rule` whose
-/// edits produced it.
+/// Reparses `new_text` and tags each failure with `rule`, the result
+/// carrying no table until the caller's `inherit` fills one.
 ///
 /// A splice reparses only the statements the edits reached and answers
 /// `None` where it declines, leaving the whole-file parse below. That
-/// path takes every notebook, so both the slide that keeps a notebook's
-/// cell boundaries current and the cell check sit on it. The semantic
-/// check runs only when `gate` carries the version to evaluate against.
+/// path takes every notebook, so the slide that keeps a notebook's cell
+/// boundaries current through `map` and the per-cell check through
+/// [`reject_split_cell`] both sit on it. The semantic check reads either
+/// path's result, and runs only when `gate` carries the version to
+/// evaluate against.
 pub(super) fn reparse_or_reject(
     source: Source,
     new_text: String,
@@ -51,12 +59,13 @@ pub(super) fn reparse_or_reject(
     let next = match source.splice_of(&new_text, map) {
         Some(splice) => source.spliced(new_text, map, splice),
         None => {
-            let cell_offsets = forward_offsets(source.cell_offsets(), map, new_text.text_len());
-            let parsed = source
+            let limit = new_text.text_len();
+            let cell_offsets = forward_offsets(source.cell_offsets(), map, limit);
+            let next = source
                 .reparse_carrying(new_text, cell_offsets)
                 .map_err(|source| PipelineError::Reparse { rule, source })?;
-            reject_split_cell(&source, &parsed, rule)?;
-            parsed
+            reject_split_cell(&source, &next, rule)?;
+            next
         }
     };
     if let Some(version) = gate
@@ -98,6 +107,18 @@ mod tests {
 
     fn rule() -> RuleId {
         RuleId::from("breaks-parse")
+    }
+
+    #[test]
+    fn batch_error_names_every_member() {
+        let error = PipelineError::Batch {
+            rules: vec![RuleId::from("normalize-literals"), rule()],
+        };
+
+        assert_eq!(
+            error.to_string(),
+            "rules `normalize-literals`, `breaks-parse` spliced into one buffer produced output the pipeline rejected",
+        );
     }
 
     #[test]

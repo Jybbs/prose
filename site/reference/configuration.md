@@ -37,7 +37,7 @@ The top-level keys carry settings that span multiple rules. They sit at the docu
 With no value set, every version-dependent arm skips rather than assume a default, leaving every version-gated rule quiet on a project that has not opted into a target.
 :::
 
-`report-unstable-output` governs what a `format` run does when the file it just rewrote is one a second run would change again. On, the run prints an [**unstable-output notice**](/reference/cli#unstable-output) naming the rules that disagree and the invocation that reproduces the defect, while still landing the rewrite and still resolving the status from that rewrite alone, since a layout defect belongs to *Prose* rather than to the source beneath it. Off, the rewrite lands silently, while [`prose check --validate`](/reference/cli#prose-check) keeps its settle check, since the key governs the notice rather than the validation the flag asks for. The notice reaches an editor through [`prose server`](/reference/cli#prose-server) as well, once per document per session rather than on every save.
+`report-unstable-output` governs what a `format` run does when the file it just rewrote is one a second run would change again. On, the run prints an [**unstable-output notice**](/reference/cli#unstable-output) naming the rules that disagree and the invocation that reproduces the defect, while still landing the rewrite and still resolving the status from that rewrite alone, since a layout defect belongs to *Prose* rather than to the source beneath it. Off, the rewrite lands silently, while [`prose check --validate`](/reference/cli#prose-check) keeps its settle check, since the key governs the notice rather than the validation the flag turns on. The two checks differ in reach, in that a `format` run and the editor notice [`prose server`](/reference/cli#prose-server) sends re-apply only the rules that edited on the first pass, whereas `prose check --validate` re-applies every enabled rule, so a rule silent on the first pass that would still edit the output goes unreported by the notice and surfaces instead under `prose check --validate`, under a later cached run that finds its own earlier output rewritten, and in the corpus sweeps that run over the standard library and its mutations. The notice reaches an editor through [`prose server`](/reference/cli#prose-server) as well, once per document per session rather than on every save.
 
 ## Lengths
 
@@ -115,7 +115,7 @@ code-line-length = 200
 paths = ["tests/**"]
 
 [overrides.rules]
-single-use-variables = false
+inlinable-bindings = false
 ```
 
 Globs anchor to the declaring config's directory, so `tests/**` matches the `tests/` beside the config rather than at any depth below it. The array-of-tables shape keeps a multi-facet override readable across lines, where a glob-keyed inline table would crowd it onto one against *Prose*'s legibility mandate. When several entries match one file, *Prose* layers their bodies in document order, leaving the last matching entry to win each facet it sets while the earlier entries' other facets stay in place.

@@ -26,6 +26,8 @@ pub(crate) struct AlignComments {
 impl AlignComments {
     pub(crate) const MESSAGE: &'static str = "align consecutive trailing comments";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             settings: config

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/inlinable_bindings/lambda_default_read_still_flags/input.py
+---
+inlinable-bindings@23..26

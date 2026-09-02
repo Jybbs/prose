@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/inlinable_bindings/starred_target_resolves_no_replacement/input.py
+---
+def peel(items):
+    head, *rest = items
+    return wrap(head, rest)

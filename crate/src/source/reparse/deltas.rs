@@ -70,11 +70,11 @@ mod tests {
     use ruff_diagnostics::Edit;
 
     use super::*;
-    use crate::{primitives::edit::apply_edits_mapped, testing::range};
+    use crate::testing::{range, replacement, woven};
 
     /// The map `edits` produce over `text`, the pairing [`Deltas`] reads.
     fn mapped(text: &str, edits: Vec<Edit>) -> SourceMap {
-        apply_edits_mapped(text, edits).expect("the edits weave").1
+        woven(text, edits).1
     }
 
     #[rstest]
@@ -86,20 +86,14 @@ mod tests {
         #[case] span: TextRange,
         #[case] expected: bool,
     ) {
-        let map = mapped(
-            "abcdef",
-            vec![Edit::range_replacement("X".to_owned(), range(3, 4))],
-        );
+        let map = mapped("abcdef", vec![replacement("X", 3, 4)]);
 
         assert_eq!(Deltas::new(&map).holds_still(span), expected);
     }
 
     #[test]
     fn replaced_and_written_pair_each_edit_with_its_woven_span() {
-        let map = mapped(
-            "abcdef",
-            vec![Edit::range_replacement("XX".to_owned(), range(1, 2))],
-        );
+        let map = mapped("abcdef", vec![replacement("XX", 1, 2)]);
         let deltas = Deltas::new(&map);
 
         assert_eq!(deltas.replaced().collect::<Vec<_>>(), [range(1, 2)]);
@@ -108,10 +102,7 @@ mod tests {
 
     #[test]
     fn slide_carries_a_zero_width_range_to_one_offset() {
-        let map = mapped(
-            "abcdef",
-            vec![Edit::range_replacement("XX".to_owned(), range(1, 2))],
-        );
+        let map = mapped("abcdef", vec![replacement("XX", 1, 2)]);
 
         let slid = Deltas::new(&map).slide(TextRange::empty(TextSize::new(4)));
 
@@ -121,10 +112,7 @@ mod tests {
 
     #[test]
     fn slide_holds_a_range_ahead_of_every_edit() {
-        let map = mapped(
-            "abcdef",
-            vec![Edit::range_replacement("XX".to_owned(), range(3, 4))],
-        );
+        let map = mapped("abcdef", vec![replacement("XX", 3, 4)]);
 
         assert_eq!(Deltas::new(&map).slide(range(0, 2)), range(0, 2));
     }
@@ -138,10 +126,7 @@ mod tests {
 
     #[test]
     fn slide_moves_a_range_past_a_widening_edit() {
-        let map = mapped(
-            "abcdef",
-            vec![Edit::range_replacement("XX".to_owned(), range(1, 2))],
-        );
+        let map = mapped("abcdef", vec![replacement("XX", 1, 2)]);
 
         assert_eq!(Deltas::new(&map).slide(range(3, 5)), range(4, 6));
     }

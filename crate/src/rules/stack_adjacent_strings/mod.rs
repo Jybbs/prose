@@ -7,11 +7,6 @@
 //! a docstring-slot run, a commented span, and a part with its own
 //! line break each stay as written.
 
-mod layout;
-
-use layout::Layout;
-pub(crate) use layout::concatenated_run;
-
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr, StringLike};
 use ruff_text_size::{Ranged, TextRange};
@@ -31,6 +26,11 @@ use crate::{
     source::Source,
 };
 
+mod layout;
+
+use layout::Layout;
+pub(crate) use layout::concatenated_run;
+
 #[derive(Debug)]
 pub(crate) struct StackAdjacentStrings {
     code_line_length: usize,
@@ -40,6 +40,8 @@ pub(crate) struct StackAdjacentStrings {
 impl StackAdjacentStrings {
     pub(crate) const MESSAGE: &'static str =
         "stack an implicitly concatenated string run one literal per line";
+
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {

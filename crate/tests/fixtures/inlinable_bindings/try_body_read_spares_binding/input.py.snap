@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/try_body_read_spares_binding/input.py
+---
+def parse(raw, fallback):
+    default = fallback or {}
+    try:
+        return loads(raw) or default
+    except ValueError:
+        return {}

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Annotated Assignment Names Its Value"
+
+description = '''
+`parsed: int = int(raw)` carries an annotation, and the binding table records the value behind it the same way it records a plain assignment's. **The diagnostic names `int(raw)`**, so an annotated binding reads no differently from an unannotated one.
+'''

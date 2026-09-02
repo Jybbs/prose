@@ -13,28 +13,6 @@ fn compile_failure_surfaces_rule_id() {
 }
 
 #[test]
-fn downstream_rule_apply_sees_upstream_rewritten_text() {
-    let seen = Arc::new(Mutex::new(Vec::<String>::new()));
-    let pipeline = Pipeline::from_rules(vec![
-        Box::new(TextCapturingRule {
-            edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
-            id: RuleId::from("rewrite-x-to-y"),
-            seen: seen.clone(),
-        }),
-        Box::new(TextCapturingRule {
-            edits: Vec::new(),
-            id: RuleId::from("downstream-observer"),
-            seen: seen.clone(),
-        }),
-    ]);
-    let source = parse("x = 1\n");
-
-    pipeline.run(source).expect("both stages succeed");
-
-    assert_eq!(*seen.lock().expect("seen mutex"), ["x = 1\n", "y = 1\n"]);
-}
-
-#[test]
 fn empty_pipeline_returns_identical_source() {
     let pipeline = Pipeline::from_rules(Vec::new());
     let source = parse("x = 1\n");
@@ -87,10 +65,10 @@ fn rules_run_in_registration_order() {
 fn run_applies_a_reordering_rule_on_a_notebook() {
     // A sibling reorder runs cell-aware on a notebook, so its
     // rewrite lands inside the cell that holds the members.
-    let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-        groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
-        id: RuleId::from("rewrite-x-to-y"),
-    })]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-x-to-y",
+        vec![replacement("y", 0, 1)],
+    )]);
     let source = notebook(&["x = 1"]);
 
     let (result, diagnostics) = pipeline.run(source).expect("notebook run succeeds");
@@ -119,13 +97,10 @@ fn run_drops_a_whole_group_holding_one_suppressed_edit() {
     // The group bundles an edit at 11..16 (inside the suppressed
     // [0..17) span) with one at 27..32. The group drops as a unit,
     // so the unsuppressed edit never applies alone.
-    let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-        groups: vec![vec![
-            Edit::range_replacement("y".to_owned(), range(11, 16)),
-            Edit::range_replacement("Z".to_owned(), range(27, 32)),
-        ]],
-        id: RuleId::from("rewrite-x-and-z"),
-    })]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-x-and-z",
+        vec![replacement("y", 11, 16), replacement("Z", 27, 32)],
+    )]);
     let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
 
     let (result, diagnostics) = pipeline.run(source).expect("filtered run succeeds");
@@ -142,10 +117,7 @@ fn run_drops_edits_whose_range_overlaps_a_suppressed_span() {
     // [0..17) span and must be dropped, leaving the unsuppressed
     // edit at 27..32 (`z = 9`) in its own group to apply.
     let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-        groups: singleton_groups(vec![
-            Edit::range_replacement("y".to_owned(), range(11, 16)),
-            Edit::range_replacement("Z".to_owned(), range(27, 32)),
-        ]),
+        groups: singleton_groups(vec![replacement("y", 11, 16), replacement("Z", 27, 32)]),
         id: RuleId::from("rewrite-x-and-z"),
     })]);
     let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
@@ -179,13 +151,10 @@ fn run_emits_lint_diagnostic_without_fix_per_lint_range() {
 
 #[test]
 fn run_emits_one_diagnostic_per_group_carrying_every_edit() {
-    let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-        groups: vec![vec![
-            Edit::range_replacement("Y".to_owned(), range(0, 1)),
-            Edit::range_replacement("Z".to_owned(), range(4, 5)),
-        ]],
-        id: RuleId::from("rewrite-x-and-1"),
-    })]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-x-and-1",
+        vec![replacement("Y", 0, 1), replacement("Z", 4, 5)],
+    )]);
     let source = parse("x = 1\n");
 
     let (result, diagnostics) = pipeline.run(source).expect("grouped rewrite succeeds");
@@ -202,10 +171,10 @@ fn run_emits_one_diagnostic_per_group_carrying_every_edit() {
 
 #[test]
 fn run_emits_one_diagnostic_per_surviving_edit() {
-    let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-        groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
-        id: RuleId::from("rewrite-x-to-y"),
-    })]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-x-to-y",
+        vec![replacement("y", 0, 1)],
+    )]);
     let source = parse("x = 1\n");
 
     let (result, diagnostics) = pipeline.run(source).expect("rewrite succeeds");
@@ -220,7 +189,7 @@ fn run_emits_one_diagnostic_per_surviving_edit() {
 #[test]
 #[should_panic(expected = "emitted a duplicate edit")]
 fn run_flags_a_byte_identical_duplicate_edit() {
-    let edit = Edit::range_replacement("y".to_owned(), range(0, 1));
+    let edit = replacement("y", 0, 1);
     let rule = GroupSentinelRule {
         groups: vec![vec![edit.clone()], vec![edit]],
         id: RuleId::from("duplicating"),
@@ -237,24 +206,21 @@ fn run_resolves_a_lint_range_against_the_settled_source() {
     // carrying the directive, so the ignore still matches.
     let pipeline = Pipeline::from_rules(vec![
         Box::new(NeedleLintRule {
-            id: RuleId::from("single-use-variables"),
+            id: RuleId::from("inlinable-bindings"),
             needle: "y = 2",
         }),
-        Box::new(GroupSentinelRule {
-            groups: vec![vec![Edit::insertion(
-                "a = 0\n".to_owned(),
-                TextSize::new(0),
-            )]],
-            id: RuleId::from("prepend-a"),
-        }),
+        sentinel(
+            "prepend-a",
+            vec![Edit::insertion("a = 0\n".to_owned(), TextSize::new(0))],
+        ),
     ]);
-    let source = parse("x = 1\ny = 2  # prose: ignore[single-use-variables]\n");
+    let source = parse("x = 1\ny = 2  # prose: ignore[inlinable-bindings]\n");
 
     let (result, diagnostics) = pipeline.run(source).expect("prepend run succeeds");
 
     assert_eq!(
         result.text(),
-        "a = 0\nx = 1\ny = 2  # prose: ignore[single-use-variables]\n",
+        "a = 0\nx = 1\ny = 2  # prose: ignore[inlinable-bindings]\n",
     );
     assert!(diagnostics.iter().all(|d| !d.severity.is_lint()));
 }
@@ -291,10 +257,10 @@ fn run_skips_empty_group_without_emitting_a_diagnostic() {
 
 #[test]
 fn run_skips_reparse_when_every_edit_is_suppressed() {
-    let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-        groups: vec![vec![Edit::range_replacement("y".to_owned(), range(11, 16))]],
-        id: RuleId::from("rewrite-x-to-y"),
-    })]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-x-to-y",
+        vec![replacement("y", 11, 16)],
+    )]);
     let source = parse("# fmt: off\nx = 1\n# fmt: on\n");
 
     let (result, diagnostics) = pipeline.run(source).expect("filtered run succeeds");
@@ -308,10 +274,10 @@ fn run_skips_the_compile_gate_when_the_input_does_not_compile() {
     // The demoted `__future__` import arrives in the source, so the
     // rewrite of `os` to `sys` leaves the module exactly as
     // uncompilable as it was found and the run carries it through.
-    let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-        groups: vec![vec![Edit::range_replacement("sys".to_owned(), range(7, 9))]],
-        id: RuleId::from("rewrite-os-to-sys"),
-    })]);
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "rewrite-os-to-sys",
+        vec![replacement("sys", 7, 9)],
+    )]);
     let source = parse("import os\nfrom __future__ import annotations\n");
 
     let (result, _) = pipeline

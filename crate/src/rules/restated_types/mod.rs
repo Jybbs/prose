@@ -24,6 +24,8 @@ impl RestatedTypes {
     pub(crate) const MESSAGE: &'static str =
         "Flag a docstring type group the code already annotates";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = true;
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/inlinable_bindings/written_once_read_once/input.py
+---
+inlinable-bindings@20..21

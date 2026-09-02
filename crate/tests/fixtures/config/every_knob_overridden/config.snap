@@ -222,7 +222,7 @@ Config {
         step_narration: ToggleOnly {
             enabled: false,
         },
-        single_use_variables: SingleUseVariablesConfig {
+        inlinable_bindings: InlinableBindingsConfig {
             allow_pattern: AllowPattern(
                 "tmp_*",
             ),

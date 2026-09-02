@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/inlinable_bindings/nonlocal_declaration_skips_function/input.py
+---
+

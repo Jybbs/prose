@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/try_arm_read_spares_binding/input.py
+---
+def load(path, fallback):
+    default = fallback or {}
+    try:
+        return read_json(path)
+    except OSError:
+        return default

@@ -31,32 +31,6 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "message": "Bare import `json` reaches 1 of its attributes. Rewrite as `from json import ...` naming only the symbols this module uses"
   },
   {
-    "code": "single-use-variables",
-    "end_location": {
-      "column": 11,
-      "row": 47
-    },
-    "fix": null,
-    "location": {
-      "column": 5,
-      "row": 47
-    },
-    "message": "`cutoff` is assigned and used once. Consider inlining `before or 0.0`"
-  },
-  {
-    "code": "single-use-variables",
-    "end_location": {
-      "column": 11,
-      "row": 64
-    },
-    "fix": null,
-    "location": {
-      "column": 5,
-      "row": 64
-    },
-    "message": "`digest` is assigned and used once. Consider inlining `hashlib.sha256(payload.encode(encoding)).hexdigest()`"
-  },
-  {
     "code": "unsorted-positionals",
     "end_location": {
       "column": 37,

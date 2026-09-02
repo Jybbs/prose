@@ -194,6 +194,29 @@ fn imports_first_party_reads_kebab_case_list() {
     assert_eq!(config.imports.first_party, ["myapp", "acme"]);
 }
 
+#[test]
+fn inlinable_bindings_explicit_allow_pattern_takes_effect() {
+    let config = Config::from_pyproject_str(
+        "[tool.prose.rules.inlinable-bindings]\nallow-pattern = \"tmp_*\"\n",
+    )
+    .expect("parses");
+
+    assert!(
+        config
+            .rules
+            .inlinable_bindings
+            .allow_pattern
+            .matches("tmp_x")
+    );
+    assert!(
+        !config
+            .rules
+            .inlinable_bindings
+            .allow_pattern
+            .matches("xtmp_")
+    );
+}
+
 #[rstest]
 #[case::max_args("reflow-calls", "max-args", max_args_cap)]
 #[case::max_atomics("reflow-collections", "max-atomics", max_atomics_cap)]
@@ -253,12 +276,12 @@ fn inline_budget_round_trips_through_toml(
 #[case::import_line_length_negative("[tool.prose]\nimport-line-length = -1\n")]
 #[case::import_line_length_true("[tool.prose]\nimport-line-length = true\n")]
 #[case::import_line_length_zero("[tool.prose]\nimport-line-length = 0\n")]
+#[case::inlinable_bindings_allow_pattern(
+    "[tool.prose.rules.inlinable-bindings]\nallow-pattern = \"[unclosed\"\n"
+)]
 #[case::max_shift_negative("[tool.prose.rules.align-equals]\nmax-shift = -1\n")]
 #[case::max_shift_true("[tool.prose.rules.align-equals]\nmax-shift = true\n")]
 #[case::rules_non_bool_non_table("[tool.prose.rules]\nalign-equals = 5\n")]
-#[case::single_use_variables_allow_pattern(
-    "[tool.prose.rules.single-use-variables]\nallow-pattern = \"[unclosed\"\n"
-)]
 #[case::target_version_extra_period("[tool.prose]\ntarget-version = \"3.14.0\"\n")]
 #[case::target_version_invalid("[tool.prose]\ntarget-version = \"py310\"\n")]
 fn invalid_value_returns_toml_error(#[case] toml: &str) {
@@ -340,18 +363,18 @@ fn rules_bare_bool_sets_enabled(#[case] literal: &str, #[case] expected: bool) {
 #[test]
 fn rules_inline_table_compiles_regex_knob() {
     let config = Config::from_pyproject_str(
-        "[tool.prose.rules]\nsingle-use-variables = { allow-pattern = \"tmp_*\" }\n",
+        "[tool.prose.rules]\ninlinable-bindings = { allow-pattern = \"tmp_*\" }\n",
     )
     .expect("parses");
 
     assert!(
         config
             .rules
-            .single_use_variables
+            .inlinable_bindings
             .allow_pattern
             .matches("tmp_x")
     );
-    assert!(config.rules.single_use_variables.enabled);
+    assert!(config.rules.inlinable_bindings.enabled);
 }
 
 #[test]
@@ -384,29 +407,6 @@ fn rules_subtable_form_still_parses() {
 
     assert!(!config.rules.align_equals.enabled);
     assert_eq!(config.rules.align_equals.max_shift, cap(4));
-}
-
-#[test]
-fn single_use_variables_explicit_allow_pattern_takes_effect() {
-    let config = Config::from_pyproject_str(
-        "[tool.prose.rules.single-use-variables]\nallow-pattern = \"tmp_*\"\n",
-    )
-    .expect("parses");
-
-    assert!(
-        config
-            .rules
-            .single_use_variables
-            .allow_pattern
-            .matches("tmp_x")
-    );
-    assert!(
-        !config
-            .rules
-            .single_use_variables
-            .allow_pattern
-            .matches("xtmp_")
-    );
 }
 
 #[test]

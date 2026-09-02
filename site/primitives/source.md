@@ -11,7 +11,7 @@ tagline: parsed-text wrapper
 
 <PrimitiveLayout primitive="source">
 
-Every rule reads the source file through one shared value. *Source* bundles the original text, the parsed AST, the token stream, the line index, and a table of comment spans into a single owned value the pipeline hands across rule boundaries. Because the text is owned rather than borrowed, *Source* carries no lifetime parameter and is `Send + Sync`, which lets the path-mode CLI parallelize across files through `rayon` without lifetime gymnastics.
+Every rule reads the source file through one shared value. *Source* bundles the original text, the parsed AST, the token stream, the line index, and a table of comment spans into a single owned value the pipeline hands across rule boundaries, alongside three tables each built the first time a rule reads it, the [[binding-analysis]], the alignment columns, and the stranded-padding edits. Because the text is owned rather than borrowed, *Source* carries no lifetime parameter and is `Send + Sync`, which lets the path-mode CLI parallelize across files through `rayon` without lifetime gymnastics.
 
 ## Public Surface
 
@@ -36,7 +36,7 @@ A Python file the parser cannot recover surfaces as `SourceError::Parse(...)` fr
 - `tokens() -> &Tokens` returns the token stream. Useful when a rule's question is comment-shaped or trivia-shaped rather than AST-shaped.
 - `token_gaps() -> impl Iterator<Item = (&Token, &Token, TextRange)>` yields each adjacent token pair with the range between them, the trivia the lexer skipped. [[strip-stranded-padding]] reads it for the padding inside a bracket and [[shed-backslash-continuations]] for the gap a continuation sits in.
 - `prev_token_end(offset: TextSize) -> TextSize` returns the end of the token before an offset, scanning backward over whitespace and comments. [[space-statements]] reads it for where a header's signature closes and [[shed-redundant-base]] for the position a shed base list reaches back to.
-- `binding_analysis() -> &BindingAnalysis` returns the per-source [[binding-analysis]] table, built once during construction.
+- `binding_analysis() -> &BindingAnalysis` returns the per-source [[binding-analysis]] table, built on the first read and carried across a reparse whenever the rule between leaves every binding standing.
 - `comment_ranges() -> &CommentRanges` returns the comment-range table for trivia walking.
 
 ### Offset and Line Helpers
@@ -51,9 +51,11 @@ Methods covering the common *"where does this offset land?"* and *"what does the
 
 ### Mutation
 
-Between rules the pipeline rebuilds the *Source* over the mutated text, taking the narrowest rebuild those edits allow. `splice_of` finds the innermost statement covering each edit and reparses only those windows, splicing the fresh statements and tokens into the tree and token stream the value already holds and sliding every range past the edits by the delta they describe. Across the standard library the statements a rule edits hold **32%** of the bytes their modules carry, and every decline below puts a whole-file parse back on top of that floor.
+Between rules the pipeline rebuilds the *Source* over the mutated text, taking the narrowest rebuild those edits allow. `splice_of` finds the innermost statement covering each edit and reparses only those windows, splicing the fresh statements and tokens into the tree and token stream the value already holds and sliding every range past the edits by the delta they describe. Across the standard library the statements a batch edits hold about a quarter of the bytes their modules carry, and a third of the rebuilds decline below and put a whole-file parse back on top of that floor.
 
 `reparse_carrying(text: String, cell_offsets: CellOffsets) -> Result<Self, ParseError>` is the whole-file path beneath it, returning a fresh *Source* over the mutated text and carrying a notebook's cell boundaries forward across the rule. A splice hands the work down to it wherever it declines, which covers an edit no single statement contains, a window whose new text does not parse or lands as more than the one statement filling it, a window whose closing indent moved, an edit writing text no window reads, and every notebook. Both are `pub(crate)`, leaving reparsing inside the crate, and both yield a value equal to a parse of the same text, an equality a debug build asserts after every splice.
+
+Either path then hands the binding table the previous *Source* built to the new one through `inherit`, every offset moved through the `SourceMap` of the applied edits. A rule declares whether its edits leave every binding standing, so one that does hands the table over, whereas a table one of whose offsets an edit replaced is left for the next read to rebuild, as are the layout forecasts behind every rule.
 
 ### Errors
 
@@ -97,7 +99,7 @@ The Python wheel exposes the binary rather than the library, so a Python consume
 <template #related>
 
 - [[pipeline]] runs the rule loop against a *Source*, reparses between rules, returns the final text and diagnostics.
-- [[binding-analysis]] builds against a *Source* during construction and answers binding-shaped questions about every name in every scope.
+- [[binding-analysis]] builds against a *Source* on its first read, carries across a reparse where the rule between keeps every binding, and answers binding-shaped questions about every name in every scope.
 - [[suppression-map]] is built during *Source* construction and consulted by the pipeline at the edit-emission boundary.
 - [[rule-id]] is the handle each rule registers under, consumed by the pipeline's deterministic ordering.
 

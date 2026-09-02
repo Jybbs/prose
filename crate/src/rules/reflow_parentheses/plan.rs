@@ -117,9 +117,11 @@ pub(super) fn candidates(source: &Source) -> Vec<Candidate<'_>> {
 /// The range of every call no other call encloses, ascending by start,
 /// the calls `reflow-calls` explodes first on an overflowing row.
 pub(super) fn outermost_calls(source: &Source) -> Vec<TextRange> {
-    outermost(filter_map_over_exprs(&source.ast().body, |expr| {
-        expr.as_call_expr().map(Ranged::range)
-    }))
+    outermost(filter_map_over_exprs(
+        &source.ast().body,
+        Descent::Over,
+        |expr| expr.as_call_expr().map(Ranged::range),
+    ))
 }
 
 /// The columns the pairs shed inside `range` give back, two per pair

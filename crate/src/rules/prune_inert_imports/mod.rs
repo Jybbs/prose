@@ -45,6 +45,8 @@ impl PruneInertImports {
     pub(crate) const MESSAGE: &'static str =
         "prune an import binding nothing references or a repeat of one already bound";
 
+    pub(crate) const PRESERVES_BINDINGS: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let facets = &config.rules.prune_inert_imports;
         Self {

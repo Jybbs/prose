@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Inline Crossing the Line Budget Spares the Binding"
+
+description = '''
+`digest` is written once and read once, and both rows sit inside the default `code-line-length` of 88 columns. Standing the `hashlib` call in at the read would carry that row to 93, **so the binding stays unreported** rather than trading a name for a row the layout rules then break.
+'''

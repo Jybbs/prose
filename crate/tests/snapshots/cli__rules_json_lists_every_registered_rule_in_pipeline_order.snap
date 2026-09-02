@@ -327,9 +327,9 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [],
-    "imperative": "Binding is assigned and used once. Consider inlining",
+    "imperative": "Flag a binding assigned and read once whose value inlines at the read without recomputing it, moving it under a guard, or crossing the line budget",
     "position": 38,
-    "slug": "single-use-variables"
+    "slug": "inlinable-bindings"
   },
   {
     "after": [],

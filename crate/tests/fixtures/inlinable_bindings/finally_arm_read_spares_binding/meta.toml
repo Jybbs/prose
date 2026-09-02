@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Read Inside a `finally` Arm Spares the Binding"
+
+description = '''
+`default` is written above the `try` and read once in the `finally` arm, which runs on the way out of the statement whether or not the body raised. **The binding stays unreported**, because the inline would move `fallback or {}` into the unwind path rather than leaving it where the author put it.
+'''

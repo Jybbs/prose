@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/inlinable_bindings/inner_local_flagged_def_exempt/input.py
+---
+[
+  {
+    "code": "inlinable-bindings",
+    "end_location": {
+      "column": 10,
+      "row": 3
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 3
+    },
+    "message": "`x` is read once and inlining its value costs nothing. Consider inlining `compute()`"
+  }
+]

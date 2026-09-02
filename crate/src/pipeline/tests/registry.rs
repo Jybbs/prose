@@ -1,4 +1,5 @@
-//! Registry-surface tests over the rule set a pipeline resolves to.
+//! Tests over the registry constructors `Pipeline::with_defaults` and
+//! `Pipeline::with_filters`.
 
 use super::*;
 

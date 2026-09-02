@@ -83,6 +83,9 @@ impl Source {
 
     /// This source rewritten as `text`, with `splice`'s statements
     /// grafted in and everything outside a window slid past the edits.
+    /// The tree moves into the result, so a caller wanting the binding
+    /// table takes the slot before this call and one replaying a
+    /// rejected batch rebuilds from the entry buffer.
     ///
     /// [`splice_of`](Self::splice_of) declines every notebook, so this
     /// path carries no cell boundaries and no cell numbering.
@@ -119,26 +122,39 @@ mod tests {
 
     use super::*;
     use crate::{
-        primitives::edit::apply_edits_mapped,
-        testing::{parse, range},
+        rule::RuleId,
+        testing::{parse, range, replacement, woven},
     };
 
     /// `text` rewritten by `edits`, spliced where the splice applies and
     /// `None` where it declines.
     fn splice(text: &str, edits: Vec<Edit>) -> Option<Source> {
-        let (woven, map) = apply_edits_mapped(text, edits).expect("the edits weave");
+        let (rewritten, map) = woven(text, edits);
         let source = parse(text);
-        let splice = source.splice_of(&woven, &map)?;
-        Some(source.spliced(woven, &map, splice))
+        let splice = source.splice_of(&rewritten, &map)?;
+        Some(source.spliced(rewritten, &map, splice))
+    }
+
+    #[test]
+    fn a_spliced_source_carries_the_binding_table_forward() {
+        let (text, map) = woven("x = 1\ny = 2\n", vec![replacement("  ", 1, 2)]);
+        let mut source = parse("x = 1\ny = 2\n");
+        source.binding_analysis();
+        let bindings = source.take_binding_analysis();
+        let splice = source.splice_of(&text, &map).expect("the splice applies");
+
+        let mut next = source.spliced(text, &map, splice);
+        next.inherit(bindings, &map, RuleId::from("align-equals"), true);
+
+        assert!(next.assert_carried_bindings_are_fresh("the spliced source"));
     }
 
     #[test]
     fn spliced_declines_a_notebook() {
         let source = crate::testing::notebook(&["x = 1\n", "y = 2\n"]);
-        let edit = Edit::range_replacement("11".to_owned(), range(4, 5));
-        let (woven, map) = apply_edits_mapped(source.text(), vec![edit]).expect("the edits weave");
+        let (text, map) = woven(source.text(), vec![replacement("11", 4, 5)]);
 
-        assert!(source.splice_of(&woven, &map).is_none());
+        assert!(source.splice_of(&text, &map).is_none());
     }
 
     #[test]
@@ -150,35 +166,35 @@ mod tests {
 
     #[test]
     fn spliced_declines_a_window_its_statement_does_not_fill() {
-        let edit = Edit::range_replacement("x = 1 ".to_owned(), range(0, 5));
+        let edit = replacement("x = 1 ", 0, 5);
 
         assert!(splice("x = 1\ny = 2\n", vec![edit]).is_none());
     }
 
     #[test]
     fn spliced_declines_a_window_reparsing_to_two_statements() {
-        let edit = Edit::range_replacement("x = 1\ny = 2".to_owned(), range(0, 5));
+        let edit = replacement("x = 1\ny = 2", 0, 5);
 
         assert!(splice("x = 1\nz = 3\n", vec![edit]).is_none());
     }
 
     #[test]
     fn spliced_declines_a_window_whose_closing_indent_moved() {
-        let edit = Edit::range_replacement("        x = 1".to_owned(), range(6, 15));
+        let edit = replacement("        x = 1", 6, 15);
 
         assert!(splice("if a:\n    x = 1\ny = 2\n", vec![edit]).is_none());
     }
 
     #[test]
     fn spliced_declines_a_window_whose_new_text_does_not_parse() {
-        let edit = Edit::range_replacement("x = (".to_owned(), range(0, 5));
+        let edit = replacement("x = (", 0, 5);
 
         assert!(splice("x = 1\ny = 2\n", vec![edit]).is_none());
     }
 
     #[test]
     fn spliced_declines_an_edit_no_single_statement_covers() {
-        let edit = Edit::range_replacement("a = 9\nb = 8".to_owned(), range(0, 11));
+        let edit = replacement("a = 9\nb = 8", 0, 11);
 
         assert!(splice("x = 1\ny = 2\n", vec![edit]).is_none());
     }
@@ -223,13 +239,13 @@ mod tests {
     fn spliced_rewrites_the_edited_statement(
         #[case] text: &str,
         #[case] span: TextRange,
-        #[case] replacement: &str,
+        #[case] content: &str,
     ) {
-        let edit = Edit::range_replacement(replacement.to_owned(), span);
+        let edit = Edit::range_replacement(content.to_owned(), span);
 
         let next = splice(text, vec![edit]).expect("the splice applies");
 
-        assert!(next.text().contains(replacement));
+        assert!(next.text().contains(content));
         assert!(next.matches_a_fresh_parse());
     }
 }

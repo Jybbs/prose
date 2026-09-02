@@ -39,6 +39,7 @@ bindings:
     name: y
     read_offsets:
       - 23
+      - 41
     runtime_read: false
     scope: 0
     write_offsets:
