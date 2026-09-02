@@ -67,7 +67,7 @@ jobs:
         run  : mise run gha:plan corpus
 
   bake:
-    name            : 🧱 Bake
+    name            : 🥧 Bake
     if              : &push ${{ github.event_name != 'pull_request' }}
     permissions     : &prune-caches { actions: write, contents: read }
     runs-on         : *ubuntu
