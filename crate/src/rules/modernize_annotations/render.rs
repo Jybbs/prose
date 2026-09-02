@@ -13,6 +13,7 @@ use ruff_python_stdlib::typing::as_pep_585_generic;
 use ruff_text_size::{Ranged, TextRange};
 use rustc_hash::FxHashMap;
 
+use super::typing_imports::is_typing_root;
 use crate::{primitives::edit::splice_bodies, source::Source};
 
 /// Rewrites a type expression against the module's `typing` aliases,
@@ -124,7 +125,7 @@ impl<'a> Renderer<'a> {
             .clone()
             .extend_members(tail.iter().copied());
         match qualified.segments() {
-            ["typing" | "typing_extensions", member] => Some((bound, *member)),
+            [root, member] if is_typing_root(root) => Some((bound, *member)),
             _ => None,
         }
     }

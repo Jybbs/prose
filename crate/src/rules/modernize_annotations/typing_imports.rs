@@ -152,6 +152,6 @@ impl TypingImport<'_> {
 
 /// True for the two module names that carry the `typing` members this
 /// rule rewrites.
-fn is_typing_root(module: &str) -> bool {
+pub(super) fn is_typing_root(module: &str) -> bool {
     matches!(module, "typing" | "typing_extensions")
 }

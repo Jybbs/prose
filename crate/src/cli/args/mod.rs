@@ -11,19 +11,12 @@ pub(crate) use rule_args::{
     CheckArgs, FormatArgs, OutputFormat, RuleFilter, RulesArgs, RulesFormat, RunArgs,
 };
 pub(crate) use server_args::{ServerArgs, Transport};
+
+use super::exit_status::ExitStatus;
 pub(crate) use validation::{
     normalize_stdin_dash, report_clap_error, validate_diff_format_combination,
     validate_stdin_filename,
 };
-
-/// Matrix appended to `prose --help` via `after_long_help`.
-const EXIT_CODE_TABLE: &str = "\
-Exit codes:
-  0    Clean: no diagnostics, no rewrites pending
-  1    Format would change: at least one Severity::Format diagnostic
-  2    Lint violation: at least one Severity::Lint diagnostic
-  3    Parse error: input could not be parsed as Python
-  4    Config error: pyproject.toml, --select / --ignore, or arg validation";
 
 #[derive(Debug, Subcommand)]
 pub(crate) enum CacheAction {
@@ -40,7 +33,7 @@ pub(crate) enum CacheAction {
 #[derive(Debug, Parser)]
 #[command(
     about,
-    after_long_help = EXIT_CODE_TABLE,
+    after_long_help = ExitStatus::matrix(),
     arg_required_else_help = true,
     name = "prose",
     propagate_version = true,

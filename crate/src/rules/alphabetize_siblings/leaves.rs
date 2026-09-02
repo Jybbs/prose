@@ -18,10 +18,10 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::FxHashMap;
 
-use super::{dict::rewrite_dict_text, joined_text};
+use super::{dict::rewrite_dict_text, dunder_list, joined_text};
 use crate::{
     primitives::{
-        binding::{sequence_elts, single_name_target},
+        binding::sequence_elts,
         comments::has_keep_marker,
         edit::{apply_inline_edits, insert_edit},
         effect::value_is_effectful,
@@ -76,7 +76,7 @@ impl<'a> LeafCollector<'a> {
 
     fn emit_dunder_list(&mut self, assign: &'a StmtAssign) {
         if self.sort_dunder_lists
-            && matches!(single_name_target(assign), Some("__all__" | "__slots__"))
+            && dunder_list(assign)
             && !has_keep_marker(self.source, &*assign.value)
             && let Some(elements) = sequence_elts(&assign.value)
         {

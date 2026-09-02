@@ -22,6 +22,9 @@ use self::{
     reorders::{joined_key, joined_text},
     rewrite::{RewriteCtx, body_layout, import_gap},
 };
+use ruff_python_ast::StmtAssign;
+
+use crate::primitives::binding::single_name_target;
 use crate::{
     config::Config,
     primitives::{imports::defers_annotations, scope::BodyScope},
@@ -113,6 +116,12 @@ impl Rule for AlphabetizeSiblings {
     fn id(&self) -> RuleId {
         Self::SLUG
     }
+}
+
+/// True when `assign` binds one of the dunder lists whose elements
+/// this rule sorts.
+pub(super) fn dunder_list(assign: &StmtAssign) -> bool {
+    matches!(single_name_target(assign), Some("__all__" | "__slots__"))
 }
 
 #[cfg(test)]

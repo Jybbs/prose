@@ -7,12 +7,12 @@ use std::{borrow::Cow, ops::Range};
 use ruff_python_ast::{AnyNodeRef, ArgOrKeyword, Arguments, Expr};
 use ruff_text_size::{Ranged, TextRange};
 
-use super::AlphabetizeSiblings;
 use super::dict::{dict_holds_as_laid_out, dict_sort_key};
+use super::{AlphabetizeSiblings, dunder_list};
 use crate::{
     config::Config,
     primitives::{
-        binding::{sequence_elts, single_name_target},
+        binding::sequence_elts,
         comments::has_keep_marker,
         effect::value_is_effectful,
         inline::spans_rows,
@@ -76,7 +76,7 @@ impl Reorders {
                     return None;
                 };
                 let elts = sequence_elts(&assign.value)
-                    .filter(|_| matches!(single_name_target(assign), Some("__all__" | "__slots__")))
+                    .filter(|_| dunder_list(assign))
                     .filter(|_| assign.value.range() == node.range())?;
                 sorted_entries(elts, whole(elts), |e| {
                     Some(e.as_string_literal_expr()?.value.to_str())

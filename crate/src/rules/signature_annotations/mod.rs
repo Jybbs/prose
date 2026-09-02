@@ -12,7 +12,10 @@ use rustc_hash::FxHashMap;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::{params::first_positional, walk::filter_map_over_stmts},
+    primitives::{
+        params::{first_positional, is_receiver_name},
+        walk::filter_map_over_stmts,
+    },
     rules::{Rule, RuleId},
     source::Source,
 };
@@ -78,7 +81,7 @@ impl Walker<'_> {
             if param.annotation().is_some() {
                 continue;
             }
-            if Some(param.start()) == receiver && matches!(param.name().as_str(), "self" | "cls") {
+            if Some(param.start()) == receiver && is_receiver_name(param.name().as_str()) {
                 continue;
             }
             self.report_param(param, params_start);

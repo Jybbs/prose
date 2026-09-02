@@ -18,10 +18,15 @@ use crate::primitives::{decorator::decorator_arguments, effect::value_is_effectf
 /// effects.
 pub(crate) fn classify_param(p: &ParameterWithDefault) -> Option<(u8, &str)> {
     let name = p.name().as_str();
-    if matches!(name, "cls" | "self") || p.default.as_deref().is_some_and(value_is_effectful) {
+    if is_receiver_name(name) || p.default.as_deref().is_some_and(value_is_effectful) {
         return None;
     }
     Some((u8::from(p.default.is_some()), name))
+}
+
+/// True for the two names a method's leading positional slot binds.
+pub(crate) fn is_receiver_name(name: &str) -> bool {
+    matches!(name, "cls" | "self")
 }
 
 /// The parameter holding a signature's leading positional slot, the

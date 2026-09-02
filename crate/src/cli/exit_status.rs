@@ -1,6 +1,6 @@
 //! Exit-code matrix. Higher discriminants shadow lower ones via `Ord::max`.
 
-use std::process::ExitCode;
+use std::{fmt::Write, process::ExitCode};
 
 use crate::diagnostics::Severity;
 
@@ -13,6 +13,41 @@ pub(crate) enum ExitStatus {
     LintViolation = 2,
     ParseError = 3,
     ConfigError = 4,
+}
+
+impl ExitStatus {
+    /// Every status, ascending by the code it exits with.
+    pub(crate) const ALL: [Self; 5] = [
+        Self::Clean,
+        Self::FormatChange,
+        Self::LintViolation,
+        Self::ParseError,
+        Self::ConfigError,
+    ];
+
+    /// The `prose --help` matrix, one row per status.
+    pub(crate) fn matrix() -> String {
+        Self::ALL
+            .into_iter()
+            .fold("Exit codes:".to_owned(), |mut rows, status| {
+                write!(rows, "\n  {}    {}", status as u8, status.describe())
+                    .expect("writes to a string");
+                rows
+            })
+    }
+
+    /// The line the help matrix prints for this status.
+    fn describe(self) -> &'static str {
+        match self {
+            Self::Clean => "Clean: no diagnostics, no rewrites pending",
+            Self::FormatChange => "Format would change: at least one Severity::Format diagnostic",
+            Self::LintViolation => "Lint violation: at least one Severity::Lint diagnostic",
+            Self::ParseError => "Parse error: input could not be parsed as Python",
+            Self::ConfigError => {
+                "Config error: pyproject.toml, --select / --ignore, or arg validation"
+            }
+        }
+    }
 }
 
 impl From<Severity> for ExitStatus {
@@ -35,14 +70,6 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-
-    const ASCENDING: [ExitStatus; 5] = [
-        ExitStatus::Clean,
-        ExitStatus::FormatChange,
-        ExitStatus::LintViolation,
-        ExitStatus::ParseError,
-        ExitStatus::ConfigError,
-    ];
 
     #[test]
     fn default_is_clean() {
@@ -71,6 +98,6 @@ mod tests {
 
     #[test]
     fn ord_matches_matrix() {
-        assert!(ASCENDING.is_sorted());
+        assert!(ExitStatus::ALL.is_sorted());
     }
 }
