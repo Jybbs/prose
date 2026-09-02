@@ -6,12 +6,13 @@
 
 use ruff_python_ast::{
     Expr, Parameters, Stmt,
-    visitor::{Visitor as AstVisitor, walk_body, walk_expr, walk_parameters},
+    visitor::{Visitor as AstVisitor, walk_expr, walk_parameters},
 };
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
-    primitives::{aligner, walk::walk_stmt},
-    rule::RuleId,
+    primitives::{aligner, range::overlaps, walk::walk_stmt},
+    rules::RuleId,
     source::Source,
 };
 
@@ -19,7 +20,7 @@ mod columns;
 mod contexts;
 
 pub(crate) use columns::EntryColumns;
-use columns::docstring_runs;
+use columns::docstring_runs_within;
 use contexts::{
     annotated_assignment_groups, dict_member_groups, match_case_members, parameter_groups,
 };
@@ -53,13 +54,26 @@ pub(crate) trait ColonEmitter {
     where
         Self: Sized,
     {
-        let runs: Vec<_> = docstring_runs(source);
-        for run in &runs {
+        self.walk_within(source, &[source.module_range()]);
+    }
+
+    /// Drives `self` across every `:` context a statement reaching one
+    /// of `windows` holds. Each body forms its groups across all of its
+    /// siblings, since a group spans the body rather than a window, and
+    /// the walk descends only into the statements a window reaches, so
+    /// a context outside every window is visited only where its group
+    /// straddles one.
+    fn walk_within(&mut self, source: &Source, windows: &[TextRange])
+    where
+        Self: Sized,
+    {
+        for run in &docstring_runs_within(source, windows) {
             self.docstring_entries(run);
         }
         let mut visitor = ContextVisitor {
             emitter: self,
             source,
+            windows,
         };
         visitor.visit_body(&source.ast().body);
     }
@@ -68,6 +82,7 @@ pub(crate) trait ColonEmitter {
 struct ContextVisitor<'a, E> {
     emitter: &'a mut E,
     source: &'a Source,
+    windows: &'a [TextRange],
 }
 
 impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
@@ -75,7 +90,11 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
         for group in annotated_assignment_groups(self.source, self.emitter.rule(), body) {
             self.emitter.handle(&group);
         }
-        walk_body(self, body);
+        for stmt in body {
+            if overlaps(stmt.range(), self.windows) {
+                self.visit_stmt(stmt);
+            }
+        }
     }
 
     fn visit_expr(&mut self, expr: &'a Expr) {

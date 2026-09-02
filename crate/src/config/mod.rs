@@ -29,7 +29,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-pub use crate::rule::RuleConfigs;
+pub use crate::rules::RuleConfigs;
 use crate::{
     primitives::{aligner, comments, fracture, one_row, padding, reserve},
     rules::{
@@ -52,9 +52,9 @@ pub(crate) use de::deserialize_rule;
 use de::{deserialize_optional_cap, deserialize_prose, serialize_optional_cap};
 pub(crate) use json_schema::rule_schema;
 use load::{ConfigNotice, emit_notice, prose_table_from_str, walk_prose_table};
-pub(crate) use load::{NoticeDedup, config_rel_paths};
+pub(crate) use load::{NoticeDedup, config_rel_paths, holding_dir};
 pub use schema::*;
-pub(crate) use source::ConfigSource;
+pub(crate) use source::{ConfigSource, DirSource};
 
 /// The resolved `prose` configuration, read from a `prose.toml` or
 /// `.config/prose.toml` document root, or a `pyproject.toml`
@@ -110,6 +110,21 @@ impl Config {
         deserialize_prose(table, on_notice)
     }
 
+    /// The config `table` describes, the default where no table was
+    /// found.
+    fn from_optional_table<F>(
+        table: Option<toml::Table>,
+        on_notice: &mut F,
+    ) -> Result<Self, ConfigError>
+    where
+        F: FnMut(ConfigNotice<'_>),
+    {
+        table.map_or_else(
+            || Ok(Self::default()),
+            |table| Self::from_base_table(table, on_notice),
+        )
+    }
+
     /// Parses a `prose.toml` snippet directly from a string, reading
     /// its keys at the document root.
     ///
@@ -130,10 +145,7 @@ impl Config {
     ///
     /// Returns `ConfigError::Toml` when `contents` is not valid TOML.
     pub fn from_pyproject_str(contents: &str) -> Result<Self, ConfigError> {
-        match prose_table_from_str(contents)? {
-            Some(table) => Self::from_base_table(table, &mut emit_notice),
-            None => Ok(Self::default()),
-        }
+        Self::from_optional_table(prose_table_from_str(contents)?, &mut emit_notice)
     }
 
     /// Shared implementation backing `load`, factored out so tests can
@@ -143,10 +155,10 @@ impl Config {
         P: AsRef<Path>,
         F: FnMut(ConfigNotice<'_>),
     {
-        match walk_prose_table(from.as_ref(), &mut on_notice)? {
-            Some((_, table)) => Self::from_base_table(table, &mut on_notice),
-            None => Ok(Self::default()),
-        }
+        Self::from_optional_table(
+            walk_prose_table(from.as_ref(), &mut on_notice)?.map(|(_, table)| table),
+            &mut on_notice,
+        )
     }
 
     /// The alignment settings `config` resolves within `width`, each

@@ -56,9 +56,9 @@ bindings:
       - 32
 scopes:
   - bindings:
-      vals: 3
-      x: 1
       xs: 0
+      x: 1
+      vals: 3
     kind: Module
     parent: ~
   - bindings:

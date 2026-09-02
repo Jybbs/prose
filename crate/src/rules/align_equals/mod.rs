@@ -17,7 +17,7 @@ use ruff_python_ast::visitor::Visitor as AstVisitor;
 use crate::{
     config::Config,
     primitives::{aligner, equal_targets, walk::walk_stmt},
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

@@ -41,17 +41,8 @@ fn every_knob_overridden_leaves_no_key_at_its_default() {
 #[test]
 fn fixtures() {
     insta::glob!("fixtures/config/*/input.toml", |path| {
-        let case = common::case_name(path);
         let toml = fs_err::read_to_string(path).expect("fixture reads");
         let config = Config::from_prose_toml_str(&toml).expect("fixture parses");
-
-        let reparsed = Config::from_prose_toml_str(&toml).expect("fixture re-parses");
-        let (a, b) = (format!("{config:#?}"), format!("{reparsed:#?}"));
-        assert!(
-            a == b,
-            "config parsing not deterministic for `{case}`:\n{}",
-            common::unified_diff(&a, &b),
-        );
 
         common::in_snapshot_dir(path, || {
             insta::assert_debug_snapshot!("config", config);

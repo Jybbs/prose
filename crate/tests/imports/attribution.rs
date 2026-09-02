@@ -9,7 +9,7 @@ use std::{
     slice::from_ref,
 };
 
-use prose::{config::Config, pipeline::Pipeline, rule::render_slugs};
+use prose::{config::Config, pipeline::Pipeline, rules::render_slugs};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use similar::TextDiff;
 
@@ -97,7 +97,7 @@ impl Attributor<'_> {
         let mut clauses = Vec::new();
         if let Some(row) = *row {
             let rows = mapped_rows(&diff, row);
-            let line = now.get(row - 1).unwrap_or(&"").trim();
+            let line = now.get(row - 1).map_or("", |line| line.trim());
             let under = self.fitting(file, |edits| reaches(edits, &rows, line));
             if !under.is_empty() {
                 clauses.push(format!("under {under}"));

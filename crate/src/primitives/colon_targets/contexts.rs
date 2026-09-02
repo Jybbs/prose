@@ -10,7 +10,7 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::{primitives::aligner, rule::RuleId, source::Source};
+use crate::{primitives::aligner, rules::RuleId, source::Source};
 
 /// Walks `body`, qualifying each statement through `annotated_assignment`,
 /// and returns one group per run of contiguous line-adjacent

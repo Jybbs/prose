@@ -126,8 +126,10 @@ pub(super) fn body_layout<'a>(
             // leaving the rest of the sort to a second pass. Each run
             // tiers once ahead of the loop, only the arrangement changing
             // per pass.
+            let mut settled: Vec<usize> = Vec::with_capacity(order.len());
             for _ in 0..body.len().max(1) {
-                let settled = order.clone();
+                settled.clear();
+                settled.extend_from_slice(&order);
                 for section in &prepared {
                     section.permute(&mut order, body, holds, keyword_fields_from);
                 }

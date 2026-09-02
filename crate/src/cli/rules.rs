@@ -6,11 +6,12 @@ use serde::Serialize;
 
 use super::{
     args::{RulesArgs, RulesFormat},
+    emit::write_json_line,
     exit_status::ExitStatus,
 };
 use crate::{
     pipeline::Pipeline,
-    rule::{dependencies_of, message_for_id},
+    rules::{dependencies_of, message_for_id},
 };
 
 /// One registered rule, carrying its one-based pipeline position and
@@ -38,8 +39,7 @@ pub(crate) fn list<W: Write>(args: &RulesArgs, mut stdout: W) -> anyhow::Result<
         .collect();
     match args.output_format {
         RulesFormat::Json => {
-            serde_json::to_writer(&mut stdout, &rules).map_err(io::Error::from)?;
-            writeln!(stdout)?;
+            write_json_line(&mut stdout, &rules)?;
         }
         RulesFormat::Table => write_table(&mut stdout, &rules)?,
     }
@@ -64,9 +64,9 @@ mod tests {
     use super::*;
 
     fn render(output_format: RulesFormat) -> String {
-        let mut out = Vec::new();
-        list(&RulesArgs { output_format }, &mut out).expect("rules listing succeeds");
-        String::from_utf8(out).expect("utf8 output")
+        crate::testing::rendered(|out| {
+            list(&RulesArgs { output_format }, out).expect("rules listing succeeds");
+        })
     }
 
     #[test]

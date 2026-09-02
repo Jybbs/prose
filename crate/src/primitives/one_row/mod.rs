@@ -20,9 +20,8 @@ use crate::{
         call_keywords::CallTargets,
         edit::apply_inline_edits,
         fracture::{self, outermost},
-        inline::display_width,
+        inline::{display_width, settled_slice_width, settled_text_width, spans_rows},
         layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
-        padding,
         params::parameter_sites,
     },
     source::Source,
@@ -30,6 +29,8 @@ use crate::{
 
 mod render;
 mod walk;
+
+use render::write_joined;
 
 use render::Writer;
 
@@ -82,11 +83,15 @@ impl<'a> Settings<'a> {
         range: TextRange,
         hold: Column,
     ) -> Option<Cow<'a, str>> {
-        let writer = Writer {
+        self.writer(source).formed(expr, range, hold)
+    }
+
+    /// The writer serializing under these settings over `source`.
+    fn writer(&self, source: &'a Source) -> Writer<'a> {
+        Writer {
             settings: *self,
             source,
-        };
-        writer.formed(expr, range, hold)
+        }
     }
 
     /// These settings resolving a call against `targets`, the map
@@ -114,20 +119,16 @@ impl<'a> Settings<'a> {
         source: &'a Source,
         arguments: &Arguments,
     ) -> Option<String> {
-        let writer = Writer {
-            settings: *self,
-            source,
-        };
+        let writer = self.writer(source);
         if source.intersects_comment(arguments.inner_range()) {
             return None;
         }
         let mut out = String::from("(");
-        for (i, arg) in arguments.iter_source_order().enumerate() {
-            if i > 0 {
-                out.push_str(", ");
-            }
-            let written = match arg {
-                ArgOrKeyword::Arg(expr) => writer.write_argument(&mut out, expr, arguments.into()),
+        write_joined(
+            &mut out,
+            arguments.iter_source_order(),
+            |out, arg| match arg {
+                ArgOrKeyword::Arg(expr) => writer.write_argument(out, expr, arguments.into()),
                 ArgOrKeyword::Keyword(kw) => {
                     match &kw.arg {
                         Some(name) => {
@@ -136,11 +137,10 @@ impl<'a> Settings<'a> {
                         }
                         None => out.push_str("**"),
                     }
-                    writer.write_argument(&mut out, &kw.value, kw.into())
+                    writer.write_argument(out, &kw.value, kw.into())
                 }
-            };
-            written?;
-        }
+            },
+        )?;
         out.push(')');
         Some(out)
     }
@@ -156,11 +156,7 @@ impl<'a> Settings<'a> {
         parent: AnyNodeRef,
     ) -> Option<Cow<'a, str>> {
         let range = source.paren_aware_range(expr.into(), parent);
-        let writer = Writer {
-            settings: *self,
-            source,
-        };
-        writer.condensed(expr, range, Column::Holds)
+        self.writer(source).condensed(expr, range, Column::Holds)
     }
 
     /// True where `reflow-calls`'s count trigger explodes `call`, read
@@ -206,16 +202,11 @@ impl<'a> Settings<'a> {
         range: TextRange,
         padding: &[Edit],
     ) -> usize {
-        let settled = display_width(source.slice(range))
-            .saturating_add_signed(-padding::slack(source, padding, range));
+        let settled = settled_slice_width(source, padding, range);
         let condensed = self
             .condensed(source, expr, parent)
             .map_or(settled, |text| {
-                if source.slice(range) == text {
-                    settled
-                } else {
-                    display_width(&text)
-                }
+                settled_text_width(source, padding, &text, range)
             });
         settled.min(condensed)
     }
@@ -233,17 +224,17 @@ impl<'a> Settings<'a> {
         if source.intersects_comment(range) {
             return None;
         }
-        let mut joins = Vec::new();
-        for (expr, parent) in parameter_sites(param) {
-            if !source.contains_line_break(expr.range()) {
-                continue;
-            }
-            let held = source.paren_aware_range(expr.into(), parent);
-            let form = self.written(source, expr, held, Column::Holds)?;
-            joins.push(Edit::range_replacement(form.into_owned(), held));
-        }
+        let joins = parameter_sites(param)
+            .into_iter()
+            .filter(|(expr, _)| source.contains_line_break(expr.range()))
+            .map(|(expr, parent)| {
+                let held = source.paren_aware_range(expr.into(), parent);
+                let form = self.written(source, expr, held, Column::Holds)?;
+                Some(Edit::range_replacement(form.into_owned(), held))
+            })
+            .collect::<Option<Vec<_>>>()?;
         let text = apply_inline_edits(source, range, &outermost(joins));
-        (!text.contains('\n')).then(|| text.into_owned())
+        (!spans_rows(&text)).then(|| text.into_owned())
     }
 
     /// `expr`'s one-row form where the layout rules rejoin it onto its
@@ -261,7 +252,7 @@ impl<'a> Settings<'a> {
     ) -> Option<Cow<'a, str>> {
         let range = expr.range();
         if !is_collapsible(expr)
-            || source.intersects_comment(range)
+            || !source.comment_ranges().comments_in_range(range).is_empty()
             || !source.contains_line_break(range)
         {
             return None;

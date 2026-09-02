@@ -28,15 +28,10 @@ pub(crate) fn hunk(diff: &TextDiff<'_, '_, str>, row: Option<usize>, name: &str)
         .collect();
     let index = row.map_or_else(
         || {
-            let changed: Vec<_> = shown
-                .iter()
-                .positions(|(_, mark, _)| *mark != ' ')
-                .collect();
-            changed
-                .iter()
-                .find(|at| !name.is_empty() && shown[**at].2.contains(name))
-                .or_else(|| changed.first())
-                .copied()
+            let changed = || shown.iter().positions(|(_, mark, _)| *mark != ' ');
+            changed()
+                .find(|&at| !name.is_empty() && shown[at].2.contains(name))
+                .or_else(|| changed().next())
                 .unwrap_or_default()
         },
         |row| {

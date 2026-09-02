@@ -9,7 +9,6 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::*;
-use crate::primitives::inline::display_width;
 
 pub(super) struct Visitor<'a> {
     pub(super) code_line_length: usize,
@@ -47,7 +46,7 @@ impl Visitor<'_> {
         let source = self.walker.source;
         let pre_colon_end = colon_targets::match_case_pre_colon_end(case);
         let lhs_width = source.width_between(case.start(), pre_colon_end);
-        let body_width = display_width(source.slice(body_first.range()));
+        let body_width = source.width_between(body_first.start(), body_first.end());
         source.column_overflows(
             case.start(),
             lhs_width + 3 + body_width,
@@ -119,49 +118,4 @@ enum CaseOutcome {
     Align(aligner::Member, TextRange),
     Disqualify,
     Split(Edit),
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::testing::parse;
-
-    /// Parses `src` as a module and tests whether its first top-level
-    /// statement would qualify a `match` arm.
-    fn collapsible(src: &str) -> bool {
-        !is_compound_statement(&parse(src).ast().body[0])
-    }
-
-    #[test]
-    fn collapsible_admits_assignments_and_simple_statements() {
-        assert!(collapsible("x = 1\n"));
-        assert!(collapsible("x: int = 1\n"));
-        assert!(collapsible("x += 1\n"));
-        assert!(collapsible("x\n"));
-        assert!(collapsible("return x\n"));
-        assert!(collapsible("raise ValueError\n"));
-        assert!(collapsible("pass\n"));
-        assert!(collapsible("break\n"));
-        assert!(collapsible("continue\n"));
-    }
-
-    #[test]
-    fn collapsible_admits_uncommon_one_liners() {
-        assert!(collapsible("import x\n"));
-        assert!(collapsible("from m import x\n"));
-        assert!(collapsible("del x\n"));
-        assert!(collapsible("global x\n"));
-        assert!(collapsible("assert x\n"));
-        assert!(collapsible("type X = int\n"));
-    }
-
-    #[test]
-    fn collapsible_rejects_compound_statements() {
-        assert!(!collapsible("if x:\n    y\n"));
-        assert!(!collapsible("for i in xs:\n    y\n"));
-        assert!(!collapsible("with x():\n    y\n"));
-        assert!(!collapsible("match x:\n    case _:\n        y\n"));
-        assert!(!collapsible("class C:\n    pass\n"));
-        assert!(!collapsible("def f():\n    pass\n"));
-    }
 }

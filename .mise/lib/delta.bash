@@ -39,7 +39,8 @@ format_tagged() {
   local side="$1" binary="$2" width="$3" status=0
   local record="$stage/.git/$side-$width"
   staged reset --hard -q pristine
-  printf 'code-line-length = %s\n' "$width" > "$stage/prose.toml"
+  printf 'code-line-length = %s\nreport-unstable-output = false\n' "$width" \
+    > "$stage/prose.toml"
   "$binary" format --no-cache --output-format json "$stage" \
     2> "$record.log" \
     | jq --arg stage "$stage/" -c '

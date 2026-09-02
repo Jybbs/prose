@@ -32,7 +32,7 @@ pub(super) fn function_key(f: &StmtFunctionDef, group_methods: bool) -> (u8, &st
 /// Returns the method-group index. `0` for dunders, `1` for
 /// `@property` / `@cached_property` (decided by the first decorator),
 /// `2` for single-leading-underscore privates, `3` for public.
-pub(super) fn method_group(f: &StmtFunctionDef) -> u8 {
+fn method_group(f: &StmtFunctionDef) -> u8 {
     let name = f.name.as_str();
     if is_dunder(name) {
         0

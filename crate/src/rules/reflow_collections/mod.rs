@@ -16,14 +16,14 @@ use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr};
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     config::Config,
     primitives::{
         call_keywords::{CallTargets, module_call_params},
-        edit::{narrowed_replacement, singleton_groups},
-        inline::{display_width, end_column},
+        edit::{narrowed_replacement, placed_head, singleton_groups},
+        inline::{end_column, indent_width, last_line, spans_rows},
         layout::{is_collapsible, is_layoutable, requires_expand},
         one_row,
         padding::Stranding,
@@ -31,8 +31,8 @@ use crate::{
         travel::Landing,
         walk::{Descent, ParentedProbe, filter_map_over_exprs, walk_parented_exprs},
     },
-    rule::{Rule, RuleId},
     rules::alphabetize_siblings::Reorders,
+    rules::{Rule, RuleId},
     source::Source,
 };
 
@@ -226,26 +226,28 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
         // earlier edits rewrote the line ahead of the literal, the column
         // and indent read from the row the literal lands on instead, the
         // column still moved by the shift `align_equals` applies there.
-        let (column, indent) = match self.placed_head(start) {
-            Cow::Owned(head) => {
-                let indent = head.rsplit_once('\n').map_or_else(
-                    || self.source.line_indent_width(start),
-                    |(_, last)| display_width(last) - display_width(last.trim_start()),
-                );
-                let column = self.reservations.column(start, || end_column(&head, 0));
-                (column, indent)
-            }
-            Cow::Borrowed(_) => {
-                let column = dict_key_of(parent, expr).map_or_else(
-                    || self.settled_column(start),
-                    |key| {
-                        end_column(self.source.slice(key), self.source.column_of(key.start()))
-                            + CANONICAL_SEPARATOR
-                    },
-                );
-                (column, self.source.line_indent_width(start))
-            }
-        };
+        let (column, indent) =
+            match placed_head(self.source, &self.edits, start, TextSize::default()) {
+                Cow::Owned(head) => {
+                    let indent = if spans_rows(&head) {
+                        indent_width(last_line(&head))
+                    } else {
+                        self.source.line_indent_width(start)
+                    };
+                    let column = self.reservations.column(start, || end_column(&head, 0));
+                    (column, indent)
+                }
+                Cow::Borrowed(_) => {
+                    let column = dict_key_of(parent, expr).map_or_else(
+                        || self.settled_column(start),
+                        |key| {
+                            end_column(self.source.slice(key), self.source.column_of(key.start()))
+                                + CANONICAL_SEPARATOR
+                        },
+                    );
+                    (column, self.source.line_indent_width(start))
+                }
+            };
         let grandparent = ancestors[ancestors.len().saturating_sub(2)];
         let tail = self.row_tail(expr, parent, grandparent);
         let Some(text) = self.replacement_for(expr, parent, column, indent, tail) else {

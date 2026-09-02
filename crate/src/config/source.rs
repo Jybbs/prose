@@ -3,11 +3,14 @@
 //! `ConfigSource` serves every file under a project, computing each
 //! file's effective config by merging the overrides its path matches.
 
-use std::borrow::Cow;
-use std::path::{Path, PathBuf};
+use std::{
+    borrow::Cow,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use super::de::deserialize_prose;
-use super::load::{ConfigNotice, NoticeDedup, walk_prose_table};
+use super::load::{ConfigNotice, NoticeDedup, holding_dir, walk_prose_table};
 use super::merge::merge_tables;
 use super::overrides::{Override, take_overrides};
 use super::{Config, ConfigError, script};
@@ -35,10 +38,9 @@ impl ConfigSource {
         notices: &NoticeDedup,
     ) -> Result<Option<Self>, ConfigError> {
         let mut on_notice = |n: ConfigNotice<'_>| notices.emit(n);
-        match walk_prose_table(from, &mut on_notice)? {
-            Some((anchor, table)) => Ok(Some(Self::build(anchor, table, &mut on_notice)?)),
-            None => Ok(None),
-        }
+        walk_prose_table(from, &mut on_notice)?
+            .map(|(anchor, table)| Self::build(anchor, table, &mut on_notice))
+            .transpose()
     }
 
     /// Reads `[tool.prose]` from `bytes`'s leading PEP 723 block as the
@@ -56,7 +58,7 @@ impl ConfigSource {
         let Some(table) = script::extract_prose_table(bytes)? else {
             return Ok(None);
         };
-        let anchor = file.parent().unwrap_or(file).to_path_buf();
+        let anchor = holding_dir(file).to_path_buf();
         Ok(Some(Self::build(anchor, table, &mut |n| notices.emit(n))?))
     }
 
@@ -114,6 +116,38 @@ impl ConfigSource {
     }
 }
 
+/// The outcome of walking one directory's ancestors for a project
+/// config.
+#[derive(Clone)]
+pub(crate) enum DirSource {
+    /// No ancestor carried a config, leaving a file here to draw its
+    /// script block.
+    Bare,
+    /// A config was found but failed to load, failing its files.
+    Failed,
+    /// The nearest ancestor config governing files under this directory.
+    Project(Arc<ConfigSource>),
+}
+
+impl DirSource {
+    /// Walks `dir`'s ancestors for a project config, handing a
+    /// present-but-broken one to `report` before answering `Failed`.
+    pub(crate) fn discover(
+        dir: &Path,
+        notices: &NoticeDedup,
+        report: impl FnOnce(ConfigError),
+    ) -> Self {
+        match ConfigSource::discover(dir, notices) {
+            Ok(Some(source)) => Self::Project(Arc::new(source)),
+            Ok(None) => Self::Bare,
+            Err(err) => {
+                report(err);
+                Self::Failed
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::assert_matches;
@@ -122,14 +156,10 @@ mod tests {
 
     use super::*;
     use crate::config::MaxShift;
-    use crate::testing::write_pyproject;
+    use crate::testing::{line_length, write_pyproject};
 
     fn discover(from: &Path) -> Result<Option<ConfigSource>, ConfigError> {
         ConfigSource::discover(from, &NoticeDedup::default())
-    }
-
-    fn line_length(config: &Config) -> Option<usize> {
-        config.code_line_length.map(std::num::NonZeroUsize::get)
     }
 
     #[test]
@@ -137,7 +167,7 @@ mod tests {
         let tmp = TempDir::new().expect("tempdir");
         write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 120\n");
         let nested = tmp.path().join("pkg/inner");
-        std::fs::create_dir_all(&nested).expect("nested dirs create");
+        fs_err::create_dir_all(&nested).expect("nested dirs create");
 
         let source = discover(&nested).expect("loads").expect("a source");
 

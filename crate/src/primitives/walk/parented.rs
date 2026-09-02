@@ -61,16 +61,17 @@ impl<'src, F: FnMut(&'src Expr, AnyNodeRef<'src>) -> Option<T>, T> ParentedProbe
         parent: AnyNodeRef<'src>,
         _: &[AnyNodeRef<'src>],
     ) -> Descent {
-        if is_interpolated_string(expr) && matches!(self.interpolations, Descent::Over) {
-            return Descent::Over;
-        }
-        match (self.probe)(expr, parent) {
+        let descent = match (self.probe)(expr, parent) {
             Some(found) => {
                 self.found.push(found);
                 self.on_hit
             }
             None => Descent::Into,
+        };
+        if is_interpolated_string(expr) && matches!(self.interpolations, Descent::Over) {
+            return Descent::Over;
         }
+        descent
     }
 }
 

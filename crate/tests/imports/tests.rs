@@ -5,11 +5,10 @@
 use std::{
     assert_matches,
     collections::{BTreeMap, BTreeSet},
-    env,
     ops::Range,
     os::unix::process::ExitStatusExt,
     path::Path,
-    process::{self, Command, ExitStatus},
+    process::{Command, ExitStatus},
 };
 
 use itertools::Itertools;
@@ -27,7 +26,7 @@ use crate::{
     fixes::{drops, holds_word, reaches, rewritten},
     format::{edit_rows, row_of},
     outcome::{Kind, Outcome, relative_to},
-    ratchet::{Baseline, Carried, VERSION, bake, dropped, judge, skipping},
+    ratchet::{Baseline, Carried, VERSION, bake, baseline_at, dropped, judge, skipping},
     records::{Break, EditRows, Frame, Width},
     report::render,
     sweep::DEFAULT_LABEL,
@@ -76,6 +75,9 @@ fn edit(content: &str, range: Range<usize>, text: &str) -> EditRows {
     }
 }
 
+/// Ten lines `l1` through `l10`, the text the hunk tests rewrite.
+const LINES: [&str; 10] = ["l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9", "l10"];
+
 /// A module binding at every compound-statement arm, with a function,
 /// a class, and a parameter binding names it does not.
 const NESTED_SCOPES: &str = "import os.path as osp\nfrom re import compile as rc\n\n\ndef f(a):\n    inner = 1\n\n\nclass K:\n    attr = 2\n\n\ntry:\n    t = 1\nexcept ValueError:\n    e = 2\n\nfor i in y:\n    pass\n";
@@ -90,7 +92,8 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
         uncomparable: vec!["blocked.py".to_owned()],
         ..Width::default()
     };
-    let baked = env::temp_dir().join(format!("prose-imports-baseline.{}", process::id()));
+    let dir = tempfile::tempdir().expect("a scratch directory");
+    let baked = dir.path().join("baseline.json");
     bake(&baked, &[found]);
     let held: Baseline = serde_json::from_str(
         &fs_err::read_to_string(&baked).expect("the baked break set reads back"),
@@ -122,13 +125,17 @@ fn a_break_reporting_no_loaded_modules_falls_back_to_its_own() {
 
 #[test]
 fn a_break_set_baked_at_an_older_generation_carries_nothing_forward() {
-    let held: Baseline = serde_json::from_str(
-        r#"{"default":[{"file":"re/_parser.py","reason":"leaves `X` unbound"}]}"#,
-    )
-    .expect("a set from an older generation parses");
-    assert_ne!(held.version, VERSION);
-    assert!(held.breaks.is_empty(), "{:?}", held.breaks);
-    assert!(held.uncomparable.is_empty(), "{:?}", held.uncomparable);
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("breaks.json");
+    let baked = |version: u32| {
+        format!(
+            r#"{{"breaks":{{"default":[{{"file":"re/_parser.py","module":"re","reason":"leaves `X` unbound"}}]}},"uncomparable":{{}},"version":{version}}}"#
+        )
+    };
+    fs_err::write(&path, baked(VERSION)).expect("writes");
+    assert!(baseline_at(&path).is_some_and(|held| !held.breaks.is_empty()));
+    fs_err::write(&path, baked(VERSION - 1)).expect("writes");
+    assert!(baseline_at(&path).is_none());
 }
 
 #[test]
@@ -583,31 +590,25 @@ fn the_flaky_list_caps_at_the_shown_limit() {
         "{shown}"
     );
     assert!(shown.contains("... and 3 more"), "{shown}");
-    assert!(!shown.contains("m32.py"), "{shown}");
+    assert!(!shown.contains(&format!("m{SHOWN}.py")), "{shown}");
 }
 
 #[test]
 fn the_hunk_centres_on_the_changed_line_naming_the_name() {
-    let before: Vec<String> = (1..=10).map(|n| format!("l{n}")).collect();
-    let mut after = before.clone();
-    after[2] = "L3".to_owned();
-    after[5] = "MARK".to_owned();
-    let was: Vec<&str> = before.iter().map(String::as_str).collect();
-    let now: Vec<&str> = after.iter().map(String::as_str).collect();
-    let lines = hunk(&TextDiff::from_slices(&was, &now), None, "MARK");
+    let mut after = LINES;
+    after[2] = "L3";
+    after[5] = "MARK";
+    let lines = hunk(&TextDiff::from_slices(&LINES, &after), None, "MARK");
     assert!(lines.iter().any(|line| line == "+MARK"));
     assert!(!lines.iter().any(|line| line == "+L3"));
 }
 
 #[test]
 fn the_hunk_cuts_context_either_side_of_the_row() {
-    let before: Vec<String> = (1..=10).map(|n| format!("l{n}")).collect();
-    let mut after = before.clone();
-    after[5] = "L6".to_owned();
-    let was: Vec<&str> = before.iter().map(String::as_str).collect();
-    let now: Vec<&str> = after.iter().map(String::as_str).collect();
+    let mut after = LINES;
+    after[5] = "L6";
     assert_eq!(
-        hunk(&TextDiff::from_slices(&was, &now), Some(6), ""),
+        hunk(&TextDiff::from_slices(&LINES, &after), Some(6), ""),
         [
             "...", " l4", " l5", "-l6", "+L6", " l7", " l8", " l9", "..."
         ]
@@ -616,12 +617,9 @@ fn the_hunk_cuts_context_either_side_of_the_row() {
 
 #[test]
 fn the_hunk_falls_back_to_the_first_change_with_no_row_or_name() {
-    let before: Vec<String> = (1..=10).map(|n| format!("l{n}")).collect();
-    let mut after = before.clone();
-    after[6] = "L7".to_owned();
-    let was: Vec<&str> = before.iter().map(String::as_str).collect();
-    let now: Vec<&str> = after.iter().map(String::as_str).collect();
-    let lines = hunk(&TextDiff::from_slices(&was, &now), None, "");
+    let mut after = LINES;
+    after[6] = "L7";
+    let lines = hunk(&TextDiff::from_slices(&LINES, &after), None, "");
     assert!(lines.iter().any(|line| line == "-l7"), "{lines:?}");
     assert!(lines.iter().any(|line| line == "+L7"), "{lines:?}");
 }

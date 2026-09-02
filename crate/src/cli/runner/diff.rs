@@ -3,7 +3,7 @@
 use std::io::Write;
 
 use anyhow::Context;
-use itertools::izip;
+use itertools::Itertools;
 use ruff_notebook::NotebookIndex;
 
 use crate::{
@@ -89,7 +89,12 @@ fn write_notebook_diff<W: Write>(
     index: &NotebookIndex,
     heading: Heading,
 ) -> anyhow::Result<()> {
-    for (before, after, cell_start) in izip!(&rewrite.before, &rewrite.after, index.iter()) {
+    for ((before, after), cell_start) in rewrite
+        .before
+        .iter()
+        .zip_eq(&rewrite.after)
+        .zip_eq(index.iter())
+    {
         if before == after {
             continue;
         }
@@ -107,9 +112,9 @@ mod tests {
     const BEFORE: &str = "ab = 1\nx = 2\n";
 
     fn rendered(heading: Heading) -> String {
-        let mut buf = Vec::new();
-        write_diff(&mut buf, "sample.py", BEFORE, AFTER, heading).expect("writes");
-        String::from_utf8(buf).expect("utf-8")
+        crate::testing::rendered(|buf| {
+            write_diff(buf, "sample.py", BEFORE, AFTER, heading).expect("writes");
+        })
     }
 
     #[test]

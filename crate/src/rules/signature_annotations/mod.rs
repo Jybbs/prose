@@ -12,8 +12,11 @@ use rustc_hash::FxHashMap;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::{params::first_positional, walk::filter_map_over_stmts},
-    rule::{Rule, RuleId},
+    primitives::{
+        params::{first_positional, is_receiver_name},
+        walk::filter_map_over_stmts,
+    },
+    rules::{Rule, RuleId},
     source::Source,
 };
 
@@ -72,15 +75,13 @@ impl Walker<'_> {
     /// with no return annotation, the missing-return report.
     fn process_def(&mut self, fd: &StmtFunctionDef) {
         let params: &Parameters = &fd.parameters;
-        let params_start = params.range().start();
-        let receiver = first_positional(params).map(|p| p.range().start());
+        let params_start = params.start();
+        let receiver = first_positional(params).map(|p| p.start());
         for param in params.iter_non_variadic_params() {
             if param.annotation().is_some() {
                 continue;
             }
-            if Some(param.range().start()) == receiver
-                && matches!(param.name().as_str(), "self" | "cls")
-            {
+            if Some(param.start()) == receiver && is_receiver_name(param.name().as_str()) {
                 continue;
             }
             self.report_param(param, params_start);

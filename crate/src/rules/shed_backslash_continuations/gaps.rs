@@ -32,27 +32,24 @@ impl Ranged for Gap {
 /// indentation.
 pub(super) fn continuation_gaps(source: &Source) -> Vec<Gap> {
     let mut depth = 0usize;
-    let mut gaps = Vec::new();
-    for (token, next, range) in source.token_gaps() {
-        let kind = token.kind();
-        if is_opener(kind) {
-            depth += 1;
-        } else if is_closer(kind) {
-            depth = depth.saturating_sub(1);
-        }
-        if !source.slice(range).contains('\\') {
-            continue;
-        }
-        if depth == 0 && source.text().is_at_start_of_line(range.start()) {
-            continue;
-        }
-        gaps.push(Gap {
-            bracketed: depth > 0,
-            join: join_text(kind, next.kind()),
-            range,
-        });
-    }
-    gaps
+    source
+        .token_gaps()
+        .filter_map(|(token, next, range)| {
+            let kind = token.kind();
+            if is_opener(kind) {
+                depth += 1;
+            } else if is_closer(kind) {
+                depth = depth.saturating_sub(1);
+            }
+            let held = !source.slice(range).contains('\\')
+                || (depth == 0 && source.text().is_at_start_of_line(range.start()));
+            (!held).then(|| Gap {
+                bracketed: depth > 0,
+                join: join_text(kind, next.kind()),
+                range,
+            })
+        })
+        .collect()
 }
 
 /// True for a token closing an atom, the left side a call's `(` or a
@@ -91,8 +88,7 @@ pub(super) fn stripped_gap(source: &Source, gap: TextRange) -> String {
     let opens_line = source.text().is_at_start_of_line(gap.start());
     source
         .slice(gap)
-        .split('\n')
-        .map(|segment| segment.strip_suffix('\r').unwrap_or(segment))
+        .split(['\r', '\n'])
         .with_position()
         .filter_map(|(position, segment)| {
             let stripped = segment.strip_suffix('\\').map_or(segment, str::trim_end);

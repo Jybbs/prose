@@ -15,10 +15,12 @@ use super::Exploder;
 use crate::primitives::{
     call_keywords::{CallKeywords, keyword_args, resolve_call_params},
     edit::apply_inline_edits,
-    inline::{display_width, end_column, opening_width},
+    inline::{
+        display_width, end_column, opening_width, settled_slice_width, settled_width, spans_rows,
+    },
     layout::{Separator, explode_parens, is_fractured, item_indent},
-    padding,
-    tokens::{is_opener, opens_subscript},
+    slots::starting_within,
+    tokens::{is_opener, opens_subscript, tokens_within},
     travel::{Landing, Travel, block_shift, shifted_block, spans_a_string_part},
 };
 
@@ -63,12 +65,8 @@ impl<'a> Exploder<'a> {
     /// `offset` explodes, which relays the row's overflow to that
     /// literal and leaves the later ones in place.
     fn earlier_literal_explodes(&self, offset: TextSize) -> bool {
-        let row_start = self.source.text().line_start(offset);
-        let literals = self.source.expandable_literals();
-        let first = literals.partition_point(|literal| literal.start() < row_start);
-        literals[first..]
-            .iter()
-            .take_while(|literal| literal.start() < offset)
+        let row = TextRange::new(self.source.text().line_start(offset), offset);
+        starting_within(self.source.expandable_literals(), row, Ranged::start)
             .any(|literal| self.literal_explodes(*literal))
     }
 
@@ -177,10 +175,9 @@ impl<'a> Exploder<'a> {
     /// subscript's `[` never does.
     fn first_breaking_opener(&self, range: TextRange) -> Option<TextSize> {
         let literals = self.source.expandable_literals();
-        self.source
-            .tokens_overlapping(range)
+        tokens_within(self.source, range)
             .find(|token| {
-                if !range.contains(token.start()) || !is_opener(token.kind()) {
+                if !is_opener(token.kind()) {
                     return false;
                 }
                 if token.kind() == TokenKind::Lsqb
@@ -188,7 +185,7 @@ impl<'a> Exploder<'a> {
                 {
                     return false;
                 }
-                match literals.binary_search_by(|literal| literal.start().cmp(&token.start())) {
+                match literals.binary_search_by_key(&token.start(), Ranged::start) {
                     Ok(_) => !self.earlier_literal_explodes(token.start()),
                     Err(_) => token.kind() == TokenKind::Lpar,
                 }
@@ -204,9 +201,11 @@ impl<'a> Exploder<'a> {
             return true;
         }
         let column = self.source.column_of(range.start());
-        let width = self.settled_width(range, display_width(self.source.slice(range)));
-        let tail_range = self.source.row_tail(range.end());
-        let tail = self.settled_width(tail_range, self.source.tail_width(tail_range));
+        let width = settled_slice_width(self.source, self.padding, range);
+        let tail = self.settled_width(
+            self.source.row_tail(range.end()),
+            self.source.row_tail_width(range.end()),
+        );
         !self.one_row.fits(column + width + tail)
     }
 
@@ -234,14 +233,14 @@ impl<'a> Exploder<'a> {
         );
         // Only the tail's opening row closes the value's last row, a pair
         // closing on a later row taking the row's comma with it.
-        let appended = if tail.contains('\n') {
+        let appended = if spans_rows(tail) {
             opening_width(tail)
         } else {
             display_width(tail) + slot.tail
         };
         // A value opening its own row below the pair's opener drops an
         // exploded closer to that row's indent rather than the argument's.
-        let opens_own_row = head.contains('\n');
+        let opens_own_row = spans_rows(head);
         let opening_indent = if opens_own_row {
             end_column(head, slot.indent)
         } else {
@@ -331,8 +330,7 @@ impl<'a> Exploder<'a> {
         if self.source.contains_line_break(arguments.range()) {
             display_width(form)
         } else {
-            let range = arguments.range();
-            self.settled_width(range, display_width(self.source.slice(range)))
+            settled_slice_width(self.source, self.padding, arguments.range())
         }
     }
 
@@ -349,7 +347,7 @@ impl<'a> Exploder<'a> {
             return None;
         }
         let count_trips = self.one_row.count_explodes(self.source, call);
-        let tail = self.row_tail(arguments.range().end());
+        let tail = self.row_tail(arguments.end());
         let form = self
             .one_row
             .arguments_form(self.source, arguments)
@@ -399,6 +397,6 @@ impl<'a> Exploder<'a> {
     /// `width`, the display width `range` was measured at, less the
     /// padding `strip-stranded-padding` drops inside `range`.
     pub(super) fn settled_width(&self, range: TextRange, width: usize) -> usize {
-        width.saturating_add_signed(-padding::slack(self.source, self.padding, range))
+        settled_width(self.source, self.padding, range, width)
     }
 }

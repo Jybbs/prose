@@ -131,7 +131,7 @@ pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Optio
 /// absolute cell holding it. A notebook translates the positions to
 /// cell-relative coordinates through the index, where a module leaves
 /// them absolute with no cell.
-fn located(
+pub(crate) fn located(
     file: &SourceFile,
     index: Option<&NotebookIndex>,
     range: TextRange,
@@ -145,4 +145,12 @@ fn located(
         ),
         None => (start, end, None),
     }
+}
+
+/// `message` under its cell number for a notebook, bare for a module.
+pub(crate) fn cell_message(message: &str, cell: Option<OneIndexed>) -> String {
+    cell.map_or_else(
+        || message.to_owned(),
+        |cell| format!("cell {cell}: {message}"),
+    )
 }

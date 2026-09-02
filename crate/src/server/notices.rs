@@ -97,6 +97,13 @@ impl Notices {
         )
     }
 
+    /// Sends `rewrite`'s notice for `uri` the first time the session
+    /// reaches it, dropping every later one for the same document.
+    ///
+    /// # Errors
+    ///
+    /// Returns whatever `send` returns when the channel to the client
+    /// has closed.
     pub(super) fn offer(
         &mut self,
         connection: &Connection,
@@ -141,13 +148,6 @@ impl Notices {
         )
     }
 
-    /// Sends `rewrite`'s notice for `uri` the first time the session
-    /// reaches it, dropping every later one for the same document.
-    ///
-    /// # Errors
-    ///
-    /// Returns whatever `send` returns when the channel to the client
-    /// has closed.
     /// True where `uri` already drew its once-per-session notice, so a
     /// caller skips the settle check whose result could never render.
     pub(super) fn reported(&self, uri: &Uri) -> bool {
@@ -180,6 +180,22 @@ mod tests {
         client.receiver.try_iter().collect()
     }
 
+    /// The first message the client drained, which is a request.
+    fn first_request(client: &Connection) -> lsp_server::Request {
+        let Some(Message::Request(request)) = drained(client).into_iter().next() else {
+            panic!("expected a request");
+        };
+        request
+    }
+
+    /// The first message the client drained, which is a notification.
+    fn first_notification(client: &Connection) -> lsp_server::Notification {
+        let Some(Message::Notification(notification)) = drained(client).into_iter().next() else {
+            panic!("expected a notification");
+        };
+        notification
+    }
+
     fn rewrite() -> UnstableRewrite {
         UnstableRewrite::sample("align-equals")
     }
@@ -191,9 +207,7 @@ mod tests {
         notices
             .offer(&server, &uri("file:///a.py"), ORIGINAL, &rewrite())
             .expect("offers");
-        let Some(Message::Request(request)) = drained(&client).into_iter().next() else {
-            panic!("expected a message request");
-        };
+        let request = first_request(&client);
 
         notices
             .answered(
@@ -232,9 +246,7 @@ mod tests {
         notices
             .offer(&server, &uri("file:///a.py"), ORIGINAL, &rewrite())
             .expect("offers");
-        let Some(Message::Request(request)) = drained(&client).into_iter().next() else {
-            panic!("expected a message request");
-        };
+        let request = first_request(&client);
 
         notices
             .answered(
@@ -260,9 +272,7 @@ mod tests {
         notices
             .offer(&server, &uri("file:///a.py"), ORIGINAL, &rewrite())
             .expect("offers");
-        let Some(Message::Request(request)) = drained(&client).into_iter().next() else {
-            panic!("expected a message request");
-        };
+        let request = first_request(&client);
 
         notices
             .answered(
@@ -277,9 +287,7 @@ mod tests {
             )
             .expect("answers");
 
-        let Some(Message::Request(opened)) = drained(&client).into_iter().next() else {
-            panic!("expected a show-document request");
-        };
+        let opened = first_request(&client);
         assert_eq!(opened.method, ShowDocument::METHOD);
         let params: ShowDocumentParams = serde_json::from_value(opened.params).expect("decodes");
         assert_eq!(params.external, Some(true));
@@ -294,9 +302,7 @@ mod tests {
             .offer(&server, &uri("file:///a.py"), ORIGINAL, &rewrite())
             .expect("offers");
 
-        let Some(Message::Notification(notification)) = drained(&client).into_iter().next() else {
-            panic!("expected a show-message notification");
-        };
+        let notification = first_notification(&client);
         assert_eq!(notification.method, ShowMessage::METHOD);
         let params: ShowMessageParams =
             serde_json::from_value(notification.params).expect("decodes");
@@ -311,9 +317,7 @@ mod tests {
             .offer(&server, &uri("file:///a.py"), ORIGINAL, &rewrite())
             .expect("offers");
 
-        let Some(Message::Request(request)) = drained(&client).into_iter().next() else {
-            panic!("expected a message request");
-        };
+        let request = first_request(&client);
         let params: ShowMessageRequestParams =
             serde_json::from_value(request.params).expect("decodes");
         assert!(
@@ -337,9 +341,7 @@ mod tests {
             .offer(&server, &uri("untitled:Untitled-1"), ORIGINAL, &rewrite())
             .expect("offers");
 
-        let Some(Message::Notification(notification)) = drained(&client).into_iter().next() else {
-            panic!("expected a show-message notification");
-        };
+        let notification = first_notification(&client);
         let params: ShowMessageParams =
             serde_json::from_value(notification.params).expect("decodes");
         assert!(

@@ -146,9 +146,9 @@ pub(crate) fn ending(status: ExitStatus, printed: &str) -> Outcome {
 
 /// The dotted name an import binds one module to.
 pub(crate) fn module_name(module: &str) -> String {
-    module
-        .trim_end_matches(".py")
-        .trim_end_matches("/__init__")
+    let stem = module.strip_suffix(".py").unwrap_or(module);
+    stem.strip_suffix("/__init__")
+        .unwrap_or(stem)
         .replace('/', ".")
 }
 

@@ -11,7 +11,7 @@ use ruff_diagnostics::Edit;
 use crate::{
     config::Config,
     primitives::{edit::singleton_groups, padding::Stranding},
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

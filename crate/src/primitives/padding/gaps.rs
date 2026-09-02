@@ -18,7 +18,7 @@ pub(super) fn delimiter_padding_gaps(
     source: &Source,
     range: TextRange,
 ) -> impl Iterator<Item = TextRange> + '_ {
-    let mut interp_depth: u32 = 0;
+    let mut interp_depth = source.interpolation_depth_at(range.start());
     source
         .tokens_overlapping(range)
         .tuple_windows()

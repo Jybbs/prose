@@ -7,24 +7,16 @@ mod rule_args;
 mod server_args;
 mod validation;
 
-#[cfg(test)]
-pub(crate) use rule_args::RunArgs;
 pub(crate) use rule_args::{
-    CheckArgs, FormatArgs, OutputFormat, RuleFilter, RulesArgs, RulesFormat,
+    CheckArgs, FormatArgs, OutputFormat, RuleFilter, RulesArgs, RulesFormat, RunArgs,
 };
 pub(crate) use server_args::{ServerArgs, Transport};
+
+use super::exit_status::ExitStatus;
 pub(crate) use validation::{
     normalize_stdin_dash, report_clap_error, validate_diff_format_combination,
+    validate_stdin_filename,
 };
-
-/// Matrix appended to `prose --help` via `after_long_help`.
-const EXIT_CODE_TABLE: &str = "\
-Exit codes:
-  0    Clean: no diagnostics, no rewrites pending
-  1    Format would change: at least one Severity::Format diagnostic
-  2    Lint violation: at least one Severity::Lint diagnostic
-  3    Parse error: input could not be parsed as Python
-  4    Config error: pyproject.toml, --select / --ignore, or arg validation";
 
 #[derive(Debug, Subcommand)]
 pub(crate) enum CacheAction {
@@ -41,7 +33,7 @@ pub(crate) enum CacheAction {
 #[derive(Debug, Parser)]
 #[command(
     about,
-    after_long_help = EXIT_CODE_TABLE,
+    after_long_help = ExitStatus::matrix(),
     arg_required_else_help = true,
     name = "prose",
     propagate_version = true,
@@ -58,6 +50,22 @@ pub(crate) struct Cli {
     /// Print extra diagnostic information to stderr.
     #[arg(long, global = true)]
     pub(crate) verbose: bool,
+}
+
+impl Cli {
+    /// The run flags behind a `check` or `format` invocation, `None`
+    /// for every subcommand that takes none.
+    pub(crate) fn run_args(&self) -> Option<&RunArgs> {
+        match &self.command {
+            Command::Check(args) => Some(&args.common),
+            Command::Format(args) => Some(&args.common),
+            Command::Cache { .. }
+            | Command::Completions { .. }
+            | Command::Rules(_)
+            | Command::Schema
+            | Command::Server(_) => None,
+        }
+    }
 }
 
 #[derive(Debug, Subcommand)]
@@ -101,7 +109,7 @@ mod tests {
     use super::validation::clap_error_status;
     use super::*;
     use crate::cli::exit_status::ExitStatus;
-    use crate::rule::RuleId;
+    use crate::rules::RuleId;
 
     macro_rules! command_args {
         ($cli:expr, $variant:ident) => {{
@@ -288,6 +296,15 @@ mod tests {
             .expect("parses");
         let err = validate_diff_format_combination(&cli).expect("validation surfaces error");
         assert_eq!(err.kind(), ErrorKind::InvalidValue);
+        assert_eq!(clap_error_status(err.kind()), ExitStatus::ConfigError);
+    }
+
+    #[test]
+    fn clap_error_status_routes_stdin_filename_without_stdin_to_config_error() {
+        let cli = Cli::try_parse_from(["prose", "check", "--stdin-filename", "nb.ipynb", "src"])
+            .expect("parses");
+        let err = validate_stdin_filename(&cli).expect("validation surfaces error");
+        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
         assert_eq!(clap_error_status(err.kind()), ExitStatus::ConfigError);
     }
 

@@ -376,11 +376,12 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'independence table': {
     aliases    : ['independent', 'independence', 'shares a splice'],
-    definition : 'The independence table beside the registry lists, per rule, the earlier rules '
-               + 'whose edits it may splice into one buffer with and parse once. A pair enters '
-               + 'it only where the subset probe found the batched splice matching the fold on '
-               + 'every file both rules edit and a reading of the later rule finds nothing it '
-               + 'measures among what the earlier rule rewrites.',
+    definition : 'The registry gives each rule a shared-splice column beside its dependency '
+               + 'column, listing the earlier rules whose edits it may splice into one buffer '
+               + 'with and parse once. A pair enters that column only where the subset probe '
+               + 'found the batched splice matching the fold on every file both rules edit and '
+               + 'a reading of the later rule finds nothing it measures among what the earlier '
+               + 'rule rewrites.',
     families   : ['engine'],
     href       : '/reference/pipeline-order#independent-rules-share-a-parse'
   },
@@ -528,12 +529,13 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'reparse': {
     aliases    : ['reparses', 'reparsing'],
-    definition : 'Reparse names the `Source::reparse_carrying` step the `Pipeline` runs between '
-               + 'batches of independent rules. Each rule reads a settled AST built from the '
-               + 'post-rewrite text of every rule it depends on, so no rule observes the '
-               + 'half-applied state of a rule whose rewrites it reads, and the binding table '
-               + 'travels into the new `Source` where every member of the batch keeps every '
-               + 'binding.',
+    definition : 'Reparse names the step the `Pipeline` runs between batches of independent '
+               + 'rules to rebuild the `Source` over their output, splicing in only the '
+               + 'statements those rules edited where it can and parsing the whole file where '
+               + 'it cannot. Each rule reads a settled AST built from the post-rewrite text of '
+               + 'every rule it depends on, so no rule observes the half-applied state of a '
+               + 'rule whose rewrites it reads, and the binding table travels into the new '
+               + '`Source` where every member of the batch keeps every binding.',
     families   : ['engine'],
     href       : '/primitives/pipeline'
   },

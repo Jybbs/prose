@@ -14,9 +14,10 @@ use super::own_line_indent;
 use crate::{
     config::Config,
     primitives::{
+        comments::comments_held_by,
         imports::{
-            Dropping, ModuleKey, defers_annotations, fold_landing, import_runs, module_key,
-            prune_import_statements, stands_alone,
+            Dropping, ModuleKey, defers_annotations, fold_landing, import_runs, is_star,
+            module_key, prune_import_statements, stands_alone,
         },
         orderer::member_blocks,
     },
@@ -189,10 +190,7 @@ pub(super) fn comments_beside(
             .checked_sub(1)
             .map_or(outer.start(), |prev| body[prev].end());
         let upper = body.get(last + 1).map_or(outer.end(), Ranged::start);
-        !source
-            .comment_ranges()
-            .comments_in_range(TextRange::new(lower, upper))
-            .is_empty()
+        source.intersects_comment(TextRange::new(lower, upper))
     })
 }
 
@@ -256,11 +254,12 @@ fn gathers_cleanly(
         return true;
     }
     let blocks = runs.blocks(source, body, outer);
-    comments.iter().all(|comment| {
-        (*first + 1..*last)
-            .filter(|slot| !slots.contains(slot))
-            .any(|slot| blocks[slot].contains_range(*comment))
-    })
+    comments_held_by(
+        source,
+        span,
+        blocks,
+        (*first + 1..*last).filter(|slot| !slots.contains(slot)),
+    )
 }
 
 /// True when `node` can join a merged roster, being a single-line
@@ -270,7 +269,7 @@ fn gathers_cleanly(
 fn mergeable(source: &Source, node: &StmtImportFrom) -> bool {
     own_line_indent(source, node).is_some()
         && stands_alone(source, node.range())
-        && !node.names.iter().any(|alias| alias.name.as_str() == "*")
+        && !node.names.iter().any(is_star)
 }
 
 /// True when a mergeable `from`-import's module recurs in a second run

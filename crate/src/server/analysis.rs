@@ -8,7 +8,7 @@ use ruff_source_file::PositionEncoding;
 
 use super::conversion::{full_document_range, to_lsp};
 use crate::{
-    config::Config, diagnostics::fired_rules, pipeline::Pipeline, rule::RuleId, source::Source,
+    config::Config, diagnostics::fired_rules, pipeline::Pipeline, rules::RuleId, source::Source,
     unstable::UnstableRewrite,
 };
 

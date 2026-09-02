@@ -10,8 +10,7 @@ use ruff_text_size::{Ranged, TextSize};
 use super::render::rendered_parts;
 use crate::{
     config::Config,
-    primitives::walk::filter_map_over_stmts,
-    primitives::{call_keywords::CallTargets, one_row},
+    primitives::{call_keywords::CallTargets, one_row, walk::filter_map_over_stmts},
     source::Source,
 };
 

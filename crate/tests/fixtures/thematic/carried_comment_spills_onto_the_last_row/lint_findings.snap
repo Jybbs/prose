@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/thematic/carried_comment_spills_onto_the_last_row/input.py
+---
+[
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 70,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 2
+    },
+    "message": "Line is 69 columns, over the 60-column budget, with no legal reshape"
+  }
+]

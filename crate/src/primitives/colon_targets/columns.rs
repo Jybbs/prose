@@ -2,10 +2,13 @@
 //! entry naming a parenthesized type and the `:` measured against the
 //! column those `(` reach.
 
+use ruff_text_size::{Ranged, TextRange};
+
 use crate::{
     primitives::{
         aligner,
         docstring::{entry_runs, walk_docstrings},
+        range::overlaps,
     },
     source::Source,
 };
@@ -69,9 +72,13 @@ impl EntryColumns {
 /// head line's unbracketed `:` and a `(` row per entry naming a
 /// parenthesized type. Each run is its own group, so one run's widths
 /// never shift another's column.
-pub(super) fn docstring_runs(source: &Source) -> Vec<EntryColumns> {
+pub(super) fn docstring_runs_within(source: &Source, windows: &[TextRange]) -> Vec<EntryColumns> {
     let mut literals = Vec::new();
-    walk_docstrings(source, |_, lit| literals.push(lit));
+    walk_docstrings(source, |_, lit| {
+        if overlaps(lit.range(), windows) {
+            literals.push(lit);
+        }
+    });
     literals
         .into_iter()
         .flat_map(|lit| entry_runs(source, lit))

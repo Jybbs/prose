@@ -24,7 +24,7 @@ use crate::{
         docstring::docstring_slots, edit::narrowed_replacement,
         tokens::is_interpolated_string_start,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 
@@ -32,7 +32,11 @@ mod numeric;
 mod prefix;
 mod quote;
 
-use self::{numeric::canonical_number, prefix::canonical_prefix, quote::requoted};
+use self::{
+    numeric::canonical_number,
+    prefix::canonical_prefix,
+    quote::{requoted, requoted_with},
+};
 
 #[derive(Debug)]
 pub(crate) struct NormalizeLiterals {
@@ -111,7 +115,13 @@ impl<'a> Normalizer<'a> {
             .collect();
         let requote = self
             .interpolations_clear(&frame, closer)
-            .then(|| requoted(&middles, frame.flags))
+            .then(|| {
+                let closer_abuts = frame
+                    .middles
+                    .last()
+                    .is_some_and(|middle| middle.end() == closer.start());
+                requoted_with(&middles, frame.flags, closer_abuts)
+            })
             .flatten();
         let prefix = self.prefix_text(frame.opener, frame.flags);
         let delimiter = requote
@@ -203,10 +213,9 @@ impl<'a> Normalizer<'a> {
     fn string(&mut self, token: &Token) {
         let flags = token.unwrap_string_flags();
         let range = token.range();
-        let body = TextRange::new(
-            range.start() + flags.opener_len(),
-            range.end() - flags.closer_len(),
-        );
+        let body = range
+            .add_start(flags.opener_len())
+            .sub_end(flags.closer_len());
         let source_body = self.source.slice(body);
         let requote = self
             .quotes_reach(range)

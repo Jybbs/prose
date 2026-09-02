@@ -88,7 +88,7 @@ impl Source {
         let Some(cell) = self.cell_offsets.containing_range(range.start()) else {
             return lines;
         };
-        let content_end = cell.end() - TextSize::from(1);
+        let content_end = cell.end() - TextSize::of('\n');
         TextRange::new(lines.start(), lines.end().min(content_end))
     }
 

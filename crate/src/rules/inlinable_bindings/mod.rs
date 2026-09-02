@@ -15,7 +15,7 @@ use crate::{
     config::{AllowPattern, Config},
     diagnostics::Diagnostic,
     primitives::binding::{BindingAnalysis, BindingId, BindingKind, UnpackKind},
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

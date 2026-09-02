@@ -51,20 +51,18 @@ fn attribute<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
 /// Each `.snap` in `case_dir` paired with the `input_file` its header
 /// names, skipping any snapshot carrying no such line.
 fn declared_inputs(case_dir: &Path) -> Vec<(String, String)> {
-    fs_err::read_dir(case_dir)
-        .unwrap()
-        .flatten()
-        .map(|entry| entry.path())
-        .filter(|path| path.extension().is_some_and(|ext| ext == "snap"))
-        .sorted()
-        .filter_map(|path| {
-            let declared = fs_err::read_to_string(&path)
-                .ok()?
-                .lines()
-                .find_map(|line| line.strip_prefix("input_file: ").map(ToOwned::to_owned))?;
-            Some((dir_name(&path), declared))
-        })
-        .collect()
+    entries(case_dir, |path| {
+        path.extension().is_some_and(|ext| ext == "snap")
+    })
+    .into_iter()
+    .filter_map(|path| {
+        let declared = fs_err::read_to_string(&path)
+            .ok()?
+            .lines()
+            .find_map(|line| line.strip_prefix("input_file: ").map(ToOwned::to_owned))?;
+        Some((dir_name(&path), declared))
+    })
+    .collect()
 }
 
 fn dir_name(path: &Path) -> String {
@@ -72,6 +70,17 @@ fn dir_name(path: &Path) -> String {
         .and_then(|name| name.to_str())
         .expect("fixture directory name is UTF-8")
         .to_owned()
+}
+
+/// The entries of `dir` that `keep` admits, ascending by path.
+fn entries(dir: &Path, keep: impl Fn(&Path) -> bool) -> Vec<PathBuf> {
+    fs_err::read_dir(dir)
+        .expect("the fixture directory reads")
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| keep(path))
+        .sorted()
+        .collect()
 }
 
 /// The `(rule, case)` pair of every `<Fixture…>` tag in `text` that
@@ -83,12 +92,9 @@ fn fixture_invocations(text: &str) -> impl Iterator<Item = (&str, &str)> {
     })
 }
 
-/// True when the rule at `module`, a single file or a directory of
-/// them, carries `needle` anywhere inside it.
+/// True when the rule's directory at `module` carries `needle`
+/// anywhere inside it.
 fn module_carries(module: &Path, needle: &str) -> bool {
-    if let Ok(source) = fs_err::read_to_string(module.with_extension("rs")) {
-        return source.contains(needle);
-    }
     WalkBuilder::new(module)
         .build()
         .flatten()
@@ -96,6 +102,11 @@ fn module_carries(module: &Path, needle: &str) -> bool {
         .any(|entry| {
             fs_err::read_to_string(entry.path()).is_ok_and(|source| source.contains(needle))
         })
+}
+
+/// The source module of the rule at `slug`, a file or a directory.
+fn rule_module(root: &Path, slug: &str) -> PathBuf {
+    root.join(format!("src/rules/{}", slug.replace('-', "_")))
 }
 
 /// The docs-site page for `slug`, searched across every family
@@ -108,13 +119,7 @@ fn rule_page(rules: &Path, slug: &str) -> Option<PathBuf> {
 }
 
 fn subdirs(dir: &Path) -> Vec<PathBuf> {
-    fs_err::read_dir(dir)
-        .unwrap()
-        .flatten()
-        .map(|entry| entry.path())
-        .filter(|path| path.is_dir())
-        .sorted()
-        .collect()
+    entries(dir, Path::is_dir)
 }
 
 #[test]
@@ -128,32 +133,10 @@ fn every_binding_reader_is_listed_on_the_primitive_page() {
         .expect("the page declares consumedBy");
 
     for slug in Pipeline::known_ids() {
-        let module = root.join(format!("src/rules/{}", slug.as_str().replace('-', "_")));
+        let module = rule_module(root, slug.as_str());
         assert!(
             !module_carries(&module, "binding_analysis()") || listed.contains(slug.as_str()),
             "rule `{slug}` reads the binding table and is absent from `consumedBy`",
-        );
-    }
-}
-
-#[test]
-fn every_lint_emitting_rule_is_named_on_the_exit_code_page() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let rules = root.join("../site/rules");
-    for slug in Pipeline::known_ids() {
-        let module = root.join(format!("src/rules/{}", slug.as_str().replace('-', "_")));
-        if !module_carries(&module, "fn lint(&self") {
-            continue;
-        }
-        let page = rule_page(&rules, slug.as_str()).expect("every rule has a page");
-        let declares = page.parent().and_then(Path::file_name) == Some("lint".as_ref())
-            || fs_err::read_to_string(&page)
-                .expect("the rule page reads")
-                .lines()
-                .any(|line| line.starts_with("lints") && line.contains("true"));
-        assert!(
-            declares,
-            "rule `{slug}` emits a lint, so its page needs the lint family or `lints : true`",
         );
     }
 }
@@ -266,7 +249,7 @@ fn every_fixture_invocation_resolves() {
     let mut types = TypesBuilder::new();
     types.add_defaults();
     types.select("markdown");
-    let types = types.build().unwrap();
+    let types = types.build().expect("the markdown type set builds");
 
     let mut found_any = false;
     let mut missing = Vec::new();
@@ -276,7 +259,7 @@ fn every_fixture_invocation_resolves() {
         }
         found_any = true;
         let path = entry.path();
-        let body = fs_err::read_to_string(path).unwrap();
+        let body = fs_err::read_to_string(path).expect("the page reads");
         for (rule, case) in fixture_invocations(&body) {
             let dir = root.join("tests/fixtures").join(rule).join(case);
             let input = dir.join("input.py");
@@ -284,7 +267,9 @@ fn every_fixture_invocation_resolves() {
             if !input.is_file() || !snap.is_file() {
                 missing.push(format!(
                     "{} -> rule=\"{rule}\" case=\"{case}\"",
-                    path.strip_prefix(&site).unwrap().display()
+                    path.strip_prefix(&site)
+                        .expect("the walk is rooted at the site")
+                        .display()
                 ));
             }
         }
@@ -298,14 +283,33 @@ fn every_fixture_invocation_resolves() {
 }
 
 #[test]
+fn every_lint_emitting_rule_declares_it_on_its_page() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let rules = root.join("../site/rules");
+    for slug in Pipeline::known_ids() {
+        let module = rule_module(root, slug.as_str());
+        if !module_carries(&module, "fn lint(&self") {
+            continue;
+        }
+        let page = rule_page(&rules, slug.as_str()).expect("every rule has a page");
+        let declares = page.parent().and_then(Path::file_name) == Some("lint".as_ref())
+            || fs_err::read_to_string(&page)
+                .expect("the rule page reads")
+                .lines()
+                .any(|line| line.starts_with("lints") && line.contains("true"));
+        assert!(
+            declares,
+            "rule `{slug}` emits a lint, so its page needs the lint family or `lints : true`",
+        );
+    }
+}
+
+#[test]
 fn every_registered_rule_has_a_page() {
     let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../site/rules");
-    let families = subdirs(&rules);
     for id in Pipeline::known_ids() {
         assert!(
-            families
-                .iter()
-                .any(|dir| dir.join(format!("{id}.md")).is_file()),
+            rule_page(&rules, id.as_str()).is_some(),
             "rule `{id}` registered in `KNOWN_IDS` has no page under `site/rules/<family>/{id}.md`"
         );
     }

@@ -99,8 +99,7 @@ fn formatted(path: &Path, pipeline: &Pipeline, tree: &Path) -> Formatted {
                     .edits()
                     .iter()
                     .map(|edit| {
-                        let range =
-                            usize::from(edit.range().start())..usize::from(edit.range().end());
+                        let range = usize::from(edit.start())..usize::from(edit.end());
                         EditRows {
                             content: edit.content().unwrap_or_default().to_owned(),
                             rows: edit_rows(&lines, &text, &range),

@@ -5,20 +5,24 @@
 //! interstitial text between adjacent items stays in source
 //! position.
 
-use ruff_source_file::LineRanges;
+use ruff_python_ast::token::TokenKind;
+use ruff_source_file::{LineRanges, UniversalNewlines};
 use ruff_text_size::{Ranged, TextRange};
 
-use crate::{primitives::inline::display_width, source::Source};
+use crate::{
+    primitives::{inline::display_width, range::blocks_span, tokens::tokens_within},
+    source::Source,
+};
 
 mod assemble;
 mod blocks;
 mod permute;
+mod separated;
 
-pub(crate) use assemble::{
-    Assembly, assemble_blocks, assemble_separated, reorder_separated, reorder_text,
-};
+pub(crate) use assemble::{Assembly, assemble_blocks, reorder_text};
 pub(crate) use blocks::{block_ranges, member_blocks, opens_its_line, rendered_member_blocks};
 pub(crate) use permute::{permute_full, permute_in_place, permute_runs};
+pub(crate) use separated::{assemble_separated, reorder_separated};
 
 use blocks::{last_member_has_comma, leading_attached_start, tail_end};
 use permute::is_identity;
@@ -56,17 +60,17 @@ pub(crate) fn reordered_lines_fit(
     budget: usize,
 ) -> bool {
     let text = source.text();
-    let outer = TextRange::new(text.line_start(span.start()), text.line_end(span.end()));
+    let outer = text.lines_range(span);
     let head = source.slice(TextRange::new(outer.start(), span.start()));
     let tail = source.slice(TextRange::new(span.end(), outer.end()));
     let cap = source
         .slice(outer)
-        .lines()
-        .map(display_width)
+        .universal_newlines()
+        .map(|line| display_width(line.as_str()))
         .fold(budget, usize::max);
     format!("{head}{assembled}{tail}")
-        .lines()
-        .all(|line| display_width(line) <= cap)
+        .universal_newlines()
+        .all(|line| display_width(line.as_str()) <= cap)
 }
 
 /// True when `order` moves a member whose range spans lines, the
@@ -90,6 +94,38 @@ pub(crate) fn swap_span_commented<T: Ranged>(source: &Source, items: &[T]) -> bo
         return false;
     };
     source.intersects_comment(TextRange::new(first.start(), tail_end(source, last.end())))
+}
+
+/// True where a leaf group over `items` holds its order as laid out:
+/// `swapped` where the group packs members onto shared rows, opens
+/// mid-row, or carries code in a gap, spanning lines, with a comment
+/// inside the swap span.
+pub(crate) fn swap_span_holds<T: Ranged>(source: &Source, items: &[T], swapped: bool) -> bool {
+    swapped
+        && items.len() > 1
+        && source.contains_line_break(blocks_span(items))
+        && swap_span_commented(source, items)
+}
+
+/// True when a group over `items` swaps member slices in place rather
+/// than reordering one-per-line blocks: one packing members onto shared
+/// rows, opening mid-row, or carrying code in its gaps.
+pub(crate) fn swaps_in_place<T: Ranged>(source: &Source, items: &[T]) -> bool {
+    items.first().is_some_and(|first| {
+        any_sibling_shares_line(source, items)
+            || !opens_its_line(source, first.start())
+            || gaps_carry_code(source, items)
+    })
+}
+
+/// True when a gap between two consecutive members of `items` carries
+/// a token of its own past the separators and comments inside it, the
+/// shape a positional argument sitting between two keywords takes.
+fn gaps_carry_code<T: Ranged>(source: &Source, items: &[T]) -> bool {
+    items.windows(2).any(|pair| {
+        tokens_within(source, TextRange::new(pair[0].end(), pair[1].start()))
+            .any(|token| !token.kind().is_trivia() && token.kind() != TokenKind::Comma)
+    })
 }
 
 #[cfg(test)]

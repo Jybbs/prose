@@ -19,7 +19,7 @@ use crate::{
         edit::narrowed_replacement,
         padding,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

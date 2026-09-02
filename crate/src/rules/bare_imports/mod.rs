@@ -14,7 +14,7 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::binding::{BindingAnalysis, top_level_module},
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

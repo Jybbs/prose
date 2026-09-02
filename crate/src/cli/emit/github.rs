@@ -2,10 +2,15 @@
 
 use std::io::{self, Write};
 
+use ruff_notebook::NotebookIndex;
 use ruff_source_file::SourceFile;
 
 use super::{Emitter, EmitterSummary, Run, diagnostics};
-use crate::{diagnostics::Diagnostic, findings::line_columns, rule::render_slugs};
+use crate::{
+    diagnostics::Diagnostic,
+    findings::{cell_message, located},
+    rules::render_slugs,
+};
 
 pub(crate) struct Github;
 
@@ -16,8 +21,8 @@ impl Emitter for Github {
         runs: &[Run<'_>],
         summary: &EmitterSummary,
     ) -> io::Result<()> {
-        for (file, _index, diag) in diagnostics(runs) {
-            emit_one(writer, file, diag)?;
+        for (file, index, diag) in diagnostics(runs) {
+            emit_one(writer, file, index, diag)?;
         }
         for entry in &summary.unstable {
             writeln!(
@@ -31,14 +36,19 @@ impl Emitter for Github {
     }
 }
 
-fn emit_one(writer: &mut dyn Write, file: &SourceFile, diag: &Diagnostic) -> io::Result<()> {
+fn emit_one(
+    writer: &mut dyn Write,
+    file: &SourceFile,
+    index: Option<&NotebookIndex>,
+    diag: &Diagnostic,
+) -> io::Result<()> {
     debug_assert!(
         !diag.message.contains(['%', '\r', '\n']),
         "rule message must not carry workflow-command escape characters",
     );
-    let (start, end) = line_columns(file, diag.range);
+    let (start, end, cell) = located(file, index, diag.range);
     let name = file.name();
-    let message = diag.message.as_str();
+    let message = cell_message(&diag.message, cell);
     write!(
         writer,
         "::warning file={name},line={l},col={c}",
@@ -62,19 +72,18 @@ mod tests {
 
     use super::*;
     use crate::{
-        cli::emit::{UnstableEntry, emitted, emitted_runs},
-        rule::RuleId,
+        cli::emit::{UnstableEntry, emitted_runs, emitted_string},
+        rules::RuleId,
         testing::{FailingWriter, format_diagnostic, parse, range},
     };
 
     fn emit_to_string(file: &SourceFile, diag: &Diagnostic) -> String {
-        let buf = emitted(
+        emitted_string(
             &Github,
             file,
             std::slice::from_ref(diag),
             &EmitterSummary::default(),
-        );
-        String::from_utf8(buf).expect("utf-8")
+        )
     }
 
     #[test]

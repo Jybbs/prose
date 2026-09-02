@@ -13,23 +13,21 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Alias, Expr, ExprCall, ExprDict, ExprLambda, ExprSet, Identifier, Parameters, Stmt, StmtAssign,
     StmtDelete,
-    token::TokenKind,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::FxHashMap;
 
-use super::{dict::rewrite_dict_text, joined_text};
+use super::{dict::rewrite_dict_text, dunder_list, joined_text};
 use crate::{
     primitives::{
-        binding::{sequence_elts, single_name_target},
+        binding::sequence_elts,
         comments::has_keep_marker,
-        docstring::{documented_definitions, entry_carrying_sections, rewrite_docstrings},
-        edit::{apply_inline_edits, insert_edit, narrowed_replacement},
+        edit::{apply_inline_edits, insert_edit},
         effect::value_is_effectful,
         orderer::{
-            any_sibling_shares_line, opens_its_line, permute_full, reorder_separated, reorder_text,
-            reordered_lines_fit, swap_relocates_spanning, swap_span_commented,
+            permute_full, reorder_separated, reorder_text, reordered_lines_fit,
+            swap_relocates_spanning, swap_span_holds, swaps_in_place,
         },
         params::classify_param,
         walk::walk_stmt,
@@ -59,8 +57,12 @@ impl<'a> LeafCollector<'a> {
         }
     }
 
+    /// Sorts only the bare names, a subscript or attribute target
+    /// pinning where unbinding it out of order raises.
     fn emit_delete(&mut self, d: &'a StmtDelete) {
-        self.try_emit_inline_reorder(&d.targets, |t| Some(self.source.slice(t)));
+        self.try_emit_inline_reorder(&d.targets, |t| {
+            t.as_name_expr().map(|name| name.id.as_str())
+        });
     }
 
     fn emit_dict(&mut self, d: &'a ExprDict) {
@@ -74,7 +76,7 @@ impl<'a> LeafCollector<'a> {
 
     fn emit_dunder_list(&mut self, assign: &'a StmtAssign) {
         if self.sort_dunder_lists
-            && matches!(single_name_target(assign), Some("__all__" | "__slots__"))
+            && dunder_list(assign)
             && !has_keep_marker(self.source, &*assign.value)
             && let Some(elements) = sequence_elts(&assign.value)
         {
@@ -134,9 +136,9 @@ impl<'a> LeafCollector<'a> {
         T: Ranged,
         S: Ord,
     {
-        let [first, .., last] = items else {
+        if items.len() < 2 {
             return;
-        };
+        }
         let source = self.source;
         // A group sharing lines, opening mid-row, or carrying code in
         // its gaps swaps member slices through `reorder_text`, keeping
@@ -145,13 +147,8 @@ impl<'a> LeafCollector<'a> {
         // routes through `reorder_separated` so each trailing comment
         // travels with its member, and a swap widening past the budget
         // and the widest source row holds the group.
-        let head_shared = !opens_its_line(source, first.start());
-        let swapped =
-            any_sibling_shares_line(source, items) || head_shared || gaps_carry_code(source, items);
-        if swapped
-            && source.contains_line_break(TextRange::new(first.start(), last.end()))
-            && swap_span_commented(source, items)
-        {
+        let swapped = swaps_in_place(source, items);
+        if swap_span_holds(source, items, swapped) {
             return;
         }
         let render = |_: usize, block| apply_inline_edits(source, block, &self.edits);
@@ -202,43 +199,6 @@ impl<'a> AstVisitor<'a> for LeafCollector<'a> {
     }
 }
 
-/// Walks every docstring in `source` and emits one edit per
-/// entry-carrying Google-style section whose `name: description`
-/// entries are out of order. An entry naming a parameter of the
-/// documented signature takes that parameter's position as the rule
-/// leaves the signature, and every other entry sinks below them,
-/// alphabetized by name. Module and class docstrings carry no
-/// signature, so their sections alphabetize throughout. Each edit
-/// replaces the section's entries-span with the reordered text.
-/// Returns an empty list when no docstring carries a sortable section.
-pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
-    let param_docs: FxHashMap<TextSize, Vec<&str>> = documented_definitions(source)
-        .into_iter()
-        .filter_map(|(definition, lit)| {
-            let function = definition.as_function_def_stmt()?;
-            Some((lit.start(), signature_order(&function.parameters)))
-        })
-        .collect();
-    rewrite_docstrings(source, |source, lit, edits| {
-        let signature = param_docs.get(&lit.start()).map(Vec::as_slice);
-        for section in entry_carrying_sections(source, lit) {
-            let (cow, span) = reorder_text(
-                source,
-                &section.entries,
-                |entry| Some(entry_key(entry.name, signature)),
-                |_, block| Cow::Borrowed(source.slice(block)),
-            );
-            let Cow::Owned(text) = cow else {
-                continue;
-            };
-            edits.extend(narrowed_replacement(source, span, text));
-        }
-    })
-    .into_iter()
-    .flatten()
-    .collect()
-}
-
 /// Walks the AST collecting one non-overlapping leaf edit per outermost
 /// reordering structure, each folding its nested reorders in.
 /// `sort_dict_keys` and `sort_dunder_lists` gate the dict-literal and
@@ -261,48 +221,6 @@ pub(super) fn collect_leaf_edits(
     collector.edits
 }
 
-/// Composite docstring-entry sort key. An entry naming a signature
-/// parameter takes that parameter's position, and any other entry
-/// sinks below the signature's, alphabetized by name.
-fn entry_key<'e>(name: &'e str, signature: Option<&[&str]>) -> (usize, &'e str) {
-    signature
-        .and_then(|names| names.iter().position(|&n| n == name))
-        .map_or((usize::MAX, name), |i| (i, ""))
-}
-
-/// True when a gap between two consecutive members of `items` carries
-/// a token of its own past the separators and comments inside it, the
-/// shape a positional argument sitting between two keywords takes.
-fn gaps_carry_code<T: Ranged>(source: &Source, items: &[T]) -> bool {
-    items.windows(2).any(|pair| {
-        let gap = TextRange::new(pair[0].end(), pair[1].start());
-        source.tokens_overlapping(gap).any(|token| {
-            gap.contains(token.start())
-                && !token.kind().is_trivia()
-                && token.kind() != TokenKind::Comma
-        })
-    })
-}
-
-/// Returns the parameter names in the order the rule leaves the
-/// signature: positional-only and positional-or-keyword in source
-/// order, then `*args`, then the keyword-only block sorted, then
-/// `**kwargs`.
-fn signature_order(params: &Parameters) -> Vec<&str> {
-    let mut names: Vec<&str> = params
-        .posonlyargs
-        .iter()
-        .chain(&params.args)
-        .map(|p| p.name().as_str())
-        .collect();
-    names.extend(params.vararg.as_deref().map(|p| p.name.as_str()));
-    let mut order: Vec<usize> = (0..params.kwonlyargs.len()).collect();
-    permute_full(&mut order, &params.kwonlyargs, classify_param);
-    names.extend(order.iter().map(|&i| params.kwonlyargs[i].name().as_str()));
-    names.extend(params.kwarg.as_deref().map(|p| p.name.as_str()));
-    names
-}
-
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
@@ -310,102 +228,6 @@ mod tests {
 
     use super::*;
     use crate::testing::{applied_text, parse};
-
-    /// The source with every docstring-entry reorder applied.
-    fn entry_sorted_text(src: &str) -> String {
-        let source = parse(src);
-        let edits = collect_docstring_entry_edits(&source);
-        applied_text(&source, edits)
-    }
-
-    /// The byte offset of `needle` within `text`.
-    fn offset_of(text: &str, needle: &str) -> usize {
-        text.find(needle)
-            .unwrap_or_else(|| panic!("{needle} present"))
-    }
-
-    #[rstest]
-    #[case(indoc! {"
-        class C:
-            def m(self, b, a):
-                \"\"\"Summary.
-
-                Args:
-                    b: two
-                    a: one
-
-                Raises:
-                    ValueError: bad
-                    KeyError: missing
-                \"\"\"
-    "})]
-    #[case(indoc! {"
-        def f(b, a):
-            \"\"\"Summary.
-
-            Args:
-                b: two
-                a: one
-
-            Raises:
-                ValueError: bad
-                KeyError: missing
-            \"\"\"
-    "})]
-    fn collect_docstring_entry_edits_mirrors_source_order_signature(#[case] src: &str) {
-        let text = entry_sorted_text(src);
-        let pos = |needle: &str| offset_of(&text, needle);
-        assert!(
-            pos("b: two") < pos("a: one"),
-            "parameter entries mirror the un-reordered signature"
-        );
-        assert!(
-            pos("KeyError: missing") < pos("ValueError: bad"),
-            "non-parameter entries still sort"
-        );
-    }
-
-    #[test]
-    fn collect_docstring_entry_edits_mirrors_vararg_and_kwarg_positions() {
-        let src = indoc! {"
-            def f(beta, alpha, *zebra, **apple):
-                \"\"\"Summary.
-
-                Args:
-                    apple: d
-                    zebra: c
-                    beta: a
-                    alpha: b
-                \"\"\"
-        "};
-        let text = entry_sorted_text(src);
-        let pos = |needle: &str| offset_of(&text, needle);
-        assert!(
-            pos("zebra:") < pos("apple:"),
-            "the vararg mirrors ahead of the kwarg, both in signature order"
-        );
-    }
-
-    #[test]
-    fn collect_docstring_entry_edits_sinks_stale_entries_below_params() {
-        let src = indoc! {"
-            class Catalog:
-                def update(self, target, source):
-                    \"\"\"Apply ``source`` onto ``target``.
-
-                    Args:
-                        source: Mapping providing new values.
-                        retries: Attempts before giving up.
-                        target: Mapping receiving the update.
-                    \"\"\"
-        "};
-        let text = entry_sorted_text(src);
-        let pos = |needle: &str| offset_of(&text, needle);
-        assert!(
-            pos("target:") < pos("source:") && pos("source:") < pos("retries:"),
-            "parameter entries mirror the signature and the stale entry sinks"
-        );
-    }
 
     #[rstest]
     #[case("def m(b, a): pass\n", "def m(b, a): pass\n")]

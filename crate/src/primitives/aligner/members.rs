@@ -23,20 +23,16 @@ use crate::{
 /// baseline is the indent ahead of that content, and the settled width
 /// reads past the delimiter padding `strip-stranded-padding` deletes.
 pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member {
-    let line_start = source.text().line_start(anchor);
     let gap = line_gap_before(source, anchor);
-    let head = TextRange::new(line_start, gap.start());
+    let head = TextRange::new(source.text().line_start(anchor), gap.start());
     let text = source.slice(head);
-    let width = display_width(text.trim_whitespace_start());
-    Member {
-        baseline: display_width(text) - width,
-        gap,
-        line_start,
-        op_width: 0,
-        settled_width: width - delimiter_padding_width(source, head),
-        value_gap: None,
-        width,
-    }
+    let indent = text.text_len() - text.trim_whitespace_start().text_len();
+    anchored_member(
+        source,
+        TextRange::new(head.start() + indent, head.end()),
+        anchor,
+        0,
+    )
 }
 
 /// Builds a `Member` whose anchor is the first `kind` token in `search`
@@ -111,32 +107,30 @@ where
     F: FnMut(&Token) -> bool,
 {
     single_line_anchor(source, target.start(), search, predicate)
-        .map(|anchor| range_anchored_member(source, target, anchor, extra_width))
+        .map(|anchor| anchored_member(source, target, anchor, extra_width))
 }
 
 /// Builds a `Member` for a row whose aligned token sits at `anchor`,
-/// with width measured by the display width of `target` plus
-/// `extra_width` and the baseline at `target`'s own column. Pass
-/// `extra_width = 0` when the LHS is exactly `target` (e.g. `x = 1`),
-/// and pass a non-zero value when the LHS visually extends past
-/// `target` by characters not covered by the slice (e.g. the `+` of
-/// `x += 1` widens the LHS by one column without being part of the
-/// target range). The settled width reads past the delimiter padding
-/// `strip-stranded-padding` deletes.
-fn range_anchored_member(
+/// measuring `span` plus `extra_width` as the left-hand side, its
+/// baseline the indent ahead of `span`, its gap `span`'s end through
+/// the anchor, and its settled width past the delimiter padding
+/// `strip-stranded-padding` deletes. `extra_width` is zero where the
+/// left-hand side is exactly `span` (`x = 1`) and the columns the
+/// side extends past `span` otherwise (the `+` of `x += 1`).
+fn anchored_member(
     source: &Source,
-    target: TextRange,
+    span: TextRange,
     anchor: TextSize,
     extra_width: usize,
 ) -> Member {
-    let width = display_width(source.slice(target)) + extra_width;
+    let width = display_width(source.slice(span)) + extra_width;
     let line_start = source.text().line_start(anchor);
     Member {
-        baseline: source.width_between(line_start, target.start()),
-        gap: TextRange::new(target.end(), anchor),
+        baseline: source.width_between(line_start, span.start()),
+        gap: TextRange::new(span.end(), anchor),
         line_start,
         op_width: 0,
-        settled_width: width - delimiter_padding_width(source, target),
+        settled_width: width - delimiter_padding_width(source, span),
         value_gap: None,
         width,
     }

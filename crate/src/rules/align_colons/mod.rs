@@ -17,7 +17,7 @@ use crate::{
         colon_targets::{ColonEmitter, EntryColumns},
         reserve,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

@@ -20,7 +20,7 @@ use prose::{
     config::Config,
     diagnostics::Severity,
     pipeline::{Pipeline, PipelineError, SettleReport},
-    rule::{RuleId, render_slugs},
+    rules::{RuleId, render_slugs},
     source::Source,
 };
 

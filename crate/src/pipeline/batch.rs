@@ -3,11 +3,12 @@
 
 use itertools::Itertools;
 use ruff_diagnostics::{Edit, SourceMap};
-use ruff_python_ast::PythonVersion;
+use ruff_python_ast::{PySourceType, PythonVersion};
+use ruff_source_file::SourceFile;
 use ruff_text_size::Ranged;
 
 use super::{PipelineError, error::reparse_or_reject, filter::prepared_groups};
-use crate::{primitives::edit::apply_edits_mapped, rule::Rule, source::Source};
+use crate::{primitives::edit::apply_edits_mapped, rules::Rule, source::Source};
 
 /// The rules whose fix groups splice into one buffer in a single pass,
 /// each read against the buffer the batch opened on.
@@ -29,7 +30,7 @@ impl<'a> Batch<'a> {
     /// them all.
     fn splice(
         self,
-        source: Source,
+        mut source: Source,
         gate: Option<PythonVersion>,
         replays: bool,
     ) -> Result<Source, PipelineError> {
@@ -37,33 +38,37 @@ impl<'a> Batch<'a> {
             return Ok(source);
         };
         let (text, map) = weave_edits(&source, self.edits);
-        match reparse_or_reject(&source, text, first.id(), &map, gate) {
+        let bindings = source.take_binding_analysis();
+        let entry = source.entry_buffer();
+        match reparse_or_reject(source, text, first.id(), &map, gate) {
             Ok(mut next) => {
                 let declining = self
                     .members
                     .iter()
-                    .map(|&(_, rule)| rule)
-                    .find(|rule| !rule.preserves_bindings());
-                let (rule, preserves) =
-                    declining.map_or((first.id(), true), |rule| (rule.id(), false));
-                next.inherit(source, &map, rule, preserves);
+                    .find_map(|&(_, rule)| (!rule.preserves_bindings()).then_some(rule.id()));
+                next.inherit(
+                    bindings,
+                    &map,
+                    declining.unwrap_or(first.id()),
+                    declining.is_none(),
+                );
                 Ok(next)
             }
             Err(_) if !rest.is_empty() && !replays => Err(PipelineError::Batch {
                 rules: self.members.iter().map(|(_, rule)| rule.id()).collect(),
             }),
             Err(_) if !rest.is_empty() => {
-                let replayed = self
-                    .members
-                    .iter()
-                    .try_fold(source, |source, &(seat, rule)| {
-                        let Some(spliceable) = Spliceable::landing(rule, &source) else {
-                            return Ok(source);
-                        };
-                        let mut alone = Self::default();
-                        alone.push(seat, rule, spliceable.edits);
-                        alone.splice(source, gate, replays)
-                    });
+                let replayed =
+                    self.members
+                        .iter()
+                        .try_fold(rebuilt(entry), |source, &(seat, rule)| {
+                            let Some(spliceable) = Spliceable::landing(rule, &source) else {
+                                return Ok(source);
+                            };
+                            let mut alone = Self::default();
+                            alone.push(seat, rule, spliceable.edits);
+                            alone.splice(source, gate, replays)
+                        });
                 debug_assert!(
                     replayed.is_err(),
                     "invariant: a batch whose splice is rejected holds a rule whose own splice is rejected",
@@ -156,6 +161,14 @@ impl Spliceable {
     pub(super) fn woven(self, source: &Source) -> String {
         weave_edits(source, self.edits).0
     }
+}
+
+/// The source `entry`'s buffer parses to, the entry a rejected splice
+/// replays its members against one at a time. That buffer parsed when
+/// the batch opened on it, so this parse holds.
+fn rebuilt((file, source_type): (SourceFile, PySourceType)) -> Source {
+    Source::build_module(file.source_text().to_owned(), file.name(), source_type)
+        .expect("invariant: the buffer a batch opened on parses")
 }
 
 /// True where an edit in `sorted` starts before the one ahead of it

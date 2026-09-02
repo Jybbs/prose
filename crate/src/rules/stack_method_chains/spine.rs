@@ -6,7 +6,10 @@ use ruff_python_ast::{Expr, ExprAttribute, ExprCall, token::TokenKind};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::{
-    primitives::{fracture, inline::display_width},
+    primitives::{
+        fracture,
+        inline::{display_width, spans_rows},
+    },
     source::Source,
 };
 
@@ -85,7 +88,7 @@ impl<'a> Chain<'a> {
     /// break leaves untouched.
     pub(super) fn spans_lines(&self, source: &Source, joins: &fracture::Joins) -> bool {
         self.segments()
-            .any(|segment| joins.settled(source, segment).contains('\n'))
+            .any(|segment| spans_rows(&joins.settled(source, segment)))
     }
 
     /// The display width the chain reads joined onto one line, each

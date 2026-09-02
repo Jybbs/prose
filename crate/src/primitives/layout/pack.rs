@@ -75,7 +75,7 @@ pub(crate) fn requires_expand(expr: &Expr) -> bool {
 /// its bracket alone, yielding the bracket and the body beneath. A
 /// single-line block and one whose first line carries content beside
 /// the bracket both return `None`.
-pub(super) fn flush_bracket_open(block: &str) -> Option<(&str, &str)> {
-    let (open, body) = block.split_once('\n')?;
-    (open.trim().len() == 1).then_some((open, body))
+pub(super) fn flush_bracket_open(block: &str) -> Option<&str> {
+    let (open, body) = block.split_once(['\n', '\r'])?;
+    (open.trim().len() == 1).then_some(body)
 }

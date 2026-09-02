@@ -14,6 +14,19 @@ use ruff_source_file::PositionEncoding;
 
 use super::send;
 use crate::server::{analysis, config_cache::ConfigCache, documents::DocumentStore};
+
+/// `notification`'s params where its method is `N`'s, and otherwise the
+/// notification handed back for the next method to read.
+fn extracted<N: NotificationTrait>(
+    notification: Notification,
+) -> anyhow::Result<Result<N::Params, Notification>> {
+    match notification.extract(N::METHOD) {
+        Ok(params) => Ok(Ok(params)),
+        Err(ExtractError::MethodMismatch(notification)) => Ok(Err(notification)),
+        Err(error) => Err(error.into()),
+    }
+}
+
 /// Routes one notification by method, updating the document store and
 /// republishing the affected document's diagnostics. An open or change
 /// replaces the buffer, a close drops it. Unknown methods are ignored
@@ -26,15 +39,14 @@ pub(super) fn handle_notification(
     notification: Notification,
     encoding: PositionEncoding,
 ) -> anyhow::Result<()> {
-    let notification = match notification.extract(DidChangeWatchedFiles::METHOD) {
+    let notification = match extracted::<DidChangeWatchedFiles>(notification)? {
         Ok(DidChangeWatchedFilesParams { .. }) => {
             configs.clear();
             return republish_all(connection, documents, configs, encoding);
         }
-        Err(ExtractError::MethodMismatch(notification)) => notification,
-        Err(error) => return Err(error.into()),
+        Err(notification) => notification,
     };
-    let notification = match notification.extract(DidOpenTextDocument::METHOD) {
+    let notification = match extracted::<DidOpenTextDocument>(notification)? {
         Ok(DidOpenTextDocumentParams { text_document }) => {
             documents.set(
                 text_document.uri.clone(),
@@ -43,34 +55,26 @@ pub(super) fn handle_notification(
             );
             return publish(connection, documents, configs, &text_document.uri, encoding);
         }
-        Err(ExtractError::MethodMismatch(notification)) => notification,
-        Err(error) => return Err(error.into()),
+        Err(notification) => notification,
     };
-    let notification = match notification.extract(DidChangeTextDocument::METHOD) {
+    let notification = match extracted::<DidChangeTextDocument>(notification)? {
         Ok(DidChangeTextDocumentParams {
             text_document,
             mut content_changes,
         }) => {
-            if let Some(change) = content_changes.pop() {
-                documents.set(
-                    text_document.uri.clone(),
-                    change.text,
-                    text_document.version,
-                );
-            }
+            let text = content_changes.pop().map(|change| change.text);
+            documents.update(&text_document.uri, text, text_document.version);
             return publish(connection, documents, configs, &text_document.uri, encoding);
         }
-        Err(ExtractError::MethodMismatch(notification)) => notification,
-        Err(error) => return Err(error.into()),
+        Err(notification) => notification,
     };
-    match notification.extract(DidCloseTextDocument::METHOD) {
-        Ok(DidCloseTextDocumentParams { text_document }) => {
-            documents.remove(&text_document.uri);
-            publish(connection, documents, configs, &text_document.uri, encoding)
-        }
-        Err(ExtractError::MethodMismatch(_)) => Ok(()),
-        Err(error) => Err(error.into()),
+    if let Ok(DidCloseTextDocumentParams { text_document }) =
+        extracted::<DidCloseTextDocument>(notification)?
+    {
+        documents.remove(&text_document.uri);
+        return publish(connection, documents, configs, &text_document.uri, encoding);
     }
+    Ok(())
 }
 
 /// Recomputes and publishes the tracked buffer's diagnostics, sending an

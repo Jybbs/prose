@@ -66,3 +66,15 @@ pub(crate) fn validate_diff_format_combination(cli: &Cli) -> Option<clap::Error>
         )
     })
 }
+
+/// Returns a config error when `--stdin-filename` pairs with neither
+/// `--stdin` nor the `-` positional, the only path that reads it.
+pub(crate) fn validate_stdin_filename(cli: &Cli) -> Option<clap::Error> {
+    let common = cli.run_args()?;
+    (common.stdin_filename.is_some() && !common.stdin).then(|| {
+        Cli::command().error(
+            ErrorKind::ArgumentConflict,
+            "`--stdin-filename` requires `--stdin` or the `-` positional",
+        )
+    })
+}

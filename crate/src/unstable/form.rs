@@ -9,9 +9,10 @@ use fluent_uri::pct_enc::{
     EString,
     encoder::{Data, Query},
 };
+use std::slice;
 
 use super::UnstableRewrite;
-use crate::rule::render_slugs;
+use crate::rules::render_slugs;
 
 const TEMPLATE: &str = "unstable-output.yml";
 
@@ -30,7 +31,14 @@ pub(crate) fn report_url(rewrite: &UnstableRewrite, original: &str) -> String {
 /// field after it still lands.
 fn build(rewrite: &UnstableRewrite, original: &str, budget: usize) -> String {
     let slugs = rewrite.slugs();
-    let title = format!("Unstable output from {}", render_slugs(&rewrite.rules));
+    let title = match rewrite.rules.as_slice() {
+        [first, rest @ ..] if rest.len() > 1 => format!(
+            "Unstable output from {} and {} more rules",
+            render_slugs(slice::from_ref(first)),
+            rest.len(),
+        ),
+        rules => format!("Unstable output from {}", render_slugs(rules)),
+    };
     let fields = [
         ("title", title.as_str()),
         ("version", env!("CARGO_PKG_VERSION")),
@@ -67,7 +75,7 @@ fn encoded(value: &str) -> EString<Query> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rule::RuleId;
+    use crate::rules::RuleId;
 
     fn rewrite(first: &str, second: &str, config_toml: &str) -> UnstableRewrite {
         UnstableRewrite {
@@ -102,9 +110,8 @@ mod tests {
 
         let declared: Vec<&str> = FORM
             .lines()
-            .filter_map(|line| line.trim().strip_prefix("id"))
-            .filter_map(|rest| rest.split(':').nth(1))
-            .map(str::trim)
+            .filter_map(|line| line.trim().strip_prefix("id")?.split_once(':'))
+            .map(|(_, value)| value.trim())
             .collect();
         let url = report_url(&rewrite("a = 1\n", "b = 2\n", "x = 1\n"), "a = 1\n");
 

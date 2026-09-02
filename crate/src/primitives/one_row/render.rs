@@ -10,9 +10,29 @@ use ruff_text_size::TextRange;
 
 use super::{Column, Settings, walk::Joiner};
 use crate::{
-    primitives::{edit::apply_inline_edits, fracture::outermost, inline::folded_line_form},
+    primitives::{
+        edit::apply_inline_edits,
+        fracture::outermost,
+        inline::{folded_line_form, spans_rows},
+    },
     source::Source,
 };
+
+/// Writes each of `items` through `write` into `out`, `", "` between
+/// them, stopping at the first item reaching no one-row form.
+pub(super) fn write_joined<T>(
+    out: &mut String,
+    items: impl IntoIterator<Item = T>,
+    mut write: impl FnMut(&mut String, T) -> Option<()>,
+) -> Option<()> {
+    for (i, item) in items.into_iter().enumerate() {
+        if i > 0 {
+            out.push_str(", ");
+        }
+        write(out, item)?;
+    }
+    Some(())
+}
 
 /// Serializes an expression tree onto one row, each method writing into
 /// the caller's buffer and answering `None` where its subtree reaches no
@@ -28,7 +48,11 @@ impl<'a> Writer<'a> {
     /// falling inside the range, and a later rule reopening it.
     fn blocked(&self, expr: &Expr, range: TextRange, hold: Column) -> bool {
         (hold == Column::Holds && self.settings.holds_its_column(self.source, expr))
-            || self.source.intersects_comment(range)
+            || !self
+                .source
+                .comment_ranges()
+                .comments_in_range(range)
+                .is_empty()
             || self.reopens(expr)
     }
 
@@ -52,7 +76,7 @@ impl<'a> Writer<'a> {
             return None;
         }
         let joined = apply_inline_edits(self.source, range, &outermost(joiner.edits));
-        (!joined.contains('\n')).then_some(joined)
+        (!spans_rows(&joined)).then_some(joined)
     }
 
     /// `expr` rewritten from its children onto one row, `None` where
@@ -60,7 +84,7 @@ impl<'a> Writer<'a> {
     fn rebuilt(&self, expr: &Expr) -> Option<Cow<'a, str>> {
         let mut out = String::new();
         self.write(&mut out, expr, expr.into())?;
-        (!out.contains('\n')).then_some(Cow::Owned(out))
+        (!spans_rows(&out)).then_some(Cow::Owned(out))
     }
 
     /// True where a later rule reopens `expr` whatever its current
@@ -184,10 +208,7 @@ impl<'a> Writer<'a> {
     /// leaves.
     fn write_dict(&self, out: &mut String, d: &ExprDict, parent: AnyNodeRef) -> Option<()> {
         out.push('{');
-        for (i, item) in d.iter().enumerate() {
-            if i > 0 {
-                out.push_str(", ");
-            }
+        write_joined(out, d.iter(), |out, item| {
             match &item.key {
                 Some(key) => {
                     self.write(out, key, parent)?;
@@ -195,8 +216,8 @@ impl<'a> Writer<'a> {
                 }
                 None => out.push_str("**"),
             }
-            self.write_child(out, &item.value, parent)?;
-        }
+            self.write_child(out, &item.value, parent)
+        })?;
         out.push('}');
         Some(())
     }
@@ -214,12 +235,7 @@ impl<'a> Writer<'a> {
     ) -> Option<()> {
         let (open, close) = brackets.unzip();
         out.extend(open);
-        for (i, e) in elts.iter().enumerate() {
-            if i > 0 {
-                out.push_str(", ");
-            }
-            self.write_child(out, e, parent)?;
-        }
+        write_joined(out, elts, |out, e| self.write_child(out, e, parent))?;
         if trailing_comma {
             out.push(',');
         }
@@ -255,9 +271,8 @@ impl<'a> Writer<'a> {
         if self.blocked(expr, range, hold) {
             return None;
         }
-        let slice = self.source.slice(range);
-        if !slice.contains('\n') {
-            return Some(Cow::Borrowed(slice));
+        if !self.source.contains_line_break(range) {
+            return Some(Cow::Borrowed(self.source.slice(range)));
         }
         self.rebuilt(expr)
     }

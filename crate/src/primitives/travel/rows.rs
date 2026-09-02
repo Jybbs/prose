@@ -49,21 +49,21 @@ pub(super) fn movable_floor(block: &str, frozen: &[bool]) -> Option<usize> {
 /// `block`'s continuation rows moved per `travel`, each blank row and
 /// each row `frozen` marks passing through as written.
 pub(super) fn shifted_rows(block: &str, travel: Travel, frozen: &[bool]) -> String {
-    let last = block
-        .split_inclusive('\n')
+    let rows: Vec<Line> = block.universal_newlines().collect();
+    let last = rows
+        .iter()
         .enumerate()
-        .filter(|(row, line)| is_movable(*row, line, frozen))
-        .map(|(row, _)| row)
-        .last();
+        .rfind(|(row, line)| is_movable(*row, line.as_str(), frozen))
+        .map(|(row, _)| row);
     let mut out = String::with_capacity(block.len());
-    for (row, line) in block.split_inclusive('\n').enumerate() {
-        if !is_movable(row, line, frozen) {
-            out.push_str(line);
+    for (row, line) in rows.iter().enumerate() {
+        if !is_movable(row, line.as_str(), frozen) {
+            out.push_str(line.as_full_str());
             continue;
         }
-        let placed = travel.placed(indent_width(line), Some(row) == last);
-        out.push_str(&" ".repeat(placed));
-        out.push_str(&line[leading_indentation(line).len()..]);
+        let placed = travel.placed(indent_width(line.as_str()), Some(row) == last);
+        out.extend(std::iter::repeat_n(' ', placed));
+        out.push_str(line.as_full_str().trim_whitespace_start());
     }
     out
 }
@@ -94,7 +94,7 @@ fn closes_the_head(row: &str) -> bool {
 
 /// True for a non-blank continuation row at `row` that `frozen` leaves
 /// free to move.
-fn is_movable(row: usize, line: &str, frozen: &[bool]) -> bool {
+pub(crate) fn is_movable(row: usize, line: &str, frozen: &[bool]) -> bool {
     row > 0 && frozen.get(row) != Some(&true) && !line.trim().is_empty()
 }
 

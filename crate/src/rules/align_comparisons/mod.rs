@@ -16,7 +16,7 @@ use ruff_text_size::Ranged;
 use crate::{
     config::Config,
     primitives::{aligner, comparison::opening_token_kind, walk::walk_stmt},
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

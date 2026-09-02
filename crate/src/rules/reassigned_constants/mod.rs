@@ -14,7 +14,7 @@ use crate::{
     primitives::binding::{
         BindingAnalysis, ModuleAssignment, is_screaming_case, module_assignments, tail_identifier,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

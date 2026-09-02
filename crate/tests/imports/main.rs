@@ -125,6 +125,9 @@ fn every_rewritten_module_still_imports() {
         );
         return;
     }
+    if !lost.is_empty() || !fresh.is_empty() {
+        sweep.runner.stage.keep();
+    }
     assert!(
         lost.is_empty(),
         "the baseline compares {} of the modules this run could not, the first being {}",

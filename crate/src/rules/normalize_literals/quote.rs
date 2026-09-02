@@ -37,8 +37,18 @@ struct Transcription {
 /// A triple-quoted string swaps to `"""` only when no `"""` run and no
 /// trailing `"` would abut the closer.
 pub(super) fn requoted(parts: &[&str], flags: AnyStringFlags) -> Option<Requote> {
+    requoted_with(parts, flags, true)
+}
+
+/// [`requoted`] for a literal whose last part ends ahead of the closer
+/// only where `closer_abuts`, as an interpolation following it does.
+pub(super) fn requoted_with(
+    parts: &[&str],
+    flags: AnyStringFlags,
+    closer_abuts: bool,
+) -> Option<Requote> {
     if flags.is_triple_quoted() {
-        return triple_requoted(parts, flags);
+        return triple_requoted(parts, flags, closer_abuts);
     }
     if flags.prefix().is_raw() {
         return raw_requoted(parts, flags);
@@ -142,9 +152,9 @@ fn transcribe(part: &str, current: Quote, target: Quote) -> Transcription {
 /// The requote a triple-quoted string settles on, `None` when it
 /// already reads `"""` or when a `"""` run or a trailing `"` would abut
 /// the closer.
-fn triple_requoted(parts: &[&str], flags: AnyStringFlags) -> Option<Requote> {
+fn triple_requoted(parts: &[&str], flags: AnyStringFlags, closer_abuts: bool) -> Option<Requote> {
     let target = Quote::Double;
-    let swappable = flags.quote_style() != target && !abuts_triple_closer(parts, true);
+    let swappable = flags.quote_style() != target && !abuts_triple_closer(parts, closer_abuts);
     swappable.then(|| verbatim_requote(parts, flags, target))
 }
 

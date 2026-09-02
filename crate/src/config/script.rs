@@ -7,6 +7,7 @@
 //! extraction is reimplemented here against the PEP 723 grammar.
 
 use memchr::memmem;
+use ruff_source_file::UniversalNewlines;
 
 use super::{ConfigError, load::prose_table_from_str};
 
@@ -49,10 +50,10 @@ fn open_line_offset(bytes: &[u8]) -> Option<usize> {
 /// the embedded TOML. `None` when no closing pragma follows.
 fn script_metadata(text: &str, open: usize) -> Option<String> {
     let mut body: Vec<&str> = text[open..]
-        .lines()
+        .universal_newlines()
         .skip(1)
         .map_while(|line| {
-            let rest = line.strip_prefix('#')?;
+            let rest = line.as_str().strip_prefix('#')?;
             if rest.is_empty() {
                 return Some("");
             }

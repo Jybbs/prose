@@ -12,7 +12,7 @@ use ruff_text_size::{TextRange, TextSize};
 use crate::{
     config::{AlignmentConfig, MaxShift},
     primitives::{comments::Settling, padding::Stranding},
-    rule::RuleId,
+    rules::RuleId,
     source::Source,
 };
 
@@ -33,7 +33,7 @@ pub(crate) use members::{
     line_gap_before, parameter_split_groups, range_anchored_member_single_line,
 };
 pub(crate) use walker::AlignWalker;
-pub(crate) use widen::Widenings;
+pub(crate) use widen::{Widening, Widenings, widening_entries};
 
 /// The columns between an aligned operator's column and the value
 /// following it, the operator's own character and the one-space value

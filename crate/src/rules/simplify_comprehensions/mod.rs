@@ -14,7 +14,7 @@ use ruff_text_size::{Ranged, TextRange};
 use crate::{
     config::Config,
     primitives::walk::{Descent, filter_map_over_exprs},
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

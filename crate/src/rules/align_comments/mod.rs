@@ -10,11 +10,12 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_trivia::CommentRanges;
+use ruff_text_size::TextRange;
 
 use crate::{
     config::Config,
     primitives::{aligner, comments::TRAILING_GAP},
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 
@@ -56,13 +57,20 @@ impl Rule for AlignComments {
 /// row held for `rule` bridges its run, leaving the neighbors on either
 /// side to align as one block.
 fn trailing_comment_groups(source: &Source, rule: RuleId) -> Vec<Vec<aligner::Member>> {
-    let trailing = source
+    let text = source.text();
+    let trailing: Vec<TextRange> = source
         .comment_ranges()
         .into_iter()
-        .filter(|r| !CommentRanges::is_own_line(r.start(), source.text()));
-    aligner::adjacent_member_groups(source, trailing, false, |range| {
-        aligner::line_anchored_member(source, range.start()).slot(source, rule)
-    })
+        .filter(|r| !CommentRanges::is_own_line(r.start(), text))
+        .collect();
+    trailing
+        .chunk_by(|a, b| source.same_cell(a.end(), b.start()))
+        .flat_map(|cell| {
+            aligner::adjacent_member_groups(source, cell.iter().copied(), false, |range| {
+                aligner::line_anchored_member(source, range.start()).slot(source, rule)
+            })
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -70,7 +78,17 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{notebook, parse};
+
+    #[test]
+    fn a_run_closes_at_a_notebook_cell_boundary() {
+        let source = notebook(&["x = 1  # a\n", "longer_name = 2  # b\n"]);
+        assert!(
+            AlignComments::from_config(&Config::default())
+                .apply(&source)
+                .is_empty()
+        );
+    }
 
     #[test]
     fn trailing_comment_groups_measures_the_code_ahead_of_the_hash() {

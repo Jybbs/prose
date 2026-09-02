@@ -13,7 +13,7 @@ use crate::{
         binding::ann_assign_with_named_field,
         docstring::{documented_definitions, entry_carrying_sections},
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

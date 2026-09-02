@@ -7,10 +7,15 @@ use super::*;
 fn known_ids_matches_with_defaults_registration() {
     let config = Config::default();
     let pipeline = Pipeline::with_defaults(&config);
-    let mut registered = registered_slugs(&pipeline);
-    registered.sort_unstable();
-    let mut known: Vec<&'static str> = Pipeline::known_ids().iter().map(RuleId::as_str).collect();
-    known.sort_unstable();
+    let registered = registered_slugs(&pipeline)
+        .into_iter()
+        .sorted()
+        .collect_vec();
+    let known = Pipeline::known_ids()
+        .iter()
+        .map(RuleId::as_str)
+        .sorted()
+        .collect_vec();
     assert_eq!(registered, known);
 }
 

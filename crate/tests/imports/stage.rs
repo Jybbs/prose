@@ -4,19 +4,22 @@
 
 use std::{
     collections::BTreeSet,
-    env,
     ffi::OsStr,
     path::{Path, PathBuf},
-    process,
+    sync::Mutex,
 };
 
 use ignore::WalkBuilder;
+use tempfile::TempDir;
 
 /// The probe the sweep writes into the stage and runs each module through.
 const PROBE: &str = include_str!("probe.py");
 
 /// The scratch directory one sweep works in.
 pub(crate) struct Stage {
+    /// The directory holding everything below, removed when the stage
+    /// drops unless [`Stage::keep`] released it.
+    held: Mutex<Option<TempDir>>,
     /// A scratch `HOME` for the runs.
     pub(crate) home: PathBuf,
     /// The unformatted copy every other copy and every comparison reads.
@@ -33,9 +36,13 @@ impl Stage {
     /// Builds the stage, copying the corpus once as the original tree and
     /// writing the probe beside it.
     pub(crate) fn new(corpus: &Path) -> Self {
-        let root = env::temp_dir().join(format!("prose-imports.{}", process::id()));
-        let _ = fs_err::remove_dir_all(&root);
+        let held = tempfile::Builder::new()
+            .prefix("prose-imports.")
+            .tempdir()
+            .expect("create the stage directory");
+        let root = held.path().to_path_buf();
         let stage = Self {
+            held: Mutex::new(Some(held)),
             home: root.join("home"),
             original: root.join("original"),
             records: root.join("records"),
@@ -87,6 +94,14 @@ impl Stage {
             }
         }
         tree
+    }
+
+    /// Releases the stage from removal, so a failed run leaves its tree
+    /// on disk to inspect.
+    pub(crate) fn keep(&self) {
+        if let Some(held) = self.held.lock().expect("the stage lock").take() {
+            let _ = held.keep();
+        }
     }
 
     /// The probe every run goes through.

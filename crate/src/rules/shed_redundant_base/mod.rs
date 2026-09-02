@@ -15,7 +15,7 @@ use crate::{
     primitives::{
         edit::singleton_groups, range::dropped_member_spans, walk::filter_map_over_stmts,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

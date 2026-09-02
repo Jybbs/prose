@@ -6,6 +6,7 @@ use std::borrow::Cow;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{ExceptHandler, Stmt};
 use ruff_text_size::{Ranged, TextRange};
+use smallvec::{SmallVec, smallvec};
 
 use crate::{primitives::edit::splice_bodies, source::Source};
 
@@ -15,6 +16,10 @@ pub(crate) enum BodyScope {
     Function,
     Module,
 }
+
+/// The `(body, outer)` pairs a statement opens, inline up to the four
+/// arms every shape but a long `try`, `if` chain, or `match` carries.
+type SubBodies<'a> = SmallVec<[(&'a [Stmt], TextRange); 4]>;
 
 /// Returns the body and scope a class or function definition opens.
 /// `None` for every other statement.
@@ -44,9 +49,9 @@ pub(crate) fn splice_compound_arms<'src>(
 /// Returns the body and enclosing range of every direct sub-body a
 /// statement opens, the class- or function-definition suite and each arm
 /// of a compound statement alike.
-pub(crate) fn sub_bodies(stmt: &Stmt) -> Vec<(&[Stmt], TextRange)> {
+pub(crate) fn sub_bodies(stmt: &Stmt) -> SubBodies<'_> {
     if let Some((body, _)) = scoped_body(stmt) {
-        return vec![(body, stmt.range())];
+        return smallvec![(body, stmt.range())];
     }
     compound_sub_bodies(stmt)
 }
@@ -54,9 +59,9 @@ pub(crate) fn sub_bodies(stmt: &Stmt) -> Vec<(&[Stmt], TextRange)> {
 /// Returns one `(body, outer)` pair per non-empty sub-body of a compound
 /// statement. `outer` carries the enclosing arm's range, which bounds a
 /// leading-comment scan for the body's first item.
-fn compound_sub_bodies(stmt: &Stmt) -> Vec<(&[Stmt], TextRange)> {
-    let mut bodies = match stmt {
-        Stmt::For(s) => vec![(s.body.as_slice(), s.range), (s.orelse.as_slice(), s.range)],
+fn compound_sub_bodies(stmt: &Stmt) -> SubBodies<'_> {
+    let mut bodies: SubBodies<'_> = match stmt {
+        Stmt::For(s) => smallvec![(s.body.as_slice(), s.range), (s.orelse.as_slice(), s.range)],
         Stmt::If(s) => std::iter::once((s.body.as_slice(), s.range))
             .chain(
                 s.elif_else_clauses
@@ -80,9 +85,9 @@ fn compound_sub_bodies(stmt: &Stmt) -> Vec<(&[Stmt], TextRange)> {
                 (s.finalbody.as_slice(), s.range),
             ])
             .collect(),
-        Stmt::While(s) => vec![(s.body.as_slice(), s.range), (s.orelse.as_slice(), s.range)],
-        Stmt::With(s) => vec![(s.body.as_slice(), s.range)],
-        _ => Vec::new(),
+        Stmt::While(s) => smallvec![(s.body.as_slice(), s.range), (s.orelse.as_slice(), s.range)],
+        Stmt::With(s) => smallvec![(s.body.as_slice(), s.range)],
+        _ => SubBodies::new(),
     };
     bodies.retain(|(body, _)| !body.is_empty());
     bodies

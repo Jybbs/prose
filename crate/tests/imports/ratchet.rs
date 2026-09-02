@@ -97,8 +97,13 @@ pub(crate) fn baking() -> Option<PathBuf> {
 /// unset, no file sits at the path it names, or what sits there was not
 /// baked at [`VERSION`].
 pub(crate) fn baseline() -> Option<Baseline> {
-    let named = setting(BASELINE_VAR)?;
-    let held = fs_err::read_to_string(Path::new(&named)).ok()?;
+    baseline_at(Path::new(&setting(BASELINE_VAR)?))
+}
+
+/// The break set at `path`, `None` where it is unreadable, malformed,
+/// or baked at another generation.
+pub(crate) fn baseline_at(path: &Path) -> Option<Baseline> {
+    let held = fs_err::read_to_string(path).ok()?;
     serde_json::from_str::<Baseline>(&held)
         .ok()
         .filter(|read| read.version == VERSION)

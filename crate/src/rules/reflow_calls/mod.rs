@@ -29,7 +29,7 @@ use crate::{
         travel::{Landing, block_shift, shifted_block, spans_a_string_part},
         walk::walk_stmt,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     rules::{alphabetize_siblings::Reorders, reflow_signatures},
     source::Source,
 };
@@ -129,7 +129,7 @@ impl<'a> Reshaper<'a> {
         tail: usize,
     ) -> Option<String> {
         let block = self.source.slice(range);
-        let travel = if block.contains('\n') {
+        let travel = if self.source.contains_line_break(range) {
             if spans_a_string_part(self.source, expr) {
                 return None;
             }
@@ -256,6 +256,16 @@ mod tests {
     use super::*;
     use crate::testing::{applied_text, parse};
 
+    /// `source` with every edit the rule under `config` emits applied.
+    fn applied(config: &Config, source: &Source) -> String {
+        let edits = ReflowCalls::from_config(config)
+            .apply(source)
+            .into_iter()
+            .flatten()
+            .collect();
+        applied_text(source, edits)
+    }
+
     #[rstest]
     fn a_call_inside_a_replacement_field_emits_no_edit(#[values("f", "t")] prefix: &str) {
         // The narration runs long enough that the call inside it clears
@@ -282,12 +292,7 @@ mod tests {
             code_line_length: NonZeroUsize::new(30),
             ..Config::default()
         };
-        let edits = ReflowCalls::from_config(&config)
-            .apply(&source)
-            .into_iter()
-            .flatten()
-            .collect();
-        let text = applied_text(&source, edits);
+        let text = applied(&config, &source);
         // The doubly-nested `wrap` answers the row it lands on, so it
         // explodes in this pass rather than the next one.
         assert!(
@@ -301,12 +306,7 @@ mod tests {
         let src =
             "emit(alpha=1, beta=2, gamma=3, note=[\n    \"x\",\n    \"\"\"multi\nline\"\"\",\n])\n";
         let source = parse(src);
-        let edits = ReflowCalls::from_config(&Config::default())
-            .apply(&source)
-            .into_iter()
-            .flatten()
-            .collect();
-        let text = applied_text(&source, edits);
+        let text = applied(&Config::default(), &source);
         // The call explodes, yet the string-bearing list stays at the floor,
         // its rows unshifted so the string interior keeps its column.
         assert!(

@@ -8,19 +8,6 @@ input_file: crate/tests/fixtures/suppression/skip_leaves_lint_diagnostics_alone/
     "code": "inlinable-bindings",
     "end_location": {
       "column": 10,
-      "row": 5
-    },
-    "fix": null,
-    "location": {
-      "column": 5,
-      "row": 5
-    },
-    "message": "`other` is read once and inlining its value costs nothing. Consider inlining `compute()`"
-  },
-  {
-    "code": "inlinable-bindings",
-    "end_location": {
-      "column": 10,
       "row": 2
     },
     "fix": null,
@@ -29,5 +16,18 @@ input_file: crate/tests/fixtures/suppression/skip_leaves_lint_diagnostics_alone/
       "row": 2
     },
     "message": "`value` is read once and inlining its value costs nothing. Consider inlining `compute()`"
+  },
+  {
+    "code": "inlinable-bindings",
+    "end_location": {
+      "column": 10,
+      "row": 5
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 5
+    },
+    "message": "`other` is read once and inlining its value costs nothing. Consider inlining `compute()`"
   }
 ]

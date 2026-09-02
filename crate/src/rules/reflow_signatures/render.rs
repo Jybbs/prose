@@ -8,7 +8,7 @@ use ruff_text_size::{Ranged, TextRange};
 
 use super::{Layout, terms::Expansion};
 use crate::primitives::{
-    inline::{end_column, opening_width},
+    inline::{end_column, opening_width, spans_rows},
     layout::{Separator, explode_parens},
     params::parameter_sites,
     range::return_annotation_range,
@@ -24,7 +24,7 @@ impl Expansion<'_> {
         out
     }
 
-    pub(super) fn push_return_and_colon(&self, out: &mut String, fd: &StmtFunctionDef) {
+    fn push_return_and_colon(&self, out: &mut String, fd: &StmtFunctionDef) {
         if let Some(ret) = fd.returns.as_deref() {
             out.push_str(" -> ");
             let range = return_annotation_range(ret, fd, self.source);
@@ -100,7 +100,7 @@ impl Layout<'_> {
                 item: param.start(),
             };
             let rest = self.source.slice(TextRange::new(held.end(), param.end()));
-            let site_tail = opening_width(rest) + if rest.contains('\n') { 0 } else { tail };
+            let site_tail = opening_width(rest) + if spans_rows(rest) { 0 } else { tail };
             match self.reshaper.reshaped(expr, held, landing, site_tail) {
                 Some(text) => {
                     reshaped = true;

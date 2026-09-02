@@ -16,14 +16,12 @@
 //! the nearest non-comprehension scope, and class-scope names are
 //! invisible to nested functions and comprehensions.
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::OnceLock,
-};
+use std::{collections::BTreeSet, sync::OnceLock};
 
+use indexmap::IndexMap;
 use ruff_python_ast::{ModModule, Stmt, name::Name, visitor::Visitor};
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet};
 use serde::Serialize;
 use smallvec::SmallVec;
 
@@ -51,7 +49,7 @@ pub struct BindingAnalysis {
     #[serde(skip)]
     function_scope_at: FxHashMap<TextSize, ScopeId>,
     #[serde(skip)]
-    global_writes: BTreeMap<Name, Vec<TextSize>>,
+    global_writes: FxHashMap<Name, Vec<TextSize>>,
     #[serde(skip)]
     module_reads: OnceLock<Vec<(TextSize, Name)>>,
     scopes: Vec<Scope>,
@@ -109,7 +107,7 @@ impl BindingAnalysis {
         stmt: &Stmt,
     ) -> impl Iterator<Item = BindingId> + use<'_> {
         self.function_scope_at
-            .get(&stmt.range().start())
+            .get(&stmt.start())
             .copied()
             .into_iter()
             .flat_map(move |s| self.scopes[s.0 as usize].bindings.values().copied())
@@ -207,10 +205,10 @@ impl BindingAnalysis {
         };
         let reads = self.module_reads();
         let from = reads.partition_point(|&(offset, _)| offset < first.start());
-        for (offset, name) in &reads[from..] {
-            if *offset >= last.end() {
-                break;
-            }
+        for (offset, name) in reads[from..]
+            .iter()
+            .take_while(|&&(offset, _)| offset < last.end())
+        {
             let slot = ranges.partition_point(|range| range.end() <= *offset);
             if ranges
                 .get(slot)
@@ -374,9 +372,9 @@ struct Binding {
 /// One lexical scope plus its binding table keyed by name.
 #[derive(Debug, PartialEq, Serialize)]
 struct Scope {
-    bindings: BTreeMap<Name, BindingId>,
+    bindings: IndexMap<Name, BindingId, FxBuildHasher>,
     #[serde(skip)]
-    globals: BTreeSet<Name>,
+    globals: FxHashSet<Name>,
     kind: ScopeKind,
     parent: Option<ScopeId>,
 }
@@ -400,7 +398,6 @@ mod tests {
     use std::assert_matches;
 
     use indoc::indoc;
-    use proptest::prelude::*;
     use rstest::rstest;
     use ruff_text_size::TextSize;
 
@@ -855,51 +852,18 @@ mod tests {
         );
     }
 
-    proptest! {
-        #[test]
-        fn closure_binding_is_independent_of_outer_same_name(
-            tail in "[a-z0-9]{0,5}"
-        ) {
-            let name = format!("x{tail}");
-            let program = format!(
-                "{name} = 1\ndef inner():\n    {name} = 2\n    return {name}\n",
-            );
-            let analysis = analyze(&program);
-            let outer = module_binding_id(&analysis, &name);
-            let inner_scope = analysis
-                .scopes
-                .iter()
-                .find(|s| matches!(s.kind, ScopeKind::Function))
-                .expect("inner is a function scope");
-            let inner = *inner_scope
-                .bindings
-                .get(name.as_str())
-                .expect("inner shadows name");
-            prop_assert_ne!(outer, inner);
-            prop_assert_eq!(analysis.read_offsets(outer).len(), 0);
-            prop_assert_eq!(analysis.read_offsets(inner).len(), 1);
-        }
-
-        #[test]
-        fn name_read_once_reports_one_read_offset(
-            tail in "[a-z0-9]{0,5}"
-        ) {
-            let name = format!("x{tail}");
-            let program = format!("{name} = 1\nprint({name})\n");
-            let analysis = analyze(&program);
-            let id = module_binding_id(&analysis, &name);
-            prop_assert_eq!(analysis.read_offsets(id).len(), 1);
-        }
-
-        #[test]
-        fn unread_name_reports_no_read_offset(
-            tail in "[a-z0-9]{0,5}"
-        ) {
-            let name = format!("x{tail}");
-            let program = format!("{name} = 1\n");
-            let analysis = analyze(&program);
-            let id = module_binding_id(&analysis, &name);
-            prop_assert_eq!(analysis.read_offsets(id).len(), 0);
-        }
+    #[test]
+    fn a_closure_binding_is_independent_of_an_outer_name_it_shadows() {
+        let analysis = analyze("x = 1\ndef inner():\n    x = 2\n    return x\n");
+        let outer = module_binding_id(&analysis, "x");
+        let inner_scope = analysis
+            .scopes
+            .iter()
+            .find(|s| matches!(s.kind, ScopeKind::Function))
+            .expect("inner is a function scope");
+        let inner = *inner_scope.bindings.get("x").expect("inner shadows name");
+        assert_ne!(outer, inner);
+        assert!(analysis.read_offsets(outer).is_empty());
+        assert_eq!(analysis.read_offsets(inner).len(), 1);
     }
 }

@@ -3,14 +3,14 @@
 //!
 //! The search runs each rule alone first and each rule pair after,
 //! returning the first subset whose own output a second pass changes. A
-//! pair is built in registration order, the order
-//! [`Pipeline::with_filters`] seats whichever subset it is handed.
+//! pair is built in candidate order, the editing rules leading, which
+//! [`Pipeline::with_filters`] reads as a set rather than as a seating.
 
 use itertools::Itertools;
 use ruff_python_ast::ModModule;
 use ruff_python_parser::Parsed;
 
-use crate::{pipeline::Pipeline, rule::RuleId, source::Source};
+use crate::{pipeline::Pipeline, rules::RuleId, source::Source};
 
 /// How many subsets one search probes before it stops and the caller
 /// falls back to naming the whole selection. Singles and pairs cover
@@ -79,7 +79,7 @@ fn smallest_subset(
 mod tests {
     use super::*;
     use crate::{
-        rule::Rule,
+        rules::Rule,
         testing::{GroupSentinelRule, breaks_parse, never_settles, parse},
     };
 

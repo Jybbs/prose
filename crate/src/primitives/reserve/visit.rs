@@ -3,12 +3,20 @@
 use rustc_hash::FxHashMap;
 
 use super::*;
+use crate::primitives::range::overlaps;
 
 /// One collected alignment run, `candidate` where the rule aligns it
-/// to a column or leaves it alone rather than buffering each row.
+/// to a column or leaves it alone rather than buffering each row, and
+/// `scope` the statement the run forms inside, the one whose body
+/// holds a statement run or whose expressions hold a keyword or
+/// parameter run, the module itself for a module-body run.
 pub(super) struct Run {
+    /// True for a run formed over a body's statements, false for one
+    /// formed over a statement's keywords or parameters.
+    pub(super) body: bool,
     pub(super) candidate: bool,
     pub(super) members: Vec<aligner::Member>,
+    pub(super) scope: TextRange,
 }
 
 /// Collects the rule's runs and the value each member's row carries,
@@ -17,6 +25,14 @@ pub(super) struct ReserveVisitor<'a> {
     pub(super) rule: RuleId,
     pub(super) runs: Vec<Run>,
     pub(super) source: &'a Source,
+    /// The statement the walk is inside, the scope a keyword or
+    /// parameter run forms over, the module ahead of any.
+    pub(super) stmt: TextRange,
+    /// The completion of a carried table, the walk forming a body's
+    /// runs over the slices it names and descending into the statements
+    /// its windows reach alone, or `None` for a walk over the whole
+    /// tree.
+    pub(super) reform: Option<&'a Reform>,
     pub(super) values: FxHashMap<TextSize, (&'a Expr, AnyNodeRef<'a>)>,
 }
 
@@ -28,24 +44,9 @@ impl<'a> ReserveVisitor<'a> {
         self.values.insert(start, (value, parent));
     }
 
-    fn record(&mut self, groups: Vec<Vec<aligner::Member>>, candidate: bool) {
-        self.runs
-            .extend(groups.into_iter().map(|members| Run { candidate, members }));
-    }
-}
-
-impl<'a> Visitor<'a> for ReserveVisitor<'a> {
-    /// Builds the statement runs the way `align_equals` builds them, so
-    /// a multi-line statement closes its run and a held one is
-    /// transparent.
-    fn visit_body(&mut self, body: &'a [Stmt]) {
-        let source = self.source;
-        self.record(
-            aligner::line_adjacent_groups(source, body, self.rule, |stmt| {
-                equal_targets::assignment(source, stmt)
-            }),
-            false,
-        );
+    /// Notes the value of each assignment in `body` against its
+    /// statement.
+    fn note_values(&mut self, body: &'a [Stmt]) {
         for stmt in body {
             match stmt {
                 Stmt::Assign(a) => self.note(&a.value, stmt.into()),
@@ -58,15 +59,62 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
                 _ => {}
             }
         }
-        walk_body(self, body);
     }
 
-    /// Builds the keyword runs the way `align_equals` builds them, a
-    /// multi-line value closing the run after it.
+    fn record(
+        &mut self,
+        groups: Vec<Vec<aligner::Member>>,
+        candidate: bool,
+        scope: TextRange,
+        body: bool,
+    ) {
+        self.runs.extend(groups.into_iter().map(|members| Run {
+            body,
+            candidate,
+            members,
+            scope,
+        }));
+    }
+}
+
+impl<'a> Visitor<'a> for ReserveVisitor<'a> {
+    fn visit_body(&mut self, body: &'a [Stmt]) {
+        let owner = self.stmt;
+        let Some(reform) = self.reform else {
+            self.record(
+                equal_targets::assignment_groups(self.source, self.rule, body),
+                false,
+                owner,
+                true,
+            );
+            self.note_values(body);
+            for stmt in body {
+                self.visit_stmt(stmt);
+            }
+            return;
+        };
+        for slice in reform.slices(owner, body) {
+            self.record(
+                equal_targets::assignment_groups(self.source, self.rule, &body[slice.clone()]),
+                false,
+                owner,
+                true,
+            );
+            self.note_values(&body[slice]);
+        }
+        for stmt in body {
+            if overlaps(stmt.range(), &reform.windows) {
+                self.visit_stmt(stmt);
+            }
+        }
+    }
+
     fn visit_expr(&mut self, expr: &'a Expr) {
         if let Expr::Call(call) = expr {
             self.record(
                 equal_targets::keyword_groups(self.source, self.rule, call, true),
+                false,
+                self.stmt,
                 false,
             );
             for keyword in &call.arguments.keywords {
@@ -79,25 +127,14 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
     /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
 
-    /// Builds the parameter-default runs the way `align_equals` builds
-    /// them, a run aligning to a column or not at all and a multi-line
-    /// default closing the run after it.
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        let outer = std::mem::replace(&mut self.stmt, stmt.range());
         if let Stmt::FunctionDef(def) = stmt {
-            let source = self.source;
-            let groups = aligner::adjacent_member_groups(
-                source,
-                def.parameters.iter_source_order(),
-                true,
-                |param| equal_targets::parameter(source, param).into(),
-            );
-            let rule = self.rule;
             self.record(
-                groups
-                    .into_iter()
-                    .map(|group| aligner::retain_unheld(source, rule, group))
-                    .collect(),
+                equal_targets::parameter_groups(self.source, self.rule, &def.parameters),
                 true,
+                stmt.range(),
+                false,
             );
             for param in def.parameters.iter_non_variadic_params() {
                 if let Some(default) = param.default.as_deref() {
@@ -106,6 +143,7 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
             }
         }
         walk::walk_stmt(self, stmt);
+        self.stmt = outer;
     }
 }
 

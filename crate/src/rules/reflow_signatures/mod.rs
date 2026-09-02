@@ -20,7 +20,7 @@ use crate::{
         splice::splice_parses,
         walk::filter_map_over_stmts,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     rules::{alphabetize_siblings::Reorders, reflow_calls::Reshaper},
     source::Source,
 };
@@ -153,11 +153,10 @@ impl Layout<'_> {
             .start();
         let colon = self
             .source
-            .first_token_offset_in_range(
-                TextRange::new(fd.parameters.range().end(), body_start),
-                |t| t.kind() == TokenKind::Colon,
-            )
+            .first_token_offset_in_range(TextRange::new(fd.parameters.end(), body_start), |t| {
+                t.kind() == TokenKind::Colon
+            })
             .expect("function def carries a `:` between `)` and the body");
-        TextRange::new(fd.parameters.range().start(), colon + TextSize::from(1u32))
+        TextRange::new(fd.parameters.start(), colon + TextSize::from(1u32))
     }
 }

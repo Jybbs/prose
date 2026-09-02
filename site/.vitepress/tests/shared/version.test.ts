@@ -26,13 +26,13 @@ describe('readRequiresPython', () => {
   })
 })
 
-describe('readRuffTag', () => {
-  it('reads the ruff dependency tag from Cargo.toml', () => {
-    expect(version.readRuffTag(crate)).toMatch(/^\d+\.\d+\.\d+$/)
+describe('readRuffRelease', () => {
+  it('reads the ruff release from Cargo.toml', () => {
+    expect(version.readRuffRelease(crate)).toMatch(/^\d+\.\d+\.\d+$/)
   })
 
-  it('throws when the manifest carries no ruff tag', () => {
-    const dir = fixtureDir(import.meta.dirname, 'cargo-no-ruff-tag')
-    expect(() => version.readRuffTag(dir)).toThrow(/ruff_python_ast\.tag/)
+  it('throws when the manifest records no ruff release', () => {
+    const dir = fixtureDir(import.meta.dirname, 'cargo-no-ruff-release')
+    expect(() => version.readRuffRelease(dir)).toThrow(/package\.metadata\.ruff\.release/)
   })
 })

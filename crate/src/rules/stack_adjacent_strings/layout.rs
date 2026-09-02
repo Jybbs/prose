@@ -28,23 +28,11 @@ impl<'a> Layout<'a> {
     fn breaks_in_place(&self, span: TextRange, ancestors: &[AnyNodeRef]) -> bool {
         let statement = ancestors
             .iter()
-            .rev()
-            .find(|node| node.is_statement())
+            .rfind(|node| node.is_statement())
             .expect("an expression is visited inside a statement");
-        let mut open = Vec::new();
-        for token in self
-            .source
-            .tokens()
-            .in_range(TextRange::new(statement.start(), span.start()))
-        {
-            let kind = token.kind();
-            if is_opener(kind) {
-                open.push(token.start());
-            } else if is_closer(kind) {
-                open.pop();
-            }
-        }
-        open.last()
+        let head = TextRange::new(statement.start(), span.start());
+        open_brackets(self.source.tokens().in_range(head))
+            .last()
             .is_some_and(|&bracket| !self.source.same_line(bracket, span.start()))
     }
 
@@ -67,7 +55,12 @@ impl<'a> Layout<'a> {
         let pair = self
             .source
             .paren_aware_range(run.as_expression_ref(), parent);
-        if self.source.intersects_comment(pair) {
+        if !self
+            .source
+            .comment_ranges()
+            .comments_in_range(pair)
+            .is_empty()
+        {
             return;
         }
         let start = span.start();

@@ -220,6 +220,27 @@ mod tests {
             .expect("server replies within the timeout")
     }
 
+    /// The next message from the server, which is a response.
+    fn response(client: &Connection) -> Response {
+        let Message::Response(response) = recv(client) else {
+            panic!("expected a response");
+        };
+        response
+    }
+
+    /// The formatting request every formatting test sends.
+    fn formatting_message() -> Message {
+        req(
+            2,
+            Formatting::METHOD,
+            DocumentFormattingParams {
+                text_document: TextDocumentIdentifier { uri: uri() },
+                options: FormattingOptions::default(),
+                work_done_progress_params: WorkDoneProgressParams::default(),
+            },
+        )
+    }
+
     /// Drives initialize + initialized against `client`, returning the
     /// decoded capabilities so each test starts from a live session.
     fn handshake(client: &Connection) -> InitializeResult {
@@ -290,19 +311,9 @@ mod tests {
     fn formatting_request(client: &Connection) -> Vec<TextEdit> {
         client
             .sender
-            .send(req(
-                2,
-                Formatting::METHOD,
-                DocumentFormattingParams {
-                    text_document: TextDocumentIdentifier { uri: uri() },
-                    options: FormattingOptions::default(),
-                    work_done_progress_params: WorkDoneProgressParams::default(),
-                },
-            ))
+            .send(formatting_message())
             .expect("send formatting");
-        let Message::Response(response) = recv(client) else {
-            panic!("expected formatting response");
-        };
+        let response = response(client);
         serde_json::from_value::<Option<Vec<TextEdit>>>(
             response.response_result.expect("formatting result"),
         )
@@ -456,19 +467,9 @@ mod tests {
         let (client, handle, _) = boot();
         client
             .sender
-            .send(req(
-                2,
-                Formatting::METHOD,
-                DocumentFormattingParams {
-                    text_document: TextDocumentIdentifier { uri: uri() },
-                    options: FormattingOptions::default(),
-                    work_done_progress_params: WorkDoneProgressParams::default(),
-                },
-            ))
+            .send(formatting_message())
             .expect("send formatting");
-        let Message::Response(response) = recv(&client) else {
-            panic!("expected formatting response");
-        };
+        let response = response(&client);
         assert_matches!(response.response_result, Ok(Value::Null));
         teardown(&client, handle);
     }
@@ -534,9 +535,7 @@ mod tests {
                 serde_json::json!({ "bogus": true }),
             ))
             .expect("send malformed formatting");
-        let Message::Response(response) = recv(&client) else {
-            panic!("expected error response");
-        };
+        let response = response(&client);
         assert_eq!(
             response.response_result.expect_err("error").code,
             ErrorCode::InvalidParams as i32
@@ -613,9 +612,7 @@ mod tests {
                 },
             ))
             .expect("send hover");
-        let Message::Response(response) = recv(&client) else {
-            panic!("expected error response");
-        };
+        let response = response(&client);
         assert_eq!(
             response.response_result.expect_err("error").code,
             ErrorCode::MethodNotFound as i32

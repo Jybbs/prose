@@ -1,32 +1,20 @@
 //! Per-file processing: read, resolve config, cache-lookup, run the
 //! pipeline, and classify the outcome.
 
-use std::{
-    collections::BTreeSet,
-    io::{self, Read, Write},
-    path::{Path, PathBuf},
-    string::FromUtf8Error,
-    sync::mpsc,
-};
+use std::{collections::BTreeSet, path::Path, string::FromUtf8Error};
 
-use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 use ruff_notebook::NotebookIndex;
 use ruff_python_ast::PySourceType;
 use ruff_source_file::{SourceFile, SourceFileBuilder};
-use rustc_hash::FxHashMap;
-use tempfile::NamedTempFile;
 
-use super::{
-    FileOutcome, Pass, RunSetup, STDIN_NAME, has_format_change, notebook, resolve::Resolved,
-};
+use super::{FileOutcome, Pass, RunSetup, has_format_change, notebook, resolve::Resolved};
 use crate::{
     cache::{Anchor, CacheEntry, CacheEntryRef, NotebookCells, NotebookCellsRef, Rewrite},
     cli::exit_status::ExitStatus,
     diagnostics::fired_rules,
-    rule::RuleId,
+    rules::RuleId,
     source::Source,
     unstable::UnstableRewrite,
-    walker::{self, Found},
 };
 
 /// How a run answers the settle question for one file. `Eager` walks
@@ -39,24 +27,6 @@ pub(super) enum Marker {
     Eager,
     LedgerHit,
     LedgerMiss,
-}
-
-/// One walk entry's outcome paired with the block its own worker
-/// rendered, `None` for an entry that yields neither.
-type Landed = anyhow::Result<Option<(FileOutcome, Vec<u8>)>>;
-
-pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
-    let FileOutcome::Done {
-        rewrite: Rewrite::Changed(kind),
-        ..
-    } = &outcome
-    else {
-        return outcome;
-    };
-    if let Err(e) = write_atomic(path, kind.written()) {
-        return failed(ExitStatus::ConfigError, e);
-    }
-    outcome
 }
 
 /// Dispatches `source` by `pass`, collecting the as-written diagnostics
@@ -81,6 +51,14 @@ pub(super) fn failed(status: ExitStatus, e: impl std::fmt::Display) -> FileOutco
     FileOutcome::Failed(status)
 }
 
+/// The outcome of a file whose text failed to parse as `name`.
+pub(super) fn parse_failure(name: &str, e: impl std::fmt::Display) -> FileOutcome {
+    failed(
+        ExitStatus::ParseError,
+        format_args!("parse error in `{name}`: {e}"),
+    )
+}
+
 pub(super) fn process_path(
     path: &Path,
     source_type: PySourceType,
@@ -96,7 +74,7 @@ pub(super) fn process_path(
     };
     let keyed = setup
         .cache_for(pass)
-        .map(|c| (c, resolved.key_prefix.key_for(&bytes)));
+        .map(|c| (c, resolved.key_prefix.key_for(&bytes, source_type)));
     let hit = keyed.as_ref().and_then(|(c, k)| c.lookup(k));
     let bytes = match hit {
         Some(entry) => match rehydrate(path, bytes, entry, pass) {
@@ -142,81 +120,55 @@ pub(super) fn process_path(
             ..
         },
     ) = (&keyed, &outcome)
-        && worth_storing(rewrite, pass)
     {
-        c.insert(
-            k,
-            &CacheEntryRef {
-                diagnostics,
-                notebook: source_type.is_ipynb().then(|| NotebookCellsRef {
-                    code: file.source_text(),
-                    index: notebook_index.as_deref(),
-                }),
-                rewrite,
-                unstable: unstable.as_deref(),
-            },
-        );
-    }
-    // A write-back module run marks the bytes it is about to land, so
-    // the next run holding them re-keys to this entry and a rewrite of
-    // marked bytes reads as a proven settle defect.
-    if let (
-        Some((c, _)),
-        FileOutcome::Done {
-            rewrite: Rewrite::Changed(kind),
-            ..
-        },
-    ) = (&keyed, &outcome)
-        && pass.write_back()
-        && !source_type.is_ipynb()
-    {
-        c.record_own_output(&resolved.key_prefix.key_for(kind.written().as_bytes()));
+        if worth_storing(rewrite, pass) {
+            c.insert(
+                k,
+                &CacheEntryRef {
+                    diagnostics,
+                    notebook: source_type.is_ipynb().then(|| NotebookCellsRef {
+                        code: file.source_text(),
+                        index: notebook_index.as_deref(),
+                    }),
+                    rewrite,
+                    unstable: unstable.as_deref(),
+                },
+            );
+        }
+        // A write-back module run marks the bytes it is about to land, so
+        // the next run holding them re-keys to this entry and a rewrite of
+        // marked bytes reads as a proven settle defect.
+        if let Rewrite::Changed(kind) = rewrite
+            && pass.write_back()
+            && !source_type.is_ipynb()
+        {
+            c.record_own_output(
+                &resolved
+                    .key_prefix
+                    .key_for(kind.written().as_bytes(), source_type),
+            );
+        }
     }
     outcome
 }
 
-pub(super) fn process_paths<F>(paths: &[PathBuf], handle: F) -> Vec<FileOutcome>
-where
-    F: Fn(&Path, PySourceType) -> FileOutcome + Send + Sync,
-{
-    // Collecting the walk before the fan-out keeps the outcomes in the
-    // order the walker yielded, which `par_bridge` does not, so a
-    // structured report is byte-comparable between two runs.
-    walker::walk(paths)
-        .collect::<Vec<_>>()
-        .into_par_iter()
-        .filter_map(|entry| match entry {
-            Ok(Found::Formattable(path, source_type)) => Some(handle(&path, source_type)),
-            Ok(Found::PassedLink(path)) => {
-                eprintln!("note: passed over the symlink {}", path.display());
-                None
-            }
-            Err(e) => Some(walk_error(e)),
-        })
-        .collect()
-}
-
-pub(super) fn process_stdin(
+/// Routes a source text to the notebook or module pipeline path under
+/// its diagnostic `name`.
+pub(super) fn process_source(
     text: String,
+    name: String,
     source_type: PySourceType,
     resolved: &Resolved,
     pass: Pass,
+    marker: Marker,
 ) -> FileOutcome {
-    process_source(
-        text,
-        STDIN_NAME.to_owned(),
-        source_type,
-        resolved,
-        pass,
-        Marker::Eager,
-    )
-}
-
-/// Reads stdin to a string, mapping a read failure to a config-error
-/// outcome.
-pub(super) fn read_stdin<R: Read>(stdin: R) -> Result<String, FileOutcome> {
-    io::read_to_string(stdin)
-        .map_err(|e| failed(ExitStatus::ConfigError, format_args!("reading stdin: {e}")))
+    if source_type.is_ipynb() {
+        return notebook::process(text, name, resolved, pass);
+    }
+    match Source::build_module(text, name.as_str(), source_type) {
+        Ok(source) => run_pipeline(source, resolved, pass, marker),
+        Err(e) => parse_failure(&name, e),
+    }
 }
 
 /// Rebuilds the outcome `entry` records against the file's own
@@ -262,44 +214,6 @@ pub(super) fn rehydrate(
     })
 }
 
-/// Runs `handle` over the walk on the rayon pool and hands each file's
-/// rendered block to `write` in walker order, releasing a block as soon
-/// as every entry ahead of it has landed rather than once the whole
-/// walk has. Rendering happens in the worker that produced the outcome,
-/// so the only serial work left is the write itself. Returns the
-/// outcomes in walker order, the same order [`process_paths`] returns.
-pub(super) fn stream_paths<F, W>(
-    paths: &[PathBuf],
-    handle: F,
-    mut write: W,
-) -> anyhow::Result<Vec<FileOutcome>>
-where
-    F: Fn(&Path, PySourceType) -> anyhow::Result<(FileOutcome, Vec<u8>)> + Send + Sync,
-    W: FnMut(&[u8]) -> anyhow::Result<()>,
-{
-    let entries: Vec<_> = walker::walk(paths).collect();
-    let total = entries.len();
-    let (sender, receiver) = mpsc::channel();
-    let mut outcomes = Vec::with_capacity(total);
-    let mut drained = Ok(());
-    // The producer takes a thread of its own rather than a rayon scope,
-    // because a scope holds its closure to `Send` and `write` borrows
-    // the caller's stream. It fans out across the pool from there, so
-    // the draining thread stays free to write what has already landed.
-    std::thread::scope(|scope| {
-        scope.spawn(|| {
-            entries
-                .into_par_iter()
-                .enumerate()
-                .for_each_with(sender, |sender, (slot, entry)| {
-                    sender.send((slot, landed(&handle, entry))).ok();
-                });
-        });
-        drained = drain_in_order(&receiver, total, &mut outcomes, &mut write);
-    });
-    drained.map(|()| outcomes)
-}
-
 /// Collects the as-written diagnostics, and with `validate` guards the
 /// would-be rewrite against an output that fails to re-parse or to
 /// compile and against one a second pass would change.
@@ -333,51 +247,6 @@ fn diagnose_only(
     }
 }
 
-/// Writes each landed block through `write` in slot order, holding a
-/// block that arrives ahead of its predecessors until they land.
-fn drain_in_order<W>(
-    receiver: &mpsc::Receiver<(usize, Landed)>,
-    total: usize,
-    outcomes: &mut Vec<FileOutcome>,
-    write: &mut W,
-) -> anyhow::Result<()>
-where
-    W: FnMut(&[u8]) -> anyhow::Result<()>,
-{
-    let mut held: FxHashMap<usize, Landed> = FxHashMap::default();
-    let mut next = 0;
-    while next < total {
-        let Ok((slot, landed)) = receiver.recv() else {
-            break;
-        };
-        held.insert(slot, landed);
-        while let Some(landed) = held.remove(&next) {
-            next += 1;
-            if let Some((outcome, block)) = landed? {
-                write(&block)?;
-                outcomes.push(outcome);
-            }
-        }
-    }
-    Ok(())
-}
-
-/// Runs `handle` over one walk entry, reporting a passed-over symlink
-/// on stderr and turning a walk failure into its own outcome.
-fn landed<F>(handle: &F, entry: Result<Found, ignore::Error>) -> Landed
-where
-    F: Fn(&Path, PySourceType) -> anyhow::Result<(FileOutcome, Vec<u8>)>,
-{
-    match entry {
-        Ok(Found::Formattable(path, source_type)) => handle(&path, source_type).map(Some),
-        Ok(Found::PassedLink(path)) => {
-            eprintln!("note: passed over the symlink {}", path.display());
-            Ok(None)
-        }
-        Err(e) => Ok(Some((walk_error(e), Vec::new()))),
-    }
-}
-
 /// The report a ledger probe hit mints, reading the editing set off the
 /// marked input rather than walking the fresh output.
 fn marked_report(
@@ -406,28 +275,6 @@ fn narrowed_report(
         fired,
     )
     .map(Box::new)
-}
-
-/// Routes a source text to the notebook or module pipeline path under
-/// its diagnostic `name`.
-fn process_source(
-    text: String,
-    name: String,
-    source_type: PySourceType,
-    resolved: &Resolved,
-    pass: Pass,
-    marker: Marker,
-) -> FileOutcome {
-    if source_type.is_ipynb() {
-        return notebook::process(text, name, resolved, pass);
-    }
-    match Source::build_module(text, name.as_str(), source_type) {
-        Ok(source) => run_pipeline(source, resolved, pass, marker),
-        Err(e) => failed(
-            ExitStatus::ParseError,
-            format_args!("parse error in `{name}`: {e}"),
-        ),
-    }
 }
 
 /// Runs the pipeline and assembles the outcome, deferring the rewrite
@@ -522,10 +369,6 @@ fn settle_report(
     UnstableRewrite::detect(&resolved.pipeline, &resolved.config, original, formatted).map(Box::new)
 }
 
-fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
-    failed(ExitStatus::ConfigError, format_args!("cannot walk: {err}"))
-}
-
 /// True where an entry recording `rewrite` is worth writing. A
 /// write-back pass commits the rewrite over the bytes its key was drawn
 /// from, so the file it just wrote never reads that entry back, and a
@@ -533,29 +376,6 @@ fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
 /// pairing stores.
 fn worth_storing(rewrite: &Rewrite, pass: Pass) -> bool {
     !(pass.write_back() && matches!(rewrite, Rewrite::Changed(_)))
-}
-
-/// Replaces `path`'s contents with `contents` through a temporary file
-/// renamed over the target, so a write that fails partway leaves the
-/// original intact rather than truncated at its opening byte. `path`
-/// resolves through a symlink first, leaving the link in place and
-/// rewriting what it points at. Opening the target beforehand holds the
-/// permission check a direct write makes, and the temporary takes the
-/// target's mode, which a fresh temporary would otherwise narrow to
-/// owner-only. Creating that temporary needs write permission on the
-/// containing directory, which a direct write does not.
-fn write_atomic(path: &Path, contents: &str) -> io::Result<()> {
-    let target = fs_err::canonicalize(path)?;
-    let permissions = fs_err::OpenOptions::new()
-        .write(true)
-        .open(&target)?
-        .metadata()?
-        .permissions();
-    let mut temp = NamedTempFile::new_in(target.parent().unwrap_or(&target))?;
-    temp.write_all(contents.as_bytes())?;
-    temp.as_file().set_permissions(permissions)?;
-    temp.persist(&target).map_err(|e| e.error)?;
-    Ok(())
 }
 
 #[cfg(test)]
@@ -572,24 +392,9 @@ mod tests {
         cache::{Cache, RewriteKind},
         config::Config,
         pipeline::Pipeline,
-        rule::RuleId,
+        rules::RuleId,
         testing::{GroupSentinelRule, breaks_parse, never_settles, notebook_index, parse, range},
     };
-
-    /// Seeds `dir` with one module per name and returns the walk order
-    /// the driver hands them back in.
-    fn seeded(dir: &TempDir, names: &[&str]) -> Vec<PathBuf> {
-        for name in names {
-            fs_err::write(dir.path().join(name), "x = 1\n").expect("seeds the module");
-        }
-        let root = vec![dir.path().to_path_buf()];
-        walker::walk(&root)
-            .filter_map(|entry| match entry {
-                Ok(Found::Formattable(path, _)) => Some(path),
-                _ => None,
-            })
-            .collect()
-    }
 
     #[test]
     fn a_marked_output_the_next_run_rewrites_proves_the_defect() {
@@ -948,79 +753,6 @@ mod tests {
         );
     }
 
-    #[cfg(unix)]
-    #[test]
-    fn stream_paths_passes_over_a_symlink_without_a_block() {
-        let dir = TempDir::new().expect("a temporary directory");
-        seeded(&dir, &["a.py"]);
-        std::os::unix::fs::symlink(dir.path().join("a.py"), dir.path().join("link.py"))
-            .expect("links to the module");
-        let mut blocks = 0;
-
-        let outcomes = stream_paths(
-            &[dir.path().to_path_buf()],
-            |_, _| Ok((FileOutcome::Failed(ExitStatus::Clean), Vec::new())),
-            |_| {
-                blocks += 1;
-                Ok(())
-            },
-        )
-        .expect("the walk streams");
-
-        assert_eq!(blocks, 1);
-        assert_eq!(outcomes.len(), 1);
-    }
-
-    #[test]
-    fn stream_paths_returns_the_writers_failure() {
-        let dir = TempDir::new().expect("a temporary directory");
-        seeded(&dir, &["a.py"]);
-
-        let result = stream_paths(
-            &[dir.path().to_path_buf()],
-            |_, _| Ok((FileOutcome::Failed(ExitStatus::Clean), b"block".to_vec())),
-            |_| Err(anyhow::anyhow!("the writer declined")),
-        );
-
-        assert_eq!(
-            result.expect_err("the writer failure surfaces").to_string(),
-            "the writer declined",
-        );
-    }
-
-    #[test]
-    fn stream_paths_writes_each_block_in_walker_order() {
-        let dir = TempDir::new().expect("a temporary directory");
-        let order = seeded(&dir, &["a.py", "b.py", "c.py", "d.py"]);
-        let first = order.first().expect("the walk found a module").clone();
-        let mut written = Vec::new();
-
-        let outcomes = stream_paths(
-            &[dir.path().to_path_buf()],
-            |path, _| {
-                // Holding the block the walk yields first behind every
-                // other one forces the driver to reorder rather than
-                // write in completion order.
-                if path == first {
-                    std::thread::sleep(std::time::Duration::from_millis(50));
-                }
-                Ok((
-                    FileOutcome::Failed(ExitStatus::Clean),
-                    path.display().to_string().into_bytes(),
-                ))
-            },
-            |block| {
-                written.push(String::from_utf8(block.to_vec()).expect("the block is UTF-8"));
-                Ok(())
-            },
-        )
-        .expect("the walk streams");
-
-        let expected: Vec<String> = order.iter().map(|p| p.display().to_string()).collect();
-        assert_eq!(written, expected);
-        assert_eq!(outcomes.len(), expected.len());
-    }
-
     #[test]
     fn validate_reports_a_rewrite_despite_the_config_key() {
         let mut resolved = Resolved::over(Pipeline::from_rules(vec![Box::new(never_settles(
@@ -1044,13 +776,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn walk_error_returns_failed_with_config_error() {
-        let outcome = walk_error("synthetic walk failure");
-        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
-    }
-
-    #[cfg(unix)]
     #[rstest]
     #[case::changed_under_a_commit(Rewrite::text("y = 1\n".to_owned()), Pass::Rewrite, false)]
     #[case::changed_under_a_structured_commit(Rewrite::text("y = 1\n".to_owned()), Pass::Both, false)]
@@ -1064,57 +789,5 @@ mod tests {
         #[case] stores: bool,
     ) {
         assert_eq!(worth_storing(&rewrite, pass), stores);
-    }
-
-    #[test]
-    fn write_atomic_holds_the_original_where_no_temporary_can_land() {
-        use std::{fs::Permissions, os::unix::fs::PermissionsExt};
-
-        let dir = TempDir::new().expect("a temporary directory");
-        let file = dir.path().join("t.py");
-        fs_err::write(&file, "x = 1\n").expect("seeds the file");
-        fs_err::set_permissions(dir.path(), Permissions::from_mode(0o500)).expect("seals the dir");
-
-        let result = write_atomic(&file, "y = 2\n");
-
-        fs_err::set_permissions(dir.path(), Permissions::from_mode(0o700))
-            .expect("reopens the dir");
-        assert_matches!(result, Err(_));
-        assert_eq!(fs_err::read_to_string(&file).expect("reads"), "x = 1\n");
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn write_atomic_keeps_the_targets_mode() {
-        use std::{fs::Permissions, os::unix::fs::PermissionsExt};
-
-        let dir = TempDir::new().expect("a temporary directory");
-        let file = dir.path().join("t.py");
-        fs_err::write(&file, "x = 1\n").expect("seeds the file");
-        fs_err::set_permissions(&file, Permissions::from_mode(0o755)).expect("sets the mode");
-
-        write_atomic(&file, "y = 2\n").expect("writes the file");
-
-        let mode = fs_err::metadata(&file)
-            .expect("metadata")
-            .permissions()
-            .mode();
-        assert_eq!(mode & 0o777, 0o755);
-        assert_eq!(fs_err::read_to_string(&file).expect("reads"), "y = 2\n");
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn write_atomic_rewrites_through_a_symlink_leaving_the_link() {
-        let dir = TempDir::new().expect("a temporary directory");
-        let target = dir.path().join("real.py");
-        let link = dir.path().join("link.py");
-        fs_err::write(&target, "x = 1\n").expect("seeds the target");
-        std::os::unix::fs::symlink(&target, &link).expect("links to the target");
-
-        write_atomic(&link, "y = 2\n").expect("writes the file");
-
-        assert!(link.is_symlink());
-        assert_eq!(fs_err::read_to_string(&target).expect("reads"), "y = 2\n");
     }
 }

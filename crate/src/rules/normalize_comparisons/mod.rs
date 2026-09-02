@@ -10,11 +10,13 @@
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, CmpOp, ExprCompare};
 
+use ruff_text_size::Ranged;
+
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::walk::{Descent, filter_map_over_exprs, filter_map_over_parented_exprs},
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 
@@ -65,7 +67,10 @@ impl NormalizeComparisons {
         if self.operand_order
             && let Some(reflected) = reflected(op)
             && constancy(left) > constancy(right)
-            && !source.intersects_comment(test.compare)
+            && source
+                .comment_ranges()
+                .comments_in_range(test.compare.range())
+                .is_empty()
         {
             op = reflected;
             std::mem::swap(&mut left, &mut right);
@@ -128,7 +133,7 @@ mod tests {
 
     /// The two-operand test the lone comparison statement of `source`
     /// states.
-    fn test_of(source: &Source) -> Option<Test<'_>> {
+    pub(super) fn test_of(source: &Source) -> Option<Test<'_>> {
         Test::of(
             first_expr(source)
                 .as_compare_expr()

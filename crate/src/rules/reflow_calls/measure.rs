@@ -3,18 +3,15 @@
 //! exploded closing `)` drops to, and whether a literal holding a call
 //! is one `reflow-collections` expands once its row lands.
 
-use std::borrow::Cow;
-
 use ruff_python_ast::{Expr, ExprCall, helpers::any_over_expr, token::TokenKind};
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use super::Exploder;
 use crate::primitives::{
-    edit::apply_inline_edits,
-    inline::{end_column, indent_width},
+    edit::{apply_inline_edits, placed_head},
+    inline::{end_column, indent_width, last_line, settled_width, spans_rows},
     layout::requires_expand,
-    padding,
     tokens::{is_closer, is_opener},
 };
 
@@ -25,36 +22,26 @@ impl<'a> Exploder<'a> {
     /// walk, a `reserved` offset starts from the column `align_equals`
     /// shifts its row to.
     fn placed_column(&self, offset: TextSize, reserved: bool) -> usize {
-        let placed = self.placed_head(offset);
-        let tail = placed.rsplit('\n').next().unwrap_or(&placed);
-        let back = TextSize::new(u32::try_from(tail.len()).unwrap_or(u32::MAX));
-        let row_start = self
-            .source
-            .text()
-            .line_start(offset)
-            .max(offset.checked_sub(back).unwrap_or_default());
+        let placed = placed_head(self.source, &self.edits, offset, self.region.start());
+        let row_start = self.source.text().line_start(offset).max(
+            offset
+                .checked_sub(last_line(&placed).text_len())
+                .unwrap_or_default(),
+        );
         let row = TextRange::new(row_start, offset);
-        let mut column = end_column(&placed, self.origin_column)
-            .saturating_add_signed(-padding::slack(self.source, self.padding, row));
-        if placed.contains('\n') {
+        let mut column = settled_width(
+            self.source,
+            self.padding,
+            row,
+            end_column(&placed, self.origin_column),
+        );
+        if spans_rows(&placed) {
             column = column.saturating_add_signed(self.line_shift);
         }
         if self.indent.is_some() || !reserved {
             return column;
         }
         self.reservations.column(offset, || column)
-    }
-
-    /// The text ahead of `offset` on its logical line, clipped to this
-    /// walk's region and rendered with the edits the walk emitted so
-    /// far.
-    fn placed_head(&self, offset: TextSize) -> Cow<'a, str> {
-        let start = self
-            .source
-            .logical_line_start(offset)
-            .start()
-            .max(self.region.start());
-        apply_inline_edits(self.source, TextRange::new(start, offset), &self.edits)
     }
 
     /// An offset on the row whose indent the row carrying `offset`
@@ -138,8 +125,8 @@ impl<'a> Exploder<'a> {
         {
             return indent;
         }
-        let placed = self.placed_head(anchor);
-        indent_width(placed.rsplit('\n').next().unwrap_or(&placed))
+        let placed = placed_head(self.source, &self.edits, anchor, self.region.start());
+        indent_width(last_line(&placed))
     }
 
     /// The column `call`'s `(` reaches once this walk's earlier edits
@@ -148,6 +135,6 @@ impl<'a> Exploder<'a> {
     /// to in a module walk.
     pub(super) fn open_paren_column(&self, call: &ExprCall) -> usize {
         let callee = apply_inline_edits(self.source, call.func.range(), &self.edits);
-        self.placed_column(call.arguments.start(), !callee.contains('\n'))
+        self.placed_column(call.arguments.start(), !spans_rows(&callee))
     }
 }

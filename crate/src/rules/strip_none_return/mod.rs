@@ -12,7 +12,7 @@ use crate::{
     primitives::{
         edit::singleton_groups, range::return_annotation_range, walk::filter_map_over_stmts,
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 
@@ -60,7 +60,7 @@ fn strip(source: &Source, fd: &StmtFunctionDef) -> Option<Edit> {
     }
     let annotation = return_annotation_range(returns, fd, source);
     Some(Edit::range_deletion(TextRange::new(
-        fd.parameters.range().end(),
+        fd.parameters.end(),
         annotation.end(),
     )))
 }

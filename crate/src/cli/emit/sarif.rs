@@ -6,6 +6,7 @@ use std::{
 };
 
 use ruff_diagnostics::Edit;
+use ruff_notebook::NotebookIndex;
 use ruff_source_file::{LineColumn, SourceFile};
 use ruff_text_size::Ranged;
 use serde_sarif::sarif::{
@@ -14,8 +15,16 @@ use serde_sarif::sarif::{
     Sarif as SarifDoc, ToolComponent,
 };
 
-use super::{Emitter, EmitterSummary, Run, diagnostics, write_json_line};
-use crate::{diagnostics::Diagnostic, file_uri, findings::line_columns};
+use super::{Emitter, EmitterSummary, Run, UnstableEntry, diagnostics, write_json_line};
+use crate::{
+    diagnostics::Diagnostic,
+    file_uri,
+    findings::{cell_message, line_columns, located},
+    rules::render_slugs,
+};
+
+/// The rule id an unstable-output result reports under.
+const UNSTABLE_RULE: &str = "unstable-output";
 
 pub(crate) struct Sarif;
 
@@ -24,11 +33,11 @@ impl Emitter for Sarif {
         &self,
         writer: &mut dyn Write,
         runs: &[Run<'_>],
-        _summary: &EmitterSummary,
+        summary: &EmitterSummary,
     ) -> io::Result<()> {
         let document = SarifDoc::builder()
             .version("2.1.0")
-            .runs(vec![sarif_run(runs)])
+            .runs(vec![sarif_run(runs, summary)])
             .build();
         write_json_line(writer, &document)
     }
@@ -74,12 +83,17 @@ fn sarif_fix(file: &SourceFile, edits: &[Edit]) -> Fix {
         .build()
 }
 
-fn sarif_result(file: &SourceFile, diag: &Diagnostic) -> SarifResult {
-    let (start, end) = line_columns(file, diag.range);
+fn sarif_result(
+    file: &SourceFile,
+    index: Option<&NotebookIndex>,
+    diag: &Diagnostic,
+) -> SarifResult {
+    let (start, end, cell) = located(file, index, diag.range);
+    let message = cell_message(&diag.message, cell);
     let builder = SarifResult::builder()
         .rule_id(diag.rule.as_str())
         .level(ResultLevel::Warning)
-        .message(diag.message.as_str())
+        .message(message.as_str())
         .locations(vec![
             Location::builder()
                 .physical_location(
@@ -96,15 +110,44 @@ fn sarif_result(file: &SourceFile, diag: &Diagnostic) -> SarifResult {
     }
 }
 
-fn sarif_run(runs: &[Run<'_>]) -> SarifRun {
+/// The result an unstable rewrite lands as, the escalated exit's cause
+/// carried into the document a code-scanning upload reads.
+fn unstable_result(entry: &UnstableEntry) -> SarifResult {
+    let message = format!(
+        "prose produced output a second run would change ({})",
+        render_slugs(&entry.rules),
+    );
+    SarifResult::builder()
+        .rule_id(UNSTABLE_RULE)
+        .level(ResultLevel::Error)
+        .message(message.as_str())
+        .locations(vec![
+            Location::builder()
+                .physical_location(
+                    PhysicalLocation::builder()
+                        .artifact_location(
+                            ArtifactLocation::builder()
+                                .uri(file_uri::from_path(&entry.file))
+                                .build(),
+                        )
+                        .build(),
+                )
+                .build(),
+        ])
+        .build()
+}
+
+fn sarif_run(runs: &[Run<'_>], summary: &EmitterSummary) -> SarifRun {
     let rules: Vec<ReportingDescriptor> = diagnostics(runs)
-        .map(|(_, _, d)| d.rule)
+        .map(|(_, _, d)| d.rule.as_str())
+        .chain((!summary.unstable.is_empty()).then_some(UNSTABLE_RULE))
         .collect::<BTreeSet<_>>()
         .into_iter()
-        .map(|id| ReportingDescriptor::builder().id(id.as_str()).build())
+        .map(|id| ReportingDescriptor::builder().id(id).build())
         .collect();
     let results: Vec<SarifResult> = diagnostics(runs)
-        .map(|(file, _index, diag)| sarif_result(file, diag))
+        .map(|(file, index, diag)| sarif_result(file, index, diag))
+        .chain(summary.unstable.iter().map(unstable_result))
         .collect();
     SarifRun::builder()
         .tool(

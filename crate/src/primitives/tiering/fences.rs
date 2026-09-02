@@ -7,7 +7,7 @@ use itertools::Itertools;
 use ruff_python_ast::{Expr, Stmt, helpers::any_over_expr};
 use rustc_hash::FxHashSet;
 
-use super::refs::root_name;
+use super::{reach::invoked, refs::root_name};
 
 /// The slot of every statement in `body` that fences the run, being a
 /// class whose base list runs a hook this module cannot read. Nothing
@@ -40,12 +40,8 @@ fn runs_opaque_code(stmt: &Stmt, defined: &FxHashSet<&str>) -> bool {
 /// True where `expr` calls or subscripts something this module does not
 /// define, which runs code no static read of the module reaches.
 fn runs_a_foreign_hook(expr: &Expr, defined: &FxHashSet<&str>) -> bool {
-    let invoked = match expr {
-        Expr::Call(call) => &call.func,
-        Expr::Subscript(subscript) => &subscript.value,
-        _ => return false,
-    };
-    root_name(invoked).is_none_or(|name| !defined.contains(name))
+    invoked(expr)
+        .is_some_and(|invoked| root_name(invoked).is_none_or(|name| !defined.contains(name)))
 }
 
 #[cfg(test)]

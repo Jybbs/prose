@@ -3,7 +3,8 @@
 //! block while descending into every other compound body.
 
 use ruff_python_ast::{
-    Comprehension, ExceptHandler, Expr, ExprContext, ExprName, Stmt, StmtClassDef, StmtFunctionDef,
+    Comprehension, ExceptHandler, Expr, ExprContext, ExprName, Pattern, PatternMatchAs,
+    PatternMatchMapping, PatternMatchStar, Stmt, StmtClassDef, StmtFunctionDef,
     statement_visitor::{StatementVisitor, walk_stmt},
     visitor::{self, Visitor},
 };
@@ -48,6 +49,22 @@ impl<'src> Visitor<'src> for BindingWalker<'src> {
             self.names.push(name.id.as_str());
         }
         visitor::walk_expr(self, expr);
+    }
+
+    fn visit_pattern(&mut self, pattern: &'src Pattern) {
+        match pattern {
+            Pattern::MatchAs(PatternMatchAs {
+                name: Some(name), ..
+            })
+            | Pattern::MatchStar(PatternMatchStar {
+                name: Some(name), ..
+            })
+            | Pattern::MatchMapping(PatternMatchMapping {
+                rest: Some(name), ..
+            }) => self.names.push(name.as_str()),
+            _ => {}
+        }
+        visitor::walk_pattern(self, pattern);
     }
 
     fn visit_stmt(&mut self, stmt: &'src Stmt) {

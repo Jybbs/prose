@@ -10,7 +10,9 @@
 //! divergent range against the source, and `insert_edit` keeps a rule's own
 //! accumulator in that sorted order as it emits. The `forward_*`
 //! functions move an offset, a range, an edit list, or a notebook's
-//! cell boundaries through the `SourceMap` of an applied edit set.
+//! cell boundaries through the `SourceMap` of an applied edit set, and
+//! `shifted_past` reads the same map for a boundary no edit replaced,
+//! the slide the reparse between rules carries over every held range.
 
 use std::borrow::Cow;
 
@@ -23,7 +25,9 @@ mod apply;
 mod offsets;
 
 pub(crate) use apply::{apply_edits_mapped, apply_inline_edits, splice_bodies};
-pub(crate) use offsets::{forward_offsets, forward_range, forward_start, narrowed_replacement};
+pub(crate) use offsets::{
+    forward_offsets, forward_range, forward_start, narrowed_replacement, shifted_past,
+};
 
 /// True when any element of `parts` is `Cow::Owned`, the signal a
 /// rewrite produced fresh content rather than a borrow of the source.
@@ -47,12 +51,32 @@ pub(crate) fn joins_an_identifier(c: char) -> bool {
 /// `text` carrying a leading space where the character before `start`
 /// would otherwise run into it, as `return[x for x in xs]` does.
 pub(crate) fn padded(source: &Source, start: TextSize, text: String) -> String {
-    let merges = text.starts_with(joins_an_identifier)
-        && source.text()[..start.to_usize()]
-            .chars()
-            .next_back()
-            .is_some_and(joins_an_identifier);
-    if merges { format!(" {text}") } else { text }
+    if text.starts_with(joins_an_identifier) && joins_before(source, start) {
+        format!(" {text}")
+    } else {
+        text
+    }
+}
+
+/// True where the character ahead of `offset` joins an identifier, so
+/// text opening with one placed there runs into it.
+pub(crate) fn joins_before(source: &Source, offset: TextSize) -> bool {
+    source.text()[..offset.to_usize()]
+        .chars()
+        .next_back()
+        .is_some_and(joins_an_identifier)
+}
+
+/// The text ahead of `offset` on its logical line, clipped to `floor`
+/// and rendered with `edits` applied.
+pub(crate) fn placed_head<'a>(
+    source: &'a Source,
+    edits: &[Edit],
+    offset: TextSize,
+    floor: TextSize,
+) -> Cow<'a, str> {
+    let start = source.logical_line_start(offset).start().max(floor);
+    apply_inline_edits(source, TextRange::new(start, offset), edits)
 }
 
 /// The edit rewriting `range` to `n` copies of `unit`, a deletion when

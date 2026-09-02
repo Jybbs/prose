@@ -28,8 +28,8 @@ pub(crate) fn is_collapsible(expr: &Expr) -> bool {
 /// bracket ending its line and its closing bracket opening its own.
 /// Every other break is a fracture.
 pub(crate) fn is_column_shaped(slice: &str) -> bool {
-    flush_bracket_open(slice).is_some_and(|(_, body)| {
-        body.rsplit_once('\n')
+    flush_bracket_open(slice).is_some_and(|body| {
+        body.rsplit_once(['\n', '\r'])
             .is_some_and(|(_, close)| close.trim_start().len() == 1)
     })
 }

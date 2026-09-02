@@ -2,7 +2,10 @@
 
 use std::{collections::BTreeSet, error::Error};
 
-use prose::{config::Config, findings::lint_records_json, pipeline::Pipeline, source::Source};
+use prose::{
+    config::Config, diagnostics::Severity, findings::lint_records_json, pipeline::Pipeline,
+    rules::RuleId, source::Source,
+};
 use wasm_bindgen::prelude::*;
 
 /// The output of [`format`]: the rewritten source, the effective
@@ -25,8 +28,8 @@ pub struct FormatResult {
 /// # Errors
 ///
 /// Throws a `JsError` when `config_toml` is not valid config TOML,
-/// when `source` does not parse as Python, or when a rule's output
-/// fails to re-parse.
+/// when `source` does not parse as Python, or when a rule's output is
+/// rejected by the reparse, the compile gate, or the batch splice.
 #[wasm_bindgen]
 pub fn format(config_toml: &str, source: &str) -> Result<FormatResult, JsError> {
     // `JsError` construction calls a wasm import that panics on a
@@ -53,7 +56,11 @@ fn try_format(config_toml: &str, source: &str) -> Result<FormatResult, Box<dyn E
     let config = Config::from_prose_toml_str(config_toml)?;
     let pipeline = Pipeline::with_defaults(&config);
     let (formatted, diagnostics) = pipeline.run(source.parse::<Source>()?)?;
-    let fired: BTreeSet<&str> = diagnostics.iter().map(|diag| diag.rule.as_str()).collect();
+    let fired: BTreeSet<&str> = diagnostics
+        .iter()
+        .filter(|diag| diag.severity == Severity::Format)
+        .map(|diag| diag.rule.as_str())
+        .collect();
     Ok(FormatResult {
         config: config.to_toml(),
         diagnostics: lint_records_json(formatted.source_file(), &diagnostics).unwrap_or_default(),
@@ -61,8 +68,9 @@ fn try_format(config_toml: &str, source: &str) -> Result<FormatResult, Box<dyn E
         formatted: formatted.text().to_owned(),
         unstable_rules: pipeline
             .unsettled(&formatted)
-            .into_iter()
-            .map(|rule| rule.as_str().to_owned())
+            .iter()
+            .map(RuleId::as_str)
+            .map(String::from)
             .collect(),
     })
 }
@@ -78,7 +86,7 @@ mod tests {
     const BARE_IMPORT_LINT: &str = "import os\n\nos.getcwd()\n";
 
     fn formatted(config_toml: &str, source: &str) -> FormatResult {
-        format(config_toml, source).unwrap_or_else(|_| panic!("format succeeds"))
+        format(config_toml, source).expect("format succeeds")
     }
 
     #[test]

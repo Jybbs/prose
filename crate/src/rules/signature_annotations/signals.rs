@@ -3,6 +3,7 @@
 
 use std::collections::BTreeSet;
 
+use itertools::Itertools;
 use ruff_python_ast::{Expr, LiteralExpressionRef, Number, UnaryOp};
 
 /// The signals a parameter draws toward an inferred annotation, folded
@@ -52,11 +53,7 @@ impl SignalSet {
         if self.opaque {
             return None;
         }
-        let mut types = self.types.iter().copied();
-        let only = types.next()?;
-        if types.next().is_some() {
-            return None;
-        }
+        let only = self.types.iter().copied().exactly_one().ok()?;
         Some(if self.has_none {
             format!("{only} | None")
         } else {

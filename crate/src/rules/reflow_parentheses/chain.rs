@@ -137,26 +137,13 @@ mod tests {
     use super::*;
     use crate::testing::{first_expr, parse};
 
-    /// `src`'s chain divided with no pair shedding, each operand as the
-    /// source spells it.
-    fn divided(src: &str) -> Option<Vec<String>> {
+    /// `src`'s chain divided with every grouping pair shedding where
+    /// `sheds` and none otherwise, each operand as the source spells it.
+    fn divided(src: &str, sheds: bool) -> Option<Vec<String>> {
         let source = parse(src);
         let expr = first_expr(&source);
-        let holds = |_: TextRange| false;
-        operands(&source, expr, &holds).map(|found| {
-            found
-                .iter()
-                .map(|o| source.slice(o.range).to_owned())
-                .collect()
-        })
-    }
-
-    /// `src`'s chain divided with every grouping pair shedding.
-    fn divided_shedding(src: &str) -> Option<Vec<String>> {
-        let source = parse(src);
-        let expr = first_expr(&source);
-        let all = |_: TextRange| true;
-        operands(&source, expr, &all).map(|found| {
+        let rule = |_: TextRange| sheds;
+        operands(&source, expr, &rule).map(|found| {
             found
                 .iter()
                 .map(|o| source.slice(o.range).to_owned())
@@ -185,7 +172,7 @@ mod tests {
     #[case("a if b else c")]
     #[case("-a")]
     fn operands_declines_an_expression_that_is_no_chain(#[case] src: &str) {
-        assert!(divided(src).is_none());
+        assert!(divided(src, false).is_none());
     }
 
     #[rstest]
@@ -202,7 +189,7 @@ mod tests {
         #[case] src: &str,
         #[case] expected: &[&str],
     ) {
-        let divided = divided(src).expect("the source holds a chain");
+        let divided = divided(src, false).expect("the source holds a chain");
         assert_eq!(
             divided.iter().map(String::as_str).collect::<Vec<_>>(),
             expected
@@ -213,7 +200,7 @@ mod tests {
     #[case("a + (b + c) + d", &["a", "b", "c", "d"])]
     #[case("a and (b == 1)", &["a", "b == 1"])]
     fn operands_divide_through_a_pair_the_pass_sheds(#[case] src: &str, #[case] expected: &[&str]) {
-        let divided = divided_shedding(src).expect("the source holds a chain");
+        let divided = divided(src, true).expect("the source holds a chain");
         assert_eq!(
             divided.iter().map(String::as_str).collect::<Vec<_>>(),
             expected
@@ -227,7 +214,7 @@ mod tests {
         #[case] src: &str,
         #[case] expected: &[&str],
     ) {
-        let divided = divided_shedding(src).expect("the source holds a chain");
+        let divided = divided(src, true).expect("the source holds a chain");
         assert_eq!(
             divided.iter().map(String::as_str).collect::<Vec<_>>(),
             expected

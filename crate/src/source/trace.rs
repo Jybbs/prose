@@ -8,7 +8,7 @@ use std::{
     sync::LazyLock,
 };
 
-use crate::rule::RuleId;
+use crate::rules::RuleId;
 
 /// True where `PROSE_CARRY_TRACE` is set in the environment.
 static ENABLED: LazyLock<bool> = LazyLock::new(|| env::var_os("PROSE_CARRY_TRACE").is_some());
@@ -79,17 +79,18 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::declined(false, true, true, Outcome::Declined)]
-    #[case::absent(true, false, false, Outcome::Absent)]
-    #[case::dropped(true, true, false, Outcome::Dropped)]
-    #[case::carried(true, true, true, Outcome::Carried)]
+    #[case::declined(false, true, true, Outcome::Declined, "declined")]
+    #[case::absent(true, false, false, Outcome::Absent, "absent")]
+    #[case::dropped(true, true, false, Outcome::Dropped, "dropped")]
+    #[case::carried(true, true, true, Outcome::Carried, "carried")]
     fn outcome_of_names_what_became_of_the_table(
         #[case] permitted: bool,
         #[case] held: bool,
         #[case] moved: bool,
         #[case] expected: Outcome,
+        #[case] spelling: &str,
     ) {
         assert_eq!(Outcome::of(permitted, held, moved), expected);
-        assert_eq!(expected.to_string(), format!("{expected:?}").to_lowercase());
+        assert_eq!(expected.to_string(), spelling);
     }
 }

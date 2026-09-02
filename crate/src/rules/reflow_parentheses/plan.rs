@@ -16,8 +16,9 @@ use crate::{
     primitives::{
         fracture::outermost,
         inline::{carries_a_continuation, folded_line_form},
+        slots::starting_within,
         splice::splice_preserves_tree,
-        tokens::{is_closer, is_opener},
+        tokens::{is_closer, is_opener, tokens_within},
         walk::{Descent, ParentedProbe, filter_map_over_exprs, walk_parented_exprs},
     },
     source::Source,
@@ -86,19 +87,16 @@ impl<'src> ParentedProbe<'src> for Probe<'src> {
 /// `inner` itself opens and `shed` reports this pass leaves standing.
 pub(super) fn breaks_held_inside(source: &Source, inner: TextRange, shed: Sheds) -> bool {
     let mut depth = 0_usize;
-    source
-        .tokens_overlapping(inner)
-        .filter(|token| inner.contains(token.start()))
-        .all(|token| {
-            if !shed(token.range()) {
-                if is_opener(token.kind()) {
-                    depth += 1;
-                } else if is_closer(token.kind()) {
-                    depth = depth.saturating_sub(1);
-                }
+    tokens_within(source, inner).all(|token| {
+        if !shed(token.range()) {
+            if is_opener(token.kind()) {
+                depth += 1;
+            } else if is_closer(token.kind()) {
+                depth = depth.saturating_sub(1);
             }
-            depth > 0 || token.kind() != TokenKind::NonLogicalNewline
-        })
+        }
+        depth > 0 || token.kind() != TokenKind::NonLogicalNewline
+    })
 }
 
 /// Every grouping pair the module carries a candidate for, ascending by
@@ -137,10 +135,7 @@ pub(super) fn shedding_inside<'c, 'src>(
     range: TextRange,
     candidates: &'c [Candidate<'src>],
 ) -> impl Iterator<Item = &'c Candidate<'src>> {
-    let from = candidates.partition_point(|other| other.pair.start() < range.start());
-    candidates[from..]
-        .iter()
-        .take_while(move |other| other.pair.start() < range.end())
+    starting_within(candidates, range, |other| other.pair.start())
         .filter(move |other| other.sheds && range.contains_range(other.pair))
 }
 
@@ -174,7 +169,7 @@ fn candidate<'src>(
     // `shed-backslash-continuations`, which runs ahead of this rule.
     if expr.is_named_expr()
         || (is_return_annotation(expr, parent) && source.contains_line_break(pair))
-        || source.intersects_comment(pair)
+        || !source.comment_ranges().comments_in_range(pair).is_empty()
         || carries_a_continuation(source.slice(pair))
     {
         return None;

@@ -8,8 +8,10 @@ use std::{
     path::Path,
 };
 
+use itertools::Itertools;
+
 use crate::{
-    common::{Hit, SHOWN, Tally, WIDTHS_VAR, setting},
+    common::{Hit, SHOWN, Tally, WIDTHS_VAR, remainder, setting},
     execute::TIMEOUT_VAR,
     outcome::Kind,
     records::{Break, Frame, Width},
@@ -54,14 +56,13 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
         ("unmeasured, a run left no record", &found.unmeasured),
     ] {
         if !listed.is_empty() {
-            let _ = write!(rendered, "\n\n{heading} ({}):", listed.len());
-            for module in listed.iter().take(SHOWN) {
-                let _ = write!(rendered, "\n  {module}");
-            }
-            let rest = listed.len().saturating_sub(SHOWN);
-            if rest > 0 {
-                let _ = write!(rendered, "\n  ... and {rest} more");
-            }
+            let _ = write!(
+                rendered,
+                "\n\n{heading} ({}):\n  {}{}",
+                listed.len(),
+                listed.iter().take(SHOWN).format("\n  "),
+                remainder(listed.len()),
+            );
         }
     }
     rendered

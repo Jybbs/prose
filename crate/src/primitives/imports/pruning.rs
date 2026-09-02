@@ -162,7 +162,8 @@ fn prune_import_aliases(
     keep: impl Fn(usize) -> bool,
 ) -> Vec<Edit> {
     let kept = (0..names.len()).filter(|&index| keep(index)).count();
-    if kept == names.len() || !stands_alone(source, stmt) || source.intersects_comment(stmt) {
+    let inside_comment = !source.comment_ranges().comments_in_range(stmt).is_empty();
+    if kept == names.len() || !stands_alone(source, stmt) || inside_comment {
         return Vec::new();
     }
     if kept == 0 {

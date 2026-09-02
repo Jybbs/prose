@@ -28,16 +28,14 @@ impl Walk<'_> {
     /// for a function or class.
     fn header_rows(&self, statement: &Stmt) -> Range<usize> {
         let (head, body) = match statement {
-            Stmt::ClassDef(class) => (class.name.range().start(), class.body.first()),
-            Stmt::FunctionDef(function) => (function.name.range().start(), function.body.first()),
-            _ => (statement.range().start(), None),
+            Stmt::ClassDef(class) => (class.name.start(), class.body.first()),
+            Stmt::FunctionDef(function) => (function.name.start(), function.body.first()),
+            _ => (statement.start(), None),
         };
         let start = row_of(self.lines, usize::from(head));
         match body {
-            Some(first) => {
-                start..row_of(self.lines, usize::from(first.range().start())).max(start + 1)
-            }
-            None => start..row_of(self.lines, usize::from(statement.range().end())) + 1,
+            Some(first) => start..row_of(self.lines, usize::from(first.start())).max(start + 1),
+            None => start..row_of(self.lines, usize::from(statement.end())) + 1,
         }
     }
 }

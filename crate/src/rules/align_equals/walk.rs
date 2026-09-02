@@ -33,12 +33,8 @@ impl Visitor<'_> {
     /// Aligns each adjacent assignment run in `body`, descending into
     /// every nested block the walk reaches.
     fn process_body(&mut self, body: &[Stmt]) {
-        let source = self.walker.source;
-        for group in aligner::line_adjacent_groups(source, body, self.walker.rule, |s| {
-            equal_targets::assignment(source, s)
-        }) {
-            self.runs.push(Run::Buffered(group));
-        }
+        let groups = equal_targets::assignment_groups(self.walker.source, self.walker.rule, body);
+        self.runs.extend(groups.into_iter().map(Run::Buffered));
     }
 
     /// Aligns each line-adjacent run of `call`'s keyword arguments that
@@ -57,24 +53,14 @@ impl Visitor<'_> {
         }
     }
 
-    /// Walks `params` through [`aligner::adjacent_member_groups`] with
-    /// [`equal_targets::parameter`], emitting an alignment pass for each
-    /// run of defaulted parameters. A multi-line default closes the run
-    /// after it, so the parameters past it align as a separate group,
-    /// mirroring an exploded call's keyword runs.
+    /// Walks `params` through [`equal_targets::parameter_groups`],
+    /// emitting an alignment pass for each run of defaulted parameters.
+    /// A multi-line default closes the run after it, so the parameters
+    /// past it align as a separate group, mirroring an exploded call's
+    /// keyword runs.
     fn process_parameters(&mut self, params: &Parameters) {
-        let source = self.walker.source;
-        let groups =
-            aligner::adjacent_member_groups(source, params.iter_source_order(), true, |p| {
-                equal_targets::parameter(source, p).into()
-            });
-        for group in groups {
-            self.runs.push(Run::Candidate(aligner::retain_unheld(
-                source,
-                self.walker.rule,
-                group,
-            )));
-        }
+        let groups = equal_targets::parameter_groups(self.walker.source, self.walker.rule, params);
+        self.runs.extend(groups.into_iter().map(Run::Candidate));
     }
 }
 

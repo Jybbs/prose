@@ -30,44 +30,21 @@ pub(crate) use entries::{entry_carrying_sections, entry_runs};
 pub(crate) use grammar::{section_heading, sibling_entry_head, typed_entry_head};
 pub(crate) use scan::{LineScan, LineScanner, ScannedLine, opens_structure};
 
-/// Receiver for the docstring walker. Implementors handle each
-/// docstring `StringLiteral` reached in source order, paired with the
-/// class or function definition whose body opens on it and `None` for
-/// the module docstring. Call `walk` to drive the receiver across
-/// `source`'s module body.
-trait DocstringHandler<'src> {
-    fn handle(&mut self, owner: Option<&'src Stmt>, lit: &'src StringLiteral);
-
-    fn walk(&mut self, source: &'src Source)
-    where
-        Self: Sized,
-    {
-        let mut visitor = Visitor { handler: self };
-        let body = &source.ast().body;
-        visitor.consider(None, body);
-        visitor.visit_body(body);
-    }
+/// The walker driving one function across every docstring in a body,
+/// each paired with the class or function definition whose body opens
+/// on it.
+struct Walker<'a, F> {
+    f: &'a mut F,
 }
 
-struct Visitor<'a, H> {
-    handler: &'a mut H,
-}
-
-impl<H> Visitor<'_, H> {
-    fn consider<'src>(&mut self, owner: Option<&'src Stmt>, body: &'src [Stmt])
-    where
-        H: DocstringHandler<'src>,
-    {
-        if let Some(lit) = body_docstring(body) {
-            self.handler.handle(owner, lit);
-        }
-    }
-}
-
-impl<'src, H: DocstringHandler<'src>> StatementVisitor<'src> for Visitor<'_, H> {
+impl<'src, F: FnMut(Option<&'src Stmt>, &'src StringLiteral)> StatementVisitor<'src>
+    for Walker<'_, F>
+{
     fn visit_stmt(&mut self, stmt: &'src Stmt) {
-        if let Some((body, _)) = scoped_body(stmt) {
-            self.consider(Some(stmt), body);
+        if let Some((body, _)) = scoped_body(stmt)
+            && let Some(lit) = body_docstring(body)
+        {
+            (self.f)(Some(stmt), lit);
         }
         walk_stmt(self, stmt);
     }
@@ -128,20 +105,13 @@ where
 /// and `None` for the module docstring.
 pub(crate) fn walk_docstrings<'src>(
     source: &'src Source,
-    f: impl FnMut(Option<&'src Stmt>, &'src StringLiteral),
+    mut f: impl FnMut(Option<&'src Stmt>, &'src StringLiteral),
 ) {
-    struct Closure<F>(F);
-
-    impl<'src, F> DocstringHandler<'src> for Closure<F>
-    where
-        F: FnMut(Option<&'src Stmt>, &'src StringLiteral),
-    {
-        fn handle(&mut self, owner: Option<&'src Stmt>, lit: &'src StringLiteral) {
-            (self.0)(owner, lit);
-        }
+    let body = &source.ast().body;
+    if let Some(lit) = body_docstring(body) {
+        f(None, lit);
     }
-
-    Closure(f).walk(source);
+    Walker { f: &mut f }.visit_body(body);
 }
 
 /// `body`'s leading string expression, the slot a docstring occupies
@@ -160,39 +130,30 @@ mod tests {
     use super::*;
     use crate::testing::parse;
 
+    /// Every docstring `source` carries in source order: its value, its
+    /// indent prefix, and its triple-quoted body text where one exists.
     #[derive(Default)]
-    struct Probe<'a> {
+    struct Probe {
         bodies: Vec<String>,
         indents: Vec<String>,
-        source: Option<&'a Source>,
         values: Vec<String>,
     }
 
-    impl Probe<'_> {
+    impl Probe {
         fn run(source: &Source) -> Vec<String> {
-            let mut probe = Probe::default();
-            probe.walk(source);
-            probe.values
+            probe_with_source(source).values
         }
     }
 
-    impl DocstringHandler<'_> for Probe<'_> {
-        fn handle(&mut self, _: Option<&Stmt>, lit: &StringLiteral) {
-            self.values.push(lit.value.to_string());
-            if let Some(source) = self.source {
-                self.indents.push(indent_prefix(source, lit).to_owned());
-                self.bodies
-                    .extend(triple_quoted_body(source, lit).map(|b| b.text.to_owned()));
-            }
-        }
-    }
-
-    fn probe_with_source(source: &Source) -> Probe<'_> {
-        let mut probe = Probe {
-            source: Some(source),
-            ..Probe::default()
-        };
-        probe.walk(source);
+    fn probe_with_source(source: &Source) -> Probe {
+        let mut probe = Probe::default();
+        walk_docstrings(source, |_, lit| {
+            probe.values.push(lit.value.to_string());
+            probe.indents.push(indent_prefix(source, lit).to_owned());
+            probe
+                .bodies
+                .extend(triple_quoted_body(source, lit).map(|b| b.text.to_owned()));
+        });
         probe
     }
 

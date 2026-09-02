@@ -41,7 +41,11 @@ impl Sections {
     /// True when `slot` opens a section past the first, the divider a
     /// same-section reorder never crosses.
     pub(crate) fn is_boundary(&self, slot: usize) -> bool {
-        self.ranges.iter().skip(1).any(|range| range.start == slot)
+        slot > 0
+            && self
+                .ranges
+                .binary_search_by_key(&slot, |range| range.start)
+                .is_ok()
     }
 
     /// One slot-index range per section, in source order.

@@ -111,7 +111,7 @@ class Summary:
     def _row(jobs: dict, job: str) -> dict:
         """
         The mark and the name one corpus row shows, the imports row
-        reading as unarmed where it succeeded against no baked break set.
+        reading as unarmed where it succeeded against no baked baseline.
 
         Args:
             jobs : The workflow's job table.
@@ -121,7 +121,7 @@ class Summary:
         name   = jobs[job]["name"].split("${{")[0].strip() or job.capitalize()
 
         if job == IMPORTS and result == "success" and environ.get("ARMED") != "true":
-            return {"mark": "⚠️", "name": f"{name} (no baked break set, nothing asserted)"}
+            return {"mark": "⚠️", "name": f"{name} (no baked baseline, nothing asserted)"}
 
         return {"mark": {"skipped": "➖", "success": "✅"}.get(result, "❌"), "name": name}
 

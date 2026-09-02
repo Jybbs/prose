@@ -6,8 +6,7 @@ use ruff_python_ast::{AnyNodeRef, CmpOp, Expr, ExprUnaryOp, helpers::is_constant
 use ruff_text_size::{Ranged, TextRange};
 
 use super::plan::{Plan, Test};
-use crate::primitives::comparison::opening_token_kind;
-use crate::source::Source;
+use crate::{primitives::comparison::opening_token_kind, source::Source};
 
 /// The edits `plan` calls for, the `not` deletion first, then the
 /// operand swap, then the operator-token replacement. `None` where a
@@ -81,7 +80,7 @@ pub(super) fn negating_parent(parent: AnyNodeRef<'_>) -> Option<&ExprUnaryOp> {
 }
 
 /// The range of the lone lexer token spelling `op` inside `gap`.
-pub(super) fn operator_range(source: &Source, gap: TextRange, op: CmpOp) -> Option<TextRange> {
+fn operator_range(source: &Source, gap: TextRange, op: CmpOp) -> Option<TextRange> {
     let kind = opening_token_kind(op);
     source
         .tokens()
@@ -110,17 +109,10 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{first_expr, parse};
-
-    /// The two-operand test the lone comparison statement of `source`
-    /// states.
-    fn test_of(source: &Source) -> Option<Test<'_>> {
-        Test::of(
-            first_expr(source)
-                .as_compare_expr()
-                .expect("first statement is a comparison"),
-        )
-    }
+    use crate::{
+        rules::normalize_comparisons::tests::test_of,
+        testing::{first_expr, parse},
+    };
 
     #[rstest]
     #[case("value == None\n", Some(CmpOp::Is))]

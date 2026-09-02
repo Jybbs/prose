@@ -35,19 +35,17 @@ pub(super) fn handle_request(
             // editor settings.
             let uri = &params.text_document.uri;
             let doc = documents.get(uri);
-            let Formatted { edits, settled } = doc.map_or_else(Formatted::default, |doc| {
-                let config = configs.resolve(uri, &doc.text);
-                analysis::format_buffer(&doc.text, encoding, &config)
-            });
+            let config = doc.map(|doc| configs.resolve(uri, &doc.text));
+            let Formatted { edits, settled } = doc
+                .zip(config.as_ref())
+                .map_or_else(Formatted::default, |(doc, config)| {
+                    analysis::format_buffer(&doc.text, encoding, config)
+                });
             send(connection, Message::Response(Response::new_ok(id, edits)))?;
-            let Some((doc, settled)) = doc.zip(settled) else {
+            let Some(((doc, config), settled)) = doc.zip(config).zip(settled) else {
                 return Ok(());
             };
-            if notices.reported(uri) {
-                return Ok(());
-            }
-            let config = configs.resolve(uri, &doc.text);
-            if !config.report_unstable_output {
+            if notices.reported(uri) || !config.report_unstable_output {
                 return Ok(());
             }
             settled
@@ -56,21 +54,23 @@ pub(super) fn handle_request(
                     notices.offer(connection, uri, &doc.text, &rewrite)
                 })
         }
-        Err(ExtractError::MethodMismatch(request)) => send(
-            connection,
-            Message::Response(Response::new_err(
-                request.id,
-                ErrorCode::MethodNotFound as i32,
-                format!("unsupported request `{}`", request.method),
-            )),
-        ),
-        Err(ExtractError::JsonError { method, error }) => send(
-            connection,
-            Message::Response(Response::new_err(
-                id,
-                ErrorCode::InvalidParams as i32,
-                format!("malformed `{method}` request: {error}"),
-            )),
-        ),
+        Err(error) => {
+            let (id, code, message) = match error {
+                ExtractError::MethodMismatch(request) => (
+                    request.id,
+                    ErrorCode::MethodNotFound,
+                    format!("unsupported request `{}`", request.method),
+                ),
+                ExtractError::JsonError { method, error } => (
+                    id,
+                    ErrorCode::InvalidParams,
+                    format!("malformed `{method}` request: {error}"),
+                ),
+            };
+            send(
+                connection,
+                Message::Response(Response::new_err(id, code as i32, message)),
+            )
+        }
     }
 }

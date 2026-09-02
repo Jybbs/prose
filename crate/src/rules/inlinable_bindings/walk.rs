@@ -6,11 +6,10 @@ use ruff_python_ast::{
     Stmt,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
-use ruff_source_file::LineRanges;
 use ruff_text_size::{TextRange, TextSize};
 
 use super::{guards::guarded_regions, *};
-use crate::primitives::{edit::apply_inline_edits, inline::display_width, walk::any_over_stmts};
+use crate::primitives::{inline::rows_within, walk::any_over_stmts};
 
 pub(super) struct Visitor<'a> {
     pub(super) allow_pattern: &'a AllowPattern,
@@ -76,9 +75,12 @@ impl Visitor<'_> {
     fn overflows(&self, read: TextSize, name: &str, value: &str) -> bool {
         let swap =
             Edit::range_replacement(value.to_owned(), TextRange::at(read, TextSize::of(name)));
-        let row = self.source.text().line_range(read);
-
-        display_width(&apply_inline_edits(self.source, row, &[swap])) > self.code_line_length
+        !rows_within(
+            self.source,
+            TextRange::empty(read),
+            &[swap],
+            self.code_line_length,
+        )
     }
 
     /// Returns the text that would stand in the binding's place at its

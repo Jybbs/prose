@@ -3,7 +3,7 @@
 
 use std::borrow::Cow;
 
-use ruff_python_trivia::{CommentRanges, PythonWhitespace};
+use ruff_python_trivia::{CommentRanges, indentation_at_offset};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -37,10 +37,7 @@ pub(crate) fn member_blocks<T: Ranged>(
 /// True when only whitespace sits between `offset` and the start of its
 /// physical line.
 pub(crate) fn opens_its_line(source: &Source, offset: TextSize) -> bool {
-    source
-        .slice(TextRange::new(source.text().line_start(offset), offset))
-        .trim_whitespace_start()
-        .is_empty()
+    indentation_at_offset(offset, source.text()).is_some()
 }
 
 /// The [`Assembly`] over every slot of `items`, each member block
@@ -104,9 +101,8 @@ fn block_range<T: Ranged>(source: &Source, items: &[T], i: usize, outer: TextRan
 /// True when the last member carries a trailing comma on its line.
 pub(super) fn last_member_has_comma<T: Ranged>(source: &Source, items: &[T]) -> bool {
     let last = items.last().expect("non-empty items");
-    let line_end = source.text().line_end(last.end());
     source
-        .slice(TextRange::new(last.end(), line_end))
+        .slice(source.row_tail(last.end()))
         .trim_start()
         .starts_with(',')
 }
@@ -162,16 +158,16 @@ fn member_block<T: Ranged>(source: &Source, items: &[T], i: usize, outer: TextRa
 /// reached across only commas and whitespace. Stops at any other token, so a
 /// comment past a `}`, `)`, or `]` stays disowned.
 pub(super) fn tail_end(source: &Source, item_end: TextSize) -> TextSize {
-    let line_end = source.text().line_end(item_end);
-    let mut consumed = 0u32;
-    for &byte in source.slice(TextRange::new(item_end, line_end)).as_bytes() {
-        match byte {
-            b',' | b' ' | b'\t' => consumed += 1,
-            b'#' => return line_end,
-            _ => break,
-        }
+    let row = source.row_tail(item_end);
+    let tail = source.slice(row).as_bytes();
+    let consumed = tail
+        .iter()
+        .take_while(|&&byte| matches!(byte, b',' | b' ' | b'\t'))
+        .count();
+    if tail.get(consumed) == Some(&b'#') {
+        return row.end();
     }
-    item_end + TextSize::from(consumed)
+    item_end + TextSize::try_from(consumed).expect("a line fits u32")
 }
 
 #[cfg(test)]

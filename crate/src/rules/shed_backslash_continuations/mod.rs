@@ -13,17 +13,18 @@ mod gaps;
 mod render;
 
 use gaps::{Gap, continuation_gaps, ends_atom, shares_a_run, stripped_gap};
-use render::{join_edits, join_text, joined_width, stripped_edit, wrap_edits};
+use render::{join_edits, join_text, stripped_edit, wrap_edits};
 
 use crate::{
     config::Config,
     primitives::{
         edit::{apply_inline_edits, narrowed_replacement},
+        inline::rows_within,
         range::blocks_span,
         splice::splice_preserves_tree,
         tokens::{is_closer, is_opener},
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 
@@ -49,7 +50,7 @@ impl ShedBackslashContinuations {
     fn shed_run(&self, source: &Source, run: &[Gap]) -> Shed {
         let span = blocks_span(run);
         let joined = join_edits(source, run);
-        if joined_width(source, span, &joined) <= self.code_line_length {
+        if rows_within(source, span, &joined, self.code_line_length) {
             return Shed::Joined(joined);
         }
         wrap_edits(source, span, run).map_or(Shed::Joined(joined), |(node, stripped)| {

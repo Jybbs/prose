@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 use ignore::Walk;
 use ruff_python_ast::PySourceType;
+use rustc_hash::FxHashSet;
 
 /// One entry a walk yields.
 pub(crate) enum Found {
@@ -31,8 +32,9 @@ pub(crate) enum Found {
 pub(crate) fn walk(
     paths: &[PathBuf],
 ) -> impl Iterator<Item = Result<Found, ignore::Error>> + Send + use<> {
-    Walk::from_iter(paths).filter_map(|entry| {
-        entry
+    let mut seen = FxHashSet::default();
+    Walk::from_iter(paths).filter_map(move |entry| {
+        let found = entry
             .map(|e| {
                 let source_type = PySourceType::try_from_path(e.path())?;
                 let file_type = e.file_type()?;
@@ -44,7 +46,11 @@ pub(crate) fn walk(
                     None
                 }
             })
-            .transpose()
+            .transpose()?;
+        match &found {
+            Ok(Found::Formattable(path, _)) if !seen.insert(path.clone()) => None,
+            _ => Some(found),
+        }
     })
 }
 
@@ -56,14 +62,10 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
+    use crate::testing::formattable;
 
     fn collect(paths: &[PathBuf]) -> BTreeSet<PathBuf> {
-        walk(paths)
-            .filter_map(|r| match r.expect("walk entry") {
-                Found::Formattable(path, _) => Some(path),
-                Found::PassedLink(_) => None,
-            })
-            .collect()
+        formattable(paths).into_iter().collect()
     }
 
     fn passed_links(paths: &[PathBuf]) -> BTreeSet<PathBuf> {

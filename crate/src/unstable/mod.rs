@@ -14,7 +14,7 @@ use std::collections::BTreeSet;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{config::Config, pipeline::Pipeline, rule::RuleId, source::Source};
+use crate::{config::Config, pipeline::Pipeline, rules::RuleId, source::Source};
 
 mod form;
 mod narrow;
@@ -48,13 +48,10 @@ impl UnstableRewrite {
         original: &str,
         formatted: &Source,
     ) -> Option<Self> {
-        Self::from_editing(
-            pipeline,
-            config,
-            original,
-            formatted,
-            pipeline.unsettled(formatted),
-        )
+        let editing = pipeline.unsettled(formatted);
+        Self::from_editing(pipeline, config, formatted, &editing, || {
+            narrowed(pipeline, config, original, &editing)
+        })
     }
 
     /// The report for a probe hit on the own-output ledger, where
@@ -70,13 +67,9 @@ impl UnstableRewrite {
     ) -> Option<Self> {
         let source = original.parse::<Source>().ok()?;
         let editing = pipeline.unsettled(&source);
-        if editing.is_empty() {
-            return None;
-        }
-        let rules = subset(pipeline, formatted, || {
+        Self::from_editing(pipeline, config, formatted, &editing, || {
             editing_subset(&editing, &source, filtered(config))
-        });
-        Some(Self::over(pipeline, config, formatted, rules))
+        })
     }
 
     /// The report a `format` run or the editor makes over `formatted`,
@@ -93,26 +86,29 @@ impl UnstableRewrite {
         fired: &BTreeSet<RuleId>,
     ) -> Option<Self> {
         let editing = pipeline.unsettled_among(formatted, fired);
-        Self::from_editing(pipeline, config, original, formatted, editing)
+        Self::from_editing(pipeline, config, formatted, &editing, || {
+            narrowed(pipeline, config, original, &editing)
+        })
     }
 
     /// The report over `formatted` where `editing` names a rule, `None`
-    /// where it is empty, the subset narrowing to a rule alone or a rule
-    /// pair where one reproduces and falling back to the whole selection.
+    /// where it is empty, under the subset `narrow` names or the whole
+    /// selection where it names none.
     fn from_editing(
         pipeline: &Pipeline,
         config: &Config,
-        original: &str,
         formatted: &Source,
-        editing: Vec<RuleId>,
+        editing: &[RuleId],
+        narrow: impl FnOnce() -> Option<Vec<RuleId>>,
     ) -> Option<Self> {
-        if editing.is_empty() {
-            return None;
-        }
-        let rules = subset(pipeline, formatted, || {
-            narrowed(pipeline, config, original, &editing)
-        });
-        Some(Self::over(pipeline, config, formatted, rules))
+        (!editing.is_empty()).then(|| {
+            Self::over(
+                pipeline,
+                config,
+                formatted,
+                subset(pipeline, formatted, narrow),
+            )
+        })
     }
 
     /// The record over `formatted` under the reproducing `rules`.
@@ -176,11 +172,11 @@ fn candidates(pipeline: &Pipeline, original: &str, editing: &[RuleId]) -> Vec<Ru
         .parse::<Source>()
         .map(|source| pipeline.unsettled(&source))
         .unwrap_or_default();
-    let (named, rest): (Vec<_>, Vec<_>) = pipeline
+    pipeline
         .rule_ids()
         .filter(|rule| touched.contains(rule) || editing.contains(rule))
-        .partition(|rule| editing.contains(rule));
-    named.into_iter().chain(rest).collect()
+        .sorted_by_key(|rule| !editing.contains(rule))
+        .collect()
 }
 
 /// The pipeline seating `rules` alone under `config`.
@@ -446,7 +442,7 @@ mod tests {
     #[test]
     fn detect_reports_regardless_of_the_config_key() {
         // The key gates the notice surfaces, not the detector, so a
-        // caller that wants the check despite the key, as `check
+        // caller taking the check despite the key, as `check
         // --validate` does, reads a real answer here.
         let pipeline = widening();
         let (formatted, _) = pipeline.run(parse(SOURCE)).expect("runs");

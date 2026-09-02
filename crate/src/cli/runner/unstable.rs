@@ -86,7 +86,6 @@ fn reproduce(files: usize) -> String {
 
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
     use ruff_source_file::SourceFileBuilder;
 
     use super::*;
@@ -95,9 +94,7 @@ mod tests {
     const FIRST: &str = "yy = 1\n";
 
     fn rendered(present: &Presentation, outcomes: &[FileOutcome]) -> String {
-        let mut buf = Vec::new();
-        render_reports(&mut buf, present, outcomes);
-        String::from_utf8(buf).expect("utf-8")
+        crate::testing::rendered(|buf| render_reports(buf, present, outcomes))
     }
 
     fn unsettled(name: &str, slug: &'static str) -> FileOutcome {
@@ -184,18 +181,20 @@ mod tests {
         assert!(indented[1].contains("issues/new"), "{out}");
     }
 
-    #[rstest]
-    #[case::reproduce_one(reproduce(1))]
-    #[case::reproduce_several(reproduce(4))]
-    #[case::filing(FILING.to_owned())]
-    fn render_reports_wraps_each_paragraph_inside_the_column(#[case] prose: String) {
-        let widest = textwrap::fill(&prose, WRAP)
+    #[test]
+    fn render_reports_wraps_each_paragraph_inside_the_column() {
+        let out = rendered(
+            &Presentation::windowed(),
+            &[unsettled("src/a.py", "align-equals")],
+        );
+
+        let widest = out
             .lines()
+            .filter(|line| !line.starts_with("    "))
             .map(str::len)
             .max()
             .unwrap_or_default();
-
-        assert!(widest <= WRAP, "{prose}");
+        assert!(widest <= WRAP, "{out}");
     }
 
     #[test]

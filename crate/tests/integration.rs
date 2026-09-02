@@ -8,7 +8,7 @@
 
 mod common;
 
-use std::fmt::Write;
+use std::{fmt::Write, path::Path};
 
 use itertools::Itertools;
 use prose::{diagnostics::Diagnostic, pipeline::Pipeline, source::Source};
@@ -70,15 +70,7 @@ fn fixtures() {
         // concatenated text, so its round-trip idempotency is pinned by
         // the CLI tests rather than here.
         if domain != "notebook" {
-            let reparsed = output
-                .parse::<Source>()
-                .expect("formatter output reparses as Python");
-            let (second, _) = pipeline.run(reparsed).expect("second pass succeeds");
-            assert!(
-                second.text() == output,
-                "fixture `{domain}/{case}` not idempotent on second pass:\n{}",
-                common::unified_diff(output, second.text()),
-            );
+            assert_settles(&pipeline, output, domain, case, "on second pass");
         }
 
         let fresh_source =
@@ -92,6 +84,35 @@ fn fixtures() {
             common::unified_diff(output, fresh_formatted.text()),
         );
     });
+}
+
+/// Runs `pipeline` over its own `output` and panics where a second
+/// pass changes it.
+fn assert_settles(pipeline: &Pipeline, output: &str, domain: &str, case: &str, under: &str) {
+    let reparsed = output
+        .parse::<Source>()
+        .expect("formatter output reparses as Python");
+    let (second, _) = pipeline.run(reparsed).expect("second pass succeeds");
+    assert!(
+        second.text() == output,
+        "fixture `{domain}/{case}` not idempotent {under}:\n{}",
+        common::unified_diff(output, second.text()),
+    );
+}
+
+/// The domain, case, sidecar options, and default pipeline for `path`,
+/// `None` for an `identity` fixture the full-pipeline sweeps pass over.
+fn sweepable(path: &Path) -> Option<(&str, &str, common::HarnessOptions, Pipeline)> {
+    let domain = common::domain_name(path);
+    (domain != "identity").then(|| {
+        let (config, harness) = common::fixture_inputs(path);
+        (
+            domain,
+            common::case_name(path),
+            harness,
+            Pipeline::with_defaults(&config),
+        )
+    })
 }
 
 /// Renders a formatted notebook as its per-cell source joined by a
@@ -153,14 +174,9 @@ fn render(diagnostics: &[Diagnostic]) -> String {
 #[test]
 fn crlf_input_holds_its_endings_and_settles() {
     insta::glob!("fixtures/**/input.py", |path| {
-        let domain = common::domain_name(path);
-        let case = common::case_name(path);
-        if domain == "identity" {
+        let Some((domain, case, _, pipeline)) = sweepable(path) else {
             return;
-        }
-
-        let (config, _) = common::fixture_inputs(path);
-        let pipeline = Pipeline::with_defaults(&config);
+        };
         let lf = fs_err::read_to_string(path).unwrap_or_else(|e| panic!("read fixture: {e}"));
         let source = crlf(&lf);
         let (first, _) = pipeline
@@ -170,58 +186,30 @@ fn crlf_input_holds_its_endings_and_settles() {
             panic!("fixture `{domain}/{case}` broke line {line} with an ending other than CRLF");
         }
 
-        let reparsed = first
-            .text()
-            .parse::<Source>()
-            .expect("CRLF output reparses as Python");
-        let (second, _) = pipeline.run(reparsed).expect("second CRLF pass succeeds");
-        assert!(
-            second.text() == first.text(),
-            "fixture `{domain}/{case}` not idempotent on CRLF input:\n{}",
-            common::unified_diff(first.text(), second.text()),
-        );
+        assert_settles(&pipeline, first.text(), domain, case, "on CRLF input");
     });
 }
 
 #[test]
 fn pipeline_is_idempotent() {
     insta::glob!("fixtures/**/input.py", |path| {
-        let domain = common::domain_name(path);
-        let case = common::case_name(path);
-        if domain == "identity" {
+        let Some((domain, case, _, pipeline)) = sweepable(path) else {
             return;
-        }
-
-        let (config, _) = common::fixture_inputs(path);
-        let pipeline = Pipeline::with_defaults(&config);
+        };
         let source = Source::from_path(path).expect("fixture input reads and parses as Python");
         let (first, _) = pipeline
             .run(source)
             .expect("first full-pipeline pass succeeds");
-        let reparsed = first
-            .text()
-            .parse::<Source>()
-            .expect("full-pipeline output reparses as Python");
-        let (second, _) = pipeline
-            .run(reparsed)
-            .expect("second full-pipeline pass succeeds");
-        assert!(
-            second.text() == first.text(),
-            "fixture `{domain}/{case}` not idempotent under full pipeline:\n{}",
-            common::unified_diff(first.text(), second.text()),
-        );
+        assert_settles(&pipeline, first.text(), domain, case, "under full pipeline");
     });
 }
 
 #[test]
 fn prose_is_stable_after_ruff() {
     insta::glob!("fixtures/**/input.py", |path| {
-        let domain = common::domain_name(path);
-        let case = common::case_name(path);
-        if domain == "identity" {
+        let Some((domain, case, harness, pipeline)) = sweepable(path) else {
             return;
-        }
-        let (config, harness) = common::fixture_inputs(path);
+        };
         if harness.skip_ruff_coexistence {
             return;
         }
@@ -236,7 +224,6 @@ fn prose_is_stable_after_ruff() {
             })
             .into_code();
 
-        let pipeline = Pipeline::with_defaults(&config);
         let format = |text: &str| {
             pipeline
                 .run(
@@ -252,7 +239,7 @@ fn prose_is_stable_after_ruff() {
         if matches!(domain, "composition" | "thematic") {
             assert!(
                 one.text() != post_ruff,
-                "prose was a no-op on `{case}` after ruff — {domain} fixture should require transformation",
+                "prose was a no-op on `{case}` after ruff, where a {domain} fixture must require transformation",
             );
         }
         assert!(

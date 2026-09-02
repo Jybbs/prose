@@ -16,13 +16,13 @@ use ruff_python_ast::PySourceType;
 use ruff_source_file::SourceFile;
 
 use super::{
-    args::{CheckArgs, FormatArgs, OutputFormat, RuleFilter},
+    args::{CheckArgs, FormatArgs, OutputFormat, RuleFilter, RunArgs},
     exit_status::ExitStatus,
     output::Presentation,
 };
 use crate::{
     cache::{Anchor, Cache, Rewrite},
-    cli::emit::Text,
+    cli::emit::{EmitterSummary, Run, Text},
     config::Config,
     diagnostics::Diagnostic,
     unstable::UnstableRewrite,
@@ -33,17 +33,20 @@ mod notebook;
 mod process;
 mod report;
 mod resolve;
+mod stdin;
+mod stdout;
 mod unstable;
+mod walk;
+mod write;
 
 use diff::{Heading, write_rewrite_diff};
-use process::{
-    apply_rewrite, process_path, process_paths, process_stdin, read_stdin, stream_paths,
-};
-use report::{
-    emit_to_stdout, emitter_summary, finish, render_summary, render_text_block,
-    status_from_outcomes, unstable_status,
-};
+use process::process_path;
+use report::{emitter_summary, finish, render_summary, unstable_status};
 use resolve::{ConfigResolver, Resolved};
+use stdin::{format_stdin, process_stdin, read_stdin, stdin_resolved};
+use stdout::{emit_to_stdout, render_text_block};
+use walk::{process_paths, stream_paths};
+use write::apply_rewrite;
 
 /// The diagnostic name a stdin run carries, rendered back as the `-`
 /// positional wherever a report names an invocation.
@@ -64,6 +67,20 @@ enum FileOutcome {
 }
 
 impl FileOutcome {
+    /// The emitter run this outcome renders through, `None` for a file
+    /// that failed.
+    fn run(&self) -> Option<Run<'_>> {
+        match self {
+            Self::Done {
+                diagnostics,
+                file,
+                notebook_index,
+                ..
+            } => Some(Run::new(file, diagnostics, notebook_index.as_deref())),
+            Self::Failed(_) => None,
+        }
+    }
+
     /// The source file and settle report this outcome carries, `None`
     /// for a settled rewrite and for a file that failed.
     fn unstable(&self) -> Option<(&SourceFile, &UnstableRewrite)> {
@@ -219,14 +236,14 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
     verbose: bool,
     present: &Presentation,
     stdin: R,
-    stdout: AutoStream<O>,
+    mut stdout: AutoStream<O>,
     mut stderr: E,
 ) -> anyhow::Result<ExitStatus> {
     let pass = Pass::Diagnose {
         validate: args.validate,
     };
     let setup = match build_run(
-        args.common.rules,
+        &args.common.rules,
         args.common.no_cache,
         pass.anchor(),
         verbose,
@@ -235,22 +252,21 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
         Err(s) => return Ok(s),
     };
     let format = args.common.output_format;
-    let outcomes = if args.common.stdin {
-        let source_type = stdin_source_type(args.common.stdin_filename.as_deref());
+    let (outcomes, emits) = if args.common.stdin {
+        let filename = args.common.stdin_filename.as_deref();
         let outcome = match read_stdin(stdin) {
-            Ok(text) => process_stdin(text, source_type, &setup.cwd, pass),
+            Ok(text) => {
+                let resolved = stdin_resolved(&setup, filename, &text);
+                process_stdin(text, filename, &resolved, pass)
+            }
             Err(outcome) => outcome,
         };
-        let outcomes = vec![outcome];
-        let summary = emitter_summary(&outcomes);
-        emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
-        outcomes
+        (vec![outcome], true)
     } else if format.is_text() {
         // Text carries no envelope around its per-file blocks, so each
         // one reaches the terminal as it lands rather than after the
         // whole walk. Every other format closes over the run.
         let text = Text::new(present.color);
-        let mut stdout = stdout;
         let outcomes = setup.streamed(
             &args.paths,
             pass,
@@ -258,18 +274,32 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
             |block| stdout.write_all(block).context("writing stdout"),
         )?;
         stdout.flush().context("flushing stdout")?;
-        outcomes
+        (outcomes, false)
     } else {
-        let outcomes = setup.walked(&args.paths, pass);
-        let summary = emitter_summary(&outcomes);
-        emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
-        outcomes
+        (setup.walked(&args.paths, pass), true)
     };
     let summary = emitter_summary(&outcomes);
-    let status = finish(&outcomes, setup.cache.is_some(), setup.verbose, pass)
+    if emits {
+        emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
+    }
+    let status = close_run(&outcomes, &summary, &setup, present, pass, &mut stderr)
         .max(unstable_status(&outcomes));
-    render_summary(&mut stderr, present, &outcomes, &summary, pass);
     Ok(status)
+}
+
+/// Closes a run, rendering its summary onto `stderr` and resolving the
+/// status it exits with.
+fn close_run<E: Write>(
+    outcomes: &[FileOutcome],
+    summary: &EmitterSummary,
+    setup: &RunSetup,
+    present: &Presentation,
+    pass: Pass,
+    stderr: &mut E,
+) -> ExitStatus {
+    let status = finish(outcomes, setup.cache.is_some(), setup.verbose, pass, stderr);
+    render_summary(stderr, present, outcomes, summary, pass);
+    status
 }
 
 /// Runs `format`, writing formatted source and undecorated diffs to the
@@ -284,7 +314,7 @@ pub(crate) fn format_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
 ) -> anyhow::Result<ExitStatus> {
     let pass = format_pass(args.diff, args.common.output_format);
     let setup = match build_run(
-        args.common.rules,
+        &args.common.rules,
         args.common.no_cache,
         pass.anchor(),
         verbose,
@@ -293,13 +323,12 @@ pub(crate) fn format_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
         Err(s) => return Ok(s),
     };
     if args.common.stdin {
-        let source_type = stdin_source_type(args.common.stdin_filename.as_deref());
         return format_stdin(
-            read_stdin(stdin).map(|text| (text, source_type)),
+            read_stdin(stdin),
+            &args.common,
             pass,
-            args.common.output_format,
             present,
-            &setup.cwd,
+            &setup,
             stdout,
             &mut stderr,
         );
@@ -330,12 +359,12 @@ pub(crate) fn format_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
 /// effective config through the resolver. The `anchor` the run reads
 /// keys every prefix the resolver builds.
 fn build_run(
-    rules: RuleFilter,
+    rules: &RuleFilter,
     no_cache: bool,
     anchor: Anchor,
     verbose: bool,
 ) -> Result<RunSetup, ExitStatus> {
-    let resolver = ConfigResolver::new(rules.select, rules.ignore, anchor);
+    let resolver = ConfigResolver::new(rules.select.clone(), rules.ignore.clone(), anchor);
     let config = super::load_config_or_status(resolver.notices())?;
     let cache = open_cache(&config, no_cache);
     let cwd = resolver.seed(&config);
@@ -393,14 +422,14 @@ fn format_paths_diff<O: Write, E: Write>(
     )?;
     writer.flush().context("flushing stdout")?;
     let summary = emitter_summary(&outcomes);
-    let status = finish(
+    Ok(close_run(
         &outcomes,
-        setup.cache.is_some(),
-        setup.verbose,
+        &summary,
+        setup,
+        present,
         Pass::Preview,
-    );
-    render_summary(stderr, present, &outcomes, &summary, Pass::Preview);
-    Ok(status)
+        stderr,
+    ))
 }
 
 fn format_paths_rewrite<O: RawStream + AsLockedWrite, E: Write>(
@@ -417,65 +446,7 @@ fn format_paths_rewrite<O: RawStream + AsLockedWrite, E: Write>(
     if !format.is_text() {
         emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
     }
-    let status = finish(&outcomes, setup.cache.is_some(), setup.verbose, pass);
-    render_summary(stderr, present, &outcomes, &summary, pass);
-    Ok(status)
-}
-
-fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
-    input: Result<(String, PySourceType), FileOutcome>,
-    pass: Pass,
-    format: OutputFormat,
-    present: &Presentation,
-    resolved: &Resolved,
-    writer: AutoStream<O>,
-    stderr: &mut E,
-) -> anyhow::Result<ExitStatus> {
-    let diff = matches!(pass, Pass::Preview);
-    let (outcome, original) = match input {
-        Ok((text, source_type)) => (
-            process_stdin(text.clone(), source_type, resolved, pass),
-            text,
-        ),
-        Err(outcome) => (outcome, String::new()),
-    };
-    let outcomes = std::slice::from_ref(&outcome);
-    let summary = emitter_summary(outcomes);
-    if let FileOutcome::Done {
-        notebook_index,
-        rewrite,
-        ..
-    } = &outcome
-    {
-        if diff {
-            if let Rewrite::Changed(kind) = rewrite {
-                let heading = diff_heading(present);
-                write_rewrite_diff(
-                    &mut writer.into_inner(),
-                    STDIN_NAME,
-                    &original,
-                    kind,
-                    notebook_index.as_deref(),
-                    heading,
-                )?;
-            }
-        } else if format.is_text() {
-            let to_write: &[u8] = match rewrite {
-                Rewrite::Changed(kind) => kind.written().as_bytes(),
-                // A non-Python notebook carries no rewrite, so echo stdin verbatim.
-                Rewrite::PassedOver | Rewrite::Skipped | Rewrite::Unchanged => original.as_bytes(),
-            };
-            writer
-                .into_inner()
-                .write_all(to_write)
-                .context("writing stdout")?;
-        } else {
-            emit_to_stdout(outcomes, format, present, writer, &summary)?;
-        }
-    }
-    let status = status_from_outcomes(outcomes, pass.write_back());
-    render_summary(stderr, present, outcomes, &summary, pass);
-    Ok(status)
+    Ok(close_run(&outcomes, &summary, setup, present, pass, stderr))
 }
 
 fn has_format_change(diagnostics: &[Diagnostic]) -> bool {
@@ -519,14 +490,6 @@ fn render_diff_block(outcome: &FileOutcome, heading: Heading) -> anyhow::Result<
     Ok(block)
 }
 
-/// Resolves the source type of stdin input from a `--stdin-filename`,
-/// defaulting to Python when none is given.
-fn stdin_source_type(filename: Option<&Path>) -> PySourceType {
-    filename
-        .and_then(PySourceType::try_from_path)
-        .unwrap_or_default()
-}
-
 #[cfg(test)]
 mod tests {
     use std::{assert_matches, io};
@@ -534,12 +497,44 @@ mod tests {
     use rstest::rstest;
     use tempfile::TempDir;
 
+    use ruff_diagnostics::{Edit, Fix};
+    use ruff_text_size::TextRange;
+
     use super::*;
     use crate::{
         cli::args::RunArgs,
-        rule::RuleId,
+        diagnostics::Severity,
+        rules::RuleId,
+        source::Source,
         testing::{FailingWriter, write_pyproject},
     };
+
+    pub(super) fn diagnostic(
+        severity: Severity,
+        range: TextRange,
+        slug: &'static str,
+    ) -> Diagnostic {
+        Diagnostic {
+            fix: severity
+                .is_format()
+                .then(|| Fix::safe_edit(Edit::range_replacement("y".into(), range))),
+            message: "test".into(),
+            range,
+            rule: RuleId::from(slug),
+            severity,
+        }
+    }
+
+    pub(super) fn outcome_with(source: Source, diagnostics: Vec<Diagnostic>) -> FileOutcome {
+        FileOutcome::Done {
+            cached: false,
+            diagnostics,
+            file: source.source_file().clone(),
+            notebook_index: None,
+            rewrite: Rewrite::Skipped,
+            unstable: None,
+        }
+    }
 
     /// The unaligned two-assignment source the runner tests reuse.
     /// `ALPHA` is SCREAMING_CASE and `B` a single character, so the lint
@@ -569,7 +564,7 @@ mod tests {
     fn fixture(source: &str) -> (TempDir, PathBuf) {
         let tmp = TempDir::new().expect("tempdir");
         let file = tmp.path().join("a.py");
-        std::fs::write(&file, source).expect("writes");
+        fs_err::write(&file, source).expect("writes");
         (tmp, file)
     }
 
@@ -591,15 +586,7 @@ mod tests {
 
     fn run_check_io<R: Read>(args: CheckArgs, stdin: R) -> (ExitStatus, Vec<u8>) {
         let mut stdout = Vec::new();
-        let status = check_with_io(
-            args,
-            false,
-            &Presentation::windowed(),
-            stdin,
-            AutoStream::never(&mut stdout),
-            io::sink(),
-        )
-        .expect("runs without anyhow");
+        let status = run_io(args, stdin, &mut stdout, check_with_io);
         (status, stdout)
     }
 
@@ -628,16 +615,34 @@ mod tests {
     /// Runs `format` against `stdin` through a stripping stdout.
     fn run_format_io<R: Read>(args: FormatArgs, stdin: R) -> (ExitStatus, Vec<u8>) {
         let mut stdout = Vec::new();
-        let status = format_with_io(
+        let status = run_io(args, stdin, &mut stdout, format_with_io);
+        (status, stdout)
+    }
+
+    /// Runs `run`, an entry point, over `args` and `stdin` with `stdout`
+    /// as its stripping stdout, returning its status.
+    fn run_io<'b, A, R: Read>(
+        args: A,
+        stdin: R,
+        stdout: &'b mut Vec<u8>,
+        run: impl FnOnce(
+            A,
+            bool,
+            &Presentation,
+            R,
+            AutoStream<&'b mut Vec<u8>>,
+            io::Sink,
+        ) -> anyhow::Result<ExitStatus>,
+    ) -> ExitStatus {
+        run(
             args,
             false,
             &Presentation::windowed(),
             stdin,
-            AutoStream::never(&mut stdout),
+            AutoStream::never(stdout),
             io::sink(),
         )
-        .expect("runs without anyhow");
-        (status, stdout)
+        .expect("runs without anyhow")
     }
 
     #[test]
@@ -645,11 +650,10 @@ mod tests {
         let tmp = TempDir::new().expect("tempdir");
         let broken = tmp.path().join("broken");
         let plain = tmp.path().join("plain");
-        std::fs::create_dir_all(&broken).expect("dirs create");
-        std::fs::create_dir_all(&plain).expect("dirs create");
+        fs_err::create_dir_all(&plain).expect("dirs create");
         write_pyproject(&broken, "[this is not valid TOML");
-        std::fs::write(broken.join("a.py"), "x = 1\n").expect("writes");
-        std::fs::write(plain.join("b.py"), "x = 1\n").expect("writes");
+        fs_err::write(broken.join("a.py"), "x = 1\n").expect("writes");
+        fs_err::write(plain.join("b.py"), "x = 1\n").expect("writes");
 
         let mut args = check_args(vec![broken.join("a.py"), plain.join("b.py")], false);
         args.common.output_format = OutputFormat::Json;
@@ -830,7 +834,7 @@ mod tests {
         let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
 
         assert_eq!(status, ExitStatus::Clean);
-        let contents = std::fs::read_to_string(&file).expect("reads");
+        let contents = fs_err::read_to_string(&file).expect("reads");
         assert_eq!(contents, "x = 1\n");
     }
 
@@ -855,8 +859,99 @@ mod tests {
         let status = run_format(format_args(vec![file.clone()], false, false));
 
         assert_eq!(status, ExitStatus::Clean);
-        let after = std::fs::read_to_string(&file).expect("reads");
+        let after = fs_err::read_to_string(&file).expect("reads");
         assert_eq!(after, UNALIGNED);
+    }
+
+    #[test]
+    fn format_unparseable_returns_parse_error() {
+        let (tmp, _file) = fixture("def foo(");
+
+        let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
+
+        assert_eq!(status, ExitStatus::ParseError);
+    }
+
+    #[test]
+    fn format_writes_and_returns_clean_for_pending_change() {
+        let (tmp, file) = fixture(UNALIGNED);
+
+        let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
+
+        assert_eq!(status, ExitStatus::Clean);
+        let after = fs_err::read_to_string(&file).expect("reads");
+        assert_ne!(after, UNALIGNED);
+    }
+
+    #[test]
+    fn format_writes_return_config_error_when_target_is_readonly() {
+        let (tmp, file) = fixture(UNALIGNED);
+        let mut perms = fs_err::metadata(&file).expect("metadata").permissions();
+        perms.set_readonly(true);
+        fs_err::set_permissions(&file, perms).expect("set_permissions");
+
+        let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
+
+        assert_eq!(status, ExitStatus::ConfigError);
+    }
+
+    #[rstest]
+    #[case(Pass::Both, Anchor::AsWritten)]
+    #[case(Pass::Diagnose { validate: false }, Anchor::AsWritten)]
+    #[case(Pass::Diagnose { validate: true }, Anchor::AsWritten)]
+    #[case(Pass::Preview, Anchor::Rewritten)]
+    #[case(Pass::Rewrite, Anchor::Rewritten)]
+    fn pass_anchors_only_a_rewriting_pass_against_the_output(
+        #[case] pass: Pass,
+        #[case] anchor: Anchor,
+    ) {
+        assert_eq!(pass.anchor(), anchor);
+    }
+
+    #[rstest]
+    #[case(Pass::Both, true)]
+    #[case(Pass::Diagnose { validate: false }, true)]
+    #[case(Pass::Diagnose { validate: true }, false)]
+    #[case(Pass::Preview, true)]
+    #[case(Pass::Rewrite, true)]
+    fn pass_caches_every_shape_but_a_validated_check(#[case] pass: Pass, #[case] caches: bool) {
+        assert_eq!(pass.caches(), caches);
+    }
+
+    #[rstest]
+    #[case(Pass::Both, false)]
+    #[case(Pass::Diagnose { validate: false }, false)]
+    #[case(Pass::Preview, true)]
+    #[case(Pass::Rewrite, true)]
+    fn pass_discloses_lint_only_where_no_emitter_printed_it(
+        #[case] pass: Pass,
+        #[case] discloses: bool,
+    ) {
+        assert_eq!(pass.discloses_lint(), discloses);
+    }
+
+    #[rstest]
+    #[case(Pass::Both, Mode::Reformat)]
+    #[case(Pass::Diagnose { validate: false }, Mode::Check)]
+    #[case(Pass::Preview, Mode::Preview)]
+    #[case(Pass::Rewrite, Mode::Reformat)]
+    fn pass_resolves_its_closing_summary_mode(#[case] pass: Pass, #[case] expected: Mode) {
+        assert_eq!(
+            std::mem::discriminant(&pass.mode()),
+            std::mem::discriminant(&expected),
+        );
+    }
+
+    #[rstest]
+    #[case(Pass::Both, true)]
+    #[case(Pass::Diagnose { validate: false }, false)]
+    #[case(Pass::Preview, false)]
+    #[case(Pass::Rewrite, true)]
+    fn pass_writes_back_only_where_it_commits_the_rewrite(
+        #[case] pass: Pass,
+        #[case] write_back: bool,
+    ) {
+        assert_eq!(pass.write_back(), write_back);
     }
 
     #[test]
@@ -934,96 +1029,5 @@ mod tests {
 
         assert_eq!(status, ExitStatus::Clean);
         assert_eq!(stdout, "AB = \"X\u{1b}Y\"\nc  = 2\n".as_bytes());
-    }
-
-    #[test]
-    fn format_unparseable_returns_parse_error() {
-        let (tmp, _file) = fixture("def foo(");
-
-        let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
-
-        assert_eq!(status, ExitStatus::ParseError);
-    }
-
-    #[test]
-    fn format_writes_and_returns_clean_for_pending_change() {
-        let (tmp, file) = fixture(UNALIGNED);
-
-        let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
-
-        assert_eq!(status, ExitStatus::Clean);
-        let after = std::fs::read_to_string(&file).expect("reads");
-        assert_ne!(after, UNALIGNED);
-    }
-
-    #[test]
-    fn format_writes_return_config_error_when_target_is_readonly() {
-        let (tmp, file) = fixture(UNALIGNED);
-        let mut perms = std::fs::metadata(&file).expect("metadata").permissions();
-        perms.set_readonly(true);
-        std::fs::set_permissions(&file, perms).expect("set_permissions");
-
-        let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
-
-        assert_eq!(status, ExitStatus::ConfigError);
-    }
-
-    #[rstest]
-    #[case(Pass::Both, Anchor::AsWritten)]
-    #[case(Pass::Diagnose { validate: false }, Anchor::AsWritten)]
-    #[case(Pass::Diagnose { validate: true }, Anchor::AsWritten)]
-    #[case(Pass::Preview, Anchor::Rewritten)]
-    #[case(Pass::Rewrite, Anchor::Rewritten)]
-    fn pass_anchors_only_a_rewriting_pass_against_the_output(
-        #[case] pass: Pass,
-        #[case] anchor: Anchor,
-    ) {
-        assert_eq!(pass.anchor(), anchor);
-    }
-
-    #[rstest]
-    #[case(Pass::Both, true)]
-    #[case(Pass::Diagnose { validate: false }, true)]
-    #[case(Pass::Diagnose { validate: true }, false)]
-    #[case(Pass::Preview, true)]
-    #[case(Pass::Rewrite, true)]
-    fn pass_caches_every_shape_but_a_validated_check(#[case] pass: Pass, #[case] caches: bool) {
-        assert_eq!(pass.caches(), caches);
-    }
-
-    #[rstest]
-    #[case(Pass::Both, false)]
-    #[case(Pass::Diagnose { validate: false }, false)]
-    #[case(Pass::Preview, true)]
-    #[case(Pass::Rewrite, true)]
-    fn pass_discloses_lint_only_where_no_emitter_printed_it(
-        #[case] pass: Pass,
-        #[case] discloses: bool,
-    ) {
-        assert_eq!(pass.discloses_lint(), discloses);
-    }
-
-    #[rstest]
-    #[case(Pass::Both, Mode::Reformat)]
-    #[case(Pass::Diagnose { validate: false }, Mode::Check)]
-    #[case(Pass::Preview, Mode::Preview)]
-    #[case(Pass::Rewrite, Mode::Reformat)]
-    fn pass_resolves_its_closing_summary_mode(#[case] pass: Pass, #[case] expected: Mode) {
-        assert_eq!(
-            std::mem::discriminant(&pass.mode()),
-            std::mem::discriminant(&expected),
-        );
-    }
-
-    #[rstest]
-    #[case(Pass::Both, true)]
-    #[case(Pass::Diagnose { validate: false }, false)]
-    #[case(Pass::Preview, false)]
-    #[case(Pass::Rewrite, true)]
-    fn pass_writes_back_only_where_it_commits_the_rewrite(
-        #[case] pass: Pass,
-        #[case] write_back: bool,
-    ) {
-        assert_eq!(pass.write_back(), write_back);
     }
 }

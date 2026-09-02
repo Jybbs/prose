@@ -5,7 +5,7 @@
 //! it.
 
 use ruff_diagnostics::Edit;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange};
 
 use super::{
     Shedder,
@@ -19,7 +19,7 @@ use crate::{
         inline::{display_width, folded_line_form},
         layout::{Separator, explode_parens, item_indent},
         splice::splice_preserves_tree,
-        tokens::{is_closer, is_opener},
+        tokens::{open_brackets, tokens_within},
         travel::hung_block_through,
     },
     source::Source,
@@ -30,24 +30,14 @@ impl Shedder<'_> {
     /// open.
     fn held_inside_a_bracket(&self, pair: TextRange, candidates: &[Candidate]) -> bool {
         let head = self.source.logical_line_start(pair.start());
-        let mut open: Vec<TextSize> = Vec::new();
-        for token in self
-            .source
-            .tokens_overlapping(head)
-            .filter(|token| head.contains(token.start()))
-        {
-            if is_opener(token.kind()) {
-                open.push(token.start());
-            } else if is_closer(token.kind()) {
-                open.pop();
-            }
-        }
-        open.iter().any(|start| {
-            candidates
-                .binary_search_by_key(start, |other| other.pair.start())
-                .ok()
-                .is_none_or(|found| !candidates[found].sheds)
-        })
+        open_brackets(tokens_within(self.source, head))
+            .iter()
+            .any(|start| {
+                candidates
+                    .binary_search_by_key(start, |other| other.pair.start())
+                    .ok()
+                    .is_none_or(|found| !candidates[found].sheds)
+            })
     }
 
     /// True where every line break inside `inner` sits within a bracket
@@ -60,18 +50,6 @@ impl Shedder<'_> {
             && breaks_held_inside(self.source, inner, &inside_a_shed)
     }
 
-    /// The paren removals every candidate `candidate` encloses earns,
-    /// ascending by start, the text a break renders its operands
-    /// through. A candidate whose own removal shifts the parse keeps
-    /// its pair and contributes nothing.
-    fn nested_shed_edits(&self, candidate: &Candidate, candidates: &[Candidate]) -> Vec<Edit> {
-        outermost(
-            shedding_inside(candidate.inner, candidates)
-                .flat_map(Candidate::paren_removals)
-                .collect(),
-        )
-    }
-
     /// The indent of the row `pair`'s own statement opens on, the seat a
     /// break hangs its rows from, read past the trivia ahead of that
     /// statement.
@@ -79,9 +57,8 @@ impl Shedder<'_> {
         let head = self.source.logical_line_start(pair.start());
         let opens_at = self
             .source
-            .tokens_overlapping(head)
-            .find(|token| head.contains(token.start()) && !token.kind().is_trivia())
-            .map_or(pair.start(), Ranged::start);
+            .first_token_offset_in_range(head, |token| !token.kind().is_trivia())
+            .unwrap_or(pair.start());
         self.source.line_indent_width(opens_at)
     }
 
@@ -99,7 +76,7 @@ impl Shedder<'_> {
         if candidate.links || self.held_inside_a_bracket(pair, candidates) {
             return false;
         }
-        let nested = self.nested_shed_edits(candidate, candidates);
+        let nested = nested_shed_edits(candidate, candidates);
         if self.holds_its_breaks_inside(inner, &nested) {
             return false;
         }
@@ -135,6 +112,18 @@ impl Shedder<'_> {
 /// `indent` behind the operator joining it to the row above, and its
 /// `)` opening the row back at `indent`. Each operand renders through
 /// `nested`.
+/// The paren removals every candidate `candidate` encloses earns,
+/// ascending by start, the text a break renders its operands through.
+/// A candidate whose own removal shifts the parse keeps its pair and
+/// contributes nothing.
+fn nested_shed_edits(candidate: &Candidate, candidates: &[Candidate]) -> Vec<Edit> {
+    outermost(
+        shedding_inside(candidate.inner, candidates)
+            .flat_map(Candidate::paren_removals)
+            .collect(),
+    )
+}
+
 fn broken(source: &Source, chain: &[Operand], nested: &[Edit], indent: usize) -> String {
     let item = item_indent(indent);
     explode_parens(

@@ -2,14 +2,12 @@
 //! construct lands at, the width it settles to, and the columns
 //! trailing it on its row.
 
-use std::borrow::Cow;
-
 use ruff_python_ast::{AnyNodeRef, Expr};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{Layouter, entry_tail};
-use crate::primitives::{edit::apply_inline_edits, inline::display_width, padding};
+use crate::primitives::inline::settled_width;
 
 impl<'a> Layouter<'a> {
     /// True when `expr` contains an over-cap `Dict` at any depth,
@@ -41,13 +39,6 @@ impl<'a> Layouter<'a> {
             .narrowest_width(self.source, expr, parent, range, self.padding)
     }
 
-    /// The text ahead of `offset` on its logical line, rendered with the
-    /// edits this walk has emitted so far.
-    pub(super) fn placed_head(&self, offset: TextSize) -> Cow<'a, str> {
-        let start = self.source.logical_line_start(offset).start();
-        apply_inline_edits(self.source, TextRange::new(start, offset), &self.edits)
-    }
-
     /// The range covering `expr` with explicit parens recovered against
     /// `parent`.
     pub(super) fn range_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> TextRange {
@@ -68,15 +59,13 @@ impl<'a> Layouter<'a> {
         parent: AnyNodeRef,
         grandparent: AnyNodeRef,
     ) -> usize {
-        let end = expr.range().end();
-        let current = self
-            .source
-            .row_tail_width(end)
-            .saturating_add_signed(-padding::slack(
-                self.source,
-                self.padding,
-                self.source.row_tail(end),
-            ));
+        let end = expr.end();
+        let current = settled_width(
+            self.source,
+            self.padding,
+            self.source.row_tail(end),
+            self.source.row_tail_width(end),
+        );
         let Some(last) = self.reorders.sorted_last(self.source, parent, grandparent) else {
             return current;
         };
@@ -96,29 +85,11 @@ impl<'a> Layouter<'a> {
     /// and the padding rule drops the padding ahead of it on that row.
     pub(super) fn settled_column(&self, offset: TextSize) -> usize {
         let row = TextRange::new(self.source.text().line_start(offset), offset);
-        self.reservations
-            .column_in(self.source, offset)
-            .saturating_add_signed(-padding::slack(self.source, self.padding, row))
-    }
-
-    /// The display width `range` settles to once the padding rule drops
-    /// the delimiter padding and colon padding inside it.
-    pub(super) fn settled_width(&self, range: TextRange) -> usize {
-        display_width(self.source.slice(range)).saturating_add_signed(-padding::slack(
+        settled_width(
             self.source,
             self.padding,
-            range,
-        ))
-    }
-
-    /// The display width `text` settles to: the settled width of `range`
-    /// where `text` is that source slice as written, and its own width
-    /// for a rewrite, which carries no padding.
-    pub(super) fn text_width(&self, text: &str, range: TextRange) -> usize {
-        if self.source.slice(range) == text {
-            self.settled_width(range)
-        } else {
-            display_width(text)
-        }
+            row,
+            self.reservations.column_in(self.source, offset),
+        )
     }
 }

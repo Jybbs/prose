@@ -9,12 +9,12 @@
 //! comment at the width of.
 
 use ruff_python_trivia::{CommentRanges, PythonWhitespace, is_pragma_comment};
-use ruff_source_file::LineRanges;
+use ruff_source_file::{LineRanges, UniversalNewlines};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::{
     primitives::{aligner::is_held, blanks::whitespace_start_before, inline::display_width},
-    rule::RuleId,
+    rules::RuleId,
     source::Source,
     suppression::is_directive_comment,
 };
@@ -23,7 +23,6 @@ mod banners;
 mod noqa;
 
 pub(crate) use banners::is_banner_block;
-use banners::is_marker_line;
 pub(crate) use noqa::{noqa_marker, noqa_names};
 
 /// The characters whose appearance directly after a comment's hash run
@@ -88,11 +87,11 @@ impl Settling {
 /// member below it, carrying a section marker, a suppression directive,
 /// or a tool pragma on any of its lines.
 pub(crate) fn anchors_in_place(source: &Source, block: TextRange) -> bool {
-    source
-        .slice(block)
-        .lines()
-        .map(str::trim_start)
-        .any(|line| is_marker_line(line) || is_directive_comment(line) || is_pragma_comment(line))
+    is_banner_block(source, block)
+        || source.slice(block).universal_newlines().any(|line| {
+            let line = line.as_str().trim_start();
+            is_directive_comment(line) || is_pragma_comment(line)
+        })
 }
 
 /// The start of the block binding to the member at `item_start`, the
@@ -126,6 +125,26 @@ pub(super) fn comment_leads(source: &Source, item_start: TextSize) -> bool {
     let line_start = text.line_start(item_start);
     let above = whitespace_start_before(source, line_start);
     leading_comment_block(source, text.line_start(above), line_start).is_some()
+}
+
+/// True where every comment inside `gap` sits inside the block of one
+/// of `slots`, the members a fold leaves standing between a pair it
+/// joins.
+pub(crate) fn comments_held_by(
+    source: &Source,
+    gap: TextRange,
+    blocks: &[TextRange],
+    slots: impl Iterator<Item = usize> + Clone,
+) -> bool {
+    source
+        .comment_ranges()
+        .comments_in_range(gap)
+        .iter()
+        .all(|comment| {
+            slots
+                .clone()
+                .any(|slot| blocks[slot].contains_range(*comment))
+        })
 }
 
 /// True when the line containing `literal`'s opening bracket or the one
@@ -208,7 +227,15 @@ pub(crate) fn trailing_comment(source: &Source, offset: TextSize) -> Option<Text
 /// The columns `comment` occupies as a trailing comment, its own indent
 /// dropped and the trailing gap counted ahead of it.
 pub(crate) fn trailing_width(source: &Source, comment: TextRange) -> usize {
-    display_width(TRAILING_GAP) + display_width(source.slice(comment).trim_start())
+    TRAILING_GAP.len() + display_width(source.slice(comment).trim_start())
+}
+
+/// The comment block between the first two statements of `s`, the gap
+/// every block test reads.
+#[cfg(test)]
+fn gap_block(s: &Source) -> Option<TextRange> {
+    let body = &s.ast().body;
+    leading_comment_block(s, body[0].end(), body[1].start())
 }
 
 #[cfg(test)]
@@ -217,12 +244,7 @@ mod tests {
     use unicode_width::UnicodeWidthStr;
 
     use super::*;
-    use crate::testing::{notebook, parse};
-
-    fn gap_block(s: &Source) -> Option<TextRange> {
-        let body = &s.ast().body;
-        leading_comment_block(s, body[0].end(), body[1].start())
-    }
+    use crate::testing::{notebook, parse, range};
 
     /// Both comment rules on, carried by slug.
     fn settling() -> Settling {
@@ -383,5 +405,21 @@ mod tests {
             trailing_comment(&source, start).map(|range| source.slice(range)),
             expected,
         );
+    }
+
+    #[rstest]
+    #[case::no_comment_in_the_gap(range(0, 5), 0..0, true)]
+    #[case::a_standing_block_holds_it(range(5, 19), 1..2, true)]
+    #[case::no_standing_block_holds_it(range(5, 19), 0..1, false)]
+    #[case::no_standing_block_at_all(range(5, 19), 0..0, false)]
+    fn comments_held_by_reads_whether_a_standing_block_covers_each_comment(
+        #[case] gap: TextRange,
+        #[case] slots: std::ops::Range<usize>,
+        #[case] expected: bool,
+    ) {
+        let source = parse("x = 1\n# lead\ny = 2\n");
+        let blocks = [range(0, 5), range(6, 19)];
+
+        assert_eq!(comments_held_by(&source, gap, &blocks, slots), expected);
     }
 }

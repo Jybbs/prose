@@ -8,14 +8,14 @@
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Expr, StringLike, helpers::any_over_expr, token::TokenKind};
 use ruff_python_parser::{Mode, lexer::lex};
-use ruff_python_trivia::leading_indentation;
+use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::{Line, UniversalNewlines};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     primitives::{
         edit::apply_inline_edits,
-        inline::indent_width,
+        inline::{indent_width, spans_rows},
         layout::item_indent,
         tokens::{CLOSERS, OPENERS, is_closer, is_opener},
     },
@@ -28,6 +28,7 @@ mod rows;
 pub(crate) use blocks::{
     block_shift, frozen_rows, hung_block_through, placed_block, shifted_block, spans_a_string_part,
 };
+pub(crate) use rows::is_movable;
 use rows::{hanging_travel, movable_floor, shifted_rows};
 
 /// Where a block lands: the indent the row carrying it lands at, the

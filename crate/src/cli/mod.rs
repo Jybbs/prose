@@ -44,7 +44,7 @@ mod schema;
 
 use args::{
     CacheAction, Cli, Command, normalize_stdin_dash, report_clap_error,
-    validate_diff_format_combination,
+    validate_diff_format_combination, validate_stdin_filename,
 };
 use exit_status::ExitStatus;
 use output::Presentation;
@@ -62,6 +62,9 @@ pub fn run() -> ExitCode {
     if let Some(err) = validate_diff_format_combination(&cli) {
         return report_clap_error(err);
     }
+    if let Some(err) = validate_stdin_filename(&cli) {
+        return report_clap_error(err);
+    }
     // The server owns stdin and stdout end to end, so it dispatches
     // before the shared stdout lock below, which its writer thread would
     // otherwise deadlock against.
@@ -69,16 +72,14 @@ pub fn run() -> ExitCode {
         return finalize(crate::server::run(args)).into();
     }
     let raw_stdout = io::stdout().lock();
-    let color = color_for(cli.color, &raw_stdout);
-    let stdout = with_color(raw_stdout, color);
-    let raw_stderr = io::stderr();
-    let stderr_color = color_for(cli.color, &raw_stderr);
-    let stderr = with_color(raw_stderr, stderr_color);
+    let stdout_tty = raw_stdout.is_terminal();
+    let (mut stdout, color) = stream_for(cli.color, raw_stdout);
+    let (stderr, stderr_color) = stream_for(cli.color, io::stderr());
     let present = Presentation {
         color,
-        quiet: command_quiet(&cli.command),
+        quiet: cli.run_args().is_some_and(|args| args.quiet),
         stderr_color,
-        stdout_tty: io::stdout().is_terminal(),
+        stdout_tty,
     };
     let verbose = cli.verbose;
     let result = match cli.command {
@@ -91,8 +92,13 @@ pub fn run() -> ExitCode {
             runner::check_with_io(args, verbose, &present, io::stdin(), stdout, stderr)
         }
         Command::Completions { shell } => {
-            generate(shell, &mut Cli::command(), "prose", &mut io::stdout());
-            Ok(ExitStatus::Clean)
+            let mut script = Vec::new();
+            generate(shell, &mut Cli::command(), "prose", &mut script);
+            stdout
+                .write_all(&script)
+                .and_then(|()| stdout.flush())
+                .context("writing stdout")
+                .map(|()| ExitStatus::Clean)
         }
         Command::Format(args) => {
             runner::format_with_io(args, verbose, &present, io::stdin(), stdout, stderr)
@@ -102,18 +108,6 @@ pub fn run() -> ExitCode {
         Command::Server(_) => unreachable!("Server dispatched before the stdout lock"),
     };
     finalize(result).into()
-}
-
-fn command_quiet(command: &Command) -> bool {
-    match command {
-        Command::Check(args) => args.common.quiet,
-        Command::Format(args) => args.common.quiet,
-        Command::Cache { .. }
-        | Command::Completions { .. }
-        | Command::Rules(_)
-        | Command::Schema
-        | Command::Server(_) => false,
-    }
 }
 
 fn finalize(result: anyhow::Result<ExitStatus>) -> ExitStatus {
@@ -166,16 +160,19 @@ fn color_for<S: RawStream>(choice: ColorChoice, raw: &S) -> bool {
     }
 }
 
-/// Wraps `raw` for the run's color decision. A color run keeps the
-/// translation a legacy Windows console needs, and a plain run passes
-/// its bytes through, because every writer branches on the same
-/// decision and emits no escape for the stream to scan for.
-fn with_color<S: RawStream>(raw: S, color: bool) -> AutoStream<S> {
-    if color {
+/// `raw` wrapped for the color decision `choice` resolves to on it,
+/// beside that decision. A color run keeps the translation a legacy
+/// Windows console needs, and a plain run passes its bytes through,
+/// because every writer branches on the same decision and emits no
+/// escape for the stream to scan for.
+fn stream_for<S: RawStream>(choice: ColorChoice, raw: S) -> (AutoStream<S>, bool) {
+    let color = color_for(choice, &raw);
+    let stream = if color {
         AutoStream::always(raw)
     } else {
         AutoStream::always_ansi(raw)
-    }
+    };
+    (stream, color)
 }
 
 #[cfg(test)]

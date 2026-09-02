@@ -22,7 +22,7 @@ use ruff_python_ast::PythonVersion;
 
 use crate::{
     diagnostics::{Diagnostic, fired_rules},
-    rule::{Rule, RuleId, independent},
+    rules::{Rule, RuleId, independent},
     source::Source,
 };
 
@@ -136,10 +136,8 @@ impl Pipeline {
     ) -> Result<Source, PipelineError> {
         let gate = compile_gate(&source, self.target_version);
         let replays = self.sharing == Sharing::Declared;
-        let opens = seats.start;
         let mut batch = Batch::default();
-        for (offset, rule) in self.rules[seats].iter().enumerate() {
-            let seat = opens + offset;
+        for (seat, rule) in seats.clone().zip(&self.rules[seats]) {
             let joins = match self.sharing {
                 Sharing::Always => true,
                 Sharing::Declared => batch.shares_with(&self.shares[seat]),
@@ -176,7 +174,7 @@ impl Pipeline {
     /// [`unsettled_among`](Self::unsettled_among) read, narrowed to the
     /// rules `keep` admits, each rule's probe reported to the trace
     /// under `pass`, weaving the first editing rule's text as the
-    /// witness only when `witness` asks for it.
+    /// witness only where `witness` is set.
     fn settle_walk(
         &self,
         source: &Source,
@@ -282,9 +280,9 @@ impl Pipeline {
 
     /// Returns every registered rule's id in a stable order.
     /// Surfaces the same registry that
-    /// [`RuleId::from_str`](crate::rule::RuleId) consults.
+    /// [`RuleId::from_str`](crate::rules::RuleId) consults.
     pub fn known_ids() -> &'static [RuleId] {
-        crate::rule::KNOWN_IDS
+        crate::rules::KNOWN_IDS
     }
 
     /// This pipeline's enabled rule ids in registration order, the
@@ -434,7 +432,7 @@ pub enum Sharing {
     /// reparse rejects surfaces as [`PipelineError::Batch`] rather
     /// than replaying.
     Always,
-    /// The rules the registry's independence table declares, every
+    /// The rules the registry's shared-splice column declares, every
     /// other rule reading the tree the batch ahead of it left.
     #[default]
     Declared,

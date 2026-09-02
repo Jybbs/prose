@@ -1,6 +1,7 @@
 //! Indexes the module's `typing` imports for the rewrite to resolve
 //! against, and drops each alias the rewrite leaves unread.
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Alias, Stmt, name::QualifiedName};
 use ruff_text_size::TextRange;
@@ -112,13 +113,16 @@ impl<'a> TypingImports<'a> {
             .statements
             .iter()
             .map(|import| Dropping {
-                dropped: (0..import.names.len())
-                    .filter(|&index| import.orphaned(&import.names[index], &unread))
+                dropped: import
+                    .names
+                    .iter()
+                    .positions(|alias| import.orphaned(alias, &unread))
                     .collect(),
                 names: import.names,
                 range: import.range,
                 slot: import.slot,
             })
+            .filter(|drop| !drop.dropped.is_empty())
             .collect();
         folds.prune(source, &drops)
     }
@@ -148,6 +152,6 @@ impl TypingImport<'_> {
 
 /// True for the two module names that carry the `typing` members this
 /// rule rewrites.
-fn is_typing_root(module: &str) -> bool {
+pub(super) fn is_typing_root(module: &str) -> bool {
     matches!(module, "typing" | "typing_extensions")
 }

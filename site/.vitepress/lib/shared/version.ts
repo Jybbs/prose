@@ -19,13 +19,13 @@ export function readRequiresPython(crateDir: string): string {
   return bound.startsWith('>=') ? bound.slice(2) : bound
 }
 
-export function readRuffTag(crateDir: string): string {
+export function readRuffRelease(crateDir: string): string {
   const cargoPath = path.join(crateDir, 'Cargo.toml')
   const parsed    = parseToml(cargoPath) as {
-    dependencies?: { ruff_python_ast?: { tag?: unknown } }
+    package?: { metadata?: { ruff?: { release?: unknown } } }
   }
   return requireString(
-    parsed.dependencies?.ruff_python_ast?.tag,
-    `Could not find dependencies.ruff_python_ast.tag in ${cargoPath}`
+    parsed.package?.metadata?.ruff?.release,
+    `Could not find package.metadata.ruff.release in ${cargoPath}`
   )
 }

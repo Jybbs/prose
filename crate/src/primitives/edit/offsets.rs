@@ -64,6 +64,19 @@ pub(crate) fn narrowed_replacement<'a>(
     Some(replacement_or_deletion(narrowed_span, narrowed_text))
 }
 
+/// `offset` moved by the delta of the last marker at or before it,
+/// left where it is when no marker precedes it, the slide a reparse
+/// reads for a range no edit replaced.
+pub(crate) fn shifted_past(offset: TextSize, markers: &[SourceMarker]) -> TextSize {
+    if let Some(last) = markers.last()
+        && last.source() <= offset
+    {
+        return shifted(offset, last);
+    }
+    let upto = markers.partition_point(|marker| marker.source() <= offset);
+    shifted_by_last(offset, &markers[..upto])
+}
+
 /// `offset`, the byte past a token, at the position the woven text
 /// `map` describes carries it, `None` where an edit in `map` replaced
 /// the token. An insertion at the offset lands past the token.
@@ -86,8 +99,7 @@ fn forward_end(offset: TextSize, map: &SourceMap) -> Option<TextSize> {
 fn forward_offset(offset: TextSize, map: &SourceMap, is_final: bool) -> TextSize {
     let markers = map.markers();
     if is_final {
-        let upto = markers.partition_point(|marker| marker.source() <= offset);
-        return shifted_by_last(offset, &markers[..upto]);
+        return shifted_past(offset, markers);
     }
     let index = markers.partition_point(|marker| marker.source() < offset);
     if let Some(marker) = markers

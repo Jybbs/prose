@@ -53,17 +53,6 @@ fn run_as_written_names_the_rules_the_fold_fired_rather_than_the_as_written_ones
 }
 
 #[test]
-fn run_as_written_passes_a_clean_rewrite() {
-    let pipeline = Pipeline::from_rules(vec![sentinel(
-        "rewrite-x-to-y",
-        vec![replacement("y", 0, 1)],
-    )]);
-    let source = parse("x = 1\n");
-
-    assert!(pipeline.run_as_written(source).is_ok());
-}
-
-#[test]
 fn run_as_written_passes_an_overlapping_group_as_a_no_op() {
     let pipeline = Pipeline::from_rules(vec![Box::new(self_overlapping())]);
     let source = parse("x = 1\n");

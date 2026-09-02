@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use clap::builder::{PossibleValuesParser, TypedValueParser};
 
-use crate::{pipeline::Pipeline, rule::RuleId};
+use crate::{pipeline::Pipeline, rules::RuleId};
 
 #[derive(Debug, Default, clap::Args)]
 pub(crate) struct CheckArgs {

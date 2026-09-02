@@ -9,7 +9,7 @@ use ruff_python_trivia::{
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 
@@ -59,21 +59,21 @@ fn is_step_narration(comment: &str) -> bool {
     matches_step_word(body) || matches_numeric_dot(body)
 }
 
+/// Eats a run of one or more characters `accepts` admits, false where
+/// the cursor opens on anything else.
+fn eat_run(cursor: &mut Cursor, accepts: impl Fn(char) -> bool) -> bool {
+    let opened = cursor.eat_if(&accepts);
+    cursor.eat_while(accepts);
+    opened
+}
+
 /// Matches the `^\d+\.\s+\S` body.
 fn matches_numeric_dot(body: &str) -> bool {
     let mut cursor = Cursor::new(body);
-    if !cursor.eat_if(|c| c.is_ascii_digit()) {
-        return false;
-    }
-    cursor.eat_while(|c| c.is_ascii_digit());
-    if !cursor.eat_char('.') {
-        return false;
-    }
-    if !cursor.eat_if(is_python_whitespace) {
-        return false;
-    }
-    cursor.eat_while(is_python_whitespace);
-    !cursor.is_eof()
+    eat_run(&mut cursor, |c| c.is_ascii_digit())
+        && cursor.eat_char('.')
+        && eat_run(&mut cursor, is_python_whitespace)
+        && !cursor.is_eof()
 }
 
 /// Matches the `^[Ss]tep\s+\d+[:.]\s+\S` body.
@@ -85,22 +85,11 @@ fn matches_step_word(body: &str) -> bool {
         return false;
     };
     let mut cursor = Cursor::new(rest);
-    if !cursor.eat_if(is_python_whitespace) {
-        return false;
-    }
-    cursor.eat_while(is_python_whitespace);
-    if !cursor.eat_if(|c| c.is_ascii_digit()) {
-        return false;
-    }
-    cursor.eat_while(|c| c.is_ascii_digit());
-    if !cursor.eat_if(|c| c == ':' || c == '.') {
-        return false;
-    }
-    if !cursor.eat_if(is_python_whitespace) {
-        return false;
-    }
-    cursor.eat_while(is_python_whitespace);
-    !cursor.is_eof()
+    eat_run(&mut cursor, is_python_whitespace)
+        && eat_run(&mut cursor, |c| c.is_ascii_digit())
+        && cursor.eat_if(|c| matches!(c, ':' | '.'))
+        && eat_run(&mut cursor, is_python_whitespace)
+        && !cursor.is_eof()
 }
 
 #[cfg(test)]

@@ -10,7 +10,7 @@ use thiserror::Error;
 use super::validity::first_semantic_error;
 use crate::{
     primitives::edit::forward_offsets,
-    rule::{RuleId, render_slugs},
+    rules::{RuleId, render_slugs},
     source::Source,
 };
 
@@ -39,25 +39,34 @@ pub enum PipelineError {
     },
 }
 
-/// Reparses `new_text`, sliding the source's cell offsets through `map`
-/// so a notebook keeps current boundaries, and tagging each failure
-/// with `rule`. A cell the source split cleanly is checked on its own
-/// through [`reject_split_cell`], and the semantic check runs only when
-/// `gate` carries the version to evaluate against. The result carries
-/// no table until the caller's `inherit` fills one.
+/// Reparses `new_text` and tags each failure with `rule`, the result
+/// carrying no table until the caller's `inherit` fills one.
+///
+/// A splice reparses only the statements the edits reached and answers
+/// `None` where it declines, leaving the whole-file parse below. That
+/// path takes every notebook, so the slide that keeps a notebook's cell
+/// boundaries current through `map` and the per-cell check through
+/// [`reject_split_cell`] both sit on it. The semantic check reads either
+/// path's result, and runs only when `gate` carries the version to
+/// evaluate against.
 pub(super) fn reparse_or_reject(
-    source: &Source,
+    source: Source,
     new_text: String,
     rule: RuleId,
     map: &SourceMap,
     gate: Option<PythonVersion>,
 ) -> Result<Source, PipelineError> {
-    let limit = new_text.text_len();
-    let cell_offsets = forward_offsets(source.cell_offsets(), map, limit);
-    let next = source
-        .reparse_carrying(new_text, cell_offsets)
-        .map_err(|source| PipelineError::Reparse { rule, source })?;
-    reject_split_cell(source, &next, rule)?;
+    let next = match source.splice_of(&new_text, map) {
+        Some(splice) => source.spliced(new_text, map, splice, rule),
+        None => {
+            let cell_offsets = forward_offsets(source.cell_offsets(), map, new_text.text_len());
+            let next = source
+                .reparse_carrying(new_text, cell_offsets)
+                .map_err(|source| PipelineError::Reparse { rule, source })?;
+            reject_split_cell(&source, &next, rule)?;
+            next
+        }
+    };
     if let Some(version) = gate
         && let Some(error) = first_semantic_error(&next, version)
     {

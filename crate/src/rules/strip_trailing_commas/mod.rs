@@ -15,7 +15,7 @@ use ruff_text_size::{Ranged, TextRange};
 use crate::{
     config::Config,
     primitives::{edit::singleton_groups, walk::walk_stmt},
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 

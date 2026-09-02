@@ -30,7 +30,12 @@ pub(super) fn edits_for(source: &Source, expr: &Expr, plan: &Plan) -> Option<Vec
     };
     edits
         .iter()
-        .all(|edit| !source.intersects_comment(edit.range()))
+        .all(|edit| {
+            source
+                .comment_ranges()
+                .comments_in_range(edit.range())
+                .is_empty()
+        })
         .then_some(edits)
 }
 

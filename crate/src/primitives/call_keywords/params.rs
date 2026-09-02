@@ -27,7 +27,5 @@ pub(crate) fn resolve_call_params<'src>(
     call: &ExprCall,
     targets: &CallTargets<'src>,
 ) -> Option<&'src Parameters> {
-    targets
-        .get(&call.func.as_name_expr()?.range().start())
-        .copied()
+    targets.get(&call.func.as_name_expr()?.start()).copied()
 }

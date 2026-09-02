@@ -9,7 +9,7 @@ use std::{
 use serde::Serialize;
 
 use super::{Emitter, EmitterSummary, Run, UnstableEntry, diagnostics, write_json_line};
-use crate::{findings::JsonDiagnostic, rule::RuleId};
+use crate::{findings::JsonDiagnostic, rules::RuleId};
 
 /// Bumps on any breaking change to existing field shapes, leaving
 /// additive fields to land unversioned.
@@ -47,6 +47,8 @@ struct JsonSummary<'a> {
     diagnostics_total: usize,
     files_changed: usize,
     files_visited: usize,
+    files_with_diagnostics: usize,
+    lint_total: usize,
     prose_version: &'a str,
     rules_fired: &'a BTreeMap<RuleId, usize>,
     schema_version: u32,
@@ -60,6 +62,8 @@ impl<'a> JsonSummary<'a> {
             diagnostics_total: summary.diagnostics_total,
             files_changed: summary.files_changed,
             files_visited: summary.files_visited,
+            files_with_diagnostics: summary.files_with_diagnostics,
+            lint_total: summary.lint_total,
             prose_version: env!("CARGO_PKG_VERSION"),
             rules_fired: &summary.rules_fired,
             schema_version: SCHEMA_VERSION,
@@ -74,7 +78,7 @@ mod tests {
     use serde_json::{Value, json};
 
     use super::*;
-    use crate::cli::emit::emitted;
+    use crate::cli::emit::emitted_string;
     use crate::diagnostics::Diagnostic;
     use crate::source::Source;
     use crate::testing::{format_diagnostic, parse, range, replacement};
@@ -92,8 +96,7 @@ mod tests {
     }
 
     fn emit_text(source: &Source, diagnostics: &[Diagnostic], summary: &EmitterSummary) -> String {
-        let buf = emitted(&Json, source.source_file(), diagnostics, summary);
-        String::from_utf8(buf).expect("utf-8")
+        emitted_string(&Json, source.source_file(), diagnostics, summary)
     }
 
     fn parse_records(text: &str) -> Vec<Value> {
@@ -233,6 +236,8 @@ mod tests {
                 "diagnostics_total" : 2,
                 "files_changed"     : 1,
                 "files_visited"     : 1,
+                "files_with_diagnostics" : 1,
+                "lint_total"        : 1,
                 "prose_version"     : env!("CARGO_PKG_VERSION"),
                 "rules_fired"       : { "align-equals": 1, "rewrite-x": 1 },
                 "schema_version"    : 1,

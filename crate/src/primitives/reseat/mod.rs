@@ -6,21 +6,21 @@
 //! string, a row indented with a tab, and a row aligned to nothing keep
 //! their columns.
 
-use std::collections::BTreeMap;
-
 use ruff_diagnostics::Edit;
 use ruff_python_ast::token::{Token, TokenKind};
 use ruff_python_trivia::leading_indentation;
-use ruff_source_file::{LineRanges, OneIndexed};
-use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
+use ruff_source_file::{LineRanges, OneIndexed, UniversalNewlines};
+use ruff_text_size::{Ranged, TextRange, TextSize};
+use rustc_hash::FxHashMap;
 
 use crate::{
     primitives::{
         INDENT_STEP,
         edit::insert_edit,
         inline::{display_width, indent_width},
-        tokens::{is_closer, is_opener},
-        travel::frozen_rows,
+        range::blocks_span,
+        tokens::{is_closer, is_opener, open_brackets, tokens_within},
+        travel::{frozen_rows, is_movable},
     },
     source::Source,
 };
@@ -31,23 +31,18 @@ use crate::{
 /// start of the first row a removal touches to the end of its logical
 /// line, and empty `removals` reseat nothing.
 pub(crate) fn push_reseat_edits(source: &Source, removals: &[Edit], edits: &mut Vec<Edit>) {
-    let Some(start) = removals.iter().map(Ranged::start).min() else {
+    if removals.is_empty() {
         return;
-    };
-    let end = removals
-        .iter()
-        .map(Ranged::end)
-        .max()
-        .expect("a removal exists");
+    }
+    let span = blocks_span(removals);
     let line = TextRange::new(
-        source.text().line_start(start),
-        source.logical_line_tail(end).end(),
+        source.text().line_start(span.start()),
+        source.logical_line_tail(span.end()).end(),
     );
     let row_of = |offset: TextSize| source.line_index(offset);
     let removed = |offset: TextSize| removals.iter().any(|edit| edit.range().contains(offset));
-    let tokens: Vec<&Token> = source
-        .tokens_overlapping(line)
-        .filter(|token| line.contains(token.start()) && !token.kind().is_trivia())
+    let tokens: Vec<&Token> = tokens_within(source, line)
+        .filter(|token| !token.kind().is_trivia())
         .collect();
     // A removed token still brackets the rows inside it, whereas a row
     // aligns only to a token that survives on a row no removal joins to
@@ -56,17 +51,16 @@ pub(crate) fn push_reseat_edits(source: &Source, removals: &[Edit], edits: &mut 
         !removed(token.start())
             && !removals.iter().any(|edit| {
                 source.contains_line_break(edit.range())
-                    && row_of(edit.range().end()) == row_of(token.start())
+                    && row_of(edit.end()) == row_of(token.start())
             })
     };
-    let mut moved: BTreeMap<OneIndexed, usize> = BTreeMap::new();
-    let token_move = |moved: &BTreeMap<OneIndexed, usize>, token: &Token| -> usize {
+    let mut moved: FxHashMap<OneIndexed, usize> = FxHashMap::default();
+    let token_move = |moved: &FxHashMap<OneIndexed, usize>, token: &Token| -> usize {
         let row = moved.get(&row_of(token.start())).copied().unwrap_or(0);
         let lost: usize = removals
             .iter()
             .filter(|edit| {
-                row_of(edit.range().start()) == row_of(token.start())
-                    && edit.range().end() <= token.start()
+                row_of(edit.start()) == row_of(token.start()) && edit.end() <= token.start()
             })
             .map(|edit| {
                 display_width(source.slice(edit.range())) - edit.content().map_or(0, display_width)
@@ -75,27 +69,30 @@ pub(crate) fn push_reseat_edits(source: &Source, removals: &[Edit], edits: &mut 
         row + lost
     };
     let frozen = frozen_rows(source, line);
-    let mut row_start = line.start();
-    for (row, line_text) in source.slice(line).split_inclusive('\n').enumerate() {
-        let start = row_start;
-        row_start += line_text.text_len();
-        if row == 0 || frozen.get(row) == Some(&true) || removed(start) {
+    for (row, line_text) in source.slice(line).universal_newlines().enumerate() {
+        let start = line.start() + line_text.start();
+        if !is_movable(row, line_text.as_str(), &frozen) || removed(start) {
             continue;
         }
-        let indentation = leading_indentation(line_text);
-        if indentation.contains('\t') || line_text.trim().is_empty() {
+        if leading_indentation(line_text.as_str()).contains('\t') {
             continue;
         }
-        let indent = indent_width(line_text);
-        let Some(opener) = enclosing_opener(&tokens, start) else {
+        let indent = indent_width(line_text.as_str());
+        let Some(opener) = open_brackets(
+            tokens
+                .iter()
+                .copied()
+                .take_while(|token| token.start() < start),
+        )
+        .pop() else {
             continue;
         };
-        let opener_row = row_of(opener.start());
+        let opener_row = row_of(opener);
         let after: Vec<&Token> = tokens
             .iter()
             .copied()
             .filter(|token| anchors(token))
-            .filter(|token| token.start() > opener.start() && row_of(token.start()) == opener_row)
+            .filter(|token| token.start() > opener && row_of(token.start()) == opener_row)
             .collect();
         let hangs_from_row = moved.get(&opener_row).copied().unwrap_or(0);
         let at = |token: &Token| source.column_of(token.start()) == indent;
@@ -103,7 +100,7 @@ pub(crate) fn push_reseat_edits(source: &Source, removals: &[Edit], edits: &mut 
             None => hangs_from_row,
             Some(first) if at(first) => token_move(&moved, first),
             Some(_) => {
-                let row_indent = source.line_indent_width(opener.start());
+                let row_indent = source.line_indent_width(opener);
                 if let Some(code) = after
                     .iter()
                     .find(|token| at(token) && is_code(token.kind()))
@@ -127,23 +124,6 @@ pub(crate) fn push_reseat_edits(source: &Source, removals: &[Edit], edits: &mut 
             insert_edit(edits, Edit::range_deletion(TextRange::at(start, taken)));
         }
     }
-}
-
-/// The opener of the innermost bracket still open at `offset` among
-/// `tokens`, `None` where none is.
-fn enclosing_opener<'t>(tokens: &[&'t Token], offset: TextSize) -> Option<&'t Token> {
-    let mut pending = 0_usize;
-    for token in tokens.iter().rev().filter(|token| token.start() < offset) {
-        if is_closer(token.kind()) {
-            pending += 1;
-        } else if is_opener(token.kind()) {
-            if pending == 0 {
-                return Some(token);
-            }
-            pending -= 1;
-        }
-    }
-    None
 }
 
 /// True for a token a row aligns to by intent rather than by the

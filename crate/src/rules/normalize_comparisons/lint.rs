@@ -30,7 +30,7 @@ pub(super) fn boolean_lint(test: Test<'_>) -> Option<Diagnostic> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{config::Config, diagnostics::Severity, rule::Rule, testing::parse};
+    use crate::{config::Config, diagnostics::Severity, rules::Rule, testing::parse};
 
     #[test]
     fn lint_pins_the_literal_range_severity_and_message() {

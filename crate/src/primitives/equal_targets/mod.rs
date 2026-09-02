@@ -5,12 +5,16 @@
 //! alignment edits, and the `reserve` primitive consumes them to predict
 //! the column `align_equals` shifts a value to for both layout rules.
 
+use itertools::Itertools;
 use ruff_python_ast::{
-    AnyNodeRef, AnyParameterRef, ArgOrKeyword, ExprCall, ExprRef, Stmt, token::TokenKind,
+    AnyNodeRef, AnyParameterRef, ArgOrKeyword, ExprCall, ExprRef, Parameters, Stmt,
+    token::TokenKind,
 };
+use ruff_source_file::OneIndexed;
 use ruff_text_size::{Ranged, TextRange, TextSize};
+use rustc_hash::FxHashSet;
 
-use crate::{primitives::aligner, rule::RuleId, source::Source};
+use crate::{primitives::aligner, rules::RuleId, source::Source};
 
 /// Returns the alignment member for an annotated `x: int = 1`, plain
 /// `x = 1`, or augmented `x += 1` statement, measuring the left-hand
@@ -78,10 +82,11 @@ pub(crate) fn keyword_groups(
     if !source.contains_line_break(call.arguments.range()) {
         return Vec::new();
     }
-    let arg_lines: Vec<_> = call
+    let shared_lines: FxHashSet<OneIndexed> = call
         .arguments
         .iter_source_order()
         .map(|a| source.line_index(a.start()))
+        .duplicates()
         .collect();
     aligner::adjacent_member_groups(
         source,
@@ -91,8 +96,7 @@ pub(crate) fn keyword_groups(
             let Some(member) = keyword(source, arg) else {
                 return aligner::Slot::Break;
             };
-            let line = source.line_index(member.line_start);
-            if arg_lines.iter().filter(|&&l| l == line).count() > 1 {
+            if shared_lines.contains(&source.line_index(member.line_start)) {
                 return aligner::Slot::Break;
             }
             member.slot(source, rule)
@@ -120,6 +124,31 @@ pub(crate) fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<a
         default.into(),
         with_default.into(),
     )
+}
+
+/// The line-adjacent assignment runs of `body`, a multi-line statement
+/// closing its run and a held one transparent.
+pub(crate) fn assignment_groups(
+    source: &Source,
+    rule: RuleId,
+    body: &[Stmt],
+) -> Vec<Vec<aligner::Member>> {
+    aligner::line_adjacent_groups(source, body, rule, |stmt| assignment(source, stmt))
+}
+
+/// The runs of `params`' annotated defaults, a multi-line default
+/// closing the run after it and every held row dropped.
+pub(crate) fn parameter_groups(
+    source: &Source,
+    rule: RuleId,
+    params: &Parameters,
+) -> Vec<Vec<aligner::Member>> {
+    aligner::adjacent_member_groups(source, params.iter_source_order(), true, |param| {
+        parameter(source, param).into()
+    })
+    .into_iter()
+    .map(|group| aligner::retain_unheld(source, rule, group))
+    .collect()
 }
 
 /// Builds an `=`-anchored member with `target` as the LHS span,

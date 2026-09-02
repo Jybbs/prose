@@ -25,7 +25,7 @@ bindings:
     name: x
     read_offsets: []
     runtime_read: false
-    scope: 1
+    scope: 0
     write_offsets:
       - 35
   - annotation_read: false
@@ -80,16 +80,16 @@ bindings:
 scopes:
   - bindings:
       globalized: 0
+      x: 1
       nested: 2
     kind: Module
     parent: ~
-  - bindings:
-      x: 1
+  - bindings: {}
     kind: Function
     parent: 0
   - bindings:
-      inner: 4
       y: 3
+      inner: 4
     kind: Function
     parent: 0
   - bindings:

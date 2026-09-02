@@ -19,7 +19,7 @@ use crate::{
         edit::narrowed_replacement,
         quoting::{TRIPLE_QUOTE, abuts_triple_closer},
     },
-    rule::{Rule, RuleId},
+    rules::{Rule, RuleId},
     source::Source,
 };
 
@@ -79,7 +79,7 @@ fn requote_edits(source: &Source, lit: &StringLiteral, body: &DocstringBody) -> 
         return Vec::new();
     }
     let opener = TextRange::new(body.range.start() - flags.quote_len(), body.range.start());
-    let closer = TextRange::new(body.range.end(), body.range.end() + flags.closer_len());
+    let closer = TextRange::at(body.range.end(), flags.closer_len());
     [opener, closer]
         .into_iter()
         .filter_map(|range| narrowed_replacement(source, range, TRIPLE_QUOTE.to_owned()))

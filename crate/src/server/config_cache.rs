@@ -11,7 +11,7 @@ use lsp_types::Uri;
 use rustc_hash::FxHashMap;
 
 use super::conversion;
-use crate::config::{Config, ConfigSource, NoticeDedup};
+use crate::config::{Config, ConfigSource, DirSource, NoticeDedup, holding_dir};
 
 /// Resolves the configuration governing each document, memoizing each
 /// directory's project source only when a watcher can invalidate the
@@ -49,44 +49,31 @@ impl ConfigCache {
         let Some(path) = conversion::to_path(uri) else {
             return Config::default();
         };
-        let dir = path.parent().unwrap_or(&path).to_path_buf();
+        let dir = holding_dir(&path).to_path_buf();
         let config = if self.enabled {
             self.by_dir
                 .entry(dir)
-                .or_insert_with_key(|dir| DirSource::discover(dir))
+                .or_insert_with_key(|dir| discovered(dir))
                 .config(&path, text.as_bytes())
         } else {
-            DirSource::discover(&dir).config(&path, text.as_bytes())
+            discovered(&dir).config(&path, text.as_bytes())
         };
-        config.unwrap_or_else(Config::default)
+        config.unwrap_or_default()
     }
 }
 
-/// A directory's resolved project source. A bare directory leaves its
-/// documents to draw their own script block.
-enum DirSource {
-    Bare,
-    Failed,
-    Project(ConfigSource),
+/// Walks `dir`'s ancestors for a project config, logging a
+/// present-but-broken config before reporting `Failed`.
+fn discovered(dir: &Path) -> DirSource {
+    DirSource::discover(dir, &NoticeDedup::default(), |err| {
+        eprintln!(
+            "prose server: config at {} failed to load, using defaults: {err}",
+            dir.display(),
+        );
+    })
 }
 
 impl DirSource {
-    /// Walks `dir`'s ancestors for a project config, logging a
-    /// present-but-broken config before reporting `Failed`.
-    fn discover(dir: &Path) -> Self {
-        match ConfigSource::discover(dir, &NoticeDedup::default()) {
-            Ok(Some(source)) => Self::Project(source),
-            Ok(None) => Self::Bare,
-            Err(err) => {
-                eprintln!(
-                    "prose server: config at {} failed to load, using defaults: {err}",
-                    dir.display(),
-                );
-                Self::Failed
-            }
-        }
-    }
-
     /// The config governing `file`, layering matching overrides onto the
     /// project base or reading `bytes`'s PEP 723 block under a bare
     /// directory. `None` draws the caller back to the defaults, including
@@ -115,17 +102,13 @@ mod tests {
     use crate::{
         file_uri,
         server::uri,
-        testing::{write_prose_toml, write_pyproject},
+        testing::{line_length, write_prose_toml, write_pyproject},
     };
 
     const SCRIPT: &str = "# /// script\n# [tool.prose]\n# code-line-length = 200\n# ///\nx = 1\n";
 
     fn doc_uri(path: &Path) -> Uri {
         uri(&file_uri::from_path(&path.display().to_string()))
-    }
-
-    fn line_length(config: &Config) -> Option<usize> {
-        config.code_line_length.map(std::num::NonZeroUsize::get)
     }
 
     #[test]
@@ -260,7 +243,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         write_prose_toml(dir.path(), "code-line-length = 100\n");
         let doc = dir.path().join("mod.py");
-        std::fs::write(&doc, "x = 1\n").expect("writes");
+        fs_err::write(&doc, "x = 1\n").expect("writes");
         let file = doc_uri(&doc);
 
         let mut cache = ConfigCache::new(true);

@@ -29,8 +29,8 @@ use crate::{
         slots::{item_holding, slot_holding},
         walk::walk_stmt,
     },
-    rule::{Rule, RuleId},
     rules::stack_adjacent_strings::concatenated_run,
+    rules::{Rule, RuleId},
     source::Source,
 };
 
@@ -75,44 +75,46 @@ impl Rule for LineOverflow {
         spans.visit_body(&source.ast().body);
         spans.index();
         let floor = self.code_line_length.min(self.import_line_length);
-        let mut diagnostics = Vec::new();
-        for line in source.text().universal_newlines() {
-            let range = line.range();
-            let width = display_width(line.as_str());
-            if width <= floor {
-                continue;
-            }
-            let cap = if spans.in_import(range) {
-                self.import_line_length
-            } else {
-                self.code_line_length
-            };
-            if width <= cap || spans.reshapes(range) {
-                continue;
-            }
-            let report = format!("Line is {width} columns, over the {cap}-column budget");
-            let lit = spans.straddling(range, cap);
-            diagnostics.push(
-                match lit.and_then(|lit| split::concatenation(source, lit, cap)) {
-                    Some(edit) if self.suggest_string_splits => Diagnostic::suggestion(
-                        self.id(),
-                        range,
-                        format!("{report}, with a legal reshape at the string literal"),
-                        edit,
-                    ),
-                    Some(_) => Diagnostic::lint(self.id(), range, report),
-                    None if lit.is_some_and(|lit| split::has_interior_break(source, lit)) => {
-                        Diagnostic::lint(self.id(), range, report)
-                    }
-                    None => Diagnostic::lint(
-                        self.id(),
-                        range,
-                        format!("{report}, with no legal reshape"),
-                    ),
-                },
-            );
-        }
-        diagnostics
+        source
+            .text()
+            .universal_newlines()
+            .filter_map(|line| {
+                let range = line.range();
+                let width = display_width(line.as_str());
+                if width <= floor {
+                    return None;
+                }
+                let cap = if spans.in_import(range) {
+                    self.import_line_length
+                } else {
+                    self.code_line_length
+                };
+                if width <= cap || spans.reshapes(range) {
+                    return None;
+                }
+                let report = format!("Line is {width} columns, over the {cap}-column budget");
+                let lit = spans.straddling(range, cap);
+                Some(
+                    match lit.and_then(|lit| split::concatenation(source, lit, cap)) {
+                        Some(edit) if self.suggest_string_splits => Diagnostic::suggestion(
+                            self.id(),
+                            range,
+                            format!("{report}, with a legal reshape at the string literal"),
+                            edit,
+                        ),
+                        Some(_) => Diagnostic::lint(self.id(), range, report),
+                        None if lit.is_some_and(|lit| split::has_interior_break(source, lit)) => {
+                            Diagnostic::lint(self.id(), range, report)
+                        }
+                        None => Diagnostic::lint(
+                            self.id(),
+                            range,
+                            format!("{report}, with no legal reshape"),
+                        ),
+                    },
+                )
+            })
+            .collect()
     }
 }
 
@@ -140,11 +142,11 @@ impl<'a> Spans<'a> {
         concatenated_run(expr).is_some() && !self.docstrings.contains(&expr.range())
     }
 
-    /// True when `line` sits inside an import statement, which answers
-    /// to the import budget. Import statements never nest, so the last
-    /// range opening at or before `line` is the only candidate.
+    /// True when `line` meets an import statement, which answers to the
+    /// import budget. Import statements never nest, so the last range
+    /// opening at or before `line`'s end is the only candidate.
     fn in_import(&self, line: TextRange) -> bool {
-        item_holding(&self.imports, line.start()).is_some_and(|import| import.contains_range(line))
+        item_holding(&self.imports, line.end()).is_some_and(|import| import.end() >= line.start())
     }
 
     /// Orders both collected range lists by start and fills [`Self::reach`],
