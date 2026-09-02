@@ -176,11 +176,11 @@ fn candidates(pipeline: &Pipeline, original: &str, editing: &[RuleId]) -> Vec<Ru
         .parse::<Source>()
         .map(|source| pipeline.unsettled(&source))
         .unwrap_or_default();
-    let (named, rest): (Vec<_>, Vec<_>) = pipeline
+    pipeline
         .rule_ids()
         .filter(|rule| touched.contains(rule) || editing.contains(rule))
-        .partition(|rule| editing.contains(rule));
-    named.into_iter().chain(rest).collect()
+        .sorted_by_key(|rule| !editing.contains(rule))
+        .collect()
 }
 
 /// The pipeline seating `rules` alone under `config`.

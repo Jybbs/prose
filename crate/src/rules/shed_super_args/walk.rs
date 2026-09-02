@@ -6,7 +6,7 @@ use ruff_python_ast::{
     visitor::{Visitor, walk_expr},
 };
 use ruff_source_file::UniversalNewlines;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::TextRange;
 
 use super::*;
 
@@ -23,15 +23,14 @@ pub(super) struct Frame<'a> {
 }
 
 /// Collects one fix group per rewritable `super(...)` call, carrying the
-/// enclosing class stack, the callable frame stack the walk maintains,
-/// and the start of the statement under visit.
+/// enclosing class stack and the callable frame stack the walk
+/// maintains.
 pub(super) struct Walker<'a> {
     pub(super) analysis: &'a BindingAnalysis,
     pub(super) classes: Vec<&'a StmtClassDef>,
     pub(super) frames: Vec<Frame<'a>>,
     pub(super) groups: Vec<Vec<Edit>>,
     pub(super) source: &'a Source,
-    pub(super) statement: TextSize,
 }
 
 impl<'a> Walker<'a> {
@@ -137,7 +136,6 @@ impl<'a> Visitor<'a> for Walker<'a> {
     }
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        self.statement = stmt.start();
         match stmt {
             Stmt::ClassDef(class) => {
                 self.classes.push(class);

@@ -297,13 +297,13 @@ fn assert_warm_run_matches_cold(paths: &[&Path]) -> String {
         .code(1);
 
     assert_eq!(cold.get_output().stdout, warm.get_output().stdout);
-    stdout_utf8(&warm)
+    stdout_utf8(&warm).to_owned()
 }
 
 /// The byte total of every file in `dir`, the measure the cache's size
 /// cap governs.
 fn cache_bytes(dir: &Path) -> u64 {
-    std::fs::read_dir(dir)
+    fs_err::read_dir(dir)
         .expect("read_dir")
         .flatten()
         .filter_map(|entry| entry.metadata().ok())
@@ -315,14 +315,23 @@ fn cache_bytes(dir: &Path) -> u64 {
 /// `source`, returning the summary line the run closed with.
 fn check_json_summary(name: &str, source: &str, code: i32) -> serde_json::Value {
     let assert = run_fixture(name, source, &["check", "--output-format", "json"]).code(code);
-    summary_line(&stdout_utf8(&assert))
+    summary_line(stdout_utf8(&assert))
 }
 
 fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
     let dir = tempdir().expect("tempdir");
     let path = dir.path().join(name);
-    std::fs::write(&path, source).expect("writes");
+    fs_err::write(&path, source).expect("writes");
     (dir, path)
+}
+
+/// Formats `path` twice with the cache off, returning the text after
+/// the first run beside the second run's assertion.
+fn format_twice(path: &Path) -> (String, Assert) {
+    let format = || prose().args(["format", "--no-cache"]).arg(path).assert();
+    format().success();
+    let once = fs_err::read_to_string(path).expect("reads");
+    (once, format())
 }
 
 fn json(text: &str) -> serde_json::Value {
@@ -355,7 +364,7 @@ fn rewrite_fixture(name: &str, source: &str, args: &[&str]) -> (Assert, String) 
     let (_dir, path) = fixture(name, source);
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.args(args).arg(&path).assert();
-    let after = std::fs::read_to_string(&path).expect("reads");
+    let after = fs_err::read_to_string(&path).expect("reads");
     (assert, after)
 }
 
@@ -381,22 +390,22 @@ fn run_stdin(source: &str, args: &[&str]) -> Assert {
 fn sibling_projects(parent: &TempDir, source: &str) -> (PathBuf, PathBuf) {
     let suppressed = parent.path().join("suppressed");
     let flagged = parent.path().join("flagged");
-    std::fs::create_dir_all(&suppressed).expect("dirs create");
-    std::fs::create_dir_all(&flagged).expect("dirs create");
+    fs_err::create_dir_all(&suppressed).expect("dirs create");
+    fs_err::create_dir_all(&flagged).expect("dirs create");
     write_pyproject(&suppressed, SUPPRESSING_PYPROJECT);
     let x = suppressed.join("x.py");
     let y = flagged.join("y.py");
-    std::fs::write(&x, source).expect("writes");
-    std::fs::write(&y, source).expect("writes");
+    fs_err::write(&x, source).expect("writes");
+    fs_err::write(&y, source).expect("writes");
     (x, y)
 }
 
-fn stderr_utf8(assert: &Assert) -> String {
-    String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8")
+fn stderr_utf8(assert: &Assert) -> &str {
+    str::from_utf8(&assert.get_output().stderr).expect("utf-8")
 }
 
-fn stdout_utf8(assert: &Assert) -> String {
-    String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8")
+fn stdout_utf8(assert: &Assert) -> &str {
+    str::from_utf8(&assert.get_output().stdout).expect("utf-8")
 }
 
 fn summary_line(out: &str) -> serde_json::Value {
@@ -423,7 +432,7 @@ fn warmed_by(path: &Path, seed: &[&str], code: i32) -> (Command, TempDir) {
 }
 
 fn write_pyproject(dir: &Path, contents: &str) {
-    std::fs::write(dir.join("pyproject.toml"), contents).expect("writes pyproject");
+    fs_err::write(dir.join("pyproject.toml"), contents).expect("writes pyproject");
 }
 
 #[test]
@@ -432,12 +441,13 @@ fn a_duplicated_unread_import_settles_before_the_ledger_probes_it() {
     let (mut warm, _cache) = warmed_by(&path, &["format"], 0);
 
     assert_eq!(
-        std::fs::read_to_string(&path).expect("reads the rewrite"),
+        fs_err::read_to_string(&path).expect("reads the rewrite"),
         "x = 1\ny = 2\n",
         "one run drops the repeat and the binding its drop leaves unread",
     );
 
-    let err = stderr_utf8(&warm.arg("format").arg(&path).assert().success());
+    let second = warm.arg("format").arg(&path).assert().success();
+    let err = stderr_utf8(&second);
     assert!(
         !err.contains("second run"),
         "the run reading the marked bytes finds them settled, stderr was {err:?}",
@@ -464,14 +474,12 @@ fn cache_compact_subcommand_exits_zero_and_reports_count() {
 
 #[test]
 fn cache_evicts_back_under_its_cap_once_a_run_ends() {
-    let dir = tempdir().expect("tempdir");
+    let (dir, path) = fixture("a.py", UNALIGNED);
     write_pyproject(dir.path(), "[tool.prose.cache]\nmax-size-mib = 1\n");
-    let path = dir.path().join("a.py");
-    std::fs::write(&path, UNALIGNED).expect("writes");
     let (mut cmd, cache_dir) = prose_isolated();
     let filler = vec![b'x'; 512 * 1024];
     for slot in 0..4_u32 {
-        std::fs::write(cache_dir.path().join(format!("{slot:064x}")), &filler).expect("writes");
+        fs_err::write(cache_dir.path().join(format!("{slot:064x}")), &filler).expect("writes");
     }
 
     cmd.current_dir(dir.path())
@@ -521,9 +529,7 @@ fn cache_info_subcommand_prints_path_and_counts() {
 
 #[test]
 fn cache_invalidates_on_config_change() {
-    let project = tempdir().expect("project");
-    let py = project.path().join("clean.py");
-    std::fs::write(&py, "x = 1\n").expect("writes");
+    let (project, py) = fixture("clean.py", "x = 1\n");
     let (mut warm_cmd, cache_dir) = prose_isolated();
     warm_cmd
         .args(["--verbose", "check"])
@@ -618,9 +624,8 @@ fn cache_serves_a_warm_diff_of_surviving_lint() {
 
 #[test]
 fn cache_stores_only_the_entry_a_write_back_leaves_reachable() {
-    let dir = tempdir().expect("tempdir");
-    std::fs::write(dir.path().join("changed.py"), UNALIGNED).expect("writes");
-    std::fs::write(dir.path().join("settled.py"), "x = 1\n").expect("writes");
+    let (dir, _changed) = fixture("changed.py", UNALIGNED);
+    fs_err::write(dir.path().join("settled.py"), "x = 1\n").expect("writes");
     let (mut cmd, cache_dir) = prose_isolated();
     cmd.arg("format").arg(dir.path()).assert().success();
 
@@ -635,17 +640,15 @@ fn cache_stores_only_the_entry_a_write_back_leaves_reachable() {
 
 #[test]
 fn cache_write_back_storing_nothing_leaves_an_over_cap_directory_alone() {
-    let dir = tempdir().expect("tempdir");
+    let (dir, path) = fixture("a.py", UNALIGNED);
     write_pyproject(dir.path(), "[tool.prose.cache]\nmax-size-mib = 1\n");
-    let path = dir.path().join("a.py");
-    std::fs::write(&path, UNALIGNED).expect("writes");
     let (mut seed, cache_dir) = prose_isolated();
     seed.current_dir(dir.path())
         .arg("check")
         .arg(&path)
         .assert()
         .code(1);
-    let generation = std::fs::read_dir(cache_dir.path())
+    let generation = fs_err::read_dir(cache_dir.path())
         .expect("read_dir")
         .flatten()
         .find(|entry| entry.path().is_dir())
@@ -653,10 +656,10 @@ fn cache_write_back_storing_nothing_leaves_an_over_cap_directory_alone() {
         .path();
     let filler = vec![b'x'; 512 * 1024];
     for slot in 0..4_u32 {
-        std::fs::write(generation.join(format!("{slot:064x}")), &filler).expect("writes");
+        fs_err::write(generation.join(format!("{slot:064x}")), &filler).expect("writes");
     }
     let padded = cache_bytes(&generation);
-    std::fs::write(&path, UNALIGNED).expect("restores the unformatted bytes");
+    fs_err::write(&path, UNALIGNED).expect("restores the unformatted bytes");
 
     prose()
         .current_dir(dir.path())
@@ -695,8 +698,8 @@ fn cache_writes_a_warm_rewrite_a_diff_run_recorded() {
         .assert()
         .success();
     assert_eq!(
-        std::fs::read_to_string(&path).expect("reads the warm rewrite"),
-        std::fs::read_to_string(&cold).expect("reads the cold rewrite"),
+        fs_err::read_to_string(&path).expect("reads the warm rewrite"),
+        fs_err::read_to_string(&cold).expect("reads the cold rewrite"),
     );
 }
 
@@ -827,7 +830,7 @@ fn check_package_init_reports_its_unread_import() {
 #[test]
 fn check_relative_path_resolves_its_ancestor_config() {
     let project = suppressed_project();
-    std::fs::write(project.path().join("unaligned.py"), UNALIGNED).expect("writes");
+    fs_err::write(project.path().join("unaligned.py"), UNALIGNED).expect("writes");
 
     prose()
         .args(["check", "--no-cache", "unaligned.py"])
@@ -862,10 +865,8 @@ fn check_resolves_each_files_config_from_its_own_project() {
 
 #[test]
 fn check_respects_cache_disabled_in_pyproject() {
-    let project = tempdir().expect("tempdir");
+    let (project, py) = fixture("clean.py", "x = 1\n");
     write_pyproject(project.path(), "[tool.prose.cache]\nenabled = false\n");
-    let py = project.path().join("clean.py");
-    std::fs::write(&py, "x = 1\n").expect("writes");
     let (mut cmd, _cache_dir) = prose_isolated();
 
     let assert = cmd
@@ -938,11 +939,10 @@ fn check_violation_summary_anchors_with_bookmark() {
 
 #[test]
 fn check_warns_a_precedence_note_once_across_both_config_loads() {
-    let project = tempdir().expect("tempdir");
-    std::fs::write(project.path().join("prose.toml"), "code-line-length = 90\n")
+    let (project, _module) = fixture("a.py", "x = 1\n");
+    fs_err::write(project.path().join("prose.toml"), "code-line-length = 90\n")
         .expect("writes prose.toml");
     write_pyproject(project.path(), "[tool.prose]\ncode-line-length = 100\n");
-    std::fs::write(project.path().join("a.py"), "x = 1\n").expect("writes");
 
     let assert = prose()
         .args(["check", "--no-cache", "a.py"])
@@ -1031,9 +1031,8 @@ fn config_errors_exit_four(#[case] args: &[&str]) {
 
 #[rstest]
 fn cwd_config_error_exits_four(#[values("check", "format")] subcommand: &str) {
-    let project = tempdir().expect("tempdir");
+    let (project, _module) = fixture("a.py", "x = 1\n");
     write_pyproject(project.path(), "[this is not valid TOML\n");
-    std::fs::write(project.path().join("a.py"), "x = 1\n").expect("writes");
 
     prose()
         .args([subcommand, "--no-cache", "a.py"])
@@ -1175,7 +1174,7 @@ fn format_json_rewrites_over_a_check_cache_entry() {
         .assert()
         .success();
 
-    let after = std::fs::read_to_string(&path).expect("reads");
+    let after = fs_err::read_to_string(&path).expect("reads");
     assert_ne!(after, UNALIGNED);
     assert_stdout_has(&assert, "align-equals");
 }
@@ -1236,7 +1235,7 @@ fn format_rewrites_after_check_populated_the_cache() {
 
     warm.arg("format").arg(&path).assert().success();
 
-    let after = std::fs::read_to_string(&path).expect("reads");
+    let after = fs_err::read_to_string(&path).expect("reads");
     assert_ne!(after, UNALIGNED);
 }
 
@@ -1270,10 +1269,8 @@ fn format_unaligned_rewrites_and_re_check_is_clean() {
 
 #[test]
 fn format_warns_an_unknown_key_once_across_both_config_loads() {
-    let project = tempdir().expect("tempdir");
+    let (project, py) = fixture("a.py", UNALIGNED);
     write_pyproject(project.path(), "[tool.prose]\nmax-shft = 4\n");
-    let py = project.path().join("a.py");
-    std::fs::write(&py, UNALIGNED).expect("writes");
 
     let assert = prose()
         .args(["format", "--no-cache"])
@@ -1303,9 +1300,7 @@ fn no_args_prints_help_and_exits_clean() {
 #[test]
 fn module_format_holds_each_line_ending_of_a_mixed_source() {
     let (_dir, path) = fixture("mod.py", MIXED_ENDING_MODULE);
-    let format = || prose().args(["format", "--no-cache"]).arg(&path).assert();
-    format().success();
-    let once = std::fs::read_to_string(&path).expect("reads");
+    let (once, second) = format_twice(&path);
 
     assert_eq!(
         once,
@@ -1328,8 +1323,8 @@ fn module_format_holds_each_line_ending_of_a_mixed_source() {
         "a break prose writes takes the first ending found, and a line it carries keeps its own",
     );
 
-    format().success();
-    assert_eq!(once, std::fs::read_to_string(&path).expect("reads"));
+    second.success();
+    assert_eq!(once, fs_err::read_to_string(&path).expect("reads"));
 }
 
 #[test]
@@ -1374,12 +1369,10 @@ fn module_format_preserves_lone_carriage_returns() {
 #[test]
 fn module_format_settles_on_crlf_input() {
     let (_dir, path) = fixture("mod.py", CRLF_MODULE);
-    let format = || prose().args(["format", "--no-cache"]).arg(&path).assert();
-    format().success();
-    let once = std::fs::read_to_string(&path).expect("reads");
+    let (once, second) = format_twice(&path);
 
-    let second = format().success();
-    assert_eq!(once, std::fs::read_to_string(&path).expect("reads"));
+    let second = second.success();
+    assert_eq!(once, fs_err::read_to_string(&path).expect("reads"));
     assert!(
         !stderr_utf8(&second).contains("second run"),
         "a CRLF module settles without an unstable-output report",
@@ -1523,8 +1516,7 @@ fn notebook_diff_renders_per_cell_hunks_from_a_warm_entry() {
 
 #[test]
 fn notebook_discovered_in_a_directory_walk() {
-    let dir = tempdir().expect("tempdir");
-    std::fs::write(dir.path().join("nb.ipynb"), ALIGNS).expect("writes");
+    let (dir, _notebook) = fixture("nb.ipynb", ALIGNS);
 
     prose()
         .args(["format", "--no-cache"])
@@ -1532,7 +1524,7 @@ fn notebook_discovered_in_a_directory_walk() {
         .assert()
         .success();
 
-    let after = std::fs::read_to_string(dir.path().join("nb.ipynb")).expect("reads");
+    let after = fs_err::read_to_string(dir.path().join("nb.ipynb")).expect("reads");
     assert_eq!(json(&after)["cells"][1]["source"][0], "x  = 1\n");
 }
 
@@ -1544,11 +1536,9 @@ fn notebook_empty_is_a_clean_no_op() {
 #[test]
 fn notebook_format_is_idempotent() {
     let (_dir, path) = fixture("nb.ipynb", ALIGNS);
-    let format = || prose().args(["format", "--no-cache"]).arg(&path).assert();
-    format().success();
-    let once = std::fs::read_to_string(&path).expect("reads");
-    format().success();
-    let twice = std::fs::read_to_string(&path).expect("reads");
+    let (once, second) = format_twice(&path);
+    second.success();
+    let twice = fs_err::read_to_string(&path).expect("reads");
     assert_eq!(once, twice);
 }
 
@@ -1618,7 +1608,7 @@ fn notebook_stdin_filename_selects_the_notebook_type() {
     .success();
 
     assert_eq!(
-        json(&stdout_utf8(&assert))["cells"][1]["source"][0],
+        json(stdout_utf8(&assert))["cells"][1]["source"][0],
         "x  = 1\n"
     );
 }
@@ -1653,7 +1643,7 @@ fn rules_json_lists_every_registered_rule_in_pipeline_order() {
         .assert()
         .success();
 
-    let rules = json(&stdout_utf8(&assert));
+    let rules = json(stdout_utf8(&assert));
 
     insta::assert_snapshot!(serde_json::to_string_pretty(&rules).expect("renders"));
 }
@@ -1662,7 +1652,7 @@ fn rules_json_lists_every_registered_rule_in_pipeline_order() {
 fn schema_subcommand_exits_zero_and_prints_the_schema() {
     let assert = prose().arg("schema").assert().success();
 
-    assert!(json(&stdout_utf8(&assert))["properties"]["rules"].is_object());
+    assert!(json(stdout_utf8(&assert))["properties"]["rules"].is_object());
 }
 
 #[test]

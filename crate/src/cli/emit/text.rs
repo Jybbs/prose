@@ -164,20 +164,16 @@ fn header(first: OneIndexed, last: OneIndexed) -> String {
 /// file's rendering cost off its diagnostic count.
 fn window(file: &SourceFile, range: TextRange) -> (TextRange, usize) {
     let code = file.to_source_code();
-    let first = code
-        .line_index(range.start())
-        .get()
-        .saturating_sub(CONTEXT_LINES)
-        .max(1);
+    let first = code.line_index(range.start()).saturating_sub(CONTEXT_LINES);
     let last = code
         .line_index(range.end())
-        .get()
         .saturating_add(CONTEXT_LINES)
-        .min(code.line_count().max(1));
-    let line = |n: usize| OneIndexed::new(n).expect("a one-based line number");
+        .min(OneIndexed::from_zero_indexed(
+            code.line_count().saturating_sub(1),
+        ));
     (
-        TextRange::new(code.line_start(line(first)), code.line_end(line(last))),
-        first,
+        TextRange::new(code.line_start(first), code.line_end(last)),
+        first.get(),
     )
 }
 
@@ -240,7 +236,7 @@ mod tests {
             .iter()
             .map(|name| rendered.find(name).expect("every run renders"))
             .collect();
-        assert!(seats.windows(2).all(|pair| pair[0] < pair[1]));
+        assert!(seats.is_sorted());
     }
 
     #[test]

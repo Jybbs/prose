@@ -98,6 +98,11 @@ fn module_carries(module: &Path, needle: &str) -> bool {
         })
 }
 
+/// The source module of the rule at `slug`, a file or a directory.
+fn rule_module(root: &Path, slug: &str) -> PathBuf {
+    root.join(format!("src/rules/{}", slug.replace('-', "_")))
+}
+
 /// The docs-site page for `slug`, searched across every family
 /// directory.
 fn rule_page(rules: &Path, slug: &str) -> Option<PathBuf> {
@@ -128,7 +133,7 @@ fn every_binding_reader_is_listed_on_the_primitive_page() {
         .expect("the page declares consumedBy");
 
     for slug in Pipeline::known_ids() {
-        let module = root.join(format!("src/rules/{}", slug.as_str().replace('-', "_")));
+        let module = rule_module(root, slug.as_str());
         assert!(
             !module_carries(&module, "binding_analysis()") || listed.contains(slug.as_str()),
             "rule `{slug}` reads the binding table and is absent from `consumedBy`",
@@ -141,7 +146,7 @@ fn every_lint_emitting_rule_is_named_on_the_exit_code_page() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let rules = root.join("../site/rules");
     for slug in Pipeline::known_ids() {
-        let module = root.join(format!("src/rules/{}", slug.as_str().replace('-', "_")));
+        let module = rule_module(root, slug.as_str());
         if !module_carries(&module, "fn lint(&self") {
             continue;
         }
@@ -300,12 +305,9 @@ fn every_fixture_invocation_resolves() {
 #[test]
 fn every_registered_rule_has_a_page() {
     let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../site/rules");
-    let families = subdirs(&rules);
     for id in Pipeline::known_ids() {
         assert!(
-            families
-                .iter()
-                .any(|dir| dir.join(format!("{id}.md")).is_file()),
+            rule_page(&rules, id.as_str()).is_some(),
             "rule `{id}` registered in `KNOWN_IDS` has no page under `site/rules/<family>/{id}.md`"
         );
     }

@@ -59,8 +59,7 @@ pub(super) fn reparse_or_reject(
     let next = match source.splice_of(&new_text, map) {
         Some(splice) => source.spliced(new_text, map, splice),
         None => {
-            let limit = new_text.text_len();
-            let cell_offsets = forward_offsets(source.cell_offsets(), map, limit);
+            let cell_offsets = forward_offsets(source.cell_offsets(), map, new_text.text_len());
             let next = source
                 .reparse_carrying(new_text, cell_offsets)
                 .map_err(|source| PipelineError::Reparse { rule, source })?;

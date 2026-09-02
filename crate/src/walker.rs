@@ -56,14 +56,10 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
+    use crate::testing::formattable;
 
     fn collect(paths: &[PathBuf]) -> BTreeSet<PathBuf> {
-        walk(paths)
-            .filter_map(|r| match r.expect("walk entry") {
-                Found::Formattable(path, _) => Some(path),
-                Found::PassedLink(_) => None,
-            })
-            .collect()
+        formattable(paths).into_iter().collect()
     }
 
     fn passed_links(paths: &[PathBuf]) -> BTreeSet<PathBuf> {

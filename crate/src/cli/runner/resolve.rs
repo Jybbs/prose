@@ -34,7 +34,24 @@ pub(super) struct ConfigResolver {
 
 impl ConfigResolver {
     pub(super) fn new(select: Vec<RuleId>, ignore: Vec<RuleId>, anchor: Anchor) -> Self {
-        let default = Arc::new(build_resolved(&Config::default(), &select, &ignore, anchor));
+        let resolved = build_resolved(&Config::default(), &select, &ignore, anchor);
+        Self::with_default(resolved, anchor, select, ignore)
+    }
+
+    /// A resolver answering every bare file with `resolved`.
+    #[cfg(test)]
+    pub(super) fn over(resolved: Resolved) -> Self {
+        Self::with_default(resolved, Anchor::AsWritten, Vec::new(), Vec::new())
+    }
+
+    /// A resolver seeded with `resolved` as its default configuration.
+    fn with_default(
+        resolved: Resolved,
+        anchor: Anchor,
+        select: Vec<RuleId>,
+        ignore: Vec<RuleId>,
+    ) -> Self {
+        let default = Arc::new(resolved);
         Self {
             anchor,
             built: Mutex::new(FxHashMap::from_iter([(
@@ -45,24 +62,6 @@ impl ConfigResolver {
             ignore,
             notices: NoticeDedup::default(),
             select,
-            sources: Mutex::new(FxHashMap::default()),
-        }
-    }
-
-    /// A resolver answering every bare file with `resolved`.
-    #[cfg(test)]
-    pub(super) fn over(resolved: Resolved) -> Self {
-        let default = Arc::new(resolved);
-        Self {
-            anchor: Anchor::AsWritten,
-            built: Mutex::new(FxHashMap::from_iter([(
-                default.config_toml.clone(),
-                Arc::clone(&default),
-            )])),
-            default,
-            ignore: Vec::new(),
-            notices: NoticeDedup::default(),
-            select: Vec::new(),
             sources: Mutex::new(FxHashMap::default()),
         }
     }

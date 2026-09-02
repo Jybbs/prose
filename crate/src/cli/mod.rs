@@ -69,6 +69,7 @@ pub fn run() -> ExitCode {
         return finalize(crate::server::run(args)).into();
     }
     let raw_stdout = io::stdout().lock();
+    let stdout_tty = raw_stdout.is_terminal();
     let color = color_for(cli.color, &raw_stdout);
     let stdout = with_color(raw_stdout, color);
     let raw_stderr = io::stderr();
@@ -78,7 +79,7 @@ pub fn run() -> ExitCode {
         color,
         quiet: command_quiet(&cli.command),
         stderr_color,
-        stdout_tty: io::stdout().is_terminal(),
+        stdout_tty,
     };
     let verbose = cli.verbose;
     let result = match cli.command {

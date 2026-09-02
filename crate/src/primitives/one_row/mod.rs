@@ -20,9 +20,8 @@ use crate::{
         call_keywords::CallTargets,
         edit::apply_inline_edits,
         fracture::{self, outermost},
-        inline::display_width,
+        inline::{display_width, settled_width},
         layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
-        padding,
         params::parameter_sites,
     },
     source::Source,
@@ -82,11 +81,15 @@ impl<'a> Settings<'a> {
         range: TextRange,
         hold: Column,
     ) -> Option<Cow<'a, str>> {
-        let writer = Writer {
+        self.writer(source).formed(expr, range, hold)
+    }
+
+    /// The writer serializing under these settings over `source`.
+    fn writer(&self, source: &'a Source) -> Writer<'a> {
+        Writer {
             settings: *self,
             source,
-        };
-        writer.formed(expr, range, hold)
+        }
     }
 
     /// These settings resolving a call against `targets`, the map
@@ -114,10 +117,7 @@ impl<'a> Settings<'a> {
         source: &'a Source,
         arguments: &Arguments,
     ) -> Option<String> {
-        let writer = Writer {
-            settings: *self,
-            source,
-        };
+        let writer = self.writer(source);
         if source.intersects_comment(arguments.inner_range()) {
             return None;
         }
@@ -156,11 +156,7 @@ impl<'a> Settings<'a> {
         parent: AnyNodeRef,
     ) -> Option<Cow<'a, str>> {
         let range = source.paren_aware_range(expr.into(), parent);
-        let writer = Writer {
-            settings: *self,
-            source,
-        };
-        writer.condensed(expr, range, Column::Holds)
+        self.writer(source).condensed(expr, range, Column::Holds)
     }
 
     /// True where `reflow-calls`'s count trigger explodes `call`, read
@@ -206,8 +202,7 @@ impl<'a> Settings<'a> {
         range: TextRange,
         padding: &[Edit],
     ) -> usize {
-        let settled = display_width(source.slice(range))
-            .saturating_add_signed(-padding::slack(source, padding, range));
+        let settled = settled_width(source, padding, range, display_width(source.slice(range)));
         let condensed = self
             .condensed(source, expr, parent)
             .map_or(settled, |text| {

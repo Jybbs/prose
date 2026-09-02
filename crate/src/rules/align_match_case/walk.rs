@@ -123,6 +123,8 @@ enum CaseOutcome {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
     use crate::testing::parse;
 
@@ -132,36 +134,29 @@ mod tests {
         !is_compound_statement(&parse(src).ast().body[0])
     }
 
-    #[test]
-    fn collapsible_admits_assignments_and_simple_statements() {
-        assert!(collapsible("x = 1\n"));
-        assert!(collapsible("x: int = 1\n"));
-        assert!(collapsible("x += 1\n"));
-        assert!(collapsible("x\n"));
-        assert!(collapsible("return x\n"));
-        assert!(collapsible("raise ValueError\n"));
-        assert!(collapsible("pass\n"));
-        assert!(collapsible("break\n"));
-        assert!(collapsible("continue\n"));
-    }
-
-    #[test]
-    fn collapsible_admits_uncommon_one_liners() {
-        assert!(collapsible("import x\n"));
-        assert!(collapsible("from m import x\n"));
-        assert!(collapsible("del x\n"));
-        assert!(collapsible("global x\n"));
-        assert!(collapsible("assert x\n"));
-        assert!(collapsible("type X = int\n"));
-    }
-
-    #[test]
-    fn collapsible_rejects_compound_statements() {
-        assert!(!collapsible("if x:\n    y\n"));
-        assert!(!collapsible("for i in xs:\n    y\n"));
-        assert!(!collapsible("with x():\n    y\n"));
-        assert!(!collapsible("match x:\n    case _:\n        y\n"));
-        assert!(!collapsible("class C:\n    pass\n"));
-        assert!(!collapsible("def f():\n    pass\n"));
+    #[rstest]
+    #[case("x = 1\n", true)]
+    #[case("x: int = 1\n", true)]
+    #[case("x += 1\n", true)]
+    #[case("x\n", true)]
+    #[case("return x\n", true)]
+    #[case("raise ValueError\n", true)]
+    #[case("pass\n", true)]
+    #[case("break\n", true)]
+    #[case("continue\n", true)]
+    #[case("import x\n", true)]
+    #[case("from m import x\n", true)]
+    #[case("del x\n", true)]
+    #[case("global x\n", true)]
+    #[case("assert x\n", true)]
+    #[case("type X = int\n", true)]
+    #[case("if x:\n    y\n", false)]
+    #[case("for i in xs:\n    y\n", false)]
+    #[case("with x():\n    y\n", false)]
+    #[case("match x:\n    case _:\n        y\n", false)]
+    #[case("class C:\n    pass\n", false)]
+    #[case("def f():\n    pass\n", false)]
+    fn collapsible_admits_only_a_simple_statement(#[case] src: &str, #[case] expected: bool) {
+        assert_eq!(collapsible(src), expected, "{src}");
     }
 }

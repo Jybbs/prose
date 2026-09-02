@@ -18,7 +18,7 @@ use ruff_python_ast::{
 };
 use ruff_python_trivia::indentation_at_offset;
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{
     config::Config,
@@ -246,7 +246,7 @@ impl<'a> Layout<'a> {
             .map_or_else(FxHashMap::default, |settings| {
                 self.forecast(settings, body, outer, &runs, &groups)
             });
-        let gathered: Vec<usize> = groups.iter().flatten().copied().collect();
+        let gathered: FxHashSet<usize> = groups.iter().flatten().copied().collect();
         for group in &groups {
             self.merge_group(body, group);
         }

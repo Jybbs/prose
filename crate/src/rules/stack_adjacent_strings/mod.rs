@@ -19,7 +19,7 @@ use crate::{
         layout::{Separator, explode_parens},
         orderer::any_sibling_shares_line,
         reserve,
-        tokens::{is_closer, is_opener},
+        tokens::open_brackets,
         walk::{Descent, ParentedProbe, walk_parented_exprs},
     },
     rule::{Rule, RuleId},

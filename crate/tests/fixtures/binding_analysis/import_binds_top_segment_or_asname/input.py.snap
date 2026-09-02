@@ -79,10 +79,10 @@ bindings:
 scopes:
   - bindings:
       a: 0
-      annotations: 5
       b: 1
       g: 2
       i: 3
       l: 4
+      annotations: 5
     kind: Module
     parent: ~

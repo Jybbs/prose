@@ -12,18 +12,18 @@ pub(crate) fn is_banner_block(source: &Source, block: TextRange) -> bool {
 
 /// True when `line` opens with two or more `#`, the Markdown-style
 /// heading shape that reads as a section divider.
-pub(super) fn is_heading_line(line: &str) -> bool {
+fn is_heading_line(line: &str) -> bool {
     line.trim_start().starts_with("##")
 }
 
 /// True when `line` reads as a section marker, a decorative rule line or
-/// a multi-haspub(super) h heading.
+/// a multi-hash heading.
 pub(super) fn is_marker_line(line: &str) -> bool {
     is_rule_line(line) || is_heading_line(line)
 }
 
-/// True for a character authors repeat topub(super)  draw a divider rule.
-pub(super) fn is_rule_char(c: char) -> bool {
+/// True for a character authors repeat to draw a divider rule.
+fn is_rule_char(c: char) -> bool {
     matches!(c, '-' | '=' | '~' | '*' | '_' | '#' | '─' | '━' | '═')
 }
 
@@ -31,8 +31,8 @@ pub(super) fn is_rule_char(c: char) -> bool {
 /// character standing alone at five or more or flanking a label at three
 /// or more, on whichever side of the label the author drew it. A closing
 /// `#` caps a trailing run without breaking it, the box shape
-/// `# Label ****#` takes. Box-drawing pub(super) dashes count as rule characters.
-pub(super) fn is_rule_line(line: &str) -> bool {
+/// `# Label ****#` takes. Box-drawing dashes count as rule characters.
+fn is_rule_line(line: &str) -> bool {
     let body = line.trim_start().strip_prefix('#').map_or("", str::trim);
     let capped = body.strip_suffix('#').unwrap_or_default();
     let run = rule_run(body.chars())
@@ -42,9 +42,9 @@ pub(super) fn is_rule_line(line: &str) -> bool {
 }
 
 /// The opening run of one repeated rule character in `chars`, zero when
-/// it opens on anything else. Reversing the iterator pub(super) measures the run
+/// it opens on anything else. Reversing the iterator measures the run
 /// closing the same text.
-pub(super) fn rule_run(mut chars: impl Iterator<Item = char>) -> usize {
+fn rule_run(mut chars: impl Iterator<Item = char>) -> usize {
     match chars.next() {
         Some(first) if is_rule_char(first) => 1 + chars.take_while(|&c| c == first).count(),
         _ => 0,

@@ -9,7 +9,10 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{Layouter, entry_tail};
-use crate::primitives::{edit::apply_inline_edits, inline::display_width, padding};
+use crate::primitives::{
+    edit::apply_inline_edits,
+    inline::{display_width, settled_width},
+};
 
 impl<'a> Layouter<'a> {
     /// True when `expr` contains an over-cap `Dict` at any depth,
@@ -69,14 +72,12 @@ impl<'a> Layouter<'a> {
         grandparent: AnyNodeRef,
     ) -> usize {
         let end = expr.range().end();
-        let current = self
-            .source
-            .row_tail_width(end)
-            .saturating_add_signed(-padding::slack(
-                self.source,
-                self.padding,
-                self.source.row_tail(end),
-            ));
+        let current = settled_width(
+            self.source,
+            self.padding,
+            self.source.row_tail(end),
+            self.source.row_tail_width(end),
+        );
         let Some(last) = self.reorders.sorted_last(self.source, parent, grandparent) else {
             return current;
         };
@@ -96,19 +97,23 @@ impl<'a> Layouter<'a> {
     /// and the padding rule drops the padding ahead of it on that row.
     pub(super) fn settled_column(&self, offset: TextSize) -> usize {
         let row = TextRange::new(self.source.text().line_start(offset), offset);
-        self.reservations
-            .column_in(self.source, offset)
-            .saturating_add_signed(-padding::slack(self.source, self.padding, row))
+        settled_width(
+            self.source,
+            self.padding,
+            row,
+            self.reservations.column_in(self.source, offset),
+        )
     }
 
     /// The display width `range` settles to once the padding rule drops
     /// the delimiter padding and colon padding inside it.
     pub(super) fn settled_width(&self, range: TextRange) -> usize {
-        display_width(self.source.slice(range)).saturating_add_signed(-padding::slack(
+        settled_width(
             self.source,
             self.padding,
             range,
-        ))
+            display_width(self.source.slice(range)),
+        )
     }
 
     /// The display width `text` settles to: the settled width of `range`

@@ -4,8 +4,6 @@
 
 use std::{collections::BTreeMap, path::Path};
 
-use itertools::Itertools;
-
 /// The names the formatter reorders by design, whose value a comparison
 /// therefore leaves out.
 const REORDERED: &[&str] = &["__all__", "__slots__"];
@@ -114,7 +112,8 @@ impl Outcome {
                 _ => {}
             }
         }
-        read.loaded = read.loaded.into_iter().sorted().dedup().collect();
+        read.loaded.sort_unstable();
+        read.loaded.dedup();
         read.names.sort();
         read
     }

@@ -132,15 +132,15 @@ bindings:
 scopes:
   - bindings:
       Holder: 0
+      obj: 1
+      ix: 2
+      xs: 3
       a: 4
       b: 5
+      head: 6
+      tail: 7
       c: 8
       d: 9
-      head: 6
-      ix: 2
-      obj: 1
-      tail: 7
-      xs: 3
     kind: Module
     parent: ~
   - bindings: {}

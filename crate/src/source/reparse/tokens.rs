@@ -4,7 +4,7 @@ use ruff_python_ast::{
     Stmt,
     token::{Token, Tokens},
 };
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange};
 
 use super::{deltas::Deltas, flags::retargeted};
 
@@ -32,12 +32,12 @@ pub(super) fn spliced(
 ) -> Tokens {
     let fresh: usize = windows.iter().map(|window| window.fresh.len()).sum();
     let mut merged = Vec::with_capacity(held.len() + fresh);
-    let still = windows.first().map_or(held.len(), |window| {
-        held.partition_point(|token| token.end() <= window.held.start())
+    let (still, moving) = windows.first().map_or((&held[..], &[][..]), |window| {
+        held.split_at(window.held.start())
     });
-    merged.extend_from_slice(&held[..still]);
+    merged.extend_from_slice(still);
     let mut next = 0;
-    for token in &held[still..] {
+    for token in moving {
         while let Some(window) = windows
             .get(next)
             .filter(|window| window.held.end() <= token.start())
@@ -62,23 +62,10 @@ pub(super) fn spliced(
         merged.extend_from_slice(&window.fresh);
     }
     debug_assert!(
-        merged
-            .windows(2)
-            .all(|pair| pair[0].start() <= pair[1].start()),
+        merged.is_sorted_by_key(Ranged::start),
         "the merged token stream ascends, as its binary searches read it",
     );
     Tokens::new(merged)
-}
-
-/// The tokens of `fresh` that open before `end`, the only ones the
-/// merge reads, so a window keeps just these rather than a copy of its
-/// whole parse.
-pub(super) fn opening_before(fresh: &Tokens, end: TextSize) -> Vec<Token> {
-    fresh
-        .iter()
-        .take_while(|token| token.start() < end)
-        .copied()
-        .collect()
 }
 
 /// True where a token over `range` is one `window`'s own reparse

@@ -142,35 +142,30 @@ pub(super) fn process_path(
             ..
         },
     ) = (&keyed, &outcome)
-        && worth_storing(rewrite, pass)
     {
-        c.insert(
-            k,
-            &CacheEntryRef {
-                diagnostics,
-                notebook: source_type.is_ipynb().then(|| NotebookCellsRef {
-                    code: file.source_text(),
-                    index: notebook_index.as_deref(),
-                }),
-                rewrite,
-                unstable: unstable.as_deref(),
-            },
-        );
-    }
-    // A write-back module run marks the bytes it is about to land, so
-    // the next run holding them re-keys to this entry and a rewrite of
-    // marked bytes reads as a proven settle defect.
-    if let (
-        Some((c, _)),
-        FileOutcome::Done {
-            rewrite: Rewrite::Changed(kind),
-            ..
-        },
-    ) = (&keyed, &outcome)
-        && pass.write_back()
-        && !source_type.is_ipynb()
-    {
-        c.record_own_output(&resolved.key_prefix.key_for(kind.written().as_bytes()));
+        if worth_storing(rewrite, pass) {
+            c.insert(
+                k,
+                &CacheEntryRef {
+                    diagnostics,
+                    notebook: source_type.is_ipynb().then(|| NotebookCellsRef {
+                        code: file.source_text(),
+                        index: notebook_index.as_deref(),
+                    }),
+                    rewrite,
+                    unstable: unstable.as_deref(),
+                },
+            );
+        }
+        // A write-back module run marks the bytes it is about to land, so
+        // the next run holding them re-keys to this entry and a rewrite of
+        // marked bytes reads as a proven settle defect.
+        if let Rewrite::Changed(kind) = rewrite
+            && pass.write_back()
+            && !source_type.is_ipynb()
+        {
+            c.record_own_output(&resolved.key_prefix.key_for(kind.written().as_bytes()));
+        }
     }
     outcome
 }
@@ -573,7 +568,10 @@ mod tests {
         config::Config,
         pipeline::Pipeline,
         rule::RuleId,
-        testing::{GroupSentinelRule, breaks_parse, never_settles, notebook_index, parse, range},
+        testing::{
+            GroupSentinelRule, breaks_parse, formattable, never_settles, notebook_index, parse,
+            range,
+        },
     };
 
     /// Seeds `dir` with one module per name and returns the walk order
@@ -582,13 +580,7 @@ mod tests {
         for name in names {
             fs_err::write(dir.path().join(name), "x = 1\n").expect("seeds the module");
         }
-        let root = vec![dir.path().to_path_buf()];
-        walker::walk(&root)
-            .filter_map(|entry| match entry {
-                Ok(Found::Formattable(path, _)) => Some(path),
-                _ => None,
-            })
-            .collect()
+        formattable(&[dir.path().to_path_buf()])
     }
 
     #[test]

@@ -5,6 +5,7 @@
 
 use std::ops::RangeInclusive;
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{TextRange, TextSize};
@@ -213,8 +214,12 @@ fn fits_line_cap(group: &[Member], bases: &[usize], settings: Settings, max_w: u
 /// stays within `shift_cap` and, when a `line_length` cap governs,
 /// every member's aligned line stays within it.
 fn group_holds(group: &[Member], bases: &[usize], settings: Settings, shift_cap: usize) -> bool {
-    let max_w = group_max_width(group);
-    let min_w = group.iter().map(|m| m.settled_width).min().unwrap_or(0);
+    let (min_w, max_w) = group
+        .iter()
+        .map(|m| m.settled_width)
+        .minmax()
+        .into_option()
+        .unwrap_or((0, 0));
     max_w - min_w <= shift_cap && fits_line_cap(group, bases, settings, max_w)
 }
 
@@ -393,6 +398,14 @@ mod tests {
         )
     }
 
+    /// The edits `emit_group` writes for `members` under `settings` with
+    /// no widenings.
+    fn emitted(source: &Source, members: &[Member], settings: Settings) -> Vec<Edit> {
+        let mut edits = Vec::new();
+        emit_group(source, members, settings, &Widenings::default(), &mut edits);
+        edits
+    }
+
     /// Builds the expected `(start, end, content)` tuple for an edit
     /// that rewrites a member's gap to `n` spaces.
     fn fill(member: &Member, n: usize) -> (u32, u32, String) {
@@ -487,15 +500,7 @@ mod tests {
     #[test]
     fn emit_group_aligns_to_shared_column_when_spread_fits_under_cap() {
         let (source, members) = rows(&[(1, 1), (2, 1), (3, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            Settings::aligned(cap(10)),
-            &Widenings::default(),
-            &mut edits,
-        );
+        let edits = emitted(&source, &members, Settings::aligned(cap(10)));
 
         // max_w=3, paddings 2/1/0, suffix=1 → targets 3/2/1 spaces.
         // member[2] already has 1 space, so it is skipped.
@@ -508,15 +513,7 @@ mod tests {
     #[test]
     fn emit_group_collapses_single_member_gap_to_suffix_len() {
         let (source, members) = rows(&[(3, 5)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            Settings::aligned(cap(8)),
-            &Widenings::default(),
-            &mut edits,
-        );
+        let edits = emitted(&source, &members, Settings::aligned(cap(8)));
 
         // single member fits any cap. max_w=3, padding=0, suffix=1 →
         // target 1 space, currently 5.
@@ -526,15 +523,7 @@ mod tests {
     #[test]
     fn emit_group_handles_empty_member_slice() {
         let source = parse("x = 0\n");
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &[],
-            Settings::aligned(cap(8)),
-            &Widenings::default(),
-            &mut edits,
-        );
+        let edits = emitted(&source, &[], Settings::aligned(cap(8)));
 
         assert!(edits.is_empty());
     }
@@ -542,15 +531,7 @@ mod tests {
     #[test]
     fn emit_group_seats_a_widened_buffer_ahead_of_the_token() {
         let (source, members) = rows(&[(1, 1), (3, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            Settings::aligned(cap(8)).with_buffer(2),
-            &Widenings::default(),
-            &mut edits,
-        );
+        let edits = emitted(&source, &members, Settings::aligned(cap(8)).with_buffer(2));
 
         // max_w=3, buffer=2 → targets 4 and 2 spaces.
         assert_eq!(
@@ -562,14 +543,10 @@ mod tests {
     #[test]
     fn emit_group_strips_lone_member_gap_when_flag_is_set() {
         let (source, members) = rows(&[(3, 5)]);
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(8)).with_singleton_strip(),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // A lone member is its own group, so strip collapses the
@@ -603,14 +580,10 @@ mod tests {
     #[test]
     fn line_cap_counts_the_post_operator_space() {
         let (source, members) = paired_rows("");
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(16)).within(10, strip(), settling()),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // Padding the width-1 row to the width-6 name lands its line on
@@ -625,14 +598,10 @@ mod tests {
     #[test]
     fn line_cap_discounts_a_value_gap_that_crosses_a_line_break() {
         let (source, members) = paired_rows("\\\n    ");
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(16)).within(10, strip(), settling()),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // The continued row's value opens on a later line, so its gap is
@@ -647,14 +616,10 @@ mod tests {
     #[test]
     fn line_cap_holds_an_over_cap_row_costing_no_further_width() {
         let (source, members) = rows(&[(13, 1), (13, 5)]);
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(16)).within(8, strip(), settling()),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // Equal widths leave the column at each row's own buffer, so the
@@ -665,14 +630,10 @@ mod tests {
     #[test]
     fn line_cap_holds_an_over_cap_row_out_of_a_widening_column() {
         let (source, members) = rows(&[(12, 1), (13, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(16)).within(8, strip(), settling()),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // Both lines sit past the cap unpadded, and the shared column
@@ -684,14 +645,10 @@ mod tests {
     #[rstest]
     fn line_cap_holds_the_run_when_both_spaces_fit(#[values("", "   ")] sep: &str) {
         let (source, members) = paired_rows(sep);
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(16)).within(11, strip(), settling()),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // One column of headroom past the declining case covers both
@@ -714,14 +671,10 @@ mod tests {
             align_member(range(1, 2), 0, 1),
             align_member(range(35, 36), 28, 7),
         ];
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(8)).within(28, strip(), settling()),
-            &Widenings::default(),
-            &mut edits,
         );
 
         assert_eq!(sorted_summaries(&edits), vec![fill(&members[0], 7)]);
@@ -730,15 +683,7 @@ mod tests {
     #[test]
     fn no_shift_collapses_every_row_to_one_space() {
         let (source, members) = rows(&[(1, 3), (2, 3), (3, 3)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            Settings::aligned(MaxShift::NoShift),
-            &Widenings::default(),
-            &mut edits,
-        );
+        let edits = emitted(&source, &members, Settings::aligned(MaxShift::NoShift));
 
         // Every row stands alone, so each collapses to its one-space
         // suffix regardless of its neighbors' widths.
@@ -755,14 +700,10 @@ mod tests {
     #[test]
     fn no_shift_keeps_equal_width_rows_flush() {
         let (source, members) = rows(&[(5, 3), (5, 3)]);
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(MaxShift::NoShift).with_singleton_strip(),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // Equal widths would group under any positive cap, but NoShift
@@ -893,15 +834,7 @@ mod tests {
     #[test]
     fn unlimited_folds_over_cap_spread_into_one_column() {
         let (source, members) = rows(&[(1, 1), (50, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            Settings::aligned(MaxShift::Unlimited),
-            &Widenings::default(),
-            &mut edits,
-        );
+        let edits = emitted(&source, &members, Settings::aligned(MaxShift::Unlimited));
 
         // A 49-wide spread that would break under any cap folds into one
         // column aligned at the width-50 member.
@@ -911,16 +844,12 @@ mod tests {
     #[test]
     fn walk_advances_past_a_singleton_holding_as_no_group() {
         let (source, members) = rows(&[(5, 1), (12, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(16))
                 .with_singleton_strip()
                 .within(15, strip(), settling()),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // The width-12 row lands on the cap stripped and one past it
@@ -935,15 +864,7 @@ mod tests {
     #[test]
     fn walk_breaks_run_at_first_over_cap_row() {
         let (source, members) = rows(&[(1, 1), (2, 1), (3, 1), (15, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            Settings::aligned(cap(8)),
-            &Widenings::default(),
-            &mut edits,
-        );
+        let edits = emitted(&source, &members, Settings::aligned(cap(8)));
 
         // Widths 1/2/3 grow one group (spread 2), then width 15 pushes
         // the spread to 14 and breaks off as a natural singleton. The
@@ -957,15 +878,7 @@ mod tests {
     #[test]
     fn walk_groups_in_source_order_not_by_width() {
         let (source, members) = rows(&[(1, 1), (2, 1), (15, 1), (3, 1), (4, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            Settings::aligned(cap(8)),
-            &Widenings::default(),
-            &mut edits,
-        );
+        let edits = emitted(&source, &members, Settings::aligned(cap(8)));
 
         // The width-15 row sits mid-run, so it breaks [1, 2] from [3, 4]
         // and stands alone rather than dragging the narrow rows into one
@@ -979,14 +892,10 @@ mod tests {
     #[test]
     fn walk_keeps_a_head_no_line_cap_pins() {
         let (source, members) = rows(&[(1, 1), (8, 1), (9, 1), (10, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(8)).releasing_heads(),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // Width 10 breaks 1/8/9 on the spread alone and would stand
@@ -1001,16 +910,12 @@ mod tests {
     #[test]
     fn walk_keeps_a_head_the_spread_alone_cuts() {
         let (source, members) = rows(&[(1, 1), (8, 1), (9, 1), (10, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(8))
                 .within(40, strip(), settling())
                 .releasing_heads(),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // Width 10 breaks 1/8/9 on the spread while every line sits far
@@ -1025,14 +930,10 @@ mod tests {
     #[test]
     fn walk_keeps_a_pinned_head_where_the_rule_releases_none() {
         let (source, members) = tailed_rows(&[(3, "123456"), (1, "0"), (2, "0"), (6, "0")]);
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(16)).within(12, strip(), settling()),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // The same pinned head stays the prefix's head for a rule that
@@ -1046,15 +947,7 @@ mod tests {
     #[test]
     fn walk_keeps_row_at_exact_cap_boundary() {
         let (source, members) = rows(&[(1, 1), (9, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            Settings::aligned(cap(8)),
-            &Widenings::default(),
-            &mut edits,
-        );
+        let edits = emitted(&source, &members, Settings::aligned(cap(8)));
 
         // Spread 8 sits exactly at the cap, so the pair aligns at 9.
         assert_eq!(sorted_summaries(&edits), vec![fill(&members[0], 9)]);
@@ -1064,16 +957,12 @@ mod tests {
     fn walk_keeps_the_head_when_the_cut_row_pairs_beneath() {
         let (source, members) =
             tailed_rows(&[(3, "123456"), (1, "0"), (2, "0"), (6, "0"), (5, "0")]);
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(16))
                 .within(12, strip(), settling())
                 .releasing_heads(),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // Width 6 breaks the pinned head's group but pairs with width 5,
@@ -1092,15 +981,7 @@ mod tests {
     #[test]
     fn walk_leaves_over_cap_pair_natural() {
         let (source, members) = rows(&[(20, 1), (4, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            Settings::aligned(cap(8)),
-            &Widenings::default(),
-            &mut edits,
-        );
+        let edits = emitted(&source, &members, Settings::aligned(cap(8)));
 
         // Each member is its own group. Without strip, both singleton
         // targets are the one-space gap each row already carries.
@@ -1110,16 +991,12 @@ mod tests {
     #[test]
     fn walk_releases_a_cap_pinned_head_that_would_strand_the_cut_row() {
         let (source, members) = tailed_rows(&[(3, "123456"), (1, "0"), (2, "0"), (6, "0")]);
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(16))
                 .within(12, strip(), settling())
                 .releasing_heads(),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // The column the width-6 row sets would carry the width-3 head
@@ -1139,15 +1016,7 @@ mod tests {
             members[1].with_op_width(1),
             members[2].with_op_width(1),
         ];
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            Settings::aligned(cap(8)),
-            &Widenings::default(),
-            &mut edits,
-        );
+        let edits = emitted(&source, &members, Settings::aligned(cap(8)));
 
         // Widths 12/11 group and right-align on their widest operator, so
         // member[1] targets 1+1+1=3 spaces while member[0] keeps its
@@ -1159,14 +1028,10 @@ mod tests {
     #[test]
     fn walk_strips_a_singleton_broken_off_mid_run() {
         let (source, members) = rows(&[(20, 1), (2, 1), (3, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
+        let edits = emitted(
             &source,
             &members,
             Settings::aligned(cap(8)).with_singleton_strip(),
-            &Widenings::default(),
-            &mut edits,
         );
 
         // Width 20 breaks off first and strips to a zero-width gap, then

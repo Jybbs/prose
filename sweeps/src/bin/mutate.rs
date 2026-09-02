@@ -298,7 +298,11 @@ fn respelled<'b>(arena: &'b Bump, name: &str, rng: &mut StdRng) -> Option<&'b st
     let candidate = if rng.random::<f64>() < 0.5 {
         format!("{name}{}", "_w".repeat(rng.random_range(1..=3)))
     } else {
-        name[..name.len().div_ceil(2).max(1)].to_owned()
+        let cut = name
+            .char_indices()
+            .nth(name.chars().count().div_ceil(2).max(1))
+            .map_or(name.len(), |(at, _)| at);
+        name[..cut].to_owned()
     };
     let usable = candidate != name
         && !candidate.is_empty()
@@ -345,9 +349,7 @@ fn suppressed(text: &str, rng: &mut StdRng) -> Option<String> {
     let simple: Vec<usize> = module
         .body
         .iter()
-        .enumerate()
-        .filter(|(_, statement)| matches!(statement, Statement::Simple(_)))
-        .map(|(slot, _)| slot)
+        .positions(|statement| matches!(statement, Statement::Simple(_)))
         .collect();
     let skipped = *simple.choose(rng)?;
     if let Statement::Simple(SimpleStatementLine {
@@ -394,13 +396,12 @@ fn walk(root: &Path) -> Vec<PathBuf> {
 fn widened(text: &str, rng: &mut StdRng) -> Option<String> {
     let parsed = parse_ruff(text).ok()?;
     let arena = Bump::new();
-    let mut names: Vec<(TextRange, &str)> = parsed
+    let names: Vec<(TextRange, &str)> = parsed
         .tokens()
         .iter()
         .filter(|token| token.kind() == TokenKind::Name)
         .map(|token| (token.range(), &text[token.range()]))
         .collect();
-    names.sort_by_key(|(range, _)| range.start());
     let distinct: Vec<&str> = names.iter().map(|(_, name)| *name).unique().collect();
     if distinct.is_empty() {
         return None;

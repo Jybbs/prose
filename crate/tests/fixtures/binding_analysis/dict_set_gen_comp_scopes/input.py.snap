@@ -133,9 +133,9 @@ bindings:
       - 93
 scopes:
   - bindings:
-      keys: 6
-      mapping: 3
       pairs: 0
+      mapping: 3
+      keys: 6
       total: 9
     kind: Module
     parent: ~
@@ -145,8 +145,8 @@ scopes:
     kind: Comprehension
     parent: 0
   - bindings:
-      _: 5
       k: 4
+      _: 5
     kind: Comprehension
     parent: 0
   - bindings:

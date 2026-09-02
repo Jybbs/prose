@@ -78,7 +78,7 @@ mod tests {
     const BARE_IMPORT_LINT: &str = "import os\n\nos.getcwd()\n";
 
     fn formatted(config_toml: &str, source: &str) -> FormatResult {
-        format(config_toml, source).unwrap_or_else(|_| panic!("format succeeds"))
+        format(config_toml, source).expect("format succeeds")
     }
 
     #[test]

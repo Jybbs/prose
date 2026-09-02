@@ -9,7 +9,6 @@
 
 use std::{
     borrow::Cow,
-    collections::BTreeSet,
     fmt::{self, Display},
     str::FromStr,
 };
@@ -62,6 +61,7 @@ use crate::{
 mod independence;
 
 pub use independence::independent;
+use independence::reaches;
 
 /// Returned when a string fails to match any registered rule slug.
 /// Carries the offending input so callers can surface it verbatim.
@@ -192,19 +192,7 @@ pub fn render_slugs(rules: &[RuleId]) -> impl Display + '_ {
 /// from [`precedes`], which asks about registration rather than the
 /// declared column.
 pub fn runs_behind(later: &str, earlier: &str) -> bool {
-    let mut seen = BTreeSet::new();
-    let mut pending = vec![later];
-    while let Some(slug) = pending.pop() {
-        for dependency in dependencies_of(slug) {
-            if *dependency == earlier {
-                return true;
-            }
-            if seen.insert(*dependency) {
-                pending.push(dependency);
-            }
-        }
-    }
-    false
+    slug_index(later).is_some_and(|seat| reaches(seat, earlier))
 }
 
 /// Returns `true` when `bytes` is a valid kebab-case slug. Non-empty,

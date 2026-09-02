@@ -7,14 +7,14 @@ use std::{collections::VecDeque, slice};
 use itertools::Itertools;
 
 use ruff_python_ast::{
-    Expr, Stmt, StmtClassDef, StmtFunctionDef,
+    Expr, Stmt,
     helpers::any_over_body,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange};
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use super::refs::root_name;
+use super::{definition_name, refs::root_name};
 use crate::primitives::{binding::BindingAnalysis, group_map};
 
 /// Per module-level definition, the module-scope names a call into it
@@ -31,11 +31,7 @@ pub(crate) fn call_reachable<'src>(
 ) -> CallReach<'src> {
     let defs: Vec<(&str, &Stmt)> = body
         .iter()
-        .filter_map(|stmt| match stmt {
-            Stmt::ClassDef(StmtClassDef { name, .. })
-            | Stmt::FunctionDef(StmtFunctionDef { name, .. }) => Some((name.as_str(), stmt)),
-            _ => None,
-        })
+        .filter_map(|stmt| Some((definition_name(stmt)?, stmt)))
         .collect();
     let ranges: Vec<TextRange> = defs.iter().map(|(_, stmt)| stmt.range()).collect();
     let mut reads: FxHashMap<&str, FxHashSet<&str>> = defs
@@ -75,7 +71,7 @@ pub(crate) fn call_reachable<'src>(
 /// The chain a name roots that `expr` runs, covering a call and a
 /// subscript alike, since `__class_getitem__` runs a class body the way
 /// `__call__` does. `None` for every other expression.
-fn invoked(expr: &Expr) -> Option<&Expr> {
+pub(super) fn invoked(expr: &Expr) -> Option<&Expr> {
     match expr {
         Expr::Call(call) => Some(&call.func),
         Expr::Subscript(subscript) => Some(&subscript.value),

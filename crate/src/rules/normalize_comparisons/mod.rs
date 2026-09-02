@@ -128,7 +128,7 @@ mod tests {
 
     /// The two-operand test the lone comparison statement of `source`
     /// states.
-    fn test_of(source: &Source) -> Option<Test<'_>> {
+    pub(super) fn test_of(source: &Source) -> Option<Test<'_>> {
         Test::of(
             first_expr(source)
                 .as_compare_expr()

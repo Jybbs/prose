@@ -97,7 +97,7 @@ impl Attributor<'_> {
         let mut clauses = Vec::new();
         if let Some(row) = *row {
             let rows = mapped_rows(&diff, row);
-            let line = now.get(row - 1).unwrap_or(&"").trim();
+            let line = now.get(row - 1).map_or("", |line| line.trim());
             let under = self.fitting(file, |edits| reaches(edits, &rows, line));
             if !under.is_empty() {
                 clauses.push(format!("under {under}"));

@@ -2,6 +2,7 @@
 //! rules: which rows a skip directive holds out of the column math, and
 //! whether a run of members forms a valid alignment column.
 
+use itertools::Itertools;
 use ruff_source_file::LineRanges;
 use ruff_text_size::TextSize;
 
@@ -46,8 +47,12 @@ pub(crate) fn shares_column(
 ) -> bool {
     members.len() >= 2
         && members
-            .windows(2)
-            .all(|w| w[0].line_start != w[1].line_start && baseline_of(w[0]) == baseline_of(w[1]))
+            .iter()
+            .map(|&member| (member.line_start, baseline_of(member)))
+            .tuple_windows()
+            .all(|((above_line, above), (below_line, below))| {
+                above_line != below_line && above == below
+            })
 }
 
 #[cfg(test)]

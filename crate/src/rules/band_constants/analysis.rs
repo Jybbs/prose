@@ -252,7 +252,11 @@ pub(super) fn module_band_plan<'src>(
     }
     let dependents = dependents(&deps);
     propagate(&mut anchored, &dependents);
-    let mut trailing: Vec<bool> = (0..n).map(|s| reaches_def[s] && !anchored[s]).collect();
+    let mut trailing: Vec<bool> = reaches_def
+        .iter()
+        .zip(&anchored)
+        .map(|(&reaches, &anchored)| reaches && !anchored)
+        .collect();
     propagate(&mut trailing, &dependents);
     let (trailing_members, leading_members): (Vec<usize>, Vec<usize>) =
         (0..n).filter(|&s| !anchored[s]).partition(|&s| trailing[s]);
@@ -413,10 +417,6 @@ fn propagate(state: &mut [bool], dependents: &FxHashMap<usize, Vec<usize>>) {
     }
 }
 
-/// The subcategory a banded constant sorts into. A PEP 695 `type X`
-/// statement or a `TypeAlias`-annotated assignment reads as an alias, a
-/// `SCREAMING_CASE` name as a constant, a remaining value that names an
-/// existing object as an alias, and everything else as module state.
 /// True when a blank line stands between `block` and `body[idx]`, the
 /// member the run heads.
 fn stands_off_its_member(source: &Source, body: &[Stmt], idx: usize, block: TextRange) -> bool {
@@ -435,6 +435,10 @@ fn stands_off_the_member_above(
         .is_none_or(|prev| !source.consecutive_lines(blocks[prev].end(), block.start()))
 }
 
+/// The subcategory a banded constant sorts into. A PEP 695 `type X`
+/// statement or a `TypeAlias`-annotated assignment reads as an alias, a
+/// `SCREAMING_CASE` name as a constant, a remaining value that names an
+/// existing object as an alias, and everything else as module state.
 fn subcategory_of(
     stmt: &Stmt,
     name: &str,

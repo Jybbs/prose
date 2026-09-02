@@ -37,10 +37,10 @@ pub(super) fn covering(
     source: &Source,
     replaced: impl Iterator<Item = TextRange>,
 ) -> Option<Vec<TextRange>> {
-    let windows: Vec<TextRange> = replaced
+    replaced
         .map(|range| covering_window(source, range))
-        .collect::<Option<_>>()?;
-    Some(merged_spans(windows))
+        .collect::<Option<Vec<_>>>()
+        .map(merged_spans)
 }
 
 #[cfg(test)]

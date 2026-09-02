@@ -59,9 +59,9 @@ bindings:
       - 55
 scopes:
   - bindings:
+      xs: 0
+      i: 1
       a: 2
       b: 3
-      i: 1
-      xs: 0
     kind: Module
     parent: ~

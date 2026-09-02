@@ -6,12 +6,15 @@
 use std::borrow::Cow;
 
 use memchr::memchr;
+use ruff_diagnostics::Edit;
 use ruff_python_ast::Expr;
 use ruff_python_trivia::leading_indentation;
+use ruff_text_size::TextRange;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     primitives::{
+        padding,
         tokens::{CLOSERS, OPENERS},
         travel::spans_a_string_part,
     },
@@ -69,6 +72,12 @@ pub(crate) fn indent_width(line: &str) -> usize {
     leading_indentation(line).chars().count()
 }
 
+/// The text past the last line break in `text`, `text` itself where it
+/// carries none.
+pub(crate) fn last_line(text: &str) -> &str {
+    text.rsplit_once('\n').map_or(text, |(_, last)| last)
+}
+
 /// The display width of `text`'s opening line.
 pub(crate) fn opening_width(text: &str) -> usize {
     display_width(text.lines().next().unwrap_or_default())
@@ -79,6 +88,17 @@ pub(crate) fn opening_width(text: &str) -> usize {
 /// sits between two tokens rather than directly inside a bracket.
 pub(crate) fn run_closes_to_a_space(text: &str, begin: usize, len: usize) -> bool {
     !text[..begin].ends_with(OPENERS) && !text[begin + len..].starts_with(CLOSERS)
+}
+
+/// `width`, the display width `range` was measured at, less the padding
+/// `padding` drops inside `range`.
+pub(crate) fn settled_width(
+    source: &Source,
+    padding: &[Edit],
+    range: TextRange,
+    width: usize,
+) -> usize {
+    width.saturating_add_signed(-padding::slack(source, padding, range))
 }
 
 /// Yields the `(start, len)` byte span of each whitespace run in `text`

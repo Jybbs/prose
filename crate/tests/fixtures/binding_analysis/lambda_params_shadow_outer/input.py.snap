@@ -43,8 +43,8 @@ bindings:
       - 6
 scopes:
   - bindings:
-      f: 2
       x: 0
+      f: 2
     kind: Module
     parent: ~
   - bindings:

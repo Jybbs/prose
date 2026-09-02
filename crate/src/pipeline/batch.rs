@@ -45,11 +45,13 @@ impl<'a> Batch<'a> {
                 let declining = self
                     .members
                     .iter()
-                    .map(|&(_, rule)| rule)
-                    .find(|rule| !rule.preserves_bindings());
-                let (rule, preserves) =
-                    declining.map_or((first.id(), true), |rule| (rule.id(), false));
-                next.inherit(bindings, &map, rule, preserves);
+                    .find_map(|&(_, rule)| (!rule.preserves_bindings()).then_some(rule.id()));
+                next.inherit(
+                    bindings,
+                    &map,
+                    declining.unwrap_or(first.id()),
+                    declining.is_none(),
+                );
                 Ok(next)
             }
             Err(_) if !rest.is_empty() && !replays => Err(PipelineError::Batch {

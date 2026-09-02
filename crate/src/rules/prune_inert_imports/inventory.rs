@@ -13,8 +13,6 @@ use crate::primitives::{
     imports::{future_annotations_alias, is_future},
 };
 
-const STAR: &str = "*";
-
 /// One module-scope `import` or `from`-import statement.
 pub(super) enum ImportNode<'a> {
     Bare(&'a StmtImport),
@@ -97,18 +95,12 @@ pub(super) fn is_self_alias(alias: &Alias) -> bool {
         .is_some_and(|asname| asname.as_str() == alias.name.as_str())
 }
 
-/// True for the `*` of a `from … import *`, which binds a name set no
-/// reference count enumerates.
-pub(super) fn is_star(alias: &Alias) -> bool {
-    alias.name.as_str() == STAR
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::{source::Source, testing::parse};
+    use crate::{primitives::imports::is_star, source::Source, testing::parse};
 
     fn first_alias(source: &Source) -> (ImportNode<'_>, &Alias) {
         let node = ImportNode::of(&source.ast().body[0]).expect("an import statement");

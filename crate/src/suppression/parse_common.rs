@@ -4,6 +4,7 @@
 use ruff_python_trivia::PythonWhitespace;
 use rustc_hash::FxHashSet;
 
+use super::lint_directive::RuleEntry;
 use crate::rule::RuleId;
 
 /// Strips the leading `prose:` marker from `after_hash` and returns
@@ -26,4 +27,14 @@ pub(super) fn parse_bracketed_rule_list(body: &str) -> Option<FxHashSet<RuleId>>
             .filter_map(|part| part.trim_whitespace().parse::<RuleId>().ok())
             .collect(),
     )
+}
+
+/// The entry `body` spells past `keyword`, `All` for the bare keyword
+/// and `Specific` for a bracketed list. `None` for any other shape.
+pub(super) fn parse_entry(body: &str, keyword: &str) -> Option<RuleEntry> {
+    let rest = body.strip_prefix(keyword)?.trim_whitespace();
+    if rest.is_empty() {
+        return Some(RuleEntry::All);
+    }
+    parse_bracketed_rule_list(rest).map(RuleEntry::Specific)
 }

@@ -23,6 +23,18 @@ fn load_collecting_precedence(dir: &Path) -> (Config, Vec<(ConfigForm, ConfigFor
     (config, precedence)
 }
 
+/// The config under `dir` beside every unknown key its load reports.
+fn loaded_with_unknown_keys(dir: &Path) -> (Config, Vec<String>) {
+    let mut captured = Vec::new();
+    let config = Config::load_with_notices(dir, |notice| {
+        if let ConfigNotice::UnknownKey(key) = notice {
+            captured.push(key.to_owned());
+        }
+    })
+    .expect("loads");
+    (config, captured)
+}
+
 #[test]
 fn load_absent_file_returns_defaults() {
     let tmp = TempDir::new().expect("tempdir");
@@ -229,13 +241,7 @@ fn load_retired_rule_key_warns_rather_than_binding_its_successor() {
     let tmp = TempDir::new().expect("tempdir");
     write_pyproject(tmp.path(), "[tool.prose.rules]\nalphabetize = false\n");
 
-    let mut captured = Vec::new();
-    let config = Config::load_with_notices(tmp.path(), |notice| {
-        if let ConfigNotice::UnknownKey(key) = notice {
-            captured.push(key.to_owned());
-        }
-    })
-    .expect("loads");
+    let (config, captured) = loaded_with_unknown_keys(tmp.path());
 
     assert_eq!(captured, ["rules.alphabetize"]);
     assert!(config.rules.space_statements.enabled);
@@ -268,13 +274,7 @@ fn load_unknown_key_invokes_callback() {
         "[tool.prose]\nunknown-future-key = \"whatever\"\n",
     );
 
-    let mut captured = Vec::new();
-    let config = Config::load_with_notices(tmp.path(), |notice| {
-        if let ConfigNotice::UnknownKey(key) = notice {
-            captured.push(key.to_owned());
-        }
-    })
-    .expect("loads");
+    let (config, captured) = loaded_with_unknown_keys(tmp.path());
 
     assert_eq!(captured, ["unknown-future-key"]);
     assert!(config.rules.align_equals.enabled);
@@ -331,13 +331,7 @@ fn rules_unknown_subtable_key_invokes_notice() {
         "[tool.prose.rules.align-equals]\nbogus-knob = 1\n",
     );
 
-    let mut captured = Vec::new();
-    Config::load_with_notices(tmp.path(), |notice| {
-        if let ConfigNotice::UnknownKey(key) = notice {
-            captured.push(key.to_owned());
-        }
-    })
-    .expect("loads");
+    let (_, captured) = loaded_with_unknown_keys(tmp.path());
 
     assert_eq!(captured, ["rules.align-equals.bogus-knob"]);
 }

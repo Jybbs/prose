@@ -8,6 +8,7 @@ use std::{
     sync::OnceLock,
 };
 
+use indexmap::IndexMap;
 use itertools::Itertools;
 use ruff_python_ast::{
     CmpOp, ExceptHandler, Expr, ExprCompare, ExprDictComp, ExprGenerator, ExprLambda, ExprList,
@@ -88,19 +89,17 @@ impl Builder {
         generators: &[ruff_python_ast::Comprehension],
         elements: &[&Expr],
     ) {
-        let Some((first, rest)) = generators.split_first() else {
+        let Some(first) = generators.first() else {
             unreachable!(
                 "invariant: comprehension carries at least one generator (parser guarantee)"
             );
         };
         self.visit_expr(&first.iter);
         self.in_scope(ScopeKind::Comprehension, |b| {
-            b.record_target(&first.target, BindingKind::Comprehension);
-            for guard in &first.ifs {
-                b.visit_expr(guard);
-            }
-            for generator in rest {
-                b.visit_expr(&generator.iter);
+            for (index, generator) in generators.iter().enumerate() {
+                if index > 0 {
+                    b.visit_expr(&generator.iter);
+                }
                 b.record_target(&generator.target, BindingKind::Comprehension);
                 for guard in &generator.ifs {
                     b.visit_expr(guard);
@@ -246,7 +245,7 @@ impl Builder {
         self.scopes.push(Scope {
             kind,
             parent,
-            bindings: BTreeMap::new(),
+            bindings: IndexMap::default(),
             globals: BTreeSet::new(),
         });
         self.scope_stack.push(id);

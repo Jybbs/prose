@@ -6,7 +6,7 @@
 //! that drop the aliases a rule has left unread. First-party detection
 //! reads the package-name list from `[tool.prose.imports]`.
 
-use ruff_python_ast::{Stmt, StmtImportFrom};
+use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
 
 mod grouping;
 mod pruning;
@@ -36,4 +36,10 @@ pub(crate) fn is_future(node: &StmtImportFrom) -> bool {
 /// True for an `import` or `from`-import statement.
 pub(crate) fn is_import(stmt: &Stmt) -> bool {
     stmt.is_import_stmt() || stmt.is_import_from_stmt()
+}
+
+/// True for the `*` of a `from … import *`, which binds a name set no
+/// reference count enumerates.
+pub(crate) fn is_star(alias: &Alias) -> bool {
+    alias.name.as_str() == "*"
 }

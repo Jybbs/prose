@@ -49,7 +49,7 @@ scopes:
     kind: Module
     parent: ~
   - bindings:
-      f: 2
       path: 1
+      f: 2
     kind: Function
     parent: 0

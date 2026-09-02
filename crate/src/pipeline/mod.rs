@@ -136,10 +136,8 @@ impl Pipeline {
     ) -> Result<Source, PipelineError> {
         let gate = compile_gate(&source, self.target_version);
         let replays = self.sharing == Sharing::Declared;
-        let opens = seats.start;
         let mut batch = Batch::default();
-        for (offset, rule) in self.rules[seats].iter().enumerate() {
-            let seat = opens + offset;
+        for (seat, rule) in seats.clone().zip(&self.rules[seats]) {
             let joins = match self.sharing {
                 Sharing::Always => true,
                 Sharing::Declared => batch.shares_with(&self.shares[seat]),

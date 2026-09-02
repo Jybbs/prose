@@ -10,7 +10,6 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::visitor::Visitor;
-use ruff_text_size::TextSize;
 
 use crate::{
     config::Config,
@@ -53,7 +52,6 @@ impl Rule for ShedSuperArgs {
             frames: Vec::new(),
             groups: Vec::new(),
             source,
-            statement: TextSize::default(),
         };
         walker.visit_body(&source.ast().body);
         walker.groups

@@ -15,9 +15,8 @@ use super::Exploder;
 use crate::primitives::{
     call_keywords::{CallKeywords, keyword_args, resolve_call_params},
     edit::apply_inline_edits,
-    inline::{display_width, end_column, opening_width},
+    inline::{display_width, end_column, opening_width, settled_width},
     layout::{Separator, explode_parens, is_fractured, item_indent},
-    padding,
     tokens::{is_opener, opens_subscript},
     travel::{Landing, Travel, block_shift, shifted_block, spans_a_string_part},
 };
@@ -188,7 +187,7 @@ impl<'a> Exploder<'a> {
                 {
                     return false;
                 }
-                match literals.binary_search_by(|literal| literal.start().cmp(&token.start())) {
+                match literals.binary_search_by_key(&token.start(), Ranged::start) {
                     Ok(_) => !self.earlier_literal_explodes(token.start()),
                     Err(_) => token.kind() == TokenKind::Lpar,
                 }
@@ -399,6 +398,6 @@ impl<'a> Exploder<'a> {
     /// `width`, the display width `range` was measured at, less the
     /// padding `strip-stranded-padding` drops inside `range`.
     pub(super) fn settled_width(&self, range: TextRange, width: usize) -> usize {
-        width.saturating_add_signed(-padding::slack(self.source, self.padding, range))
+        settled_width(self.source, self.padding, range, width)
     }
 }

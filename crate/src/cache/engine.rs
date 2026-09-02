@@ -59,15 +59,8 @@ impl Cache {
     #[cfg(test)]
     pub(crate) fn in_store(store: PathBuf) -> Self {
         let root = store.join("generation");
-        std::fs::create_dir_all(&root).expect("creates the cache root");
-        Self {
-            inserted: AtomicBool::new(false),
-            max_entries: usize::MAX,
-            max_size_bytes: u64::MAX,
-            own_output: OnceLock::new(),
-            root,
-            store,
-        }
+        fs_err::create_dir_all(&root).expect("creates the cache root");
+        Self::rooted(store, root)
     }
 
     /// Sets the LRU eviction cap on the directory's entry count.
@@ -112,11 +105,7 @@ impl Cache {
     fn prune_dead_generations(&self) -> CleanReport {
         let mut report = CleanReport::default();
         let now = SystemTime::now();
-        for entry in fs_err::read_dir(&self.store)
-            .into_iter()
-            .flatten()
-            .filter_map(Result::ok)
-        {
+        for entry in dir_entries(&self.store) {
             let path = entry.path();
             if path == self.root {
                 continue;
@@ -144,13 +133,22 @@ impl Cache {
         report
     }
 
+    /// An uncapped cache rooted at `root` under `store`.
+    fn rooted(store: PathBuf, root: PathBuf) -> Self {
+        Self {
+            inserted: AtomicBool::new(false),
+            max_entries: usize::MAX,
+            max_size_bytes: u64::MAX,
+            own_output: OnceLock::new(),
+            root,
+            store,
+        }
+    }
+
     /// Every entry the store holds, across this build's generation and
     /// any older one a sweep has not yet reclaimed.
     fn stored(&self) -> impl Iterator<Item = (DirEntry, Metadata)> + use<> {
-        let generations: Vec<PathBuf> = fs_err::read_dir(&self.store)
-            .into_iter()
-            .flatten()
-            .filter_map(Result::ok)
+        let generations: Vec<PathBuf> = dir_entries(&self.store)
             .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
             .map(|e| e.path())
             .collect();
@@ -252,7 +250,7 @@ impl Cache {
                 acc.bytes += m.len();
                 if let Ok(t) = m.modified() {
                     acc.oldest_mtime = Some(acc.oldest_mtime.map_or(t, |o| o.min(t)));
-                    acc.newest_mtime = Some(acc.newest_mtime.map_or(t, |n| n.max(t)));
+                    acc.newest_mtime = acc.newest_mtime.max(Some(t));
                 }
                 acc
             },
@@ -315,14 +313,7 @@ impl Cache {
         })?;
         let root = store.join(generation());
         fs_err::create_dir_all(&root)?;
-        Ok(Self {
-            inserted: AtomicBool::new(false),
-            max_entries: usize::MAX,
-            max_size_bytes: u64::MAX,
-            own_output: OnceLock::new(),
-            root,
-            store,
-        })
+        Ok(Self::rooted(store, root))
     }
 
     /// True where `key` names bytes a write-back run of this generation
@@ -330,13 +321,10 @@ impl Cache {
     pub fn owns_output(&self, key: &CacheKey) -> bool {
         self.own_output
             .get_or_init(|| {
-                let Ok(bytes) = std::fs::read(self.own_output_path()) else {
+                let Ok(bytes) = fs_err::read(self.own_output_path()) else {
                     return FxHashSet::default();
                 };
-                bytes
-                    .chunks_exact(32)
-                    .map(|chunk| chunk.try_into().expect("a 32-byte chunk"))
-                    .collect()
+                bytes.as_chunks::<32>().0.iter().copied().collect()
             })
             .contains(key.0.as_bytes())
     }
@@ -351,8 +339,8 @@ impl Cache {
     /// the advisory contract absorbs.
     pub fn record_own_output(&self, key: &CacheKey) {
         let path = self.own_output_path();
-        let oversized = std::fs::metadata(&path).is_ok_and(|meta| meta.len() > 1 << 20);
-        let mut open = std::fs::OpenOptions::new();
+        let oversized = fs_err::metadata(&path).is_ok_and(|meta| meta.len() > 1 << 20);
+        let mut open = fs_err::OpenOptions::new();
         open.create(true);
         if oversized {
             open.write(true).truncate(true);
@@ -371,12 +359,17 @@ fn cache_root() -> Option<PathBuf> {
         .or_else(|| dirs::cache_dir().map(|d| d.join("prose")))
 }
 
-/// The entry files directly under `dir`, paired with their metadata.
-fn entries_in(dir: &Path) -> impl Iterator<Item = (DirEntry, Metadata)> + use<> {
+/// The entries directly under `dir`, none where it cannot be read.
+fn dir_entries(dir: &Path) -> impl Iterator<Item = DirEntry> + use<> {
     fs_err::read_dir(dir)
         .into_iter()
         .flatten()
         .filter_map(Result::ok)
+}
+
+/// The entry files directly under `dir`, paired with their metadata.
+fn entries_in(dir: &Path) -> impl Iterator<Item = (DirEntry, Metadata)> + use<> {
+    dir_entries(dir)
         .filter(|e| is_entry_file(&e.path()))
         .filter_map(|e| e.metadata().ok().filter(Metadata::is_file).map(|m| (e, m)))
 }
@@ -419,11 +412,7 @@ fn stale(file: &fs_err::File, now: SystemTime) -> bool {
 /// Removes every file directly under `dir`, reporting what went.
 fn sweep(dir: &Path) -> CleanReport {
     let mut report = CleanReport::default();
-    for entry in fs_err::read_dir(dir)
-        .into_iter()
-        .flatten()
-        .filter_map(Result::ok)
-    {
+    for entry in dir_entries(dir) {
         let bytes = entry.metadata().map_or(0, |m| m.len());
         if fs_err::remove_file(entry.path()).is_ok() {
             report.record(bytes);

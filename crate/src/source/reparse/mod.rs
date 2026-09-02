@@ -26,10 +26,8 @@ impl Source {
     /// True where this source's tree and token stream equal those a
     /// whole-file parse of its own text produces, every range included.
     fn matches_a_fresh_parse(&self) -> bool {
-        let Ok(fresh) = super::parse_typed_module(self.text(), self.source_type) else {
-            return false;
-        };
-        *self.ast() == *fresh.syntax() && self.tokens() == fresh.tokens()
+        super::parse_typed_module(self.text(), self.source_type)
+            .is_ok_and(|fresh| *self.ast() == *fresh.syntax() && self.tokens() == fresh.tokens())
     }
 
     /// The reparse of each statement `map` reports edited, or `None`
@@ -68,20 +66,21 @@ impl Source {
             return None;
         }
         let options = ParseOptions::from(self.source_type);
-        let mut windows = Vec::with_capacity(covered.len());
-        for Window { held, slid } in covered {
-            let parsed = parse_cells_unchecked(text, [slid], &options);
-            if !parsed.has_valid_syntax() {
-                return None;
-            }
-            if !matches!(parsed.syntax().body.as_slice(), [only] if only.range() == slid) {
-                return None;
-            }
-            let fresh = tokens::opening_before(parsed.tokens(), slid.end());
-            let stmt = parsed.into_syntax().body.pop()?;
-            windows.push(Reparsed { fresh, held, stmt });
-        }
-        Some(Splice(windows))
+        covered
+            .into_iter()
+            .map(|Window { held, slid }| {
+                let parsed = parse_cells_unchecked(text, [slid], &options);
+                if !parsed.has_valid_syntax()
+                    || !matches!(parsed.syntax().body.as_slice(), [only] if only.range() == slid)
+                {
+                    return None;
+                }
+                let fresh = parsed.tokens().before(slid.end()).to_vec();
+                let stmt = parsed.into_syntax().body.pop()?;
+                Some(Reparsed { fresh, held, stmt })
+            })
+            .collect::<Option<Vec<_>>>()
+            .map(Splice)
     }
 
     /// This source rewritten as `text`, with `splice`'s statements
@@ -94,7 +93,6 @@ impl Source {
     /// path carries no cell boundaries and no cell numbering.
     pub(crate) fn spliced(self, text: String, map: &SourceMap, splice: Splice) -> Self {
         let deltas = Deltas::new(map);
-        let name = self.file.name().to_owned();
         let spliced = tokens::spliced(&self.tokens, self.text(), &deltas, &splice.0);
         let mut ast = self.ast;
         let grafts = splice
@@ -104,7 +102,7 @@ impl Source {
         Slide::new(&deltas, grafts).over_module(&mut ast);
         let next = Self::from_parts(
             text,
-            name,
+            self.file.name(),
             self.source_type,
             CellOffsets::default(),
             ast,
@@ -160,53 +158,38 @@ mod tests {
         assert!(source.splice_of(&text, &map).is_none());
     }
 
-    #[test]
-    fn spliced_declines_a_window_its_edit_emptied() {
-        let edit = Edit::range_deletion(range(0, 5));
-
-        assert!(splice("x = 1\ny = 2\n", vec![edit]).is_none());
+    #[rstest]
+    #[case::a_window_its_edit_emptied("x = 1\ny = 2\n", Edit::range_deletion(range(0, 5)))]
+    #[case::a_window_its_statement_does_not_fill("x = 1\ny = 2\n", replacement("x = 1 ", 0, 5))]
+    #[case::a_window_reparsing_to_two_statements(
+        "x = 1\nz = 3\n",
+        replacement("x = 1\ny = 2", 0, 5)
+    )]
+    #[case::a_window_whose_closing_indent_moved(
+        "if a:\n    x = 1\ny = 2\n",
+        replacement("        x = 1", 6, 15)
+    )]
+    #[case::a_window_whose_new_text_does_not_parse("x = 1\ny = 2\n", replacement("x = (", 0, 5))]
+    #[case::an_edit_no_single_statement_covers(
+        "x = 1\ny = 2\n",
+        replacement("a = 9\nb = 8", 0, 11)
+    )]
+    #[case::an_insertion_writing_a_statement_of_its_own(
+        "x = 1\ny = 2\n",
+        Edit::insertion("a = 0\n".to_owned(), 0u32.into())
+    )]
+    fn spliced_declines_an_edit_no_window_carries(#[case] text: &str, #[case] edit: Edit) {
+        assert!(splice(text, vec![edit]).is_none());
     }
 
     #[test]
-    fn spliced_declines_a_window_its_statement_does_not_fill() {
-        let edit = replacement("x = 1 ", 0, 5);
+    fn spliced_merges_every_window_a_batch_edits() {
+        let edits = vec![replacement("11", 4, 5), replacement("33", 16, 17)];
 
-        assert!(splice("x = 1\ny = 2\n", vec![edit]).is_none());
-    }
+        let next = splice("x = 1\ny = 2\nz = 3\n", edits).expect("the splice applies");
 
-    #[test]
-    fn spliced_declines_a_window_reparsing_to_two_statements() {
-        let edit = replacement("x = 1\ny = 2", 0, 5);
-
-        assert!(splice("x = 1\nz = 3\n", vec![edit]).is_none());
-    }
-
-    #[test]
-    fn spliced_declines_a_window_whose_closing_indent_moved() {
-        let edit = replacement("        x = 1", 6, 15);
-
-        assert!(splice("if a:\n    x = 1\ny = 2\n", vec![edit]).is_none());
-    }
-
-    #[test]
-    fn spliced_declines_a_window_whose_new_text_does_not_parse() {
-        let edit = replacement("x = (", 0, 5);
-
-        assert!(splice("x = 1\ny = 2\n", vec![edit]).is_none());
-    }
-
-    #[test]
-    fn spliced_declines_an_edit_no_single_statement_covers() {
-        let edit = replacement("a = 9\nb = 8", 0, 11);
-
-        assert!(splice("x = 1\ny = 2\n", vec![edit]).is_none());
-    }
-
-    #[test]
-    fn spliced_declines_an_insertion_writing_a_statement_of_its_own() {
-        let edit = Edit::insertion("a = 0\n".to_owned(), 0u32.into());
-
-        assert!(splice("x = 1\ny = 2\n", vec![edit]).is_none());
+        assert_eq!(next.text(), "x = 11\ny = 2\nz = 33\n");
+        assert!(next.matches_a_fresh_parse());
     }
 
     #[rstest]
@@ -224,6 +207,13 @@ mod tests {
         "111"
     )]
     #[case::a_module_of_one_statement_with_no_trailing_newline("x = 1", range(4, 5), "11")]
+    #[case::an_insertion_at_the_statement_end("x = 1\ny = 2\n", range(5, 5), " + 2")]
+    #[case::a_statement_following_a_block("if a:\n    x = 1\ny = 2\n", range(20, 21), "22")]
+    #[case::a_compound_statement_as_the_window(
+        "if a:\n    x = 1\nelse:\n    y = 2\n",
+        range(3, 4),
+        "bb"
+    )]
     #[case::global_and_nonlocal_slid_past_the_edit(
         "x = 1\ndef outer():\n    global x\n    y = 0\n    def inner():\n        nonlocal y\n        y = 2\n",
         range(4, 5),

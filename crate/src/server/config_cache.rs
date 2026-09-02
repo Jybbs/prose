@@ -58,7 +58,7 @@ impl ConfigCache {
         } else {
             DirSource::discover(&dir).config(&path, text.as_bytes())
         };
-        config.unwrap_or_else(Config::default)
+        config.unwrap_or_default()
     }
 }
 

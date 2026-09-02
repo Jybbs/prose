@@ -70,15 +70,7 @@ fn fixtures() {
         // concatenated text, so its round-trip idempotency is pinned by
         // the CLI tests rather than here.
         if domain != "notebook" {
-            let reparsed = output
-                .parse::<Source>()
-                .expect("formatter output reparses as Python");
-            let (second, _) = pipeline.run(reparsed).expect("second pass succeeds");
-            assert!(
-                second.text() == output,
-                "fixture `{domain}/{case}` not idempotent on second pass:\n{}",
-                common::unified_diff(output, second.text()),
-            );
+            assert_settles(&pipeline, output, domain, case, "on second pass");
         }
 
         let fresh_source =
@@ -92,6 +84,20 @@ fn fixtures() {
             common::unified_diff(output, fresh_formatted.text()),
         );
     });
+}
+
+/// Runs `pipeline` over its own `output` and panics where a second
+/// pass changes it.
+fn assert_settles(pipeline: &Pipeline, output: &str, domain: &str, case: &str, under: &str) {
+    let reparsed = output
+        .parse::<Source>()
+        .expect("formatter output reparses as Python");
+    let (second, _) = pipeline.run(reparsed).expect("second pass succeeds");
+    assert!(
+        second.text() == output,
+        "fixture `{domain}/{case}` not idempotent {under}:\n{}",
+        common::unified_diff(output, second.text()),
+    );
 }
 
 /// Renders a formatted notebook as its per-cell source joined by a
@@ -170,16 +176,7 @@ fn crlf_input_holds_its_endings_and_settles() {
             panic!("fixture `{domain}/{case}` broke line {line} with an ending other than CRLF");
         }
 
-        let reparsed = first
-            .text()
-            .parse::<Source>()
-            .expect("CRLF output reparses as Python");
-        let (second, _) = pipeline.run(reparsed).expect("second CRLF pass succeeds");
-        assert!(
-            second.text() == first.text(),
-            "fixture `{domain}/{case}` not idempotent on CRLF input:\n{}",
-            common::unified_diff(first.text(), second.text()),
-        );
+        assert_settles(&pipeline, first.text(), domain, case, "on CRLF input");
     });
 }
 
@@ -198,18 +195,7 @@ fn pipeline_is_idempotent() {
         let (first, _) = pipeline
             .run(source)
             .expect("first full-pipeline pass succeeds");
-        let reparsed = first
-            .text()
-            .parse::<Source>()
-            .expect("full-pipeline output reparses as Python");
-        let (second, _) = pipeline
-            .run(reparsed)
-            .expect("second full-pipeline pass succeeds");
-        assert!(
-            second.text() == first.text(),
-            "fixture `{domain}/{case}` not idempotent under full pipeline:\n{}",
-            common::unified_diff(first.text(), second.text()),
-        );
+        assert_settles(&pipeline, first.text(), domain, case, "under full pipeline");
     });
 }
 

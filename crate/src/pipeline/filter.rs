@@ -22,14 +22,13 @@ pub(super) fn prepared_groups(rule: &dyn Rule, source: &Source) -> Vec<Vec<Edit>
 /// `# prose: ignore[<id>]` directive names on their own line.
 pub(super) fn settled_lints(rules: &[Box<dyn Rule>], source: &Source) -> Vec<Diagnostic> {
     let suppression = source.suppression_map();
-    let unspanned = rules
+    let lints = suppression.has_lint_suppression();
+    rules
         .iter()
         .flat_map(|rule| rule.lint(source))
-        .filter(|d| !suppression.intersects(d.range));
-    if !suppression.has_lint_suppression() {
-        return unspanned.collect();
-    }
-    unspanned
-        .filter(|d| !suppression.is_lint_suppressed_at(source.line_index(d.start()), d.rule))
+        .filter(|d| !suppression.intersects(d.range))
+        .filter(|d| {
+            !lints || !suppression.is_lint_suppressed_at(source.line_index(d.start()), d.rule)
+        })
         .collect()
 }

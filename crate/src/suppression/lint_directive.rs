@@ -2,10 +2,9 @@
 //! its `ignore[<id>]` form, plus the rule entry both the lint and the
 //! format namespaces record.
 
-use ruff_python_trivia::PythonWhitespace;
 use rustc_hash::FxHashSet;
 
-use super::parse_common::parse_bracketed_rule_list;
+use super::parse_common::parse_entry;
 use crate::rule::RuleId;
 
 /// The rule set one `# prose: ignore` or `# prose: skip[<id>]`
@@ -52,9 +51,5 @@ impl Default for RuleEntry {
 /// Whitespace is tolerated around `[`, `,`, and `]`, and unknown rule
 /// ids inside the brackets are dropped.
 pub(super) fn parse_ignore(body: &str) -> Option<RuleEntry> {
-    let body = body.strip_prefix("ignore")?.trim_whitespace();
-    if body.is_empty() {
-        return Some(RuleEntry::All);
-    }
-    parse_bracketed_rule_list(body).map(RuleEntry::Specific)
+    parse_entry(body, "ignore")
 }

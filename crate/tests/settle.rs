@@ -295,8 +295,8 @@ impl Probes {
             .collect();
         let pairs = Pipeline::known_ids()
             .iter()
+            .copied()
             .array_combinations()
-            .map(|[&earlier, &later]| [earlier, later])
             .filter(|[earlier, later]| match claim {
                 Claim::Owned => in_scope(earlier),
                 Claim::Touching => in_scope(earlier) || in_scope(later),
@@ -550,7 +550,7 @@ fn shard_of(spec: Option<&str>) -> (usize, usize) {
     };
     let parsed = spec
         .split_once('/')
-        .and_then(|(k, n)| Some((k.parse::<usize>().ok()?, n.parse::<usize>().ok()?)))
+        .and_then(|(k, n)| k.parse::<usize>().ok().zip(n.parse::<usize>().ok()))
         .filter(|&(k, n)| k >= 1 && k <= n);
     let (k, n) =
         parsed.unwrap_or_else(|| panic!("{SHARD_VAR} takes `k/n` with 1 <= k <= n: {spec}"));

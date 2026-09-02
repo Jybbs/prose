@@ -48,8 +48,8 @@ scopes:
     kind: Module
     parent: ~
   - bindings:
-      inner: 2
       x: 1
+      inner: 2
     kind: Function
     parent: 0
   - bindings: {}

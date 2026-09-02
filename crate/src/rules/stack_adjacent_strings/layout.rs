@@ -31,20 +31,9 @@ impl<'a> Layout<'a> {
             .rev()
             .find(|node| node.is_statement())
             .expect("an expression is visited inside a statement");
-        let mut open = Vec::new();
-        for token in self
-            .source
-            .tokens()
-            .in_range(TextRange::new(statement.start(), span.start()))
-        {
-            let kind = token.kind();
-            if is_opener(kind) {
-                open.push(token.start());
-            } else if is_closer(kind) {
-                open.pop();
-            }
-        }
-        open.last()
+        let head = TextRange::new(statement.start(), span.start());
+        open_brackets(self.source.tokens().in_range(head))
+            .last()
             .is_some_and(|&bracket| !self.source.same_line(bracket, span.start()))
     }
 

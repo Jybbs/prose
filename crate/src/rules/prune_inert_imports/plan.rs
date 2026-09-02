@@ -10,13 +10,17 @@ use super::{
     PruneInertImports,
     annotations::annotation_names,
     future::annotations_are_inert,
-    inventory::{ImportNode, is_star},
+    inventory::ImportNode,
     is_package_init,
     reexports::{Reexports, reexports_a_private_member},
 };
 use crate::{
     diagnostics::Diagnostic,
-    primitives::{binding::BindingAnalysis, comments::noqa_names, imports::Dropping},
+    primitives::{
+        binding::BindingAnalysis,
+        comments::noqa_names,
+        imports::{Dropping, is_star},
+    },
     rule::RuleId,
     rules::reflow_imports::Folds,
     source::Source,

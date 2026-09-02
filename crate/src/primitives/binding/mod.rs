@@ -21,9 +21,10 @@ use std::{
     sync::OnceLock,
 };
 
+use indexmap::IndexMap;
 use ruff_python_ast::{ModModule, Stmt, name::Name, visitor::Visitor};
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet};
 use serde::Serialize;
 use smallvec::SmallVec;
 
@@ -374,7 +375,7 @@ struct Binding {
 /// One lexical scope plus its binding table keyed by name.
 #[derive(Debug, PartialEq, Serialize)]
 struct Scope {
-    bindings: BTreeMap<Name, BindingId>,
+    bindings: IndexMap<Name, BindingId, FxBuildHasher>,
     #[serde(skip)]
     globals: BTreeSet<Name>,
     kind: ScopeKind,

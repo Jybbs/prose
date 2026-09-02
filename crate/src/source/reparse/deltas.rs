@@ -1,5 +1,6 @@
 //! The old-to-new offset slide a rule's applied edits describe.
 
+use itertools::Itertools;
 use ruff_diagnostics::{SourceMap, SourceMarker};
 use ruff_text_size::{TextRange, TextSize};
 
@@ -31,8 +32,9 @@ impl<'map> Deltas<'map> {
         side: F,
     ) -> impl Iterator<Item = TextRange> + use<'_, 'map, F> {
         self.markers
-            .chunks_exact(2)
-            .map(move |pair| TextRange::new(side(&pair[0]), side(&pair[1])))
+            .iter()
+            .tuples()
+            .map(move |(start, end)| TextRange::new(side(start), side(end)))
     }
 
     /// True where nothing in `range` moves, the span closing before the
@@ -40,7 +42,7 @@ impl<'map> Deltas<'map> {
     pub(super) fn holds_still(&self, range: TextRange) -> bool {
         self.markers
             .first()
-            .is_none_or(|first| range.end() <= first.source())
+            .is_none_or(|first| range.end() < first.source())
     }
 
     /// The spans the edits replaced, ascending, in the buffer they were
@@ -51,11 +53,7 @@ impl<'map> Deltas<'map> {
 
     /// `range` moved to where the woven text holds it.
     pub(super) fn slide(&self, range: TextRange) -> TextRange {
-        let start = self.shift(range.start());
-        if range.is_empty() {
-            return TextRange::empty(start);
-        }
-        TextRange::new(start, self.shift(range.end()))
+        TextRange::new(self.shift(range.start()), self.shift(range.end()))
     }
 
     /// The spans the edits wrote, ascending, in the woven text.
@@ -79,7 +77,7 @@ mod tests {
 
     #[rstest]
     #[case::a_span_closing_before_the_edit(range(0, 2), true)]
-    #[case::a_span_closing_where_the_edit_opens(range(0, 3), true)]
+    #[case::a_span_closing_where_the_edit_opens(range(0, 3), false)]
     #[case::a_span_reaching_past_the_edit(range(0, 4), false)]
     #[case::a_span_opening_after_the_edit(range(5, 6), false)]
     fn holds_still_reads_whether_a_span_closes_ahead_of_the_first_edit(
@@ -100,47 +98,26 @@ mod tests {
         assert_eq!(deltas.written().collect::<Vec<_>>(), [range(1, 3)]);
     }
 
-    #[test]
-    fn slide_carries_a_zero_width_range_to_one_offset() {
-        let map = mapped("abcdef", vec![replacement("XX", 1, 2)]);
+    #[rstest]
+    #[case::ahead_of_every_edit(vec![replacement("XX", 3, 4)], range(0, 2), range(0, 2))]
+    #[case::past_a_narrowing_edit(vec![Edit::range_deletion(range(1, 3))], range(4, 6), range(2, 4))]
+    #[case::past_a_widening_edit(vec![replacement("XX", 1, 2)], range(3, 5), range(4, 6))]
+    #[case::past_two_insertions(
+        vec![
+            Edit::insertion("X".to_owned(), 1u32.into()),
+            Edit::insertion("Y".to_owned(), 3u32.into()),
+        ],
+        range(4, 6),
+        range(6, 8)
+    )]
+    #[case::a_zero_width_range(vec![replacement("XX", 1, 2)], range(4, 4), range(5, 5))]
+    fn slide_moves_a_range_by_the_deltas_ahead_of_it(
+        #[case] edits: Vec<Edit>,
+        #[case] span: TextRange,
+        #[case] expected: TextRange,
+    ) {
+        let map = mapped("abcdef", edits);
 
-        let slid = Deltas::new(&map).slide(TextRange::empty(TextSize::new(4)));
-
-        assert!(slid.is_empty());
-        assert_eq!(slid.start(), TextSize::new(5));
-    }
-
-    #[test]
-    fn slide_holds_a_range_ahead_of_every_edit() {
-        let map = mapped("abcdef", vec![replacement("XX", 3, 4)]);
-
-        assert_eq!(Deltas::new(&map).slide(range(0, 2)), range(0, 2));
-    }
-
-    #[test]
-    fn slide_moves_a_range_past_a_narrowing_edit() {
-        let map = mapped("abcdef", vec![Edit::range_deletion(range(1, 3))]);
-
-        assert_eq!(Deltas::new(&map).slide(range(4, 6)), range(2, 4));
-    }
-
-    #[test]
-    fn slide_moves_a_range_past_a_widening_edit() {
-        let map = mapped("abcdef", vec![replacement("XX", 1, 2)]);
-
-        assert_eq!(Deltas::new(&map).slide(range(3, 5)), range(4, 6));
-    }
-
-    #[test]
-    fn slide_sums_the_deltas_of_every_edit_ahead_of_a_range() {
-        let map = mapped(
-            "abcdef",
-            vec![
-                Edit::insertion("X".to_owned(), 1u32.into()),
-                Edit::insertion("Y".to_owned(), 3u32.into()),
-            ],
-        );
-
-        assert_eq!(Deltas::new(&map).slide(range(4, 6)), range(6, 8));
+        assert_eq!(Deltas::new(&map).slide(span), expected);
     }
 }

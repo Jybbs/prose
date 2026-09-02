@@ -1,6 +1,7 @@
 //! Line classification for a docstring body, separating verbatim
 //! structures from the prose a walker reflows.
 
+use itertools::Itertools;
 use ruff_python_trivia::{PythonWhitespace, leading_indentation};
 
 use crate::primitives::{
@@ -225,10 +226,7 @@ fn is_list_marker(trimmed: &str) -> bool {
 /// True when `trimmed` is a section underline, a run of one repeated
 /// adornment character (`-`, `=`, or `~`).
 fn is_section_underline(trimmed: &str) -> bool {
-    let mut chars = trimmed.chars();
-    chars
-        .next()
-        .is_some_and(|first| matches!(first, '-' | '=' | '~') && chars.all(|c| c == first))
+    trimmed.starts_with(['-', '=', '~']) && trimmed.chars().all_equal()
 }
 
 /// True when `trimmed` is a simple-table rule, two or more runs of one

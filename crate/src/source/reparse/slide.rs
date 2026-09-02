@@ -223,13 +223,11 @@ impl Transformer for Slide<'_> {
             MatchStar,
             MatchValue,
         );
-        match &mut *pattern {
-            Pattern::MatchAs(ast::PatternMatchAs { name, .. })
-            | Pattern::MatchStar(ast::PatternMatchStar { name, .. })
-            | Pattern::MatchMapping(ast::PatternMatchMapping { rest: name, .. }) => {
-                self.slide_names(name.as_mut());
-            }
-            _ => {}
+        if let Pattern::MatchAs(ast::PatternMatchAs { name, .. })
+        | Pattern::MatchStar(ast::PatternMatchStar { name, .. })
+        | Pattern::MatchMapping(ast::PatternMatchMapping { rest: name, .. }) = &mut *pattern
+        {
+            self.slide_names(name.as_mut());
         }
         walk_pattern(self, pattern);
     }
@@ -318,13 +316,10 @@ impl Transformer for Slide<'_> {
             TypeVar,
             TypeVarTuple,
         );
-        match &mut *type_param {
-            TypeParam::ParamSpec(ast::TypeParamParamSpec { name, .. })
-            | TypeParam::TypeVar(ast::TypeParamTypeVar { name, .. })
-            | TypeParam::TypeVarTuple(ast::TypeParamTypeVarTuple { name, .. }) => {
-                self.slide_name(name);
-            }
-        }
+        let (TypeParam::ParamSpec(ast::TypeParamParamSpec { name, .. })
+        | TypeParam::TypeVar(ast::TypeParamTypeVar { name, .. })
+        | TypeParam::TypeVarTuple(ast::TypeParamTypeVarTuple { name, .. })) = &mut *type_param;
+        self.slide_name(name);
         walk_type_param(self, type_param);
     }
 

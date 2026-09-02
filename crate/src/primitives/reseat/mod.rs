@@ -31,17 +31,12 @@ use crate::{
 /// start of the first row a removal touches to the end of its logical
 /// line, and empty `removals` reseat nothing.
 pub(crate) fn push_reseat_edits(source: &Source, removals: &[Edit], edits: &mut Vec<Edit>) {
-    let Some(start) = removals.iter().map(Ranged::start).min() else {
+    let Some(span) = removals.iter().map(Ranged::range).reduce(TextRange::cover) else {
         return;
     };
-    let end = removals
-        .iter()
-        .map(Ranged::end)
-        .max()
-        .expect("a removal exists");
     let line = TextRange::new(
-        source.text().line_start(start),
-        source.logical_line_tail(end).end(),
+        source.text().line_start(span.start()),
+        source.logical_line_tail(span.end()).end(),
     );
     let row_of = |offset: TextSize| source.line_index(offset);
     let removed = |offset: TextSize| removals.iter().any(|edit| edit.range().contains(offset));

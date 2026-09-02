@@ -7,14 +7,13 @@ use std::borrow::Cow;
 
 use ruff_python_ast::{Expr, ExprCall, helpers::any_over_expr, token::TokenKind};
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use super::Exploder;
 use crate::primitives::{
     edit::apply_inline_edits,
-    inline::{end_column, indent_width},
+    inline::{end_column, indent_width, last_line, settled_width},
     layout::requires_expand,
-    padding,
     tokens::{is_closer, is_opener},
 };
 
@@ -26,16 +25,18 @@ impl<'a> Exploder<'a> {
     /// shifts its row to.
     fn placed_column(&self, offset: TextSize, reserved: bool) -> usize {
         let placed = self.placed_head(offset);
-        let tail = placed.rsplit('\n').next().unwrap_or(&placed);
-        let back = TextSize::new(u32::try_from(tail.len()).unwrap_or(u32::MAX));
-        let row_start = self
-            .source
-            .text()
-            .line_start(offset)
-            .max(offset.checked_sub(back).unwrap_or_default());
+        let row_start = self.source.text().line_start(offset).max(
+            offset
+                .checked_sub(last_line(&placed).text_len())
+                .unwrap_or_default(),
+        );
         let row = TextRange::new(row_start, offset);
-        let mut column = end_column(&placed, self.origin_column)
-            .saturating_add_signed(-padding::slack(self.source, self.padding, row));
+        let mut column = settled_width(
+            self.source,
+            self.padding,
+            row,
+            end_column(&placed, self.origin_column),
+        );
         if placed.contains('\n') {
             column = column.saturating_add_signed(self.line_shift);
         }
@@ -139,7 +140,7 @@ impl<'a> Exploder<'a> {
             return indent;
         }
         let placed = self.placed_head(anchor);
-        indent_width(placed.rsplit('\n').next().unwrap_or(&placed))
+        indent_width(last_line(&placed))
     }
 
     /// The column `call`'s `(` reaches once this walk's earlier edits

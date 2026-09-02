@@ -219,7 +219,7 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
     verbose: bool,
     present: &Presentation,
     stdin: R,
-    stdout: AutoStream<O>,
+    mut stdout: AutoStream<O>,
     mut stderr: E,
 ) -> anyhow::Result<ExitStatus> {
     let pass = Pass::Diagnose {
@@ -235,22 +235,18 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
         Err(s) => return Ok(s),
     };
     let format = args.common.output_format;
-    let outcomes = if args.common.stdin {
+    let (outcomes, emits) = if args.common.stdin {
         let source_type = stdin_source_type(args.common.stdin_filename.as_deref());
         let outcome = match read_stdin(stdin) {
             Ok(text) => process_stdin(text, source_type, &setup.cwd, pass),
             Err(outcome) => outcome,
         };
-        let outcomes = vec![outcome];
-        let summary = emitter_summary(&outcomes);
-        emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
-        outcomes
+        (vec![outcome], true)
     } else if format.is_text() {
         // Text carries no envelope around its per-file blocks, so each
         // one reaches the terminal as it lands rather than after the
         // whole walk. Every other format closes over the run.
         let text = Text::new(present.color);
-        let mut stdout = stdout;
         let outcomes = setup.streamed(
             &args.paths,
             pass,
@@ -258,14 +254,14 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
             |block| stdout.write_all(block).context("writing stdout"),
         )?;
         stdout.flush().context("flushing stdout")?;
-        outcomes
+        (outcomes, false)
     } else {
-        let outcomes = setup.walked(&args.paths, pass);
-        let summary = emitter_summary(&outcomes);
-        emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
-        outcomes
+        (setup.walked(&args.paths, pass), true)
     };
     let summary = emitter_summary(&outcomes);
+    if emits {
+        emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
+    }
     let status = finish(&outcomes, setup.cache.is_some(), setup.verbose, pass)
         .max(unstable_status(&outcomes));
     render_summary(&mut stderr, present, &outcomes, &summary, pass);

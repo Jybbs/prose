@@ -319,14 +319,13 @@ const _: () = {
 pub fn independent(later: &str, earlier: &str) -> bool {
     INDEPENDENCE
         .iter()
-        .find(|(slug, _)| *slug == later)
-        .is_some_and(|(_, shared)| shared.contains(&earlier))
+        .any(|(slug, shared)| *slug == later && shared.contains(&earlier))
 }
 
 /// Whether the rule at `seat` reaches `slug` through its dependency
 /// column, directly or through the column of a rule that column names.
 /// The const counterpart of [`runs_behind`](super::runs_behind).
-const fn reaches(seat: usize, slug: &str) -> bool {
+pub(super) const fn reaches(seat: usize, slug: &str) -> bool {
     let mut seen = [false; KNOWN_IDS.len()];
     let mut pending = [0usize; KNOWN_IDS.len()];
     let mut depth = 1;

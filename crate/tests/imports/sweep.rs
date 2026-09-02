@@ -139,14 +139,10 @@ impl Sweep {
         self.runner.precompile(&formatted);
         let modules = setting(MODULE_VAR).map_or_else(
             || {
-                let found = candidates(&run.rewritten);
-                match skip {
-                    Some(held) => found
-                        .into_iter()
-                        .filter(|module| !held.contains(module))
-                        .collect(),
-                    None => found,
-                }
+                candidates(&run.rewritten)
+                    .into_iter()
+                    .filter(|module| skip.is_none_or(|held| !held.contains(module)))
+                    .collect()
             },
             |only| vec![only],
         );

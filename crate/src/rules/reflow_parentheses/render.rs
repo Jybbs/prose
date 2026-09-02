@@ -5,7 +5,7 @@
 //! it.
 
 use ruff_diagnostics::Edit;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange};
 
 use super::{
     Shedder,
@@ -19,7 +19,7 @@ use crate::{
         inline::{display_width, folded_line_form},
         layout::{Separator, explode_parens, item_indent},
         splice::splice_preserves_tree,
-        tokens::{is_closer, is_opener},
+        tokens::open_brackets,
         travel::hung_block_through,
     },
     source::Source,
@@ -30,19 +30,11 @@ impl Shedder<'_> {
     /// open.
     fn held_inside_a_bracket(&self, pair: TextRange, candidates: &[Candidate]) -> bool {
         let head = self.source.logical_line_start(pair.start());
-        let mut open: Vec<TextSize> = Vec::new();
-        for token in self
+        let tokens = self
             .source
             .tokens_overlapping(head)
-            .filter(|token| head.contains(token.start()))
-        {
-            if is_opener(token.kind()) {
-                open.push(token.start());
-            } else if is_closer(token.kind()) {
-                open.pop();
-            }
-        }
-        open.iter().any(|start| {
+            .filter(|token| head.contains(token.start()));
+        open_brackets(tokens).iter().any(|start| {
             candidates
                 .binary_search_by_key(start, |other| other.pair.start())
                 .ok()

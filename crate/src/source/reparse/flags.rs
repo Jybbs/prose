@@ -36,9 +36,6 @@ fn flags_of(token: Token, text: &str) -> TokenFlags {
     if string.is_triple_quoted() {
         flags |= TokenFlags::TRIPLE_QUOTED_STRING;
     }
-    if string.is_unclosed() {
-        flags |= TokenFlags::UNCLOSED_STRING;
-    }
     flags
 }
 
@@ -120,7 +117,10 @@ spec = f"{plain:>{raw}}"
     #[test]
     fn retargeted_rebuilds_every_flag_a_token_carries() {
         let parsed = parse_module(FLAVORS).expect("the sample parses");
-        let mut checked = 0;
+        assert!(
+            parsed.tokens().len() > 60,
+            "the sample exercises the flag-bearing kinds"
+        );
         for token in parsed.tokens().iter() {
             assert_eq!(
                 retargeted(*token, FLAVORS, token.range()),
@@ -128,8 +128,6 @@ spec = f"{plain:>{raw}}"
                 "token at {:?} lost a flag",
                 token.range(),
             );
-            checked += 1;
         }
-        assert!(checked > 60, "the sample exercises the flag-bearing kinds");
     }
 }

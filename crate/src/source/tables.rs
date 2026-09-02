@@ -121,9 +121,9 @@ fn inherited<T>(
     forward: impl FnOnce(T) -> Option<T>,
 ) -> OnceLock<Box<T>> {
     let held = slot.get().is_some();
-    let moved = permitted
-        .then(|| slot.into_inner())
-        .flatten()
+    let moved = slot
+        .into_inner()
+        .filter(|_| permitted)
         .and_then(|table| forward(*table));
     trace::carried(rule, table, Outcome::of(permitted, held, moved.is_some()));
     moved

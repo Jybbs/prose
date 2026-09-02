@@ -163,15 +163,15 @@ fn member_block<T: Ranged>(source: &Source, items: &[T], i: usize, outer: TextRa
 /// comment past a `}`, `)`, or `]` stays disowned.
 pub(super) fn tail_end(source: &Source, item_end: TextSize) -> TextSize {
     let line_end = source.text().line_end(item_end);
-    let mut consumed = 0u32;
-    for &byte in source.slice(TextRange::new(item_end, line_end)).as_bytes() {
-        match byte {
-            b',' | b' ' | b'\t' => consumed += 1,
-            b'#' => return line_end,
-            _ => break,
-        }
+    let tail = source.slice(TextRange::new(item_end, line_end)).as_bytes();
+    let consumed = tail
+        .iter()
+        .take_while(|&&byte| matches!(byte, b',' | b' ' | b'\t'))
+        .count();
+    if tail.get(consumed) == Some(&b'#') {
+        return line_end;
     }
-    item_end + TextSize::from(consumed)
+    item_end + TextSize::try_from(consumed).expect("a line fits u32")
 }
 
 #[cfg(test)]

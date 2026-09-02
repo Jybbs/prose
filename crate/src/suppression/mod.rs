@@ -248,20 +248,13 @@ mod tests {
 
     use rstest::rstest;
     use ruff_source_file::OneIndexed;
-    use ruff_text_size::TextRange;
 
     use super::{FormatDirective, SuppressionKind, directives, is_directive_comment};
     use crate::{
         rule::RuleId,
         rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
-        source::Source,
-        testing::{notebook, parse, range},
+        testing::{at, notebook, parse, range},
     };
-
-    fn at(source: &Source, needle: &str) -> TextRange {
-        let start = source.text().find(needle).expect("needle is present") as u32;
-        range(start, start + needle.len() as u32)
-    }
 
     fn line(zero_indexed: usize) -> OneIndexed {
         OneIndexed::from_zero_indexed(zero_indexed)
@@ -437,7 +430,11 @@ mod tests {
     #[test]
     fn nested_prose_off_after_non_pragma_hash_is_recognized() {
         let source = parse("# my note # prose: off\nx = 1\n");
-        assert!(source.suppression_map().intersects(at(&source, "x = 1")));
+        assert!(
+            source
+                .suppression_map()
+                .intersects(at(source.text(), "x = 1"))
+        );
     }
 
     #[test]
@@ -456,8 +453,8 @@ mod tests {
     fn own_line_skip_stays_on_its_own_line() {
         let source = parse("x = 1\n# fmt: skip\ny = 2\n");
         let map = source.suppression_map();
-        assert!(!map.intersects(at(&source, "x = 1")));
-        assert!(!map.intersects(at(&source, "y = 2")));
+        assert!(!map.intersects(at(source.text(), "x = 1")));
+        assert!(!map.intersects(at(source.text(), "y = 2")));
     }
 
     #[rstest]
@@ -471,7 +468,7 @@ mod tests {
         text: &str,
     ) {
         let src = parse(text);
-        assert!(src.suppression_map().intersects(at(&src, "x = 1")));
+        assert!(src.suppression_map().intersects(at(src.text(), "x = 1")));
     }
 
     #[test]
@@ -503,7 +500,7 @@ mod tests {
         let source = parse("x = 1 + \\\n    2  # fmt: skip\ny = 3\n");
         let map = source.suppression_map();
         assert!(map.suppresses(range(0, 1), AlignEquals::SLUG));
-        assert!(!map.suppresses(at(&source, "y = 3"), AlignEquals::SLUG));
+        assert!(!map.suppresses(at(source.text(), "y = 3"), AlignEquals::SLUG));
     }
 
     #[test]
@@ -520,14 +517,14 @@ mod tests {
         let source = notebook(&["z = (\n    x\n)  # fmt: skip", "y = 2"]);
         let map = source.suppression_map();
         assert!(map.suppresses(range(0, 1), AlignEquals::SLUG));
-        assert!(!map.suppresses(at(&source, "y = 2"), AlignEquals::SLUG));
+        assert!(!map.suppresses(at(source.text(), "y = 2"), AlignEquals::SLUG));
     }
 
     #[test]
     fn skip_inside_a_bracketed_construct_stays_on_its_own_line() {
         let source = parse("config = {\n    \"a\": 1,  # fmt: skip\n    \"b\": 2,\n}\n");
         let map = source.suppression_map();
-        assert!(map.suppresses(at(&source, "\"a\""), AlignEquals::SLUG));
+        assert!(map.suppresses(at(source.text(), "\"a\""), AlignEquals::SLUG));
         assert!(!map.suppresses(range(0, 6), AlignEquals::SLUG));
     }
 
@@ -544,7 +541,7 @@ mod tests {
         let source = parse("if (\n    ready\n):  # fmt: skip\n    pass\n");
         let map = source.suppression_map();
         assert!(map.suppresses(range(0, 2), AlignEquals::SLUG));
-        assert!(!map.suppresses(at(&source, "pass"), AlignEquals::SLUG));
+        assert!(!map.suppresses(at(source.text(), "pass"), AlignEquals::SLUG));
     }
 
     #[test]
@@ -561,9 +558,9 @@ mod tests {
     fn skip_span_opens_at_the_statement_below_a_comment_gap() {
         let source = parse("a = 1\n\n# note\nz = (\n    x\n)  # fmt: skip\n");
         let map = source.suppression_map();
-        assert!(map.suppresses(at(&source, "z"), AlignEquals::SLUG));
+        assert!(map.suppresses(at(source.text(), "z"), AlignEquals::SLUG));
         assert!(!map.suppresses(range(0, 5), AlignEquals::SLUG));
-        assert!(!map.suppresses(at(&source, "# note"), AlignEquals::SLUG));
+        assert!(!map.suppresses(at(source.text(), "# note"), AlignEquals::SLUG));
     }
 
     #[test]
@@ -571,7 +568,7 @@ mod tests {
         let source = parse("z = (\r\n    x\r\n)  # fmt: skip\r\ny = 2\r\n");
         let map = source.suppression_map();
         assert!(map.suppresses(range(0, 1), AlignEquals::SLUG));
-        assert!(!map.suppresses(at(&source, "y = 2"), AlignEquals::SLUG));
+        assert!(!map.suppresses(at(source.text(), "y = 2"), AlignEquals::SLUG));
     }
 
     #[test]
@@ -636,8 +633,8 @@ mod tests {
         // but not cell 1's `y`, and the file is not wholly suppressed.
         let source = notebook(&["# prose: off\nx = 1", "y = 2"]);
         let map = source.suppression_map();
-        assert!(map.intersects(at(&source, "x")));
-        assert!(!map.intersects(at(&source, "y")));
+        assert!(map.intersects(at(source.text(), "x")));
+        assert!(!map.intersects(at(source.text(), "y")));
         assert!(!map.file_is_suppressed());
     }
 

@@ -88,8 +88,8 @@ scopes:
     kind: Function
     parent: 0
   - bindings:
-      inner: 4
       y: 3
+      inner: 4
     kind: Function
     parent: 0
   - bindings:
