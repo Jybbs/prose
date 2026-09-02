@@ -2,8 +2,6 @@
 //! of module-body siblings.
 
 use ruff_python_ast::token::{Token, TokenKind};
-use ruff_python_trivia::leading_indentation;
-use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
@@ -26,29 +24,20 @@ impl Ranged for Window {
     }
 }
 
-/// The leading whitespace of the last logical line `range` covers in
-/// `text`, the indent the `Dedent` run past the window counts down
-/// from. `tokens` are the window's own, and the line is the one the
-/// window's last code token's logical line opens on, read past the
-/// comments, non-logical newlines, and indent tokens ahead of it, or
-/// the window's opening line where it holds no code. The lexer tracks
-/// indentation on logical lines alone, so a continuation line's
-/// whitespace never reaches the count.
-pub(super) fn closing_indent<'t>(text: &'t str, tokens: &[Token], range: TextRange) -> &'t str {
-    let opens = tokens
+/// The levels `tokens`, a window's own, open on balance, each `Indent`
+/// counting one up and each `Dedent` one down, so the window's end sits
+/// that many levels past its start. The lexer tracks indentation on
+/// logical lines alone, so a continuation line's whitespace never
+/// reaches the count.
+pub(super) fn net_indent(tokens: &[Token]) -> isize {
+    tokens
         .iter()
-        .rposition(|token| is_code(token.kind()))
-        .and_then(|last| {
-            let from = tokens[..last]
-                .iter()
-                .rposition(|token| token.kind() == TokenKind::Newline)
-                .map_or(0, |newline| newline + 1);
-            tokens[from..=last]
-                .iter()
-                .find(|token| is_code(token.kind()))
+        .map(|token| match token.kind() {
+            TokenKind::Indent => 1,
+            TokenKind::Dedent => -1,
+            _ => 0,
         })
-        .map_or(range.start(), Ranged::start);
-    leading_indentation(&text[text.line_start(opens).to_usize()..])
+        .sum()
 }
 
 /// True for a token the lexer's indentation tracking reads a logical
@@ -140,31 +129,20 @@ mod tests {
     use crate::testing::{parse, range};
 
     #[rstest]
-    #[case::a_single_line_statement("x = 1\n", range(0, 5), "")]
-    #[case::a_block_closing_deeper("def f():\n    y = 2\n", range(0, 18), "    ")]
-    #[case::a_block_closing_deeper_across_cr("def f():\r    y = 2\r", range(0, 18), "    ")]
-    #[case::a_block_closing_deeper_still(
-        "if a:\n    if b:\n        c = 1\n",
-        range(0, 29),
-        "        "
-    )]
-    #[case::a_statement_closing_on_a_continuation_line("foo(\n        a)\n", range(0, 15), "")]
-    #[case::a_block_closing_on_a_continuation_line(
-        "if a:\n    b = foo(\n        1)\n",
-        range(0, 29),
-        "    "
-    )]
-    #[case::a_nested_statement_holding_no_newline("def f():\n    y = 2\n", range(13, 18), "    ")]
-    fn closing_indent_reads_the_last_logical_line_of_the_window(
+    #[case::a_single_line_statement("x = 1\n", range(0, 5), 0)]
+    #[case::a_block_closing_deeper("def f():\n    y = 2\n", range(0, 18), 1)]
+    #[case::a_block_closing_deeper_across_cr("def f():\r    y = 2\r", range(0, 18), 1)]
+    #[case::a_block_closing_deeper_still("if a:\n    if b:\n        c = 1\n", range(0, 29), 2)]
+    #[case::a_statement_closing_on_a_continuation_line("foo(\n        a)\n", range(0, 15), 0)]
+    #[case::a_nested_statement_holding_no_newline("def f():\n    y = 2\n", range(13, 18), 0)]
+    fn net_indent_counts_the_levels_a_window_opens(
         #[case] text: &str,
         #[case] window: TextRange,
-        #[case] expected: &str,
+        #[case] expected: isize,
     ) {
         let source = parse(text);
-        assert_eq!(
-            closing_indent(text, source.tokens().in_range(window), window),
-            expected,
-        );
+
+        assert_eq!(net_indent(source.tokens().in_range(window)), expected);
     }
 
     #[rstest]

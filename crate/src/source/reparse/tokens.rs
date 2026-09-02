@@ -2,17 +2,21 @@
 
 use ruff_python_ast::{
     Stmt,
-    token::{Token, TokenKind, Tokens},
+    token::{Token, TokenFlags, TokenKind, Tokens},
 };
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{deltas::Deltas, flags::retargeted, window::is_code};
 
 /// One window's held span and the span the woven text holds it at,
 /// whether it is a window of the module body, which any count of
-/// statements may fill, the statements its reparse produced, and the
-/// tokens of that reparse the merge reads.
+/// statements may fill, the statements its reparse produced, the
+/// tokens of that reparse the merge reads, and the levels its end
+/// moved.
 pub(super) struct Reparsed {
+    /// The levels the window's end moved past its start, which the
+    /// `Dedent` run past the window closes in addition.
+    pub(super) delta: isize,
     pub(super) fresh: Vec<Token>,
     pub(super) held: TextRange,
     pub(super) run: bool,
@@ -26,12 +30,15 @@ pub(super) struct Reparsed {
 /// A window's reparse closes on zero-width tokens at its own end, where
 /// the held stream carries the real ones, so the merge takes only those
 /// opening before it, and opens on none of the `Dedent` run the held
-/// stream carries at its start, which the merge seats where the lexer
-/// emits it. `held_text` is the buffer `held`'s own ranges index, read
-/// to rebuild the flags of each token the slide moves.
+/// stream carries at its start. Every held `Dedent` run is seated where
+/// the lexer emits it, ahead of the next code token or at `len`, the
+/// woven text's end, its count moved by the levels the window ahead of
+/// it moved its end. `held_text` is the buffer `held`'s own ranges
+/// index, read to rebuild the flags of each token the slide moves.
 pub(super) fn spliced(
     held: &Tokens,
     held_text: &str,
+    len: TextSize,
     deltas: &Deltas,
     windows: &[Reparsed],
 ) -> Tokens {
@@ -42,7 +49,7 @@ pub(super) fn spliced(
     });
     merged.extend_from_slice(still);
     let mut next = 0;
-    let mut dedents: Vec<Token> = Vec::new();
+    let mut dedents = Dedents::default();
     for token in moving {
         while let Some(window) = windows
             .get(next)
@@ -51,16 +58,20 @@ pub(super) fn spliced(
             merge_window(&mut merged, window, &mut dedents, held_text);
             next += 1;
         }
-        if let Some(window) = windows.get(next) {
-            if reparsed(window.held, token.range()) {
-                continue;
-            }
-            if token.kind() == TokenKind::Dedent && token.start() == window.held.start() {
-                dedents.push(*token);
-                continue;
-            }
+        if windows
+            .get(next)
+            .is_some_and(|window| reparsed(window.held, token.range()))
+        {
+            continue;
+        }
+        if token.kind() == TokenKind::Dedent {
+            dedents.held.push(*token);
+            continue;
         }
         let slid = deltas.slide_token(token.range());
+        if is_code(token.kind()) {
+            dedents.seat(&mut merged, slid.start(), held_text);
+        }
         merged.push(if slid == token.range() {
             *token
         } else {
@@ -70,6 +81,7 @@ pub(super) fn spliced(
     for window in &windows[next..] {
         merge_window(&mut merged, window, &mut dedents, held_text);
     }
+    dedents.seat(&mut merged, len, held_text);
     debug_assert!(
         merged.is_sorted_by_key(Ranged::start),
         "the merged token stream ascends, as its binary searches read it",
@@ -77,14 +89,47 @@ pub(super) fn spliced(
     Tokens::new(merged)
 }
 
-/// Appends `window`'s fresh tokens, seating the `Dedent` run the held
-/// stream carried at the window's start ahead of the first code token
-/// the window holds, where the lexer emits it once the trivia above
-/// that token has passed, or at the window's end where it holds none.
+/// The `Dedent` run the merge holds back until the code token it
+/// closes blocks ahead of, and the levels the window behind it moved
+/// its end, which that run closes in addition.
+#[derive(Default)]
+struct Dedents {
+    held: Vec<Token>,
+    owed: isize,
+}
+
+impl Dedents {
+    /// Appends the run at `at`, its count moved by the levels owed,
+    /// and clears both. A window's end never drops below its start and
+    /// the next code token never sits deeper than that start, so the
+    /// count never goes negative.
+    fn seat(&mut self, merged: &mut Vec<Token>, at: TextSize, held_text: &str) {
+        let count = self.held.len().cast_signed() + self.owed;
+        debug_assert!(
+            count >= 0,
+            "a window closes no fewer levels than its start opened"
+        );
+        let template = self.held.first().copied();
+        merged.extend((0..count.max(0)).map(|_| {
+            template.map_or_else(
+                || Token::new(TokenKind::Dedent, TextRange::empty(at), TokenFlags::empty()),
+                |dedent| retargeted(dedent, held_text, TextRange::empty(at)),
+            )
+        }));
+        self.held.clear();
+        self.owed = 0;
+    }
+}
+
+/// Appends `window`'s fresh tokens, seating the held `Dedent` run ahead
+/// of the first code token the window holds, where the lexer emits it
+/// once the trivia above that token has passed, or at the window's end
+/// where it holds none, and leaves the levels the window's end moved
+/// owed to the run past it.
 fn merge_window(
     merged: &mut Vec<Token>,
     window: &Reparsed,
-    dedents: &mut Vec<Token>,
+    dedents: &mut Dedents,
     held_text: &str,
 ) {
     let at = window
@@ -94,12 +139,9 @@ fn merge_window(
         .map_or(window.slid.end(), Ranged::start);
     let split = window.fresh.partition_point(|token| token.start() < at);
     merged.extend_from_slice(&window.fresh[..split]);
-    merged.extend(
-        dedents
-            .drain(..)
-            .map(|dedent| retargeted(dedent, held_text, TextRange::empty(at))),
-    );
+    dedents.seat(merged, at, held_text);
     merged.extend_from_slice(&window.fresh[split..]);
+    dedents.owed = window.delta;
 }
 
 /// True where a token over `range` is one `window`'s own reparse

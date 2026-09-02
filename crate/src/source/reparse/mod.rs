@@ -74,12 +74,12 @@ impl Source {
     ///
     /// A splice declines a window whose new text does not parse, a
     /// nested window landing as anything but the one statement filling
-    /// it, a window whose last logical line changed indent, an edit
-    /// writing text no window reads, windows reaching past
+    /// it, an edit writing text no window reads, windows reaching past
     /// [`WINDOW_SHARE_PERCENT`] of a text [`GATED_FROM`] long or longer,
     /// and a notebook, whose cell boundaries a splice would have to
     /// recut. A module-body window lands as any count of statements,
-    /// none included.
+    /// none included, and a window whose end moved to another depth
+    /// hands the levels it moved to the `Dedent` run past it.
     pub(crate) fn splice_of(&self, text: &str, map: &SourceMap) -> Option<Splice> {
         if self.is_notebook() {
             return None;
@@ -119,13 +119,11 @@ impl Source {
                     return None;
                 }
                 let fresh = parsed.tokens().before(slid.end()).to_vec();
-                if window::closing_indent(self.text(), self.tokens().in_range(held), held)
-                    != window::closing_indent(text, &fresh, slid)
-                {
-                    return None;
-                }
+                let delta =
+                    window::net_indent(&fresh) - window::net_indent(self.tokens().in_range(held));
                 let stmts: Vec<Stmt> = parsed.into_syntax().body.into_iter().collect();
                 Some(Reparsed {
+                    delta,
                     fresh,
                     held,
                     run,
@@ -157,7 +155,13 @@ impl Source {
         rule: RuleId,
     ) -> Self {
         let deltas = Deltas::new(map);
-        let spliced = tokens::spliced(&self.tokens, self.text(), &deltas, &splice.0);
+        let spliced = tokens::spliced(
+            &self.tokens,
+            self.text(),
+            text.text_len(),
+            &deltas,
+            &splice.0,
+        );
         let stranded = std::mem::take(&mut self.stranded_padding);
         let columns = std::mem::take(&mut self.columns);
         let held: Vec<TextRange> = splice.0.iter().map(|window| window.held).collect();
@@ -278,10 +282,6 @@ mod tests {
         "def f():\n    x = 1\n",
         replacement("x = 1\n    y = 2", 13, 18)
     )]
-    #[case::a_window_whose_last_logical_line_moved_depth(
-        "if a:\n    x = 1\ny = 2\n",
-        replacement("        x = 1", 6, 15)
-    )]
     #[case::a_window_whose_new_text_does_not_parse("x = 1\ny = 2\n", replacement("x = (", 0, 5))]
     fn spliced_declines_an_edit_no_window_carries(#[case] text: &str, #[case] edit: Edit) {
         assert!(splice(text, vec![edit]).is_none());
@@ -311,6 +311,22 @@ mod tests {
     #[case::a_window_reparsing_to_two_statements(
         "x = 1\nz = 3\n",
         replacement("x = 1\ny = 2", 0, 5)
+    )]
+    #[case::a_window_whose_last_line_widened_its_indent(
+        "if a:\n    x = 1\ny = 2\n",
+        replacement("        x = 1", 6, 15)
+    )]
+    #[case::a_module_run_whose_last_line_gained_a_level(
+        "x = 1\ny = 2\nz = 3\n",
+        replacement("if a:\n    z = 3\n    y = 2", 6, 17)
+    )]
+    #[case::a_module_run_whose_last_line_lost_two_levels(
+        "if a:\n    if b:\n        x = 1\ny = 2\n",
+        replacement("x = 1", 0, 29)
+    )]
+    #[case::a_nested_window_whose_next_sibling_sits_above_depth_zero(
+        "def f():\n    if a:\n        x = 1\n    y = 2\n",
+        replacement("x = 1", 13, 32)
     )]
     fn spliced_reparses_a_run_of_module_siblings(#[case] text: &str, #[case] edit: Edit) {
         let (rewritten, _) = woven(text, vec![edit.clone()]);
