@@ -56,6 +56,38 @@ impl<'map> Deltas<'map> {
         TextRange::new(self.shift(range.start()), self.shift(range.end()))
     }
 
+    /// `offset` moved by the delta of the last marker strictly before
+    /// it, so an edit opening at `offset` lands past it rather than
+    /// ahead of it.
+    pub(super) fn shift_before(&self, offset: TextSize) -> TextSize {
+        let ahead = self
+            .markers
+            .partition_point(|marker| marker.source() < offset);
+        self.markers[..ahead]
+            .last()
+            .map_or(offset, |marker| marker.dest() + (offset - marker.source()))
+    }
+
+    /// A window over `held` moved to where the woven text holds it, an
+    /// insertion at the window's start landing inside it rather than
+    /// ahead of it, so the text the edits wrote there is the window's
+    /// to reparse.
+    pub(super) fn slide_window(&self, held: TextRange) -> TextRange {
+        TextRange::new(self.shift_before(held.start()), self.shift(held.end()))
+    }
+
+    /// A token over `range` the reparse leaves standing, moved to where
+    /// the woven text holds it, an insertion at a token's end landing
+    /// past it and a zero-width token sitting past text inserted where
+    /// it stands.
+    pub(super) fn slide_token(&self, range: TextRange) -> TextRange {
+        if range.is_empty() {
+            self.slide(range)
+        } else {
+            TextRange::new(self.shift(range.start()), self.shift_before(range.end()))
+        }
+    }
+
     /// The spans the edits wrote, ascending, in the woven text.
     pub(super) fn written(&self) -> impl Iterator<Item = TextRange> + use<'_, 'map> {
         self.spans(SourceMarker::dest)

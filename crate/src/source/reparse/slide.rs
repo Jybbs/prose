@@ -1,7 +1,7 @@
 //! Carries the slide over a tree, reaching the `Identifier` and
 //! format-spec ranges the walk does not visit on its own.
 
-use std::cell::RefCell;
+use std::{cell::RefCell, ops::Range};
 
 use ruff_python_ast::{
     self as ast, Alias, Arguments, BytesLiteral, Comprehension, Decorator, ExceptHandler, Expr,
@@ -49,29 +49,47 @@ macro_rules! slide_variants {
 }
 
 /// Carries [`Deltas`] over a tree, sliding every node and identifier
-/// range it reaches and swapping in each freshly parsed statement where
-/// the slid range meets its window.
+/// range it reaches, swapping in each freshly parsed statement where
+/// the slid range meets its nested window, and replacing the module
+/// body's statements inside each run window with the statements parsed
+/// from it.
 pub(super) struct Slide<'map> {
     deltas: &'map Deltas<'map>,
     grafts: RefCell<FxHashMap<TextRange, Stmt>>,
+    run_spans: Vec<TextRange>,
+    runs: RefCell<Vec<Vec<Stmt>>>,
 }
 
 impl<'map> Slide<'map> {
-    /// Builds the pass, `grafts` pairing each window's slid range with
-    /// the statement parsed from it.
+    /// Builds the pass, `grafts` pairing each nested window's held range
+    /// with the statement parsed from it and `runs` pairing each module
+    /// window's held range with the statements parsed from it.
     pub(super) fn new(
         deltas: &'map Deltas<'map>,
         grafts: impl IntoIterator<Item = (TextRange, Stmt)>,
+        runs: impl IntoIterator<Item = (TextRange, Vec<Stmt>)>,
     ) -> Self {
+        let mut runs: Vec<_> = runs.into_iter().collect();
+        runs.sort_by_key(|(held, _)| held.start());
+        let (run_spans, runs) = runs.into_iter().unzip();
         Self {
             deltas,
             grafts: RefCell::new(grafts.into_iter().collect()),
+            run_spans,
+            runs: RefCell::new(runs),
         }
     }
 
-    /// The statement parsed for the window at `range`, taken once.
+    /// The statement parsed for the nested window held at `range`,
+    /// taken once.
     fn graft(&self, range: TextRange) -> Option<Stmt> {
         self.grafts.borrow_mut().remove(&range)
+    }
+
+    /// True where `range`, in the held buffer, lies inside a run window,
+    /// whose statements the reparse replaces whole.
+    fn inside_a_run(&self, range: TextRange) -> bool {
+        self.run_spans.iter().any(|held| held.contains_range(range))
     }
 
     fn slide(&self, range: TextRange) -> TextRange {
@@ -95,13 +113,35 @@ impl<'map> Slide<'map> {
     }
 
     /// Slides `module`'s own range and every range beneath it, grafting
-    /// each window's statement in as the walk reaches it.
+    /// each nested window's statement in as the walk reaches it and
+    /// each run window's statements in over the body slots the run
+    /// held.
     pub(super) fn over_module(&self, module: &mut ModModule) {
-        module.range = self.slide(module.range);
+        module.range = self.deltas.slide_window(module.range);
+        let slots: Vec<Range<usize>> = self
+            .run_spans
+            .iter()
+            .map(|held| {
+                let from = module
+                    .body
+                    .partition_point(|stmt| stmt.start() < held.start());
+                let to = module
+                    .body
+                    .partition_point(|stmt| stmt.start() < held.end());
+                from..to
+            })
+            .collect();
         self.visit_body(&mut module.body);
+        let runs = self.runs.take();
+        for (slots, stmts) in slots.into_iter().zip(runs).rev() {
+            let tail: Vec<Stmt> = module.body.drain(slots.end..).collect();
+            module.body.truncate(slots.start);
+            module.body.extend(stmts);
+            module.body.extend(tail);
+        }
         debug_assert!(
             self.grafts.borrow().is_empty(),
-            "every window came from a statement the slide reaches",
+            "every nested window came from a statement the slide reaches",
         );
     }
 }
@@ -121,6 +161,16 @@ impl Transformer for Slide<'_> {
     slide_node!(visit_comprehension, walk_comprehension, Comprehension);
 
     slide_node!(visit_decorator, walk_decorator, Decorator);
+
+    /// Walks `body`, leaving every statement inside a run window to the
+    /// graft that replaces it.
+    fn visit_body(&self, body: &mut [Stmt]) {
+        for stmt in body {
+            if !self.inside_a_run(stmt.range()) {
+                self.visit_stmt(stmt);
+            }
+        }
+    }
 
     fn visit_except_handler(&self, except_handler: &mut ExceptHandler) {
         let ExceptHandler::ExceptHandler(handler) = except_handler;
@@ -255,6 +305,10 @@ impl Transformer for Slide<'_> {
         if self.deltas.holds_still(stmt.range()) {
             return;
         }
+        if let Some(parsed) = self.graft(stmt.range()) {
+            *stmt = parsed;
+            return;
+        }
         slide_variants!(
             &mut *stmt,
             |range| self.slide(range),
@@ -285,10 +339,6 @@ impl Transformer for Slide<'_> {
             While,
             With,
         );
-        if let Some(parsed) = self.graft(stmt.range()) {
-            *stmt = parsed;
-            return;
-        }
         match &mut *stmt {
             Stmt::ClassDef(ast::StmtClassDef { name, .. })
             | Stmt::FunctionDef(ast::StmtFunctionDef { name, .. }) => self.slide_name(name),

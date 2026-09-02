@@ -1,4 +1,5 @@
-//! The statement windows a rule's edits fall inside.
+//! The windows a rule's edits fall inside, each a statement or a run
+//! of module-body siblings.
 
 use ruff_python_ast::token::{Token, TokenKind};
 use ruff_python_trivia::leading_indentation;
@@ -28,41 +29,107 @@ impl Ranged for Window {
 /// The leading whitespace of the last logical line `range` covers in
 /// `text`, the indent the `Dedent` run past the window counts down
 /// from. `tokens` are the window's own, and the line is the one the
-/// first token past the window's last `Newline` opens, skipping the
+/// window's last code token's logical line opens on, read past the
 /// comments, non-logical newlines, and indent tokens ahead of it, or
-/// the window's opening line where no `Newline` falls inside it. The
-/// lexer tracks indentation on logical lines alone, so a continuation
-/// line's whitespace never reaches the count.
+/// the window's opening line where it holds no code. The lexer tracks
+/// indentation on logical lines alone, so a continuation line's
+/// whitespace never reaches the count.
 pub(super) fn closing_indent<'t>(text: &'t str, tokens: &[Token], range: TextRange) -> &'t str {
     let opens = tokens
         .iter()
-        .rposition(|token| token.kind() == TokenKind::Newline)
-        .and_then(|newline| {
-            tokens[newline + 1..].iter().find(|token| {
-                !matches!(
-                    token.kind(),
-                    TokenKind::Comment
-                        | TokenKind::Dedent
-                        | TokenKind::Indent
-                        | TokenKind::NonLogicalNewline
-                )
-            })
+        .rposition(|token| is_code(token.kind()))
+        .and_then(|last| {
+            let from = tokens[..last]
+                .iter()
+                .rposition(|token| token.kind() == TokenKind::Newline)
+                .map_or(0, |newline| newline + 1);
+            tokens[from..=last]
+                .iter()
+                .find(|token| is_code(token.kind()))
         })
         .map_or(range.start(), Ranged::start);
     leading_indentation(&text[text.line_start(opens).to_usize()..])
 }
 
-/// The statement windows covering `replaced`, ascending and merged
-/// where two overlap or meet. `None` where an edit is covered by no
-/// single statement, leaving the module itself as its window.
+/// True for a token the lexer's indentation tracking reads a logical
+/// line from, leaving out the trivia and the indent tokens it emits.
+pub(super) fn is_code(kind: TokenKind) -> bool {
+    !matches!(
+        kind,
+        TokenKind::Comment
+            | TokenKind::Dedent
+            | TokenKind::Indent
+            | TokenKind::Newline
+            | TokenKind::NonLogicalNewline
+    )
+}
+
+/// The windows covering `replaced`, ascending and merged where two
+/// overlap or meet: the innermost statement covering a range, or the
+/// run of module-body siblings the range reaches where no single
+/// statement covers it, a module-body window running on through the
+/// gap after it so the reparse lexes the gap's line breaks against
+/// what the window holds.
 pub(super) fn covering(
     source: &Source,
     replaced: impl Iterator<Item = TextRange>,
-) -> Option<Vec<TextRange>> {
-    replaced
-        .map(|range| covering_window(source, range))
-        .collect::<Option<Vec<_>>>()
-        .map(merged_spans)
+) -> Vec<TextRange> {
+    merged_spans(
+        replaced
+            .map(|range| {
+                let window =
+                    covering_window(source, range).unwrap_or_else(|| sibling_run(source, range));
+                through_the_gap(source, window)
+            })
+            .collect(),
+    )
+}
+
+/// True where `held` is a window of the module body rather than of a
+/// statement nested in one, being a module-body sibling's own range or
+/// a run of them, which the reparse may fill with any count of
+/// statements.
+pub(super) fn module_level(source: &Source, held: TextRange) -> bool {
+    let body = &source.ast().body;
+    body.iter().any(|stmt| stmt.range() == held) || covering_window(source, held).is_none()
+}
+
+/// The run of module-body siblings a range no single statement covers
+/// reparses within, from the first sibling it overlaps, or the one
+/// before it where it opens in a gap, or the module's start where none
+/// precedes it, to the last sibling it overlaps, or the one after it
+/// where it closes in a gap, or the module's end where none follows.
+fn sibling_run(source: &Source, range: TextRange) -> TextRange {
+    let body = &source.ast().body;
+    let module = source.module_range();
+    let first = body.partition_point(|stmt| stmt.end() <= range.start());
+    let start = match body.get(first) {
+        Some(stmt) if stmt.start() <= range.start() => stmt.start(),
+        _ => first
+            .checked_sub(1)
+            .map_or(module.start(), |slot| body[slot].start()),
+    };
+    let past = body.partition_point(|stmt| stmt.start() < range.end());
+    let end = match past.checked_sub(1) {
+        Some(slot) if body[slot].end() >= range.end() => body[slot].end(),
+        _ => body.get(past).map_or(module.end(), Ranged::end),
+    };
+    TextRange::new(start, end)
+}
+
+/// `window` run on to the next module-body sibling's start, or the
+/// module's end, where it is a module-body window, and left as it is
+/// where it is a statement nested in one.
+fn through_the_gap(source: &Source, window: TextRange) -> TextRange {
+    if !module_level(source, window) {
+        return window;
+    }
+    let body = &source.ast().body;
+    let next = body.partition_point(|stmt| stmt.start() < window.end());
+    let end = body
+        .get(next)
+        .map_or(source.module_range().end(), Ranged::start);
+    TextRange::new(window.start(), end)
 }
 
 #[cfg(test)]
@@ -100,17 +167,25 @@ mod tests {
         );
     }
 
-    #[test]
-    fn covering_answers_none_where_an_edit_spans_two_statements() {
-        let source = parse("x = 1\ny = 2\n");
+    #[rstest]
+    #[case::two_statements("x = 1\ny = 2\n", range(0, 11), range(0, 12))]
+    #[case::a_blank_line_between_two_statements("x = 1\n\ny = 2\n", range(6, 6), range(0, 13))]
+    #[case::ahead_of_the_first_statement("\nx = 1\n", range(0, 0), range(0, 7))]
+    #[case::past_the_last_statement("x = 1\n", range(6, 6), range(0, 6))]
+    fn covering_takes_the_sibling_run_where_no_statement_covers(
+        #[case] text: &str,
+        #[case] edit: TextRange,
+        #[case] window: TextRange,
+    ) {
+        let source = parse(text);
 
-        assert!(covering(&source, [range(0, 11)].into_iter()).is_none());
+        assert_eq!(covering(&source, [edit].into_iter()), vec![window]);
     }
 
     #[rstest]
-    #[case::two_statements_apart(&[(4, 5), (10, 11)], &[(0, 5), (6, 11)])]
-    #[case::two_edits_in_one_statement(&[(0, 1), (4, 5)], &[(0, 5)])]
-    #[case::edits_in_both_statements_out_of_order(&[(10, 11), (4, 5)], &[(0, 5), (6, 11)])]
+    #[case::two_statements_apart(&[(4, 5), (10, 11)], &[(0, 12)])]
+    #[case::two_edits_in_one_statement(&[(0, 1), (4, 5)], &[(0, 6)])]
+    #[case::edits_in_both_statements_out_of_order(&[(10, 11), (4, 5)], &[(0, 12)])]
     fn covering_merges_and_orders_the_windows_it_finds(
         #[case] edits: &[(u32, u32)],
         #[case] expected: &[(u32, u32)],
@@ -119,7 +194,7 @@ mod tests {
         let spans = edits.iter().map(|&(a, b)| range(a, b));
         let want: Vec<TextRange> = expected.iter().map(|&(a, b)| range(a, b)).collect();
 
-        assert_eq!(covering(&source, spans), Some(want));
+        assert_eq!(covering(&source, spans), want);
     }
 
     #[test]
@@ -128,7 +203,7 @@ mod tests {
 
         assert_eq!(
             covering(&source, [range(17, 18)].into_iter()),
-            Some(vec![range(13, 18)]),
+            vec![range(13, 18)],
         );
     }
 }

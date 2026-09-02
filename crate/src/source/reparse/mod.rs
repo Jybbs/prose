@@ -13,6 +13,7 @@ mod window;
 
 use ruff_diagnostics::SourceMap;
 use ruff_notebook::CellOffsets;
+use ruff_python_ast::Stmt;
 use ruff_python_parser::{ParseOptions, parse_cells_unchecked};
 use ruff_text_size::{Ranged, TextRange};
 
@@ -34,21 +35,22 @@ impl Source {
     /// where the splice does not apply and the caller takes its
     /// whole-file parse.
     ///
-    /// A splice declines an edit no single statement covers, a window
-    /// whose new text does not parse, a window landing as anything but
-    /// the one statement filling it, a window whose last logical line
-    /// changed indent, an edit writing text no window reads, and a
-    /// notebook, whose cell boundaries a splice would have to recut.
+    /// A splice declines a window whose new text does not parse, a
+    /// nested window landing as anything but the one statement filling
+    /// it, a window whose last logical line changed indent, an edit
+    /// writing text no window reads, and a notebook, whose cell
+    /// boundaries a splice would have to recut. A module-body window
+    /// lands as any count of statements, none included.
     pub(crate) fn splice_of(&self, text: &str, map: &SourceMap) -> Option<Splice> {
         if self.is_notebook() {
             return None;
         }
         let deltas = Deltas::new(map);
-        let covered: Vec<Window> = window::covering(self, deltas.replaced())?
+        let covered: Vec<Window> = window::covering(self, deltas.replaced())
             .into_iter()
             .map(|held| Window {
                 held,
-                slid: deltas.slide(held),
+                slid: deltas.slide_window(held),
             })
             .collect();
         let covers = |written: TextRange| {
@@ -63,9 +65,9 @@ impl Source {
             .into_iter()
             .map(|Window { held, slid }| {
                 let parsed = parse_cells_unchecked(text, [slid], &options);
-                if !parsed.has_valid_syntax()
-                    || !matches!(parsed.syntax().body.as_slice(), [only] if only.range() == slid)
-                {
+                let run = window::module_level(self, held);
+                let filled = matches!(&parsed.syntax().body[..], [only] if only.range() == slid);
+                if !parsed.has_valid_syntax() || !(run || filled) {
                     return None;
                 }
                 let fresh = parsed.tokens().before(slid.end()).to_vec();
@@ -74,8 +76,14 @@ impl Source {
                 {
                     return None;
                 }
-                let stmt = parsed.into_syntax().body.pop()?;
-                Some(Reparsed { fresh, held, stmt })
+                let stmts: Vec<Stmt> = parsed.into_syntax().body.into_iter().collect();
+                Some(Reparsed {
+                    fresh,
+                    held,
+                    run,
+                    slid,
+                    stmts,
+                })
             })
             .collect::<Option<Vec<_>>>()
             .map(Splice)
@@ -103,13 +111,22 @@ impl Source {
         let deltas = Deltas::new(map);
         let spliced = tokens::spliced(&self.tokens, self.text(), &deltas, &splice.0);
         let stranded = std::mem::take(&mut self.stranded_padding);
-        let windows: Vec<TextRange> = splice.0.iter().map(|window| window.stmt.range()).collect();
+        let windows: Vec<TextRange> = splice.0.iter().map(|window| window.slid).collect();
         let mut ast = self.ast;
-        let grafts = splice
-            .0
-            .into_iter()
-            .map(|window| (window.stmt.range(), window.stmt));
-        Slide::new(&deltas, grafts).over_module(&mut ast);
+        let (runs, nested): (Vec<Reparsed>, Vec<Reparsed>) =
+            splice.0.into_iter().partition(|window| window.run);
+        Slide::new(
+            &deltas,
+            nested.into_iter().map(|mut window| {
+                let stmt = window
+                    .stmts
+                    .pop()
+                    .expect("a nested window holds the one statement filling it");
+                (window.held, stmt)
+            }),
+            runs.into_iter().map(|window| (window.held, window.stmts)),
+        )
+        .over_module(&mut ast);
         let mut next = Self::from_parts(
             text,
             self.file.name(),
@@ -202,27 +219,69 @@ mod tests {
     }
 
     #[rstest]
-    #[case::a_window_its_edit_emptied("x = 1\ny = 2\n", Edit::range_deletion(range(0, 5)))]
-    #[case::a_window_its_statement_does_not_fill("x = 1\ny = 2\n", replacement("x = 1 ", 0, 5))]
-    #[case::a_window_reparsing_to_two_statements(
-        "x = 1\nz = 3\n",
-        replacement("x = 1\ny = 2", 0, 5)
+    #[case::a_nested_window_its_statement_does_not_fill(
+        "def f():\n    x = 1\n",
+        replacement("x = 1 ", 13, 18)
+    )]
+    #[case::a_nested_window_reparsing_to_two_statements(
+        "def f():\n    x = 1\n",
+        replacement("x = 1\n    y = 2", 13, 18)
     )]
     #[case::a_window_whose_last_logical_line_moved_depth(
         "if a:\n    x = 1\ny = 2\n",
         replacement("        x = 1", 6, 15)
     )]
     #[case::a_window_whose_new_text_does_not_parse("x = 1\ny = 2\n", replacement("x = (", 0, 5))]
-    #[case::an_edit_no_single_statement_covers(
-        "x = 1\ny = 2\n",
-        replacement("a = 9\nb = 8", 0, 11)
+    fn spliced_declines_an_edit_no_window_carries(#[case] text: &str, #[case] edit: Edit) {
+        assert!(splice(text, vec![edit]).is_none());
+    }
+
+    #[rstest]
+    #[case::a_blank_line_added_between_two_definitions(
+        "def a():\n    pass\n\ndef b():\n    pass\n",
+        Edit::insertion("\n".to_owned(), 18u32.into())
     )]
-    #[case::an_insertion_writing_a_statement_of_its_own(
+    #[case::two_siblings_reordered(
+        "def a():\n    pass\n\ndef b():\n    pass\n",
+        replacement("def b():\n    pass\n\ndef a():\n    pass\n", 0, 37)
+    )]
+    #[case::a_statement_deleted("x = 1\ny = 2\nz = 3\n", Edit::range_deletion(range(6, 12)))]
+    #[case::a_window_its_edit_emptied("x = 1\ny = 2\n", Edit::range_deletion(range(0, 5)))]
+    #[case::a_statement_trailing_a_space("x = 1\ny = 2\n", replacement("x = 1 ", 0, 5))]
+    #[case::a_statement_inserted_ahead_of_the_first(
         "x = 1\ny = 2\n",
         Edit::insertion("a = 0\n".to_owned(), 0u32.into())
     )]
-    fn spliced_declines_an_edit_no_window_carries(#[case] text: &str, #[case] edit: Edit) {
-        assert!(splice(text, vec![edit]).is_none());
+    #[case::a_statement_inserted_past_the_last(
+        "x = 1\n",
+        Edit::insertion("y = 2\n".to_owned(), 6u32.into())
+    )]
+    #[case::an_edit_spanning_two_statements("x = 1\ny = 2\n", replacement("a = 9\nb = 8", 0, 11))]
+    #[case::a_window_reparsing_to_two_statements(
+        "x = 1\nz = 3\n",
+        replacement("x = 1\ny = 2", 0, 5)
+    )]
+    fn spliced_reparses_a_run_of_module_siblings(#[case] text: &str, #[case] edit: Edit) {
+        let (rewritten, _) = woven(text, vec![edit.clone()]);
+
+        let next = splice(text, vec![edit]).expect("the splice applies");
+
+        assert_eq!(next.text(), rewritten);
+        assert!(next.matches_a_fresh_parse());
+    }
+
+    #[test]
+    fn spliced_takes_the_enclosing_statement_for_a_nested_gap_edit() {
+        let text = "def f():\n    x = 1\n    y = 2\n";
+        let (rewritten, map) = woven(text, vec![Edit::insertion("\n".to_owned(), 19u32.into())]);
+        let source = parse(text);
+
+        let splice = source
+            .splice_of(&rewritten, &map)
+            .expect("the splice applies");
+
+        assert_eq!(splice.0.len(), 1);
+        assert_eq!(splice.0[0].held, range(0, 29));
     }
 
     #[test]
