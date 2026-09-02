@@ -36,9 +36,9 @@ impl Source {
     ///
     /// A splice declines an edit no single statement covers, a window
     /// whose new text does not parse, a window landing as anything but
-    /// the one statement filling it, a window whose closing indent
-    /// moved, an edit writing text no window reads, and a notebook,
-    /// whose cell boundaries a splice would have to recut.
+    /// the one statement filling it, a window whose last logical line
+    /// changed indent, an edit writing text no window reads, and a
+    /// notebook, whose cell boundaries a splice would have to recut.
     pub(crate) fn splice_of(&self, text: &str, map: &SourceMap) -> Option<Splice> {
         if self.is_notebook() {
             return None;
@@ -58,13 +58,6 @@ impl Source {
         if !deltas.written().all(covers) {
             return None;
         }
-        let holds_its_indent = |window: &Window| {
-            window::closing_indent(self.text(), window.held)
-                == window::closing_indent(text, window.slid)
-        };
-        if !covered.iter().all(holds_its_indent) {
-            return None;
-        }
         let options = ParseOptions::from(self.source_type);
         covered
             .into_iter()
@@ -76,6 +69,11 @@ impl Source {
                     return None;
                 }
                 let fresh = parsed.tokens().before(slid.end()).to_vec();
+                if window::closing_indent(self.text(), self.tokens().in_range(held), held)
+                    != window::closing_indent(text, &fresh, slid)
+                {
+                    return None;
+                }
                 let stmt = parsed.into_syntax().body.pop()?;
                 Some(Reparsed { fresh, held, stmt })
             })
@@ -210,7 +208,7 @@ mod tests {
         "x = 1\nz = 3\n",
         replacement("x = 1\ny = 2", 0, 5)
     )]
-    #[case::a_window_whose_closing_indent_moved(
+    #[case::a_window_whose_last_logical_line_moved_depth(
         "if a:\n    x = 1\ny = 2\n",
         replacement("        x = 1", 6, 15)
     )]
@@ -273,6 +271,11 @@ mod tests {
         "x = 1\ndef f[T, *Ts, **P](a: T) -> T:\n    return a\n",
         range(4, 5),
         "11"
+    )]
+    #[case::a_continuation_line_joined_onto_its_statement(
+        "def f():\n    x = foo(\n        a)\n    y = 2\n",
+        range(17, 32),
+        "foo(a)"
     )]
     fn spliced_rewrites_the_edited_statement(
         #[case] text: &str,
