@@ -76,7 +76,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{parse, range};
 
     /// A comment ahead of two statements, the first starting at 7 and
     /// the second at 14.
@@ -129,5 +129,23 @@ mod tests {
             slot_runs(&items, |a, b| a == b).collect::<Vec<_>>(),
             vec![0..2, 2..3, 3..6]
         );
+    }
+
+    #[rstest]
+    #[case::inside_the_range(range(4, 12), &[4, 8])]
+    #[case::opening_at_the_range_start(range(8, 20), &[8, 12, 16])]
+    #[case::closing_at_the_range_end(range(0, 8), &[0, 4])]
+    #[case::empty_range(range(8, 8), &[])]
+    #[case::past_every_item(range(21, 30), &[])]
+    fn starting_within_takes_the_items_opening_inside_the_range(
+        #[case] span: TextRange,
+        #[case] expected: &[u32],
+    ) {
+        let items: Vec<TextRange> = (0..5).map(|i| range(i * 4, i * 4 + 3)).collect();
+        let starts: Vec<u32> = starting_within(&items, span, Ranged::start)
+            .map(|item| item.start().to_u32())
+            .collect();
+
+        assert_eq!(starts, expected);
     }
 }

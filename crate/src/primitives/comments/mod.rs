@@ -244,7 +244,7 @@ mod tests {
     use unicode_width::UnicodeWidthStr;
 
     use super::*;
-    use crate::testing::{notebook, parse};
+    use crate::testing::{notebook, parse, range};
 
     /// Both comment rules on, carried by slug.
     fn settling() -> Settling {
@@ -405,5 +405,21 @@ mod tests {
             trailing_comment(&source, start).map(|range| source.slice(range)),
             expected,
         );
+    }
+
+    #[rstest]
+    #[case::no_comment_in_the_gap(range(0, 5), 0..0, true)]
+    #[case::a_standing_block_holds_it(range(5, 19), 1..2, true)]
+    #[case::no_standing_block_holds_it(range(5, 19), 0..1, false)]
+    #[case::no_standing_block_at_all(range(5, 19), 0..0, false)]
+    fn comments_held_by_reads_whether_a_standing_block_covers_each_comment(
+        #[case] gap: TextRange,
+        #[case] slots: std::ops::Range<usize>,
+        #[case] expected: bool,
+    ) {
+        let source = parse("x = 1\n# lead\ny = 2\n");
+        let blocks = [range(0, 5), range(6, 19)];
+
+        assert_eq!(comments_held_by(&source, gap, &blocks, slots), expected);
     }
 }

@@ -100,4 +100,15 @@ mod tests {
     fn ord_matches_matrix() {
         assert!(ExitStatus::ALL.is_sorted());
     }
+
+    #[test]
+    fn matrix_lists_every_status_against_its_code() {
+        let matrix = ExitStatus::matrix();
+        let rows: Vec<&str> = matrix.lines().skip(1).collect();
+
+        assert_eq!(rows.len(), ExitStatus::ALL.len());
+        for (status, row) in ExitStatus::ALL.into_iter().zip(rows) {
+            assert_eq!(row, format!("  {}    {}", status as u8, status.describe()));
+        }
+    }
 }

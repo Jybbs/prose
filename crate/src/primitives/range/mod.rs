@@ -129,4 +129,34 @@ mod tests {
         let members = [range(0, 4), range(6, 10), range(12, 16)];
         assert_eq!(member_deletion_span(&members, run), range(start, end));
     }
+
+    #[rstest]
+    #[case::inside_one_span(range(4, 6), true)]
+    #[case::flush_with_a_span(range(2, 8), true)]
+    #[case::reaching_past_a_span(range(4, 9), false)]
+    #[case::empty_inside_a_span(range(5, 5), true)]
+    #[case::empty_at_a_span_end(range(8, 8), true)]
+    #[case::across_two_spans(range(6, 12), false)]
+    #[case::ahead_of_every_span(range(0, 1), false)]
+    fn covers_reads_a_range_wholly_inside_one_span(
+        #[case] span: TextRange,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(covers(span, &[range(2, 8), range(10, 14)]), expected);
+    }
+
+    #[rstest]
+    #[case::inside_one_span(range(4, 6), true)]
+    #[case::one_byte_into_a_span(range(7, 9), true)]
+    #[case::touching_a_span_end(range(8, 9), false)]
+    #[case::touching_a_span_start(range(1, 2), false)]
+    #[case::empty_inside_a_span(range(5, 5), true)]
+    #[case::spanning_two_spans(range(6, 12), true)]
+    #[case::between_two_spans(range(9, 10), false)]
+    fn overlaps_reads_a_range_meeting_a_span_by_a_byte(
+        #[case] span: TextRange,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(overlaps(span, &[range(2, 8), range(10, 14)]), expected);
+    }
 }

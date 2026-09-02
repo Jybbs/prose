@@ -163,4 +163,17 @@ mod tests {
 
         assert_eq!(Deltas::new(&map).slide(span), expected);
     }
+
+    #[rstest]
+    #[case::ahead_of_the_edit(range(0, 3), Some(range(0, 3)))]
+    #[case::past_the_edit(range(9, 12), Some(range(3, 6)))]
+    #[case::opening_inside_the_edit(range(5, 9), None)]
+    fn slide_stmt_declines_a_statement_whose_opening_an_edit_swallowed(
+        #[case] stmt: TextRange,
+        #[case] expected: Option<TextRange>,
+    ) {
+        let map = mapped("abcdefghijkl", vec![Edit::range_deletion(range(3, 9))]);
+
+        assert_eq!(Deltas::new(&map).slide_stmt(stmt), expected);
+    }
 }
