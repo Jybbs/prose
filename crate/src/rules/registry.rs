@@ -48,10 +48,7 @@ use crate::{
     source::Source,
 };
 
-use super::{
-    id::{RuleId, is_valid_slug},
-    independence::reaches,
-};
+use super::id::{RuleId, is_valid_slug};
 
 /// Every rule in Prose implements this trait and nothing more.
 ///
@@ -101,64 +98,6 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
     }
 }
 
-/// The slugs the rule named `slug` must run behind, empty for a rule
-/// that settles wherever it sits and for an unknown slug.
-pub fn dependencies_of(slug: &str) -> &'static [&'static str] {
-    slug_index(slug).map_or(&[], |i| PIPELINE_DEPENDENCIES[i])
-}
-
-/// Whether `later`'s dependency column reaches `earlier`, directly or
-/// through the column of a rule it already names. `false` for an
-/// unknown slug on either side. Takes its pair in the opposite order
-/// from [`precedes`], which asks about registration rather than the
-/// declared column.
-pub fn runs_behind(later: &str, earlier: &str) -> bool {
-    slug_index(later).is_some_and(|seat| reaches(seat, earlier))
-}
-
-/// Returns `true` when `earlier` is registered before `later`, and
-/// `false` when either is absent from the registry. Answers about the
-/// registry's own order rather than the declared column [`runs_behind`]
-/// walks, and takes its pair in the opposite order.
-pub(super) const fn precedes(earlier: &str, later: &str) -> bool {
-    match (slug_index(earlier), slug_index(later)) {
-        (Some(a), Some(b)) => a < b,
-        _ => false,
-    }
-}
-
-/// The registry index of `id`, which every id outside a test carries.
-fn registered_index(id: RuleId) -> usize {
-    slug_index(id.as_str()).unwrap_or_else(|| unreachable!("rule id must be registered"))
-}
-
-/// Byte-wise equality on `&[u8]` usable from const contexts.
-pub(super) const fn slug_bytes_equal(a: &[u8], b: &[u8]) -> bool {
-    if a.len() != b.len() {
-        return false;
-    }
-    let mut i = 0;
-    while i < a.len() {
-        if a[i] != b[i] {
-            return false;
-        }
-        i += 1;
-    }
-    true
-}
-
-/// The registry index of `slug`, or `None` when it is absent.
-pub(super) const fn slug_index(slug: &str) -> Option<usize> {
-    let mut i = 0;
-    while i < KNOWN_IDS.len() {
-        if slug_bytes_equal(KNOWN_IDS[i].as_str().as_bytes(), slug.as_bytes()) {
-            return Some(i);
-        }
-        i += 1;
-    }
-    None
-}
-
 /// Generates [`KNOWN_IDS`], [`RuleConfigs`] with its bool-or-table
 /// `JsonSchema` impl, [`message_for_id`], [`preserves_bindings_for_id`],
 /// [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
@@ -181,7 +120,7 @@ pub(super) const fn slug_index(slug: &str) -> Option<usize> {
 /// `id()` collapses to `Self::SLUG`.
 macro_rules! register_rules {
     ($($slug:literal: $field:ident: $config:ty => $ty:ident
-        => [$($after:literal),*]),* $(,)?) => {
+        => [$($after:literal),*] => [$($shares:literal),*]),* $(,)?) => {
         pub(crate) const KNOWN_IDS: &[RuleId] = &[
             $(RuleId($slug)),*
         ];
@@ -192,6 +131,10 @@ macro_rules! register_rules {
         /// The slugs each rule runs behind, indexed alongside [`KNOWN_IDS`].
         pub(super) const PIPELINE_DEPENDENCIES: &[&[&str]] = &[$(&[$($after),*]),*];
 
+        /// The slugs each rule shares a splice and a parse with,
+        /// indexed alongside [`KNOWN_IDS`].
+        const SHARES: &[&[&str]] = &[$(&[$($shares),*]),*];
+
         /// Whether each rule's edits leave every binding standing,
         /// indexed alongside [`KNOWN_IDS`].
         const PRESERVES_BINDINGS: &[bool] = &[$($ty::PRESERVES_BINDINGS),*];
@@ -200,6 +143,16 @@ macro_rules! register_rules {
         $($(const _: () = assert!(
             precedes($after, $slug),
             concat!("`", $after, "` must be registered before `", $slug, "`"),
+        );)*)*
+
+        // Asserts each shared splice names a rule seated earlier and
+        // outside the later rule's dependency column.
+        $($(const _: () = assert!(
+            shares_cleanly($slug, $shares),
+            concat!(
+                "`", $slug, "` cannot share a splice with `", $shares,
+                "`, which must be registered ahead of it and outside its dependency column",
+            ),
         );)*)*
 
         /// Per-rule configuration under `[tool.prose.rules]`.
@@ -338,48 +291,153 @@ macro_rules! register_rules {
 }
 
 register_rules! {
-    "shed-backslash-continuations": shed_backslash_continuations: ToggleOnly                 => ShedBackslashContinuations => [],
-    "normalize-literals":           normalize_literals:           NormalizeLiteralsConfig    => NormalizeLiterals          => [],
-    "prune-inert-imports":          prune_inert_imports:          PruneInertImportsConfig    => PruneInertImports          => ["shed-backslash-continuations", "normalize-literals"],
-    "strip-none-return":            strip_none_return:            ToggleOnly                 => StripNoneReturn            => [],
-    "modernize-annotations":        modernize_annotations:        ModernizeAnnotationsConfig => ModernizeAnnotations       => [],
-    "strip-trailing-commas":        strip_trailing_commas:        ToggleOnly                 => StripTrailingCommas        => [],
-    "normalize-comparisons":        normalize_comparisons:        NormalizeComparisonsConfig => NormalizeComparisons       => [],
-    "reflow-parentheses":           reflow_parentheses:           ToggleOnly                 => ReflowParentheses          => ["shed-backslash-continuations", "normalize-comparisons"],
-    "shed-redundant-base":          shed_redundant_base:          ToggleOnly                 => ShedRedundantBase          => [],
-    "simplify-comprehensions":      simplify_comprehensions:      ToggleOnly                 => SimplifyComprehensions     => ["reflow-parentheses"],
-    "frame-docstrings":             frame_docstrings:             ToggleOnly                 => FrameDocstrings            => [],
-    "expand-docstrings":            expand_docstrings:            ToggleOnly                 => ExpandDocstrings           => ["frame-docstrings"],
-    "group-imports":                group_imports:                ToggleOnly                 => GroupImports               => [],
-    "shed-super-args":              shed_super_args:              ToggleOnly                 => ShedSuperArgs              => [],
-    "stack-method-chains":          stack_method_chains:          StackMethodChainsConfig    => StackMethodChains          => ["reflow-parentheses"],
-    "reflow-calls":                 reflow_calls:                 ReflowCallsConfig          => ReflowCalls                => ["shed-backslash-continuations", "reflow-parentheses", "simplify-comprehensions", "shed-super-args", "stack-method-chains"],
-    "reflow-signatures":            reflow_signatures:            ReflowSignaturesConfig     => ReflowSignatures           => ["strip-none-return", "reflow-parentheses"],
-    "reflow-collections":           reflow_collections:           ReflowCollectionsConfig    => ReflowCollections          => ["simplify-comprehensions", "stack-method-chains", "reflow-calls", "reflow-signatures"],
-    "prefer-fstring":               prefer_fstring:               PreferFstringConfig        => PreferFstring              => ["normalize-literals", "reflow-collections"],
-    "stack-adjacent-strings":       stack_adjacent_strings:       ToggleOnly                 => StackAdjacentStrings       => ["stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures"],
-    "align-match-case":             align_match_case:             AlignmentConfig            => AlignMatchCase             => ["reflow-parentheses"],
-    "reflow-imports":               reflow_imports:               ReflowImportsConfig        => ReflowImports              => ["shed-backslash-continuations", "prune-inert-imports", "group-imports"],
-    "band-constants":               band_constants:               BandConstantsConfig        => BandConstants              => ["simplify-comprehensions", "reflow-imports"],
-    "alphabetize-siblings":         alphabetize_siblings:         AlphabetizeSiblingsConfig  => AlphabetizeSiblings        => ["normalize-literals", "strip-trailing-commas", "reflow-parentheses", "frame-docstrings", "expand-docstrings", "stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures", "reflow-imports", "band-constants"],
-    "space-statements":             space_statements:             ToggleOnly                 => SpaceStatements            => ["prune-inert-imports", "group-imports", "alphabetize-siblings", "band-constants"],
-    "align-imports":                align_imports:                AlignmentConfig            => AlignImports               => ["reflow-imports", "alphabetize-siblings", "band-constants", "space-statements"],
-    "align-colons":                 align_colons:                 AlignmentConfig            => AlignColons                => ["strip-trailing-commas", "reflow-parentheses", "reflow-collections", "reflow-signatures", "stack-adjacent-strings", "alphabetize-siblings", "band-constants"],
-    "wrap-docstrings":              wrap_docstrings:              ToggleOnly                 => WrapDocstrings             => ["frame-docstrings", "expand-docstrings", "align-colons"],
-    "align-equals":                 align_equals:                 AlignmentConfig            => AlignEquals                => ["strip-trailing-commas", "reflow-parentheses", "reflow-collections", "alphabetize-siblings", "band-constants", "align-colons"],
-    "align-comparisons":            align_comparisons:            AlignmentConfig            => AlignComparisons           => ["reflow-parentheses", "normalize-comparisons", "reflow-calls", "reflow-collections"],
-    "strip-stranded-padding":       strip_stranded_padding:       ToggleOnly                 => StripStrandedPadding       => ["reflow-parentheses", "align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"],
-    "normalize-comment-spacing":    normalize_comment_spacing:    ToggleOnly                 => NormalizeCommentSpacing    => [],
-    "align-comments":               align_comments:               AlignmentConfig            => AlignComments              => ["strip-trailing-commas", "strip-stranded-padding", "normalize-comment-spacing"],
-    "bare-imports":                 bare_imports:                 BareImportsConfig          => BareImports                => [],
-    "miscased-constants":           miscased_constants:           MiscasedConstantsConfig    => MiscasedConstants          => [],
-    "reassigned-constants":         reassigned_constants:         ReassignedConstantsConfig  => ReassignedConstants        => [],
-    "step-narration":               step_narration:               ToggleOnly                 => StepNarration              => [],
-    "inlinable-bindings":           inlinable_bindings:           InlinableBindingsConfig    => InlinableBindings          => [],
-    "unsorted-positionals":         unsorted_positionals:         ToggleOnly                 => UnsortedPositionals        => [],
-    "signature-annotations":        signature_annotations:        ToggleOnly                 => SignatureAnnotations       => [],
-    "restated-types":               restated_types:               ToggleOnly                 => RestatedTypes              => ["frame-docstrings", "expand-docstrings", "wrap-docstrings"],
-    "line-overflow":                line_overflow:                LineOverflowConfig         => LineOverflow               => ["strip-stranded-padding", "normalize-comment-spacing", "align-comments"],
+    "shed-backslash-continuations": shed_backslash_continuations: ToggleOnly                 => ShedBackslashContinuations => [] => [],
+    "normalize-literals":           normalize_literals:           NormalizeLiteralsConfig    => NormalizeLiterals          => [] => ["shed-backslash-continuations"],
+    "prune-inert-imports":          prune_inert_imports:          PruneInertImportsConfig    => PruneInertImports          => ["shed-backslash-continuations", "normalize-literals"] => [],
+    "strip-none-return":            strip_none_return:            ToggleOnly                 => StripNoneReturn            => [] => ["shed-backslash-continuations", "normalize-literals", "prune-inert-imports"],
+    "modernize-annotations":        modernize_annotations:        ModernizeAnnotationsConfig => ModernizeAnnotations       => [] => [],
+    "strip-trailing-commas":        strip_trailing_commas:        ToggleOnly                 => StripTrailingCommas        => [] => ["shed-backslash-continuations", "normalize-literals", "prune-inert-imports", "strip-none-return"],
+    "normalize-comparisons":        normalize_comparisons:        NormalizeComparisonsConfig => NormalizeComparisons       => [] => ["shed-backslash-continuations", "normalize-literals", "prune-inert-imports", "strip-none-return", "strip-trailing-commas"],
+    "reflow-parentheses":           reflow_parentheses:           ToggleOnly                 => ReflowParentheses          => ["shed-backslash-continuations", "normalize-comparisons"] => ["prune-inert-imports"],
+    "shed-redundant-base":          shed_redundant_base:          ToggleOnly                 => ShedRedundantBase          => [] => ["shed-backslash-continuations", "normalize-literals", "prune-inert-imports", "strip-none-return", "strip-trailing-commas", "normalize-comparisons", "reflow-parentheses"],
+    "simplify-comprehensions":      simplify_comprehensions:      ToggleOnly                 => SimplifyComprehensions     => ["reflow-parentheses"] => ["strip-none-return", "shed-redundant-base"],
+    "frame-docstrings":             frame_docstrings:             ToggleOnly                 => FrameDocstrings            => [] => ["shed-backslash-continuations", "normalize-literals", "prune-inert-imports", "strip-none-return", "strip-trailing-commas", "normalize-comparisons", "reflow-parentheses", "shed-redundant-base", "simplify-comprehensions"],
+    "expand-docstrings":            expand_docstrings:            ToggleOnly                 => ExpandDocstrings           => ["frame-docstrings"] => ["shed-backslash-continuations", "normalize-literals", "prune-inert-imports", "strip-none-return", "strip-trailing-commas", "normalize-comparisons", "reflow-parentheses", "shed-redundant-base", "simplify-comprehensions"],
+    "group-imports":                group_imports:                ToggleOnly                 => GroupImports               => [] => ["normalize-literals", "strip-none-return", "strip-trailing-commas", "normalize-comparisons", "reflow-parentheses", "shed-redundant-base", "simplify-comprehensions", "frame-docstrings", "expand-docstrings"],
+    "shed-super-args":              shed_super_args:              ToggleOnly                 => ShedSuperArgs              => [] => ["shed-redundant-base", "frame-docstrings", "expand-docstrings", "group-imports"],
+    "stack-method-chains":          stack_method_chains:          StackMethodChainsConfig    => StackMethodChains          => ["reflow-parentheses"] => ["prune-inert-imports", "frame-docstrings", "expand-docstrings", "group-imports"],
+    "reflow-calls":                 reflow_calls:                 ReflowCallsConfig          => ReflowCalls                => ["shed-backslash-continuations", "reflow-parentheses", "simplify-comprehensions", "shed-super-args", "stack-method-chains"] => ["prune-inert-imports", "frame-docstrings", "expand-docstrings", "group-imports"],
+    "reflow-signatures":            reflow_signatures:            ReflowSignaturesConfig     => ReflowSignatures           => ["strip-none-return", "reflow-parentheses"] => ["prune-inert-imports", "shed-redundant-base", "frame-docstrings", "expand-docstrings", "group-imports"],
+    "reflow-collections":           reflow_collections:           ReflowCollectionsConfig    => ReflowCollections          => ["simplify-comprehensions", "stack-method-chains", "reflow-calls", "reflow-signatures"] => ["prune-inert-imports", "frame-docstrings", "expand-docstrings", "group-imports"],
+    "prefer-fstring":               prefer_fstring:               PreferFstringConfig        => PreferFstring              => ["normalize-literals", "reflow-collections"] => [],
+    "stack-adjacent-strings":       stack_adjacent_strings:       ToggleOnly                 => StackAdjacentStrings       => ["stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures"] => ["frame-docstrings", "expand-docstrings"],
+    "align-match-case":             align_match_case:             AlignmentConfig            => AlignMatchCase             => ["reflow-parentheses"] => ["strip-none-return", "strip-trailing-commas", "shed-redundant-base", "frame-docstrings", "expand-docstrings", "group-imports", "reflow-signatures"],
+    "reflow-imports":               reflow_imports:               ReflowImportsConfig        => ReflowImports              => ["shed-backslash-continuations", "prune-inert-imports", "group-imports"] => ["strip-none-return", "strip-trailing-commas", "normalize-comparisons", "reflow-parentheses", "shed-redundant-base", "simplify-comprehensions", "frame-docstrings", "expand-docstrings", "shed-super-args", "stack-method-chains", "reflow-calls", "reflow-signatures", "reflow-collections"],
+    "band-constants":               band_constants:               BandConstantsConfig        => BandConstants              => ["simplify-comprehensions", "reflow-imports"] => ["strip-none-return", "shed-redundant-base", "frame-docstrings", "expand-docstrings", "reflow-signatures"],
+    "alphabetize-siblings":         alphabetize_siblings:         AlphabetizeSiblingsConfig  => AlphabetizeSiblings        => ["normalize-literals", "strip-trailing-commas", "reflow-parentheses", "frame-docstrings", "expand-docstrings", "stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures", "reflow-imports", "band-constants"] => ["shed-redundant-base"],
+    "space-statements":             space_statements:             ToggleOnly                 => SpaceStatements            => ["prune-inert-imports", "group-imports", "alphabetize-siblings", "band-constants"] => ["shed-redundant-base", "stack-adjacent-strings", "align-match-case"],
+    "align-imports":                align_imports:                AlignmentConfig            => AlignImports               => ["reflow-imports", "alphabetize-siblings", "band-constants", "space-statements"] => ["shed-redundant-base", "stack-adjacent-strings", "align-match-case"],
+    "align-colons":                 align_colons:                 AlignmentConfig            => AlignColons                => ["strip-trailing-commas", "reflow-parentheses", "reflow-collections", "reflow-signatures", "stack-adjacent-strings", "alphabetize-siblings", "band-constants"] => ["shed-redundant-base", "space-statements", "align-imports"],
+    "wrap-docstrings":              wrap_docstrings:              ToggleOnly                 => WrapDocstrings             => ["frame-docstrings", "expand-docstrings", "align-colons"] => ["shed-redundant-base", "align-match-case", "space-statements", "align-imports"],
+    "align-equals":                 align_equals:                 AlignmentConfig            => AlignEquals                => ["strip-trailing-commas", "reflow-parentheses", "reflow-collections", "alphabetize-siblings", "band-constants", "align-colons"] => ["shed-redundant-base", "space-statements", "align-imports", "wrap-docstrings"],
+    "align-comparisons":            align_comparisons:            AlignmentConfig            => AlignComparisons           => ["reflow-parentheses", "normalize-comparisons", "reflow-calls", "reflow-collections"] => ["prune-inert-imports", "shed-redundant-base", "frame-docstrings", "expand-docstrings", "group-imports", "reflow-imports", "band-constants", "alphabetize-siblings", "space-statements", "align-imports", "wrap-docstrings"],
+    "strip-stranded-padding":       strip_stranded_padding:       ToggleOnly                 => StripStrandedPadding       => ["reflow-parentheses", "align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"] => ["shed-redundant-base", "wrap-docstrings"],
+    "normalize-comment-spacing":    normalize_comment_spacing:    ToggleOnly                 => NormalizeCommentSpacing    => [] => ["shed-backslash-continuations", "normalize-literals", "prune-inert-imports", "strip-none-return", "strip-trailing-commas", "normalize-comparisons", "reflow-parentheses", "shed-redundant-base", "simplify-comprehensions", "frame-docstrings", "expand-docstrings", "group-imports", "shed-super-args", "stack-method-chains", "reflow-calls", "reflow-signatures", "reflow-collections", "align-match-case", "reflow-imports", "band-constants", "alphabetize-siblings", "space-statements", "align-imports", "align-colons", "wrap-docstrings", "align-equals", "align-comparisons", "strip-stranded-padding"],
+    "align-comments":               align_comments:               AlignmentConfig            => AlignComments              => ["strip-trailing-commas", "strip-stranded-padding", "normalize-comment-spacing"] => [],
+    "bare-imports":                 bare_imports:                 BareImportsConfig          => BareImports                => [] => [],
+    "miscased-constants":           miscased_constants:           MiscasedConstantsConfig    => MiscasedConstants          => [] => [],
+    "reassigned-constants":         reassigned_constants:         ReassignedConstantsConfig  => ReassignedConstants        => [] => [],
+    "step-narration":               step_narration:               ToggleOnly                 => StepNarration              => [] => [],
+    "inlinable-bindings":           inlinable_bindings:           InlinableBindingsConfig    => InlinableBindings          => [] => [],
+    "unsorted-positionals":         unsorted_positionals:         ToggleOnly                 => UnsortedPositionals        => [] => [],
+    "signature-annotations":        signature_annotations:        ToggleOnly                 => SignatureAnnotations       => [] => [],
+    "restated-types":               restated_types:               ToggleOnly                 => RestatedTypes              => ["frame-docstrings", "expand-docstrings", "wrap-docstrings"] => [],
+    "line-overflow":                line_overflow:                LineOverflowConfig         => LineOverflow               => ["strip-stranded-padding", "normalize-comment-spacing", "align-comments"] => [],
+}
+
+/// The slugs the rule named `slug` must run behind, empty for a rule
+/// that settles wherever it sits and for an unknown slug.
+pub fn dependencies_of(slug: &str) -> &'static [&'static str] {
+    slug_index(slug).map_or(&[], |i| PIPELINE_DEPENDENCIES[i])
+}
+
+/// Whether `later` shares a splice and a parse with `earlier`, so the
+/// two fold into one buffer and parse once. `false` for an unknown slug
+/// on either side.
+pub fn independent(later: &str, earlier: &str) -> bool {
+    slug_index(later).is_some_and(|seat| SHARES[seat].contains(&earlier))
+}
+
+/// Returns `true` when `earlier` is registered before `later`, and
+/// `false` when either is absent from the registry. Answers about the
+/// registry's own order rather than the declared column [`runs_behind`]
+/// walks, and takes its pair in the opposite order.
+pub(super) const fn precedes(earlier: &str, later: &str) -> bool {
+    match (slug_index(earlier), slug_index(later)) {
+        (Some(a), Some(b)) => a < b,
+        _ => false,
+    }
+}
+
+/// Whether `later`'s dependency column reaches `earlier`, directly or
+/// through the column of a rule it already names. `false` for an
+/// unknown slug on either side. Takes its pair in the opposite order
+/// from [`precedes`], which asks about registration rather than the
+/// declared column.
+pub fn runs_behind(later: &str, earlier: &str) -> bool {
+    slug_index(later).is_some_and(|seat| reaches(seat, earlier))
+}
+
+/// Whether `later` may declare a shared splice with `earlier`: both
+/// registered, `earlier` seated ahead, and `later` reaching it through
+/// no dependency column, its own or one a column it names carries.
+pub(super) const fn shares_cleanly(later: &str, earlier: &str) -> bool {
+    match slug_index(later) {
+        Some(seat) => precedes(earlier, later) && !reaches(seat, earlier),
+        None => false,
+    }
+}
+
+/// Byte-wise equality on `&[u8]` usable from const contexts.
+pub(super) const fn slug_bytes_equal(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut i = 0;
+    while i < a.len() {
+        if a[i] != b[i] {
+            return false;
+        }
+        i += 1;
+    }
+    true
+}
+
+/// The registry index of `slug`, or `None` when it is absent.
+pub(super) const fn slug_index(slug: &str) -> Option<usize> {
+    let mut i = 0;
+    while i < KNOWN_IDS.len() {
+        if slug_bytes_equal(KNOWN_IDS[i].as_str().as_bytes(), slug.as_bytes()) {
+            return Some(i);
+        }
+        i += 1;
+    }
+    None
+}
+
+/// Whether the rule at `seat` reaches `slug` through its dependency
+/// column, directly or through the column of a rule that column names.
+/// The const counterpart of [`runs_behind`].
+const fn reaches(seat: usize, slug: &str) -> bool {
+    let mut seen = [false; KNOWN_IDS.len()];
+    let mut pending = [0usize; KNOWN_IDS.len()];
+    let mut depth = 1;
+    pending[0] = seat;
+    seen[seat] = true;
+    while depth > 0 {
+        depth -= 1;
+        let column = PIPELINE_DEPENDENCIES[pending[depth]];
+        let mut i = 0;
+        while i < column.len() {
+            if slug_bytes_equal(column[i].as_bytes(), slug.as_bytes()) {
+                return true;
+            }
+            if let Some(next) = slug_index(column[i])
+                && !seen[next]
+            {
+                seen[next] = true;
+                pending[depth] = next;
+                depth += 1;
+            }
+            i += 1;
+        }
+    }
+    false
+}
+
+/// The registry index of `id`, which every id outside a test carries.
+fn registered_index(id: RuleId) -> usize {
+    slug_index(id.as_str()).unwrap_or_else(|| unreachable!("rule id must be registered"))
 }
 
 #[cfg(test)]
@@ -446,5 +504,18 @@ mod tests {
         assert!(slug_bytes_equal(b"foo", b"foo"));
         assert!(!slug_bytes_equal(b"foo", b"food"));
         assert!(!slug_bytes_equal(b"foo", b"bar"));
+    }
+
+    #[rstest]
+    #[case("strip-trailing-commas", "normalize-literals", true)]
+    #[case("normalize-literals", "strip-trailing-commas", false)]
+    #[case("align-equals", "align-colons", false)]
+    #[case("align-equals", "not-a-rule", false)]
+    fn independent_reads_the_pair_in_registry_order(
+        #[case] later: &str,
+        #[case] earlier: &str,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(independent(later, earlier), expected);
     }
 }

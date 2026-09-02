@@ -80,7 +80,7 @@ fn format_span_leaves_a_file_suppressed_source_alone() {
 fn format_span_segments_compose_to_the_full_fold() {
     // A seam falling inside a batch splits it, so the rules behind the
     // seam read a reparsed buffer rather than the one the batch opened
-    // on, and the two agree only where the registry's independence
+    // on, and the two agree only where the registry's shared-splice
     // declarations hold.
     let pipeline = Pipeline::with_defaults(&Config::default());
     let text = concat!(

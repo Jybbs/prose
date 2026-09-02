@@ -58,7 +58,7 @@ fn run_batches_adjacent_edits_from_two_rules() {
     assert_eq!(captured(&seen), ["x = 1\n", "x = 1\n"]);
 }
 
-/// Neither sentinel is in the registry's independence table, so the
+/// Neither sentinel is in the registry's shared-splice column, so the
 /// second reads the first's rewrite under either sharing and the batch
 /// closes between them.
 #[rstest]

@@ -432,7 +432,7 @@ pub enum Sharing {
     /// reparse rejects surfaces as [`PipelineError::Batch`] rather
     /// than replaying.
     Always,
-    /// The rules the registry's independence table declares, every
+    /// The rules the registry's shared-splice column declares, every
     /// other rule reading the tree the batch ahead of it left.
     #[default]
     Declared,
