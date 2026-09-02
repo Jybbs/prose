@@ -83,7 +83,7 @@ let statements = module.body.len();
 println!("{statements} top-level statements");
 ```
 
-A consumer that wants the full rule loop instead builds a [[pipeline]] from a `Config`, hands it the *Source*, and reads the returned text plus diagnostics. The [[pipeline]] primitive page covers the `with_defaults`, `with_filters`, and `for_rule` constructors that drive every shape of consumer pipeline.
+A consumer taking the full rule loop instead builds a [[pipeline]] from a `Config`, hands it the *Source*, and reads the returned text plus diagnostics. The [[pipeline]] primitive page covers the `with_defaults`, `with_filters`, and `for_rule` constructors that drive every shape of consumer pipeline.
 
 A downstream Rust crate consumes *Prose* the same way it consumes the `ruff_*` workspace, through a Git dependency pinned to a release tag:
 

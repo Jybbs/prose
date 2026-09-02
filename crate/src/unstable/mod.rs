@@ -442,7 +442,7 @@ mod tests {
     #[test]
     fn detect_reports_regardless_of_the_config_key() {
         // The key gates the notice surfaces, not the detector, so a
-        // caller that wants the check despite the key, as `check
+        // caller taking the check despite the key, as `check
         // --validate` does, reads a real answer here.
         let pipeline = widening();
         let (formatted, _) = pipeline.run(parse(SOURCE)).expect("runs");

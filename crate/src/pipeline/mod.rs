@@ -174,7 +174,7 @@ impl Pipeline {
     /// [`unsettled_among`](Self::unsettled_among) read, narrowed to the
     /// rules `keep` admits, each rule's probe reported to the trace
     /// under `pass`, weaving the first editing rule's text as the
-    /// witness only when `witness` asks for it.
+    /// witness only where `witness` is set.
     fn settle_walk(
         &self,
         source: &Source,

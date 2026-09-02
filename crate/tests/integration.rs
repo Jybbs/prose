@@ -239,7 +239,7 @@ fn prose_is_stable_after_ruff() {
         if matches!(domain, "composition" | "thematic") {
             assert!(
                 one.text() != post_ruff,
-                "prose was a no-op on `{case}` after ruff — {domain} fixture should require transformation",
+                "prose was a no-op on `{case}` after ruff, where a {domain} fixture must require transformation",
             );
         }
         assert!(

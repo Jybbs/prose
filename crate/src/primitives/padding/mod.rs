@@ -51,8 +51,8 @@ impl Stranding {
     /// The edits of [`edits`](Self::edits) that fall inside one of
     /// `windows`, ascending and disjoint, walking only the statements
     /// and docstrings a window reaches. Over the module range this is
-    /// every edit; over a splice's windows it is the entries a reparse
-    /// there could have changed.
+    /// every edit, whereas over a splice's windows it is the entries a
+    /// reparse there could have changed.
     pub(crate) fn edits_within(self, source: &Source, windows: &[TextRange]) -> Vec<Edit> {
         if !self.enabled {
             return Vec::new();
