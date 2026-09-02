@@ -15,7 +15,7 @@ use ruff_diagnostics::SourceMap;
 use ruff_notebook::CellOffsets;
 use ruff_python_ast::Stmt;
 use ruff_python_parser::{ParseOptions, parse_cells_unchecked};
-use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextLen, TextRange};
 
 use self::{deltas::Deltas, slide::Slide, tokens::Reparsed, window::Window};
 use crate::{
@@ -23,17 +23,6 @@ use crate::{
     rules::RuleId,
     source::Source,
 };
-
-/// The share of the woven text, in percent, past which the windows a
-/// splice would reparse cost more than the whole-file parse they stand
-/// in for, the merge over the token stream, the slide over every node
-/// past the windows, and the walks over the windows growing with the
-/// text where a fresh parse grows with it once.
-const WINDOW_SHARE_PERCENT: u64 = 65;
-
-/// The text length below which the share gate never applies, a parse
-/// of that size costing less than the gate's own reading.
-const GATED_FROM: TextSize = TextSize::new(4096);
 
 /// The reparse of each window a rule's edits fell inside.
 pub(crate) struct Splice(Vec<Reparsed>);
@@ -73,12 +62,11 @@ impl Source {
     ///
     /// A splice declines a window whose new text does not parse, a
     /// nested window landing as anything but the one statement filling
-    /// it, an edit writing text no window reads, windows reaching past
-    /// [`WINDOW_SHARE_PERCENT`] of a text [`GATED_FROM`] long or longer,
-    /// and a notebook, whose cell boundaries a splice would have to
-    /// recut. A module-body window lands as any count of statements,
-    /// none included, and a window whose end moved to another depth
-    /// hands the levels it moved to the `Dedent` run past it.
+    /// it, an edit writing text no window reads, and a notebook, whose
+    /// cell boundaries a splice would have to recut. A module-body
+    /// window lands as any count of statements, none included, and a
+    /// window whose end moved to another depth hands the levels it
+    /// moved to the `Dedent` run past it.
     pub(crate) fn splice_of(&self, text: &str, map: &SourceMap) -> Option<Splice> {
         if self.is_notebook() {
             return None;
@@ -96,15 +84,6 @@ impl Source {
                 .is_some_and(|window| window.slid.contains_range(written))
         };
         if !deltas.written().all(covers) {
-            return None;
-        }
-        let reparsed: u64 = covered
-            .iter()
-            .map(|window| u64::from(window.slid.len().to_u32()))
-            .sum();
-        if text.text_len() >= GATED_FROM
-            && reparsed * 100 > u64::from(text.text_len().to_u32()) * WINDOW_SHARE_PERCENT
-        {
             return None;
         }
         let options = ParseOptions::from(self.source_type);
@@ -344,31 +323,6 @@ mod tests {
         let next = splice(text, vec![edit]).expect("the splice applies");
 
         assert_eq!(next.text(), rewritten);
-        assert!(next.matches_a_fresh_parse());
-    }
-
-    /// A module of `GATED_FROM` bytes and more, one assignment per line.
-    fn gated_module() -> String {
-        "x = 1\n".repeat(GATED_FROM.to_usize() / 6 + 1)
-    }
-
-    #[test]
-    fn spliced_declines_windows_past_the_share_of_a_gated_text() {
-        let text = gated_module();
-        let whole = TextRange::up_to(text.text_len());
-        let edit = Edit::range_replacement(text.replace("x = 1", "y = 2"), whole);
-
-        assert!(splice(&text, vec![edit]).is_none());
-    }
-
-    #[test]
-    fn spliced_takes_a_window_inside_the_share_of_a_gated_text() {
-        let text = gated_module();
-        let edit = replacement("11", 4, 5);
-
-        let next = splice(&text, vec![edit]).expect("the splice applies");
-
-        assert!(next.text().starts_with("x = 11\n"));
         assert!(next.matches_a_fresh_parse());
     }
 
