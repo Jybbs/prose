@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Call Explodes Ahead of an Unbreakable Tail"
+title       = "A Call Explodes Ahead of a Tail That Cannot Break"
 
 description = '''
-The `{start}` set after the call holds one item, so `reflow-collections` never breaks it and the call's row tail counts at its full width rather than only up to its `{`. The row overflows, `deque(` explodes, and its argument lands packed on its own row where it fits, instead of the inner tuple exploding under a column the explode would have moved.
+`deque([(start, 0)]), {start}` assigns a call and a one-item set on one row that crosses the 50-column budget. `reflow-collections` never breaks a one-item set, so the row's tail counts at its full width rather than only up to its `{`. **`deque(` explodes with its list argument packed on a row of its own**, where it fits, rather than the inner tuple exploding under a column the explode would then have moved.
 '''

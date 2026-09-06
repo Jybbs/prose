@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Fenced Code Blocks inside the Description Are Preserved"
+title       = "A Fenced Code Block Inside the Description Passes Through Verbatim"
 
 description = '''
-The fenced `python` block in `example`'s docstring **passes through verbatim no matter how wide its lines run**, its `x = some_long_identifier + ...` line overflowing the budget untouched. The fence marks the region as code rather than prose, so the wrap never measures it.
+The fenced `python` block in `example`'s docstring carries an `x = some_long_identifier + ...` line wider than the budget. **The block passes through verbatim however wide its lines run**, because the fence marks the region as code rather than prose, so the wrap never measures it.
 '''

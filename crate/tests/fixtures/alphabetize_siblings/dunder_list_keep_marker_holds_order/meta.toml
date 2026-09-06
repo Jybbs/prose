@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "`# prose: keep` on a Dunder List Preserves Source Order"
+title       = "`# prose: keep` on a Dunder List Keeps Source Order"
 
 description = '''
-A trailing `# prose: keep` holds an `__all__` or `__slots__` sequence in its authored order the same way it holds a dict, and it counts whether it sits on the opening bracket's line or the closing one.
-
-The second `__all__` carries no marker and sorts, which shows what the first one suppressed. `plain_list` shows that **the sort reaches a sequence by its assignment target rather than by its shape**, so an ordinary list sitting beside them keeps whatever order its author wrote.
+The first `__all__` and the `__slots__` tuple each carry a trailing `# prose: keep`, one on the opening bracket's line and one on the closing bracket's line, whereas the second `__all__` carries no marker and `plain_list` is an ordinary list. **Both marked sequences keep their authored order and the unmarked `__all__` sorts**, showing what the marker suppressed, and `plain_list` keeps its order too, because the sort reaches a sequence by its assignment target rather than by its form.
 '''

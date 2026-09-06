@@ -27,9 +27,8 @@ use crate::{
 /// The reparse of each window a rule's edits fell inside.
 pub(crate) struct Splice(Vec<Reparsed>);
 
-/// `range` moved to where the woven text `map` describes holds it, the
-/// way the slide moves a statement a splice leaves standing, collapsed
-/// to an empty range where the edits swallowed it whole.
+/// `range` moved to where the woven text behind `map` holds it,
+/// collapsed to an empty range where the edits swallowed it whole.
 #[cfg(test)]
 pub(crate) fn slid_range(map: &SourceMap, range: TextRange) -> TextRange {
     Deltas::new(map).slide_window(range)
@@ -62,14 +61,11 @@ impl Source {
     ///
     /// A splice declines a window whose new text does not parse, a
     /// nested window landing as anything but the one statement filling
-    /// it, an edit writing text no window reads, and a notebook, whose
-    /// cell boundaries a splice would have to recut. A lone window that
-    /// does not reparse widens once to the statement around it, since
-    /// an edit writing a second logical line leaves its own statement
-    /// no longer standing alone. A module-body window lands as any
-    /// count of statements, none included, and a window whose end moved
-    /// to another depth hands the levels it moved to the `Dedent` run
-    /// past it.
+    /// it, an edit writing text no window reads, and a notebook. A lone
+    /// window that does not reparse widens outward one statement at a
+    /// time. A module-body window lands as any count of statements,
+    /// none included, and a window whose end moved to another depth
+    /// hands the levels it moved to the `Dedent` run past it.
     pub(crate) fn splice_of(&self, text: &str, map: &SourceMap) -> Option<Splice> {
         if self.is_notebook() {
             return None;
@@ -104,8 +100,7 @@ impl Source {
     /// The reparse of the innermost statement around `held` whose own
     /// slid text reparses, widening outward one statement at a time.
     /// `None` where the widening reaches the module body without
-    /// reparsing, or where it would swallow another window, whose own
-    /// reparse would then land twice.
+    /// reparsing, or where it would swallow another window.
     fn widened_window(
         &self,
         text: &str,

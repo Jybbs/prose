@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "Single-Comparator Operands Share One Operator Column"
+title       = "Comparison Operators in an `and` Chain Share One Column"
 
 description = '''
-The multi-line `and` chain compares `foo`, `bar_baz`, and `quux` with one `==` apiece, and the three rows share an alignment column. Each `==` sits one space past the widest left side, the `and bar_baz` row.
+The multi-line `and` chain compares `foo`, `bar_baz`, and `quux` with one `==` apiece. **Every `==` moves to one space past the widest left operand**, the `and bar_baz` row, so the three comparisons read as one parallel list.
 '''

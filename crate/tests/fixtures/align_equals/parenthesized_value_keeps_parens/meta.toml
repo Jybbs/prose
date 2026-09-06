@@ -3,5 +3,5 @@ previewable = true
 title       = "A Parenthesized Value Keeps Its Parentheses"
 
 description = '''
-`x`'s value arrives as `(1 + 2)` written flush against its `=`. The gap rewrite treats the `(` as where the value starts, so `x` aligns with `yy`, each `=` gains its spacing, and the parentheses come through untouched as `x  = (1 + 2)`.
+`x=(1 + 2)` and `yy=3` are written with no space around their `=`. **Each `=` gains a space on both sides and `x` pads out to `yy`'s width, with the parentheses around `1 + 2` left as written**, so the first row reads `x  = (1 + 2)`. The rewrite reads the `(` as the start of the value and stops before it.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Builtin Read Holds Above the Line That Rebinds It"
+title       = "A Builtin Read Stays Above the Line That Rebinds It"
 
 description = '''
-Nothing here moves. `X = list` reads the builtin, and the very next line rebinds `list` to a list of its own.
-
-Sorting the group would be free to place that rebinding above the read, which would hand `X` the new list instead of the builtin. Rather than risk it, **the whole region keeps its source order**, so `ZETA` and `ALPHA` stay unsorted alongside it. A builtin and a module dunder are both bound before the module body runs, and both are read the same way here.
+`X = list` reads the builtin, and the next line `list = [1]` rebinds the name, with `ZETA = 1` and `ALPHA = 2` below. **Nothing moves, `ZETA` and `ALPHA` included**, because a sorted band could place the rebinding above the read and hand `X` the new list instead of the builtin, so the whole region keeps its source order. A builtin and a module dunder are both bound before the module body runs, and the rule reads both the same way.
 '''

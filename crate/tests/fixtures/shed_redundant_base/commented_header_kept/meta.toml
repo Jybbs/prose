@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Comment Inside the Header Holds It"
+title       = "A Comment Inside the Header Keeps It as Written"
 
 description = '''
-Removing `object` from `Annotated`'s base list would also remove the comment sharing its line, and dropping `Bare`'s empty parentheses would take `# no bases at all` with them. A deletion span that holds a comment is skipped, so both headers stay exactly as written.
+`Annotated` lists `object,` on its own line beside the comment `# spelled out for the reader`, and `Bare(` carries `# no bases at all` inside its empty parentheses. **Both headers stay exactly as written**, because a deletion whose span contains a comment is skipped rather than applied, and removing the base or the parentheses here would remove the comment with it.
 '''

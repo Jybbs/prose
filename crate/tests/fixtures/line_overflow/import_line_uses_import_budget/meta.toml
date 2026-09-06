@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Import Line Answers to the Import Budget"
+title       = "An Import Line Is Measured Against the Import Budget"
 
 description = '''
-`from deep.nested.package.path import single_name` is 48 columns, past the `code-line-length` budget of 40 but within the default `import-line-length`. An import line is measured against the import budget rather than the code budget, so `line-overflow` leaves it unflagged.
+`from deep.nested.package.path import single_name` is 48 columns, past the `code-line-length` of 40 this case sets but within the default `import-line-length`. **The line is not reported**, because an import line is measured against the import budget rather than the code budget.
 '''

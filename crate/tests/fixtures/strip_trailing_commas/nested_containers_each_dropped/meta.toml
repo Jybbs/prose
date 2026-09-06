@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Nested Multi-Line Collections Strip Independently"
+title       = "Nested Multi-Line Collections Each Drop Their Trailing Comma"
 
 description = '''
-`Posting(...)`'s call, its `keywords` list, its `metadata` dict, and `metadata`'s nested `tags` list each carry a trailing `,` before their own closing bracket. **`strip-trailing-commas` emits a separate deletion edit for each container**, so nesting the four inside one another does not make the edits interact.
+`Posting(...)`, its `keywords` list, its `metadata` dict, and the `tags` list inside `metadata` each carry a `,` before their own closing bracket. **Each container's trailing comma is removed**, one deletion edit per container, so nesting the four inside one another changes nothing about how each is stripped.
 '''

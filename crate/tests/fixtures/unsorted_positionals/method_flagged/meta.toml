@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Method's Parameters Draw the Same Report"
+title       = "A Method's Parameters Are Reported Like a Free Function's"
 
 description = '''
-`Catalog.update`'s out-of-order `target, source` parameters **trigger the same diagnostic a free function's would**. Its callers bind by slot exactly as a free function's callers do, so the run reads the same way, with the `self` receiver dropping out of the run rather than silencing the check.
+`Catalog.update(self, target, source)` lists `target` before `source`. **The lint reports the run exactly as it would for a free function**, because a method's callers bind by slot the same way, and the `self` receiver drops out of the run rather than silencing it.
 '''

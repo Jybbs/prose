@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Already-Aligned Input Emits Zero Edits"
+title       = "Already-Aligned Input Gets No Edit"
 
 description = '''
-The `CAPITALS` dict, the `User` class body, and the `register` signature with its `Args` docstring section each already hold their `:` column at its target width. **Already-aligned input needs no edit**, so no gap changes and the output matches the input.
+The `CAPITALS` dict, the `User` class body, and the `register` signature with its `Args` docstring section each already keep their `:` on the column the rule would pick. **Input that is already aligned gets no edit**, so no gap changes and the output matches the input.
 '''

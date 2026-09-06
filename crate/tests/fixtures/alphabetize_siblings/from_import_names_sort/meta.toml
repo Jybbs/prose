@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Alias Lists Sort within One `from` Statement"
+title       = "Names Sort Within One `from` Statement"
 
 description = '''
-The names imported by one `from collections import` statement bind independently of their listed order, so the alias list **alphabetizes by name**, `deque, defaultdict, Counter` settling into `Counter, defaultdict, deque`. The same sort covers an inline list like this one and a parenthesized multi-line list alike.
+`from collections import deque, defaultdict, Counter` lists three names in one statement. **The list alphabetizes to `Counter, defaultdict, deque`**, because the names bind independently of their listed order, and the same sort covers an inline list like this one and a parenthesized multi-line list alike.
 '''

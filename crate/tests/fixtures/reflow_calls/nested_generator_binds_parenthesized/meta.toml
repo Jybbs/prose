@@ -3,5 +3,5 @@ previewable = false
 title       = "A Nested Call's Generator Takes Its Own Grouping Pair"
 
 description = '''
-The line overflows the width cap, so `outer` explodes and the `inner` call inside it explodes as well, each argument binding to its resolved parameter name. The bare generator passed to `inner` becomes the named argument `beta=`, and a named generator argument must sit in parentheses, so it gains its own pair.
+`outer(inner(row for row in rows if row.enabled))` passes a bare generator to `inner`, both functions defined above, under `code-line-length = 40`. **`outer` and `inner` both explode, each argument gains its parameter name, and the generator becomes `beta=(row for row in rows if row.enabled)` with its own pair of parentheses**, because the row overflows the budget and a named generator argument must sit in parentheses.
 '''

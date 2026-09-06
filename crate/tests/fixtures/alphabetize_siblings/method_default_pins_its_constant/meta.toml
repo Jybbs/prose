@@ -3,5 +3,5 @@ previewable = false
 title       = "A Method Default Pins the Constant It Reads"
 
 description = '''
-`draw`'s default `factor=SCALE` is evaluated while the class body runs, so `SCALE = 2` must already be assigned when the `def` line executes. Swapping the constants to put `APPLE` first would land `SCALE` below the method that reads it and break the class with a `NameError`, so the constant pair **keeps source order**.
+`draw`'s default `factor=SCALE` is evaluated while the class body runs, so `SCALE = 2` must already be assigned when the `def` line executes, and `APPLE = 1` follows the method. **The constant pair keeps source order**, because swapping the constants to put `APPLE` first would move `SCALE` below the method that reads it and break the class with a `NameError`.
 '''

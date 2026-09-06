@@ -3,7 +3,5 @@ previewable = false
 title       = "A Multi-Line Spread Does Not Count Toward the Divider Tally"
 
 description = '''
-Blank-line dividers open only once a dict holds two multi-line entries. `**load_defaults(...)` spans several lines, but a spread pins in its source slot and **stays out of that count**.
-
-That leaves `"limits"` as the only multi-line entry carrying a key, so the dict reads as one undivided block. The keys inside `"limits"` still sort, moving `"retries"` ahead of `"timeout"`.
+`config` contains the multi-line `"limits"` dict, a `**load_defaults(...)` spread spanning several lines, and the one-line `"version"`. **The dict stays one undivided block and the keys inside `"limits"` sort, `"retries"` moving ahead of `"timeout"`**, because blank-line dividers open only once a dict contains two multi-line entries, and a spread stays in its source place and is left out of that count, leaving `"limits"` as the only multi-line entry carrying a key.
 '''

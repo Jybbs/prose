@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Repeat of an Unread Name Drops Both Lines"
+title       = "A Repeat of an Unread Name Removes Both Lines"
 
 description = '''
-The module imports `os` twice and reads it nowhere. **One walk drops the repeat and the first binding together**, because the reassignment the repeat records stops counting once the repeat itself is a drop.
+`import os` appears twice, and nothing reads `os`. **Both lines are removed in one pass**, because the repeat is a removal under `drop-duplicates`, so the rebinding it recorded no longer keeps the first import, which then drops under `drop-unreferenced`.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Trailing Comment After the Colon Does Not Pin"
+title       = "A Comment Trailing the `:` Leaves the Signature Free to Expand"
 
 description = '''
-`render`'s trailing `# entry point` comment sits after the `:`, which puts it **outside the `(...)` parameter list**.
-
-A comment pins the signature only when it falls between `(` and `)`, so this one pins nothing. The five parameters still expand past `max-params`, and the comment stays where it was, now trailing the `):` line.
+`render` takes five parameters, over `max-params`, and its `# entry point` comment trails the `:` rather than sitting between `(` and `)`. **The signature expands one parameter per line and the comment ends up trailing the `):` line**, because only a comment inside the parameter list keeps the existing layout, and this one sits outside it.
 '''

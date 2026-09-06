@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Platform-Guarded If Bodies Stay Module-Level"
+title       = "A Write Inside a Top-Level `if` Counts as a Module-Scope Write"
 
 description = '''
-`DEFAULT_BACKEND` is assigned `"memory"` at module level and reassigned to `"registry"` inside the `if sys.platform == "win32"` guard.
-
-A top-level `if` body **still executes at module scope**, which is why the walk descends into `if`, `for`, and `try` bodies. Both writes therefore count as module-scope writes, and the constant is flagged as reassigned.
+`DEFAULT_BACKEND = "memory"` is assigned at module level and assigned again inside `if sys.platform == "win32":`. **Both lines are reported**, because the body of a top-level `if` still runs at module scope, so the rule reads through `if`, `for`, and `try` bodies and counts the write inside the guard.
 '''

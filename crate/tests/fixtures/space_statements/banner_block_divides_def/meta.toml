@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Banner Comments Don't Block the Blank-Line Discipline"
+title       = "A Banner Block Divides Two Defs"
 
 description = '''
-The `# ====` banner block between `first` and `second` reads as a **section divider rather than a comment describing `second`**.
-
-That changes where the gap goes. The canonical two-blank gap between module-level definitions lands above the banner, and a single blank separates the banner from the `def second():` beneath it.
+A `# ====` banner block sits between `first` and `second` with no blank line on either side. **The banner reads as a section divider rather than as a description of `second`**, so the canonical two blank lines between module-level definitions are written above the banner and one blank line separates it from `def second():`.
 '''

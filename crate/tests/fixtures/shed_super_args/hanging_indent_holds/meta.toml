@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Hanging Indent Holds Its Depth"
+title       = "A Hanging Indent Keeps Its Depth"
 
 description = '''
-`super(SecureConnection, self).__init__(` opens a call whose `host`, `port`, and `timeout` arguments hang one step under the statement rather than aligning to the open parenthesis. `SecureConnection, self` drops from the `super(...)` call, and every hanging argument line stays at the indentation it already had.
+`super(SecureConnection, self).__init__(` opens a call whose `host`, `port`, and `timeout` arguments hang one step under the statement rather than aligning to the open parenthesis. **`SecureConnection, self` drops from the call and every hanging argument line keeps the indentation it already had**, because a hanging line is indented from the statement rather than from the text that moved.
 '''

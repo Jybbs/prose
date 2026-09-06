@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Assignment Run and `BoolOp` Align in Separate Columns"
+title       = "An Assignment Run and a `BoolOp` Align in Separate Columns"
 
 description = '''
-`evaluate` opens with three `record.get` assignments and then guards on a multi-line `BoolOp`. `align-equals` settles the assignment run onto a shared `=` column, and **the `is`, `==`, and `<` comparisons right-align in their own independent column** inside the `if` below.
+`evaluate` opens with three `record.get` assignments and then guards on a multi-line `BoolOp`. `align-equals` pads the assignment run's `=` into one column, and **`align-comparisons` right-aligns the `is`, `==`, and `<` operators in a column of their own** inside the `if`, the two columns independent of each other.
 '''

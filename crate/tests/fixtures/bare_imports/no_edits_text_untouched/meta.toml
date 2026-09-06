@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Lint Diagnostics Never Rewrite the Source"
+title       = "A Lint Diagnostic Never Rewrites the Source"
 
 description = '''
-`os` is reached only through `os.getcwd`, so `bare-imports` reports the import, yet it emits no fix. The source text is left exactly as written, because a lint diagnostic is a report rather than a rewrite.
+`import os` is reached only through `os.getcwd`, so `bare-imports` reports the import. **The source text passes through exactly as written**, because a lint diagnostic is a report rather than a rewrite, and the rule emits no fix.
 '''

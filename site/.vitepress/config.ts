@@ -125,8 +125,9 @@ export default defineConfig({
       'link',
       { href: canonicalUrl(pageData.relativePath), rel: 'canonical' }
     ])
-    if (!pageData.description && typeof pageData.frontmatter.caption === 'string') {
-      pageData.description = pageData.frontmatter.caption
+    const fallback = pageData.frontmatter.caption ?? pageData.frontmatter.summary
+    if (!pageData.description && typeof fallback === 'string') {
+      pageData.description = fallback
     }
     injectSectionName(pageData, 'rules/', slug => toTitleCase(slug, '-'))
     injectSectionName(pageData, 'primitives/', slug => primitiveIndex.get(slug)?.name)

@@ -1,7 +1,9 @@
 [docs]
 previewable = false
-title       = "Adjacent `object` Bases Shed as One Run"
+title       = "Adjacent `object` Bases Are Removed as One Run"
 
 description = '''
-`class Twice(Mapping, object, object):` lists `object` twice in a row, and both bases are removed as a single deletion covering the whole run. Deleting each base separately would produce overlapping edits, and an overlapping set is rejected for the entire file, which would leave even the ordinary `class Single(object):` above unshed. The one-run edit avoids that, so the headers settle to `class Single:` and `class Twice(Mapping):`.
+`class Twice(Mapping, object, object):` lists `object` twice in a row, below `class Single(object):`. **Both `object` bases are removed in a single edit that spans the run**, so the headers read `class Single:` and `class Twice(Mapping):`.
+
+Removing each base with its own edit would produce two overlapping edits, and an overlapping set is rejected for the whole file, which would leave the ordinary `class Single(object):` above unchanged as well.
 '''

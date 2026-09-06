@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Classes Band Above Functions at Module Scope"
+title       = "Classes Group Above Functions at Module Scope"
 
 description = '''
-`render`, `Widget`, `build`, and `Gadget` are written with the two kinds interleaved.
-
-**The classes group above the functions, and each group then sorts by name.** The module reads `Gadget`, `Widget`, `build`, `render`, rather than keeping the interleaving and merely sorting each kind where it already sat.
+`render`, `Widget`, `build`, and `Gadget` are written with classes and functions interleaved. **The classes group above the functions and each group sorts by name**, so the module reads `Gadget`, `Widget`, `build`, `render`, rather than keeping the interleaving and sorting each kind where it already sat.
 '''

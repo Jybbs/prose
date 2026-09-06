@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A SCREAMING_CASE Constant Stays Silent"
+title       = "A SCREAMING_CASE Constant Is Not Reported"
 
 description = '''
-`MAX_RETRIES = 5` assigns a module-level constant whose name is already SCREAMING_CASE, so the lint reports nothing. This is the shape every flagged case suggests renaming to.
+`MAX_RETRIES = 5` assigns a module-level constant whose name is already `SCREAMING_CASE`. **The lint reports nothing**, this being the form every reported case suggests renaming to.
 '''

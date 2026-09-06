@@ -1,6 +1,6 @@
-//! Maps a source offset, a range, an edit, and a notebook's cell
-//! boundaries through the `SourceMap` of an applied edit set, and
-//! narrows a whole-range replacement to the span that actually differs.
+//! Maps a source offset, a range, and a notebook's cell boundaries
+//! through the `SourceMap` of an applied edit set, and narrows a
+//! whole-range replacement to the span that differs.
 
 use std::{borrow::Cow, cmp::Ordering};
 
@@ -12,11 +12,9 @@ use super::*;
 use crate::source::Source;
 
 /// Forwards each cell boundary in `offsets` through `map`, shifting it
-/// by the delta of the nearest marker at or before it, the slide that
-/// keeps notebook cell boundaries current across a reparse. `limit` is
-/// the length of the text the forwarded offsets describe, and every
-/// boundary lands inside it and at or after the boundary before it, so
-/// the result indexes that text and cuts its cells in order.
+/// by the delta of the nearest marker at or before it and clamping it
+/// between the boundary before it and `limit`, the length of the
+/// forwarded text.
 pub(crate) fn forward_offsets(
     offsets: &CellOffsets,
     map: &SourceMap,
@@ -32,7 +30,7 @@ pub(crate) fn forward_offsets(
     forwarded
 }
 
-/// `range` at the position the woven text `map` describes carries it,
+/// `range` moved to its position in the woven text `map` describes,
 /// `None` where an edit in `map` replaced either end of it.
 pub(crate) fn forward_range(range: TextRange, map: &SourceMap) -> Option<TextRange> {
     let start = forward_start(range.start(), map)?;
@@ -40,9 +38,9 @@ pub(crate) fn forward_range(range: TextRange, map: &SourceMap) -> Option<TextRan
     (start <= end).then(|| TextRange::new(start, end))
 }
 
-/// `offset`, a token's first byte, at the position the woven text
-/// `map` describes carries it, `None` where an edit in `map` replaced
-/// the token. An insertion at the offset lands ahead of the token.
+/// `offset`, a token's first byte, moved to its position in the woven
+/// text `map` describes, `None` where an edit in `map` replaced the
+/// token. An insertion at the offset lands ahead of the token.
 pub(crate) fn forward_start(offset: TextSize, map: &SourceMap) -> Option<TextSize> {
     let markers = map.markers();
     forward_through(
@@ -53,7 +51,7 @@ pub(crate) fn forward_start(offset: TextSize, map: &SourceMap) -> Option<TextSiz
 }
 
 /// Narrows `text` against the source slice covered by `span` and
-/// shapes the result as either a deletion or replacement Edit.
+/// shapes the result as either a deletion or replacement `Edit`.
 /// Returns `None` when the text already matches the source slice.
 pub(crate) fn narrowed_replacement<'a>(
     source: &Source,
@@ -65,8 +63,7 @@ pub(crate) fn narrowed_replacement<'a>(
 }
 
 /// `offset` moved by the delta of the last marker at or before it,
-/// left where it is when no marker precedes it, the slide a reparse
-/// reads for a range no edit replaced.
+/// left where it is when no marker precedes it.
 pub(crate) fn shifted_past(offset: TextSize, markers: &[SourceMarker]) -> TextSize {
     if let Some(last) = markers.last()
         && last.source() <= offset
@@ -77,9 +74,9 @@ pub(crate) fn shifted_past(offset: TextSize, markers: &[SourceMarker]) -> TextSi
     shifted_by_last(offset, &markers[..upto])
 }
 
-/// `offset`, the byte past a token, at the position the woven text
-/// `map` describes carries it, `None` where an edit in `map` replaced
-/// the token. An insertion at the offset lands past the token.
+/// `offset`, the byte past a token, moved to its position in the woven
+/// text `map` describes, `None` where an edit in `map` replaced the
+/// token. An insertion at the offset lands past the token.
 fn forward_end(offset: TextSize, map: &SourceMap) -> Option<TextSize> {
     let markers = map.markers();
     forward_through(
@@ -89,13 +86,12 @@ fn forward_end(offset: TextSize, map: &SourceMap) -> Option<TextSize> {
     )
 }
 
-/// Shifts a single offset by the delta of the nearest marker at or
+/// Shifts one cell boundary by the delta of the nearest marker at or
 /// before it, the per-boundary slide [`forward_offsets`] maps over a
-/// notebook's cell offsets. Markers sharing an interior offset's exact
-/// source resolve to the first pushed, so an insertion landing on a
-/// cell boundary stays inside the cell it opens, whereas the final
-/// boundary resolves to the last pushed, keeping an end-of-buffer
-/// insertion inside the last cell.
+/// notebook's cell offsets. A boundary inside a replaced span lands at
+/// the replacement's start. Markers sharing an interior boundary's
+/// exact source resolve to the first pushed, whereas the final boundary
+/// resolves to the last pushed.
 fn forward_offset(offset: TextSize, map: &SourceMap, is_final: bool) -> TextSize {
     let markers = map.markers();
     if is_final {
@@ -127,8 +123,7 @@ fn forward_through(offset: TextSize, markers: &[SourceMarker], passed: usize) ->
 /// Trims a candidate replacement to its minimal spanning range by
 /// stripping the longest common codepoint prefix and suffix shared
 /// with `source_slice`. Returns `None` when `text` already equals
-/// `source_slice` (no edit needed). Walks codepoint-by-codepoint so
-/// the trim never lands inside a multibyte UTF-8 sequence.
+/// `source_slice`.
 fn narrow_edit(
     text: Cow<'_, str>,
     span: TextRange,

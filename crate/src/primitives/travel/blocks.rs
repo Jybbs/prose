@@ -38,8 +38,8 @@ pub(crate) fn block_shift(
 }
 
 /// One flag per row of the block at `range`, set for every row opening
-/// strictly inside a string token that itself spans rows. Shifting such
-/// a row would pad the string's own interior, so a move holds it.
+/// strictly inside a string token that itself spans rows, the rows a
+/// move holds.
 pub(crate) fn frozen_rows(source: &Source, range: TextRange) -> Vec<bool> {
     let head = source.line_index(range.start()).get();
     let mut frozen = vec![false; source.line_index(range.end()).get() - head + 1];
@@ -95,9 +95,8 @@ pub(crate) fn hung_block_through<'s>(
         .next()
         .is_some_and(|head| head.trim_end().ends_with(OPENERS));
     let travel = if opens_a_bracket {
-        // The bracket the head leaves open lays out the rows beneath it,
-        // so a block whose shape [`hanging_travel`] cannot follow holds
-        // where it sits rather than hanging from the row it lands on.
+        // A block whose shape [`hanging_travel`] cannot follow holds
+        // where it sits.
         match hanging_travel(&block, &frozen, landing) {
             Some(travel) => travel,
             None => return block,
@@ -130,7 +129,7 @@ pub(crate) fn placed_block(source: &Source, range: TextRange, landing: Landing) 
 /// `block`'s continuation rows moved per `travel`, every blank row
 /// passing through as written and the block borrowed where no row
 /// moves. A caller screens the block through [`spans_a_string_part`]
-/// first, whose interior a move would pad.
+/// first.
 pub(crate) fn shifted_block(block: &str, travel: Travel) -> Cow<'_, str> {
     if travel.is_still() {
         return Cow::Borrowed(block);
@@ -138,9 +137,9 @@ pub(crate) fn shifted_block(block: &str, travel: Travel) -> Cow<'_, str> {
     Cow::Owned(shifted_rows(block, travel, &[]))
 }
 
-/// True where a string part inside `expr` itself spans rows, whose
-/// interior a re-indent would pad. A stacked run of single-line parts
-/// carries its break between parts and moves whole, so it reads false.
+/// True where a string part inside `expr` itself spans rows. A stacked
+/// run of single-line parts carries its break between parts and reads
+/// false.
 pub(crate) fn spans_a_string_part(source: &Source, expr: &Expr) -> bool {
     any_over_expr(expr, |e| {
         StringLike::try_from(e)

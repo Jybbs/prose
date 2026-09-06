@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Per-Rule Skip Is Line-Scoped, Neighbors Still Strip"
+title       = "A Per-Rule Skip Covers Its Own Line and Not the Next"
 
 description = '''
-`# prose: skip[strip-trailing-commas]` trailing `inside(1, 2, 3,)` opts only that line out of the named rule, **without sparing the neighboring line from that same rule**. `inside`'s call keeps its trailing `,`, while `outside(4, 5, 6,)` still has its comma stripped.
+`# prose: skip[strip-trailing-commas]` trails `inside(1, 2, 3,)`. **It opts that line alone out of the named rule**, so `inside` keeps its trailing `,` while `strip-trailing-commas` still removes the one on the neighboring `outside(4, 5, 6,)`.
 '''

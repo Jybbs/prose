@@ -9,10 +9,10 @@ use ruff_text_size::{Ranged, TextRange};
 
 use crate::{primitives::inline::spans_rows, source::Source};
 
-/// Body slice between a triple-quoted docstring's opener and closer,
-/// paired with the source range that slice covers and whether the
-/// literal carries an `r` prefix, which decides whether a backslash in
-/// the slice is an escape or a literal character.
+/// Body slice between a docstring's opener and closer, paired with the
+/// source range that slice covers and whether the literal carries an
+/// `r` prefix, which decides whether a backslash in the slice is an
+/// escape or a literal character.
 pub(crate) struct DocstringBody<'a> {
     pub(crate) range: TextRange,
     pub(crate) raw: bool,
@@ -51,9 +51,7 @@ pub(crate) fn indent_prefix<'a>(source: &'a Source, lit: &StringLiteral) -> &'a 
 }
 
 /// Returns the body slice of a triple-quoted `lit`, the `"""` or `'''`
-/// form `expand-docstrings` and `wrap-docstrings` act on once
-/// `frame-docstrings` has canonicalized every docstring to `"""`.
-/// Returns `None` for a non-triple-quoted or inline literal.
+/// form. Returns `None` for a non-triple-quoted or inline literal.
 pub(crate) fn triple_quoted_body<'a>(
     source: &'a Source,
     lit: &StringLiteral,

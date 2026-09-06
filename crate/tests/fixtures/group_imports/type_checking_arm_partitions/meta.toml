@@ -3,5 +3,5 @@ previewable = true
 title       = "Imports Inside a `TYPE_CHECKING` Arm Partition Too"
 
 description = '''
-The rule reaches into compound-statement arms, so the run under `if TYPE_CHECKING:` **groups in place** exactly as a module-level run would. The bare `import sys` moves above `from collections import abc`, and both lines keep the arm's indent.
+Under `if TYPE_CHECKING:`, `from collections import abc` sits above `import sys`. **`group-imports` moves the bare `import sys` above the `from` import in place**, both lines keeping the arm's indent, because the rule reads the body of a compound statement the same way it reads the module.
 '''

@@ -1,5 +1,5 @@
-//! Drops the imports and aliases a module never reads, and reads where
-//! a dropped statement lands its comment.
+//! Drops the imports and aliases a module never reads, and finds the
+//! import a dropped statement's comment lands on.
 
 use std::collections::BTreeMap;
 
@@ -28,12 +28,13 @@ pub(crate) struct Dropping<'a> {
     pub(crate) slot: usize,
 }
 
-/// The body slot whose import the drop of a comment-led `slot` lands
-/// on. Within the run of `runs` holding `slot`, the landing sibling
-/// `survives` the drops, opens its own line with no comment leading
-/// it, and shares the module `merges` folds into, or is the next
-/// member where `sorted_heads` seats another member ahead of a written
-/// band head. `None` leaves the drop held under its comment.
+/// The body slot whose import a comment-led `slot`'s drop lands on.
+/// Within the run of `runs` holding `slot`, the landing sibling comes
+/// later, `survives` the drops, holds its line alone with no comment
+/// leading it, and shares `slot`'s module where `merges` is set, or is
+/// the next such sibling where `slot` heads its run and `sorted_heads`
+/// seats another member ahead of it. `None` leaves the drop held under
+/// its comment.
 pub(crate) fn fold_landing(
     source: &Source,
     body: &[Stmt],
@@ -67,8 +68,8 @@ pub(crate) fn fold_landing(
 /// One fix group per statement of `drops` losing an alias, the drops
 /// of `body`'s module-scope imports. A statement losing every alias
 /// under a leading comment gives its line to the import `landing`
-/// names, its former lines cleared with the blank run above them, and
-/// of two statements landing on one import the later takes it.
+/// names, clearing that import's former lines with the blank run above
+/// them, and of two statements landing on one import the later takes it.
 pub(crate) fn prune_import_statements(
     source: &Source,
     body: &[Stmt],
@@ -134,8 +135,8 @@ pub(crate) fn prune_import_statements(
 
 /// True when `stmt` holds its lines alone, carrying only whitespace
 /// ahead of it and only whitespace or a trailing comment behind it. A
-/// row a `\` join continues is held by the row above, so it stands with
-/// that row rather than alone.
+/// row a `\` join continues belongs to the row above and never stands
+/// alone.
 pub(crate) fn stands_alone(source: &Source, stmt: TextRange) -> bool {
     if source.continues_a_logical_line(stmt.start()) {
         return false;
@@ -152,7 +153,7 @@ pub(crate) fn stands_alone(source: &Source, stmt: TextRange) -> bool {
 /// `keep` rejects, empty when every alias survives, when the statement
 /// shares its lines with other code, or when a comment sits inside it.
 /// A statement losing every alias drops whole unless a leading comment
-/// block holds it and `folded` is clear, and one losing a subset drops
+/// block holds it and `folded` is false, and one losing a subset drops
 /// each run of rejected aliases with the separator binding it.
 fn prune_import_aliases(
     source: &Source,

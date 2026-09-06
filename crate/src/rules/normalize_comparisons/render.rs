@@ -10,9 +10,7 @@ use crate::{primitives::comparison::opening_token_kind, source::Source};
 
 /// The edits `plan` calls for, the `not` deletion first, then the
 /// operand swap, then the operator-token replacement. `None` where a
-/// rewritten operator resolves to no token, which declines the whole
-/// group rather than swapping operands around an operator that stayed
-/// as authored.
+/// rewritten operator resolves to no token, declining the whole group.
 pub(super) fn edits(
     source: &Source,
     test: Test<'_>,

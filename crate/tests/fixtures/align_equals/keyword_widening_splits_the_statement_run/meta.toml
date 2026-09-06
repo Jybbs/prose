@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Keyword Widening Splits the Statement Run"
+title       = "Keyword Spacing Counts Toward the Fit Check and Splits the Statement Run"
 
 description = '''
-`formatter` would need eight spaces of padding to share `label_width_total`'s `=` column, and its first line also grows as the `Formatter` call's own keywords gain their spacing.
-
-The line-cap check reads each row **at its final width, counting both the padding and the keyword widening**. The row would overflow, so `formatter` splits out of the statement run and keeps its `=` tight, while `offset_column_padding` and `display_width` still align inside the call.
+`formatter = Formatter(...)` sits below `label_width_total = 4`, and the `Formatter` call's own keywords gain spacing around their `=` in the same run. The fit check measures each row **at its final width, padding and keyword spacing both counted**, so `formatter` would overflow the budget if padded out to `label_width_total`'s column. `formatter` therefore keeps its single space, whereas `offset_column_padding` and `display_width` still align inside the call.
 '''

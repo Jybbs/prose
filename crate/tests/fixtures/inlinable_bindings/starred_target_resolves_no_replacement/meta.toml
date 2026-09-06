@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Starred Target Resolves No Replacement"
+title       = "A Starred Unpack Target Is Not Reported"
 
 description = '''
-`head` and `rest` in `head, *rest = items` are each read exactly once, in `wrap(head, rest)`, yet `*rest` shifts the positions of the names around it so a fixed `items[0]` subscript would no longer line up. No replacement text resolves for either target, **so neither is reported**.
+`head, *rest = items` unpacks with a starred target, and `wrap(head, rest)` reads each name once. **Neither target is reported**, because a starred target leaves no fixed subscript for itself or the names after it, and the binding table resolves no replacement for any target of such an unpack, `head` included.
 '''

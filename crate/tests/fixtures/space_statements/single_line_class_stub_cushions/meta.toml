@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Single-Line Class Stub Gains Cushions like a Block Class"
+title       = "A Single-Line Class Stub Takes the Same Two Blank Lines as a Block Class"
 
 description = '''
-`class Beta: ...` keeps its `...` body on the header line, sitting between the block-bodied `Alpha` and `Gamma`. **Two blank lines separate `Beta` from each neighbor**, the same spacing a block-bodied class takes, and because the `...` opens on the header there is no gap inside `Beta` to normalize.
+`class Beta: ...` keeps its `...` body on the header line, sitting flush between the block-bodied `Alpha` and `Gamma`. **Two blank lines separate `Beta` from each neighbor**, the same count a block-bodied class takes, and because the `...` sits on the header there is no gap inside `Beta` to set.
 '''

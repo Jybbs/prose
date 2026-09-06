@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Merge Gathers Across a Hoisted Constant"
+title       = "Two Imports Merge Across a Constant That Is About to Move"
 
 description = '''
-`LIMIT = 3` sits between the two `pkg` imports in the source, which would ordinarily keep them apart.
-
-`band-constants` is about to move that constant below the imports, and `reflow-imports` **reads that move before it happens**. It treats the two `pkg` statements as already adjacent and gathers them onto one line, rather than waiting for a second pass once the constant has actually moved.
+`LIMIT = 3` sits between `from pkg import alpha` and `from pkg import beta`, which would ordinarily keep the two apart. `band-constants` moves the constant below the imports, and **`reflow-imports` merges the two `pkg` statements onto one line in the same run**, because it measures against the order the move leaves rather than the order as written, so no second pass is needed once the constant has moved.
 '''

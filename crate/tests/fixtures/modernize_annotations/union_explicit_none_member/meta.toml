@@ -3,5 +3,5 @@ previewable = false
 title       = "An Explicit `None` Member Joins the Pipe Run"
 
 description = '''
-`Union[int, str, None]` names `None` outright as its last member, so the rewrite simply joins all three members with `|`, landing on `int | str | None` with no extra `| None` appended. The `Union` import is removed once nothing reads it.
+`x: Union[int, str, None]` names `None` outright as its last member. **The three members join with `|` as `int | str | None`, with no extra `| None` appended**, and the `Union` import is removed once nothing reads it.
 '''

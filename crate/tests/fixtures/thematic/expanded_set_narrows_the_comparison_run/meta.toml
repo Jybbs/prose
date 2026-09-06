@@ -3,5 +3,5 @@ previewable = false
 title       = "An Expanded Set Narrows the Comparison Run"
 
 description = '''
-The set literal crosses the budget, so `reflow-collections` lays it out across rows and the `in` comparison stops sharing a row with an operator. That leaves `conn.type` and `conn.proto` as the run `align-comparisons` reads, and **the column comes from those two alone** rather than from all three rows the author wrote.
+The set literal in `conn.family in {...}` crosses the `55`-column budget, so `reflow-collections` lays it out across rows and the `in` comparison no longer shares a row with an operator. **`align-comparisons` reads `conn.type` and `conn.proto` as the run and sets the column from those two alone** rather than from all three rows the author wrote.
 '''

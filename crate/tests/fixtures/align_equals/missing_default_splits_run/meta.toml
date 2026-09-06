@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Default-Less Parameter Splits the Run"
+title       = "A Parameter Without a Default Splits the Run"
 
 description = '''
-`flag: bool` carries no default, and **it splits the parameter run**, leaving `x` and `verbose` on opposite sides of the break. Each is then a singleton with no partner to align against, so `x: int = 1` keeps its natural width instead of padding out to match `verbose: bool = True`.
+`flag: bool` carries no default and sits between `x: int = 1` and `verbose: bool = True` in `f`'s signature. **The parameter without a default splits the run**, leaving `x` and `verbose` alone on either side of it, so neither pads out and `x: int = 1` keeps its single space.
 '''

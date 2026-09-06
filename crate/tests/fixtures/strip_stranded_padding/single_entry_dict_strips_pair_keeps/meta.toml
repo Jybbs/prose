@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "Single-Entry Dict Strips, Two-Entry Dict Keeps"
+title       = "A Single-Entry Dict Loses Its Padding and a Two-Entry Dict Keeps It"
 
 description = '''
-`single = {"only_key"  : compute_value()}` holds one key, so `strip-stranded-padding` drops its pre-`:` padding, reading as a plain key-value pair rather than a one-row table. `paired`'s two entries spread across separate lines and keep their padding for `align-colons`, whereas `nested`'s single `"outer"` entry strips along with the single-entry `{"inner" : "value"}` it holds.
+`single = {"only_key"  : compute_value()}` carries one key, `paired` spreads two entries across separate lines, and `nested` carries a single `"outer"` entry whose value is the single-entry `{"inner" : "value"}`. **`strip-stranded-padding` removes the padding before the `:` in `single` and in both levels of `nested`**, so each reads as a plain key-value pair rather than a one-row table, whereas `paired`'s entries keep their padding for `align-colons`.
 '''

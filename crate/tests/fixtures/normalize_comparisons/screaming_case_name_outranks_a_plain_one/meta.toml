@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A SCREAMING_CASE Name Reads as the Constant Side"
+title       = "A `SCREAMING_CASE` Name Reads as the Constant Side"
 
 description = '''
-The SCREAMING_CASE `LIMIT` reads as the constant side of `LIMIT == size`, so the operands flip and the plain name leads. The test comes back as `size == LIMIT`.
-
-`FLOOR == LIMIT` sets **two names of the same rank** against each other, so there is no constant side to identify and that order holds exactly as its author wrote it.
+`LIMIT == size` puts the `SCREAMING_CASE` name `LIMIT` ahead of the plain name `size`, and `FLOOR == LIMIT` sets two `SCREAMING_CASE` names against each other. **`LIMIT == size` flips to `size == LIMIT` and `FLOOR == LIMIT` stays as written**, because a `SCREAMING_CASE` name ranks as more constant than a plain name, whereas two names of the same rank leave no constant side to move.
 '''

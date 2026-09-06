@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Call Inside a Replacement Field Still Reports"
+title       = "A Call Inside a Replacement Field Is Still Reported"
 
 description = '''
-The 52-column line overflows the 40-column budget, and the call it carries, `compute(alpha, beta)`, sits inside an f-string replacement field where no layout rule reaches it. The line therefore has no legal reshape, and `line-overflow` reports it rather than deferring to `reflow-calls`.
+`result = f"{compute(alpha, beta)} and the remainder"` is 52 columns, over the 40-column budget, and its only call sits inside an f-string replacement field. **The line is reported with no legal reshape**, because no layout rule reads inside a replacement field, so the call is not left to `reflow-calls`.
 '''

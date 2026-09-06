@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Relative Imports Align Beside Absolute Ones"
+title       = "Relative Imports Align on the `import` Keyword"
 
 description = '''
-Four relative imports lead with one, two, or three dots, from the bare `from .` down to `from ...common`. **The `import` keyword lines up across the whole run**, with the widest path, `...common`, setting the column, so a dotted path aligns the same as any named one.
+Four relative imports lead with one, two, or three dots, from the bare `from .` to `from ...common`. **Every `import` keyword moves to the column one space past `...common`**, the widest path, so a dotted path pads the same way a named module does.
 '''

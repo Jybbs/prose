@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Already-Annotated Members Stay Silent"
+title       = "Annotated Parameters and Returns Are Not Reported"
 
 description = '''
-`configured` takes an annotated `name: str` alongside the unannotated `count`, and its return type is annotated `-> int`. `signature-annotations` reports only `count`, leaving the annotated parameter and the annotated return unflagged.
+`configured` takes the annotated `name: str` beside the unannotated `count` and declares `-> int`. **The rule reports `count` alone**, leaving the annotated parameter and the annotated return without a finding.
 '''

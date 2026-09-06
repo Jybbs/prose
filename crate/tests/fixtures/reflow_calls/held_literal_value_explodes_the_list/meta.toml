@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Held Literal Explodes the Argument List Around It"
+title       = "A Multi-Line Literal Explodes the Argument List Around It"
 
 description = '''
-The `mapping=` dict arrives laid out across several rows, with `alpha=1` and `zeta=2` packed onto the lines its braces open and close.
-
-**A multi-line argument explodes the list around it**, so each sibling moves onto a row of its own. The call sits inside both the argument cap and the line budget, so the row break alone is what fires the explode.
+`emit` passes `alpha=1`, a `mapping=` dict written across several rows, and `zeta=2`, with the two scalars packed onto the rows the dict's braces open and close. **Each sibling moves onto a row of its own**, because an argument spanning rows explodes the list around it, and the call sits inside both `max-args` and the line budget, so the row break alone fires the explode.
 '''

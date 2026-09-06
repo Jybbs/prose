@@ -4,5 +4,5 @@ previewable = true
 title       = "An Annotated Signature Makes the Docstring Types Redundant"
 
 description = '''
-`dial` annotates both parameters as `host: str` and `timeout: float`, and the docstring's `Args:` entries restate the same types as `(str)` and `(float)`. Each parenthesized type is reported, the report anchored on the type group itself rather than the whole entry. A type checker verifies the annotation on every run whereas nothing checks the docstring copy, leaving the prose free to describe what the parameter is for.
+`dial` annotates `host: str` and `timeout: float`, and its docstring's `Args:` entries restate the same types as `(str)` and `(float)`. **Both parenthesized types are reported, each diagnostic anchored on the type group rather than the whole entry**, because a type checker reads the annotation on every run whereas nothing reads the docstring copy, so the description after it is left to say what the parameter is for.
 '''

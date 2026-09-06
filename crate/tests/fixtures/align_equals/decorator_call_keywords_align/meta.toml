@@ -3,5 +3,5 @@ previewable = false
 title       = "A Decorator Call's Keywords Align"
 
 description = '''
-The `@register(` decorator above `handler` is already exploded, one keyword per line. Its `name`, `priority`, and `enabled` keywords align on a shared `=` column exactly as they would inside any other call, because the rule reaches every call expression, decorator position included.
+The `@register(` decorator above `handler` is already exploded, one keyword per line. **`name`, `priority`, and `enabled` align their `=` on one column**, because the rule reads every call expression the same way, decorator position included.
 '''

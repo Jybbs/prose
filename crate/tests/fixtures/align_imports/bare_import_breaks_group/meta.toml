@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Non-Import Statements Reset the Alignment Run"
+title       = "A Bare Import Splits the Aliased Run in Two"
 
 description = '''
-`import os` carries no `as` to align against, so **it breaks the aliased run in two**, with `collections` and `datetime` sharing one `as` column above it while `re` and `json` share another below. The `LOG_LEVEL` assignment breaks a run the same way, which is why the two `from` imports around it stay singletons.
+`import os` sits between two pairs of aliased imports, and `LOG_LEVEL = "INFO"` sits between two `from` imports. **`import os` has no `as` to align, so it splits the run in two**, leaving `collections` and `datetime` on one `as` column above it and `re` and `json` on another below. The assignment ends a run the same way, so `from sys import path` and `from typing import Optional` each stay as written in a run of one.
 '''

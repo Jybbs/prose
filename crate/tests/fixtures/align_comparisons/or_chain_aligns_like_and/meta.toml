@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "`or`-Chains Align with the Same Column Math as `and`-Chains"
+title       = "An `or` Chain Aligns With the Same Column Math as an `and` Chain"
 
 description = '''
-The `or` chain over `foo`, `bar_baz`, and `quux` aligns with the **same column math** the rule applies to `and` chains. Each row's `==` settles one space past the widest left side, the `or bar_baz` row.
+The `or` chain compares `foo`, `bar_baz`, and `quux` with one `==` apiece. **The `or` chain aligns exactly as an `and` chain does**, so each `==` moves to one space past the widest left operand, the `or bar_baz` row.
 '''

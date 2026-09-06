@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Aligned Colon Survives the Expand"
+title       = "An Aligned `:` Column Survives the Expansion of an Entry"
 
 description = '''
-Expanding the over-long list under `"mike"` re-renders every entry of `notice`, and the padding before each `:` carries through the rewrite, including on the `"alpha"` entry whose value is a parenthesized multi-line string. That padding is the column `align-colons` builds, so dropping it on the re-render would leave the two rules rewriting the same lines back and forth on every run.
+The `"mike"` entry of `notice` carries a list too wide for its row, and every `:` in the dict is padded to one column, including on the `"alpha"` entry whose value is a parenthesized pair of string fragments. **The `"mike"` list expands into packed rows and the padding before every `:` is written back unchanged**, because the rule keeps the column `align-colons` pads when it re-lays a kept literal, so neither rule rewrites the other's output on the next run, and only the trailing `,` after the `"alpha"` entry is dropped.
 '''

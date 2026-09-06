@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Source Without Numbered Comments Surfaces Nothing"
+title       = "Source With No Numbered Comments Reports Nothing"
 
 description = '''
-`process` carries no comments at all, so there is no numbered-step narration for the lint to flag and the run produces **no diagnostics**. The rule is lint-only, leaving the source byte-for-byte unchanged.
+`process` carries no comments at all, so **`step-narration` reports nothing and the source is left byte for byte as written**, because the rule is lint-only and there is no numbered-step comment to report.
 '''

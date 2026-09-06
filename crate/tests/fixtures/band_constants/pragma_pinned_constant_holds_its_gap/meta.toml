@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Pragma-Pinned Constant Holds Its Gap When the Band Re-Emits"
+title       = "A Constant Under a Pragma Keeps Its Blank Line When the Band Rewrites"
 
 description = '''
-`# noqa` anchors in place and pins `LIMIT = 3` beneath it, so the constant stands outside the reference analysis, whereas `ALPHA` and `ZETA` sort above it. **The gap holding the pragma stays as the source wrote it** while the band re-emits, because only a constant the analysis anchored spaces as a band member.
+`# noqa` sits on its own line above `LIMIT = 3`, with a blank line separating the pair from `ZETA` and `ALPHA` above. **`ALPHA` and `ZETA` sort while the blank line above the pragma stays as the source wrote it**, because a pragma keeps its slot and keeps the constant beneath it in place, and only a constant the reference analysis itself pinned spaces as a band member.
 '''

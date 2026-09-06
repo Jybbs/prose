@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An `as`-Aliased Name Carries Its Alias across the Split"
+title       = "An Aliased Name Keeps Its Alias Across the Split"
 
 description = '''
-With `import-line-length` set to `40`, `from pkg import alpha as a, beta as b, gamma as g` overflows and splits. Each aliased name **keeps its alias across the split**, so both statements repeat the `from pkg import` prefix and `gamma as g` moves whole to the second line.
+With `import-line-length` set to `40`, `from pkg import alpha as a, beta as b, gamma as g` runs past the budget and splits. **Each name keeps its `as` alias on the line it moves to**, so both statements repeat the `from pkg import` prefix and `gamma as g` moves whole to the second line.
 '''

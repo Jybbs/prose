@@ -79,9 +79,9 @@ use prose-completions`,
     language : 'zsh',
     mono     : 'zsh',
     name     : 'Zsh',
-    note     : 'The `${fpath[1]}` expansion lands at the first entry of zsh\'s function path, '
-             + 'which is where `compinit` picks up new completions. Restart the shell or run '
-             + '`autoload -Uz compinit && compinit` to pick the completions up without '
+    note     : 'The `${fpath[1]}` expansion resolves to the first entry of zsh\'s function '
+             + 'path, which is where `compinit` reads new completions from. Restart the shell '
+             + 'or run `autoload -Uz compinit && compinit` to load the completions without '
              + 're-launching.',
     slug     : 'zsh',
     target   : '${fpath[1]}/_prose'

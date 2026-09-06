@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Class Header Cushions Its First Member by One Blank"
+title       = "A Class Header Takes One Blank Line Before Its First Member"
 
 description = '''
-Every class here opens with its first member flush against the header, and **one blank line is inserted between the two** in each case.
-
-The plain method `alpha`, the decorated `builder`, the fields `capacity` and `label`, and the nested `Inner` class all take the same gap. In the decorated case that blank lands above `@classmethod` rather than between it and the `def`, and `Inner`'s own header gains one before `m` as well.
+Every class here opens with its first member flush against the header. **One blank line is inserted between the header and the first member in each**, for the plain method `alpha`, the decorated `builder`, the fields `capacity` and `label`, and the nested class `Inner` alike. In the decorated case the blank line sits above `@classmethod` rather than between it and the `def`, and `Inner`'s own header gains one before `m` as well.
 '''

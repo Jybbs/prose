@@ -129,7 +129,7 @@ pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Optio
 
 /// The start and end positions of `range` plus, for a notebook, the
 /// absolute cell holding it. A notebook translates the positions to
-/// cell-relative coordinates through the index, where a module leaves
+/// cell-relative coordinates through the index, whereas a module leaves
 /// them absolute with no cell.
 pub(crate) fn located(
     file: &SourceFile,

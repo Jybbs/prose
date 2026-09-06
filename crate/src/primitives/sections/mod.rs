@@ -1,8 +1,7 @@
 //! Partitions a statement body's slots into sections at each dividing
-//! marker and at each notebook cell boundary, the shared boundary a
-//! section-aware reorder consults so it never moves a member across a
-//! divider or out of its cell. Import grouping, the family sorts, and
-//! constant banding all read one [`Sections`].
+//! marker and at each notebook cell boundary, the boundaries a
+//! section-aware reorder never moves a member across. Import grouping,
+//! the family sorts, and constant banding all read one [`Sections`].
 
 use std::ops::Range;
 

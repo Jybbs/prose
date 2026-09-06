@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Over-Budget Wrapped Pair Sheds in Place"
+title       = "An Over-Budget Wrapped Pair Is Removed in Place"
 
 description = '''
-Inside the call to `report_invalid_enum_member_names`, the parentheses around `", ".join(repr(name) for name in invalid_names)` span two lines, and folding them onto one row would overflow the line budget. They shed anyway, in place, because the call's own enclosing parentheses already hold the break they used to carry. The outcome does not depend on the columns they happened to sit at in the original source.
+Inside the `report_invalid_enum_member_names` call, the pair around `", ".join(repr(name) for name in invalid_names)` opens at the end of one row, holds its interior on the next, and closes on a third row of its own, and joining onto one row would overflow the budget. **The pair is removed in place, its interior row left where it was written and its closer's row deleted so the call's `)` closes the interior row**, because the call's own parentheses already carry the break, so neither the joined width nor the columns the pair sat at matter.
 '''

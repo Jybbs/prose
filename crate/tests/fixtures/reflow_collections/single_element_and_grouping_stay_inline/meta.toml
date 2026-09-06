@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A One-Element Tuple and a Grouping Paren Stay Intact"
+title       = "A One-Element Tuple and a Parenthesized Expression Stay Inline"
 
 description = '''
-The `one_element` tuple overflows the budget yet stays inline with its load-bearing trailing `,` intact, because breaking a single element gains nothing. **A grouping-parenthesized expression is left untouched** as well, so the parenthesized sum under `grouping` keeps its line, sharing the `( )` spelling while being no tuple.
+`one_element` is a one-element tuple past the budget with its trailing `,`, and `grouping` is a parenthesized sum past the budget. **Both are left as written**, because breaking a single element across rows gains nothing, and a parenthesized expression is not a tuple, so the rule does not reach it whatever its `( )` spelling.
 '''

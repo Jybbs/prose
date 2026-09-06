@@ -1,11 +1,7 @@
 [docs]
 previewable = false
-title       = "An Inner Comment Pins the Multi-Line Shape"
+title       = "A Comment Inside a Literal Keeps It Expanded"
 
 description = '''
-A literal holding a comment anywhere inside its range is **left expanded**, because collapsing it would drop prose the author wrote.
-
-`own_line_comment_between_entries`, `trailing_comment_on_entry`, `comment_before_close`, and the `registry` subscript under `comment_pins_subscript` all keep the multi-line shapes they arrived in.
-
-`trailing_comment_expands` is the exception. Its comment sits after the closing `]`, which is **outside the literal's range**, so that over-wide list still expands and packs its strings across rows.
+`own_line_comment_between_entries`, `trailing_comment_on_entry`, `comment_before_close`, and the `registry` subscript under `comment_pins_subscript` each carry a comment inside their brackets, whereas the comment on `trailing_comment_expands` sits after its closing `]`. **The four with a comment inside stay as written and `trailing_comment_expands` still expands into a packed row**, because a comment anywhere inside a literal's range keeps the literal's layout, since rejoining or re-laying it would drop the comment, and a comment past the closing bracket is outside the range the rule rewrites.
 '''

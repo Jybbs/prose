@@ -1,22 +1,22 @@
 ---
-summary: 'Tab-completes every flag and rule slug across Bash, Zsh, Fish, Elvish, and PowerShell.'
+summary: 'Tab-completes every flag and rule slug in Bash, Zsh, Fish, Elvish, and PowerShell.'
 tagline: 'interactive shell'
 ---
 
 # Shell Completions
 
-`prose completions <shell>` prints a shell-completion script to stdout, ready to redirect into the shell's completion search path. Each supported shell carries the canonical install path it expects, meaning the install reduces to a single redirect on every supported platform.
+`prose completions <shell>` prints a completion script for the named shell to stdout. Redirect it into the directory that shell reads completions from, which the widget below names for each shell, so the install is one command on every platform.
 
 <ShellCompletions />
 
 ## What Gets Completed
 
-Every flag, value-enum *(`--output-format text|json|github|sarif`, `--color always|auto|never`)*, and rule slug *(every entry in [**Pipeline Order**](/reference/pipeline-order))* surfaces in the completion menu. The `--select` and `--ignore` flags accept comma-separated rule slugs, and the completion script offers the rule list at the cursor position.
+Every flag, every enum-valued flag *(`--output-format text|json|github|sarif`, `--color always|auto|never`)*, and every rule slug *(every entry in [**Pipeline Order**](/reference/pipeline-order))* appears in the completion menu. `--select` and `--ignore` take comma-separated slugs, and the script completes the slug at the cursor.
 
-The completion script is generated from the `prose` binary's compile-time view of flags and rules, so it carries every rule the binary ships rather than a runtime-filtered subset. A rule disabled in `[tool.prose]` still surfaces in the completion menu, because the menu reads the binary's catalog rather than the project's config.
+The script is generated from the flags and rules compiled into the `prose` binary, so it lists every rule the binary ships. A rule turned off in `[tool.prose]` still completes, because the menu reads the binary's rule list rather than the project's config.
 
 ## Updating After an Upgrade
 
-A new *Prose* release that adds a flag or a rule lands in the completion menu after the script is regenerated. Re-running the install command from the widget above against the upgraded binary writes the new script to the same path, and the next shell session picks up the additions.
+A new release that adds a flag or a rule shows it in the menu once the script is regenerated. Re-run the install command from the widget against the upgraded binary to overwrite the script, and the next shell session reads the new one.
 
-For the canonical CLI surface, see the [**CLI Reference**](/reference/cli) page. Completions install after the binary lands on `PATH`, so the [**Installation**](/usage/installation) chapter covers the prerequisite step.
+The [**CLI Reference**](/reference/cli) lists every flag. Completions install after the binary is on `PATH`, so the [**Installation**](/usage/installation) chapter comes first.

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Legacy `Optional` Inside a Replacement Field Is Rewritten"
 
 description = '''
-The `Optional[int]` inside `label`'s f-string replacement field rewrites to `int | None` exactly as the annotation `plain: Optional[str]` rewrites to `str | None`, because the rule reaches expressions inside replacement fields too. With both reads gone, the `Optional` import is removed.
+`label = f"{Optional[int]}"` carries `Optional[int]` inside an f-string replacement field, and `plain: Optional[str]` sits below it. **Both rewrite, the field to `{int | None}` and the annotation to `str | None`**, because the rule reaches expressions inside replacement fields too, and with both reads gone the `Optional` import is removed.
 '''

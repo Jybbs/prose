@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Backslash Join Pins the Member It Opens"
+title       = "A Backslash Line Join Keeps Its Member in Place"
 
 description = '''
-Relocating a member takes its whole physical rows, and a `\` explicit line join opening `y = 2`'s row puts the break the join rests on inside that span. **A joined member pins**, holding its slot and its leading comment where the source put them rather than travelling and leaving the backslash behind.
+A `\` line join opens the row of `y = 2`, below `x = 1` and the own-line comment `# notes`. **`y` keeps its slot and the comment keeps its own line**, so the file passes through unchanged, because a moved member takes its whole physical rows with it, and the break the join continues sits inside that span.
 '''

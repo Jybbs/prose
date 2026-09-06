@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Name a `del` Unbinds Holds Its Import"
+title       = "A Name a `del` Unbinds Keeps Its Import"
 
 description = '''
-Nothing reads `os` after the import, yet the `del os` statement requires the binding to exist before it can unbind it. **The import holds**, because removing it would leave the `del` raising `NameError`.
+Nothing reads `os` after `import os`, and `del os` unbinds it. **The import stays**, because the `del` needs the binding to exist and would raise `NameError` without it, so the rule counts a `del` of the name as a use.
 '''

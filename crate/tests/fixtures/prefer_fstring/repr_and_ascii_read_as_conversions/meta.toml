@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "`%r` and `%a` Read as Field Conversions"
+title       = "`%r` and `%a` Become Field Conversions"
 
 description = '''
-`%r` renders `repr()` of its value and `%a` renders `ascii()`, the same operations f-string fields spell as conversions. The rewrite maps each directly, so `%r` on `record` becomes `{record!r}` and `%a` on `name` becomes `{name!a}`.
+`%r` renders `repr()` of its value and `%a` renders `ascii()`, the operations an f-string field writes as `!r` and `!a`. **The rewrite maps each directly**, so `%r` on `record` becomes `{record!r}` and `%a` on `name` becomes `{name!a}`.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Comments inside the Parameter List Pin the Shape"
+title       = "A Comment Inside the Parameter List Keeps the Layout as Written"
 
 description = '''
-Nothing here moves. `own_line_pin` carries `# comment between parameters` on a line of its own, and `trailing_line_pin` carries `# trailing on a parameter line` after one of its parameters. Both comments sit between `(` and `)`.
-
-**Either placement pins the signature's existing shape**, so both five-parameter signatures are left exactly as written despite exceeding `max-params`.
+`own_line_pin` carries `# comment between parameters` on a line of its own, and `trailing_line_pin` carries `# trailing on a parameter line` after one parameter, both between `(` and `)`, and both signatures take five parameters, over `max-params`. **Both signatures are left exactly as written**, because a comment in either placement keeps the existing layout, since moving the parameters would separate the comment from the line it describes.
 '''

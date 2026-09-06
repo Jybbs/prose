@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Write-Once Constants Pass Whatever Their Value"
+title       = "A Write-Once Constant Is Not Reported Whatever Its Value"
 
 description = '''
-`PI` and `MAX_RETRIES` are each assigned exactly once, the write-once pattern a `SCREAMING_CASE` name signals. The rule counts writes rather than reading values, so **it stays silent** on both, one a float and the other an int.
+`PI = 3.14` and `MAX_RETRIES = 5` are each assigned exactly once. **No diagnostic is reported for either**, because the rule counts writes rather than reading values, so a float and an int pass the same way.
 '''

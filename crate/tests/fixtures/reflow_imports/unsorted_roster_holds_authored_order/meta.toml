@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Over-Long Roster Holds Its Authored Order Under `alphabetize = false`"
+title       = "An Over-Long Member List Keeps Its Authored Order"
 
 description = '''
-`from pkg import gamma, alpha, beta, delta, epsilon` overflows the 30-column import budget and splits across three lines, with the members still reading `gamma, alpha, beta, delta, epsilon` in **authored order**. Sorting belongs to [[alphabetize-siblings]] rather than to the split, so `alphabetize = false` leaves the roster exactly as written.
+`from pkg import gamma, alpha, beta, delta, epsilon` runs past the `import-line-length` budget of `30` with `alphabetize-siblings = false` set. **The names split across three lines and still read `gamma, alpha, beta, delta, epsilon` in authored order**, because sorting belongs to [[alphabetize-siblings]] rather than to the split, so the split leaves the list exactly as written.
 '''

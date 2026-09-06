@@ -72,8 +72,7 @@ impl Banding {
         })
     }
 
-    /// True when any banded constant opens a blank-separated sub-band, so
-    /// the assembly re-emits even when the order is already settled.
+    /// True when any banded constant opens a blank-separated sub-band.
     pub(super) fn stratifies(&self) -> bool {
         self.tiers.keys().any(|&idx| self.opens_band(idx))
     }
@@ -83,10 +82,9 @@ impl Banding {
 /// intra-band `(tier, subcategory, name)` key per banded constant, the
 /// eager-reference edges the order keeps backward, each flagged where
 /// its referent rebinds a name bound before the module body runs, the
-/// comment run each
-/// member's block folds in ahead of its code, and the comment each
-/// carries onto another member's line. A statement absent from `ranks`
-/// is a pinned anchor.
+/// comment run each member's block folds in ahead of its code, and the
+/// comment each carries onto another member's line. A statement absent
+/// from `ranks` is a pinned anchor.
 pub(super) struct BandPlan<'src> {
     pub(super) anchored: FxHashSet<usize>,
     pub(super) attached: FxHashMap<usize, TextRange>,
@@ -101,8 +99,8 @@ impl BandPlan<'_> {
     /// Appends `region`'s body indices to the drained order, the import
     /// run sorted to the front, the leading constants below it, the
     /// definitions in incoming order, the trailing constants last. The
-    /// import run sorts by group then name when `grouped`, flat otherwise,
-    /// and is recorded as one import band. Both constant
+    /// import run sorts by group then name when `rule.group_imports`,
+    /// flat otherwise, and is recorded as one import band. Both constant
     /// bands sort by `(tier, subcategory, name)`. Records a `(from, to)`
     /// shift for every sorted band whose head member changed. Clears
     /// `region`.
@@ -195,9 +193,7 @@ impl BandPlan<'_> {
     /// referent, and keeps a reference to a name bound before the body
     /// runs on the side the source seated it on, a reader written above
     /// such a rebind staying above it and one written below staying
-    /// below. Every other name is unbound until its statement runs, so
-    /// hoisting it above a reader only ever resolves a reference. An
-    /// edge reaching outside the region imposes nothing.
+    /// below. An edge reaching outside the region imposes nothing.
     fn region_holds_its_references(&self, banded: &[usize]) -> bool {
         let seat: FxHashMap<usize, usize> = banded
             .iter()
@@ -351,9 +347,9 @@ struct Drained {
 /// above instead, and one above an anchored constant a detached heading
 /// leads. An import run keeps one blank line between canonical groups.
 /// Every other pair takes the count [`module_blank_lines`] declares, one
-/// blank line standing in wherever that policy holds no opinion,
-/// rendered in `ending`. `None` falls back to the source gap, the case
-/// for a pinned statement outside the constant analysis on either side.
+/// blank line standing in wherever that returns `None`, rendered in
+/// `ending`. `None` falls back to the source gap, the case for a pinned
+/// statement outside the constant analysis on either side.
 pub(super) fn banded_gap(
     band: &Banding,
     body: &[Stmt],

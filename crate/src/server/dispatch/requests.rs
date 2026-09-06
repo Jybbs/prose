@@ -15,10 +15,9 @@ use crate::server::{
     notices::Notices,
 };
 /// Routes one request, answering formatting and rejecting any other
-/// method so the client never blocks waiting for a response. The settle
-/// check itself runs only after the edits response is on the wire, and
-/// only for a document not yet holding its once-per-session notice, so
-/// neither detection nor narrowing sits on the formatting latency.
+/// method. The settle check runs only after the edits response is on
+/// the wire, and only for a document not yet holding its
+/// once-per-session notice.
 pub(super) fn handle_request(
     connection: &Connection,
     documents: &DocumentStore,
@@ -30,9 +29,8 @@ pub(super) fn handle_request(
     let id = request.id.clone();
     match request.extract::<DocumentFormattingParams>(Formatting::METHOD) {
         Ok((id, params)) => {
-            // The client's `FormattingOptions` (tab size, spaces) go unused
-            // because prose formats to its own `[tool.prose]` config, not
-            // editor settings.
+            // The client's `FormattingOptions` (tab size, spaces) go
+            // unused, the rewrite reading the `[tool.prose]` config alone.
             let uri = &params.text_document.uri;
             let doc = documents.get(uri);
             let config = doc.map(|doc| configs.resolve(uri, &doc.text));

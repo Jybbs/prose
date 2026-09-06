@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Body Holding a Triple-Quote Run Keeps Its Quotes"
+title       = "A Body Containing a Triple-Quote Run Keeps Its Quotes"
 
 description = '''
-`render`'s single-quoted docstring holds a literal `"""` run in its body. **The original quotes stay**, because a `"""` frame around a body already containing `"""` would end the string early, so this rare shape passes through untouched.
+`render`'s single-quoted docstring contains a literal `"""` in its body. **The original quotes stay and no diagnostic is emitted**, because a `"""` frame around a body that already contains `"""` would end the string early.
 '''

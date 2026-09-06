@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Generated Constructor's Field Run Is Flagged"
+title       = "A Generated Constructor's Field Run Is Reported"
 
 description = '''
-`@dataclass` turns `Window`'s annotated fields into its generated constructor's positional parameters, so `width` sitting before `height` fixes the order every positional call binds them in. The lint **reports the run without reordering it**, because a reorder would transpose the values at every such call. The defaulted `title` sorts after the required pair, since Python permits no defaulted field before a required one.
+`Window` is a `@dataclass` declaring `width`, then `height`, then `title: str = "untitled"`. **The lint reports the field run and leaves it in place**, because `@dataclass` turns the annotated fields into the generated constructor's positional parameters, so a reorder would transpose the values at every call like `Window(1920, 1080)`. The order the lint checks against places the required `height` and `width` ahead of the defaulted `title`, since Python permits no required field after a defaulted one.
 '''

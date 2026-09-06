@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Typed Signature Expands and Aligns Its Columns"
+title       = "A Typed Signature Explodes and Aligns Its Columns"
 
 description = '''
-`configure`'s five typed parameters keep their source order even with `alphabetize-siblings` in the run, because reordering parameters would change every positional call. **`reflow-signatures` expands the signature to one parameter per line, `align-colons` pads each name to a shared annotation `:` column, and `align-equals` aligns the `=` across `mango` and `delta`**, the two parameters carrying defaults.
+`configure` takes five typed parameters on one line, two with defaults. **`reflow-signatures` explodes the signature to one parameter per line, `align-colons` pads each name to one `:` column, and `align-equals` pads the `=` of `mango` and `delta` into one column**, while the parameters keep their source order even with `alphabetize-siblings` in the run, because reordering parameters would change every positional call.
 '''

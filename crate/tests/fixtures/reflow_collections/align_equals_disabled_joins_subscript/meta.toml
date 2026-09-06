@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Assigned Subscript Joins Without a Reserved Column"
+title       = "An Assigned Subscript Rejoins When No `=` Column Is Reserved"
 
 description = '''
-With `align-equals` set to `false`, `reflow-collections` reserves no shifted `=` column, so the `registry` subscript assigned to `HEADER_VALIDATORS` measures against its literal `=` position and **rejoins onto one line**. With alignment on, the `=` would shift out to the column `_VALID_HEADER_VALUE_RE_BYTE` sets, pushing the same rejoin past the budget and leaving the break standing.
+`align-equals = false` is set, and the `registry[...]` subscript assigned to `HEADER_VALIDATORS` is broken across three rows below `_VALID_HEADER_VALUE_RE_BYTE = 1`. **The subscript rejoins onto one line**, because with alignment off the rule measures the join from the `=` as written, whereas with alignment on the `=` would move out to the column `_VALID_HEADER_VALUE_RE_BYTE` sets, pushing the joined line past the budget and keeping the break.
 '''

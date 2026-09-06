@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Augmented Assignments Join the Run"
+title       = "An Augmented Assignment Joins the Run"
 
 description = '''
-The augmented assignment `beta += 2` joins the run with the plain bindings `alpha` and `gamma_long`, aligning its `=` on the shared column. The `+` of `+=` therefore **sits one column before** the stacked equals signs.
+`beta += 2` sits between the plain assignments `alpha = 1` and `gamma_long = 3`. **The `+=` line joins the run with its `=` on the shared column**, so the `+` sits one column before the stacked `=` signs.
 '''

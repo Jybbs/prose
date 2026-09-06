@@ -1,10 +1,8 @@
 //! `prose server`: a Language Server Protocol server over stdio.
 //!
-//! Editors reach Prose through a long-lived process rather than a
-//! per-save shellout. The server tracks each open buffer, formats it on
-//! request, and republishes diagnostics on open and change, running the
-//! same `Pipeline` the CLI runs so an editor session and `prose check`
-//! agree on the active rule set.
+//! The server tracks each open buffer, formats it on request, and
+//! republishes diagnostics on open and change, running the same
+//! `Pipeline` the CLI runs.
 //!
 //! Layout: `dispatch` owns the handshake and the message loop,
 //! `capabilities` advertises the server's surface and negotiates
@@ -13,8 +11,7 @@
 //! pipeline over a buffer, `notices` sends the bug notice for a rewrite
 //! a second run would change, and `conversion` maps between Prose's
 //! byte offsets and the protocol's positions and between document URIs
-//! and filesystem paths. This module holds only the stdio glue, the one
-//! piece that resists unit testing.
+//! and filesystem paths. This module holds only the stdio glue.
 
 use anyhow::Context;
 use lsp_server::Connection;

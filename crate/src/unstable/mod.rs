@@ -38,10 +38,10 @@ pub(crate) struct UnstableRewrite {
 }
 
 impl UnstableRewrite {
-    /// `None` where `config` turns the report off or the enabled rules
-    /// leave `formatted` settled. The subset narrows to a rule alone or
-    /// a rule pair where one reproduces, falling back to the whole
-    /// selection the run carried, which a notebook takes outright.
+    /// `None` where the enabled rules leave `formatted` settled. The
+    /// subset narrows to a rule alone or a rule pair where one
+    /// reproduces, falling back to the whole selection the run carried,
+    /// which a notebook takes outright.
     pub(crate) fn detect(
         pipeline: &Pipeline,
         config: &Config,
@@ -56,9 +56,8 @@ impl UnstableRewrite {
 
     /// The report for a probe hit on the own-output ledger, where
     /// `original` is a prior run's own output that this run rewrote.
-    /// The proof already happened, so the walk the eager path runs is
-    /// skipped and the editing set reads straight off the marked bytes,
-    /// narrowed to the smallest subset still editing them.
+    /// The editing set reads straight off the marked bytes, narrowed to
+    /// the smallest subset still editing them.
     pub(crate) fn detect_marked(
         pipeline: &Pipeline,
         config: &Config,
@@ -121,7 +120,8 @@ impl UnstableRewrite {
         }
     }
 
-    /// A subject naming no `path` takes the `-` stdin positional.
+    /// The `prose format` invocation reproducing the rewrite, the `-`
+    /// stdin positional standing in where `path` is `None`.
     pub(crate) fn invocation(&self, path: Option<&str>) -> String {
         format!(
             "prose format --select {} {}",
@@ -164,9 +164,8 @@ pub(crate) fn headline(subject: &str) -> String {
 }
 
 /// The rules editing `original` together with the `editing` rules still
-/// editing the output, the `editing` rules leading so the pairs the
-/// probe budget reaches first are the ones anchored on a rule the
-/// settle walk already named. Each block keeps registration order.
+/// editing the output, the `editing` rules leading. Each block keeps
+/// registration order.
 fn candidates(pipeline: &Pipeline, original: &str, editing: &[RuleId]) -> Vec<RuleId> {
     let touched = original
         .parse::<Source>()
@@ -184,8 +183,8 @@ fn filtered(config: &Config) -> impl Fn(&[RuleId]) -> Pipeline + '_ {
     move |rules| Pipeline::with_filters(config, rules, &[])
 }
 
-/// `None` where neither a rule alone nor a rule pair reproduces on this
-/// source.
+/// The smallest subset reproducing the rewrite of `original`, `None`
+/// where neither a rule alone nor a rule pair does.
 fn narrowed(
     pipeline: &Pipeline,
     config: &Config,
@@ -199,9 +198,9 @@ fn narrowed(
     )
 }
 
-/// Falls back to `formatted`'s own text where the second run does not
-/// parse or a rule's output is rejected. The second source carries the
-/// cell boundaries the first one did.
+/// What a second pass turns `formatted` into, its own text where the
+/// second run does not parse or a rule's output is rejected. The second
+/// source carries the cell boundaries the first one did.
 fn second_pass(pipeline: &Pipeline, formatted: &Source) -> String {
     let first = formatted.text();
     formatted

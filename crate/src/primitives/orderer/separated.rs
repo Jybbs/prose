@@ -65,9 +65,8 @@ pub(crate) fn assemble_separated(
 /// Reorders a comma-separated group laid out one member per line, the comma
 /// re-emitted per slot so each member's trailing comment travels with it. Each
 /// block reaches back over the own-line comments attached above its member and
-/// forward through any trailing comma and comment, so both move with the member.
-/// Declines, returning a borrow, when nothing reorders or the reassembled group
-/// no longer parses.
+/// forward through any trailing comma and comment. Returns a borrow when
+/// nothing reorders or the reassembled group no longer parses.
 pub(crate) fn reorder_separated<'src, 'a, T, S, F>(
     source: &'src Source,
     items: &'a [T],

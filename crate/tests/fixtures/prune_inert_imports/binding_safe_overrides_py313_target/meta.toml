@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Binding Resolution Removes the Directive on a 3.13 Target"
+title       = "Resolved Annotations Remove the Directive on a 3.13 Target"
 
 description = '''
-The `target-version = "3.13"` config names a Python where annotations evaluate eagerly once the directive is gone, so removal is safe only when every annotation reference already resolves. Each annotation here names `Node`, defined above `visit`, so no `NameError` can appear and the `from __future__ import annotations` line goes.
+`target-version = "3.13"` names a Python where annotations evaluate eagerly once the directive is gone, so the version branch does not run, and each annotation on `visit` names `Node`, the class defined above it. **The `from __future__ import annotations` line is removed**, because every annotated name resolves to an unconditional module-scope binding written before it and no annotation runs at module scope.
 '''

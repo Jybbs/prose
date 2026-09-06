@@ -3,7 +3,5 @@ previewable = true
 title       = "A Subscript After the Closer Counts at Its Full Width"
 
 description = '''
-A subscript trailing the call on its row can never be broken across lines, so **its whole `[0]` counts toward the joined row**.
-
-A breakable bracket would have contributed only its single opening column. Because the index counts in full here, a join that would fit only by ignoring it is rejected, and the call stays fractured.
+`some_function_name(argument_one_x, argument_two_x)[0]` arrives broken across two rows with a `[0]` subscript trailing the closer, under `code-line-length = 64`. **The call explodes rather than rejoining**, because a subscript trailing the call on its row can never be broken across lines, so its whole `[0]` counts toward the joined row where a breakable bracket would count only its opening column, and a join that would fit only by ignoring it is rejected.
 '''

@@ -2,7 +2,7 @@
 //! `__future__` → bare → external `from` → local-package, finds the runs
 //! of adjacent imports the ordering rules act on, builds the composite
 //! sort key ordering a run within and across those groups, counts the
-//! canonical blank lines dividing two imports, and shapes the deletions
+//! canonical blank lines dividing two imports, and builds the deletions
 //! that drop the aliases a rule has left unread. First-party detection
 //! reads the package-name list from `[tool.prose.imports]`.
 

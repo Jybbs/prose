@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "All Six Comparison Operators Right-Align in One Group"
+title       = "Every Comparison Operator Right-Aligns in One Group"
 
 description = '''
-The `and` chain compares `a` through `f` using all six comparison operators, `==`, `!=`, `<`, `<=`, `>`, and `>=`, and they align in one group with **right-alignment**. Each operator's last character sits in the shared column, so the single-character `<` and `>` sit one column deeper than the two-character forms.
+The `and` chain compares `a` through `f` with `==`, `!=`, `<`, `<=`, `>`, and `>=`, one operator per row. **Every operator right-aligns in one group**, so the last character of each sits in the shared column and the one-character `<` and `>` sit one column further right than the two-character operators.
 '''

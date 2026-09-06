@@ -3,5 +3,5 @@ previewable = false
 title       = "Wrapping Resumes After a Verbatim Block Closes"
 
 description = '''
-The `>>> run()` doctest and its `'ok'` output pass through verbatim, then the blank line closes the interactive region. The over-long description paragraph below it wraps to the docstring budget, confirming a verbatim block stops the wrap only for its own lines.
+The `>>> run()` doctest and its `'ok'` output are followed by a blank line and then an over-long description paragraph. **The doctest passes through verbatim and the paragraph below it wraps to the docstring budget**, because the blank line closes the interactive region, so a verbatim block stops the wrap only for its own lines.
 '''

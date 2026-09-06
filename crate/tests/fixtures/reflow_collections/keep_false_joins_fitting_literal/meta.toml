@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A False Keep Facet Joins a Fitting Literal Back"
+title       = "With `keep-multiline-literals` Off a Fitting Column Rejoins"
 
 description = '''
-Setting `keep-multiline-literals` to `false` restores the join, so the broken `fitting_joins` list comes back onto one line as `[10, 20, 30]`, while the over-wide `overflowing_explodes` still explodes into packed rows. The `keep-multiline-literals` and `explode` facets move independently, in that clearing one leaves the other live.
+`keep-multiline-literals = false` is set, `fitting_joins` is written one item per line with a joined form that fits, and `overflowing_explodes` runs past the budget on one line. **`fitting_joins` rejoins onto one line as `[10, 20, 30]` and `overflowing_explodes` still expands into packed rows**, because the facet releases only the kept column, leaving the width trigger under `explode` in force.
 '''

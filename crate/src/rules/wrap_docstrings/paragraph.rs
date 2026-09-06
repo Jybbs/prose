@@ -27,9 +27,9 @@ impl Walker<'_> {
                 lines,
                 subsequent_indent,
             } = std::mem::take(&mut self.paragraph);
-            // The head is a fixed prefix rather than wrappable text, so
-            // it joins the initial indent, which `textwrap` never breaks
-            // inside and never emits a row without a word after.
+            // The head joins the initial indent, which `textwrap` never
+            // breaks inside and never emits on a row without a word
+            // after it.
             let opening = [initial_indent, head].concat();
             let text = collapsed(lines);
             if head_slack == 0 {

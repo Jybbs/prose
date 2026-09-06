@@ -73,8 +73,7 @@ impl ReflowImports {
         let rules = &config.rules.reflow_imports;
         Self {
             // Forecast the aligned column only when `align-imports`
-            // runs, under the settings that rule resolves within, so
-            // the column the forecast names is one the capped run seats.
+            // runs, under the settings that rule resolves within.
             align_settings: align.enabled.then(|| config.import_align_settings()),
             bands: band_forecast(config),
             divides: config.group_imports_enabled() && config.rules.space_statements.enabled,

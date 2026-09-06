@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Scrambled Imports Resolve Into Three Cushioned Groups"
+title       = "Scrambled Imports Settle Into Grouped, Sorted, Aligned Sections"
 
 description = '''
-Bare, external `from`, and local-package imports sit scrambled together, with `myapp` declared first-party. **`group-imports` partitions them into the three canonical sections, `alphabetize-siblings` sorts the names within each section, `space-statements` separates the sections with one blank line, and `align-imports` aligns the `import` keyword within each section**.
+Bare, external `from`, and local imports sit scrambled together, with `myapp` named in `first-party`. **`group-imports` partitions them into bare, external, and local sections, `alphabetize-siblings` sorts the names within each section, `space-statements` writes one blank line between sections, and `align-imports` pads the `import` keyword into a column within each section**.
 '''

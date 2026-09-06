@@ -4,13 +4,12 @@ use super::*;
 
 /// The move for a block whose first row leaves a bracket open, seating
 /// the shallowest interior row one `INDENT_STEP` inside `landing.indent`
-/// and a closing row of the block's own back on that indent, the shape
-/// `explode_parens` writes. A closing row the row move already lands
-/// there travels with the rest. `None` where the first row opens no
-/// bracket, where a row-spanning string opens on it, or where an
-/// interior row itself opens with a closing bracket, whose depth one
-/// move cannot follow, a last row opening with the closer of a bracket
-/// an interior row opened reading as interior too.
+/// and a closing row of the block's own back on that indent. A closing
+/// row the row move already lands there travels with the rest. `None`
+/// where the first row opens no bracket, where a row-spanning string
+/// opens on it, or where an interior row itself opens with a closing
+/// bracket, a last row opening with the closer of a bracket an interior
+/// row opened reading as interior too.
 pub(super) fn hanging_travel(block: &str, frozen: &[bool], landing: Landing) -> Option<Travel> {
     let head = block.universal_newlines().next()?;
     if !head.trim_end().ends_with(OPENERS) || frozen.get(1) == Some(&true) {

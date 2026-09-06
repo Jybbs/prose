@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Concat-Valued Entry Holds Its Line"
+title       = "An Entry Whose Value Is Two Adjacent Strings Stays on One Row"
 
 description = '''
-The `"alpha"` entry runs past the budget, the shape that normally hangs a value beneath its key, but its value is two implicitly concatenated string fragments whose break belongs to `stack-adjacent-strings`. The entry therefore survives the expansion on one line rather than hanging around a run another rule would split.
+The `"alpha"` entry of `notice` runs past the budget, the case that normally breaks an entry at its `:` and hangs the value below, and its value is two string fragments written side by side. **The entry stays on one row**, because the break between adjacent string fragments belongs to `stack-adjacent-strings`, so the rule does not hang a value that rule would split, and only the trailing `,` after `"delta": 3` is dropped.
 '''

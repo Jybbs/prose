@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Fence Inside an Entry Passes Through and the Next Entry Resumes"
+title       = "A Fence Inside an Entry Passes Through and the Next Entry Resumes"
 
 description = '''
-The `sample` entry introduces a fenced code block, and **the fence passes through verbatim and ends the entry at the block's boundary**. Entry detection resumes once the closing fence lands, so the over-long `next_entry` description below it wraps with the hanging-column shape.
+The `sample` entry introduces a fenced code block, and the over-long `next_entry` follows the closing fence. **The fence passes through verbatim and `next_entry` wraps with a hanging indent at its description column**, because the fence ends `sample` at the block boundary and entry detection resumes once the closing fence is read.
 '''

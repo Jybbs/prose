@@ -187,9 +187,8 @@ fn is_unreferenced(
 }
 
 /// The write offset of every alias repeating a binding an earlier
-/// import already made. An alias the re-export surface holds keeps its
-/// binding, as does one on a statement a `noqa` comment trails, so
-/// neither offset stays in.
+/// import already made. An alias the re-export surface holds and one
+/// on a statement a `noqa` comment trails are both left out.
 fn repeat_writes(
     nodes: &[(usize, ImportNode<'_>)],
     reexports: &Reexports<'_>,

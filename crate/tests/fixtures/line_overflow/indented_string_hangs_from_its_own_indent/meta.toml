@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Nested Literal Measures From Its Own Indent"
+title       = "A Nested Literal Is Measured From Its Own Indent"
 
 description = '''
-The 56-column `return` line inside `render` overflows the 40-column budget, and the suggested split opens its parts one indent level past the `return`, with the closing `)` landing back on the `return`'s own indent. Each part is filled against the columns that deeper indent leaves, not against the full budget.
+The 56-column `return` line inside `render` overflows the 40-column budget. **The suggested split opens its parts one indent level past the `return`, with the closing `)` back at the `return`'s own indent**, and each part is filled against the columns that deeper indent leaves rather than against the full budget.
 '''

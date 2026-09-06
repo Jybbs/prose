@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Plain Docstring Reframes Then Expands"
+title       = "A Single-Quoted Docstring Requotes, Then Expands"
 
 description = '''
-`summarize`'s docstring sits in a plain `"..."` pair rather than triple quotes. **`frame-docstrings` requotes it to `"""` and `expand-docstrings` then rewrites it to the multi-line shape**, the reframe running first so the requoted one-liner expands.
+`summarize`'s docstring sits in a plain `"..."` pair rather than triple quotes. **`frame-docstrings` requotes it to `"""` and `expand-docstrings` then rewrites it to multi-line form**, the requote running first so the one-liner it produces is the text the expand reads.
 '''

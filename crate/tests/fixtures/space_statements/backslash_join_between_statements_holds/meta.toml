@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Backslash Join Between Two Statements Holds"
+title       = "A Backslash Join Between Two Statements Stays as Written"
 
 description = '''
-`x = 1` and `y = 2` are adjacent statements whose canonical gap the rule would ordinarily settle, and a `\` explicit line join sits between them. **The pair keeps the gap the join occupies**, since the break beneath the backslash belongs to the join rather than to the statements on either side.
+A `\` explicit line join sits on the row between `x = 1` and `y = 2`, a pair whose gap the rule would ordinarily set. **The pair keeps the gap the join occupies**, because the line break beneath the backslash belongs to the join rather than to the statements on either side.
 '''

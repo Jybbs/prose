@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Already-Grouped Run Passes Through Untouched"
+title       = "An Already-Grouped Run Is Left as Written"
 
 description = '''
-With `myapp` named in `first-party`, the run already sits in bare → external `from` → first-party order, so the rule **emits no edit**. The partition rewrites only when it would relocate an import, and every statement here already sits in its group.
+With `myapp` named in `first-party`, the run already reads bare imports, then the external `from collections import Counter`, then the first-party `from myapp import app`. **`group-imports` emits no edit**, because every statement already sits in its section and the rule rewrites only when a statement has to move.
 '''

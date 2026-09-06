@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Deleted Name Holds Past Its Repeat"
+title       = "A Deleted Name Keeps Its First Import Past a Repeat"
 
 description = '''
-`import os` appears twice and `del os` unbinds the name. The repeat drops, and **the first import holds** because a `del` consumes the binding without recording a read.
+`import os` appears twice and `del os` follows. **The repeat is removed and the first import stays**, because the `del` needs a binding to unbind even though the binding table records no read for it.
 '''

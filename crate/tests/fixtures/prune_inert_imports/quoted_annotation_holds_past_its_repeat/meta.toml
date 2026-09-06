@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Quoted Annotation Holds Past Its Repeat"
+title       = "A Quoted Annotation Keeps the First Import Past a Repeat"
 
 description = '''
-`from typing import List` appears twice and only a string-literal annotation reads `List`. The repeat drops, and **the first import holds** because the annotation parse reaches the name the binding table does not.
+`from typing import List` appears twice, and only the string annotation `"List[int]"` reads `List`. **The repeat is removed and the first import stays**, because the parse of the quoted annotation reaches a name the binding table does not.
 '''

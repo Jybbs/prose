@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Computed Format Spec Still Reports"
+title       = "A Call Inside a Format Spec Is Still Reported"
 
 description = '''
-The format spec after the `:` in `f"{amount:{compute(width, pad)}}"` is itself a replacement field, and the `compute(width, pad)` call inside it sits as far out of layout's reach as one in the outer field. The 62-column line therefore has no legal reshape, and `line-overflow` reports it rather than leaving it for `reflow-calls`.
+The format spec after the `:` in `f"{amount:{compute(width, pad)}}"` is itself a replacement field, and the 62-column line overflows the 40-column budget. **The line is reported with no legal reshape**, because the `compute(width, pad)` call inside the spec is as far out of any layout rule's reach as one in the outer field, so it is not left to `reflow-calls`.
 '''

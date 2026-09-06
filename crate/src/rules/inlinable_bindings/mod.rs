@@ -7,7 +7,7 @@
 //! the read's row past `code_line_length`. Names matching
 //! `allow_pattern`, names a `del` statement targets, a function
 //! declaring `global` or `nonlocal`, and every write kind but
-//! `Assignment` and `Walrus` stay outside the surface.
+//! `Assignment` and `Walrus` are skipped.
 
 use ruff_python_ast::statement_visitor::StatementVisitor;
 
@@ -31,7 +31,7 @@ pub(crate) struct InlinableBindings {
 }
 
 impl InlinableBindings {
-    pub(crate) const MESSAGE: &'static str = "Flag a binding assigned and read once whose value inlines at the read without recomputing it, moving it under a guard, or crossing the line budget";
+    pub(crate) const MESSAGE: &'static str = "inline a binding read once, where the value inlines with nothing recomputed, moved under a guard, or pushed past the line budget";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

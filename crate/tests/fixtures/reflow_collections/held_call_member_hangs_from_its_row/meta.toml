@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Held Call Member Hangs From the Item Column"
+title       = "A Kept Multi-Line Call Hangs From the Entry Column"
 
 description = '''
-Expanding `nested` puts `alpha`, the `helper` call, and `zeta` each on their own row, and the already multi-line call is held rather than laid out again. Its block moves with the row it lands on, hanging from the item column with `beta` and `gamma` re-indented beneath `helper(` instead of staying at the columns the source wrote them at.
+`nested` lists `alpha`, a `helper` call already written across rows, and `zeta` in a list that already spans rows. **The list expands one entry per row, and the call moves whole with its `beta` and `gamma` rows re-indented one step under `helper(`**, because a member already laid out across rows is kept rather than laid out again, and its continuation rows shift to the column the entries sit at.
 '''

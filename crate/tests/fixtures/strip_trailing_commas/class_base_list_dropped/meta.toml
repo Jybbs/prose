@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Class Base Lists Strip the Trailing Comma"
+title       = "A Class Base List Drops Its Trailing Comma"
 
 description = '''
-`Loader`'s base list, `BaseLoader, CacheMixin,`, carries the same bracket shape as a call's argument list, so `strip-trailing-commas` reaches it the same way. **The scan backward from the closing `)` lands on the `,` after `CacheMixin`**, and the rule deletes it.
+`Loader` lists its bases `BaseLoader` and `CacheMixin` one per line, with a `,` after `CacheMixin` before the closing `)`. **That comma is removed**, because a base list is bracketed the same way a call's argument list is and the rule reads it the same way.
 '''

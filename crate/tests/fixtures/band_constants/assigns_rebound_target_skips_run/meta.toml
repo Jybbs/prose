@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Re-Bound Target Skips the Run"
+title       = "A Name Bound Twice Keeps the Run in Source Order"
 
 description = '''
-`LIMIT` binds twice in one run, first to `10` and again to `20`, and the later write is the one the module keeps. Reordering could swap the two writes and change the final value, so **the whole run skips**, leaving `ALPHA = 1` where it sits between them.
+`LIMIT` is bound twice in one run, to `10` and then to `20`, with `ALPHA = 1` between the two writes. **The whole run stays in source order**, `ALPHA` included, because swapping the two writes would change the value the module keeps.
 '''

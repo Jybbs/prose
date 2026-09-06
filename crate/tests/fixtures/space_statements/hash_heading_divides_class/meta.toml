@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Multi-Hash Heading Keeps Its Blank Below"
+title       = "A Multi-Hash Heading Keeps Its Blank Line Below"
 
 description = '''
-`### Codec APIs` opens with several `#`, which reads as a **section divider rather than a description of the class below it**.
-
-The canonical two-blank gap after `import codecs` therefore sits above the heading, and the single blank the author left below it stays. Separately, `Codec`'s own body gains one blank line between its header and `pass`.
+`### Codec APIs` sits two blank lines below `import codecs` and one blank line above `class Codec(codecs.Codec):`. **The heading, opening with several `#`, reads as a section divider rather than as a description of the class**, so the two blank lines above it stay and the one blank line below it stays. `Codec`'s body separately gains one blank line between its header and `pass`.
 '''

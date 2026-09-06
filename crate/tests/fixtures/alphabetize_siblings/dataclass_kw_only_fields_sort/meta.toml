@@ -3,7 +3,5 @@ previewable = true
 title       = "A `kw_only` Dataclass Sorts Its Fields"
 
 description = '''
-`@dataclass(kw_only=True)` generates an `__init__` that accepts every field by keyword only, so no call site can depend on the order the fields are declared in.
-
-The fields are therefore **free to sort**, and `company` and `date_posted` move above `title`. Only a literal `True` enables this, since a computed `kw_only` value cannot be read while formatting and leaves the fields pinned.
+`@dataclass(kw_only=True)` generates an `__init__` that accepts every field by keyword only, so no call site can depend on the declared field order. **The fields sort, and `company` and `date_posted` move above `title`.** Only a literal `True` unpins them, because a computed `kw_only` value cannot be read while formatting and leaves the fields pinned.
 '''

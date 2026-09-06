@@ -3,5 +3,5 @@ previewable = false
 title       = "`Yields:` Entries Sort When Named"
 
 description = '''
-`stream`'s `Yields:` entries each carry the `name: description` shape, so the section **reorders alphabetically**, `token`, `offset`, and `record` settling into `offset`, `record`, `token`.
+`stream`'s `Yields:` section lists `token`, `offset`, and `record`, each in the `name: description` form. **The section reorders alphabetically to `offset`, `record`, `token`**, because every entry carries a name to sort by.
 '''

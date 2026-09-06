@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Multi-Line Right-Hand Side Breaks the Run"
+title       = "A Multi-Line Value Ends the Assignment Run"
 
 description = '''
-`PRIMARY`'s value is an exploded dict spanning several lines, and **the multi-line right-hand side breaks the alignment group**. `SECONDARY = 3` below it lands in a group of its own, so `PRIMARY` never pads out to meet the wider name even though the two would otherwise share an `=` column.
+`PRIMARY`'s value is an exploded dict spanning several lines, and `SECONDARY = 3` follows it. **The multi-line value ends the run**, so `SECONDARY` stands alone, and `PRIMARY` never pads out to the wider name even though the two `=` would otherwise share a column.
 '''

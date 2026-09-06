@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Call to Anything Else Holds Its Argument"
+title       = "A Call to Any Other Callee Keeps Its Argument"
 
 description = '''
-`registry.make([1, 2])` calls an attribute, and `record([1, 2])` calls a name that isn't `dict`, `list`, `set`, or `tuple`. Neither callee matches a constructor `simplify-comprehensions` acts on, so the `[1, 2]` literal each one carries stays exactly where it was written.
+`registry.make([1, 2])` calls an attribute, and `record([1, 2])` calls a name other than `dict`, `list`, `set`, or `tuple`. **Both `[1, 2]` literals stay exactly where they were written**, because neither callee is a constructor the rule rewrites.
 '''

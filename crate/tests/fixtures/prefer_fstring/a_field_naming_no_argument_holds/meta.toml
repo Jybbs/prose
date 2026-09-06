@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Field Naming No Argument Holds"
+title       = "A Field Naming No Argument Keeps the Call as Written"
 
 description = '''
-The `{missing}` field names a keyword the `.format` call never passes, `present=value` being the only argument there. The field reads nothing the rewrite could splice inline, so the template holds.
+The `{missing}` field names a keyword the `.format` call never passes, `present=value` being its only argument. **The call stays as written**, because the field reads nothing the rewrite could move inline.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Padded Member Measures on Its Settled Row"
+title       = "A Padded Member Is Measured on the Row the Explode Leaves"
 
 description = '''
-The list is written with padding just inside its brackets, so `strip-stranded-padding` reports both of those columns. The expansion rebuilds the bracket interior and carries that padding away before the strip ever lands.
-
-The first member call ends up alone on its own row at the literal's indent, where none of that padding sits ahead of it. Its `(` is therefore measured **from the row the expansion leaves**, not from the row the source wrote, and at that column the call is over budget and explodes as it moves.
+`dirlist.extend([ ... ])` writes a space just inside each bracket of its list, and `strip-stranded-padding` reports both. `reflow-collections` explodes the list, rebuilding the bracket interior and carrying that padding away before the strip is written, and the first member call ends up alone on a row inside the exploded list with no padding ahead of it. **The `_os.path.expanduser(...)` call is measured from that row and explodes**, because at that column it crosses the 60-column budget, rather than being measured from the row the source wrote.
 '''

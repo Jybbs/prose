@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Index Naming a Keyword Slot Holds"
+title       = "An Index Naming a Keyword Slot Keeps the Call"
 
 description = '''
-The field `{1}` names the second positional slot, but the call passes only `first` positionally, `second=other` arriving by keyword. Positional numbering reaches the positional arguments alone, so the index resolves to nothing and the call holds as written.
+The field `{1}` names the second positional slot, but the call passes only `first` positionally and `second=other` by keyword. **The call stays as written**, because positional numbering reaches the positional arguments alone and the index resolves to nothing.
 '''

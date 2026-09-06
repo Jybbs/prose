@@ -23,7 +23,7 @@ use crate::{
 pub(crate) struct ExpandDocstrings;
 
 impl ExpandDocstrings {
-    pub(crate) const MESSAGE: &'static str = "expand single-line docstring to multi-line form";
+    pub(crate) const MESSAGE: &'static str = "expand a single-line docstring onto its own lines";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

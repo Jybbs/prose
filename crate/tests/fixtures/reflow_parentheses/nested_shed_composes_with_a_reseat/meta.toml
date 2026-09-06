@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Re-Seat Composes With a Held Boolean Group"
+title       = "A Moved Continuation Row Composes With a Kept Boolean Group"
 
 description = '''
-A continuation row aligned to the shed opener follows it leftward through an indent-only edit at the row start. The pair nested on that same row holds one `and` group inside the surrounding `or` chain, so it stays rather than shedding, and the break lands it whole on a row of its own.
+The `elif` condition is over budget and carries two nested pairs, one grouping an `and` inside the surrounding `or` chain and, inside it, a redundant one around the long `nextchar not in` comparison on a continuation row aligned to `self.whitespace_split`. **The outer pair breaks into a row per operand, the redundant pair is removed, and its continuation row moves left with the token it was aligned to**, whereas the grouping pair stays as written across its two rows, its `and` still trailing the first of them.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Inline-Opener Docstring Splits, Aligns Args, Wraps Prose"
+title       = "A Docstring Moves Off Its Opener, Aligns Its `Args:`, and Wraps"
 
 description = '''
-`render`'s docstring starts its summary on the `"""` line itself and carries an `Args:` section. **`frame-docstrings` moves the summary off the opener line, `align-colons` pads the `:` after `template`, `context_map`, and `escape_html` into one column, and `wrap-docstrings` re-wraps the summary to the docstring budget**, breaking it across two lines.
+`render`'s docstring starts its summary on the `"""` line and carries an `Args:` section. **`frame-docstrings` moves the summary off the opener line, `align-colons` pads the `:` after `template`, `context_map`, and `escape_html` into one column, and `wrap-docstrings` wraps the summary to the docstring budget** across two lines.
 '''

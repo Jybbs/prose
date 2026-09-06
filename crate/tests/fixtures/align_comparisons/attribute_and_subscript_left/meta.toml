@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Attribute and Subscript Left Sides Qualify"
+title       = "An Attribute or Subscript Left Operand Joins the Group"
 
 description = '''
-An **attribute access or subscript on the left side qualifies** for the alignment group the same way a plain name does. `foo.attr`, `bar[0]`, and the bare `qux` all count their full width toward the shared `==` column, so all three rows align as one group.
+The left operands are the attribute access `foo.attr`, the subscript `bar[0]`, and the bare name `qux`. **An attribute access or a subscript joins the alignment group the same way a plain name does**, its full width counting toward the shared `==` column, so all three rows align as one group.
 '''

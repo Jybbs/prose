@@ -1,5 +1,5 @@
 ---
-caption : "Surfaces a module-level constant reassigned despite its `UPPER_SNAKE_CASE` casing."
+caption : "Reports a module-level `SCREAMING_CASE` name the module assigns more than once."
 related : [inlinable-bindings, miscased-constants, step-narration]
 layout  : doc
 ---
@@ -8,26 +8,28 @@ layout  : doc
 
 <RuleLayout rule="reassigned_constants">
 
-A `SCREAMING_CASE` name promises a constant, so a module-level one that is reassigned contradicts its own casing. `reassigned-constants` surfaces a module-level `SCREAMING_CASE` binding only when it is reassigned (*an `assignment_count` above one or an augmented assignment recorded against the name*), leaving a write-once constant silent whatever its value. The fix renames the variable to lowercase or stops reassigning it, work the lint leaves to a future migration pass that picks up its output.
+`reassigned-constants` reports a module-level `SCREAMING_CASE` binding the module reassigns, because the casing promises a constant and a second write contradicts it. A binding counts as reassigned when the binding table records more than one write against the name or an augmented assignment, and a write-once constant stays silent whatever its value. The fix is to rename the variable to lowercase or to stop reassigning it, and the lint leaves that work to a later migration pass that reads its output.
 
-The rule reads module-level `SCREAMING_CASE` assignments and annotated assignments, firing only on the reassigned ones, whereas several shapes stay quiet:
+The rule reads module-level `SCREAMING_CASE` assignments and annotated assignments and reports only the reassigned ones, whereas several kinds of binding stay quiet:
 
-- Names on the configurable `allow` list.
-- Dunder-style names (*`__version__`, `__all__`*), which fall outside `SCREAMING_CASE` because they lead with an underscore.
-- Typing constructs from the standard library (*`TypeVar`, `ParamSpec`, `NewType`, `TypeAliasType`*) and any binding declared inside an `if TYPE_CHECKING:` block, since both carry their own semantics distinct from runtime configuration.
-- In-place mutation through a method call or a subscript store, which stays out of scope since the binding table records those as reads. The lint is non-rewriting, so the diagnostic surfaces without touching the source.
+- A name on the configurable `allow` list.
+- A dunder name (*`__version__`, `__all__`*), which falls outside `SCREAMING_CASE` because it leads with an underscore.
+- A typing construct from the standard library (*`TypeVar`, `ParamSpec`, `NewType`, `TypeAliasType`*) and any binding declared inside an `if TYPE_CHECKING:` block, because both carry semantics of their own distinct from runtime configuration.
+- In-place mutation through a method call or a subscript store, which the binding table records as a read, so it stays out of scope.
+
+The lint never rewrites, so the diagnostic is reported and the source stays as written.
 
 <template #configuration>
 
 <RuleConfigTable />
 
-The `allow` list holds bare names, so an entry never produces a lint even when its shape would otherwise match.
+The `allow` list takes bare names, and a listed name never produces a finding even when it would otherwise match.
 
 </template>
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression#lint-directives) chapter covers the `# prose: ignore[reassigned-constants]` directive.
+For per-line opt-outs, the [**Suppression**](/usage/suppression#tagging-a-line) chapter covers the `# prose: ignore[reassigned-constants]` directive.
 
 </template>
 

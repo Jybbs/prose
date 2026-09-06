@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Raw Interpolated String Collapses Its Prefix and Settles Its Quotes"
+title       = "A Raw Interpolated String Collapses Its Prefix and Swaps Its Quotes"
 
 description = '''
-`pattern`'s `RF` collapses to lowercase raw-first `rf`, and its delimiters swap to `"` because no bare `"` sits in its literal text. `guarded` holds as written, since a raw string can neither gain nor lose a backslash and the `"q"` it carries would need one after the swap.
+`pattern = RF'{mask}\d'` carries an uppercase `RF` prefix, and `guarded = rf'path "q" {x}'` carries a bare `"q"` in its literal text. **`pattern` becomes `rf"{mask}\d"`, its prefix lowercased raw-first and its delimiters swapped**, whereas `guarded` stays as written, because a raw string can neither gain nor lose a backslash and the `"q"` would need one after the swap.
 '''

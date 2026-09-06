@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Aligned Fields Settle Their Comment Column Behind the `=`"
+title       = "Aligned Fields Settle Their Comment Column After the `=`"
 
 description = '''
-Both fields of `Config` carry trailing comments, and **`align-equals` fixes each row's width first, then `align-comments` measures against those settled widths** rather than the ones the author wrote. `retries` gains the padding that clears `timeout_seconds`, then `# attempts` and `# per attempt` land on a shared column, so the values read down one edge and the notes down another.
+Both fields of `Config` carry a trailing comment, and `retries` is shorter than `timeout_seconds`. **`align-equals` pads the `=` of `retries` first, and `align-comments` measures the comment column against those padded widths** rather than the widths as written, so the values sit in one column and `# attempts` and `# per attempt` sit in another.
 '''

@@ -44,7 +44,7 @@ impl Shedder<'_> {
     }
 
     /// The column `offset` reaches once the edits emitted so far apply
-    /// and `reflow-calls` takes its turn on the row: each outermost
+    /// and `reflow-calls` takes its turn on the row. Each outermost
     /// call ending ahead of `offset` on that row explodes while the row
     /// through `offset` still overflows the budget, dropping its closer
     /// to the row's indent and the text after it along with it.

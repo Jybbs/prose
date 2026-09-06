@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Aliased Imports Sort Then Align Their `as` Column"
+title       = "Aliased Imports Sort, Then Their `as` Keywords Align"
 
 description = '''
-Four aliased module imports arrive out of alphabetical order, `import numpy as np` sitting first. **`alphabetize-siblings` reorders the statements so `collections` leads, then `align-imports` settles the `as` keyword onto a shared column** across the sorted run.
+Four aliased bare imports arrive out of alphabetical order, with `import numpy as np` first. **`alphabetize-siblings` sorts the statements so `collections` leads, and `align-imports` then pads the `as` keyword of every row into one column** measured against the sorted run.
 '''

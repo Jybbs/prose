@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Comment Spacing Settles an Opener Before the Column Moves"
+title       = "Comment Spacing Settles Before the Comment Column Is Set"
 
 description = '''
-Both comments are written at the same column with a padded `#     ` opener.
-
-`normalize-comment-spacing` collapses each opener to a single `# ` first. `align-comments` then tries to share a column, but the two call names differ in width by more than `max-shift` allows, so the run splits and **each hash lands at the two-space minimum instead**. Each opener is settled against the column its comment finally reaches rather than against the one it was written at.
+`warm()` and `a_name_that_is_far_longer_here()` each carry a trailing comment written at the same column with a padded `#     ` opener. `normalize-comment-spacing` collapses each opener to `# ` first, and `align-comments` then measures the two rows, whose widths differ by more than `max-shift` allows, so the run splits and **each `#` sits at the two-space minimum after its code**, each opener settled against the column its comment ends up at rather than the one it was written at.
 '''

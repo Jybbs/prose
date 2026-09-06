@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Keyword Form Keeps the Chain Pair"
+title       = "A Keyword Value That Spans Rows Keeps Its Chain's Parentheses"
 
 description = '''
-`stack-method-chains` wraps the positional argument in a grouping pair and stacks `.text.replace(...)` beneath `tokenizer.read()`.
-
-`reflow-calls` then renders that argument in keyword form as `env_var = ...`, and **it keeps the pair around the value** because the value spans rows. The stacked chain holds its shape through the `=` alignment instead of being re-wrapped.
+`process_env_var(tokenizer.read().text.replace(".", "_"))` passes a method chain as its one positional. `stack-method-chains` wraps the chain in parentheses and stacks `.text.replace(...)` under `tokenizer.read()`, and `reflow-calls` then writes the argument in keyword form as `env_var = ...`. **The parentheses stay around the value**, because the value spans rows, and the stacked chain keeps its layout through the `=` alignment instead of being re-wrapped.
 '''

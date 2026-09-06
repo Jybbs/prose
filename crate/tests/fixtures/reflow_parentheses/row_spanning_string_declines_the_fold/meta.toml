@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Row-Spanning String Stops the Fold"
+title       = "A String Spanning Rows Stops the Join"
 
 description = '''
-The interior is an operator chain, so the shape test passes and the fold looks available.
-
-It stops anyway, because one operand holds a string spanning two rows and closing the soft wraps would **respace that string's own interior**. The fold therefore stops on the string rather than on the shape. That string's break is not a logical one, so the pair reads as holding no break of its own, sheds, and leaves the rows where the author put them.
+The `if` condition in `b` is an operator chain, so the join test opens, and one operand is a triple-quoted string spanning two rows. **The join stops**, because closing the soft breaks would respace the string's own interior. That string's break is not a logical break in the expression, so the pair carries no break of its own, and it is removed with the rows left where the author put them.
 '''

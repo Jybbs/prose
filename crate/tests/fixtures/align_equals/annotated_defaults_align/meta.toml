@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Function-Parameter Defaults Align on the Same Column"
+title       = "Parameter Defaults Align Across an Exploded Signature"
 
 description = '''
-The three annotated parameters of `configure` align their defaults across the multi-line signature. The `=` column sits **one space past** the widest row, `delay: float`, so `host: str` and `port: int` take padding between the annotation and the `=`.
+`configure` declares `host: str`, `port: int`, and `delay: float`, each with a default and each on its own line. **Every `=` moves to the column one space past `delay: float`**, the widest parameter, so `host: str` and `port: int` take padding between their annotation and the `=`.
 '''

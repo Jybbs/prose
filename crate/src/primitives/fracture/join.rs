@@ -82,9 +82,9 @@ fn join_args(source: &Source, settings: Settings<'_>, arguments: &Arguments) -> 
 /// One argument's text with every fractured list beneath it closed onto
 /// one line. A column-shaped list keeps its break, so an enclosing
 /// measure still reads it as spanning lines. An argument whose own text
-/// spans rows reaches the grouping parentheses recovered against
+/// spans rows keeps the grouping parentheses recovered against
 /// `parent`, which hold those rows together once the list closes,
-/// whereas a single-row argument leaves a redundant pair out of the
+/// whereas a single-row argument drops a redundant pair from the
 /// joined form.
 fn settled_argument<'a>(
     source: &'a Source,

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "The Walk Reaches Every Class Header"
+title       = "Class Headers at Every Depth Lose `object`"
 
 description = '''
-The decorated `Decorated`, the parameterized `Generic[T]`, `Inner` nested inside `Outer`, and `Local` defined inside `factory` each shed their `object` base, showing the walk reaches class headers at every depth. `class Generic[T] (object):` also carries a space ahead of its parentheses, and removing that space extends the deletion back to the `]` rather than to a class name.
+The decorated `Decorated`, the parameterized `Generic[T]`, `Inner` nested inside `Outer`, and `Local` defined inside `factory` each name `object` as a base. **Every one of them loses the base**, because the rule visits class headers at every depth, and `class Generic[T] (object):` also loses the space before its parentheses, the deletion extending back to the `]` rather than to the class name.
 '''

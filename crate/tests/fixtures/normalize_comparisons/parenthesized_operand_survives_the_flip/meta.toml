@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Parenthesized Operand Carries Its Parentheses Across the Flip"
+title       = "A Parenthesized Operand Keeps Its Parentheses Across the Flip"
 
 description = '''
-`42 == (a + b)` leads with the constant, so the operands flip, and the parentheses around `a + b` travel with the operand they wrap. The condition comes back as `(a + b) == 42`, parsing exactly as the authored form did.
+`42 == (a + b)` leads with the constant, and the right operand is wrapped in parentheses. **The operands flip and the parentheses travel with `a + b`**, so the condition is written as `(a + b) == 42`, which parses exactly as the authored form did.
 '''

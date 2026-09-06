@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Call after a Module-Level Class Carries Two Blanks"
+title       = "A Call After a Module-Level Class Takes Two Blank Lines"
 
 description = '''
-The bare call `register(Registry)` sits directly against the end of `class Registry:`, and the gap **widens to two blank lines**, the canonical count after a module-level class whatever the source wrote. The class header also gains its one blank before the `entries` field.
+The bare call `register(Registry)` sits flush below the end of `class Registry:`. **The gap widens to two blank lines**, the canonical count after a module-level class whatever the source wrote, and the class header gains its one blank line before the `entries` field.
 '''

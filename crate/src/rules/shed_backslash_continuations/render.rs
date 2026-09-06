@@ -35,10 +35,9 @@ pub(super) fn stripped_edit(source: &Source, gap: TextRange) -> Option<Edit> {
 }
 
 /// The outermost expression spanning `run` and the edits dropping the
-/// run's backslashes inside it, keeping every break, the pair around
-/// that expression left to the caller so runs sharing it take one.
-/// Returns `None` where no expression spans the run or the wrapped form
-/// reparses to a different tree.
+/// run's backslashes inside it, keeping every break. The caller adds
+/// the pair around that expression. Returns `None` where no expression
+/// spans the run or the wrapped form reparses to a different tree.
 pub(super) fn wrap_edits(
     source: &Source,
     span: TextRange,

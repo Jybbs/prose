@@ -3,5 +3,5 @@ previewable = false
 title       = "A Legacy Member Inside a Modern Generic Rewrites in Place"
 
 description = '''
-`table`'s enclosing `dict[...]` is already the modern builtin spelling, so only the `Optional[int]` member inside it rewrites, landing the annotation on `dict[str, int | None]`. That was `Optional`'s only read, so its import is removed as well.
+`table: dict[str, Optional[int]]` already uses the builtin `dict` spelling around a legacy `Optional[int]` member. **Only the member rewrites, so the annotation ends up as `dict[str, int | None]`**, and with `Optional`'s only read gone its import is removed as well.
 '''

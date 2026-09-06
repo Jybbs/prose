@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Transforming Dict Comprehension Sheds Its `dict` Call"
+title       = "A Transforming Dict Comprehension Inside `dict()` Drops the Call"
 
 description = '''
-The comprehension rewrites each value through `normalize`, so it builds a new mapping rather than copying `rows`, and the surrounding `dict()` call adds nothing. **The call unwraps to the comprehension itself**, the counterpart to the copying case that reduces to its iterable instead.
+`dict({key: normalize(value) for key, value in rows})` wraps a dict comprehension that passes each value through `normalize`, so the comprehension builds a new mapping rather than copying `rows`. **The `dict()` call is removed and the comprehension stays**, whereas a copying comprehension becomes `dict(rows)` instead.
 '''

@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "Setting `max-args` to `false` Disables the Explode"
+title       = "Setting `max-args` to `false` Switches Off the Count Trigger"
 
 description = '''
-The four-keyword `fetch` call would explode under the default cap, but `max-args = false` turns the count trigger off. The line also fits inside the default `code-line-length`, so with neither trigger firing the call keeps its one-line shape.
+`fetch(headers=h, method=m, params=p, url=u)` would explode under the default cap and runs with `max-args = false`. **The call keeps its one-line form**, because `max-args = false` turns the count trigger off and the row fits inside the default `code-line-length`, so neither trigger fires.
 '''

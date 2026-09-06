@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Sandwiched Single-Line Stub Reorders and Keeps Two-Blank Cushions"
+title       = "A One-Line Class Stub Sorts and Takes Two Blank Lines on Each Side"
 
 description = '''
-`Beta` is a single-line class stub sandwiched between the block-bodied `Alpha` and `Gamma`. `alphabetize-siblings` reorders the three classes into `Alpha`, `Beta`, `Gamma`, and **`space-statements` settles two blank lines on both sides of `Beta`**, the stub taking the same gap a block-bodied class would.
+`class Beta: ...` is a one-line stub written after the block-bodied `Gamma` and `Alpha`. `alphabetize-siblings` sorts the three into `Alpha`, `Beta`, `Gamma`, and **`space-statements` writes two blank lines on both sides of `Beta`**, the stub taking the same gap a block-bodied class takes.
 '''

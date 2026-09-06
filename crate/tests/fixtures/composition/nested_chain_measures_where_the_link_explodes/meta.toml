@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Nested Chain Measures Where the Link Explodes"
+title       = "A Nested Chain Is Measured Where the Exploded Link Puts It"
 
 description = '''
-`stack-method-chains` wraps the outer chain in a grouping pair, and the row holding `o.first_link_that_is_quite_long(` crosses the 60-column budget, so `reflow-calls` explodes that argument list.
-
-The inner chain is then measured **from the column it lands at**, one indent step past that row, rather than from the wider column the joined row would have given it. It fits on a single line there, so it stays joined instead of stacking the way the outer chain does.
+`f` returns an outer chain whose first link takes an inner chain as its argument, on a row past the 60-column budget. `stack-method-chains` wraps the outer chain in parentheses, and the row holding `o.first_link_that_is_quite_long(` still crosses the budget, so `reflow-calls` explodes that argument list. **The inner chain stays joined on one line**, because it is measured from the column it ends up at, one indent step past that row, rather than from the wider column the joined row would have given it, and it fits there.
 '''

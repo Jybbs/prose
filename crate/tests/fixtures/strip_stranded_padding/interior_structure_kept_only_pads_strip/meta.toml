@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Only the Pad Strips, Interior Structure Stays"
+title       = "Only the Pad Is Removed and the Interior Stays"
 
 description = '''
-`d[ 1 ]` strips down to `d[1]`, and `s[ 1 : 2 ]` strips only its bracket padding, keeping the spacing around its slice `:` as `s[1 : 2]`. `trailing = [ 1, 2, ]` strips the same way to `[1, 2,]`, leaving its trailing comma for `strip-trailing-commas` to remove.
+`d[ 1 ]`, `s[ 1 : 2 ]`, and `trailing = [ 1, 2, ]` each pad just inside their brackets. **`strip-stranded-padding` removes only that bracket padding**, writing `d[1]`, `s[1 : 2]` with the spacing around the slice `:` kept, and `[1, 2,]` with its trailing comma left for `strip-trailing-commas` to remove.
 '''

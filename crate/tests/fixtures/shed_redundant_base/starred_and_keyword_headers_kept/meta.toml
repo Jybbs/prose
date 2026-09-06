@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Header Carrying Anything Real Is Left Alone"
+title       = "A Header With Nothing Redundant Is Left as Written"
 
 description = '''
-`class Configured(metaclass=ConfiguredMeta):`, `class Dynamic(*RESOLVED_BASES):`, `class Forwarded(**NAMESPACE):`, and `class Plain:` each carry a header shape with nothing to shed: a bare keyword, a starred base list, a double-starred namespace, or no parentheses at all. Every one stays exactly as written.
+`class Configured(metaclass=ConfiguredMeta):`, `class Dynamic(*RESOLVED_BASES):`, `class Forwarded(**NAMESPACE):`, and `class Plain:` carry a bare keyword, a starred base list, a double-starred namespace, and no parentheses at all. **Every one stays exactly as written**, because none of them names `object` and none carries an empty base list.
 '''

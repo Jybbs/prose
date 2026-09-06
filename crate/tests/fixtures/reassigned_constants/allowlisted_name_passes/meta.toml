@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Names on the Configured Allow List Stay Quiet"
+title       = "A Name on the `allow` List Is Not Reported"
 
 description = '''
-`reassigned-constants.allow` lists `LOG_LEVEL`, so its two module-level assignments pass through silently even though the name is reassigned. **`CACHE_DIR` is not listed, so both of its assignments are still flagged**, one diagnostic per occurrence.
+`LOG_LEVEL` and `CACHE_DIR` are each assigned twice at module level, and the case runs with `allow = ["LOG_LEVEL"]`. **Both `CACHE_DIR` lines are reported and neither `LOG_LEVEL` line is**, one diagnostic per write, because a name on the `allow` list never produces a finding.
 '''

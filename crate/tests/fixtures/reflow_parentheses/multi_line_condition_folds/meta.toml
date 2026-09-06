@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Multi-Line Condition Folds When It Fits"
+title       = "A Multi-Line Condition Joins Onto One Line When It Fits"
 
 description = '''
-`ready = (` opens a multi-line grouping around `server.up and cache.warm`, and with the line budget set to `32` characters the folded single-line form just fits. The parentheses shed and the condition folds onto `ready = server.up and cache.warm`.
+`ready = (` opens a multi-line pair around `server.up and cache.warm` under a `code-line-length` of `32`. **The interior joins onto one line and the pair is removed**, because the joined form `ready = server.up and cache.warm` fits the budget exactly.
 '''

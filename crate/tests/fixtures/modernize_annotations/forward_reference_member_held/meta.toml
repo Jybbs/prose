@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Forward-Reference Member Holds the Union"
+title       = "A Forward-Reference Member Keeps the Legacy Union"
 
 description = '''
-`Optional["Node"]` wraps the forward-reference string `"Node"`, and the modern spelling `"Node" | None` raises when the annotation is evaluated, because `str` defines no `|` operator. The whole annotation therefore holds in its legacy form.
+`parent: Optional["Node"]` wraps the forward-reference string `"Node"`. **The whole annotation stays in its legacy form**, because the modern spelling `"Node" | None` raises when the annotation is evaluated, since `str` defines no `|` operator.
 '''

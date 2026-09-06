@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "A Run past the Budget Breaks One Literal per Line"
+title       = "A Run Past the Budget Breaks to One Literal per Line"
 
 description = '''
-`message`'s run joins two adjacent string literals onto one line that overruns `code-line-length`. `stack-adjacent-strings` **wraps the run in parentheses and gives it one literal per line**, so the seam between `"the opening clause of this notice "` and `"and the trailing clause"` falls at a line end.
+`message`'s run joins two adjacent string literals on one line that overflows `code-line-length`. **The run is wrapped in parentheses and broken to one literal per line**, so the seam between `"the opening clause of this notice "` and `"and the trailing clause"` falls at a line end.
 '''

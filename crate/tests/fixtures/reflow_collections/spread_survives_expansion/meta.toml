@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Spreads Survive Expansion and Split Atomic Runs"
+title       = "A `*` or `**` Spread Takes a Row of Its Own and Splits an Atomic Run"
 
 description = '''
-`dict_unpack`, `list_unpack`, and `set_unpack` each explode with their `**` or `*` spread landing on its own line, and the `**extra_config` inside the held `held_dict_unpack` keeps that line through the re-layout. **Being non-atomic, `*middle_range` splits the numbers around it in `list_unpack` into two independent packed runs**, and `set_unpack`, holding nothing but spreads, lands one per line. The overflowing `**` row in `overflowing_dict_unpack` stays on a single line because the hang shape needs a `:` to break at.
+`dict_unpack`, `list_unpack`, and `set_unpack` each run past the budget with a `**` or `*` spread among their entries, `held_dict_unpack` keeps `**extra_config` in a written column, and `overflowing_dict_unpack` carries a `**` row too wide for the budget. **Each spread takes a row of its own in the expanded form, and `*middle_range` splits the integers around it in `list_unpack` into two packed runs**, because a spread is non-atomic, so `set_unpack` ends up one spread per row, `held_dict_unpack` keeps its column, and the over-wide `**` row in `overflowing_dict_unpack` stays on one row because the hang needs a `:` to break at.
 '''

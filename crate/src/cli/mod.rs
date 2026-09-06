@@ -150,8 +150,7 @@ fn log_error_chain(err: &anyhow::Error) {
     }
 }
 
-/// The color decision `choice` resolves to for `raw`, taken before the
-/// stream is wrapped so every writer reads one answer.
+/// The color decision `choice` resolves to for `raw`.
 fn color_for<S: RawStream>(choice: ColorChoice, raw: &S) -> bool {
     match choice {
         ColorChoice::Always => true,
@@ -161,10 +160,9 @@ fn color_for<S: RawStream>(choice: ColorChoice, raw: &S) -> bool {
 }
 
 /// `raw` wrapped for the color decision `choice` resolves to on it,
-/// beside that decision. A color run keeps the translation a legacy
-/// Windows console needs, and a plain run passes its bytes through,
-/// because every writer branches on the same decision and emits no
-/// escape for the stream to scan for.
+/// paired with that decision. A color run keeps the translation a
+/// legacy Windows console needs, whereas a plain run passes its bytes
+/// through.
 fn stream_for<S: RawStream>(choice: ColorChoice, raw: S) -> (AutoStream<S>, bool) {
     let color = color_for(choice, &raw);
     let stream = if color {

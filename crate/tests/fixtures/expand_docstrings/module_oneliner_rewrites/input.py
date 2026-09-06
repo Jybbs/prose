@@ -1,7 +1,5 @@
-# This fixture pins module-level single-line docstring rewriting at
-# column 0. The fixture's module docstring is itself the rewrite
-# target, so the conventional triple-quoted claim-banner is replaced
-# by these `#` comments.
+# A single-line module docstring at column 0. The docstring is the
+# rewrite target itself, so these comments stand above it in its place.
 
 
 """Module summary on a single line."""

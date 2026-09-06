@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Comment Fused onto Its Code Is Pushed Two Columns Clear"
+title       = "A Comment Fused Onto Its Code Is Pushed Two Columns Clear"
 
 description = '''
-The comment on `value = 1` opens with no whitespace at all between the `1` and the `#`.
-
-The two-column minimum before a trailing comment therefore arrives as **an insertion rather than a rewrite of an existing gap**. The `# right` opener already carries its single space, which leaves that insertion as the only edit the comment takes.
+The comment on `value = 1` opens with no whitespace between the `1` and the `#`. **Two spaces are inserted before the `#`**, the minimum gap before a trailing comment, and because the `# right` opener already carries its single space that insertion is the only edit the comment takes.
 '''

@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "Explode a Keyword Method Call"
+title       = "A Keyword Method Call Explodes"
 
 description = '''
-`client.request` is a method call, so no signature in this module resolves for it. Its four arguments already name their parameters, `headers=h` through `url=u`, so the call explodes to one keyword per line exactly as a free function's would, with no signature lookup needed.
+`client.request(headers=h, method=m, params=p, url=u)` is a method call, so no signature in this module resolves for it. **The call explodes to one keyword per line exactly as a free function's does**, because its four arguments already name their parameters, so no signature lookup is needed.
 '''

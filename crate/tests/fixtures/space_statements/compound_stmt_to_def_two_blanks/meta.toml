@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "Compound Statement Before a Def Takes Two Blanks"
+title       = "A Def After a Compound Statement Takes Two Blank Lines"
 
 description = '''
-The `for setup in initial_steps:` loop sits one blank line above `def main():`. **Two blank lines precede every module-level `def`**, so the gap widens to two, giving the reader's eye an anchor between top-level units.
+The `for setup in initial_steps:` loop sits one blank line above `def main():`. **The gap widens to two blank lines**, the canonical count before every module-level `def`, so the reader finds the same separation between top-level units everywhere in the file.
 '''

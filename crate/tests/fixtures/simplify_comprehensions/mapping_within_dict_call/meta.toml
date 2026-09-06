@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Mapping Inside `dict()` Stands On Its Own"
+title       = "A Dict Literal Inside `dict()` Stands on Its Own"
 
 description = '''
-`dict({"size": 10})` wraps a dict literal that is already the mapping it would build, so the call is dropped and `config` becomes `{"size": 10}`.
+`dict({"size": 10})` wraps a dict literal that is already the mapping the call would build. **The call is removed**, so `config` becomes `{"size": 10}`.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Call Splits an Atomic Run into Flow Segments"
+title       = "A Call in the Middle of an Atomic Run Splits It in Two"
 
 description = '''
-Literals, names, attribute chains like `pkg.CONST`, and unary operands like `~mask` all count as atomic, so `mixed_atomics` flows as one run across balanced rows.
-
-**A non-atomic expression in the middle breaks the run around it into two independent segments.** In `split_by_call` the call `lookup()` takes a row of its own, and the strings before and after it each balance separately.
+`mixed_atomics` lists literals, names, attribute chains such as `pkg.CONST`, and unary operands such as `~mask`, all of which count as atomic, whereas `split_by_call` puts the call `lookup()` between two runs of strings. **`mixed_atomics` packs as one run across two rows, and in `split_by_call` the call takes a row of its own with the strings before and after it packed as two separate runs**, because a non-atomic entry splits the run around it.
 '''

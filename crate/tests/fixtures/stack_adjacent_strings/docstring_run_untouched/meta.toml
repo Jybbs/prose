@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Run Filling a Docstring Slot Stays as Written"
+title       = "A Run in a Docstring Slot Stays as Written"
 
 description = '''
-Nothing here moves. The two adjacent string literals in `handler`'s body sit in the docstring slot, as the function's first statement.
-
-The run is **kept on one line however wide it runs**. Wrapping it in parentheses would leave a value that no longer reads as a docstring at all.
+The two adjacent string literals in `handler`'s body sit in the docstring slot, as the function's first statement. **The run is kept on one line however wide it runs**, because wrapping it in parentheses would leave a value that no longer reads as a docstring, and the over-budget line is left for `line-overflow` to report.
 '''

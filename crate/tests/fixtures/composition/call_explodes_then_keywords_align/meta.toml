@@ -3,5 +3,5 @@ previewable = true
 title       = "A Call Explodes, Then Its Keywords Sort and Align"
 
 description = '''
-The call `draw(w, h, d, c)` packs four positional arguments, so `reflow-calls` explodes it to keyword form, naming each argument after its parameter so `w` becomes `width = w`. `alphabetize-siblings` then sorts the keywords with `color` first, and `align-equals` settles their `=` on one column.
+`draw(w, h, d, c)` passes four positional arguments to a `def draw(width, height, depth, color)` defined above it. `reflow-calls` explodes the call to keyword form, naming each argument after its parameter so `w` becomes `width = w`, and **`alphabetize-siblings` sorts the keywords so `color` leads while `align-equals` pads their `=` into one column**.
 '''

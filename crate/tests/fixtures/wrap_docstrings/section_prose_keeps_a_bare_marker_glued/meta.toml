@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Section Prose Keeps a Bare Marker Glued"
+title       = "Section Prose Keeps a Bare Marker Glued to the Word Before It"
 
 description = '''
-Section prose wraps one row at a time, first-fit, and a break whose remainder would head the next row as an entry head, a comment marker, or a list marker **folds back into the word before it**.
-
-A plain fill would open a row on `threshold:`, which would then read as a new entry rather than as prose. The wrap takes `writes threshold:` down together instead, and the same guard keeps the bare `#` and `+` markers glued to the words ahead of them.
+The line under `Notes:` carries a bare `#`, a `threshold:` head, and a `+`, and a first-fit wrap at the `code-line-length = 40` the case sets would open a row on `threshold:`. **Each marker moves down with the word before it**, so the wrap writes `writes threshold:` together rather than opening a row that would read as a new entry, and the same guard keeps the bare `#` and `+` markers glued to the words ahead of them.
 '''

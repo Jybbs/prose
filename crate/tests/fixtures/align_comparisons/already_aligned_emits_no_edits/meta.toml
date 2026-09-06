@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Already-Aligned Source Is Left Alone"
+title       = "Already-Aligned Source Gets No Edit"
 
 description = '''
-The `and` chain over `foo`, `bar`, and `qux` already places each `==` one space past the widest left side, so **no edit is emitted** and the source passes through unchanged.
+The `and` chain over `foo`, `bar`, and `qux` already has each `==` one space past the widest left operand. **The rule emits no edit**, so the source passes through unchanged.
 '''

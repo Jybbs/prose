@@ -3,7 +3,5 @@ previewable = true
 title       = "A Width Chain Breaks After the Rows That Read First"
 
 description = '''
-Field widths climb steadily in source order, from `cpu` up to `persistent_storage_quota`.
-
-The narrow rows `cpu`, `disk`, and `memory` share one `:` column. That column **breaks at `network_throughput_gauge`**, because padding the narrow rows out that far would exceed `max-shift`, leaving the two wide fields to align in a column of their own.
+Field widths climb steadily in source order, from `cpu` up to `persistent_storage_quota`. The narrow rows `cpu`, `disk`, and `memory` share one `:` column, and **that column breaks at `network_throughput_gauge`**, because padding the narrow rows out that far would exceed `max-shift`, leaving the two wide fields to align in a column of their own.
 '''

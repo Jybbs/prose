@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Already-Split Output Round-Trips with No Edit"
+title       = "Already-Split Statements Pass Through With No Edit"
 
 description = '''
-Both `from pkg.sub import` statements already sit in repeated-prefix form, and each fits the `import-line-length` budget of `40`, so the run **passes through unchanged**.
+Both `from pkg.sub import` statements are already in repeated-prefix form, and each fits the `import-line-length` budget of `40`. **Both lines pass through unchanged**, because they are already the lines a gather and repack to that budget would write.
 '''

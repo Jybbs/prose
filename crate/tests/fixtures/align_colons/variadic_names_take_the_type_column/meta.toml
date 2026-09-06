@@ -3,5 +3,5 @@ previewable = false
 title       = "Variadic Names Measure Into the Type Column"
 
 description = '''
-The entries `*args` and `**kwargs` carry their star prefixes into the width the type-group column measures, so `**kwargs`, the widest head, sets the column that `channel` and `*args` pad out to. The stars sit inside the name column rather than hanging off its left edge, and `(str)`, `(int)`, and `(Any)` open on one shared column.
+The entries `*args` and `**kwargs` carry their star prefixes into the width the type column measures. **The widest head `**kwargs` sets the column that `channel` and `*args` pad out to**, so the stars sit inside the name column rather than hanging off its left edge, and `(str)`, `(int)`, and `(Any)` open on one shared column.
 '''

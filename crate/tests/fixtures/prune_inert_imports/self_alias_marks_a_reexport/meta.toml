@@ -3,5 +3,5 @@ previewable = true
 title       = "A `from x import y as y` Alias Marks a Re-Export"
 
 description = '''
-`from json import loads as loads` uses the PEP 484 redundant-alias form, marking `loads` as part of the module's public surface. **`prune-inert-imports` holds the import** even though nothing else in the module reads `loads`.
+`from json import loads as loads` uses the PEP 484 redundant-alias form, and nothing else in the module reads `loads`. **The import stays**, because the self-alias marks the name as a re-export.
 '''

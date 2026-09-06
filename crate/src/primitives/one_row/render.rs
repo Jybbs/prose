@@ -35,7 +35,7 @@ pub(super) fn write_joined<T>(
 }
 
 /// Serializes an expression tree onto one row, each method writing into
-/// the caller's buffer and answering `None` where its subtree reaches no
+/// the caller's buffer and returning `None` where its subtree reaches no
 /// one-row form.
 pub(super) struct Writer<'a> {
     pub(super) settings: Settings<'a>,

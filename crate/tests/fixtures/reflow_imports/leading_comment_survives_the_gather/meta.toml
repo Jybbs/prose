@@ -3,5 +3,5 @@ previewable = false
 title       = "A Comment Above the Group Survives the Gather"
 
 description = '''
-The `# the package this module leans on` comment sits on the line above the first member, outside the lines the gather clears, so the merge **runs and the comment stays**. `from pkg import alpha` and `from pkg import beta` fold into one statement below it, the complement of a comment inside the span holding the merge back.
+A comment sits on the line above `from pkg import alpha`, with `from pkg import beta` below. **The two statements merge into `from pkg import alpha, beta` and the comment stays above them**, because the comment is outside the lines the merge rewrites, the complement of a comment inside the span keeping the statements apart.
 '''

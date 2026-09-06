@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Aliased Bare Import Passes"
+title       = "An Aliased Import Is Not Reported"
 
 description = '''
-`import os as o` binds the module to an alias the author chose, a deliberate namespace handle rather than a leftover bare import. The `exempt-aliased` default therefore **exempts the aliased import from this lint**, whatever its attribute count.
+`import os as o` binds the module under an alias the author chose. **No diagnostic is reported**, whatever the attribute count, because `exempt-aliased` is on by default and an alias is the author's chosen namespace handle rather than a leftover bare import.
 '''

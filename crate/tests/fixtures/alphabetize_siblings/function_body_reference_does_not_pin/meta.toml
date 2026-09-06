@@ -3,7 +3,5 @@ previewable = false
 title       = "A Method-Body Reference Does Not Pin the Order"
 
 description = '''
-`Alpha.run` returns `Beta()`, but that reference sits inside a method body, which runs when the method is called rather than when the class is defined.
-
-By the time anything calls it both classes exist whatever order they were written in, so **the reference constrains nothing** and `Alpha` sorts ahead of `Beta`.
+`Alpha.run` returns `Beta()`, a reference that sits inside a method body, and `Beta` is defined above `Alpha`. **`Alpha` sorts ahead of `Beta`**, because a method body runs when the method is called rather than when the class is defined, so both classes exist by the time anything calls it whatever order they were written in and the reference constrains nothing.
 '''

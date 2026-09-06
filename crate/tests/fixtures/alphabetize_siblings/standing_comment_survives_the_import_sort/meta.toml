@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Standing Comment Survives the Import Sort"
+title       = "A Standing Comment Stays Put Through the Import Sort"
 
 description = '''
-The comment sits on its own line at a two-space indent matching neither import, so it attaches to neither of them.
-
-The sort swaps `import zlib` and `import os` around it, and **the comment stays exactly where it stands** rather than travelling with either name.
+A comment sits on its own line between `import zlib` and `import os`, at a two-space indent matching neither import, with a blank line on each side. **The sort swaps the two imports around it and the comment stays exactly where it stands**, rather than moving with either name, because its indent attaches it to neither of them.
 '''

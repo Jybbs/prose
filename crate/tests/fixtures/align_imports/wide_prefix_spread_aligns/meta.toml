@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Wide Prefix Spread Still Aligns under the Import Default"
+title       = "A Wide Spread of Module Widths Still Aligns"
 
 description = '''
-`from re import loads` runs nine characters narrower than `from collections import Counter`, a spread past what the operator-alignment default would pad. `align-imports` seeds a wider `max-shift` than the operator rules, so **the run still aligns on the `import` keyword**, with `re` padded out to the column `collections` and `dataclasses` share.
+`from re import loads` is nine characters narrower than `from collections import Counter` below it, and `from dataclasses import field` closes the run. **The run still aligns on the `import` keyword**, with `re` padded out to the column `collections` and `dataclasses` share, because a spread of nine sits within the default `max-shift`.
 '''

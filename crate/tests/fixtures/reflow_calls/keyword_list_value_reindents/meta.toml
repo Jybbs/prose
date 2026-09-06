@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "Re-Indent an Exploded List Value to the Keyword Column"
+title       = "An Exploded List Value Re-Indents to the Keyword Column"
 
 description = '''
-`render` explodes to one keyword per line, and `items=` holds a list already spread across rows. The list takes the same re-indent a dict value does, so the packed `"a", "b", "c"` and `"d", "e", "f"` rows move one step past `items=[` and the `]` lands at the keyword column.
+`render` passes `name`, `other`, `more`, and an `items=` list already spread across rows, with `"a", "b", "c"` and `"d", "e", "f"` packed onto its two rows. **`render` explodes to one keyword per line and the list takes the same re-indent a dict value does**, so the two packed rows move one step past `items=[` and the `]` closes at the keyword column.
 '''

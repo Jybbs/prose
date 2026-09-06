@@ -68,9 +68,8 @@ pub(crate) fn call_reachable<'src>(
     reads
 }
 
-/// The chain a name roots that `expr` runs, covering a call and a
-/// subscript alike, since `__class_getitem__` runs a class body the way
-/// `__call__` does. `None` for every other expression.
+/// The callee of a call or the value of a subscript, the expression
+/// `expr` runs. `None` for every other expression.
 pub(super) fn invoked(expr: &Expr) -> Option<&Expr> {
     match expr {
         Expr::Call(call) => Some(&call.func),
@@ -80,8 +79,7 @@ pub(super) fn invoked(expr: &Expr) -> Option<&Expr> {
 }
 
 /// Every name `stmt` runs, an attribute or subscript chain contributing
-/// the name it roots in, each name once. A subscripted callee roots the
-/// same name twice, once for the subscript and once for the call.
+/// the name it roots in, each name once.
 pub(super) fn called_names(stmt: &Stmt) -> Vec<&str> {
     struct Calls<'src>(Vec<&'src str>);
     impl<'src> AstVisitor<'src> for Calls<'src> {

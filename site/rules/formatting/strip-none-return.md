@@ -1,5 +1,5 @@
 ---
-caption : "Drops a redundant `-> None` return annotation, since an omitted one already reads as returning nothing."
+caption : "Removes a bare `-> None` return annotation, since an omitted one already reads as returning nothing."
 related : [prune-inert-imports, signature-annotations, reflow-signatures]
 layout  : doc
 ---
@@ -8,9 +8,9 @@ layout  : doc
 
 <RuleLayout rule="strip_none_return">
 
-A written `-> None` on a function that returns nothing is visual weight the signature does not need. The omission convention already reads an absent return annotation as a function that returns nothing, leaving the explicit form as noise rather than information. `strip-none-return` rewrites it away.
+`strip-none-return` removes a written `-> None` from a function that returns nothing, so `def configure() -> None:` reads `def configure():`. An omitted return annotation already reads as a function that returns nothing, which leaves the explicit form as visual weight rather than information.
 
-The rewrite stays purely mechanical, firing only when the return annotation is a bare `None`, leaving a `None` nested inside a larger annotation *(`int | None`, `Callable[..., None]`)* and every parameter annotation untouched. A declaration-only stub keeps its `-> None` too, because a lone `...` body *(an `@overload` arm, a `Protocol` method, an abstract method)* is a placeholder whose `-> None` declares a type-checker contract rather than redundant weight. The companion [[signature-annotations]] rule enforces the other side of the convention, reporting where a parameter or a value-returning function lacks the annotation it owes.
+The rewrite is purely mechanical, running only where the return annotation is a bare `None`, with or without its own parentheses, and leaving a `None` nested inside a larger annotation *(`int | None`, `Callable[..., None]`)* and every parameter annotation as written. A declaration-only stub keeps its `-> None` too, because a body that is only `...`, with or without a docstring ahead of it *(an `@overload` arm, a `Protocol` method, an abstract method)*, is a placeholder whose `-> None` declares a type-checker contract rather than a redundant annotation. The companion [[signature-annotations]] rule enforces the other side of the convention, reporting where a parameter or a value-returning function lacks the annotation it owes.
 
 <template #configuration>
 
@@ -20,7 +20,7 @@ The rewrite stays purely mechanical, firing only when the return annotation is a
 
 <template #related-after>
 
-For per-statement opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[strip-none-return]` directive, which holds every line a wrapped statement spans.
+For per-statement opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[strip-none-return]` directive, which covers every line a wrapped statement spans.
 
 </template>
 

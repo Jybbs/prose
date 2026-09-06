@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Nested BoolOp Breaks the Outer Run"
+title       = "A Nested Chain Ends the Outer Run and Aligns on Its Own"
 
 description = '''
-The parenthesized `or` chain nested inside the `and` chain **breaks the outer run**, since its multi-line range separates `foo == 1` from `qux == 4` and neither takes padding. The inner chain still aligns on its own, so `bar` pads out to meet `baz_long`'s `==`.
+A parenthesized `or` chain sits between `foo == 1` and `qux == 4` inside the outer `and` chain. **The nested chain's multi-line range ends the outer run**, so neither `foo` nor `qux` takes padding, whereas the inner chain aligns on its own and `bar` pads out to `baz_long`'s `==`.
 '''

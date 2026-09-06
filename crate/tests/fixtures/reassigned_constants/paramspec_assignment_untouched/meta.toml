@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "ParamSpec Bindings Pass Through Untouched"
+title       = "A `ParamSpec` Binding Is Not Reported"
 
 description = '''
-`P = ParamSpec("P")` binds a single-letter type-parameter name rather than the `SCREAMING_CASE` shape the rule targets. A `ParamSpec` binding is also **structural by definition**, declaring a parameter specification rather than storing a value, so the rule emits no diagnostic.
+`P = ParamSpec("P")` binds a single uppercase letter, a name inside the `SCREAMING_CASE` pattern, to a `ParamSpec` call. **No diagnostic is reported**, because a `ParamSpec` binding declares a parameter specification rather than storing a value, a typing construct the rule exempts, and the name is written only once besides.
 '''

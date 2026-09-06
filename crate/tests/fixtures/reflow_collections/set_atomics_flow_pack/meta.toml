@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Set Atomics Pack Across Rows on Overflow"
+title       = "An Over-Wide Set Packs Its Strings Across Two Rows"
 
 description = '''
-`short_set` fits the 88-character budget and stays inline, whereas the nine-string `long_set` overflows and expands. **Inside the expanded form, atomic items flow across as few balanced lines as fit** under `code-line-length` and the `max-atomics` cap, landing the permission strings on two balanced rows. `held_set`, written one item per line, holds its break and packs onto one interior row as `"read", "write", "execute"` rather than joining back inline.
+`short_set` fits its line, `long_set` lists nine permission strings past the budget, and `held_set` is three strings written one per line. **`long_set` expands and packs its strings across two balanced rows**, because atomic items pack across as few rows as fit under `code-line-length` and `max-atomics`, whereas `short_set` stays inline and `held_set` keeps its column and packs onto one row as `"read", "write", "execute"` rather than rejoining.
 '''

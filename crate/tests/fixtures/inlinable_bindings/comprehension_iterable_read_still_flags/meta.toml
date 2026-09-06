@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Comprehension's Own Iterable Still Flags"
+title       = "A Read in a Comprehension's Iterable Is Still Reported"
 
 description = '''
-`rows` is read once, as the comprehension's outermost iterable, which Python evaluates once before any iteration. **The binding is reported**, unlike a read in the comprehension's body, which runs once per item.
+`rows` is written once from `source.fetch()` and read once as the outermost iterable of the list comprehension, which Python evaluates once before the first iteration. **The binding is reported**, unlike a read in the comprehension body, which runs once per item.
 '''

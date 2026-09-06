@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Bare Imports with Aliases Align on the `as` Keyword"
+title       = "Aliased Imports Align on the `as` Keyword"
 
 description = '''
-Four aliased imports run from `collections as c` down to `itertools as it`. **The widest module name, `collections`, fixes the shared `as` column**, and each shorter row pads between its module and the `as` to reach it, so every alias starts at the same place.
+`import collections as c`, `datetime as dt`, `functools as fn`, and `itertools as it` sit on four consecutive lines. **Every `as` moves to the column one space past `collections`**, the widest module name, so the aliases `c`, `dt`, `fn`, and `it` start at one column and read as a list.
 '''

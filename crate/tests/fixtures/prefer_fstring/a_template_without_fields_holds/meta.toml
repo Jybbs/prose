@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Template Stating No Field Holds"
+title       = "A Template With No Field Keeps Its Call"
 
 description = '''
-Neither template carries a substitution, in that `"no fields here"` holds no `{}` field and `"no specs here"` holds no `%` spec. Converting would not move `value` or the empty tuple inline, it would delete them outright, so both lines hold.
+Neither template writes a substitution, in that `"no fields here"` has no `{}` field and `"no specs here"` has no `%` spec. **Both lines stay as written**, because converting would delete `value` and the empty tuple outright rather than moving them inline.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Annotated Fields Sort Beneath a Derived Constant"
+title       = "Annotated Fields Sort Beneath a Constant That Reads One of Them"
 
 description = '''
-`HALF = width` reads the annotated field `width`, a reference reaching from the constant family into the field family. Both families order through **one shared dependency graph**, so `height` and `width` alphabetize among themselves while `HALF` stays below the `width` it reads rather than freezing the whole class body.
+`HALF = width` reads the annotated field `width`, a reference reaching from the constant family into the field family. **`height` and `width` alphabetize among themselves and `HALF` stays below the `width` it reads**, rather than the whole class body freezing, because both families order through one shared dependency graph.
 '''

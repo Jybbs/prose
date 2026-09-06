@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "File-Top Prose Off Opts the Whole Source Out"
+title       = "A File-Top `prose: off` Opts the Whole File Out"
 
 description = '''
-`# prose: off` at the top of the file opts every line below it out of every rule, so nothing here changes.
-
-`x`, `foo`, and `bar_baz` stay unsorted and unaligned, `config` keeps both its unsorted keys and its trailing comma, and `helper` keeps its `b, a` parameter order. **However many rules would otherwise fire, none of them reaches past the directive.**
+`# prose: off` at the top of the file opts every line below it out of every rule, so **nothing here changes**. `x`, `foo`, and `bar_baz` stay unsorted and unaligned, `config` keeps its unsorted keys and its trailing comma, and `helper` keeps its `b, a` parameter order, however many rules would otherwise fire.
 '''

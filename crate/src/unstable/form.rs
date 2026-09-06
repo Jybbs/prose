@@ -16,9 +16,7 @@ use crate::rules::render_slugs;
 
 const TEMPLATE: &str = "unstable-output.yml";
 
-/// The budget every report URL stays under, terminal-printed and
-/// client-opened alike, so what travels toward a public tracker is the
-/// same bounded content the notice prints. A field too long for it
+/// The budget every report URL stays under. A field too long for it
 /// drops, which on a real module is the source and both passes, and
 /// the form asks the reporter for the file instead.
 const BUDGET: usize = 1200;

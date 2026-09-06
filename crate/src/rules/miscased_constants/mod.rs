@@ -28,8 +28,7 @@ pub(crate) struct MiscasedConstants {
 }
 
 impl MiscasedConstants {
-    pub(crate) const MESSAGE: &'static str =
-        "Module constant is not SCREAMING_CASE. Rename it to the SCREAMING_CASE form";
+    pub(crate) const MESSAGE: &'static str = "rename a module constant to SCREAMING_CASE";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

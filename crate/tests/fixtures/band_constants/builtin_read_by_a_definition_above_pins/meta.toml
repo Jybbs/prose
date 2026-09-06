@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Constant Rebinding a Builtin a Definition Above It Reads Pins"
+title       = "A Constant Rebinding a Builtin a Definition Reads Stays Below It"
 
 description = '''
-`def helper(x=list)` evaluates its default against the builtin `list` at the moment the definition runs, and the module rebinds `list` further down.
-
-Hoisting `list = [1, 2, 3]` above the definition would bind that default to the new list object instead of the builtin, so **the rebinding holds its source position**. `TABLE = 5` shadows nothing the definition reads, so it moves up past `helper` as usual.
+`def helper(x=list)` evaluates its default against the builtin `list` when the definition runs, and `list = [1, 2, 3]` rebinds that name further down the module. **The rebinding stays below `helper` while `TABLE = 5` moves up past it**, because hoisting `list` above the definition would bind the default to the new list instead of the builtin.
 '''

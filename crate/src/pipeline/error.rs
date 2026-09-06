@@ -42,13 +42,12 @@ pub enum PipelineError {
 /// Reparses `new_text` and tags each failure with `rule`, the result
 /// carrying no table until the caller's `inherit` fills one.
 ///
-/// A splice reparses only the statements the edits reached and answers
-/// `None` where it declines, leaving the whole-file parse below. That
-/// path takes every notebook, so the slide that keeps a notebook's cell
-/// boundaries current through `map` and the per-cell check through
-/// [`reject_split_cell`] both sit on it. The semantic check reads either
-/// path's result, and runs only when `gate` carries the version to
-/// evaluate against.
+/// A splice reparses only the statements the edits reached and returns
+/// `None` where it declines, leaving the whole-file parse below. Every
+/// notebook takes that path, so forwarding the cell offsets through
+/// `map` and the per-cell check through [`reject_split_cell`] both sit
+/// on it. The semantic check reads either path's result, and runs only
+/// when `gate` carries the version to evaluate against.
 pub(super) fn reparse_or_reject(
     source: Source,
     new_text: String,

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Drop Future Import, Then Flag Step-Narration Comments"
+title       = "The Future Import Drops and the Step Reports Follow Their Comments"
 
 description = '''
-`process` narrates its own steps with `# 1. Filter empties.` and `# 2. Sort ascending.`, the comment shape `step-narration` flags rather than rewrites, so both stay in the output. `prune-inert-imports` removes `from __future__ import annotations` alongside them, and **each diagnostic's range is computed against the file after that removal**, so the reported positions still land on the comments.
+`process` narrates its steps with `# 1. Filter empties.` and `# 2. Sort ascending.`, and the module opens with `from __future__ import annotations`. `prune-inert-imports` removes the directive, and `step-narration` reports both comments and rewrites nothing, **each finding landing on the comment's row in the output** after the removal shifts the file up by one line.
 '''

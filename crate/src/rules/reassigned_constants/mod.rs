@@ -1,8 +1,8 @@
 //! Flags a module-level `SCREAMING_CASE` binding that is reassigned.
-//! A write-once name passes whatever its value. The structural-home
-//! carve-outs (dunder names, `TypeVar` / `ParamSpec` / `NewType` /
-//! `TypeAliasType` constructors, the `if TYPE_CHECKING:` block, and the
-//! per-project `allow` list) drop out ahead of the reassignment gate.
+//! A write-once name passes whatever its value. Dunder names,
+//! `TypeVar` / `ParamSpec` / `NewType` / `TypeAliasType` constructors,
+//! the `if TYPE_CHECKING:` block, and the per-project `allow` list are
+//! skipped ahead of the reassignment gate.
 
 use ruff_python_ast::Expr;
 use ruff_text_size::Ranged;
@@ -24,7 +24,8 @@ pub(crate) struct ReassignedConstants {
 }
 
 impl ReassignedConstants {
-    pub(crate) const MESSAGE: &'static str = "SCREAMING_CASE name is reassigned despite its constant casing. Rename it lowercase or keep it write-once";
+    pub(crate) const MESSAGE: &'static str =
+        "rename a reassigned SCREAMING_CASE name lowercase, or assign it once";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

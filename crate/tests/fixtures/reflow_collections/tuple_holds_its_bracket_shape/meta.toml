@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Held Tuples Keep Their Source Bracket Shape"
+title       = "A Kept Tuple Keeps Its Parentheses"
 
 description = '''
-`held_paren_tuple` holds its multi-line break while **preserving its source bracket shape**, keeping its parens as the interior repacks onto one row. `joined_one_element` carries too few entries to hold, so it rejoins to `(42,)` with both its parens and the trailing `,` that makes it a tuple. `paren_tuple` and `bare_tuple` fit and are untouched whatever their bracket shape, whereas `qualifying_inner_in_tuple` expands along with the five-key dict it encloses.
+`held_paren_tuple` is three integers written one per row inside parentheses, `joined_one_element` is `42,` spread across rows, `paren_tuple` and `bare_tuple` fit on their lines, and `qualifying_inner_in_tuple` encloses a five-key dict. **`held_paren_tuple` keeps its column and its parentheses while its interior packs onto one row**, whereas `joined_one_element` rejoins as `(42,)` because one entry is too few for a kept column, the two fitting tuples are left as written whatever their bracket form, and `qualifying_inner_in_tuple` expands with the dict it encloses.
 '''

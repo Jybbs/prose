@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Leading Constant Carries Its Prose Comment Up"
+title       = "A Leading Constant Carries Its Comment Up"
 
 description = '''
-The own-line comment `# the upstream cache time-to-live` binds to `TTL_SECONDS` even across the blank line the author left between them, so the pair hoists into the leading band above `render` together. The hoist closes that blank, leaving the comment directly on top of the constant it describes.
+`# the upstream cache time-to-live` stands a blank line above `TTL_SECONDS = 60`, both below `render`. **The comment and the constant move together into the leading band above `render`, and the blank line between them closes**, because an own-line comment above a member moves with it even across a blank line.
 '''

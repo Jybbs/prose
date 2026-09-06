@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An F-String Holds When the Target Quote Appears Inside"
+title       = "An F-String Keeps Its Quotes When the Target Quote Appears Inside"
 
 description = '''
-Swapping `row` to double quotes would set its outer quote against the `"key"` inside its replacement field, a nesting Python only accepts from 3.12. `shout` carries `"hi"` in its literal text, where the swap would add two escapes instead, so both f-strings hold their single quotes.
+`row = f'{data["key"]}'` carries `"key"` inside its replacement field, and `shout = f'say "hi" to {name}'` carries `"hi"` in its literal text. **Both f-strings keep their single quotes**, because swapping `row` would set its outer quote against the `"` inside the field, a nesting Python accepts only from 3.12, and swapping `shout` would add two escapes instead.
 '''

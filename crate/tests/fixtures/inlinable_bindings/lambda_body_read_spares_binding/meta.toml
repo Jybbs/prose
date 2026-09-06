@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Read Inside a Lambda Body Spares the Binding"
+title       = "A Read Inside a Lambda Body Is Not Reported"
 
 description = '''
-`helper` in `factory` is read once, inside the `lambda x: x * helper` body, and the analyzer attributes that read to `factory`'s own scope rather than the lambda's. **`inlinable-bindings` declines it anyway**, because the lambda body runs on each later call, so inlining would move `compute()` into that body and change both when it runs and what the closure captures.
+`helper` in `factory` is written once from `compute()` and read once inside the body of `lambda x: x * helper`, and the binding table attributes that read to `factory`'s scope rather than the lambda's. **The binding is not reported anyway**, because the lambda body runs on each later call, so inlining would move `compute()` into that body and change both when it runs and what the closure captures.
 '''

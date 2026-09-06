@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "A Bare Attribute Joins the Link Below It"
+title       = "A Bare Attribute Shares the Row of the Link Below It"
 
 description = '''
-Splitting the chain gives each call its own row, whereas `.second`, a bare attribute that is never called, opens no row of its own. It lands ahead of the call that follows it, the row reading `.second.third()`, so every row of the stacked chain ends in a call.
+`source.first().second.third().fourth()` carries `.second`, an attribute that is never called, between two calls. Breaking the chain gives each call its own row, whereas **`.second` opens no row of its own and is written ahead of the call that follows it**, so the middle row reads `.second.third()` and every row of the stacked chain ends in a call.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Read Inside an `except` Clause Spares the Binding"
+title       = "A Read Naming the `except` Class Is Not Reported"
 
 description = '''
-`expected` is written above the `try` and read once in the `except` clause naming the exception class, which Python evaluates only once a raise reaches the handler. **The binding stays unreported**, because the inline would move `mod.Error` under the guard the `try` opens rather than leaving it where the author put it.
+`expected` is written above the `try` from `mod.Error` and read once in the `except expected:` clause, which Python evaluates only once a raise reaches the handler. **The binding is not reported**, because inlining would move `mod.Error` under the guard the `try` opens rather than leaving it where the author wrote it.
 '''

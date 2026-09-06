@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Comment Below an Anchored Constant Holds Its Slot"
+title       = "A Comment Below a Constant That Stays in Place Keeps Its Slot"
 
 description = '''
-`LIMIT = compute_limit()` calls a name nothing in the module defines, so the constant anchors in place and never bands. The comment `# the ceiling the scheduler honors` binds to `LIMIT`, and because the sort never rewrites the anchored line, the comment keeps the slot the source gave it, leaving `ALPHA_DECAY = 0.9` unchanged below.
+`LIMIT = compute_limit()` calls a name nothing in the module defines, so it stays where it is written, and the comment `# the ceiling the scheduler reads` sits directly below it. **The comment keeps its own line rather than folding onto `LIMIT`**, because the rule never rewrites a line it left in place, and `ALPHA_DECAY = 0.9` stays unchanged below the blank line.
 '''

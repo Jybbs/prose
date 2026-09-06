@@ -3,7 +3,5 @@ previewable = false
 title       = "A Trailing Comment Widens the Import Row It Joins"
 
 description = '''
-The comment sits directly beneath the import with no blank line between the two, so it reads as that statement's trailing comment rather than as a note standing on its own.
-
-It therefore **joins the import's row**, and its width counts toward that row when the roster is measured.
+The `# A comment trailing the run.` line sits directly beneath `from pkg import alpha, beta` with no blank line between them, so it reads as that statement's trailing comment rather than as a note standing on its own. **The comment is written onto the import's row**, and its width counts toward that row when the import is measured against the `60`-column budget.
 '''

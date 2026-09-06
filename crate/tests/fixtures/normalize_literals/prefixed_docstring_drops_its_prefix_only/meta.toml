@@ -3,5 +3,5 @@ previewable = true
 title       = "A Docstring Drops Its Prefix and Keeps Its Quotes"
 
 description = '''
-`render`'s `U"""Doc."""` and `tally`'s `u'inline.'` each drop their no-op prefix, and neither one's delimiters move, `'inline.'` staying single-quoted precisely because it sits in docstring position. **The prefixes facet reaches a docstring and the quotes facet does not**, leaving that frame to [[frame-docstrings]].
+`render`'s docstring is `U"""Doc."""` and `tally`'s is `u'inline.'`. **Each drops its no-op prefix and neither one's delimiters move**, `'inline.'` staying single-quoted because it sits in docstring position, since the prefixes facet reaches a docstring whereas the quotes facet leaves that frame to [[frame-docstrings]].
 '''

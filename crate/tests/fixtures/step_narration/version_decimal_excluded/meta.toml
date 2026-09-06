@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Decimal-Version Comments Sit Out"
+title       = "A Decimal Version Comment Is Skipped"
 
 description = '''
-`# 1.2 release notes` and `# 2.0 spec compliance` each place a digit immediately after the `.`, and `step-narration`'s numbered-step shape **requires whitespace there before it counts as a step**. Because that whitespace is missing, neither comment matches, so decimal-version comments never trigger the lint.
+`# 1.2 release notes` and `# 2.0 spec compliance` each put a digit directly after the `.`. **`step-narration` reports neither**, because the numbered-step form requires whitespace after the `.`, and a decimal version has a digit there instead.
 '''

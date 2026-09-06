@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Stacked Decorators Keep, Docstring Reshapes, Cushions Normalize"
+title       = "Stacked Decorators Stay, the Docstring Reframes, and Blank Lines Settle"
 
 description = '''
-Three stacked decorators sit above `lookup`, and its docstring is written with both the opening and closing `"""` sharing a line with prose rather than standing alone.
-
-**The `"""` delimiters lift onto lines of their own and the prose wraps at the budget**, while the blank-line cushions around `memoize` and `trace` normalize to two lines. `lookup`'s signature stays on one line and carries no multi-line columns to align, so it passes through unchanged.
+Three stacked decorators sit above `lookup`, whose docstring has both the opening and closing `"""` sharing a line with prose. **The `"""` move onto their own lines and the prose wraps at the budget**, while the gaps around `memoize` and `trace` settle to two blank lines. `lookup`'s signature stays on one line and carries no multi-line columns to align, so it passes through unchanged.
 '''

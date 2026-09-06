@@ -3,5 +3,5 @@ previewable = true
 title       = "A Module Docstring's Entries Sort by Name"
 
 description = '''
-The `Args:` section sits in a module docstring, and a module has no signature for the entries to mirror, because a module takes no parameters. The entries therefore sort alphabetically, `alpha:` moving ahead of `zebra:` rather than keeping an order borrowed from anywhere else.
+The `Args:` section sits in a module docstring, listing `zebra` before `alpha`. **The entries sort alphabetically, `alpha:` moving ahead of `zebra:`**, because a module takes no parameters, so it has no signature for the entries to mirror and no order is borrowed from anywhere else.
 '''

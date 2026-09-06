@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Overflowing Arm Lists Expand and Stay Wrapped"
+title       = "Exploded Arm Lists Keep Their Arms Wrapped"
 
 description = '''
-The `"alpha"` and `"beta"` arms of `dispatch` return inline lists that overflow the line budget. `reflow-collections` expands each list, and **`align-match-case` leaves those arm bodies wrapped because expansion forces a multi-line statement** the arm cannot collapse, whereas the wildcard's `return []` folds onto its `case _:` line.
+The `"alpha"` and `"beta"` arms of `dispatch` return inline lists that overflow the line budget, and the wildcard returns `[]`. `reflow-collections` explodes each list, and **`align-match-case` leaves those two arm bodies wrapped**, because an exploded list makes the `return` a multi-line statement the arm cannot join onto its `case` line, whereas the wildcard's `return []` joins onto `case _:`.
 '''

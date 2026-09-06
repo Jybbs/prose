@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "An Outer Call Measures Its Nested Fracture Joined"
+title       = "An Outer Call Measures Its Nested Break Joined"
 
 description = '''
-The `TypeError` call and the `format` call inside it both arrive fractured.
-
-Measuring whether the outer call fits back on one line counts the nested call **at its joined width**, not at the truncated width its opening row happens to show. The whole `raise` collapses onto one line in a single pass, rather than waiting for the inner rejoin to land first.
+The `TypeError` call and the `format` call inside it both arrive broken across rows. **The whole `raise` rejoins onto one row in a single pass**, rather than waiting for the inner rejoin to be written first, because measuring whether the outer call fits back on one row counts the nested call at its joined width, not at the truncated width its opening row shows.
 '''

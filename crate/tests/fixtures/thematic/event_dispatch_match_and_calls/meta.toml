@@ -4,7 +4,5 @@ sandbox     = true
 title       = "Event Dispatch Splits Match Arms and Explodes a Keyword Call"
 
 description = '''
-`dispatch` matches on `event.kind`. Its `"create"` arm carries an over-wide `registry.create` call while `"update"` and `_` stay terse, and `summarize` holds a five-entry `totals` dict.
-
-The `"create"` arm and its call explode one per line, with the keywords sorted and settled onto a shared `=` column. `"update"` and `_` **stay collapsed inline with their `:` padded to match each other**, the `totals` dict sorts and expands one entry per line, and `summarize`'s single-line docstring reshapes to framed form. The assign-once `totals` is flagged for inlining.
+`dispatch` matches on `event.kind`, its `"create"` arm carrying an over-wide `registry.create` call while `"update"` and `_` stay short, and `summarize` builds a five-entry `totals` dict. **The `"create"` arm's call explodes to one keyword per line with the keywords sorted and aligned on one `=` column, whereas the `"update"` and `_` arms each join their one-statement body onto the `case` line, `registry.update`'s keywords sort to `actor`, `source`, and the two `:` pad to one column.** The `totals` dict sorts and expands to one entry per line, both single-line docstrings expand to the framed form, the imports regroup, and `bare-imports` reports `logging` as reached through a single attribute.
 '''

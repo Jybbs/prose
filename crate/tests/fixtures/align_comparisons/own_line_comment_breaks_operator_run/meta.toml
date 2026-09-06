@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Own-Line Comment Breaks the Operator Run"
+title       = "An Own-Line Comment Ends the Run"
 
 description = '''
-The `# divider` comment on its own line pushes `foo == 1` and `bar_baz == 2` onto non-adjacent source lines, so the **line-distance check breaks the run** regardless of what the comment says. `bar_baz` and `qux` below the divider still align among themselves.
+The comment `# divider` takes a line of its own between `foo == 1` and `bar_baz == 2`. **The comment line ends the run**, whatever its text says, because the two rows are no longer on adjacent source lines, so `foo` keeps its `==` as written and `bar_baz` and `qux` align below the comment.
 '''

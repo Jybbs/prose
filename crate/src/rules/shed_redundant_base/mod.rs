@@ -2,7 +2,7 @@
 //! `object` base and the empty parentheses a base-less header carries.
 //! A header left with nothing sheds its parentheses alongside the base,
 //! whereas a run of `object` bases beside a surviving base or metaclass
-//! keyword goes as one span carrying the separator that bound it. An
+//! keyword is deleted as one span with the separator that bound it. An
 //! `object` rebound at module scope ahead of the class stays, as does
 //! any span carrying a comment.
 
@@ -26,7 +26,7 @@ pub(crate) struct ShedRedundantBase;
 
 impl ShedRedundantBase {
     pub(crate) const MESSAGE: &'static str =
-        "shed a redundant `object` base or empty class parentheses";
+        "remove a redundant `object` base or empty class parentheses";
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 

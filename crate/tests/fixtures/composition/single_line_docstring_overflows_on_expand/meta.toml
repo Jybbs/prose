@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Expanded Single-Line Docstring Overflows and Rewraps"
+title       = "A One-Line Docstring Expands and Its Text Wraps"
 
 description = '''
-`render` carries a one-line docstring whose text runs past the line budget once the quotes move to their own lines. **`expand-docstrings` rewrites it to the multi-line form and `wrap-docstrings` reflows the text** across three lines that fit within the budget.
+`render` carries a one-line docstring whose text runs past the line budget once the quotes move to their own lines. **`expand-docstrings` rewrites it to multi-line form and `wrap-docstrings` reflows the text** across three lines within the budget.
 '''

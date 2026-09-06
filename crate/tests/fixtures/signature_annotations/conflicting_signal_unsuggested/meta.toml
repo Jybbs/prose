@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Conflicting Call Signals Leave the Report Unsuggested"
+title       = "Call Sites Disagreeing on a Type Report Without a Suggestion"
 
 description = '''
-`render`'s only parameter, `width`, is called once with the `int` literal `80` and once with the `str` literal `"full"`. Because the two calls disagree on a type, `signature-annotations` reports the missing annotation on `width` without a suggested type.
+`render`'s only parameter, `width`, is passed the `int` literal `80` at one call and the `str` literal `"full"` at another. **The rule reports `width` with no suggested type**, because the two calls disagree, and reports separately that `render` returns a value without a return annotation.
 '''

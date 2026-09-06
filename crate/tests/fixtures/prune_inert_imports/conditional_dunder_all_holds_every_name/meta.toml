@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An `__all__` Below Module Scope Holds Every Name"
+title       = "An `__all__` Written Below Module Scope Keeps Every Import"
 
 description = '''
-The `__all__` naming `dumps` sits inside an `if TYPE_CHECKING:` block rather than at module scope, so the rule cannot settle which names the module exports. **Every import holds**, leaving `from json import dumps` in place even though nothing else reads it.
+`__all__ = ["dumps"]` sits inside an `if TYPE_CHECKING:` block rather than at module scope, and nothing else reads `dumps`. **`from json import dumps` stays**, because the rule reads an export list only at module scope, and an `__all__` it cannot read keeps every import in the module.
 '''

@@ -69,8 +69,8 @@ impl Rule for LintSentinelRule {
 }
 
 /// Test-only lint-only rule that locates `needle` in the source it
-/// is handed and emits one lint over it, so its range tracks the
-/// buffer the rule actually reads rather than a fixed offset.
+/// is handed and emits one lint over it, its range tracking the
+/// buffer the rule reads.
 #[derive(Debug)]
 struct NeedleLintRule {
     id: RuleId,

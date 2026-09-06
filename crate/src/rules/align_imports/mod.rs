@@ -3,9 +3,8 @@
 //! statements at the same block indentation. Group boundaries are
 //! blank lines, own-line comments, form changes, bare imports, and
 //! multi-name imports, the two forms aligning independently so a
-//! stranded `import M as A` splits a `from`-import group rather than
-//! fusing all three. A multi-line import skips alignment, since
-//! shifting the keyword would break the continuation indent.
+//! stranded `import M as A` splits a `from`-import group. A multi-line
+//! import skips alignment.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -64,12 +63,11 @@ struct Visitor<'a> {
 }
 
 impl Visitor<'_> {
-    /// Walks `body` once through `aligner::keyed_line_adjacent_groups`,
+    /// Groups `body` through `aligner::keyed_line_adjacent_groups`,
     /// tagging each qualifying statement with its form. The keyed
     /// grouper closes an active run whenever the form changes at an
     /// otherwise-adjacent boundary, so a stranded `import M as A`
-    /// between two `from`-imports splits the surrounding run without
-    /// merging its neighbors and without re-walking the body.
+    /// between two `from`-imports splits the surrounding run.
     fn process_body(&mut self, body: &[Stmt]) {
         let source = self.walker.source;
         let groups = aligner::keyed_line_adjacent_groups(source, body, self.walker.rule, |s| {
@@ -90,9 +88,8 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
 
 /// Builds an alignment member for a `from M import N` statement,
 /// anchored at the `import` keyword. Returns `None` for any other
-/// statement shape and for multi-line imports whose continuation
-/// indent would misalign if the keyword shifted. Read by the
-/// `reflow-imports` forecast as well, so both rules seat one row alike.
+/// statement shape and for a multi-line import. The `reflow-imports`
+/// forecast reads it as well.
 pub(crate) fn qualify_from(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
     let s = stmt.as_import_from_stmt()?;
     if source.contains_line_break(s.range) {

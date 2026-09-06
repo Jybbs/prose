@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Inline Comment Travels with Its Hoisted Constant"
+title       = "An Inline Comment Moves With Its Constant"
 
 description = '''
-`zebra = 1` carries the trailing comment `# explanatory note`, and as the sort moves `alpha = 2` and `beta = 3` above it, **the comment travels with its statement** to the bottom. A trailing comment attaches to the line it ends, whereas a detached comment standing between statements would pin the run in place.
+`zebra = 1` ends in the trailing comment `# explanatory note`, above `alpha = 2` and `beta = 3`. **The comment moves with `zebra` to the bottom of the run** as the other two sort above it, because a trailing comment belongs to the line it ends.
 '''

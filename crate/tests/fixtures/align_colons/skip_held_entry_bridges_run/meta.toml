@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Skip-Held Entry Bridges the Alignment Run"
+title       = "A Skipped Entry Stays Tight and the Run Bridges It"
 
 description = '''
-The `"port"` entry carries a `# prose: skip[align-colons]` suppression, so it drops out of the alignment group and keeps its tight spacing untouched. `"host"` and `"timeout"` bridge across the held line and align on the shared `:` column the two of them set.
+The `"port"` entry carries a `# prose: skip[align-colons]` suppression. **It drops out of the alignment group and keeps its tight spacing**, whereas `"host"` and `"timeout"` bridge across the skipped line and align on the `:` column the two of them set.
 '''

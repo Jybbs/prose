@@ -3,6 +3,6 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/stack_method_chains/comment_between_links_pins_the_chain/input.py
 ---
-result = query.filter(a).order(  # keep the shape
+result = query.filter(a).order(  # keep this layout
     b
 ).limit(c)

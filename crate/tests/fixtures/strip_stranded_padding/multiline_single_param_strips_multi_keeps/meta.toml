@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Multi-Line Singleton Signatures Drop the Padding Too"
+title       = "A Multi-Line Signature With One Parameter Loses the Padding Too"
 
 description = '''
-`fetch`'s signature spans multiple lines but holds only `timeout : float,`, the lone parameter, so `strip-stranded-padding` **strips its pre-`:` padding** down to `timeout: float,`. `render`'s signature holds two parameters, `template : str,` and `context  : dict,`, each on its own line, so the rule defers to `align-colons` and their padding stays.
+`fetch`'s signature spans several lines but carries only `timeout : float,`, the lone parameter, whereas `render`'s carries two parameters, `template : str,` and `context  : dict,`, each on its own line. **`strip-stranded-padding` removes the padding before `timeout`'s `:`**, writing `timeout: float,`, and leaves `render`'s two parameters to `align-colons`, so their padding stays.
 '''

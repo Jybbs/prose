@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "An Over-Budget Chain Breaks One Operand Per Row"
+title       = "An Over-Budget Chain Breaks Into One Operand per Row"
 
 description = '''
-The condition sits on a single row that crosses the 40-column budget, and its interior does not fit on a row of its own either.
-
-The pair therefore opens its bracket alone, lands **each operand on its own row** one indent step in, and closes on a row of its own ahead of the `:`.
+The `if` condition in `dispatch` sits on one row over the `code-line-length` of `40`, and its interior does not fit on a row of its own either. **The pair breaks into one operand per row**, so the opening `(` ends its row, each operand takes a row one indent step in with its `and` at the start, and the `)` closes on a row of its own ahead of the `:`.
 '''

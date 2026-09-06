@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Global and Nonlocal Declarations Are Ignored"
+title       = "A `global` Write Binds at Module Scope and a `nonlocal` Write Stays Local"
 
 description = '''
-`global x` inside `globalized` and `nonlocal y` inside `inner` are **ignored by the analyzer**, so each later write binds in its own function scope. `x = 1` lands in `globalized`'s scope rather than the module table, and `inner`'s `y = 1` becomes a second `y` binding separate from the one in `nested`.
+`globalized` declares `global x` before `x = 1`, and `inner` declares `nonlocal y` before `y = 1` inside `nested`. **`x` binds in the module table and `globalized`'s own scope stays empty, whereas `inner`'s `y` is a second binding in `inner`'s scope separate from the `y` in `nested`**, because the table records the names a `global` statement declares and ignores a `nonlocal` one.
 '''

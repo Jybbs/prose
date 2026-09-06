@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Unbroken Annotated Field Run Aligns as One Block"
+title       = "An Unbroken Run of Annotated Fields Aligns as One Block"
 
 description = '''
-The body of `User` is an unbroken run of five annotated fields at one indent, from `id` through `is_active`. Nothing interrupts the run, so **the whole body aligns as a single block**, every `:` settling on the column set by `is_active`, the widest name.
+The body of `User` is an unbroken run of five annotated fields at one indent, from `id` through `is_active`. Nothing interrupts the run, so **the whole body aligns as one block**, every `:` moving to the column set by `is_active`, the widest name.
 '''

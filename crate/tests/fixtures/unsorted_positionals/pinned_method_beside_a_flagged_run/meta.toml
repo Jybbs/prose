@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Pinned Method Leaves the Field Run Still Reported"
+title       = "A Silenced Method Leaves the Field Run Reported"
 
 description = '''
-`Report.render`'s `@click.argument("path")` decorator, since it carries an argument, silences the method's own `target, source` parameters, while `Report`'s `zebra`, `apple` field run **still triggers its diagnostic**. The two skips are independent, in that one reads the decorator list and the other reads the class header.
+`Report` is a `@dataclass` declaring `zebra` then `apple`, and its `render` method takes `target, source` under `@click.argument("path")`. **The lint reports the field run and nothing for the method**, because the decorator's positional argument silences the method's own run whereas the class header still generates a positional constructor, so the two checks read different constructs and neither depends on the other.
 '''

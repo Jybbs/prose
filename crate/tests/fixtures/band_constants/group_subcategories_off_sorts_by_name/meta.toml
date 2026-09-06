@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "group-subcategories = false Sorts by Tier and Name Alone"
+title       = "`group-subcategories = false` Sorts by Tier and Name Alone"
 
 description = '''
-`Zeta = int` is a type alias, and by default type aliases cluster ahead of plain constants like `ALPHA = 1`, so `Zeta` would normally come first.
-
-Setting `group-subcategories = false` turns that clustering off. The constants are then ordered **by dependency level and name alone**, which puts `ALPHA` above `Zeta`.
+`Zeta = int` is a type alias and `ALPHA = 1` a plain constant, and the case runs with `group-subcategories = false`. **`ALPHA` sorts above `Zeta`**, because the setting turns off the clustering that places aliases ahead of constants, leaving a plain sort by tier and name.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Trailing Off Comment Is Not a Block Opener"
+title       = "A Trailing Off Comment Does Not Open a Block"
 
 description = '''
-The `# fmt: off` trailing `short = 3` is a **normal end-of-line comment, not a block opener**, because only a `# fmt: off` on its own line opens a suppressed span. `short` still receives its `align-equals` edit alongside `x`, `foo`, `aa`, `bbb`, and `cccc`, and none of the code below it is suppressed.
+The `# fmt: off` trailing `short = 3` is **an ordinary end-of-line comment rather than a block opener**, because only a `# fmt: off` alone on its line opens a suppressed span. `short` still sorts into one run with `x`, `foo`, `aa`, `bbb`, and `cccc`, every `=` pads to the column one space past `short`, and nothing below the comment is suppressed.
 '''

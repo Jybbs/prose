@@ -1,6 +1,7 @@
-import { repoRoot }                  from '../../lib/shared/paths'
-import { declaredKeys, proseSchema } from '../../lib/shared/rule-schema'
-import * as sources                  from '../../lib/tokens/sources'
+import { repoRoot }                        from '../../lib/shared/paths'
+import { declaredKeys, proseSchema }       from '../../lib/shared/rule-schema'
+import { configKeySources, firstSentence } from '../../lib/tokens/config-keys'
+import * as sources                        from '../../lib/tokens/sources'
 
 const token = (domain: sources.Domain, key: string): sources.Token =>
   ({ blurbNodes: [], domain, href: '', key, sort: key })
@@ -35,15 +36,27 @@ describe('groupByDomain', () => {
   })
 })
 
-describe('config-key sources', () => {
-  const keys     = declaredKeys(proseSchema(repoRoot(import.meta.url)))
+describe('firstSentence', () => {
+  it.each([
+    ['Turns the cache on or off.',                         'Turns the cache on or off.'],
+    ['Reads `a.b`. Then more.',                            'Reads `a.b`.'],
+    ['The `prose.toml` file wins. A second sentence.',     'The `prose.toml` file wins.'],
+    ['No terminator at all',                               'No terminator at all']
+  ])('cuts %s at its first sentence end outside code', (input, expected) => {
+    expect(firstSentence(input)).toBe(expected)
+  })
+})
+
+describe('configKeySources', () => {
+  const schema   = proseSchema(repoRoot(import.meta.url))
+  const keys     = declaredKeys(schema)
   const declared = new Set([
     ...keys.top,
     ...keys.rules,
     ...keys.cache.map(key => `cache.${key}`),
     ...keys.imports.map(key => `imports.${key}`)
   ])
-  const indexed = sources.SOURCES['config-key'].map(source => source.key)
+  const indexed = configKeySources(schema).map(source => source.key)
 
   it('indexes every key the schema declares', () => {
     expect([...declared].filter(key => !indexed.includes(key)).toSorted()).toEqual([])
@@ -52,5 +65,9 @@ describe('config-key sources', () => {
   it('indexes nothing the schema leaves out, beyond the overrides table', () => {
     const unschemed = new Set(['overrides.paths'])
     expect(indexed.filter(key => !declared.has(key) && !unschemed.has(key))).toEqual([])
+  })
+
+  it('gives every key a one-sentence blurb', () => {
+    expect(configKeySources(schema).filter(s => s.blurb === '' || !s.blurb.endsWith('.'))).toEqual([])
   })
 })

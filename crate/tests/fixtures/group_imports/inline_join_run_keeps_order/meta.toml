@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Semicolon-Joined Run Keeps Source Order"
+title       = "A Semicolon-Joined Pair Keeps Its Source Order"
 
 description = '''
-`from collections import abc` and `import sys` share one physical line, joined by a `;`. The partition relocates whole one-per-line statements, and neither of these owns its line, so the rule **leaves the pair untouched** in source order.
+`from collections import abc` and `import sys` share one physical line, joined by `;`. **`group-imports` leaves the pair as written**, because the rule moves whole statements that own their line, and neither of these does.
 '''

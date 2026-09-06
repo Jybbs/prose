@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Trailing Comment Rides the Rejoined Line"
+title       = "A Trailing Comment Stays on the Rejoined Line"
 
 description = '''
-`x = 1 + \` continues onto a line ending in `# note`, and the two fold into `x = 1 + 2  # note`. The comment's width still counts toward the budget that settles whether the split rejoins onto one line or takes parentheses instead.
+`x = 1 + \` continues onto a line ending in `# note`. **The two lines join into `x = 1 + 2  # note`**, with the comment kept at the end of the joined line, and the comment's width counts toward the budget the rule fits the joined line within, which sets whether a split rejoins or takes parentheses.
 '''

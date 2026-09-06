@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Prose Comment Travels With the Def It Heads"
+title       = "A Comment Above a Def Moves With It"
 
 description = '''
-A comment written directly above `rgb_to_yiq` sits between the module constants and three function definitions that `alphabetize-siblings` reorders. **The comment moves with `rgb_to_yiq`** to its new position between `hls_to_rgb` and `yiq_to_rgb`, rather than staying above whichever definition lands in the original slot.
+A two-line comment sits one blank line above `rgb_to_yiq`, between the module constants and three functions that `alphabetize-siblings` reorders. **The comment moves with `rgb_to_yiq`** to its new position between `hls_to_rgb` and `yiq_to_rgb`, closing onto the line directly above the `def`, rather than staying above whichever definition ends up in the original slot, and `band-constants` sorts `ONE_SIXTH` ahead of `ONE_THIRD` above them.
 '''

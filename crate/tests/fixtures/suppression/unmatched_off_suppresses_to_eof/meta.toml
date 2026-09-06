@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Unmatched Off Suppresses Through End of File"
+title       = "An Unmatched Off Suppresses Through the End of the File"
 
 description = '''
-An unmatched `# fmt: off`, with no closing `# fmt: on` anywhere below it, **suppresses through end of file**, so `short`, `much_longer_name`, and `mid` stay exactly as written even though their `=` signs sit ragged. The run above the marker is untouched by the suppression, so `x`, `foo`, and `bar_baz` sort into `bar_baz`, `foo`, `x` and align their `=` on that group's own width.
+An unmatched `# fmt: off` with no `# fmt: on` below it **suppresses through the end of the file**, so `short`, `much_longer_name`, and `mid` stay exactly as written with their `=` signs ragged. The run above the directive is outside the span, so `x`, `foo`, and `bar_baz` sort to `bar_baz`, `foo`, `x` and pad their `=` to that group's own width.
 '''

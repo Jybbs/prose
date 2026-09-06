@@ -1,8 +1,8 @@
-//! Module-scope semantic-syntax check, the ground Python's `compile`
-//! covers past a bare parse. `ruff_python_parser`'s
+//! Module-scope semantic-syntax check, the errors Python's `compile`
+//! reports past a bare parse. `ruff_python_parser`'s
 //! `SemanticSyntaxChecker` supplies the checks and this module supplies
-//! the context it reads, answering as the module scope every visited
-//! statement sits in.
+//! the context it reads, reporting module scope for every visited
+//! statement.
 
 use std::cell::OnceCell;
 

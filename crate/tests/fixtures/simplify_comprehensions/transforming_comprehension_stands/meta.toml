@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Comprehension That Transforms Its Input Stands"
+title       = "A Comprehension That Transforms Its Input Stays as Written"
 
 description = '''
-The element `row.width` differs from the loop target `row`, and `row.label` likewise, so each comprehension transforms its input rather than copying it. A rewrite to `list(rows)` or `set(rows)` would lose that transformation, so both stand exactly as written.
+`[row.width for row in rows]` and `{row.label for row in rows}` each produce an element, `row.width` or `row.label`, that differs from the target `row`. **Both comprehensions stay exactly as written**, because each transforms its input rather than copying it, and `list(rows)` or `set(rows)` would lose that transformation.
 '''

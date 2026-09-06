@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "An Import Run Sorts When Constant-Banding Consolidates It"
+title       = "An Import Run Sorts Once a Constant Moves Out of It"
 
 description = '''
-`y = 1` sits between the two imports and splits them into two separate runs.
-
-Moving that constant below the imports brings the pair together as one run, and **a run that has just been joined is then sorted**, so `from a import x` lands above `from b import x`.
+`y = 1` sits between `from b import x` and `from a import x`, splitting the imports into two runs. **`y` moves below the imports and the two `from` imports then sort as one run**, `from a import x` above `from b import x`, with one blank line between the run and the constant.
 '''

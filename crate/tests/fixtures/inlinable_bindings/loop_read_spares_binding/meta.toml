@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Read Inside a Loop Spares the Binding"
+title       = "A Read Inside a Loop Body Is Not Reported"
 
 description = '''
-`cutoff` is written once above the `for` and read once inside it, the shape `inlinable-bindings` otherwise reports. **The binding stays unreported**, because standing `before or 0.0` in at the read would recompute it once per path rather than once per call.
+`cutoff` is written once above the `for` from `before or 0.0` and read once inside the loop body, the case the rule otherwise reports. **The binding is not reported**, because replacing the read with `before or 0.0` would recompute it once per path rather than once per call.
 '''

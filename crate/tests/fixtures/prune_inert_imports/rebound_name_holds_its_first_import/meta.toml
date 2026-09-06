@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Rebound Name Holds Its First Import"
+title       = "A Name a Second Import Rebinds Keeps Its First Import"
 
 description = '''
-The module imports `loads` from `_pyjson`, then a `try` block rebinds it from `_speedups`, so the module-scope binding for `loads` carries two writes. **The first import holds** because the `except ImportError: pass` branch leaves the original binding in place when the second import fails.
+`loads` is imported from `_pyjson`, and a `try` block rebinds it from `_speedups` with `except ImportError: pass`. **The first import stays**, because a name a second import rebinds from another source keeps its first binding, which is the fallback the `except` branch leaves in place when the second import fails.
 '''

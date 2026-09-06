@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Parameter Default Joins and the Run Skips the Column"
+title       = "A Parameter Default Joins and the Run Skips the `=` Column"
 
 description = '''
-`a`'s list default is written across two lines and rejoins onto one.
-
-Measured at that joined width, padding the `=` out to the column `bbbbbbbbbbbbbb` would set takes the row past the 44-column budget, so **`align-equals` reserves no padding at all**. `reflow-collections` reads that decision before it joins, so the list joins where it stands and the `=` stays tight, rather than the list breaking apart just to make room for padding.
+The list default of `a` in `f` is written across two lines, above `bbbbbbbbbbbbbb: int = 2`. Measured at its joined width, padding the `=` of `a` out to the column `bbbbbbbbbbbbbb` sets would take the row past the 44-column budget, so **`align-equals` reserves no padding and the `=` stays tight**, and `reflow-collections` reads that reservation before it joins the list, so the list joins where it stands rather than breaking apart to make room for padding.
 '''

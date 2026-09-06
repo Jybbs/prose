@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Lambda Value Holds"
+title       = "A Lambda Value Keeps the Template"
 
 description = '''
-Splicing `lambda: 1` into an f-string field would put the lambda's `:` where the field grammar reads the start of a format spec. The template `"%s" % (lambda: 1,)` is left as written rather than converted into a field that parses differently.
+`later = "%s" % (lambda: 1,)` passes a lambda as the value. **The template stays as written**, because the lambda's `:` inside a replacement field would read as the start of a format spec and change what the field means.
 '''

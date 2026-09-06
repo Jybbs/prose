@@ -3,7 +3,5 @@ previewable = false
 title       = "A Two-Hash Heading Reads as a Divider"
 
 description = '''
-`## Helpers` opens with two `#`, which is the minimum that reads as a **section divider** rather than a note about the code below it.
-
-The gap under the heading normalizes to one blank line instead of the comment attaching directly onto `def helper`, and the two blanks above the heading stay as written.
+`## Helpers` sits two blank lines below `import os` and two above `def helper():`. **The heading, opening with two `#`, reads as a section divider rather than as a note about the code below it**, two being the minimum for that reading, so the gap below it collapses to one blank line rather than the comment binding flush onto the `def`, and the two blank lines above it stay.
 '''

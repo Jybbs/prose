@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Assignments Under if TYPE_CHECKING Are Left Alone"
+title       = "A Write Under `if TYPE_CHECKING` Is Not Reported"
 
 description = '''
-Nothing here is flagged. `DEFAULT_BACKEND` is assigned inside `if TYPE_CHECKING:`, a block that runs under a type checker and never at runtime.
-
-A binding there is **type-system-only rather than a runtime constant**, so the block is skipped entirely and the write is left alone.
+`DEFAULT_BACKEND = "memory"` is assigned inside `if TYPE_CHECKING:`, a block that runs under a type checker and never at runtime. **No diagnostic is reported**, because a binding there belongs to the type system rather than to runtime configuration, so the rule skips the whole block.
 '''

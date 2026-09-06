@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "External Froms Lead Local Froms With No Bare Group"
+title       = "External `from` Imports Lead Local Ones With No Bare Group"
 
 description = '''
-Every import in this file uses the `from` form, so there is no plain `import x` group at the top.
-
-`first-party = ["myapp"]` marks `myapp` as local code, so `group-imports` puts the external `collections` and `typing` ahead of `myapp` and the relative `.`. `space-statements` opens a single blank line between the two groups, and `align-imports` pads `import` into **a shared column within each group** rather than one column spanning both.
+Every import in the file uses the `from` form, and `first-party = ["myapp"]` marks `myapp` as local, so there is no bare `import x` group at the top. `group-imports` puts `collections` and `typing` ahead of `myapp` and the relative `.`, `space-statements` writes one blank line between the two groups, and **`align-imports` pads `import` into a column per group** rather than one column spanning both.
 '''

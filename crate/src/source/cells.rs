@@ -82,7 +82,7 @@ impl Source {
     /// The full lines `range` spans, held back from the synthetic
     /// newline closing the notebook cell that holds it. An ordinary
     /// module takes the span unclamped, and a deletion over the result
-    /// empties a cell rather than merging it into the next.
+    /// empties a cell without merging it into the next.
     pub(crate) fn full_lines_within_cell(&self, range: TextRange) -> TextRange {
         let lines = self.text().full_lines_range(range);
         let Some(cell) = self.cell_offsets.containing_range(range.start()) else {

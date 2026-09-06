@@ -4,7 +4,5 @@ previewable = true
 title       = "An Over-Cap Call the Rule Cannot Name Rejoins"
 
 description = '''
-`helper` resolves to no function defined in this module, so `beta` through `epsilon` can never reach `name=value` form and the over-cap argument count cannot explode the call.
-
-Nothing downstream reopens it either, so **the fracture the author wrote closes onto one row**, rather than holding a shape neither trigger is able to improve.
+`wrap(alpha, helper(beta, gamma, delta, epsilon))` arrives with `helper`'s four arguments broken across rows, and `helper` resolves to no function defined in this module. **The broken list closes onto one row**, because `beta` through `epsilon` can never reach `name=value` form, so the count trigger cannot explode the call, and nothing downstream reopens it, leaving no reason to keep a layout neither trigger can improve.
 '''

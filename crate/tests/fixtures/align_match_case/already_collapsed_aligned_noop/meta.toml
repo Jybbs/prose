@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Already Collapsed and Aligned Passes Through Untouched"
+title       = "An Already Folded and Aligned Match Passes Through Unchanged"
 
 description = '''
-Each arm of the `match` on `credential.kind` already sits on one line, its assignment beside its pattern and every `:` on the column `"apprenticeship"` sets as the widest pattern. Nothing is left to collapse or pad, so **the rule emits zero edits** and the output equals the input byte-for-byte.
+Each arm of the `match` on `credential.kind` already sits on one line with its `:` on the column one space past `"apprenticeship"`, the widest pattern. **The rule emits no edit**, so the output equals the input byte for byte, because nothing is left to fold and no `:` is left to pad.
 '''

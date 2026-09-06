@@ -140,8 +140,7 @@ pub(super) fn shedding_inside<'c, 'src>(
 }
 
 /// True where `expr` joins at one boolean operator and the node
-/// holding it joins at the other, so the pair around `expr` separates
-/// two bindings rather than repeating one.
+/// holding it joins at the other.
 fn binds_apart(expr: &Expr, parent: AnyNodeRef) -> bool {
     let Expr::BoolOp(inner) = expr else {
         return false;
@@ -162,11 +161,11 @@ fn candidate<'src>(
     ancestors: &[AnyNodeRef],
 ) -> Option<Candidate<'src>> {
     let pair = source.parenthesized_range(expr.into(), parent)?;
-    // A walrus binding keeps its pair whatever the context, since the
-    // grammar needs it almost everywhere, and a multi-line return
-    // annotation belongs to `reflow-signatures`, so neither sheds here.
-    // A backslash continuing a row inside the pair belongs to
-    // `shed-backslash-continuations`, which runs ahead of this rule.
+    // A walrus binding keeps its pair whatever the context, a pair
+    // holding a comment stays, a multi-line return annotation belongs
+    // to `reflow-signatures`, and a backslash continuing a row inside
+    // the pair belongs to `shed-backslash-continuations`, so none of
+    // them yields a candidate.
     if expr.is_named_expr()
         || (is_return_annotation(expr, parent) && source.contains_line_break(pair))
         || !source.comment_ranges().comments_in_range(pair).is_empty()

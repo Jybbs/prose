@@ -3,5 +3,5 @@ previewable = true
 title       = "A Backslash Alone on Its Line Takes the Line With It"
 
 description = '''
-The backslash in `x = (2 + \` sits alone on its own physical line inside the parentheses, so removing it leaves nothing behind on that line. The empty line drops along with the backslash, folding the expression down to `x = (2 +` and `2)`.
+`x = (2 +` opens a parenthesized expression, and a backslash sits alone on the next physical line inside the parentheses before `2)`. **The backslash and its now-empty line are both removed**, because removing the backslash leaves nothing on that line, so the expression closes to `x = (2 +` over `2)`.
 '''

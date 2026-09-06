@@ -15,7 +15,7 @@ input_file: crate/tests/fixtures/thematic/tight_commas_hold_the_row_they_were_wr
       "column": 10,
       "row": 1
     },
-    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
   },
   {
     "code": "signature-annotations",

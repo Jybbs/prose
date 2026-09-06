@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Nested Dict Holds Its Order Too"
+title       = "A Nested Dict Keeps Its Order When Key Sorting Is Off"
 
 description = '''
-`outer` keeps `"zulu"` before `"bravo"`, and the inner dict under `"zulu"` keeps `"yankee"` before `"alpha"`. With `sort-dict-keys = false` both levels hold their authored order, because the setting stops the key sort at every nesting depth rather than only in the outermost literal.
+The case runs under `sort-dict-keys = false`, and `outer` lists `"zulu"` before `"bravo"` with the inner dict under `"zulu"` listing `"yankee"` before `"alpha"`. **Both levels keep their authored order**, because the setting stops the key sort at every nesting depth rather than only in the outermost literal.
 '''

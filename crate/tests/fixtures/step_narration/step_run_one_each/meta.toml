@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Multiple Steps in One Function Surface One Lint Each"
+title       = "Several Steps in One Function Are Reported One Each"
 
 description = '''
-`process` narrates its three statements with `# 1.`, `# 2.`, and `# Step 3:` comments, and the lint reports **one diagnostic per matching comment** rather than collapsing the run into a single report. Each diagnostic's range covers its own comment, so the numeric-dot and step-word shapes match independently.
+`process` narrates its statements with `# 1.`, `# 2.`, and `# Step 3:` comments on their own lines. **`step-narration` reports one diagnostic per comment** rather than one for the run, each diagnostic's range covering its own comment, because the numeric-dot form and the step-word form match independently.
 '''

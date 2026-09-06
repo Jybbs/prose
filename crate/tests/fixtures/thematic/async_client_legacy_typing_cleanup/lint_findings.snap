@@ -67,7 +67,7 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
       "column": 15,
       "row": 50
     },
-    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
   },
   {
     "code": "unsorted-positionals",
@@ -80,7 +80,7 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
       "column": 13,
       "row": 75
     },
-    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
   },
   {
     "code": "signature-annotations",

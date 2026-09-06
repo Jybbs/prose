@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Single-Line Calls Pass Through Untouched"
+title       = "A Single-Line Call Passes Through Unchanged"
 
 description = '''
-The `connect` call holds `host`, `port`, and `use_tls` on a single line, and **it passes through unchanged**. The rule opens `=` spacing only for keywords standing on their own lines, so a one-line call keeps the tight `name=value` form PEP 8 expects.
+The `connect` call places `host`, `port`, and `use_tls` on one line. **The call passes through unchanged**, because the rule spaces an `=` only for a keyword that sits alone on its line, so a one-line call keeps the tight `name=value` form PEP 8 gives a call-site keyword.
 '''

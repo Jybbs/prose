@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Multi-Line Annotations Break the Alignment Run"
+title       = "A Multi-Line Annotation Splits the Parameter Run"
 
 description = '''
-`fn`'s `Callable[...]` annotation spans several lines before its `=` arrives, and **the multi-line parameter breaks the run**, cutting `host` off from `timeout`. Each neighbor is left a singleton, so `host: str = "localhost"` and `timeout: float = 30.0` keep their natural widths even though the two would align if grouped.
+`fn`'s `Callable[...]` annotation spans several lines before its `=`, between `host` and `timeout` in `configure`'s signature. **The multi-line parameter splits the run**, leaving `host` and `timeout` alone on either side, so `host: str = "localhost"` and `timeout: float = 30.0` keep their single spaces even though the two would align as a pair.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Annotated Targets Are Reassignment Candidates"
+title       = "An Annotated Assignment Counts as a Write"
 
 description = '''
-`FLAG: bool` carries no value while `MAX: int = 1` does, and both names are then reassigned with a plain `FLAG = True` and `MAX = 2`. **Every one of the four assignments is flagged**, showing that an annotated assignment feeds the same reassignment count whether or not a value follows the annotation.
+`FLAG: bool` declares a name without a value and `MAX: int = 1` declares one with a value, and the plain `FLAG = True` and `MAX = 2` then rebind each. **All four lines are reported**, because an annotated assignment counts toward the write count whether or not a value follows the annotation.
 '''

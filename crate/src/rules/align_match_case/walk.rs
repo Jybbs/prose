@@ -77,8 +77,8 @@ impl Visitor<'_> {
     /// Classifies one arm into the matching `CaseOutcome` variant.
     /// Disqualifies on multi-statement, compound, or multi-line
     /// bodies and on a comment in the `:`-to-body gap, deferring to
-    /// `over_budget_outcome` when the arm would overflow the
-    /// line-length budget collapsed.
+    /// `over_budget_outcome` when the collapsed arm would overflow
+    /// the line-length budget.
     fn qualify_case(&self, case: &MatchCase) -> CaseOutcome {
         let [body_first] = case.body.as_slice() else {
             return CaseOutcome::Disqualify;

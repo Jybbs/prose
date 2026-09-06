@@ -3,5 +3,5 @@ previewable = false
 title       = "A Legacy Spelling Inside a Container Rewrites Where It Sits"
 
 description = '''
-Each annotation here holds a legacy spelling inside a container, and each rewrites where it sits. The `Optional[int]` and `List[str]` inside `Callable`'s brackets become `int | None` and `list[str]` while `Callable` itself keeps its text, `Tuple[List[int], *Ts]` becomes `tuple[list[int], *Ts]` around the PEP 646 unpack, and `Optional[List[int] | str]` unwraps into `list[int] | str | None`. The `typing` import shrinks to the surviving `Callable`, whereas `import os` and `from collections import deque` stay untouched.
+Each annotation here carries a legacy spelling inside a container. **Each one rewrites where it sits**, so the `Optional[int]` and `List[str]` inside `Callable`'s brackets become `int | None` and `list[str]` while `Callable` keeps its text, `Tuple[List[int], *Ts]` becomes `tuple[list[int], *Ts]` around the PEP 646 unpack, and `Optional[List[int] | str]` unwraps to `list[int] | str | None`. The `typing` import shrinks to the surviving `Callable`, whereas `import os` and `from collections import deque` stay untouched.
 '''

@@ -16,7 +16,7 @@ use crate::primitives::binding::{
 /// ahead of it.
 const AUTO: &str = "auto";
 
-/// The `enum` module every ordered base and `auto` come out of.
+/// The module that defines every ordered base and `auto`.
 const ENUM: &str = "enum";
 
 /// The class-body name spelling the member order the loader checks the
@@ -74,10 +74,8 @@ impl<'a> Enumerations<'a> {
 }
 
 /// True where `class` is an enumeration whose members take their value
-/// from the order they are written in, so a reorder rewrites what each
-/// member holds or makes the module raise as it loads. An enumeration
-/// spelling every value out and repeating none sorts freely, its
-/// members meaning the same wherever they sit.
+/// from the order they are written in. An enumeration spelling every
+/// value out and repeating none sorts freely.
 pub(super) fn class_orders_members(class: &StmtClassDef, enums: &Enumerations) -> bool {
     names_a_base(class, &enums.bases) && numbers_by_position(&class.body, &enums.autos)
 }
@@ -104,8 +102,8 @@ fn names_a_base(class: &StmtClassDef, bases: &FxHashSet<&str>) -> bool {
 }
 
 /// True where one class-body statement makes a member's value or its
-/// identity depend on where it sits, being a `__new__` the enumeration
-/// runs per member, an `_order_` the loader checks the declared order
+/// identity depend on where it sits: a `__new__` the enumeration runs
+/// per member, an `_order_` the loader checks the declared order
 /// against, a value reaching `auto` anywhere inside it, or a value a
 /// member above already carries, which makes the one above canonical
 /// and this one its alias.

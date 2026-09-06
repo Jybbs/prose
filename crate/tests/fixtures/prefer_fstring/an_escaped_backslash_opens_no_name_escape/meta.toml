@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Escaped Backslash Opens No Name Escape"
+title       = "Braces After an Escaped Backslash Double as Literal Text"
 
 description = '''
-In `"\\N{token} %s"` the `\\` pair renders one literal backslash, so the `N{token}` after it is plain text rather than a `\N{...}` name escape. Those braces would open a replacement field in an f-string, so the rewrite doubles them to `{{token}}` while `%s` becomes `{name}`.
+In `"\\N{token} %s"` the `\\` pair renders one literal backslash, so the `N{token}` after it is plain text rather than a `\N{...}` name escape. **The rewrite doubles the braces to `{{token}}`** while `%s` becomes `{name}`, because a bare `{` in an f-string would open a replacement field.
 '''

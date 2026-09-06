@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Nested Matches Align Independently"
+title       = "A Nested Match Aligns as Its Own Group"
 
 description = '''
-`case "wrap"` holds a whole `match inner:` as its body, so it cannot fold onto one line and stays multi-line, whereas `case "skip"` collapses to `value = 0` with its `:` hugging the pattern because it aligns alone. **The inner `match` is processed as its own group**, folding `"alpha"`, `"beta"`, and `"gamma"` onto their `case` lines and aligning their `:` on a separate column.
+`case "wrap"` holds a whole `match inner:` as its body, and `case "skip"` holds `value = 0`. **The inner `match` aligns as its own group**, folding `"alpha"`, `"beta"`, and `"gamma"` onto their `case` lines with their `:` on one column, whereas the outer `case "wrap"` stays multi-line because a compound body cannot fold, and `case "skip"` folds with its `:` flush against the pattern because it aligns alone.
 '''

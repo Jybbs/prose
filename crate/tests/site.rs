@@ -283,28 +283,6 @@ fn every_fixture_invocation_resolves() {
 }
 
 #[test]
-fn every_lint_emitting_rule_declares_it_on_its_page() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let rules = root.join("../site/rules");
-    for slug in Pipeline::known_ids() {
-        let module = rule_module(root, slug.as_str());
-        if !module_carries(&module, "fn lint(&self") {
-            continue;
-        }
-        let page = rule_page(&rules, slug.as_str()).expect("every rule has a page");
-        let declares = page.parent().and_then(Path::file_name) == Some("lint".as_ref())
-            || fs_err::read_to_string(&page)
-                .expect("the rule page reads")
-                .lines()
-                .any(|line| line.starts_with("lints") && line.contains("true"));
-        assert!(
-            declares,
-            "rule `{slug}` emits a lint, so its page needs the lint family or `lints : true`",
-        );
-    }
-}
-
-#[test]
 fn every_registered_rule_has_a_page() {
     let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../site/rules");
     for id in Pipeline::known_ids() {

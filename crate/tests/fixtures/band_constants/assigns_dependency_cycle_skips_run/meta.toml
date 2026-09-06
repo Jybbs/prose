@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Dependency Cycle Skips the Whole Run"
+title       = "A Dependency Cycle Keeps the Whole Run in Source Order"
 
 description = '''
-`FORWARD` reads `BACKWARD` and `BACKWARD` reads `FORWARD`, so the run's dependency graph carries a cycle. No ordering can place each definition ahead of its use, so **the whole run skips**, leaving even the independent `MIDDLE = 0` in place.
+`FORWARD = BACKWARD + 1` reads `BACKWARD` and `BACKWARD = FORWARD - 1` reads `FORWARD`, so the run's dependency graph carries a cycle. **The whole run stays in source order**, `MIDDLE = 0` included, because no order places each definition ahead of its use.
 '''

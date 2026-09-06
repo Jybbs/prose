@@ -29,9 +29,8 @@ fn extracted<N: NotificationTrait>(
 
 /// Routes one notification by method, updating the document store and
 /// republishing the affected document's diagnostics. An open or change
-/// replaces the buffer, a close drops it. Unknown methods are ignored
-/// (the protocol leaves notifications unanswered), and malformed params
-/// surface as an error.
+/// replaces the buffer, a close drops it. Unknown methods are ignored,
+/// and malformed params surface as an error.
 pub(super) fn handle_notification(
     connection: &Connection,
     documents: &mut DocumentStore,

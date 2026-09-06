@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Return Annotation Literal Expands Under the Signature"
+title       = "A Return Annotation's Literal Explodes Under the Signature"
 
 description = '''
-The return annotation crosses the 50-column budget, and the widest thing on that row is the `[Values, list[str]]` literal inside it, which `reflow-collections` expands.
-
-`reflow-signatures` reads the opening row as ending at that literal's bracket, so it **keeps `self` inline** rather than exploding a lone parameter to recover width the expansion is about to give back.
+`handler_map`'s return annotation crosses the 50-column budget, and the only collection literal on that row is the `[Values, list[str]]` list inside `Callable`. `reflow-collections` explodes that literal, and **`reflow-signatures` keeps `self` inline**, because it reads the opening row as ending at the literal's bracket rather than exploding a lone parameter to recover width the explode is about to give back.
 '''

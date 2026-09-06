@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A False Explode Facet Lets an Over-Count Dict Collapse"
+title       = "With `explode` and `keep-multiline-literals` Off a Dict Past the Count Rejoins"
 
 description = '''
-With `explode` set to `false` the count cap stops applying, so the four-entry `fits_but_over_count` dict no longer breaks on `max-dict-entries` alone. Clearing `keep-multiline-literals` alongside it releases the already-broken shape, and the inline form fits, so the dict collapses to one line.
+`explode = false` and `keep-multiline-literals = false` are set, and `fits_but_over_count` is a four-entry dict written one entry per line whose joined form fits. **The dict rejoins onto one line**, because `explode` off turns the count trigger off along with the width one, and `keep-multiline-literals` off releases the column the author wrote, leaving the rejoin as the only move.
 '''

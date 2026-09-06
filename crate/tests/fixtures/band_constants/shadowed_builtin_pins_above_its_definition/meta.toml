@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Constant Naming a Shadowed Builtin Pins Above Its Definition"
+title       = "A Constant Naming a Shadowed Builtin Stays Above the Class That Shadows It"
 
 description = '''
-`LIMIT = TimeoutError` reads the builtin, because it sits above the module's own `class TimeoutError` further down the file.
-
-Moving `LIMIT` below the definitions would bind it to that class instead of the builtin, so **it holds its source position**. `TABLE = dict` names a builtin that nothing in the module shadows, so it moves up freely past `helper`.
+`LIMIT = TimeoutError` reads the builtin, because it sits above the module's own `class TimeoutError` further down. **`LIMIT` stays where it is written and `TABLE = dict` moves up past `helper` to join it**, because moving `LIMIT` below the definitions would bind it to the class instead of the builtin, whereas `dict` is a builtin nothing in the module shadows.
 '''

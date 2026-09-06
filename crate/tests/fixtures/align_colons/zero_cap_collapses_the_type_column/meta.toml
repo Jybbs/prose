@@ -3,5 +3,5 @@ previewable = false
 title       = "A Zero Cap Collapses the Type Column Too"
 
 description = '''
-In the `Attributes:` docstring section, `max-shift = 0` collapses the type-group column along with the `:` column. The padded `host      (str)  :` row shrinks to `host (str):`, wherein each `(` sits one space past its own name and each `:` lands flush against the closing parenthesis.
+`config.toml` sets `max-shift = 0` and the `Attributes:` section of `Session` arrives hand-padded. **The type column collapses along with the `:` column**, so the padded `host      (str)  :` row shrinks to `host (str):`, where each `(` sits one space past its own name and each `:` sits flush against the closing paren.
 '''

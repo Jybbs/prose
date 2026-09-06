@@ -3,5 +3,5 @@ previewable = false
 title       = "The Identity Facet Off Leaves the Other Rewrites Running"
 
 description = '''
-With `rewrite-identity = false`, `value == None` stays an equality rather than becoming an `is` test, and `flag == True` is not flagged either, because the boolean-literal lint belongs to the same facet. The other facets keep running, so `0 == len(table)` still flips to `len(table) == 0` and `not key in table` still folds into `key not in table`.
+With `rewrite-identity = false` set, **`value == None` stays an equality rather than becoming an `is` test, and `flag == True` is not reported either**, because the boolean-literal diagnostic belongs to the same facet, whereas the other facets keep running, so `0 == len(table)` still flips to `len(table) == 0` and `not key in table` still folds into `key not in table`.
 '''

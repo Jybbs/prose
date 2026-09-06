@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "A Chain Inside a Held Chain's Argument Still Breaks"
+title       = "A Chain Inside an Unbroken Chain's Argument Still Breaks"
 
 description = '''
-The outer `base.first(...).second(beta)` chain sits under both triggers, so its own shape is left alone. The walk still descends into each link's arguments, and the three-link `other.one().two().three()` passed to `first` trips the count on its own reading, breaking into a grouping pair inside the call.
+The outer `base.first(...).second(beta)` chain is under both triggers, so its own layout is left alone. **The three-link `other.one().two().three()` passed to `first` still breaks into a parenthesis pair inside the call**, because the rule reads each link's arguments and the inner chain exceeds `max-links` on its own.
 '''

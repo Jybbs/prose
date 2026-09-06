@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A `false` Cap Folds a Wide Spread into One Column"
+title       = "A `false` Cap Aligns a Wide Spread on One Column"
 
 description = '''
-Setting `max-shift = false` removes the shift cap entirely, so a run the default cap would split **folds into one column** measured at the widest row. The `#` after `seed()` shifts all the way out to the column `reconcile_every_pending_shipment_record()` sets, rather than falling back to the two-space floor.
+`seed()` and `reconcile_every_pending_shipment_record()` each carry a trailing comment, and the case runs with `max-shift = false`. **The `#` after `seed()` moves all the way out to the column `reconcile_every_pending_shipment_record()` sets**, rather than falling back to the two-space minimum, because `false` removes the limit on how much padding one row may take, so a run the default limit would split aligns on one column.
 '''

@@ -11,10 +11,8 @@ use super::{reach::invoked, refs::root_name};
 
 /// The slot of every statement in `body` that fences the run, being a
 /// class whose base list runs a hook this module cannot read. Nothing
-/// written above such a class may sort below it, since the hook reaches
-/// module bindings the base list never names and every one of them was
-/// bound when it ran. A definition written below was unbound then, so it
-/// stays free to sort.
+/// written above such a class may sort below it, whereas a definition
+/// written below stays free to sort.
 pub(crate) fn fenced_slots(body: &[Stmt], defined: &FxHashSet<&str>) -> Vec<usize> {
     body.iter()
         .positions(|stmt| runs_opaque_code(stmt, defined))
@@ -23,9 +21,7 @@ pub(crate) fn fenced_slots(body: &[Stmt], defined: &FxHashSet<&str>) -> Vec<usiz
 
 /// True where a class's base list runs a call or a subscript this module
 /// cannot read, its chain rooting outside `defined` or in something
-/// other than a name. A metaclass and a `__class_getitem__` hook both
-/// run at class creation, and a C extension holding one calls back into
-/// this module, so no static read follows where it reaches.
+/// other than a name.
 fn runs_opaque_code(stmt: &Stmt, defined: &FxHashSet<&str>) -> bool {
     let Stmt::ClassDef(class) = stmt else {
         return false;

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Decorators Travel with Their `def`, Not above the Blank Run"
+title       = "A Decorator Stays With Its Def and the Blank Run Sits Above It"
 
 description = '''
-`def second` carries `@decorator`, so the blank lines separating it from `first` are counted above the decorator line rather than between the decorator and the `def`. **The single blank grows to two above `@decorator`**, and the decorator stays directly attached to the `def` it modifies.
+`second` carries `@decorator` and sits one blank line below `first`. **The blank run is measured above the decorator line rather than between the decorator and the `def`**, so the one blank line widens to two above `@decorator` and the decorator stays flush against `def second():`.
 '''

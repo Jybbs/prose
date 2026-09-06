@@ -3,5 +3,5 @@ previewable = true
 title       = "An Attribute or Subscript Chain Closes Up"
 
 description = '''
-`chained = value.first` splits before each `.`, and `sliced = mapping["first"]` splits before `[`. Both close up without a space ahead of the operator, rejoining to `value.first.second.third` and `mapping["first"]["second"]`.
+`chained = value.first` splits before each `.`, and `sliced = mapping["first"]` splits before `[`. **Both rejoin with no space before the operator**, to `value.first.second.third` and `mapping["first"]["second"]`, because an attribute or subscript operator closes up against its operand.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Repeated Unread Import Clears Both Cells"
+title       = "A Repeated Unread Import Is Removed From Both Cells"
 
 description = '''
-Each cell opens with `import os` and neither cell reads the name.
-
-Cells concatenate into one module before the walk, so the second `import os` reads as a repeat of the first. **Both lines go together**, leaving each cell holding only its own assignment.
+Each cell opens with `import os`, and neither cell reads the name. **Both `import os` lines are removed**, leaving each cell with only its own assignment, because the cells concatenate into one module before the rules read it, so the second import counts as a repeat of the first.
 '''

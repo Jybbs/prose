@@ -3,5 +3,5 @@ previewable = true
 title       = "A Multi-Hash Heading Keeps Its Run and Gains the Space"
 
 description = '''
-The space lands after the whole hash run rather than flattening it, so `##notes` becomes `## notes` and `####deeper` becomes `#### deeper`, each surviving as the section marker it was written as. `### Section` already carries its space, so it passes through as written.
+`##notes`, `### Section`, and `####deeper` open on runs of two, three, and four hashes. **`##notes` becomes `## notes` and `####deeper` becomes `#### deeper`**, because the space is inserted after the whole hash run rather than the run being reduced to one `#`, so each line survives as the section marker it was written as. `### Section` already carries its space and is left as written.
 '''

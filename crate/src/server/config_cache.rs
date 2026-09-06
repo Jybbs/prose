@@ -76,7 +76,7 @@ fn discovered(dir: &Path) -> DirSource {
 impl DirSource {
     /// The config governing `file`, layering matching overrides onto the
     /// project base or reading `bytes`'s PEP 723 block under a bare
-    /// directory. `None` draws the caller back to the defaults, including
+    /// directory. `None` leaves the caller on the defaults, including
     /// when a bare document's block fails to load.
     fn config(&self, file: &Path, bytes: &[u8]) -> Option<Config> {
         match self {

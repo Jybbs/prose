@@ -14,8 +14,8 @@ pub(super) struct Requote {
     pub(super) parts: Vec<String>,
 }
 
-/// One literal run written both ways, alongside the backslash each
-/// delimiter costs across it.
+/// One literal run written under both delimiters, alongside the
+/// escapes each costs.
 struct Transcription {
     current_body: String,
     current_escapes: usize,
@@ -24,24 +24,24 @@ struct Transcription {
 }
 
 /// The requote a string carrying `parts` settles on under `flags`.
-/// `None` covers the raw and triple-quoted declines alone, in that a
-/// plain string always reports the quoting it settles on even where
-/// that leaves the source untouched.
+/// `None` covers only a raw or triple-quoted string keeping its
+/// delimiters, a plain string always reporting the quoting it settles
+/// on even where that leaves the source untouched.
 ///
 /// A plain string swaps to the opposite delimiter when that drops an
 /// escape, and on a tie when the target is `"`. Either way its body
 /// comes back carrying exactly the escapes the surviving delimiter
-/// needs, so a redundant backslash before the opposite quote is shed.
-/// A raw string never gains or loses a backslash, so it swaps only
-/// toward `"` and only when every `"` in its parts already carries one.
-/// A triple-quoted string swaps to `"""` only when no `"""` run and no
-/// trailing `"` would abut the closer.
+/// needs, shedding a redundant backslash before the opposite quote. A
+/// raw string swaps only toward `"` and only when every `"` in its
+/// parts already carries a backslash. A triple-quoted string swaps to
+/// `"""` only when no `"""` run and no trailing `"` would abut the
+/// closer.
 pub(super) fn requoted(parts: &[&str], flags: AnyStringFlags) -> Option<Requote> {
     requoted_with(parts, flags, true)
 }
 
-/// [`requoted`] for a literal whose last part ends ahead of the closer
-/// only where `closer_abuts`, as an interpolation following it does.
+/// [`requoted`] for a literal whose last part abuts the closer only
+/// where `closer_abuts` holds, an interpolation ending it otherwise.
 pub(super) fn requoted_with(
     parts: &[&str],
     flags: AnyStringFlags,
@@ -105,9 +105,8 @@ fn escaped_throughout(part: &str, target: Quote) -> bool {
 }
 
 /// The requote a raw string settles on, `None` when it keeps its
-/// delimiters. A raw body carries every backslash into its value, so
-/// the swap runs only toward `"`, only when no bare `"` is left to
-/// escape, and it leaves the parts byte-for-byte.
+/// delimiters. The swap runs only toward `"` and only when no bare `"`
+/// remains, leaving the parts byte-for-byte.
 fn raw_requoted(parts: &[&str], flags: AnyStringFlags) -> Option<Requote> {
     let target = flags.quote_style().opposite();
     let swappable = target.is_double() && parts.iter().all(|part| escaped_throughout(part, target));

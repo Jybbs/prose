@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Nested Keyword Run Folds into Its Outer Call"
+title       = "A Nested Keyword Run Folds Into Its Outer Call"
 
 description = '''
-Both keyword runs sort, so `g`'s arguments reorder to `c=2, d=1` and `foo`'s `b=2, a=3` become `a=3, b=2`.
-
-`z=g(...)` **keeps its first slot**, because its value is a call and moving it would change the order the arguments are evaluated in. The inner run folds into the outer call's single edit rather than emitting a second edit that would overlap it.
+`foo` is called with `z=g(d=1, c=2)`, `b=2`, and `a=3`, so a keyword run sits inside a keyword run. **Both runs sort, `g`'s arguments to `c=2, d=1` and `foo`'s `b=2, a=3` to `a=3, b=2`, whereas `z=g(...)` keeps its first place**, because its value is a call and moving it would change the order the arguments are evaluated in. The inner run folds into the outer call's single edit rather than emitting a second edit that would overlap it.
 '''

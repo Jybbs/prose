@@ -3,5 +3,5 @@ previewable = true
 title       = "A Gap Already Past Two Columns Is Left Where It Sits"
 
 description = '''
-Two columns is the floor rather than the target, so the wide gaps between `value = 1` and `other = 22` and their trailing comments survive untouched. Those comments already share a column, and leaving the gaps alone keeps that column reachable by an alignment rule rather than flattened before one can read it.
+`value = 1` and `other = 22` each carry a trailing comment with a wide gap before it, and the two comments already share a column. **Both gaps are left as written**, because two columns is the minimum rather than the target, so the column they share stays in place for an alignment rule to read rather than being flattened before one can.
 '''

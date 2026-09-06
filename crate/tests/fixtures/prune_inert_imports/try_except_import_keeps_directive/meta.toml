@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Optional Import Keeps the Directive"
+title       = "An Import Inside `try` Keeps the Directive"
 
 description = '''
-`Bar` is imported inside a `try` block whose `except ImportError: pass` leaves the name unbound whenever the import fails, so `value: Bar` never resolves to an unconditional binding written before it. **The directive stays** because evaluating that annotation eagerly, without a `target-version` deferring it, could raise `NameError` when the import fails.
+`Bar` is imported inside a `try` block whose `except ImportError: pass` leaves the name unbound when the import fails, and `use` annotates a parameter as `value: Bar`. **The directive stays**, because `Bar` never resolves to an unconditional binding written before the annotation, and evaluating it eagerly could raise `NameError`.
 '''

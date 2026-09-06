@@ -3,5 +3,5 @@ previewable = false
 title       = "`for` Body and `else` Arm Sort Independently"
 
 description = '''
-The loop body's imports reorder into `from alpha import b` then `from zeta import a`, and the `else:` arm's reorder into `from delta import d` then `from omega import c`, **each arm sorting its own contents independently**. Nothing crosses between the arms, in that the rule treats the body and the `else:` clause as two ordinary statement bodies.
+The `for` body contains `from zeta import a` and `from alpha import b`, and its `else:` arm contains `from omega import c` and `from delta import d`. **Each arm sorts its own contents and nothing crosses between them**, the body reordering to `alpha` then `zeta` and the `else:` arm to `delta` then `omega`, because the rule reads the body and the `else:` clause as two ordinary statement bodies.
 '''

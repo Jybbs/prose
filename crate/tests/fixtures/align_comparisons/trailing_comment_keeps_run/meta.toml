@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Trailing Comment Keeps the Run Intact"
+title       = "A Trailing Comment Keeps the Run Together"
 
 description = '''
-The `# trailing` comment after `foo == 1` **does not break the alignment run**, since the three operands still sit on adjacent source lines. The `==` for `foo`, `bar_baz`, and `qux` settle into one column, whereas a comment ends a run only when it takes a line of its own.
+The comment `# trailing` sits at the end of the `foo == 1` row rather than on a line of its own. **The trailing comment keeps the run together**, because the three operands still sit on adjacent source lines, so the `==` for `foo`, `bar_baz`, and `qux` move to one column. A comment ends a run only when it takes a line of its own.
 '''

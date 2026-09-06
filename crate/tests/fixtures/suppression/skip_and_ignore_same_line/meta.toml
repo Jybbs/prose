@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Skip and Ignore Coexist on One Line"
+title       = "A Skip and an Ignore Coexist on One Line"
 
 description = '''
-One line assigning `RETRY_INTERVAL` carries both `# prose: skip[strip-trailing-commas]` and `# prose: ignore[reassigned-constants]`. The **skip stops `strip-trailing-commas` from removing the trailing comma in `func(3, 4,)`**, and the **ignore stops `reassigned-constants` from reporting `RETRY_INTERVAL`'s later `+= 1`**, while `align-equals` still aligns the line's `=` against `DEFAULT_LIMIT` and `PAGE_SIZE`.
+The line assigning `RETRY_INTERVAL` carries both `# prose: skip[strip-trailing-commas]` and `# prose: ignore[reassigned-constants]`. **The skip stops `strip-trailing-commas` from removing the trailing comma in `func(3, 4,)`, and the ignore stops `reassigned-constants` from reporting `RETRY_INTERVAL`'s later `+= 1`**, while the line still anchors the `align-equals` run, so `DEFAULT_LIMIT` and `PAGE_SIZE` pad their `=` to `RETRY_INTERVAL`'s column.
 '''

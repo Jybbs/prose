@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Argument List of Any Other Shape Stays Written"
+title       = "An Argument List of Any Other Form Stays Written"
 
 description = '''
-`Child` defines three methods, each calling `super` with an argument shape the bare-call rewrite doesn't match. `send` passes `Child, self, **extra`, `single` passes only `Child`, and `starred` passes `*pair`, none the `ClassName, self` pair the rewrite requires, so `shed-super-args` leaves all three calls exactly as written.
+`Child` defines three methods, each calling `super` with an argument list the rewrite does not match. `send` passes `Child, self, **extra`, `single` passes only `Child`, and `starred` passes `*pair`. **All three calls stay exactly as written**, because none is the `ClassName, self` pair the rewrite requires.
 '''

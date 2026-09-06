@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Comma-Joined Import Stays Quiet"
+title       = "A Comma-Joined Import Is Not Reported"
 
 description = '''
-`import collections, itertools` runs to 29 columns against the 20-column import budget, yet `line-overflow` emits nothing. The comma join is a form `reflow-imports` can split into one statement per module, and the shape still counts as reshapeable even here, where `reflow-imports = false` turns that rule off entirely.
+`import collections, itertools` runs to 29 columns against the 20-column `import-line-length` this case sets, with `reflow-imports = false` turning that rule off. **`line-overflow` emits nothing**, because the comma join is a form `reflow-imports` can split into one statement per module, and the line still counts as reshapeable even with that rule disabled.
 '''

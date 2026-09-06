@@ -3,7 +3,5 @@ previewable = false
 title       = "Nested Compound Arms Recurse to Any Depth"
 
 description = '''
-Sorting **recurses into nested compound statements at any depth**.
-
-The `if inner:` body reorders `from alpha import b` ahead of `from zeta import a`, and the outer body reorders `beta` and `gamma` below it. The nested `if` itself keeps its source slot within the outer arm while its contents sort.
+An `if inner:` block containing one import pair sits inside an `if outer:` block containing another. **Both pairs sort, the inner body reordering `from alpha import b` ahead of `from zeta import a` and the outer body reordering `beta` and `gamma` below it**, while the nested `if` keeps its place within the outer arm, because sorting recurses into nested compound statements at any depth.
 '''

@@ -3,7 +3,5 @@ previewable = false
 title       = "A Yield Argument Keeps the Parentheses Its Range Omits"
 
 description = '''
-The four-argument `relay` call explodes to keyword form, binding `(yield 1)` to `count=` and `(yield from stream)` to `offset=`.
-
-A `yield` is a legal argument only in parenthesized form, and the parser reports its range **without** those parentheses. The rewrite restores each pair rather than emitting source Python would reject.
+`relay((yield 1), (yield from stream), start, limit)` passes two parenthesized `yield` expressions among four positionals to a `relay` defined above it. **The call explodes to keyword form with `count=(yield 1)` and `offset=(yield from stream)` keeping their parentheses**, because a `yield` is a legal argument only in parenthesized form and the parser reports its range without those parentheses, so the rewrite restores each pair rather than writing source Python would reject.
 '''

@@ -131,8 +131,8 @@ impl<'a> Walker<'a> {
                     return;
                 }
                 // Section prose wraps one line at a time with no
-                // paragraph rejoin, so it takes the first-fit algorithm,
-                // whose maximal lines re-wrap to themselves.
+                // paragraph rejoin, under the first-fit algorithm, whose
+                // maximal lines re-wrap to themselves.
                 let opts = wrap_options(self.rule.section_width, indent, indent)
                     .wrap_algorithm(WrapAlgorithm::FirstFit);
                 for piece in textwrap::wrap(&collapsed([text]), opts) {

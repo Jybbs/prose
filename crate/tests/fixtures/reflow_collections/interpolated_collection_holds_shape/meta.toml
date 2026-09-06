@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Collection Inside a Replacement Field Holds Its Shape"
+title       = "A Collection Inside an f-string Field Is Left as Written"
 
 description = '''
-The list `[alpha, beta, gamma]` sits inside the replacement field of the f-string handed to `ValueError`, on a line running past the budget. It still holds its source shape, because an f-string literal is opaque to layout and expanding the list would splice a line break into the string itself.
+The list `[alpha, beta, gamma]` sits inside a replacement field of the f-string passed to `ValueError`, on a row past the budget. **The list is left as written**, because the rule never rewrites inside an f-string's replacement field, so no line break is ever written into the string.
 '''

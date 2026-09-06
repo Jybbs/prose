@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Negated None Equality Settles in One Pass"
+title       = "A Negated `None` Equality Settles in One Pass"
 
 description = '''
-`not value == None` stacks two rewrites, in that the `== None` should read as an identity test and the leading `not` should fold into the operator. Both land together, so the condition comes back as `value is not None` rather than passing through an intermediate form.
+`not value == None` carries two rewrites at once, in that `== None` becomes an identity test and the leading `not` folds into the operator. **The condition is written as `value is not None` in one pass**, because both rewrites compose in one traversal rather than passing through an intermediate form.
 '''

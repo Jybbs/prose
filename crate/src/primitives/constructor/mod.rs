@@ -43,8 +43,7 @@ pub(crate) fn keyword_field_start(class: &StmtClassDef) -> TextSize {
 /// True when the class header names a constructor generator that binds
 /// the annotated field run by position, named by either a base class or
 /// a decorator. Each name resolves on its tail segment, so a dotted or
-/// aliased import matches alike and a same-named local shadow pins a
-/// run that would otherwise sort.
+/// aliased import matches alike.
 fn generates_positional_init(class: &StmtClassDef) -> bool {
     let based = class
         .bases()

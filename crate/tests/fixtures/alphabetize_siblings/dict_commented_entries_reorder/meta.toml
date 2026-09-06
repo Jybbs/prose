@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Trailing Comments Travel with Their Entries"
+title       = "Trailing Comments Move With Their Dict Entries"
 
 description = '''
-Sorting `theme` moves `"ruler"` below `"accent"` and `"background"`, and each entry's trailing `#` comment travels with its entry, the separator `,` sitting after the value and before the comment. Values that contain their own `#`, like the hex string `"#ff8800"`, **stay intact** because the comma is placed from the parsed value span rather than from the first `#` on the line.
+`theme` lists `"ruler"`, `"accent"`, and `"background"`, each value a hex string containing `#` and each entry ending in a trailing `#` comment. **Sorting moves `"ruler"` below `"accent"` and `"background"`, and each trailing comment moves with its entry**, the `,` sitting after the value and before the comment. A value containing its own `#`, such as `"#ff8800"`, stays intact because the comma is placed from the parsed value span rather than from the first `#` on the line.
 '''

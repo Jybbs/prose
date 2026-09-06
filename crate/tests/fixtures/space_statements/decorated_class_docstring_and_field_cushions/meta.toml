@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Decorated Class Threads Docstring and Field Cushions"
+title       = "A Decorated Class Binds Its Docstring and Spaces Its Fields"
 
 description = '''
-The blank line between `class Posting:` and its docstring **closes to zero**, binding the docstring to the header even under the `@final` and `@dataclass` decorators. One blank then separates the docstring from the `company` field, and another separates `title` from `def summary(self):`.
+`Posting`, decorated with `@final` and `@dataclass`, has a blank line between its header and its docstring, and its fields `company` and `title` and the method `summary` sit flush below the docstring. **The blank line between the header and the docstring closes to none**, whatever decorators sit above the class, and one blank line is written between the docstring and `company` and another between `title` and `def summary(self):`.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "An Async Method and a Closure Taking a Receiver Shorten"
 
 description = '''
-`Child.items`, defined `async def`, calls `super(Child, self).items()`, and shortens the same way a synchronous method would. `wrapped`'s nested `inner(self)` closure also calls `super(Child, self).items()`, and shortens because its own first positional parameter, `self`, is the receiver, the rewrite reading the innermost callable rather than `wrapped` around it.
+`Child.items`, defined `async def`, calls `super(Child, self).items()`, and the `inner(self)` closure nested in `wrapped` calls it too. **Both shorten to `super().items()`**, the async method the same way a synchronous one would and the closure because its own first positional parameter, `self`, is the receiver, since the rewrite reads the innermost callable rather than `wrapped` around it.
 '''

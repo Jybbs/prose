@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Except-As Binds in the Enclosing Scope"
+title       = "An `except ... as` Name Binds in the Enclosing Scope"
 
 description = '''
-`except FileNotFoundError as e` **binds `e` in the enclosing module scope**, recorded with the `ExceptHandler` kind rather than in any scope of its own. Both `print(e)` calls inside the handler count as reads of that binding, so its `read_offsets` lists the two sites.
+`except FileNotFoundError as e` names the caught exception, and two `print(e)` calls read it inside the handler. **`e` binds in the enclosing module scope with the `ExceptHandler` kind**, in no scope of its own, so its `read_offsets` lists both `print(e)` sites.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "One Blank between `from` and Bare Import Stays"
+title       = "One Blank Line Between a `from` Import and a Bare Import Stays"
 
 description = '''
-`from sys import argv` sits one blank line above the bare `import os`, the reverse ordering of the sibling case. The single blank is already the canonical gap between the two import forms, so the source **passes through unchanged**.
+`from sys import argv` sits one blank line above the bare `import os`, the reverse order of the sibling case, with the rule running alone. **The blank line stays as written**, because `space-statements` alone sets no count between two imports, so the source passes through unchanged.
 '''

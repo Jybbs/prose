@@ -3,5 +3,5 @@ previewable = true
 title       = "A Star Import Keeps a Resolvable Call Positional"
 
 description = '''
-`from _bisect import *` can rebind `bisect_left` at runtime, so the `def` visible above the import is not a signature the rule can safely name arguments against. The keyword rewrite is skipped, leaving the four positionals exactly as written.
+`bisect_left(data, target, low, high)` calls the `def` above it in a module that also carries `from _bisect import *`. **The four positionals stay exactly as written**, because the star import can rebind `bisect_left` at runtime, so the visible `def` is not a signature the rule can safely name arguments against, and the keyword rewrite is skipped.
 '''

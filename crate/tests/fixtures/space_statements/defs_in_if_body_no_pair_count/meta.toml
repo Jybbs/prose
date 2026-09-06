@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Defs inside an If Body Don't Pair-Count"
+title       = "Defs Inside an `if` Body Take No Canonical Count"
 
 description = '''
-`alpha` and `beta` sit directly against each other inside the `if FEATURE_X:` body, and **no blank lines are inserted between them**.
-
-The walk does descend into the `if` body to find nested classes and functions, but it applies no canonical blank-line count at that indentation, so the source passes through unchanged.
+`alpha` and `beta` sit flush against each other inside the `if FEATURE_X:` body. **No blank line is inserted between them**, because the rule reads into the `if` body to find nested classes and functions and applies no canonical count at that indentation, so the source passes through unchanged.
 '''

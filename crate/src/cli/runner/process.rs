@@ -17,11 +17,11 @@ use crate::{
     unstable::UnstableRewrite,
 };
 
-/// How a run answers the settle question for one file. `Eager` walks
-/// the rules over the output as it lands. The ledger variants apply
-/// where a live cache lets a write-back run mark its output instead,
-/// wherein the walk is skipped and `LedgerHit` proves the input bytes
-/// are a prior run's own output that failed to settle.
+/// How a run checks that one file's output settles. `Eager` walks the
+/// rules over the output as it lands. The ledger variants apply where
+/// a live cache lets a write-back run mark its output instead, skipping
+/// the walk, and `LedgerHit` means the input bytes are a prior run's
+/// own output that failed to settle.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) enum Marker {
     Eager,
@@ -173,14 +173,13 @@ pub(super) fn process_source(
 
 /// Rebuilds the outcome `entry` records against the file's own
 /// `bytes`, which an ordinary module hands straight to the
-/// `SourceFile` rather than copying. A notebook reads the cells the
-/// entry carries instead, leaving the JSON those bytes hold unparsed.
+/// `SourceFile`. A notebook reads the cells the entry carries instead,
+/// leaving the JSON those bytes hold unparsed.
 ///
 /// # Errors
 ///
 /// Returns the bytes back where the entry cannot serve this mode or
-/// where they are not UTF-8, so the caller runs the pipeline against
-/// them without a second read.
+/// where they are not UTF-8.
 pub(super) fn rehydrate(
     path: &Path,
     bytes: Vec<u8>,
@@ -247,8 +246,8 @@ fn diagnose_only(
     }
 }
 
-/// The report a ledger probe hit mints, reading the editing set off the
-/// marked input rather than walking the fresh output.
+/// The report a ledger probe hit builds, reading the editing set off
+/// the marked input.
 fn marked_report(
     resolved: &Resolved,
     original: &str,
@@ -281,8 +280,8 @@ fn narrowed_report(
 /// to `rewrite`. The caller handles the diagnose-only pass, while an
 /// `AsWritten` anchor takes the rewrite beside the as-written
 /// diagnostics an output format renders with it. A rewritten notebook
-/// re-reads from the bytes that reached disk, so a write that lost its
-/// cell boundaries fails rather than being reported clean.
+/// re-parses the JSON it will write, failing where a cell boundary was
+/// lost.
 fn run_and_assemble(
     source: Source,
     resolved: &Resolved,
@@ -316,9 +315,8 @@ fn run_and_assemble(
             }
             // Under a live ledger a write-back module run skips the
             // settle walk, because its output is marked instead and a
-            // probe hit on the input bytes is already the proof the
-            // prior run's output failed to settle, arriving with the
-            // minimal reproducing source in hand.
+            // probe hit on the input bytes already proves the prior
+            // run's output failed to settle.
             let checks = match marker {
                 Marker::Eager | Marker::LedgerHit => true,
                 Marker::LedgerMiss => !pass.write_back() || formatted.is_notebook(),
@@ -370,9 +368,8 @@ fn settle_report(
 }
 
 /// True where an entry recording `rewrite` is worth writing. A
-/// write-back pass commits the rewrite over the bytes its key was drawn
-/// from, so the file it just wrote never reads that entry back, and a
-/// `Changed` rewrite goes unwritten under such a pass. Every other
+/// `Changed` rewrite under a write-back pass is skipped, because the
+/// commit replaces the bytes its key was drawn from. Every other
 /// pairing stores.
 fn worth_storing(rewrite: &Rewrite, pass: Pass) -> bool {
     !(pass.write_back() && matches!(rewrite, Rewrite::Changed(_)))

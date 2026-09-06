@@ -3,5 +3,5 @@ previewable = true
 title       = "Commented Dict Entries Align on the Shared Column"
 
 description = '''
-Each entry of `config` carries a trailing `#` comment after its value. The comments annotate the entries rather than interrupting the run, so the `:` separators still align on the column set by `"timeout"` and each comment stays where it was, two spaces after its value.
+Each entry of `config` carries a trailing `#` comment after its value. **The `:` separators align on the column set by `"timeout"`** and each comment stays two spaces after its value, because a trailing comment belongs to its entry rather than breaking the run.
 '''

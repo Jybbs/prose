@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Stacked Comment Blocks Keep the Blank Between Them"
+title       = "Stacked Comment Blocks Keep the Blank Line Between Them"
 
 description = '''
-Two comment blocks stand above the constants and they mean different things. `# per-attempt ceiling, in milliseconds` describes `ATTEMPT_MS` directly, while `# the retry envelope the loader reads` is held apart by a blank line and heads the whole group.
-
-The constants hoist above `load`, and a blank line opens between the plain literals and the two derived from them. The blank line between the two comment blocks **survives that hoist**, which is what keeps the heading and the bound note distinct however many times the file is formatted.
+`# the retry envelope the loader reads` heads the whole group of constants below `load` with a blank line under it, and `# per-attempt ceiling, in milliseconds` sits directly above `ATTEMPT_MS`. **The constants move into the leading band above `load`, and the blank line between the two comment blocks stays**, with a second blank line opening between the literals and the two constants derived from them, so the heading and the bound note stay distinct however many times the file is formatted.
 '''

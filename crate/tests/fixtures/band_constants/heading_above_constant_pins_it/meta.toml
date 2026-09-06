@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Heading Above a Constant Pins It In Place"
+title       = "A Heading Above a Constant Keeps It in Place"
 
 description = '''
-Nothing in this file moves. `PALETTE` would ordinarily hoist above `build_palette` to join the constants at the top of the module.
-
-The `### theme colors` line above it reads as a section heading rather than an ordinary note, and a constant sitting beneath a heading belongs to that section. Hoisting `PALETTE` would **carry it out of its own section**, so it stays where it was written.
+`PALETTE` sits below `build_palette` under the line `### theme colors`, and a literal constant in that position would ordinarily move into the leading band above the definition. **Nothing moves**, because the `###` line reads as a banner opening a section rather than as a note on the constant, and a band never crosses a banner, so `PALETTE` stays in the section the heading opens.
 '''

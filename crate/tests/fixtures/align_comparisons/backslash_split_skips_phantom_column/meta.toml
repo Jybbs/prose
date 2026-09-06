@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Backslash-Split Operands Share No Baseline"
+title       = "Operands Split by a Backslash Share No Column"
 
 description = '''
-The chain splits across a backslash continuation, so `filename in breaks` starts after `result = ` while `lineno in breaks[filename]` starts at the continuation indent. **The two members do not share a baseline** because their left edges occupy different screen columns, so neither `in` is padded and the source passes through unchanged.
+The chain is split by a backslash continuation, so `filename in breaks` starts after `result = ` and `lineno in breaks[filename]` starts at the continuation indent. **The two operands share no column**, because their left edges start at different screen columns, so neither `in` is padded and the source passes through unchanged.
 '''

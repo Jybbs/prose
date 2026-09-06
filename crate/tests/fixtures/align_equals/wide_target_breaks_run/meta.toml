@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Wide Target Breaks the Assignment Run"
+title       = "A Wide Target Ends the Run"
 
 description = '''
-`really_really_long_target` is so much wider than `short` and `medium_size` that padding them to meet it would shift their `=` past `max-shift`, so **the wide row breaks the run** and keeps its own single-space gap. The rows on each side align in their own columns, `short` with `medium_size` above and `longer` with `tiny` below.
+`really_really_long_target` sits between `short` and `medium_size` above it and `longer` and `tiny` below it. Padding the narrower names out to its width would take more than `max-shift` allows, so **the wide row ends the run and keeps a single space around its `=`**, and the rows on either side align on columns of their own, `short` with `medium_size` and `longer` with `tiny`.
 '''

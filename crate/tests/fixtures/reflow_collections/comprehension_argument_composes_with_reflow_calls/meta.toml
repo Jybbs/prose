@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Comprehension Argument Joins or Holds Its Re-Indent"
+title       = "A Comprehension Argument Rejoins or Keeps Its Indent"
 
 description = '''
-The comprehension under `items` fits once collapsed, so `[value for value in source]` joins onto its keyword line whole. The one under `rows` would overflow if joined, so it keeps the keyword-column indent `reflow-calls` gives it with its `for` and `if` lines stacked, and both shapes settle together.
+`configure` and `register` are each written one keyword argument per line, and each passes a comprehension broken across rows, the second with an `if` clause as well as its `for`. **The comprehension under `items` rejoins onto its keyword's line, whereas the one under `rows` keeps its breaks**, because the joined form of the second would overflow, so it stays at the indent `reflow-calls` gives a keyword argument with its `for` and `if` rows stacked below.
 '''

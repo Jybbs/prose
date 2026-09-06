@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Set Literal Inside `set()` Stands On Its Own"
+title       = "A Set Literal Inside `set()` Stands on Its Own"
 
 description = '''
-`set({1, 2})` wraps a set literal that is already the set it would build, so the call is dropped and `unique` becomes `{1, 2}`.
+`set({1, 2})` wraps a set literal that is already the set the call would build. **The call is removed**, so `unique` becomes `{1, 2}`.
 '''

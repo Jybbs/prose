@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Padded Entry Holds Where Its Rebuild Fits"
+title       = "A Padded Entry Stays on Its Row Where Its Rebuild Fits"
 
 description = '''
-The entry carries padding around its `:` that `strip-stranded-padding` removes, so the row settles **three columns narrower** than the author wrote it.
-
-That gap matters because the two spellings disagree about whether the dict fits. Measured as written it is too wide and would explode across three rows, and measured as rebuilt it fits on one. The expand test reads **the narrower of the two**, so the entry keeps the single row it was written on.
+`self.loggerMap = { alogger : None }` carries padding inside its braces and around its `:` that `strip-stranded-padding` removes, so the row settles three columns narrower than written. **The entry keeps the single row it was written on**, because the fit test reads the narrower of the two spellings. Measured as written the dict crosses the `40`-column budget and would explode across three rows, whereas measured as rebuilt it fits on one.
 '''

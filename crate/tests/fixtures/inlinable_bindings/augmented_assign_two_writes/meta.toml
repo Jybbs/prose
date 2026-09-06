@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Augmented Assignments Count as Both Write and Read"
+title       = "An Augmented Assignment Counts as a Write and a Read"
 
 description = '''
-`total = 0` is the first write, and `total += value` inside the loop is **both a read and a write** of `total`, lifting the write count above one. A binding written twice cannot dissolve into a single use site, so the accumulator is not flagged.
+`total = 0` is one write, and `total += value` inside the `for` body is both a second write and a read of `total`. **`total` is not reported**, because a binding written twice cannot be replaced at a single read.
 '''

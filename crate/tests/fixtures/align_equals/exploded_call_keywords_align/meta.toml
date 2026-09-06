@@ -3,5 +3,5 @@ previewable = true
 title       = "An Exploded Call's Keywords Align on One Column"
 
 description = '''
-The `connect` call is already exploded, one keyword per line, with `host`, `port`, and `use_tls` each written tight as `name=value`. Padding lands between each keyword name and its `=`, so all three rows share one `=` column, with the widest name, `use_tls`, setting where that column falls.
+The `connect` call is already exploded, with `host`, `port`, and `use_tls` each written tight as `name=value` on its own line. **Every `=` moves to the column one space past `use_tls`**, the widest keyword, so all three rows read `name = value` with the operators stacked.
 '''

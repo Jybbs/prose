@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Triple-Quoted Literal Settles on Triple Double Quotes"
+title       = "A Triple-Quoted Literal Moves to Triple Double Quotes"
 
 description = '''
-`banner` sits outside docstring position, so its triple-apostrophe frame moves to `"""` with both lines of its body untouched. **The delimiter follows the same preference a one-line string does**, so a multi-line block reads the same frame as everything around it.
+`banner` is a two-line literal in triple single quotes sitting outside docstring position. **Its delimiters move to `"""` with both lines of its body untouched**, because the delimiter follows the same preference a one-line string does, so a multi-line block reads with the same frame as everything around it.
 '''

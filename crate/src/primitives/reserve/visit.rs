@@ -5,10 +5,10 @@ use rustc_hash::FxHashMap;
 use super::*;
 use crate::primitives::range::overlaps;
 
-/// One collected alignment run, `candidate` where the rule aligns it
-/// to a column or leaves it alone rather than buffering each row, and
-/// `scope` the statement the run forms inside, the one whose body
-/// holds a statement run or whose expressions hold a keyword or
+/// One collected alignment run, `candidate` true where the rule aligns
+/// it to a column or leaves it alone and false where it buffers each
+/// row, and `scope` the statement the run forms inside, the one whose
+/// body holds a statement run or whose expressions hold a keyword or
 /// parameter run, the module itself for a module-body run.
 pub(super) struct Run {
     /// True for a run formed over a body's statements, false for one

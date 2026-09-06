@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Dunder Read Holds Above the Line That Rebinds It"
+title       = "A Dunder Read Stays Above the Line That Rebinds It"
 
 description = '''
-Nothing here moves. `__xname__ = __name__` reads the name the import machinery bound before the module body ran, and the next line rebinds `__name__` to `"decimal"`.
-
-Sorting the group would be free to place that rebinding above the read, which would hand `__xname__` the new value. Rather than risk it, **the whole region keeps its source order**, so `ZETA` and `ALPHA` stay unsorted alongside it. A constant naming something no earlier binding covers still hoists freely, since moving one up only ever resolves its reference sooner.
+`__xname__ = __name__` reads the name the loader bound before the module body ran, and the next line rebinds `__name__` to `"decimal"`, with `ZETA = 1` and `ALPHA = 2` below. **Nothing moves, `ZETA` and `ALPHA` included**, because a sorted band could place the rebinding above the read and hand `__xname__` the new value, so the whole region keeps its source order. A constant reading a name no earlier statement binds still moves up freely, since moving it up can only resolve the reference sooner.
 '''

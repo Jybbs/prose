@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Generic Whose Target Needs an Import Holds"
+title       = "A Generic Whose Target Needs an Import Stays as Written"
 
 description = '''
-`Deque` modernizes to `collections.deque` rather than to a builtin, so the rewrite would need an import this file does not have. The rule never adds imports, so `queue: Deque[int]` holds as written.
+With `target-version = "3.9"`, `queue: Deque[int]` names a `typing` generic whose modern spelling is `collections.deque` rather than a builtin. **The annotation stays as written and its `Deque` import with it**, because the rewrite would need an import this file does not have and the rule never adds one.
 '''

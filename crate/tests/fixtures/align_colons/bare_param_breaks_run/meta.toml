@@ -3,5 +3,5 @@ previewable = false
 title       = "A Bare Parameter Splits the Run in Two"
 
 description = '''
-The signature of `combine` mixes annotated parameters with the bare `legacy`, which carries no `:` to align. The bare line **breaks the alignment group in two**, so `user` and `source` align against each other above it whereas `target_path` and `destination` form their own column below it.
+The signature of `combine` mixes annotated parameters with the bare `legacy`, which has no `:` to align. **The bare line splits the alignment group in two**, so `user` and `source` align with each other above it whereas `target_path` and `destination` form their own column below it.
 '''

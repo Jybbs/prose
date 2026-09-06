@@ -1,6 +1,6 @@
 ---
-source: tests/integration.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/expand_docstrings/module_oneliner_rewrites/input.py
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/expand_docstrings/module_oneliner_rewrites/input.py
 ---
-expand-docstrings@232..264
+expand-docstrings@144..176

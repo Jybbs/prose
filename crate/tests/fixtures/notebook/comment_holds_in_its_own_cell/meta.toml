@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Trailing Comment Holds in the Cell That Carries It"
+title       = "A Trailing Comment Stays in the Cell That Carries It"
 
 description = '''
-The first cell closes on the standalone `# Sampling knobs` comment, and the second opens on the constants that comment describes.
-
-A comment normally folds up onto the constant beneath it, but **the fold stops at the cell boundary**. The comment stays in the cell the author typed it in, while `BATCH` and `WINDOW` sort between themselves in theirs.
+The first cell closes on the own-line comment `# Sampling knobs`, and the second opens on `WINDOW = 32` and `BATCH = 8`, the constants the comment describes. **The comment stays in the first cell while `BATCH` and `WINDOW` sort and align in the second**, because a comment above a constant ordinarily moves with it, and that tie stops at the cell boundary.
 '''

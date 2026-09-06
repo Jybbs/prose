@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "`Attributes:` Entries Sort, Carrying Their Continuations"
+title       = "`Attributes:` Entries Sort and Carry Their Continuations"
 
 description = '''
-`Config`'s `Attributes:` entries **reorder alphabetically by attribute name**, settling into `retries`, `timeout`, `verbose`. The `verbose` description spills onto an indented continuation line, and that hanging line travels with its entry to the new last position.
+`Config`'s `Attributes:` section lists `verbose`, `timeout`, and `retries`, with `verbose`'s description spilling onto an indented continuation line. **The entries reorder alphabetically to `retries`, `timeout`, `verbose`, and the continuation line moves with `verbose`** to its new last position.
 '''

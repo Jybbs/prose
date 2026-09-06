@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Parameter Annotation Without a Return Still Resolves"
+title       = "A Parameter Annotation Without a Return Annotation Is Read"
 
 description = '''
-`fetch` annotates its parameter as `target: Result` but declares no return annotation, and the scan for annotations still finds it. `Result` is defined at module scope before `fetch`, so evaluating the annotation eagerly is safe and **the `from __future__ import annotations` directive is removed**.
+`fetch` annotates its parameter as `target: Result` and declares no return annotation, and `Result` is the class defined above it. **The directive is removed**, because the rule reads the parameter annotation on its own, and `Result` resolves to an unconditional module-scope binding written before it.
 '''

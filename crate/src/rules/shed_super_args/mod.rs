@@ -30,8 +30,7 @@ use walk::Walker;
 pub(crate) struct ShedSuperArgs;
 
 impl ShedSuperArgs {
-    pub(crate) const MESSAGE: &'static str =
-        "shed the arguments a parameterized `super()` call restates";
+    pub(crate) const MESSAGE: &'static str = "remove the arguments a `super()` call restates";
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 

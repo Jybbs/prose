@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Module-Level Runs Reorder Around `# fmt: off` Blocks"
+title       = "A Run Ends at a `# fmt: off` Block"
 
 description = '''
-The run of `zebra`, `foo`, and `bar_baz` **ends at the `# fmt: off` line**, so those three sort among themselves and `matrix` never joins the run. The hand-shaped rows inside the suppressed span come through verbatim, with `# fmt: on` closing the scope.
+`zebra`, `foo`, and `bar_baz` are bound above a `# fmt: off` block that wraps the hand-laid rows of `matrix`. **The three sort among themselves and `matrix` never joins the run**, because the run ends at the `# fmt: off` line, and the rows between the markers pass through exactly as written.
 '''

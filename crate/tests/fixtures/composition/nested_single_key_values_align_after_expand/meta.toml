@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Outer Dict Expands and Aligns Over Single-Key Values"
+title       = "An Outer Dict Explodes and Aligns Over One-Key Values"
 
 description = '''
-`CONFIG` overflows its line, four keys each holding a one-key nested dict as its value. **The outer dict expands to one entry per row and sorts so `"delta"` moves ahead of `"gamma"`, while each nested value like `{"only_alpha_key": 1}` stays inline** on its row. `align-colons` pads only the outer `:` into a shared column, in that a nested one-entry dict forms no alignment group of its own.
+`CONFIG` overflows its line with four keys, each with a one-key dict as its value. **The outer dict explodes to one entry per row and sorts so `"delta"` moves ahead of `"gamma"`, while each nested value such as `{"only_alpha_key": 1}` stays inline** on its row, and `align-colons` pads only the outer `:` into one column, because a one-entry dict forms no alignment group of its own.
 '''

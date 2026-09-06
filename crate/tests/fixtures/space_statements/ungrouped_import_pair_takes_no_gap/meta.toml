@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Import Pair Takes No Gap without the Grouping Rule"
+title       = "An Import Pair Takes No Gap Without the Grouping Rule"
 
 description = '''
-`from sys import argv` and `import os` sit on adjacent lines with [[group-imports]] not running. **The pair keeps the shape its author wrote**, because `space-statements` alone treats two imports as ordinary neighboring statements, leaving no boundary between them for a blank line to mark.
+`from sys import argv` and `import os` sit on adjacent lines with [[group-imports]] not running. **The pair stays as written**, because `space-statements` alone reads two imports as ordinary neighboring statements and sets no count between them, so no blank line marks a boundary.
 '''

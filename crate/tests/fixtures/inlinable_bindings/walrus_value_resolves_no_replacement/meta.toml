@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Walrus Resolves No Replacement"
+title       = "A Walrus Target Read Nowhere Else Is Not Reported"
 
 description = '''
-`n := len(items)` hands its value to `print` and is read nowhere else, so it reaches exactly one use and clears the count checks.
-
-**It still goes unreported**, because a walrus target names no assignment value the rule could stand in its place, and every finding carries the expression that would.
+`n := len(items)` passes its value to `print` and is read nowhere else, so `n` reaches exactly one use and passes the count checks. **`n` is still not reported**, because a walrus target names no assignment value the rule could put in its place, and every finding names the expression that would stand in.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Dotted `typing.TYPE_CHECKING`-Style Names Stay Quiet"
+title       = "A Dotted `typing.TYPE_CHECKING` Guard Is Skipped"
 
 description = '''
-Nothing here is flagged. The guard spells its name as the attribute-qualified `typing.TYPE_CHECKING` rather than the bare `TYPE_CHECKING`.
-
-**The dotted form is matched too**, so the block is skipped exactly as a bare-name guard's block would be, and the `DEFAULT_BACKEND` write inside it never counts as a module-scope write.
+`DEFAULT_BACKEND = "memory"` is assigned inside `if typing.TYPE_CHECKING:`, with the guard spelled through the module attribute rather than the bare name. **No diagnostic is reported**, because the rule matches the dotted form as well as the bare one, so the block is skipped and the write inside it never counts as a module-scope write.
 '''

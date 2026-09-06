@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Lone Type Group Collapses to One Space"
+title       = "A Lone Typed Entry Collapses Its Padding to One Space"
 
 description = '''
-The `Returns:` section of `render` holds a single entry, so no shared column forms. The padded gap in `markup    (str)` collapses to the single space a written `name (type)` carries, and the `:` stays flush against the closing paren.
+The `Returns:` section of `render` has a single entry, so no shared column forms. **The padded gap in `markup    (str)` collapses to the single space** a written `name (type)` carries, and the `:` stays flush against the closing paren.
 '''

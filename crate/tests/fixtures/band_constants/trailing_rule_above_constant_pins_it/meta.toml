@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Trailing Rule Above a Constant Pins It In Place"
+title       = "A Banner With a Trailing Rule Keeps the Constant Below It in Place"
 
 description = '''
-Nothing in this file moves. The `# Cache Sizing ****#` line puts its decorative run after the label and caps the line with a `#`, which is the reverse of a heading whose rule opens the line.
-
-It reads as a section divider all the same, so `CACHE_SIZE` **stays beneath it** rather than hoisting across the divider to join the constants above `render`.
+`CACHE_SIZE = 256` sits below `render` under the `# Cache Sizing` banner line, whose run of `*` follows the label and ends the line with a `#`, the reverse of a banner whose rule opens the line. **Nothing moves**, because the line still reads as a banner, and a band never crosses a banner, so `CACHE_SIZE` stays in the section it opens rather than moving above `render`.
 '''

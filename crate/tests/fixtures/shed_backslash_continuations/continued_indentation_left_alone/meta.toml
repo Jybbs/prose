@@ -3,5 +3,5 @@ previewable = false
 title       = "A Backslash Inside an Indent Is Left Alone"
 
 description = '''
-The backslash on its own line beneath `if ready:` sets the indentation that `started = True` takes, an indent no rejoin could preserve. The source is left exactly as written.
+A backslash sits alone on its own line beneath `if ready:`, and `started = True` follows it at the body indent. **The source is left exactly as written**, because the backslash sets the indentation the statement below it takes and no rejoin could keep that indent.
 '''

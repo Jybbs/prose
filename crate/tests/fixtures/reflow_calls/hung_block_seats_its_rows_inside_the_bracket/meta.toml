@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Hung Block Seats Its Rows Inside the Bracket That Opened Them"
+title       = "A Hung Block Puts Its Rows Inside the Bracket That Opened Them"
 
 description = '''
-Each `[` here hangs at the end of the row that opens it, with its contents written one indent step in from that row.
-
-Exploding `parser.Header` and `parser.HeaderLabel` seats each `[` on a row of its own. The `parser.ValueTerminal` rows then move **one step further in**, so they read as sitting inside the bracket rather than beside it, and each closing bracket takes the indent its own block lands at.
+Each `[` hangs at the end of the row that opens it, with its contents written one indent step in from that row. **Exploding `parser.Header` and `parser.HeaderLabel` puts each `[` on a row of its own and moves the `parser.ValueTerminal` rows two steps further in, one step inside the `[` that now opens above them**, so they read as sitting inside the bracket rather than beside it, while the inner `]` stays on the last `parser.ValueTerminal` row and the three outer closers each take the indent their own block starts at.
 '''

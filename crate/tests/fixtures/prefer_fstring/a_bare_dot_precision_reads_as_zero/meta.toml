@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Bare Dot Precision Reads as Zero"
+title       = "A Bare Dot Precision Is Written as `.0`"
 
 description = '''
-The bare `.` precision in `"%.f" % (measure,)` means zero decimal places, a value the f-string format spec spells out. The rewrite lands on `f"{measure:.0f}"`, with the implied zero written explicitly as `.0`.
+`"%.f" % (measure,)` writes a bare `.` for its precision, which `%` reads as zero decimal places. **The rewrite spells that precision out as `.0`**, so `rounded` becomes `f"{measure:.0f}"`, because a format spec writes the precision digit explicitly.
 '''

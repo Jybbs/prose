@@ -1,11 +1,15 @@
+---
+description: "Every rule Prose runs, auto-fix and lint, listed by family."
+---
+
 # Rules
 
-*Prose* ships its rules across two categories. Auto-fix rules rewrite source as part of `prose format` and surface as `Severity::Format` diagnostics under `prose check`. Lint rules surface as `Severity::Lint` diagnostics in both subcommands and never rewrite.
+*Prose* ships two categories of rule, where an auto-fix rule rewrites source under `prose format` and reports each rewrite as a `Severity::Format` diagnostic under `prose check`, whereas a lint rule reports a `Severity::Lint` diagnostic under both subcommands and never rewrites.
 
-Every rule respects the [**suppression directives**](/usage/suppression) and the [**`enabled`**](/reference/configuration#per-rule-facets) facet, which lets a project disable any rule without re-shaping the rest of the pipeline.
+The [**suppression directives**](/usage/suppression) silence any rule on a line or a block, and the [**`enabled`**](/reference/configuration#per-rule-facets) facet turns any rule off across a project without changing the rest of the pipeline.
 
 <RulesPlate />
 
 ## Subsetting
 
-`--select` and `--ignore` restrict the active set per invocation, taking precedence over the configured-enabled set. See the [**Installation**](/usage/quick-start#subset-the-active-rules) chapter for the CLI surface.
+`--select` and `--ignore` restrict the active set for one run and take precedence over the set the configuration enables. The [**Quick Start**](/usage/quick-start#subset-the-active-rules) chapter covers both flags.

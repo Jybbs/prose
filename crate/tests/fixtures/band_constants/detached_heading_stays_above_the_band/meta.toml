@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Detached Heading Stays Above the Hoisted Band"
+title       = "A Detached Heading Moves to the Top of the Band"
 
 description = '''
-A blank line stands on both sides of `# the tunable solver knobs`, which detaches it from `solve` above and lets it read as a heading for the constants below it.
-
-The two constants hoist above `solve` and sort, and the comment **moves to the head of the whole group** rather than travelling with `MAX_INT`, the one constant it happened to precede in the source.
+`# the tunable solver knobs` stands with a blank line on each side between `solve` and the two constants below it, so it reads as a heading for the group rather than as a note on `MAX_INT`. **The constants move into the leading band above `solve` and the heading moves to the top of the group**, above `ALPHA_DECAY` once the sort puts it first, rather than following `MAX_INT` into second place.
 '''

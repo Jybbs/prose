@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Already-Conforming Source Is Left Alone"
+title       = "One Blank Line Between a Bare Import and a `from` Import Stays"
 
 description = '''
-`import os` and `from sys import argv` arrive already separated by a single blank line, the canonical gap between the bare form and the `from` form. The source **passes through untouched**, staying at one blank.
+`import os` and `from sys import argv` are separated by one blank line, with the rule running alone. **The blank line stays as written**, because `space-statements` alone sets no count between two imports, and the one-blank-line boundary between the bare form and the `from` form applies only when [[group-imports]] is enabled.
 '''

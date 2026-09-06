@@ -170,14 +170,14 @@ impl<'a> Breaker<'a> {
         nested.found
     }
 
-    /// `chain`'s segment at `segment` settled and written from `column`
-    /// on a row indented `indent`, the receiver at index zero and each
-    /// link past that, every chain inside it broken where it trips from
-    /// the column it lands at. A segment whose settled row overflows
-    /// the budget has its argument list exploded by `reflow_calls`, so
-    /// a chain inside that list that fits one indent step past the row
-    /// stays joined for that explode to seat, and one that trips even
-    /// there breaks from the column the joined row reaches.
+    /// `chain`'s segment at `segment`, settled and written from
+    /// `column` on a row indented `indent`, the receiver at index zero
+    /// and each link after it, every chain inside it broken where it
+    /// trips from the column it lands at. Where the settled row
+    /// overflows the budget, `reflow_calls` explodes the argument list,
+    /// so a nested chain that fits one indent step past the row stays
+    /// joined and one that trips even there breaks from the column the
+    /// joined row reaches.
     fn segment(
         &self,
         chain: &Chain<'a>,
@@ -241,9 +241,8 @@ impl<'a> ParentedProbe<'a> for Breaker<'a> {
 }
 
 /// The chain `expr` opens, `None` where it opens none or where
-/// `parent` already places it on the spine of a longer chain, an
-/// attribute's value or a call's callee, so the outermost chain is the
-/// one a break reshapes.
+/// `parent`, an attribute's value or a call's callee, already places
+/// it on the spine of a longer chain.
 fn outermost_chain<'a>(source: &Source, expr: &'a Expr, parent: AnyNodeRef) -> Option<Chain<'a>> {
     if matches!(
         parent,

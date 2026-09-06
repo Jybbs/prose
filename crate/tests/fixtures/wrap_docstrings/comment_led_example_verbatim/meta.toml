@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Comment-Led Code Examples Pass Through Verbatim"
+title       = "A Comment-Led Code Example Passes Through Verbatim"
 
 description = '''
-The example under `Summary line.` opens with a `#` comment and continues into `total = sum(values)` and `print(total)`. **The comment opens a passthrough block running to the next blank line**, so each statement keeps its own line instead of merging into a single run-on paragraph.
+The example under `Summary line.` opens with a `#` comment and continues into `total = sum(values)` and `print(total)`. **All three lines pass through verbatim, one statement per line**, because the comment opens a passthrough block that runs to the next blank line, so the statements never merge into one paragraph.
 '''

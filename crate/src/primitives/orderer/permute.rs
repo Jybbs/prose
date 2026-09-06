@@ -3,9 +3,7 @@
 
 use std::ops::Range;
 
-/// Convenience wrapper for `permute_in_place` over the full `items`
-/// span. Shared by every caller that sorts the entire slice rather
-/// than a sub-run.
+/// `permute_in_place` over the full `items` span.
 pub(crate) fn permute_full<'a, T, K>(
     order: &mut [usize],
     items: &'a [T],

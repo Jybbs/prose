@@ -48,8 +48,8 @@ pub(crate) trait ColonEmitter {
     fn rule(&self) -> RuleId;
 
     /// Drives `self` across every `:` context in `source`'s module
-    /// body. Recurses into nested classes, functions, matches, and
-    /// expressions so a single call covers the whole tree.
+    /// body, recursing into nested classes, functions, matches, and
+    /// expressions.
     fn walk(&mut self, source: &Source)
     where
         Self: Sized,
@@ -59,10 +59,9 @@ pub(crate) trait ColonEmitter {
 
     /// Drives `self` across every `:` context a statement reaching one
     /// of `windows` holds. Each body forms its groups across all of its
-    /// siblings, since a group spans the body rather than a window, and
-    /// the walk descends only into the statements a window reaches, so
-    /// a context outside every window is visited only where its group
-    /// straddles one.
+    /// siblings, and the walk descends only into the statements a
+    /// window reaches, so a context outside every window is visited
+    /// only where its group straddles one.
     fn walk_within(&mut self, source: &Source, windows: &[TextRange])
     where
         Self: Sized,

@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Set Literals Sort"
+title       = "Set Literals Sort and a `*` Unpacking Stays Put"
 
 description = '''
-Set-literal elements **alphabetize**, because a Python set is unordered and reordering the literal changes nothing at runtime. The key is each element's source text, so `{3, 1, 2}` settles as `{1, 2, 3}`.
-
-`*defaults` in `mixed` pins in its source slot, since an unpacking cannot safely move, and `"a"`, `"m"`, and `"z"` sort around it without crossing it.
+`allowed` and `priorities` are plain set literals, and `mixed` places `*defaults` second among its strings. **The elements of every set alphabetize by their source text, `{3, 1, 2}` becoming `{1, 2, 3}`, whereas `*defaults` keeps its second slot and `"a"`, `"m"`, and `"z"` fill the remaining slots in sorted order, `"a"` moving above the unpacking**, because a Python set is unordered, so reordering the literal changes nothing at runtime, whereas the unpacking itself cannot safely move.
 '''

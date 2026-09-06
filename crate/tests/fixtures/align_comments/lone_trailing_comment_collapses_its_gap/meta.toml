@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Lone Trailing Comment Collapses to the Floor"
+title       = "A Lone Trailing Comment Collapses to the Two-Space Minimum"
 
 description = '''
-`flush()` carries the only trailing comment in the module, and one annotated line is not a run, so no shared column exists. The wide gap before its `#` settles back to the two-space floor, the same spacing a row gets when it partitions out of a column.
+`flush()` carries the only trailing comment in the module, written with a wide gap before its `#`. **The gap closes to two spaces**, because one annotated line is not a run and so has no shared column, the same spacing a row takes when it leaves a run.
 '''

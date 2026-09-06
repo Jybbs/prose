@@ -1,16 +1,20 @@
+---
+description: "The path from a fresh install to a `prose check` step gating CI, one page per step."
+---
+
 # Usage
 
-The Usage chapters walk the day-one path from a fresh install to a CI-gated `prose check`, with each page below stepping through one piece of that path. The section is operations rather than lookup, so the writing leans toward narrative against a working project rather than enumeration of every flag.
+The Usage chapters follow the path from a fresh install to a `prose check` step gating CI, one page per step. This section tells that story against a working project, whereas the [**Reference**](/reference/) section lists every flag and key.
 
 ## Pick Your Run Shape
 
-The invocation shapes below cover almost every run, with an additional shape for adopting one rule at a time. Each row pairs the use case on the left with the command pulled into the right margin.
+The commands below cover almost every run, plus one for adopting a single rule at a time. Each row pairs what you want to do with the command that does it.
 
 <div class="pq-rows">
 
 <div class="pq-row">
 
-**Gate CI on pending rewrites.** The [**Quick Start**](/usage/quick-start) walks the day-one shape end to end, and the [**Exit Codes**](/reference/exit-codes) reference carries the gate contract every CI workflow compiles against.
+**Gate CI on pending rewrites.** The command exits non-zero when any file would change, and the [**Quick Start**](/usage/quick-start) walks the full setup. The [**Exit Codes**](/reference/exit-codes) reference lists what each exit code means for a CI gate.
 
 <aside class="pq-aside"><code>prose check .</code></aside>
 
@@ -18,7 +22,7 @@ The invocation shapes below cover almost every run, with an additional shape for
 
 <div class="pq-row">
 
-**Rewrite the working tree in place.** The most common operation against a project root, walked end to end in the [**Quick Start**](/usage/quick-start).
+**Rewrite a project in place.** The most common command, run against the project root and walked end to end in the [**Quick Start**](/usage/quick-start).
 
 <aside class="pq-aside"><code>prose format .</code></aside>
 
@@ -26,7 +30,7 @@ The invocation shapes below cover almost every run, with an additional shape for
 
 <div class="pq-row">
 
-**Preview a rewrite before it lands.** Prints a unified diff against the working tree without touching the files. Every flag and its precedence is documented in the [**CLI Reference**](/reference/cli).
+**Preview a rewrite before writing it.** Prints a unified diff and leaves every file as it was. The [**CLI Reference**](/reference/cli) documents every flag and how the flags combine.
 
 <aside class="pq-aside"><code>prose format --diff .</code></aside>
 
@@ -34,7 +38,7 @@ The invocation shapes below cover almost every run, with an additional shape for
 
 <div class="pq-row">
 
-**Read source from stdin and write to stdout.** The shape an editor save reaches for, with the [**Editor**](/integrations/editor) integration covering the LSP and save-hook paths.
+**Read source from stdin and write to stdout.** The form an editor's save hook uses, with the [**Editor**](/integrations/editor) page covering both the language server and the save-hook setup.
 
 <aside class="pq-aside"><code>prose format -</code></aside>
 
@@ -42,7 +46,7 @@ The invocation shapes below cover almost every run, with an additional shape for
 
 <div class="pq-row">
 
-**Adopt one rule at a time.** Restricts the active set to a single slug for incremental rollout. The [**Quick Start**](/usage/quick-start) walks the path under *Subset the active rules*.
+**Adopt one rule at a time.** Runs a single rule, so a project can take the rules on one by one. The [**Quick Start**](/usage/quick-start) covers it under *Subset the active rules*.
 
 <aside class="pq-aside"><code>prose check --select &lt;slug&gt; .</code></aside>
 
@@ -52,13 +56,11 @@ The invocation shapes below cover almost every run, with an additional shape for
 
 ## The Section at a Glance
 
-- [**Installation**](/usage/installation) covers the package managers, post-install verification, and the platform matrix.
-- [**Quick Start**](/usage/quick-start) walks each run shape end to end against a sample project.
-- [**Suppression**](/usage/suppression) covers `# fmt: off`, `# fmt: skip`, and `# prose: ignore[<rule>]`, with one opt-out surface per scope.
+<SectionGlance section="usage" />
 
 ## See Also
 
-- [**Integrations**](/integrations/) covers the surfaces that hook `prose format` / `prose check` into the editor save event, the git staging boundary, and the CI gate.
-- [**Rules**](/rules/) covers the rule catalog *Prose* actually runs.
-- [**Primitives**](/primitives/) covers the primitive surface a downstream Rust caller links against.
-- [**Sandbox**](/sandbox/) runs the formatter live in the browser, seeded from the fixture corpus.
+- [**Integrations**](/integrations/) covers running `prose format` or `prose check` from an editor's save event, a pre-commit hook, and a CI job.
+- [**Rules**](/rules/) lists every rule *Prose* runs.
+- [**Primitives**](/primitives/) covers the Rust types a downstream crate links against.
+- [**Sandbox**](/sandbox/) runs the formatter in the browser on examples taken from the fixture set.

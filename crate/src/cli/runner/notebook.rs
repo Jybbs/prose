@@ -14,11 +14,10 @@ use super::{
 };
 use crate::{cache::Rewrite, cli::exit_status::ExitStatus, source::Source};
 
-/// Reparses `written`, the JSON a notebook rewrite lands on disk, back
-/// into a `Source`, so a caller reads the cells that file will carry
-/// rather than the concatenation they were serialized from. The two
-/// diverge where `Notebook::update` cuts a cell at a different boundary
-/// than the run carried.
+/// Reparses `written`, the JSON a notebook rewrite writes to disk, into
+/// the `Source` that file will carry, which diverges from the run's
+/// concatenation where `Notebook::update` cuts a cell at a different
+/// boundary. `None` where the JSON fails to re-read as a notebook.
 pub(super) fn as_written(written: &str, name: &str) -> Option<Source> {
     let notebook = Notebook::from_source_code(written).ok()?;
     Source::from_notebook(&notebook, name).ok()

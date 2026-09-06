@@ -56,7 +56,7 @@ pub(crate) struct ReflowCollections {
 }
 
 impl ReflowCollections {
-    pub(crate) const MESSAGE: &'static str = "lay out collection literal against the line budget";
+    pub(crate) const MESSAGE: &'static str = "lay out a collection literal against the line budget";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
@@ -79,8 +79,8 @@ impl Rule for ReflowCollections {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let body = &source.ast().body;
         // The count cap reads the `explode` facet, so a cleared `explode`
-        // leaves no tripping dicts and the cap goes inert. Precomputed once
-        // so the per-node check is a containment scan rather than a re-walk.
+        // leaves no tripping dicts and the cap goes inert. Precomputed
+        // once for the per-node containment scan.
         let count_cap = self.one_row.dict_entry_cap();
         let tripping_dicts = count_cap.map_or_else(Vec::new, |cap| {
             filter_map_over_exprs(body, Descent::Over, |expr| {
@@ -135,14 +135,14 @@ struct Layouter<'a> {
 impl<'a> Layouter<'a> {
     /// Returns the canonical rewrite for `expr` under `parent`, or
     /// `None` to descend into its children. `indent` is where the
-    /// closing bracket lands on
-    /// expand. A multi-line subscript or comprehension that fits rejoins,
-    /// while a multi-item `Dict`, `List`, `Set`, or parenthesized `Tuple`
-    /// that overflows expands, as does a `Dict` over `max_dict_entries`
-    /// and a literal already laid out as a flush column. A subscript and a
-    /// comprehension only ever rejoin. The `explode` facet gates every
-    /// expansion, and a set `keep_multiline_literals` suppresses the
-    /// literal rejoin, a cleared `explode` returning `None`.
+    /// closing bracket lands on expand. A multi-line subscript or
+    /// comprehension that fits rejoins, while a multi-item `Dict`,
+    /// `List`, `Set`, or parenthesized `Tuple` that overflows expands,
+    /// as does a `Dict` over `max_dict_entries` and a literal already
+    /// laid out as a flush column. A subscript and a comprehension only
+    /// ever rejoin. The `explode` facet gates every expansion, and a set
+    /// `keep_multiline_literals` suppresses the literal rejoin, a
+    /// cleared `explode` returning `None`.
     fn replacement_for(
         &self,
         expr: &Expr,
@@ -217,15 +217,14 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
         }
         let range = expr.range();
         let start = range.start();
-        // Test the collapse against the column `align_equals` shifts the
+        // Measure the collapse from the column `align_equals` shifts the
         // value to and `strip-stranded-padding` settles the row ahead of
-        // it at, not the column the literal currently opens at, so a fit
-        // that survives both is what the rule collapses. A dict value
-        // measures from the canonical `": "` past its key's last row, the column the
-        // aligner pads only where the cap allows. Where this walk's own
-        // earlier edits rewrote the line ahead of the literal, the column
-        // and indent read from the row the literal lands on instead, the
-        // column still moved by the shift `align_equals` applies there.
+        // it at. A dict value measures from the canonical `": "` past its
+        // key's last row, the column the aligner pads only where the cap
+        // allows. Where this walk's own earlier edits rewrote the line
+        // ahead of the literal, the column and indent read from the row
+        // the literal lands on instead, the column still moved by the
+        // shift `align_equals` applies there.
         let (column, indent) =
             match placed_head(self.source, &self.edits, start, TextSize::default()) {
                 Cow::Owned(head) => {

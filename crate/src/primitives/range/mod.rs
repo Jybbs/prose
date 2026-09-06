@@ -23,10 +23,9 @@ pub(crate) fn blocks_span<T: Ranged>(blocks: &[T]) -> TextRange {
 /// `reject` names by index, one span per contiguous run of rejected
 /// members, each carrying the separator binding it to the survivor
 /// beside it. `members` holds every member's range in source order,
-/// widened to any grouping parentheses around it, since a span that
-/// stops inside those parentheses leaves a stray bracket behind. Empty
-/// where every member survives and where none does, a list losing
-/// everything going whole rather than member by member.
+/// widened to any grouping parentheses around it. Empty where every
+/// member survives and where none does, a list losing everything going
+/// whole rather than member by member.
 pub(crate) fn dropped_member_spans(
     members: &[TextRange],
     reject: impl Fn(usize) -> bool,

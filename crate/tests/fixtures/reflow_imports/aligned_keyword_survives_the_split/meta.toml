@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Aligned `import` Keyword Survives the Split"
+title       = "An Aligned `import` Keyword Keeps Its Column Across the Split"
 
 description = '''
-The `from typing` roster overflows and splits into repeated-prefix lines, and each repeated prefix keeps the padded gap the source holds before its `import` keyword rather than collapsing it to a single space. That gap is the alignment column `align-imports` establishes against `from __future__ import`, so every split line lands on the same column.
+`from typing     import ...` pads the gap before its `import` keyword to the column [[align-imports]] sets under `from __future__ import`, and its member list runs past the default `import-line-length`. **Each line the split writes repeats the padded prefix with the same gap** rather than closing it to one space, so every `import` keyword stays on one column.
 '''

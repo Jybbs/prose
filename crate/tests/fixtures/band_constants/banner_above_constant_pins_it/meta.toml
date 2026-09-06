@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Banner Above a Constant Pins It In Place"
+title       = "A Banner Above a Constant Keeps It in Place"
 
 description = '''
-Nothing in this file moves. `CACHE_SIZE = 256` would ordinarily be hoisted above `render` to join the other constants at the top of the module.
-
-It stays where it was written, because the `# =========================` line above it reads as a section divider rather than as a note about any one statement. Hoisting the constant would **lift it out of the section that divider opens**, so the hoist is declined.
+`CACHE_SIZE = 256` sits below `render` under the banner line `# =========================`, and a literal constant in that position would ordinarily move into the leading band above the definition. **Nothing moves**, because the banner opens a section and a band never crosses a banner, so the constant stays in the section the divider opens.
 '''

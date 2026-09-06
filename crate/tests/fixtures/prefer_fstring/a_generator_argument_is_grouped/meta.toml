@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Bare Generator Argument Is Grouped"
+title       = "A Bare Generator Argument Gains Parentheses"
 
 description = '''
-The generator `x for x in xs` stands as the call's only argument, which is the one position Python allows it to go unparenthesized.
-
-Splicing it into an f-string replacement field **needs those parentheses back**, so the rewrite lands on `f"{(x for x in xs)}"` rather than producing source that would not parse.
+The generator `x for x in xs` is the call's only argument, the one position where Python accepts it without parentheses. **The rewrite writes the field as `f"{(x for x in xs)}"`**, adding the parentheses back, because a bare generator inside a replacement field does not parse.
 '''

@@ -13,8 +13,7 @@ use super::schema::RuleToggle;
 use super::{Config, ConfigError};
 
 /// Deserializes a cap of integer type `T`, or `false` lifting it to
-/// `None`. `true` is rejected with `on_true` so the disable spelling
-/// stays unambiguous.
+/// `None`. `true` is rejected with `on_true`.
 pub(super) fn deserialize_cap_or_false<'de, T, D>(
     deserializer: D,
     on_true: &'static str,
@@ -93,8 +92,7 @@ where
     deserializer.deserialize_any(RuleVisitor(PhantomData))
 }
 
-/// Serializes an optional cap as its integer, or `false` when uncapped,
-/// mirroring `deserialize_optional_cap`.
+/// Serializes an optional cap as its integer, or `false` when uncapped.
 pub(super) fn serialize_optional_cap<S: Serializer>(
     cap: &Option<NonZeroUsize>,
     serializer: S,

@@ -210,21 +210,20 @@ impl Source {
     ///
     /// # Errors
     ///
-    /// Returns the parse error the module parser draws from the text.
+    /// Returns `ParseError` when `text` is not a valid Python module.
     pub fn parse_named(text: String, name: &str) -> Result<Self, ParseError> {
         Self::build_module(text, name, PySourceType::default())
     }
 
-    /// Parses `text` as a plain module, handing back the tree a probe
-    /// rebuild clones rather than re-parsing per subset.
+    /// Parses `text` as a plain module, returning the tree a probe
+    /// rebuild clones per subset.
     pub(crate) fn parsed_module(text: &str) -> Result<Parsed<ModModule>, ParseError> {
         parse_typed_module(text, PySourceType::default())
     }
 
-    /// Reparses with replacement source text, preserving the original
-    /// name, and carrying `cell_offsets` forward through [`Self::recut_cells`]
-    /// so a notebook keeps its cell boundaries across a rule. Diagnostic
-    /// labels keep the original path or `<source>` placeholder.
+    /// Reparses `text` under the original name, carrying `cell_offsets`
+    /// forward through [`Self::recut_cells`]. Diagnostic labels keep the
+    /// original path or `<source>` placeholder.
     ///
     /// # Errors
     ///
@@ -257,8 +256,8 @@ impl Source {
 
     /// This source's buffer beside its parse mode, the pair
     /// [`build_module`](Self::build_module) rebuilds an equal source
-    /// from. `SourceFile` is `Arc`-backed, so holding one is a refcount
-    /// bump rather than a copy of the text.
+    /// from. `SourceFile` is `Arc`-backed, so the clone is a refcount
+    /// bump.
     pub(crate) fn entry_buffer(&self) -> (SourceFile, PySourceType) {
         (self.file.clone(), self.source_type)
     }

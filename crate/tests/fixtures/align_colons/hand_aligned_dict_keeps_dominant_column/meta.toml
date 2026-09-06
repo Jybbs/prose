@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Hand-Aligned Dict Keeps Its Dominant Column"
+title       = "A Hand-Aligned Dict Keeps Its Column"
 
 description = '''
-The `options` dict arrives hand-aligned at the width of `"verify_certificates"`, and the spread from `"ttl"` up to that widest key lands exactly at the `max-shift` cap. The reading-order walk gathers the whole run into one group, so the hand-alignment **round-trips unchanged** and every `:` keeps its column.
+The `options` dict arrives hand-aligned at the width of `"verify_certificates"`, and the spread from `"ttl"` up to that widest key sits exactly at the `max-shift` cap. The rule reads the whole run into one group, so **the hand alignment round-trips unchanged** and every `:` keeps its column.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Multi-Line Member Holds the Packed Swap"
+title       = "A Multi-Line Member Blocks the Packed Swap"
 
 description = '''
-Sorted, `args=` would move ahead of `target=worker`, and the group opens mid-row, so the reorder would swap the member texts in place. The `args=(...)` member spans lines whose interior rows would keep their source columns wherever the text landed, garbling the layout, so the sort holds the group in source order instead.
+The `Process` call opens its keyword group mid-row with `target=worker`, followed by an `args=(...)` member spanning several lines. **The group keeps its source order**, because sorting would move `args=` ahead of `target=worker` by swapping the member texts in place, and the interior rows of `args=(...)` would keep their source columns wherever the text ended up, garbling the layout.
 '''

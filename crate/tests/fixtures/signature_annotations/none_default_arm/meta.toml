@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Bare None Default Contributes a None Arm"
+title       = "A None Default Adds a None Arm to the Suggestion"
 
 description = '''
-`connect`'s only parameter, `host`, defaults to `None`, contributing no type on its own. The call site `connect(host="localhost")` binds a `str` literal to `host`, and `signature-annotations` folds the two signals into a display-only `host: str | None` suggestion.
+`connect`'s only parameter, `host`, defaults to `None`, which contributes no type on its own, and the call `connect(host="localhost")` passes a `str` literal by keyword. **The rule combines the two into the display-only suggestion `host: str | None`**, and reports separately that `connect` returns a value without a return annotation.
 '''

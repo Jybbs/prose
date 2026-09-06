@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Multi-Row Dict Aligns While Single-Row Dict Strips"
+title       = "A Multi-Row Dict Aligns While a One-Entry Dict Is Stripped"
 
 description = '''
-`paired` holds three entries with ragged spacing before their `:`, and `single` holds one entry padded as `"only_key" : 1`. **`align-colons` pads `paired`'s `:` into a column one space past `"second"`, while `strip-stranded-padding` removes the stray space in `single`** because a lone entry forms no alignment group, leaving plain `"only_key": 1`.
+`paired` lists three entries with uneven spacing before their `:`, and `single` lists one entry written `"only_key" : 1`. **`align-colons` pads `paired`'s `:` into one column one space past `"second"`, and `strip-stranded-padding` removes the stray space in `single`**, leaving `"only_key": 1`, because a lone entry forms no alignment group.
 '''

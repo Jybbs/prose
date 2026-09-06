@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Comparison Inside a Replacement Field Holds"
+title       = "A Comparison Inside a Replacement Field Stays as Written"
 
 description = '''
-The `x == None` inside `label`'s f-string and the `not k in table` inside `other`'s both hold as written. An f-string replacement field is opaque to this rule, the same way it is to the layout rules, so a comparison written inside one keeps the shape its author gave it.
+`label`'s f-string carries `x == None` inside a replacement field, and `other`'s carries `not k in table`. **Both stay as written**, because an f-string replacement field is opaque to this rule, the same way it is to the layout rules, so a comparison written inside one keeps the form its author gave it.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Interleaved Markdown Shifts Each Code Cell's Number"
+title       = "Interleaved Markdown Cells Are Skipped in the Cell Count"
 
 description = '''
-The markdown cells `Intro` and `Middle` interleave with three code cells. Both assignment pairs align inside their own cells while the `pass` cell between them stands unchanged, and neither markdown cell enters the formatted stream, so the cell banners count code cells alone.
+The markdown cells `Intro` and `Middle` interleave with three code cells, two of which contain an assignment pair and one a bare `pass`. **Both pairs align inside their own cells, the `pass` cell passes through unchanged, and neither markdown cell enters the formatted stream**, so the cell banners in the output count code cells alone.
 '''

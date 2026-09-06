@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Method Docstrings Expand inside the Class Body"
+title       = "A Method Docstring Expands at the Method-Body Indent"
 
 description = '''
-`empty`'s docstring expands at the **method-body indent, two steps deeper than the module column**. The body line lands at the same column as `return not self.items`, confirming the rewrite reads the actual enclosing indent rather than counting from column 0.
+`empty`'s docstring `"""Return whether the bag is empty."""` sits on one line inside a `def` nested in `class Bag`. **It expands with its body line at the method-body indent, two steps in from column zero**, the same column `return not self.items` starts at, because the rule reads the enclosing indent rather than counting from column zero.
 '''

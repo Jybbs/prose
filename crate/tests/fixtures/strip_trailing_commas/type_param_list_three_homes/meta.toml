@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Type-Parameter Lists Strip in All Three Homes"
+title       = "Type-Parameter Lists Drop the Trailing Comma on `def`, `class`, and `type`"
 
 description = '''
-`transform`'s `[T, U,]`, `Container`'s `[T, U,]`, and `Pair`'s `[T, U,]` are the three homes a generic-syntax type-parameter list can sit on, a `def`, a `class`, and a `type` alias. **`strip-trailing-commas` scans backward from each closing `]` and lands on the `,` after `U`**, dropping it in every one of the three homes.
+`transform`, `Container`, and `Pair` each carry a generic-syntax type-parameter list `[T, U,]` spread over one name per line, on a `def`, a `class`, and a `type` alias. **The comma after `U` is removed in all three**, because the rule reads each closing `]` the same way whatever statement the list sits on.
 '''

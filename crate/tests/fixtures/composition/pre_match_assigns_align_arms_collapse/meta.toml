@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Pre-Match Assigns Align While Match Arms Collapse"
+title       = "Assignments Before a Match Align While Its Arms Join"
 
 description = '''
-`dispatch` opens with the assignments `x`, `yz`, and `qrs` ahead of a `match` whose arms each return one of those bindings. **`align-equals` pads the three `=` into a column one space past `qrs`, and `align-match-case` folds each single return onto its `case` line** with every arm `:` aligned one space past the widest pattern, `"alpha"`.
+`dispatch` opens with the assignments `x`, `yz`, and `qrs` above a `match` whose arms each return one of those bindings. **`align-equals` pads the three `=` into one column one space past `qrs`, and `align-match-case` joins each single `return` onto its `case` line** with every arm `:` padded one space past the widest pattern, `"alpha"`.
 '''

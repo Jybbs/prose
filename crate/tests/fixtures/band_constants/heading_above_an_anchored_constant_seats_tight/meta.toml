@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Heading Touching an Anchored Constant Seats Tight beneath the Band"
+title       = "A Heading Touching a Constant That Stays in Place Sits Tight Below the Band"
 
 description = '''
-`# the ceiling the scheduler reads` sits directly above `LIMIT = compute()`, so it heads that constant rather than standing apart, and `LIMIT` anchors on its call while `ALPHA` and `ZETA` sort above it. **The heading seats tight beneath the sorted pair** with its constant, the blank line the source held above it closing as the band seats the anchored member.
+`# the ceiling the scheduler reads` sits directly above `LIMIT = compute()`, which calls `compute` and stays where it is written, while `ZETA` and `ALPHA` sort above it. **The blank line between the sorted pair and the heading closes**, because a comment touching its constant heads that constant alone rather than the band, and a constant that stays in place still spaces as a member of the band beside it.
 '''

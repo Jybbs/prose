@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Banded Class Keeps the Directive That Deferred Its Reference"
+title       = "A Sorted Class Keeps the Directive That Deferred Its Reference"
 
 description = '''
-`from __future__ import annotations` is kept, even though the file that comes out has `class Node` standing above the `visit` that reads it.
-
-`prune-inert-imports` runs before `alphabetize-siblings`, so at the moment it decides, `visit` still sits above the class. It reads `Node` as a name the sort is free to move either way and **keeps the directive rather than betting on where the sort will land**.
+`visit` names `Node` in its annotations and sits above `class Node`, under `from __future__ import annotations`. `alphabetize-siblings` moves the class above `visit`, and the output reads as if the directive were no longer needed. **`from __future__ import annotations` stays**, because `prune-inert-imports` runs before the sort, reads `Node` as a binding the sort is free to move either way, and keeps the directive rather than depending on where the sort puts the class.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Dropped Future Import, Then the Gap Collapses to the Cushion"
+title       = "A Removed Future Import Leaves a Gap That Closes to Two Blank Lines"
 
 description = '''
-The module opens with `from __future__ import annotations`, and three blank lines separate `CONFIG = {}` from `def add`. **`prune-inert-imports` removes the future import and `space-statements` collapses the gap to two blank lines**, the standard separation between a module-level constant and the first `def`.
+The module opens with `from __future__ import annotations`, and three blank lines separate `CONFIG = {}` from `def add`. **`prune-inert-imports` removes the directive and `space-statements` closes the gap to two blank lines**, the separation between a module-level constant and the first `def`.
 '''

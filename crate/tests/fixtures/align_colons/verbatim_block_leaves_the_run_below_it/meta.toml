@@ -3,5 +3,5 @@ previewable = false
 title       = "A Verbatim Block Leaves the Run Beneath It Intact"
 
 description = '''
-The line indented past the docstring body of `Frame` sits outside any section and passes through as a verbatim block, untouched. The run of `handler` and `codec` heads below the blank line still settles its type and `:` columns rather than reading as a continuation of the block above.
+The line indented past the docstring body of `Frame` sits outside any section and passes through as a verbatim block. **The run of `handler` and `codec` heads below the blank line still aligns its type and `:` columns** rather than reading as a continuation of the block above, and the block itself stays as written.
 '''

@@ -3,7 +3,5 @@ previewable = false
 title       = "A Short Wildcard Joins the Guarded Run"
 
 description = '''
-Three arms match `(x, y)` with an `if` guard between the pattern and the `:`, and **the guard text counts toward each arm's width**.
-
-`case _` is far shorter, but it still sits within `max-shift` of the guarded trio, so the reading-order walk gathers all four arms into one group and the wildcard's `:` pads out to the shared column the guards set.
+Three arms match `(x, y)` with an `if` guard between the pattern and the `:`, and `case _` follows them. **All four arms fold and share one `:` column**, because the guard text counts toward each arm's width and `case _`, though far shorter, still sits within `max-shift` of the guarded trio, so the wildcard's `:` pads out to the column the guards set.
 '''

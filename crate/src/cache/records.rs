@@ -15,9 +15,7 @@ use crate::{
 
 /// Post-pipeline state cached per `(source, config, rules, version)` key
 /// under the reading mode's [`Anchor`](crate::cache::Anchor), which
-/// names which buffer the diagnostics resolve against, so a `check`
-/// entry and a text `format` entry describing one file sit under
-/// separate keys rather than overwriting each other. The rewrite is
+/// names which buffer the diagnostics resolve against. The rewrite is
 /// `Skipped` where the reading mode ran no
 /// [`Pipeline::run`](crate::pipeline::Pipeline::run), and `unstable`
 /// carries the settle check's report where that run left a rule still
@@ -44,10 +42,9 @@ pub struct CacheEntryRef<'a> {
 }
 
 /// Reads and writes a diagnostic list with each message elided where it
-/// matches the static message its rule registers, which is the common
-/// case and 11 to 14% of an entry's bytes. Postcard spends one byte on
-/// the `Option` discriminant in its place, and the read resolves the
-/// elision back through `message_for_id`.
+/// matches the static message its rule registers. Postcard spends one
+/// byte on the `Option` discriminant in its place, and the read resolves
+/// the elision back through `message_for_id`.
 mod elided_messages {
     use super::{
         Deserialize, Deserializer, Diagnostic, Fix, RuleId, Serialize, Serializer, Severity,
@@ -133,10 +130,8 @@ impl CleanReport {
 
 /// What a notebook entry carries beyond a module's: the concatenated
 /// code its diagnostics resolve against, and the cell index a report
-/// renders each position through. A hit reads both back rather than
-/// parsing the `.ipynb` JSON a second time. A notebook holding no
-/// Python cell carries its own JSON as `code` and no index, which is
-/// what the run itself produces for one.
+/// renders each position through. A notebook holding no Python cell
+/// carries its own JSON as `code` and no index.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct NotebookCells {
     pub code: String,
@@ -158,7 +153,7 @@ pub struct NotebookCellsRef<'a> {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Rewrite {
     /// `run` produced output differing from the original, carried as the
-    /// kind that writes and diffs itself.
+    /// `RewriteKind` a write or a diff reads.
     Changed(RewriteKind),
     /// The file was passed over with no rewrite to make, the shape a
     /// non-Python notebook takes.
@@ -189,8 +184,8 @@ impl Rewrite {
 }
 
 /// The formatted output of a `run`. `Text` writes and diffs its
-/// source; `Notebook` writes the re-emitted JSON and diffs each code
-/// cell's Python.
+/// source, whereas `Notebook` writes the re-emitted JSON and diffs each
+/// code cell's Python.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum RewriteKind {
     Notebook(NotebookRewrite),

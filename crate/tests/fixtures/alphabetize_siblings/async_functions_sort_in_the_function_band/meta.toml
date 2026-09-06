@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Async Functions Sort in the Function Band"
+title       = "Async Functions Sort by Name Among the Plain Functions"
 
 description = '''
-`zeta` and `beta` are `async def`, and they sort among the plain functions by name below the class band rather than holding their slots.
+`zeta` and `beta` are `async def` and sit around the plain `alpha` and the class `Widget`. **Both sort by name among the plain functions, below the class band**, rather than keeping their original places, because `async` does not change which band a function sorts in.
 '''

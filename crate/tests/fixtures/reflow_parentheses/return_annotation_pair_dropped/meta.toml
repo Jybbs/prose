@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Single-Line Return Annotation's Pair Drops"
+title       = "A Single-Line Return Annotation's Pair Is Removed"
 
 description = '''
-The parentheses around `int` in `def total() -> (int):` wrap a single name and change nothing about how the annotation parses. The pair sheds, leaving the header as `def total() -> int:`.
+`def total() -> (int):` wraps the single name `int` in a pair that changes nothing about how the annotation parses. **The pair is removed**, leaving `def total() -> int:`.
 '''

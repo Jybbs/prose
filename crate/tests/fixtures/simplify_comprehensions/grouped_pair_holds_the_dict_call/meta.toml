@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Pair Wrapped in Its Own Grouping Pair Holds the Call"
+title       = "A Pair Wrapped in Extra Parentheses Keeps the `dict()` Call"
 
 description = '''
-`dict([((1, 2))])` wraps its one member, the tuple `(1, 2)`, in a second set of parentheses the tuple does not need. Rewriting the call to spell that tuple as a dict entry would strand those outer parentheses, so `simplify-comprehensions` emits no edit, leaving `reflow-parentheses` to remove them first.
+`dict([((1, 2))])` wraps its one member, the tuple `(1, 2)`, in a second pair of parentheses the tuple does not need. **The rule emits no edit and the call stays as written**, because rewriting the tuple as a dict entry would strand the outer parentheses, so they are left for `reflow-parentheses` to remove first.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Line Whose Every Member Is Unread Goes Whole"
+title       = "A Line Whose Every Member Is Unread Is Removed Whole"
 
 description = '''
-Neither `Any` nor `Final` is referenced anywhere in the file, so every name on the `from typing import` line is pruned. **The whole line is removed rather than surviving empty**, leaving `value = 1` as the only statement.
+Neither `Any` nor `Final` is read anywhere in the file, and `value = 1` is the only other statement. **The whole `from typing import Any, Final` line is removed** rather than left as an empty `from typing import`, because every name on it is unread.
 '''

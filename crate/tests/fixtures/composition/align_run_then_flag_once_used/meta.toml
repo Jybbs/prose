@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Aligned Local Run Carries the Inline Lint Past Padding"
+title       = "An Aligned Local Run Keeps the Inlinable-Binding Reports at Source Offsets"
 
 description = '''
-The body of `compute` assigns four consecutive locals, and `align-equals` widens the `=` column across the whole run. `base`, `used_twice`, and `result` are each read once after their assignment, so **`inlinable-bindings` emits one diagnostic per once-used binding whose range tracks the source offset**, leaving only the twice-read `offset` unreported.
+The body of `compute` assigns `base`, `offset`, `used_twice`, and `result` on consecutive lines, and `align-equals` pads every `=` into one column. `base`, `used_twice`, and `result` are each read once after their assignment, so **`inlinable-bindings` reports one diagnostic per once-used binding, each range tracking the source offset**, and the twice-read `offset` goes unreported.
 '''

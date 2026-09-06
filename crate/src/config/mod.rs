@@ -7,11 +7,10 @@
 //! nearest directory carrying any of them wins. A `prose.toml` or
 //! `.config/prose.toml` holds the config at its document root, whereas a
 //! `pyproject.toml` nests it under `[tool.prose]`. Reaching the root
-//! without a match resolves to full defaults, so Prose works on a
-//! fresh project with no configuration step.
+//! without a match resolves to full defaults.
 //!
 //! Each rule's configuration lives under `[tool.prose.rules]`, where
-//! a bare bool toggles the rule and a sub-table carries its knobs.
+//! a bare bool toggles the rule and a sub-table carries its facets.
 //!
 //! `Config::load` yields the base config. Per-file resolution, layering
 //! `[[tool.prose.overrides]]` globs and a standalone script's PEP 723
@@ -71,7 +70,7 @@ pub(crate) use source::{ConfigSource, DirSource};
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
     pub cache: CacheConfig,
-    /// The line budget every length-aware rule honors.
+    /// The line budget every width-aware rule fits within.
     pub code_line_length: Option<NonZeroUsize>,
     /// The description-prose budget for `wrap-docstrings`.
     pub docstring_line_length: Option<NonZeroUsize>,
@@ -86,11 +85,11 @@ pub struct Config {
     )]
     pub import_line_length: Option<NonZeroUsize>,
     pub imports: ImportsConfig,
-    /// Reports a rewrite whose settle check names rules as a defect in
-    /// Prose, naming the reproducing subset and the invocation that
-    /// replays it. `false` lands the rewrite with no notice, governing
-    /// the notice surfaces alone, so `check --validate` still runs the
-    /// settle check it was passed to run.
+    /// Reports a rewrite a second run would change again as a defect in
+    /// Prose, naming the smallest reproducing rule subset and the command
+    /// that replays it. `false` writes the rewrite with no notice and
+    /// governs the notice alone, so `check --validate` still runs its
+    /// settle check.
     pub report_unstable_output: bool,
     pub rules: RuleConfigs,
     /// The Python runtime the project ships to, read by the
@@ -148,8 +147,8 @@ impl Config {
         Self::from_optional_table(prose_table_from_str(contents)?, &mut emit_notice)
     }
 
-    /// Shared implementation backing `load`, factored out so tests can
-    /// inspect the emitted notices without capturing stderr.
+    /// Loads the config governing `from`, routing each notice through
+    /// `on_notice`.
     fn load_with_notices<P, F>(from: P, mut on_notice: F) -> Result<Self, ConfigError>
     where
         P: AsRef<Path>,
@@ -225,8 +224,7 @@ impl Config {
     }
 
     /// The alignment settings `align-equals` runs under, resolving
-    /// within the code width and releasing a group's head, since its
-    /// rows reach their settled width under it.
+    /// within the code width and releasing a group's head.
     pub(crate) fn equals_settings(&self) -> aligner::Settings {
         self.align_settings(&self.rules.align_equals, self.code_width())
             .releasing_heads()
@@ -248,8 +246,7 @@ impl Config {
 
     /// The alignment settings `align-imports` runs under, resolving
     /// within the import width, read by the rule itself and by the
-    /// forecast `reflow-imports` packs against, so the column the
-    /// forecast names is one the capped run seats.
+    /// forecast `reflow-imports` packs against.
     pub(crate) fn import_align_settings(&self) -> aligner::Settings {
         self.align_settings(&self.rules.align_imports, self.import_width())
     }
@@ -269,8 +266,7 @@ impl Config {
     /// `pyproject.toml` table.
     ///
     /// Unknown keys and the precedence outcome are logged to stderr and
-    /// ignored, keeping the loader forward-compatible with rules added
-    /// in future releases.
+    /// ignored.
     ///
     /// # Errors
     ///

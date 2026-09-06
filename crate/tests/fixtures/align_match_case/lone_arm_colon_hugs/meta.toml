@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Lone Arm Collapses with Its Colon Hugging the Pattern"
+title       = "A Lone Arm Folds With Its Colon Flush Against the Pattern"
 
 description = '''
-The `match` on `value` holds a single arm, so `result = "lone"` folds onto its `case` line. With no neighboring arm to share a column with, **alignment is skipped and the `:` stays tight against `"only"`** with a single space after it.
+The `match` on `value` holds a single arm. **`result = "lone"` folds onto its `case` line and the `:` stays flush against `"only"`** with one space after it, because no neighboring arm exists to share a column with, so no padding is written.
 '''

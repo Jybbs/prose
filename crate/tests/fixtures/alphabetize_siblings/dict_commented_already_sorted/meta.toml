@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Ordered Commented Dict Stays Untouched"
+title       = "An Already-Sorted Commented Dict Stays Unchanged"
 
 description = '''
-The `palette` keys `"amber"`, `"cyan"`, and `"magenta"` already sit in alphabetical order, so the sort emits **no edit**. The trailing `#` comments and the magic trailing `,` come through exactly as written, leaving the dict untouched.
+The `palette` keys `"amber"`, `"cyan"`, and `"magenta"` already sit in alphabetical order, each with a trailing `#` comment. **The rule emits no edit**, so the comments and the magic trailing `,` come through exactly as written.
 '''

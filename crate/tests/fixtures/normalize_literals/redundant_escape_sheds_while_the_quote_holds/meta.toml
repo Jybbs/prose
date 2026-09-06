@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Redundant Escape Sheds Even When the Quote Holds"
+title       = "A Redundant Escape Is Removed Even When the Quote Stays"
 
 description = '''
-A `\"` inside single quotes needs no backslash, so `traced` and `spare` shed those escapes while their `'` delimiters stay put, and `mirror` sheds its needless `\'` the same way inside double quotes. **A quote character counts once wherever it appears, escaped or not**, which is what keeps the delimiter choice stable rather than flipping it on every run.
+`traced` carries two `\"` escapes and `spare` one, both inside single quotes, and `mirror` carries a `\'` inside double quotes. **Each redundant backslash is removed while the delimiters stay put**, because neither escape is needed inside its own quotes, and a quote character counts once wherever it appears, escaped or not, which keeps the delimiter choice stable rather than flipping it on every run.
 '''

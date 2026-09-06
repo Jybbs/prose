@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Comment Across the Wall Loses Its Import"
+title       = "A Comment in the Cell Above Does Not Keep an Unread Import"
 
 description = '''
-The first cell closes on `# Sampling knobs` and the second opens on the unreferenced `import statistics`. **A cell wall breaks the hold a leading comment block puts on the statement below it**, so the import prunes rather than reading a comment from the cell above as its lead.
+The first cell closes on the comment `# Sampling knobs`, and the second opens on `import statistics`, which no cell reads. **The import is removed**, because an own-line comment directly above an import ordinarily keeps the statement in place, and a cell boundary separates the two, so the comment in the cell above does not count as the leading comment of the import.
 '''

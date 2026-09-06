@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Single-Line Signatures Pass Through Untouched"
+title       = "A Single-Line Signature Passes Through Unchanged"
 
 description = '''
-`f` declares `a: int = 1` and `bee: int = 2` on a single line, and **the signature passes through unchanged**. Defaults align only across a signature exploded onto multiple lines, so a one-line signature keeps each `=` at its natural spacing.
+`f` declares `a: int = 1` and `bee: int = 2` on one line. **The signature passes through unchanged**, because defaults align only across a signature exploded onto several lines, so each `=` keeps the spacing it was written with.
 '''

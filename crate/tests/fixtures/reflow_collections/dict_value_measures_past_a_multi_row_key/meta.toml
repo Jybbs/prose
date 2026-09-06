@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Dict Value Measures Past a Multi-Row Key"
+title       = "A Value After a Multi-Row Key Is Measured From the Key's Last Row"
 
 description = '''
-The tuple key crosses the 40-column budget and expands to one component per row.
-
-Its value is then measured **from the column where the `:` lands on the key's closing row**, which leaves ample room for `(1, 2)`. Reading the key's rows as one joined line instead would have made the entry look impossibly wide and expanded the value along with it.
+`code-line-length = 40` is set, and the tuple key in `lookup` runs past it with the value `(1, 2)` and a trailing comment after it. **The key expands to one component per row and the value stays on the closing row beside the `:`**, because the value is measured from the column the `:` sits at on the key's last row rather than from the key's rows read as one line, which leaves room for `(1, 2)`.
 '''

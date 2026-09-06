@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Flush Paren Keeps Its Call Shape"
+title       = "A Paren Flush Against the Name Keeps Its Call Form"
 
 description = '''
-The docstring heads `divmod(self, other)` and `trunc(self)` press the `(` flush against the name, the shape of a call signature rather than a `name (type)` entry. No type column opens, so each call keeps the shape its author wrote, and the `:` column still settles across the run because the padding lands after the `)`.
+The docstring heads `divmod(self, other)` and `trunc(self)` press the `(` flush against the name, the form of a call signature rather than a `name (type)` entry. **No type column opens, so each call keeps the spacing its author wrote**, and the `:` column still aligns across the run because the padding goes after the `)`.
 '''

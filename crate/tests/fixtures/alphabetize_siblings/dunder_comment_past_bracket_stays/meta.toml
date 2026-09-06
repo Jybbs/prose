@@ -3,5 +3,5 @@ previewable = false
 title       = "A Comment Past the Closing Bracket Stays Put"
 
 description = '''
-The `# noqa` comment sits past the closing `]`, so the bracket between it and `"Ant"` cuts it off from any entry. Sorting swaps `"Zebra"` and `"Ant"` while the comment **stays put** after the bracket, traveling with neither string.
+The `# noqa` comment sits past the closing `]` of `__all__`, on the same line as `"Ant"`. **Sorting swaps `"Zebra"` and `"Ant"` and the comment stays after the bracket**, moving with neither string, because the bracket between it and `"Ant"` cuts it off from any entry.
 '''

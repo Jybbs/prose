@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Lone Key Leaves Every Other Field at Its Default"
+title       = "A Lone Key Leaves Every Other Field at Its Default"
 
 description = '''
-The snippet sets `target-version = "3.10"` under `[tool.prose]` and nothing else. **Every other field resolves to its built-in default**, so the loaded `Config` pairs the 3.10 target with the stock line lengths, the enabled cache, and every rule toggle at `true`.
+The table sets `target-version = "3.10"` under `[tool.prose]` and nothing else. **Every other field resolves to its built-in default**, so the loaded `Config` pairs the 3.10 target with the stock line lengths, an enabled cache, and every rule toggle at `true`.
 '''

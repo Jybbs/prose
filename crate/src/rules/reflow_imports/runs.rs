@@ -105,9 +105,8 @@ pub(super) struct MergeRuns {
 impl MergeRuns {
     /// The import runs of `body` as written, or the bands `bands`
     /// forecasts once it hoists the constants between two runs and
-    /// sorts each, sought where a module repeats across the runs as
-    /// written or where `seek` reads them as needed over the runs as
-    /// written.
+    /// sorts each. The forecast runs where `seek` reports the written
+    /// runs need it or where a module repeats across them.
     pub(super) fn of(
         bands: Option<&BandConstants>,
         source: &Source,
@@ -263,9 +262,7 @@ fn gathers_cleanly(
 }
 
 /// True when `node` can join a merged roster, being a single-line
-/// `from`-import holding its line alone, so the fold clears no code
-/// sharing it, and binding no star member, since `*` admits no sibling
-/// on its statement.
+/// `from`-import holding its line alone and binding no star member.
 fn mergeable(source: &Source, node: &StmtImportFrom) -> bool {
     own_line_indent(source, node).is_some()
         && stands_alone(source, node.range())

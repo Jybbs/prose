@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Every Target Read Once Names Its Subscript Rewrite"
+title       = "Every Unpack Target Read Once Is Reported With a Subscript"
 
 description = '''
-Both targets of `first, second = batch` are read exactly once, inside `combine(first, second)`, so the whole unpacking could dissolve into subscripts. The lint flags each target and names its rewrite, `batch[0]` for `first` and `batch[1]` for `second`, while the source itself is left unedited.
+`first, second = batch` unpacks a plain name, and `combine(first, second)` reads each target once. **Both targets are reported, and the findings name `batch[0]` for `first` and `batch[1]` for `second`**, so the whole unpacking could be replaced by subscripts, while the source is left as written.
 '''

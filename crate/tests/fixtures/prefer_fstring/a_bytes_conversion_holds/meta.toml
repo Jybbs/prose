@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Bytes Conversion Holds"
+title       = "A Bytes Conversion Stays as Written"
 
 description = '''
-`%b` is a bytes-template conversion, so the str template in `raw = "%b" % (payload,)` carries a placeholder with no f-string spelling to rewrite into. The statement is left as written.
+`raw = "%b" % (payload,)` uses `%b`, a conversion defined for `bytes` templates rather than `str` ones. **The line stays as written**, because no f-string field spells `%b` and the rewrite has nothing to convert it into.
 '''

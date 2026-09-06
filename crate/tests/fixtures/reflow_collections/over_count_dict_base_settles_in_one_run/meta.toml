@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Over-Count Dict Under a Subscript Settles in One Run"
+title       = "A Dict Past the Count Under a Subscript Settles in One Run"
 
 description = '''
-The four-entry dict assigned to `selected` crosses `max-dict-entries` while standing as the base of the `[chosen_key]` subscript, so the count trigger expands it to one entry per line. The enclosing subscript then reads the expanded dict as a break the rejoin cannot swallow, so **the literal reaches one shape** rather than alternating between exploded and rejoined.
+`selected` subscripts a four-entry dict with `[chosen_key]` on one line. **The dict expands to one entry per line and `}[chosen_key]` closes it on the last row**, because the dict passes `max-dict-entries`, and the enclosing subscript reads the expanded dict as a break it cannot rejoin, so the construct reaches one layout rather than alternating between expanded and rejoined on each run.
 '''

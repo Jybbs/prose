@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Tier-and-Alphabetical Order Is Idempotent"
+title       = "A Run Already in Tier Order Is Left Unchanged"
 
 description = '''
-`ALPHA` and `BRAVO` already alphabetize, and `CHARLIE = ALPHA + BRAVO` already sits below the two names it reads. The run **produces no edits**, leaving the module exactly as written.
+`ALPHA` and `BRAVO` are already in name order, and `CHARLIE = ALPHA + BRAVO` already sits below the two names it reads. **The rule emits no edit**, and the module passes through exactly as written.
 '''

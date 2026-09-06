@@ -2,7 +2,7 @@
 //! annotated assignments in any scope, annotated function parameters,
 //! and `match` arm cases. Each member carries the post-colon
 //! `value_gap` an aligned or stripped row rewrites to one space, left
-//! `None` where match arms defer to `align_match_case`.
+//! `None` on a `match` arm member.
 
 use ruff_python_ast::{
     AnyNodeRef, AnyParameterRef, DictItem, ExprDict, ExprRef, MatchCase, Parameters, Stmt,
@@ -25,14 +25,11 @@ pub(super) fn annotated_assignment_groups(
 }
 
 /// Returns one group per run of consecutive-line `key: value` entries
-/// in `d`. A trailing comment on an entry stays with it and keeps the
-/// run going, whereas a standalone comment line or a blank line between
-/// two entries closes the active run and starts a fresh one, so each
-/// run aligns independently. `**spread` entries skip the colon scan but
-/// do not break the run, matching the long-standing rule that an
-/// unpacking passes alignment through. A keyed entry whose `:` crosses a
-/// line break instead closes the run, so its neighbors do not align a
-/// column across the stranded colon.
+/// in `dict`. A trailing comment on an entry stays with it and keeps
+/// the run going, whereas a standalone comment line or a blank line
+/// between two entries closes the active run and starts a fresh one.
+/// A `**spread` entry skips the colon scan but does not break the run,
+/// and a keyed entry whose `:` crosses a line break closes the run.
 pub(super) fn dict_member_groups(
     source: &Source,
     rule: RuleId,
@@ -45,8 +42,7 @@ pub(super) fn dict_member_groups(
             return aligner::Slot::Bridge;
         }
         // A keyed entry whose colon sits on a later line carries no
-        // single-line anchor, so it breaks the run rather than stranding
-        // its colon inside a column its neighbors share.
+        // single-line anchor and breaks the run.
         dict_item(source, dict, item).into()
     })
 }

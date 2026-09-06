@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import * as contentPage  from '../shared/content-page'
 import { memoizeByPath } from '../shared/memoize-by-path'
+import * as paths        from '../shared/paths'
 import * as registries   from '../shared/registries'
 import { requireString } from '../shared/require-string'
 import { ruleRoute }     from '../shared/routes'
@@ -20,6 +21,18 @@ export interface DiscoveredRule {
 export interface RuleDiscovery {
   rules      : DiscoveredRule[]
   strayPages : string[]
+}
+
+const crate = paths.crateDirFrom(paths.repoRoot(import.meta.url))
+
+// A rule emits lints where its module overrides `Rule::lint`, read off the
+// crate source the way `crate/tests/site.rs` reads it.
+function moduleEmitsLints(slug: string): boolean {
+  const directory = path.join(crate, 'src', 'rules', slug.replaceAll('-', '_'))
+  if (!fs.existsSync(directory)) return false
+  return (fs.readdirSync(directory, { recursive: true }) as string[])
+    .filter(name => name.endsWith('.rs'))
+    .some(name => fs.readFileSync(path.join(directory, name), 'utf8').includes('fn lint(&self'))
 }
 
 export const discoverRuleIndex = memoizeByPath(
@@ -53,7 +66,7 @@ export const discoverRules = memoizeByPath((rulesDirectory): RuleDiscovery => {
         category : registries.categoryOf(family),
         family,
         href     : ruleRoute(family, slug),
-        lints    : fm.lints === true || registries.categoryOf(family) === 'lint',
+        lints    : registries.categoryOf(family) === 'lint' || moduleEmitsLints(slug),
         related  : relatedSlugs,
         slug
       })

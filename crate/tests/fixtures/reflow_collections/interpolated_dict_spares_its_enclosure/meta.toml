@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Dict Inside a Replacement Field Spares Its Enclosure"
+title       = "A Dict Inside an f-string Field Expands Nothing Around It"
 
 description = '''
-The four-entry dict inside the f-string carries more entries than `max-dict-entries` allows, the count that normally expands a dict and every collection around it whatever the widths involved. Sitting inside a replacement field puts it out of the layout's reach, so neither the dict nor the `ROWS` list holding the string expands.
+The dict inside the f-string in `ROWS` carries four entries, one past `max-dict-entries`, the count that normally expands a dict and every collection enclosing it. **Neither the dict nor the `ROWS` list expands**, because a collection inside a replacement field is outside the rule's reach, so its count never fires the trigger for the list around it.
 '''

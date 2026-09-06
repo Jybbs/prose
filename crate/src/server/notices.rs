@@ -1,9 +1,9 @@
 //! Session-scoped bug notices for a rewrite a second run would change.
 //!
-//! A document draws its notice once per session rather than once per
-//! save. Where the client advertises `window/showDocument`, the notice
-//! carries an action that opens the pre-filled report form, and the
-//! reply naming that action is what sends the open request.
+//! A document draws its notice once per session. Where the client
+//! advertises `window/showDocument`, the notice carries an action that
+//! opens the pre-filled report form, and the reply naming that action
+//! is what sends the open request.
 
 use std::collections::HashMap;
 
@@ -148,8 +148,7 @@ impl Notices {
         )
     }
 
-    /// True where `uri` already drew its once-per-session notice, so a
-    /// caller skips the settle check whose result could never render.
+    /// True where `uri` already drew its once-per-session notice.
     pub(super) fn reported(&self, uri: &Uri) -> bool {
         self.reported.contains(uri)
     }

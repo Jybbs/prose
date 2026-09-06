@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Backslash Join Below a Comment Run Holds"
+title       = "A Backslash Join Below a Leading Comment Keeps Its Blank Run"
 
 description = '''
-A module's leading comment block ordinarily caps the blank run beneath it at one line. Here a `\` explicit line join opens the row that run closes on, so capping the run would take the break the join rests on. **The run keeps every blank the author wrote**, the cap standing down rather than reaching across a join.
+The file opens with the comment `# notes`, two blank lines, and a `\` explicit line join on the row above `y = 2`. A module's leading comment block ordinarily caps the blank run beneath it at one line, and here the join opens the row that run ends on, so capping it would remove the line break the join rests on. **The run keeps every blank line the author wrote**, because the cap never reaches across a join.
 '''

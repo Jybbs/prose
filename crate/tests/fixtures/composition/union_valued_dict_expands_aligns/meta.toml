@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Union-Valued Dict Expands, Sorts, and Aligns Colons"
+title       = "A Union-Valued Dict Explodes, Sorts, and Aligns Its Colons"
 
 description = '''
-The one-line `ALIASES` dict overflows the budget, and its values are written as `Optional` and `Union` expressions.
-
-`reflow-collections` explodes it to one entry per row, `alphabetize-siblings` sorts the keys so `"extended_label"` leads, and `align-colons` pads every key out to a shared `:` column. **The legacy union values on the right pass through untouched**, since no rule in this set rewrites annotation syntax.
+`ALIASES` overflows its line with values written as `Optional` and `Union` expressions. `reflow-collections` explodes it to one entry per row, `alphabetize-siblings` sorts the keys so `"extended_label"` leads, and `align-colons` pads every key out to one `:` column, and **the `Optional` and `Union` values pass through as written**, because no rule in this set rewrites annotation syntax.
 '''

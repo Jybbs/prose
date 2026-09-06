@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Lone Parameter Expands Bare"
+title       = "A Single Parameter Expands Onto One Bare Line"
 
 description = '''
-`render`'s single parameter `palette_descriptor_inventories` pushes the inline signature past `code-line-length`, so **it expands onto one bare line of its own**. Because the only parameter is also the last, the expanded form carries no trailing comma.
+`render`'s only parameter, `palette_descriptor_inventories`, pushes the inline signature past `code-line-length`. **The parameter expands onto one line of its own with no trailing comma**, because the only parameter is also the last, and the last parameter ends bare.
 '''

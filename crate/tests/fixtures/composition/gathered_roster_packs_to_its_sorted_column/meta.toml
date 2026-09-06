@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Gathered Roster Packs to the Column Its Sorted Run Settles"
+title       = "A Gathered Roster Packs to the Column Its Sorted Run Settles On"
 
 description = '''
-The three `from email` statements gather into one roster that overruns the 40-column import budget and packs onto two rows.
-
-`alphabetize-siblings` then sorts the run, which moves the wider `email._encoded_words` and `email._policybase` rows below the gathered ones. `reflow-imports` forecasts that sorted order rather than the order as written, so **the roster packs to the column its own rows settle on** instead of the wider column its source-order neighbour would have set.
+Three `from email import` statements sit among `from email._policybase` and `from email._encoded_words`, and the three gather into one roster that crosses the 40-column import budget and packs onto two rows. `alphabetize-siblings` then sorts the run, which moves the wider `email._encoded_words` and `email._policybase` rows below the gathered ones, and **the roster packs to the column its own rows settle on** rather than the wider column its source-order neighbor would have set, because `reflow-imports` measures against the sorted order rather than the order as written.
 '''

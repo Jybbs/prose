@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "The Sub-Band Reads the Value, Not the Name"
+title       = "The Subcategory Reads the Value, Not the Name"
 
 description = '''
-Which cluster a binding joins is decided by **its value, not by how its name is spelled**.
-
-`opener = TarFile.open` points at something that already exists, so it counts as an alias despite its lowercase name. `Config = {"debug": True}` builds a fresh dict, so it counts as module state despite its PascalCase. `opener` therefore leads, `MAX` follows as a plain constant, and `Config` trails.
+`opener = TarFile.open` binds an existing attribute under a lowercase name, `Config = {"debug": True}` builds a fresh dict under a `PascalCase` name, and `MAX = 100` is a plain constant. **`opener` sorts first as an alias, `MAX` follows as a constant, and `Config` sorts last as module state**, because the cluster a binding joins is decided by the form of its value rather than the spelling of its name.
 '''

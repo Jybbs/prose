@@ -20,13 +20,12 @@ use crate::{
 
 /// Walks every docstring in `source` and emits one edit per
 /// entry-carrying Google-style section whose `name: description`
-/// entries are out of order. An entry naming a parameter of the
+/// entries are out of order, each edit replacing the section's entries
+/// span with the reordered text. An entry naming a parameter of the
 /// documented signature takes that parameter's position as the rule
 /// leaves the signature, and every other entry sinks below them,
 /// alphabetized by name. Module and class docstrings carry no
-/// signature, so their sections alphabetize throughout. Each edit
-/// replaces the section's entries-span with the reordered text.
-/// Returns an empty list when no docstring carries a sortable section.
+/// signature, so their sections alphabetize throughout.
 pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
     let param_docs: FxHashMap<TextSize, Vec<&str>> = documented_definitions(source)
         .into_iter()

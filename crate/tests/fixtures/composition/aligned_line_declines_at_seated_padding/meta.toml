@@ -1,10 +1,10 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "An Aligned Line Skips Its Column at the Width Seated Padding Leaves"
+title       = "An Aligned Row Skips Its Column at the Width the Padding Leaves"
 
 description = '''
-`strip-stranded-padding` puts a space after each `:` in the dict, which widens that row by three columns.
+`_openers` is assigned a dict with no space after any `:`, above `CHECK_DELAY = 100`. `strip-stranded-padding` writes a space after each `:`, which widens the `_openers` row by three columns.
 
-`align-equals` reads **the width the row will have once that edit lands**, not the width it has in the source. Padding `_openers` and `CHECK_DELAY` onto a shared `=` column would take the row past the 40-column budget, so the two are left unaligned.
+**`align-equals` leaves the two `=` unaligned**, because it measures the row at the width it has once that edit is written, and padding `_openers` onto a shared column with `CHECK_DELAY` would take the row past the 40-column budget.
 '''

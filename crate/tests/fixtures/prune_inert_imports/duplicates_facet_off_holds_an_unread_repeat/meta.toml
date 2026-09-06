@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "The `drop-duplicates` Facet Off Holds an Unread Repeat"
+title       = "With `drop-duplicates` Off an Unread Repeat Keeps Both Lines"
 
 description = '''
-`import os` appears twice, nothing reads `os`, and `drop-duplicates` is off. **Both lines hold**, because the repeat is no longer a drop and the second write it records still counts against the unreferenced test.
+`drop-duplicates = false` is set, `import os` appears twice, and nothing reads `os`. **Both lines stay**, because with the repeat no longer a removal its second write still counts as a rebinding of `os`, and `drop-unreferenced` keeps a name a surviving write rebinds.
 '''

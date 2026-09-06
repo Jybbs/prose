@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Comments Around the Comma Ride Through"
+title       = "Comments Around the Comma Are Left in Place"
 
 description = '''
-`title="Electrician",  # primary listing title` loses only its `,`, keeping the trailing comment intact, and `retired`'s own-line `# legacy identifier kept for audit history` survives untouched between the last element and the closing `]`. **`strip-trailing-commas` treats both comments as trivia before it tests for a comma**, so neither comment is disturbed.
+`title="Electrician",` carries a trailing `# primary listing title` after its comma, and the `retired` list ends with an own-line `# legacy identifier kept for audit history` between its last element and the closing `]`. **Each trailing comma is removed and both comments stay exactly where they were**, because the rule reads past comments as trivia before testing for the comma ahead of a closing bracket.
 '''

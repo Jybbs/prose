@@ -31,19 +31,20 @@ export { data }
 const SURFACE_BODIES: Record<RuleFamily, string> = {
   alignment  : 'Equals signs, colons, the `import` keyword, and match arrows line up across '
              + 'consecutive lines. The eye drops down the column.',
-  docs       : 'Docstrings join the same legibility discipline as code. Wrap to the project '
-             + 'line length, keep single-line shapes single-line, multi-line shapes '
-             + 'multi-line, and quote style consistent throughout.',
-  formatting : 'Trailing commas come off, blank lines snap to canonical counts, empty grouping '
-             + 'parentheses and redundant `-> None` annotations fall away, and a stale '
+  docs       : 'Docstrings follow the same legibility discipline as code. Wrap to the docstring '
+             + 'budget, put a one-line docstring\'s opener, body, and closer on lines of their '
+             + 'own, and keep the quote style consistent throughout.',
+  formatting : 'Trailing commas come off, blank lines snap to canonical counts, backslash '
+             + 'continuations and redundant `-> None` annotations fall away, and a stale '
              + '`__future__` import is removed once nothing needs it. The scaffolding clears '
              + 'after the shape is set.',
   layout     : 'Calls, signatures, collections, and from-imports that outgrow the line budget '
              + 'explode to one entry per line. Each argument, key, or name lands on its own '
              + 'row, so the eye reads down the column and a later edit touches a single line.',
-  lint       : 'Legacy union syntax, reassigned constants, step-narration comments, bare-import '
-             + 'patterns, and bindings whose value inlines for free surface as diagnostics. The '
-             + 'formatter never rewrites these, because the fix belongs to the reader.',
+  lint       : 'Missing signature annotations, reassigned constants, step-narration comments, '
+             + 'bare imports, and bindings whose value inlines for free are reported as '
+             + 'findings. The formatter never rewrites these, because the fix belongs to the '
+             + 'reader.',
   ordering   : 'Sibling entries sort into a predictable order. Imports, dictionary keys, and '
              + 'set members read top-to-bottom by name, so a reader looking for an entry '
              + 'already knows where it sits.'
@@ -53,14 +54,14 @@ type StepSource = Omit<Step, 'bodyNodes' | 'codeHtml'> & { body: string, code: s
 
 const STEP_SOURCES: readonly StepSource[] = [
   {
-    body     : 'Fetch the wheel and expose the `prose` binary.',
+    body     : 'Install the wheel, which puts the `prose` binary on `PATH`.',
     code     : `uv tool install ${PYPI_PACKAGE}`,
     language : 'bash',
     number   : '01',
     title    : 'Install'
   },
   {
-    body     : 'Drop a `prose.toml` at the project root, a `.config/prose.toml`, or a '
+    body     : 'Write a `prose.toml` at the project root, a `.config/prose.toml`, or a '
              + '`[tool.prose]` table in `pyproject.toml`. The defaults already work.',
     code     : 'target-version = "3.13"',
     language : 'toml',
@@ -75,7 +76,7 @@ const STEP_SOURCES: readonly StepSource[] = [
     title    : 'Run'
   },
   {
-    body     : 'Optionally pair with Ruff for the token-level surface *Prose* doesn\'t touch.',
+    body     : 'Optionally run Ruff too, for the token-level formatting *Prose* leaves alone.',
     code     : 'ruff format && prose format',
     language : 'bash',
     number   : '04',

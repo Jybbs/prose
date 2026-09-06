@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Parenthesized None Return Drops Its Wrapping Parens"
+title       = "A Parenthesized `-> (None)` Drops With Its Parentheses"
 
 description = '''
-`configure`'s `-> (None)` return annotation wraps `None` in parentheses, and `strip-none-return` drops the parentheses along with the arrow, landing on `def configure():`. The rule reaches this parenthesized form as readily as a bare `-> None`.
+`configure` declares its return annotation as `-> (None)`, with `None` wrapped in parentheses. **`strip-none-return` removes the arrow, the parentheses, and the `None` together**, so the header reads `def configure():`, because a parenthesized `None` is the same bare annotation as `-> None`.
 '''

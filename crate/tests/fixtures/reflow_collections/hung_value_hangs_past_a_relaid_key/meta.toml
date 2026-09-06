@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Held Value Hangs From Its Entry Past a Relaid Key"
+title       = "A Value Hung past Its Entry Keeps That Hang after Its Key Expands"
 
 description = '''
-The tuple key expands across rows, and the list value written one step past the entry keeps that hang rather than following the key's text, so the row neither drifts nor widens.
+`code-line-length = 40` is set, and each entry of `_settings` in `DOMBuilder` is a tuple key whose list value continues on a row indented one step past the entry. **The first key expands to one component per row and the value's continuation row stays at the column the source wrote it**, because a value hung one step past its entry keeps that hang rather than following the key's text, so the row neither drifts nor widens.
 '''

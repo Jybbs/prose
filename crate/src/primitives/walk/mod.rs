@@ -13,9 +13,8 @@ use ruff_python_ast::{
     visitor::{self, Visitor, walk_expr},
 };
 
-/// Carries a caller's function to every annotation the walk reaches,
-/// leaving the annotation's own subtree unvisited so the function reads
-/// each one whole.
+/// Runs a caller's function on every annotation the walk reaches,
+/// leaving the annotation's own subtree unvisited.
 struct AnnotationProbe<F> {
     run: F,
 }

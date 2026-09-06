@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Bare Imports Reorder, Then Draw the Narrow-Use Lint"
+title       = "Bare Imports Sort, Then the Narrow-Use Report Lands on the Sorted Rows"
 
 description = '''
-`import sys`, `import os`, and `import json` arrive out of order, and each module is used through a single attribute access below, `os.getcwd()`, `sys.argv`, and `json.loads`. `alphabetize-siblings` reorders the statements so `json` leads, and **`bare-imports` flags all three, each diagnostic anchored to the import as written** rather than to its post-reorder position.
+`import sys`, `import os`, and `import json` arrive out of order, and each module is used once below through a single attribute, `os.getcwd()`, `sys.argv`, and `json.loads`. `alphabetize-siblings` sorts the statements so `json` leads, and **`bare-imports` reports all three, each finding landing on the import's row in the sorted output**, so `json` is reported on row 1 and `sys` on row 3.
 '''

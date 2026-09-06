@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Multi-Line Return Annotation Keeps Its Parentheses When Parameters Expand"
+title       = "A Multi-Line Union Return Annotation Keeps Its Parentheses When Parameters Expand"
 
 description = '''
-`assemble_result`'s four parameters make the inline header overflow `code-line-length`, so they expand one per line.
-
-The return annotation's parentheses wrap a three-line union, `PrimaryEnvelope | SecondaryEnvelope | DeferredEnvelope`. **Those parentheses pass through intact**, because they are the only thing letting the type span several lines and dropping them would leave output that does not parse.
+`assemble_result` takes four parameters whose inline header overflows `code-line-length`, and its return annotation is the three-line union `PrimaryEnvelope | SecondaryEnvelope | DeferredEnvelope` inside parentheses. **The parameters expand one per line and the parentheses pass through intact**, because they are what lets the type span several lines, and dropping them would leave output that does not parse.
 '''

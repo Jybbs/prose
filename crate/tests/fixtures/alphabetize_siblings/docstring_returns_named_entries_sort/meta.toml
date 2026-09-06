@@ -3,5 +3,5 @@ previewable = false
 title       = "`Returns:` Entries Sort When Named"
 
 description = '''
-`parse`'s `Returns:` entries each carry the `name: description` shape, so the section **reorders alphabetically**, `tail`, `head`, and `body` settling into `body`, `head`, `tail`. A `Returns:` section written as one prose paragraph holds no entries to sort and falls through to the description path `wrap-docstrings` handles.
+`parse`'s `Returns:` section lists `tail`, `head`, and `body`, each in the `name: description` form. **The section reorders alphabetically to `body`, `head`, `tail`**, because every entry carries a name to sort by. A `Returns:` section written as one prose paragraph has no entries to sort and falls through to the description path `wrap-docstrings` handles.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "An `attrs` Class Holds Its Field Order"
+title       = "An `attrs` Class Keeps Its Field Order"
 
 description = '''
-Nothing in `Posting` moves. `@attrs.define` generates a constructor whose positional parameters follow the order the fields are declared in, the same shape the standard library's dataclass decorator produces.
-
-Sorting the fields would therefore **change the meaning of every positional call site**, so the decorator pins the class body and it passes through exactly as written.
+`Posting` is decorated with `@attrs.define`, which generates a constructor whose positional parameters follow the declared field order, the same as the standard library's `dataclass` decorator. **Nothing in the body moves**, because sorting the fields would change the meaning of every positional call site, so the decorator pins the class body and it passes through exactly as written.
 '''

@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "A Fractured Default Joins and the Signature Collapses"
+title       = "A Default Written Across Rows Rejoins and the Signature Collapses"
 
 description = '''
-The `beta` default, a `helper(one, two, three)` call the author hand-wrapped across three rows, rejoins onto a single row. With no multi-line construct left inside it, the whole `render` signature fits on one line and collapses to it.
+`render`'s `beta` default, a `helper(one, two, three)` call the author wrapped across three rows, fits on one row. **The call rejoins onto one row, and with no multi-line construct left inside it the whole signature collapses to one line**, because a call inside a default is reshaped where its parameter ends up rather than kept as written.
 '''

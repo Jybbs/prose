@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Wrapped Scalar Holds Its Partition Slot Across Passes"
+title       = "A Wrapped Scalar Keeps Its Partition Slot Across Runs"
 
 description = '''
-The dict inside `outer`'s nested `inner` function already sits in its settled form, with `sha256`'s long hex value wrapped onto its own continuation line while keeping its alphabetical slot between `legacy` and `short`. Running it through the pipeline again reproduces the identical output, confirming the ordering and the wrapping stay stable once the shape settles.
+The dict inside `outer`'s nested `inner` function is already in its settled form, with `sha256`'s long hex value wrapped onto its own continuation line while keeping its alphabetical slot between `legacy` and `short`. **Running the pipeline over it again produces the identical output**, so the ordering and the wrapping stay stable once settled.
 '''

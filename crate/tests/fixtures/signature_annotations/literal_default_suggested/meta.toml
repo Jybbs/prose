@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "A Literal Default Suggests the Parameter's Type"
+title       = "A Literal Default Suggests the Parameter Type"
 
 description = '''
-`scale`'s only parameter, `factor`, defaults to the float literal `2.0` and carries no annotation. `signature-annotations` reports the gap and attaches a display-only suggestion, `factor: float`, that the formatter records but never auto-applies.
+`scale`'s only parameter, `factor`, defaults to the float literal `2.0` and has no annotation. **The rule reports `factor` with the display-only suggestion `factor: float`**, which it records but never applies, and reports separately that `scale` returns a value without a return annotation.
 '''

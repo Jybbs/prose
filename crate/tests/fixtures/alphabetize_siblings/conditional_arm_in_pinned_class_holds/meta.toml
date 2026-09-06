@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Conditional Arm Inherits the Enclosing Pin"
+title       = "A Conditional Arm Inside a Pinned Class Keeps Its Order"
 
 description = '''
-Nothing in `Posting` moves. `@dataclass` generates a constructor taking the fields in declaration order, which pins the class body.
-
-The `if TYPE_CHECKING:` arm sits inside that same body, so **the pin reaches into it**. `url` and `company` hold their slots exactly as `title` does above them, even though `company` would alphabetize first.
+`Posting` is decorated with `@dataclass`, which generates a constructor taking the fields in declaration order, and an `if TYPE_CHECKING:` arm sits inside its body. **Nothing in `Posting` moves**, so `url` and `company` keep their places exactly as `title` does above them even though `company` would alphabetize first, because the pin on the class body reaches into the arm.
 '''

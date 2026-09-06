@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Method Regrouping Then Field Column Alignment on a Class"
+title       = "Methods Regroup and Field Columns Align on a Class"
 
 description = '''
-`Posting`'s methods sort into the standard groups, which puts `__init__` and `__repr__` first, then the `name` property, then the private `_internal`, then the public `update`.
-
-The annotated fields sort alphabetically to `company`, `description`, `salary`, `title`, and both import runs alphabetize at the top of the module. **`align-colons` and `align-equals` then settle the field declarations onto shared `:` and `=` columns.**
+`Posting` declares four annotated fields and five methods in arbitrary order under two unsorted import runs. **The methods sort into the standard groups**, `__init__` and `__repr__` first, then the `name` property, then the private `_internal`, then the public `update`. The fields sort to `company`, `description`, `salary`, `title` and settle onto shared `:` and `=` columns through `align-colons` and `align-equals`, and both import runs sort at the top of the module with `align-imports` padding the `from` rows.
 '''

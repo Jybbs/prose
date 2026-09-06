@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "The `drop-unreferenced` Facet Off Prunes Nothing Unread"
+title       = "With `drop-unreferenced` Off an Unread Member Stays"
 
 description = '''
-With `drop-unreferenced = false` configured, `Any` sits unread in `from typing import Any, Final` while only `Final` is used, through `label: Final`. **`Any` keeps its slot on the line and no binding is reported**, since turning the facet off disables both the auto-fix and its lint.
+`drop-unreferenced = false` is set, and `label: Final = "x"` reads `Final` whereas nothing reads `Any`. **`Any` stays on the line and nothing is reported**, because turning the facet off disables both the removal and the report it would otherwise make.
 '''

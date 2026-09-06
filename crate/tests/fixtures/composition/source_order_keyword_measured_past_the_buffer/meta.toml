@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Source-Order Keyword Measures Its Buffer and Its Separator"
+title       = "A Source-Order Keyword Is Measured With Its Buffer and Its Comma"
 
 description = '''
-`screen._drawpoly` is a method call whose signature the rule cannot resolve, so it cannot rename the positionals and explodes the arguments in source order instead.
-
-Each keyword value is still measured **from the column the `align-equals` buffer settles it at**, counting the comma that closes its own row. Those two together take the `outline` value past the 40-column budget, so it explodes while the shorter keywords stay on their rows.
+`screen._drawpoly(...)` is a method call whose signature `reflow-calls` cannot resolve, so it leaves the positionals unnamed and explodes the arguments in source order. Each keyword value is still measured **from the column the `align-equals` buffer puts it at, with the comma that closes its row counted in**, and those two together take the `outline` value past the 40-column budget, so it explodes, while `fill` and `top` fit their rows and `width = self._outlinewidth`, an attribute access with nothing to explode, stays on its row past the budget.
 '''
