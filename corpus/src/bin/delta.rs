@@ -7,6 +7,7 @@
 //! on, and git's diffstat between the two tags.
 
 use std::{
+    cmp::Reverse,
     collections::{BTreeMap, BTreeSet},
     error::Error,
     path::{Path, PathBuf},
@@ -16,7 +17,7 @@ use std::{
 use clap::Parser;
 use itertools::Itertools;
 use rustc_hash::FxHashMap;
-use serde_json::Value;
+use serde_json::{Deserializer, Value};
 use tabled::{builder::Builder, settings::Style};
 
 /// How many files a movement line names before it counts the rest.
@@ -33,6 +34,7 @@ struct Args {
 }
 
 /// One tagged cycle's summary record and the files each rule fired on.
+#[derive(Default)]
 struct Cycle {
     counts: BTreeMap<String, usize>,
     fired: FxHashMap<String, BTreeSet<String>>,
@@ -42,18 +44,14 @@ impl Cycle {
     /// Reads one cycle's records, the summary carrying the per-rule counts
     /// and the rest naming a rule beside the file its fix landed in.
     fn read(path: &Path) -> Result<Self, Box<dyn Error>> {
-        let mut cycle = Self {
-            counts: BTreeMap::new(),
-            fired: FxHashMap::default(),
-        };
-        for line in fs_err::read_to_string(path)?.lines() {
-            let record: Value = serde_json::from_str(line)?;
-            if record.get("kind").and_then(Value::as_str) == Some("summary") {
-                cycle.counts = serde_json::from_value(record["rules_fired"].clone())?;
-            } else if let (Some(code), Some(file)) = (
-                record.get("code").and_then(Value::as_str),
-                record.get("filename").and_then(Value::as_str),
-            ) {
+        let mut cycle = Self::default();
+        for record in Deserializer::from_str(&fs_err::read_to_string(path)?).into_iter::<Value>() {
+            let mut record = record?;
+            if record["kind"] == "summary" {
+                cycle.counts = serde_json::from_value(record["rules_fired"].take())?;
+            } else if let (Some(code), Some(file)) =
+                (record["code"].as_str(), record["filename"].as_str())
+            {
                 cycle
                     .fired
                     .entry(code.to_owned())
@@ -96,9 +94,10 @@ impl Report {
             .filter_map(|slug| {
                 let before = self.base.counts.get(slug).copied().unwrap_or(0);
                 let after = self.head.counts.get(slug).copied().unwrap_or(0);
-                (before != after).then(|| (slug, before, after, after as isize - before as isize))
+                let delta = after.cast_signed() - before.cast_signed();
+                (delta != 0).then_some((slug, before, after, delta))
             })
-            .sorted_by(|a, b| b.3.abs().cmp(&a.3.abs()).then_with(|| a.0.cmp(b.0)))
+            .sorted_by_key(|&(slug, _, _, delta)| (Reverse(delta.abs()), slug))
             .collect_vec();
         if moved.is_empty() {
             return indented("every rule fired the same number of times");
@@ -118,15 +117,15 @@ impl Report {
 
     /// Git's own diffstat between the two tags, capped at five files.
     fn diffstat(&self) -> Result<String, Box<dyn Error>> {
-        let stage = self.stage.display().to_string();
-        let text = git(&[
-            "-C",
-            &stage,
-            "diff",
-            "--stat-count=5",
-            &format!("base-{}", self.width),
-            &format!("head-{}", self.width),
-        ])?;
+        let text = git(
+            &self.stage,
+            &[
+                "diff",
+                "--stat-count=5",
+                &format!("base-{}", self.width),
+                &format!("head-{}", self.width),
+            ],
+        )?;
         let trimmed = text.lines().map(str::trim).join("\n");
         let shown = if trimmed.is_empty() {
             "no file differs"
@@ -159,12 +158,7 @@ impl Report {
                 .filter(|(_, files)| !files.is_empty())
                 .map(move |(verb, files)| (slug, verb, files))
             })
-            .sorted_by(|a, b| {
-                b.2.len()
-                    .cmp(&a.2.len())
-                    .then_with(|| a.0.cmp(b.0))
-                    .then_with(|| a.1.cmp(b.1))
-            })
+            .sorted_by_key(|(slug, verb, files)| (Reverse(files.len()), *slug, *verb))
             .collect_vec();
         if moves.is_empty() {
             return indented("every rule fires on the same files");
@@ -200,10 +194,10 @@ impl Report {
     }
 }
 
-/// Runs `git` with `args`, failing rather than reporting empty output when
-/// the command does not succeed.
-fn git(args: &[&str]) -> Result<String, Box<dyn Error>> {
-    let run = Command::new("git").args(args).output()?;
+/// Runs `git` with `args` inside `dir`, failing when the command does not
+/// succeed.
+fn git(dir: &Path, args: &[&str]) -> Result<String, Box<dyn Error>> {
+    let run = Command::new("git").current_dir(dir).args(args).output()?;
     if !run.status.success() {
         return Err(format!(
             "git {} exited {}: {}",

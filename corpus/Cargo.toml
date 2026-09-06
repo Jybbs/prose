@@ -1,25 +1,15 @@
 [package]
-edition      = "2024"
-license      = { workspace = true }
-name         = "prose_sweeps"
-publish      = false
-repository   = { workspace = true }
-rust-version = { workspace = true }
-version      = "0.0.0"
+edition.workspace      = true
+license.workspace      = true
+name                   = "prose_corpus"
+publish                = false
+repository.workspace   = true
+rust-version.workspace = true
 
 [package.metadata.cargo-machete]
 ignored = ["libcst"]
 
-[[bin]]
-name = "delta"
-path = "src/bin/delta.rs"
-
-[[bin]]
-name = "mutate"
-path = "src/bin/mutate.rs"
-
 [dependencies]
-bumpalo            = "3.20"
 clap               = { version = "4.5", features = ["derive"] }
 fs-err             = "3"
 ignore             = "0.4"
