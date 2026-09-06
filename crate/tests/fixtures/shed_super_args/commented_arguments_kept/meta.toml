@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Comment Inside the Arguments Holds Them in Place"
+title       = "A Comment Inside the Arguments Keeps Them in Place"
 
 description = '''
-`super(Child, self)` in `Child.apply` spans three lines, with `# the defining class` commenting the first argument. Deleting the argument span would take that comment with it, so the call stays exactly as written.
+`super(Child, self)` in `Child.apply` spans three lines, with `# the defining class` commenting the first argument. **The call stays exactly as written**, because deleting the argument span would take that comment with it.
 '''

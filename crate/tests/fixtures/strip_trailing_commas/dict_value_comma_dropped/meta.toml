@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "Multi-Line Dict Drops the Trailing Comma"
+title       = "A Multi-Line Dict Drops the Trailing Comma"
 
 description = '''
-`config`'s last entry, `"threshold": 0.7,`, carries a trailing `,` before the dict's closing `}`. `strip-trailing-commas` strips it, landing on `"threshold": 0.7`.
+`config` spreads four entries over one line each, and the last, `"threshold": 0.7,`, carries a `,` before the closing `}`. **That comma is removed**, so the last entry reads `"threshold": 0.7` and the dict ends on its value.
 '''

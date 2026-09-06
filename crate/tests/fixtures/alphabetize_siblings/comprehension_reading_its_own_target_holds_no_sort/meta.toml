@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Comprehension Reading Its Own Target Holds No Sort Back"
+title       = "A Comprehension Reading Its Own Target Does Not Block the Sort"
 
 description = '''
-The comprehension binds `name` and reads it within the same statement, so it is the only thing binding that name.
-
-A statement is exempt from the ordering rule for any name it binds at its own slot, since nothing can need to sort ahead of itself. `NAMES` therefore holds nothing back, and **`alpha` and `zebra` trade places freely around it**.
+`NAMES` is a comprehension that binds `name` and reads it within the same statement, sitting between `zebra` and `alpha`. **`alpha` and `zebra` trade places around it**, because a statement is exempt from the ordering check for any name it binds itself, since nothing can need to sort ahead of itself, so `NAMES` blocks nothing.
 '''

@@ -1,10 +1,10 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "A Redundant Return Annotation Is Dropped"
+title       = "A Redundant `-> None` Is Removed"
 
 description = '''
-`configure` and `reset` each declare an explicit `-> None`, and both are stripped away, landing on `def configure():` and `def reset(state):`.
+`configure` and `reset` each declare `-> None` over a body that returns nothing. **`strip-none-return` removes both annotations**, so the headers read `def configure():` and `def reset(state):`.
 
-An omitted return annotation **already reads as a function that returns nothing**, so the explicit form carries no information worth keeping.
+A function with no return annotation already reads as one that returns nothing, so the explicit `-> None` adds no information.
 '''

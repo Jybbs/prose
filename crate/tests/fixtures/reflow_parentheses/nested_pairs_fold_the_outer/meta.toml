@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Wrapped Pair Counts the Pairs Nested Inside It"
+title       = "A Join Counts the Nested Pairs It Removes"
 
 description = '''
-`ready = (` wraps two nested groupings, `(server.up)` and `(cache.warm)`, each carrying its own redundant parentheses, inside an outer grouping split across lines. With the budget set to `34` characters, the fold test already counts those two sets of parentheses as shed, so the whole expression fits and folds to `ready = server.up and cache.warm`.
+`ready = (` opens a multi-line pair around `(server.up)` and `(cache.warm)`, each wrapped in a redundant pair of its own, under a `code-line-length` of `34`. **The join test measures the interior with those two inner pairs already removed**, so the expression fits and joins to `ready = server.up and cache.warm`.
 '''

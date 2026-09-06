@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Loop-Body Annotation Runs at Module Scope and Holds the Directive"
+title       = "An Annotation Inside a Module-Level Loop Keeps the Directive"
 
 description = '''
-Nothing here changes. The annotated assignment `y: Item` sits inside a `for` loop body, and a nested annotation still counts when the file is checked.
-
-`Item` resolves to the class written above the loop, so eager evaluation would succeed and the directive looks unnecessary. It is kept anyway, because **a `for` loop body runs at module scope** and its annotation reaches `__annotations__` only while the directive stands.
+The annotated assignment `y: Item = Item()` sits inside a `for` loop body at module level, and `Item` is the class defined above the loop. **The directive stays**, because a `for` loop body at module level runs in module scope, so the rule counts the nested annotation as one written into the module's `__annotations__`, where the directive stores it as the string `'Item'` rather than the class object.
 '''

@@ -1,7 +1,7 @@
 # Lint Rules
 
-Lint rules surface diagnostics without rewriting source. They run under both `prose check` and `prose format`, returning exit code 2 when any lint diagnostic fires, and they never produce an [[edit]]. Lint coincides with its domain, in that every lint rule sits in the `lint` domain and every rule in the `lint` domain is a lint. The category-versus-domain distinction collapses cleanly to one landing.
+Lint rules report a finding without rewriting the source. They run under both `prose check` and `prose format`, they never produce an [[edit]], and any lint finding sets exit code `2`. Every lint rule lives in the `lint` family and every rule in that family is a lint, so the category and the family share this one landing page.
 
 <RuleCardList category="lint" />
 
-Each lint surfaces a pattern *Prose* notices but won't itself resolve, because the right fix depends on intent the binary can't infer. The [**Suppression**](/usage/suppression) chapter covers per-line opt-outs via `# prose: ignore[<rule>]`. The [**Exit Codes**](/reference/exit-codes) reference covers the gating semantics. For the auto-fix companion landing, see the [**Auto-Fix Rules**](/rules/auto-fix/) page. For the per-rule `enabled` facet, see the [**Configuration**](/reference/configuration) reference.
+Each lint reports a pattern *Prose* can find but not resolve, because the right fix depends on a judgment the binary does not make. The [**Suppression**](/usage/suppression) chapter covers the per-line opt-out `# prose: ignore[<rule>]`, the [**Exit Codes**](/reference/exit-codes) reference covers how the code gates a CI run, the [**Auto-Fix Rules**](/rules/auto-fix/) page is the companion landing for the rules that rewrite, and the [**Configuration**](/reference/configuration) reference covers the per-rule `enabled` facet.

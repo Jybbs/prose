@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Inner Local Flagged While the `def` Stays Exempt"
+title       = "A Local Inside a Nested `def` Is Reported While the `def` Itself Is Not"
 
 description = '''
-`x` inside `inner` **is flagged**. `inner` itself is bound once by its `def` and read once in `return inner`, yet it is not.
-
-The rule reports assignments and walrus bindings only, and **a `def` is neither**. The function binding falls outside what the rule tracks, even though it is bound once and read once exactly like the names the rule does report.
+`x` inside `inner` is written once from `compute()` and read once in `return x + 1`, and `inner` itself is bound once by its `def` and read once in `return inner`. **`x` is reported and `inner` is not**, because the rule reports assignments and walrus bindings only, and a `def` is neither, even though it is bound once and read once exactly like the names the rule does report.
 '''

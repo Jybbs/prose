@@ -3,5 +3,5 @@ previewable = true
 title       = "A Split Between Statement Clauses Rejoins"
 
 description = '''
-`import os, sys`, `assert ready, "the resource never came up"`, and `with open("a") as first, open("b") as second:` each start out split across a backslash that carries no expression, so none of the three can take parentheses. Each rejoins onto one line instead.
+`import os, sys`, `assert ready, "the resource never came up"`, and `with open("a") as first, open("b") as second:` each start out split across a backslash that carries no expression. **Each rejoins onto one line**, because none of the three breaks sits inside an expression, so no parenthesized form could keep the split.
 '''

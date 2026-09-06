@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Stacked Off Directives Flatten, First On Closes"
+title       = "Stacked Off Directives Flatten and the First On Closes Them"
 
 description = '''
-Two `# fmt: off` directives stack ahead of `much_longer_name` and its neighbors, and they **flatten into a single span** rather than nesting, so the one `# fmt: on` closes the whole block. If the directives nested, that closer would leave a region open to the end of the file, whereas here `a`, `bb`, and `ccc` align as a normal run below it.
+Two `# fmt: off` directives sit ahead of `much_longer_name` and its neighbors. **They flatten into one span rather than nesting**, so the single `# fmt: on` closes the whole block. Nested directives would leave a region open to the end of the file, whereas here `a`, `bb`, and `ccc` align as a normal run below the closer.
 '''

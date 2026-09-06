@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Import Carries Its Prose Comment Into the Sorted Run"
+title       = "An Import Carries Its Comment Into the Sorted Run"
 
 description = '''
-`# the hex helpers both writers reach for` stands above `import binascii` and binds forward to it. When the run sorts and `binascii` moves ahead of `zlib`, the comment **travels to the front of the run with its import** rather than stranding above whichever import lands where it stood.
+`# the hex helpers both writers call` stands above `import binascii`, which sits below `import zlib` with a blank line on each side of the comment. **The comment moves to the top of the run directly above `binascii` as the two imports sort**, rather than staying above whichever import ends up where `binascii` stood, because an own-line comment above a member moves with it.
 '''

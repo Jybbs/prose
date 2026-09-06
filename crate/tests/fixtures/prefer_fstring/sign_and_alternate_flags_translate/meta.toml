@@ -3,5 +3,5 @@ previewable = true
 title       = "Sign and Alternate-Form Flags Translate"
 
 description = '''
-Each printf flag carries into the matching format spec, so `%+f` becomes `{delta:+f}`, `%#x` keeps its alternate-form `#` in `{mask:#x}`, and the blank sign of `% f` survives as `{offset: f}`. The blank sign carries over only where no explicit sign character supersedes it.
+`flags` uses the `+`, `#`, and blank-sign printf flags, and **each carries into the matching format spec**, so `%+f` becomes `{delta:+f}`, `%#x` keeps its alternate-form `#` in `{mask:#x}`, and `% f` becomes `{offset: f}`, where the blank sign carries over only when no explicit sign character supersedes it.
 '''

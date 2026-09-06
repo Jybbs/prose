@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Multi-Line Value Closes the Keyword Run"
+title       = "A Multi-Line Keyword Value Ends the Keyword Run Below It"
 
 description = '''
-`rows` takes an exploded list as its value, and its `=` still aligns with `w` and `title` on the line where the list opens. **The multi-line value then closes the run**, so `on_click` and `label` align as a separate group below, on a column of their own.
+`rows` takes an exploded list as its value inside the `render` call, between `w` and `title` above and `on_click` and `label` below. **`rows`'s `=` aligns with `w` and `title` on the line where the list opens, and the multi-line value ends the run there**, so `on_click` and `label` align as a separate group on their own column.
 '''

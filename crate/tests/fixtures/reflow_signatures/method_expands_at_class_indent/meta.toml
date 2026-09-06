@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Class Methods Reshape the Same Way Free Functions Do"
+title       = "A Method Expands at the Class-Body Indent"
 
 description = '''
-`Renderer.render` carries `self` plus four typed parameters, which is enough to trip the `max-params` count.
-
-**It expands at the class-body indent.** Class bodies are descended into the same way top-level definitions are, and each parameter line takes its indent from the method's own `def` position rather than from the module margin.
+`Renderer.render` takes `self` plus four typed parameters, five in all, over `max-params`. **It expands one parameter per line at the class-body indent**, because the rule reads into class bodies the same way it reads top-level definitions, and each parameter line takes its indent from the method's own `def` rather than from the module margin.
 '''

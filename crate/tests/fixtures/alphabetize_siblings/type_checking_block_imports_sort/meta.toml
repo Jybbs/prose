@@ -3,5 +3,5 @@ previewable = false
 title       = "`if TYPE_CHECKING` Blocks Sort Their Imports"
 
 description = '''
-The three `from` imports inside `if TYPE_CHECKING:` sit out of order, and they **alphabetize exactly as they would at module level**, `from alpha import beta` climbing to the top. The recursion into compound statements reaches every sub-body, so the same reorder fires inside `if`, `for`, `while`, `with`, `try`, and `match` arms.
+Three `from` imports sit out of order inside a module-level `if TYPE_CHECKING:` block. **They alphabetize exactly as they would at module level, `from alpha import beta` climbing to the top**, because the recursion into compound statements reaches every sub-body, so the same reorder fires inside `if`, `for`, `while`, `with`, `try`, and `match` arms.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Lookalike Import from Another Module Is Untouched"
+title       = "An Import Named `annotations` From Another Module Is Left Alone"
 
 description = '''
-`from typing import annotations` imports a name that matches the future directive's, yet the module it comes from is `typing` rather than `__future__`. The removal applies **only to `from __future__ import annotations`**, and the imported name is read by `x = annotations` besides, so the line is untouched.
+`from typing import annotations` imports a name spelled the same as the future directive's, from `typing` rather than `__future__`, and `x = annotations` reads it. **The line is left as written**, because the directive branch matches only `from __future__ import annotations`, and the name is read besides.
 '''

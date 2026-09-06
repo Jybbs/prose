@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "An Inner `type` Call Holds Inside an Expanding Tuple"
+title       = "An Inner `type` Call Stays Whole Inside an Exploding Tuple"
 
 description = '''
-The `%` tuple overflows the 60-column budget, so `reflow-collections` expands it to one element per row and moves its closing `)` onto a row of its own. `reflow-calls` then breaks the `TypeError` closer onto its own row as well.
-
-The `type(other).__qualname__` call inside **stays on one line**. It only crossed the budget because the two stacked closers sat at the end of its row, and expanding the tuple takes that tail away.
+The `%` tuple in the `TypeError` call crosses the 60-column budget, with `type(other).__qualname__` as its first element and two closing parentheses stacked at the end of its last row. `reflow-collections` explodes the tuple to one element per row with its `)` on a row of its own, and `reflow-calls` moves the `TypeError` closer onto its own row as well. **The `type(other).__qualname__` call stays on one line**, because the explode moves `self.__class__.__qualname__` and the two closers off its row, and `type(other).__qualname__,` alone fits the budget.
 '''

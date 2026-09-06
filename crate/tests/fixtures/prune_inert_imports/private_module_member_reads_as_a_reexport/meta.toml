@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Member of a Private Module Reads as a Re-Export"
+title       = "A Name Taken From a Private Module Counts as a Re-Export"
 
 description = '''
-Nothing reads `OPENSSL_VERSION`, `_DEFAULT_CIPHERS`, or `namedtuple`. **The two `_ssl` imports hold**, a public module taking names out of its underscore-named implementation being how the standard library re-exports, whereas `namedtuple` comes from a public module and **drops**. `__future__` is excluded from the marker despite its underscores, so **the unused directive still drops**.
+Nothing reads `OPENSSL_VERSION`, `_DEFAULT_CIPHERS`, or `namedtuple`, and the file opens with a `from __future__ import annotations` no annotation needs. **The two `_ssl` imports stay, whereas `namedtuple` and the directive are removed**, because a public module importing from its underscore-named implementation is how the standard library re-exports, and `__future__` is excluded from that marker despite its underscores, since its names carry compiler meaning rather than a public API.
 '''

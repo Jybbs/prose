@@ -3,5 +3,5 @@ previewable = true
 title       = "A Lone Over-Budget Name Keeps Its Line"
 
 description = '''
-`from verylongpackagename import singleverylongmembername` overruns the `import-line-length` budget of `30` all by itself, and a statement carrying one name has nowhere left to break. The line **stays in place rather than splitting further**, overflowing the budget whole.
+`from verylongpackagename import singleverylongmembername` runs past the `import-line-length` budget of `30` on its own. **The line stays as written and overflows the budget whole**, because a statement carrying one name has no comma left to break at.
 '''

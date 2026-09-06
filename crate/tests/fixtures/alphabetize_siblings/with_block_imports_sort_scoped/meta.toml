@@ -3,7 +3,5 @@ previewable = false
 title       = "`with` Blocks Sort Imports in Scope"
 
 description = '''
-The `with open("foo") as f:` body holds three `from` imports out of order.
-
-A `with` block **recurses exactly as other compound bodies do**, so the run sorts in place to `alpha`, `beta`, `zeta` without leaking into the statements around it.
+The `with open("foo") as f:` body contains three `from` imports out of order. **The run sorts in place to `alpha`, `beta`, `zeta`**, because a `with` block recurses exactly as other compound bodies do.
 '''

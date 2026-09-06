@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Async Comprehension Takes the Brace Form"
+title       = "An Async Comprehension Inside `set()` Takes the Brace Form"
 
 description = '''
-`[row async for row in rows]` inside `set(...)` is an async comprehension, and `simplify-comprehensions` never reads an async generator as a plain copy of its input. The rule still rewraps it, trading the list brackets and the enclosing `set(` and `)` for one pair of braces, so the comprehension keeps its body and becomes `{row async for row in rows}`.
+`set([row async for row in rows])` wraps an async list comprehension in a `set()` call. **The call and the list brackets are replaced by one pair of braces**, so the result is `{row async for row in rows}` with the comprehension body as written, because an async comprehension is never treated as a plain copy of its input, so it is not rewritten to `set(rows)`.
 '''

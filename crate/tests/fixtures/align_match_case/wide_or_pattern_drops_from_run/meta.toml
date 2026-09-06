@@ -3,5 +3,5 @@ previewable = true
 title       = "A Wide Or-Pattern Drops Out of the Run"
 
 description = '''
-The arms match `|` alternations of differing width, and padding `"warn"` out to `"fail" | "error" | "panic"` would exceed `max-shift`. The widest arm therefore **drops out of the alignment** into its own sub-group with its `:` hugging the pattern, whereas `"ok" | "pass"` and `"warn"` still collapse and share one column.
+The arms match `|` alternations of differing width, `"ok" | "pass"`, `"warn"`, and `"fail" | "error" | "panic"`. **The widest arm folds but drops out of the shared column**, its `:` flush against the pattern, because padding `"warn"` out to `"fail" | "error" | "panic"` would exceed `max-shift`, whereas `"ok" | "pass"` and `"warn"` fold and share one column.
 '''

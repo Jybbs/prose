@@ -3,7 +3,5 @@ previewable = true
 title       = "An Own-Line Comment Divides Two Columns"
 
 description = '''
-The own-line comment between `seed()` and `flush()` is a heading for what follows rather than an annotation on a line of code.
-
-It therefore **never joins a column, and it ends the run above it**. `warm_the_cache()` and `seed()` settle on one column, `flush()` and `compact_the_index()` settle on another, and the heading stays flush at the indent it was written on.
+An own-line comment sits between `seed()` and `flush()` in a stretch of four annotated calls. **The own-line comment ends the run above it and never joins a column**, so `warm_the_cache()` and `seed()` align on one column, `flush()` and `compact_the_index()` align on another, and the comment stays flush at the indent it was written on.
 '''

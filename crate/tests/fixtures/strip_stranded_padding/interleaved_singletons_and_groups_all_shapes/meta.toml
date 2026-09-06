@@ -1,11 +1,9 @@
 [docs]
 previewable = true
-title       = "Singleton and Multi-Member Groups Compose inside One File"
+title       = "Singleton and Multi-Member Groups Compose Inside One File"
 
 description = '''
-`Solo.only_field`, `single_dict`'s one entry, and `lone_param`'s `x` are each the only member in their group, so there is no sibling column for them to line up with. **Their pre-`:` padding is stripped.**
+`Solo.only_field`, `single_dict`'s one entry, and `lone_param`'s `x` are each the only member in their group, so there is no sibling column for them to line up with. **Their padding before the `:` is removed.**
 
-`Pair`'s `first` and `second`, and `paired_dict`'s two entries, each have a sibling on a separate line, so their padding stays for `align-colons` to use.
-
-`two_params` squashes `first` and `second` onto one line. Their padding is stripped too, because **a `:` sharing a line with another has no column to align against**.
+`Pair`'s `first` and `second`, and `paired_dict`'s two entries, each have a sibling on a separate line, so their padding stays for `align-colons` to use. `two_params` squashes `first` and `second` onto one line, and their padding is removed too, because a `:` sharing a line with another has no column to align against.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Multi-Line Expressions Break the Run, Too"
+title       = "A Multi-Line Right-Hand Side Disqualifies the Arm"
 
 description = '''
-`case "fail"` holds one assignment, yet its right-hand side spreads `base + extra` over parenthesized lines, and **the multi-line right-hand side disqualifies the arm** even though it is structurally a single statement. It passes through untouched, whereas `case "ok"` folds `result = simple` onto its line and, alone in its sub-group, takes no padding.
+`case "fail"` holds one assignment whose right-hand side spreads `base + extra` over parenthesized lines. **That arm passes through unchanged even though it holds a single statement**, because a body spanning several lines disqualifies the arm, whereas `case "ok"` folds `result = simple` onto its line and, alone in its group, takes no padding.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Multi-Line Augmented Target Skips the Member"
+title       = "A Multi-Line Augmented Target Is Skipped and Splits the Run"
 
 description = '''
-`data[...]` spreads its subscript target across three lines before the `+=`, so that statement is skipped outright and its `]+=2` keeps its tight spacing. The skip also breaks the run, leaving `count` and `total` as singletons on either side, each normalizing to `count += 1` and `total += 3` without sharing a column.
+`data[...]` spreads its subscript target across three lines before its `+=`, between `count+=1` and `total+=3`. **The statement with the multi-line target is skipped, its `]+=2` kept tight, and it splits the run**, so `count` and `total` each stand alone and gain their spaces as `count += 1` and `total += 3` without sharing a column.
 '''

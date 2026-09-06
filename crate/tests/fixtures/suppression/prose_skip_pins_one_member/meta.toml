@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Prose Skip Holds One Line Out, Mirroring Fmt Skip"
+title       = "A `prose: skip` Keeps One Line Out Like a `fmt: skip`"
 
 description = '''
-A trailing `# prose: skip` on `short` **holds that line out of its alignment group** while leaving it transparent to the group around it.
-
-`bar_baz`, `foo`, and `x` above it and `aa`, `bbb`, and `cccc` below it still align to a single shared `=` column reaching across the gap, and `short` keeps its own tight spacing. This mirrors what a bare `# fmt: skip` does.
+A trailing `# prose: skip` on `short` sits in the middle of one assignment run. **It keeps that line out of the alignment group without splitting the group**, so `bar_baz`, `foo`, and `x` above it and `aa`, `bbb`, and `cccc` below it pad to one shared `=` column across the gap while `short` keeps its own tight spacing, the same result a bare `# fmt: skip` gives.
 '''

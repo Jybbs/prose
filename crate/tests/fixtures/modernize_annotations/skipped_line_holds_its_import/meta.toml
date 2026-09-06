@@ -3,5 +3,5 @@ previewable = false
 title       = "A Skipped Line Keeps the Import Its Neighbor Would Drop"
 
 description = '''
-The `# prose: skip` comment suppresses the rewrite on `x`'s line, so `x: Optional[int]` stays as written while `y: Optional[str]` below it becomes `y: str | None`. The suppressed annotation still reads `Optional`, so the import survives a rewrite that would otherwise have removed it.
+`x: Optional[int]` carries a `# prose: skip` comment, and `y: Optional[str]` sits below it. **`x` stays as written and `y` becomes `str | None`**, because the directive suppresses the rewrite on its own line alone, and the suppressed annotation still reads `Optional`, so the import survives a rewrite that would otherwise have removed it.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Attribute Right-Hand Side Names Its Subscript Rewrite"
+title       = "An Attribute Right-Hand Side Is Reported With a Subscript Rewrite"
 
 description = '''
-`x, y = point.coords` unpacks an attribute access, and each target is read exactly once in `render(x, y)`. An attribute right-hand side supports the subscript rewrite the same way a plain name does, so the lint flags both targets and names `point.coords[0]` for `x` and `point.coords[1]` for `y`.
+`x, y = point.coords` unpacks an attribute access, and `render(x, y)` reads each target once. **Both targets are reported, and the findings name `point.coords[0]` for `x` and `point.coords[1]` for `y`**, because an attribute right-hand side takes the subscript rewrite the same way a plain name does.
 '''

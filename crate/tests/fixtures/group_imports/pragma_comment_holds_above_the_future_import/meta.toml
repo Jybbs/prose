@@ -1,9 +1,9 @@
 [docs]
 previewable = false
-title       = "A Pragma Comment Holds Above the `__future__` Import"
+title       = "A Pragma Comment Stays Above the `__future__` Import"
 
 description = '''
-The `# type: ignore` pragma sits directly above `from __future__ import annotations`, and a comment attached to a statement travels with that statement through a reorder.
+The `# type: ignore` pragma sits directly above `from __future__ import annotations`, with `from collections import Counter` and `import os` below.
 
-The directive is pinned at the front of the file, so **the pragma stays at the very top with it** while `import os` and `from collections import Counter` partition into their groups below.
+**The pragma stays at the top of the file with the directive**, because a comment attached to a statement moves with that statement and the directive stays first, while `import os` and `from collections import Counter` partition into their groups beneath.
 '''

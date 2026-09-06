@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Import Binds the Top Segment or the Asname"
+title       = "An Import Binds Its Top Segment or Its `as` Name"
 
 description = '''
-`import b.c.d` **binds only the top segment `b`**, whereas `import e.f as g` binds its asname `g`. The `from` forms bind each imported name directly, so `i`, the asname `l`, and even `annotations` from `__future__` all land in the module table with the `Import` kind.
+`import b.c.d`, `import e.f as g`, `from h import i`, `from j import k as l`, and `from __future__ import annotations` follow `import a`. **`import b.c.d` binds only `b` and `import e.f as g` binds only `g`**, whereas each `from` form binds the imported name or its `as` name directly, so `a`, `b`, `g`, `i`, `l`, and `annotations` each appear in the module table with the `Import` kind.
 '''

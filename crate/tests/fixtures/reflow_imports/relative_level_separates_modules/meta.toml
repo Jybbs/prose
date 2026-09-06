@@ -3,5 +3,5 @@ previewable = false
 title       = "Relative Depth Keeps Two Same-Named Modules Apart"
 
 description = '''
-`from .pkg import beta` and `from .pkg import gamma` merge into one statement, whereas `from ..pkg import alpha` keeps its own line. The merge compares the leading-dot count along with the module name, so `.pkg` and `..pkg` name **two distinct modules** that never combine.
+`from .pkg import beta`, `from ..pkg import alpha`, and `from .pkg import gamma` name `pkg` at two relative depths. **The two `.pkg` statements merge into `from .pkg import beta, gamma` and `from ..pkg import alpha` keeps its own line**, because the merge compares the leading-dot count along with the module name, so `.pkg` and `..pkg` are two distinct modules.
 '''

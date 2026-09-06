@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Import Holds While Any Read Survives"
+title       = "An Import Stays While Any Read Survives"
 
 description = '''
-`first`'s `Optional[int]` rewrites to `int | None`, whereas `parent`'s `Optional["Node"]` holds because its member is the forward-reference string `"Node"`. That surviving annotation still reads `Optional` once, so the `from typing import Optional` line stays.
+With `target-version = "3.10"`, `Node` annotates `first` as `Optional[int]` and `parent` as `Optional["Node"]`. **`first` rewrites to `int | None` and `parent` stays as written**, because its member is the forward-reference string `"Node"`, and that surviving annotation still reads `Optional`, so the `from typing import Optional` line stays.
 '''

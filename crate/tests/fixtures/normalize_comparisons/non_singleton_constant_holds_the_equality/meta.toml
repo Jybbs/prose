@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Equality Against a Non-Singleton Constant Holds"
+title       = "An Equality Against a Non-Singleton Constant Keeps Its `==`"
 
 description = '''
-`None == 0` compares `None` against `0`, and `0` is not a singleton, so rewriting the `==` to `is` would test whether the two are the same object, something the interpreter never guarantees for an integer. The equality therefore holds as written.
+`None == 0` compares `None` against `0`, and `0` is not a singleton. **The equality stays as written**, because rewriting the `==` to `is` would test whether the two are the same object, which the interpreter never guarantees for an integer.
 '''

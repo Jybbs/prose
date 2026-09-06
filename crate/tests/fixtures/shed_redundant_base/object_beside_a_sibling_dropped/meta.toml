@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "`object` Beside a Real Base Goes Alone"
+title       = "`object` Beside a Real Base Drops Alone"
 
 description = '''
-`class Layered(Mapping, Sized, object):` and `class Trailing(Mapping, object):` each name a real base alongside `object`. Only the `object` entry and the comma binding it to the preceding base drop, leaving `class Layered(Mapping, Sized):` and `class Trailing(Mapping):` with their parentheses kept.
+`class Layered(Mapping, Sized, object):` and `class Trailing(Mapping, object):` each name a real base beside `object`. **Only the `object` entry and the comma before it drop**, leaving `class Layered(Mapping, Sized):` and `class Trailing(Mapping):` with their parentheses kept around the remaining bases.
 '''

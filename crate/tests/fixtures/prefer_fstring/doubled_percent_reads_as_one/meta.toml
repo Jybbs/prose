@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Doubled Percent Reads as One Literal"
+title       = "A Doubled Percent Becomes One Literal `%`"
 
 description = '''
-In the `%` template, `%%` is the escaped spelling of one literal percent sign, an escape an f-string no longer needs. The rewrite collapses it to a plain `%` while `%.1f` becomes the field `{ratio:.1f}`, its precision carried into the format spec beside it.
+In the `%` template `"%.1f%% done"`, `%%` is the escaped spelling of one literal percent sign, an escape an f-string does not need. **The rewrite collapses `%%` to a plain `%`** while `%.1f` becomes the field `{ratio:.1f}`, its precision carried into the format spec.
 '''

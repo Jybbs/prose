@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Resolved Class Annotation Still Keeps the Directive Under the Sort"
+title       = "A Class Defined Above Its Use Still Keeps the Directive Under the Sort"
 
 description = '''
-`Node` is defined above the `visit` that names it, which on its own lets `prune-inert-imports` drop the directive. With `alphabetize-siblings` sorting definitions in the same pipeline the class is a binding the sort can move, so **the directive stays whichever side of `visit` the class sits on**.
+`class Node` is defined above the `visit` that names it in annotations, which on its own would let `prune-inert-imports` remove `from __future__ import annotations`. **The directive stays**, because `alphabetize-siblings` sorts definitions in the same pipeline and the class is a binding the sort can move, so the directive is kept whichever side of `visit` the class ends up on.
 '''

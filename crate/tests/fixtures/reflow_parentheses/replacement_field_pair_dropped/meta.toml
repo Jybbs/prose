@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Redundant Pair Inside a Replacement Field Sheds"
+title       = "A Redundant Pair Inside an f-string Replacement Field Is Removed"
 
 description = '''
-The parentheses around `a + b` sit inside an f-string replacement field, whereas the pair around `c + d` sits in a plain assignment. Both shed the same way, leaving `f"{a + b}"` and `value = c + d`, because an interpolated expression follows the same rules as one written outside a string.
+The pair around `a + b` sits inside an f-string replacement field, and the pair around `c + d` sits in a plain assignment. **Both pairs are removed the same way**, leaving `f"{a + b}"` and `value = c + d`, because an interpolated expression follows the same test as one written outside a string.
 '''

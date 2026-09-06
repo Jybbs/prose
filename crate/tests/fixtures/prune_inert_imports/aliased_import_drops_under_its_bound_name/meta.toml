@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Aliased Import Is Read Under the Name It Binds"
+title       = "An Aliased Import Is Counted Under the Name It Binds"
 
 description = '''
-`import numpy as np` binds the name `np` rather than `numpy`, and it is `np` the reference scan reads. The body below holds only `value = 1`, which mentions neither name. **Nothing references the binding, so the line goes.**
+`import numpy as np` binds `np` rather than `numpy`, and the body below it is `value = 1`, which reads neither name. **Nothing reads `np`, so the line is removed**, because the rule counts references against the name an import binds rather than against the module path.
 '''

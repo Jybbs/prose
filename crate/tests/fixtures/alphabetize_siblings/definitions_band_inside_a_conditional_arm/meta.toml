@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Definitions Band Inside a Conditional Arm"
+title       = "Definitions Group Inside a Conditional Arm"
 
 description = '''
-Each arm of the `if` is ordered on its own, exactly as a module body would be.
-
-Inside the first arm, `Widget` is a class, so it groups above the two functions and `build` sorts ahead of `render`. The `else` arm holds a single `render`, so **there is nothing there to reorder**.
+The first arm of the `if sys.version_info` conditional contains `render`, `Widget`, and `build`, and the `else` arm contains a single `render`. **In the first arm `Widget` groups above the two functions and `build` sorts ahead of `render`, whereas the `else` arm has nothing to reorder**, because each arm is ordered on its own exactly as a module body would be.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Hold an Effectful Constant Within a Cell"
+title       = "A Constant Calling a Function Stays in Place Within a Cell"
 
 description = '''
-The cell interleaves `helper` with two constants.
-
-The inert `SEED = 42` hoists above the definition as usual. `CACHE = build_cache(size=10)` **holds its place**, because a call runs code the moment the cell executes and moving it would change what that run computes.
+The cell interleaves `helper` with `SEED = 42` and `CACHE = build_cache(size=10)`. **`SEED` moves above the definition and `CACHE` stays below it**, because a call runs code the moment the cell executes, so moving it would change what that run computes, whereas a literal moves freely.
 '''

@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "An Augmented Assignment's Value Measures From Its Own Column"
+title       = "An Augmented Assignment's Value Is Measured From Its Own Column"
 
 description = '''
-The `border +=` row sits in a run with `padx +=`, and [[reflow-calls]] reads the value's column from the row's own indent rather than one column short, so the nested `widget.cget` call explodes.
+`padx +=` and `border +=` sit in one run inside `measure`, each assigned a nested `widget.tk.getint(widget.cget(...))` call, and the `border` row runs past the 64-column budget. **The `widget.tk.getint(...)` call on the `border` row explodes, its `widget.cget('border')` argument moving to a row of its own**, because [[reflow-calls]] measures the value from the row's own indent rather than one column short, while the `padx` row fits and stays whole.
 '''

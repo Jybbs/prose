@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Non-Assignment Write Kinds Are Exempt"
+title       = "A Binding That Is Not an Assignment Is Exempt"
 
 description = '''
-`arg`, `value`, `fp`, `err`, and `os` are each written once and read once, which is exactly the shape the rule flags on a plain assignment. None of them is reported.
-
-**The rule reports assignments and walrus bindings only.** A function parameter, a `for` target, a `with` target, an `except` handler name, and an `import` binding are none of those, and none of them carries a right-hand side that inlining could move.
+`fp`, `err`, and `os` are each written once and read once, the case the rule reports on a plain assignment, and `arg` and `value` are each read twice. **None of the five is reported**, because the rule reports assignments and walrus bindings only, and a function parameter, a `for` target, a `with` target, an `except` handler name, and an `import` are none of those, so none carries a right-hand side inlining could move.
 '''

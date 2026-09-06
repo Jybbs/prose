@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Class-Body Numbered Steps Surface the Lint Too"
+title       = "A Numbered Step in a Class Body Is Reported"
 
 description = '''
-`# 1. normalize input` sits on its own line inside `Processor`'s class body, ahead of `run`, and `step-narration` **flags it the same way it flags a numbered-step comment inside a function**. The comment's enclosing scope plays no part in the match, only its own-line numbered-step shape.
+`# 1. normalize input` sits on its own line inside the body of `Processor`, ahead of `run`. **`step-narration` reports it**, exactly as it reports a numbered-step comment inside a function, because the match reads the comment's own text and ignores the scope around it.
 '''

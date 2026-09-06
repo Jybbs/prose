@@ -3,5 +3,5 @@ previewable = true
 title       = "How the Module Uses a Name Settles What the Value Cannot"
 
 description = '''
-`path_sep = os.sep` and `opener = tarfile.TarFile.open` are the same attribute-read shape, and nothing in either value says which one holds data, so how the module uses each name settles it. The module truth-tests `path_sep` in `if path_sep:`, a pointless operation on a class, so `path_sep` is flagged with the `PATH_SEP` rename, whereas `opener` is only ever called and passes. `Vec` and `Crate` read as types from their values alone, one parametrizing the imported `NDArray` and the other the locally declared `Box`.
+`path_sep = os.sep` and `opener = tarfile.TarFile.open` are the same attribute-read form, and nothing in either value says which one binds data, so how the module uses each name settles it. **The module truth-tests `path_sep` in `if path_sep:`, a pointless operation on a class, so `path_sep` is reported with the `PATH_SEP` rename, whereas `opener` is only ever called and passes.** `Vec` and `Crate` read as types from their values alone, one parametrizing the imported `NDArray` and the other the locally declared `Box`.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Skipped Sort Measures the Comma as Written"
+title       = "A Skipped Sort Leaves Each Comma Measured as Written"
 
 description = '''
-`reflow-collections` normally forecasts which entry `alphabetize-siblings` will leave last, so the comma it measures matches the one the sort is going to write.
-
-The `# prose: skip[alphabetize-siblings]` over this dict turns the sort off, and **the forecast turns off with it**. Every entry is then measured with the comma it already carries, which is why `"bb"` counts a trailing comma and breaks after its `:` instead of being measured as the last entry.
+`table` carries `# prose: skip[alphabetize-siblings]` on its closing line, listing `"bb"` before `"aa"`. `reflow-collections` ordinarily measures each entry with the comma the sort is about to write, and **the skip directive turns the sort off, and with it the measurement against the sorted order**, so every entry is measured with the comma it already carries, and `"bb"` counts a trailing comma and breaks after its `:` rather than being measured as the last entry.
 '''

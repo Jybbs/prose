@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "An Exploded Keyword Value Measures Past the `=` Buffer"
+title       = "An Exploded Keyword Value Is Measured Past the `=` Buffer"
 
 description = '''
-`reflow-calls` lands every keyword alone on its own row, and `align-equals` then opens a buffer around each `=`, which moves every value two columns to the right.
-
-The nested `os.listdir(...)` call is measured **from that settled column** rather than from where it sat before the buffer was added. Those two columns are what take it past the 40-column budget and explode it, instead of leaving an over-budget row behind.
+`_filter(flist=os.listdir(self.left_folders), skip=self.hide)` crosses the 40-column budget. `reflow-calls` puts each keyword on its own row, and `align-equals` writes a buffer around each `=`, which moves every value two columns right. **The nested `os.listdir(...)` call explodes**, because it is measured from that settled column rather than from where it sat before the buffer, and those two columns take it past the budget.
 '''

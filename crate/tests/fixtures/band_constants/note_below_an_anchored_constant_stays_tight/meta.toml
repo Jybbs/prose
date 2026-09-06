@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Note below an Anchored Constant Stays Tight against It"
+title       = "A Note Below a Constant That Stays in Place Stays Tight Against It"
 
 description = '''
-`# documents RAW` sits directly under `RAW = compute()` with a blank line before `SCALED = RAW`, so it reads as `RAW`'s own note, and both constants anchor on the call while `ALPHA` and `ZETA` sort beneath them. **The note keeps its place against `RAW`** rather than opening a blank line, because only a heading with a blank line on each side of it holds the band off.
+`# documents RAW` sits directly under `RAW = compute()` with a blank line before `SCALED = RAW`, so it reads as the note of `RAW` alone, and both constants stay where they are written while `ALPHA` and `ZETA` sort beneath them. **The note stays tight against `RAW`**, no blank line opening between them, because only a heading with a blank line on each side of it opens a gap, and the blank line the source left below the note stays.
 '''

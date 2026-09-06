@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Bare Skip Pins Every Line of the Statement It Trails"
+title       = "A Bare Skip Covers Every Line of the Statement It Trails"
 
 description = '''
-A trailing `# fmt: skip` on `z`'s wrapped assignment **covers the whole logical statement**, spanning both the opening `(` and the closing `)  # fmt: skip` line. `reflow-parentheses` therefore drops its opening and closing edits together rather than applying one half and leaving source that fails to parse.
+A trailing `# fmt: skip` on `z`'s wrapped assignment **covers the whole logical statement**, from the opening `(` through the `)  # fmt: skip` line. `reflow-parentheses` therefore drops its opening and closing edits together rather than applying one half and leaving source that fails to parse.
 '''

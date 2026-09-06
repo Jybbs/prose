@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Run Following a Closed Bracket Reads Its Own Enclosing One"
+title       = "A Run After a Closed Bracket Breaks Inside Its Own Enclosing Pair"
 
 description = '''
-`helper(alpha)` opens and closes before the run in `emit(helper(alpha), ...)`, so the bracket the break answers to is `emit`'s own parentheses rather than the nested `helper(...)` pair that already closed. `stack-adjacent-strings` **breaks the run in place at `emit`'s indent**, leaving `helper(alpha)` on the first line.
+`helper(alpha)` opens and closes before the run in `emit(helper(alpha), ...)`, so the bracket enclosing the run is `emit`'s own parentheses rather than the nested `helper(...)` pair that already closed. **The run breaks in place, the second literal dropping to the argument row's indent**, leaving `helper(alpha)` and the first literal together on the row where they started.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Bare Namespace Reference Passes"
+title       = "An Import Passed as a Bare Object Is Not Reported"
 
 description = '''
-`register(os)` passes the module object itself, a use no `from os import ...` rewrite could express, because the caller needs the namespace rather than a symbol from it. That bare reference exempts the import from this lint, so `import os` passes even though `os.getcwd` is its only attribute use.
+`register(os)` passes the module object itself, and `os.getcwd` is the only attribute use of the import. **No diagnostic is reported**, because a namespace used as the bare object cannot collapse into a `from os import ...` rewrite, since the caller needs the module rather than a symbol from it.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Returned Run Gains the Parentheses It Needs"
 
 description = '''
-`build`'s `return` value carries no bracket of its own around its two-literal run. `stack-adjacent-strings` **wraps the run in parentheses**, dropping the closing one to the statement's indent and breaking one literal per line.
+`build`'s `return` value is a two-literal run with no bracket of its own around it, and it overflows the line. **The run is wrapped in parentheses and broken to one literal per line**, with the closing `)` written back at the statement's indent.
 '''

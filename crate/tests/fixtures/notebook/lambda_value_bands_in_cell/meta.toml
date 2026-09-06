@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Band a Lambda Constant Within a Cell"
+title       = "A `lambda` Constant Bands Within a Cell"
 
 description = '''
-`KEY = lambda row: row.score` sits below `helper` in its cell, and a `lambda` value is inert, because its body runs only when the lambda is later called rather than when the assignment binds. The constant therefore hoists into the leading band above the definition, all inside the one cell.
+`KEY = lambda row: row.score` sits below `helper` in its cell. **The constant moves into the leading band above the definition, inside the one cell**, because a `lambda` value is inert, its body running only when the lambda is later called rather than when the assignment binds.
 '''

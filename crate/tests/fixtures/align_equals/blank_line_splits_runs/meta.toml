@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Blank Lines Reset the Group"
+title       = "A Blank Line Splits the Run"
 
 description = '''
-The blank line **splits the bindings into independent groups**, so `alpha` and `beta` settle a narrow `=` column above the gap while `long_name` and `short` settle a wider one below it. Neither side's width reaches across the blank line.
+`alpha` and `beta` sit above a blank line, with `long_name` and `short` below it. **The blank line splits the assignments into two groups**, so `beta` pads out to `alpha`'s column above the gap and `short` pads out to `long_name`'s column below it, and neither column reaches across the blank line.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Spread Past `max-shift` Collapses to the Two-Space Floor"
+title       = "A Spread Past `max-shift` Collapses to the Two-Space Minimum"
 
 description = '''
-`seed()` and `reconcile_every_pending_shipment_record()` differ in width by more than `max-shift` allows, so neither row can reach the other's column and each stands alone. A row standing alone takes the two-space floor, which strips the hand-set gap after `seed()` down to the width it would carry with nothing beside it.
+`seed()` and `reconcile_every_pending_shipment_record()` each carry a trailing comment, and the one after `seed()` is padded by hand to line up with the other. **The hand-set gap after `seed()` closes to two spaces**, because the two rows differ in width by more than `max-shift` allows, so neither reaches the other's column and each stands alone at the two-space minimum.
 '''

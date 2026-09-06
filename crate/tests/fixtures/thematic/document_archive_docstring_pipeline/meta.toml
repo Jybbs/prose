@@ -1,17 +1,15 @@
 [docs]
 previewable = false
 sandbox     = true
-title       = "Document Archive Reframes, Wraps, and Expands Docstrings Across the Whole Module"
+title       = "A Document Archive Reframes, Wraps, and Expands Docstrings Across the Module"
 
 description = '''
-This persistence module runs the docstring rules across a whole file. It opens with a mis-framed module docstring whose summary paragraph runs long, then unsorted interleaved imports, a pool of constants split around the function definitions, an over-wide `write_document` signature, and single-line docstrings on `write_document`, `purge`, and `CatalogStore`.
+This persistence module opens with a module docstring whose summary shares a line with the opening `"""` and whose second paragraph runs long, then unsorted interleaved imports, constants split around the function definitions, an over-wide `write_document` signature, a multi-line `Args:` docstring on `purge`, and single-line docstrings on `write_document`, `CatalogStore`, and `CatalogStore.get`. **Every docstring in the file reframes, wraps, or expands in one pass**, with the layout rules writing beside them:
 
-The rewrites land together:
-
-1. The module docstring and `purge`'s `Args:` docstring reframe onto their own `"""` lines and wrap at the budget, with the `Args:` entries aligning their `:` column.
-2. The single-line docstrings expand to framed form.
+1. The module docstring and `purge`'s `Args:` docstring move their `"""` onto their own lines and wrap at the budget, with the `Args:` entries aligning their `:` column.
+2. The single-line docstrings expand to the framed form.
 3. The imports group, sort, and align, and `ARCHIVE_ROOT`, `ENCODING`, and `MANIFEST_NAME` gather into one aligned block.
-4. `write_document`'s signature explodes one parameter per line, and `purge`'s bare `-> None` strips.
+4. `write_document`'s signature explodes to one parameter per line, and `purge`'s bare `-> None` is removed.
 
-Lints stand alongside those rewrites. `json` and `hashlib` are each reached through a single attribute, `write_document`'s out-of-order parameters stay in place but are flagged, and `purge`'s assign-once `cutoff` is flagged for inlining.
+Lints report beside those rewrites, in that `json` and `hashlib` are each reached through a single attribute, and the out-of-order parameters of `write_document` and `CatalogStore.__init__` stay in place and are reported.
 '''

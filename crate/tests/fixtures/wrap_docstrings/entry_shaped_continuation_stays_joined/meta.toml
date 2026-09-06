@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Entry-Shaped Continuation Past the Section Body Stays Joined"
+title       = "An Entry-Shaped Continuation Past the Section Body Stays Joined"
 
 description = '''
-The continuation line `nested: it picks up here.` reads exactly like a fresh `name: description` pair, so it looks as though it should open an entry of its own.
-
-It does not, because it sits **deeper than the section body indent**, and no sibling entry can open there. It stays part of the `outer` description it continues, and only a line at the section body indent itself, like `after:`, opens the next entry.
+The continuation line `nested: it picks up here.` reads like a fresh `name: description` pair, but it sits deeper than the section body indent. **It stays part of the `outer` description and joins its head line**, because no sibling entry can open past the section body indent, so only a line at that indent, like `after:`, opens the next entry.
 '''

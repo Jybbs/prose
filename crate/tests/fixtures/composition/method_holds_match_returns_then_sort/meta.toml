@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Methods Sort Around One Holding a Collapsing Match"
+title       = "Methods Sort Around One Whose Match Arms Join"
 
 description = '''
-Three methods sit out of order, and `handle_alpha` holds a `match` whose arms each return a single value. **The methods sort alphabetically, `align-match-case` folds each return onto its `case` line and aligns the `:` column**, and `space-statements` inserts a blank line between the methods.
+Three methods of `Dispatcher` sit out of order, and `handle_alpha` contains a `match` whose arms each return a single value. **The methods sort so `handle_alpha` leads, `align-match-case` joins each `return` onto its `case` line and pads the `:` into one column**, and `space-statements` writes one blank line between the methods.
 '''

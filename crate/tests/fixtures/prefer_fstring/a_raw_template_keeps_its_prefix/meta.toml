@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Raw Template Comes Back as `rf`"
+title       = "A Raw `%` Template Converts to `rf`"
 
 description = '''
-`r"\d+%s" % (suffix,)` converts to `rf"\d+{suffix}"`, the `r` placed ahead of the `f` in the new prefix. The raw marker survives the rewrite, so `\d` stays literal text exactly as it was in the original template.
+`pattern = r"\d+%s" % (suffix,)` carries an `r` prefix. **The rewrite writes `rf"\d+{suffix}"`**, placing the `r` ahead of the `f` in the new prefix, so `\d` stays the literal text it was in the source template.
 '''

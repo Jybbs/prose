@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Parenthesized Tuple Target Aligns"
+title       = "A Parenthesized Tuple Target Aligns Like a Name"
 
 description = '''
-The tuple target `(a, b)` keeps its parentheses and its unpacking assignment aligns like any other. `(a, b)` measures six characters, parentheses included, so `cc` pads out to meet that width and both `=` land on one column.
+The unpacking assignment `(a, b) = 1, 2` sits above `cc = 3`. **The tuple target keeps its parentheses and its `=` shares a column with `cc`'s**, because `(a, b)` measures six characters with the parentheses counted, so `cc` pads out to that width.
 '''

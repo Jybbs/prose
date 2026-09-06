@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Leading Comment Holds Its Import Across a Blank Line"
+title       = "A Leading Comment Keeps Its Import Across a Blank Line"
 
 description = '''
-A blank line between the comment and the import **does not break the hold**, because deleting the line would strand the comment just as it would with the two written tight.
+An own-line comment sits two rows above `import multiprocessing.connection` with a blank line between them, and nothing reads the binding. **The import stays**, because the blank line does not detach the comment from the import, and removing the line would leave the comment above whatever statement followed.
 '''

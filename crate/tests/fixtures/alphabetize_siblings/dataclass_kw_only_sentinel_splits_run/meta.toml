@@ -3,5 +3,5 @@ previewable = true
 title       = "A `KW_ONLY` Sentinel Splits the Field Run"
 
 description = '''
-The `_: KW_ONLY` pseudo-field marks where `Posting` stops accepting positional arguments, so `title` and `company` above it **hold their slots** while `date_posted` and `url` below it **sort**. The sentinel itself stays put, leaving the keyword-only boundary exactly where the author drew it.
+The `_: KW_ONLY` pseudo-field marks where `Posting` stops accepting positional arguments. **`title` and `company` above it keep their places, whereas `date_posted` and `url` below it sort**, and the sentinel itself stays where the author drew the keyword-only boundary.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "Constants Sort and Align Around a `# fmt: off` Block"
 
 description = '''
-The constants `zebra`, `foo`, and `bar_baz` sit above a `# fmt: off` block, so they sort alphabetically and their `=` pads into one column. **The hand-shaped `matrix` between `# fmt: off` and `# fmt: on` stays byte for byte as written**, because the directives bound a region no rule edits, and the sort-and-align run stops at that boundary.
+`zebra`, `foo`, and `bar_baz` sit above a `# fmt: off` block that contains the hand-laid `matrix`. `band-constants` sorts the three and `align-equals` pads their `=` into one column, and **the `matrix` between `# fmt: off` and `# fmt: on` stays byte for byte as written**, because the directives mark a region no rule edits and the run stops at that boundary.
 '''

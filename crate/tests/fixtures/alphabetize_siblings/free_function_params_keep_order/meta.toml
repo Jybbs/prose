@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Positional Parameters Keep Their Order, Keyword-Only Sorts"
+title       = "Positional Parameters Keep Their Order and Keyword-Only Parameters Sort Required First"
 
 description = '''
-`target` and `source` **hold their source order** because they can bind by position, so reordering them would rebind call sites a single-file pass cannot see. The keyword-only block past the `*` binds by name at every call site and sorts with required entries ahead of optional ones, which is why the default-less `mode` moves ahead of `atomic=True`. The companion [[unsorted-positionals]] lint reports the positional run when alphabetizing it would help.
+`merge` takes the positionals `target` and `source`, then `atomic=True` and `mode` past the `*`. **`target` and `source` keep their source order, and the keyword-only block sorts with the default-less `mode` moving ahead of `atomic=True`**, because positionals can bind by position, so reordering them would rebind call sites a single-file pass cannot see, whereas keyword-only parameters bind by name at every call site and sort with required entries ahead of optional ones.
 '''

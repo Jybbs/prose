@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Function Calls Drop the Trailing Comma on the Final Arg"
+title       = "A Call Drops the Trailing Comma After Its Last Argument"
 
 description = '''
-`Posting(...)`'s last argument, `title="Electrician",`, carries a `,` right before the call's closing `)`. **`strip-trailing-commas` scans backward from that `)`, finds the comma, and deletes it**, so the call reads without a dangling separator.
+`Posting(...)` spreads three keyword arguments over one line each, and the last, `title="Electrician",`, carries a `,` before the closing `)`. **That comma is removed**, so the call ends on its last argument rather than on a dangling separator.
 '''

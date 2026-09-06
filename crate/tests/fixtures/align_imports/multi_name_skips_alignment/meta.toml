@@ -3,5 +3,5 @@ previewable = false
 title       = "Multi-Name Imports Skip Alignment"
 
 description = '''
-`import os, sys` and `import re as regex, json as parser` each name more than one module, leaving no single `as` to align, so **a multi-name import skips alignment entirely** and breaks the run it sits in. That leaves `import collections as c` and `import datetime as dt` each alone in a run of one, wherein no padding is added and the file passes through unchanged.
+`import os, sys` and `import re as regex, json as parser` each name more than one module, and each sits beside an aliased single-module import. **Neither multi-name import is aligned, and each ends the run it sits in**, because a line naming several modules has no single `as` to align. That leaves `import collections as c` and `import datetime as dt` each in a run of one, so no padding is added and the file is left as written.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A File Without the Directive Passes Through Unchanged"
+title       = "A Read Import Passes Through Unchanged"
 
 description = '''
-`os` is imported and then read through `os.getcwd()` inside `main`. **The import passes through unchanged** because the binding table holds a live reference to `os`, giving `prune-inert-imports` nothing to prune.
+`import os` binds `os`, and `os.getcwd()` inside `main` reads it. **The file passes through unchanged and nothing is reported**, because the binding table records a read for `os`, so the rule has no unreferenced name to remove.
 '''

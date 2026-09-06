@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Anchored Constant below a Definition Takes Two Blank Lines"
+title       = "A Constant That Stays in Place Opens Two Blank Lines Below a Definition"
 
 description = '''
-`LIMIT = compute()` anchors on its call directly under `helper` with no blank line between them, and `ALPHA` and `ZETA` sort beneath it. **The anchored constant takes the two blank lines the module policy seats after a definition**, the count a banded constant in the same slot would take.
+`LIMIT = compute()` calls `compute`, so it stays where it is written, directly under `helper` with no blank line between them, and `ALPHA` and `ZETA` sort beneath it. **Two blank lines open between `helper` and `LIMIT`**, the gap a module keeps after a definition, because a constant that stays in place still spaces as a member of the band beside it.
 '''

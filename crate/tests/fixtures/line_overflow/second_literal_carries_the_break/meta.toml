@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "The Literal Crossing the Cap Is the One Offered"
+title       = "The Literal Crossing the Budget Is the One Offered a Split"
 
 description = '''
-Both `"key"` and its long value are literals on the 75-column line, and the suggestion lands on the one that crosses the 40-column cap rather than the first in source order. `"key"` sits well inside the budget, so splitting it would shorten nothing, leaving the value literal to carry the break.
+`LOOKUP`'s 75-column line carries two literals, `"key"` and its long value, and `"key"` sits well inside the 40-column budget. **The suggested split is placed on the value literal, the one that crosses the budget, rather than on the first literal in source order**, because splitting `"key"` would shorten nothing.
 '''

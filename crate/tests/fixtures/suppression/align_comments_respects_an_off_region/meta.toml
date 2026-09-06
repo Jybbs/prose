@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A `prose: off` Region Holds Its Comment Column"
+title       = "A `prose: off` Region Keeps Its Comment Gaps"
 
 description = '''
-`seed()` and `compact_the_index()` sit inside a `#prose: off` region, so their trailing comments keep the gaps they were written with. Once `# prose: on` closes the region, `align-comments` settles the comments on `flush()` and `warm_the_cache_now()` onto a shared column.
+`seed()` and `compact_the_index()` sit inside a `#prose: off` region, and `flush()` and `warm_the_cache_now()` follow the `# prose: on` that closes it. **The comments inside the region keep the gaps they were written with**, whereas `align-comments` pads the two comments below the closer onto one shared column.
 '''

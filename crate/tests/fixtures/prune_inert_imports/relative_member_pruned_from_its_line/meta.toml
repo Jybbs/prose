@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Unread Member Prunes Off a Relative Import"
+title       = "An Unread Member Is Removed From a Relative Import"
 
 description = '''
-`from .helpers import first, second` is relative, and only `first` is read, through `value = first()`. **`second` prunes off the import line**, the same as an unread member on an absolute import would.
+`from .helpers import first, second` is a relative import, and `value = first()` reads only `first`. **`second` is removed from the line**, leaving `from .helpers import first`, the same as an unread member on an absolute import.
 '''

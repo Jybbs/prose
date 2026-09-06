@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Backslash a Bracket Already Spans Just Goes"
+title       = "A Backslash a Bracket Already Spans Is Removed and Its Newline Stays"
 
 description = '''
-`data = [` and `result = call(` already break across brackets before the backslash reaches them, so the backslash after `alpha,` and after `first,` is redundant and drops. The newline each one sat on stays in place, leaving the layout rules to shape the bracketed lines.
+`data = [` and `result = call(` each break across a bracket, and a backslash follows `alpha,` and `first,` inside the brackets. **Each backslash is removed and the newline it sat on stays in place**, because the bracket already spans the break and the backslash is redundant, leaving the layout rules to set the bracketed lines.
 '''

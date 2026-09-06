@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Multi-Level Nested Dict Expands and Aligns Per Depth"
+title       = "A Nested Dict Expands and Aligns at Every Depth"
 
 description = '''
-`DEPLOY`'s long single-line dict nests through `services`, `api`, `endpoints`, `headers`, `gateway`, `worker`, and `telemetry`, exercising expansion, sorting, scalar-before-collection partitioning, and per-group `:` alignment together. **At every depth the sort, the partition's blank-line divider, and the per-group `:` alignment are all visible**.
+`DEPLOY` is one long single-line dict nesting through `services`, `api`, `endpoints`, `headers`, `gateway`, `worker`, and `telemetry`. **At every depth the entries sort and align a `:` column, and where a level holds more than one nested collection, at the top level with `services` and `telemetry` and inside `api` with `endpoints` and `headers`, the scalar entries partition ahead of the collections behind a blank line with each group aligning its own column**, whereas `gateway`, `telemetry`, and `logs` keep their single nested dict directly under their scalars in the same column, so the expansion, the sort, the partition, and the per-group alignment are all visible in one literal.
 '''

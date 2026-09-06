@@ -3,7 +3,5 @@ previewable = true
 title       = "Turning Off `unify-numerics` Leaves the Other Facets Running"
 
 description = '''
-`unify-numerics = false` turns off one spelling axis and leaves the rest of the rule running.
-
-The hex `0XABC` therefore stands exactly as written, while **the other facets still fire**. `U"y"` drops its no-op prefix, `R"a\d"` lowercases to `r"a\d"`, and `'ada'` settles onto double quotes. Each facet gates one axis on its own.
+With `unify-numerics = false`, the module binds `0XABC`, `U"y"`, `R"a\d"`, and `'ada'`. **`0XABC` stays exactly as written while the other facets still run**, so `U"y"` drops its no-op prefix, `R"a\d"` lowercases to `r"a\d"`, and `'ada'` swaps to double quotes, because each facet gates one spelling axis on its own.
 '''

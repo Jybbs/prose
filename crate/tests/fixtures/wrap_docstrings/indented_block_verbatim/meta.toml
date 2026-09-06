@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Indented Code Blocks Are Preserved Too"
+title       = "An Indented Code Block Passes Through Verbatim"
 
 description = '''
-Under `Summary line.`, two assignments sit indented an extra four spaces, and the block **passes through verbatim** because indented blocks read as code samples. The first assignment runs past the budget, but reflowing code would damage it, so the rule leaves the over-budget line as written.
+Under `Summary line.`, two assignments sit indented four extra spaces, the first running past the budget. **The block passes through verbatim, over-budget line included**, because an indented block reads as a code sample and reflowing code would break it.
 '''

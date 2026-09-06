@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "A Member Running Through a Multi-Line String Keeps Its Floor"
+title       = "A Row Inside a Multi-Line String Keeps Its Column"
 
 description = '''
-The `helper` member of `holder` carries a triple-quoted string whose `line2` starts at column zero, and when the list explodes one member per line, every row outside that literal moves to the item indent. The row inside the string stays where the source wrote it, because indenting it would add spaces to the literal's own content.
+`holder` lists `alpha`, a `helper` call whose argument is a triple-quoted string with `line2` at column zero, and `zeta` in one construct. **The list expands one member per row and every row outside the string moves to the entry indent, whereas the `line2` row stays at column zero**, because indenting a row inside the string would add spaces to the string's own value.
 '''

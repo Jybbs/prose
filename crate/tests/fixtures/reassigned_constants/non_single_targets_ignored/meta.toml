@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Chained and Tuple Targets Pass Through"
+title       = "Chained, Tuple, and Attribute Targets Are Not Reported"
 
 description = '''
-The chained `A = B = 1`, the tuple unpacking `A, B = 1, 2`, and the attribute target `FOO.bar = 1` each assign through something other than a single bare name, the only assignment shape the rule tracks. Even though `A` and `B` are each written twice across these lines, **each line passes through silently**.
+`A = B = 1` chains two targets, `A, B = 1, 2` unpacks a tuple, and `FOO.bar = 1` assigns through an attribute, so `A` and `B` are each written twice across the three lines. **No diagnostic is reported for any line**, because the rule tracks assignments to a single bare name only.
 '''

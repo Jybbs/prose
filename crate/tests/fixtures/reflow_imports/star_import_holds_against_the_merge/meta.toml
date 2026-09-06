@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Star Import Holds Its Own Line Against the Merge"
+title       = "A Star Import Keeps Its Own Line Against the Merge"
 
 description = '''
-A `*` cannot share a line with a named member, in that `from pkg import *, alpha` is not valid Python, so the merge leaves `from pkg import *` and `from pkg import alpha` **as two statements**.
+`from pkg import *` and `from pkg import alpha` name the same module on consecutive lines. **They stay as two statements**, because `from pkg import *, alpha` is not valid Python, so a `*` never shares a line with a named member.
 '''

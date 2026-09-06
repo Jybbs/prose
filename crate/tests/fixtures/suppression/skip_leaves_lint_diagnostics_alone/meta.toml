@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Bare Skip Pins Layout Without Silencing Lints"
+title       = "A Bare Skip Keeps the Layout Without Silencing Lints"
 
 description = '''
-A bare `# fmt: skip` trails `value`'s wrapped assignment, and it **holds every line the statement spans out of the rewrite rules without suppressing lint diagnostics on it**, so `inlinable-bindings` still reports `value`. Silencing that lint takes a `# prose: ignore` directive alongside the skip.
+A bare `# fmt: skip` trails `value`'s wrapped assignment. **It keeps every line the statement spans out of the rewrite rules without suppressing lint diagnostics on it**, so `inlinable-bindings` still reports `value`. Silencing that lint takes a `# prose: ignore` directive beside the skip.
 '''

@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "Every Collapsible Body Kind Aligns on One Colon"
+title       = "Every Foldable Body Kind Aligns on One Colon"
 
 description = '''
-Every arm body in the `match` on `token` is a single collapsible statement, spanning `pass`, `continue`, `break`, a `raise`, a bare `log(token)` call, and a `return`. **Each folds onto its `case` line and every `:` lands on one shared column**, with the wildcard `_` padded out to the width the string patterns set.
+Every arm body in the `match` on `token` is a single statement, spanning `pass`, `continue`, `break`, a `raise`, a bare `log(token)` call, and a `return`. **Each folds onto its `case` line and every `:` moves to one shared column**, with the wildcard `_` padded out to the width the string patterns set.
 '''

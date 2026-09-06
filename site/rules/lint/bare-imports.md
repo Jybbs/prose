@@ -1,5 +1,5 @@
 ---
-caption : "Surfaces a narrowly-used bare import that `from x import …` would replace."
+caption : "Reports an unaliased bare import reached through at most `max-attributes` distinct attributes, which a `from x import …` would replace."
 related : [alphabetize-siblings, align-imports, space-statements]
 layout  : doc
 ---
@@ -8,21 +8,21 @@ layout  : doc
 
 <RuleLayout rule="bare_imports">
 
-A bare `import os` whose only use is `os.environ`, however many times it appears, names a single symbol the reader could pull in directly with `from os import environ`. A namespace reached through many distinct attributes earns its bare form, because the prefix then organizes a wide surface a `from` import would only scatter, and an aliased import (*`import numpy as np`*) is the author's deliberate namespace handle. `bare-imports` leans on those signals, flagging an unaliased bare import only when its namespace is reached through at most `max-attributes` distinct attributes (*default 4*) and never as the bare object itself, recommending the explicit `from package import name` rewrite and leaving the rewrite itself to a future migration pass that picks up the lint output.
+`bare-imports` reports a bare `import os` that a `from os import environ` would serve better, because the module reads only a few names off the namespace and never uses the module object itself. The rule fires on an unaliased import reached through at least one and at most `max-attributes` distinct attributes (*default 4*), however many times each attribute repeats, and a `from` import then names each symbol in use directly. The finding recommends the explicit `from package import name` rewrite and leaves the rewrite itself to a later migration pass that reads the lint output. A namespace reached through many distinct attributes keeps its bare form, because the prefix then organizes a wide set of names a `from` import would scatter, and an aliased import (*`import numpy as np`*) is the author's chosen namespace handle, exempt while `exempt-aliased` stays on.
 
-The rule weighs each imported namespace by the distinct attributes read off it at module scope, attribute reads nested inside functions and class bodies still resolving to the module-level binding. A namespace used as the bare object (*passed to a call, bound to another name*) cannot collapse into a `from` import, so it passes whatever its attribute count, and a function-local import sits outside the module scope the rule measures. An entry on the `allow` list preserves the bare form, including its dotted submodules (*`numpy.linalg` inherits the exemption from `numpy`*), and `exempt-aliased` (*on by default*) exempts every aliased import. When a downstream migration pass acts on the lint output, the rewrite hands off cleanly to the rest of the import surface: [[alphabetize-siblings]] sorts the resulting block, [[align-imports]] aligns the `import` keyword, and [[space-statements]] lands the gap between groups. The lint itself is non-rewriting, so the diagnostic surfaces without touching the source.
+The rule counts the distinct attributes read off each imported namespace at module scope, and an attribute read inside a function or class body still resolves to the module-level binding and counts. A namespace used as the bare object (*passed to a call, bound to another name*) cannot collapse into a `from` import, so it passes whatever its attribute count, and an import inside a function sits outside the module scope the rule measures. An entry on the `allow` list keeps its bare form, its dotted submodules included (*`numpy.linalg` inherits the exemption from `numpy`*), and `exempt-aliased` (*on by default*) exempts every aliased import. When a migration pass acts on the lint output, the other import rules finish the job, in that [[alphabetize-siblings]] sorts the resulting block, [[align-imports]] pads the `import` keyword to one column, and [[space-statements]] sets the blank lines between groups. The lint never rewrites, so the diagnostic is reported and the source stays as written.
 
 <template #configuration>
 
 <RuleConfigTable />
 
-The `allow` list holds bare package names, where any dotted submodule of an allowlisted package inherits the exemption. Set `exempt-aliased` to `false` for a project that wants every import to name its symbols, aliased or not. Lower `max-attributes` to flag only the narrowest imports, or raise it to catch wider ones.
+The `allow` list takes bare package names, and any dotted submodule of a listed package inherits the exemption. Set `exempt-aliased` to `false` in a project where every import, aliased or not, is to name its symbols. Lower `max-attributes` to report only the narrowest imports, or raise it to report wider ones.
 
 </template>
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression#lint-directives) chapter covers the `# prose: ignore[bare-imports]` directive.
+For per-line opt-outs, the [**Suppression**](/usage/suppression#tagging-a-line) chapter covers the `# prose: ignore[bare-imports]` directive.
 
 </template>
 

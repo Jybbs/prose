@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Only the Keyword Alone on Its Line Buffers"
+title       = "Only a Keyword Alone on Its Line Gains Spaces Around Its `=`"
 
 description = '''
-Inside `foo`, `a` stands alone on its line while `b` and `c` share the next one. Only the keyword alone on its line takes the spaced `=`, so `a = 1` gains its buffer while `b=2, c=3` keep the tight `name=value` form.
+Inside the `foo` call, `a=1` has a line to itself, whereas `b=2` and `c=3` share the next line. **Only `a` gains a space on each side of its `=`**, whereas `b=2` and `c=3` keep the tight `name=value` form, because a keyword that shares its line with another argument is never spaced.
 '''

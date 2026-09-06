@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Function-Local Constants Fall Outside Module Scope"
+title       = "A Function-Local Constant Is Not Reported"
 
 description = '''
-`PI` is assigned inside `compute`'s body, a function-local binding rather than a module-level one. **The rule leaves it alone**, `reassigned-constants` reading only module-level `SCREAMING_CASE` assignments and stopping at `def` and `class` boundaries by design.
+`PI = 3.14` is assigned inside the body of `compute`. **No diagnostic is reported**, because the rule reads module-level `SCREAMING_CASE` assignments only and stops at every `def` and `class` boundary.
 '''

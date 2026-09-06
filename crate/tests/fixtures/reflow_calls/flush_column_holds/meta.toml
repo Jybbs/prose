@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Flush Column Holds Its Break"
+title       = "A Flush Column Keeps Its Break"
 
 description = '''
-`helper(alpha, beta)` would fit on one line with room to spare, yet it arrives with the `(` ending its line and the `)` opening its own. That is the exact column shape the explode path emits, so the layout is held as deliberate rather than rejoined, whatever the joined form would measure.
+`helper(alpha, beta)` would fit on one row with room to spare, yet it arrives with the `(` ending its row and the `)` opening its own. **The layout stays as written rather than rejoining**, whatever the joined form would measure, because a list whose `(` ends its row and whose `)` opens its own is exactly the layout the explode writes, so the rule leaves it in place.
 '''

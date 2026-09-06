@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Widened Head Carries Its Continuation Column With It"
+title       = "A Widened `Args:` Head Moves Its Continuation Column With It"
 
 description = '''
-`align-colons` pads `host` and `(str)` so the two `Args:` entries share a type column and a `:` column, which pushes the start of `host`'s description to the right. `wrap-docstrings` then reflows the overflowing description from that padded position, so the continuation line hangs under `The remote hostname` rather than under the narrower column the source wrote.
+The `Args:` section of `dial` lists `host (str)` and `retry_budget (int)`, and `host`'s description runs past the budget. `align-colons` pads `host` and `(str)` so the two entries share a type column and a `:` column, which moves the start of `host`'s description to the right, and **`wrap-docstrings` reflows the description from that padded position**, so the continuation line hangs under `The remote hostname` rather than under the narrower column the source wrote.
 '''

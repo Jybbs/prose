@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Compound Import Flags Only Its Narrowly-Used Segment"
+title       = "A Compound Import Is Reported for Its Narrowly-Used Segment Only"
 
 description = '''
-`import os, torch` binds both modules in one statement, and the lint counts attribute uses per segment rather than per line. `os` is reached only through `os.environ` and is reported, whereas `torch` fans out across five distinct attributes and passes, so the diagnostic lands on the narrow segment alone.
+`import os, torch` binds both modules in one statement, `os` is reached only through `os.environ`, and `torch` fans out across five distinct attributes. **The diagnostic covers the `os` segment alone**, because the lint counts attribute uses per imported name rather than per line, and `torch` sits past the `max-attributes` limit.
 '''

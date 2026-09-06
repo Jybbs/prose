@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Constant-Led Test Flips So the Variable Leads"
+title       = "A Constant-Led Test Flips so the Variable Leads"
 
 description = '''
-Each test here leads with the literal, so the operands trade places until the variable leads, `"__main__" == name` coming back as `name == "__main__"` and `42 == count` as `count == 42`. The ordered `0 < count` also reverses its operator as it flips, landing on `count > 0` so the check still means the same thing.
+Each test leads with a literal, `"__main__" == name`, `0 < count`, and `42 == count`. **The operands trade places so the variable leads**, `"__main__" == name` becoming `name == "__main__"` and `42 == count` becoming `count == 42`, and the ordered `0 < count` reverses its operator as it flips, ending up as `count > 0` so the check means the same thing.
 '''

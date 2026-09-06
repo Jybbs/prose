@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Attribute or Index Part Follows the Value Inline"
+title       = "An Attribute or Index Part Follows Its Value Inline"
 
 description = '''
-Each field spells an accessor after its argument reference, `{0.attr}` an attribute and `{1[2]}` a numeric index. The rewrite reattaches each accessor to the argument it read, so the fields land inline as `{record.attr}` and `{rows[2]}`.
+Each field writes an accessor after its argument reference, `{0.attr}` an attribute and `{1[2]}` a numeric index. **The rewrite reattaches each accessor to the argument it read**, so the fields become `{record.attr}` and `{rows[2]}`.
 '''

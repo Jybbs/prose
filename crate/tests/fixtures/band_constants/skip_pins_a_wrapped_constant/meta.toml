@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Wrapped Constant's Skip Pins It Against the Band"
+title       = "A Skip Directive on a Closing Bracket Keeps the Whole Assignment in Place"
 
 description = '''
-The `# prose: skip[band-constants]` trails the closing `}` of `ALPHA`, several lines below where that assignment starts.
-
-The directive still **pins the whole `ALPHA` assignment**, because its span reaches back to the statement's opening line rather than covering only the line the closing bracket sits on. `MIDDLE` and `ZEBRA` sort above it, and `ALPHA` stays last even though its name would sort first.
+`# prose: skip[band-constants]` trails the closing `}` of `ALPHA`, several lines below the line the assignment opens on. **`ALPHA` stays last while `MIDDLE` and `ZEBRA` sort above it**, even though its name sorts first, because the span of the directive reaches back to the opening line of the statement rather than covering only the line the bracket sits on.
 '''

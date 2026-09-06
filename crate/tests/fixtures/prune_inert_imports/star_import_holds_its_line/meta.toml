@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Star Import Holds, Binding a Set No Count Enumerates"
+title       = "A Star Import Keeps Its Line"
 
 description = '''
-`from os.path import *` binds an unenumerable set of names that the reference count cannot resolve. **The import line holds and produces neither a prune nor a report**, since the rule cannot single out any one name to act on.
+`from os.path import *` binds a set of names the rule cannot enumerate, and `value = 1` is the only other statement. **The import stays and nothing is reported**, because the rule cannot count references to names it cannot enumerate, so it never removes or reports a star import.
 '''

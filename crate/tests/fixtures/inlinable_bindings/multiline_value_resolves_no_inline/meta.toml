@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Value Spanning Rows Resolves No Inline"
+title       = "A Value That Spans Rows Is Not Reported"
 
 description = '''
-`totals` is written once and read once, yet its dict literal already spans rows. **The binding stays unreported**, because the replacement would carry those rows into the `return` and grow the file for a name removed.
+`totals` is written once and read once in `return totals`, but its value is a dict literal that already spans rows. **The binding is not reported**, because the replacement would carry those rows into the `return` and the file would grow for a name removed.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Blank Line in the Gap Breaks the Run"
+title       = "A Blank Line Between Operands Ends the Run"
 
 description = '''
-**A blank line between two qualifying operands breaks the alignment run.**
-
-`foo == 1` sits above the gap and keeps its `==` where it stands, while `bar_baz` and `qux` below the gap align in a column of their own.
+A blank line separates `foo == 1` from the `bar_baz` and `qux` rows below it. **The blank line ends the run**, so `foo` keeps its `==` where it was written and `bar_baz` and `qux` align on a column of their own.
 '''

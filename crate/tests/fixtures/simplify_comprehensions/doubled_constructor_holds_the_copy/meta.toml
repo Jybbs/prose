@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Copy Over a Constructor Call Stands"
+title       = "A Copy Over a Constructor Call Stays as Written"
 
 description = '''
-`[row for row in list(rows)]` copies its target the same way a collapsible comprehension does, but its iterable is itself a call to `list`. Collapsing would spell `list(list(rows))`, no clearer than the comprehension it would replace, so `simplify-comprehensions` leaves both `values` and `unique` written as comprehensions.
+`[row for row in list(rows)]` and `[row for row in set(rows)]` each copy their target the way a rewritable comprehension does, but each iterable is itself a constructor call. **Both comprehensions stay as written**, because the rewrite would spell `list(list(rows))` and `list(set(rows))`, and a doubled constructor reads no better than the comprehension it would replace.
 '''

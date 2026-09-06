@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Which Class-Body Declarations Count as Annotated Fields"
+title       = "Only a Direct Child of the Class Body Counts as an Annotated Field"
 
 description = '''
-`registry: ClassVar[dict]` sits as a direct child of the class body, and its docstring entry restates the same `ClassVar[dict]` type. **`registry` is flagged, while `cache`, declared inside the nested `if TYPE_CHECKING:` block, resolves against nothing**, because the walk reads the class body's direct children rather than descending into a nested block.
+`Remote` declares `registry: ClassVar[dict] = {}` as a direct child of its class body and `cache: dict` inside a nested `if TYPE_CHECKING:` block, and its `Attributes:` section restates both types. **`registry (ClassVar[dict])` is reported and `cache (dict)` is not**, because the rule reads the class body's direct children and does not descend into a nested block.
 '''

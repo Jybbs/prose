@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Off Block Survives Verbatim Between Aligned Runs"
+title       = "An Off Block Stays Verbatim Between Aligned Runs"
 
 description = '''
-A `# fmt: off` / `# fmt: on` block sits between two assignment runs, and the lines it encloses, `short`, `much_longer_name`, and `mid`, **survive verbatim**. The runs on either side stay eligible, so `x`, `foo`, and `bar_baz` sort and pad to a shared `=` column above the block and `a`, `bb`, and `ccc` align below it.
+A `# fmt: off` / `# fmt: on` block sits between two assignment runs. **`short`, `much_longer_name`, and `mid` inside it stay verbatim**, whereas the runs on either side stay open to formatting, so `x`, `foo`, and `bar_baz` sort and pad to one `=` column above the block and `a`, `bb`, and `ccc` align below it.
 '''

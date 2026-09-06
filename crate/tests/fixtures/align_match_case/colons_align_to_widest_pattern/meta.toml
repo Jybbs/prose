@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Single-Assignment Bodies Collapse and Align Colons"
+title       = "Single-Assignment Bodies Fold and Align Their Colons"
 
 description = '''
-Each arm of the `match` on `credential.kind` holds one assignment to `icon`, so all three bodies fold onto their `case` lines. **The `:` column aligns to the widest pattern**, `"apprenticeship"`, leaving `"certification"` and `"program"` padded until the colons stack.
+Each arm of the `match` on `credential.kind` holds one assignment to `icon`. **All three bodies fold onto their `case` lines and every `:` moves to the column one space past `"apprenticeship"`**, the widest pattern, so `"certification"` and `"program"` take padding until the colons stack.
 '''

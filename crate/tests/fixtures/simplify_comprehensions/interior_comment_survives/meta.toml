@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Comment Inside the Rewritten Call Survives"
+title       = "A Comment Inside the Rewritten Call Stays on Its Line"
 
 description = '''
-`marks`'s call to `set([...])` spans three lines, and `# the first` trails the `1` member on its own line. `simplify-comprehensions` rewrites only the delimiters on either side of the members, trading `set([` and `])` for `{` and `}`, so the comment keeps describing `1` on the line it was written.
+`marks = set([...])` spans three lines, and `# the first` trails the `1` member on its own line. **Only the delimiters on either side of the members change, `set([` to `{` and `])` to `}`**, so the comment keeps trailing `1` on the line where it was written.
 '''

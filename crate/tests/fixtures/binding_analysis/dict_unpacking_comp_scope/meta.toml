@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Keyless Dict-Unpacking Comprehension Pushes a Scope"
+title       = "A Dict Comprehension With Only a `**` Unpacking Opens a Scope"
 
 description = '''
-`merged = {**d for d in dicts}` is a PEP 798 dict comprehension with no key expression, only the `**d` unpacking. **It still pushes its own `Comprehension` scope** the way a keyed dict comprehension does, so the loop target `d` binds there and the module table holds only `dicts` and `merged`.
+`merged = {**d for d in dicts}` is a PEP 798 dict comprehension with no key expression, only the `**d` unpacking. **It opens a `Comprehension` scope of its own**, the same as a keyed dict comprehension, so the loop target `d` binds there and the module table carries only `dicts` and `merged`.
 '''

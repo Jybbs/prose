@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Condensed Subscript Target Aligns Its Run's Equals"
+title       = "A Condensed Subscript Target Joins Its Run's `=` Column"
 
 description = '''
-The assignment into `config[primary_key]` arrives with its subscript target split across three lines, and `reflow-collections` condenses it back onto one. That gives the statement a single row, so `align-equals` pads its `=` into one column with `shorter` and `the_longest_label_here`. Condensing first is what lets the subscript line join the alignment run rather than sit outside it with its `=` on a continuation line.
+The assignment into `config[primary_key]` arrives with its subscript target written across three lines, above `shorter` and `the_longest_label_here`. `reflow-collections` condenses the subscript onto one line, which gives the statement a single row, and **`align-equals` pads its `=` into one column with the two assignments below**, whereas a subscript left across three lines would have kept its `=` on a continuation line outside the run.
 '''

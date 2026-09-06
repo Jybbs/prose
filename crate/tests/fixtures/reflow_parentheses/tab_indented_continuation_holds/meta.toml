@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Tab-Indented Continuation Holds"
+title       = "A Tab-Indented Continuation Row Keeps Its Indentation"
 
 description = '''
-Shedding the redundant pair moves the opening row one column to the left, and the continuation row would ordinarily follow it.
-
-It does not, because its indent is written with a tab. **A tab carries no fixed column count**, so no single-column deletion expresses moving the row left by one, and it keeps the indentation the source gave it.
+Inside `gg(...)`, removing the redundant pair moves the rest of the opening row one column left, and the continuation row beneath it is indented with a tab. **The continuation row keeps the indentation it was written with**, because a tab has no fixed column count, so no single-column deletion moves the row left by one.
 '''

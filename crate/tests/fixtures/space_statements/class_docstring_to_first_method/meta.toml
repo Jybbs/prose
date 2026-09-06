@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "The First Method after a Class Docstring Tightens Up"
+title       = "The First Method After a Class Docstring Gains One Blank Line"
 
 description = '''
-`Posting`'s docstring, written in triple-apostrophe quotes, sits flush against `def m1(self):`, and three blank lines separate `m1` from `m2`. **One blank line lands between the docstring and the first method**, and the wider drift between the two methods collapses to the canonical single blank.
+`Posting`'s docstring, written in triple-apostrophe quotes, sits flush against `def m1(self):`, and three blank lines separate `m1` from `m2`. **One blank line is written between the docstring and the first method**, and the three blank lines between the two methods collapse to one.
 '''

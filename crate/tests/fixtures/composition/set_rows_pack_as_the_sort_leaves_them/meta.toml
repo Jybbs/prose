@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Set Rows Pack as the Sort Leaves Them"
+title       = "Set Rows Pack at the Widths the Sort Leaves"
 
 description = '''
-`reflow-collections` packs the set's rows at **the widths `alphabetize-siblings` will leave in each slot**, not at the widths the source wrote.
-
-Because the packing already anticipates the sorted order, the rows fill the 30-column budget as densely as a list's would, and the sort then lands without having to widen any row.
+`y` is a four-element set on one line past the 30-column budget. **`reflow-collections` packs the rows at the widths `alphabetize-siblings` leaves in each slot**, not the widths the source wrote, so the rows fill the budget as densely as a list's would and the sort is written without widening any row.
 '''

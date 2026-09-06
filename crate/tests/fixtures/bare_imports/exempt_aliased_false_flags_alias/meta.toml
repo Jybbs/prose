@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Setting exempt-aliased False Flags an Aliased Import"
+title       = "`exempt-aliased = false` Reports an Aliased Import"
 
 description = '''
-By default an alias like `import os as o` is exempt from this lint, because the alias reads as a deliberate namespace handle rather than an accident.
-
-Setting `exempt-aliased = false` **withdraws that exemption**, so the alias counts like any bare import and its single attribute use in `o.getcwd()` is reported.
+`import os as o` is reached only through `o.getcwd()`, and the case runs with `exempt-aliased = false`. **The import is reported**, because the setting withdraws the exemption an alias gets by default, so the alias counts like any bare import with a single attribute use.
 '''

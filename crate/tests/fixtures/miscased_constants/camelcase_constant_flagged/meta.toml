@@ -3,5 +3,5 @@ previewable = true
 title       = "A camelCase Constant Suggests the SCREAMING_CASE Form"
 
 description = '''
-The module constant `maxRetries` is flagged, and the suggested rename splits the name at its case boundary to produce `MAX_RETRIES`, where a naive uppercasing would produce `MAXRETRIES`. The same word-boundary fold would cover a PascalCase `MaxRetries`.
+`maxRetries = 5` is a module constant in camelCase. **The lint reports it and suggests `MAX_RETRIES`**, splitting the name at its case boundary where a plain uppercasing would produce `MAXRETRIES`. The same word-boundary split covers a PascalCase `MaxRetries`.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Spec Count Past the Tuple Length Holds"
+title       = "A Spec Count Past the Tuple Length Keeps the Template"
 
 description = '''
-The template holds two `%s` specs while the tuple supplies only `only`, a mismatch that raises `TypeError` at runtime. The second spec has no expression to inline, so the template is left as written.
+The template writes two `%s` specs while the tuple supplies only `only`, a mismatch that raises `TypeError` at runtime. **The template stays as written**, because the second spec has no expression for the rewrite to move inline.
 '''

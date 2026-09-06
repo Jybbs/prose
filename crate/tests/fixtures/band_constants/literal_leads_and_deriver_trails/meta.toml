@@ -1,10 +1,10 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "A Literal Constant Leads and a Deriver Trails the Definitions"
+title       = "A Literal Constant Leads and a Derived Constant Trails the Definitions"
 
 description = '''
-This is the basic split the rule makes. A constant whose value reaches only imports, builtins, and literals **moves up to sit directly below the imports**, while a constant that names a definition further down **moves below the definitions**.
+`SESSION = build` and `TIMEOUT = 30` sit together at the bottom of the module below `build`. **`TIMEOUT` moves up to sit one blank line below `import logging`, and `SESSION` stays below the definition it names**, because a constant whose value reads only imports, builtins, and literals belongs to the leading band, whereas one naming a definition further down belongs to the trailing band.
 
-`TIMEOUT = 30` is a plain literal, so it lifts above `build`. `SESSION = build` reads the `build` definition, so it stays underneath it. The module then reads top to bottom as its imports, its plain constants, its definitions, and finally the constants derived from those definitions.
+The module then reads top to bottom as its imports, its plain constants, its definitions, and the constants derived from them.
 '''

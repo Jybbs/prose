@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Multi-Line Default Closes the Parameter Run"
+title       = "A Multi-Line Default Ends the Parameter Run Below It"
 
 description = '''
-`opts` takes an exploded dict as its default, spanning three lines, yet its `=` still aligns with `timeout`'s on the line where the dict opens. **The multi-line default then closes the run**, so `mode` and `level` below it align as a separate group on their own `=` column rather than joining the first.
+`opts` takes an exploded dict as its default, spanning three lines, between `timeout` above and the pair `mode` and `level` below in `configure`'s signature. **`opts`'s `=` aligns with `timeout`'s on the line where the dict opens, and the multi-line default ends the run there**, so `mode` and `level` align as a separate group on their own `=` column.
 '''

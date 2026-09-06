@@ -3,5 +3,5 @@ previewable = false
 title       = "A Sole Generator Argument Takes a Grouping Pair"
 
 description = '''
-The line overflows the cap, so the call explodes and its sole argument binds to `entries=`. Python accepts a bare generator only as a call's lone positional and not after a `name=` prefix, so the bound value gains parentheses rather than landing as source that fails to parse.
+`collect_visible_rows(row for row in rows if row.enabled)` passes a bare generator as its only argument to a function defined above it, and the row overflows `code-line-length = 50`. **The call explodes and the generator binds as `entries=(row for row in rows if row.enabled)` with a new pair of parentheses**, because Python accepts a bare generator only as a call's lone positional and not after a `name=` prefix, so the bound value gains the pair rather than being written as source that fails to parse.
 '''

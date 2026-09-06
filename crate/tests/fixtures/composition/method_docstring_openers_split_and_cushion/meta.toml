@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Method Docstring Openers Split and Methods Gain Cushions"
+title       = "Method Docstrings Move Off Their Quotes and the Methods Take Blank Lines"
 
 description = '''
-`primary` and `secondary` each carry a docstring whose prose shares the `"""` opener and closer lines, and nothing separates the two methods. **`frame-docstrings` moves each `"""` onto its own line, `wrap-docstrings` reflows the two short prose lines into one, and `space-statements` inserts a blank line between the methods** and after the `class Service:` header.
+`primary` and `secondary` each carry a docstring whose text shares the `"""` opener and closer lines, and nothing separates the two methods. **`frame-docstrings` puts each `"""` on its own line, `wrap-docstrings` joins the two short text lines into one, and `space-statements` writes one blank line between the methods** and one under the `class Service:` header.
 '''

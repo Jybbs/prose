@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Scalar Spanning Lines Keeps Its Alphabetical Slot"
+title       = "A Scalar Spanning Lines Keeps Its Alphabetical Place"
 
 description = '''
-`"alpha"`'s value is one string literal written as a parenthesized implicit concatenation across two lines, and the scalar-before-collection partition reads the value's AST kind rather than counting its lines. The entry therefore sorts as a scalar, landing above `"mike"` and `"zulu"` instead of sinking to the collection tail its height suggests.
+`"alpha"`'s value is one string literal written as a parenthesized implicit concatenation across two lines, beside the one-line `"mike"` and `"zulu"`. **The entry sorts as a scalar and moves above `"mike"` and `"zulu"`** instead of sinking to the collection tail its height suggests, because the scalar-before-collection partition reads the value's AST kind rather than counting its lines.
 '''

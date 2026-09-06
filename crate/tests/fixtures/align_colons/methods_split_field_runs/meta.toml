@@ -3,5 +3,5 @@ previewable = false
 title       = "Interleaved Methods Split the Field Run"
 
 description = '''
-The body of `Account` declares three fields, defines `activate` and `deactivate`, then declares two more fields. The methods **break the field run into two independent groups**, so `id` through `email` align at the width of `user_name` whereas `balance` and `currency_code` align at the wider column their own pair needs.
+The body of `Account` declares three fields, defines `activate` and `deactivate`, then declares two more fields. **The methods split the field run into two independent groups**, so `id` through `email` align at the width of `user_name` whereas `balance` and `currency_code` align at the wider column their own pair needs.
 '''

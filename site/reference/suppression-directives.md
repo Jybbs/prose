@@ -1,10 +1,10 @@
 # Suppression Directives
 
-Directive shapes opt code out of *Prose*'s rewrites or lints at the file, block, line, and dict-literal scopes. The conceptual narrative for when to reach for suppression lives in the [**Suppression**](/usage/suppression) guide chapter. This page is the canonical index.
+A directive exempts code from *Prose*'s rewrites or lints at the file, block, line, or dict-literal scope. The [**Suppression**](/usage/suppression) chapter covers when to reach for each, and this page is the complete list.
 
-Any other directive shape *(`# pylint: disable`, `# type: ignore`, `# pyright: ignore`, the wider Python-tooling pragma surface)* is invisible to *Prose*. The walker treats them as ordinary comments and the rules ignore them, so they coexist with the directives below without further wiring.
+Any pragma from another tool *(`# pylint: disable`, `# type: ignore`, `# pyright: ignore`, and the rest of the Python tooling pragmas)* is invisible to *Prose*. The walker reads them as ordinary comments and the rules ignore them, so they sit beside the directives below with no further setup.
 
-`# noqa` is the one foreign shape a rule reads, and it suppresses nothing even there. [[prune-inert-imports]] takes a bare `# noqa` or one naming `F401` on an import, read where the marker opens a comment rather than where the word appears in prose, as a marker that the statement re-exports what it binds, alongside the `__all__` listing and the PEP 484 `from x import y as y` form it already reads, and [[band-constants]] takes one naming `E402` as a marker that the import holds the row its author gave it. Those two readings are the whole of it, and neither opens anything out of a rewrite or a lint.
+`# noqa` is the one foreign comment a rule reads, and it suppresses nothing even then. [[prune-inert-imports]] reads a bare `# noqa`, or one naming `F401`, on an import as a marker that the statement re-exports what it binds, in the same way it reads an `__all__` entry and the PEP 484 `from x import y as y` form. The marker counts only where it opens a comment rather than where the word appears in prose. [[band-constants]] reads one naming `E402` as a marker that the import stays on the line its author gave it. Those two readings are the whole of it, and neither exempts anything from a rewrite or a lint.
 
 ## Directives
 
@@ -12,7 +12,7 @@ Any other directive shape *(`# pylint: disable`, `# type: ignore`, `# pyright: i
 
 ## Block Markers
 
-`# fmt: off` and `# fmt: on` wrap a region in suppression, with the `# fmt: off` line itself being the directive marker and the following line being the first suppressed line. `# fmt: on` re-enables formatting starting on the next line.
+`# fmt: off` and `# fmt: on` enclose a region. The `# fmt: off` line is the marker and the next line is the first exempt line, and `# fmt: on` turns formatting back on from the line after it.
 
 ```python
 # fmt: off
@@ -20,21 +20,21 @@ keep_this_block_exactly_as_written = (1,2,3)
 # fmt: on
 ```
 
-`# prose: off` and `# prose: on` are recognized identically, sharing the same span machinery, so a project can pick whichever prefix reads better in its codebase. `# yapf: disable` and `# yapf: enable` are recognized as block-level equivalents for projects migrating from yapf.
+`# prose: off` and `# prose: on` work identically and share the same machinery, so a project can use whichever prefix reads better. `# yapf: disable` and `# yapf: enable` are block markers too, for a project moving from yapf.
 
 ## Line Markers
 
-Line-level directives split by severity, with rewrite suppression taking the `skip` family, lint suppression taking the `ignore` family, and the two independent so a line can carry one of each.
+Line-level directives come in two families, `skip` for rewrites and `ignore` for lints, and the two are independent so a line can carry one of each.
 
 ### Rewrite Suppression
 
-`# fmt: skip` *(equivalent to `# prose: skip`)* suppresses every auto-fix rewrite on the logical line it trails:
+`# fmt: skip` *(or its equivalent `# prose: skip`)* exempts the logical line it ends from every auto-fix rewrite:
 
 ```python
 data = {"a": 1, "b": 2, "c": 3}  # fmt: skip
 ```
 
-A directive trailing a wrapped statement covers every physical line that statement spans, from its opening line through the directive's own, so a rule's co-dependent edits are withheld together rather than half-applied:
+A directive at the end of a wrapped statement covers every physical line the statement spans, from its first line through the directive's own, so a rule's edits to that statement are withheld together rather than applied to part of it:
 
 ```python
 z = (
@@ -42,22 +42,22 @@ z = (
 )  # fmt: skip
 ```
 
-A directive sitting inside a bracketed construct, where the logical line runs on past it, covers its own physical line alone.
+A directive inside a bracketed construct, where the logical line continues past it, covers only its own physical line.
 
-`# prose: skip` and its bracketed variants narrow to listed rules:
+The bracketed forms of `# prose: skip` narrow the exemption to the listed rules:
 
 ```python
 foo = 1  # prose: skip[align-equals]
 bar = 2  # prose: skip[align-equals, strip-trailing-commas]
 ```
 
-A bare `# fmt: skip` or `# prose: skip` widens to every rewrite rule on that logical line. A bracketed list scopes to the named rules, with unknown rule slugs dropped silently and two bracketed directives on the same line unioning their rule sets.
+A bare `# fmt: skip` or `# prose: skip` exempts the logical line from every rewrite rule. A bracketed list names the rules, an unknown slug in the list is ignored, and two bracketed directives on one line combine their lists.
 
-A skip reaches the rewrite rules alone, so lint diagnostics on the statement still report and silencing one takes a `# prose: ignore` alongside the skip. The block markers above differ, in that a `# fmt: off` region suppresses rewrites and lint diagnostics together.
+A skip reaches the rewrite rules only, so a lint finding on the statement still prints, and silencing it takes a `# prose: ignore` beside the skip. The block markers above differ, since a `# fmt: off` region suppresses rewrites and lint findings together.
 
 ### Lint Suppression
 
-`# prose: ignore` and its bracketed variants suppress lint diagnostics on the same line:
+`# prose: ignore` and its bracketed forms silence lint findings on the same line:
 
 ```python
 SCREAMING_CONSTANT = 42  # prose: ignore[reassigned-constants]
@@ -65,11 +65,11 @@ TIMEOUT = 30             # prose: ignore[reassigned-constants, inlinable-binding
 helper = build_helper()  # prose: ignore
 ```
 
-A bare `# prose: ignore` suppresses every lint rule on the line. A bracketed list scopes to the named rules.
+A bare `# prose: ignore` silences every lint rule on the line. A bracketed list names the rules.
 
 ## Dict-Literal Order Preservation
 
-`# prose: keep` on the opening `{` line of a dict literal tells [[alphabetize-siblings]] to leave the entries in their authored order:
+`# prose: keep` on the opening `{` line or the closing `}` line of a dict literal keeps the entries in the order written, so [[alphabetize-siblings]] leaves them alone:
 
 ```python
 config = {  # prose: keep
@@ -79,11 +79,11 @@ config = {  # prose: keep
 }
 ```
 
-The directive scopes to that one dict literal, where [[alphabetize-siblings]] holds the entry order and [[band-constants]] leaves the statement out of the leading band.
+The directive covers that one literal, where [[alphabetize-siblings]] keeps the entry order and [[band-constants]] leaves the statement out of the band, and the same marker on an `__all__` or `__slots__` list keeps that one list as written.
 
 ## Composition
 
-A single line can carry one block marker, one `# fmt: skip` *(or its `# prose: skip` aliases)*, and one `# prose: ignore[...]` directive. *Prose* parses each independently, so all surfaces compose without ordering constraints. A bare `# prose: ignore` *(no bracket list)* widens any same-line `# prose: ignore[<rule>]` so every lint on the line stays silent, and the same widening applies between bare `# prose: skip` and bracketed `# prose: skip[<rule>]` for rewrites. Two specific bracketed directives of the same family on the same line union their rule slugs:
+One line can carry a block marker, `# fmt: skip` or `# prose: skip` directives, and `# prose: ignore[...]` directives together. *Prose* parses each on its own, so they combine in any order. A bare `# prose: ignore` *(no bracket list)* widens any `# prose: ignore[<rule>]` on the same line so every lint on the line is silenced, and a bare `# prose: skip` widens a bracketed `# prose: skip[<rule>]` the same way for rewrites. Two bracketed directives of the same family on one line combine their slugs:
 
 ```python
 # fmt: off
@@ -91,15 +91,15 @@ data = build()  # prose: ignore[reassigned-constants]  # prose: ignore[inlinable
 # fmt: on
 ```
 
-The same line carries the block marker pair *(opening and closing on the surrounding lines)*, plus two bracketed line directives whose rule lists merge into `{reassigned-constants, inlinable-bindings}`. A bare `# prose: ignore` anywhere on the line would override both into a widen-to-every-rule.
+The line above carries the block marker pair *(opening and closing on the surrounding lines)* plus two bracketed line directives whose lists combine into `{reassigned-constants, inlinable-bindings}`. A bare `# prose: ignore` anywhere on the line would widen both to every rule.
 
 ::: warning Malformed Directives No-Op
-A malformed directive *(unclosed brackets, misspelled keyword, trailing text after `ignore`)* parses as a no-op, surfacing nothing and rewriting nothing.
+A malformed directive *(unclosed brackets, a misspelled keyword, trailing text after `ignore`)* is read as no directive, so it reports nothing and rewrites nothing.
 :::
 
 ## File-Level Suppression
 
-`# prose: off` on a standalone comment line *(not trailing a statement)* opens a suppression span starting at that line. When no matching `# prose: on` follows, the span runs to EOF, suppressing every *Prose* rewrite below the marker, though inside a notebook it closes at the end of its own code cell rather than crossing into the next. Placed at the top of the file, the directive consequently covers every line in the file:
+`# prose: off` on a comment line of its own *(not at the end of a statement)* opens an exempt region at that line. With no `# prose: on` after it, the region runs to the end of the file, exempting every line below the marker from every rewrite, whereas inside a notebook it closes at the end of its own code cell rather than reaching the next. At the top of a file the directive therefore covers the whole file:
 
 ```python
 # prose: off
@@ -108,10 +108,10 @@ A malformed directive *(unclosed brackets, misspelled keyword, trailing text aft
 def messy(): pass
 ```
 
-A trailing `# prose: off` on a statement line *(such as `x = 1  # prose: off`)* is ignored, in that the directive must sit on a comment line of its own to register as a span opener. The file-level form is the broadest suppression scope, and for region-bounded suppression the block markers above are the right reach.
+A `# prose: off` at the end of a statement *(such as `x = 1  # prose: off`)* is ignored, since the directive opens a region only from a comment line of its own. The file-level form is the widest scope, and a bounded region takes the block markers above.
 
-## Composition with `--select` / `--ignore`
+## Composition With `--select` / `--ignore`
 
-Per-line and block directives compose against the active rule set. `--select align-equals` narrows the pipeline to one rule, and `# prose: ignore[align-equals]` still suppresses that rule on its line. `--ignore reassigned-constants` drops a rule from the active set, and a line carrying `# prose: ignore[reassigned-constants]` is a no-op since the rule is already not firing.
+Line and block directives apply on top of the active rule set. `--select align-equals` narrows the run to one rule, and `# prose: skip[align-equals]` still exempts its line from that rule. `--ignore reassigned-constants` removes a rule from the run, so a line carrying `# prose: ignore[reassigned-constants]` changes nothing, since the rule was not going to report.
 
-For the per-rule `enabled` facet, see the [**Configuration**](/reference/configuration) reference. For the conceptual narrative on when to reach for suppression, see the [**Suppression**](/usage/suppression) guide chapter.
+The [**Configuration**](/reference/configuration) reference covers the per-rule `enabled` facet, and the [**Suppression**](/usage/suppression) chapter covers when to reach for each directive.

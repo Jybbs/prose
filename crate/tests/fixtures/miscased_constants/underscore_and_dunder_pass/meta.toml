@@ -3,5 +3,5 @@ previewable = true
 title       = "Underscore-Led and Dunder Names Stay Private"
 
 description = '''
-`_cache = {}` opens with a leading underscore, the marker for deliberate module-private state, and `__version__ = "1.0"` is a dunder whose casing is fixed by convention. Both names are excluded before the casing check ever runs, so neither is flagged.
+`_cache = {}` opens with a leading underscore, the marker for deliberate module-private state, and `__version__ = "1.0"` is a dunder whose casing is fixed by convention. **Neither name is reported**, because both are excluded before the casing check runs.
 '''

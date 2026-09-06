@@ -3,5 +3,5 @@ previewable = true
 title       = "A Class Alias Survives the Uses That Look Like Data"
 
 description = '''
-`Colors`, `Kind`, `Node`, and `int_` each alias a class, and the four uses that look like data handling are all operations a class supports too, so none of them is flagged. An `Enum` class is itself iterable, covering `for color in Colors:`, while `type(value) == Kind` is an equality check, `base is Node` an identity check, and `int_.from_bytes` a method read, each as valid on a type as on data. Treating any of the four as a data read would rename a real type.
+`Colors`, `Kind`, `Node`, and `int_` each alias a class, and the module uses them in four ways that look like data handling. **None of the four is reported**, because each use is an operation a class supports too. An `Enum` class is itself iterable, covering `for color in Colors:`, while `type(value) == Kind` is an equality check, `base is Node` an identity check, and `int_.from_bytes` a method read, each as valid on a type as on data. Reading any of the four as a data read would rename a real type.
 '''

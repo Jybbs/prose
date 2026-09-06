@@ -1,7 +1,7 @@
 # Layout Rules
 
-The layout rules decide the shape a bracketed construct takes once it outgrows a single line, exploding a call, signature, collection, or `from … import …` to one entry per line so each binding reads on its own and a later edit touches a single row. The trigger is a width budget like `code-line-length`, a count cap like `max-args`, or both, so the inline shape gives way to the stacked one the moment it stops being legible.
+The layout rules rewrite a bracketed construct that has outgrown one line, exploding a call, a signature, a collection, or a `from … import …` to one entry per line so each entry reads on its own and a later edit touches a single row. Each rule fires on a width budget such as `code-line-length`, a count cap such as `max-args`, or both, so the inline form gives way to the stacked one at the point it stops being legible.
 
 <RuleCardList family="layout" />
 
-For the per-rule facets, see the [**Configuration**](/reference/configuration) reference. For the order these rules fire in *(layout settles the bracketed shape early, so the alignment rules measure their columns against the committed layout)*, see the [**Pipeline Order**](/reference/pipeline-order) reference.
+The [**Configuration**](/reference/configuration) reference lists the per-rule facets, and the [**Pipeline Order**](/reference/pipeline-order) reference lists where these rules run *(layout settles the bracketed form early, so the alignment rules measure their columns against the layout it writes)*.

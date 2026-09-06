@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Repeated Member on One Line Drops Its Alias"
+title       = "A Member Repeated on One Line Loses Its Second Copy"
 
 description = '''
-`from x import a, a` names `a` twice on a single line and the module reads it once. **The repeat drops off the shared line** while its surviving sibling stays, the prune stripping one alias rather than the whole statement.
+`from x import a, a` names `a` twice on one line, and `y = a` reads it. **The second `a` is removed from the line and the first stays**, leaving `from x import a`, because the repeat is one member rather than the whole statement.
 '''

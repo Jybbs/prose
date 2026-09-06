@@ -1,10 +1,10 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "A Link Past `max-args` Holds the Chain"
+title       = "A Link Past `max-args` Keeps the Chain as Written"
 
 description = '''
-Nothing here moves. `first` takes four arguments, past `max-args`, so its hand-wrapped argument list never closes back onto one row.
+`first` takes four arguments, one past the default `max-args`, hand-wrapped one per line, and no join closes the list back onto one row when the chain is measured.
 
-It cannot explode to keyword form either, because `base.first` resolves to no signature and the line already fits under the width cap. **The fracture therefore stands**, which means the link still spans lines when the chain is measured, and the chain stays where the source put it.
+**The chain stays as written**, because the `.first(` link still spans lines and a link that cannot reach one row blocks the restack.
 '''

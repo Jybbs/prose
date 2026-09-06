@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Constructor Called With Nothing Reaches Its Literal"
+title       = "A Constructor Called With No Argument Becomes Its Empty Literal"
 
 description = '''
-`dict()`, `list()`, and `tuple()` each collapse to their empty literal, `{}`, `[]`, and `()`. `set()` has no such literal, since `{}` already names an empty dict, so `simplify-comprehensions` leaves `unique = set()` written as a call.
+`dict()`, `list()`, `tuple()`, and `set()` are each called with no argument. **`dict()`, `list()`, and `tuple()` become `{}`, `[]`, and `()`**, whereas `unique = set()` stays a call, because `{}` already names an empty dict and no literal spells an empty set.
 '''

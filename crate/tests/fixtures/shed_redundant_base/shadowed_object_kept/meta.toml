@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Rebound `object` Names a Real Base"
+title       = "A Rebound `object` Names a Real Base and Stays"
 
 description = '''
-`object = LegacyBase` rebinds the name `object` at module level before `class Consumer(object):` is reached. The base in `Consumer`'s header names that local binding rather than the `object` builtin, so the header stays exactly as written.
+`object = LegacyBase` rebinds the name at module level, and `class Consumer(object):` follows it. **The header stays exactly as written**, because its `object` names that module-level binding rather than the builtin, and removing it would change which class `Consumer` inherits from.
 '''

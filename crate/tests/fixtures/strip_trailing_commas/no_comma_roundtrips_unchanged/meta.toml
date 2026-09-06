@@ -3,5 +3,5 @@ previewable = true
 title       = "Already-Stripped Source Is Left Alone"
 
 description = '''
-`Posting(company="Cianbro", title="Electrician")` already ends without a trailing `,` before its closing `)`. **`strip-trailing-commas` scans backward, reaches `"Electrician"` rather than a comma, and emits no edit**, so the source round-trips exactly as written.
+`Posting(company="Cianbro", title="Electrician")` spreads its two arguments over one line each and already ends without a `,` before the closing `)`. **The rule emits no edit**, because the token before the `)` is `"Electrician"` rather than a comma, so the source is written back exactly as it came.
 '''

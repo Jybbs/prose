@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A False Explode Facet Freezes Every Collection Shape"
+title       = "With `explode` Off No Collection Expands"
 
 description = '''
-Setting `explode` to `false` suppresses every expansion, so all three literals pass through untouched. The over-wide `overflowing_list` keeps its single line, the five-entry `over_count_dict` stays inline because the count cap stops applying, and `already_multiline`, already spread across lines, is left as written.
+`explode = false` is set, `overflowing_list` runs past the budget, `over_count_dict` has five entries, and `already_multiline` is written across rows. **All three are left as written**, because the facet turns off both the width trigger and the count trigger, and the already multi-line list keeps its column under `keep-multiline-literals`.
 '''

@@ -1,5 +1,5 @@
 ---
-caption : "Aligns the `import` and `as` keywords across consecutive import statements."
+caption : "Pads the space before the `import` keyword across consecutive `from` imports, or before `as` across consecutive aliased imports, so the keywords share one column."
 related : [align-colons, align-equals, alphabetize-siblings, bare-imports, space-statements, align-match-case]
 layout  : doc
 ---
@@ -8,15 +8,15 @@ layout  : doc
 
 <RuleLayout rule="align_imports">
 
-An import block carries two columns, the module a name comes from and the name pulled in, and at varying widths neither reads as a column at all. `align-imports` gathers consecutive `from ... import ...` statements (*or consecutive `import ... as ...` statements*) into a shared column for the `import` (*or `as`*) keyword, leaving the module column flush left and the name column flush right.
+`align-imports` pads the space before the `import` keyword across consecutive `from … import …` statements (*or before `as` across consecutive `import … as …` statements*) so the keyword sits at one column, leaving the module names flush left and the imported names starting at one column to the right. An import block pairs the module a name comes from with the name it brings in, and at varying widths neither reads as a column until the keyword between them lines up.
 
-The rule reads each block as the run of consecutive imports at the same indentation. A blank line, an own-line comment, or a non-import statement resets the run. [[alphabetize-siblings]] sorts the entries within each block and [[space-statements]] separates the groups by category, both settling before this rule measures a column. [[bare-imports]] reports on the bare-versus-`from` choice without rewriting, so its finding is advice for the author rather than an input to this pass. The [**Pipeline Order**](/reference/pipeline-order) reference lists where each sits.
+The rule reads each block as the run of consecutive imports at the same indentation. A blank line, an own-line comment, or a statement of another kind ends the run. [[alphabetize-siblings]] sorts the entries within each block and [[space-statements]] separates the sections by category, both before this rule measures a column. [[bare-imports]] reports on the choice between a bare and a `from` import without rewriting, so its finding is advice to the author rather than an input to this rule. The [**Pipeline Order**](/reference/pipeline-order) reference lists where each runs.
 
 <template #configuration>
 
 <RuleConfigTable />
 
-`max-shift` bounds how far the `import` keyword may shift to align. The rule walks each block of imports in source order and grows a column while its width spread stays within the cap, breaking a fresh column at the first import that would exceed it. A `max-shift` of `false` lifts the cap so a contiguous block folds into one column, and `0` forbids any shift. The [**per-rule facets**](/reference/configuration#per-rule-facets) reference covers the full semantics.
+`max-shift` limits how much padding one `import` keyword may take. The rule reads each block of imports in source order and extends a column while the gap between the widest and narrowest module names stays within the limit, starting a new column at the first import that would exceed it. Setting `max-shift` to `false` removes the limit, so a block of any width aligns on one column, and `0` forbids padding altogether. The [**per-rule facets**](/reference/configuration#per-rule-facets) reference covers the full semantics.
 
 </template>
 

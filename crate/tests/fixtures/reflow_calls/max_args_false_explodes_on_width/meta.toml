@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "max-args = false Still Yields to the Width Trigger"
+title       = "`max-args = false` Still Yields to the Width Trigger"
 
 description = '''
-`max-args = false` switches off the argument-count trigger, so the four keywords of `fetch` alone would not explode the call. The width trigger stays live, and the line crosses `code-line-length = 40`, so the call still explodes, in that no configuration leaves an over-wide call inline.
+`fetch(headers=h, method=m, params=p, url=u)` runs under `max-args = false` and `code-line-length = 40`. **The call still explodes**, because `max-args = false` switches off only the count trigger, whereas the width trigger stays live and the row crosses the budget, so no configuration leaves an over-wide call inline.
 '''

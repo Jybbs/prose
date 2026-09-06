@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Zero-Parameter Signatures Are a No-Op"
+title       = "A Zero-Parameter Signature Is Left as Written"
 
 description = '''
-`render` takes no parameters and its `def` line runs well short of the budget, so neither the `max-params` count nor the `code-line-length` measure can trigger an expansion. `reflow-signatures` **leaves the `def` exactly as written**.
+`render` takes no parameters, and its `def` line runs well short of the budget. **The `def` is left exactly as written**, because neither the `max-params` count nor the `code-line-length` measure can trigger an expansion.
 '''

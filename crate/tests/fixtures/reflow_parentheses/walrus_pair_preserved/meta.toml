@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Walrus Binding's Pair Survives"
+title       = "A Walrus Binding's Pair Stays"
 
 description = '''
-The line `result = (count := total)` passes through unchanged, because a pair around a `:=` binding is never shed. Keeping the parentheses in every context lets the walrus read as one consistent shape rather than a positional exception.
+`result = (count := total)` wraps a `:=` binding, and **the pair stays and the line passes through unchanged**, because a pair around a walrus is never removed, so the walrus reads the same in every position rather than as a positional exception.
 '''

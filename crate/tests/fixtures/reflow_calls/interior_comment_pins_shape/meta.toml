@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "An Interior Comment Pins the Existing Shape"
+title       = "An Interior Comment Pins the Layout as Written"
 
 description = '''
-Nothing here moves. The exploded `build` call carries `# keep this note anchored` on its `alpha=1` row.
-
-**A comment inside an argument list pins the shape as written**, because reshaping the arguments could separate the comment from the line it annotates. The call is left exactly as the author laid it out.
+The exploded `build` call carries `# keep this note anchored` on its `alpha=1` row. **The call is left exactly as written**, because a comment inside an argument list pins the layout, since reshaping the arguments could separate the comment from the line it annotates.
 '''

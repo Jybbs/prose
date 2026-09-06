@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Fractured Tuple Condenses Before Its Template Converts"
+title       = "An Exploded Tuple Condenses Before Its `%` Template Converts"
 
 description = '''
-The `%` template's tuple arrives exploded, `first` and `second` each on their own line. **`reflow-collections` condenses the tuple back onto one line first, and `prefer-fstring` then measures the conversion against the budget**, rewriting `"%s and %s" % (first, second)` into `f"{first} and {second}"` with each member inline in the template.
+`total` is assigned a `%` template whose tuple arrives exploded, `first` and `second` each on their own line. **`reflow-collections` condenses the tuple onto one line first, and `prefer-fstring` then measures the conversion against the budget and rewrites `"%s and %s" % (first, second)` to `f"{first} and {second}"**, each member inline in the template.
 '''

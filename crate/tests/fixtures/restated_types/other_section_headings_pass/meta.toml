@@ -3,5 +3,5 @@ previewable = true
 title       = "A `Returns:` or `Raises:` Entry Documents No Parameter"
 
 description = '''
-`resolve`'s `Returns:` entry names `value` and its `Raises:` entry names `error`, both sharing a parameter's name and matching type. **Neither entry is flagged**, because only a parameter-documenting section resolves against the signature, and `Returns:` and `Raises:` are not among them.
+`resolve` annotates `value: int` and `error: str`, and its docstring names `value (int)` under `Returns:` and `error (str)` under `Raises:`, each sharing a parameter's name and type. **Neither entry is reported**, because only a parameter-documenting section resolves against the signature, and `Returns:` and `Raises:` are not among them.
 '''

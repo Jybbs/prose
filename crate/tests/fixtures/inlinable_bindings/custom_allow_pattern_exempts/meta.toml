@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Custom `allow-pattern` Exempts Matching Names"
+title       = "A Custom `allow-pattern` Exempts the Names It Matches"
 
 description = '''
-Setting `allow-pattern = "tmp_*"` **replaces** the default `_*` pattern, so `inlinable-bindings` exempts any name starting with `tmp_` instead of an underscore. `tmp_value` in `consume` matches the configured pattern and is bound once and read once without being reported.
+`tmp_value` in `consume` is written once from `compute()` and read once in `return tmp_value + 1`, with `allow-pattern = "tmp_*"` set for the rule. **`tmp_value` is not reported**, because the setting replaces the default `_*` pattern, so any name starting with `tmp_` is exempt and a name starting with an underscore no longer is.
 '''

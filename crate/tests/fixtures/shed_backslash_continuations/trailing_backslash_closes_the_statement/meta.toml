@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Backslash Ahead of the Closing Newline Leaves No Space"
+title       = "A Backslash Before the Closing Newline Leaves No Space"
 
 description = '''
-`x = 1 \` continues onto the newline that closes the statement, so nothing follows the backslash to join it to. It drops without inserting a separator, leaving `x = 1` with no trailing whitespace.
+`x = 1 \` continues onto the newline that ends the statement, so nothing follows the backslash. **The backslash is removed with no separator inserted**, leaving `x = 1` with no trailing whitespace, because there is nothing after the break to join it to.
 '''

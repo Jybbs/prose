@@ -3,5 +3,5 @@ previewable = false
 title       = "A Parenthesized Walrus Annotation Aligns"
 
 description = '''
-`named`'s annotation is the parenthesized assignment expression `(value := int)`, and the row aligns like any other. The annotation's width is measured through its parentheses, closing `)` included, so `other_field_xyz: int` pads one space further and both `=` share a column.
+`named` is annotated with the parenthesized assignment expression `(value := int)`, above `other_field_xyz: int`. **The row aligns like any other, its annotation measured through the closing `)`**, so `other_field_xyz: int` pads out one space further and both `=` share a column with the walrus left as written.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Pair That Cannot Shed Still Counts Toward the Joined Width"
+title       = "A Pair That Stays Still Counts Toward the Joined Width"
 
 description = '''
-The inner pair keeps its parentheses, since `server.up and cache.warm or cache.cold` regroups the parse, so the columns it occupies are still there when the outer pair measures its fold. Under `code-line-length = 46` the joined form reaches 48 columns and the break holds rather than folding past the budget.
+`ready = (` wraps `server.up and (cache.warm or cache.cold)` under a `code-line-length` of `46`. The inner pair stays, because `server.up and cache.warm or cache.cold` would regroup the parse, so **its two characters count toward the joined width the outer pair is measured at**. The joined form would reach 48 columns, so the outer pair keeps its break rather than joining past the budget.
 '''

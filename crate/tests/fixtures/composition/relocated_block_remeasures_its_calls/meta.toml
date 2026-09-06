@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Relocated Block Remeasures the Calls Inside It"
+title       = "A Moved Block Remeasures the Calls Inside It"
 
 description = '''
-`reflow-calls` explodes `tuple(` at the indent its row holds before anything around it has moved.
-
-`reflow-collections` then expands the tuple surrounding it, which pushes that whole block one indent step deeper. The `_mapdict_values` call inside is **re-measured at the column it lands at**, not at the one it started from, and at that deeper column it no longer fits the 40-column budget, so it explodes as well.
+`specs` is assigned a tuple whose last element is `tuple(_mapdict_values(statemap))`, on a row past the 40-column budget. `reflow-calls` leaves a literal that `reflow-collections` is about to explode unwalked, so `reflow-collections` explodes the outer tuple and lays out the `tuple(` and `_mapdict_values(` calls inside it against the rows the explode leaves. **Both calls explode at the column they end up at**, because at that deeper column neither fits the budget.
 '''

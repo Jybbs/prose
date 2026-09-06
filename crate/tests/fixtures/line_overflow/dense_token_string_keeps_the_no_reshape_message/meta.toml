@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Whitespace-Free Literal Is Offered No Break"
+title       = "A Literal With No Interior Whitespace Is Offered No Break"
 
 description = '''
-`ENDPOINT`'s URL carries no interior whitespace, so no pair of adjacent literals can reproduce its value with a break between them. The 52-column line still overflows the 40-column budget, leaving a bare report that ends `with no legal reshape`, and the same holds for a hash or a dense regex, where the message means exactly what it says.
+`ENDPOINT`'s URL carries no interior whitespace, and its 52-column line overflows the 40-column budget. **The finding is a bare report ending `with no legal reshape`**, because no pair of adjacent literals can reproduce the value with a break between them, and the same is true of a hash or a dense regex, where the message means exactly what it says.
 '''

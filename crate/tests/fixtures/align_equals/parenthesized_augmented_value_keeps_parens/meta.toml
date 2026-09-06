@@ -3,5 +3,5 @@ previewable = false
 title       = "A Parenthesized Augmented Value Keeps Its Parentheses"
 
 description = '''
-`x`'s value arrives as `(1 + 2)`, written flush against its `+=`. The rewrite opens the gaps around each `+=` and aligns `x` with `yy`, then stops before the `(`, so the parentheses pass through intact and the value reads `+= (1 + 2)`.
+`x+=(1 + 2)` and `yy+=3` are written with no space around their `+=`. **Each `+=` gains a space on both sides and `x` pads out to `yy`'s width, with the parentheses around `1 + 2` left as written**, so the first row reads `x  += (1 + 2)`. The rewrite ends at the space before the `(`, so the value itself is never touched.
 '''

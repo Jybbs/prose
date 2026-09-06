@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Align Assignments in a Code Cell"
+title       = "Assignments Align Inside a Code Cell"
 
 description = '''
-The code cell assigns `x = 1` above `yy = 2`, and the pair aligns on the `=` column, **leaving the `# Demo` markdown cell and the cell's saved output untouched**.
+The code cell assigns `x = 1` above `yy = 2` under the `# Demo` markdown cell. **The pair aligns on the `=` column**, and the markdown cell and the saved output of the code cell pass through untouched.
 '''

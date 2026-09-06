@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Derived Constant Pools into the Trailing Band"
+title       = "A Constant Naming a Later Definition Moves Below It"
 
 description = '''
-`HANDLER = make` starts the file above the `def make()` it references, so running the module as written would raise a `NameError`. The constant therefore **moves into the trailing band beneath the definitions**, because its right-hand side evaluates `make` and that name must already be defined when the line runs.
+`HANDLER = make` opens the module above the `def make()` it names, so running the file as written would raise a `NameError`. **The constant moves into the trailing band beneath the definition**, because its right-hand side reads `make`, and that name must be bound when the line runs.
 '''

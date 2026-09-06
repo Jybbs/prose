@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Two Identical From-Imports Collapse to One"
+title       = "Two Identical From-Imports Collapse Into One"
 
 description = '''
-`from pkg import alpha` appears twice, and the gathered roster carries each member once. The pair settles as **a single statement**, so the duplicate line disappears rather than surviving as a merged line naming `alpha` twice.
+`from pkg import alpha` appears on two consecutive lines. **The pair collapses to one statement naming `alpha` once**, because the gathered member list keeps each name a single time, so the duplicate line disappears rather than surviving as a merged line naming `alpha` twice.
 '''

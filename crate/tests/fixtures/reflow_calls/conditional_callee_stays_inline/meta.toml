@@ -3,5 +3,5 @@ previewable = false
 title       = "A Conditional Callee Keeps Its Trailing Link Inline"
 
 description = '''
-The callee here is the parenthesized conditional choosing between `alpha_fn` and `beta_fn` on `check_fn`'s result, with `.method(aa, bb)` hanging off the closing parenthesis. Under `code-line-length = 30` all three inner calls explode first, and `.method(aa, bb)` is then measured from the `))` line that explosion produces, where it fits and stays inline.
+The callee is a parenthesized conditional choosing `alpha_fn` or `beta_fn` on `check_fn`'s result, with `.method(aa, bb)` following the closing parenthesis, under `code-line-length = 30`. **All three inner calls explode and `.method(aa, bb)` stays inline**, because the trailing link is measured from the `))` row the explode writes, where it fits.
 '''

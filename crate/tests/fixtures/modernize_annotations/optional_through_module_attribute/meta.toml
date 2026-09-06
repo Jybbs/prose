@@ -3,5 +3,5 @@ previewable = false
 title       = "A Module-Qualified `typing.Optional` Rewrites the Same Way"
 
 description = '''
-`import typing` binds the module itself rather than any one member, and the rule resolves the attribute access `typing.Optional[int]` through it to the same rewrite, `int | None`. Nothing reads `typing` afterward, so the import is removed.
+`import typing` binds the module itself rather than any one member, and `x: typing.Optional[int]` reads it through attribute access. **The annotation rewrites to `int | None` exactly as the imported-name form does**, and with nothing reading `typing` afterward the import is removed.
 '''

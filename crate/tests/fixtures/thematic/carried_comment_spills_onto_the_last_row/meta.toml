@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Carried Comment Spills onto the Roster's Last Row"
+title       = "A Carried Comment Is Written Onto the Split's Last Row"
 
 description = '''
-The three names overrun the 60-column import budget, so the statement splits into a run of repeated-prefix lines.
-
-The comment carried along with it **lands inline on the last row** rather than opening a line of its own above the run. The forecast seats that final row alone and holds the row above it at the column it packed to, so the comment's width is measured against the row it actually joins rather than against the widest row of the roster.
+`from package.transforms import indentation, suitify, commatize` crosses the `60`-column import budget, so the statement splits into two rows sharing the prefix, and the `# A comment trailing the run.` line beneath it travels with the statement. **The comment is written inline on the last row** rather than on a line of its own above the split. The split packs the row above without counting the comment and leaves the comment's row last on its own, so the comment's width counts against the row it joins rather than against the widest row of the split.
 '''

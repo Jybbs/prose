@@ -1,17 +1,17 @@
 [docs]
 previewable = false
 sandbox     = true
-title       = "Async Client Modernizes Its Legacy Typing"
+title       = "An Async Client Modernizes Its Legacy Typing"
 
 description = '''
-This is a full async API client run through the whole pipeline at once. It opens with `from __future__ import annotations` beside a single `from typing import …` line pulling in thirteen names, then declares three type aliases, a `poll` coroutine with an over-wide signature and call, and a `consume` coroutine annotated through a quoted forward reference.
+This async API client runs through the whole pipeline at once. It opens with `from __future__ import annotations` beside one `from typing import …` line pulling in thirteen names, then declares three type aliases, a `poll` coroutine with an over-wide signature and call, and a `consume` coroutine annotated through a quoted forward reference.
 
 Most of it is rewritten in one pass:
 
-1. The typing import splits, sorts, and drops the names the module no longer needs.
-2. `Optional` and `Union` become `|` unions, since `target-version` is `3.10`.
-3. The constants group into dependency levels and align on a shared `=` column.
-4. The wide `poll` signature, its `client.get` call, and the `DEFAULT_HEADERS` dict each explode one entry per line.
+1. The `typing` import sorts its names and drops the ones the module no longer reads.
+2. `Optional` and `Union` become `|` unions, because `target-version` is `3.10`.
+3. The constants group by dependency level and align on a shared `=` column within each group.
+4. The wide `poll` signature, its `client.get` call, and the `DEFAULT_HEADERS` dict each explode to one entry per line.
 
-`from __future__ import annotations` is **kept**, because `_handlers: dict[Text, Callable] = {}` carries an annotation at module scope and only the directive writes that annotation into the module's `__annotations__`. Lints stand alongside the rewrites, on the half-annotated parameters of `register`, `poll`, and `consume`, and on `decode`'s assign-once `parsed`.
+**`from __future__ import annotations` is kept**, because `_handlers: dict[Text, Callable] = {}` carries an annotation at module scope and only the directive writes that annotation into the module's `__annotations__`. Lints report beside the rewrites, on the half-annotated parameters of `register`, `poll`, and `consume`, and on `decode`'s assign-once `parsed`.
 '''

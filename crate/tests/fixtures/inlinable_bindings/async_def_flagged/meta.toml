@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Async Function Bodies Are Reported the Same Way"
+title       = "A Binding Inside an `async def` Is Reported"
 
 description = '''
-`payload` is written once from `await get(url)` and read once in the `return`, the exact shape this lint reports. Its position inside an `async def` is **flagged the same way** a plain `def` body would be, because the rule treats both function kinds as the same scope, leaving `await`-driven code no exemption.
+`payload` is written once from `await get(url)` and read once in `return payload`, inside an `async def`. **The binding is reported the same way it would be inside a plain `def`**, because the rule reads both function kinds as the same kind of scope, so a value that awaits is not exempt.
 '''

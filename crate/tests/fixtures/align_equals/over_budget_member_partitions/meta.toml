@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Over-Budget Row Partitions Out of the Aligned Run"
+title       = "A Row That Would Overflow the Budget Stays Unpadded"
 
 description = '''
-`q`'s name is narrow enough to join the run, but padding its `=` out to `wider_name`'s width would carry its long string value past the `code-line-length` cap of 40. `q` partitions out unpadded instead, while `wider_name` and `also_wide` align beneath the cap, leaving no line over budget.
+`q`'s name is one character wide and its string value is long, with `wider_name` and `also_wide` below it, under a `code-line-length` of 40. Padding `q` out to `wider_name`'s column would carry its value past the cap, so **`q` keeps its single space while `wider_name` and `also_wide` align beneath it**, leaving no line over budget.
 '''

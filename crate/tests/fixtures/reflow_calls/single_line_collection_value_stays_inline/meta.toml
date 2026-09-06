@@ -4,5 +4,5 @@ previewable = true
 title       = "A Single-Line Collection Value Stays Inline"
 
 description = '''
-The `build` call explodes to one keyword per line, and `opts` carries the single-line dict `{"k": "v"}`. A collection already on one line has no rows to re-indent, so the value moves with its keyword and stays inline.
+`build(alpha=1, beta=2, gamma=3, opts={"k": "v"})` passes four keywords, the last a single-line dict. **`build` explodes to one keyword per line and `opts={"k": "v"}` moves with its keyword and stays inline**, because a collection already on one row has no rows to re-indent.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Run inside a Bracket Breaks without Adding Parentheses"
+title       = "A Run Inside a Bracket Breaks in Place Without Added Parentheses"
 
 description = '''
-`emit`'s call parentheses already enclose the two-clause run, so `stack-adjacent-strings` **breaks the run in place** rather than wrapping it in a nested pair of its own. `"and the trailing clause"` lands at the indent of the row the run opens on, one literal per line inside `emit(...)`.
+`emit`'s call parentheses already enclose the two-literal run, which overflows the `code-line-length = 60` the case sets. **The run breaks in place, one literal per line inside `emit(...)`**, with `"and the trailing clause"` written at the indent of the row the run opens on, because a run already inside a bracket pair takes no nested pair of its own.
 '''

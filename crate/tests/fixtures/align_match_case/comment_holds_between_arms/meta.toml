@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Comments between Cases Keep the Shared Column"
+title       = "A Comment Between Arms Keeps the Shared Column"
 
 description = '''
-The standalone `# legacy synonyms` line sits between the first two arms, and **the comment passes through unchanged** without splitting the group. All three bodies still fold onto their `case` lines and share one `:` column, so `"certification"` and `"program"` below the comment pad to the width `"apprenticeship"` sets above it.
+The own-line comment `# legacy synonyms` sits between the first two arms of the `match` on `credential.kind`. **The comment passes through unchanged and the arms on both sides of it still share one `:` column**, so all three bodies fold onto their `case` lines and `"certification"` and `"program"` below the comment pad to the width `"apprenticeship"` sets above it.
 '''

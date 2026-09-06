@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Single-Item Groups Defer to the Singleton Rule"
+title       = "Single-Item Groups Are Left to the Singleton Rule"
 
 description = '''
-The one-entry `one_entry` dict, the single-parameter `identity` signature, its one-entry `Args:` section, and the lone `solo` field of `Lonely` each form a group of one. With nothing to align against, **`align-colons` defers single-item layout to the singleton rule**, so every line passes through unchanged.
+The one-entry `one_entry` dict, the single-parameter `identity` signature, its one-entry `Args:` section, and the lone `solo` field of `Lonely` each form a group of one. **`align-colons` writes nothing for a group of one**, leaving single-item layout to the singleton rule, so every line passes through unchanged.
 '''

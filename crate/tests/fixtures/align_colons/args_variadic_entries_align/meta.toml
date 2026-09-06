@@ -3,5 +3,5 @@ previewable = false
 title       = "Variadic Arg Entries Align Beside Named Ones"
 
 description = '''
-The `Args:` section of `emit` lists `*args` and `**kwargs` beside the named entry `channel`. A leading `*` counts as a valid start for an entry line, so **the variadic entries join the alignment group** and all three colons land on the column set by `**kwargs`, the widest name.
+The `Args:` section of `emit` lists `*args` and `**kwargs` beside the named entry `channel`. A leading `*` is a valid start for an entry line, so **the variadic entries join the alignment group** and all three colons sit on the column set by `**kwargs`, the widest name.
 '''

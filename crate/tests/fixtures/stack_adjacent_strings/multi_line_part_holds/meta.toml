@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Run Carrying a Part with Its Own Break Stays Put"
+title       = "A Run Carrying a Part With Its Own Line Break Stays as Written"
 
 description = '''
-Nothing here moves. `message`'s run holds a triple-quoted part already spanning two lines, sitting beside the plain literal `"and the trailing clause"`.
-
-The run is **left exactly as written**, because moving the triple-quoted part would place its opening line away from the interior the source has already pinned it against.
+`message`'s run has a triple-quoted part already spanning two lines beside the plain literal `"and the trailing clause"`. **The run is left exactly as written**, because moving the triple-quoted part would shift its opening line and change the interior the source pinned.
 '''

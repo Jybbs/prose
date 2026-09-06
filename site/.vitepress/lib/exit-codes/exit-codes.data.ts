@@ -33,57 +33,59 @@ const SOURCES: readonly ExitCodeSource[] = [
   {
     code   : 0,
     detail : [
-      'Returned by both `prose check` and `prose format` when the input is already conforming.',
-      '`prose format` also returns this for a rewrite a second run would change, because '
-      + 'that defect belongs to the formatter rather than to the file, and the notice on '
-      + 'stderr is what surfaces it rather than a status of its own.',
-      'CI gates pass without further work.'
+      'Returned by both `prose check` and `prose format` when the input already conforms.',
+      '`prose format` also returns it for a rewrite a second run would change, because that '
+      + 'defect belongs to the formatter rather than to the file, and the notice on stderr '
+      + 'reports it rather than a code of its own.',
+      'A CI gate passes with no further work.'
     ],
     label  : 'Clean',
-    summary: 'No diagnostics, no rewrites pending.'
+    summary: 'No findings, no rewrite pending.'
   },
   {
     code   : 1,
     detail : [
-      '`prose check` returns this when one or more auto-fix rules would emit edits.',
-      '`prose format` returns 0 once the rewrite lands.',
-      'Every auto-fix rule contributes here.'
+      '`prose check` and `prose format --diff` return this when one or more auto-fix rules '
+      + 'would write an edit.',
+      '`prose format` returns 0 once the rewrite is written.',
+      'Every auto-fix rule can produce it.'
     ],
     label  : 'Format would change',
-    summary: 'At least one auto-fix diagnostic is pending.'
+    summary: 'At least one auto-fix rewrite is pending.'
   },
   {
     code   : 2,
     detail : [
-      'Surfaces under both `prose check` and `prose format`.',
-      `The shipped lints contribute: ${SHIPPED_LINTS}.`
+      'Returned by both `prose check` and `prose format`.',
+      `The shipped lints can produce it: ${SHIPPED_LINTS}.`
     ],
     label  : 'Lint violation',
-    summary: 'At least one lint-only diagnostic surfaced.'
+    summary: 'At least one lint finding was reported.'
   },
   {
     code   : 3,
     detail : [
-      'Surfaces under both subcommands when `ruff_python_parser` fails on the source.',
-      'The pipeline does not run, leaving no other diagnostics to fire.'
+      'Returned by both subcommands when `ruff_python_parser` fails on the source.',
+      'The pipeline does not run, so no other finding is reported.'
     ],
     label  : 'Parse error',
-    summary: 'Input could not be parsed as Python.'
+    summary: 'The input could not be parsed as Python.'
   },
   {
     code   : 4,
     detail : [
-      'Surfaces from config-file parse errors, malformed `--select` / '
-      + '`--ignore` flags, or unknown CLI options.',
-      'A malformed flag pre-empts the whole run, whereas a broken ancestor '
-      + 'config fails only the files it governs while the rest proceed.',
-      'A rewrite that fails to re-parse or to compile lands here too, its '
-      + 'file left unwritten.',
-      'A rewrite a second run would change lands here too under `prose check --validate`, '
+      'Returned for a config-file parse error, a malformed `--select` or `--ignore` '
+      + 'flag, or an unknown CLI option.',
+      'A `prose cache` subcommand returns it on a permission or filesystem failure.',
+      'A malformed flag stops the whole run, whereas a broken ancestor config fails only '
+      + 'the files it governs and the rest proceed.',
+      'A rewrite that fails to parse or to compile returns it too, with the file left '
+      + 'unwritten.',
+      'A rewrite a second run would change returns it too under `prose check --validate`, '
       + 'the opt-in gate for a project that would rather fail CI than read the notice.'
     ],
     label  : 'Config error',
-    summary: 'Config file or argument validation failed.'
+    summary: 'The config file or the arguments failed validation.'
   }
 ]
 

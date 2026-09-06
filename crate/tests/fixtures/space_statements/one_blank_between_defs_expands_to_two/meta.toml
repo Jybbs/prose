@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "One Blank between Module Defs Expands to Two"
+title       = "One Blank Line Between Module Defs Widens to Two"
 
 description = '''
-`first` and `second` are separated by a single blank line, one short of the module-level standard. **The gap between two module-level defs expands to two blank lines**, in that the rule rewrites the whitespace between the statements rather than moving either `def`.
+`first` and `second` are separated by one blank line, one short of the count between module-level definitions. **The gap widens to two blank lines**, because the rule rewrites the whitespace between the two statements rather than moving either `def`.
 '''

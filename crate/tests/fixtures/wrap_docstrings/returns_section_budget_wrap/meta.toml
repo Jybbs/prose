@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Structured `Returns:` Sections Wrap to the Wider Budget"
+title       = "A Structured `Returns:` Body Wraps to the Wider Budget"
 
 description = '''
-The `Returns:` description under `total` runs past the budget, and a structured section body **wraps to the section budget** rather than the narrower description budget. The sentence reflows onto two lines at the section body indent, keeping the wider horizontal room a structured section is allowed.
+The description under `Returns:` in `total`'s docstring names no entry and runs past the budget. **It wraps to the structured budget rather than the narrower description budget**, reflowing onto two lines at the section body indent, because a structured section body without a `name:` head takes the wider budget.
 '''

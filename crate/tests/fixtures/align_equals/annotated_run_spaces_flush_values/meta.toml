@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Flush Annotated Run Spaces Its Values"
+title       = "Flush Annotated Assignments Gain Their Spaces and Align"
 
 description = '''
-`x: int=1` and `name: str=2` arrive with the `=` flush on both sides. The rule inserts the value-side space along with the name-side column padding, so both rows land on the `name: str = 2` shape with their `=` in one column.
+`x: int=1` and `name: str=2` arrive with no space on either side of the `=`. **Both `=` move to the column one space past `name: str` and gain a space before each value**, so the two lines read `x: int    = 1` and `name: str = 2`.
 '''

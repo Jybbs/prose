@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Wrapped Row's Skip Holds Every Line It Spans"
+title       = "A Skip on a Wrapped Row Covers Every Line the Statement Spans"
 
 description = '''
-The `# prose: skip[align-equals]` trailing `beta`'s closing `}` **holds every line that statement spans out of the column math**, not just the line carrying the comment. Without it, `a` would pad out to share an `=` column with `beta`'s opening line, so the skip leaves `a = 1` at its natural width.
+The `# prose: skip[align-equals]` directive trails the closing `}` of `beta`, a dict literal spanning three lines, between `a = 1` and `gamma_wide = 3`. **The skip covers every line the statement spans, not only the line carrying the comment**, so `a` never pads out to share a column with `beta`'s opening line and the source passes through unchanged.
 '''

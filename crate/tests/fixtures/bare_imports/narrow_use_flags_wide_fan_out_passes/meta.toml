@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "A Narrowly-Used Import Flags Where a Wide Fan-Out Passes"
+title       = "A Narrowly-Used Import Is Reported Where a Wide Fan-Out Is Not"
 
 description = '''
-`import os` is reached only through `os.environ`, one distinct attribute however many times it repeats, so a `from os import environ` rewrite would cover every use and the bare import is reported. `import torch` fans out across five distinct attributes, past the `max-attributes` budget of 4, so its bare form is **left untouched**.
+`import os` is reached only through `os.environ`, one distinct attribute however many times it repeats, and `import torch` is reached through five distinct attributes. **The `os` import is reported and the `torch` import is not**, because a `from os import environ` rewrite would cover every use of `os`, whereas `torch` fans out past the default `max-attributes` of `4`, where the bare namespace keeps a wide set of names organized.
 '''

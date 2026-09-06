@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Single-Line Containers Strip Too"
+title       = "Single-Line Containers Drop the Trailing Comma Too"
 
 description = '''
-`f(a, b, c,)`, `[1, 2, 3,]`, `{"a": 1, "b": 2,}`, and `def signature(a, b, c,):` each keep their brackets on one source line, yet still carry a trailing `,`. **`strip-trailing-commas` strips each one along the same backward-scan path it uses on multi-line input**, since a single-line trailing comma carries no semantic weight in these contexts.
+`f(a, b, c,)`, `[1, 2, 3,]`, `{"a": 1, "b": 2,}`, and `def signature(a, b, c,):` each keep their brackets on one line and still carry a trailing `,`. **Each trailing comma is removed**, by the same read from the closing bracket the rule makes on multi-line input, because a trailing comma in these positions changes nothing about what the code means.
 '''

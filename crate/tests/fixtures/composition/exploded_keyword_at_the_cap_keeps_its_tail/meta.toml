@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "An Exploded Keyword Ending on the Cap Keeps Its Tail"
+title       = "A Keyword That Ends on the Budget Counts the Comma the Sort Adds"
 
 description = '''
-`alphabetize-siblings` moves `aa=` ahead of `bb=`, which gives the `aa` row a trailing comma it did not carry while it was last.
-
-A nested call ending exactly at the end of its row still counts **whatever the enclosing row writes after it**, and that new comma is enough to cross the 40-column budget. The `g(...)` call inside the lambda therefore explodes.
+`aa=lambda: g(111111, 2222, 333333)` is the last keyword of `f`, and `alphabetize-siblings` moves it ahead of `bb=1`, which gives its row a trailing comma it did not carry while it was last. **The `g(...)` call inside the lambda explodes**, because a nested call ending at the end of its row still counts whatever the enclosing row writes after it, and with the `align-equals` buffer around the `=` that comma crosses the 40-column budget.
 '''

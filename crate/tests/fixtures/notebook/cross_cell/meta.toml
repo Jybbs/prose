@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Reorder Within a Cell, Never Across One"
+title       = "Statements Reorder Within a Cell, Never Across One"
 
 description = '''
-Two cells each open with an import, and **the sibling-reordering rules run cell-aware, so neither `import os` nor `import abc` migrates across the boundary**. The second cell's `a = (b, abc)` reads `b` from the first cell, and the per-cell reorder keeps that reference after its referent.
+Two cells each open with an import, `import os` above `b = os` and `import abc` above `a = (b, abc)`. **Neither import moves across the cell boundary, and a blank line opens after each import inside its own cell**, because the reordering rules read each cell on its own, and `a` in the second cell reads `b` from the first, which the per-cell order keeps after its referent.
 '''

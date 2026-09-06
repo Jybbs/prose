@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Single-Character Names Are Spared"
+title       = "Single-Character Names Are Exempt"
 
 description = '''
-`x = 3` and `n = 100` assign single-letter names at module scope, which is the shape that usually names a mathematical scalar.
-
-Uppercasing one leaves a lone capital, and by mathematical convention **a lone capital reads as a matrix rather than a constant**. The lint exempts single-character names rather than suggesting a rename that would mislead.
+`x = 3` and `n = 100` assign single-letter names at module scope, the form that usually names a mathematical scalar. **The lint exempts single-character names**, because uppercasing one leaves a lone capital, and by mathematical convention a lone capital reads as a matrix rather than a constant, so the rename would mislead.
 '''

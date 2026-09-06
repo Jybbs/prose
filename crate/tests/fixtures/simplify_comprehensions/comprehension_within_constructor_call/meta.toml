@@ -3,5 +3,5 @@ previewable = true
 title       = "A Comprehension Inside a Constructor Takes the Constructor's Brackets"
 
 description = '''
-`set([row.width for row in rows])` trades its list comprehension's `[` and `]` and the enclosing `set(` and `)` for a single pair of braces. `list([row.label for row in rows])` simply drops the redundant `list(` and `)`, since a list comprehension already builds a list.
+`set([row.width for row in rows])` wraps a list comprehension in `set()`, and `list([row.label for row in rows])` wraps one in `list()`. **The `set()` call and the list brackets become one pair of braces, and the `list()` call is removed**, so `widths` reads `{row.width for row in rows}` and `labels` reads `[row.label for row in rows]`, because a list comprehension already builds a list.
 '''

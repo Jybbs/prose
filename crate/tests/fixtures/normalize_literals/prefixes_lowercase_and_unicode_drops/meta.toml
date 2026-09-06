@@ -3,5 +3,5 @@ previewable = true
 title       = "String Prefixes Lowercase and the No-Op `u` Drops"
 
 description = '''
-The `U` on `U"unicode"` disappears outright, because every Python 3 string is already unicode. `R"a\d"` and `B"bytes"` fall to lowercase `r` and `b`, and the combined `BR"z\d"` settles raw-first as `rb"z\d"`.
+`U"unicode"`, `R"a\d"`, `B"bytes"`, and `BR"z\d"` each carry an uppercase prefix. **The `U` disappears outright, `R` and `B` lowercase to `r` and `b`, and `BR` comes out raw-first as `rb`**, because every Python 3 string is already unicode and every other prefix takes one lowercase spelling.
 '''

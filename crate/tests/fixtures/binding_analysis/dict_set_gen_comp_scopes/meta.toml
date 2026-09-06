@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Dict, Set, and Generator Comprehensions Each Push a Scope"
+title       = "Dict, Set, and Generator Comprehensions Each Open a Scope"
 
 description = '''
-The dict comprehension behind `mapping`, the set comprehension behind `keys`, and the generator passed to `sum` **each push their own `Comprehension` scope**, just as a list comprehension does. The snapshot lists three such scopes parented to the module, holding `k` and `v`, `k` and `_`, and `_` and `v`, while the module table carries only `pairs`, `mapping`, `keys`, and `total`.
+`mapping` is a dict comprehension, `keys` is a set comprehension, and `total` passes a generator to `sum`, each reading `pairs`. **Each opens a `Comprehension` scope of its own under the module**, the same as a list comprehension, so the three scopes carry `k` and `v`, `k` and `_`, and `_` and `v`, and the module table carries only `pairs`, `mapping`, `keys`, and `total`.
 '''

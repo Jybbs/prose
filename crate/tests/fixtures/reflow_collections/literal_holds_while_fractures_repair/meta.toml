@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Literal Holds Its Break While Fractures Repair"
+title       = "A Kept Column Re-Expands While a Mid-Entry Break Rejoins"
 
 description = '''
-`held_list` was laid out by its author as a bracketed column, so it **holds its break** and re-expands to the canonical packed layout.
-
-The multi-line `registry` subscript and the broken tuple key in `repaired_collection_key` both rejoin onto one line instead, whatever `keep-multiline-literals` is set to. Neither carries an entry boundary for a break to sit on, so each reads as a fracture rather than as a column the author built.
+`held_list` is written as a bracketed column, its opening `[` ending a row and its closing `]` opening one, the `registry` subscript is broken inside its brackets, and the tuple key in `repaired_collection_key` is a bracketed column of its own. **`held_list` keeps its column and packs onto one row, and the subscript and the tuple key rejoin onto one line**, whatever `keep-multiline-literals` is set to, because a subscript and a dict key whose joined form fits always rejoin, and only a literal's own entry boundaries make a column the author built.
 '''

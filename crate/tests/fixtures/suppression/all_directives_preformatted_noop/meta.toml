@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Already-Formatted Source With Every Directive Is Idempotent"
+title       = "Already-Formatted Source With Every Directive Gets No Edit"
 
 description = '''
-Every directive appears in already-formatted source, wherein `bar_baz`, `foo`, and `x` are padded to a shared `=` column, a `# fmt: off` block holds unaligned assignments, and `skipped = 4` carries a `# fmt: skip`. The file produces **no edits**, because the suppressed spans stay as written and the aligned runs already sit at their group widths.
+The file is already formatted and carries every directive, with `bar_baz`, `foo`, and `x` padded to one `=` column, a `# fmt: off` block keeping three unaligned assignments, and `skipped = 4` trailing a `# fmt: skip`. **No rule emits an edit**, because the suppressed spans stay as written and the aligned runs already sit on their group widths, so a second run changes nothing.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Off Block Spares a Trailing Comma the Filter Would Strip"
+title       = "An Off Block Keeps a Trailing Comma the Rule Would Remove"
 
 description = '''
-`inside(1, 2, 3,)` sits between `# fmt: off` and `# fmt: on`, so its trailing `,` survives untouched. `outside(4, 5, 6,)` sits outside that block, and `strip-trailing-commas` strips its trailing `,` the same way it would any other call, showing the pipeline-level suppression filter covers **every rule, not just alignment**.
+`inside(1, 2, 3,)` sits between `# fmt: off` and `# fmt: on`, and `outside(4, 5, 6,)` sits below the block. **`inside` keeps its trailing `,`**, whereas `strip-trailing-commas` removes the one on `outside` the way it would on any other call, so the suppression filter in the pipeline covers every rule rather than alignment alone.
 '''

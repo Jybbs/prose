@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Multi-Line Target Skips the Member"
+title       = "A Multi-Line Tuple Target Is Skipped and Splits the Run"
 
 description = '''
-The tuple target `(x, y)` spreads across four lines before its `= 2, 3` arrives, so that assignment never joins the alignment and it breaks the run. **`alpha` and `beta` are left on either side as separate singletons**, which is why `beta = 4` keeps its natural width instead of padding to match `alpha`.
+The tuple target `(x, y)` spreads across four lines before its `= 2, 3`, between `alpha = 1` and `beta = 4`. **The statement is skipped and splits the run**, leaving `alpha` and `beta` alone on either side, so `beta = 4` keeps its single space rather than padding out to match `alpha`.
 '''

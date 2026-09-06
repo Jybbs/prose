@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Tuple-Unpacking Targets Skip the Run"
+title       = "A Tuple-Unpacking Target Keeps the Run in Source Order"
 
 description = '''
-`(alpha, beta) = (2, 3)` binds two names from one statement, and that destructuring target **stops the whole run from sorting**, so `zebra = 1` and `delta = 4` hold their places around it. Reordering could land a statement that reads `alpha` or `beta` above the unpacking that defines them.
+`(alpha, beta) = (2, 3)` binds two names in one statement between `zebra = 1` and `delta = 4`. **The whole run stays in source order**, because a sorted order could place a statement reading `alpha` or `beta` above the unpacking that binds them.
 '''

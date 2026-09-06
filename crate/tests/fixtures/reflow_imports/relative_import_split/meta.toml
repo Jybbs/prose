@@ -3,5 +3,5 @@ previewable = true
 title       = "A Relative Import Repeats Its Leading Dots"
 
 description = '''
-`from ..pkg import alpha, beta, delta, gamma` overflows the `import-line-length` budget of 35, forcing the members across two statements. **Each split line repeats the two leading dots in its prefix**, so both open with the same `from ..pkg import`.
+`from ..pkg import alpha, beta, delta, gamma` runs past the `import-line-length` budget of `35`, so the names split across two statements. **Each line repeats the two leading dots in its prefix**, so both open with `from ..pkg import`.
 '''

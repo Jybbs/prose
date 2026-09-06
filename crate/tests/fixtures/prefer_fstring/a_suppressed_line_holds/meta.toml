@@ -3,5 +3,5 @@ previewable = true
 title       = "A Skipped Line Keeps Its Template"
 
 description = '''
-The `# prose: skip` directive holds the line it sits on, so `held` keeps its `"%s" % (value,)` template untouched. The suppression reaches no further than its own line, leaving the neighbour below to convert to `f"{other}"`.
+`held` carries a `# prose: skip` directive at the end of its line, and `converted` on the line below carries none. **`held` keeps its `"%s" % (value,)` template and `converted` becomes `f"{other}"`**, because the directive reaches no further than its own line.
 '''

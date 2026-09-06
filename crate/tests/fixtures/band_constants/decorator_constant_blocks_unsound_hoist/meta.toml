@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Decorator Constant Blocks an Unsound Hoist"
+title       = "A Constant Used as a Decorator Stays Above the Function It Decorates"
 
 description = '''
-Nothing moves here. `HANDLER = decorate` names a function, which is the shape that would ordinarily be moved down to the constants at the bottom of the module.
-
-`@HANDLER` decorates `target` further down, and a decorator runs when its definition executes. Moving `HANDLER` below `target` would put the binding after its own use and **raise a `NameError` at import time**, so the move is declined and the module keeps source order.
+`HANDLER = decorate` names a function, the kind of value that ordinarily moves into the trailing band at the bottom of the module, and `@HANDLER` decorates `target` further down. **Nothing moves**, because a decorator runs when its definition executes, so moving `HANDLER` below `target` would put the binding after its use and raise a `NameError` at import time.
 '''

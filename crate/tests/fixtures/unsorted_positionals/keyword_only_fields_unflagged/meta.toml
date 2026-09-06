@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A `kw_only=True` Generator Draws No Report"
+title       = "A `kw_only=True` Generator Is Not Reported"
 
 description = '''
-`Request`'s `@dataclass(kw_only=True)` generator binds every field by name, so its out-of-order `timeout`, `method`, `body` run **gets no diagnostic**. Nothing here needs a human's read of the callers, because [[alphabetize-siblings]] sorts these fields as an auto-fix instead.
+`Request` is a `@dataclass(kw_only=True)` declaring `timeout`, then `method`, then `body` out of alphabetical order. **The lint reports nothing**, because a keyword-only generator binds every field by name at each call site, so no reader needs to check the callers, and sorting such fields is [[alphabetize-siblings]]'s auto-fix rather than this lint's.
 '''

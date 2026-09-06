@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Import Below a Definition Hoists Into the Import Band"
+title       = "An Import Below a Definition Moves Into the Import Band"
 
 description = '''
-`import os` sits beneath `def helper`, so it hoists into the import band at the top of the module. `CONFIG = helper` stays in the trailing band below the definition, because its right-hand side reads `helper` and that name must already exist when the line runs.
+`import os` sits below `def helper`, and `CONFIG = helper` sits below the import. **The import moves to the top of the module and `CONFIG` stays in the trailing band below the definition**, because the right-hand side of `CONFIG` reads `helper`, and that name must be bound when the line runs.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Walrus Annotation and Value Align Together"
+title       = "A Walrus Annotation and a Walrus Value Align Together"
 
 description = '''
-`D`'s annotation and its value are each a parenthesized assignment expression, `(E := 4)` and `(F := 5)`.
-
-The row aligns like any other, with `zz: int` padding out to share the `=` column, and **both `:=` forms pass through intact**. The rewrite measures through the annotation's closing `)` and stops before the value's opening `(`, so neither walrus is touched.
+`D` is annotated with the parenthesized assignment expression `(E := 4)` and assigned another, `(F := 5)`, above `zz: int = 1`. **The row aligns like any other and both `:=` forms pass through unchanged**, because the rewrite measures the annotation through its closing `)` and stops before the value's opening `(`, so `zz: int` pads out to share the `=` column.
 '''

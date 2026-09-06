@@ -3,5 +3,5 @@ previewable = true
 title       = "An `Attributes:` Entry Resolves Against the Class Body"
 
 description = '''
-`host: str` is annotated in the class body, and its docstring entry `host (str)` restates that type. **`host` is flagged**, while `port`, bound by the unannotated `port = 8080`, and `proxy`, declared nowhere in the body, both stay silent.
+`Remote` annotates `host: str` in its class body, binds `port = 8080` without an annotation, and declares no `proxy`, while its docstring's `Attributes:` section documents all three with types. **Only `host (str)` is reported**, because `port` has no annotation for the docstring copy to restate and `proxy` resolves against no member of the class body.
 '''

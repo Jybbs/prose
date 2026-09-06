@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Return Annotations Trail the Closing `)`"
+title       = "A Return Annotation Trails the Closing `)` When the Signature Collapses"
 
 description = '''
-`render`'s single parameter, `target: int`, is written in expanded shape though it fits comfortably inline. `reflow-signatures` collapses it to `render(target: int) -> int:`, **the `-> int` return annotation trailing the closing `)` on the same line** rather than landing on its own.
+`render`'s only parameter, `target: int`, is written in the expanded form though it fits inline, with a `-> int` return annotation. **The signature collapses to `render(target: int) -> int:`**, with the return annotation trailing the closing `)` on the same line rather than sitting on its own.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Bulleted Lists inside the Description Are Preserved"
+title       = "A Bulleted List Inside the Description Passes Through Verbatim"
 
 description = '''
-The docstring's list items **pass through verbatim and are never reflowed**, even the first `-` item that runs far past the budget. The fixture exercises `-`, `+`, and `1.` markers, shapes drawn from the CommonMark marker set, and the `Continuation prose` paragraph after the list resumes the description budget.
+The docstring carries list items under `-`, `+`, and `1.` markers, the first `-` item running far past the budget, followed by a `Continuation prose` paragraph. **Every list item passes through verbatim, the over-budget `-` item included, and the `Continuation prose` paragraph below the list, which already fits the budget, is written unchanged**, because the markers are drawn from the CommonMark set and a line opening on one reads as a list item rather than prose.
 '''

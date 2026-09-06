@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Skip Between Two Bands Holds Each Side"
+title       = "A Skip Directive Between Two Bands Sorts Each Side on Its Own"
 
 description = '''
-`# prose: skip[band-constants]` on the `PINNED` assignment breaks the constants into two separate groups, one above it and one below.
-
-**Each group sorts on its own.** `MIDDLE` rises above `ZEBRA` before the pin and `ALPHA` above `BETA` after it, and nothing crosses the pinned statement, since the rule rewrites each group it touches rather than the whole span between them.
+`# prose: skip[band-constants]` trails the `PINNED` assignment, splitting the constants into a group above it and a group below. **Each group sorts on its own and nothing crosses the pinned statement**, `MIDDLE` moving above `ZEBRA` before it and `ALPHA` above `BETA` after it, because the rule rewrites each run it reads rather than the whole span between them.
 '''

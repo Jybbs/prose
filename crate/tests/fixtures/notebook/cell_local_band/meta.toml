@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Band Constants Within Each Cell"
+title       = "Constants Band Within Each Cell"
 
 description = '''
-Each cell interleaves a definition, an import, and a constant. The first holds `helper` with `import os` and `CONFIG`, and the second holds `runner` with `import sys` and `MODE`.
-
-Grouping runs **inside each cell separately**. Each import hoists to the front of its own cell and each constant pools below the definition it reads, and nothing from the second cell is ever drawn into the first cell's group.
+Each cell interleaves a definition, an import, and a constant that reads the definition, `helper` with `import os` and `CONFIG = helper` in the first, and `runner` with `import sys` and `MODE = runner` in the second. **Each import moves to the top of its own cell and each constant stays below the definition it reads**, and nothing from the second cell is drawn into the first, because `band-constants` reads each cell as its own module-level region.
 '''

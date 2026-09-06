@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Assigned Dict Holds Its Break and Takes the Aligned Equals"
+title       = "An Assigned Dict Keeps Its Break and Takes the Aligned `=`"
 
 description = '''
-The dict assigned to `HEADER_VALIDATORS` would fit back on one line at the `=` column its author wrote, yet `keep-multiline-literals` **holds the break** and re-expands the entries in place. That leaves the assignment's opening line short, so `align-equals` shifts the `=` rightward to clear the longer `_VALID_HEADER_VALUE_RE_BYTE`, an alignment a joined dict would have pushed past the budget.
+`HEADER_VALIDATORS` is assigned a dict written across several lines, below `_VALID_HEADER_VALUE_RE_BYTE = 1`, and the dict would fit on one line at the `=` column the source wrote. **The `keep-multiline-literals` facet of `reflow-collections` keeps the break, and `align-equals` pads the `=` out to the column `_VALID_HEADER_VALUE_RE_BYTE` sets**, because the opening line is short once the dict stays exploded, whereas a joined dict would have pushed that padding past the budget.
 '''

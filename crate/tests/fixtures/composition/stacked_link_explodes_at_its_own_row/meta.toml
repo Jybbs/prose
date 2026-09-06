@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Stacked Link Explodes at Its Own Row"
+title       = "A Stacked Link Explodes Against Its Own Row"
 
 description = '''
-`stack-method-chains` wraps the chain in a grouping pair and puts the receiver and its first link together on the row below the opener. That row, the one holding `repr(value).replace(`, is itself too wide for the 88-column budget.
-
-`reflow-calls` then explodes that link **against the row it landed on** rather than against the pair's opener. Its two string arguments sit one indent step in from that row, and its closing `)` comes back to that row's own indent. The second `.replace` keeps its place in the dot column below.
+`out.write(...)` takes a chain of two `.replace` calls on `repr(value)`, already stacked one link per line. `stack-method-chains` wraps the chain in parentheses and puts the receiver and its first link together on the row below the opener, and that row, holding `repr(value).replace(`, crosses the 88-column budget. **`reflow-calls` explodes that link against the row it sits on** rather than against the pair's opener, its two string arguments one indent step in from that row and its `)` back at that row's indent, while the second `.replace` keeps its place in the `.` column below.
 '''

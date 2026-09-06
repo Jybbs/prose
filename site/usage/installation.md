@@ -1,6 +1,6 @@
 # Installation
 
-*Prose* ships as a single native binary written in Rust, distributed as a Python wheel so the install path lands on PyPI with no separate toolchain. The binary runs on Linux, macOS, and Windows, with no Python interpreter on the hot path. The recommended install is through <Tool slug="uv" />, in that `uv tool install` fetches the platform wheel and exposes the `prose` executable on the user's `PATH` without an explicit venv.
+*Prose* is a single native binary, written in Rust and published on PyPI as a Python wheel, so installing it needs no Rust toolchain. Pre-built wheels cover Linux, macOS, and Windows, and the formatter runs with no Python interpreter on the hot path. The recommended installer is <Tool slug="uv" />, whose `uv tool install` downloads the wheel for your platform and puts the `prose` executable on your `PATH` with no virtual environment to manage.
 
 ## Install
 
@@ -8,9 +8,9 @@
 uv tool install prose-formatter
 ```
 
-Two names are worth flagging up front, starting with the PyPI distribution `prose-formatter`, named so because the unqualified `prose` name was already claimed when the project shipped. The binary the wheel installs is `prose`, because that's the name a user types at the shell and a CI step writes into a workflow. Every later command in the documentation assumes the `prose` binary on `PATH`.
+The package name and the executable name differ, and both appear throughout the documentation. The PyPI distribution is `prose-formatter`, because the name `prose` was already taken on PyPI when the project first published. The executable the wheel installs is `prose`, which is what you type at a shell and write into a CI step. Every later command assumes `prose` is on your `PATH`.
 
-`pip install prose-formatter` and `pipx install prose-formatter` work the same way for users who prefer those package managers. The PyPI distribution is the same wheel in every case, so the install path is whatever fits the project's existing tooling.
+`pip install prose-formatter` and `pipx install prose-formatter` install the same wheel, so use whichever package manager the project already uses.
 
 Confirm the install with:
 
@@ -30,15 +30,15 @@ Pre-built wheels cover the following targets:
 | `aarch64-apple-darwin` | macOS Apple Silicon |
 | `x86_64-pc-windows-msvc` | Windows x86_64 |
 
-A source distribution ships alongside the wheels for any target outside this matrix *(musl-based Linux distros, FreeBSD, 32-bit architectures)*. Installing the sdist requires a Rust toolchain on the install host, because the installer builds the binary from source rather than fetching a pre-built artifact.
+A source distribution is published beside the wheels for any other target *(musl-based Linux distributions, FreeBSD, 32-bit architectures)*. Installing from the source distribution needs a Rust toolchain on the machine, because the installer compiles the binary rather than downloading one.
 
 ## Python Compatibility
 
-The install path needs Python **{{ $frontmatter.requiresPython }} or newer**, which is the lower bound declared in the wheel's `requires-python` metadata. The Python interpreter is used only by the installer *(uv, pip, pipx)* to land the binary on `PATH`, and the running formatter doesn't load it on the hot path. For the runtime version a project's source itself targets *(read by the version-gated rules when judging safety)*, see the `target-version` field in the [**Configuration**](/reference/configuration) reference.
+Installing needs Python **{{ $frontmatter.requiresPython }} or newer**, the lower bound the wheel declares in its `requires-python` metadata. Only the installer *(uv, pip, or pipx)* uses that interpreter, to place the binary on `PATH`, and the formatter itself never loads the interpreter. The Python version a project's own code targets is a separate setting, the `target-version` key in the [**Configuration**](/reference/configuration) reference, which the version-gated rules read before rewriting anything.
 
 ## Next Steps
 
-- The [**Quick Start**](/usage/quick-start) chapter walks through the first `prose format` and `prose check` invocations.
-- The [**Ruff**](/integrations/ruff) integration page covers the `ruff format && prose format` recipe for projects that pair the two.
-- The [**Configuration**](/reference/configuration) reference enumerates every per-rule facet.
-- For shell completions, see [**Shell Completions**](/integrations/shell-completions) under Integrations.
+- The [**Quick Start**](/usage/quick-start) chapter walks through the first `prose format` and `prose check` commands.
+- The [**Ruff**](/integrations/ruff) integration page covers running Ruff in the same project.
+- The [**Configuration**](/reference/configuration) reference lists every top-level key and every per-rule facet.
+- [**Shell Completions**](/integrations/shell-completions) under Integrations installs tab completion for the `prose` command.

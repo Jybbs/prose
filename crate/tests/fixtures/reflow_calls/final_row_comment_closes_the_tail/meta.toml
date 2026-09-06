@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Final Row Comment Closes the Tail"
+title       = "A Comment on the Final Row Closes the Tail Measure"
 
 description = '''
-The trailing comment sits on the module's very last row, with no line terminator after it.
-
-**That closes the tail measure exactly as a comment on any other row would**, so the comment's own width never counts toward whether the call ahead of it may rejoin. The call joins onto one line and the comment follows it, even though the finished row runs past the 57-column budget.
+The `write_header` call arrives broken across two rows with a trailing comment on the module's last row, under `code-line-length = 57`. **The call rejoins onto one row and the comment follows it**, even though the finished row runs past the budget, because the comment closes the tail measure exactly as a comment on any other row does, so its own width never counts toward whether the call may rejoin.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Blank Line Splits an Args Section into Adjacent Entries"
+title       = "A Blank Line Splits an `Args:` Section Into Two Entries"
 
 description = '''
-A blank line ends the `first` entry's paragraph, so **the `second:` line below it is tested as a fresh entry candidate rather than as a continuation**. The `Args:` section composes as two adjacent entries, each wrapping at its own description column.
+A blank line separates the `first` entry from the `second:` line under `Args:`. **Each wraps as its own entry at its own description column**, because the blank line ends the `first` paragraph, so `second:` is tested as a fresh entry rather than read as a continuation of `first`.
 '''

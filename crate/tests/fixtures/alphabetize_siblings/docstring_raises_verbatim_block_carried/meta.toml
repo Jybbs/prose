@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Verbatim Continuations Stay Attached to Their Parent Entry through the Reorder"
+title       = "A Verbatim Block Moves With Its Parent Entry"
 
 description = '''
-`ValueError`'s description ends in `::` and continues into an indented doctest block, and sorting moves `OSError` above it.
-
-**The verbatim block travels with `ValueError`.** Its lines sit deeper than the entry's hanging column, which is what marks them as a continuation of that entry rather than as sibling entries of their own.
+`ValueError`'s description ends in `::` and continues into an indented doctest block, with `OSError` listed after it. **Sorting moves `OSError` above `ValueError` and the verbatim block moves with `ValueError`**, because its lines sit deeper than the entry's hanging column, which marks them as a continuation of that entry rather than as sibling entries of their own.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Skip-Held Keyword Bridges Its Neighbors"
+title       = "A Skipped Keyword Stays Tight While Its Neighbors Align Across It"
 
 description = '''
-The `# prose: skip[align-equals]` comment holds `port=8080` exactly as written, so **the held row keeps its tight spacing while the rows around it align across it**. `host` and `debug` still share one `=` column, as they would if the skipped line did not sit between them.
+`port=8080` carries a trailing `# prose: skip[align-equals]` between `host` and `debug` inside `configure`. **The skipped row keeps its tight spacing, and `host` and `debug` still share one `=` column**, as they would if the skipped line were not between them.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Trailing Comments Travel With Their Method"
+title       = "Trailing Comments Move With Their Method"
 
 description = '''
-Each trailing comment **moves with its method as the body sorts**, so `# reds and oranges` follows `warm` to the last line while `cool` and `neutral` rise with their own notes. The comment travels as part of the member's text rather than staying with the row it sat on, so no method ends up with a neighbor's comment.
+`Palette`'s one-line methods `warm`, `cool`, and `neutral` each end in a trailing comment. **Each comment moves with its method as the body sorts, so `# reds and oranges` follows `warm` to the last line** while `cool` and `neutral` rise with their own notes, because the comment is part of the member's text rather than of the row it sat on, so no method ends up with a neighbor's comment.
 '''

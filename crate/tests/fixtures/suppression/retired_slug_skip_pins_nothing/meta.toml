@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Retired Slug in a Skip Directive Pins Nothing"
+title       = "A Retired Slug in a Skip Directive Suppresses Nothing"
 
 description = '''
-`# prose: skip[signature-layout]` names a slug that no longer resolves, so the directive suppresses nothing and `reflow-signatures` condenses the one-parameter header exactly as it would with no comment at all. The sibling case pinning the same signature with a live directive is the contrast.
+`# prose: skip[signature-layout]` names a slug that no longer resolves. **The directive suppresses nothing**, so `reflow-signatures` condenses the one-parameter header onto one line exactly as it would with no comment at all. The sibling case with a live directive on the same signature is the contrast.
 '''

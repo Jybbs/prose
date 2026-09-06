@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Comments Attached to a `def` Keep Their Blank-Above"
+title       = "Blank Lines Between a Comment and Its Def Close to None"
 
 description = '''
-`# describes second` reads as `second`'s leading block, so it belongs tight against the definition it describes.
-
-The four blank lines that had drifted in below it **collapse to none**, binding the comment directly onto `def second():`. The two blanks above the comment already match the canonical gap between module-level definitions and stay as they are.
+`# describes second` sits two blank lines below `first` and four blank lines above `def second():`. The comment reads as `second`'s leading block, so **the four blank lines below it close to none** and the comment sits flush against the definition it describes, whereas the two blank lines above it already match the canonical count and stay.
 '''

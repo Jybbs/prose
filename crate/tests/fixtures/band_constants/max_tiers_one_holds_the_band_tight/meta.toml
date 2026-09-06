@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "max-tiers = 1 Holds the Band Tight"
+title       = "`max-tiers = 1` Keeps the Band Tight"
 
 description = '''
-`X = A + B` and `Y = A * B` both read `A` and `B`, so the four constants sit at two dependency levels.
-
-`max-tiers = 1` allows only one level before a blank line would open, which here means **no blank line opens at all**. The four assignments stay as a single tight run, with the two plain literals still ordered ahead of the two derived from them.
+`X = A + B` and `Y = A * B` both read `A` and `B`, so the four constants sit at two tiers, and the case runs with `max-tiers = 1`. **No blank line opens between the two tiers**, because the setting allows one tier before a sub-band would open, so the four assignments stay one tight run with the two literals ahead of the two derived from them.
 '''

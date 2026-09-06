@@ -3,5 +3,5 @@ previewable = true
 title       = "`Union[X, Y]` Becomes `X | Y`"
 
 description = '''
-`x: Union[int, str]` rewrites to `x: int | str`, each member joining with the PEP 604 `|` in the order the subscript listed them. That was the only read of `Union`, so its import is removed too.
+With `target-version = "3.10"`, `x: Union[int, str]` sits under `from typing import Union`. **The annotation rewrites to `x: int | str`**, each member joined with the PEP 604 `|` in the order the subscript listed them, and with that only read of `Union` gone its import is removed too.
 '''

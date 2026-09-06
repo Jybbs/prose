@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Backslash-Continued Run Is Already One per Line"
+title       = "A Backslash-Continued Run Already One per Line Stays as Written"
 
 description = '''
-`message`'s run already breaks one literal per line, using a trailing backslash instead of parentheses to continue across the line break. `stack-adjacent-strings` gives this shape the same hold a parenthesized run gets, **so the backslash continuation stays exactly as written**.
+`message`'s run is already written one literal per line, continued across the line break with a trailing backslash rather than parentheses. **The backslash continuation stays exactly as written**, because the rule keeps any run already at one literal per line, backslash-continued and parenthesized alike.
 '''

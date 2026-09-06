@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Over-Budget Grouping Wraps Its Interior"
+title       = "An Over-Budget Pair Keeps Its Interior Whole on One Row"
 
 description = '''
-`ready = (` wraps `server.up and cache.warm`, and with the budget set to `31` characters the joined single-line form runs one character over. The pair therefore breaks rather than folding, and because the interior fits a row of its own one indent step in, it takes that row whole rather than one operand per row.
+`ready = (` wraps `server.up and cache.warm` under a `code-line-length` of `31`, one column short of the joined form's 32. **The pair breaks rather than joining, and the interior takes one row whole** one indent step in, because it fits that row, so the chain is not split into one operand per row.
 '''

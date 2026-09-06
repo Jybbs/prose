@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Tight Commas Hold the Row They Were Written On"
+title       = "Tight Commas Keep the Row They Were Written On"
 
 description = '''
-The nested literal is written flat with no space after any internal comma, landing at 58 columns against a budget of `60`. Nothing rewrites the interior of a literal the author already wrote on one row, so **the row is measured as it stands rather than as a rebuild would spell it**, and it holds. Measuring the rebuilt spelling would count three columns for the three tight commas, cross the budget, and expand a row that already fits as written.
+The nested literal `[[(45,0.69), (0,0.65), (-45,0.71)]]` is written flat with no space after any interior comma, its row sitting at 58 columns against a budget of `60`. **The row stays as written**, because no rule rewrites the interior of a literal the author wrote on one row, so the row is measured as it stands rather than as a rebuild would spell it. Measuring the rebuilt spelling would count three more columns for the three tight commas, cross the budget, and expand a row that already fits.
 '''

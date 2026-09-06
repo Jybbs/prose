@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Shed Super Call Settles Before Its Row Reflows"
+title       = "A `super()` Call Sheds Its Arguments Before Its Row Is Measured"
 
 description = '''
-[[shed-super-args]] runs ahead of [[reflow-calls]], so the bare `super()` is the text the length trigger measures, and the `add_exception` call explodes on that width rather than on the wider one the shed removes.
+`add_exception` calls `super(Waiter, self).add_exception(future)` on a row past the 40-column budget. [[shed-super-args]] runs ahead of [[reflow-calls]], so **the bare `super()` is the text the length trigger measures, and the `add_exception` call explodes on that width** rather than on the wider text the shed removes.
 '''

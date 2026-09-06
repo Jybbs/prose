@@ -3,5 +3,5 @@ previewable = true
 title       = "Commented and Bare Entries Share One Column"
 
 description = '''
-Two entries of `limits` carry trailing `#` comments and two do not. Each comment attaches to its own entry rather than interrupting the run, so all four rows align to the single `:` column set by `"memory"` instead of splitting at the commented lines.
+Two entries of `limits` carry trailing `#` comments and two do not. **All four rows align on the single `:` column set by `"memory"`** rather than splitting at the commented lines, because each comment belongs to its own entry and does not break the run.
 '''

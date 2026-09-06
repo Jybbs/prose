@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Own-Line Comments Reset the Run, like Blank Lines"
+title       = "An Own-Line Comment Ends the Run Like a Blank Line"
 
 description = '''
-The own-line comment between `from typing import Optional` and `from sys import path` **breaks the run in two**, so `typing` pads out to match `collections` whereas `sys` pads only to `os.path`, each half aligning with its own contiguous neighbors. The trailing comment on `import re as regex` sits inside that row rather than between rows, so `re` and `json` still align their `as` keywords as one run.
+An own-line comment sits between `from typing import Optional` and `from sys import path`, and `import re as regex` carries a trailing comment. **The own-line comment splits the `from` imports into two runs**, so `typing` pads to match `collections` and `sys` pads only to match `os.path`. The trailing comment sits inside its row rather than between rows, so `re` and `json` still align their `as` keywords as one run.
 '''

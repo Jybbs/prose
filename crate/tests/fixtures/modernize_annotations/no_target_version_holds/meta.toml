@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Unset `target-version` Holds Every Rewrite"
+title       = "An Unset `target-version` Leaves Every Annotation as Written"
 
 description = '''
-No `target-version` is declared for this case, and each rewrite runs only when the target sits at or above its version floor. An unset field clears neither floor, so `x: Optional[int] = None` and its `Optional` import pass through untouched.
+No `target-version` is set for this case, and `x: Optional[int]` sits under its `Optional` import. **Both pass through untouched**, because each rewrite runs only when the target sits at or above its version floor, and an unset field clears neither floor.
 '''

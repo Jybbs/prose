@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Header Comment Cushions Above, Binds to the Member"
+title       = "A Comment Below a Class Header Binds to the First Member"
 
 description = '''
-`# describes the first method` sits between `class Posting:` and `def m1(self):`, and it reads as `m1`'s leading block rather than as a note on the class.
-
-**One blank line opens between the class header and the comment**, while the comment itself stays tight against the method it describes.
+`# describes the first method` sits flush between `class Posting:` and `def m1(self):`. **One blank line is written between the class header and the comment, and the comment stays flush against the method**, because it reads as `m1`'s leading block rather than as a note on the class.
 '''

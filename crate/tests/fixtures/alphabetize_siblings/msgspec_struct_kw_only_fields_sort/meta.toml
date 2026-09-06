@@ -3,5 +3,5 @@ previewable = false
 title       = "A `kw_only` Base Sorts Its Fields"
 
 description = '''
-`kw_only=True` on the class header makes the constructor a `msgspec.Struct` base generates take every field by keyword, so field order binds no caller and `Posting`'s fields **sort**, `company`, `date_posted`, `title` replacing the declared order. The escape reads the header's keywords, whereas for a decorated class the same check reads the decorator's argument list.
+`Posting` extends `msgspec.Struct` with `kw_only=True` on the class header, which makes the generated constructor take every field by keyword. **The fields sort to `company`, `date_posted`, `title`**, because field order binds no caller, and the check reads the header's keywords, whereas for a decorated class the same check reads the decorator's argument list.
 '''

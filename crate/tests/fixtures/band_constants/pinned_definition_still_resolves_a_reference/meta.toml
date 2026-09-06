@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Constant Naming a Pinned Definition Still Bands"
+title       = "A Constant Naming a Class Under a Banner Still Moves to the Trailing Band"
 
 description = '''
-The `# Filters` divider holds `class FilterError` inside its own section, so the class itself is not reordered.
-
-`FILTER_ERRORS = (FilterError, OSError)` still reads that class by name, and being pinned does not change what the name resolves to. The tuple **counts as derived from a definition** and moves down below `apply_filter` with the other derived constants, rather than staying anchored where it was written.
+`class FilterError` sits under the `# Filters` banner line, which keeps the class in its section, and `FILTER_ERRORS = (FilterError, OSError)` sits directly below it above `apply_filter`. **`FILTER_ERRORS` moves into the trailing band below `apply_filter`**, because its value names the class, and a class kept in place by a banner still resolves as a definition the constant depends on.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Leading Header Settles Above a Sorted Import Block"
+title       = "A Leading Header Stays Above a Sorted Import Block"
 
 description = '''
-A two-line copyright header opens the file above an import run that is regrouped and sorted beneath it.
-
-**The header keeps the single blank line its author left below it** while `group-imports`, `alphabetize-siblings`, and `align-imports` reshape `requests`, `numpy`, `os`, and `collections` underneath. It settles the same way against every rule acting on the statements it heads.
+A two-line copyright header opens the file above an import run written out of order. **The header keeps the single blank line its author left below it** while the imports sort to `numpy`, `os`, `requests` and the `from collections` import stays in its own group beneath them, so the header settles the same way against every rule acting on the statements it heads.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Rebinding Holds Only the Names It Covers"
+title       = "Rebinding Exempts Only the Names It Covers"
 
 description = '''
-The module rebinds `dict = {}` and `tuple = ()`, so `mapping = dict([(1, 2)])` and `frozen = tuple([1, 2])` stay untouched because those two names no longer refer to their builtins. `list` and `set` keep their usual meaning, so `values` and `unique` still collapse to `[1, 2]` and `{1, 2}`, the rebinding blocking only the two names it covers rather than the whole rule.
+The module rebinds `dict = {}` and `tuple = ()`, so those two names no longer refer to their builtins, whereas `list` and `set` keep their usual meaning. **`mapping = dict([(1, 2)])` and `frozen = tuple([1, 2])` stay as written, and `values` and `unique` still become `[1, 2]` and `{1, 2}`**, because a rebinding blocks the rewrite for the names it covers and not for the whole rule.
 '''

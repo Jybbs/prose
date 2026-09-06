@@ -1,11 +1,9 @@
 [docs]
 previewable = false
-title       = "Rule Toggles Accept Bool Shorthand and Inline Tables"
+title       = "Rule Toggles Accept a Bare Bool and an Inline Table"
 
 description = '''
-The `[rules]` table exercises each override shape the loader accepts.
+The `[rules]` table writes each override form the loader accepts. A bare `false` disables `alphabetize-siblings`, the inline table `{ max-shift = 4 }` sets `align-equals`'s cap to `4` **while leaving the rule enabled**, because an inline table configures a rule rather than toggling it, and `max-params = false` removes `reflow-signatures`'s parameter budget without disabling the rule.
 
-A bare `false` disables `alphabetize-siblings` outright. The inline table `{ max-shift = 4 }` tightens `align-equals`'s cap **while leaving the rule enabled**, since an inline table configures rather than toggles. And `max-params = false` switches off `reflow-signatures`'s parameter budget without disabling the rule itself.
-
-Every rule the table does not name resolves to its own default.
+Every rule the table does not name resolves to its default.
 '''

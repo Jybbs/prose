@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Value Return Is Flagged While a Procedure Passes"
+title       = "A Value-Returning Function Is Reported and a Procedure Is Not"
 
 description = '''
-`fetch` returns `store[key]`, a value, so `signature-annotations` reports its two unannotated parameters, `store` and `key`, alongside a missing return type on `fetch` itself. `persist` only assigns `store[key] = value` and returns nothing, so its three unannotated parameters are reported while no missing-return diagnostic fires.
+`fetch` returns `store[key]`, a value, whereas `persist` only assigns `store[key] = value` and returns nothing. **`fetch` draws a missing-return finding beside the findings on its unannotated `store` and `key`, and `persist` draws none**, though its three unannotated parameters are still reported.
 '''

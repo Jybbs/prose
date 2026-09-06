@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Read Inside the `try` Body Spares the Binding"
+title       = "A Read Inside the `try` Body Is Not Reported"
 
 description = '''
-`default` is written above the `try` and read once inside the `try` suite rather than a handler. **The binding stays unreported**, because the inline would move `fallback or {}` under the guard the `try` opens, the same disposition an `except` arm read takes.
+`default` is written above the `try` from `fallback or {}` and read once inside the `try` body rather than a handler. **The binding is not reported**, because inlining would move `fallback or {}` under the guard the `try` opens, the same outcome a read in an `except` body gets.
 '''

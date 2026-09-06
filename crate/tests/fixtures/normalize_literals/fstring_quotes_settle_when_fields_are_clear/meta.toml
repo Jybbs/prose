@@ -3,5 +3,5 @@ previewable = true
 title       = "An F-String Swaps When No Field Carries the Target Quote"
 
 description = '''
-Neither f-string carries a `"` anywhere inside it, so both settle on double quotes, `label` bringing its `:>8` format spec through the swap untouched and `plain` holding no replacement field at all. The opener, the closer, and the literal text between them swap in a single edit.
+`label = f'{mask:>8}'` and `plain = f'no field at all'` carry no `"` anywhere inside them. **Both swap to double quotes**, `label` bringing its `:>8` format spec through the swap untouched and `plain` having no replacement field at all, and the opener, the closer, and the literal text between them swap in a single edit.
 '''

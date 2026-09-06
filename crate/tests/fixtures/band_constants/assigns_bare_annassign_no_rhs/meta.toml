@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Bare Annotated Declarations Carry a Name but No RHS"
+title       = "A Bare Annotated Declaration Sorts by Its Name"
 
 description = '''
-`zebra: int` declares a name with no value, and it still sorts alongside the valued bindings, landing below `apple = 1` and `banana: str = "two"`. **A bare `AnnAssign` contributes its target name to the sort**, whereas it has no right-hand side to walk for dependencies or side effects.
+`zebra: int` declares a name with no value above `apple = 1` and `banana: str = "two"`. **The declaration sorts by its target name with the valued bindings**, ending up below `banana`, and with no right-hand side it reads no other name and runs no code.
 '''

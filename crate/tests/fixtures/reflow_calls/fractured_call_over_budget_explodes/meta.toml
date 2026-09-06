@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "A Fractured Call Whose Joined Row Overflows Explodes"
+title       = "A Broken Call Whose Joined Row Overflows Explodes"
 
 description = '''
-The fractured `ValueError` call is measured as though it had been rejoined, and that measure counts both the column the call starts at and the `from underlying_cause_error` trailing it.
-
-The joined row would overflow the budget, so **the call explodes to one argument per line** rather than keeping the break the author wrote. The `from` clause follows the closing `)`.
+The `ValueError` call arrives broken across two rows with `from underlying_cause_error` trailing its `)`. **The call explodes to one argument per line and the `from` clause follows the closing `)`**, because the rejoin is measured across the whole row, counting the column the call starts at and the `from` clause after it, and that joined row would overflow the budget.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "The Import Removes Cleanly from a Mixed Import Block"
+title       = "The First Name on a Two-Name Directive Line Is Removed Alone"
 
 description = '''
-`annotations` sits first in the two-name `from __future__ import annotations, division`, and the file holds no annotations that would justify it. **Only the `annotations` entry is removed**, taking the `,` after it along, leaving `from __future__ import division` as the surviving line.
+`annotations` is the first of two names on `from __future__ import annotations, division`, and the file carries no annotation. **Only `annotations` and the `,` after it are removed**, leaving `from __future__ import division` on the line.
 '''

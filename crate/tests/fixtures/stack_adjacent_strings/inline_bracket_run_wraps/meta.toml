@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Run inside a Still-Inline Bracket Takes Its Own Parentheses"
+title       = "A Run Inside a Still-Inline Bracket Takes Its Own Parentheses"
 
 description = '''
-The subscript in `value = registry[...]` never expands onto its own lines, so the run inside it would otherwise sit on the statement's own row. `stack-adjacent-strings` **wraps the run in its own parentheses rather than breaking it in place**, because a continuation at the statement's indent would read as the next statement.
+The subscript in `value = registry[...]` never expands onto lines of its own, so the run inside it would otherwise break onto the statement's own row. **The run is wrapped in its own parentheses rather than broken in place**, because a continuation at the statement's indent would read as the next statement.
 '''

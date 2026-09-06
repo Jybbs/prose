@@ -3,5 +3,5 @@ previewable = true
 title       = "A Raw String Swaps Only Its Delimiters"
 
 description = '''
-`digits` swaps from `r'\d+'` to `r"\d+"` with its body left byte-for-byte, since a raw string carries every backslash into its value and only the delimiters are the rule's to rewrite. `guarded` swaps too, because each `"` in `r'\"exact\"'` already sits behind a backslash and needs none added.
+`digits = r'\d+'` and `guarded = r'\"exact\"'` are raw strings, the second carrying two `"` characters that each already sit behind a backslash. **Both swap to double quotes with their bodies left byte-for-byte**, because a raw string carries every backslash into its value, so only the delimiters are the rule's to rewrite and `guarded` needs no escape added.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Module-Level Conditional Is Still Module Scope"
 
 description = '''
-`default_encoding` sits behind the `sys.platform == "win32"` guard, yet a top-level `if` is still module scope, so the scan descends into it and flags the name with the suggested `DEFAULT_ENCODING` rename. Only a `def`, a `class`, or an `if TYPE_CHECKING:` block ends the descent.
+`default_encoding` is bound behind the `sys.platform == "win32"` guard. **The lint reports it with the suggested `DEFAULT_ENCODING` rename**, because a top-level `if` is still module scope and the scan descends into it. Only a `def`, a `class`, or an `if TYPE_CHECKING:` block ends the descent.
 '''

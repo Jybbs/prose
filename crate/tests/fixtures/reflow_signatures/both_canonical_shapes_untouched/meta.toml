@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Signature Already in Canonical Form Is Left Alone"
+title       = "A Signature Already in One of the Two Forms Is Left as Written"
 
 description = '''
-`already_inline`'s two parameters, `palette` and `target`, fit within both `max-params` and `code-line-length`, so the inline form stays as written. `already_expanded`'s five parameters exceed `max-params`, yet its one-per-line layout already matches what `reflow-signatures` would produce, so **neither signature is edited**.
+`already_inline` takes two parameters, `palette` and `target`, which fit within both `max-params` and `code-line-length`, and `already_expanded` takes five, over `max-params`, written one per line. **Neither signature is edited**, because the inline form is the one the rule would write for the first and the one-per-line form is the one it would write for the second.
 '''

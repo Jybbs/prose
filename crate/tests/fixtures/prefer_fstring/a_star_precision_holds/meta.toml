@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Star Precision Holds"
+title       = "A `*` Precision Keeps the Template"
 
 description = '''
-The `*` in `"%.*f"` reads its precision from the argument list at render time, so one conversion consumes two tuple members, `places` for the digit count and then `measure` for the number itself. A single replacement field has no slot for that second argument, so the line holds.
+The `*` in `"%.*f"` reads its precision from the argument tuple at render time, so the one conversion consumes two members, `places` for the digit count and `measure` for the number. **The line stays as written**, because a single replacement field has no slot for that second argument.
 '''

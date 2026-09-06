@@ -1,10 +1,10 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Chain Inside a Split Operand Settles Behind the Pair"
+title       = "A Chain Inside a Split Operand Is Read After the Pair Settles"
 
 description = '''
-Nothing here moves. The `%` expression runs over budget at a narrow width, so `reflow-parentheses` breaks its operands across rows before the chain rule ever reaches the `os.urandom(8).hex()` sitting inside the right operand.
+The `%` expression is already written with its operands on two rows, and `os.urandom(8).hex()` sits inside the parenthesized right operand. **Nothing changes**, because the two-link chain sits at `max-links` and fits its row, measured against the settled layout of the pair around it.
 
-**That ordering is what the `stack-method-chains` dependency column declares.** Running the chain rule first would leave the surrounding pair unsettled, and the chain would then be measured against a shape about to change underneath it.
+The `stack-method-chains` dependency on `reflow-parentheses` declares that order, so a pair that does split at a narrower width settles before the chain inside it is measured.
 '''

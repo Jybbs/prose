@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Comma Inside a Comment Does Not Hold the Sort"
+title       = "A Comma Inside a Comment Does Not Stop the Sort"
 
 description = '''
-A trailing comment carrying a comma is trivia rather than a positional member sitting between two entries, so the `__all__` list and the keyword run both sort, each comment travelling with its entry.
+The `__all__` list and the keyword run each carry a trailing comment containing a comma, `# first, second` and `# one, two`. **Both sort, each comment moving with its entry**, because a comma inside a comment is trivia rather than a positional member sitting between two entries.
 '''

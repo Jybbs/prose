@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Lists Follow the Same Strip as Dicts"
+title       = "A List Drops the Trailing Comma the Way a Dict Does"
 
 description = '''
-`retired`'s last element, `"INST_2021_0044",`, carries a `,` before the list's closing `]`. **`strip-trailing-commas` scans backward from that `]` and lands on the comma**, applying the identical path used to strip dict values.
+`retired` spreads three strings over one line each, and the last, `"INST_2021_0044",`, carries a `,` before the closing `]`. **That comma is removed**, by the same read from the closing bracket that strips a dict's last entry.
 '''

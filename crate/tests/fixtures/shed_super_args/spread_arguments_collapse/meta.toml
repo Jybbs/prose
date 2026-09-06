@@ -3,5 +3,5 @@ previewable = true
 title       = "An Argument List Spread Across Lines Collapses"
 
 description = '''
-`Logger.dispatch` calls `super(` with `Logger` and `self` each sitting on their own line before `).dispatch(event)`. Everything between the parentheses deletes in one span, collapsing the call onto `super().dispatch(event)` on the callee's own line.
+`Logger.dispatch` calls `super(` with `Logger` and `self` each on its own line before `).dispatch(event)`. **The call collapses to `super().dispatch(event)` on the callee's own line**, because everything between the parentheses is deleted in one span.
 '''

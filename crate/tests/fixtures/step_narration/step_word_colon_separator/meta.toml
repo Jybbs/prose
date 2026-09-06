@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Step Word With a Colon Separator Is Flagged"
+title       = "A `Step 1:` Comment Is Reported"
 
 description = '''
-The comment `# Step 1: validate input` inside `process` matches the **step-word shape with a `:` separator**, wherein the literal word `Step` plus a number is enough and `:` stands in for the dot. The lint reports one diagnostic and leaves the source unchanged.
+`# Step 1: validate input` sits on its own line inside `process`. **`step-narration` reports it**, because the word `Step` followed by a number matches with a `:` separator as well as a `.`, and the source is left as written.
 '''

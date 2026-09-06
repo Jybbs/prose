@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Binding Never Read Stays Quiet"
+title       = "A Binding Never Read Is Not Reported"
 
 description = '''
-`scratch` is written once and read nowhere, so there is no read for its value to drop into. **The binding stays unreported**, this rule speaking only to a binding whose one read the value could stand in for rather than to one nothing consumes.
+`scratch` is written once from `source.build()` and read nowhere, so there is no read its value could replace. **The binding is not reported**, because the rule reports only a binding whose one read its value could stand in for, and a binding nothing reads has no such read.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Stub's None Return Annotation Survives a Leading Docstring"
+title       = "A Stub With a Docstring Keeps Its `-> None`"
 
 description = '''
-`Reader.close` is a `Protocol` method whose body holds `"""Close the reader."""` followed by a single `...`, and `strip-none-return` leaves its `-> None` untouched. A leading docstring does not disqualify a declaration-only stub from keeping its annotation.
+`Reader.close` is a `Protocol` method whose body is the docstring `"""Close the reader."""` followed by a single `...`. **`strip-none-return` leaves its `-> None` in place**, because a docstring ahead of the `...` still leaves the body a declaration-only stub.
 '''

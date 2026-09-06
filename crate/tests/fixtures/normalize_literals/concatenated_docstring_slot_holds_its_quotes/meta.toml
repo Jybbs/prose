@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Concatenated Docstring Slot Holds Its Quotes"
+title       = "A Concatenated Docstring Slot Keeps Its Quotes"
 
 description = '''
-The first statement in `render` is `'Summary ' 'continued.'`, an implicit concatenation sitting where a docstring would, and a concatenation is not a docstring `frame-docstrings` can reframe. **Both parts keep their single quotes**, whereas `'body'` in the return beside them swaps to `"body"`.
+The first statement in `render` is `'Summary ' 'continued.'`, an implicit concatenation sitting where a docstring would, with `return 'body'` below it. **Both parts keep their single quotes, whereas `'body'` swaps to `"body"`**, because the quotes facet skips whatever sits in the docstring slot, and a concatenation there is not a docstring `frame-docstrings` can reframe either.
 '''

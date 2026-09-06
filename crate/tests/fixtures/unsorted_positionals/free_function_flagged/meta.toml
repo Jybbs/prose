@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "An Out-of-Order Free Function Is Flagged"
+title       = "An Out-of-Order Free Function Is Reported"
 
 description = '''
-`merge(target, source, fallback=None)` lists its parameters out of alphabetical order, and the lint **reports the run without reordering it**. A reorder would rebind every call site that passes arguments by position, so the diagnostic points the order out and leaves the fix to whoever can check the callers.
+`merge(target, source, fallback=None)` lists its parameters out of alphabetical order. **The lint reports the run and leaves the source as written**, because reordering would rebind every call site that passes arguments by position, so the fix is left to a reader who can check the callers.
 '''

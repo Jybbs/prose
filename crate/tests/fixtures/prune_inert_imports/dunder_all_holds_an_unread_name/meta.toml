@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Name Listed in `__all__` Holds Its Import"
+title       = "A Name Listed in `__all__` Keeps Its Import"
 
 description = '''
-Nothing in the module body reads `loads`, but `__all__ = ["loads"]` names it as part of the module's public interface. **The import holds** and no diagnostic is reported, because pruning it would break the re-export.
+Nothing in the body reads `loads`, and `__all__ = ["loads"]` lists it. **The import stays and no diagnostic is reported**, because a name in `__all__` is a re-export the rule leaves in place.
 '''

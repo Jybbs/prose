@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "An Over-Budget Colon Row Partitions Out of the Run"
+title       = "An Over-Budget Row Leaves the Colon Run"
 
 description = '''
-Both entries of `x` already fit on their own lines, but padding `"b"`'s `:` out to match the wider `"aaaaaaaaaaaaa"` would push that row past `code-line-length`.
-
-**The over-budget row is dropped from the run and left unpadded**, which is the same treatment an outlier past `max-shift` gets. That leaves `"aaaaaaaaaaaaa"` on its own, and a single entry forms no group, so the dict ends up with tight `:` spacing throughout rather than padding past the budget.
+Both entries of `x` fit on their own lines as written, and padding the `:` of `"b"` out to match the wider `"aaaaaaaaaaaaa"` would push that row past `code-line-length`. **The over-budget row is dropped from the run and left unpadded**, the same treatment a row past `max-shift` takes, and with `"aaaaaaaaaaaaa"` left alone a single entry forms no group, so the dict keeps tight `:` spacing throughout.
 '''

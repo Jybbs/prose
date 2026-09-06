@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "The `drop-duplicates` Facet Off Keeps Every Repeat"
+title       = "With `drop-duplicates` Off a Repeat Stays"
 
 description = '''
-The config sets `drop-duplicates = false`, so the second `import os` **stays as written** even though it repeats the line above it. The rest of the rule still applies, though with `os` read through `os.getcwd()` there is nothing left to prune.
+`drop-duplicates = false` is set, `import os` appears twice, and `os.getcwd()` reads the name. **The second `import os` stays as written**, because the facet that removes a repeat is off, and `drop-unreferenced` still runs but has nothing to remove with `os` read.
 '''

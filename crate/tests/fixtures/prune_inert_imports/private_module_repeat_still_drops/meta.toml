@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Repeat Drops Even Out of a Private Module"
+title       = "A Repeat Is Removed Even From a Private Module"
 
 description = '''
-Every name here comes out of an underscore-named module, which holds an unread name as part of the importing module's surface, so **`unread` stays**. That marker reads an unread name rather than a repeated statement, so **the second `thing` still drops** as the rebind it is.
+Every name here comes from `pkg._impl`, `thing` is imported twice and read once by `print(thing)`, and nothing reads `unread`. **The second `thing` import is removed and `unread` stays**, because the private-module marker exempts an unread name and not a repeated statement.
 '''

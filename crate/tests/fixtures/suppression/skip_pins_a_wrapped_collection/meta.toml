@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Skip on a Wrapped Collection Keeps It Exploded"
+title       = "A Skip on a Wrapped Collection Keeps It Exploded"
 
 description = '''
-A `# fmt: skip` trailing `items`'s multi-line list **spans every line between its `[` and `]`**, not just the line the comment itself sits on.
-
-`1` and `2` therefore stay exploded one per line, where rejoining them onto a single line would otherwise fit comfortably.
+A `# fmt: skip` trails the `]` of `items`'s multi-line list. **The directive covers every line between the `[` and the `]`**, not the line it sits on alone, so `1` and `2` stay one per line where rejoining them onto a single line would otherwise fit.
 '''

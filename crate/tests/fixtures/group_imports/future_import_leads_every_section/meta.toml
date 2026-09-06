@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A `__future__` Import Leads Every Section"
+title       = "A `__future__` Import Stays Ahead of Every Section"
 
 description = '''
-The module opens with `from __future__ import annotations` above a mix of bare, external, and first-party imports, `myapp` being named in the config's `first-party` list. **The future import holds the front while the rest partition into their sections**, the placement Python requires of the directive, so `import os` rises above `from collections import Counter` and `from myapp import helper` closes the run.
+The module opens with `from __future__ import annotations` above a mix of bare, external, and first-party imports, with `myapp` named in `first-party`. **The directive stays first while the rest partition into their sections**, so `import os` moves above `from collections import Counter` and `from myapp import helper` closes the run, because Python requires the directive ahead of every other statement.
 '''

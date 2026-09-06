@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Protocol Method Stub's None Return Annotation Survives"
+title       = "A `Protocol` Method Stub Keeps Its `-> None`"
 
 description = '''
-`Reader.close` is a `Protocol` method whose entire body is a single `...`, and `strip-none-return` leaves its `-> None` untouched. The placeholder carries the contract a structural type checker reads, not a redundant annotation the rule strips.
+`Reader.close` is a `Protocol` method whose whole body is a single `...`. **`strip-none-return` leaves its `-> None` in place**, because the annotation on a `...` body is the return type a structural type checker reads rather than a restatement of a body that returns nothing.
 '''

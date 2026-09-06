@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Parenthesized Argument Lists Strip the Trailing Comma"
+title       = "A Parenthesized Last Argument Still Drops the Trailing Comma"
 
 description = '''
-`compute`'s arguments, `(a + b)` and `(c * d)`, each wrap their own expression in parentheses, so an inner `)` sits between the expression and the call's trailing `,`. **`strip-trailing-commas` reads backward from the call's outer `)` and reaches that comma directly**, never needing to step over the inner paren.
+`compute` takes `(a + b)` and `(c * d)`, each wrapped in its own parentheses, so an inner `)` sits between the last expression and the call's trailing `,`. **The comma after `(c * d)` is removed**, because the rule reads backward from the call's outer `)` and reaches the comma directly, with the inner `)` never in its way.
 '''

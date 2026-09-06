@@ -1,5 +1,5 @@
 ---
-caption : "Expands a one-line docstring into the multi-line block shape."
+caption : "Expands a single-line triple-quoted docstring so its opener, its body, and its closer each sit on a line of their own."
 related : [wrap-docstrings, frame-docstrings]
 layout  : doc
 ---
@@ -8,11 +8,11 @@ layout  : doc
 
 <RuleLayout rule="expand_docstrings">
 
-A single-line docstring (*opener, body, and closer all on one line*) reads as a kind of inline comment, and many downstream tools (*Sphinx, IDE preview surfaces, doctest, PEP 257-aware linters*) treat it inconsistently with its multi-line sibling. `expand-docstrings` expands every single-line triple-quoted docstring into the canonical multi-line shape, so a project's documentation surface presents one consistent structure across every documented unit.
+`expand-docstrings` rewrites every single-line triple-quoted docstring (*opener, body, and closer all on one line*) into the multi-line form, putting the opener, the body, and the closer each on a line of its own, so every documented unit in a project shows one structure. A single-line docstring reads as a kind of inline comment, and downstream tools (*Sphinx, IDE hover previews, doctest, PEP 257-aware linters*) treat it differently from its multi-line sibling.
 
-The rule fires on module, class, and function single-line docstrings. The body content is preserved verbatim across the expansion, and the resulting multi-line form passes immediately to [[frame-docstrings]] for the opener-and-closer placement and to [[wrap-docstrings]] for the line-budget wrap.
+The rule fires on module, class, and function single-line docstrings. The body text moves onto its own line at the docstring's indent with its leading and trailing whitespace trimmed and nothing else changed. [[frame-docstrings]] runs ahead of this rule and settles the quotes, so a requoted one-liner expands in the same pass, and [[wrap-docstrings]] then wraps the description prose against its budget.
 
-The walker [[docstring]] reads against the PEP 257 definition, so f-string forms *(`f"""..."""`)* and concatenated string forms never qualify as docstrings and the rule skips them. Raw-prefixed *(`r"""`)* and byte-prefixed *(`b"""`)* single-line docstrings expand the same way as plain triple-quoted forms, with the prefix preserved verbatim on the opener. An empty single-line docstring *(`""""""`)* expands to a multi-line shape with a blank line between the opener and the closer. The PEP 257 summary-line convention is out of scope for this rule, leaving the body content's shape to authors and downstream conventions.
+The [[docstring]] walker reads against the PEP 257 definition, so an f-string (*`f"""..."""`*), a bytes literal (*`b"""..."""`*), and a concatenated string never count as docstrings and the rule skips them. A raw-prefixed (*`r"""`*) single-line docstring expands the same way as a plain one, with the prefix kept on the opener. A docstring whose body is empty or whitespace alone (*`""""""`*) stays as written, as does a non-triple-quoted one-liner and a docstring sharing the `def` line with its definition. The PEP 257 summary-line convention is out of scope for this rule, leaving the body's wording to authors and downstream conventions.
 
 <template #related-after>
 

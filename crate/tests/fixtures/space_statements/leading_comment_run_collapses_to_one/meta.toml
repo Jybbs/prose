@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Blank Run Below a Module's Leading Comment Collapses to One"
+title       = "The Blank Run Below a Leading Description Collapses to One Line"
 
 description = '''
-Three blank lines separate `# Licensed under the MIT License` from `import os`. **The cap reaches a description as much as a banner**, so the run collapses to the one blank the author's own spacing already carried.
+Three blank lines separate `# Licensed under the MIT License`, opening the file, from `import os`. **The run collapses to one blank line**, because the cap below a leading block applies to a description as much as to a banner, and one blank line is what the author's spacing already carried.
 '''

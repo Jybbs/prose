@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A `0` Cap Settles Every Row on the Two-Space Floor"
+title       = "A `0` Cap Sets Every Row at the Two-Space Minimum"
 
 description = '''
-Setting `max-shift = 0` forbids any shift, so no comment may move to meet another and `seed()`, `flush_all()`, and `warm_now()` each stand alone. The rule only settles, taking the hand-set column back down to the two spaces PEP 8 prescribes.
+`seed()`, `flush_all()`, and `warm_now()` carry comments padded by hand to one column, and the case runs with `max-shift = 0`. **Every hand-set gap closes to the two spaces PEP 8 prescribes**, because `0` forbids padding altogether, so no comment moves to meet another and each row stands alone.
 '''

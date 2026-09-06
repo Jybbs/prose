@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "The Sole Directive Is Removed, Leaving Its Blank Line"
+title       = "A Sole Directive Is Removed and Its Blank Line Stays"
 
 description = '''
-Neither `x = 1` nor `main` carries any type annotation anywhere in the module, so `from __future__ import annotations` has nothing to defer. **The sole import line is removed**, leaving the blank line that followed it as the file's new leading blank.
+Neither `x = 1` nor `main` carries an annotation, so `from __future__ import annotations` defers nothing. **The import line is removed and the blank line below it stays as the file's first line**, because the rule removes the statement's own rows and nothing else.
 '''

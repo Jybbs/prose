@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Dict Value Fits Against the Canonical Separator"
+title       = "A Dict Value Is Measured From the Plain `: ` Separator"
 
 description = '''
-[[reflow-collections]] measures a dict value from the canonical `": "` past its key rather than from the padding the key carries, the column [[align-colons]] pads only where the cap allows and [[strip-stranded-padding]] otherwise collapses. The value the sort leaves last rejoins onto the cap, whatever padding the source wrote.
+`tagdefs` writes two spaces after each key's `:`, and `alphabetize-siblings` moves `"stderr"` ahead of `"stdout"`, the comment above `"stdout"` moving with it. **The `"stdout"` value, last after the sort, stays on one row at exactly the 40-column budget**, because [[reflow-collections]] measures a value from the plain `": "` past its key rather than from the two spaces the source wrote, and the row is written back at that width, whereas the `"stderr"` value explodes.
 '''

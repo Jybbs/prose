@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Hand-Wrapped `super()` Call Rejoins Before It Sheds"
+title       = "A Hand-Wrapped `super()` Call Joins Before Its Arguments Shed"
 
 description = '''
-The author wrapped the `__init__` call's arguments under its open parenthesis, one per line. [[reflow-calls]] rejoins `host`, `port`, and `timeout` onto one row, and [[shed-super-args]] then sheds `SecureConnection` and `self` from the call, leaving `super().__init__(host, port, timeout)`. Rejoining first is what makes the shed reachable, because the hand-aligned continuation lines are gone by the time the shortened call is measured.
+`SecureConnection.__init__` calls `super(SecureConnection, self).__init__(...)` with `host`, `port`, and `timeout` wrapped one per line under the open parenthesis. [[reflow-calls]] joins the three onto one row, and **[[shed-super-args]] then removes `SecureConnection` and `self` from the call**, leaving `super().__init__(host, port, timeout)`, because the hand-aligned continuation lines are gone by the time the shortened call is measured.
 '''

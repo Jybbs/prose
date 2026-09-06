@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Blank Lines and Form Changes Split Groups"
+title       = "Blank Lines Split the Imports Into Separate Groups"
 
 description = '''
-Blank lines cut these imports into three clusters, and the middle one also switches form, from `from` imports to aliased `import … as` lines.
-
-**Each cluster aligns at a column of its own.** `collections` and `typing` share one `import` column, `re` and `json` share an `as` column, and the trailing `sys` and `os.path` pair aligns by itself at a narrower column than the top block's.
+Two `from` imports, two `import … as` lines, and two more `from` imports sit in three blocks separated by blank lines. **Each block aligns on a column of its own**, so `collections` and `typing` share one `import` column, `re` and `json` share an `as` column, and `sys` and `os.path` share an `import` column narrower than the first block's. A blank line ends a run, so each block aligns alone whatever form its neighbours take.
 '''

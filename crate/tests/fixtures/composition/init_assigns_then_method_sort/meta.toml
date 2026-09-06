@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "`__init__` Self-Assigns Align, Then Methods Sort"
+title       = "`__init__` Assignments Align and the Methods Sort"
 
 description = '''
-`Service.__init__` opens with three `self` assignments, and the methods after it arrive out of order. **The assignments pad their `=` into one column inside `__init__`, and the methods sort alphabetically so `alpha`, `beta`, and `zeta` follow in order**, with `space-statements` inserting a single blank line between every member. The assignments themselves stay in source order, in that sorting reaches the methods rather than the statements inside one.
+`Service.__init__` opens with three `self` assignments, and the methods after it arrive out of order. **The assignments pad their `=` into one column inside `__init__`, and the methods sort so `alpha`, `beta`, and `zeta` follow in order**, with `space-statements` writing one blank line between every member. The assignments keep their source order, because the sort reorders the methods and not the statements inside one.
 '''

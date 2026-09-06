@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Positional-Binding Decorator Silences the Lint"
+title       = "A Decorator Called With Arguments Silences the Report"
 
 description = '''
-`run(target, source)` lists its parameters out of alphabetical order, yet the case produces **no diagnostic** because `click.argument` is a decorator that binds arguments by position. Reordering the parameters would change which value lands in each one, so the lint skips any function under such a decorator.
+`run(target, source)` sits under `@click.argument("path")`, a decorator called with a positional argument, and lists its parameters out of alphabetical order. **The lint reports nothing**, because such a decorator may bind values to the parameters by slot, so a reorder would change which value each parameter receives.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Zero Blanks between Module Defs Insert Two"
+title       = "No Blank Line Between Module Defs Widens to Two"
 
 description = '''
-`def second` opens on the very next line after `first`'s `return 1`, with no blank between the two defs. **The gap expands to the standard two blank lines**, in that the rule inserts the missing newlines into the whitespace between the statements.
+`def second():` opens on the line directly after `first`'s `return 1`, with no blank line between the two defs. **Two blank lines are inserted**, the canonical count between module-level definitions, because the rule writes the missing newlines into the whitespace between the two statements.
 '''

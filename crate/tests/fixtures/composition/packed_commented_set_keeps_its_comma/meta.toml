@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Packed Commented Set Keeps Its Comma"
+title       = "A Packed Set With a Comment Keeps Its Written Commas"
 
 description = '''
-The `# note` comment sitting inside the set holds its order under `alphabetize-siblings`, so no element moves.
-
-`reflow-collections` therefore reads **the comma each element carries as written** rather than the one a sort would have left behind. The single element too wide for the 40-column budget expands onto rows of its own, and the packed rows around it keep both their commas and their places.
+`s` is a set packed across three rows with `# note` at the end of the first. The comment inside the set keeps its order fixed under `alphabetize-siblings`, so no element moves, and **`reflow-collections` measures each element with the comma it carries as written** rather than the one a sort would have left. The one element too wide for the 40-column budget explodes onto rows of its own, and the packed rows around it keep their commas and their places.
 '''

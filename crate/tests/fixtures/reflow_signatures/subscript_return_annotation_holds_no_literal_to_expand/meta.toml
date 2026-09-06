@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Subscript Return Annotation Holds No Literal to Expand"
+title       = "A Subscript Return Annotation Leaves Nothing Else to Expand"
 
 description = '''
-The inline row overflows and its only literal is the subscript's own slice, which carries no bracket pair `reflow-collections` hangs rows on, so nothing ends the opening row early. The signature expands its parameters rather than resting on an expansion that never arrives and leaving the row over the budget.
+`_parse_file`'s inline row overflows the budget, and the only literal on it is the subscript in the `Generator[ParsedLine, None, None]` return annotation, which carries no bracket pair `reflow-collections` explodes. **The signature expands its parameters one per line**, because nothing else on the row can end the opening row early, so waiting on an expansion that never arrives would leave the row over the budget.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Rows Past the Closer Follow Their Anchor"
+title       = "Rows Aligned Past the Removed Closer Follow Their Anchor"
 
 description = '''
-Shedding the closer moves the text that follows it along the same row.
-
-A later row aligned to that text **follows it by the same number of columns**, so the second argument stays lined up under its own opener rather than being left behind at the column the opener used to sit at.
+Inside `gg(...)`, removing the redundant pair moves the second argument that follows its `)` left along the same row. **A later row aligned to that argument moves left by the same number of columns**, so it stays lined up under its own opener rather than staying at the column the opener used to sit at.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Turning the Facet Off Leaves the Bare Report"
+title       = "Turning `suggest-string-splits` Off Leaves the Bare Report"
 
 description = '''
-With `suggest-string-splits = false`, the finding on `BANNER`'s 54-column line carries no suggested split, only the report naming the line and its budget. The message still omits `with no legal reshape`, because the split of this string exists whether or not the finding spells it out.
+`BANNER`'s 54-column line overflows the 40-column budget, with `suggest-string-splits = false` set for the rule. **The finding carries no suggested split, only the report naming the line and its budget**, and the message still omits `with no legal reshape`, because the split of this string exists whether or not the finding spells it out.
 '''

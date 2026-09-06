@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Literal-Valued Bindings Sort within Tier Zero"
+title       = "Literal-Valued Constants Sort by Name"
 
 description = '''
-`charlie`, `alpha`, and `bravo` each bind a string literal and none reads another, so the dependency graph inside the run is empty. **The run alphabetizes freely**, landing `alpha = "first"` above `bravo = "second"` above `charlie = "third"`.
+`charlie`, `alpha`, and `bravo` each bind a string literal and none reads another, so the run carries no dependency. **The three sort by name**, `alpha = "first"` above `bravo = "second"` above `charlie = "third"`.
 '''

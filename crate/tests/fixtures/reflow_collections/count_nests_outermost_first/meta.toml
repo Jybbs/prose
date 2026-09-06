@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "The Count Trigger Resolves Each Dict Level on Its Own Entries"
+title       = "The Count Trigger Reads Each Nested Dict on Its Own Entries"
 
 description = '''
-The count trigger fires once per dict, so the four-entry `outer` expands while its two-entry `"inner"` value stays inline. In `nested_trips` the outer level holds only three entries, at the cap, yet the four-entry `"deep"` value crosses it, expands, and **forces its enclosing parent multiline** as well.
+`outer` has four entries, one of them the two-entry dict under `"inner"`, and `nested_trips` has three entries, one of them the four-entry dict under `"deep"`. **`outer` expands and its `"inner"` value stays inline, whereas in `nested_trips` the `"deep"` value expands and takes its enclosing dict with it**, because the count trigger fires once per dict on that dict's own entries, and every collection enclosing an expanded dict expands too.
 '''

@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "A Splittable String Carries the Concatenated Form"
+title       = "A Splittable String Is Offered the Concatenated Form"
 
 description = '''
-`BANNER`'s 54-column line overflows inside one string literal, and the literal's interior spaces give the break somewhere legal to land, so the finding carries the parenthesized adjacent-literal form as a suggestion. Python joins the parts back into the identical value at compile time, yet **`prose format` never writes them**, because the chosen break points would become source a later edit has to reflow by hand.
+`BANNER`'s 54-column line overflows the 40-column budget inside one string literal whose interior spaces give a break somewhere legal to fall. **The finding carries the parenthesized adjacent-literal form as a suggestion, and `prose format` never writes it**, because Python joins the parts back into the identical value at compile time, whereas the chosen break points would become source a later edit has to reflow by hand.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Comment Pins a Comprehension at Its Source Shape"
+title       = "A Comment Inside a Comprehension Keeps Its Breaks"
 
 description = '''
-Nothing here moves. The `squares` comprehension would fit on one line comfortably.
-
-The comment trailing `value * value` has **no place in the joined form**, so collapsing the comprehension would silently drop it. The comment therefore pins the comprehension at the line breaks the source gave it.
+The `squares` comprehension would fit on one line, and a comment trails its `value * value` row. **The comprehension is left as written**, because the joined form has no row for the comment to trail, so rejoining would drop it.
 '''

@@ -1,9 +1,9 @@
 [docs]
 previewable = true
-title       = "A `noqa` Marker Repeats across the Split"
+title       = "A `noqa` Marker Repeats Across the Split"
 
 description = '''
-With `import-line-length` set to `40`, `from pkg import alpha, beta, gamma, delta` overflows and splits across two statements.
+With `import-line-length` set to `40`, `from pkg import alpha, beta, gamma, delta  # noqa: F401` runs past the budget and splits across two statements.
 
-The trailing `# noqa: F401` marker **repeats on every row the split writes**, so each name it covered still carries it. A rule reading the marker therefore holds the same set of names after the split that it held before it.
+**The trailing `# noqa: F401` marker repeats on every line the split writes**, so each name it covered still carries it, and a linter reading the marker suppresses the same set of names after the split as before it.
 '''

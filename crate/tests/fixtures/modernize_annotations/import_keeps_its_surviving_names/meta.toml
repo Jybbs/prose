@@ -3,5 +3,5 @@ previewable = true
 title       = "Only the Names the Rewrite Read Are Dropped"
 
 description = '''
-`Optional[int]` rewrites to `int | None`, leaving `Optional` unread, whereas the `cast(object, value)` call still reads `cast` at runtime. Only `Optional` is dropped from the import, which survives as `from typing import cast`.
+`from typing import Optional, cast` feeds `value: Optional[int]` and the `cast(object, value)` call in `widen`. **`Optional[int]` rewrites to `int | None` and only `Optional` drops from the import**, which survives as `from typing import cast`, because the call still reads `cast` at runtime.
 '''

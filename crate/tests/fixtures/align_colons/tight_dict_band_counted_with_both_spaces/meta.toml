@@ -1,9 +1,9 @@
 [docs]
 previewable = true
-title       = "A Tight Dict Band Is Measured With Both Inserted Spaces"
+title       = "Both Inserted Spaces Count Toward the Line Budget"
 
 description = '''
-Every entry of `paths` sits flush against its `:`, so aligning them inserts one space before each colon and another after it.
+Every entry of `paths` sits flush against its `:`, so aligning them inserts one space before each colon and another after it, and `config.toml` sets `code-line-length` to 42.
 
-**Both inserted spaces count toward the budget.** At the shared column that puts the `"label"` row, with its long `"docs/annual-summary.html"` value, one column past the 42-column limit, so that row partitions out of the run. It keeps its colon flush as a lone entry, while `"verbose"` and `"dry"` align beneath it.
+**Both inserted spaces count toward the budget.** At the shared column that puts the `"label"` row, with its long `"docs/annual-summary.html"` value, one column past the limit, so that row partitions out of the run, keeps its `:` flush against the key, and gains only the one space after it, whereas `"verbose"` and `"dry"` align beneath it.
 '''

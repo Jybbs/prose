@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Comment Inside the Chain Pins Its Shape"
+title       = "A Comment Inside the Chain Keeps Its Layout"
 
 description = '''
-The `# keep the shape` comment sits mid-chain on the `.order(` row. Breaking a chain relocates every link, which would move the comment away from the row it annotates, so a chain spanning a comment holds the shape the source gave it.
+`query.filter(a).order(  # keep this layout` carries a comment mid-chain on the `.order(` row. **The chain keeps the layout the source gave it**, because breaking it would move every link and carry the comment away from the row it describes.
 '''

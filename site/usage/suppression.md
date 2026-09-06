@@ -1,24 +1,24 @@
 # Suppression
 
-*Prose* is opinionated by design, and most projects benefit from running every rule at its default. Every codebase has its corners, though, and those corners want a way to opt out without dropping a whole rule from the pipeline. The decision is which scope the exception lives at, because *Prose* exposes suppression at four scopes *(file, block, line, dict literal)* and each one fits a different shape of exception.
+*Prose* is opinionated by design, and most projects run every rule at its default. A suppression directive exempts one place from a rule without turning that rule off for the whole project. *Prose* offers suppression at the file, block, line, and dict-literal scopes, and choosing a directive means choosing the narrowest scope that covers the exception.
 
 ## Scope Decisions
 
-Each scope carries the directive that fits exceptions at its width. The colored brackets in the gutter trace where each scope binds against a representative source, and the right-side legend gathers every directive against the scope it serves.
+Each directive covers exceptions at one scope, and the colored brackets in the gutter mark where each scope applies in a sample file, with the legend on the right listing every directive under the scope it covers.
 
 <ScopeSpecimen />
 
 ## When to Reach for Each
 
-Each suppression directive sits in *Prose*'s [[suppression-map]] index alongside the rule it applies to, and a narrower scope leaves the rest of the file under *Prose*'s defaults. The subsections below pair each scope with the kind of exception it fits, working from broadest to narrowest.
+The subsections below go from the broadest scope to the narrowest, because a narrower scope leaves the rest of the file under the defaults. Whichever scope a directive takes, it is recorded in the file's [[suppression-map]], and each rule checks that map before writing an edit or reporting a finding.
 
 ### Disabling a Whole File
 
-`# prose: off` on a comment line near the top of the file short-circuits the whole pipeline to identity before any rule fires. The directive fits generated files, vendored snapshots, or bridging code whose every line carries a constraint a narrower marker would smother. Reach for it only when block-level marker accumulation would itself become noise, because the file-level form opts the file out of every rule *Prose* might add in the future too.
+`# prose: off` on its own comment line near the top of a file turns every rule off for that file, before any rule runs. It fits generated files, vendored snapshots, and bridging code where nearly every line has a reason to stay as written. Reach for it only when block markers would pile up, because the file-level directive also exempts the file from every rule a later release adds.
 
 ### Bracketing a Block
 
-Block markers fit the case wherein several adjacent lines carry a hand-crafted layout *(a sparse matrix laid out as a 4×4 grid, a state-transition table whose row alignment carries the diagram, an ASCII-art schematic embedded in a comment-fenced region)*. The `# fmt: off` and `# fmt: on` pair brackets the region, leaving every line outside the markers under *Prose*'s defaults. Projects migrating from `yapf` get `# yapf: disable` and `# yapf: enable` as recognized aliases, so the toolchain swap leaves existing markers intact.
+Block markers fit several adjacent lines that carry a hand-made layout *(a sparse matrix written as a 4×4 grid, a state-transition table whose row alignment is the diagram, ASCII art inside a comment)*. `# fmt: off` and `# fmt: on` enclose the region, and every line outside them stays under the defaults. `# yapf: disable` and `# yapf: enable` work as aliases, so a project moving from `yapf` keeps its existing markers.
 
 ```python
 # fmt: off
@@ -29,21 +29,21 @@ weights = [[0.7, 0.1, 0.1, 0.1],
 # fmt: on
 ```
 
-The bracket bounds its own scope, leaving rules outside the markers to fire on every sibling, so [[alphabetize-siblings]]'s module-level branch reorders the assigns above and below the bracket while the bracketed region stays untouched. The directive confines suppression to the region between `# fmt: off` and `# fmt: on` rather than disabling formatting for the surrounding lines.
+The markers exempt only the lines between them, so [[alphabetize-siblings]] still reorders the module-level assignments above and below the bracket, and the bracketed region itself stays exactly as written.
 
 ### Tagging a Line
 
-Line-level directives split by severity, because rewrites and lints take different escape hatches.
+Line-level directives come in two families, one for rewrites and one for lints, because the two need different escapes.
 
-The **`skip`** family covers rewrite suppression. `# fmt: skip` *(equivalent to `# prose: skip`)* exempts the whole logical line it trails from every auto-fix rule, so a statement wrapped across several physical lines is held from its opening line through the directive's own, fitting cases wherein a single statement carries a deliberate token layout *(a hand-padded dict expression, a one-off argument list whose spacing carries intent)*. `# prose: skip[<rule>]` narrows to the listed rules, so a project that wants only `align-equals` held on one statement writes `# prose: skip[align-equals]` and leaves the other rewrite rules free to fire. When the exempted statement occupies a single line inside an alignment group, the group's other rows still align as one block around it, so the held row reads as a deliberate exception rather than collapsing the surrounding alignment.
+The **`skip`** family exempts a line from rewrites, where `# fmt: skip` *(or its equivalent `# prose: skip`)* at the end of a statement exempts the whole logical line from every auto-fix rule, so a statement spanning several physical lines is exempt from its first line through the line carrying the directive. It fits a statement whose spacing is deliberate *(a hand-padded dict, a one-off argument list laid out to read a certain way)*. `# prose: skip[<rule>]` narrows the exemption to the named rules, where `# prose: skip[align-equals]` exempts one statement from `align-equals` and leaves every other rewrite rule free to run. When the exempted statement is a single line inside an alignment group, the other rows still align around it, so the exempt row reads as a deliberate exception rather than breaking the group.
 
-The **`ignore`** family covers lint suppression. `# prose: ignore[<rule>]` exempts the line from the named lint rules, fitting cases wherein the lint's recommended refactor doesn't apply *(a constant the project genuinely wants pinned at module scope, a binding whose name documents what the inlined expression would leave unnamed)*. A bare `# prose: ignore` widens to every lint rule on the line, and the bracketed form scopes precisely.
+The **`ignore`** family silences lints, where `# prose: ignore[<rule>]` at the end of a line silences the named lint rules on it, for a case where the lint's suggested change does not apply *(a constant the project reassigns on purpose, a binding whose name explains a value the inlined expression would leave unnamed)*. A bare `# prose: ignore` silences every lint on the line.
 
-The two families stay separate, so a statement that needs its layout pinned and its lint silenced carries one of each. Only the block markers cover both at once, a `# fmt: off` region suppressing rewrites and lint diagnostics together for every line it brackets.
+The two families stay separate, so a statement that needs both its layout kept and its lint silenced carries one of each. Only the block markers cover both at once, since a `# fmt: off` region suppresses rewrites and lint diagnostics together for every line it encloses.
 
 ### Pinning a Dict Literal
 
-`# prose: keep` is the one directive tied to a single construct. [[alphabetize-siblings]] reorders dict entries by key as its default, which is the wrong call when source order encodes meaning *(a pipeline whose stages run in declared order, a state machine whose transitions read top-to-bottom as a narrative, a dispatch table whose first match wins)*. The marker on the opening `{` line or the closing `}` line tells [[alphabetize-siblings]] to leave that one literal's authored order alone, and [[band-constants]] reads it too, pinning the statement where the author left it rather than gathering it into the leading band. Where a whole project reads its dicts positionally, the `sort-dict-keys` facet turns the reorder off everywhere and leaves the directive for the remaining exceptions. The same marker on an `__all__` or `__slots__` sequence holds that one hand-curated roster, with the `sort-dunder-lists` facet as its project-wide counterpart.
+`# prose: keep` on the opening `{` line or the closing `}` line of a dict literal keeps that one literal's order as written, and it is the one directive tied to a single construct. The default it overrides is [[alphabetize-siblings]] sorting dict entries by key, which is wrong where the source order carries meaning *(a pipeline whose stages run in the order written, a state machine whose transitions read top to bottom, a dispatch table where the first match wins)*. [[band-constants]] reads the same marker and leaves the statement where the author put it rather than gathering it into the band. Where a whole project reads its dicts in order, the `sort-dict-keys` facet turns the sort off everywhere, leaving the directive for the remaining exceptions. The same marker on an `__all__` or `__slots__` list keeps that one hand-ordered list, and the `sort-dunder-lists` facet is its project-wide counterpart.
 
 ```python
 stages = {  # prose: keep
@@ -56,4 +56,4 @@ stages = {  # prose: keep
 
 ## See Also
 
-For the exact directive syntax, alias surfaces, malformed-directive behavior, and composition rules, see the [**Suppression Directives**](/reference/suppression-directives) reference. For the per-rule `enabled` toggle that disables a rule at the configuration level rather than per-scope, see the [**Configuration**](/reference/configuration) reference.
+The [**Suppression Directives**](/reference/suppression-directives) reference gives the exact syntax of every directive, its aliases, what happens to a malformed directive, and how directives combine. The [**Configuration**](/reference/configuration) reference covers the per-rule `enabled` facet, which turns a rule off for the whole project rather than for one place.

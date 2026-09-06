@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Exploded Keyword's Parenthesized Value Keeps Its Parentheses"
+title       = "A Keyword's Parenthesized Value Keeps Its Parentheses"
 
 description = '''
-`host`'s value arrives wrapped as `(1 + 2)`, and the parentheses survive the alignment untouched. The rewrite normalizes only the spacing around each `=`, stopping before the `(`, so `host` and `port` land on a shared column with each value's own text intact.
+`host`'s value arrives as `(1 + 2)` inside the exploded `connect` call, with `port=3` beneath it. **`host` and `port` align on one `=` column and the parentheses stay in place**, because the rewrite changes only the spacing around each `=` and stops before the `(`.
 '''

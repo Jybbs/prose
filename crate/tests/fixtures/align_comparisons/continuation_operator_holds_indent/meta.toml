@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Continuation-Line Operator Holds Its Indent"
+title       = "An Operator Opening a Continuation Line Leaves the Run"
 
 description = '''
-The `in` of `"supports_collation" in model.required_features` opens a continuation line, leaving its left side on the line above. **The cross-line operand drops out of the run** rather than aligning against `collation is None`, so every line keeps its indentation untouched.
+The `in` of `"supports_collation" in model.required_features` opens a continuation line, leaving its left operand on the line above. **The operand whose operator sits on a different line from its left side leaves the run**, so nothing aligns against `collation is None` and every line keeps its indentation.
 '''

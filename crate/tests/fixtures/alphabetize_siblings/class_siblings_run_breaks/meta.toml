@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "Consecutive Class Siblings Sort, Pinned Statements Break the Run"
+title       = "Consecutive Class Siblings Sort by Name"
 
 description = '''
-Three sibling classes sit at module level with `Gamma` written first, and the run sorts them alphabetically into `Alpha`, `Beta`, `Gamma`. A reader scanning the module then meets its classes in name order rather than the order the file grew in.
+Three sibling classes sit at module level with `Gamma` written first. **The run sorts them into `Alpha`, `Beta`, `Gamma`**, so a reader scanning the module meets its classes in name order rather than the order the file grew in.
 '''

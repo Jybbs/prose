@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "A Test Against None Reads as an Identity Check"
+title       = "A Test Against `None` Becomes an Identity Check"
 
 description = '''
-`value == None` becomes `value is None`, and `fallback != None` becomes `fallback is not None`. `None` is a singleton, so PEP 8 prescribes the identity form for any comparison against it, and the rule rewrites both operators to match.
+`value == None` and `fallback != None` each compare against `None` with an equality operator. **`value == None` becomes `value is None` and `fallback != None` becomes `fallback is not None`**, because `None` is a singleton and PEP 8 prescribes the identity form for any comparison against it.
 '''

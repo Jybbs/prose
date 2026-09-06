@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Param Colons and Defaults Align in Width Groups"
+title       = "Parameter Colons and Defaults Align in Two Columns"
 
 description = '''
-The `configure` signature arrives already expanded, its four typed parameters carrying defaults at widths from `host` to `timeout_seconds`. **`align-colons` pads every name to one shared `:` column set by `timeout_seconds`, and `align-equals` pads every annotation to one shared `=` column set by `float`**, so all four rows read as name, type, default.
+`configure`'s signature arrives exploded, its four typed parameters carrying defaults at widths from `host` to `timeout_seconds`. **`align-colons` pads every name to one `:` column set by `timeout_seconds`, and `align-equals` pads every annotation to one `=` column set by `float`**, so all four rows read as name, type, default.
 '''

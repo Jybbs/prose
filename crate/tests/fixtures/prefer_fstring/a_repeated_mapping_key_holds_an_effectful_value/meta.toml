@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Key Two Specs Read Holds an Effectful Value"
+title       = "A Mapping Key Two Specs Read Keeps the Template as Written"
 
 description = '''
-Both `%(v)s` specs read the same mapping key, and the dict binds `"v"` to a call. The original evaluates `build()` once while filling both slots, whereas an f-string repeating the expression would call it twice, so the line holds.
+Both `%(v)s` specs read the same mapping key, and the dict binds `"v"` to `build()`. **The line stays as written**, because the `%` form evaluates `build()` once while filling both specs whereas an f-string repeating the expression would call it twice.
 '''

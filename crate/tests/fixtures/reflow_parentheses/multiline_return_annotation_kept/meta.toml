@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Multi-Line Return Annotation Is Left Alone"
+title       = "A Multi-Line Return Annotation Stays as Written"
 
 description = '''
-`def total() -> (` opens a multi-line return annotation spanning `int | str`. The parentheses stay, leaving `reflow-signatures` to reshape them across the expanded signature.
+`def total() -> (` opens a multi-line return annotation spanning `int | str`. **The pair and its rows stay as written**, leaving the annotation's layout to [[reflow-signatures]].
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Trailing Comment Holds the Column In"
+title       = "A Trailing Comment Keeps the Column In"
 
 description = '''
-The `"low"` row's long trailing comment already runs past the line budget before any padding, so the column cannot push that row further right than the one-space buffer alignment itself inserts. `"low"` and `"mid"` align at that minimal column while the widest key `"high"` partitions off and stays flush, leaving the line over budget by no more than the comment alone already made it.
+The `"low"` row's long trailing comment already runs past the line budget before any padding. **The column cannot push that row further right than the one-space buffer alignment itself inserts**, so `"low"` and `"mid"` align at that minimal column while the widest key `"high"` partitions off and stays flush, leaving the `"low"` line one column longer than the comment alone already made it.
 '''

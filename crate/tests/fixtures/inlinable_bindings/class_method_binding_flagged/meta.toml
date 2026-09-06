@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Bindings Inside Class Methods Are Flagged"
+title       = "A Binding Inside a Method Is Reported"
 
 description = '''
-`normalized` inside `Service.consume` **is flagged** the same as any once-read binding in a plain function, because `inlinable-bindings` walks into class bodies and evaluates each method's scope on its own. Methods carry no blanket exemption from the rule.
+`normalized` inside `Service.consume` is written once from `transform(payload)` and read once in `return normalized`. **It is reported the same way a binding in a plain function is**, because the rule reads into class bodies and counts each method's scope on its own, so a method is not exempt.
 '''

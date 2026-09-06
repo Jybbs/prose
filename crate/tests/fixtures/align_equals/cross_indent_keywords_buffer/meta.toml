@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Cross-Indent Keywords Take a Buffer"
+title       = "Keywords at Different Indents Each Take a Single Space"
 
 description = '''
-`host` sits on the same line as the `connect(` opener, whereas `port` begins its own line at a deeper indent. **Keywords whose lines carry differing indents are never grouped into one `=` column**, so each takes a single space around its `=` instead, landing as `host = "localhost"` above `port = 8080`.
+`host` shares the line with the `connect(` opener, whereas `port` starts its own line at a deeper indent. **Keywords whose lines start at different indents never share one `=` column**, so each takes one space on either side of its `=` instead, reading `host = "localhost"` above `port = 8080`.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Value Continued Onto the Next Line Is Left Alone"
+title       = "A Value Continued Onto the Next Line Passes Through Unchanged"
 
 description = '''
-`total`'s value continues onto the next line after a `\`, leaving `a + b` indented on its own line. The statement passes through unchanged, because the spacing rewrite on the value side stops applying when the gap after `=` spans a line break.
+`total = \` continues its value `a + b` onto the next line after a backslash. **The statement passes through unchanged**, because the value-side spacing rewrite stops when the gap after `=` spans a line break.
 '''

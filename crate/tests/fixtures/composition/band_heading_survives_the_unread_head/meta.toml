@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Band Heading Survives Its Unread Head"
+title       = "A Band Heading Stays Over the Import That Fills the Gap"
 
 description = '''
-`from .pgen2 import token` is unread, and it is the line the `# Local imports` comment sits above.
-
-`band-constants` sorts the import band and carries the comment onto whichever import ends up first, so when `prune-inert-imports` drops `token` the surviving `from ..pgen2 import driver` **takes the vacated line** with the heading still above it. The comment is never left stranded over the gap the drop would otherwise leave.
+`from .pgen2 import token` is unread, and it is the line the `# Local imports` comment sits above, with `from ..pgen2 import driver` below it. `band-constants` sorts the import band and moves the comment onto whichever import ends up first, so when `prune-inert-imports` removes `token`, **`from ..pgen2 import driver` moves up onto the vacated line with the heading still above it**, and the comment is never left over a gap.
 '''

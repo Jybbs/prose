@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Continuation Splicing a Split URL Keeps It Atomic"
+title       = "A Continuation Splicing a Split URL Keeps It Whole"
 
 description = '''
-The URL in `reference`'s docstring is split with a trailing `\` and resumed flush at column zero, so **the two halves carry no separator across the join**.
-
-The wrap splices the pair back together before measuring anything, which leaves the URL as one atomic token on a line of its own. Joining the two as ordinary prose lines would have inserted a space the value never held and broken the link in two.
+The URL in `reference`'s docstring is split with a trailing `\` and resumed flush at column zero, so no whitespace separates the two halves across the join. **The wrap splices the halves back into one token before measuring and writes the URL alone on its own line**, because joining the two as ordinary prose lines would insert a space the value never had and break the link in two.
 '''

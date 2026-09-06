@@ -3,5 +3,5 @@ previewable = false
 title       = "A Literal Run Ending in a Lone Backslash Survives the Swap"
 
 description = '''
-In `traced`, `\{` is not an escape sequence, so the literal text `path\` before the replacement field genuinely ends in a lone backslash. **That backslash escapes nothing in either spelling**, so the surrounding quotes still settle from `'` to `"`.
+`traced = f'path\{x}'` ends its literal text in a lone backslash, because `\{` is not an escape sequence. **The quotes still swap from `'` to `"`, giving `f"path\{x}"`**, because that backslash escapes nothing in either spelling.
 '''

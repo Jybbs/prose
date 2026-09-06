@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "A Multi-Line Variadic Annotation Expands and Hangs From Its Row"
+title       = "A Multi-Line `*args` Annotation Moves With Its Parameter"
 
 description = '''
-`render`'s six parameters, including `*args`, exceed `max-params`, and `*args`'s annotation `Sequence[int]` was written across two rows in the source. `reflow-signatures` expands the signature and moves `*args`'s annotation with it, so `int` and the closing `]` land indented under `*args`'s new column rather than the column the source left them at.
+`render` takes six parameters including `*args`, over `max-params`, and the `*args` annotation `Sequence[int]` is written across two rows. **The signature expands one parameter per line and the annotation moves with `*args`**, so `int` and the closing `]` end up indented under the new `*args` column rather than at the column the source left them.
 '''

@@ -3,7 +3,5 @@ previewable = false
 title       = "Nested Sort Targets Settle in One Pass"
 
 description = '''
-Four separate things sort in this one file. The `from`-imports swap so `collections` leads `loguru`, the classes reorder to `Alpha`, `Beta`, `Gamma`, `Alpha`'s methods regroup with `__repr__` joining `__init__` above `public`, and the `Counter` call's keywords become `first=1, second=2`.
-
-**Each nested reorder settles inside its enclosing one before that outer one moves.** By the time `Gamma` is relocated, the text being moved already carries the sorted `Counter` call, so nothing has to be revisited on a second pass.
+The file carries four sort targets at once, a `from` import pair, three classes, `Alpha`'s methods, and the keywords of a `Counter` call inside `Gamma.public`. **All four sort in one pass, the imports putting `collections` before `loguru`, the classes reordering to `Alpha`, `Beta`, `Gamma`, `Alpha`'s methods regrouping with `__repr__` joining `__init__` above `public`, and the `Counter` keywords becoming `first=1, second=2`**, because each nested reorder settles inside its enclosing one before that outer one moves, so by the time `Gamma` is relocated the text being moved already carries the sorted `Counter` call and nothing is revisited on a second pass.
 '''

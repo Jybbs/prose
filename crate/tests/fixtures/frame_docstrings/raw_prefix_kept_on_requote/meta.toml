@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Raw Prefix Survives the Requote"
+title       = "A Raw Prefix Stays on the Requoted Opener"
 
 description = '''
-`escape_pattern`'s docstring pairs an `r` prefix with plain `"..."` quotes because its body holds the `\d` escape. **The requote to `r"""..."""` keeps the prefix verbatim on the opener**, the raw form PEP 257 sanctions for a docstring carrying a backslash.
+`escape_pattern`'s docstring pairs an `r` prefix with plain `"..."` quotes because its body contains the `\d` escape. **The requote to `r"""..."""` keeps the prefix on the opener**, the raw form PEP 257 permits for a docstring containing a backslash.
 '''

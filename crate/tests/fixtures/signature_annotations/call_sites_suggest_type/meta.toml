@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Literal-Only Call Sites Suggest the Parameter Type"
+title       = "Call Sites Passing One Literal Type Suggest the Parameter Type"
 
 description = '''
-`total`'s only parameter, `count`, carries no annotation, and both call sites, `total(3)` and `total(7)`, bind an `int` literal to it by position. `signature-annotations` matches each call back to `total`'s parameters and reports a display-only `count: int` suggestion, never inserted automatically.
+`total`'s only parameter, `count`, has no annotation, and both call sites, `total(3)` and `total(7)`, pass an `int` literal by position. **The rule reports `count` with the display-only suggestion `count: int`**, which it never inserts, and reports separately that `total` returns a value without a return annotation.
 '''

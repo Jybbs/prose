@@ -3,7 +3,5 @@ previewable = true
 title       = "An Over-Budget Positional Call Explodes Positionally"
 
 description = '''
-`compute` is not defined in this module, so its positionals cannot be bound to parameter names.
-
-The row still overflows the 40-column budget, so **the call explodes positionally instead**, with `alpha_value` through `gamma_value` each on a row of its own and the closing `)` back at the statement's indent. There is no configuration in which an over-budget call simply stays inline.
+`compute(alpha_value, beta_value, gamma_value)` calls a function defined nowhere in this module, so its positionals cannot be bound to parameter names, and the row overflows `code-line-length = 40`. **The call explodes positionally, with `alpha_value` through `gamma_value` each on a row of its own and the closing `)` back at the statement's indent**, because no configuration leaves an over-budget call inline.
 '''

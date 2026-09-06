@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Second Fold Answers the Line the First One Left"
+title       = "A Second Join Is Measured Against the Line the First Join Wrote"
 
 description = '''
-Under `code-line-length = 40`, the first pair folds and sheds, joining `alphas + betas` onto the assignment line. The second pair is measured against that already-joined line, and folding `gammas + deltas` up as well would push the line past the limit, so its parentheses stay and the group keeps its multi-line shape.
+`result = (alphas + betas) or (gammas + deltas)` is written with each pair broken across rows, under a `code-line-length` of `40`. **The first pair joins and is removed, and the second is measured against the line that join wrote**, so joining `gammas + deltas` up as well would push the line past the budget, and its pair and rows stay as written.
 '''

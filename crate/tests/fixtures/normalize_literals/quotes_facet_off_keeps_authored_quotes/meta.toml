@@ -3,7 +3,5 @@ previewable = true
 title       = "Turning Off `unify-quotes` Leaves the Other Facets Running"
 
 description = '''
-`unify-quotes = false` turns off one spelling axis and leaves the rest of the rule running.
-
-The single-quoted `'ada'` therefore stands exactly as written, while **the other facets still fire**. `0XABC` lowercases its marker to `0xABC`, `U"y"` drops its no-op prefix, and `R"a\d"` falls to `r"a\d"`. Each facet gates one axis on its own.
+With `unify-quotes = false`, the module binds `0XABC`, `U"y"`, `R"a\d"`, and `'ada'`. **The single-quoted `'ada'` stays exactly as written while the other facets still run**, so `0XABC` lowercases its marker to `0xABC`, `U"y"` drops its no-op prefix, and `R"a\d"` lowercases to `r"a\d"`, because each facet gates one spelling axis on its own.
 '''

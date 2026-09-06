@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Raw String Holding a Bare Double Quote Stands"
+title       = "A Raw String Carrying a Bare Double Quote Keeps Its Delimiters"
 
 description = '''
-`pattern` is the raw string `r'"\d+"'`, whose body carries two bare `"` characters. Swapping to double quotes would need an escape on each one, and a raw string cannot gain a backslash, so the delimiters stay where they are.
+`pattern = r'"\d+"'` is a raw string whose body carries two bare `"` characters. **Its delimiters stay where they are**, because swapping to double quotes would need an escape on each `"` and a raw string cannot gain a backslash.
 '''

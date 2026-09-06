@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Closed Bracket Ahead of a Breaking Pair Holds Nothing Open"
+title       = "A Bracket Closed Before the Pair Leaves Nothing Open"
 
 description = '''
-`compute(value)[0]` closes both its brackets before the pair opens, so the pair breaks on its own row with the interior joined, the closed brackets ahead of it holding nothing open.
+`compute(value)[0]` closes both its brackets before the conditional expression's pair opens, on a line over the budget. **The pair breaks, its `(` ending the first row, its interior joined on one row beneath, and its `)` opening the row below that**, because the brackets closed ahead of it leave nothing open around it.
 '''

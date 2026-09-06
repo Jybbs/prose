@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Pinned Positionals, Sorted Keyword-Only Parameters"
+title       = "Positionals Keep Their Order While Keyword-Only Parameters Sort"
 
 description = '''
-`test_add` lists `b` before `a`, and that positional pair holds its source order because reordering it would rebind call sites a single-file pass cannot see. The parameters past the `*` separator bind by name alone, so **the keyword-only run still sorts**, `atomic`, `retries`, and `verbose` landing in alphabetical order.
+`test_add` lists `b` before `a`, then `verbose`, `atomic`, and `retries` past the `*` separator. **The positional pair keeps its source order and the keyword-only run sorts to `atomic`, `retries`, `verbose`**, because reordering positionals would rebind call sites a single-file pass cannot see, whereas parameters past `*` bind by name alone.
 '''

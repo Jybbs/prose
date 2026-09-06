@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Precision on a Hex Conversion Holds"
+title       = "A Precision on a Hex Conversion Keeps the Template"
 
 description = '''
-`"%.5x"` renders `bits` with at least five hex digits, because a precision on `%x` sets a floor on the digit count. The format-spec mini-language allows no precision on its integer `x` type, in that `{:.5x}` raises `ValueError`, so no equivalent spec exists and the line holds.
+`"%.5x"` renders `bits` with at least five hex digits, because a precision on `%x` sets a floor on the digit count. **The line stays as written**, because the format-spec mini-language accepts no precision on its integer `x` type, in that `{:.5x}` raises `ValueError`, so no equivalent spec exists.
 '''

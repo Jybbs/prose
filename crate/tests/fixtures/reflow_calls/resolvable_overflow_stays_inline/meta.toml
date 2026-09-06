@@ -3,5 +3,5 @@ previewable = false
 title       = "A Call Overflowing the Named Parameters Stays Inline"
 
 description = '''
-`f` names only `b` and `a` before its `*rest`, so of the five positionals passed, `three` through `five` land in `*rest` and can never take keyword form. Rather than exploding a list where only the first two arguments would carry names, the rule leaves the call inline.
+`f(one, two, three, four, five)` passes five positionals to an `f` that names only `b` and `a` before its `*rest`, so `three` through `five` end up in `*rest` and can never take keyword form. **The call stays inline**, because exploding it would name only the first two arguments.
 '''

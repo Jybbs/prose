@@ -1,11 +1,11 @@
 ---
-summary: 'Refuses a commit that would land unformatted code, gating the git staging boundary against layout drift.'
+summary: 'Fails a commit that would land unformatted code, so nothing reaches the repository with layout drift.'
 tagline: 'git staging'
 ---
 
 # Pre-Commit
 
-<Tool slug="precommit" /> wires *Prose* into the git commit boundary, so a staged change either matches the canonical layout or the commit fails. The hook runs against staged files only, which keeps the loop tight on edited code without re-walking the whole tree.
+<Tool slug="precommit" /> runs *Prose* when you commit, so a staged file either matches the formatted layout or the commit fails. The hook runs on staged files only, checking the code you edited rather than the whole tree.
 
 ## Local Hook
 
@@ -21,13 +21,13 @@ Add a `local` hook to your `.pre-commit-config.yaml`:
       types    : [python]
 ```
 
-`entry: prose format` rewrites the staged file in place, so the hook surfaces as a *"fixed by **Prose**"* diff that fails the commit and leaves the rewrite on disk for the developer to re-stage and re-commit. This is the loop pre-commit uses for every fixer-style hook *(Black, isort, autopep8 behave the same way)*. For a check-only variant that fails on pending rewrites without writing to disk, swap `entry: prose check`, leaving the developer to run `prose format` manually before retrying the commit.
+`entry: prose format` rewrites the staged file in place, so the hook fails the commit with a *"fixed by **Prose**"* diff and leaves the rewritten file on disk for you to stage again and re-commit. This is the loop pre-commit runs for every hook that fixes files *(Black, isort, and autopep8 behave the same way)*. For a hook that fails on pending rewrites without writing anything, use `entry: prose check` and run `prose format` yourself before committing again.
 
-The `language: system` setting tells pre-commit to use the `prose` binary already installed on the developer's `PATH` *(per the [**Installation**](/usage/installation) chapter)* rather than installing a pinned version into the hook's sandbox. Projects that prefer a sandboxed pin can use `language: python` with `additional_dependencies: ["prose-formatter==<version>"]` instead.
+`language: system` tells pre-commit to run the `prose` binary already on your `PATH` *(see the [**Installation**](/usage/installation) chapter)* rather than installing a pinned copy into the hook's own environment. A project that prefers a pinned copy uses `language: python` with `additional_dependencies: ["prose-formatter==<version>"]`.
 
 ## Pairing With Ruff
 
-For projects that pair *Prose* with `ruff format`, add a Ruff hook above the *Prose* hook in the same `repo: local` block. pre-commit runs hooks in declaration order, so Ruff settles tokens before *Prose* lays out lines. The added hook reads:
+A project that runs `ruff format` as well adds a Ruff hook above the *Prose* hook in the same `repo: local` block. pre-commit runs hooks in the order written, and Ruff's hook comes first because a later `ruff format` would remove the padding *Prose* writes:
 
 ```yaml
     - id       : ruff-format
@@ -37,11 +37,11 @@ For projects that pair *Prose* with `ruff format`, add a Ruff hook above the *Pr
       types    : [python]
 ```
 
-The [**Ruff**](/integrations/ruff) integration page covers the `extend-ignore` configuration that keeps Ruff's `pycodestyle` lints quiet on the whitespace *Prose* introduces.
+The [**Ruff**](/integrations/ruff) integration page covers the `pycodestyle` codes to turn off so Ruff's linter does not report the whitespace *Prose* writes.
 
 ## Upstream Hook
 
-The [**`pre-commit`-managed Ruff hook**](https://github.com/astral-sh/ruff-pre-commit) handles the Ruff side without requiring a system install. Add this block above the `repo: local` from the Local Hook section:
+The [**Ruff pre-commit hook**](https://github.com/astral-sh/ruff-pre-commit) runs Ruff without a system install. Add this block above the `repo: local` block from the Local Hook section:
 
 ```yaml-vue
 - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -50,8 +50,8 @@ The [**`pre-commit`-managed Ruff hook**](https://github.com/astral-sh/ruff-pre-c
     - id: ruff-format
 ```
 
-The `rev:` field pins to a specific Ruff release. The version family is the same one *Prose* compiles against on the Astral side, so the two stay in lockstep without a custom pin matrix.
+`rev:` pins a Ruff release, and the version shown is the one *Prose* builds against, so the two stay in step without a separate pin.
 
 ## Exit Codes
 
-The hook surfaces the same [**Exit Codes**](/reference/exit-codes) the CLI uses, so a `format` hook never fails on rewrites it applies *(those resolve to exit 0 once the rewrite lands)* and a `check` hook fails the commit when changes are pending.
+The hook reads the same [**Exit Codes**](/reference/exit-codes) the CLI uses. A `format` hook exits 0 once its rewrites are written, so it never fails on a change it made itself, whereas a `check` hook fails the commit whenever a change is pending.

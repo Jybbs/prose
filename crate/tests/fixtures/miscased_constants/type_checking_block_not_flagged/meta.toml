@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A TYPE_CHECKING Block Stays Quiet"
+title       = "A `TYPE_CHECKING` Block Is Not Reported"
 
 description = '''
-`json_type = dict` is bound inside an `if TYPE_CHECKING:` block, a region that never executes at runtime and exists only for the type checker. A binding there is type-only scaffolding rather than runtime configuration, so the lint never flags `json_type`.
+`json_type = dict` is bound inside an `if TYPE_CHECKING:` block, a region that never executes at runtime and exists only for the type checker. **The lint never reports `json_type`**, because a binding there is type-only scaffolding rather than runtime configuration.
 '''

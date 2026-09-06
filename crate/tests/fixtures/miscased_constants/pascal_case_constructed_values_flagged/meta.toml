@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A PascalCase Name Building Data Still Draws the Rename"
+title       = "A PascalCase Name Building Data Still Gets the Rename"
 
 description = '''
-Classification follows **the value, not how the target is spelled**. `Palette`, `Timeout`, `Banner`, and `Ceiling` bind a dict display, a literal, an f-string, and an arithmetic expression, and every one of those constructs new data.
-
-All four therefore count as constants and draw `SCREAMING_CASE` renames. This is the converse of the carve-out that spares a bare class alias, and it is what keeps dispatch tables and derived strings inside the lint's reach.
+`Palette`, `Timeout`, `Banner`, and `Ceiling` bind a dict display, a literal, an f-string, and an arithmetic expression, and every one of those constructs new data. **All four are reported with `SCREAMING_CASE` renames**, because classification follows the value rather than how the target is spelled. This is the converse of the carve-out that exempts a bare class alias, and it is what keeps dispatch tables and derived strings inside the lint's reach.
 '''

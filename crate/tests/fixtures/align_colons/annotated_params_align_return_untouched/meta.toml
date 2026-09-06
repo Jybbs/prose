@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Function-Signature Annotations Align inside the Parameter List"
+title       = "Parameter Annotations Align and the Return Colon Stays Put"
 
 description = '''
-The four annotated parameters of `dispatch` settle their `:` onto a shared column at the width of the widest name, `request_id`, so `user`, `priority`, and `timeout` each gain padding before the colon. The `:` after `-> Response` closes the signature rather than annotating a parameter, so it **stays untouched**.
+The four annotated parameters of `dispatch` sit one per line. **Every parameter `:` moves to the column one space past `request_id`**, the widest name, so `user`, `priority`, and `timeout` gain padding before the colon. The `:` after `-> Response` closes the signature rather than annotating a parameter, so it stays as written.
 '''

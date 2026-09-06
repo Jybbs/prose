@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Augmented Assignment Counts One Read and One Write"
+title       = "An Augmented Assignment Counts One Read and One Write"
 
 description = '''
-`x` is bound by `x = 0` and then augmented twice with `+=`. **An augmented assignment counts as one read plus one write**, so `write_offsets` lists all three statements whereas `read_offsets` lists only the two `+=` sites, and `kinds` carries `AugAssign` next to the original `Assignment`.
+`x = 0` binds `x`, and `x += 1` and `x += 2` follow. **Each `+=` records one read and one write at its offset**, so `write_offsets` lists all three statements, `read_offsets` lists only the two `+=` sites, and `kinds` carries `AugAssign` beside the original `Assignment`.
 '''

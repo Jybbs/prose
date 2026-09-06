@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Multi-Line Left Operand Holds Its Indent"
+title       = "A Multi-Line Left Operand Leaves the Run"
 
 description = '''
-The left operand `(a + b)` spans two lines, so its `==` sits on a later line than the one where the operand opens. **The cross-line operand drops out of the run**, leaving the single-line `dd == e` alone and unpadded.
+The left operand `(a + b)` spans two lines, so its `==` sits on a later line than the one the operand opens on. **The multi-line operand leaves the run**, leaving `dd == e` alone with nothing to align to, so the source passes through unchanged.
 '''

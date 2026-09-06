@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Parenthesized Children Keep Their Explicit Parens"
+title       = "An Entry's Own Parentheses Survive the Expansion"
 
 description = '''
-The over-wide `precedence` list expands one entry per line, and the already-broken `short_precedence` holds its multi-line shape, and through both rewrites every child **retains its explicit parens**. Slicing each child's raw range would drop them and turn `(-a) ** 2` into `-a ** 2`, which Python reparses as `-(a ** 2)` and flips the sign.
+The over-wide `precedence` list expands one entry per line, and the already-broken `short_precedence` is left as written, with every entry written as a parenthesized operand raised to a power. **Each entry keeps its parentheses, through the expansion and through the untouched literal alike**, because writing `(-a) ** 2` as `-a ** 2` would parse as `-(a ** 2)` and change the sign.
 '''

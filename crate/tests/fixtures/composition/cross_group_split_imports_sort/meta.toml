@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Cross-Group Import Run Sorts as the Band Consolidates It"
+title       = "Imports Split by a Constant Gather and Sort Into Their Groups"
 
 description = '''
-`from . import shared` and `import os` start out separated by the constant `x = 1`, so the two imports are split across the module.
-
-Moving that constant down gathers both imports to the top, and once they are together they **sort into their standard groups**, so the plain `import os` lands ahead of the relative `from . import shared` with a blank line between the two. `x = 1` follows below.
+`from . import shared` and `import os` are separated by the constant `x = 1`. `band-constants` moves the constant below both imports, and once they are adjacent **`group-imports` puts the bare `import os` ahead of the relative `from . import shared` with a blank line between them**, and `x = 1` follows below.
 '''

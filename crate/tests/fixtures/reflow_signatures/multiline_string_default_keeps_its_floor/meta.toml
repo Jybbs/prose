@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Multi-Line String Default Expands the Signature and Keeps Its Floor"
+title       = "A Multi-Line String Default Expands the Signature and Keeps Its Own Column"
 
 description = '''
-`note`'s default is a triple-quoted string whose line break falls inside the literal's own text. `reflow-signatures` still expands `render`'s three parameters one per line, but the string's second line **stays at its source column** rather than shifting under `note`, since moving it would pad the literal's own interior.
+`render`'s `note` default is a triple-quoted string whose line break falls inside the literal's own text. **The three parameters expand one per line, and the string's second line stays at its source column** rather than moving under `note`, because shifting it would pad the literal's own contents.
 '''

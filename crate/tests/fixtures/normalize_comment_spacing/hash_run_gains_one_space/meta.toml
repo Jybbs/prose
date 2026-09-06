@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "Every Comment Opens on a Single `# ` and Clears Two Spaces of Code"
+title       = "Every Comment Opens on `# ` and Sits Two Spaces Clear of Its Code"
 
 description = '''
-The trailing `#note` gains the space its text was missing and moves two columns clear of `x = 1`, while the full-line `#tidy this` below opens the same way. Both land on the single `# ` shape, so the eye reads the delimiter once rather than re-parsing it per line.
+`x = 1` carries a trailing `#note` one space after the code, and a full-line `#tidy this` sits below it. **Both comments gain the space after their `#`, and the trailing one moves two columns clear of `x = 1`**, so every comment opens on the same `# ` and the eye reads the delimiter once rather than re-parsing it per line.
 '''

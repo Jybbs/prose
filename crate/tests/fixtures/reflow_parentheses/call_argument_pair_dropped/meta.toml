@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Redundant Pair Around a Call Argument Drops"
+title       = "A Redundant Pair Around a Call Argument Is Removed"
 
 description = '''
-`record((event))` wraps its single argument `event` in an extra set of parentheses inside the call's own. The inner set sheds, reflowing the call to `record(event)`.
+`record((event))` wraps its only argument in a second pair of parentheses inside the call's own. **The inner pair is removed**, so the call reads `record(event)`.
 '''

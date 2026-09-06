@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Comment Below a Constant Trails It"
+title       = "A Comment Below a Constant Folds Onto Its Line"
 
 description = '''
-The blank line below the comment separates it from `MAX_INT`, so it attaches upward to `DEFAULT_EPSILON` instead.
-
-Sorting then moves `DEFAULT_EPSILON` to the top of the group and `PENALTY_TYPES` to the bottom. The comment folds onto its own constant's line as a **trailing note**, which keeps the two together rather than leaving it stranded above whichever constant sorts into its old place.
+The comment `# the convergence floor the solver stops at` sits directly below `DEFAULT_EPSILON = 0.1`, with a blank line between it and `MAX_INT`. **The comment folds onto the line of `DEFAULT_EPSILON` as a trailing note and moves with it to the top of the group**, because the blank line below the comment ties it to the constant above rather than the one below, so it stays with what it documents instead of sitting above whichever constant sorts into its old place.
 '''

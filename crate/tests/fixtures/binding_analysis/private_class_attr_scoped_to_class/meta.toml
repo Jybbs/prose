@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Private Class Attribute Stays Scoped to the Class"
+title       = "A Private Class Attribute Binds in the Class Scope"
 
 description = '''
-The private attribute `__secret = 1` **binds in `C`'s class scope** next to `get`, reaching no other scope table. The method's `self` parameter binds in `get`'s own function scope, where the `return self` counts as its one read.
+`C` binds `__secret = 1` in its body, and its method `get` returns `self`. **`__secret` binds in `C`'s class scope beside `get`, and `self` binds in `get`'s function scope with the `Parameter` kind**, so `return self` records that parameter's one read and no other scope table carries either name.
 '''

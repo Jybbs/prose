@@ -3,5 +3,5 @@ previewable = false
 title       = "A Lone Over-Budget URL Overflows in Place"
 
 description = '''
-The `reference` docstring holds nothing but one long URL, and a URL contains no space a wrap could break at. The URL overflows the budget in place, staying whole on its own line rather than splitting between its path segments.
+The `reference` docstring carries nothing but one URL longer than the budget. **The URL stays whole on its own line and overflows the budget**, because a URL contains no space a wrap could break at and the rule never splits one between its path segments.
 '''

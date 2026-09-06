@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Signature Measures the Stripped Padding"
+title       = "A Signature Is Measured at the Width the Stripped Padding Leaves"
 
 description = '''
-`strip-stranded-padding` removes the space before the `:` in `ttl : int`, which narrows the signature by one column.
-
-`reflow-signatures` measures the one-line form at **the width it settles to once that strip lands**. The signature fits the 40-column budget only after the padding goes, so it stays on one line rather than exploding and then rejoining on a later pass.
+`store` writes `ttl : int` with a space before the `:`, and its one-line signature crosses the 40-column budget by exactly that space. `strip-stranded-padding` removes it, and **`reflow-signatures` measures the signature at the width that removal leaves, so it stays on one line** rather than exploding and joining back on a later pass.
 '''

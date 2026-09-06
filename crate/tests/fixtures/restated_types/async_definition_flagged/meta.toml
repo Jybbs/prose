@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Async Definition Resolves Like Any Other"
+title       = "An `async def` Resolves Its Entries Like a Plain `def`"
 
 description = '''
-`fetch` is defined with `async def` rather than a plain `def`, and both `url (str)` and `timeout (float)` restate the same type their signature already annotates. **Both entries are flagged**, showing that `async def` resolves its `Args:` entries exactly like `def` would.
+`fetch` is an `async def` annotating `url: str` and `timeout: float`, and its `Args:` entries restate both types. **Both entries are reported**, because an `async def` resolves its `Args:` entries against its own parameters exactly as a plain `def` does.
 '''

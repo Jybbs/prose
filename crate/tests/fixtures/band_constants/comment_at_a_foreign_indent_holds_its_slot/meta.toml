@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Comment at a Foreign Indent Holds Its Slot"
+title       = "A Comment at a Foreign Indent Keeps Its Slot"
 
 description = '''
-Nothing in this file moves. The comment about `disk_usage` sits at the continuation indent of the `__all__` list above it, which matches neither `__all__`'s own indent nor `ALPHA_CAP`'s below it.
-
-Because it lines up with neither neighbour, it attaches to neither, and **it keeps the slot the source gave it**. Attaching it either way would carry that unusual indent along under a statement it does not belong to.
+The comment about `disk_usage` sits at the continuation indent of the `__all__` list above it, which matches neither the indent of `__all__` nor that of `ALPHA_CAP` below it. **Nothing moves**, because a comment at another indent attaches to neither neighbour and keeps the slot the source gave it, and the constant beneath it stays put rather than sorting above `ZETA_CAP`.
 '''

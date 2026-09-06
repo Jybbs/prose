@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Reassigned TypeVar Is Spared"
+title       = "A Reassigned `TypeVar` Is Not Reported"
 
 description = '''
-`T` is written twice at module scope, first as `TypeVar("T")` and again as `TypeVar("T", bound=int)`, so the reassignment count alone would flag it. Each write binds a `TypeVar` call, the structural shape the carve-out exempts, so the rule reports nothing.
+`T` is written twice at module scope, as `TypeVar("T")` and again as `TypeVar("T", bound=int)`, so the write count alone would report it. **No diagnostic is reported**, because each write binds a `TypeVar` call, the typing construct the rule exempts.
 '''

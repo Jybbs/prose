@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Band Heading Carries Off the Merge Lead"
+title       = "A Band Heading Leaves With the Merge Lead"
 
 description = '''
-`group-imports` puts `import _random` first, which leaves the two-line comment block sitting directly above it rather than above the `math` rows it was written over.
-
-That block is then carried onto `import _random` as the heading for the whole group. `reflow-imports` **reads that move before it happens**, so the gathered `math` rows land next to `itertools` and share its alignment column, rather than opening a run of their own beneath a comment that is about to leave.
+The two-line comment block sits directly above `import _random`, the last statement in a run of `from` imports. `group-imports` moves `import _random` to the front, and the comment block moves with it as the heading of the whole group. **The gathered `math` rows sit beside `itertools` and share its `import` column**, because `reflow-imports` measures against the order that move leaves rather than the order as written, so the rows never open a run of their own under a comment that is about to leave.
 '''

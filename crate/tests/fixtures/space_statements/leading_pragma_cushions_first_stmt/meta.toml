@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Module's Leading Pragma Cushions the First Statement"
+title       = "A Leading Pragma Takes One Blank Line Before the First Statement"
 
 description = '''
-The `# ruff: noqa: F401` pragma opens the file tight against `import os`.
-
-**A tool pragma anchors in place the way a suppression directive does**, so the divider blank seats below it rather than binding it onto the import as a leading comment.
+The `# ruff: noqa: F401` pragma opens the file flush against `import os`. **One blank line is written below the pragma**, because a tool pragma stays in place the way a suppression directive does rather than binding to the import as a leading comment.
 '''

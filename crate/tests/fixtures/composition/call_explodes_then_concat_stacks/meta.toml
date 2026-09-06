@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Call Explodes before Its String Run Breaks"
+title       = "A Call Explodes Before Its Adjacent Strings Stack"
 
 description = '''
-The `emit` call overruns the budget, so `reflow-calls` settles its argument list one entry per line first. `stack-adjacent-strings` then measures the two adjacent literals against the column they land at and breaks only that argument, stacking the opening clause over the trailing one while `alpha` keeps its single line.
+The `emit` call crosses the 60-column budget, carrying `alpha` and a pair of adjacent string literals. `reflow-calls` explodes the call to one argument per line first, and **`stack-adjacent-strings` then measures the two literals at the column the explode leaves them and stacks only that argument**, the opening clause over the trailing one, while `alpha` keeps its single line.
 '''

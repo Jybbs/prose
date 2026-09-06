@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Fractured Link Settles Before the Chain Is Measured"
+title       = "A Broken Link Joins Before the Chain Is Counted"
 
 description = '''
-The author hand-wrapped `base.first(alpha,` mid-call, and [[reflow-calls]] rejoins `first(alpha, beta)` onto one row. That settles the chain's width before `stack-method-chains` counts its links, so the link-count trigger breaks the chain, wrapping the expression in parentheses and stacking `.second(gamma)` and `.third(delta)` under `.first(alpha, beta)`.
+`base.first(alpha,` is hand-wrapped mid-call, with `beta).second(gamma).third(delta)` on the next line. [[reflow-calls]] joins `first(alpha, beta)` onto one row, which settles the chain's width before `stack-method-chains` counts its links, and **the link count breaks the chain**, wrapping the expression in parentheses and stacking `.second(gamma)` and `.third(delta)` under `.first(alpha, beta)`.
 '''

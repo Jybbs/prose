@@ -1,6 +1,6 @@
 # Pipeline Order
 
-*Prose* runs each enabled rule in a deterministic order, reparsing the source between batches of independent rules so every downstream rule reads a settled AST. The reparse is the discipline that makes the rule set composable, wherein no rule observes the half-applied state of a rule whose rewrites it reads, leaving every pass free of cross-rule edit conflict by construction. The order itself is canonical, source-of-truth in `crate/src/rules/registry.rs` *(the `register_rules!` macro block)*, and pedagogically valuable. A rule that depends on a settled token surface sits downstream of every rule that touches that surface, in that *(for example)* [[align-colons]] runs before [[wrap-docstrings]] because the docstring wrap budget depends on the post-colon column the alignment rule sets.
+*Prose* runs its enabled rules in a fixed order, re-parsing the source between batches of independent rules so every later rule reads a tree that reflects the earlier rules' edits. That re-parse is what lets the rules combine, since no rule ever reads a file with another rule's edits half applied, and no two rules' edits conflict within one pass. The order is defined in one place, the `register_rules!` block in `crate/src/rules/registry.rs`, and reading it explains the pipeline. A rule that reads text an earlier rule rewrites runs after that rule. [[align-colons]] runs before [[wrap-docstrings]], for example, because the docstring wrap budget depends on the column the alignment rule sets after each colon.
 
 ## Canonical Order
 
@@ -8,40 +8,45 @@
 
 ## Why Ordering Matters
 
-Each rule's edits shape the source the next rule reads. Three kinds of dependency drive the ordering.
+Each rule's edits change the source the next rule reads. Three kinds of dependency set the order.
 
 ### Layout Before Alignment
 
-[[reflow-collections]] runs near the top because rules below it *(alignment, alphabetization)* operate on the per-line shape it commits to. Aligning before laying out would pad lines that re-collapse in the next pass.
+[[reflow-collections]] runs near the top because the rules after it *(alignment, alphabetization)* read the one-entry-per-line layout it writes. Aligning first would pad lines that the next pass joins back together.
 
 ### Reorder Before Align
 
-[[alphabetize-siblings]] runs before the alignment rules wherein the columns the aligners compute against reflect the final order of the entries rather than the source order.
+[[alphabetize-siblings]] runs before the alignment rules, so the columns the aligners compute reflect the final order of the entries rather than the source order.
 
 ### Strip Before Pad
 
-[[strip-trailing-commas]] runs before alignment so the trailing-comma decision is settled when alignment math measures member widths. Padding a line that's about to lose its trailing comma would land at the wrong column.
+[[strip-trailing-commas]] runs before alignment, so the trailing comma is already decided when alignment measures each row's width. Padding a line that is about to lose its trailing comma would put the column in the wrong place.
 
-The pipeline reparses between batches, so a rule that depends on a token surface earlier in the order sees that surface in the AST it walks, whereas a rule the registry declares independent of every rule in the current batch reads the buffer that batch opened on and lands its edits in the same splice. The cost is one parse per batch rather than one per editing rule, and the binding analysis carries across that parse rather than rebuilding where every member of the batch keeps every binding, whereas the layout forecasts rebuild behind any batch that edits.
+Each of those orderings relies on the re-parse between batches, which lets a rule that reads text an earlier rule rewrites see that text in the tree it reads. A rule the registry declares independent of every rule in the current batch instead reads the buffer the batch opened on and applies its edits in the same pass, so the cost is one parse per batch rather than one per editing rule. Whenever no rule in the batch changed a binding, the binding analysis carries across that parse rather than being rebuilt, whereas the layout forecasts are rebuilt after any batch that edits.
 
 ## Every Subset Settles
 
-The order carries more than the default set settling a file in one pass. Any subset a project enables settles too, `--select`, `--ignore`, and a rule disabled under `[tool.prose.rules]` each producing one, because a subset needing a second pass would be a defect for whoever configured it rather than a curiosity. A corpus sweep in CI holds the promise, so a rule leaning on a later rule to finish its work is caught where the fault lives rather than through a default pipeline that hides it.
+The order guarantees more than the default set settling a file in one pass. Any subset a project enables settles too, whether through `--select`, `--ignore`, or a rule turned off under `[tool.prose.rules]`, because a subset that needed a second pass would be a defect for whoever configured it rather than a curiosity. A corpus sweep in CI checks the guarantee, so a rule that depends on a later rule to finish its work is caught where the fault is rather than hidden by the default pipeline.
 
-Holding the guarantee needs no exhaustive sweep, in that a rule that settles alone and never un-settles an earlier one leaves every larger subset holding it settled, so each rule alone and each ordered rule pair carry it between them.
+The guarantee needs no sweep over every subset, because a rule that settles alone and never unsettles an earlier rule leaves every larger subset settled, so checking each rule alone and each ordered pair of rules covers all of them.
 
-Each ordering the guarantee rests on is recorded in the registry's dependency column, which `prose rules --output-format json` renders as the `after` list per rule, rather than left to a seating that happens to work.
+Each ordering the guarantee depends on is recorded in the registry's dependency column rather than left to a position that happens to work, and `prose rules --output-format json` prints that column as each rule's `after` list.
 
 ## Independent Rules Share a Parse
 
-A run splices the fix groups of consecutive rules whose edits are independent into one buffer and parses once, closing the batch ahead of a rule the registry seats behind one it holds and ahead of a rule whose edits overlap one already batched. Independence is declared rather than assumed, in a shared-splice column each rule carries beside its dependency column in the registry, and a pair enters that column on two kinds of evidence: the subset probe found the two rules editing a standard-library file together with the batched splice matching the fold on every such file at every line length, and a reading of the later rule's `apply` found nothing it measures among what the earlier rule rewrites, meaning the text a column is derived from, the adjacency of the rows a run spans, a statement's position, a name binding, or a docstring's rows. A row's fit against the budget is left to the probe alone, so a rule measuring only that shares a splice with one rewriting the row's value side. The probe re-checks every declared pair on each `cargo test` over the fixture tree and on every pointed sweep, failing where a declared pair's batched splice differs from its fold, and a batch whose splice the reparse rejects replays its rules one at a time so the failure still names the rule whose own edits produce it.
+A run applies the edits of consecutive rules whose edits are independent to one buffer and parses once. The batch closes before a rule the registry places after one the batch holds, and before a rule whose edits overlap one already in the batch. Independence is declared rather than assumed, in a shared-splice column each rule carries beside its dependency column in the registry, and a pair joins that column on two kinds of evidence:
+
+1. The subset probe finding the two rules editing a standard-library file together, with the batched splice matching the rule-by-rule result on every such file at every line length.
+2. A reading of the later rule's `apply` that finds nothing it measures among what the earlier rule rewrites, meaning the text a column is computed from, the adjacency of the rows a run spans, a statement's position, a name binding, or a docstring's rows.
+
+A row's fit against the budget is left to the probe alone, so a rule that measures only that shares a splice with one rewriting the row's value side. The probe re-checks every declared pair on each `cargo test` over the fixture tree and on every corpus sweep, failing where a declared pair's batched splice differs from its rule-by-rule result. A batch whose combined edit the re-parse rejects replays its rules one at a time, so the failure still names the rule whose own edits caused it.
 
 ## Lint Rules
 
-Lint-only rules *(the entries above with the 🧶 badge)* never rewrite, so they don't shape the source the next rule reads. They could in principle run in any order, but they sit at their canonical positions to make the registered set stable for the [`Pipeline::known_ids`](/primitives/pipeline) consumer and for the CLI's `--select` / `--ignore` ergonomics.
+Lint rules *(the entries above with the 🧶 badge)* never rewrite, so they do not change the source the next rule reads. They could run in any order, and they sit at fixed positions so the registered set stays stable for the [`Pipeline::known_ids`](/primitives/pipeline) consumer and for the `--select` and `--ignore` flags.
 
 ## Internal Surface
 
-The data driving this page comes from running `prose rules --output-format json` at build time, so the order on the page is always the order the binary actually runs. The [[pipeline]] primitive page covers the `Pipeline::with_defaults`, `Pipeline::with_filters`, and `Pipeline::for_rule` constructors that pick subsets out of this canonical list.
+The data on this page comes from running `prose rules --output-format json` at build time, so the order shown is always the order the binary runs. The [[pipeline]] primitive page covers the `Pipeline::with_defaults`, `Pipeline::with_filters`, and `Pipeline::for_rule` constructors that pick subsets out of this list.
 
-For the per-rule canonical case and the surrounding behavior of each entry, click the rule's chip above. For the deterministic gate that consumers compile against, see the [**Exit Codes**](/reference/exit-codes) reference.
+Click a rule's chip above for its canonical case and the behavior around it. The [**Exit Codes**](/reference/exit-codes) reference covers the codes a CI gate reads.

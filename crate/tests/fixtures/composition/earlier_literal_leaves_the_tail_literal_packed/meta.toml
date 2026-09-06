@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "An Earlier Literal Leaves the Tail Literal Packed"
+title       = "The Earlier Literal Takes the Overflow and the Tail Literal Stays Packed"
 
 description = '''
-Two tuples sit on the same over-budget row. The one inside `isinstance` comes first, so it is the one the overflow is handed to, and it is the one that expands.
-
-That leaves the rest of the row counting at **its full width** rather than only up to the second tuple's `(`. `isinstance(` explodes with its tuple laid out inside, and the `(None, "", [])` tuple after `in` stays on one row, where it already fits.
+Two tuples sit on one row that crosses the 88-column budget, one inside `isinstance(...)` and one after `in`. The tuple inside `isinstance` comes first, so the overflow goes to that call, and the rest of the row counts at its full width rather than only up to the second tuple's `(`. **`isinstance(` explodes with `toklist` and `(type(None), basestring, list)` each on a row of their own, and `(None, "", [])` stays on one row**, where it already fits, the tuple inside `isinstance` staying packed as well.
 '''

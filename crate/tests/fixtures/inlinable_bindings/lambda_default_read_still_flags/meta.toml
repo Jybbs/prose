@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Lambda Parameter Default Still Flags"
+title       = "A Read in a Lambda Parameter Default Is Still Reported"
 
 description = '''
-`sep` is read once, as the default of the lambda's `s` parameter, which Python evaluates where the `lambda` is written rather than on each later call. **The binding is reported**, the lambda guarding its body alone.
+`sep` is written once from `", "` and read once as the default of the lambda's `s` parameter, which Python evaluates where the `lambda` is written rather than on each later call. **The binding is reported**, because a lambda exempts a read in its body alone.
 '''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Literal That Fits One Indent Down Draws No Suggestion"
 
 description = '''
-The 46-column line overflows because `WELCOME_MESSAGE_BANNER` is wide, not because the string is, and `"hello there, friend"` would fit whole one indent down. Wrapping an unsplit literal in parentheses is a reshape this rule does not offer, so the finding stays a bare report whose message omits `with no legal reshape`, because that wrap does exist.
+`WELCOME_MESSAGE_BANNER = "hello there, friend"` is 46 columns, over the 40-column budget, and the overflow comes from the wide target rather than the string, since `"hello there, friend"` would fit whole one indent down. **The finding is a bare report whose message omits `with no legal reshape`**, because wrapping an unsplit literal in parentheses is a reshape that exists even though this rule does not offer it.
 '''

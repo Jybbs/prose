@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Leading Not Folds Into the Operator It Negates"
+title       = "A Leading `not` Folds Into the Operator It Negates"
 
 description = '''
-`not key in table` folds into `key not in table`, and `not key is sentinel` folds into `key is not sentinel`. Both `not in` and `is not` are operators the language grammar defines, so each fold restates the test exactly rather than approximating it.
+`not key in table` and `not key is sentinel` each put a `not` ahead of the comparison. **`not key in table` becomes `key not in table` and `not key is sentinel` becomes `key is not sentinel`**, because the language defines `not in` and `is not` as the negations of `in` and `is`, so each fold restates the test exactly.
 '''

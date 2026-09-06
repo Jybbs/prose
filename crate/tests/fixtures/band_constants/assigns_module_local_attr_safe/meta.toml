@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Subscripted Constant Tiers within the Leading Band"
+title       = "A Subscript of Another Constant Sorts Below It"
 
 description = '''
-`band-constants` gathers module-level constants into a single group and sorts them, so the blank line between `SETTINGS` and the three bindings below it clears and all four end up together.
-
-`zebra = SETTINGS["timeout"]` reads another constant in that same group, so **it is held below `SETTINGS`** wherever sorting would otherwise place it. `alpha` and `beta` read nothing and sort freely between the two.
+`zebra = SETTINGS["timeout"]` subscripts `SETTINGS`, a constant bound in the same run, with `alpha = 1` and `beta = 2` below it and a blank line above it. **`zebra` sorts to the bottom, below the `SETTINGS` it reads, and the blank line closes** so the four sit as one band, because a tier with a single constant sits tight below the tier above.
 '''

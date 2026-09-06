@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Heading and a Bound Comment Both Travel"
+title       = "A Heading Stays at the Top While a Bound Comment Moves With Its Constant"
 
 description = '''
-Two comments are in play here and each attaches to something different. `# the tunable solver knobs` heads the whole group, while `# the decay the scheduler honors` attaches upward to `BETA_DECAY`, because a blank line separates it from `ALPHA_DECAY` below it.
-
-Sorting puts `ALPHA_DECAY` first. The heading **stays at the head of the group**, and the second comment travels with `BETA_DECAY` and lands as a trailing note on its line, so neither comment displaces the other.
+`# the tunable solver knobs` heads the run, and `# the decay the scheduler reads` sits directly below `BETA_DECAY` with a blank line between it and `ALPHA_DECAY`. **The heading stays at the top of the group and the second comment folds onto the line of `BETA_DECAY` as a trailing note**, moving with it as `ALPHA_DECAY` sorts into first place, so neither comment displaces the other.
 '''

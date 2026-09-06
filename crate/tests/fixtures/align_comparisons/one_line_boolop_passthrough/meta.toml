@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Single-Line BoolOp Passes Through Verbatim"
+title       = "A Single-Line Chain Passes Through Unchanged"
 
 description = '''
-The whole `and` chain assigned to `x` fits on **one source line, so it passes through verbatim**. Alignment only applies across stacked rows, and a single line holds no rows to stack, so the rule makes no edit.
+The whole `and` chain assigned to `x` sits on one source line. **The rule emits no edit for a single-line chain**, because alignment pads rows stacked one above another and one line has no rows to stack.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Skipped Line Keeps the Import Nothing Reads"
+title       = "A `# prose: skip` Line Keeps the Import Nothing Reads"
 
 description = '''
-Nothing references `json`, and a bare `# prose: skip` trails its import line. **The directive widens to every rewrite rule on the line, `prune-inert-imports` included**, so the import stays exactly as written.
+Nothing reads `json`, and a bare `# prose: skip` trails its import line. **The import stays exactly as written**, because the directive exempts the line from every rewriting rule, `prune-inert-imports` included.
 '''

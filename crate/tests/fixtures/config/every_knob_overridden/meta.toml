@@ -1,9 +1,9 @@
 [docs]
 previewable = false
-title       = "Every Knob Overridden Round-Trips Through the Loader"
+title       = "Every Key Overridden Reads Back With Its Supplied Value"
 
 description = '''
-This `[tool.prose]` snippet sets **every available knob** to a non-default value, from the top-level lengths and `target-version`, through the `[tool.prose.cache]` and `[tool.prose.imports]` tables, down to an override for each rule and every facet those rules carry.
+This `[tool.prose]` table sets every key to a non-default value, from the top-level line lengths, `docstring-structured-policy`, `report-unstable-output`, and `target-version`, through the `[tool.prose.cache]` and `[tool.prose.imports]` tables, down to an override for each rule and every facet a rule carries.
 
-The resolved `Config` reads back with every supplied value in place, so **no key falls through to a default**. A key that did would show up immediately as a mismatch against the snapshot.
+**The resolved `Config` reads back every supplied value**, so no key falls through to its default, and a key that did would show as a mismatch against the snapshot.
 '''

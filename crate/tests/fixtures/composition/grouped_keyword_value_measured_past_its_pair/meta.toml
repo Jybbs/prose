@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Grouped Keyword Value Opens One Column Past Its Pair"
+title       = "A Parenthesized Keyword Value Opens One Column Past Its Pair"
 
 description = '''
-`reflow-calls` gives the walrus argument its parameter name `anchor`, and a named expression used as a keyword value needs parentheses of its own, so the value gains a wrapping pair.
-
-That pair opens the value **one column further right** than the plain `=` gap `align-equals` sets. Counting that extra column is what takes the row past the 30-column budget and explodes the nested `len` call.
+`window(seen := len(rows), page_size, start, rows)` passes a walrus as its first positional, and `reflow-calls` names it `anchor` as it explodes the call. A named expression used as a keyword value takes parentheses of its own, so the value opens **one column further right** than the plain `=` gap `align-equals` writes, and counting that column takes the row past the 30-column budget, so the nested `len` call explodes.
 '''

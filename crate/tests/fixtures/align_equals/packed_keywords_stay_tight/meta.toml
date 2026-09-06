@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Condensed Keywords Stay Tight"
+title       = "Keywords Packed Onto One Line Stay Tight"
 
 description = '''
-The `check_output` call packs several keywords onto each physical line, `shell=True` through `errors=errors`. A keyword sharing its line with others keeps the tight `name=value` form PEP 8 gives a call-site keyword, so none of these takes the spaced-out `=` an exploded keyword would.
+The `check_output` call packs several keywords onto each physical line, from `shell=True` through `errors=errors`. **Every keyword keeps the tight `name=value` form**, because only a keyword alone on its line takes spaces around its `=`, and PEP 8 gives a packed call-site keyword none.
 '''

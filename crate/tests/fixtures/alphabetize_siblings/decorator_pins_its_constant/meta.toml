@@ -3,5 +3,5 @@ previewable = false
 title       = "A Decorator Pins the Constant It Reads"
 
 description = '''
-`@WRAP` is applied at class-definition time, so `WRAP = staticmethod` must already be assigned when `def parse` executes. Sorting `APPLE` ahead of `WRAP` would move `WRAP` below the method it decorates and call the decorator before it exists, so the constants **hold source order**.
+`@WRAP` is applied at class-definition time, so `WRAP = staticmethod` must already be assigned when `def parse` executes, and `APPLE` follows the method. **The constants keep source order**, because sorting `APPLE` ahead of `WRAP` would move `WRAP` below the method it decorates and call the decorator before it exists.
 '''

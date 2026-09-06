@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Comprehension Target Stays Scope-Local"
+title       = "A Comprehension Target Binds in Its Own Scope"
 
 description = '''
-`vals = [x for x in xs]` reuses the name of the module-level `x = "outer"`, yet the analysis records two separate `x` bindings. **The comprehension target stays in its own `Comprehension` scope and never reaches the module table**, so the module `x` shows no reads and the read inside the comprehension belongs to the scope-local `x`.
+`vals = [x for x in xs]` reuses the name of the module-level `x = "outer"`. **The table records two separate `x` bindings, the comprehension's in a `Comprehension` scope of its own**, so the module `x` shows no read and the read inside the comprehension belongs to the scope-local `x`.
 '''

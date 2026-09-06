@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Inline Dict Overflows Budget and Expands One Per Line"
+title       = "An Inline Dict Past the Budget Expands to One Entry per Line"
 
 description = '''
-`CONFIG` is written as one long dict literal on a single source line, and that line overflows the width budget once measured.
-
-`reflow-collections` puts each entry on its own line and **recursively expands the nested `limits` dict** as well. The scalar-valued entries partition ahead of the collection-valued `limits` and `tags`, their `:` columns align, and the dangling commas drop.
+`CONFIG` is written as one long dict literal on a single line that crosses the width budget. **`reflow-collections` puts each entry on its own line and expands the nested `limits` dict the same way**, with the scalar-valued entries partitioned ahead of the collection-valued `limits` and `tags` and their `:` columns aligned.
 '''

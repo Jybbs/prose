@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Field-to-Decorated-Method Cushion Sits Above the Stack"
+title       = "The Blank Line Before a Decorated Method Sits Above Its Decorators"
 
 description = '''
-The `capacity` field runs straight into the decorated `label` method, and the separating blank line lands **above the topmost `@cached_property` decorator** rather than between `@logged` and the `def`. The decorator stack therefore stays bound to the method below it, and the class header gains its own blank before `capacity`.
+Inside `Posting`, the `capacity` field runs straight into the `label` method's decorators `@cached_property` and `@logged`. **The one blank line between a field and a method is written above the topmost decorator**, rather than between `@logged` and the `def`, so the decorator stack stays bound to its method, and the class header gains its one blank line before `capacity`.
 '''

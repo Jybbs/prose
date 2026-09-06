@@ -3,7 +3,5 @@ previewable = true
 title       = "A Band Heading Stays Above Every Member"
 
 description = '''
-The comment `# the tunable solver knobs` describes the whole group of constants below it rather than `MAX_INT` alone, so it **stays at the head of the group** while the constants sort beneath it.
-
-`ALPHA_DECAY` moves up past `MAX_INT` into first place, and the comment does not travel down with `MAX_INT` into the middle of the group.
+The comment `# the tunable solver knobs` heads the run of `MAX_INT`, `ALPHA_DECAY`, and `PENALTY` and describes the whole group rather than `MAX_INT` alone. **The comment stays at the top of the group while the constants sort beneath it**, so `ALPHA_DECAY` moves into first place and the heading does not follow `MAX_INT` into the middle.
 '''

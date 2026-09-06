@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Pair Whose Breaks a Nested Bracket Holds Joins in One Pass"
+title       = "A Redundant Pair Whose Breaks Belong to an Inner Bracket Joins in One Pass"
 
 description = '''
-The grouping pair around the comparison holds none of the line breaks, since the `find` call's own parentheses hold them instead.
-
-`reflow-parentheses` can therefore fold the interior onto one row and drop the redundant pair in a single pass, which leaves `reflow-calls` **a call that already fits its row** and nothing further to do.
+The `if` condition is wrapped in a grouping pair, with the line break inside the `find` call's own parentheses rather than inside the pair. **`reflow-parentheses` joins the interior onto one row and drops the redundant pair in a single pass**, because the pair owns none of the breaks, leaving `reflow-calls` a call that already fits its row, so it changes nothing.
 '''

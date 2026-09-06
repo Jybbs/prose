@@ -1,11 +1,11 @@
 ---
-summary: 'For projects that already run Ruff, the `extend-ignore` configuration that keeps Ruff’s `pycodestyle` codes from flagging the whitespace *Prose*’s alignment rules deliberately introduce.'
+summary: 'For a project that already runs Ruff, the `extend-ignore` list that keeps Ruff’s `pycodestyle` codes from reporting the whitespace *Prose*’s alignment rules write.'
 tagline: 'alongside Ruff'
 ---
 
 # Ruff
 
-<Tool slug="ruff" /> is the token-level formatter most commonly paired with *Prose*. *Prose* doesn't need Ruff to run, in that it produces a settled layout from any well-formed Python source, though pairing the two cleanly takes the small Ruff configuration laid out below.
+<Tool slug="ruff" /> is the formatter most often run in the same project as *Prose*. *Prose* does not need Ruff, since it produces a settled layout from any well-formed Python source on its own, and running both takes only the small Ruff configuration below.
 
 ## Recommended Ordering
 
@@ -14,14 +14,14 @@ ruff format && prose format
 ```
 
 ::: warning Order Matters
-When both tools run on the same file, run Ruff first. *Prose*'s alignment math reads the line breaks already on the file, so a later Ruff re-wrap will undo per-line layout decisions and force a third pass.
+When both tools run on the same file, run Ruff first. *Prose* aligns within the lines as it finds them, so a later `ruff format` that rewraps a line undoes that alignment and a third run is needed.
 :::
 
-A second run of `ruff format` against *Prose*'s output changes no line breaks, because the layout *Prose* settles lives within the lines Ruff already wrapped. What it does undo is the horizontal padding, collapsing an aligned `=` run and a shared comment column back to single spacing, which is why *Prose* runs last. The pairing stays idempotent end-to-end in that order, meaning a developer can re-run `ruff format && prose format` after a manual edit without expecting either tool to thrash.
+A `ruff format` run over *Prose*'s output changes no line breaks, because *Prose* keeps every line break Ruff wrote. What it does remove is the horizontal padding, collapsing an aligned `=` run or a shared comment column back to single spaces, which is why *Prose* runs last. In that order the pair is idempotent, so re-running `ruff format && prose format` after an edit changes only what the edit touched.
 
 ## Ruff Configuration
 
-A handful of Ruff's `pycodestyle` codes flag whitespace patterns that *Prose*'s alignment rules deliberately introduce, so a clean pairing needs `extend-ignore` to silence them on the Ruff side. Copy this block into the project's `ruff.toml` *(or under `[tool.ruff]` in `pyproject.toml`)*:
+Several of Ruff's `pycodestyle` codes report whitespace that *Prose*'s alignment rules write on purpose, so running both cleanly means listing those codes under `extend-ignore` in Ruff's config. Copy this block into `ruff.toml` *(or under `[tool.ruff]` in `pyproject.toml`)*:
 
 ```toml
 [lint]
@@ -37,24 +37,24 @@ extend-ignore = [
 skip-magic-trailing-comma = true
 ```
 
-The conflict table:
+Each entry in the block covers one conflict:
 
 | Code | Conflict | Reason |
 |---|---|---|
-| `COM812` | Lint re-adds trailing commas | [[strip-trailing-commas]] removes them in multi-line collections and signatures |
-| `E203` | Lint flags whitespace before `:` | [[align-colons]] produces it in dict literals, annotated assignments, function signatures, and docstring `Args:` blocks |
-| `E221` | Lint flags multiple spaces before `=` | [[align-equals]] produces it across consecutive assignments at the same indentation |
-| `E272` | Lint flags multiple spaces before `import` / `as` | [[align-imports]] produces it across `from ... import ...` and `import ... as ...` groups |
-| `E501` | Lint flags lines past `line-length` | A long member in an alignment group pads shorter lines rightward, occasionally past the configured limit |
-| `skip-magic-trailing-comma` | Formatter re-expands collections by trailing-comma presence | `prose format` controls collection layout independently of comma signaling, via [[reflow-collections]] |
+| `COM812` | The lint adds trailing commas back | [[strip-trailing-commas]] removes them from multi-line collections and signatures |
+| `E203` | The lint reports whitespace before `:` | [[align-colons]] writes it in dict literals, annotated assignments, signatures, and docstring `Args:` sections |
+| `E221` | The lint reports multiple spaces before `=` | [[align-equals]] writes them across consecutive assignments at one indentation |
+| `E272` | The lint reports multiple spaces before `import` or `as` | [[align-imports]] writes them across `from ... import ...` and `import ... as ...` runs |
+| `E501` | The lint reports lines longer than `line-length` | Padding a short row out to a wide column can push it past the limit |
+| `skip-magic-trailing-comma` | The formatter explodes a collection whenever it ends in a trailing comma | [[reflow-collections]] decides collection layout by width and count rather than by a trailing comma |
 
 ## Import Sorting
 
-Ruff's import-sorting rules (*the isort `I` category, surfaced through `ruff check` rather than `ruff format`*) are a different kind of overlap from the formatter codes above. *Prose*'s [[alphabetize-siblings]] owns import ordering, grouping each block into bare, then external `from`, then local-package, with one blank line between groups, which does not match Ruff's isort layout. A project that runs `ruff check` should leave the `I` rules unselected so the two tools don't rewrite the same import block against competing conventions.
+Ruff's import-sorting rules *(the isort `I` category, run by `ruff check` rather than `ruff format`)* overlap with *Prose* differently from the formatter codes above. *Prose* orders imports itself, grouping each block into bare imports, then external `from` imports, then local-package imports, with one blank line between groups, which is not isort's layout. A project that runs `ruff check` should leave the `I` rules unselected so the two tools do not rewrite the same import block to different orders.
 
 ## In CI
 
-The pairing compiles into CI as two sequential check steps, with the exit codes gating the workflow. The <Tool slug="github" /> integration page covers the workflow shape end-to-end:
+Both tools run as check steps, and either non-zero exit fails the job. The <Tool slug="github" /> integration page covers the whole workflow, the annotation formats, and the SARIF upload:
 
 ```yaml
 - run: uv tool install ruff
@@ -63,18 +63,16 @@ The pairing compiles into CI as two sequential check steps, with the exit codes 
 - run: prose check .
 ```
 
-A non-zero exit from either step fails the gate. The [**GitHub Actions**](/integrations/github-actions) integration page covers the annotation forms and SARIF upload.
-
 ## In an Editor
 
-For run-on-save in editors, chain the commands in the save hook so Ruff settles tokens before *Prose* lays out lines:
+For format-on-save, chain both commands in the save hook, Ruff first:
 
 ```bash
 ruff format ${file} && prose format ${file}
 ```
 
-The [**Editor**](/integrations/editor) integration page covers the per-editor wiring for VSCode, Neovim, JetBrains, Sublime Text, Emacs, and Helix.
+The [**Editor**](/integrations/editor) page covers the setup for VSCode, Neovim, JetBrains, Sublime Text, Emacs, and Helix.
 
 ## Other Token-Level Formatters
 
-Black and autopep8 pair with *Prose* through the same shape, with Black requiring `--skip-magic-trailing-comma` so it doesn't re-expand collections that [[reflow-collections]] is responsible for. The conflict table above transfers directly, because Black, autopep8, and Ruff all consume `pycodestyle`'s codes.
+Black and autopep8 run with *Prose* the same way, with Black needing `--skip-magic-trailing-comma` so it does not explode collections that [[reflow-collections]] lays out. The conflict table above applies as written, because Black, autopep8, and Ruff all use `pycodestyle`'s codes.

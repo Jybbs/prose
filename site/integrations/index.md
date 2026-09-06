@@ -1,6 +1,6 @@
 # Integrations
 
-Every integration on the pages below is a thin wrapper around `prose format` or `prose check`, wired into a different boundary in the development loop. The editor wraps the save event, the pre-commit hook wraps the staging boundary, the CI workflow wraps the merge gate. Each layer runs the same CLI against the same [`[tool.prose]`](/reference/configuration) table and surfaces the same [exit codes](/reference/exit-codes), so adopting a second integration is configuration rather than a new mental model.
+Every integration on the pages below runs `prose format` or `prose check` at one point in the development loop. The editor runs it on save, the pre-commit hook runs it on commit, and the CI workflow runs it before merge. Each one reads the same [`[tool.prose]`](/reference/configuration) table and reports the same [exit codes](/reference/exit-codes), so adding a second integration is a configuration change rather than a new tool to learn.
 
 ## Pick Your Boundary
 
@@ -8,14 +8,14 @@ Every integration on the pages below is a thin wrapper around `prose format` or 
 
 ## How the Boundaries Compose
 
-Three editing boundaries *(save, commit, merge)* are complementary rather than redundant, each catching what the layer before it lets through:
+The three points *(save, commit, merge)* complement one another, each catching what the one before it missed:
 
-1. Run-on-save catches layout drift the instant it appears, leaving the working tree clean before the developer thinks about staging.
-2. The pre-commit hook catches the case where a save fires without the editor integration *(an upstream patch applied with `git apply`, a teammate's edit pulled in unformatted)*.
-3. The CI gate catches every remaining case, including pushes from contributors who run none of the local hooks.
+1. Format-on-save fixes layout as soon as it drifts, so the working tree is already formatted before anything is staged.
+2. The pre-commit hook catches a change that arrived without passing through the editor integration *(a patch applied with `git apply`, a teammate's unformatted edit pulled in)*.
+3. The CI gate catches everything else, including pushes from contributors who run neither local hook.
 
-A project that wires all three runs the same `prose check` or `prose format` against the same [`[tool.prose]`](/reference/configuration) at every layer, so a rule disabled in one place is disabled everywhere.
+A project that wires all three runs the same `prose check` or `prose format` against the same [`[tool.prose]`](/reference/configuration) at every point, so a rule turned off in one place is off everywhere.
 
 ## See Also
 
-For the CLI flags every integration aims, see [**Usage**](/usage/) and the [**CLI Reference**](/reference/cli). For the exit-code contract every CI integration compiles against, see [**Exit Codes**](/reference/exit-codes), and for the diagnostic shapes the integrations route, see [**Output Formats**](/reference/output-formats). For the rule catalog the integrations run, see [**Rules**](/rules/).
+The [**Usage**](/usage/) section and the [**CLI Reference**](/reference/cli) cover the commands and flags every integration runs. [**Exit Codes**](/reference/exit-codes) lists what each exit code means for a CI gate, [**Output Formats**](/reference/output-formats) covers the diagnostic formats an integration can read, and [**Rules**](/rules/) lists the rules every integration runs.

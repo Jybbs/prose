@@ -3,5 +3,5 @@ previewable = false
 title       = "A `# prose: ignore` Comment Drops the Diagnostic"
 
 description = '''
-`os` is reached only through `os.getcwd`, the single-attribute shape this lint reports. The `# prose: ignore[bare-imports]` trailing the import line drops the diagnostic for that rule alone, so the import passes while every other rule still reads the line.
+`import os  # prose: ignore[bare-imports]` is reached only through `os.getcwd`, the narrow use the lint reports. **No diagnostic is reported**, because the directive drops the finding for that rule on that line alone, and every other rule still reads the line.
 '''

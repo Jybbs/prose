@@ -1,11 +1,9 @@
 [docs]
 previewable = true
-title       = "Nested Collections Expand Level by Level Independently"
+title       = "Each Nested Collection Settles Its Own Layout at Its Own Column"
 
 description = '''
-**Each nested collection settles its own layout at its own column**, rather than every level following whatever the outermost one does.
+`cascade`, `tiered_dict`, `shallow_dict_in_dict`, and `walks_through_singleton` each nest a collection inside another on one over-wide line, and `outer_holds_with_inner` and `outer_pinned_inner_holds` each carry an inner list written across rows. **Every nested collection expands or stays inline on its own width at its own column**, rather than following whatever the outermost one does.
 
-In `cascade` the outer list expands and carries its over-wide first dict into an expansion too, while `{"name": "bob", "role": "user"}` stays inline. In `tiered_dict` the key text of `"primary_database"` counts toward its value's column, which pushes that inner dict past the budget while `"cache": {"ttl": 60}` still fits. `walks_through_singleton` keeps its singleton `[{` tight while the six-entry dict inside it expands.
-
-Two cases run the other way. The inner list of `outer_holds_with_inner` was written across lines and holds its own break, and that break is what keeps the outer list from joining. `outer_pinned_inner_holds` shows the same hold where the outer is already pinned past the budget by its long strings.
+In `cascade` the outer list expands and its over-wide first dict expands with it while `{"name": "bob", "role": "user"}` stays inline, in `tiered_dict` the four-entry inner dict under `"primary_database"` expands on its own count and width while `"cache": {"ttl": 60}` fits, and `walks_through_singleton` keeps its `[{` tight while the six-entry dict inside it expands. The inner list of `outer_holds_with_inner` keeps its column and packs onto one row inside an outer list that keeps its own column, whereas `outer_pinned_inner_holds` keeps the same inner column under an outer list its long strings already keep past the budget.
 '''

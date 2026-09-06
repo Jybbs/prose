@@ -3,5 +3,5 @@ previewable = false
 title       = "A Grouped Value Reshapes Inside Its Pair"
 
 description = '''
-The bare generator passed to `collect` gains its parameter's name, `entries=`, and a named generator argument must sit in parentheses. The `transform` call inside it explodes, so the new parentheses wrap the exploded form rather than preserving the one-line shape they enclosed.
+`collect(transform(alpha, beta, gamma) for alpha in rows)` passes a bare generator to a `collect` defined above it, under `code-line-length = 40`. **The generator gains its parameter name `entries=` and a pair of parentheses, and the `transform` call inside it explodes within that pair**, because a named generator argument must sit in parentheses and the new pair wraps the exploded form rather than the one-line form it enclosed.
 '''

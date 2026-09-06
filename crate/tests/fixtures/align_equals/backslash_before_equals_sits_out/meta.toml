@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Backslash Before the Equals Sits Out"
+title       = "A Backslash Continuation Drops the Assignment From the Group"
 
 description = '''
-A backslash continuation splits `foo` from its `=`, which lands on the next line, and that **drops the assignment out of the group**. `bar = 2` stands alone with no partner to align against, so nothing is padded and the source passes through unchanged.
+`foo` is split from its `=` by a backslash continuation, so the `=` sits on the next line, with `bar = 2` beneath it. **The continued assignment leaves the group**, and `bar = 2` has no partner left to align with, so the source passes through unchanged.
 '''
