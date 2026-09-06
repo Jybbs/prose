@@ -2,10 +2,9 @@
 //! A `==` or `!=` test against `None` becomes `is` or `is not`, a test
 //! whose constant side leads flips so the variable leads, and a leading
 //! `not` folds into the `in` or `is` it negates. A test against `True`
-//! or `False` is flagged rather than rewritten, because dropping the
-//! literal changes the test for a non-boolean operand. A chained
-//! comparison is left as written, as is one inside an f-string or
-//! t-string replacement field.
+//! or `False` is flagged rather than rewritten. A chained comparison is
+//! left as written, as is one inside an f-string or t-string
+//! replacement field.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, CmpOp, ExprCompare};
@@ -38,7 +37,7 @@ pub(crate) struct NormalizeComparisons {
 }
 
 impl NormalizeComparisons {
-    pub(crate) const MESSAGE: &'static str = "normalize a comparison to state its check directly";
+    pub(crate) const MESSAGE: &'static str = "rewrite a comparison to state its test directly";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
@@ -53,9 +52,8 @@ impl NormalizeComparisons {
 
     /// The form `test` settles on across the enabled facets, or `None`
     /// where every facet leaves it as authored. The operand swap
-    /// resolves first so the identity rewrite reads the settled order,
-    /// and the `not` fold resolves last so it reads the settled
-    /// operator.
+    /// resolves first, then the identity rewrite, then the `not` fold,
+    /// each reading the settled result of the one before.
     fn plan(&self, source: &Source, test: Test<'_>, negated: bool) -> Option<Plan> {
         let Test {
             mut left,

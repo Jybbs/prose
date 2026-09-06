@@ -6,10 +6,10 @@ use super::*;
 use crate::primitives::inline::display_width;
 
 /// Emits the break each over-budget or raggedly stacked string run
-/// needs, probing each expression the parent-tracking walk hands it
-/// alongside its enclosing node, which recovers a run's grouping
-/// parentheses, and the ancestor chain above it, which locates the
-/// statement its bracket depth counts from.
+/// needs. The parent-tracking walk hands each expression over with its
+/// enclosing node, which recovers a run's grouping parentheses, and
+/// its ancestor chain, which locates the statement its bracket depth
+/// counts from.
 pub(super) struct Layout<'a> {
     pub(super) code_line_length: usize,
     pub(super) docstrings: Vec<TextRange>,
@@ -21,10 +21,9 @@ pub(super) struct Layout<'a> {
 
 impl<'a> Layout<'a> {
     /// True when the bracket immediately enclosing `span` has already
-    /// put it on a later row, the shape that takes the break in place
-    /// rather than in parentheses of its own. A bracket still sharing
-    /// the run's row leaves no deeper indent for a continuation to land
-    /// at, and an unbracketed run has none at all.
+    /// put it on a later row, the shape that breaks in place rather
+    /// than inside parentheses of its own. False for a bracket still
+    /// sharing the run's row and for an unbracketed run.
     fn breaks_in_place(&self, span: TextRange, ancestors: &[AnyNodeRef]) -> bool {
         let statement = ancestors
             .iter()

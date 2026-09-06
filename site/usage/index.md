@@ -1,3 +1,7 @@
+---
+description: "The path from a fresh install to a `prose check` step gating CI, one page per step."
+---
+
 # Usage
 
 The Usage chapters follow the path from a fresh install to a `prose check` step gating CI, one page per step. This section tells that story against a working project, whereas the [**Reference**](/reference/) section lists every flag and key.
@@ -52,9 +56,7 @@ The commands below cover almost every run, plus one for adopting a single rule a
 
 ## The Section at a Glance
 
-- [**Installation**](/usage/installation) covers the package managers, post-install verification, and the platforms wheels are built for.
-- [**Quick Start**](/usage/quick-start) walks each command end to end against a sample project.
-- [**Suppression**](/usage/suppression) covers `# fmt: off`, `# fmt: skip`, and `# prose: ignore[<rule>]`, one directive per scope.
+<SectionGlance section="usage" />
 
 ## See Also
 

@@ -32,8 +32,8 @@ pub(crate) fn slot_holding<T: Ranged>(items: &[T], offset: TextSize) -> Option<u
 }
 
 /// Inverts `order` into the slot each item index occupies, the reverse
-/// of the index-per-slot mapping `order` itself holds. Reading
-/// `slot_positions(order)[idx]` answers where item `idx` landed.
+/// of the index-per-slot mapping `order` itself holds.
+/// `slot_positions(order)[idx]` is the slot item `idx` landed in.
 pub(crate) fn slot_positions(order: &[usize]) -> Vec<usize> {
     let mut positions = vec![0usize; order.len()];
     for (slot, &idx) in order.iter().enumerate() {

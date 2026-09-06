@@ -4,10 +4,8 @@
 //! escapes its surviving delimiter needs. `unify-prefixes` lowercases a
 //! string prefix and drops the no-op `u`. `unify-numerics` uppercases hex
 //! digits while lowercasing the radix marker, the exponent, and the `j`
-//! suffix. The quote facet passes over the docstring slot, whose frame
-//! `frame-docstrings` owns, and over any literal inside a replacement
-//! field, whose quotes the enclosing string constrains before Python
-//! 3.12.
+//! suffix. The quote facet passes over the docstring slot and over any
+//! literal inside a replacement field.
 
 use std::borrow::Cow;
 
@@ -47,7 +45,7 @@ pub(crate) struct NormalizeLiterals {
 
 impl NormalizeLiterals {
     pub(crate) const MESSAGE: &'static str =
-        "canonicalize literal quote, prefix, and numeric spelling";
+        "normalize a literal's quotes, prefix, and numeric spelling";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
@@ -100,9 +98,9 @@ struct Normalizer<'a> {
 }
 
 impl<'a> Normalizer<'a> {
-    /// Emits the edits closing the interpolated string `frame` opened,
-    /// its opener carrying the prefix and both delimiters moving
-    /// together with every literal run between them.
+    /// Emits the edits for the interpolated string `frame` opened and
+    /// `closer` ends, respelling the opener's prefix and moving both
+    /// delimiters together with every literal run between them.
     fn close(&mut self, closer: TextRange) {
         let frame = self
             .open
@@ -189,8 +187,7 @@ impl<'a> Normalizer<'a> {
         }
     }
 
-    /// Files `edit` as a fix group of its own, the shape a literal
-    /// whose respelling stands independent of every other one takes.
+    /// Files `edit` as a fix group of its own.
     fn push(&mut self, edit: Option<Edit>) {
         self.groups.extend(edit.map(|edit| vec![edit]));
     }

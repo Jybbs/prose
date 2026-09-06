@@ -1,3 +1,7 @@
+---
+description: "Covers the `prose.toml`, `.config/prose.toml`, and `pyproject.toml` config files and every per-rule facet."
+---
+
 # Configuration
 
 *Prose* reads its configuration from a `prose.toml` file, a `.config/prose.toml`, or the `[tool.prose]` table of a `pyproject.toml`, searching upward from each input file's directory to the nearest one. With no configuration, every rule runs at its default, so a project that writes no config gets the standard *Prose* layout. The whole key set is also available as a [JSON Schema](https://json-schema.org) through [`prose schema`](/reference/cli#prose-schema).
@@ -106,7 +110,7 @@ Every key follows one shape, so its name predicts its kind:
 
 ## Docstring Budgets
 
-A docstring holds two kinds of text inside one triple-quoted region. The description prose between the opening `"""` and the first section heading reads as paragraphs and wraps to `docstring-line-length` (*76 by default*), a comfortable line for sustained reading. Each Title-case-headed section after it reads as a code-shaped table, whose prose lines take `code-line-length` (*88 by default*) to match the surrounding code, whereas its `name: description` entries wrap to `docstring-line-length` with a hanging indent at the column the description starts on. `docstring-structured-policy` switches those prose lines to `docstring-line-length` for a project that prefers one narrower budget across the whole docstring. [[wrap-docstrings]] reads both budgets.
+A docstring holds two kinds of text inside one triple-quoted region. The description prose between the opening `"""` and the first section heading reads as paragraphs and wraps to `docstring-line-length` (*<ConfigDefault facet="docstring-line-length" /> by default*), a comfortable line for sustained reading. Each Title-case-headed section after it reads as a code-shaped table, whose prose lines take `code-line-length` (*<ConfigDefault facet="code-line-length" /> by default*) to match the surrounding code, whereas its `name: description` entries wrap to `docstring-line-length` with a hanging indent at the column the description starts on. `docstring-structured-policy` switches those prose lines to `docstring-line-length` for a project that prefers one narrower budget across the whole docstring. [[wrap-docstrings]] reads both budgets.
 
 ## Per-Pattern Overrides
 

@@ -26,7 +26,7 @@ The sibling rules [[frame-docstrings]] and [[expand-docstrings]] settle the quot
 
 <RuleConfigTable />
 
-The description and structured budgets come from the top-level [**Configuration**](/reference/configuration#top-level-keys) keys, where `docstring-line-length` (*default 76*), `code-line-length` (*default 88*), and `docstring-structured-policy` (*defaulting to `"code-line-length"`*) set the column targets.
+The description and structured budgets come from the top-level [**Configuration**](/reference/configuration#top-level-keys) keys, where `docstring-line-length` (*default <ConfigDefault facet="docstring-line-length" />*), `code-line-length` (*default <ConfigDefault facet="code-line-length" />*), and `docstring-structured-policy` (*defaulting to <ConfigDefault facet="docstring-structured-policy" />*) set the column targets.
 
 </template>
 

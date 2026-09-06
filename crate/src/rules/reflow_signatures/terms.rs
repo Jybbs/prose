@@ -1,5 +1,5 @@
-//! The shape decision one source's signatures resolve under, read from
-//! configuration and answered per definition.
+//! The shape decision for one source's signatures, read from
+//! configuration and resolved per definition.
 
 use std::borrow::Cow;
 
@@ -15,8 +15,7 @@ use crate::{
 };
 
 /// The terms this rule lays a signature out under, resolved from
-/// configuration, so a rule measuring a call inside a parameter reads
-/// the same decision about the signature around it.
+/// configuration.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Terms {
     code_line_length: usize,
@@ -56,7 +55,7 @@ impl Terms {
     }
 }
 
-/// The shape decision over one source: whether a signature lays out one
+/// The shape decision over one source, whether a signature lays out one
 /// parameter per line or on one row.
 #[derive(Clone, Copy)]
 pub(crate) struct Expansion<'a> {
@@ -88,9 +87,8 @@ impl Expansion<'_> {
     }
 
     /// The shape `fd`'s signature takes, `None` where a comment inside
-    /// `()` pins the shape it has. The one-row reading answers whether
-    /// every parameter reaches a single row at all, so a signature
-    /// holding one that cannot is laid out one per line whatever its
+    /// `()` pins the shape it has. A signature holding a parameter that
+    /// cannot fit on one row is laid out one per line whatever its
     /// width would have been.
     pub(super) fn shape(&self, fd: &StmtFunctionDef) -> Option<Shape> {
         let params = &fd.parameters;

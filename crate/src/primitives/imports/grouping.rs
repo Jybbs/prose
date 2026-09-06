@@ -8,8 +8,8 @@ use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
 use super::*;
 use crate::primitives::binding::top_level_module;
 
-/// What distinguishes one `from`-import's module from another, the
-/// leading-dot count alongside the module name.
+/// The leading-dot count and module name that tell one `from`-import's
+/// module from another's.
 pub(crate) type ModuleKey<'a> = (u32, Option<&'a str>);
 
 /// Canonical import group. Derived `Ord` ranks the variants in
@@ -54,7 +54,7 @@ pub(crate) fn import_group(stmt: &Stmt, first_party: &[String]) -> Option<Import
 /// `from` by `(relative, depth, module)`. An absolute `from` import
 /// leads every relative one, and relative imports run furthest to
 /// closest, so `..pkg` precedes `.pkg`. Ungrouped, every group below
-/// `__future__` collapses to one rank. `None` pins a non-import.
+/// `__future__` collapses to one rank. `None` for a non-import.
 pub(crate) fn import_sort_key<'a>(
     stmt: &'a Stmt,
     first_party: &[String],
@@ -79,8 +79,7 @@ pub(crate) fn import_sort_key<'a>(
     })
 }
 
-/// The module a `from`-import reads, its leading-dot count beside the
-/// module name, what tells one such import's module from another's.
+/// The leading-dot count and module name of a `from`-import.
 pub(crate) fn module_key(node: &StmtImportFrom) -> ModuleKey<'_> {
     (node.level, node.module.as_deref())
 }

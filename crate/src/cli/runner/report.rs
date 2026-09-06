@@ -63,8 +63,9 @@ pub(super) fn finish<E: Write>(
 }
 
 /// Writes a run's stderr tail: one bug notice per unsettled rewrite,
-/// then the rewrite or diagnostics outcome, then in a format mode whose
-/// diagnostics never reached stdout the surviving-lint disclosure.
+/// then the rewrite or diagnostics outcome, then the surviving-lint
+/// disclosure in a format mode whose diagnostics never reached stdout,
+/// then the unsettled-file count.
 pub(super) fn render_summary<E: Write>(
     stderr: &mut E,
     present: &Presentation,

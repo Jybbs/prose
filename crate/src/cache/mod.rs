@@ -98,8 +98,7 @@ mod tests {
     }
 
     /// Writes `entry` under `key` the way the run path does, borrowing
-    /// the diagnostics and rewrite rather than handing over an owned
-    /// record.
+    /// the diagnostics and rewrite.
     fn insert(cache: &Cache, key: &CacheKey, entry: &CacheEntry) {
         cache.insert(
             key,

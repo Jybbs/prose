@@ -1,6 +1,6 @@
 //! Re-seats the continuation rows of a logical line once a rule removes
-//! text from its rows, each row reading its indent against the bracket
-//! it sits inside: a hanging row keeps its column, a row on a token's
+//! text from its rows, each row's indent read against the bracket it
+//! sits inside: a hanging row keeps its column, a row on a token's
 //! column follows the token, and a row one or two indent steps past the
 //! opener's row moves as that row does. A row inside a row-spanning
 //! string, a row indented with a tab, and a row aligned to nothing keep
@@ -126,8 +126,8 @@ pub(crate) fn push_reseat_edits(source: &Source, removals: &[Edit], edits: &mut 
     }
 }
 
-/// True for a token a row aligns to by intent rather than by the
-/// coincidence of a hang, every kind but a bracket and a comma.
+/// True for every token kind but a bracket and a comma, the kinds a
+/// row aligns to by intent.
 fn is_code(kind: TokenKind) -> bool {
     !is_opener(kind) && !is_closer(kind) && kind != TokenKind::Comma
 }
@@ -139,8 +139,8 @@ mod tests {
     use super::*;
     use crate::testing::{applied_text, parse};
 
-    /// Each two-space run `src` writes directly after a `(` or a `[`,
-    /// the padding a shedding rule removes, ascending by start.
+    /// Each two-space run in `src` directly after a `(` or a `[`, the
+    /// padding a shedding rule removes, ascending by start.
     fn opener_padding(src: &str) -> Vec<TextRange> {
         let mut pads: Vec<TextRange> = src
             .match_indices("(  ")
@@ -156,8 +156,8 @@ mod tests {
         pads
     }
 
-    /// The text `src` leaves once its opener padding is deleted and the
-    /// reseat edits that deletion earns are applied beside it.
+    /// `src` with its opener padding deleted and the reseat edits that
+    /// deletion produces applied beside it.
     fn reseated(src: &str) -> String {
         let source = parse(src);
         let removals: Vec<Edit> = opener_padding(src)

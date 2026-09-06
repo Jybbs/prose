@@ -2,9 +2,9 @@
 //!
 //! Walks the module once and records, for every name introduced or
 //! shadowed in a lexical scope, the offsets of every write and read,
-//! a read finding no binding mid-walk resolving against the completed
-//! scope chain after it. Consuming rules query by `BindingId`, name,
-//! offset, or owning `&Stmt` rather than driving their own walk.
+//! resolving a read that finds no binding mid-walk against the
+//! completed scope chain afterward. Consuming rules query by
+//! `BindingId`, name, offset, or owning `&Stmt`.
 //!
 //! ## Scope model
 //!
@@ -221,9 +221,7 @@ impl BindingAnalysis {
     }
 
     /// Every module-scope read as its offset beside the name read, in
-    /// offset order. Built on first use, so a caller asking about one
-    /// body's ranges walks the reads inside that span rather than every
-    /// read the file holds.
+    /// offset order, built on first use.
     fn module_reads(&self) -> &[(TextSize, Name)] {
         self.module_reads.get_or_init(|| {
             let mut reads: Vec<(TextSize, Name)> = self.scopes[0]

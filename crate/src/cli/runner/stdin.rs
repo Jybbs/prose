@@ -51,7 +51,7 @@ pub(super) fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
         } else if format.is_text() {
             let to_write: &[u8] = match rewrite {
                 Rewrite::Changed(kind) => kind.written().as_bytes(),
-                // A non-Python notebook carries no rewrite, so echo stdin verbatim.
+                // A passed-over or unchanged source echoes stdin verbatim.
                 Rewrite::PassedOver | Rewrite::Skipped | Rewrite::Unchanged => original.as_bytes(),
             };
             writer
@@ -89,9 +89,8 @@ pub(super) fn read_stdin<R: Read>(stdin: R) -> Result<String, FileOutcome> {
 }
 
 /// The resolution governing a stdin run: the config of the file
-/// `filename` names, so a named buffer draws the ancestors and
-/// overrides its on-disk twin would, and the working directory's for an
-/// unnamed one.
+/// `filename` names, with its ancestors and overrides, or the working
+/// directory's for an unnamed buffer or one whose config fails to load.
 pub(super) fn stdin_resolved(
     setup: &RunSetup,
     filename: Option<&Path>,

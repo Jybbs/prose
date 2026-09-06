@@ -1,12 +1,10 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/expand_docstrings/module_oneliner_rewrites/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/expand_docstrings/module_oneliner_rewrites/input.py
 ---
-# This fixture pins module-level single-line docstring rewriting at
-# column 0. The fixture's module docstring is itself the rewrite
-# target, so the conventional triple-quoted claim-banner is replaced
-# by these `#` comments.
+# A single-line module docstring at column 0. The docstring is the
+# rewrite target itself, so these comments stand above it in its place.
 
 
 """

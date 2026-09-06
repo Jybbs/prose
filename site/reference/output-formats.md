@@ -1,3 +1,7 @@
+---
+description: "Covers the `text`, `json`, `github`, and `sarif` formats."
+---
+
 # Output Formats
 
 `--output-format` selects the format diagnostics print in, with one format per kind of reader. `text` is the default for a person reading a terminal, printing rustc-style snippets with carets and a suggested fix. `json` prints Ruff-shaped NDJSON for editor plugins and tooling, in the record shape editor diagnostic panels already read. `github` prints workflow commands that <Tool slug="github" /> renders as inline annotations. `sarif` prints a [**SARIF 2.1.0**](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) document for upload to [**GitHub Code Scanning**](https://docs.github.com/en/code-security/code-scanning), which keeps findings across runs in the repository's Security tab.

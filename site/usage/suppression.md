@@ -1,3 +1,7 @@
+---
+description: "Covers `# fmt: off`, `# fmt: skip`, and `# prose: ignore[<rule>]`, one directive per scope."
+---
+
 # Suppression
 
 *Prose* is opinionated by design, and most projects run every rule at its default. A suppression directive exempts one place from a rule without turning that rule off for the whole project. *Prose* offers suppression at the file, block, line, and dict-literal scopes, and choosing a directive means choosing the narrowest scope that covers the exception.

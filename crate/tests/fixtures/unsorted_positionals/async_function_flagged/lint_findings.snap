@@ -15,6 +15,6 @@ input_file: crate/tests/fixtures/unsorted_positionals/async_function_flagged/inp
       "column": 16,
       "row": 1
     },
-    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
   }
 ]

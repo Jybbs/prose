@@ -1,6 +1,5 @@
 ---
 caption : "Removes an import that binds a name nothing references or repeats a binding an earlier import already made, and reports the unreferenced one in a package `__init__.py` instead of removing it."
-lints   : true
 related : [bare-imports, group-imports, inlinable-bindings, modernize-annotations]
 layout  : doc
 ---

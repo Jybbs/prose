@@ -78,8 +78,8 @@ pub(super) fn serve(connection: Connection) -> anyhow::Result<()> {
 }
 
 /// Reads each message until the client requests shutdown or sends a bare
-/// `exit`. A malformed message is logged and dropped rather than ending the
-/// session, so one bad payload never tears down a live editor.
+/// `exit`. A malformed message is logged and dropped, leaving the session
+/// running.
 fn main_loop(
     connection: &Connection,
     encoding: PositionEncoding,

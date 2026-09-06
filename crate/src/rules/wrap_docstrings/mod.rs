@@ -3,11 +3,12 @@
 //! sections to the budget `docstring_structured_policy` selects, and
 //! each `name: description` entry to `docstring_line_length` with a
 //! hanging indent, later lines opening no entry of their own gathered
-//! into it. Every region [`LineScan`](crate::primitives::docstring::LineScan)
-//! marks verbatim passes through
-//! unchanged, reflowed prose collapses interior whitespace to one
-//! space, and a backslash continuing a line of non-raw prose resolves
-//! into the join rather than reaching the output as a word.
+//! into it. Every region
+//! [`LineScan`](crate::primitives::docstring::LineScan) marks verbatim
+//! passes through unchanged, reflowed prose collapses interior
+//! whitespace to one space, and a backslash continuing a line of
+//! non-raw prose resolves into the join rather than reaching the
+//! output as a word.
 
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextSize};
@@ -45,7 +46,7 @@ pub(crate) struct WrapDocstrings {
 }
 
 impl WrapDocstrings {
-    pub(crate) const MESSAGE: &'static str = "wrap docstring prose to the configured budget";
+    pub(crate) const MESSAGE: &'static str = "wrap docstring prose to its line budget";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

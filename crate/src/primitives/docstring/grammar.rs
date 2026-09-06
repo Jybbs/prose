@@ -33,7 +33,7 @@ pub(crate) fn section_heading(trimmed: &str) -> Option<&str> {
     let end = title_case_run(trimmed)?;
     let rest = &trimmed[end..];
     // A second colon opens a reStructuredText literal block rather than
-    // a section, so the indented lines beneath it stay verbatim.
+    // a section.
     (rest.starts_with(':') && !rest.starts_with("::")).then(|| &trimmed[..end])
 }
 

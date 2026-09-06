@@ -26,9 +26,9 @@ pub(super) fn guarded_regions(body: &[Stmt]) -> Vec<TextRange> {
 }
 
 /// The span of each arm `stmt` guards, `None` for a statement that
-/// guards none. An `if` and a `match` guard no arm here. A `while`
-/// test re-runs on each pass and an `except` clause's type expression
-/// runs only once a raise reaches it, so both join the arm bodies.
+/// guards none. An `if` and a `match` guard no arm here, whereas a
+/// `while` test and an `except` clause's type expression join the arm
+/// bodies.
 fn guarded_arms(stmt: &Stmt) -> Option<Vec<TextRange>> {
     let deferred = match stmt {
         Stmt::For(_) | Stmt::FunctionDef(_) | Stmt::With(_) => Vec::new(),
@@ -53,9 +53,7 @@ fn guarded_arms(stmt: &Stmt) -> Option<Vec<TextRange>> {
 
 /// The spans of `expr` that run per item or on a later call, `None` for
 /// an expression that defers nothing. A lambda defers its body alone,
-/// leaving its parameter defaults to the enclosing scope, and a
-/// comprehension's first iterable runs there too, so both sit outside
-/// the spans returned.
+/// and a comprehension's spans leave out its first iterable.
 fn guarded_spans(expr: &Expr) -> Option<Vec<TextRange>> {
     let generators = match expr {
         Expr::DictComp(ExprDictComp { generators, .. })

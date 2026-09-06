@@ -1,3 +1,7 @@
+---
+description: "Covers the package managers, post-install verification, and the platforms wheels are built for."
+---
+
 # Installation
 
 *Prose* is a single native binary, written in Rust and published on PyPI as a Python wheel, so installing it needs no Rust toolchain. Pre-built wheels cover Linux, macOS, and Windows, and the formatter runs with no Python interpreter on the hot path. The recommended installer is <Tool slug="uv" />, whose `uv tool install` downloads the wheel for your platform and puts the `prose` executable on your `PATH` with no virtual environment to manage.
@@ -22,13 +26,7 @@ prose --version
 
 Pre-built wheels cover the following targets:
 
-| Triple | Platform |
-|---|---|
-| `x86_64-unknown-linux-gnu` | Linux x86_64 *(glibc, manylinux)* |
-| `aarch64-unknown-linux-gnu` | Linux aarch64 *(glibc, manylinux)* |
-| `x86_64-apple-darwin` | macOS Intel |
-| `aarch64-apple-darwin` | macOS Apple Silicon |
-| `x86_64-pc-windows-msvc` | Windows x86_64 |
+<WheelPlatforms />
 
 A source distribution is published beside the wheels for any other target *(musl-based Linux distributions, FreeBSD, 32-bit architectures)*. Installing from the source distribution needs a Rust toolchain on the machine, because the installer compiles the binary rather than downloading one.
 

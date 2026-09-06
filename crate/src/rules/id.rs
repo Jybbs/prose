@@ -1,5 +1,5 @@
-//! The rule identifier: a registered slug as a copyable handle, its
-//! parse off a string, and its serde and display forms.
+//! The rule identifier: a registered slug as a copyable handle, parsed
+//! from a string, with its serde and display forms.
 
 use std::{
     fmt::{self, Display},
@@ -12,8 +12,8 @@ use thiserror::Error;
 
 use super::registry::{KNOWN_IDS, slug_index};
 
-/// Returned when a string fails to match any registered rule slug.
-/// Carries the offending input so callers can surface it verbatim.
+/// Returned when a string matches no registered rule slug, carrying
+/// the input verbatim.
 #[derive(Debug, Error)]
 #[error("unknown rule id `{0}`")]
 pub struct ParseRuleIdError(String);

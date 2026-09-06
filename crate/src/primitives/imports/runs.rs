@@ -39,11 +39,10 @@ pub(crate) fn future_annotations_alias(node: &StmtImportFrom) -> Option<usize> {
 }
 
 /// Canonical blank-line count between two adjacent import statements,
-/// the one decider the import collapse, the banded import arm, and
-/// `space-statements` share. `Some(1)` divides distinct groups while
-/// `grouped`, `Some(0)` seats every other import pair tight, and `None`
-/// pins any pair that is not two imports. Ungrouped, the imports read as
-/// one flat block, so no pair carries a divider.
+/// shared by the import collapse, the banded import arm, and
+/// `space-statements`. `Some(1)` divides distinct groups while
+/// `grouped`, `Some(0)` covers every other import pair, and `None` any
+/// pair that is not two imports. Ungrouped, no pair carries a divider.
 pub(crate) fn import_blank_lines(
     a: &Stmt,
     b: &Stmt,

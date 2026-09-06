@@ -38,7 +38,7 @@ pub(crate) fn item_indent(indent: usize) -> usize {
 /// Greedily groups item indices into lines, each opening after
 /// `prefix_width` and packing items joined by `separator_width` columns
 /// up to `budget`. The first item on every line is always placed, so an
-/// item whose own line overflows still lands rather than splitting away.
+/// item that overflows on its own still lands.
 pub(crate) fn pack(
     widths: &[usize],
     prefix_width: usize,

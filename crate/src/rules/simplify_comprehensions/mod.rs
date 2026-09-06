@@ -5,8 +5,8 @@
 //! reaches `set()` rather than a brace form, because `{}` names an empty
 //! dict. A constructor name the module binds itself leaves every call to
 //! it alone. The walk reads expressions in source order, so an enclosing
-//! rewrite is recorded first and a nested candidate whose edits fall
-//! where it already edits drops.
+//! rewrite is recorded first and a nested candidate whose edits
+//! overlap it is dropped.
 
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextRange};
@@ -28,7 +28,7 @@ use self::{constructor::Constructor, plan::plan_for, render::edits_for};
 pub(crate) struct SimplifyComprehensions;
 
 impl SimplifyComprehensions {
-    pub(crate) const MESSAGE: &'static str = "collapse a redundant collection constructor";
+    pub(crate) const MESSAGE: &'static str = "remove a redundant collection constructor";
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 

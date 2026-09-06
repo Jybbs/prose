@@ -8,19 +8,17 @@
 //!     suppressed     A `# prose: off` region and a logical-line `# prose: skip`.
 //!     widened        Identifiers lengthened or shortened.
 //!
-//! Each mutation takes source text and hands back source text, reaching for
-//! whichever tree serves it. The reorders and the comment insertions run on
-//! the `libcst` concrete tree, where a statement's leading comment lines
-//! belong to the statement and travel with it. The rename and the redundant
-//! parentheses run on ruff's token stream and argument ranges, splicing the
-//! text those name, since `libcst` carries no walk that reaches every node.
-//! Both routes leave every byte no mutation names exactly as it was.
+//! Each mutation takes source text and returns source text. The reorders and
+//! the comment insertions run on the `libcst` concrete tree, where a
+//! statement's leading comment lines belong to the statement and travel with
+//! it. The rename and the redundant parentheses run on ruff's token stream
+//! and argument ranges, splicing the text those name. Both routes leave every
+//! byte no mutation names exactly as it was.
 //!
-//! A variant lands only where it parses, which holds a mutation that breaks
-//! the grammar out of the corpus. The check reads ruff's parser rather than
-//! CPython's own compile step, and the two part company on source CPython
-//! rejects semantically while ruff parses, a walrus inside an annotation
-//! among them, so a file already carrying one keeps its variants here.
+//! A variant lands only where ruff's parser reads it, which drops a mutation
+//! that breaks the grammar. CPython rejects some source ruff parses, a walrus
+//! inside an annotation among it, so a file already carrying one keeps its
+//! variants.
 
 use std::{
     hash::{DefaultHasher, Hash, Hasher},

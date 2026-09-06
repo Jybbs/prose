@@ -1,3 +1,7 @@
+---
+description: "Covers the per-user cache, the `[cache]` keys, the `--no-cache` flag, and the `prose cache` subcommands."
+---
+
 # Cache
 
 *Prose* caches each file's result, keyed on the file's bytes, the configuration that governs it, the rules the run selects, the *Prose* version, and the diagnostic anchor, meaning whether the entry's diagnostics refer to the text before or after a rewrite. A repeat `prose check` or `prose format` over an unchanged file then costs a stat, a hash, and a deserialize, because a cache hit prints the stored diagnostics without running the pipeline.
@@ -45,11 +49,7 @@ An insert writes to a `.tmp`-suffixed sibling and then renames it onto the final
 
 The keys under the `[cache]` table *(`[tool.prose.cache]` in a `pyproject.toml`)*:
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Turns the cache on or off |
-| `max-entries` | positive int | `10000` | The entry count eviction reduces the cache to |
-| `max-size-mib` | positive int | `100` | The size in MiB eviction reduces the cache to |
+<ConfigKeys section="cache" />
 
 ```toml
 [cache]

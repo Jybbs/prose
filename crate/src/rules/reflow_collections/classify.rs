@@ -23,12 +23,10 @@ pub(super) fn is_align_colons_gap(gap: &str) -> bool {
     split_colon_gap(gap).is_some_and(|(_, tail)| tail == " ")
 }
 
-/// True for expressions that render as a single compact token and
-/// therefore do not benefit from a dedicated line. Covers literals,
-/// dotted names, unary operations over atomic operands, and an
-/// attribute reached off any of them, so `None.__new__` reads the way
-/// `object.__new__` does. Starred expressions are non-atomic so a
-/// spread takes its run to one item per line.
+/// True for an expression that renders as a single compact token: a
+/// literal, a dotted name, a unary operation over an atomic operand,
+/// or an attribute reached off any of them. A starred expression is
+/// non-atomic, so a spread takes its run to one item per line.
 pub(super) fn is_atomic(expr: &Expr) -> bool {
     std::iter::successors(Some(expr), |e: &&Expr| match e {
         Expr::Attribute(a) => Some(a.value.as_ref()),
@@ -50,11 +48,8 @@ pub(super) fn pre_colon_padding(gap: &str) -> &str {
 /// non-atomic items one `OnePerLine` segment, so a non-atomic item
 /// breaks the atomic run around it.
 ///
-/// A `reordered` run answers one segment for the whole of itself
-/// instead, flowing only while every item is atomic. `alphabetize`
-/// permutes a set's members, so a partition read off their arrival
-/// order repartitions on the pass after the sort and never settles,
-/// whereas a list or tuple keeps the order the author wrote.
+/// A `reordered` run becomes one segment for the whole of itself
+/// instead, `Flow` only where every item is atomic.
 pub(super) fn segments(atomics: &[bool], reordered: bool) -> Vec<Segment> {
     if reordered && !atomics.is_empty() {
         let run = 0..atomics.len();

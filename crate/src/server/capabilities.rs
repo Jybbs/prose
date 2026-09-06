@@ -6,8 +6,8 @@ use lsp_types::{
 };
 use ruff_source_file::PositionEncoding;
 
-/// Picks the position encoding for a session: UTF-8 when the client
-/// advertises it, otherwise UTF-16.
+/// Picks the position encoding for a session, UTF-8 when the client
+/// advertises it and UTF-16 otherwise.
 pub(super) fn negotiate_encoding(client: &ClientCapabilities) -> PositionEncoding {
     let advertised = client
         .general

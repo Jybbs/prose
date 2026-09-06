@@ -14,15 +14,12 @@ use crate::{pipeline::Pipeline, rules::RuleId, source::Source};
 
 /// How many subsets one search probes before it stops and the caller
 /// falls back to naming the whole selection. Singles and pairs cover
-/// twelve candidates in full under it, and each probe costs a full
-/// pipeline run over the file, so the budget bounds a search that
-/// would otherwise run every pair of a wide selection.
+/// twelve candidates in full under it.
 const PROBE_BUDGET: usize = 96;
 
-/// The smallest subset still editing `parsed`, probed without running
-/// any pipeline, because the question here is only which rules edit
-/// the source as it stands. `None` once neither a single rule nor a
-/// pair inside the budget edits it.
+/// The smallest subset still editing `parsed`, each probe reading
+/// `unsettled` without a pipeline run. `None` once neither a single
+/// rule nor a pair inside the budget edits it.
 pub(super) fn editing_subset(
     candidates: &[RuleId],
     parsed: &Source,
@@ -46,9 +43,9 @@ pub(super) fn reproducing_subset(
     })
 }
 
-/// A `text` that does not parse and a run a rule's output is rejected
-/// on both answer false. The probe rebuilds its source from `parsed`
-/// rather than re-parsing `text` once per subset.
+/// True where a second pass over `pipeline`'s output for `text` still
+/// edits. A `text` that does not parse and a run a rule's output is
+/// rejected on both answer false. The source is rebuilt from `parsed`.
 fn leaves_an_edit(pipeline: &Pipeline, text: &str, parsed: &Parsed<ModModule>) -> bool {
     let source = Source::from_parsed_module(text.to_owned(), parsed.clone());
     let Ok((formatted, _)) = pipeline.run(source) else {

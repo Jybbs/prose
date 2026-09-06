@@ -40,7 +40,7 @@ pub(crate) struct ReflowParentheses {
 
 impl ReflowParentheses {
     pub(crate) const MESSAGE: &'static str =
-        "reflow a redundant grouping parenthesis pair against the line budget";
+        "remove a redundant grouping parenthesis pair, or break one that runs past the line budget";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

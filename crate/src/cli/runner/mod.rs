@@ -101,8 +101,7 @@ enum Mode {
 
 /// Which pipeline passes a CLI mode reads from a file, and the
 /// invocation shape that follows from it. Every per-run flag the runner
-/// needs is derived from this one value, so no call site carries a
-/// second copy of the same fact.
+/// needs derives from this one value.
 #[derive(Clone, Copy, Debug)]
 enum Pass {
     /// `format` with a `json`, `sarif`, or `github` output format: the
@@ -131,9 +130,8 @@ impl Pass {
 
     /// True where the pass reads and writes the run's cache.
     fn caches(self) -> bool {
-        // A `--validate` check re-confirms the rewrite parses rather than
-        // trusting an entry an earlier unvalidated run wrote, so it alone
-        // bypasses the cache.
+        // A `--validate` check alone bypasses the cache, so it always
+        // re-confirms the rewrite parses.
         !matches!(self, Self::Diagnose { validate: true })
     }
 
@@ -152,9 +150,8 @@ impl Pass {
         }
     }
 
-    /// True where the pass commits its rewrite to the file. A committing
-    /// run reports a rewrite it landed as clean rather than as pending,
-    /// which is the same distinction, so the exit status reads this too.
+    /// True where the pass commits its rewrite to the file. The exit
+    /// status reads this too, reporting a landed rewrite as clean.
     fn write_back(self) -> bool {
         matches!(self, Self::Both | Self::Rewrite)
     }
@@ -176,11 +173,7 @@ impl RunSetup {
     }
 
     /// Enforces the cache's caps where the run inserted at least one
-    /// entry. A run that hit on every file left the directory the size
-    /// it already was, and so did a write-back run whose every miss
-    /// produced a rewrite it commits rather than stores. Neither can
-    /// newly cross a cap, leaving the sweep to stat every entry for
-    /// nothing.
+    /// entry.
     fn compact_after(&self, pass: Pass) {
         if let Some(cache) = self.cache_for(pass).filter(|c| c.inserted()) {
             cache.compact();
@@ -189,8 +182,8 @@ impl RunSetup {
 
     /// Walks `paths` under `pass`, rendering each file's block through
     /// `render` in the worker that produced its outcome and handing it
-    /// to `write` in walker order as it lands. Neither caller writes
-    /// back, so no rewrite reaches disk here.
+    /// to `write` in walker order as it lands. No rewrite reaches disk
+    /// here.
     fn streamed<R, W>(
         &self,
         paths: &[PathBuf],
@@ -264,8 +257,8 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
         (vec![outcome], true)
     } else if format.is_text() {
         // Text carries no envelope around its per-file blocks, so each
-        // one reaches the terminal as it lands rather than after the
-        // whole walk. Every other format closes over the run.
+        // one is written as it lands, whereas every other format closes
+        // over the run.
         let text = Text::new(present.color);
         let outcomes = setup.streamed(
             &args.paths,
@@ -376,8 +369,8 @@ fn build_run(
     })
 }
 
-/// Resolves how the diff heads each file, styling the `🧵` line only
-/// where stdout carries color through.
+/// Resolves how the diff heads each file, using the `🧵` line on a
+/// non-quiet TTY and painting it only under color.
 fn diff_heading(present: &Presentation) -> Heading {
     if present.decorate_diff() {
         Heading::Thread {
@@ -412,8 +405,7 @@ fn format_paths_diff<O: Write, E: Write>(
     let heading = diff_heading(present);
     let mut writer = BufWriter::new(stdout);
     // Each diff renders in the worker that produced its outcome and
-    // reaches the buffer in walk order as it lands, so the serial half
-    // is the write alone.
+    // reaches the buffer in walk order as it lands.
     let outcomes = setup.streamed(
         paths,
         Pass::Preview,

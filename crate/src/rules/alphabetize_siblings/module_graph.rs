@@ -22,8 +22,7 @@ pub(super) enum Band {
 /// A section's module-level definitions, tiered as one run.
 pub(super) type ModuleDefs<'a, 'src> = DefRun<'a, 'src, (Band, u8, &'src str)>;
 
-/// Prepares a section's module-level definitions as one tiered run, so a
-/// caller permuting it on every pass of a fixed-point loop tiers it once.
+/// Prepares a section's module-level definitions as one tiered run,
 /// `None` where a name repeats or the reference graph cycles.
 pub(super) fn module_def_run<'a, 'src>(
     body: &'src [Stmt],

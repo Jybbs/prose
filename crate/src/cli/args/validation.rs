@@ -53,8 +53,8 @@ pub(crate) fn report_clap_error(err: clap::Error) -> ExitCode {
 }
 
 /// Returns a config error when `--diff` pairs with a non-text
-/// `--output-format`. Routed through [`report_clap_error`] so the
-/// exit code lands at 4 alongside other config errors.
+/// `--output-format`. The caller routes it through
+/// [`report_clap_error`], which exits at 4.
 pub(crate) fn validate_diff_format_combination(cli: &Cli) -> Option<clap::Error> {
     let Command::Format(args) = &cli.command else {
         return None;

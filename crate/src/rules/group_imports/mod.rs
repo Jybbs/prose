@@ -85,9 +85,9 @@ impl Walker<'_> {
 
     /// Relocates the imports in `run` into canonical group order, the
     /// names within a group left in place. Emits one edit only when the
-    /// partition rewrites the order, seating every import tight against
-    /// its neighbor and leaving the blank dividing one section from the
-    /// next to `space-statements`.
+    /// partition rewrites the order, joining each import to the next
+    /// with one newline and leaving the blank line between sections to
+    /// `space-statements`.
     fn group_run(&mut self, body: &[Stmt], blocks: &[TextRange], run: Range<usize>) {
         let items = &body[run.clone()];
         let mut order: Vec<usize> = (0..items.len()).collect();

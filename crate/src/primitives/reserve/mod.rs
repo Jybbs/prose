@@ -1,15 +1,12 @@
 //! Predicts the column an alignment rule shifts each assignment,
-//! keyword, and parameter-default value to, so a layout decision tests
-//! a construct against the position it lands at after alignment rather
-//! than its current one, and reads that prediction back per offset
-//! through [`Columns`]. The runs are built the way `align_equals` builds
-//! them, a statement or keyword whose value spans lines closing its run
-//! and a held statement staying transparent, the widenings the rule's
-//! other groups seat on a line read the way the rule reads them, and a
-//! row whose value a later rule joins onto it measured at that joined
-//! width, so the prediction and the rule seat the same rows. No column
-//! is reserved for a value inside an f-string or t-string replacement
-//! field.
+//! keyword, and parameter-default value to, and reads that prediction
+//! back per offset through [`Columns`]. The runs are built the way
+//! `align_equals` builds them, a statement or keyword whose value spans
+//! lines closing its run and a held statement staying transparent, the
+//! widenings the rule's other groups seat on a line read the way the
+//! rule reads them, and a row whose value a later rule joins onto it
+//! measured at that joined width. No column is reserved for a value
+//! inside an f-string or t-string replacement field.
 
 use std::ops::Range;
 
@@ -56,10 +53,8 @@ pub(crate) struct Carry {
 /// The columns each aligned value shifts by once the alignment
 /// settles, one entry per reservation ascending by start, each carrying
 /// the span from the value's own start to the end of its physical row.
-/// Reading a shift over a span rather than a column at one offset lets
-/// a construct nested inside an aligned value move with it, and lets
-/// the shift compose with a caller's own placement rather than
-/// replacing it.
+/// A construct nested inside an aligned value moves with it, and the
+/// shift composes with a caller's own placement.
 #[derive(Clone, Debug)]
 pub(crate) struct Columns {
     /// The gap an aligned row holds ahead of its operator, `None` where
@@ -382,9 +377,9 @@ impl Reservations {
         }
     }
 
-    /// What a splice over `held` carries of `carried`, the table
-    /// `source`, the text before the splice, held: every run the edit
-    /// could not reach, moved through `map` and the slides, and the
+    /// What a splice over `held` carries of `carried`, the table over
+    /// `source`, the text before the splice: every run the edit could
+    /// not reach, moved through `map` and the slides, and the
     /// completion forming the rest. A statement run stays where its
     /// rows sit outside the neighborhood of the siblings a window
     /// reaches, that neighborhood being one sibling either side widened
@@ -493,10 +488,7 @@ impl Reservations {
     }
 
     /// The widening the reserved rule seats on each line, empty where
-    /// that rule is off. A rule deciding a column ahead of the reserved
-    /// one reads this so its line-cap check measures a row at the width
-    /// the reserved rule leaves rather than the width the source
-    /// carries.
+    /// that rule is off.
     pub(crate) fn widenings(&self, source: &Source) -> aligner::Widenings {
         let Some(settings) = self.settings else {
             return aligner::Widenings::default();
@@ -557,11 +549,11 @@ impl Ranged for Shift {
     }
 }
 
-/// Appends to `entries`, for `body` owned by `owner` and each body
-/// beneath a statement a `held` window reaches, the span of the
-/// siblings whose statement runs the splice can change: each maximal
-/// stretch of reached siblings with one sibling either side, widened
-/// to the extent of any run of `runs` that stretch cuts.
+/// Appends to `entries` the span of the siblings whose statement runs
+/// the splice can change, for `body` owned by `owner` and each body
+/// beneath a statement a `held` window reaches: each maximal stretch
+/// of reached siblings with one sibling either side, widened to the
+/// extent of any run of `runs` that stretch cuts.
 fn reform_entries(
     body: &[Stmt],
     owner: TextRange,

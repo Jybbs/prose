@@ -27,8 +27,8 @@ pub(super) fn canonical_blanks(
 
 /// Class-scope pair dispatch. The class header pairs with its first
 /// body member, with 0 blank lines before a docstring and 1 otherwise.
-/// Class-field → method and method-after-method pairs carry 1. Any
-/// docstring-predecessor pair carries 1.
+/// A field-to-method pair, a method-to-method pair, and any pair whose
+/// predecessor is a docstring take 1.
 fn class_scope_blanks(prev: &Stmt, curr: &Stmt) -> Option<u32> {
     match (prev, curr) {
         (Stmt::ClassDef(_), _) => Some(u32::from(!is_docstring_stmt(curr))),

@@ -20,7 +20,7 @@ use crate::{
 pub(crate) struct StripNoneReturn;
 
 impl StripNoneReturn {
-    pub(crate) const MESSAGE: &'static str = "drop a redundant `-> None` return annotation";
+    pub(crate) const MESSAGE: &'static str = "remove a redundant `-> None` return annotation";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
@@ -50,9 +50,10 @@ fn is_ellipsis_stub(body: &[Stmt]) -> bool {
     )
 }
 
-/// The deletion taking the ` -> None` span from `(`'s close through the
-/// annotation, parens included. `None` where the annotation holds, which
-/// covers a non-bare return type and a declaration-only stub.
+/// The deletion of the ` -> None` span from the parameters' closing
+/// `)` through the annotation, parens included. `None` where the
+/// annotation stays, covering a non-bare return type and a
+/// declaration-only stub.
 fn strip(source: &Source, fd: &StmtFunctionDef) -> Option<Edit> {
     let returns = fd.returns.as_deref()?;
     if !returns.is_none_literal_expr() || is_ellipsis_stub(&fd.body) {

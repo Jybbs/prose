@@ -6,8 +6,8 @@
 //!
 //! A positional-binding-decorated function is skipped whole. `self` /
 //! `cls`, the positional-only parameters, a `ClassVar` declaration, and
-//! the `KW_ONLY` sentinel merely drop from the run, leaving the rest of
-//! it still evaluated.
+//! the `KW_ONLY` sentinel drop from the run, leaving the rest of it
+//! still evaluated.
 
 use ruff_python_ast::{Stmt, StmtClassDef};
 use ruff_text_size::{Ranged, TextRange};
@@ -29,7 +29,7 @@ use crate::{
 pub(crate) struct UnsortedPositionals;
 
 impl UnsortedPositionals {
-    pub(crate) const MESSAGE: &'static str = "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword";
+    pub(crate) const MESSAGE: &'static str = "sort a positional run alphabetically by hand, since reordering rebinds every positional call site";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

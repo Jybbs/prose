@@ -43,7 +43,7 @@ pub(crate) struct SpaceStatements {
 }
 
 impl SpaceStatements {
-    pub(crate) const MESSAGE: &'static str = "normalize the gap between adjacent statements";
+    pub(crate) const MESSAGE: &'static str = "set the blank lines between adjacent statements";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

@@ -1,5 +1,5 @@
-//! The `[[tool.prose.overrides]]` array-of-tables: each entry pairs a
-//! `paths` glob list with a partial `[tool.prose]` body deep-merged
+//! Each entry of the `[[tool.prose.overrides]]` array-of-tables pairs
+//! a `paths` glob list with a partial `[tool.prose]` body deep-merged
 //! onto a matching file's base config.
 
 use std::path::Path;

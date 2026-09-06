@@ -10,12 +10,11 @@ use ruff_python_ast::{
 
 use crate::primitives::tiering::walk_lambda_defaults;
 
-/// Walks the evaluation-time surface of a value, pruning each lambda
-/// body, and flips `effectful` on a call, comprehension, `await`, or
+/// Walks the evaluation-time surface of a value, skipping each lambda
+/// body, and sets `effectful` on a call, comprehension, `await`, or
 /// notebook escape command. `ruff_python_ast::helpers::contains_effect`
 /// also classifies a subscript, an operator expression, and a walrus as
-/// effectful and walks lambda bodies, so it over-pins against this
-/// narrower split.
+/// effectful and walks lambda bodies, a wider split than this one.
 struct EffectVisitor {
     effectful: bool,
 }

@@ -43,7 +43,7 @@ pub(crate) struct PruneInertImports {
 
 impl PruneInertImports {
     pub(crate) const MESSAGE: &'static str =
-        "prune an import binding nothing references or a repeat of one already bound";
+        "remove an import nothing references, or one that repeats an earlier import";
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 
@@ -74,8 +74,7 @@ impl Rule for PruneInertImports {
     }
 }
 
-/// True when `source` is a package's `__init__.py` or its stub, whose
-/// unread imports carry the package's re-export surface.
+/// True when `source` is a package's `__init__.py` or its stub.
 fn is_package_init(source: &Source) -> bool {
     Path::new(source.source_file().name())
         .file_name()
@@ -94,8 +93,7 @@ mod tests {
         testing::{applied_text, parse},
     };
 
-    /// Parses `src` under a package `__init__.py` name, which is what
-    /// the re-export hold keys off.
+    /// Parses `src` under a package `__init__.py` name.
     fn parse_init(src: &str) -> Source {
         Source::parse_named(src.to_owned(), "pkg/__init__.py").expect("test source parses")
     }

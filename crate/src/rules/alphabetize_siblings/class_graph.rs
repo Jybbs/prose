@@ -21,10 +21,8 @@ use crate::primitives::{
 };
 
 /// One class body's assignment run prepared for permutation, holding the
-/// tier keys of both families beside the binder graph a repair reads.
-/// Both are fixed for the run, so a caller permuting the same range on
-/// every pass of a fixed-point loop builds them once rather than per
-/// pass.
+/// tier keys of both families beside the binder graph a repair reads,
+/// both fixed for the run.
 pub(super) struct ClassAssigns<'a, 'src> {
     keys: FxHashMap<TextSize, (usize, &'src str)>,
     range: Range<usize>,
@@ -56,11 +54,11 @@ impl<'a, 'src> ClassAssigns<'a, 'src> {
         })
     }
 
-    /// Permutes both families of this run's slots of `order`, the fields
-    /// first and the constants after, leaving `order` untouched where the
-    /// sorted order would strand a reader. A field starting below
-    /// `keyword_fields_from` holds its slot while the constants around it
-    /// still sort.
+    /// Permutes both families within this run's slots of `order`, the
+    /// fields first and the constants after, leaving `order` untouched
+    /// where the sorted order would strand a reader. A field starting
+    /// below `keyword_fields_from` holds its slot while the constants
+    /// around it still sort.
     pub(super) fn permute(
         &self,
         order: &mut [usize],

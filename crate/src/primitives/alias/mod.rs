@@ -2,14 +2,14 @@
 //!
 //! Three checks run, and none can turn a constant into an alias, only
 //! an alias into a constant, so a value none of them pins down stays an
-//! alias and draws no rename.
+//! alias and `miscased-constants` never renames it.
 //!
 //! `runtime_only` matches the slice of a subscript against what a type
 //! expression may hold, so `path_separators[1:]` is an index. Nothing
 //! in a type is a slice, a dunder, a float, a call, or a comprehension,
 //! and a bare integer, bool, or bytes stands only inside `Literal`.
 //!
-//! `name_binds_data` looks the base of a subscript up in the module
+//! `name_binds_data` looks up the base of a subscript in the module
 //! binding table, so `SETTINGS["db"]` is a lookup once `SETTINGS` is
 //! found assigned a dict display in the same file, and `Box[int]` is a
 //! type once `Box` is found declared by a `class` statement. An import,
@@ -35,9 +35,9 @@ mod resolver;
 
 use resolver::Resolver;
 
-/// The module-scope evidence the alias read consumes, pairing the
-/// binding table with every module-scope assignment and an index from
-/// each bound name to its value.
+/// The module-scope evidence the alias checks read: the binding table,
+/// every module-scope assignment, and an index from each bound name to
+/// its value.
 pub(crate) struct AliasContext<'src> {
     analysis: &'src BindingAnalysis,
     sites: Vec<ModuleAssignment<'src>>,

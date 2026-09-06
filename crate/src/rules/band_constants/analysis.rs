@@ -31,9 +31,8 @@ use crate::{
     source::Source,
 };
 
-/// The code `flake8` and its successors report an import placed below
-/// the top of a file under, which a `noqa` naming it marks as
-/// deliberate, so the statement holds the slot the author gave it.
+/// The `flake8` code for an import placed below the top of a file. A
+/// `noqa` naming it pins the statement in its slot.
 const POSITION_CODE: &str = "E402";
 
 /// A module-scope single-name assignment considered for hoisting,
@@ -93,18 +92,16 @@ pub(super) fn module_band_plan<'src>(
     let mut carries: Vec<Carry> = Vec::new();
     let mut sites: Vec<ConstSite<'src>> = Vec::new();
     for (idx, stmt) in body.iter().enumerate() {
-        // A `# prose: off` span or a skip directive pins its statement, as
-        // does a row a `\` join continues, whose relocation would take the
-        // break the join rests on. So does an own-line comment run left
-        // standing between two blocks,
-        // one `member_block` declined to bind because it anchors in place,
-        // opens at another indent, or sits behind a notebook cell wall. A
-        // pinned member holds its slot, bounding the bands to its side so
-        // no reorder drops the run out of the gap holding it, while its
-        // name still binds below, so a reference to a pinned definition or
-        // import reads as resolved. A cell wall already holds a run clear
-        // of the cell-local reorder below it, leaving a constant behind one
-        // free to band.
+        // A `# prose: off` span, a skip directive, a `noqa` naming
+        // `POSITION_CODE`, and a row a `\` join continues each pin their
+        // statement. So does an own-line comment run left standing
+        // between two blocks, one `member_block` declined to bind because
+        // it anchors in place, opens at another indent, or sits behind a
+        // notebook cell wall, except above a constant when the run sits
+        // in another cell and does not itself anchor in place. A pinned
+        // member holds its slot and bounds the bands to its side, while
+        // its name still binds below, so a reference to a pinned
+        // definition or import reads as resolved.
         let gap_comment = idx.checked_sub(1).and_then(|prev| {
             leading_comment_block(source, blocks[prev].end(), blocks[idx].start())
         });
@@ -150,8 +147,7 @@ pub(super) fn module_band_plan<'src>(
             }
             _ => {
                 if !pinned && let Some((name, value)) = const_target {
-                    // A `# prose: keep` dict pins its statement, so the
-                    // marker freezes module position as well as entry order.
+                    // A `# prose: keep` dict pins its statement.
                     if let Some(Expr::Dict(dict)) = value
                         && has_keep_marker(source, dict)
                     {
@@ -200,9 +196,8 @@ pub(super) fn module_band_plan<'src>(
             anchored[s] = true;
             continue;
         }
-        // A definition above the site reads the site's name at
-        // evaluation time, resolving it against the builtin, so seating
-        // the site above that definition rebinds what it read.
+        // The site anchors when its name is a builtin and a definition
+        // above it reads that name at evaluation time.
         if is_builtin(site.name)
             && eager_reader_at
                 .get(site.name)
@@ -211,10 +206,9 @@ pub(super) fn module_band_plan<'src>(
             anchored[s] = true;
             continue;
         }
-        // A definition above the site reads, at evaluation time, a name
-        // the site observes through a subscript or attribute, so seating
-        // the site above that definition reads the object before the
-        // definition has run.
+        // The site anchors when a definition above it reads, at
+        // evaluation time, a name the site observes through a subscript
+        // or attribute.
         if site.observed_refs.iter().any(|name| {
             eager_reader_at
                 .get(name)
@@ -224,18 +218,16 @@ pub(super) fn module_band_plan<'src>(
             continue;
         }
         // A value reference to an unresolved name pins the constant unless
-        // the name is an import or a builtin, both clean terminals, whereas
-        // an annotation reference only ever constrains order, so `x: int = 1`
-        // sits in the leading band.
+        // the name is an import or a builtin, whereas an annotation
+        // reference only constrains order.
         for (name, anchor_unresolved) in site.foreign_refs() {
             if dup_defs.contains(name) {
                 anchored[s] = true;
             } else if let Some(&def) = def_at.get(name) {
                 // A definition below the site rebinds a name the site
                 // already resolves against a builtin or an earlier
-                // module-scope write, so the site pins rather than
-                // reaching the trailing band. A write inside a branch
-                // counts as that earlier binding.
+                // module-scope write, so the site pins. A write inside a
+                // branch counts as that earlier binding.
                 let rebinds_below = def > site.idx
                     && (is_builtin(name) || analysis.is_bound_before(name, body[site.idx].start()));
                 if rebinds_below {
@@ -282,8 +274,7 @@ pub(super) fn module_band_plan<'src>(
         }
     }
     // A dunder and a builtin are both bound before the module body
-    // runs, so a read above a statement rebinding one reads the earlier
-    // value and the edge records which side the source seated it on.
+    // runs, so an edge flags a referent rebinding one.
     let mut edges: Vec<(usize, usize, bool)> = Vec::new();
     let prebound = |name: &str| is_dunder(name) || is_builtin(name);
     let site_edge = |from: usize, name: &str| {
@@ -312,10 +303,9 @@ pub(super) fn module_band_plan<'src>(
         }
     }
     // A bound comment only travels when its member bands, leaving an
-    // anchored member's comment where the source put it. A carry onto an
-    // anchored member reverts to heading the member whose block folds it
-    // in, so the run travels as that member's own heading rather than
-    // holding a shape the reassembled text reads back as a carry.
+    // anchored member's comment where the source put it. A carry onto a
+    // member outside the bands reverts to heading the member whose block
+    // folds it in.
     for carry in carries.extract_if(.., |carry| !ranks.contains_key(&carry.carrier)) {
         attached.insert(carry.absorbs, carry.comment);
     }
@@ -346,12 +336,11 @@ pub(super) fn module_band_plan<'src>(
 }
 
 /// The carry binding `block` back onto the member above `body[idx]`,
-/// which `block` sits on the line directly below while a blank line
-/// holds it off `body[idx]`. `None` for every other run, leaving it
-/// bound to `body[idx]`, a run touching both members reading as the
-/// description of the one beneath it. The comment trails the member's
+/// where `block` sits on the line directly below that member and a
+/// blank line holds it off `body[idx]`. `None` for every other run,
+/// leaving it bound to `body[idx]`. The comment trails the member's
 /// code when both hold to one source line and the joined line fits
-/// inside `code_width`, and climbs onto the line above it otherwise.
+/// inside `code_width`, and sits on the line above it otherwise.
 fn backward_carry(
     source: &Source,
     body: &[Stmt],

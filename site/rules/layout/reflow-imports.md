@@ -24,7 +24,7 @@ Pair with [[align-imports]] to align the `import` keyword across the resulting r
 
 Each move sits behind its own facet, so a project can switch one off without touching the others. `split-multi-module` gates the comma-joined break and `merge-members` the same-module merge, both on by default, and the width split runs whatever either is set to.
 
-The wrap budget comes from the top-level [`import-line-length`](/reference/configuration#top-level-keys) key *(default `120`)*, which governs the import wrap independently of `code-line-length`. An import is a list of names [[alphabetize-siblings]] already sorts, so it stays scannable at a width where dense expression code would not, which is why it gets more horizontal room before a wrap pays off. Setting `import-line-length` to `false` drops the dedicated budget, so the import wrap falls back to `code-line-length`.
+The wrap budget comes from the top-level [`import-line-length`](/reference/configuration#top-level-keys) key *(default <ConfigDefault facet="import-line-length" />)*, which governs the import wrap independently of `code-line-length`. An import is a list of names [[alphabetize-siblings]] already sorts, so it stays scannable at a width where dense expression code would not, which is why it gets more horizontal room before a wrap pays off. Setting `import-line-length` to `false` drops the dedicated budget, so the import wrap falls back to `code-line-length`.
 
 </template>
 

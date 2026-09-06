@@ -21,12 +21,11 @@ use crate::{
 /// Bundles the `groups` accumulator, `settings`, the owning `rule`, and
 /// borrowed `source` shared by every alignment-rule visitor. Each entry
 /// in `groups` is one fix the pipeline maps to a single diagnostic. The
-/// `rule` id powers the skip-directive check that holds a row out of
-/// its group.
+/// skip-directive check reads `rule` to hold a row out of its group.
 pub(crate) struct AlignWalker<'a> {
     pub groups: Vec<Vec<Edit>>,
-    /// Every edit in `groups` again, ordered by start, so a prefix
-    /// lookup binary searches one slice rather than scanning each group.
+    /// Every edit in `groups` again, ordered by start for the prefix
+    /// lookup's binary search.
     placed: Vec<Edit>,
     pub rule: RuleId,
     settings: Settings,
@@ -63,9 +62,7 @@ impl<'a> AlignWalker<'a> {
 
     /// True when `members` form a multi-row group whose aligned tokens
     /// share a display column once the edits this walker has already
-    /// recorded land, so a run whose opening row an earlier column in
-    /// the same pass moves reads that row where it will sit rather than
-    /// where the source wrote it.
+    /// recorded land.
     fn is_placed_candidate(&self, members: &[Member]) -> bool {
         shares_column(members, |m| self.placed_baseline(m))
     }

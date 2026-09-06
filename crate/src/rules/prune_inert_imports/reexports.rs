@@ -65,13 +65,8 @@ enum DunderAll<'a> {
     Unreadable,
 }
 
-/// True where `node` takes a name out of a module its own name marks
-/// private, the convention a public module re-exports its
-/// implementation through. A dunder module such as `__future__` is not
-/// one of those, its names carrying compiler meaning rather than a
-/// surface to re-export. Nothing in the importing module needs to
-/// read such a name for it to be part of that module's surface, so an
-/// unread one reads as re-exported rather than as dead.
+/// True where `node` takes a name out of a module whose last segment
+/// leads with `_`, a dunder module such as `__future__` excepted.
 pub(super) fn reexports_a_private_member(node: &ImportNode<'_>) -> bool {
     node.module()
         .map(|source| source.rsplit_once('.').map_or(source, |(_, last)| last))

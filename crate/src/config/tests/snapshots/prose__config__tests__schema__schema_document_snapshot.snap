@@ -14,7 +14,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "max-shift": {
           "$ref": "#/$defs/MaxShift",
           "default": 16,
-          "description": "The width-spread budget a contiguous run may shift to reach the\nshared column. A positive `N` caps the spread, `0` forbids any\nshift so every row sits flush, and `false` lifts the cap so a\ncontiguous run folds into one column. To hold one row out of an\notherwise-aligned group, mark it with `# prose: skip`."
+          "description": "How far apart the widest and narrowest rows of a run may be for the\nrun to still align on one column. A positive `N` caps that gap, `0`\nforbids any padding so every row sits flush, and `false` lifts the\ncap so a run of any width aligns on one column. A row marked\n`# prose: skip` stays out of its group."
         }
       },
       "type": "object"
@@ -33,22 +33,22 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "sort-definitions": {
           "default": true,
-          "description": "Reorders class and function definitions alphabetically, holding\neach behind any sibling it names at evaluation time. `false`\nfreezes definitions in source order while other surfaces still\nsort.",
+          "description": "Sorts class and function definitions alphabetically, keeping each\nbelow any sibling it names at evaluation time. `false` keeps\ndefinitions in source order while everything else still sorts.",
           "type": "boolean"
         },
         "sort-dict-keys": {
           "default": true,
-          "description": "Reorders the keyed entries of a dict literal, scalar-valued\nentries before collection-valued and alphabetical by key within\neach. `false` keeps the authored order, which iteration,\n`.items()`, and `**` expansion all observe.",
+          "description": "Sorts the entries of a dict literal, scalar values before\ncollection values and alphabetical by key within each. `false`\nkeeps the order as written, which iteration, `.items()`, and `**`\nunpacking all follow.",
           "type": "boolean"
         },
         "sort-docstring-entries": {
           "default": true,
-          "description": "Reorders `name: description` entries within Title-case-headed\ndocstring sections, parameter entries mirroring the signature as\nthe rule leaves it and stragglers alphabetizing below. `false`\nkeeps narrative-curated entry order while still sorting every\nother surface.",
+          "description": "Sorts the `name: description` entries of a Title-case-headed\ndocstring section, parameter entries in the signature's order as\nthe rule leaves it and every other entry alphabetical below them.\n`false` keeps the entries in the order written while everything\nelse still sorts.",
           "type": "boolean"
         },
         "sort-dunder-lists": {
           "default": true,
-          "description": "Reorders the string items inside `__all__` and `__slots__`.\n`false` keeps a hand-curated public-API order.",
+          "description": "Sorts the string items inside `__all__` and `__slots__`. `false`\nkeeps the order written, for a hand-ordered public API.",
           "type": "boolean"
         }
       },
@@ -69,7 +69,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "max-tiers": {
           "$ref": "#/$defs/InlineBudget",
           "default": 2,
-          "description": "Caps how many evaluation tiers open their own blank-separated\nsub-band, merging every deeper tier into the last. `1` holds the\nband tight and `false` opens one sub-band per tier."
+          "description": "Caps how many evaluation tiers get their own blank-line-separated\nsub-band, merging every deeper tier into the last. `1` keeps the\nwhole band together and `false` gives every tier its own sub-band."
         }
       },
       "type": "object"
@@ -79,7 +79,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "properties": {
         "allow": {
           "default": [],
-          "description": "Modules whose bare-import form is preserved whatever their\nattribute count.",
+          "description": "Modules whose bare `import` form is kept whatever their attribute\ncount.",
           "items": {
             "type": "string"
           },
@@ -96,7 +96,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "max-attributes": {
           "default": 4,
-          "description": "The distinct-attribute count at or below which an unaliased bare\nimport is flagged.",
+          "description": "The number of distinct attributes at or below which an unaliased\nbare import is reported.",
           "format": "uint",
           "minimum": 0,
           "type": "integer"
@@ -109,19 +109,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "properties": {
         "enabled": {
           "default": true,
-          "description": "Toggles the cache globally.",
+          "description": "Turns the cache on or off.",
           "type": "boolean"
         },
         "max-entries": {
           "default": 10000,
-          "description": "The LRU eviction cap on the cache directory's entry count.",
+          "description": "The entry count LRU eviction reduces the cache directory to.",
           "format": "uint32",
           "minimum": 0,
           "type": "integer"
         },
         "max-size-mib": {
           "default": 100,
-          "description": "The LRU eviction cap on the cache directory.",
+          "description": "The size in MiB LRU eviction reduces the cache directory to.",
           "format": "uint32",
           "minimum": 0,
           "type": "integer"
@@ -142,7 +142,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "properties": {
         "first-party": {
           "default": [],
-          "description": "Root package names whose imports lift into the local-package\ngroup.",
+          "description": "Root package names whose imports sort into the local-package\ngroup.",
           "items": {
             "type": "string"
           },
@@ -187,7 +187,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "suggest-string-splits": {
           "default": true,
-          "description": "Offers the parenthesized adjacent-literal form on an over-budget\nline whose overflow sits inside one string literal holding\ninterior whitespace, as a display-only suggestion `prose format`\nnever writes. `false` leaves the bare overflow report.",
+          "description": "Suggests the parenthesized adjacent-literal form for an over-budget\nline whose overflow sits inside one string literal containing\nwhitespace, as a display-only fix `prose format` never writes.\n`false` reports the overflow alone.",
           "type": "boolean"
         }
       },
@@ -259,7 +259,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "rewrite-operand-order": {
           "default": true,
-          "description": "Flips a comparison whose constant side leads, so `42 == n` reads\n`n == 42`. `false` keeps the authored operand order.",
+          "description": "Swaps the operands of a comparison whose constant side comes first,\nso `42 == n` reads `n == 42`. `false` keeps the operand order as\nwritten.",
           "type": "boolean"
         }
       },
@@ -284,7 +284,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "unify-quotes": {
           "default": true,
-          "description": "Settles a non-docstring string on `\"`, falling to `'` only where\nthat drops an escape, and sheds a backslash the surviving quote\ndoes not need. `false` keeps the literal spelled as written.",
+          "description": "Rewrites a non-docstring string to `\"` quotes, using `'` only where\nthat avoids an escape, and removes a backslash the chosen quote\nmakes unnecessary. `false` keeps the literal as written.",
           "type": "boolean"
         }
       },
@@ -320,7 +320,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "drop-unreferenced": {
           "default": true,
-          "description": "Drops an import binding a name nothing references, where the\nbinding is not marked for re-export, read by a `del` or a quoted\nannotation, or bound in a package `__init__.py`, where it is\nreported instead. `false` leaves every unreferenced import in\nplace and reports none of them.",
+          "description": "Drops an import binding a name nothing references, unless the\nbinding is marked for re-export, read by a `del` or a quoted\nannotation, or bound in a package `__init__.py`, in which case it\nis reported instead. `false` keeps every unreferenced import and\nreports none.",
           "type": "boolean"
         },
         "enabled": {
@@ -402,7 +402,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "max-args": {
           "$ref": "#/$defs/InlineBudget",
           "default": 3,
-          "description": "Explodes a call to one keyword argument per line once its argument\ncount exceeds the cap. `false` disables the count trigger and\nleaves every call inline."
+          "description": "Explodes a call whose every argument can be written as a keyword\nto one `name=value` per line once its argument count exceeds the\ncap. `false` turns the count trigger off and leaves only the\n`code-line-length` budget."
         }
       },
       "type": "object"
@@ -416,18 +416,18 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "explode": {
           "default": true,
-          "description": "Expands an overflowing or over-count collection to one entry per\nline. `false` suppresses every expansion and leaves the count cap\ninert.",
+          "description": "Explodes a collection that overflows the line budget or exceeds its\nentry cap to one entry per line. `false` turns every explosion off,\nleaving the count cap with no effect.",
           "type": "boolean"
         },
         "keep-multiline-literals": {
           "default": true,
-          "description": "Holds a literal the author laid out as a flush bracketed column\nof two or more entries. `false` joins one whose single-line form\nfits the budget, and every other break rejoins either way.",
+          "description": "Keeps a literal the author wrote as a bracketed column of two or\nmore entries, one per line. `false` joins one back onto a single\nline where it fits the budget, and any other multi-line layout\nrejoins either way.",
           "type": "boolean"
         },
         "max-atomics": {
           "$ref": "#/$defs/InlineBudget",
           "default": 8,
-          "description": "Keeps short collections on one line when each entry is an atomic\nliteral and the run fits the cap. `false` removes the cap and\npacks by width alone."
+          "description": "Caps how many atomic entries, meaning ints, floats, strings, and\nsingle names, one packed row of an expanded collection carries.\n`false` removes the cap and packs each row by width alone."
         },
         "max-dict-entries": {
           "$ref": "#/$defs/InlineBudget",
@@ -451,7 +451,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "merge-members": {
           "default": true,
-          "description": "Folds repeated `from <module> import …` statements into one\nstatement carrying each member once, ordered as `alphabetize-siblings`\nwould leave it. `false` leaves each statement on its own line.",
+          "description": "Merges repeated `from <module> import …` statements into one\nstatement naming each member once, in the order\n`alphabetize-siblings` gives them. `false` keeps each statement as\nwritten.",
           "type": "boolean"
         },
         "split-multi-module": {
@@ -472,7 +472,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "max-params": {
           "$ref": "#/$defs/InlineBudget",
           "default": 4,
-          "description": "Expands a signature to one parameter per line once its parameter\ncount exceeds the cap. `false` disables the count trigger and\nleaves only the `code-line-length` budget."
+          "description": "Explodes a signature to one parameter per line once its parameter\ncount exceeds the cap. `false` turns the count trigger off and\nleaves only the `code-line-length` budget."
         }
       },
       "type": "object"
@@ -1082,22 +1082,22 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "max-links": {
           "$ref": "#/$defs/InlineBudget",
           "default": 2,
-          "description": "Breaks a method chain to one link per line once its link count\nexceeds the cap. `false` disables the count trigger and leaves\nonly the `code-line-length` budget."
+          "description": "Breaks a method chain to one link per line once its link count\nexceeds the cap. `false` turns the count trigger off and leaves\nonly the `code-line-length` budget."
         },
         "max-shift": {
           "$ref": "#/$defs/MaxShift",
           "default": 16,
-          "description": "The width a hung link's dot column may sit past the indent the\nbroken chain opens at. A wider receiver takes the full split\ninstead, standing alone with every link flush beneath it. `0`\nalways takes that split, and `false` lifts the cap so every\nchain hangs."
+          "description": "How far past the broken chain's indent a hanging link's dot column\nmay sit. A receiver wider than that takes the full split instead,\nstanding alone with every link flush beneath it. `0` always takes\nthe full split, and `false` lifts the cap so every chain hangs."
         }
       },
       "type": "object"
     },
     "ToggleOnly": {
-      "description": "Sub-table shape for rules whose only knob is `enabled`.",
+      "description": "Sub-table shape for rules whose only facet is `enabled`.",
       "properties": {
         "enabled": {
           "default": true,
-          "description": "Toggles the rule on or off.",
+          "description": "Turns the rule on or off.",
           "type": "boolean"
         }
       },
@@ -1117,7 +1117,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
     },
     "code-line-length": {
       "default": 88,
-      "description": "The line budget every length-aware rule honors.",
+      "description": "The line budget every width-aware rule fits within.",
       "format": "uint",
       "minimum": 1,
       "type": [
@@ -1162,7 +1162,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
     },
     "report-unstable-output": {
       "default": true,
-      "description": "Reports a rewrite whose settle check names rules as a defect in\nProse, naming the reproducing subset and the invocation that\nreplays it. `false` lands the rewrite with no notice, governing\nthe notice surfaces alone, so `check --validate` still runs the\nsettle check it was passed to run.",
+      "description": "Reports a rewrite a second run would change again as a defect in\nProse, naming the smallest reproducing rule subset and the command\nthat replays it. `false` writes the rewrite with no notice and\ngoverns the notice alone, so `check --validate` still runs its\nsettle check.",
       "type": "boolean"
     },
     "rules": {

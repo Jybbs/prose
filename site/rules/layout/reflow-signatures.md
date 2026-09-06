@@ -22,7 +22,7 @@ Otherwise the signature collapses to a single line. A comment inside the paramet
 
 <RuleConfigTable />
 
-The line-length budget comes from the top-level [`code-line-length`](/reference/configuration#top-level-keys) key *(default `88`)*, which the rule reads directly. Setting `max-params` to `false` makes the rule expand on line length alone, so a signature that fits the budget stays inline whatever its parameter count.
+The line-length budget comes from the top-level [`code-line-length`](/reference/configuration#top-level-keys) key *(default <ConfigDefault facet="code-line-length" />)*, which the rule reads directly. Setting `max-params` to `false` makes the rule expand on line length alone, so a signature that fits the budget stays inline whatever its parameter count.
 
 </template>
 

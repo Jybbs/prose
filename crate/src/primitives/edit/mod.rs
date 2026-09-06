@@ -1,18 +1,14 @@
 //! Edit-shaping primitives shared across rules. `apply_edits_mapped`
-//! splices a sorted edit list into a source string, the pipeline
-//! runner's transform between rules, pairing that string with a
-//! `SourceMap` of one marker per applied edit. `apply_inline_edits`
-//! folds a list of edits into a source range, returning `Cow::Borrowed`
-//! when no edit applies. Both decline overlapping edits,
-//! `apply_edits_mapped` with `None` and `apply_inline_edits` with
-//! `Cow::Borrowed`.
-//! `narrowed_replacement` trims a candidate replacement to its minimal
-//! divergent range against the source, and `insert_edit` keeps a rule's own
-//! accumulator in that sorted order as it emits. The `forward_*`
-//! functions move an offset, a range, an edit list, or a notebook's
-//! cell boundaries through the `SourceMap` of an applied edit set, and
-//! `shifted_past` reads the same map for a boundary no edit replaced,
-//! the slide the reparse between rules carries over every held range.
+//! splices a sorted edit list into a source string, pairing it with a
+//! `SourceMap` of one start-and-end marker per applied edit, and
+//! `apply_inline_edits` folds a list of edits into a source range. Both
+//! decline overlapping edits, the first with `None` and the second with
+//! `Cow::Borrowed`. `narrowed_replacement` trims a replacement to the
+//! range that differs from the source, `insert_edit` keeps a rule's own
+//! accumulator sorted by start, the `forward_*` functions move an
+//! offset, a range, or a notebook's cell boundaries through the
+//! `SourceMap` of an applied edit set, and `shifted_past` reads the
+//! same map for a boundary no edit replaced.
 
 use std::borrow::Cow;
 
@@ -93,8 +89,7 @@ pub(crate) fn singleton_groups(edits: impl IntoIterator<Item = Edit>) -> Vec<Vec
 
 /// The edit clearing every full line `range` sits on, its final line
 /// terminator included, held back from the newline closing a notebook
-/// cell so the deletion empties that cell rather than merging it into
-/// the next.
+/// cell.
 pub(crate) fn whole_line_deletion(source: &Source, range: TextRange) -> Edit {
     Edit::range_deletion(source.full_lines_within_cell(range))
 }

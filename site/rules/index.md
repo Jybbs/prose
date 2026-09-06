@@ -1,3 +1,7 @@
+---
+description: "Every rule Prose runs, auto-fix and lint, listed by family."
+---
+
 # Rules
 
 *Prose* ships two categories of rule, where an auto-fix rule rewrites source under `prose format` and reports each rewrite as a `Severity::Format` diagnostic under `prose check`, whereas a lint rule reports a `Severity::Lint` diagnostic under both subcommands and never rewrites.

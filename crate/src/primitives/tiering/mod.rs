@@ -33,9 +33,7 @@ pub(crate) struct Evaluated<'src> {
 
 impl<'src> Evaluated<'src> {
     /// The pair over `body`, widening through `reachable`. `refs` is the
-    /// evaluation-time reference map [`eval_time_refs_of`] builds, taken
-    /// prebuilt so a caller reading it for its own gate walks the body
-    /// once rather than twice.
+    /// evaluation-time reference map [`eval_time_refs_of`] builds.
     pub(crate) fn of(
         body: &'src [Stmt],
         reachable: &CallReach<'src>,
@@ -85,10 +83,10 @@ fn lookup<'a, 'src>(map: &'a FxHashMap<TextSize, Vec<&'src str>>, stmt: &Stmt) -
 }
 
 /// True where some statement of `body` reaches another definition's body
-/// at evaluation time, so the run needs the call graph. A non-definition
-/// reaches one by calling a name, and a definition reaches one where its
-/// own evaluation surface, a base list or a decorator or a default, names
-/// a sibling definition, read off the `refs` map rather than walked again.
+/// at evaluation time. A non-definition reaches one by calling a name,
+/// and a definition reaches one where its own evaluation surface, a base
+/// list or a decorator or a default, names a sibling definition, read
+/// off the `refs` map.
 pub(crate) fn consults_call_graph(
     body: &[Stmt],
     refs: &FxHashMap<TextSize, Vec<&str>>,

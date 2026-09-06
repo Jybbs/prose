@@ -56,7 +56,7 @@ pub(super) fn has_interior_break(source: &Source, lit: &StringLiteral) -> bool {
 /// Splits `content` into the two or more parts an adjacent-literal form
 /// carries, filling each to `budget` where the cuts allow. `None` when
 /// `content` carries no interior whitespace and when it fits `budget`
-/// whole, neither of which leaves a split to make.
+/// whole.
 fn concatenated_parts(content: &str, budget: usize) -> Option<Vec<&str>> {
     let bounds: Vec<usize> = iter::once(0)
         .chain(split_points(content))

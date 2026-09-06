@@ -15,7 +15,7 @@ interface ExitCode {
 declare const data: readonly ExitCode[]
 export { data }
 
-interface ExitCodeSource {
+export interface ExitCodeSource {
   code    : number
   detail  : readonly string[]
   label   : string
@@ -29,7 +29,7 @@ const SHIPPED_LINTS = discoverRuleSlugs(rulesDirectory)
   .map(rule => `\`${rule.slug}\``)
   .join(', ')
 
-const SOURCES: readonly ExitCodeSource[] = [
+export const SOURCES: readonly ExitCodeSource[] = [
   {
     code   : 0,
     detail : [

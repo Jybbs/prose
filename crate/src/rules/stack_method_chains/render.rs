@@ -13,9 +13,9 @@ use crate::{
 /// `chain` broken across lines inside a parenthesis pair, its head one
 /// indent step past `indent` and its closing `)` back at `indent`.
 /// `hang` is the columns each later link's dot sits past the head's
-/// indent, `None` standing the receiver alone and running every link
-/// flush beneath it. `segment` writes the receiver at index zero and
-/// each link at its index past that, given the column and the row
+/// indent, `None` putting the receiver alone on the head row and every
+/// link flush beneath it. `segment` writes the receiver at index zero
+/// and each link at its index past that, given the column and the row
 /// indent the segment lands at.
 pub(super) fn broken(
     source: &Source,

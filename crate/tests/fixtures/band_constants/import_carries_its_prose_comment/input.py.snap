@@ -3,7 +3,7 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/band_constants/import_carries_its_prose_comment/input.py
 ---
-# the hex helpers both writers reach for
+# the hex helpers both writers call
 import binascii
 import zlib
 

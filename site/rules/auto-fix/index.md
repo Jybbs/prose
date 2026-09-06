@@ -1,3 +1,7 @@
+---
+description: "The rules that rewrite source under prose format and report the pending edit under prose check."
+---
+
 # Auto-Fix Rules
 
 An auto-fix rule rewrites source under `prose format` and reports each rewrite as a `Severity::Format` diagnostic under `prose check`. Each rule settles one layout question *Prose* can answer mechanically *(an alignment column, an alphabetical order, a blank-line count, a collection layout, a trailing comma)* and emits an [[edit]] list the [[pipeline]] applies between rules. An auto-fix rule never reports a change the binary will not itself write.

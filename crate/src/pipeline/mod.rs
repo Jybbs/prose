@@ -1,18 +1,18 @@
 //! Runs the enabled rules against a source file in deterministic order.
 //!
-//! Each rule returns a `Vec<Edit>` and a `Vec<TextRange>` of lint
-//! ranges. The pipeline splices the edits of a batch of consecutive
-//! rules into a fresh buffer in one pass, then reparses and confirms
-//! the result still compiles before handing the new `Source` to the
-//! next batch, carrying into it the tables every member declares its
-//! edits leave standing. Registration order follows the data
-//! dependency, seating every rule that mutates a line's width, a
-//! group's member order, or a statement's position ahead of every rule
-//! that reads one, and a rule joins a batch only beside rules the
-//! registry declares it independent of. The settle check re-applies
-//! the enabled rules to a completed run's output and names every rule
-//! still editing it, a `format` run re-applying only the rules that
-//! edited on its first pass.
+//! Each rule returns its fix groups as a `Vec<Vec<Edit>>` and its lint
+//! findings as a `Vec<Diagnostic>`. The pipeline splices the edits of a
+//! batch of consecutive rules into a fresh buffer in one pass, then
+//! reparses and confirms the result still compiles before handing the
+//! new `Source` to the next batch, carrying into it the tables every
+//! member declares its edits leave standing. Registration order follows
+//! the data dependency, seating every rule that mutates a line's width,
+//! a group's member order, or a statement's position ahead of every
+//! rule that reads one, and a rule joins a batch only beside rules the
+//! registry declares it independent of. The settle check re-applies the
+//! enabled rules to a completed run's output and names every rule still
+//! editing it, a `format` run re-applying only the rules that edited on
+//! its first pass.
 
 use std::{collections::BTreeSet, ops::Range, slice};
 
@@ -89,9 +89,8 @@ impl Pipeline {
     /// The diagnostics [`diagnose`](Self::diagnose) collects, paired
     /// with the seat of the first rule holding a fix group against
     /// `source`, or `None` where no rule holds one. A fold over this
-    /// same buffer reaches its first edit at that seat, so every rule
-    /// ahead of it re-derives a result this pass already has, and a
-    /// `None` leaves that fold nothing to apply.
+    /// same buffer reaches its first edit at that seat, and a `None`
+    /// leaves that fold nothing to apply.
     fn diagnosed(&self, source: &Source) -> (Vec<Diagnostic>, Option<usize>) {
         if source.suppression_map().file_is_suppressed() {
             return (Vec::new(), None);
@@ -126,8 +125,9 @@ impl Pipeline {
     ///
     /// # Errors
     ///
-    /// Returns whichever `PipelineError` a rule's output draws from
-    /// [`reparse_or_reject`](error::reparse_or_reject).
+    /// Returns the `PipelineError`
+    /// [`reparse_or_reject`](error::reparse_or_reject) reports for a
+    /// rule's output.
     fn fold_rules(
         &self,
         mut source: Source,
@@ -169,12 +169,12 @@ impl Pipeline {
         batch.close(source, gate, replays)
     }
 
-    /// The settle walk [`settle_report`](Self::settle_report),
+    /// The walk [`settle_report`](Self::settle_report),
     /// [`unsettled`](Self::unsettled), and
-    /// [`unsettled_among`](Self::unsettled_among) read, narrowed to the
-    /// rules `keep` admits, each rule's probe reported to the trace
-    /// under `pass`, weaving the first editing rule's text as the
-    /// witness only where `witness` is set.
+    /// [`unsettled_among`](Self::unsettled_among) share, narrowed to the
+    /// rules `keep` admits, tracing each rule's probe under `pass` and
+    /// weaving the first editing rule's text as the witness only where
+    /// `witness` is set.
     fn settle_walk(
         &self,
         source: &Source,
@@ -249,8 +249,8 @@ impl Pipeline {
     ///
     /// # Errors
     ///
-    /// Returns whichever `PipelineError` a rule's output draws from the
-    /// reparse between rules.
+    /// Returns the `PipelineError` the reparse between rules reports
+    /// for a rule's output.
     pub fn format(&self, source: Source) -> Result<Source, PipelineError> {
         if source.suppression_map().file_is_suppressed() {
             return Ok(source);
@@ -264,8 +264,8 @@ impl Pipeline {
     ///
     /// # Errors
     ///
-    /// Returns whichever `PipelineError` a rule's output draws from the
-    /// reparse between rules.
+    /// Returns the `PipelineError` the reparse between rules reports
+    /// for a rule's output.
     ///
     /// # Panics
     ///
@@ -285,9 +285,8 @@ impl Pipeline {
         crate::rules::KNOWN_IDS
     }
 
-    /// This pipeline's enabled rule ids in registration order, the
-    /// resolved selection that keys the check cache so two runs
-    /// differing only in `--select` / `--ignore` key separately.
+    /// This pipeline's enabled rule slugs in registration order, the
+    /// resolved selection that keys the check cache.
     pub(crate) fn rule_ids(&self) -> impl Iterator<Item = RuleId> + use<'_> {
         self.rules.iter().map(|rule| rule.id())
     }
@@ -296,9 +295,8 @@ impl Pipeline {
     /// returns the rewritten source paired with the diagnostics each
     /// rule emitted.
     ///
-    /// Lint diagnostics are collected once the rewrites settle, so
-    /// every lint range resolves against the returned source rather
-    /// than against the buffer as it stood when its rule ran.
+    /// Lint diagnostics are collected once the rewrites settle, and
+    /// every lint range resolves against the returned source.
     ///
     /// File-level `# prose: off` short-circuits to identity. The
     /// suppression map otherwise drops each fix group holding a
@@ -327,19 +325,17 @@ impl Pipeline {
     /// Rewrites `source` and returns it beside the diagnostics
     /// [`diagnose`](Self::diagnose) collects against the buffer as
     /// written, the pair a structured `format` reports, and the rules
-    /// the fold fired, the set a narrowed settle check re-applies, which
-    /// a rule applicable only once an upstream rule has rewritten joins
-    /// where the as-written diagnostics leave it out.
+    /// the fold fired, the set a narrowed settle check re-applies. That
+    /// set includes a rule that edits only once an upstream rule has
+    /// rewritten, which the as-written diagnostics leave out.
     ///
-    /// One walk over the rules serves both halves, in that the fold
-    /// opens at the first rule the diagnose pass found editing and
-    /// leaves every rule ahead of it to that pass, where a buffer no
+    /// The fold opens at the first rule the diagnose pass found editing
+    /// and leaves every rule ahead of it to that pass, and a buffer no
     /// rule edits skips the fold outright. No lint pass runs against the
-    /// rewritten buffer, because the reported diagnostics resolve
-    /// against the source as written. Replaying the editing rules is
-    /// also what surfaces one whose output fails to re-parse or to
-    /// compile, so `check --validate` reads this in place of the full
-    /// [`run`](Self::run) and keeps the rewrite for its settle check.
+    /// rewritten buffer, leaving the reported diagnostics resolved
+    /// against the source as written. `check --validate` reads this in
+    /// place of the full [`run`](Self::run) and keeps the rewrite for
+    /// its settle check.
     ///
     /// # Errors
     ///
@@ -361,18 +357,18 @@ impl Pipeline {
         Ok((formatted, diagnostics, fired_rules(&fold)))
     }
 
-    /// What one walk over `source` reads for the settle check, so the
-    /// rules still editing and the rules reporting a fix the weave
-    /// never lands come off the same fix groups. Reads whichever subset
-    /// this pipeline carries, so a `--select` run answers for that
-    /// subset alone, and a file-level `# prose: off` answers empty.
+    /// What the settle check reads off one walk over `source`, where the
+    /// rules still editing and the rules reporting a fix the weave never
+    /// lands come off the same fix groups. Reads whichever subset this
+    /// pipeline carries, and a file-level `# prose: off` yields an empty
+    /// report.
     pub fn settle_report(&self, source: &Source) -> SettleReport {
         self.settle_walk(source, "full", |_| true, true)
     }
 
     /// One pipeline per rule this pipeline carries, in order, each
     /// holding its rule as this pipeline constructed it, so a rule that
-    /// reads a sibling's flag keeps the answer this selection gave it.
+    /// reads a sibling's flag keeps the value this selection gave it.
     pub fn split(self) -> Vec<(RuleId, Self)> {
         let (sharing, target_version) = (self.sharing, self.target_version);
         self.rules
@@ -396,10 +392,9 @@ impl Pipeline {
     }
 
     /// The rules among `fired` whose edits would still rewrite `source`,
-    /// the second pass a `format` run makes over its own output,
-    /// re-applying the rules that edited on the first pass rather than
-    /// every enabled rule. A rule silent on the first pass is left to
-    /// the full [`settle_report`](Self::settle_report) walk that `check
+    /// the second pass a `format` run makes over its own output. A rule
+    /// silent on the first pass is left to the full
+    /// [`settle_report`](Self::settle_report) walk that `check
     /// --validate` and the settle sweeps run.
     pub(crate) fn unsettled_among(&self, source: &Source, fired: &BTreeSet<RuleId>) -> Vec<RuleId> {
         self.settle_walk(source, "narrowed", |id| fired.contains(&id), false)
@@ -427,10 +422,10 @@ pub struct SettleReport {
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum Sharing {
     /// Every rule, so a run reparses only where a rule's edits overlap
-    /// one already batched, the reading the subset probe takes of a
-    /// pair to test whether its edits are independent. A batch the
-    /// reparse rejects surfaces as [`PipelineError::Batch`] rather
-    /// than replaying.
+    /// one already batched, the setting the subset probe runs a pair
+    /// under to test whether its edits are independent. A batch the
+    /// reparse rejects surfaces as [`PipelineError::Batch`] with no
+    /// replay.
     Always,
     /// The rules the registry's shared-splice column declares, every
     /// other rule reading the tree the batch ahead of it left.

@@ -1,3 +1,7 @@
+---
+description: "Covers `# fmt: off / on`, `# fmt: skip`, the `# yapf` aliases, `# prose: ignore`, and `# prose: keep`."
+---
+
 # Suppression Directives
 
 A directive exempts code from *Prose*'s rewrites or lints at the file, block, line, or dict-literal scope. The [**Suppression**](/usage/suppression) chapter covers when to reach for each, and this page is the complete list.

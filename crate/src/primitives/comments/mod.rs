@@ -5,8 +5,8 @@
 //! pragma, and binds to the member otherwise, whatever blank line sits
 //! between the two. The trailing-comment gap the banding and spacing
 //! rules seat lives here too, with the width a comment takes behind
-//! it, beside the [`Settling`] a measuring rule reads a trailing
-//! comment at the width of.
+//! it, and the [`Settling`] a measuring rule reads a trailing comment's
+//! settled width from.
 
 use ruff_python_trivia::{CommentRanges, PythonWhitespace, is_pragma_comment};
 use ruff_source_file::{LineRanges, UniversalNewlines};
@@ -36,7 +36,7 @@ pub(crate) const TRAILING_GAP: &str = "  ";
 /// The two comment rules a measuring rule predicts over a trailing
 /// comment, the one seating the gap ahead of it and the one settling
 /// the opener between its hash run and its text, which also widens
-/// that gap to the [`TRAILING_GAP`] floor, each carried by rule id and
+/// that gap to the [`TRAILING_GAP`] floor, each carried by slug and
 /// `None` where the rule is off.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Settling {
@@ -98,7 +98,8 @@ pub(crate) fn anchors_in_place(source: &Source, block: TextRange) -> bool {
 /// own-line comment run in `[lower, item_start)` when that run binds,
 /// or `item_start`'s line start when the run anchors in place, opens at
 /// another indent, or no comment sits there. A blank line above the
-/// member leaves the run bound.
+/// member leaves the run bound, and a `lower` past the line start
+/// returns `item_start` itself.
 pub(super) fn bound_block_start(
     source: &Source,
     lower: TextSize,
@@ -118,8 +119,7 @@ pub(super) fn bound_block_start(
 
 /// True when an own-line comment block leads the item at `item_start`,
 /// reached across the blank run between the two and stopped at a
-/// notebook cell wall. A whole-line deletion of that item strands the
-/// block.
+/// notebook cell wall.
 pub(super) fn comment_leads(source: &Source, item_start: TextSize) -> bool {
     let text = source.text();
     let line_start = text.line_start(item_start);
@@ -150,9 +150,7 @@ pub(crate) fn comments_held_by(
 /// True when the line containing `literal`'s opening bracket or the one
 /// containing its closing bracket carries a trailing `# prose: keep`
 /// comment, the marker that pins a dict or a dunder list against entry
-/// reordering and a dict against module-constant banding, so an
-/// expansion that carries the comment from the one line to the other
-/// keeps the literal pinned.
+/// reordering and a dict against module-constant banding.
 pub(crate) fn has_keep_marker(source: &Source, literal: impl Ranged) -> bool {
     let text = source.text();
     [literal.start(), literal.end()]

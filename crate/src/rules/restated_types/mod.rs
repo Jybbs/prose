@@ -22,7 +22,7 @@ pub(crate) struct RestatedTypes;
 
 impl RestatedTypes {
     pub(crate) const MESSAGE: &'static str =
-        "Flag a docstring type group the code already annotates";
+        "remove a docstring type the annotation already states";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

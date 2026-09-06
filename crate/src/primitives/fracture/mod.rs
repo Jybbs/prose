@@ -1,7 +1,6 @@
 //! Closes a fractured argument list back onto one row. A break the
 //! author hand-wrapped closes up, whereas a flush column, a list
-//! carrying a comment, and one past the argument cap each hold, so a
-//! rule measuring a construct reads the width layout settles on.
+//! carrying a comment, and one past the argument cap each hold.
 
 use std::borrow::Cow;
 
@@ -42,8 +41,8 @@ impl Joins {
 
 /// The terms a fracture closes under, resolved from configuration.
 /// `cap` is the argument count past which a list keeps its break, and
-/// `closes` is clear where `reflow_calls` is off and no fracture shuts
-/// at all.
+/// `closes` is false where `reflow_calls` is off, leaving every
+/// fracture open.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Settings<'a> {
     cap: Option<usize>,
@@ -52,9 +51,8 @@ pub(crate) struct Settings<'a> {
 }
 
 impl Settings<'_> {
-    /// These settings resolving a call against `targets`, the map
-    /// [`module_call_params`] builds for one source, so the join reads
-    /// the count trigger the way `reflow-calls` explodes it.
+    /// These settings resolving each call against `targets`, the map
+    /// [`module_call_params`] builds for one source.
     pub(crate) fn against<'t>(self, targets: &'t CallTargets<'t>) -> Settings<'t> {
         Settings {
             cap: self.cap,
@@ -63,14 +61,13 @@ impl Settings<'_> {
         }
     }
 
-    /// True where `reflow-calls` runs at all, so a list its length
-    /// trigger reaches explodes once the rule takes its turn.
+    /// True where `reflow-calls` is enabled.
     pub(crate) fn closes(self) -> bool {
         self.closes
     }
 
     /// True where `reflow-calls`'s count trigger explodes `call`, its
-    /// arguments past the cap and every one taking keyword form.
+    /// arguments running past the cap and every one taking keyword form.
     pub(crate) fn explodes(self, source: &Source, call: &ExprCall) -> bool {
         self.over_cap(call.arguments.len()) && takes_keyword_form(source, call, self.targets)
     }
@@ -83,9 +80,9 @@ impl Settings<'_> {
         Joins(join_edits(source, self, expr))
     }
 
-    /// True where a list of `count` arguments sits past the cap a
-    /// closing fracture holds to, the list `reflow-calls` explodes on its
-    /// count trigger. False throughout where `reflow-calls` is off.
+    /// True where `count` arguments run past the cap, the list
+    /// `reflow-calls` explodes on its count trigger. False throughout
+    /// where `reflow-calls` is off.
     fn over_cap(self, count: usize) -> bool {
         self.closes && self.cap.is_some_and(|cap| count > cap)
     }

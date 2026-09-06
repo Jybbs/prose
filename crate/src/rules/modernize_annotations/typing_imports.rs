@@ -27,7 +27,7 @@ pub(super) struct TypingImports<'a> {
 impl<'a> TypingImports<'a> {
     /// Reads the module's top-level imports, `None` when none of them
     /// binds a `typing` name. An import below module scope and a
-    /// relative `from .typing import …` both go unread.
+    /// relative `from .typing import …` are both skipped.
     pub(super) fn collect(body: &'a [Stmt]) -> Option<Self> {
         let mut aliases = FxHashMap::default();
         let mut statements = Vec::new();
@@ -93,10 +93,9 @@ impl<'a> TypingImports<'a> {
     }
 
     /// One fix group per import statement, dropping every alias whose
-    /// bound name `consumed` read as many times as the module reads it
-    /// at all and leaving an alias with a surviving reference in place.
-    /// A comment-led statement losing every alias lands on the import
-    /// `folds` carries its comment onto.
+    /// reads the rewrite consumed entirely and keeping one with a
+    /// surviving reference. A comment-led statement losing every alias
+    /// lands on the import `folds` moves its comment to.
     pub(super) fn prune(
         &self,
         source: &Source,
@@ -138,9 +137,8 @@ struct TypingImport<'a> {
 }
 
 impl TypingImport<'_> {
-    /// True when `alias` binds a name the rewrite read out entirely. An
-    /// unaliased `import a.b` holds, in that dropping it would unbind
-    /// `a.b` as well as the `a` the rewrite read.
+    /// True when `alias` binds a name the rewrite read out entirely, an
+    /// unaliased dotted `import a.b` holding regardless.
     fn orphaned(&self, alias: &Alias, unread: &impl Fn(&str) -> bool) -> bool {
         if !self.bare {
             return unread(from_import_bound_name(alias));

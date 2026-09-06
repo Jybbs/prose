@@ -35,7 +35,7 @@ Each move sits behind its own facet, `explode` gating the count trigger as well 
 
 <RuleConfigTable />
 
-A short tuple inside a call's argument list, like `numpy.zeros((3, 4))`, stays inline, since it fits the budget and `max-dict-entries` reads dicts alone. A `dict` literal with eight non-atomic entries expands whatever its length. A four-entry `dict` expands at the default `max-dict-entries` of `3` even when it fits the line.
+A short tuple inside a call's argument list, like `numpy.zeros((3, 4))`, stays inline, since it fits the budget and `max-dict-entries` reads dicts alone. A `dict` literal with eight non-atomic entries expands whatever its length. A four-entry `dict` expands at the default `max-dict-entries` of <ConfigDefault rule="reflow-collections" facet="max-dict-entries" /> even when it fits the line.
 
 </template>
 

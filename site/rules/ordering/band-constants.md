@@ -52,7 +52,7 @@ The move and its spacing settle in one run, so the file reaches its final layout
 
 <RuleConfigTable />
 
-The facets above tune the band without switching it off. `group-subcategories` clusters each band by subcategory, falling back to a plain `(tier, name)` sort when `false`. `max-tiers` caps how many evaluation tiers open their own sub-band, defaulting to `2` so a band reads as its base plus one derived sub-band, with `1` keeping it tight and `false` opening one per tier. Turned off entirely with `band-constants = false`, the constants stay in place among their neighbors. The `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* sets which imports the leading band sits below, since a first-party package's imports group with the local-package section.
+The facets above tune the band without switching it off. `group-subcategories` clusters each band by subcategory, falling back to a plain `(tier, name)` sort when `false`. `max-tiers` caps how many evaluation tiers open their own sub-band, defaulting to <ConfigDefault rule="band-constants" facet="max-tiers" /> so a band reads as its base plus one derived sub-band, with `1` keeping it tight and `false` opening one per tier. Turned off entirely with `band-constants = false`, the constants stay in place among their neighbors. The `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* sets which imports the leading band sits below, since a first-party package's imports group with the local-package section.
 
 </template>
 

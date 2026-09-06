@@ -71,7 +71,7 @@ For format-on-save, chain both commands in the save hook, Ruff first:
 ruff format ${file} && prose format ${file}
 ```
 
-The [**Editor**](/integrations/editor) page covers the setup for VSCode, Neovim, JetBrains, Sublime Text, Emacs, and Helix.
+The [**Editor**](/integrations/editor) page covers the setup for every editor the run-on-save widget documents.
 
 ## Other Token-Level Formatters
 

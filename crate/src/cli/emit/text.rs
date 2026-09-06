@@ -20,8 +20,7 @@ pub(crate) struct Text {
 }
 
 impl Text {
-    /// Builds the emitter, styling its renderer only where the stream
-    /// carries escapes through.
+    /// Builds the emitter, with a styled renderer where `color` is set.
     pub(crate) fn new(color: bool) -> Self {
         Self {
             renderer: if color {
@@ -78,8 +77,7 @@ impl Emitter for Text {
 }
 
 /// The source span a diagnostic renders against, its own range widened
-/// to every edit its fix would apply, so the snippet holds each patch
-/// the renderer draws.
+/// to cover every edit its fix would apply.
 fn annotated(diag: &Diagnostic) -> TextRange {
     diag.fix
         .iter()
@@ -88,11 +86,8 @@ fn annotated(diag: &Diagnostic) -> TextRange {
 }
 
 /// The notebook cells `range` runs across, paired with the byte range
-/// they span, derived from the index by walking from the first cell's
-/// row to the row opening the cell past the last. A rule reads the
-/// cells concatenated, so a range covering an aligned group spans
-/// every cell that group reaches. `None` for an offset outside every
-/// cell.
+/// they span, walked from the first cell's row to the row opening the
+/// cell past the last. `None` for an offset outside every cell.
 fn cell_slice(
     file: &SourceFile,
     index: &NotebookIndex,
@@ -130,9 +125,9 @@ fn framed<'a, T: Clone>(text: &'a str, line_start: usize, path: &'a str) -> Snip
 /// The snippet view for a diagnostic spanning `range`: the byte offset
 /// its rendered text begins at, a cell header for a notebook, that text,
 /// and the one-based line its first row carries. A module renders the
-/// lines around `range` with no header and their own numbering, where a
-/// notebook renders the cells the range reaches, from line one, under a
-/// header naming them.
+/// lines around `range` with no header and their own numbering, whereas
+/// a notebook renders the cells the range reaches, from line one, under
+/// a header naming them.
 fn view<'a>(
     file: &'a SourceFile,
     index: Option<&NotebookIndex>,
@@ -160,8 +155,6 @@ fn header(first: OneIndexed, last: OneIndexed) -> String {
 
 /// The line-bounded slice of `file` covering `range` with `CONTEXT_LINES`
 /// rows either side, paired with the one-based number of its first row.
-/// Handing the renderer this window rather than the whole file keeps a
-/// file's rendering cost off its diagnostic count.
 fn window(file: &SourceFile, range: TextRange) -> (TextRange, usize) {
     let code = file.to_source_code();
     let first = code.line_index(range.start()).saturating_sub(CONTEXT_LINES);

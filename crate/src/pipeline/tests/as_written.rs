@@ -6,8 +6,8 @@ use super::*;
 #[test]
 fn run_as_written_leaves_the_unedited_prefix_to_the_diagnose_pass() {
     // The first rule reads the buffer and edits nothing, so the
-    // diagnose pass has already answered for it and the fold opens
-    // at the second. Its capture log holds the one read.
+    // diagnose pass already covers it and the fold opens at the
+    // second. Its capture log holds the one read.
     let seen = Arc::new(Mutex::new(Vec::new()));
     let pipeline = Pipeline::from_rules(vec![
         capturing(&seen, "reads-only", Vec::new()),

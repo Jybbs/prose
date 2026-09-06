@@ -4,9 +4,9 @@
 //! `strip_stranded_padding`. Each aligned `:` keeps a one-space buffer
 //! before it, the dict, annotation, and parameter contexts collapse
 //! the gap after it and resolve within `code_line_length`, and a
-//! docstring run carries no cap, settling its parenthesized type
-//! groups into a column first so the `:` column measures the widths
-//! that padding leaves.
+//! docstring run has no cap, settling its parenthesized type groups
+//! into a column first so the `:` column measures the widths that
+//! padding leaves.
 
 use ruff_diagnostics::Edit;
 
@@ -72,9 +72,9 @@ struct Emitter<'a> {
 
 impl ColonEmitter for Emitter<'_> {
     /// Seats the type-group column first, then the `:` column against
-    /// the widths that padding leaves, recording both as one fix group
-    /// so a run settles in a single pass. The type-group column takes
-    /// no singleton strip, collapsing instead to its one-space buffer.
+    /// the widths that padding leaves, recording both as one fix group.
+    /// The type-group column takes no singleton strip, collapsing to
+    /// its one-space buffer.
     fn docstring_entries(&mut self, run: &EntryColumns) {
         let (parens, colons) = run.settled_columns(self.walker.source, self.rule.type_settings);
         let mut edits = self

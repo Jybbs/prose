@@ -35,17 +35,12 @@ impl<M> From<Option<M>> for Slot<M> {
 /// without joining, a `Break` closes the run, and a standalone comment
 /// or blank line between two members closes it as well. When
 /// `break_after_multiline` is set, a member whose own range spans more
-/// than one line also closes the run after it, so a run never extends
-/// past a multi-line row. The multi-line flag tracks the last member
-/// only, so a `Bridge` extends the run's reach without tripping the
-/// break for a held row.
+/// than one line also closes the run after it. The multi-line flag
+/// tracks the last member only, so a `Bridge` extends the run's reach
+/// without tripping the break.
 ///
 /// An item sharing its row with a sibling lands in a run of its own,
-/// because a column belongs to a row that one member owns. Two items on
-/// one row otherwise pair diagonally, the trailing item of one row
-/// landing in a column with the leading item of the next. The lone run
-/// still reaches the rules that read a single-member group, so a packed
-/// row sheds stale padding while seating no column.
+/// which still reaches the rules that read a single-member group.
 pub(crate) fn adjacent_member_groups<T, M, F>(
     source: &Source,
     items: impl IntoIterator<Item = T>,
@@ -114,9 +109,9 @@ where
 /// transparent, in that it joins no group and leaves neighbors on
 /// either side to align as one block, whereas a held multi-line
 /// statement stands as the prior statement and closes the run. A
-/// trailing comment on a row sits inside that row, so it leaves the run
-/// intact, while a standalone comment line or a blank line between rows
-/// breaks it. Walks `body` exactly once.
+/// trailing comment on a row leaves the run intact, whereas a
+/// standalone comment line or a blank line between rows breaks it.
+/// Walks `body` exactly once.
 pub(crate) fn keyed_line_adjacent_groups<'a, K, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
@@ -161,12 +156,11 @@ where
 /// grouping the qualified members into runs where every consecutive
 /// pair sits on adjacent source lines. A multi-line prior statement,
 /// a non-qualifying statement, an own-line comment between two rows,
-/// or a blank line breaks the current run. A single-line statement held
-/// for `rule` is transparent per [`keyed_line_adjacent_groups`]. Empty
-/// groups (statements that fail qualification with no qualified
-/// neighbors) are skipped. Thin wrapper over
-/// [`keyed_line_adjacent_groups`] for rules whose qualifier produces
-/// only one form, so every member shares an implicit `()` key.
+/// or a blank line breaks the current run, and a single-line statement
+/// held for `rule` is transparent per [`keyed_line_adjacent_groups`].
+/// A thin wrapper over [`keyed_line_adjacent_groups`] for rules whose
+/// qualifier produces only one form, so every member shares an
+/// implicit `()` key.
 pub(crate) fn line_adjacent_groups<'a, M, F>(
     source: &'a Source,
     body: &'a [Stmt],

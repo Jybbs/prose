@@ -1,8 +1,8 @@
 //! The one-row form of an expression or an argument list, and the
 //! terms under which that form exists at all. A rule deciding where a
-//! construct lands asks this module, so the decision rests on the
+//! construct lands reads this module, so the decision rests on the
 //! shape layout settles on rather than the shape it starts from, and
-//! `None` carries the weight: a flush column
+//! `None` is the answer that counts, in that a flush column
 //! `keep_multiline_literals` holds, a dict past `max_dict_entries`,
 //! an argument list past `max_args`, a string part spanning rows, and
 //! a range carrying a comment each leave a construct with no one-row
@@ -94,10 +94,9 @@ impl<'a> Settings<'a> {
         }
     }
 
-    /// These settings resolving a call against `targets`, the map
+    /// These settings resolving each call against `targets`, the map
     /// [`module_call_params`](crate::primitives::call_keywords::module_call_params)
-    /// builds for one source. A rule reads the count trigger the same
-    /// way `reflow-calls` does once it carries the map.
+    /// builds for one source.
     pub(crate) fn against<'t>(self, targets: &'t CallTargets<'t>) -> Settings<'t> {
         Settings {
             code_line_length: self.code_line_length,
@@ -109,11 +108,10 @@ impl<'a> Settings<'a> {
 
     /// The one-row `(...)` form of `arguments`, `None` where no one-row
     /// form exists. A single-row argument sheds a redundant grouping
-    /// pair, which a top-level argument slot never needs, and a
-    /// row-spanning one keeps the pair holding its rows together. This
-    /// list's own argument count is left to the caller's count trigger,
-    /// whereas an argument holding a construct a later rule lays out
-    /// across rows reaches no form at all.
+    /// pair and a row-spanning one keeps the pair holding its rows
+    /// together. This list's own argument count is left to the caller's
+    /// count trigger, whereas an argument holding a construct a later
+    /// rule lays out across rows reaches no form at all.
     pub(crate) fn arguments_form(
         &self,
         source: &'a Source,
@@ -145,9 +143,8 @@ impl<'a> Settings<'a> {
         Some(out)
     }
 
-    /// `expr`'s one-row form rebuilt at the canonical spacing rather
-    /// than read off the source, so padding written inside it stays out
-    /// of a measurement taken over it. `None` where no one-row form
+    /// `expr`'s one-row form rebuilt at the canonical spacing, whatever
+    /// padding the source wrote inside it. `None` where no one-row form
     /// exists.
     pub(crate) fn condensed(
         &self,
@@ -165,7 +162,7 @@ impl<'a> Settings<'a> {
         self.rejoin.explodes(source, call)
     }
 
-    /// The dict entry cap the `explode` facet leaves armed, `None` where
+    /// The dict entry cap where the `explode` facet is set, `None` where
     /// no count expands a dict.
     pub(crate) fn dict_entry_cap(&self) -> Option<usize> {
         self.max_dict_entries
@@ -212,8 +209,8 @@ impl<'a> Settings<'a> {
     }
 
     /// `param`'s one-row text, each row-spanning annotation and default
-    /// spliced back at its own one-row form so the spacing the source
-    /// wrote around `:` and `=` survives, `None` where either reaches no
+    /// spliced back at its own one-row form, keeping the spacing the
+    /// source wrote around `:` and `=`. `None` where either reaches no
     /// single row.
     pub(crate) fn parameter_form(
         &self,

@@ -70,8 +70,8 @@ impl Visitor<'_> {
         }
     }
 
-    /// Returns `true` when standing `value` in for `name` carries the
-    /// read's own physical row past the code budget.
+    /// Returns `true` when substituting `value` for `name` pushes the
+    /// read's row past the code budget.
     fn overflows(&self, read: TextSize, name: &str, value: &str) -> bool {
         let swap =
             Edit::range_replacement(value.to_owned(), TextRange::at(read, TextSize::of(name)));
@@ -83,9 +83,8 @@ impl Visitor<'_> {
         )
     }
 
-    /// Returns the text that would stand in the binding's place at its
-    /// read, and `None` where no rewrite resolves or the value it names
-    /// spans rows.
+    /// Returns the text replacing the binding at its read, `None` where
+    /// no value resolves or the value spans rows.
     fn replacement(&self, binding: BindingId, write: TextSize) -> Option<String> {
         let (value, index) = match self.analysis.unpack_target(binding) {
             Some(UnpackKind::Suggested(range, index)) => (range, Some(index)),

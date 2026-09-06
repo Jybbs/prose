@@ -26,7 +26,7 @@ A chain inside an f-string or t-string replacement field is left as written what
 
 <RuleConfigTable />
 
-A three-link chain breaks at the default cap of `2` even where it fits the line. Setting `max-links = false` leaves `code-line-length` as the only trigger, and setting `max-shift = 0` takes the full split for every chain.
+A three-link chain breaks at the default cap of <ConfigDefault rule="stack-method-chains" facet="max-links" /> even where it fits the line. Setting `max-links = false` leaves `code-line-length` as the only trigger, and setting `max-shift = 0` takes the full split for every chain.
 
 </template>
 

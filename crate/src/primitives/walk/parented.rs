@@ -1,5 +1,5 @@
-//! The parent-tracking expression walk a rule drives when it needs the
-//! node enclosing each expression.
+//! The parent-tracking expression walk, handing a rule the node
+//! enclosing each expression.
 
 use ruff_python_ast::{
     AnyNodeRef, Arguments, Expr, ExprCall, ModModule, Stmt,
@@ -106,9 +106,8 @@ impl<'src, P: ParentedProbe<'src>> Visitor<'src> for ParentedWalk<'src, '_, P> {
     }
 }
 
-/// True for an f-string or t-string, the expression a probe leaves
-/// unwalked to keep every replacement field inside it the shape its
-/// author gave it.
+/// True for an f-string or t-string, the expression a probe set to
+/// `Descent::Over` leaves unwalked.
 const fn is_interpolated_string(expr: &Expr) -> bool {
     matches!(expr, Expr::FString(_) | Expr::TString(_))
 }

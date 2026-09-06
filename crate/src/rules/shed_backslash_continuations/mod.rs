@@ -34,7 +34,7 @@ pub(crate) struct ShedBackslashContinuations {
 }
 
 impl ShedBackslashContinuations {
-    pub(crate) const MESSAGE: &'static str = "shed a backslash line continuation";
+    pub(crate) const MESSAGE: &'static str = "remove a backslash line continuation";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

@@ -45,7 +45,7 @@ impl<'a> Renderer<'a> {
     /// The bound name `expr` reads through and the builtin PEP 585 gave
     /// the `typing` generic it names. `None` when the facet is off, when
     /// `expr` names no `typing` member, and when that member's
-    /// replacement lives under `collections` rather than in builtins.
+    /// replacement lives outside the builtins.
     fn builtin_for(&self, expr: &'a Expr) -> Option<(&'a str, &'static str)> {
         if !self.generics {
             return None;
@@ -84,9 +84,9 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    /// Weaves each element's rewritten text back into `span`, keeping the
-    /// brackets, separators, and spacing between them verbatim. Borrows
-    /// `span` when no element changes.
+    /// Splices each element's rewritten text back into `span`, keeping
+    /// the brackets, separators, and spacing between them verbatim.
+    /// Borrows `span` when no element changes.
     fn spliced(
         &mut self,
         span: TextRange,
@@ -100,7 +100,7 @@ impl<'a> Renderer<'a> {
     }
 
     /// The rewritten text of a subscript, preferring the PEP 604 form
-    /// where the head is a legacy union and otherwise weaving the head
+    /// where the head is a legacy union and otherwise splicing the head
     /// and slice back around their brackets.
     fn subscript(&mut self, subscript: &'a ExprSubscript) -> Cow<'a, str> {
         match self.union(subscript) {

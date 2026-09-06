@@ -1,5 +1,5 @@
-//! Applies edit groups to source text, weaving overlapping groups and
-//! declining any group that conflicts with itself.
+//! Splices edit lists into source text, weaving each sorted list in one
+//! pass and declining a list whose edits overlap.
 
 use std::borrow::Cow;
 
@@ -15,9 +15,7 @@ use crate::source::Source;
 /// sorted edits overlap.
 ///
 /// Sorts edits by start-then-end (via `Edit`'s `Ord` impl) and weaves
-/// them in one forward pass, linear in the source length regardless of
-/// how many edits apply. Declines with `None` rather than slicing an
-/// inverted range, leaving the caller to keep the source unchanged.
+/// them in one forward pass.
 pub(crate) fn apply_edits_mapped(text: &str, mut edits: Vec<Edit>) -> Option<(String, SourceMap)> {
     edits.sort_unstable();
     let mut source_map = SourceMap::default();
@@ -33,8 +31,7 @@ pub(crate) fn apply_edits_mapped(text: &str, mut edits: Vec<Edit>) -> Option<(St
 /// Folds any leaf edits whose range falls inside `range` into the
 /// source slice for that range. Returns `Cow::Borrowed` when no leaf
 /// edit applies or the in-range edits overlap. `edits` must be sorted
-/// by `start()`, an invariant that `collect_leaf_edits` upholds
-/// via the AST visitor's source-order pre-order walk.
+/// by `start()`.
 pub(crate) fn apply_inline_edits<'src>(
     source: &'src Source,
     range: TextRange,
@@ -86,9 +83,8 @@ where
 }
 
 /// Returns `Cow::Borrowed` of `source.slice(span)` when every part is
-/// still a borrow of source, signalling no descendant rewrite fired.
-/// Otherwise concatenates the parts into a single owned string covering
-/// the same span.
+/// still a borrow of source, and otherwise concatenates the parts into
+/// one owned string covering the same span.
 fn concat_or_borrow<'src>(
     parts: &[Cow<'src, str>],
     source: &'src Source,

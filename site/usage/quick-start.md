@@ -1,3 +1,7 @@
+---
+description: "Walks each command end to end against a sample project."
+---
+
 # Quick Start
 
 `prose format` rewrites files in place, `prose check` reports what would change without writing anything, and `prose completions` prints a shell-completion script. `format` and `check` use the same exit codes, so a CI step and a local pre-commit hook read the same outcomes.

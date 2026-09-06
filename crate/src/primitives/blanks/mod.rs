@@ -1,10 +1,10 @@
 //! Module-scope blank-line policy, the gap text it renders to, and the
-//! walk back over a blank run. [`module_blank_lines`] declares the
+//! walk back over a blank run. [`module_blank_lines`] returns the
 //! canonical blank count for a module-scope `(prev, curr)` pair,
 //! [`blank_gap`] turns a line ending and a count into the separator an
 //! assembled body seats between two blocks, and
 //! [`whitespace_start_before`] reaches back over the run preceding an
-//! offset, stopping at the wall opening a notebook cell.
+//! offset, stopping at the start of a notebook cell.
 
 use ruff_python_ast::{CmpOp, Expr, Stmt};
 use ruff_source_file::LineEnding;
@@ -30,11 +30,11 @@ pub(crate) fn blank_gap(ending: LineEnding, blanks: u32) -> &'static str {
 /// curr)`. `None` means no case applies and the pair keeps the gap the
 /// source holds. A statement following an `if __name__ == "__main__":`
 /// block carries 1. A grouped import pair carries 1 across distinct
-/// canonical groups and reports no opinion within a group, while an
-/// ungrouped pair reads as one flat block and never divides. A
-/// top-level `FunctionDef` or `ClassDef` carries 2 on each side,
-/// whatever statement kind neighbors it, and any other statement
-/// following an import carries 1.
+/// canonical groups and `None` within a group, while an ungrouped pair
+/// reads as one flat block and never divides. A top-level `FunctionDef`
+/// or `ClassDef` carries 2 on each side, whatever statement kind
+/// neighbors it, and any other statement following an import
+/// carries 1.
 pub(crate) fn module_blank_lines(
     prev: &Stmt,
     curr: &Stmt,
@@ -56,8 +56,8 @@ pub(crate) fn module_blank_lines(
 }
 
 /// Returns the start of the contiguous ASCII-whitespace run immediately
-/// preceding `offset`, held at the start of the notebook cell
-/// containing `offset` so the run never reaches into the cell above.
+/// preceding `offset`, floored at the start of the notebook cell
+/// containing `offset`.
 pub(crate) fn whitespace_start_before(source: &Source, offset: TextSize) -> TextSize {
     let text = source.text();
     let trimmed = text[..offset.to_usize()].trim_end_matches(|c: char| c.is_ascii_whitespace());

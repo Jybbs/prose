@@ -106,8 +106,7 @@ impl ConfigSource {
     }
 
     /// The effective config's serialized TOML, the cache key for `file`.
-    /// Borrows the precomputed base when no override matches, sparing the
-    /// common case a deserialize round-trip.
+    /// Borrows the precomputed base when no override matches.
     pub(crate) fn effective_toml(&self, file: &Path) -> Cow<'_, str> {
         match self.merged(file) {
             None => Cow::Borrowed(&self.base_toml),
@@ -120,7 +119,7 @@ impl ConfigSource {
 /// config.
 #[derive(Clone)]
 pub(crate) enum DirSource {
-    /// No ancestor carried a config, leaving a file here to draw its
+    /// No ancestor carried a config, so a file here falls back to its
     /// script block.
     Bare,
     /// A config was found but failed to load, failing its files.
@@ -130,8 +129,8 @@ pub(crate) enum DirSource {
 }
 
 impl DirSource {
-    /// Walks `dir`'s ancestors for a project config, handing a
-    /// present-but-broken one to `report` before answering `Failed`.
+    /// Walks `dir`'s ancestors for a project config, passing the error
+    /// of a present-but-broken one to `report` and returning `Failed`.
     pub(crate) fn discover(
         dir: &Path,
         notices: &NoticeDedup,

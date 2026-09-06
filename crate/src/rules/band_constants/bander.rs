@@ -35,8 +35,7 @@ pub(super) struct Bander<'a> {
 impl<'a> Bander<'a> {
     /// Bands a module-scope body, returning the rewritten text alongside
     /// the block-extent span it covers. Each member's text folds in any
-    /// banded module-scope compound arm beneath it, so a banded arm splices
-    /// into its parent member rather than emitting on its own. The text is
+    /// banded module-scope compound arm beneath it. The text is
     /// `Cow::Owned` when the band reorders or a descendant arm rewrites,
     /// falling back to `Cow::Borrowed` over `source.slice(span)`.
     fn band_body(&self, body: &'a [Stmt], outer: TextRange) -> (Cow<'a, str>, TextRange) {
@@ -132,7 +131,7 @@ struct BandLayout<'a> {
 
 impl BandLayout<'_> {
     /// True when the band opens a tier blank, forcing an owned assembly
-    /// so the spacing lands even when the order is already settled.
+    /// even where the order is already settled.
     fn forced(&self) -> bool {
         self.band.as_ref().is_some_and(Banding::stratifies)
     }
@@ -140,12 +139,10 @@ impl BandLayout<'_> {
 
 /// Settles every comment the band moves or re-seats. The first pass
 /// closes the blank run under a comment run still heading its own
-/// member, so a banded block re-reads with the attachment it was
-/// assembled from rather than binding backward onto whichever member
-/// the band seats above it. The second drops the comment and the blank
-/// run beneath it from the text of the member whose block folded them
-/// in, that block opening on the comment itself, and the third prepends
-/// or trails it on the carrier's text.
+/// member. The second drops the comment and the blank run beneath it
+/// from the text of the member whose block folded them in, that block
+/// opening on the comment itself, and the third prepends or trails it
+/// on the carrier's text.
 fn apply_band_comments<'src>(
     source: &'src Source,
     body: &[Stmt],
@@ -174,8 +171,8 @@ fn apply_band_comments<'src>(
         let comment = source.slice(carry.comment);
         let carried = &rendered[carry.carrier];
         rendered[carry.carrier] = Cow::Owned(if carry.trails {
-            // The block reaches back to its line start, so its indent
-            // belongs to a line of its own rather than to a trailing slot.
+            // The block reaches back to its line start, so its indent is
+            // dropped from the trailing slot.
             format!("{carried}{TRAILING_GAP}{}", comment.trim_start())
         } else {
             format!("{comment}{newline}{carried}")

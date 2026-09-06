@@ -45,14 +45,14 @@ impl<'a> Layouter<'a> {
         self.source.paren_aware_range(expr.into(), parent)
     }
 
-    /// The display width of the text trailing `expr` on its own physical
-    /// row once the padding rule drops the padding inside it, read as
-    /// the separator a sort pending over `parent`, itself under
-    /// `grandparent`, leaves closing the entry where that text is at
-    /// most the comma the entry carries now, and at least that separator
-    /// where more follows on the row or the sort leaves `parent` as laid
-    /// out. A construct the expand path relocates lands on a row of its
-    /// own instead, so only the walk's own entry reads this.
+    /// The display width of the text trailing `expr` on its physical
+    /// row once the padding rule drops the padding inside it. Where a
+    /// sort is pending over `parent`, itself under `grandparent`, the
+    /// separator that sort leaves closing the entry replaces a tail
+    /// holding at most a bare comma unless the sort leaves `parent` as
+    /// laid out, and otherwise sets the floor of the measure. A
+    /// construct the expand path relocates lands on a row of its own,
+    /// so only the walk's own entry reads this.
     pub(super) fn row_tail(
         &self,
         expr: &Expr,

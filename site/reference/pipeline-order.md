@@ -1,3 +1,7 @@
+---
+description: "Covers the fixed order rules run in and why each rule sits where it does."
+---
+
 # Pipeline Order
 
 *Prose* runs its enabled rules in a fixed order, re-parsing the source between batches of independent rules so every later rule reads a tree that reflects the earlier rules' edits. That re-parse is what lets the rules combine, since no rule ever reads a file with another rule's edits half applied, and no two rules' edits conflict within one pass. The order is defined in one place, the `register_rules!` block in `crate/src/rules/registry.rs`, and reading it explains the pipeline. A rule that reads text an earlier rule rewrites runs after that rule. [[align-colons]] runs before [[wrap-docstrings]], for example, because the docstring wrap budget depends on the column the alignment rule sets after each colon.

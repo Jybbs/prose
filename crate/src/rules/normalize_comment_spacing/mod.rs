@@ -1,10 +1,10 @@
 //! Settles every comment to one space between its leading hash run and
 //! its text, and widens the gap before a trailing comment to at least
 //! two spaces. A space-opened run keeps whatever width it carries where
-//! the comment opens at a column an adjacent comment shares, so a block
-//! laid out in one column holds its indents. The opener passes through
-//! where the run is followed by `!`, `'`, `:`, or `|`, and where no text
-//! follows the run at all, leaving the trailing gap settled either way.
+//! the comment opens at a column an adjacent comment shares. The opener
+//! passes through where the run is followed by `!`, `'`, `:`, or `|`,
+//! whereas a run followed by no text at all sheds its whitespace,
+//! leaving the trailing gap settled either way.
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
@@ -58,9 +58,8 @@ impl Rule for NormalizeCommentSpacing {
 
 /// One flag per comment in source order, `true` where an own-line
 /// comment opens at the same column as an own-line comment on the line
-/// directly above or below it. A bare `#` sustains a run, since it opens
-/// at that column too. A trailing comment never joins a run, because
-/// `align_comments` moves its column downstream.
+/// directly above or below it. A bare `#` sustains a run, and a
+/// trailing comment never joins one.
 fn columnar_runs(source: &Source) -> Vec<bool> {
     let ranges = source.comment_ranges();
     let text = source.text();
@@ -96,9 +95,8 @@ fn gap_edit(source: &Source, range: TextRange) -> Option<Edit> {
 /// The edit settling the whitespace between the hash run of the comment
 /// at `range` and its text to one space, or to none where no text
 /// follows the run. A `columnar` comment carrying a space-opened run
-/// keeps it at whatever width it holds, so an indented line inside a
-/// comment block keeps its shape. `None` for an exempt leader and for a
-/// run already reading that way.
+/// keeps it at whatever width it holds. `None` for an exempt leader and
+/// for a run already reading that way.
 fn opener_edit(source: &Source, range: TextRange, columnar: bool) -> Option<Edit> {
     let (opener, settled) = settled_opener(source, range, columnar)?;
     space_padding_edit(source, opener, settled)
@@ -129,7 +127,7 @@ mod tests {
     #[test]
     fn columnar_runs_carries_a_run_across_a_bare_hash() {
         // The bare `#` opens at the run's column too, so it sustains the
-        // run rather than splitting it into two lone comments.
+        // run.
         let flags = columnar_runs(&parse("# lead\n#\n#     deep\n"));
         assert_eq!(flags, [true, true, true]);
     }
@@ -149,8 +147,7 @@ mod tests {
     #[test]
     fn columnar_runs_skips_a_trailing_pair_sharing_a_column() {
         // Both hashes open at column 35, which `align_comments` then
-        // moves, so neither row carries the concession an own-line block
-        // earns.
+        // moves, so neither row counts as columnar.
         let flags = columnar_runs(&parse(
             "q()                                #     deep\nlonger_name_here_by_far()          #     deep\n",
         ));

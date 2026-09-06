@@ -1,11 +1,8 @@
 //! Leaf-edit collection for `alphabetize-siblings`. A single AST walk
-//! emits one non-overlapping edit per outermost reordering structure,
-//! and the docstring-entry sort reads each function's signature-order
-//! names as its mirror key. Positional-or-keyword parameters never
-//! reorder, since no single-file rewrite can keep every caller's
-//! positional binding intact. Only the keyword-only block sorts. A call
-//! keyword bound to an effectful value holds its slot while the inert
-//! keywords around it sort.
+//! emits one non-overlapping edit per outermost reordering structure.
+//! Positional-or-keyword parameters never reorder and only the
+//! keyword-only block sorts. A call keyword bound to an effectful value
+//! holds its slot while the inert keywords around it sort.
 
 use std::borrow::Cow;
 
@@ -58,7 +55,7 @@ impl<'a> LeafCollector<'a> {
     }
 
     /// Sorts only the bare names, a subscript or attribute target
-    /// pinning where unbinding it out of order raises.
+    /// holding its slot.
     fn emit_delete(&mut self, d: &'a StmtDelete) {
         self.try_emit_inline_reorder(&d.targets, |t| {
             t.as_name_expr().map(|name| name.id.as_str())
@@ -96,10 +93,8 @@ impl<'a> LeafCollector<'a> {
         }
     }
 
-    /// Sorts only the keyword-only block. A keyword-only parameter
-    /// binds by name at every call site, so reordering it preserves
-    /// behavior, whereas a positional-or-keyword parameter does not and
-    /// holds its source slot.
+    /// Sorts only the keyword-only block, a positional-or-keyword
+    /// parameter holding its source slot.
     fn emit_parameters(&mut self, params: &'a Parameters) {
         self.try_emit_inline_reorder(&params.kwonlyargs, classify_param);
     }

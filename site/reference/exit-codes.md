@@ -1,3 +1,7 @@
+---
+description: "Covers what each exit code means, which is the contract a CI gate reads."
+---
+
 # Exit Codes
 
 Every `prose check` and `prose format` run exits with one of the codes below, which is the contract a CI gate reads. When two outcomes apply to one run, the higher code wins. A `format` run that writes an auto-fix exits `0` once the rewrite is written, since the change was applied rather than left pending, whereas `check` on the same source exits `1`.

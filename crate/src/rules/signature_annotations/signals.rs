@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use itertools::Itertools;
 use ruff_python_ast::{Expr, LiteralExpressionRef, Number, UnaryOp};
 
-/// The signals a parameter draws toward an inferred annotation, folded
+/// The literal signals for a parameter's inferred annotation, folded
 /// into the one scalar type they agree on plus an optional `| None` arm.
 #[derive(Default)]
 pub(super) struct SignalSet {
@@ -16,8 +16,8 @@ pub(super) struct SignalSet {
 }
 
 impl SignalSet {
-    /// Folds the signal `expr` contributes, peeling a unary `+`/`-` over
-    /// a number so `-1` reads as `int`. A non-literal lands `opaque`.
+    /// Folds in the signal `expr` contributes, peeling a unary `+`/`-`
+    /// off a number so `-1` reads as `int`. A non-literal sets `opaque`.
     pub(super) fn add(&mut self, expr: &Expr) {
         let inner = match expr {
             Expr::UnaryOp(unary) if matches!(unary.op, UnaryOp::UAdd | UnaryOp::USub) => {

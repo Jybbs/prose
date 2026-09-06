@@ -1,3 +1,7 @@
+---
+description: "Covers every flag, how the flags combine, and the subcommand each belongs to."
+---
+
 # CLI
 
 Each `prose` subcommand does one job, in that `format` rewrites Python files in place, `check` reports what would change without writing anything, `server` runs a language server for an editor, and `completions` prints a shell-completion script. `format` and `check` take the same path arguments, the same stdin flags, the same rule-filtering flags, and the same output formats, so a CI step running `prose check` and a developer running `prose format` share one flag set and one set of rules for how the flags combine.

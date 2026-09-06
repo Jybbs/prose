@@ -1,3 +1,7 @@
+---
+description: "The rules that reorder sibling nodes by a fixed key while keeping each node's comments with it."
+---
+
 # Ordering Rules
 
 The ordering rules reorder sibling AST nodes by a fixed key while keeping each node's attached comments with it and the gaps between sections as written. The shared machinery lives in the [[orderer]] primitive, and each rule supplies the classifier closure that names the sort key. A pin keeps specific items *(a class docstring, a module-level import above a divider comment)* in the slot the author wrote while the rest of the siblings reorder.

@@ -150,12 +150,8 @@ fn structure(trimmed: &str, at_block_start: bool) -> Option<Structure> {
     }
 }
 
-/// True where `rest` opens a structure a docstring walker reads
-/// verbatim rather than as prose, so a wrap putting `rest` at a row
-/// head would have the next pass parse that row as the structure. Reads
-/// the whole remainder rather than its leading token, which makes the
-/// suppression transitive and so terminating, a multi-word heading
-/// pulling the break back word by word until the row head is prose.
+/// True where `rest` as a whole opens a structure a docstring walker
+/// reads verbatim, an entry head, or a section heading.
 pub(crate) fn opens_structure(rest: &str) -> bool {
     let trimmed = rest.trim_whitespace_start();
     structure(trimmed, true).is_some() || opens_entry(trimmed) || section_heading(trimmed).is_some()
@@ -180,8 +176,7 @@ fn head_delimited(trimmed: &str, open: &str, close: &str) -> bool {
 }
 
 /// True when `trimmed` opens a bracketed literal, the `{` or `[` a
-/// dict, set, or list example carries. A prose parenthetical takes the
-/// `(` shape, so that delimiter reads as prose.
+/// dict, set, or list example carries.
 fn is_bracketed_literal(trimmed: &str) -> bool {
     trimmed.starts_with(['{', '['])
 }

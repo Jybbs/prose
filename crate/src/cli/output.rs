@@ -1,9 +1,7 @@
 //! Human-readable run summary: section anchors and the Ube palette.
 //!
-//! A plain run writes the anchor and message untinted, matching the
-//! emitters and the diff, so nothing downstream has to scan the stream
-//! for escapes to remove. The 24-bit-versus-8-color choice is the one
-//! this module owns, keyed on `anstyle_query::truecolor`.
+//! A plain run writes the anchor and message untinted. The
+//! 24-bit-versus-8-color choice is keyed on `anstyle_query::truecolor`.
 
 use std::io::{self, Write};
 
@@ -22,8 +20,7 @@ const UBE: (RgbColor, AnsiColor) = (RgbColor(0x8a, 0x80, 0xcb), AnsiColor::Magen
 /// and diffs written there, whereas `stderr_color` is stderr's own and
 /// gates the summary line, which is the one thing written to that
 /// stream. `quiet` reduces the anchor emoji and color to a bare count
-/// line, and a non-TTY stdout leaves `--diff` headers plain so the
-/// output stays a valid patch.
+/// line, and a non-TTY stdout leaves `--diff` headers plain.
 pub(super) struct Presentation {
     pub(super) color: bool,
     pub(super) quiet: bool,
@@ -166,8 +163,8 @@ mod tests {
 
     use super::*;
 
-    /// The summary line as it reaches the stream, which strips nothing,
-    /// so an escape here is one the caller would see.
+    /// The summary line as it reaches the stream, with no escape
+    /// stripped.
     fn rendered(present: &Presentation, summary: &Summary) -> String {
         crate::testing::rendered(|buf| report(buf, present, summary).expect("reports"))
     }

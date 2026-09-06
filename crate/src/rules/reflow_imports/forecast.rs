@@ -69,9 +69,9 @@ enum Packs {
     /// The display width of each member of the roster the rule packs
     /// to the seat's column.
     Roster(Vec<usize>),
-    /// The last row of a packed roster, holding these of its members,
-    /// spilled beneath a carried comment at the width `Seat::width`
-    /// names.
+    /// The last row of a packed roster, holding this range of its
+    /// members, spilled beneath a carried comment at the width
+    /// `Seat::width` names.
     Spilled(Range<usize>),
     /// The row as the source wrote it.
     Written,
@@ -80,9 +80,9 @@ enum Packs {
 /// One row of an `align-imports` run as the later rules seat it. `tail`
 /// is the columns the seat's last row keeps past its members for a
 /// trailing comment, the settled one it holds and any a banding carries
-/// onto it, `width` the width its line reads at where a rule writes it
-/// and `None` where it reads as the source wrote it, and `splits` marks
-/// a roster whose last row a carried own-line comment lands above.
+/// onto it. `width` is the width its line reads at where a rule writes
+/// it, `None` where it reads as the source wrote it. `splits` marks a
+/// roster whose last row a carried own-line comment lands above.
 #[derive(Clone)]
 struct Seat<'a> {
     member: aligner::Member,
@@ -238,10 +238,10 @@ impl<'a> Layout<'a> {
     /// lands directly under the row of `moved[0]` once the later rules
     /// lay the block out, the two seated at the run positions `held`
     /// hold as written. Same-group rows seat tight where `sorts` holds
-    /// because a rule collapses their gap, or where `band-constants`
-    /// writes it across a hoisted constant, unless a comment outside the
-    /// hoisted blocks sits between them, whereas any other pair keeps
-    /// the gap the source wrote, less the lines of the folded rows.
+    /// or where `band-constants` hoists a constant from between them,
+    /// unless a comment outside the hoisted blocks sits between them,
+    /// whereas any other pair keeps the gap the source wrote, less the
+    /// lines of the folded rows.
     fn lands_under(
         &self,
         body: &[Stmt],

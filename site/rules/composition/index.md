@@ -1,3 +1,7 @@
+---
+description: "Small sources run through several rules together, in pipeline order."
+---
+
 # Rule Composition
 
 Each case on this page pairs a small Python source with the rule set it turns on and shows what those rules write when they run together in [**Pipeline Order**](/reference/pipeline-order). A rule page shows the cases its own rule takes part in, whereas this page runs each case through the whole listed set. The cards below render the previewable cases from `crate/tests/fixtures/composition/`, and the binary's integration tests run every case in that directory.

@@ -23,7 +23,7 @@ use crate::{
 pub(crate) struct StripTrailingCommas;
 
 impl StripTrailingCommas {
-    pub(crate) const MESSAGE: &'static str = "strip trailing comma";
+    pub(crate) const MESSAGE: &'static str = "remove a trailing comma";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

@@ -67,11 +67,11 @@ impl EntryColumns {
     }
 }
 
-/// Returns one alignment group per entry run in every docstring
-/// `source` carries, each holding a `:` row per entry anchored on its
-/// head line's unbracketed `:` and a `(` row per entry naming a
-/// parenthesized type. Each run is its own group, so one run's widths
-/// never shift another's column.
+/// Returns one alignment group per entry run in every docstring of
+/// `source` overlapping one of `windows`, each holding a `:` row per
+/// entry anchored on its head line's unbracketed `:` and a `(` row per
+/// entry naming a parenthesized type. Each run is its own group, so one
+/// run's widths never shift another's column.
 pub(super) fn docstring_runs_within(source: &Source, windows: &[TextRange]) -> Vec<EntryColumns> {
     let mut literals = Vec::new();
     walk_docstrings(source, |_, lit| {

@@ -145,9 +145,7 @@ impl Source {
 
     /// The display width of the code from `offset` to the end of its
     /// physical row, the columns a construct ending there shares its row
-    /// with once it joins. A trailing comment closes the measure, since
-    /// charging one against the code budget would let a comment reshape
-    /// the code it annotates.
+    /// with once it joins. A trailing comment closes the measure.
     pub fn row_tail_width(&self, offset: TextSize) -> usize {
         self.tail_width(self.row_tail(offset))
     }
@@ -160,9 +158,7 @@ impl Source {
 
     /// Returns the line and character offset for a byte offset, with the
     /// character offset counted in `encoding`'s units. Both line and
-    /// character offset are `OneIndexed`. The editor protocol publishes
-    /// positions in a negotiated encoding, where `line_column` only ever
-    /// counts characters.
+    /// character offset are `OneIndexed`.
     pub fn source_location(&self, offset: TextSize, encoding: PositionEncoding) -> SourceLocation {
         self.file.to_source_code().source_location(offset, encoding)
     }

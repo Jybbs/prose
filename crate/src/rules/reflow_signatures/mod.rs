@@ -43,7 +43,7 @@ pub(crate) struct ReflowSignatures {
 
 impl ReflowSignatures {
     pub(crate) const MESSAGE: &'static str =
-        "normalize function signature to one-line or one-per-line shape";
+        "lay out a function signature on one line or one parameter per line";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
@@ -121,8 +121,7 @@ impl Layout<'_> {
             Shape::Inline(text) if self.source.contains_line_break(replacement_range) => text,
             Shape::Inline(_) => return,
         };
-        // Emit the reshape only when the spliced signature re-parses, the
-        // safety net for return types the rewrite cannot reassemble.
+        // Emit the reshape only when the spliced signature re-parses.
         if splice_parses(
             self.source,
             fd.range(),

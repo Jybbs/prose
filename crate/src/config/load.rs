@@ -94,8 +94,7 @@ impl fmt::Display for ConfigNotice<'_> {
 
 /// A run-scoped notice sink printing each distinct line once, however
 /// many config files a run loads. The cwd load and the parallel per-file
-/// resolutions share one, so a run reading the same `pyproject.toml` from
-/// both warns each key once rather than twice.
+/// resolutions share one.
 #[derive(Default)]
 pub(crate) struct NoticeDedup {
     seen: Mutex<FxHashSet<String>>,
@@ -194,8 +193,7 @@ fn prose_value(value: &toml::Value) -> Option<&toml::Value> {
 }
 
 /// Reads a config file that may not exist. `NotADirectory` reads as
-/// absent too, so a walk whose starting path is itself a file skips
-/// the join through that file rather than erroring.
+/// absent too, covering a walk whose starting path is itself a file.
 fn read_optional(path: PathBuf) -> Result<Option<String>, ConfigError> {
     match fs_err::read_to_string(path) {
         Ok(contents) => Ok(Some(contents)),

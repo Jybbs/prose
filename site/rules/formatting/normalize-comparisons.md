@@ -1,6 +1,5 @@
 ---
 caption : "Rewrites a comparison to state its check directly, using `is` against `None`, putting the variable side first, and folding a leading `not` into its operator."
-lints   : true
 related : [align-comparisons, reflow-parentheses]
 layout  : doc
 ---

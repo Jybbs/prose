@@ -19,12 +19,11 @@ use tempfile::NamedTempFile;
 use super::{CacheEntry, CacheEntryRef, CacheInfo, CacheKey, CleanReport, key::generation};
 
 /// How long a generation directory must sit untouched before a sweep
-/// reclaims it, leaving a concurrently running build of another
-/// version its own entries.
+/// reclaims it.
 const GENERATION_GRACE: Duration = Duration::from_hours(1);
 
 /// The fraction of each cap an eviction pass drives down to, as a
-/// multiplier over a divisor so the arithmetic stays in integers.
+/// multiplier over a divisor.
 const LOW_WATER_DIVISOR: u64 = 5;
 
 const LOW_WATER_MULTIPLIER: u64 = 4;
@@ -36,17 +35,16 @@ const MTIME_GRANULARITY: Duration = Duration::from_hours(1);
 /// User-level on-disk cache.
 #[derive(Debug)]
 pub struct Cache {
-    /// Set by the first [`insert`](Self::insert) to land, so the run's
-    /// closing sweep can tell a run that grew the directory from one
-    /// that only read it.
+    /// Set by the first [`insert`](Self::insert) to land, read by the
+    /// run's closing sweep.
     pub(super) inserted: AtomicBool,
     pub(super) max_entries: usize,
     pub(super) max_size_bytes: u64,
     /// The own-output marker keys, loaded from the generation's ledger
     /// on first probe. A marked key names bytes a write-back run
-    /// landed, so a later run rewriting them again holds a proven
-    /// settle defect. Advisory only, in that a lost marker loses a
-    /// detection and never corrupts a run.
+    /// landed, so a later run rewriting them has found a settle
+    /// defect. Advisory only, in that a lost marker loses a detection
+    /// and never corrupts a run.
     pub(super) own_output: OnceLock<FxHashSet<[u8; 32]>>,
     /// This build's generation directory, where every entry lands.
     pub(super) root: PathBuf,
@@ -78,11 +76,8 @@ impl Cache {
     }
 
     /// True where an eviction pass has driven the directory far enough
-    /// below its caps to stop. Stopping at the cap itself leaves the
-    /// next insert over it again, so every run pays a full walk and a
-    /// removal, whereas stopping below buys many runs of headroom for
-    /// one pass. The entry floor holds at one, so a cap of one still
-    /// keeps an entry.
+    /// below its caps to stop. The entry floor holds at one, so a cap
+    /// of one still keeps an entry.
     fn below_low_water(&self, total: u64, count: usize) -> bool {
         let count = u64::try_from(count).unwrap_or(u64::MAX);
         let entries = u64::try_from(self.max_entries).unwrap_or(u64::MAX);
@@ -100,8 +95,7 @@ impl Cache {
     /// Removes every generation directory but this build's, plus any
     /// entry file left directly in the store by a build that predates
     /// the generation layout. A directory touched within
-    /// [`GENERATION_GRACE`] is left alone, so a concurrently running
-    /// build of another version keeps its own entries.
+    /// [`GENERATION_GRACE`] is left alone.
     fn prune_dead_generations(&self) -> CleanReport {
         let mut report = CleanReport::default();
         let now = SystemTime::now();
@@ -196,8 +190,7 @@ impl Cache {
 
     /// Runs the LRU eviction pass to honor the configured size and
     /// entry-count caps, and returns what it removed. Each entry counts
-    /// the space the filesystem allocated to it rather than its own
-    /// length, so the total tracks what the directory costs on disk.
+    /// the blocks the filesystem allocated to it.
     pub fn compact(&self) -> CleanReport {
         let mut report = self.prune_dead_generations();
         let mut files: Vec<(SystemTime, u64, DirEntry)> = self
@@ -254,18 +247,16 @@ impl Cache {
 
     /// Atomically writes `value` for `key` via a temporary sidecar and
     /// `rename`. Any encode, write, or rename failure drops the insert
-    /// silently and lets the tempfile clean itself up on drop. The size
-    /// cap is honored by [`compact`](Self::compact). A landed write
-    /// records itself, which [`inserted`](Self::inserted) reads.
+    /// silently and the tempfile is removed on drop. The size cap is
+    /// honored by [`compact`](Self::compact). A landed write sets the
+    /// flag [`inserted`](Self::inserted) reads.
     pub fn insert(&self, key: &CacheKey, value: &CacheEntryRef<'_>) {
         if self.try_insert(key, value).is_ok() {
             self.inserted.store(true, Ordering::Relaxed);
         }
     }
 
-    /// True once a write has landed in this run. A run that only read
-    /// entries left the directory the size it already was, so its
-    /// closing sweep would stat every entry to find nothing over a cap.
+    /// True once a write has landed in this run.
     #[must_use]
     pub fn inserted(&self) -> bool {
         self.inserted.load(Ordering::Relaxed)
@@ -273,10 +264,7 @@ impl Cache {
 
     /// Returns the entry stored at `key` if present and well-formed,
     /// bumping the entry's mtime where the recorded one has aged past
-    /// [`MTIME_GRANULARITY`]. Eviction orders by mtime at hour
-    /// granularity at most, so a bump per hit would write an inode on
-    /// every read of an edit loop to sharpen an order nothing reads
-    /// that finely.
+    /// [`MTIME_GRANULARITY`].
     pub fn lookup(&self, key: &CacheKey) -> Option<CacheEntry> {
         let mut file = fs_err::File::open(self.path_for(key)).ok()?;
         let mut bytes = Vec::new();
@@ -329,9 +317,8 @@ impl Cache {
     }
 
     /// Marks `key`'s bytes as this run's own output, appended to the
-    /// generation's ledger. An oversized ledger truncates first, which
-    /// forgets old markers rather than growing without bound, a loss
-    /// the advisory contract absorbs.
+    /// generation's ledger. An oversized ledger is truncated first,
+    /// dropping its old markers.
     pub fn record_own_output(&self, key: &CacheKey) {
         let path = self.own_output_path();
         let oversized = fs_err::metadata(&path).is_ok_and(|meta| meta.len() > 1 << 20);
@@ -385,8 +372,8 @@ fn low_water(cap: u64) -> u64 {
     cap / LOW_WATER_DIVISOR * LOW_WATER_MULTIPLIER
 }
 
-/// The space one entry occupies, which a filesystem allocates in whole
-/// blocks rather than in the entry's own length.
+/// The space one entry occupies, in the whole blocks the filesystem
+/// allocated to it.
 #[cfg(unix)]
 fn on_disk(metadata: &Metadata) -> u64 {
     use std::os::unix::fs::MetadataExt;
@@ -400,9 +387,7 @@ fn on_disk(metadata: &Metadata) -> u64 {
 }
 
 /// True where `file`'s recorded mtime is older than
-/// [`MTIME_GRANULARITY`], or where the metadata read fails, since a
-/// file whose age cannot be read is bumped rather than left to sort
-/// as the oldest entry in the directory.
+/// [`MTIME_GRANULARITY`], or where the metadata read fails.
 fn stale(file: &fs_err::File, now: SystemTime) -> bool {
     file.metadata()
         .ok()

@@ -40,7 +40,7 @@ Each editor wires the command differently, and every one runs `prose format ${fi
 
 <EditorRunOnSave />
 
-The widget shows the snippet for each editor *Prose* documents *(VSCode, Neovim, JetBrains, Sublime Text, Emacs, Helix)*. Three of the snippets carry a dependency or a wrapper worth knowing about before pasting:
+The widget shows the snippet for each editor *Prose* documents. Three of the snippets carry a dependency or a wrapper worth knowing about before pasting:
 
 - The VSCode snippet needs the [**`emeraldwalk.RunOnSave`**](https://marketplace.visualstudio.com/items?itemName=emeraldwalk.RunOnSave) extension, which runs the command on every matching save.
 - The Neovim snippet wraps the command in `silent!`, which hides the command prompt and keeps a non-zero exit from stopping later autocommands.

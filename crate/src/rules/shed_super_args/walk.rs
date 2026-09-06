@@ -12,10 +12,10 @@ use super::*;
 
 /// One enclosing callable. `receiver` names the parameter the bare form
 /// reads as the instance, `None` for a comprehension and for a callable
-/// whose leading slot is keyword-only or variadic. `scope` carries the
-/// `def` whose locals the class name resolves against, `None` for a
-/// lambda and a comprehension. `class_depth` is the enclosing class
-/// count where the callable opened.
+/// whose leading slot is keyword-only or variadic. `scope` is the `def`
+/// whose locals the class name resolves against, `None` for a lambda
+/// and a comprehension. `class_depth` is the enclosing class count
+/// where the callable opened.
 pub(super) struct Frame<'a> {
     pub(super) class_depth: usize,
     pub(super) receiver: Option<&'a str>,
@@ -51,11 +51,11 @@ impl<'a> Walker<'a> {
     }
 
     /// The edits deleting `call`'s arguments and re-seating any later
-    /// row of the logical line aligned to text the deletion moves,
+    /// row of the logical line aligned to text the deletion moves.
     /// `None` where the bare form would resolve a different class or
-    /// instance, or none at all, and `None` where a stranded row sits
-    /// inside a string no move re-seats. A span written across rows
-    /// joins the rows it spans, so the rows below it hold.
+    /// instance, or none at all, and where a stranded row sits inside a
+    /// string no move re-seats. A span written across rows joins the
+    /// rows it spans, leaving the rows below it in place.
     fn rewrite(&self, call: &ExprCall) -> Option<Vec<Edit>> {
         if call.func.as_name_expr()?.id.as_str() != "super" || !call.arguments.keywords.is_empty() {
             return None;

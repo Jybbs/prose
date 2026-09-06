@@ -138,9 +138,7 @@ fn anchored_member(
 
 /// Returns the offset of the first token in `search` satisfying
 /// `predicate`, or `None` when none matches or the span from
-/// `guard_start` to that token crosses a line break. A member measures
-/// its width from the anchor's own line, so a cross-line anchor would
-/// align against the wrong line and is held out.
+/// `guard_start` to that token crosses a line break.
 fn single_line_anchor<F>(
     source: &Source,
     guard_start: TextSize,
@@ -191,7 +189,8 @@ mod tests {
         let source = parse("xy\n");
         let member = line_anchored_member(&source, TextSize::new(0));
 
-        // anchor sits at line start, with empty gap and zero width.
+        // The anchor sits at line start, with an empty gap and zero
+        // width.
         assert_eq!(member.gap.start(), member.gap.end());
         assert_eq!(member.width, 0);
     }

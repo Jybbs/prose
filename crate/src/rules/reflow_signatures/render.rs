@@ -1,5 +1,5 @@
-//! The canonical text a signature lands as, inline or one parameter per
-//! line, each parameter placed where its row falls.
+//! The canonical text a signature renders to, inline or one parameter
+//! per line, each parameter placed where its row falls.
 
 use std::borrow::Cow;
 
@@ -54,11 +54,11 @@ impl Layout<'_> {
         out
     }
 
-    /// `param`'s text placed at `indent` with `tail` columns closing its
-    /// last row, every call inside its annotation and default reshaped
-    /// where it lands, or the source text moved whole where none
-    /// reshapes. A variadic parameter carries its `*` or `**` prefix and
-    /// holds no default.
+    /// `param`'s text placed at `indent`, with `tail` columns closing
+    /// its last row. Each call inside its annotation and default is
+    /// reshaped where it lands, or the source text moves whole where
+    /// none reshapes. A variadic parameter keeps its `*` or `**` prefix
+    /// and has no default.
     pub(super) fn place<'p>(
         &'p self,
         param: AnyParameterRef,
@@ -77,12 +77,12 @@ impl Layout<'_> {
         )
     }
 
-    /// `param`'s text at `indent` with the calls inside its annotation
-    /// and its default reshaped where each lands, `tail` the columns
-    /// closing the last row. Each site measures from the column the text
-    /// ahead of it ends at and across the opening row of the text after
-    /// it, and one no call inside reshapes moves whole. `None` where no
-    /// site reshapes, or where text between two sites spans rows.
+    /// `param`'s text at `indent`, with the calls inside its annotation
+    /// and default reshaped where each lands and `tail` the columns
+    /// closing the last row. Each site measures from the column where
+    /// the text ahead of it ends, across the opening row of the text
+    /// after it, and a site nothing reshapes moves whole. `None` where
+    /// no site reshapes, or where the text between two sites spans rows.
     fn reshaped(&self, param: AnyParameterRef, indent: usize, tail: usize) -> Option<String> {
         let mut out = String::new();
         let mut cursor = param.start();

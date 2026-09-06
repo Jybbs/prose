@@ -29,7 +29,7 @@ pub(crate) struct AlignMatchCase {
 }
 
 impl AlignMatchCase {
-    pub(crate) const MESSAGE: &'static str = "align match-case colons";
+    pub(crate) const MESSAGE: &'static str = "align consecutive `case` colons";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

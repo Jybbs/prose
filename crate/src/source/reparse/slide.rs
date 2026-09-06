@@ -38,8 +38,8 @@ macro_rules! slide_node {
     };
 }
 
-/// Rewrites each node's own range in place, leaving the walk to reach
-/// its children.
+/// Slides the range of whichever variant `$node` holds, leaving the
+/// walk to reach its children.
 macro_rules! slide_variants {
     ($node:expr, $slide:expr, $enum:ident, $($variant:ident),+ $(,)?) => {
         match $node {

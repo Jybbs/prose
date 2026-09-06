@@ -200,8 +200,7 @@ impl Report {
     }
 }
 
-/// Runs `git` with `args`, failing rather than reporting empty output when
-/// the command does not succeed.
+/// Runs `git` with `args`, failing when the command does not succeed.
 fn git(args: &[&str]) -> Result<String, Box<dyn Error>> {
     let run = Command::new("git").args(args).output()?;
     if !run.status.success() {

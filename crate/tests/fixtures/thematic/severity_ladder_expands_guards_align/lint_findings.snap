@@ -75,7 +75,7 @@ input_file: crate/tests/fixtures/thematic/severity_ladder_expands_guards_align/i
       "column": 5,
       "row": 20
     },
-    "message": "Numbered-step comment found. Consider extracting each step as a named function"
+    "message": "extract each numbered step of a comment into a named function"
   },
   {
     "code": "step-narration",
@@ -88,7 +88,7 @@ input_file: crate/tests/fixtures/thematic/severity_ladder_expands_guards_align/i
       "column": 5,
       "row": 23
     },
-    "message": "Numbered-step comment found. Consider extracting each step as a named function"
+    "message": "extract each numbered step of a comment into a named function"
   },
   {
     "code": "unsorted-positionals",
@@ -101,7 +101,7 @@ input_file: crate/tests/fixtures/thematic/severity_ladder_expands_guards_align/i
       "column": 9,
       "row": 37
     },
-    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
   },
   {
     "code": "signature-annotations",
