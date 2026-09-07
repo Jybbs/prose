@@ -1,4 +1,5 @@
 import vue                              from '@vitejs/plugin-vue'
+import { playwright }                   from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -28,7 +29,13 @@ export default defineConfig({
       {
         test    : {
           include : ['.vitepress/tests/wasm/**/*.test.ts'],
-          name    : 'wasm'
+          name    : 'wasm',
+          browser : {
+            enabled   : true,
+            headless  : true,
+            instances : [{ browser: 'chromium' }],
+            provider  : playwright()
+          }
         }
       }
     ],

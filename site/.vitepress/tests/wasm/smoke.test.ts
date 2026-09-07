@@ -1,4 +1,6 @@
-import { format, panic_for_test } from './pkg/prose_wasm.js'
+import init, { format, panic_for_test } from './pkg/prose_wasm.js'
+
+await init()
 
 describe('prose_wasm', () => {
   it('sorts imports through the instantiated module', () => {
@@ -18,6 +20,5 @@ describe('prose_wasm', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => panic_for_test()).toThrow(/unreachable/)
     expect(spy.mock.calls.flat().join(' ')).toContain('smoke-test panic')
-    spy.mockRestore()
   })
 })
