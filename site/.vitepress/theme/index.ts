@@ -16,8 +16,9 @@ import '@fontsource-variable/jetbrains-mono/wght-italic.css'
 import '@fontsource-variable/lora'
 import '@fontsource-variable/lora/wght-italic.css'
 
-import { stripSuffix } from '../lib/shared/strip-suffix'
-import Layout          from './Layout.vue'
+import { provideCurrentRule, useFamilyDataset } from '../lib/composables/route'
+import { stripSuffix }                          from '../lib/shared/strip-suffix'
+import Layout                                   from './Layout.vue'
 
 import 'virtual:prose-palette.css'
 import './styles/tokens.css'
@@ -58,6 +59,10 @@ const components = Object.fromEntries(
 export default {
   extends: DefaultTheme,
   Layout,
+  setup() {
+    provideCurrentRule()
+    useFamilyDataset()
+  },
   enhanceApp({ app }) {
     enhanceAppWithTabs(app)
     for (const [name, component] of Object.entries(components).sort()) {

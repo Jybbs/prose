@@ -53,3 +53,18 @@ describe('useCurrentFamily', () => {
     expect(mountSetup(composables.useCurrentFamily).value).toBeNull()
   })
 })
+
+describe('useFamilyDataset', () => {
+  it('mirrors the family of a rule route onto the body element', () => {
+    route.value = { relativePath: 'rules/alignment/align-equals.md' }
+    mountSetup(composables.useFamilyDataset)
+    expect(document.body.dataset.family).toBe('alignment')
+  })
+
+  it('clears the attribute off the rules tree', () => {
+    document.body.dataset.family = 'alignment'
+    route.value = { relativePath: 'usage/index.md' }
+    mountSetup(composables.useFamilyDataset)
+    expect(document.body.dataset.family).toBeUndefined()
+  })
+})

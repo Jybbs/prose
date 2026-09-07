@@ -1,5 +1,5 @@
 import { useData } from 'vitepress'
-import { computed, inject, provide, type ComputedRef, type InjectionKey } from 'vue'
+import { computed, inject, provide, watchEffect, type ComputedRef, type InjectionKey } from 'vue'
 
 import { data as rules, type RenderedRule } from '../rules/rules.data'
 import { FAMILY_META, type RuleFamily }     from '../shared/registries'
@@ -35,5 +35,16 @@ export function useCurrentFamily(): ComputedRef<RuleFamily | null> {
   return computed(() => {
     const family = routeSegments(page.value.relativePath)[0]
     return family && family in FAMILY_META ? family as RuleFamily : null
+  })
+}
+
+// Mirrors the current family onto the body element, which the accent sheets
+// select through `[data-family]`.
+export function useFamilyDataset(): void {
+  const family = useCurrentFamily()
+  watchEffect(() => {
+    if (typeof document === 'undefined') return
+    if (family.value) document.body.dataset.family = family.value
+    else              delete document.body.dataset.family
   })
 }
