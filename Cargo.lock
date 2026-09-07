@@ -1547,10 +1547,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "prose_sweeps"
+name = "prose_corpus"
 version = "0.0.0"
 dependencies = [
- "bumpalo",
  "clap",
  "fs-err",
  "ignore",
@@ -1563,6 +1562,7 @@ dependencies = [
  "ruff_python_stdlib",
  "ruff_text_size",
  "rustc-hash",
+ "serde",
  "serde_json",
  "tabled",
 ]

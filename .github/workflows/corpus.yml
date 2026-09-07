@@ -27,6 +27,7 @@ on:
       - .mise/tasks/rust/subsets
       - Cargo.lock
       - Cargo.toml
+      - corpus/**
       - crate/Cargo.toml
       - crate/src/**
       - crate/tests/common/**
@@ -99,7 +100,7 @@ jobs:
         id   : mutations
         uses : &cache-restore actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          key         : &mutations-key ${{ steps.python.outputs.mutations }}${{ hashFiles('sweeps/src/bin/mutate.rs', 'sweeps/Cargo.toml') }}
+          key         : &mutations-key ${{ steps.python.outputs.mutations }}${{ hashFiles('Cargo.lock', 'corpus/Cargo.toml', 'corpus/src/bin/mutate.rs') }}
           lookup-only : true
           path        : &mutations-dir ${{ runner.temp }}/mutations
 
