@@ -2,5 +2,6 @@
 #MISE alias       = "smoke"
 #MISE depends     = ["site:bake", "wasm:pack"]
 #MISE description = "Run the browser smoke test against the packed `site/public/wasm` module"
+#MISE dir         = "site"
 
-(cd site && bunx vitest run --project wasm)
+bunx vitest run --project wasm "$@"

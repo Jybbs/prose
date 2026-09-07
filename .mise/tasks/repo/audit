@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 #MISE alias="audit"
-#MISE description="Audit version-pin parity and action-manifest hygiene"
+#MISE description="Audit version-pin parity, action-manifest hygiene, and cache-trigger coverage"
 # /// script
 # requires-python = ">=3.11"
 # ///

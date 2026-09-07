@@ -1,6 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE depends     = ["wasm:build"]
-#MISE description = "Run `clippy` over `prose_wasm` built for `wasm32-unknown-unknown`"
+#MISE description = "Run `clippy` over `prose_wasm` for the `wasm32-unknown-unknown` target"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/wasm.bash"
 

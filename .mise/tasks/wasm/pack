@@ -16,6 +16,8 @@
 #MISE ]
 
 out=site/public/wasm
+trap 'rm -rf "$out"' ERR
+
 wasm-bindgen --out-dir "$out" --target web "$WASM_ARTIFACT"
 wasm-opt -O --output "$out/prose_wasm_bg.wasm.opt" "$out/prose_wasm_bg.wasm"
 mv "$out/prose_wasm_bg.wasm.opt" "$out/prose_wasm_bg.wasm"
