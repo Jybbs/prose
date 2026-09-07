@@ -13,6 +13,6 @@ describe('memoizeByPath', () => {
     const memo    = memoizeByPath(compute)
     memo('a')
     memo('a')
-    expect(compute).toHaveBeenCalledTimes(1)
+    expect(compute).toHaveBeenCalledOnce()
   })
 })

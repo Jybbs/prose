@@ -94,14 +94,14 @@ describe('useProseSandbox', () => {
     const api  = sandbox(load)
     await api.start()
     await api.start()
-    expect(load).toHaveBeenCalledTimes(1)
+    expect(load).toHaveBeenCalledOnce()
   })
 
   it('shares one instantiation across concurrent cold formats', async () => {
     const load = vi.fn<Loader>(okLoader)
     const api  = sandbox(load)
     await Promise.all([api.start(), api.start()])
-    expect(load).toHaveBeenCalledTimes(1)
+    expect(load).toHaveBeenCalledOnce()
   })
 
   it('parses the lint findings from the format result', async () => {
@@ -226,7 +226,7 @@ describe('useProseSandbox', () => {
     await api.start()
     expect(api.error.value).toBe('no parse')
     await api.start()
-    expect(load).toHaveBeenCalledTimes(1)
+    expect(load).toHaveBeenCalledOnce()
   })
 
   it('renders a non-Error throw as its string form', async () => {
@@ -364,7 +364,7 @@ describe('useProseSandbox', () => {
     await flushPromises()
     // One settled display run for the final edit, rather than a run per
     // intermediate edit, with the eligibility runs deferred past the paint.
-    expect(format).toHaveBeenCalledTimes(1)
+    expect(format).toHaveBeenCalledOnce()
     expect(api.formatted.value).toBe('OUT')
   })
 
@@ -377,7 +377,7 @@ describe('useProseSandbox', () => {
     await flushPromises()
     // The two toggles coalesce into one immediate display run with no timer
     // advance, the eligibility runs deferred past the publish paint.
-    expect(format).toHaveBeenCalledTimes(1)
+    expect(format).toHaveBeenCalledOnce()
     expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('align-equals = false'), 'seed a')
     expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('space-statements = false'), 'seed a')
   })
@@ -388,7 +388,7 @@ describe('useProseSandbox', () => {
     const api    = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 250 })
     api.refresh()
     await flushPromises()
-    expect(format).toHaveBeenCalledTimes(1)
+    expect(format).toHaveBeenCalledOnce()
     expect(api.formatted.value).toBe('OUT')
   })
 

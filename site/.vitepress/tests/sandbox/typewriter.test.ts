@@ -22,14 +22,14 @@ describe('lineHtml', () => {
 
 describe('tokenLines', () => {
   it('maps each line to styled tokens through the shared highlighter', async () => {
-    expect(await typewriter.tokenLines('a = 1\n')).toStrictEqual([
+    await expect(typewriter.tokenLines('a = 1\n')).resolves.toStrictEqual([
       [{ content: 'a = 1', style: 'color:red' }],
       []
     ])
   })
 
   it('leaves a token no theme rule matches as an empty style string', async () => {
-    expect(await typewriter.tokenLines('  ')).toStrictEqual([[{ content: '  ', style: '' }]])
+    await expect(typewriter.tokenLines('  ')).resolves.toStrictEqual([[{ content: '  ', style: '' }]])
   })
 })
 

@@ -63,7 +63,7 @@ describe('createTypingMachine', () => {
     machine.setInView(false)
     const parked = phases.length
     vi.advanceTimersByTime(20_000)
-    expect(phases.length).toBe(parked)
+    expect(phases).toHaveLength(parked)
     machine.setInView(true)
     vi.advanceTimersByTime(20_000)
     expect(phases.length).toBeGreaterThan(parked)

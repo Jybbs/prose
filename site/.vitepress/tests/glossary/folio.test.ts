@@ -81,7 +81,7 @@ describe('groupByInitial', () => {
     (pool) => {
       const groups = folio.groupByInitial(pool)
       const flat   = groups.flatMap(([, es]) => es)
-      expect(flat.length).toBe(pool.length)
+      expect(flat).toHaveLength(pool.length)
       expect(new Set(flat)).toStrictEqual(new Set(pool))
       const letters = groups.map(([letter]) => letter)
       expect(letters).toStrictEqual([...letters].toSorted((a, b) => folio.compareCaseless(a, b)))

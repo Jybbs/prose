@@ -117,18 +117,18 @@ describe('ProseSandboxSurface', () => {
     await wrapper.get('textarea').setValue('y=2')
     await wrapper.get('.sandbox-surface-apply').trigger('click')
     expect(sandbox.source.value).toBe('y=2')
-    expect(sandbox.formatNow).toHaveBeenCalledTimes(1)
+    expect(sandbox.formatNow).toHaveBeenCalledOnce()
 
     // Applying an unchanged draft and discarding an edit both leave the count.
     await wrapper.get('.sandbox-surface-display').trigger('click')
     await flushPromises()
     await wrapper.get('.sandbox-surface-apply').trigger('click')
-    expect(sandbox.formatNow).toHaveBeenCalledTimes(1)
+    expect(sandbox.formatNow).toHaveBeenCalledOnce()
     await wrapper.get('.sandbox-surface-display').trigger('click')
     await flushPromises()
     await wrapper.get('textarea').setValue('z=3')
     await wrapper.get('.sandbox-surface-discard').trigger('click')
-    expect(sandbox.formatNow).toHaveBeenCalledTimes(1)
+    expect(sandbox.formatNow).toHaveBeenCalledOnce()
   })
 
   surfaceTest('discards the edit and keeps the source', async ({ mounted }) => {
