@@ -120,9 +120,7 @@ describe('useProseSandbox', () => {
     await api.start()
     // The probe adoption defers past the publish paint, so the set lands a
     // few frames after the format rather than in the same task.
-    await vi.waitFor(() => {
-      expect(api.eligible.value).toEqual(['align-equals', 'space-statements'])
-    })
+    await expect.poll(() => api.eligible.value).toEqual(['align-equals', 'space-statements'])
   })
 
   it('probes each eligible rule for the facets that can affect the source', async () => {
@@ -154,9 +152,7 @@ describe('useProseSandbox', () => {
     })
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
     await api.start()
-    await vi.waitFor(() => {
-      expect(api.facetImpact.value['align-equals']).toContain('condense')
-    })
+    await expect.poll(() => api.facetImpact.value['align-equals']).toContain('condense')
     expect(api.facetImpact.value).not.toHaveProperty('space-statements')
   })
 
@@ -168,9 +164,7 @@ describe('useProseSandbox', () => {
     }
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
     await api.start()
-    await vi.waitFor(() => {
-      expect(api.facetImpact.value['align-equals']).toContain('max-shift')
-    })
+    await expect.poll(() => api.facetImpact.value['align-equals']).toContain('max-shift')
   })
 
   it('keeps a good format when the default-config probe run traps', async () => {

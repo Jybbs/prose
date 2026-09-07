@@ -29,9 +29,7 @@ describe('ProseSandboxToml', () => {
     const wrapper = await mountToml(sandbox)
 
     sandbox.configToml.value = 'code-line-length = 100'
-    await vi.waitFor(() => {
-      expect(wrapper.get('.sandbox-toml-display').html()).toContain('code-line-length = 100')
-    })
+    await expect.poll(() => wrapper.get('.sandbox-toml-display').html()).toContain('code-line-length = 100')
     expect(isHidden(wrapper.get('.code-typewriter'))).toBe(true)
   })
 
@@ -78,9 +76,7 @@ describe('ProseSandboxToml', () => {
     const wrapper = await mountToml(sandbox)
 
     sandbox.configToml.value = 'code-line-length = 60'
-    await vi.waitFor(() => {
-      expect(wrapper.get('.sandbox-toml-display').html()).toContain('code-line-length = 60')
-    })
+    await expect.poll(() => wrapper.get('.sandbox-toml-display').html()).toContain('code-line-length = 60')
     expect(isHidden(wrapper.get('.code-typewriter'))).toBe(true)
   })
 })

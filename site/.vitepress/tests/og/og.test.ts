@@ -80,31 +80,32 @@ describe('the card modules', () => {
     .filter(file => /\.(ts|mjs)$/.test(file))
     .map(file => fs.readFileSync(path.join(dir, file), 'utf8'))
 
-  const imported = (pattern: RegExp, take: (spec: string) => string) =>
-    new Set(sources.flatMap(text => [...text.matchAll(pattern)]).map(([, spec]) => take(spec)))
+  const imported = (
+    pattern : RegExp,
+    take    : (spec: string) => string,
+    keep    : (name: string) => boolean
+  ): ReadonlySet<string> =>
+    new Set(sources
+      .flatMap(text => [...text.matchAll(pattern)])
+      .map(([, spec]) => take(spec))
+      .filter(keep))
 
-  const packages = imported(/from '([^.'][^']*)'/g, packageOf)
-  const outside  = imported(/from '(\.\.?\/[^']*)'/g, spec => `${spec}.ts`)
+  // Each list and the imports it describes cover each other exactly, so a new
+  // import fails until it joins a list and a stale entry fails on its own.
+  const covers = (found: ReadonlySet<string>, listed: readonly string[], role: string): void => {
+    it.each([...found])(`%s is ${role}`, name => { expect(listed).toContain(name) })
+    it.each(listed)('%s is still imported', name => { expect(found).toContain(name) })
+  }
 
-  const listed = [...cardKey.KEYED_PACKAGES, ...cardKey.UNKEYED_PACKAGES]
-
-  it.each([...packages].filter(name => !name.startsWith('node:')))(
-    '%s is either keyed into the cache key or listed as unkeyed', name => {
-      expect(listed).toContain(name)
-    }
+  covers(
+    imported(/from '([^.'][^']*)'/g, packageOf, name => !name.startsWith('node:')),
+    [...cardKey.KEYED_PACKAGES, ...cardKey.UNKEYED_PACKAGES],
+    'keyed into the cache key or listed as unkeyed'
   )
 
-  it.each(listed)('%s is still imported', name => {
-    expect(packages).toContain(name)
-  })
-
-  it.each([...outside].filter(spec => !spec.startsWith('./')))(
-    '%s is hashed into the template digest', spec => {
-      expect(cardKey.SHARED_SOURCES).toContain(spec)
-    }
+  covers(
+    imported(/from '(\.\.?\/[^']*)'/g, spec => `${spec}.ts`, spec => !spec.startsWith('./')),
+    cardKey.SHARED_SOURCES,
+    'hashed into the template digest'
   )
-
-  it.each(cardKey.SHARED_SOURCES)('%s is still imported from outside the directory', spec => {
-    expect(outside).toContain(spec)
-  })
 })

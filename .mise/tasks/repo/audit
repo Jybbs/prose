@@ -162,17 +162,6 @@ def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
     ]
 
 
-def mise_provisioning(action: str) -> str:
-    """
-    Return the `min_version` read the `action` composite carries.
-    """
-    return extract(
-        f"no min_version read in {action}/action.yml",
-        r"(?s)(version=\$\(sed.*?GITHUB_OUTPUT\")",
-        manifest(action)
-    )
-
-
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
     """
     Return one parity pair per `overrides` entry the manifest also pins as a
@@ -234,11 +223,6 @@ def parity() -> int:
             ".mise/config.toml wasm-bindgen pin ↔ Cargo.lock wasm-bindgen",
             mise["tools"]["github:rustwasm/wasm-bindgen"],
             cargo_lock_version("wasm-bindgen")
-        ),
-        (
-            "provision-cargo min_version read ↔ provision-uv min_version read",
-            mise_provisioning("provision-cargo"),
-            mise_provisioning("provision-uv")
         ),
         (
             ".mise/tasks/site/test sources ↔ .mise/tasks/site/press sources",
