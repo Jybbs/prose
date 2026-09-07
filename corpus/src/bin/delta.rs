@@ -7,6 +7,7 @@
 //! on, and git's diffstat between the two tags.
 
 use std::{
+    cmp::Reverse,
     collections::{BTreeMap, BTreeSet},
     error::Error,
     path::{Path, PathBuf},
@@ -16,7 +17,8 @@ use std::{
 use clap::Parser;
 use itertools::Itertools;
 use rustc_hash::FxHashMap;
-use serde_json::Value;
+use serde::Deserialize;
+use serde_json::Deserializer;
 use tabled::{builder::Builder, settings::Style};
 
 /// How many files a movement line names before it counts the rest.
@@ -33,36 +35,41 @@ struct Args {
 }
 
 /// One tagged cycle's summary record and the files each rule fired on.
+#[derive(Default)]
 struct Cycle {
     counts: BTreeMap<String, usize>,
     fired: FxHashMap<String, BTreeSet<String>>,
 }
 
 impl Cycle {
-    /// Reads one cycle's records, the summary carrying the per-rule counts
-    /// and the rest naming a rule beside the file its fix landed in.
+    /// Reads one cycle's records out of the file at `path`, folding each into
+    /// the counts or into the per-rule file set.
     fn read(path: &Path) -> Result<Self, Box<dyn Error>> {
-        let mut cycle = Self {
-            counts: BTreeMap::new(),
-            fired: FxHashMap::default(),
-        };
-        for line in fs_err::read_to_string(path)?.lines() {
-            let record: Value = serde_json::from_str(line)?;
-            if record.get("kind").and_then(Value::as_str) == Some("summary") {
-                cycle.counts = serde_json::from_value(record["rules_fired"].clone())?;
-            } else if let (Some(code), Some(file)) = (
-                record.get("code").and_then(Value::as_str),
-                record.get("filename").and_then(Value::as_str),
-            ) {
-                cycle
-                    .fired
-                    .entry(code.to_owned())
-                    .or_default()
-                    .insert(file.to_owned());
+        let mut cycle = Self::default();
+        for record in Deserializer::from_str(&fs_err::read_to_string(path)?).into_iter::<Record>() {
+            match record? {
+                Record::Fix { code, filename } => {
+                    cycle.fired.entry(code).or_default().insert(filename);
+                }
+                Record::Summary { rules_fired } => cycle.counts = rules_fired,
             }
         }
         Ok(cycle)
     }
+}
+
+/// One line of a cycle's stream, where a fix line names its rule and the file
+/// the fix landed in, and a summary line carries the per-rule counts.
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum Record {
+    Fix {
+        code: String,
+        filename: String,
+    },
+    Summary {
+        rules_fired: BTreeMap<String, usize>,
+    },
 }
 
 /// The two cycles one width compares, rendered as terminal text.
@@ -85,7 +92,7 @@ impl Report {
         })
     }
 
-    /// Tables the rules whose firing count moved, largest move first.
+    /// Renders as a table the rules whose firing count moved, largest move first.
     fn counts(&self) -> String {
         let moved = self
             .base
@@ -96,9 +103,10 @@ impl Report {
             .filter_map(|slug| {
                 let before = self.base.counts.get(slug).copied().unwrap_or(0);
                 let after = self.head.counts.get(slug).copied().unwrap_or(0);
-                (before != after).then(|| (slug, before, after, after as isize - before as isize))
+                let delta = after.cast_signed() - before.cast_signed();
+                (delta != 0).then_some((slug, before, after, delta))
             })
-            .sorted_by(|a, b| b.3.abs().cmp(&a.3.abs()).then_with(|| a.0.cmp(b.0)))
+            .sorted_by_key(|&(slug, _, _, delta)| (Reverse(delta.abs()), slug))
             .collect_vec();
         if moved.is_empty() {
             return indented("every rule fired the same number of times");
@@ -116,24 +124,19 @@ impl Report {
         indented(&table.build().with(Style::blank()).to_string())
     }
 
-    /// Git's own diffstat between the two tags, capped at five files.
+    /// Returns git's own diffstat between the two tags, capped at five files.
     fn diffstat(&self) -> Result<String, Box<dyn Error>> {
-        let stage = self.stage.display().to_string();
-        let text = git(&[
-            "-C",
-            &stage,
-            "diff",
-            "--stat-count=5",
-            &format!("base-{}", self.width),
-            &format!("head-{}", self.width),
-        ])?;
+        let text = git(
+            &self.stage,
+            &[
+                "diff",
+                "--stat-count=5",
+                &format!("base-{}", self.width),
+                &format!("head-{}", self.width),
+            ],
+        )?;
         let trimmed = text.lines().map(str::trim).join("\n");
-        let shown = if trimmed.is_empty() {
-            "no file differs"
-        } else {
-            &trimmed
-        };
-        Ok(indented(shown))
+        Ok(section(&trimmed, "no file differs"))
     }
 
     /// Names the files each rule newly fires on or no longer fires on.
@@ -159,29 +162,18 @@ impl Report {
                 .filter(|(_, files)| !files.is_empty())
                 .map(move |(verb, files)| (slug, verb, files))
             })
-            .sorted_by(|a, b| {
-                b.2.len()
-                    .cmp(&a.2.len())
-                    .then_with(|| a.0.cmp(b.0))
-                    .then_with(|| a.1.cmp(b.1))
-            })
+            .sorted_by_key(|(slug, verb, files)| (Reverse(files.len()), *slug, *verb))
             .collect_vec();
-        if moves.is_empty() {
-            return indented("every rule fires on the same files");
-        }
         let rendered = moves
             .iter()
             .map(|(slug, verb, files)| {
                 let plural = if files.len() > 1 { "s" } else { "" };
-                format!(
-                    "{} {verb} on {} file{plural} ({})",
-                    slug,
-                    files.len(),
-                    Self::named(files)
-                )
+                let count = files.len();
+                let names = Self::named(files);
+                format!("{slug} {verb} on {count} file{plural} ({names})")
             })
             .join("\n");
-        indented(&rendered)
+        section(&rendered, "every rule fires on the same files")
     }
 
     /// Lists the first [`SHOWN`] of `files` and counts the rest.
@@ -195,14 +187,19 @@ impl Report {
 
     /// Renders the width's heading, count table, movements, and diffstat.
     fn render(&self) -> Result<String, Box<dyn Error>> {
-        let heading = format!("width {}\n", self.width);
-        Ok(heading + &self.counts() + &self.movements() + &self.diffstat()?)
+        let diffstat = self.diffstat()?;
+        Ok(format!(
+            "width {}\n{}{}{diffstat}",
+            self.width,
+            self.counts(),
+            self.movements()
+        ))
     }
 }
 
-/// Runs `git` with `args`, failing when the command does not succeed.
-fn git(args: &[&str]) -> Result<String, Box<dyn Error>> {
-    let run = Command::new("git").args(args).output()?;
+/// Runs `git` with `args` inside `dir`, failing on a nonzero exit.
+fn git(dir: &Path, args: &[&str]) -> Result<String, Box<dyn Error>> {
+    let run = Command::new("git").current_dir(dir).args(args).output()?;
     if !run.status.success() {
         return Err(format!(
             "git {} exited {}: {}",
@@ -217,7 +214,7 @@ fn git(args: &[&str]) -> Result<String, Box<dyn Error>> {
 
 /// Renders `text` as indented lines.
 fn indented(text: &str) -> String {
-    text.lines().map(|line| format!("  {line}\n")).collect()
+    text.lines().flat_map(|line| ["  ", line, "\n"]).collect()
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -226,4 +223,36 @@ fn main() -> Result<(), Box<dyn Error>> {
         print!("{}", Report::read(&args.stage, width)?.render()?);
     }
     Ok(())
+}
+
+/// Renders `text` indented, or `empty` where there is nothing to render.
+fn section(text: &str, empty: &str) -> String {
+    indented(if text.is_empty() { empty } else { text })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn named_counts_the_files_past_the_cap() {
+        let files: Vec<String> = (1..=5).map(|n| format!("f{n}.py")).collect();
+        assert_eq!(Report::named(&files), "f1.py, f2.py, f3.py, and 2 more");
+    }
+
+    #[test]
+    fn named_lists_every_file_at_the_cap() {
+        let files: Vec<String> = (1..=3).map(|n| format!("f{n}.py")).collect();
+        assert_eq!(Report::named(&files), "f1.py, f2.py, f3.py");
+    }
+
+    #[test]
+    fn section_falls_back_where_there_is_nothing() {
+        assert_eq!(section("", "nothing"), "  nothing\n");
+    }
+
+    #[test]
+    fn section_indents_its_text() {
+        assert_eq!(section("one\ntwo", "nothing"), "  one\n  two\n");
+    }
 }

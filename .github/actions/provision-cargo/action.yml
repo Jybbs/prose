@@ -3,20 +3,12 @@ description : Install the `.mise/config.toml` tools, the Rust toolchain among th
 
 inputs:
   shared-key:
-    description : Swatinem cache scope. Distinct keys allow per-profile cache isolation.
+    description : The Swatinem cache scope, which two rows given the same name read and write together. An empty value skips the cache step and leaves the mise archive unwritten.
     required    : true
-
-  cache:
-    default     : true
-    description : When `false` the Swatinem cache step is skipped and the mise archive is not written back.
-
-  cache-targets:
-    default     : true
-    description : When `false` only the Cargo home is cached. The `--zig` wheel rows build in a container whose fingerprints never match a host-built `target/`.
 
   save:
     default     : true
-    description : When `false` the caches restore but never save. `warm.yml` is the only caller that saves.
+    description : When `false` the caches restore but never save. `warm.yml` and `module.yml` leave it `true`, being the only callers that write these entries.
 
   tools:
     default     : ''
@@ -31,23 +23,27 @@ runs:
       run   : |
         {
           echo "CARGO_TERM_COLOR=always"
-          echo "MISE_RUSTUP_HOME=$HOME/.local/share/mise/rustup"
+          echo "MISE_RUSTUP_HOME=${LOCALAPPDATA:-$HOME/.local/share}/mise/rustup"
         } >> "$GITHUB_ENV"
 
+    - name  : Read the required mise version
+      id    : mise
+      shell : bash
+      run   : |
+        version=$(sed -n 's/^min_version *= *"\([^"]*\)".*/\1/p' .mise/config.toml)
+        [[ -n "$version" ]] || { echo "::error::.mise/config.toml sets no min_version"; exit 1; }
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
     - name : Install mise tools
-      uses : jdx/mise-action@dad1bfd3df957f44999b559dd69dc1671cb4e9ea
+      uses : jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c
       with:
-        cache_save   : ${{ inputs.cache != 'false' && inputs.save != 'false' }}
+        cache_save   : ${{ inputs.shared-key != '' && inputs.save != 'false' }}
         install_args : ${{ inputs.tools }}
+        version      : ${{ steps.mise.outputs.version }}
 
     - name : Restore Cargo cache
-      if   : ${{ inputs.cache != 'false' }}
-      uses : Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
+      if   : ${{ inputs.shared-key != '' }}
+      uses : Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
       with:
-        cache-targets : ${{ inputs.cache-targets }}
-        save-if       : ${{ inputs.save != 'false' }}
-        shared-key    : ${{ inputs.shared-key }}
-
-    - name  : Point Cargo at the git CLI for its git dependencies
-      shell : bash
-      run   : echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"
+        save-if    : ${{ inputs.save != 'false' }}
+        shared-key : ${{ inputs.shared-key }}

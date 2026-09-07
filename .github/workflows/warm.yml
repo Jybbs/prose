@@ -3,9 +3,9 @@ run-name    : 🪻 Warm · ${{ github.ref_name }}
 permissions : { contents: read }
 
 env:
-  PARENT : ${{ github.event.pull_request.base.sha || github.event.before }}
-  REF    : ${{ github.head_ref || github.ref_name }}
-  SHA    : ${{ github.event.pull_request.head.sha || github.sha }}
+  PARENT : ${{ github.event.before }}
+  REF    : ${{ github.ref_name }}
+  SHA    : ${{ github.sha }}
 
 on:
   push:
@@ -18,8 +18,8 @@ on:
       - .mise/config.toml
       - Cargo.lock
       - Cargo.toml
+      - corpus/Cargo.toml
       - crate/Cargo.toml
-      - sweeps/Cargo.toml
       - wasm/Cargo.toml
 
   workflow_dispatch:
@@ -38,7 +38,7 @@ jobs:
     steps:
       - &checkout
         name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        uses : actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - &provision-uv
         name : Provision uv
@@ -50,7 +50,6 @@ jobs:
 
   checks:
     name            : ${{ matrix.name }}
-    env             : { CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}" }
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 
@@ -82,11 +81,11 @@ jobs:
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
         with:
-          cache      : ${{ matrix.shared-key != '' }}
           save       : ${{ matrix.save }}
           shared-key : ${{ matrix.shared-key }}
 
       - name : ${{ matrix.command }}
+        env  : { CODECOV_TOKEN: "${{ endsWith(matrix.command, ':upload') && secrets.CODECOV_TOKEN || '' }}" }
         run  : ${{ matrix.command }}
 
   wheels:
@@ -118,6 +117,7 @@ jobs:
     name            : 🗞️ Brief
     if              : always()
     needs           : [checks, wheels]
+    permissions     : { actions: write, contents: read }
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 
@@ -126,8 +126,11 @@ jobs:
 
       - *provision-uv
 
+      - name              : Delete the cache entries this run replaces
+        continue-on-error : true
+        env               : { GH_TOKEN: "${{ github.token }}" }
+        run               : mise run gha:prune
+
       - name : Summarize and gate
-        env:
-          CHECKS : ${{ needs.checks.result }}
-          WHEELS : ${{ needs.wheels.result }}
+        env  : { NEEDS: "${{ toJSON(needs) }}" }
         run  : mise run gha:brief warm
