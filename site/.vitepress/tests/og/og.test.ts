@@ -2,7 +2,7 @@ import fs   from 'node:fs'
 import path from 'node:path'
 
 import { enumeratePages }       from '../../lib/og/pages'
-import { cardKeyer, RENDERERS } from '../../lib/og/render/card-key'
+import * as cardKey             from '../../lib/og/render/card-key'
 import { siteDir }              from '../../lib/shared/paths'
 import { readPackageVersions }  from '../../lib/shared/version'
 import { fixtureDir }           from '../support'
@@ -45,44 +45,66 @@ describe('cardKeyer', () => {
     wordmark         : { aspect: 1, src: 'w' }
   }
 
-  const renderers = { '@resvg/resvg-js': '1.0.0', satori: '2.0.0' }
+  const packages = { '@resvg/resvg-js': '1.0.0', satori: '2.0.0' }
 
   it('gives the same key for the same input', () => {
-    const keyOf = cardKeyer(brand, '0.1.0', renderers)
-    expect(keyOf('landing')).toBe(cardKeyer(brand, '0.1.0', renderers)('landing'))
+    const keyOf = cardKey.cardKeyer(brand, '0.1.0', packages)
+    expect(keyOf('landing')).toBe(cardKey.cardKeyer(brand, '0.1.0', packages)('landing'))
   })
 
   it('gives a different key when the version or the card changes', () => {
-    const keyOf = cardKeyer(brand, '0.1.0', renderers)
-    expect(keyOf('landing')).not.toBe(cardKeyer(brand, '0.2.0', renderers)('landing'))
+    const keyOf = cardKey.cardKeyer(brand, '0.1.0', packages)
+    expect(keyOf('landing')).not.toBe(cardKey.cardKeyer(brand, '0.2.0', packages)('landing'))
     expect(keyOf('landing'))
       .not.toBe(keyOf({ breadcrumb: [], kind: 'usage', outputPath: 'o', title: 'T' }))
   })
 
-  it('gives a different key when a renderer version changes', () => {
-    const keyOf = (r: Record<string, string>) => cardKeyer(brand, '0.1.0', r)('landing')
-    expect(keyOf(renderers)).not.toBe(keyOf({ ...renderers, satori: '2.1.0' }))
+  it('gives a different key when a keyed package version changes', () => {
+    const keyOf = (r: Record<string, string>) => cardKey.cardKeyer(brand, '0.1.0', r)('landing')
+    expect(keyOf(packages)).not.toBe(keyOf({ ...packages, satori: '2.1.0' }))
   })
 
-  it('keys on the real renderer pins when none are passed', () => {
-    const pinned = readPackageVersions(siteDir(import.meta.url), RENDERERS)
-    expect(cardKeyer(brand, '0.1.0')('landing'))
-      .toBe(cardKeyer(brand, '0.1.0', pinned)('landing'))
+  it('keys on the real package pins when none are passed', () => {
+    const pinned = readPackageVersions(siteDir(import.meta.url), cardKey.KEYED_PACKAGES)
+    expect(cardKey.cardKeyer(brand, '0.1.0')('landing'))
+      .toBe(cardKey.cardKeyer(brand, '0.1.0', pinned)('landing'))
   })
 })
 
-describe('RENDERERS', () => {
+describe('the card modules', () => {
   const packageOf = (spec: string): string =>
     spec.split('/', spec.startsWith('@') ? 2 : 1).join('/')
 
-  const dir   = path.join(import.meta.dirname, '../../lib/og/render')
-  const bare  = /from '([^.'][^']*)'/g
-  const specs = new Set(fs.readdirSync(dir)
+  const dir     = path.join(import.meta.dirname, '../../lib/og/render')
+  const sources = fs.readdirSync(dir)
     .filter(file => /\.(ts|mjs)$/.test(file))
-    .flatMap(file => [...fs.readFileSync(path.join(dir, file), 'utf8').matchAll(bare)])
-    .map(([, spec]) => packageOf(spec)))
+    .map(file => fs.readFileSync(path.join(dir, file), 'utf8'))
 
-  it.each(RENDERERS)('%s is still imported by the card renderer', name => {
-    expect(specs).toContain(name)
+  const imported = (pattern: RegExp, take: (spec: string) => string) =>
+    new Set(sources.flatMap(text => [...text.matchAll(pattern)]).map(([, spec]) => take(spec)))
+
+  const packages = imported(/from '([^.'][^']*)'/g, packageOf)
+  const outside  = imported(/from '(\.\.?\/[^']*)'/g, spec => `${spec}.ts`)
+
+  const listed = [...cardKey.KEYED_PACKAGES, ...cardKey.UNKEYED_PACKAGES]
+
+  it.each([...packages].filter(name => !name.startsWith('node:')))(
+    '%s is either keyed into the cache key or listed as unkeyed', name => {
+      expect(listed).toContain(name)
+    }
+  )
+
+  it.each(listed)('%s is still imported', name => {
+    expect(packages).toContain(name)
+  })
+
+  it.each([...outside].filter(spec => !spec.startsWith('./')))(
+    '%s is hashed into the template digest', spec => {
+      expect(cardKey.SHARED_SOURCES).toContain(spec)
+    }
+  )
+
+  it.each(cardKey.SHARED_SOURCES)('%s is still imported from outside the directory', spec => {
+    expect(outside).toContain(spec)
   })
 })
