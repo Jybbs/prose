@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Hung Block Drops Its Closing Bracket to the Landing Indent"
+title       = "A Hung Block Drops Its Closing Bracket to the Argument Indent"
 
 description = '''
-The call's one argument is the `%` format expression, whose first row ends by leaving a `(` hanging open while the `", ".join(...)` line already sits one step inside it. Exploding the call moves the argument onto its own row and leaves that interior line where it sits, dropping only the hung group's closing `)` down to the indent the argument lands at.
+`report_invalid_enum_member_names` takes one argument, a `%` format expression whose first row leaves a `(` open while the `", ".join(...)` row already sits one step inside it. **The call explodes, the argument moves onto its own row, and the hung group's closing `)` drops to the indent the argument starts at**, leaving the interior `join` row where it sits.
 '''

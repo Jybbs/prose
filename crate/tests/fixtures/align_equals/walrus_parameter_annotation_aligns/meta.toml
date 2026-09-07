@@ -3,5 +3,5 @@ previewable = false
 title       = "A Parenthesized Walrus Parameter Annotation Aligns"
 
 description = '''
-`host`'s annotation is the parenthesized assignment expression `(c := int)`, and its default joins the signature's run like any other parameter. The annotation is measured through its closing `)`, so `portfolio` and `region` pad out to `host`'s width and all three defaults share one `=` column.
+In the exploded `configure` signature, `host` is annotated with the parenthesized assignment expression `(c := int)` above `portfolio: str` and `region: float`. **`host`'s default joins the run like any other parameter, its annotation measured through the closing `)`**, so `portfolio` and `region` pad out to `host`'s width and all three `=` share one column.
 '''

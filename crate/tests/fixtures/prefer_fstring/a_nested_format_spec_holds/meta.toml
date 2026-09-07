@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Format Spec Carrying Its Own Field Holds"
+title       = "A Format Spec Carrying Its Own Field Keeps the Call"
 
 description = '''
-The spec in `"{:{width}}"` nests a second replacement field, wherein the outer slot reads `value` and the inner one reads the keyword argument `width=size`. A format spec that carries its own field is a shape `prefer-fstring` leaves alone, so the call holds.
+The spec in `"{:{width}}"` nests a second replacement field, so the outer field reads `value` and the inner one reads the keyword argument `width=size`. **The call stays as written**, because `prefer-fstring` never rewrites a format spec that carries a field of its own.
 '''

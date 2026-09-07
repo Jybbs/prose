@@ -35,8 +35,7 @@ struct Arguments<'src> {
 
 impl<'src> Arguments<'src> {
     /// Collects the call's arguments, `None` when it carries no
-    /// argument or a `**` expansion, neither of which names the value
-    /// a field reads.
+    /// argument or a `**` expansion.
     fn read(call: &'src ExprCall) -> Option<Self> {
         let slots = call
             .arguments
@@ -70,8 +69,9 @@ impl<'src> Arguments<'src> {
     }
 
     /// The argument `field` names, counting the read. `None` covers a
-    /// field naming no argument and a template mixing automatic
-    /// numbering with explicit indices, which `str.format` rejects.
+    /// field naming no argument, a numbered field reaching a keyword
+    /// argument, and a template mixing automatic numbering with
+    /// explicit indices, which `str.format` rejects.
     fn slot(&mut self, field: &FieldType) -> Option<&Argument<'src>> {
         let index = match field {
             FieldType::Auto => {

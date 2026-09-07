@@ -3,5 +3,5 @@ previewable = true
 title       = "Chained, Tuple, and Attribute Targets Pass"
 
 description = '''
-The rule reads only the single-name assignment shape, one plain name bound to one value. The chained `first = second = 1`, the tuple unpacking `first, second = 1, 2`, and the attribute target `config.timeout = 30` all fall outside that shape, so each line passes whatever the casing of its names.
+The rule reads only the single-name assignment form, one plain name bound to one value. **The chained `first = second = 1`, the tuple unpacking `first, second = 1, 2`, and the attribute target `config.timeout = 30` all pass**, whatever the casing of their names, because each falls outside that form.
 '''

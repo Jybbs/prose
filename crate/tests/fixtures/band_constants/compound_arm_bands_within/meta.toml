@@ -3,7 +3,5 @@ previewable = false
 title       = "A Band Forms Inside a Module-Scope Compound Arm"
 
 description = '''
-`band-constants` descends into the arms of a top-level compound statement, so the body of `if FEATURE:` is grouped exactly the way the module body would be.
-
-`SCALE = factor` names a function, which places it in the group that sits below the definitions, so it **moves down past the `factor` definition it reads**. The descent stops at class and function boundaries, leaving `factor`'s own body alone.
+`SCALE = factor` sits above `def factor()` inside the arm of `if FEATURE:`. **`SCALE` moves below the `factor` definition it reads**, two blank lines under it, because the rule reads the body of a top-level compound statement the same way it reads the module body, stopping at class and function boundaries, so the body of `factor` stays as written.
 '''

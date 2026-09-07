@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Dotted Alias Is Read Under the Name It Binds"
+title       = "A Dotted Alias Is Counted Under the Name It Binds"
 
 description = '''
-`import os.path as p` imports the module `os.path` but binds only the alias `p`, so reads are counted against `p` rather than `os`. **Nothing in the file reads `p`, so the import line is removed**, leaving only `value = 1`.
+`import os.path as p` imports the module `os.path` and binds only `p`, and the body below it is `value = 1`. **Nothing reads `p`, so the line is removed**, because the rule counts references against the alias rather than against `os`.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Demoted `__future__` Import Returns to the Front"
+title       = "A `__future__` Import Below Other Imports Moves Back to the Front"
 
 description = '''
-`from __future__ import annotations` sits below `import os` and `from collections import Counter`, a placement Python rejects outright. The partition **lifts the directive back to the front**, so the file compiles and the two remaining imports settle into bare-then-`from` order.
+`from __future__ import annotations` sits below `import os` and `from collections import Counter`, a position Python rejects. **`group-imports` moves the directive back to the front**, so the file compiles, and the two remaining imports settle into bare-then-`from` order beneath it.
 '''

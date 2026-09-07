@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Named Returns Entries Wrap Like Args Entries"
+title       = "A Named `Returns:` Entry Wraps Like an `Args:` Entry"
 
 description = '''
-`record` and `cached` under `Returns:` each take the `name: description` entry shape, and both run past the budget. **Each wraps at the docstring budget with a hanging indent at the description column**, so the continuation lines land under the text after the `:` exactly as a parameter entry's would.
+`record` and `cached` under `Returns:` each take the `name: description` entry form, and both run past the budget. **Each wraps at the docstring budget with a hanging indent at its description column**, so the continuation lines sit under the text after the `:` exactly as a parameter entry's would.
 '''

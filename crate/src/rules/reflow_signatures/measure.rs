@@ -17,16 +17,15 @@ use crate::primitives::{
 
 impl Expansion<'_> {
     /// True when the inline signature `text` sits inside the budget at
-    /// the width the later rules settle it to: the padding
-    /// `strip-stranded-padding` drops inside each parameter comes off,
-    /// and where the row still overflows, the first literal along the
-    /// row whose one-row form overflows from its column is the one
-    /// `reflow-collections` expands. One inside a parameter leaves that
-    /// parameter spanning rows, so the one-line form is out of reach,
-    /// whereas one inside the return annotation ends the opening row at
-    /// its bracket, which needs a literal that rule expands somewhere
-    /// beneath it, leaving a subscript slice holding none to overflow
-    /// the row whole.
+    /// the width the later rules settle it to, less the padding
+    /// `strip-stranded-padding` drops inside each parameter. Where the
+    /// row still overflows, the first literal along the row whose
+    /// one-row form overflows from its column decides. One inside a
+    /// parameter leaves that parameter spanning rows, so the one-line
+    /// form is out of reach, whereas one inside the return annotation
+    /// ends the opening row at its bracket where it opens inside the
+    /// budget and holds a literal `reflow-collections` expands, a
+    /// subscript slice holding none overflowing the row whole.
     pub(super) fn inline_fits(&self, fd: &StmtFunctionDef, text: &str) -> bool {
         let start = fd.parameters.start();
         let slack_before = |offset: TextSize| -> isize {
@@ -108,8 +107,7 @@ impl Expansion<'_> {
 }
 
 /// Every literal beneath `expr` in source order with the node enclosing
-/// it, a literal's own interior left unwalked since `reflow-collections`
-/// lays the outer one out before any inside it.
+/// it, a literal's own interior left unwalked.
 fn literals_beneath<'src>(
     expr: &'src Expr,
     parent: AnyNodeRef<'src>,

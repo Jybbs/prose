@@ -3,7 +3,5 @@ previewable = true
 title       = "A Set Element Sorts by Its Sorted Entries"
 
 description = '''
-Each `frozenset` inside the outer set sorts its own elements first, so `{"delta", "alpha"}` becomes `{"alpha", "delta"}`.
-
-The outer set then keys that element on **the text the inner sort produced**, not on the text the source wrote. `{"alpha", "delta"}` lands first, where its sorted form belongs, rather than staying second where its original spelling would have put it.
+The outer set contains two `frozenset` calls, `{"beta", "carrot"}` and `{"delta", "alpha"}`. **Each inner set sorts its own elements first, so `{"delta", "alpha"}` becomes `{"alpha", "delta"}`, and that element then moves to the first position**, where its sorted form belongs rather than second where its original spelling would have put it, because the outer set keys each element on the text the inner sort produced rather than the text the source wrote.
 '''

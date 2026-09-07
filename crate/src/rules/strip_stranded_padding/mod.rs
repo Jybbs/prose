@@ -2,7 +2,7 @@
 //! column to align to it clears the pre-colon gap and collapses the
 //! post-colon gap to one space, and it clears the space just inside a
 //! bracket delimiter. Runs after the alignment rules in
-//! `Pipeline::with_defaults` so it sees their output, and the edits it
+//! `Pipeline::with_defaults`, reading their output, and the edits it
 //! emits are the ones `primitives::padding` lists for a rule measuring
 //! a row ahead of it.
 
@@ -21,7 +21,7 @@ pub(crate) struct StripStrandedPadding {
 }
 
 impl StripStrandedPadding {
-    pub(crate) const MESSAGE: &'static str = "drop padding that lines up with nothing";
+    pub(crate) const MESSAGE: &'static str = "remove padding that aligns with nothing";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

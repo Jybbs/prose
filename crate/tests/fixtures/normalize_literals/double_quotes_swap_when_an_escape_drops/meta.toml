@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Double-Quoted Body Swaps When That Sheds an Escape"
+title       = "A Double-Quoted Body Swaps When That Removes an Escape"
 
 description = '''
-Rewriting `quoted` as `'already " escaped'` sheds the backslash in `\"`, so the swap runs even though it moves away from the preferred double quote. The neighbouring `apostrophe` keeps its double quotes, because single-quoting `it's fine` would only trade one escape for another.
+`quoted = "already \" escaped"` carries an escaped `"`, and `apostrophe = "it's fine"` carries a bare `'`. **`quoted` swaps to `'already " escaped'` and loses the backslash, even though the swap moves away from the preferred double quote**, whereas `apostrophe` keeps its double quotes because single-quoting `it's fine` would only trade one escape for another.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Keyword Dict Expands at the Spaced Equals"
+title       = "A Keyword Dict Explodes at the Width the `=` Buffer Adds"
 
 description = '''
-The line carrying `KW={...}` sits at the budget, and `align-equals` widens the tight `KW=` to `KW = `, adding two characters. `reflow-collections` counts those two columns when it measures the dict, so **the value expands once and stays expanded**, its `"migrations"` entry moving to its own line rather than fitting inline and then exploding.
+The line carrying `KW={...}` in the `d` call sits exactly at the budget, and `align-equals` writes `KW = ` in place of `KW=`, two characters wider. **`reflow-collections` counts those two columns and explodes the dict once**, its `"migrations"` entry moving to its own line, rather than fitting inline and then exploding on a later run.
 '''

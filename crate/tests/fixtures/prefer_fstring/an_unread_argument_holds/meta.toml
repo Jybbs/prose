@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Argument No Field Reads Holds"
+title       = "An Argument No Field Reads Keeps the Call"
 
 description = '''
-The single `{}` field reads `used`, leaving `spare` an argument no field consumes. The call still evaluates `spare` today, and a rewrite to `f"{used}"` would drop that evaluation, so the line holds.
+The single `{}` field reads `used`, leaving `spare` an argument no field consumes. **The line stays as written**, because the call still evaluates `spare` and a rewrite to `f"{used}"` would drop that evaluation.
 '''

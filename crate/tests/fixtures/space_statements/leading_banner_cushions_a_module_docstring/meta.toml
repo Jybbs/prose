@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Leading Banner Cushions a Module Docstring"
+title       = "A Leading Banner Takes One Blank Line Above a Module Docstring"
 
 description = '''
-The `# Copyright and license notice` banner opens the file above a module docstring rather than above code. **The docstring takes the divider blank exactly as a first import would**, the head reading the statement below the block without inspecting its kind.
+The `# Copyright and license notice` banner opens the file directly above a module docstring rather than above code. **One blank line is written between the banner and the docstring, exactly as it would be above a first import**, because the rule places the blank line below a leading block without regard to the kind of statement beneath it.
 '''

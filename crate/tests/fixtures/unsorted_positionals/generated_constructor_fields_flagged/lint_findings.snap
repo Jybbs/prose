@@ -15,6 +15,6 @@ input_file: crate/tests/fixtures/unsorted_positionals/generated_constructor_fiel
       "column": 5,
       "row": 6
     },
-    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
   }
 ]

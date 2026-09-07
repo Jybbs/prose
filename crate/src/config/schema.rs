@@ -18,11 +18,11 @@ use super::{
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlignmentConfig {
     pub enabled: bool,
-    /// The width-spread budget a contiguous run may shift to reach the
-    /// shared column. A positive `N` caps the spread, `0` forbids any
-    /// shift so every row sits flush, and `false` lifts the cap so a
-    /// contiguous run folds into one column. To hold one row out of an
-    /// otherwise-aligned group, mark it with `# prose: skip`.
+    /// How far apart the widest and narrowest rows of a run may be for the
+    /// run to still align on one column. A positive `N` caps that gap, `0`
+    /// forbids any padding so every row sits flush, and `false` lifts the
+    /// cap so a run of any width aligns on one column. A row marked
+    /// `# prose: skip` stays out of its group.
     pub max_shift: MaxShift,
 }
 
@@ -35,8 +35,8 @@ impl Default for AlignmentConfig {
     }
 }
 
-/// A glob a lint reads names against, matched against the whole name,
-/// the empty pattern matching no name at all.
+/// A glob a lint matches names against as a whole, where the empty
+/// pattern matches no name.
 #[derive(Clone)]
 pub struct AllowPattern(GlobMatcher);
 
@@ -104,24 +104,23 @@ pub struct AlphabetizeSiblingsConfig {
     /// before sorting within each group. `false` sorts methods by plain
     /// name alone.
     pub group_methods: bool,
-    /// Reorders class and function definitions alphabetically, holding
-    /// each behind any sibling it names at evaluation time. `false`
-    /// freezes definitions in source order while other surfaces still
-    /// sort.
+    /// Sorts class and function definitions alphabetically, keeping each
+    /// below any sibling it names at evaluation time. `false` keeps
+    /// definitions in source order while everything else still sorts.
     pub sort_definitions: bool,
-    /// Reorders the keyed entries of a dict literal, scalar-valued
-    /// entries before collection-valued and alphabetical by key within
-    /// each. `false` keeps the authored order, which iteration,
-    /// `.items()`, and `**` expansion all observe.
+    /// Sorts the entries of a dict literal, scalar values before
+    /// collection values and alphabetical by key within each. `false`
+    /// keeps the order as written, which iteration, `.items()`, and `**`
+    /// unpacking all follow.
     pub sort_dict_keys: bool,
-    /// Reorders `name: description` entries within Title-case-headed
-    /// docstring sections, parameter entries mirroring the signature as
-    /// the rule leaves it and stragglers alphabetizing below. `false`
-    /// keeps narrative-curated entry order while still sorting every
-    /// other surface.
+    /// Sorts the `name: description` entries of a Title-case-headed
+    /// docstring section, parameter entries in the signature's order as
+    /// the rule leaves it and every other entry alphabetical below them.
+    /// `false` keeps the entries in the order written while everything
+    /// else still sorts.
     pub sort_docstring_entries: bool,
-    /// Reorders the string items inside `__all__` and `__slots__`.
-    /// `false` keeps a hand-curated public-API order.
+    /// Sorts the string items inside `__all__` and `__slots__`. `false`
+    /// keeps the order written, for a hand-ordered public API.
     pub sort_dunder_lists: bool,
 }
 
@@ -148,9 +147,9 @@ pub struct BandConstantsConfig {
     /// before sorting by name within each. `false` sorts by tier and
     /// name alone.
     pub group_subcategories: bool,
-    /// Caps how many evaluation tiers open their own blank-separated
-    /// sub-band, merging every deeper tier into the last. `1` holds the
-    /// band tight and `false` opens one sub-band per tier.
+    /// Caps how many evaluation tiers get their own blank-line-separated
+    /// sub-band, merging every deeper tier into the last. `1` keeps the
+    /// whole band together and `false` gives every tier its own sub-band.
     pub max_tiers: InlineBudget,
 }
 
@@ -168,14 +167,14 @@ impl Default for BandConstantsConfig {
 #[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct BareImportsConfig {
-    /// Modules whose bare-import form is preserved whatever their
-    /// attribute count.
+    /// Modules whose bare `import` form is kept whatever their attribute
+    /// count.
     pub allow: Vec<String>,
     pub enabled: bool,
     /// Exempts every aliased bare import (`import x as y`) from the rule.
     pub exempt_aliased: bool,
-    /// The distinct-attribute count at or below which an unaliased bare
-    /// import is flagged.
+    /// The number of distinct attributes at or below which an unaliased
+    /// bare import is reported.
     pub max_attributes: usize,
 }
 
@@ -194,11 +193,11 @@ impl Default for BareImportsConfig {
 #[derive(Clone, Copy, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CacheConfig {
-    /// Toggles the cache globally.
+    /// Turns the cache on or off.
     pub enabled: bool,
-    /// The LRU eviction cap on the cache directory's entry count.
+    /// The entry count LRU eviction reduces the cache directory to.
     pub max_entries: u32,
-    /// The LRU eviction cap on the cache directory.
+    /// The size in MiB LRU eviction reduces the cache directory to.
     pub max_size_mib: u32,
 }
 
@@ -228,7 +227,7 @@ pub enum DocstringStructuredPolicy {
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ImportsConfig {
-    /// Root package names whose imports lift into the local-package
+    /// Root package names whose imports sort into the local-package
     /// group.
     pub first_party: Vec<String>,
 }
@@ -254,9 +253,9 @@ impl Default for InlinableBindingsConfig {
 }
 
 /// An inline-element budget read from a `max-<element>` key and shared
-/// across the layout rules. `Some(n)` caps the element count a construct
-/// holds inline, and `None` lifts the cap so width alone gates the
-/// shape.
+/// across the layout rules. `Some(n)` caps how many elements a construct
+/// keeps on one line, and `None` lifts the cap so width alone decides the
+/// layout.
 #[derive(Clone, Copy, Debug)]
 pub struct InlineBudget(pub(crate) Option<NonZeroUsize>);
 
@@ -294,10 +293,10 @@ impl Serialize for InlineBudget {
 #[serde(default, rename_all = "kebab-case")]
 pub struct LineOverflowConfig {
     pub enabled: bool,
-    /// Offers the parenthesized adjacent-literal form on an over-budget
-    /// line whose overflow sits inside one string literal holding
-    /// interior whitespace, as a display-only suggestion `prose format`
-    /// never writes. `false` leaves the bare overflow report.
+    /// Suggests the parenthesized adjacent-literal form for an over-budget
+    /// line whose overflow sits inside one string literal containing
+    /// whitespace, as a display-only fix `prose format` never writes.
+    /// `false` reports the overflow alone.
     pub suggest_string_splits: bool,
 }
 
@@ -310,11 +309,11 @@ impl Default for LineOverflowConfig {
     }
 }
 
-/// How far a row may shift to align, read from `max-shift`.
-/// `Unlimited` lifts the cap so a contiguous run always aligns to its
-/// widest member. `NoShift` forbids any shift, collapsing every row to
-/// its minimal spacing. `Cap(n)` aligns a run while its width spread
-/// stays within `n`.
+/// How much padding a row may take to align, read from `max-shift`.
+/// `Unlimited` lifts the cap so a run always aligns on its widest
+/// member. `NoShift` forbids any padding, so every row sits flush.
+/// `Cap(n)` aligns a run while the gap between its widest and narrowest
+/// rows stays within `n`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum MaxShift {
     Cap(NonZeroUsize),
@@ -419,8 +418,9 @@ pub struct NormalizeComparisonsConfig {
     /// Folds a leading `not` into the `in` or `is` it negates, so
     /// `not a in b` reads `a not in b`. `false` keeps the outer `not`.
     pub rewrite_negation: bool,
-    /// Flips a comparison whose constant side leads, so `42 == n` reads
-    /// `n == 42`. `false` keeps the authored operand order.
+    /// Swaps the operands of a comparison whose constant side comes first,
+    /// so `42 == n` reads `n == 42`. `false` keeps the operand order as
+    /// written.
     pub rewrite_operand_order: bool,
 }
 
@@ -448,9 +448,9 @@ pub struct NormalizeLiteralsConfig {
     /// Lowercases a string prefix and drops the no-op `u`. `false`
     /// keeps the prefix cased and ordered as written.
     pub unify_prefixes: bool,
-    /// Settles a non-docstring string on `"`, falling to `'` only where
-    /// that drops an escape, and sheds a backslash the surviving quote
-    /// does not need. `false` keeps the literal spelled as written.
+    /// Rewrites a non-docstring string to `"` quotes, using `'` only where
+    /// that avoids an escape, and removes a backslash the chosen quote
+    /// makes unnecessary. `false` keeps the literal as written.
     pub unify_quotes: bool,
 }
 
@@ -499,11 +499,11 @@ pub struct PruneInertImportsConfig {
     /// Drops an import rebinding a name an earlier import already bound
     /// to the same source. `false` keeps every repeat.
     pub drop_duplicates: bool,
-    /// Drops an import binding a name nothing references, where the
-    /// binding is not marked for re-export, read by a `del` or a quoted
-    /// annotation, or bound in a package `__init__.py`, where it is
-    /// reported instead. `false` leaves every unreferenced import in
-    /// place and reports none of them.
+    /// Drops an import binding a name nothing references, unless the
+    /// binding is marked for re-export, read by a `del` or a quoted
+    /// annotation, or bound in a package `__init__.py`, in which case it
+    /// is reported instead. `false` keeps every unreferenced import and
+    /// reports none.
     pub drop_unreferenced: bool,
     pub enabled: bool,
 }
@@ -541,9 +541,10 @@ impl Default for ReassignedConstantsConfig {
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReflowCallsConfig {
     pub enabled: bool,
-    /// Explodes a call to one keyword argument per line once its argument
-    /// count exceeds the cap. `false` disables the count trigger and
-    /// leaves every call inline.
+    /// Explodes a call whose every argument can be written as a keyword
+    /// to one `name=value` per line once its argument count exceeds the
+    /// cap. `false` turns the count trigger off and leaves only the
+    /// `code-line-length` budget.
     pub max_args: InlineBudget,
 }
 
@@ -562,17 +563,18 @@ impl Default for ReflowCallsConfig {
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReflowCollectionsConfig {
     pub enabled: bool,
-    /// Expands an overflowing or over-count collection to one entry per
-    /// line. `false` suppresses every expansion and leaves the count cap
-    /// inert.
+    /// Explodes a collection that overflows the line budget or exceeds its
+    /// entry cap to one entry per line. `false` turns every explosion off,
+    /// leaving the count cap with no effect.
     pub explode: bool,
-    /// Holds a literal the author laid out as a flush bracketed column
-    /// of two or more entries. `false` joins one whose single-line form
-    /// fits the budget, and every other break rejoins either way.
+    /// Keeps a literal the author wrote as a bracketed column of two or
+    /// more entries, one per line. `false` joins one back onto a single
+    /// line where it fits the budget, and any other multi-line layout
+    /// rejoins either way.
     pub keep_multiline_literals: bool,
-    /// Keeps short collections on one line when each entry is an atomic
-    /// literal and the run fits the cap. `false` removes the cap and
-    /// packs by width alone.
+    /// Caps how many atomic entries, meaning ints, floats, strings, and
+    /// single names, one packed row of an expanded collection carries.
+    /// `false` removes the cap and packs each row by width alone.
     pub max_atomics: InlineBudget,
     /// Expands a dict once its entry count exceeds the cap, whatever its
     /// width. `false` disables the count trigger.
@@ -601,9 +603,10 @@ impl Default for ReflowCollectionsConfig {
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReflowImportsConfig {
     pub enabled: bool,
-    /// Folds repeated `from <module> import …` statements into one
-    /// statement carrying each member once, ordered as `alphabetize-siblings`
-    /// would leave it. `false` leaves each statement on its own line.
+    /// Merges repeated `from <module> import …` statements into one
+    /// statement naming each member once, in the order
+    /// `alphabetize-siblings` gives them. `false` keeps each statement as
+    /// written.
     pub merge_members: bool,
     /// Breaks a comma-joined `import a, b` into one `import` statement
     /// per module. `false` keeps the comma-joined form.
@@ -625,8 +628,8 @@ impl Default for ReflowImportsConfig {
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReflowSignaturesConfig {
     pub enabled: bool,
-    /// Expands a signature to one parameter per line once its parameter
-    /// count exceeds the cap. `false` disables the count trigger and
+    /// Explodes a signature to one parameter per line once its parameter
+    /// count exceeds the cap. `false` turns the count trigger off and
     /// leaves only the `code-line-length` budget.
     pub max_params: InlineBudget,
 }
@@ -642,7 +645,7 @@ impl Default for ReflowSignaturesConfig {
 
 /// A per-rule config a bare bool can toggle. `with_enabled` is the
 /// shorthand for the `{ enabled = <bool> }` table under
-/// `[tool.prose.rules]`, leaving every other knob at its default.
+/// `[tool.prose.rules]`, leaving every other facet at its default.
 pub(crate) trait RuleToggle: Default {
     fn with_enabled(enabled: bool) -> Self;
 }
@@ -653,14 +656,13 @@ pub(crate) trait RuleToggle: Default {
 pub struct StackMethodChainsConfig {
     pub enabled: bool,
     /// Breaks a method chain to one link per line once its link count
-    /// exceeds the cap. `false` disables the count trigger and leaves
+    /// exceeds the cap. `false` turns the count trigger off and leaves
     /// only the `code-line-length` budget.
     pub max_links: InlineBudget,
-    /// The width a hung link's dot column may sit past the indent the
-    /// broken chain opens at. A wider receiver takes the full split
-    /// instead, standing alone with every link flush beneath it. `0`
-    /// always takes that split, and `false` lifts the cap so every
-    /// chain hangs.
+    /// How far past the broken chain's indent a hanging link's dot column
+    /// may sit. A receiver wider than that takes the full split instead,
+    /// standing alone with every link flush beneath it. `0` always takes
+    /// the full split, and `false` lifts the cap so every chain hangs.
     pub max_shift: MaxShift,
 }
 
@@ -674,11 +676,11 @@ impl Default for StackMethodChainsConfig {
     }
 }
 
-/// Sub-table shape for rules whose only knob is `enabled`.
+/// Sub-table shape for rules whose only facet is `enabled`.
 #[derive(Clone, Copy, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ToggleOnly {
-    /// Toggles the rule on or off.
+    /// Turns the rule on or off.
     pub enabled: bool,
 }
 
@@ -694,7 +696,7 @@ impl RuleToggle for ToggleOnly {
     }
 }
 
-/// Implements [`RuleToggle`] for configs carrying knobs beyond
+/// Implements [`RuleToggle`] for configs carrying facets beyond
 /// `enabled`, filling the rest from `Default`.
 macro_rules! impl_rule_toggle {
     ($($config:ty),+ $(,)?) => {

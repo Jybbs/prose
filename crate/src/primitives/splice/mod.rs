@@ -42,9 +42,9 @@ pub(crate) fn splice_parses<T, E>(
 
 /// Reports whether splicing `replacement` over `range` reparses to the
 /// same statement tree, the round-trip a rule runs before committing a
-/// rewrite it means to leave semantics-free. The window is the
-/// innermost statement covering `range`, widening to the whole module
-/// where no single statement does.
+/// rewrite that must not change semantics. The window is the innermost
+/// statement covering `range`, widening to the whole module where no
+/// single statement does.
 pub(crate) fn splice_preserves_tree(source: &Source, range: TextRange, replacement: &str) -> bool {
     let body = &source.ast().body;
     let covering = covering_statement(body, range);
@@ -67,9 +67,8 @@ fn covering_in_body(body: &[Stmt], range: TextRange) -> Option<&Stmt> {
 }
 
 /// The innermost statement whose own range holds `range` with room to
-/// spare, so a window whose own slice does not reparse can widen to the
-/// statement around it. `None` where the module body holds `range`
-/// directly.
+/// spare, the statement a window whose own slice does not reparse
+/// widens to. `None` where the module body holds `range` directly.
 pub(crate) fn enclosing_window(source: &Source, range: TextRange) -> Option<TextRange> {
     let mut body: &[Stmt] = &source.ast().body;
     let mut enclosing = None;

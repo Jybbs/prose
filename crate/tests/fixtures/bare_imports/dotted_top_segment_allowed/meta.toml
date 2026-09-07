@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Dotted Import Inherits Its Top Segment's Exemption"
+title       = "A Dotted Import Inherits the Exemption of Its Top Segment"
 
 description = '''
-`import numpy.linalg` binds the name `numpy`, which the file reaches only through `numpy.linalg.norm`, ordinarily a narrow enough use to be flagged. The `allow` entry names the top segment `numpy`, and a dotted import matches on that segment, so the exemption covers `numpy.linalg` and the import passes.
+`import numpy.linalg` binds the name `numpy`, which the file reaches only through `numpy.linalg.norm`, a use narrow enough to report, and the case runs with `allow = ["numpy"]`. **No diagnostic is reported**, because a dotted import matches the `allow` list on its top segment, so the exemption for `numpy` covers `numpy.linalg`.
 '''

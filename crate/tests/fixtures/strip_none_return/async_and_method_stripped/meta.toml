@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Async Functions and Methods Drop the Annotation Alike"
+title       = "An `async def` and a Method Drop the Annotation Alike"
 
 description = '''
-`Service.__init__` and the `async def shutdown` function each declare a redundant `-> None`, and `strip-none-return` drops the annotation from both. The strip reaches an `async def` and a method the same way, landing on `def __init__(self):` and `async def shutdown():`.
+`Service.__init__` and the module-level `async def shutdown` each declare `-> None` over a body that returns nothing. **`strip-none-return` removes the annotation from both**, so the headers read `def __init__(self):` and `async def shutdown():`, because a method and an `async def` are stripped the same way as a plain function.
 '''

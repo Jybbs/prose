@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Backslash Join Holds Its Row"
+title       = "A Backslash Join Keeps Its Row"
 
 description = '''
-A `\` explicit line join makes the row beneath it part of the row above, so the break between the two is not a gap between statements at all. **The rule leaves a joined row alone**, where rewriting the run would take the newline the join rests on and leave source that no longer parses.
+The file opens with a `\` explicit line join on the row above `y = 2`, which makes that row part of the row above, so the line break between them is no gap between statements at all. **The joined row is left alone**, because rewriting the run would remove the newline the join rests on and leave source that no longer parses.
 '''

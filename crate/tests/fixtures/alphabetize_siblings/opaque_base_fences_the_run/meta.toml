@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "An Opaque Base Fences the Run Around It"
+title       = "An Opaque Base Fences the Run Above It"
 
 description = '''
-`Generic` comes from a module this file cannot read, and subscripting it runs a hook inside that module while `class Widget` is being defined. A hook reached that way can call back into the module that imported it.
-
-Everything written above `Widget` was already bound when that hook ran, so **nothing above it may sort below it** and `zzz_helper` holds its place. The fence works in one direction only, since every definition below `Widget` was still unbound at that moment, which leaves `yyy_render` and `aaa_build` **free to sort among themselves**. A base naming no call and no subscript runs nothing and fences nothing.
+`Widget` subclasses `Generic[str]`, where `Generic` comes from a module this file cannot read, and subscripting it runs a hook inside that module while `class Widget` is being defined. **`zzz_helper` above `Widget` keeps its place, whereas `yyy_render` and `aaa_build` below it sort among themselves**, because a hook reached that way can call back into the module that imported it, and everything written above `Widget` was already bound when the hook ran, so nothing above it may sort below it. The fence works in one direction only, since every definition below `Widget` was still unbound at that moment, and a base naming no call and no subscript runs nothing and fences nothing.
 '''

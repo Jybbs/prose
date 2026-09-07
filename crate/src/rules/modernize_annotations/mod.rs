@@ -34,7 +34,7 @@ pub(crate) struct ModernizeAnnotations {
 
 impl ModernizeAnnotations {
     pub(crate) const MESSAGE: &'static str =
-        "modernize a legacy `typing` annotation to its builtin or PEP 604 form";
+        "rewrite a legacy `typing` annotation to its builtin or PEP 604 form";
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 
@@ -89,9 +89,9 @@ struct Walker<'a> {
 
 impl<'a> Walker<'a> {
     /// Rewrites `expr` whole against the enclosing `parent`, returning
-    /// `true` once the walk may leave the members the edit already
-    /// covers unvisited. A suppressed edit is dropped without counting
-    /// its heads, leaving the import it reads through in place.
+    /// `true` when the edit covers its members and the walk skips them.
+    /// A suppressed edit is dropped without counting its heads, leaving
+    /// the import it reads through in place.
     fn rewrite(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>) -> bool {
         let Some(rewrite) = self.renderer.rewrite(expr) else {
             return false;

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Listed Name Holds While Its Sibling Prunes"
+title       = "A Listed Name Stays While Its Unlisted Sibling Is Removed"
 
 description = '''
-Neither `dumps` nor `loads` is read inside the module, but `__all__ = ["dumps"]` marks `dumps` as a re-export. **The listed name holds its place on the import line while the unlisted `loads` is pruned off it**, leaving `from json import dumps`.
+Neither `dumps` nor `loads` is read in the module, and `__all__ = ["dumps"]` lists only `dumps`. **`dumps` stays on the import line and `loads` is removed from it**, leaving `from json import dumps`, because the export list marks one name a re-export and not the other.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An `__all__` No Static Pass Reads Holds Every Name"
+title       = "An `__all__` Built From a Call Keeps Every Import"
 
 description = '''
-`__all__ = build_exports()` builds the list from a function call rather than a literal list or tuple of strings, so the rule cannot settle what the public surface holds. **Every import holds and none is reported**, since `dumps` and `loads` might both be part of an export list the rule cannot read statically.
+`__all__ = build_exports()` builds the export list from a call rather than a literal list or tuple of strings, and nothing reads `dumps` or `loads`. **Both imports stay and nothing is reported**, because the rule reads an `__all__` only when it is a literal list or tuple of strings, and one it cannot read keeps every import in the module.
 '''

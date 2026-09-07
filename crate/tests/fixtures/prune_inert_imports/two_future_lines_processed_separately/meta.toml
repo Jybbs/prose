@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Two Future Lines Are Processed Independently"
+title       = "Two `__future__` Lines Are Read One at a Time"
 
 description = '''
-The module writes `from __future__ import annotations` and `from __future__ import division` as two separate lines. **Each import statement is evaluated independently, so `annotations` is removed because the module carries no annotation to defer, while `division` stays untouched**, since only the `annotations` feature is ever subject to removal.
+`from __future__ import annotations` and `from __future__ import division` sit on two lines, and the file carries no annotation. **The `annotations` line is removed and the `division` line stays**, because each import statement is read on its own and only the `annotations` feature is ever removed.
 '''

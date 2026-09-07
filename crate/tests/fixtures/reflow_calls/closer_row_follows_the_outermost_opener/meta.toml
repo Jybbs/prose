@@ -3,7 +3,5 @@ previewable = false
 title       = "A Closer Row Follows the Outermost Bracket It Closes"
 
 description = '''
-The `.get` call opens on a row that closes both the tuple and the dict around it, so several candidate rows could set the indent its exploded arguments hang from.
-
-They hang from **the row the dict's `{` sits on**, which is the outermost bracket that row closes. The balanced `bar(1)` pair ahead of the tuple is stepped over, since a pair opening and closing on the same row sets no indent of its own.
+The `.get` call opens on a row that closes both the tuple and the dict around it, under `code-line-length = 40`. **Its exploded arguments hang one indent step inside the row the dict's `{` sits on, and the closing `)` returns to that row's indent**, because a row opening on a closer takes the indent of the outermost bracket it closes, and the balanced `bar(1)` pair ahead of the tuple sets no indent of its own since it opens and closes on the same row.
 '''

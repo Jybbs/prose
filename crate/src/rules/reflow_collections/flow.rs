@@ -80,8 +80,8 @@ mod tests {
 
     #[test]
     fn flow_lines_charges_the_separator_closing_a_row() {
-        // Two rows of two would leave the first exactly on the budget
-        // before its comma lands, so the packer escalates to three rows.
+        // Two rows would leave the first exactly on the budget before
+        // its comma lands, so the packer escalates to three rows.
         assert_eq!(
             flow_lines(&[10, 10, 10], packing(22, 8)),
             vec![0..1, 1..2, 2..3]

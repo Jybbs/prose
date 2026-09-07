@@ -3,5 +3,5 @@ previewable = true
 title       = "Each Part Keeps the Prefix and Quote the Source Wrote"
 
 description = '''
-The suggested split slices each part's opener and closer out of the source rather than rebuilding them, so the `r` prefix and single quote of `PATTERN`'s literal open and close both parts. Rebuilding the delimiters from the quote style alone would drop the `r`, silently changing what a pattern's backslashes mean.
+`PATTERN`'s literal carries an `r` prefix and single quotes, and its 56-column line overflows the 40-column budget. **Each part of the suggested split opens with `r'` and closes with `'`**, because the split copies each part's opener and closer from the source rather than rebuilding them from the quote style, which would drop the `r` and change what the pattern's backslashes mean.
 '''

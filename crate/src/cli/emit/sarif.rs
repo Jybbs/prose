@@ -23,7 +23,7 @@ use crate::{
     rules::render_slugs,
 };
 
-/// The rule id an unstable-output result reports under.
+/// The `ruleId` an unstable-output result reports under.
 const UNSTABLE_RULE: &str = "unstable-output";
 
 pub(crate) struct Sarif;
@@ -110,8 +110,7 @@ fn sarif_result(
     }
 }
 
-/// The result an unstable rewrite lands as, the escalated exit's cause
-/// carried into the document a code-scanning upload reads.
+/// The error-level result an unstable rewrite lands as.
 fn unstable_result(entry: &UnstableEntry) -> SarifResult {
     let message = format!(
         "prose produced output a second run would change ({})",

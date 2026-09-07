@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Trailing Band Stratifies by Tier"
+title       = "A Trailing Band Opens a Sub-Band per Tier"
 
 description = '''
-`FIRST` and `SECOND` each name the `base` definition, so all four constants pool below it, and `DERIVED_A` and `DERIVED_B` read that pair in turn. The trailing band stratifies by tier the same as a leading one, so a blank line opens between the base pair and the two constants derived from them.
+`FIRST` and `SECOND` name `base`, and `DERIVED_A` and `DERIVED_B` read that pair, all four sitting below the definition. **A blank line opens between the base pair and the two derived from them**, because a trailing band opens a sub-band per tier the same way a leading band does.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A None Nested in a Larger Annotation Survives"
+title       = "A `None` Inside a Larger Annotation Stays"
 
 description = '''
-`lookup` declares `-> int | None` and `make_handler` declares `-> Callable[..., None]`, and `strip-none-return` leaves both untouched. The rule strips only a return annotation that is a bare `None`, not one where `None` sits nested inside a larger type.
+`lookup` declares `-> int | None` and `make_handler` declares `-> Callable[..., None]`. **`strip-none-return` leaves both annotations as written**, because the rule removes only a return annotation that is a bare `None`, and a `None` nested inside a union or a `Callable` names a different type.
 '''

@@ -36,7 +36,7 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
       "column": 5,
       "row": 15
     },
-    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
   },
   {
     "code": "unsorted-positionals",
@@ -49,7 +49,7 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
       "column": 18,
       "row": 33
     },
-    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
   },
   {
     "code": "signature-annotations",

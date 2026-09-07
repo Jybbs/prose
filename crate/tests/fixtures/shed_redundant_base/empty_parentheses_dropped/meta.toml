@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Empty Parentheses Leave the Header"
+title       = "Empty Parentheses Drop From the Header"
 
 description = '''
-`class Marker():` and `class Sentinel():` each carry an empty base list, so the parentheses drop and the headers read `class Marker:` and `class Sentinel:`. `class Spaced ():` writes a space before its pair, and that space is removed along with the parentheses, leaving no gap ahead of the `:`.
+`class Marker():`, `class Sentinel():`, and `class Spaced ():` each carry an empty base list. **The parentheses drop from all three**, so the headers read `class Marker:`, `class Sentinel:`, and `class Spaced:`, and the space `Spaced` wrote before its parentheses goes with them so no gap is left ahead of the `:`.
 '''

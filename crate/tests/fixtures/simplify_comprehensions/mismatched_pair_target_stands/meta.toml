@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Comprehension Whose Target Does Not Match Its Entry Stands"
+title       = "A Comprehension Whose Target Does Not Match Its Entry Stays as Written"
 
 description = '''
-The comprehension's target `pair` binds one name while its entry `key: value` names two others, so the comprehension is not copying `rows` and no `dict(...)` call could spell what it builds. `paired` stays exactly as written.
+`{key: value for pair in rows}` binds one name, `pair`, as its target, while its entry `key: value` names two others. **`paired` stays exactly as written**, because the comprehension is not copying `rows`, so no `dict(...)` call could spell what it builds.
 '''

@@ -3,7 +3,7 @@ previewable = false
 title       = "An Inner Closer Row Keeps Its Column"
 
 description = '''
-The exploded `type` call closes on a row whose leading `)` belongs to it and whose final `)` closes the enclosing tuple. That makes the row interior to the tuple rather than the end of the call, so the closer **keeps the call's own column** instead of dropping to the argument indent.
+The `type(other)` call explodes under `code-line-length = 60`, closing on a row whose leading `)` belongs to it and whose final `)` closes the enclosing tuple. **The closer row stays at the column the `type(` row opens at rather than dropping to the tuple's indent**, because the row is interior to the tuple rather than the end of the call.
 
-Only `reflow-calls` runs in this fixture, so the `%` tuple beside it stays packed, that literal belonging to `reflow-collections`. The rows here are narrower than the full pipeline settles them to.
+Only `reflow-calls` runs in this case, so the `%` tuple beside it stays packed, that literal belonging to `reflow-collections`, and the rows here are narrower than the full pipeline settles them to.
 '''

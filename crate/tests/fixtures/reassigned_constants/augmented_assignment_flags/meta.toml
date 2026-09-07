@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Augmented Assignment Marks a Constant as Reassigned"
+title       = "An Augmented Assignment Marks a Constant as Reassigned"
 
 description = '''
-`COUNTER = 0` is followed by `COUNTER += 1`, an augmented assignment that counts as a second write to the same name. **Only the initial `COUNTER = 0` is flagged**, the augmented assignment itself carrying no separate report.
+`COUNTER = 0` is followed by `COUNTER += 1`. **Only the `COUNTER = 0` line is reported**, because the augmented assignment counts as a second write to the name and marks it reassigned, while carrying no diagnostic of its own.
 '''

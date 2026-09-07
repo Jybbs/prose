@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Outlier Name Partitions Out of the Type-Group Column"
+title       = "An Outlier Name Partitions Out of the Type Column"
 
 description = '''
-`host (str)` and `port (int)` share one `:` column in the docstring's `Args:` section. Pushing that column out to `deadline_after_first_handshake_attempt (float)` would shift the short rows further than `max-shift` allows, so the wide row starts a fresh column and its `:` lands flush after the type group.
+`host (str)` and `port (int)` share one `:` column in the docstring's `Args:` section. Pushing that column out to `deadline_after_first_handshake_attempt (float)` would shift the short rows further than `max-shift` allows, so **the wide row starts a fresh column and its `:` stays flush after the type**.
 '''

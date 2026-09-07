@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Lone Type Group Settles Beside Untyped Siblings"
+title       = "A Lone Typed Entry Aligns Its Colon Beside Untyped Siblings"
 
 description = '''
-Only `beta` in this `Args:` block carries a parenthesized type, so there is no second typed entry to form a shared type column with.
-
-The padded gap in `beta  (int)` therefore **collapses to a single space**, and the `:` column seats across all three entries with `beta (int)` as the widest head.
+Only `beta` in this `Args:` block carries a parenthesized type, so there is no second typed entry to form a type column with. **The padded gap in `beta  (int)` collapses to a single space**, and the `:` column aligns across all three entries with `beta (int)` as the widest head.
 '''

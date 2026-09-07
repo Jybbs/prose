@@ -1,10 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "Explode a Call Above the Argument Threshold"
+title       = "A Call Past the Argument Cap Explodes"
 
 description = '''
-`connect(h, p, t, u)` passes four positionals, which is past the threshold, and `connect` is defined in the same module so its signature can be read.
-
-The call explodes to one argument per line, and **each positional gains its parameter name** from that resolved signature, so the rows read `host=h` through `user=u`. The closing `)` drops to the indent of the row the call starts on.
+`connect(h, p, t, u)` passes four positionals, past `max-args`, to a `connect` defined in the same module. **The call explodes to one argument per line and each positional gains its parameter name**, so the rows read `host=h` through `user=u`, because the rule reads the names from the resolved signature, and the closing `)` returns to the indent of the row the call starts on.
 '''

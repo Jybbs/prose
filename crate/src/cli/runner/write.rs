@@ -27,14 +27,12 @@ pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
 }
 
 /// Replaces `path`'s contents with `contents` through a temporary file
-/// renamed over the target, so a write that fails partway leaves the
-/// original intact rather than truncated at its opening byte. `path`
-/// resolves through a symlink first, leaving the link in place and
-/// rewriting what it points at. Opening the target beforehand holds the
-/// permission check a direct write makes, and the temporary takes the
-/// target's mode, which a fresh temporary would otherwise narrow to
-/// owner-only. Creating that temporary needs write permission on the
-/// containing directory, which a direct write does not.
+/// renamed over the target, leaving the original intact where a write
+/// fails partway. `path` resolves through a symlink first, leaving the
+/// link in place and rewriting what it points at. Opening the target
+/// beforehand runs the permission check a direct write makes, and the
+/// temporary takes the target's mode. Creating that temporary needs
+/// write permission on the containing directory.
 fn write_atomic(path: &Path, contents: &str) -> io::Result<()> {
     let target = fs_err::canonicalize(path)?;
     let permissions = fs_err::OpenOptions::new()

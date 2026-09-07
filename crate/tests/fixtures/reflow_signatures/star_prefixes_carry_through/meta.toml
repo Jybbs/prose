@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Variadic Star Prefixes Carry Through Expansion"
+title       = "Variadic `*` and `**` Prefixes Carry Through Expansion"
 
 description = '''
-`dispatch` mixes two positional parameters, `*args`, two keyword-only parameters, and `**kwargs`, six parameters total against a `max-params` cap of `4`. `reflow-signatures` expands the signature and **carries each variadic's `*` or `**` prefix through to the expanded form**, since every variadic slot counts toward the parameter count the same as a plain parameter.
+`dispatch` mixes two positional parameters, `*args`, two keyword-only parameters, and `**kwargs`, six parameters against a `max-params` limit of `4`. **The signature expands one per line with each variadic's `*` or `**` prefix kept**, because every variadic counts toward the parameter count the same as a plain parameter.
 '''

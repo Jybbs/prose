@@ -1,9 +1,9 @@
 [docs]
 previewable = true
-title       = "A T-String Settles Its Quotes the Way an F-String Does"
+title       = "A T-String Swaps Its Quotes the Way an F-String Does"
 
 description = '''
-`label` swaps to `t"{mask:>8}"`, while `shout` holds its single quotes because double-quoting `say "hi"` would add two escapes. That is what the f-string pair does, entry for entry.
+`label = t'{mask:>8}'` carries no `"`, and `shout = t'say "hi" to {name}'` carries two in its literal text. **`label` swaps to `t"{mask:>8}"` and `shout` keeps its single quotes**, because double-quoting `say "hi"` would add two escapes, the same outcome the f-string pair pins entry for entry.
 
-**The quotes facet reads a t-string through its own token kinds rather than assuming it behaves like an f-string**, so this case pins the behaviour against the tokens that actually differ.
+The quotes facet reads a t-string through its own token kinds rather than treating it as an f-string, so this case pins the behavior against the tokens that differ.
 '''

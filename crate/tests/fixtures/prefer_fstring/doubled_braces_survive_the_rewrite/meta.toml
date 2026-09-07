@@ -3,5 +3,5 @@ previewable = true
 title       = "Doubled Braces Survive the Rewrite"
 
 description = '''
-`{{literal}}` is already the escaped spelling of literal braces, and f-strings read the doubled form the same way `str.format` does. The rewrite keeps it untouched while `{}` becomes `{value}`, so the rendered text matches what the call produced.
+`{{literal}}` in the `.format` template is already the escaped spelling of literal braces, and an f-string reads the doubled form the same way `str.format` does. **The rewrite keeps `{{literal}}` untouched** while `{}` becomes `{value}`, so the rendered text matches what the call produced.
 '''

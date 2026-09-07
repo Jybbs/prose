@@ -3,5 +3,5 @@ previewable = true
 title       = "A Recursive Alias Rests on Its Annotation Alone"
 
 description = '''
-`Tree` forward-references itself as the string `"list[Tree]"`, because the name is unbound while its own value evaluates. A string literal constructs data, so reading the value's shape alone would flag the name, leaving the `TypeAlias` annotation as the one signal that marks `Tree` a type and spares it.
+`Tree: TypeAlias = "list[Tree]"` forward-references itself as a string, because the name is unbound while its own value evaluates. A string literal constructs data, so reading the value alone would report the name. **The `TypeAlias` annotation is the one signal that marks `Tree` a type, and it exempts the name.**
 '''

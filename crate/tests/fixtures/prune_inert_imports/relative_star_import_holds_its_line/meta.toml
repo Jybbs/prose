@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Relative Star Import Holds Its Line"
+title       = "A Relative Star Import Keeps Its Line"
 
 description = '''
-`from . import *` is a relative star import, binding an unenumerable set of names the same way an absolute `from module import *` would. **The import line holds** because the rule cannot resolve which names a star import binds, so it never prunes one.
+`from . import *` binds a set of names the rule cannot enumerate, and `value = 1` is the only other statement. **The import stays and nothing is reported**, because the rule never removes a star import, relative or absolute.
 '''

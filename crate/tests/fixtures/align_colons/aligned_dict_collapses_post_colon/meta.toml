@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Aligned Dict Collapses the Gap after Its Colons"
+title       = "Hand Padding After the Colon Collapses to One Space"
 
 description = '''
-Both entries of `config` were padded by hand after the `:`, so `"a":   1` and `"bbb":   2` carry extra spaces on the value side. Aligning the `:` column also **collapses the spaces after each colon to exactly one**, so the rows land as `"a"   : 1` and `"bbb" : 2` with the stray padding gone.
+The two entries of `config` carry extra spaces after the `:`, as `"a":   1` and `"bbb":   2`. **Aligning the `:` column also collapses the gap after each colon to one space**, so the rows are written as `"a"   : 1` and `"bbb" : 2` with the hand padding removed.
 '''

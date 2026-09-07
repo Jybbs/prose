@@ -3,5 +3,5 @@ previewable = false
 title       = "An Untyped Name-Colon Line Wraps as Prose"
 
 description = '''
-The `setting:` line names no parenthesized type, so it stays ordinary prose and wraps to the description budget. This is the negative case that keeps the verbatim treatment of a typed field head from reaching every line with a `:` in it.
+The `setting:` line names no parenthesized type and runs past the budget. **It wraps to the description budget as ordinary prose**, because only a parenthesized type marks a `name:` line as a field header, so the verbatim treatment never reaches every line with a `:` in it.
 '''

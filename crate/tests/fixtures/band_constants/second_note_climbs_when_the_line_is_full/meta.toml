@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Second Note Climbs When the Line Is Already Full"
+title       = "A Second Note Moves Above a Constant Whose Line Is Already Full"
 
 description = '''
-`ZETA_CAP` already ends in a trailing note, and the comment below it describes that same constant.
-
-Adding the second note to that line measures from the end of the existing note rather than from the end of the code, which runs the line past the budget. The second comment **moves above `ZETA_CAP` instead**, and travels with it when `ALPHA_CAP` sorts to the top.
+`ZETA_CAP = 1` already ends in a trailing note, and the comment below it describes the same constant. **The second comment moves to the line above `ZETA_CAP` and follows it as `ALPHA_CAP` sorts to the top**, because appending it after the existing note would run the line past the line budget, measured from the end of the note rather than the end of the code.
 '''

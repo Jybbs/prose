@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Held Import Bridges Its Run without Joining the Column"
+title       = "A Skipped Import Bridges Its Run Without Joining the Column"
 
 description = '''
-The middle import carries `# prose: skip[align-imports]`, which takes it out of the alignment.
-
-The forecast **steps over that row rather than closing the run at it**, so `package.alpha` and `package.zeta_rendering` still share one column across the gap. The imports sort and partition into their groups as usual, and the held row keeps the two spaces its author wrote ahead of the comment.
+The middle import carries `# prose: skip[align-imports]`, which takes it out of the alignment. **The rule steps over that row rather than ending the run at it**, so `package.alpha` and `package.zeta_rendering` share one `import` column across the gap, while the imports sort and partition into their groups as usual and the skipped row keeps the two spaces its author wrote before the comment.
 '''

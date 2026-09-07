@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Same-Module Imports Hold at Adjacent Cell Edges"
+title       = "Same-Module Imports at Adjacent Cell Edges Stay Apart"
 
 description = '''
-Cell one closes on `from pkg import alpha` and cell two opens on `from pkg import beta`, which makes the two an adjacent import run.
-
-A module-level gather would merge them and **empty the first cell of the import it declares**. The cell wall holds them apart instead, so each cell keeps its own statement.
+The first cell closes on `from pkg import alpha` and the second opens on `from pkg import beta`, so the two read as an adjacent import run. **Each cell keeps its own statement**, because a module-level gather would merge them and empty the first cell of the import it declares, and the cell boundary keeps them apart.
 '''

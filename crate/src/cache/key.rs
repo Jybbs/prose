@@ -12,9 +12,7 @@ pub(super) const CACHE_FORMAT_VERSION: &str = "9";
 const GENERATION_LEN: usize = 16;
 
 /// The directory segment this build's entries live under. A version
-/// bump lands on a fresh segment, so an earlier build's entries stay
-/// out of this build's walk and are reclaimed whole rather than aged
-/// out one eviction at a time.
+/// bump lands on a fresh segment.
 #[must_use]
 pub(super) fn generation() -> String {
     generation_for(env!("CARGO_PKG_VERSION"), CACHE_FORMAT_VERSION)
@@ -40,11 +38,7 @@ pub enum Anchor {
 impl Anchor {
     /// The BLAKE3 key-derivation context separating this anchor's keys
     /// from the other's. Each string is hardcoded and unique to Prose,
-    /// which is what `Hasher::new_derive_key` documents as the
-    /// requirement, and it sets a distinct initial value rather than
-    /// mixing a marker into the message, so no arrangement of the
-    /// remaining inputs can carry one anchor's key into the other's
-    /// space.
+    /// as `Hasher::new_derive_key` requires.
     fn context(self) -> &'static str {
         match self {
             Self::AsWritten => "prose cache entry, diagnostics as written",
@@ -53,27 +47,23 @@ impl Anchor {
     }
 }
 
-/// BLAKE3 digest of
-/// `config_toml ++ rule_ids ++ prose_version ++ cache_format_version ++ source_bytes`,
-/// taken under the anchor's key-derivation context. The config TOML and
-/// the source bytes are length-framed so neither can absorb a boundary,
-/// the rule slugs are newline-delimited and hold no newline of their
-/// own, and the two version strings are fixed by the build rather than
-/// by any input.
+/// BLAKE3 digest of the config TOML, rule slugs, Prose version, cache
+/// format version, source type, and source bytes, taken under the
+/// anchor's key-derivation context. The config TOML, source type, and
+/// source bytes are length-framed, the rule slugs are newline-delimited
+/// and hold no newline of their own, and the two version strings are
+/// fixed by the build.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct CacheKey(pub(super) blake3::Hash);
 
 /// A hasher holding every input a run shares across its files, the
-/// anchor's derivation context included, cloned per file so the config,
-/// rule selection and version tail are absorbed once for the run rather
-/// than once for each file.
+/// anchor's derivation context included, cloned once per file.
 #[derive(Clone, Debug)]
 pub struct CacheKeyPrefix(blake3::Hasher);
 
 impl CacheKeyPrefix {
-    /// Loads the run-invariant inputs, so that two runs differing only
-    /// in `--select` / `--ignore`, or only in which buffer their
-    /// diagnostics resolve against, key separately.
+    /// Absorbs the config, rule selection, anchor context, and version
+    /// strings, the inputs every file in a run shares.
     #[must_use]
     pub fn new(
         config_toml: &str,
@@ -126,8 +116,7 @@ impl CacheKeyPrefix {
     }
 }
 
-/// Absorbs `bytes` behind its own length, so a boundary between two
-/// variable-length inputs cannot be forged by moving bytes across it.
+/// Absorbs `bytes` behind its little-endian `u64` length.
 fn framed(hasher: &mut blake3::Hasher, bytes: &[u8]) {
     hasher.update(&(bytes.len() as u64).to_le_bytes());
     hasher.update(bytes);

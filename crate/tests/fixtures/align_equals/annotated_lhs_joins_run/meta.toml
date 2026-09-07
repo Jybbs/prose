@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Type Annotations Sit inside the Alignment"
+title       = "An Annotated Assignment Joins the Run"
 
 description = '''
-The annotated assignment `beta: int = 2` **joins the run** with the plain bindings `alpha` and `gamma_long`. Its left-hand width runs through the annotation, so the `int` counts toward the column and its `=` lands in line with the other two.
+`beta: int = 2` sits between the plain assignments `alpha = 1` and `gamma_long = 3`. **The annotated line joins the run**, its width measured through `int`, so all three `=` share the column one space past `gamma_long`.
 '''

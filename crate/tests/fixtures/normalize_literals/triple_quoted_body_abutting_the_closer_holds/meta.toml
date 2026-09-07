@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Triple-Quoted Body Abutting the Closer Stands"
+title       = "A Triple-Quoted Body Abutting the Closer Keeps Its Delimiters"
 
 description = '''
-`sentinel` holds a `"""` run in its body and `trailing` ends in a bare `"`, and either one would collide with the `"""` closer a swap would install. Both keep their triple-single delimiters rather than corrupt the literal.
+`sentinel` carries a `"""` run in its body and `trailing` ends in a bare `"`, both written in triple single quotes. **Both keep their triple-single delimiters**, because either body would collide with the `"""` closer a swap would install and corrupt the literal.
 '''

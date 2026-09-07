@@ -1,6 +1,5 @@
 //! Predicts the widening the rule's own later groups seat on each
-//! line, so a column decided early measures a line at the width the
-//! pass leaves it rather than the width the source carries.
+//! line, read by a column decided earlier in the pass.
 
 use ruff_text_size::{TextRange, TextSize};
 

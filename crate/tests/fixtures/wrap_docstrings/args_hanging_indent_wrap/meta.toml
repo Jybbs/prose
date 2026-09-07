@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Structured `Args:` Sections Wrap to the Wider Budget"
+title       = "A Structured `Args:` Entry Wraps With a Hanging Indent"
 
 description = '''
-The `name` entry under `Args:` overruns its line, so it **re-wraps to the section budget with a hanging indent**.
-
-The continuation lines sit under `A descriptive name`, at the column the description itself starts at, rather than back at the parameter-list indent. The short `retries` entry below already fits and is left alone.
+The `name` entry under `Args:` runs past its budget, whereas the short `retries` entry below it fits. **`name` re-wraps to the docstring budget with a hanging indent**, its continuation lines sitting under `A descriptive name` at the column the description starts on rather than back at the parameter-list indent, and `retries` is left as written.
 '''

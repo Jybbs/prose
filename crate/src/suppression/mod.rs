@@ -131,8 +131,7 @@ impl SuppressionMap {
     /// Returns `true` when `ranged`'s span overlaps a `# prose: off`
     /// region by at least one byte. Empty ranges report overlap when
     /// their offset strictly sits inside a region. A bare
-    /// `# prose: skip` opens no region, so it does not report here and
-    /// lint diagnostics on its line survive.
+    /// `# prose: skip` opens no region, so it does not report here.
     pub(crate) fn intersects<R: Ranged>(&self, ranged: R) -> bool {
         overlaps(ranged.range(), &self.spans)
     }
@@ -166,16 +165,14 @@ struct Directives {
     skip: Option<RuleEntry>,
 }
 
-/// True when `comment` is a recognized format or lint directive, so it
-/// drives suppression from its own line and must stay pinned there
-/// rather than move with a sibling reorder.
+/// True when `comment` is a recognized format or lint directive.
 pub(crate) fn is_directive_comment(comment: &str) -> bool {
     let found = directives(comment);
     found.region.is_some() || found.skip.is_some() || found.lint.is_some()
 }
 
-/// The offset an unmatched `# prose: off` opened at `start` closes at:
-/// the end of the notebook cell holding `start`, or the buffer's end for
+/// The offset an unmatched `# prose: off` opened at `start` closes at,
+/// the end of the notebook cell holding `start` or the buffer's end for
 /// an ordinary module whose `cell_offsets` are empty.
 fn cell_close_end(cell_offsets: &CellOffsets, source_text: &str, start: TextSize) -> TextSize {
     cell_offsets

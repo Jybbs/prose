@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Module Annotation Holds the Directive Even Where Every Name Resolves"
+title       = "A Module-Scope Annotation Keeps the Directive Even When Every Name Resolves"
 
 description = '''
-Nothing in this file changes, and the reason is worth spelling out. Every annotation names `Node`, and `class Node` is defined above the first annotation that reads it, so the annotations would resolve fine even without the directive.
-
-*Prose* keeps `from __future__ import annotations` regardless, because `root: Node = Node()` carries an annotation at module scope. With the directive in place, Python records that annotation in the module's `__annotations__`, and **without it `__annotations__` is never created at all**. Dropping the import would take a readable name out of the module, which is a change in behavior rather than a cleanup.
+Every annotation in the file names `Node`, and `class Node` is defined above the first annotation that reads it, so each annotation would evaluate without the directive. **`from __future__ import annotations` stays as written**, because `root: Node = Node()` carries an annotation at module scope, whose entry in the module's `__annotations__` the directive stores as the string `'Node'` rather than the class object, so removing the import would change what the module exposes rather than only shorten the file.
 '''

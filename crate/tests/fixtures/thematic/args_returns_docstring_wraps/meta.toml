@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Args and Returns Docstring Wraps With Aligned Args Colons"
+title       = "An `Args:` and `Returns:` Docstring Frames, Wraps, and Aligns"
 
 description = '''
-`render`'s docstring carries `Args:` and `Returns:` sections above a parameter list of varying widths: `template`, `context`, `encoding`. **The docstring's opening and closing `"""` lift onto their own lines, its prose paragraph wraps at the budget, the parameters hold their source order, and the `Args:` entries align their `:` column.**
+`render`'s docstring carries an `Args:` section for `template`, `context`, and `encoding` and a `Returns:` section, with its summary sentence running past the budget. **The opening `"""` moves onto its own line, the summary wraps at the budget, and the `Args:` entries align on one `:` column**, while the parameters stay in their source order and `unsorted-positionals` reports them.
 '''

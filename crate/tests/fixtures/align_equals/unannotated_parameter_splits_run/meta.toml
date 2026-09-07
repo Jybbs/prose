@@ -3,5 +3,5 @@ previewable = false
 title       = "An Unannotated Parameter Splits the Run"
 
 description = '''
-`unannotated=2` carries no annotation, so its `=` stays tight per PEP 8, and **it splits the parameter run**. `x` and `verbose` are left as singletons on either side, which is why `x: int = 1` never pads out to align with `verbose: bool = True`.
+`unannotated=2` sits between `x: int = 1` and `verbose: bool = True` in `f`'s exploded signature. **The parameter without an annotation keeps its tight `=` and splits the run**, leaving `x` and `verbose` alone on either side of it with no partner to align with, so the signature passes through unchanged.
 '''

@@ -3,7 +3,5 @@ previewable = true
 title       = "A Sole Dict Argument Explodes the Call Around It"
 
 description = '''
-`reflow-collections` lays the dict out one entry per row, and **an argument that spans rows makes the call explode around it** rather than opening the `{` on the calling row and closing with `})` as a pair. The row break alone is the trigger, whatever the argument count and however short the one-line form would have been.
-
-Inside the block, `alphabetize-siblings` sorts the keys so `"delta"` moves ahead of `"gamma"`, and `align-colons` pads each `:` into a shared column.
+`foo({"alpha": 1, "beta": 2, "gamma": 3, "delta": 4})` passes one dict as its only argument. `reflow-collections` explodes the dict to one entry per row, and **the call explodes around the dict**, its `(` and `{` on separate rows and its `}` and `)` on separate rows, because an argument that spans rows explodes the call whatever the argument count and however short the one-line form. Inside, `alphabetize-siblings` sorts the keys so `"delta"` moves ahead of `"gamma"`, and `align-colons` pads each `:` into one column.
 '''

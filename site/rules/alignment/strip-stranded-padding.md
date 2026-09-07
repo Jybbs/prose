@@ -1,5 +1,5 @@
 ---
-caption : "Strips padding that lines up with nothing and settles the gap after a colon, in one-member alignment groups and just inside bracket delimiters."
+caption : "Removes padding that lines up with nothing, before the `:` of a one-member group and just inside a bracket, and settles the gap after a `:` to one space."
 related : [align-colons, align-equals, align-imports, align-match-case, strip-trailing-commas]
 layout  : doc
 ---
@@ -8,19 +8,19 @@ layout  : doc
 
 <RuleLayout rule="strip_stranded_padding">
 
-An alignment group exists to give the reader's eye a column to drop down. With **two or more members** the column carries information, where each row reads as a row in a table. With **exactly one member** the column becomes a single cell, and padding it to a width that no sibling matches adds visual noise without payoff. `strip-stranded-padding` strips the pre-`:` padding from every `:`-alignment context that resolves to a single member, so a one-key dict, a one-arg signature, or a one-field dataclass reads as **plain code** instead of a one-row table.
+`strip-stranded-padding` removes the padding before the `:` in every `:`-alignment group that has a single member, so a one-key dict, a one-parameter signature, or a one-field dataclass reads as **plain code** rather than a one-row table. An alignment group with **two or more members** gives the eye a column to drop down, whereas a group with **exactly one member** has no sibling for its padding to line up with, so the padding adds width and nothing else.
 
-The rule operates on the `:`-shaped contexts that [[align-colons]] covers (*dict literals, annotated assignments at any scope, function-signature annotations, Google-style docstring sections*) plus the single-expression `match`-arm context that [[align-match-case]] covers. Multi-member groups whose `:`s sit on distinct lines and open at a shared column pass through this rule untouched, since the colon-alignment surfaces own them. A run whose rows open at differing columns realizes no shared column, so its padding strips here the way a singleton's does. The `=`-alignment from [[align-equals]] and the `import`-keyword alignment from [[align-imports]] carry their own one-member fallbacks and don't need pruning here.
+The rule reads the `:` contexts [[align-colons]] covers (*dict literals, annotated assignments at any scope, function-signature annotations, Google-style docstring sections*) plus the single-statement `match`-arm context [[align-match-case]] covers. A group of two or more members whose colons sit on separate lines and whose rows start at one shared indent passes through this rule unchanged, since the colon-alignment rules own it. A run whose rows start at differing indents resolves no shared column, so its padding is stripped here the way a single member's is. The `=` alignment of [[align-equals]] and the `import`-keyword alignment of [[align-imports]] handle their own one-member groups and need no stripping here.
 
-Beyond the pre-`:` gap, the rule settles the run after a colon to one space wherever that colon introduces a value, so a stray `x:   int` reads as `x: int` and a missing space in `x:int` fills to one. A `match`-arm body keeps the spacing [[align-match-case]] gives it, and a docstring entry's description stays as written.
+Past the gap before the `:`, the rule settles the gap after a colon to one space wherever that colon introduces a value, so a stray `x:   int` becomes `x: int` and `x:int` gains its missing space. A `match`-arm body keeps the spacing [[align-match-case]] writes, and a docstring entry's description stays as written.
 
-`strip-stranded-padding` also clears the padding just inside a bracket delimiter, where no alignment rule ever lines anything up. A space run directly after an opening `(`, `[`, or `{`, or directly before its closer, lines up with nothing, so `int(a )` settles to `int(a)` and `[ 1, 2 ]` to `[1, 2]`. Each side strips on its own, and only where the pad shares a line with the content beside it, so a closer on its own line keeps its indent. The braces of an f-string or t-string replacement field are not delimiters this rule touches, wherein a debug `f"{ total = }"` keeps the spaces it echoes into its output. On a `[ 1, 2, ]`, [[strip-trailing-commas]] drops the comma while this rule clears both pads.
+`strip-stranded-padding` also removes the padding just inside a bracket delimiter, where no alignment rule ever lines anything up. A run of spaces directly after an opening `(`, `[`, or `{`, or directly before its closer, lines up with nothing, so `int(a )` becomes `int(a)` and `[ 1, 2 ]` becomes `[1, 2]`. Each side is stripped on its own, and only where the padding shares a line with the content beside it, so a closer on its own line keeps its indent. The braces of an f-string or t-string replacement field are not delimiters this rule reads, so a debug `f"{ total = }"` keeps the spaces it echoes into its output. On `[ 1, 2, ]`, [[strip-trailing-commas]] removes the comma while this rule removes both pads.
 
 <template #configuration>
 
 <RuleConfigTable />
 
-`strip-stranded-padding` is the cleanup pass for the alignment rules above it, so its only facet is `enabled`. Turning it off leaves one-member alignment contexts as one-row tables *(a one-key dict reading with the same padding a multi-key dict would carry)*, which is rarely what a project wants in practice.
+`strip-stranded-padding` is the cleanup pass for the alignment rules above it, so its only facet is `enabled`. Turning it off leaves a one-member alignment group as a one-row table *(a one-key dict carrying the same padding a multi-key dict would)*, which is rarely the layout a project chooses.
 
 </template>
 

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Annotated Assignment Names Its Value"
+title       = "An Annotated Assignment Is Reported With Its Value"
 
 description = '''
-`parsed: int = int(raw)` carries an annotation, and the binding table records the value behind it the same way it records a plain assignment's. **The diagnostic names `int(raw)`**, so an annotated binding reads no differently from an unannotated one.
+`parsed: int = int(raw)` carries a type annotation, and `parsed` is read once in `return parsed + 1`. **The finding names `int(raw)` as the value to inline**, because the binding table records the value of an annotated assignment the same way it records a plain one, so the annotation changes nothing about the report.
 '''

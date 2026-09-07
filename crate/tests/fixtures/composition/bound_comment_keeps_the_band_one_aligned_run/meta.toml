@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Bound Comment Keeps the Band One Aligned Run"
+title       = "A Comment Bound to a Constant Keeps the Band One Aligned Run"
 
 description = '''
-The comment describes `DEFAULT_EPSILON` above it, so `band-constants` folds it onto that constant's line as a trailing note while packing the group.
-
-`align-equals` then settles all three constants onto **one shared `=` column**. Had the comment stayed on a line of its own it would have split the run in two, and the documented constant would have dropped out of the alignment.
+The comment `# the convergence floor the solver stops at` sits on its own line directly below `DEFAULT_EPSILON = 0.1`, describing it, with `MAX_INT = 5` after a blank line. `band-constants` moves the comment onto the end of the `DEFAULT_EPSILON` line as it packs and sorts the band, and **`align-equals` then pads all three constants onto one `=` column**, whereas a comment left on its own line would have split the run in two and left `DEFAULT_EPSILON` out of the alignment.
 '''

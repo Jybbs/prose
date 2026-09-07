@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A `NamedTuple` Base Carries the Same Run"
+title       = "A `NamedTuple` Field Run Is Reported"
 
 description = '''
-`ModelSpec`'s `NamedTuple` base generates the same positional constructor a `@dataclass` decorator would, so its out-of-order `display`, `build` field run **triggers the same report**. Alphabetizing it would move `build` ahead of `display`, and that reorder would leave a call site like `ModelSpec("Baseline", BaselineAE)` binding the type where the label belongs.
+`ModelSpec(NamedTuple)` declares `display` then `build`, and **the lint reports the field run**, because a `NamedTuple` base generates the same positional constructor a `@dataclass` decorator does, so moving `build` ahead of `display` would leave a call like `ModelSpec("Baseline", BaselineAE)` binding the type where the label belongs.
 '''

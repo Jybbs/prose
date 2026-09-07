@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Comment Anywhere in the Span Holds the Merge Back"
+title       = "A Commented First Statement Keeps Both Lines Apart"
 
 description = '''
-The trailing comment on `from pkg import beta` describes that statement alone, and folding the line together with `from pkg import alpha` would leave the comment describing nothing. The commented member therefore **holds every `pkg` statement in place**, so the two lines never merge.
+`from pkg import beta` carries a trailing comment, and `from pkg import alpha` sits below it. **Neither line merges**, because the comment describes the `beta` statement alone and a merged line would put it beside both names, so the rule leaves every `pkg` statement in place whenever one of them carries a comment.
 '''

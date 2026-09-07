@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Run Mixing an f-String with a Plain Literal Breaks"
+title       = "A Run Mixing an f-String With a Plain Literal Breaks Between the Parts"
 
 description = '''
-`label`'s run mixes an f-string, `f"the opening clause {value} of this notice "`, with a plain literal, `"and the trailer"`. `stack-adjacent-strings` **breaks between the two parts**, leaving the `{value}` replacement field untouched inside the f-string part that carries it.
+`label`'s run mixes an f-string, `f"the opening clause {value} of this notice "`, with the plain literal `"and the trailer"`, and together they overflow the line. **The run breaks between the two parts and leaves the `{value}` replacement field untouched inside its f-string**, because the break falls between parts and never inside one.
 '''

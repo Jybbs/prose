@@ -28,7 +28,7 @@ pub(crate) struct FrameDocstrings;
 
 impl FrameDocstrings {
     pub(crate) const MESSAGE: &'static str =
-        "canonicalize docstring quotes and frame the opener and closer on their own lines";
+        "rewrite a docstring's quotes to `\"\"\"` with the opener and closer on their own lines";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
@@ -67,9 +67,8 @@ impl Rule for FrameDocstrings {
 
 /// Edits re-delimiting `lit` to canonical `"""` with its prefix left in
 /// place. Empty when `lit` already opens with `"""`, when the body is
-/// blank, or when re-delimiting would break the string, in that a `"""`
-/// run inside the body or a single-line body ending in `"` would abut
-/// the closer.
+/// blank, and when a `"""` run inside the body or a single-line body
+/// ending in `"` would abut the closer.
 fn requote_edits(source: &Source, lit: &StringLiteral, body: &DocstringBody) -> Vec<Edit> {
     let flags = lit.flags;
     if flags.quote_str() == TRIPLE_QUOTE

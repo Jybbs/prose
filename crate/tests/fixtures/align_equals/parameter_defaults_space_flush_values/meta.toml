@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Flush Parameter Defaults Align and Space Their Values"
+title       = "Flush Parameter Defaults Gain Their Spaces and Align"
 
 description = '''
-`host: str="local"` and `port: int=8080` arrive with their defaults written flush against the `=`. Across the exploded `connect` signature the two `=` align on one column, and each gains a space on both sides, reading `host: str = "local"` above `port: int = 8080`.
+`host: str="local"` and `port: int=8080` arrive with their defaults written flush against the `=` in the exploded `connect` signature. **Both `=` gain a space on each side and share one column**, so the two lines read `host: str = "local"` above `port: int = 8080`.
 '''

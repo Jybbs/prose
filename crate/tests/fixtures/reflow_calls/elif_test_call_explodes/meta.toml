@@ -3,7 +3,5 @@ previewable = false
 title       = "A Call Inside an `elif` Test Explodes Like One Inside an `if`"
 
 description = '''
-The `gather` call in the `elif` test runs from `alpha` to `nu`, far past the line budget, and it explodes to one argument per line.
-
-That is **the same rewrite the identical call would take in an `if` test**. The statement walk reaches an `elif` test exactly once and emits a single edit for it, rather than skipping it or visiting it twice.
+The `gather` call in the `elif` test runs from `alpha` to `nu`, far past the line budget. **The call explodes to one argument per line, the same rewrite the identical call takes in an `if` test**, because the statement pass visits an `elif` test exactly once and emits a single edit for it rather than skipping it or visiting it twice.
 '''

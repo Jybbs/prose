@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Rows Hanging Inside a Nested Bracket Hold"
+title       = "Rows Indented Under a Nested Opener Keep Their Column"
 
 description = '''
-The rows below an opener that ends its own row hang from that row rather than aligning to anything the shed moves.
-
-They therefore **keep their column**, even where that column happens to coincide with the one directly past the shed opener. A coincidence of columns is not evidence of alignment.
+Inside `gg(...)`, a redundant pair is removed, and a nested `(` ends the first row with two rows indented beneath it. **Those rows keep their column**, because they are indented under an opener that ends its row rather than aligned to anything the removal moves, even where that column happens to match the one directly past the removed opener. Matching columns are not evidence of alignment.
 '''

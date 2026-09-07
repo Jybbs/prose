@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Single-Line Class with a Docstring Body Gains Cushions"
+title       = "A Single-Line Class With a Docstring Body Takes Two Blank Lines on Each Side"
 
 description = '''
-`class B: "doc"` packs its docstring body onto the header line, leaving the whole class on one physical line between `A` and `C`. **Two blank lines land on both sides of `B`**, the same spacing any single-line class stub receives, and because `"doc"` opens on the header there is no gap inside `B` to normalize.
+`class B: "doc"` keeps its docstring on the header line, sitting flush between `A` and `C`. **Two blank lines are written on each side of `B`**, the same count any single-line class takes, and because `"doc"` sits on the header there is no gap inside `B` to set.
 '''

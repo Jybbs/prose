@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Aliased `__future__` Import Still Leads"
+title       = "An Aliased `__future__` Import Stays First"
 
 description = '''
-`from __future__ import annotations as _annotations` aliases the directive, and the classifier reads only the `__future__` module name, never the alias, so **the statement holds the front**. Below it, the bare `import os` and the external `from collections import Counter` partition as usual.
+`from __future__ import annotations as _annotations` aliases the directive, above `from collections import Counter` and `import os`. **The aliased statement stays at the front**, because `group-imports` reads the `__future__` module name and not the alias, and below it the bare `import os` moves above the external `from collections import Counter` as usual.
 '''

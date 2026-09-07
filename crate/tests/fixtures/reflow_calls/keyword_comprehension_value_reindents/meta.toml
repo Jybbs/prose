@@ -4,7 +4,5 @@ previewable = false
 title       = "An Exploded Comprehension Value Re-Indents to the Keyword Column"
 
 description = '''
-`configure` explodes to one keyword per line, and `picks=` carries a multi-line list comprehension.
-
-That block is **re-indented to the keyword column**, exactly as a dict or list value would be. The `for value in source` and `if value` rows land one step past `picks=[`, and the `]` closes back at the keyword column, rather than the block being spliced in at whatever indentation the source gave it.
+`configure` passes `name`, `other`, `more`, and a `picks=` list comprehension written across several rows. **`configure` explodes to one keyword per line and the comprehension re-indents to the keyword column**, exactly as a dict or list value does, so the `for value in source` and `if value` rows sit one step past `picks=[` and the `]` closes at the keyword column rather than the block being spliced in at the indentation the source gave it.
 '''

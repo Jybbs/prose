@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Multi-Line String Pins a Comprehension at Its Source Shape"
+title       = "A Multi-Line String Inside a Comprehension Keeps Its Breaks"
 
 description = '''
-Nothing here moves. Each element of `banners` is a triple-quoted string whose text spans lines.
-
-Folding the comprehension's soft wraps onto one line would **respace the string's own interior**, changing the value it holds. The multi-line string therefore pins the comprehension at its source shape, leaving `for title in section_titles` on a line of its own.
+Each element of `banners` is a triple-quoted string whose text spans rows, and the `for title in section_titles` clause sits on a row of its own. **The comprehension is left as written**, because joining its rows would move text inside the string and change the string's value.
 '''

@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Commented Import Run Prunes Its First Line"
+title       = "A Commented Import Run Loses Its First Line and Keeps Its Heading"
 
 description = '''
-`from .pgen2 import token` is the first line of the `# Local imports` run, and nothing in the module reads it.
-
-`reflow-imports` folds that line into its same-module sibling, so once it goes the comment heads `from .pgen2 import driver` instead. `prune-inert-imports` **moves the sibling onto the vacated line** rather than waiting for the merge to land first, which keeps a real import under the comment at every step.
+`from .pgen2 import token` is the first line under the `# Local imports` comment, and nothing in the module reads it. `reflow-imports` merges that line into its `.pgen2` sibling, so once it goes the comment heads `from .pgen2 import driver`. **`prune-inert-imports` moves the sibling onto the vacated line** rather than leaving the move to the merge on a later pass, which keeps a real import under the comment at every step.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Dict Entry Leaves Its Break to the String Run"
+title       = "A Dict Entry Leaves Its Break to the Adjacent Strings"
 
 description = '''
-`table` holds one entry too long for the line, so `reflow-collections` expands the dict onto multiple rows. **The entry does not break at its `:`**, because its key is an implicitly concatenated pair of string literals that `stack-adjacent-strings` splits instead, leaving `"and the trailing part": 1` intact on the second fragment's line.
+`table` contains one entry whose key is two adjacent string literals, and the entry is too long for the 60-column budget. `reflow-collections` explodes the dict, and **the entry does not break at its `:`**, because `stack-adjacent-strings` splits the key between its two literals instead, leaving `"and the trailing part": 1` whole on the second literal's line.
 '''

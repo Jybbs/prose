@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Pragma-Style Comments Stay Quiet"
+title       = "Pragma Comments Are Skipped"
 
 description = '''
-`# noqa: F401`, `# type: ignore`, and `# pyright: ignore[reportMissingImports]` are tool directives rather than step narration, and **the lint skips pragma comments entirely**. The run reports nothing, leaving the module byte-for-byte unchanged.
+`# noqa: F401`, `# type: ignore`, and `# pyright: ignore[reportMissingImports]` sit on their own lines at the top of the module. **`step-narration` reports nothing**, because a pragma comment is a tool directive and the rule skips it, and the module is left byte for byte as written.
 '''

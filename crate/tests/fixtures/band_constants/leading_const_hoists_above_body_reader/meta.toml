@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Dependency-Clean Constant Hoists above Its Body Reader"
+title       = "A Literal Constant Moves Above the Function That Reads It"
 
 description = '''
-`TIMEOUT = 30` touches only a literal, so it **hoists into the leading band at the top of the module**, above the `fetch` definition that reads it. The move is safe because `fetch` reads `TIMEOUT` only when called, so a reference inside a function body constrains no module order.
+`TIMEOUT = 30` sits below `fetch`, whose body returns it. **The constant moves into the leading band at the top of the module, above the definition**, because `fetch` reads `TIMEOUT` only when called, so a reference inside a function body puts no constraint on module order.
 '''

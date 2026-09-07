@@ -11,8 +11,8 @@ use serde::Serialize;
 use super::{Emitter, EmitterSummary, Run, UnstableEntry, diagnostics, write_json_line};
 use crate::{findings::JsonDiagnostic, rules::RuleId};
 
-/// Bumps on any breaking change to existing field shapes, leaving
-/// additive fields to land unversioned.
+/// Bumped on any breaking change to an existing field shape. An
+/// additive field lands unversioned.
 const SCHEMA_VERSION: u32 = 1;
 
 pub(crate) struct Json;

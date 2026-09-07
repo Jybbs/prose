@@ -132,11 +132,10 @@ impl Source {
 
     /// Fills the binding table `bindings` holds where `preserves` says
     /// the splice's edits leave every binding standing, moved through
-    /// `map` to the positions this text carries, so the next read finds
-    /// it in place, the outcome reported under `rule`. A table an edit
-    /// in `map` leaves nowhere to move, one of whose offsets that edit
-    /// replaced, is left for that read to rebuild, as are the layout
-    /// forecasts behind every splice.
+    /// `map` to the positions this text carries, the outcome reported
+    /// under `rule`. A table an edit in `map` leaves nowhere to move,
+    /// one of whose offsets that edit replaced, is left for the next
+    /// read to rebuild, as are the layout forecasts behind every splice.
     pub(crate) fn inherit(
         &mut self,
         bindings: OnceLock<Box<BindingAnalysis>>,
@@ -153,11 +152,10 @@ impl Source {
     /// holds, every entry outside `windows` moved through `map` and the
     /// entries inside them walked afresh, `windows` being the spans a
     /// splice reparsed in this text, ascending. The union equals a fresh
-    /// walk while no entry outside a window changes, the property the
-    /// containment test re-proves over the corpus. An entry an edit
-    /// replaced sat inside a window, since every edit does, so it drops
-    /// for the walk there to re-derive. The slot is left empty where
-    /// `previous` holds no walk, the outcome reported under `rule`.
+    /// walk while no entry outside a window changes. An entry an edit
+    /// replaced sits inside a window and drops for the walk there to
+    /// re-derive. The slot is left empty where `previous` holds no walk,
+    /// the outcome reported under `rule`.
     pub(crate) fn rebuild_stranded_padding(
         &mut self,
         previous: OnceLock<Box<(Stranding, Vec<Edit>)>>,
@@ -196,8 +194,7 @@ impl Source {
     }
 
     /// Takes the binding table out of this source's slot, leaving an
-    /// empty slot behind, so a caller holds the table across a reparse
-    /// that consumes the source it came from.
+    /// empty slot behind.
     pub(crate) fn take_binding_analysis(&mut self) -> OnceLock<Box<BindingAnalysis>> {
         std::mem::take(&mut self.binding_analysis)
     }

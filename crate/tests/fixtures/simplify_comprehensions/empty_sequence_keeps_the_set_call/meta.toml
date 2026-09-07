@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Empty Sequence Leaves `set()` Standing"
+title       = "An Empty Sequence Inside `set()` Becomes a Bare `set()` Call"
 
 description = '''
-`set([])` and `set(())` each carry an empty sequence literal as their argument. Because `{}` already names an empty dict, `simplify-comprehensions` collapses both to the bare `set()` call rather than a brace form.
+`set([])` and `set(())` each pass an empty sequence literal to `set()`. **Both become the bare `set()` call rather than a brace form**, because `{}` already names an empty dict.
 '''

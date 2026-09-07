@@ -3,5 +3,5 @@ previewable = false
 title       = "Section Body Prose Collapses Its Whitespace Runs"
 
 description = '''
-The line under `Note:` fits the budget yet holds a double space after `prose`, and section body prose **collapses every interior whitespace run** just as description prose does. The section path wraps each line on its own rather than joining a paragraph, so without the collapse the double space would persist until a later edit pushed the line to a wrap point.
+The line under `Note:` fits the budget yet carries a double space after `prose`. **The double space collapses to one**, because section body prose collapses every interior whitespace run just as description prose does, and without the collapse the double space would persist until a later edit pushed the line to a wrap point, since the section path wraps each line on its own rather than joining a paragraph.
 '''

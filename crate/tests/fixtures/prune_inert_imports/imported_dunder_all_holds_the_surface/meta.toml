@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Imported `__all__` Holds the Export Surface"
+title       = "An Imported `__all__` Keeps Its Own Import"
 
 description = '''
-`from io import SEEK_CUR, __all__` binds `__all__` itself, so the imported list becomes this module's export list even though nothing reads it afterward. **The `__all__` entry holds**, on the same ground as a name a written `__all__` lists, and `SEEK_CUR` stays because `position` reads it.
+`from io import SEEK_CUR, __all__` binds `__all__` itself, and `position = SEEK_CUR` reads the other name. **The `__all__` member stays on the line**, because an import binding `__all__` sets the module's export list the same as a written one, and `SEEK_CUR` stays because it is read.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Value Carrying a Quote Holds"
+title       = "A Value Carrying a Quote Keeps the Template"
 
 description = '''
-Moving `table["key"]` into the template would put its `"` quotes inside an f-string delimited by the same character, where the first inner quote would close the string early. The value stays outside the template, so the line holds.
+The value `table["key"]` in `entry = "%s" % (table["key"],)` is written with `"` quotes. **The line stays as written**, because moving the value into an f-string delimited by the same `"` would let the first inner quote close the string early.
 '''

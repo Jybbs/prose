@@ -4,5 +4,5 @@ previewable = true
 title       = "A Nested Call Explodes in the Same Pass"
 
 description = '''
-The `outer` call overflows the line, so it explodes to one argument per line, and the `inner` call passed as `beta=` explodes alongside it even though its own span would fit. The recursion resolves both levels before the rule returns.
+`outer(alpha=1, beta=inner(east=2, north=3, south=4, west=5), gamma=6, delta=7)` fits the default budget but passes `max-args`, with a four-keyword `inner` call as its `beta=` value. **`outer` explodes to one argument per line and `inner` explodes alongside it**, even though `inner`'s own span would fit, because each call passes `max-args` on its own and the recursion resolves both levels in one pass.
 '''

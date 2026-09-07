@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Cross-Line Dict Key Breaks the Run"
+title       = "A Key Spanning Two Lines Breaks the Run"
 
 description = '''
-The tuple key `(multi, line)` spans two lines, so its `:` lands on a different line from the one where the key opens. **The cross-line key breaks the run**, so `aa` and `bbbb` align against each other above it whereas `cc` below it is left as a group of one and keeps its tight `cc: 4` form.
+The tuple key `(multi, line)` spans two lines, so its `:` sits on a different line from the one where the key opens. **The cross-line key breaks the run**, so `aa` and `bbbb` align with each other above it whereas `cc` below it is a group of one and keeps its tight `cc: 4` form.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Comment Inside the Pair Keeps It"
+title       = "A Comment on the Wrapping Parentheses Still Converts"
 
 description = '''
-The `# the note stays` comment hangs on the parentheses wrapping the template rather than sitting inside the `%` construct itself, so nothing blocks the conversion. `"%s" % (value,)` becomes `f"{value}"`, and the wrapping pair stays with its comment in place.
+The `# the note stays` comment hangs on the parentheses around the whole template rather than inside the `%` construct. **`"%s" % (value,)` becomes `f"{value}"`** and the parentheses keep the comment where it was, because the comment sits outside the span the rewrite replaces.
 '''

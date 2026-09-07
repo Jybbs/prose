@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Constant Naming a Guarded Import Pins Above Its Definition"
+title       = "A Constant Naming a Guarded Import Stays in Place"
 
 description = '''
-`REGISTRY = OrderedDict` reads the name the `try` block imports, even though the module also defines `class OrderedDict` further down the file.
-
-A write inside a `try` arm counts as a real binding, so the `OrderedDict` that `REGISTRY` reads is the imported one rather than the class. Moving `REGISTRY` would change which of the two it sees, so **it holds its source position**. `TABLE = dict` reads a builtin that nothing shadows, so it moves up freely past `helper`.
+`REGISTRY = OrderedDict` reads the name the `try` block above it imports, and the module also defines `class OrderedDict` further down. **`REGISTRY` stays where it is written and `TABLE = dict` moves up past `helper` to join it**, because an import inside a `try` arm counts as a binding, so moving `REGISTRY` below the class would change which `OrderedDict` it reads, whereas `dict` is a builtin nothing shadows.
 '''

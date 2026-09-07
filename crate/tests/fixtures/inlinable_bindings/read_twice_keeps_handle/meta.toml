@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Binding Read Twice Keeps Its Handle"
+title       = "A Binding Read Twice Is Not Reported"
 
 description = '''
-`x` in `doubled` is read twice, in `return x + x`, so `inlinable-bindings` **does not flag it**. Inlining would force `compute()` to run twice or the expression to repeat, so the named binding stays.
+`x` in `doubled` is written once from `compute()` and read twice in `return x + x`. **The binding is not reported**, because inlining would either run `compute()` twice or repeat the expression, so the named binding stays.
 '''

@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "Module-Scope Numbered Steps Are Flagged"
+title       = "Numbered Steps at Module Scope Are Reported"
 
 description = '''
-The comments `# 1. normalize input` and `# 2. emit the result` sit at module scope, above `process`, outside any function or class body. `step-narration` flags each one, because the numbered-step shape triggers the lint no matter which scope contains it.
+`# 1. normalize input` and `# 2. emit the result` sit at module scope above `process`, outside any function or class body. **`step-narration` reports each one**, because the numbered-step form triggers the lint in every scope.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Unsplittable Line Surfaces as a Finding"
+title       = "An Unsplittable Line Is Reported"
 
 description = '''
-`metrics.rolling.window.average = previous_value` carries no call, collection, import, or signature a layout rule could split, so once the 47-column line crosses `code-line-length` **no legal form brings it within the cap**. `line-overflow` reports it with `with no legal reshape`, turning an unsatisfiable cap into a finding rather than a setting that silently did nothing.
+`metrics.rolling.window.average = previous_value` is 47 columns, over the 40-column `code-line-length`, and carries no call, collection, import, or signature a layout rule could split. **The line is reported with `with no legal reshape`**, because no legal form brings it within the budget, so an unsatisfiable budget becomes a finding rather than a setting that silently did nothing.
 '''

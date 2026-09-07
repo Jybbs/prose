@@ -52,7 +52,7 @@ pub(super) fn rewritten(source: &Source, binop: &ExprBinOp) -> Option<String> {
 }
 
 /// The rendered value each spec reads, in spec order, `None` wherever
-/// the right-hand side does not prove which value each spec reads.
+/// the right-hand side does not settle which value each spec reads.
 ///
 /// A tuple literal binds by position and a dict literal of identifier
 /// keys binds by name, and a lone spec also reads a literal right-hand

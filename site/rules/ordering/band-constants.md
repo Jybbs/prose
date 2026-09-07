@@ -1,5 +1,5 @@
 ---
-caption : "Hoists module-level constants into a leading band below the imports and a trailing band beneath the definitions, ordering each band it seats."
+caption : "Moves module-level constants into a leading band below the imports and a trailing band below the definitions, and sorts each band."
 related : [alphabetize-siblings, group-imports, space-statements, align-equals, miscased-constants, reassigned-constants]
 layout  : doc
 ---
@@ -8,18 +8,18 @@ layout  : doc
 
 <RuleLayout rule="band_constants">
 
-`band-constants` gathers module-level constants into two bands and orders what it gathers, a leading band directly below the imports and a trailing band beneath the definitions, so a module reads top to bottom as its imports, its leading constants, its definitions, then the constants derived from them.
+`band-constants` moves module-level constants into two bands and sorts each, a leading band directly below the imports and a trailing band below the definitions, so a module reads top to bottom as its imports, its leading constants, its definitions, then the constants derived from them.
 
-| Band | Holds |
+| Band | Members |
 |---|---|
-| Leading | a constant whose value reaches only imports, builtins, literals, or fellow leading constants |
+| Leading | a constant whose value reads only imports, builtins, literals, or other leading constants |
 | Trailing | a constant that names a function or class defined later in the module |
 
-The rule relocates a constant into its band, and each band orders by `(tier, subcategory, name)`, clustering the type aliases ahead of the `SCREAMING_CASE` constants and those ahead of the remaining module state. A constant reading another band member climbs an evaluation tier, and each tier opens its own blank-separated sub-band so derived values read apart from the primitives they build on. A tier holding a single constant folds tight below the tier above and aligns with it through [[align-equals]]. `max-tiers` caps how many tiers open a sub-band.
+The rule moves a constant into its band, and each band sorts by `(tier, subcategory, name)`, clustering the type aliases ahead of the `SCREAMING_CASE` constants and those ahead of the remaining module state. A constant that reads another band member climbs one evaluation tier, and each tier opens its own blank-separated sub-band, so derived values read apart from the primitives they build on. A tier with a single constant sits tight below the tier above and aligns with it through [[align-equals]]. `max-tiers` caps how many tiers open a sub-band.
 
-A band carries its own order, where [[group-imports]] relocates an import into its section and leaves the order within it to [[alphabetize-siblings]]. The split follows what each order costs to get wrong, in that import siblings reorder freely whereas a constant's slot binds every reference to it, so the move is only safe under the evaluation analysis this rule already runs.
+A band carries its own order, whereas [[group-imports]] moves an import into its section and leaves the order within it to [[alphabetize-siblings]]. The split follows what each order costs to get wrong, in that import siblings reorder freely whereas a constant's slot binds every reference to it, so the move is only safe under the evaluation analysis this rule already runs.
 
-Only an evaluation-time reference binds the order, covering a right-hand side, a decorator, a default argument, a base class, and a non-deferred annotation, so a constant a function reads inside its body still joins the leading band. Several shapes pin a constant where the author left it:
+Only an evaluation-time reference binds the order, covering a right-hand side, a decorator, a default argument, a base class, and a non-deferred annotation, so a constant a function reads inside its body still joins the leading band. Several cases pin a constant where the author left it:
 
 - A reassigned name.
 - A value naming an unresolved reference.
@@ -28,23 +28,23 @@ Only an evaluation-time reference binds the order, covering a right-hand side, a
 - A row a `\` line join continues.
 - Every constant in a reference cycle.
 
-A constant also pins wherever banding it would change which object a name resolves to while the module runs. That covers:
+A constant also stays put wherever moving it would change which object a name resolves to while the module runs. That covers:
 
-1. A constant whose own name shadows a builtin some definition above it already read.
+1. A constant whose own name shadows a builtin some definition above it already reads.
 2. A value reaching through an attribute or a subscript into a name a definition above it reads at evaluation time.
-3. A value resolving a name against a builtin or an earlier module-scope write that a definition below it rebinds, where a write inside a branch, an import a guard wraps, and a `global` write from a call the module makes each count as that earlier binding.
+3. A value resolving a name against a builtin or an earlier module-scope write that a definition below it rebinds, where a write inside a branch, an import inside a guard, and a `global` write from a call the module makes each count as that earlier binding.
 
-Each case resolves one object before the move and a different one after, without raising, so the constant holds its slot instead.
+Each case resolves one object before the move and a different one after, without raising, so the constant keeps its slot instead.
 
-A statement reading a dunder the module later rebinds holds the whole region in source order, because the loader binds every module dunder before the body runs, so seating the rebind above the read would hand it the new value. Every other name is unbound until its own statement runs, leaving a hoist above a reader able only to resolve a reference rather than to change one.
+A statement reading a dunder the module later rebinds keeps the whole region in source order, because the loader binds every module dunder before the body runs, so placing the rebind above the read would give it the new value. Every other name is unbound until its own statement runs, so a move above a reader can only resolve a reference, never change one.
 
-Only an inert value bands. An inert value reads names and builds a result (*a literal, a name, an attribute or subscript read, a display or operator expression, or a `lambda`*), whereas an effectful value carries a call, a comprehension, or an `await` and moving it would reorder that work. `RANDOM_SEED = 42` hoists into the leading band whereas `wide_trainer = L.Trainer(**trainer_kwargs)` holds its place.
+Only an inert value bands, meaning one that reads names and builds a result (*a literal, a name, an attribute or subscript read, a display or operator expression, or a `lambda`*), whereas an effectful value carries a call, a comprehension, or an `await`, and moving it would reorder that work. `RANDOM_SEED = 42` moves into the leading band whereas `wide_trainer = L.Trainer(**trainer_kwargs)` stays where it is.
 
-A constant the analysis pins for a reassigned or unresolved name, a resolution hazard, or an effectful value still spaces as a member of the band beside it, so its pair with a banded constant seats tight, a tier boundary between them opens one blank line, and a heading standing a blank line off the pinned constant keeps one blank line above it. Every other pinned member keeps the gap the source wrote.
+A constant the analysis pins for a reassigned or unresolved name, a resolution hazard, or an effectful value still spaces as a member of the band beside it, so its pair with a banded constant sits tight, a tier boundary between them opens one blank line, and a heading standing a blank line above the pinned constant keeps one blank line above it. Every other pinned member keeps the gap the source wrote.
 
-An own-line comment above a member travels with it wherever the rule seats it, and a comment on the line below documents that member instead and travels the other way. A banner (*`# --- Configuration ---`*), a suppression directive, a tool pragma (*`# noqa`*), and a comment opening at another indent each hold their slot and pin the member beneath, so a band never crosses a banner. A notebook carries the same reach as a module, with its cell boundary bounding the carry.
+An own-line comment above a member travels with it wherever the rule places it, and a comment on the line directly below a member documents that member instead and follows it rather than leading it. A banner (*`# --- Configuration ---`*), a suppression directive, a tool pragma (*`# noqa`*), and a comment at another indent each keep their slot and pin the member beneath, so a band never crosses a banner. A notebook has the same reach as a module, with each cell boundary bounding the move.
 
-Relocation and its spacing settle in one run, so the file reaches its final shape on the first format.
+The move and its spacing settle in one run, so the file reaches its final layout on the first format.
 
 <FixtureConvergence rule="band_constants" case="stacked_comment_blocks_keep_their_blank" />
 
@@ -52,7 +52,7 @@ Relocation and its spacing settle in one run, so the file reaches its final shap
 
 <RuleConfigTable />
 
-The facets above tune the band without switching it off. `group-subcategories` clusters each band by subcategory, dropping to a plain `(tier, name)` sort when `false`. `max-tiers` caps how many evaluation tiers open their own sub-band, defaulting to `2` so a band reads as its base plus one derived sub-band, with `1` holding it tight and `false` opening one per tier. Turned off entirely with `band-constants = false`, the constants stay in place among their neighbors. The `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* decides which imports the leading band seats below, since a first-party package's imports group with the local-package section.
+The facets above tune the band without switching it off. `group-subcategories` clusters each band by subcategory, falling back to a plain `(tier, name)` sort when `false`. `max-tiers` caps how many evaluation tiers open their own sub-band, defaulting to <ConfigDefault rule="band-constants" facet="max-tiers" /> so a band reads as its base plus one derived sub-band, with `1` keeping it tight and `false` opening one per tier. Turned off entirely with `band-constants = false`, the constants stay in place among their neighbors. The `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* sets which imports the leading band sits below, since a first-party package's imports group with the local-package section.
 
 </template>
 

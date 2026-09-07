@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Attribute, Subscript, and Destructuring Targets Beyond Plain Names"
+title       = "Attribute, Subscript, and Destructuring Targets Bind Only the Names Inside Them"
 
 description = '''
-`obj.attr = 1` and `obj[ix] = 2` bind nothing new, in that the analysis **walks the receiver `obj` and the index `ix` as reads without creating a binding** for the attribute or the subscript. The destructuring targets `a, b`, `*head, tail`, and `[c, d]` recurse instead into the names they contain, so each of `a`, `b`, `head`, `tail`, `c`, and `d` records its own write.
+`obj.attr = 1` and `obj[ix] = 2` assign through an attribute and a subscript, and `a, b = (1, 2)`, `*head, tail = xs`, and `[c, d] = (3, 4)` destructure. **The attribute and subscript assignments bind nothing and record reads of `obj` and `ix`, whereas each destructured name records its own write**, so `a`, `b`, `head`, `tail`, `c`, and `d` each appear in the module table with one write and no read.
 '''

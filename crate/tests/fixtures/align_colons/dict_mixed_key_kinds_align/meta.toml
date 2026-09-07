@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Mixed Key Shapes Still Find the Widest Key"
+title       = "Keys of Mixed Kinds Align on the Widest as Printed"
 
 description = '''
-The keys of `mapping` mix string literals, the integer `42`, and the bare name `HEADER`. The column math runs on each key's **display width** rather than its expression kind, so all four colons land on the column set by `HEADER`, the widest key as printed.
+The keys of `mapping` mix string literals, the integer `42`, and the bare name `HEADER`. **All four colons sit on the column set by `HEADER`**, the widest key as printed, because the column math reads each key's display width rather than its expression kind.
 '''

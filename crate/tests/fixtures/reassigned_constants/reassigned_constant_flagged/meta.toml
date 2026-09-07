@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "Reassigned SCREAMING_CASE Constant Draws the Diagnostic"
+title       = "A Reassigned `SCREAMING_CASE` Constant Is Reported"
 
 description = '''
-`RETRIES = 3` followed by `RETRIES = 5` reassigns a `SCREAMING_CASE` name at module scope, breaking the write-once contract the casing announces. **Each write line is flagged**, whereas a constant written exactly once stays silent.
+`RETRIES = 3` is followed by `RETRIES = 5`, a second write to a `SCREAMING_CASE` name at module scope. **Both lines are reported**, because the casing promises a write-once constant and the second write contradicts it, whereas a constant written exactly once produces no finding.
 '''

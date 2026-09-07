@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A `__future__` Import Leads the Sorted Run"
+title       = "A `__future__` Import Stays on the First Line of the Sorted Run"
 
 description = '''
-`import sys` and `import os` sort into name order while `from __future__ import annotations` holds the first line. Sorting it by module name would place it below them, and Python only recognizes a `__future__` import at the top of the file, so the sort leaves it first.
+`from __future__ import annotations` opens the file above `import sys` and `import os`. **`sys` and `os` sort into name order and the `__future__` import stays on the first line**, because sorting it by module name would place it below them and Python only recognizes a `__future__` import at the top of the file.
 '''

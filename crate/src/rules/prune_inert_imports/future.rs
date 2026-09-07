@@ -1,9 +1,9 @@
 //! The gate deciding whether `from __future__ import annotations` is
 //! inert. It clears when the target version defers annotation
-//! evaluation per PEP 749, or when the module declares no annotation of
-//! its own and every name every annotation reads is bound ahead of that
-//! annotation, which a module carrying no annotation at all satisfies
-//! with nothing to check.
+//! evaluation per PEP 749, or when no module-scope statement declares
+//! an annotation and every name every annotation reads is bound ahead
+//! of it, which a module carrying no annotation at all satisfies with
+//! nothing to check.
 
 use ruff_python_ast::{Expr, PythonVersion, Stmt, helpers::any_over_expr};
 use ruff_text_size::{Ranged, TextSize};
@@ -100,9 +100,7 @@ pub(super) fn annotations_are_inert(rule: &PruneInertImports, source: &Source) -
 
 /// True where a statement running at module scope declares an
 /// annotation, walking each compound arm and stopping at a definition,
-/// whose annotations land on its own object. The directive decides
-/// whether such an annotation writes `__annotations__` into the module
-/// namespace as a string, so dropping it takes the binding away.
+/// whose annotations land on its own object.
 fn annotates_module_scope(body: &[Stmt]) -> bool {
     body.iter().any(|stmt| match stmt {
         Stmt::AnnAssign(_) => true,

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A `u` Prefix Holds"
+title       = "A `u` Prefix Keeps the Template"
 
 description = '''
-Python accepts `u"..."` but no `uf"..."`, so the `u`-prefixed template cannot become an f-string and the line holds. In the full pipeline `normalize-literals` drops the prefix before this rule runs, leaving this the shape a project reaches with `unify-prefixes` off.
+`legacy = u"%s" % (value,)` carries a `u` prefix. **The line stays as written**, because Python accepts `u"..."` but no `uf"..."`, so the template cannot become an f-string. In the full pipeline `normalize-literals` removes the prefix before this rule runs, so this form arises only with `unify-prefixes` off.
 '''

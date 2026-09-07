@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Native Prose Block Mirrors the Fmt Span Exactly"
+title       = "A `prose` Block Covers the Same Span as a `fmt` Block"
 
 description = '''
-A `# prose: off` / `# prose: on` pair opens a block covering `short`, `much_longer_name`, and `mid`, sitting between the `x`, `foo`, `bar_baz` run and the later `a`, `bb`, `ccc` run. That block **survives verbatim** while `alphabetize-siblings` reorders each surrounding run and `align-equals` pads it to its own group width, and the native `prose` namespace reads the same span the `fmt` namespace would.
+A `# prose: off` / `# prose: on` pair encloses `short`, `much_longer_name`, and `mid`, between the `x`, `foo`, `bar_baz` run and the `a`, `bb`, `ccc` run. **The block stays verbatim** while `band-constants` sorts the run above it and `align-equals` pads each surrounding run to its own group width, so the `prose` namespace reads the same span the `fmt` namespace does.
 '''

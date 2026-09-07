@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Annotated Assignment Writes the Target and Reads the Annotation"
+title       = "An Annotated Assignment Writes Its Target and Reads Its Annotation"
 
 description = '''
-The annotated assignments `x: int = 0` and `y: Pair = (1, 2)` each record a **write at the target's offset**, so `x` and `y` end up with writes and no reads. Each annotation is walked as an ordinary expression, which attributes a read to every name it references, so the `Pair` in `y: Pair` lands on the `Pair = tuple[int, int]` binding as an annotation read.
+`x: int = 0` and `y: Pair = (1, 2)` follow `Pair = tuple[int, int]`. **Each annotated assignment records a write at its target's offset and a read for every name its annotation references**, so `x` and `y` carry a write and no read, and `Pair` carries the read from `y: Pair` with `annotation_read` set to `true`, because the table reads an annotation as an ordinary expression.
 '''

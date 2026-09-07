@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Class Fields and Methods Sort, Align, and Gain Cushions"
+title       = "Class Fields and Methods Sort, Align, and Take Blank Lines"
 
 description = '''
-`Service` declares three fields out of order and three methods in no particular order either, and four rules settle the class together.
-
-The fields sort alphabetically and align **both their `:` and their `=` columns** as one group. The methods sort separately, so `_cleanup` leads `restart` and `shutdown`, and `space-statements` opens a single blank line between every member, including one directly under the `class Service:` header.
+`Service` declares three fields and three methods, each set out of order. **The fields sort and pad both their `:` and their `=` into one column each, the methods sort separately so `_cleanup` leads `restart` and `shutdown`, and `space-statements` writes one blank line between every member** and one directly under the `class Service:` header.
 '''

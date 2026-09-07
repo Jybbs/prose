@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Two Runs Under One Expression Take One Pair"
+title       = "Two Runs Under One Expression Take One Pair of Parentheses"
 
 description = '''
-Two separate backslash runs sit on different rows of the same condition, and a single outermost expression spans both of them.
-
-The wrap parenthesizes **that expression once** and drops every backslash inside it, rather than inserting a pair around each run and leaving the condition wrapped twice over.
+Two separate backslash runs sit on different rows of the same `if` condition, and the case runs with `code-line-length = 40`, so the joined condition would overflow. **One pair of parentheses wraps the outermost expression spanning both runs and every backslash inside it is removed**, rather than a pair around each run leaving the condition wrapped twice over.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Bound Comment Re-Emits an Already-Settled Band"
+title       = "A Bound Comment Rewrites a Band Already in Order"
 
 description = '''
-The three constants are already in sorted order, so sorting by itself would rewrite nothing here.
-
-The comment on the second line sits directly below `DEFAULT_EPSILON` and describes it, so it folds up onto that constant's own line as a trailing note. **That fold is the edit that rewrites the group**, and rewriting it also closes the blank line, leaving all three constants standing together.
+`DEFAULT_EPSILON`, `MAX_INT`, and `PENALTY_TYPES` are already in name order, and the comment `# the convergence floor the solver stops at` sits directly below `DEFAULT_EPSILON` with a blank line after it. **The comment folds onto the line of `DEFAULT_EPSILON` as a trailing note and the blank line closes**, because the rule rewrites the whole band whenever a bound comment moves, even where sorting alone would change nothing.
 '''

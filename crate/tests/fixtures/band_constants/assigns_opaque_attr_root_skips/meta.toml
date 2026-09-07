@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Opaque Attribute Roots Skip the Run"
+title       = "An Attribute Read on an Unbound Root Stays in Place"
 
 description = '''
-`zebra = os.environ` reads through an attribute chain whose root `os` is neither a target in the run nor a module-local binding written above it, so nothing proves the read is safe to move. **The whole run skips**, leaving `alpha = 1` and `beta = 2` in source order below it.
+`zebra = os.environ` reads an attribute of `os`, a name that is neither bound in the run nor written anywhere above it in the module. **`zebra` stays on the line where it is written**, with `alpha = 1` and `beta = 2` keeping their order beneath it, because nothing in the file proves the read is safe to move.
 '''

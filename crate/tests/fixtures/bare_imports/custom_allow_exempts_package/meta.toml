@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Custom Allow List Exempts Its Package"
+title       = "A Package on the `allow` List Is Not Reported"
 
 description = '''
-`import numpy` and `import torch` are each used through a single attribute access, the shape this lint flags. Naming `numpy` in the `allow` list marks it as a bare import the project keeps on purpose, so only `torch` is reported.
+`import numpy` and `import torch` are each reached through a single attribute, and the case runs with `allow = ["numpy"]`. **Only `torch` is reported**, because a package on the `allow` list keeps its bare form as one the project keeps on purpose.
 '''

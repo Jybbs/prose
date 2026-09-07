@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Sub-Band Closes with a Blank Line above an Anchored Constant"
+title       = "A Sub-Band Closes With a Blank Line Above a Constant That Stays in Place"
 
 description = '''
-`DERIVED_A` and `DERIVED_B` read the base pair and open a blank-separated sub-band beneath it, and `LIMIT = compute()` anchors in place below them. **The sub-band closes with one blank line above the anchored constant**, the same tier boundary a banded member would open, so the derived pair reads apart from a constant that derives from neither.
+`DERIVED_A` and `DERIVED_B` read `FIRST` and `SECOND`, which name `base`, and `LIMIT = compute()` sits below them all. **`FIRST` and `SECOND` sort, the derived pair opens a sub-band under one blank line, and a second blank line opens above `LIMIT`**, because `LIMIT` calls `compute` and stays where it is written, and a constant that stays in place still spaces as a band member, so the tier boundary above it opens the same blank line a banded member would.
 '''

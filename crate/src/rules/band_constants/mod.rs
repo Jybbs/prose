@@ -39,8 +39,7 @@ pub(crate) struct BandConstants {
 }
 
 impl BandConstants {
-    pub(crate) const MESSAGE: &'static str =
-        "band module constants into leading and trailing bands";
+    pub(crate) const MESSAGE: &'static str = "gather module constants into bands below the imports";
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 

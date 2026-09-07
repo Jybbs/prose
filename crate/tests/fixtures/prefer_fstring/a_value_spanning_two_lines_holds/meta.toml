@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Value Spanning Two Lines Holds"
+title       = "A Value Spanning Two Lines Keeps the Template"
 
 description = '''
-The tuple's one member, `first + second`, is written across two lines. Below the PEP 701 floor a replacement field cannot contain a line break, and the `target-version = "3.10"` config sits below that floor, so the expression stays outside the template and the statement holds.
+The tuple's one member, `first + second`, is written across two lines. **The statement stays as written**, because a replacement field cannot contain a line break below the PEP 701 floor and the `target-version = "3.10"` config sits below it.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "An Over-Budget Import Splits, Then Aligns Within the Cap"
+title       = "An Import Splits at Its Padded Width, Then Aligns Within the Budget"
 
 description = '''
-`align-imports` pads `from apps.io` out to match the wider `apps.registry.longpath` prefix, and at that padded width the three-name list on the `apps.io` line would cross the 52-column import budget.
-
-`reflow-imports` measures against **the padded prefix rather than the unpadded one**, so it splits first and lands `beta_helper`, `delta`, and `gamma_helper` one per line. `align-imports` then pads every `import` into the shared column with every row still inside the budget.
+`from apps.io import beta_helper, delta, gamma_helper` sits above `from apps.registry.longpath import alpha`, and `align-imports` pads `from apps.io` out to the wider prefix, where the three-name list would cross the 52-column import budget. **`reflow-imports` measures against the padded prefix and splits the statement to one name per line**, and `align-imports` then pads every `import` into one column with every row inside the budget.
 '''

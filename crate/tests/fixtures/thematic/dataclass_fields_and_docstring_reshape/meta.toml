@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Dataclass Fields Sort, Align, and Method Docstring Reshapes"
+title       = "Dataclass Fields Keep Their Order, Align, and the Docstring Reframes"
 
 description = '''
-`JobPosting` is a `@dataclass`, so its fields feed the generated constructor's signature and **their order is held rather than sorted**, even though they arrive out of alphabetical order.
-
-The annotation `:` and default `=` columns still align, the blank-line cushion before `summary` is normalized, and that method's single-line docstring is reshaped into multi-line form.
+`JobPosting` is a `@dataclass` whose fields arrive out of alphabetical order. **The fields keep their written order rather than sorting**, because they define the generated constructor's signature, while their `:` and `=` columns still align. A blank line opens before `summary`, and its single-line docstring expands to the framed form with the `"""` on their own lines.
 '''

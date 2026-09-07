@@ -15,9 +15,8 @@ use rustc_hash::FxHashSet;
 pub(crate) enum Found {
     /// A file to format, paired with its `PySourceType`.
     Formattable(PathBuf, PySourceType),
-    /// A Python-named symlink the walk passed over. Following one
-    /// reaches a file outside the tree the caller named, so the walk
-    /// leaves it and the runner says so.
+    /// A Python-named symlink the walk passed over and the runner
+    /// reports.
     PassedLink(PathBuf),
 }
 

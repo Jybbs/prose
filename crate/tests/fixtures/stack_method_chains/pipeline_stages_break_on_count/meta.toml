@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "A Three-Stage Chain Breaks and Hangs Each Dot"
+title       = "A Three-Link Chain Breaks and Hangs Each Dot"
 
 description = '''
-`query.filter(a).order(b).limit(c)` fits on one line, yet its three calls exceed `max-links`, so the chain breaks anyway because a pipeline of that length reads better stacked. `query.filter(a)` stays on the head line, and `.order(b)` and `.limit(c)` hang beneath it with each `.` aligned under the head's own, giving the chain one column to scan down.
+`query.filter(a).order(b).limit(c)` fits on one line, yet its three calls exceed `max-links`. **The chain breaks anyway, with `query.filter(a)` on the head row and `.order(b)` and `.limit(c)` hanging beneath it**, each `.` under the head's own, so a pipeline of that length reads down one column of dots.
 '''

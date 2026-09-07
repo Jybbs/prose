@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Colon-Padded Signature Aligns the `=` in One Group"
+title       = "A Colon-Padded Signature Aligns Its Defaults in One Group"
 
 description = '''
-The `configure` signature arrives with `:` padding that already aligns `retries` with `timeout_seconds`, and the four parameter widths span within `max-shift`. The `=` therefore aligns in **one group**, the reading-order walk keeping `host`, `port`, `timeout_seconds`, and `retries` together rather than splitting them.
+The `configure` signature arrives with padding before the `:` that already lines `retries` up with `timeout_seconds`, and the four parameter widths stay within `max-shift`. **All four `=` align on one column**, one space past `timeout_seconds : float`, so `host`, `port`, `timeout_seconds`, and `retries` stay in one group rather than splitting in two.
 '''

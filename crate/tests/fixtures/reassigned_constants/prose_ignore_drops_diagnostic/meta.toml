@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Trailing prose: ignore Directive Drops the Diagnostic"
+title       = "A Trailing `# prose: ignore` Directive Drops the Diagnostic"
 
 description = '''
-`RETRIES += 1` marks `RETRIES` as reassigned, so the initial `RETRIES = 3` write would be flagged. The trailing `# prose: ignore[reassigned-constants]` directive on that line **drops the diagnostic** through the per-line suppression filter, leaving nothing reported.
+`RETRIES = 3` ends in `# prose: ignore[reassigned-constants]`, and `RETRIES += 1` marks the name reassigned. **No diagnostic is reported**, because the directive drops the finding on its line through the per-line suppression filter, leaving nothing for the run to report.
 '''

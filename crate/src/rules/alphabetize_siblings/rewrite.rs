@@ -122,8 +122,7 @@ pub(super) fn body_layout<'a>(
                 .collect();
             // A permutation reverted for a reference that a later
             // permutation relocates becomes legal once that one lands, so
-            // the section's permutations run to a fixed point rather than
-            // leaving the rest of the sort to a second pass. Each run
+            // the section's permutations run to a fixed point. Each run
             // tiers once ahead of the loop, only the arrangement changing
             // per pass.
             let mut settled: Vec<usize> = Vec::with_capacity(order.len());
@@ -145,10 +144,8 @@ pub(super) fn body_layout<'a>(
             |s| import_sort_key(s, first_party, group_imports),
         );
         // Same-group import neighbors collapse to one line, except across a
-        // section marker, whose dividing gap must survive in place. A slot
-        // gap holding a comment and a member block opening on a bound run
-        // both keep their source gap, so no collapse deletes or reseats a
-        // comment.
+        // section marker. A slot gap holding a comment and a member block
+        // opening on a bound run both keep their source gap.
         import_run_slots = adjacent_slots(&order, |slot, a, b| {
             import_blank_lines(&body[a], &body[b], first_party, group_imports) == Some(0)
                 && !sections.is_boundary(slot + 1)

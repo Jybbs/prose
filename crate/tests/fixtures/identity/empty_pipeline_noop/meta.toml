@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Empty Pipeline Returns Source Unchanged"
+title       = "An Empty Pipeline Returns the Source Unchanged"
 
 description = '''
-The single binding `x = 1` runs through a pipeline with **no rules enabled** and comes out byte-for-byte identical, with no diagnostics. The case confirms the empty pipeline is the identity transform that touches nothing.
+The single assignment `x = 1` runs through a pipeline with no rules enabled. **The output is byte-for-byte identical to the input and no diagnostic is emitted**, which pins the empty pipeline as the identity transform.
 '''

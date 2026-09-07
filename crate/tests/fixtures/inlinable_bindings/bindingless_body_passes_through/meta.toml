@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Clean File Passes Through Unchanged"
+title       = "A Function With No Bindings Passes Through Unchanged"
 
 description = '''
-`main` binds no name at all, so the file holds nothing for this lint to flag. The run produces **no diagnostic and no edit**, pinning the rule's lint-only shape wherein a clean input passes through exactly as written.
+`main` binds no name, so there is nothing for the rule to count. **The run emits no diagnostic and no edit**, and the file passes through exactly as written, since the rule reports and never rewrites.
 '''

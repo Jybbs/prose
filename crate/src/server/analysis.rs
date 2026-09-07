@@ -24,8 +24,7 @@ pub(super) struct Formatted {
 }
 
 /// A rewrite held beside the pipeline that produced it and the rules
-/// that edited on the way, so the settle check runs off the formatting
-/// response's critical path.
+/// that edited on the way, read by a later settle check.
 pub(super) struct Settled {
     fired: BTreeSet<RuleId>,
     pipeline: Pipeline,

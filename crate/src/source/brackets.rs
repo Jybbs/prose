@@ -1,4 +1,4 @@
-//! The token and bracket reads a `Source` answers: the parenthesized
+//! The token and bracket lookups on a `Source`: the parenthesized
 //! range an expression recovers against its parent, the tokens a span
 //! overlaps, and the literals and replacement fields a walk seeds from.
 
@@ -131,8 +131,7 @@ impl Source {
     }
 
     /// `expr`'s range, widened to its recovered parentheses only where
-    /// its own text spans rows, the pair holding those rows together
-    /// once the text around it joins.
+    /// its own text spans rows.
     pub(crate) fn spanning_paren_range(&self, expr: ExprRef, parent: AnyNodeRef) -> TextRange {
         if self.contains_line_break(expr.range()) {
             self.paren_aware_range(expr, parent)

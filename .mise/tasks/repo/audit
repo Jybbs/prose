@@ -121,11 +121,20 @@ def manifests() -> int:
     return failed
 
 
-def member_manifests(cargo: dict) -> list[str]:
+def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
     """
-    Return the manifest each workspace member owns, in sorted order.
+    Return one parity pair per list that restates the workspace members,
+    comparing the manifests that list names against the ones the members own.
     """
-    return sorted(f"{name}/Cargo.toml" for name in cargo["workspace"]["members"])
+    owned = sorted(f"{name}/Cargo.toml" for name in cargo["workspace"]["members"])
+    return [
+        (f"Cargo.toml members ↔ {home}", owned, named)
+        for home, named in [
+            (".github/workflows/warm.yml path filter", watched_manifests("warm.yml")),
+            (".mise/tasks/lock/check sources", sourced_manifests("lock/check")),
+            (".mise/tasks/lock/sync sources", sourced_manifests("lock/sync"))
+        ]
+    ]
 
 
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
@@ -195,21 +204,7 @@ def parity() -> int:
             task_sources("site/test"),
             task_sources("site/press")
         ),
-        (
-            "Cargo.toml members ↔ .github/workflows/warm.yml path filter",
-            member_manifests(cargo),
-            watched_manifests("warm.yml")
-        ),
-        (
-            "Cargo.toml members ↔ .mise/tasks/lock/check sources",
-            member_manifests(cargo),
-            [path for path in task_sources("lock/check") if path.endswith("/Cargo.toml")]
-        ),
-        (
-            "Cargo.toml members ↔ .mise/tasks/lock/sync sources",
-            member_manifests(cargo),
-            [path for path in task_sources("lock/sync") if path.endswith("/Cargo.toml")]
-        ),
+        *member_pins(cargo),
         *override_pins(package),
         *patch_pins(package)
     ]
@@ -238,6 +233,13 @@ def patch_pins(package: dict) -> list[tuple[str, str, str]]:
             pinned
         ))
     return pairs
+
+
+def sourced_manifests(task: str) -> list[str]:
+    """
+    Return every member manifest the `task` frontmatter's sources list names.
+    """
+    return [path for path in task_sources(task) if path.endswith("/Cargo.toml")]
 
 
 def task_sources(task: str) -> list[str]:

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Binding a `del` Names Spares the Target"
+title       = "A Binding Named by a Later `del` Is Not Reported"
 
 description = '''
-`handle` is written once and read once, and a later `del handle` names it again without counting as a read. **The binding stays unreported**, because standing `acquire()` in at the read would leave `del handle` naming a value nothing bound.
+`handle` is written once from `acquire()` and read once in `use(handle)`, and `del handle` names it again below without counting as a read. **The binding is not reported**, because replacing the read with `acquire()` would leave `del handle` naming a value nothing bound.
 '''

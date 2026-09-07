@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Module-Level Runs Skip When the RHS Could Have Side Effects"
+title       = "A Call on the Right-Hand Side Stays in Place"
 
 description = '''
-`zebra = compute_default()` puts a call on a right-hand side, and that one call **stops the whole run from sorting**, so `alpha = 1` and `beta = 2` stay beneath it in source order. `compute_default()` could carry observable side effects, and reordering the assignments would run them out of the order the author wrote.
+`zebra = compute_default()` calls `compute_default` on its right-hand side, above `alpha = 1` and `beta = 2`. **`zebra` stays on the line where it is written**, and the two constants beneath it keep their order, because a call runs code when the line executes, and moving the line would run it at a different point in the module than the author wrote.
 '''

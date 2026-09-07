@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Tab Directly after the Hash Becomes One Space"
+title       = "A Tab Directly After the Hash Becomes One Space"
 
 description = '''
-The comment below `value = 1` separates its `#` from its text with a single tab. A tab is already one character wide, so it is the content rather than the length that falls short of the settled `# ` opener.
-
-The rewrite replaces the tab with a space, which **leaves the opener the same width on every reader's tab setting** rather than one that shifts with the viewer.
+The comment below `value = 1` separates its `#` from its text with a single tab. **The tab is replaced with a space**, because the opener is settled on `# ` by its content rather than by its width, leaving the opener the same width on every reader's tab setting rather than one that shifts with the viewer.
 '''

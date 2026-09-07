@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An At-Cap Member Holds the Group Tight"
+title       = "A Member at the Line Cap Keeps the Group Unpadded"
 
 description = '''
-Aligning these two aliases would insert the one-space buffer before each `:`, and the `WSGIApplication` line already sits at the line cap, so the buffer would push it past the budget. **A group whose widest member sits at the cap skips alignment entirely**, leaving both rows in their tight `WSGIEnvironment: TypeAlias` form.
+The `WSGIApplication` line already sits at the line cap, and aligning the two aliases would insert the one-space buffer before each `:` and push that line past the budget. **A group whose widest member sits at the cap gets no alignment at all**, so both rows keep their tight `WSGIEnvironment: TypeAlias` form.
 '''

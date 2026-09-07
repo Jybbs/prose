@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Nested-Loop Comprehension Joins onto One Line"
+title       = "A Comprehension With Two `for` Clauses Rejoins"
 
 description = '''
-The `flattened` comprehension carries two `for` clauses, and its one-line form fits, so it joins into `[cell for row in grid for cell in row]` with the clauses concatenated in source order.
+The `flattened` comprehension carries two `for` clauses on rows of their own. **It rejoins onto one line as `[cell for row in grid for cell in row]`, with the clauses in source order**, because the joined form fits the budget.
 '''

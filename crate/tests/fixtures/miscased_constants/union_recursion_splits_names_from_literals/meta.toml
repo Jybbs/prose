@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A PEP 604 Union Recurses into Both Sides"
+title       = "A PEP 604 Union Is Read on Both Sides"
 
 description = '''
-The `|` in a module-level assignment can spell a PEP 604 union or a bitwise or, so the rule reads both sides. `Interval = int | float` joins two type names and passes as a type alias, whereas `permissions = 0o644 | 0o111` combines two octal literals into plain data and is flagged with the `PERMISSIONS` rename.
+The `|` in a module-level assignment can spell a PEP 604 union or a bitwise or, so the rule reads both sides. **`Interval = int | float` joins two type names and passes as a type alias, whereas `permissions = 0o644 | 0o111` combines two octal literals into plain data and is reported with the `PERMISSIONS` rename.**
 '''

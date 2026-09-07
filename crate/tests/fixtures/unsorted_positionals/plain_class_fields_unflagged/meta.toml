@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Plain Class Draws No Report"
+title       = "A Plain Class Is Not Reported"
 
 description = '''
-`Endpoint`'s header names no constructor generator, so it binds no field by position and its out-of-order `timeout`, `method` run **gets no diagnostic**. [[alphabetize-siblings]] sorts these fields by name as an auto-fix instead.
+`Endpoint` is a plain class declaring `timeout` then `method`. **The lint reports nothing**, because the header names no constructor generator, so no field binds by position, and sorting such fields by name is [[alphabetize-siblings]]'s auto-fix rather than this lint's.
 '''

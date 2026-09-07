@@ -44,7 +44,8 @@ pub(crate) struct LineOverflow {
 }
 
 impl LineOverflow {
-    pub(crate) const MESSAGE: &'static str = "Flag a line over its length budget, offering the split form where a string literal can take the break";
+    pub(crate) const MESSAGE: &'static str =
+        "shorten a line that runs past its length budget, or take the string split the fix offers";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
@@ -120,15 +121,14 @@ impl Rule for LineOverflow {
 
 /// Gathers the import-statement ranges that shift a line to the import
 /// budget, the still-collapsible construct ranges a layout rule could
-/// shorten so a line intersecting one is left for that rule, the
-/// one-line string literals a suggested reshape can split, and the
-/// docstring slots a concatenated run is held in.
+/// shorten, the one-line string literals a suggested reshape can split,
+/// and the docstring slots a concatenated run is held in.
 struct Spans<'a> {
     docstrings: Vec<TextRange>,
     imports: Vec<TextRange>,
     /// The furthest end any `reshapeable` range up to each index
-    /// covers, which turns the intersection test into one binary search
-    /// over the ascending starts and one running-maximum read.
+    /// covers, so the intersection test is one binary search over the
+    /// ascending starts and one read.
     reach: Vec<TextSize>,
     reshapeable: Vec<TextRange>,
     source: &'a Source,
@@ -149,8 +149,8 @@ impl<'a> Spans<'a> {
         item_holding(&self.imports, line.end()).is_some_and(|import| import.end() >= line.start())
     }
 
-    /// Orders both collected range lists by start and fills [`Self::reach`],
-    /// so the per-line lookups below binary search rather than scan.
+    /// Orders both collected range lists by start and fills [`Self::reach`]
+    /// for the per-line binary searches below.
     fn index(&mut self) {
         self.imports.sort_unstable_by_key(Ranged::start);
         self.reshapeable.sort_unstable_by_key(Ranged::start);

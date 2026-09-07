@@ -15,7 +15,7 @@ input_file: crate/tests/fixtures/unsorted_positionals/field_run_and_method_both_
       "column": 5,
       "row": 6
     },
-    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
   },
   {
     "code": "unsorted-positionals",
@@ -28,6 +28,6 @@ input_file: crate/tests/fixtures/unsorted_positionals/field_run_and_method_both_
       "column": 15,
       "row": 9
     },
-    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
   }
 ]

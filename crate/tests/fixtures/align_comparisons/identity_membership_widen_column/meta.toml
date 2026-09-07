@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "`is` and `is not` Participate in the Same Column"
+title       = "`is`, `is not`, `in`, and `not in` Join the Same Column"
 
 description = '''
-The identity operators `is` and `is not` and the membership operators `in` and `not in` join the same aligned group as `==` and `<`. The wider `is not` and `not in` **widen the operator column**, and every operator's last character lands at the shared right edge.
+The chain mixes `==` and `<` with the identity operators `is` and `is not` and the membership operators `in` and `not in`. **All of them join one alignment group**, and the wider `is not` and `not in` widen the column, so the last character of every operator sits at the shared right edge.
 '''

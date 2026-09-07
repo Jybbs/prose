@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Chained Compare Anchors on Its First Operator"
+title       = "A Chained Compare Aligns on Its First Operator"
 
 description = '''
-The chained compare `0 < bar < 100` **anchors on its first operator**, so only that `<` moves into the column shared with the `==` rows for `foo` and `qux`. The second `<` stays in place and takes no part in the column math.
+The chained compare `0 < bar < 100` sits between the `foo == 1` and `qux == 3` rows. **Only its first `<` moves to the shared column**, and the second `<` stays where it was written and takes no part in the column math.
 '''

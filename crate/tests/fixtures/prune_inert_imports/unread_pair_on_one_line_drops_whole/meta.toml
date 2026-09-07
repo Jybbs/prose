@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Bare Pair Neither Name Reads Goes Whole"
+title       = "Two Unread Names on One `import` Line Are Removed Together"
 
 description = '''
-`import os, sys` binds two names in one statement, and nothing in the module reads either `os` or `sys`. **Neither name is read, so the whole line drops**, taking both out together rather than leaving one behind.
+`import os, sys` binds two names in one statement, and nothing in the module reads either. **The whole line is removed**, because every name on it is unread.
 '''

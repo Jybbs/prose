@@ -3,7 +3,7 @@
 //! keyword-only parameters, call kwargs, dict keys, set elements,
 //! import names and alias lists within each section, `global` /
 //! `nonlocal` / `del` name lists, and the strings inside `__all__` /
-//! `__slots__`. Sorting flows through the `primitives::orderer`
+//! `__slots__`. Sorting runs through the `primitives::orderer`
 //! permute and assemble primitives, a recursive rewriter folding inner
 //! sorts into the outer scope's replacement text so each outermost
 //! scope emits one edit, or one per notebook cell. Positional-or-
@@ -57,7 +57,7 @@ pub(crate) struct AlphabetizeSiblings {
 }
 
 impl AlphabetizeSiblings {
-    pub(crate) const MESSAGE: &'static str = "alphabetize this group";
+    pub(crate) const MESSAGE: &'static str = "alphabetize these siblings";
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 

@@ -119,9 +119,8 @@ pub(super) struct Spliceable {
 }
 
 impl Spliceable {
-    /// [`of`](Self::of) narrowed to a rule whose edits weave, the
-    /// reading a fold takes because it leaves an overlapping rule
-    /// unapplied.
+    /// [`of`](Self::of) narrowed to a rule whose edits weave, `None`
+    /// where two of them overlap.
     pub(super) fn landing(rule: &dyn Rule, source: &Source) -> Option<Self> {
         Self::of(rule, source).filter(Self::lands)
     }

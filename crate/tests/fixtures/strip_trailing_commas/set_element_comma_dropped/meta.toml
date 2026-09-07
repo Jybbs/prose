@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Set Literals Drop the Trailing Comma"
+title       = "A Set Literal Drops the Trailing Comma"
 
 description = '''
-`allowed`'s last element, `"INST_2021_0044",`, carries a `,` before the set's closing `}`. **`strip-trailing-commas` scans backward from that `}` and lands on the comma**, matching the path used for dicts.
+`allowed` spreads three strings over one line each, and the last, `"INST_2021_0044",`, carries a `,` before the closing `}`. **That comma is removed**, by the same read from the closing bracket that strips a dict.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Cross-Line Parameter Colon Skips the Member"
+title       = "A Parameter Whose Colon Starts the Next Line Leaves the Group"
 
 description = '''
-The parameter `a` puts its `:` at the start of the line after its name, so no colon sits on the name's own line. **The cross-line annotation drops `a` from the alignment group**, leaving both of its lines untouched while `bb` and `cccc` below it align on one column.
+The parameter `a` puts its `:` at the start of the line after its name, so no colon sits on the name's own line. **The rule leaves `a` out of the alignment group**, so both of its lines stay as written whereas `bb` and `cccc` below it align on one column.
 '''

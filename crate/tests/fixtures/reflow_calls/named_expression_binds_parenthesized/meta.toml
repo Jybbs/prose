@@ -3,7 +3,5 @@ previewable = false
 title       = "A Named Expression Argument Takes a Grouping Pair"
 
 description = '''
-`seen := len(rows)` binds `seen` and passes the value as `window`'s first positional in a single expression.
-
-The explode names each positional from the resolved signature, and a bare walrus cannot follow the `=` of a keyword argument. The rewrite therefore wraps it as **`anchor=(seen := len(rows))`**, keeping the binding intact, while `count`, `offset`, and `source` bind plainly.
+`window(seen := len(rows), page_size, start, rows)` passes a bare walrus as its first positional to a `window` defined above it. **The explode names each positional from the resolved signature and wraps the walrus as `anchor=(seen := len(rows))`**, keeping the binding intact, because a bare walrus cannot follow the `=` of a keyword argument, whereas `count`, `offset`, and `source` bind plainly.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Numeric-Dot Shape (`# 1.`) Is Matched"
+title       = "A `# 1.` Comment Is Reported"
 
 description = '''
-The comment `# 1. normalize whitespace` inside `process` matches the **numeric-dot shape**, a digit followed by `.` and whitespace, so the lint reports it and recommends extracting the step as a named function. The source itself is left unchanged, because the rule is lint-only.
+`# 1. normalize whitespace` sits on its own line inside `process`, a digit followed by `.` and a space. **`step-narration` reports it with a message to extract the step into a named function**, and the source is left as written, because the rule is lint-only.
 '''

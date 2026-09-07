@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Parameters That Fit Stay Inline Beneath a Multi-Line Return Annotation"
+title       = "Parameters That Fit Stay Inline Under a Multi-Line Return Annotation"
 
 description = '''
-`resolve`'s two parameters, `payload` and `fallback`, fit on a single line even though the return annotation `PrimaryEnvelope | SecondaryEnvelope | DeferredEnvelope` spans three. `reflow-signatures` measures the line budget only up to the return annotation rather than its full wrapped width, so **the parameters stay inline** and the signature is left as written.
+`resolve`'s two parameters, `payload` and `fallback`, fit on one line, and its return annotation `PrimaryEnvelope | SecondaryEnvelope | DeferredEnvelope` spans three parenthesized lines. **The parameters stay inline and the signature is left as written**, because the rule measures the line budget up to the return annotation rather than across its full wrapped width.
 '''

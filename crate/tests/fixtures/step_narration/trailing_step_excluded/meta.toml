@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Inline End-of-Line Comments Stay Quiet"
+title       = "An End-of-Line Step Comment Is Skipped"
 
 description = '''
-Nothing is reported here. The `# 1. trim whitespace` comment sits at the end of the `cleaned = payload.strip()` line rather than on a line of its own.
-
-**Only comments occupying their own line are checked**, so this one is skipped even though its text matches the numbered-step shape exactly.
+`# 1. trim whitespace` sits at the end of the `cleaned = payload.strip()` line rather than on a line of its own. **`step-narration` reports nothing**, because the rule reads only a comment that occupies its own line, even though this one's text matches the numbered-step form exactly.
 '''

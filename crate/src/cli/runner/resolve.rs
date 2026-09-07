@@ -150,7 +150,7 @@ impl ConfigResolver {
 /// its enabled rules build, the serialized TOML that keys the cache and
 /// fills a bug report's configuration field, and the hasher already
 /// holding that TOML and rule selection, which every file under this
-/// config clones rather than re-absorbing.
+/// config clones.
 pub(super) struct Resolved {
     pub(super) config: Config,
     pub(super) config_toml: String,

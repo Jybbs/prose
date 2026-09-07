@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Flush Augmented Run Spaces Its Values"
+title       = "Flush Augmented Assignments Gain Their Spaces and Align"
 
 description = '''
-`x+=1` and `yy+=2` arrive with their `+=` flush on both sides. Each gains the one-space value-side buffer past the full operator, so `x+=1` becomes `x  += 1` with its `=` in the shared column and the `+` one column before it.
+`x+=1` and `yy+=2` arrive with no space on either side of the `+=`. **Both `=` move to one column and each value gains a space after the operator**, so `x+=1` becomes `x  += 1` with its `+` one column before the shared `=`.
 '''

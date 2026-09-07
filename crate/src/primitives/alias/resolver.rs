@@ -1,4 +1,5 @@
-//! Resolves a name to the alias target it stands for.
+//! Classifies a value as an alias or data, following each name it holds
+//! to the value the module binds it to.
 
 use rustc_hash::FxHashSet;
 
@@ -79,9 +80,7 @@ impl<'src> Resolver<'_, 'src> {
     /// `in_literal` widens the grammar to the arguments a `Literal[...]`
     /// carries.
     ///
-    /// The match is exhaustive over `Expr` rather than closing on a
-    /// wildcard, so a new AST node raises a compile error instead of
-    /// silently reading as a type.
+    /// The match is exhaustive over `Expr`, with no wildcard arm.
     fn runtime_only(&mut self, expr: &Expr, in_literal: bool) -> bool {
         match expr {
             // No type expression admits any of these.
@@ -169,7 +168,7 @@ impl<'src> Resolver<'_, 'src> {
         let kinds = analysis.module_binding_kinds(name);
         // An unbound name is a builtin, a star-import, or a global
         // injected at runtime. A `class` statement binds a type. An
-        // import and a rebind are decided elsewhere. None says data.
+        // import and a rebind are decided elsewhere. None proves data.
         if kinds.is_empty()
             || kinds.contains(&BindingKind::ClassDef)
             || kinds.contains(&BindingKind::Import)

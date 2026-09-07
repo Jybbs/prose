@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Rewrite Past the Line Budget Holds"
+title       = "A Rewrite Past the Line Budget Keeps the Template"
 
 description = '''
-Splicing `first_component_name`, `second_component_name`, and `third_component_name` into one f-string would push `summary`'s line past `code-line-length`, and no layout rule reaches inside an f-string to wrap it back. The template keeps its `%` form, whose argument tuple the layout rules can still reach.
+Moving `first_component_name`, `second_component_name`, and `third_component_name` into one f-string would push `summary`'s line past `code-line-length`. **The `%` template and its argument tuple stay as written**, because no layout rule reaches inside an f-string to wrap it back, whereas the tuple is a collection the layout rules can break.
 '''

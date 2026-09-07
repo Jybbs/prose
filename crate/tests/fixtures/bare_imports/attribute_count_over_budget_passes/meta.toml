@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Wide Fan-Out Passes the Attribute Budget"
+title       = "An Import Reached Through More Attributes Than `max-attributes` Is Not Reported"
 
 description = '''
-`os` is reached through five distinct attributes, from `os.getcwd` to `os.path`, one past the `max-attributes` budget of 4, so `import os` passes unflagged. Rewriting it as `from os import ...` would have to name all five symbols, and at that width the namespace import is the more legible form.
+`import os` is reached through five distinct attributes, `os.getcwd` through `os.path`, one past the default `max-attributes` of `4`. **No diagnostic is reported**, because a `from os import ...` rewrite would have to name all five symbols, and at that width the bare namespace import is the more legible form.
 '''

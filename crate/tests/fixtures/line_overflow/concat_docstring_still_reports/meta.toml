@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Concatenated Docstring Still Reports"
+title       = "A Concatenated Docstring Is Still Reported"
 
 description = '''
-`handler`'s docstring is two adjacent string literals on one 50-column line, over the 40-column budget. `stack-adjacent-strings` holds a concatenation that fills a docstring slot rather than stacking it, so no reshape will shorten the line and `line-overflow` **reports it as a finding** with no legal reshape.
+`handler`'s docstring is two adjacent string literals on one 50-column line, over the 40-column budget this case sets. **The line is reported with no legal reshape**, because `stack-adjacent-strings` leaves a concatenation that fills a docstring slot as written rather than stacking it, so no layout rule can shorten the line.
 '''

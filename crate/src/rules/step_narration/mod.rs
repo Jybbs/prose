@@ -18,7 +18,7 @@ pub(crate) struct StepNarration;
 
 impl StepNarration {
     pub(crate) const MESSAGE: &'static str =
-        "Numbered-step comment found. Consider extracting each step as a named function";
+        "extract each numbered step of a comment into a named function";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

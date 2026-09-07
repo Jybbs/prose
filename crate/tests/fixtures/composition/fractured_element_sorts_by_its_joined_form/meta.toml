@@ -1,10 +1,10 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Fractured Element Sorts by Its Joined Form"
+title       = "A Broken Element Sorts by Its Joined Text"
 
 description = '''
-The first set element is written across two lines. `alphabetize-siblings` keys each element by **the text it would occupy once joined onto one row**, not by the fractured text in the source, so that element sorts where its joined form belongs.
+The first element of the set `s` is written across two lines as `(1,` and `2)`. **`alphabetize-siblings` sorts each element by the text it has once joined onto one row**, not by the broken text in the source, so `(1, 2)` sorts after the long tuple.
 
-Sorting puts the long element first, which gives it a trailing comma. Measuring it with that comma takes it one column past the 40-column budget, so it expands rather than holding a single row.
+Sorting puts the long tuple first, which gives it a trailing comma, and measuring it with that comma takes it one column past the 40-column budget, so it explodes rather than staying on one row.
 '''

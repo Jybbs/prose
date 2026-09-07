@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Other Future Directives Like Division Stay Out of Scope"
+title       = "The `division` Directive Is Left Alone"
 
 description = '''
-`from __future__ import division` can still change what `1 / 2` evaluates to on legacy interpreters, so the directive is **out of scope**. The rule acts only on the `annotations` import, leaving every other `__future__` directive untouched.
+`from __future__ import division` changes how `1 / 2` compiles rather than binding a name anything reads. **The line is left as written**, because the rule removes only the `annotations` feature and every other `__future__` directive stays.
 '''

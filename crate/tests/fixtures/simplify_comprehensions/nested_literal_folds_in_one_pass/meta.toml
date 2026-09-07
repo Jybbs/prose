@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Copy Over a Literal Reaches That Literal"
+title       = "A Copy Over a Literal or Over a Nested Copy Settles in One Pass"
 
 description = '''
-`values` copies the list literal `[1, 2]`, so the comprehension collapses straight to `[1, 2]` with no `list(...)` call left standing.
-
-`nested` copies a comprehension over `cells` that would itself resolve to `list(cells)`. **The outer copy and that inner resolution fold together in one pass**, landing directly on `list(cells)` rather than first producing `list(list(cells))`, which nothing downstream would clean up.
+`[row for row in [1, 2]]` copies the list literal `[1, 2]`, and `[row for row in [cell for cell in cells]]` copies a comprehension that is itself a copy of `cells`. **`values` becomes `[1, 2]` with no `list(...)` call left, and `nested` becomes `list(cells)` in the same pass**, rather than first producing `list(list(cells))`, which nothing downstream would clean up.
 '''

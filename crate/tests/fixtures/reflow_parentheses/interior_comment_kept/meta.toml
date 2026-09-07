@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Pair Holding a Comment Stays"
+title       = "A Pair Carrying a Comment Stays"
 
 description = '''
-`total = (  # running sum` opens a parenthesized expression whose first line carries a comment. Folding the break would strand `# running sum` off the line it describes, so the parentheses and the multi-line form stay exactly as written.
+`total = (  # running sum` opens a pair whose first line carries a comment. **The pair and its multi-line form stay exactly as written**, because joining the break would move `# running sum` off the line it describes.
 '''

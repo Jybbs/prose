@@ -3,7 +3,7 @@ previewable = true
 title       = "An Enclosing Closer Keeps Its Column"
 
 description = '''
-Shedding `Invoice, self` from the `super` call shortens the row and pulls the text after it leftward.
+`super(Invoice, self).render(body,` sits inside a `wrap(` call, with `footer` hanging under `body` on the next line and the closing `)` of `wrap(` on its own line below.
 
-**Only rows aligned to text that actually moved follow it.** The continuation under the first argument shifts left with that argument, while the closing `)` of the enclosing `wrap(` call hangs from its own opener and stays exactly where it was written.
+**Only the rows aligned to text that moved follow it.** Shedding `Invoice, self` pulls the text after it leftward, so `footer` shifts left with `body`, whereas the closing `)` of `wrap(` hangs from its own opener and stays exactly where it was written.
 '''

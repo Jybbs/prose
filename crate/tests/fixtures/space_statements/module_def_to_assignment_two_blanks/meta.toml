@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Annotated Assignment after a Def Carries Two Blanks"
+title       = "An Annotated Assignment After a Def Takes Two Blank Lines"
 
 description = '''
-`TIMEOUT: float = 30.0` follows directly on the line after `configure`'s body ends. **The gap after a module-level `def` normalizes to two blank lines**, so the annotated assignment gains that spacing even though the source held none.
+`TIMEOUT: float = 30.0` sits on the line directly after `configure`'s body ends. **The gap widens to two blank lines**, the canonical count after a module-level `def`, even though the source had none.
 '''

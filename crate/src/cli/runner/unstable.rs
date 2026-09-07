@@ -59,8 +59,8 @@ pub(super) fn render_reports<E: Write>(
     }
 }
 
-/// Each group's files sort by name, so the block a tree-wide run heads
-/// with names the same file whichever directory the walk reached first.
+/// Groups the unsettled outcomes by reproducing subset, each group's
+/// files sorted by name.
 fn grouped(outcomes: &[FileOutcome]) -> BTreeMap<String, Vec<(&SourceFile, &UnstableRewrite)>> {
     outcomes
         .iter()

@@ -116,8 +116,7 @@ impl Member {
 /// `release_heads` lets a group's head row stand down as a singleton
 /// where the cap would otherwise strand the row that cut the group,
 /// which a rule opts into only where its rows reach their settled width
-/// under it, since a later alignment widening the head afterward
-/// re-partitions the run.
+/// under it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Settings {
     buffer: usize,
@@ -128,8 +127,8 @@ pub(crate) struct Settings {
 }
 
 /// The line length a run resolves within, the padding rule whose later
-/// edits the cap check reads each line at, and the comment rules it
-/// reads a trailing comment at the width of.
+/// edits the cap check reads each line at, and the comment rules whose
+/// settled width it reads a trailing comment at.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct Cap {
     line_length: usize,

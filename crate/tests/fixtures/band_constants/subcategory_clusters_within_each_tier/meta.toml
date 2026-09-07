@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Subcategory Clustering Holds within Each Evaluation Tier"
+title       = "Subcategory Clustering Repeats Within Each Tier"
 
 description = '''
-`Handler = Callable[[Seconds], None]` reads the `Seconds` alias and `TIMEOUT = MAX + 1` reads `MAX`, so both **climb into the derived tier** below the blank line the tier split opens. Subcategory clustering still holds inside each tier, the alias leading the constant in both, `Seconds` ahead of `MAX` above the blank and `Handler` ahead of `TIMEOUT` beneath it.
+`Handler = Callable[[Seconds], None]` reads the `Seconds` alias and `TIMEOUT = MAX + 1` reads `MAX`, so both sit one tier below the names they read. **A blank line opens between the two tiers, and within each the alias sorts ahead of the constant**, `Seconds` above `MAX` in the first and `Handler` above `TIMEOUT` in the second.
 '''

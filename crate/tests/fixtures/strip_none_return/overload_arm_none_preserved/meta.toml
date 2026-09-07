@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Overload Stub's None Return Annotation Survives"
+title       = "An `@overload` Arm Keeps Its `-> None`"
 
 description = '''
-The first `@overload` arm of `f` declares `-> None` with a body of a single `...`, and `strip-none-return` leaves it untouched, because the placeholder declares the type-checker contract rather than a redundant annotation. Stripping it would leave that arm declaring no return beside the second arm's `-> str`.
+The first `@overload` arm of `f` declares `-> None` over a body of a single `...`. **`strip-none-return` leaves that annotation in place**, because the arm declares the return type the type checker reads for `f(x: int)`, and removing it would leave that arm with no return type beside the second arm's `-> str`.
 '''

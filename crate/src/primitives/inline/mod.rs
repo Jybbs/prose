@@ -1,7 +1,7 @@
 //! The whitespace-folded form of an expression, closing its soft wraps
-//! onto one line and declining the one leaf a fold would respace, plus
-//! the column measures a rendered form or a source line answers the
-//! budget with.
+//! onto one line and declining a leaf a fold would respace, plus the
+//! column measures that check a rendered form or a source line against
+//! the budget.
 
 use std::borrow::Cow;
 
@@ -130,8 +130,8 @@ pub(crate) fn settled_slice_width(source: &Source, padding: &[Edit], range: Text
     settled_width(source, padding, range, display_width(source.slice(range)))
 }
 
-/// The display width `text` settles to: the settled width of `range`
-/// where `text` is that source slice as written, and its own width for
+/// The display width `text` settles to, the settled width of `range`
+/// where `text` is that source slice as written and its own width for
 /// a rewrite, which carries no padding.
 pub(crate) fn settled_text_width(
     source: &Source,

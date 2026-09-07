@@ -23,7 +23,7 @@ pub(super) fn full_document_range(source: &Source, encoding: PositionEncoding) -
 }
 
 /// Renders a Prose diagnostic as a protocol diagnostic, tagging it with
-/// the rule slug and the `prose` source so the editor groups findings.
+/// the rule slug and the `prose` source.
 pub(super) fn to_lsp(
     source: &Source,
     diagnostic: &Diagnostic,

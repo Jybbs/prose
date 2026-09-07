@@ -3,5 +3,5 @@ previewable = true
 title       = "A Positional Argument Ends the Keyword Run"
 
 description = '''
-The positional `event` leads the exploded `record` call and carries no `=`, so it sits outside the keyword run the way an undefaulted parameter sits outside a signature's. The keywords after it, `name`, `target_id`, and `ok`, align as one block on a shared `=` column set by the widest name, `target_id`.
+The exploded `record` call opens with the positional `event` and follows it with the keywords `name`, `target_id`, and `ok`. **`event` stays out of the keyword run, because it carries no `=`, and the three keywords below it align on one column** set by the widest name, `target_id`.
 '''

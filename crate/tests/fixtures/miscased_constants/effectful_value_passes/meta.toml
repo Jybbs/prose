@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Call-Produced Globals Are Not Constants"
+title       = "A Call-Produced Global Is Not a Constant"
 
 description = '''
-`logger` and `app` each bind the result of a call, so evaluating either one runs code rather than reading a fixed value. A constant is an inert value, and a call-produced global is not one, so the lint reports neither name despite the lowercase.
+`logger` and `app` each bind the result of a call, so evaluating either one runs code rather than reading a fixed value. **The lint reports neither name** despite the lowercase, because a constant is an inert value and a call-produced global is not one.
 '''

@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Reorder Measures Against the Widest Source Row"
+title       = "A Keyword Reorder Is Measured Against the Widest Source Row"
 
 description = '''
-Sorting the keywords produces rows no wider than the widest row already present in the source, so `alphabetize-siblings` is free to reorder them.
-
-`align-equals` afterwards opens a buffer around the `=` of `option_strings`, the keyword left alone on its row. **That buffer does not reopen the width question**, since the reorder was already settled against the source's own widest row.
+`sup.__init__(option_strings=[], dest=dest, help=help, metavar=metavar)` is written across two rows, and sorting the keywords produces no row wider than the widest already in the source, so `alphabetize-siblings` reorders them. `align-equals` then writes a buffer around the `=` of `option_strings`, the keyword left alone on its row, and **that buffer does not trigger a second width check**, because the reorder was already measured against the source's own widest row.
 '''

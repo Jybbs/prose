@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "An Implicit String-Concatenation Return Keeps Its Parentheses When Parameters Expand"
+title       = "A Concatenated String Return Annotation Keeps Its Parentheses When Parameters Expand"
 
 description = '''
-`assemble_result`'s four parameters make the inline header overflow `code-line-length`, so they expand one per line.
-
-The return annotation's parentheses wrap two adjacent string literals joined by implicit concatenation into a single expression. **Those parentheses pass through intact**, because dropping them would break the concatenation and leave output that does not parse.
+`assemble_result` takes four parameters whose inline header overflows `code-line-length`, and its return annotation is two adjacent string literals inside parentheses, joined by implicit concatenation. **The parameters expand one per line and the parentheses pass through intact**, because dropping them would break the concatenation and leave output that does not parse.
 '''

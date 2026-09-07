@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Comments Already Reading Right Emit Nothing"
+title       = "Comments Already Spaced Right Emit Nothing"
 
 description = '''
-The full-line comment already opens on `# `, and the comment trailing `value = 1` already sits two columns clear of its code, so both are settled as written. The rule emits no edit and the file passes through unchanged.
+A full-line comment already opens on `# `, and the comment trailing `value = 1` already sits two columns clear of its code. **The rule emits no edit**, because both comments already carry the spacing it writes, so the file is left as written.
 '''

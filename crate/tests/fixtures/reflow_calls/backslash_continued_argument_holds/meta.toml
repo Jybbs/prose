@@ -3,7 +3,5 @@ previewable = true
 title       = "A Backslash-Continued Argument Keeps Its Break"
 
 description = '''
-A backslash continues the row inside the call's argument, and a backslash is a line break rather than a token.
-
-Closing the row behind it would strand the backslash in front of a space and **the text would stop parsing**. The argument therefore keeps its break, leaving the backslash itself to `shed-backslash-continuations`, which runs ahead of this rule in the default pipeline.
+The `print` call's one argument continues across a `\` line break onto a second row. **The call explodes around the argument and the argument keeps its break**, with the continuation row re-indented to the argument's column, because a backslash is a line break rather than a token, so closing the row behind it would leave the backslash before a space and the text would no longer parse. The backslash itself is left to `shed-backslash-continuations`, which runs before this rule in the default pipeline.
 '''

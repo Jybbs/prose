@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Tiered Class Graph Is a Fixed Point"
+title       = "An Already-Ordered Class Body With a Dependency Is Left Unchanged"
 
 description = '''
-`height` and `width` already sit in name order, and `HALF` already trails the `width` its value reads, so the dependency-aware sort **finds nothing to move** and the output equals the input.
+`height` and `width` already sit in name order, and `HALF` already sits below the `width` its value reads. **The output equals the input**, because the dependency-aware sort finds nothing to move.
 '''

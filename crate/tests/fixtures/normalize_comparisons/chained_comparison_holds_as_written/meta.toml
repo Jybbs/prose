@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Chained Comparison Holds as Written"
+title       = "A Chained Comparison Stays as Written"
 
 description = '''
-Both comparisons here chain more than two operands, and the rule holds any chain as written. The range check `0 < n < 10` keeps its reading order, and even the `None` in `value == low == None` stays under `==`, so a chain never comes back mixing `==` with `is`.
+Both comparisons chain more than two operands, the range check `0 < n < 10` and the `value == low == None` chain. **Both stay as written**, the `None` included under `==`, because the rule never rewrites one link of a chain, so a chain never comes back mixing `==` with `is`.
 '''

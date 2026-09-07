@@ -3,5 +3,5 @@ previewable = false
 title       = "Bare and Annotated Assignments Sort Together"
 
 description = '''
-The run mixes annotated and bare assignments, and **both forms sort by their target name alone**, so `apple = 1` climbs above `banana: str = "two"` and `zoo: int = 3` drops to the bottom. Whether an assignment carries an annotation makes no difference to the reorder.
+`zoo: int = 3`, `apple = 1`, and `banana: str = "two"` mix annotated and bare assignments in one run. **All three sort by target name alone**, so `apple` moves to the top and `zoo` to the bottom, because an annotation makes no difference to the order.
 '''

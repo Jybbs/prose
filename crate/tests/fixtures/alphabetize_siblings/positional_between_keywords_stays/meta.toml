@@ -4,7 +4,5 @@ previewable = true
 title       = "A Positional Argument Between Keywords Stays Put"
 
 description = '''
-`*overrides` sits between two keywords that need to swap.
-
-The run **swaps the keyword texts in place and keeps every gap between them verbatim**, so the `*overrides` row stays in its own slot. Rebuilding the argument block from scratch would have dropped that row along with the rest of the original layout.
+`*overrides` sits between `verbose=True` and `retries=3`, two keywords out of order. **The keyword texts swap in place and the `*overrides` row stays in its own place**, because the run keeps every gap between members verbatim, whereas rebuilding the argument block from scratch would have dropped that row along with the rest of the original layout.
 '''

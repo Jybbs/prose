@@ -30,22 +30,20 @@ pub(super) struct Visitor<'a> {
 }
 
 impl Visitor<'_> {
-    /// Aligns each adjacent assignment run in `body`, descending into
-    /// every nested block the walk reaches.
+    /// Collects each adjacent assignment run in `body` as a buffered
+    /// run.
     fn process_body(&mut self, body: &[Stmt]) {
         let groups = equal_targets::assignment_groups(self.walker.source, self.walker.rule, body);
         self.runs.extend(groups.into_iter().map(Run::Buffered));
     }
 
-    /// Aligns each line-adjacent run of `call`'s keyword arguments that
-    /// sit alone on their physical line, padding before each `=` and
-    /// rewriting the gap after it to one space. A run pads its `=` only
-    /// when its keywords share a column baseline. A lone keyword, or a
-    /// run whose rows open at differing columns, instead takes a
-    /// one-space buffer on each side of its `=`, so an exploded keyword
-    /// reads as `name = value`. A keyword sharing its line with another
-    /// argument keeps its tight `name=value`, and a single-line call or
-    /// a held row is left untouched.
+    /// Collects each line-adjacent run of `call`'s keyword arguments
+    /// sitting alone on their physical line as a buffered run. A run
+    /// pads its `=` only when its keywords share a column baseline,
+    /// and a lone keyword or a run whose rows open at differing
+    /// columns takes a one-space buffer on each side of its `=`. A
+    /// keyword sharing its line with another argument keeps its tight
+    /// `name=value`, and a single-line call or a held row is skipped.
     fn process_call(&mut self, call: &ExprCall) {
         for group in equal_targets::keyword_groups(self.walker.source, self.walker.rule, call, true)
         {
@@ -53,11 +51,10 @@ impl Visitor<'_> {
         }
     }
 
-    /// Walks `params` through [`equal_targets::parameter_groups`],
-    /// emitting an alignment pass for each run of defaulted parameters.
-    /// A multi-line default closes the run after it, so the parameters
-    /// past it align as a separate group, mirroring an exploded call's
-    /// keyword runs.
+    /// Collects each run of defaulted parameters in `params` through
+    /// [`equal_targets::parameter_groups`] as a candidate run. A
+    /// multi-line default closes the run after it, so the parameters
+    /// past it align as a separate group.
     fn process_parameters(&mut self, params: &Parameters) {
         let groups = equal_targets::parameter_groups(self.walker.source, self.walker.rule, params);
         self.runs.extend(groups.into_iter().map(Run::Candidate));

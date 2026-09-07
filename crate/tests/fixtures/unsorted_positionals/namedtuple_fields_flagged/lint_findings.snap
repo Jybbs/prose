@@ -15,6 +15,6 @@ input_file: crate/tests/fixtures/unsorted_positionals/namedtuple_fields_flagged/
       "column": 5,
       "row": 5
     },
-    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
   }
 ]

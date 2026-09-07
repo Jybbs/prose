@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Filtered or Chained Comprehension Stands"
+title       = "A Filtered or Chained Comprehension Stays as Written"
 
 description = '''
-Nothing here changes. `active`'s comprehension carries an `if row.live` guard, and `nested`'s carries two `for` clauses chaining over two levels.
-
-Neither reads as **a plain copy of a single iterable**, which is the only shape this rule collapses, so both comprehensions are left exactly as written.
+`active`'s comprehension carries an `if row.live` guard, and `nested`'s carries two `for` clauses over two levels. **Both comprehensions stay as written**, because the rule rewrites only a plain copy of a single iterable, and a guard or a second generator does work no constructor call does.
 '''

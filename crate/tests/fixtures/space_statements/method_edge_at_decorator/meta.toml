@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Method's Leading Edge Is Counted from Its Decorator"
+title       = "A Method's Gap Is Measured From Its Decorator"
 
 description = '''
-`second` sits under a `@cached_property` decorator, so its **leading edge is the decorator line rather than the `def`**. The three blank lines after `first` collapse to the class-scope canonical of one, measured above `@cached_property`, and the decorator stays tight against its method.
+Inside `Posting`, `second` carries `@cached_property` and sits three blank lines below `first`. **The three blank lines collapse to the one blank line class scope takes, measured above `@cached_property`**, so the decorator stays flush against its method, and the class header gains its one blank line before `first`.
 '''

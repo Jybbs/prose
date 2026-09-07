@@ -3,5 +3,5 @@ previewable = true
 title       = "`TypedDict` Fields Sort"
 
 description = '''
-`Config(TypedDict)` lists `timeout`, `name`, `retries`, and `host`, and the annotated fields **alphabetize** to run `host` through `timeout`. Detection reads the AST shape rather than the base-class name, so a plain class holding the same bare annotated fields would sort identically.
+`Config(TypedDict)` lists `timeout`, `name`, `retries`, and `host`. **The annotated fields alphabetize to run `host` through `timeout`**, because detection reads the AST form of the fields rather than the base-class name, so a plain class carrying the same bare annotated fields would sort identically.
 '''

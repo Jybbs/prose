@@ -133,8 +133,8 @@ fn pair_edits(
 }
 
 /// The edits trading the call and `inner`'s own delimiters for `ctor`'s
-/// pair. A one-element tuple's comma goes where the result is no longer
-/// a tuple, and arrives where the result becomes one.
+/// pair. A one-element tuple's comma is removed where the result is no
+/// longer a tuple, and added where the result becomes one.
 fn rewrap_edits(source: &Source, call: &Expr, ctor: Constructor, inner: &Expr) -> Vec<Edit> {
     let width = delimiter(inner);
     let (open, close) = ctor.brackets();

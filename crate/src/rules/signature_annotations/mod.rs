@@ -30,7 +30,7 @@ use signals::SignalSet;
 pub(crate) struct SignatureAnnotations;
 
 impl SignatureAnnotations {
-    pub(crate) const MESSAGE: &'static str = "Flag a missing parameter or return type annotation";
+    pub(crate) const MESSAGE: &'static str = "annotate a parameter or return type that has none";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
@@ -58,7 +58,7 @@ impl Rule for SignatureAnnotations {
 }
 
 /// Per resolved module function (keyed by its parameters' start), the
-/// call-site argument bound to each named parameter.
+/// call-site arguments bound to each named parameter.
 type CallArgs<'a> = FxHashMap<TextSize, FxHashMap<&'a str, Vec<&'a Expr>>>;
 
 /// Emits the parameter reports and the missing-return report for each

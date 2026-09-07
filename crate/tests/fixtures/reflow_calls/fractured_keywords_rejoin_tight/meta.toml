@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Fractured Keyword List Rejoins Tight"
+title       = "A Broken Keyword List Rejoins Tight"
 
 description = '''
-`wrap(alpha, beta=2, **rest)` arrives fractured, with `**rest` pushed onto a second line.
-
-The joined form fits, so the call rejoins onto one row, and the keyword **keeps the tight `beta=2` spelling** a condensed call takes rather than gaining spaces around its `=`.
+`wrap(alpha, beta=2, **rest)` arrives broken across two rows, with `**rest` pushed onto the second. **The call rejoins onto one row and `beta=2` keeps its tight spelling**, because the joined form fits and a keyword inside a condensed call takes no spaces around its `=`.
 '''

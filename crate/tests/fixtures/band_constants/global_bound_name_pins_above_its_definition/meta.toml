@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Constant Reading a Global-Bound Name Pins Above Its Definition"
+title       = "A Constant Reading a Name Bound Through `global` Stays in Place"
 
 description = '''
-`DEFAULT = Selector` reads a name that `setup` writes into module scope through its `global` declaration, even though the module also defines `class Selector` further down the file.
-
-A write reaching module scope from inside a function counts as a real binding, so the `Selector` that `DEFAULT` reads is the one `setup` assigned rather than the class. Moving `DEFAULT` would change which of the two it sees, so **it holds its source position**. `TABLE = dict` reads a builtin that nothing shadows, so it moves up freely past `helper`.
+`DEFAULT = Selector` reads the `Selector` that `setup` writes into module scope through its `global` declaration when the module calls it, and the module also defines `class Selector` further down. **`DEFAULT` stays where it is written and `TABLE = dict` moves up past `helper` to join it**, because a `global` write from a call the module makes counts as a binding, so moving `DEFAULT` below the class would change which `Selector` it reads, whereas `dict` is a builtin nothing shadows.
 '''

@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A `msgspec.Struct` Base Holds Its Field Order"
+title       = "A `msgspec.Struct` Base Keeps Its Field Order"
 
 description = '''
-Nothing in `Posting` moves, even though `company` would sort first.
-
-The `msgspec.Struct` base generates a constructor binding the fields positionally, so reordering them would **change the meaning of every call site**. The base pins the class body just as a constructor-generating decorator would, matched by the `Struct` tail of the dotted name so an aliased import is recognized the same way.
+`Posting` extends `msgspec.Struct`, which generates a constructor binding the fields positionally. **Nothing in `Posting` moves**, even though `company` would sort first, because reordering the fields would change the meaning of every call site, so the base pins the class body just as a constructor-generating decorator would, matched by the `Struct` tail of the dotted name so an aliased import is recognized the same way.
 '''

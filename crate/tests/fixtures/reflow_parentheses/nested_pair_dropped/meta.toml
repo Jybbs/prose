@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Nested Redundant Pairs Drop in One Pass"
+title       = "Nested Redundant Pairs Are Removed in One Pass"
 
 description = '''
-`doubled = ((base + bonus))` nests one redundant set of parentheses inside another, and `mixed = (left + (right))` nests one around `right` alone. Both shed, reducing them to `doubled = base + bonus` and `mixed = left + right`.
+`doubled = ((base + bonus))` nests one redundant pair inside another, and `mixed = (left + (right))` wraps `right` alone inside a wider pair. **Every redundant pair is removed in the same run**, so the lines read `doubled = base + bonus` and `mixed = left + right`.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Backslash Opening Its Own Line at Module Level Is Left Alone"
+title       = "A Backslash Alone on Its Line at Module Level Is Left Alone"
 
 description = '''
-The backslash sitting alone on its own line between `x = 1` and `y = 2` sets the indentation of the statement it continues, here column zero. Rejoining `y = 2` onto that line would shift it off column zero, so the source is left exactly as written.
+A backslash sits alone on its own line between `x = 1` and `y = 2` at module level. **The source is left exactly as written**, because a backslash that opens a physical line outside every bracket sits where a join would rewrite the statement's indentation, so the rule skips it rather than rejoining.
 '''

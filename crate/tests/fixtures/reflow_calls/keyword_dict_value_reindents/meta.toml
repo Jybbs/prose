@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "Re-Indent an Exploded Dict Value to the Keyword Column"
+title       = "An Exploded Dict Value Re-Indents to the Keyword Column"
 
 description = '''
-`configure` explodes to one keyword per line, and `settings=` already carries a dict spread one entry per line. The dict re-indents with the explode, so `"alpha": 1` through `"delta": 4` sit one step past `settings={` and the `}` lands at the keyword column, rather than the block splicing in at its original indentation.
+`configure` passes `name`, `other`, `more`, and a `settings=` dict already written one entry per line. **`configure` explodes to one keyword per line and the dict re-indents with it**, so `"alpha": 1` through `"delta": 4` sit one step past `settings={` and the `}` closes at the keyword column rather than the block being spliced in at its original indentation.
 '''

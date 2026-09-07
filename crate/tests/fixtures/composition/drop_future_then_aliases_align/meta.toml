@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Dropped Future Import Leaves a Blank Before Aligned Aliases"
+title       = "A Removed Future Import Leaves a Blank Line Above Aligned Aliases"
 
 description = '''
-The module opens with `from __future__ import annotations` ahead of three aliased imports. **`prune-inert-imports` removes the future import, leaving the blank line that followed it at the top of the file, and `align-imports` pads the `as` keywords of `numpy`, `collections`, and `functools` into one column.** The imports keep their source order, because this case runs without `alphabetize-siblings`.
+The module opens with `from __future__ import annotations` above a blank line and three aliased imports. **`prune-inert-imports` removes the directive, leaving the blank line that followed it at the top of the file, and `align-imports` pads the `as` keywords of `numpy`, `collections`, and `functools` into one column.** The imports keep their source order, because this case runs without `alphabetize-siblings`.
 '''

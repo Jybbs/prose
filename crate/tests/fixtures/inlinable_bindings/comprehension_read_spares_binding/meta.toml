@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Read Inside a Comprehension Spares the Binding"
+title       = "A Read Inside a Comprehension Body Is Not Reported"
 
 description = '''
-`ratio` is read once, inside the comprehension body, which evaluates once per item in `values`. **The binding stays unreported** for the same reason a loop read does, the inline turning one division into one per element.
+`ratio` is written once from `factor / 100` and read once inside the comprehension body, which runs once per item in `values`. **The binding is not reported**, for the same reason a read inside a loop body is not, because inlining would turn one division into one per element.
 '''

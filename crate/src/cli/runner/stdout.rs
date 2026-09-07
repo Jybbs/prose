@@ -19,10 +19,7 @@ use crate::cli::{
 /// Emits `outcomes` to the process stdout `stdout` wraps.
 ///
 /// A structured format writes to the raw stream through a `BufWriter`,
-/// since json, sarif and github hold no escape sequence for the
-/// `AutoStream` to strip and each emits many small writes. Text keeps
-/// the `AutoStream`, which `--color always` needs, and writes blocks
-/// large enough that a second buffer buys nothing.
+/// whereas text keeps the `AutoStream`, which `--color always` needs.
 pub(super) fn emit_to_stdout<O: RawStream + AsLockedWrite>(
     outcomes: &[FileOutcome],
     format: OutputFormat,

@@ -201,7 +201,7 @@ impl Builder {
 
     /// Marks every operand of `expr` that stands where only data stands.
     /// A class raises `TypeError` on each of these, whereas it iterates,
-    /// compares by equality, and answers `is` like any other object.
+    /// compares by equality, and supports `is` like any other object.
     fn mark_runtime_operands(&mut self, expr: &Expr) {
         match expr {
             Expr::BinOp(node) if node.op != Operator::BitOr => {

@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Literal Tail Measures the Stripped Padding"
+title       = "A Literal Is Measured at the Width Its Stripped Padding Leaves"
 
 description = '''
-`strip-stranded-padding` removes two separate paddings on this row, the space just after `append(` and the space just before its closing `)`.
-
-The first narrows the column the tuple starts at and the second narrows the text trailing it. `reflow-collections` reads **both settled widths**, and since the padded row crosses the 40-column budget by exactly that pair of spaces, the tuple stays on its row where the stripped version fits.
+`non_adjacent.append( (la, lb, 0) )` carries a space after `append(` and a space before its closing `)`, and the row crosses the 40-column budget by exactly those two spaces. `strip-stranded-padding` removes both, and **`reflow-collections` measures the tuple at the width that removal leaves, so the tuple stays on its row**, the first space narrowing the column the tuple starts at and the second narrowing the text trailing it.
 '''

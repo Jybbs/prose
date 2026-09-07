@@ -71,8 +71,7 @@ pub(crate) fn assignment(source: &Source, stmt: &Stmt) -> Option<aligner::Member
 /// physical line with another argument ends the active run, so a
 /// condensed keyword keeps its tight `name=value`. A skip-held keyword
 /// bridges the run without joining. `break_after_multiline` closes a run
-/// after a keyword whose own value spans lines, so a wrapped value does
-/// not drag later keywords into its group.
+/// after a keyword whose own value spans lines.
 pub(crate) fn keyword_groups(
     source: &Source,
     rule: RuleId,
@@ -126,8 +125,8 @@ pub(crate) fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<a
     )
 }
 
-/// The line-adjacent assignment runs of `body`, a multi-line statement
-/// closing its run and a held one transparent.
+/// The line-adjacent assignment runs of `body`, where a multi-line
+/// statement closes its run and a held one is transparent.
 pub(crate) fn assignment_groups(
     source: &Source,
     rule: RuleId,
@@ -136,8 +135,8 @@ pub(crate) fn assignment_groups(
     aligner::line_adjacent_groups(source, body, rule, |stmt| assignment(source, stmt))
 }
 
-/// The runs of `params`' annotated defaults, a multi-line default
-/// closing the run after it and every held row dropped.
+/// The runs of `params`' annotated defaults, where a multi-line default
+/// closes the run after it and every held row is dropped.
 pub(crate) fn parameter_groups(
     source: &Source,
     rule: RuleId,

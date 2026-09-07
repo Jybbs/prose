@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "An Alignment Run Measures a Comment at the Width It Settles To"
+title       = "An Alignment Run Measures a Comment at the Spacing It Settles To"
 
 description = '''
-The first row's comment opens tight against its hash run, which [[normalize-comment-spacing]] later settles to one space. [[align-equals]] counts that column before it sets its own, so the run takes no shared column that would carry the row past the budget rather than padding to one and then undoing it.
+`_handlers` carries a trailing comment written `#map of ...`, tight against the hash, above `_handlerList`, and [[normalize-comment-spacing]] later writes one space after the `#`. **`_handlers` and `_handlerList` stay unaligned**, because [[align-equals]] counts that space before it sets its column and a shared column would carry the `_handlers` row past the 79-column budget, whereas `_ok` and `_status` below pad onto one column as usual.
 '''

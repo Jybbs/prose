@@ -45,9 +45,7 @@ pub(crate) fn is_explicit_type_alias(stmt: &Stmt) -> bool {
 /// Returns `true` when `id` begins with an ASCII uppercase letter and
 /// every remaining character is an ASCII uppercase letter, digit, or
 /// underscore. A leading underscore fails the first test, so dunder and
-/// private names never qualify. `ruff_python_stdlib::str::is_cased_uppercase`
-/// reads `_HIDDEN` as uppercase, so it cannot stand in where a leading
-/// underscore must disqualify the name.
+/// private names never qualify.
 pub(crate) fn is_screaming_case(id: &str) -> bool {
     let mut chars = id.chars();
     chars.next().is_some_and(|c| c.is_ascii_uppercase())

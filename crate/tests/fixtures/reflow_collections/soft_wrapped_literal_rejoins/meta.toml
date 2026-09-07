@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Soft-Wrapped Literal Rejoins While a Column Holds"
+title       = "A Literal Wrapped Mid-Entry Rejoins While a Bracketed Column Stays"
 
 description = '''
-A literal reads as **soft-wrapped** when its opening bracket shares a line with an entry, or when its closing bracket trails one. That is a wrap the author fell into rather than a column they built, so `soft_wrapped_set`, the `**extra_config` spread, and the one-element `soft_wrapped_single` all rejoin onto one line, the tuple keeping the trailing `,` that makes it a tuple at all.
-
-`tuple_key_column` is the exception. Its brackets sit on lines of their own, which is the authored multi-line shape `keep-multiline-literals` holds, so it stays exactly as written.
+`class_name`, `trailing_bracket_shares_its_line`, `soft_wrapped_set`, `soft_wrapped_spread`, and `soft_wrapped_single` are each broken with an opening bracket sharing a row with an entry or a closing bracket trailing one, whereas `tuple_key_column` puts both brackets on rows of their own. **The five rejoin onto one line, the one-element tuple keeping the trailing `,` that makes it a tuple, and `tuple_key_column` keeps its column**, because a break that sits on no entry boundary is a wrap rather than a column the author built, and only the trailing `,` after `"second": 2` is dropped as the kept column is written in the canonical layout.
 '''

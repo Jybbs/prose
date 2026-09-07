@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "A Fracture Inside an Argument Breaks the Chain"
+title       = "A Break Inside an Argument Counts as a Break in the Chain"
 
 description = '''
-The chain arrives already broken across two lines, but the break sits inside `compute(alpha, beta)` rather than between two links of the chain.
-
-A chain segment runs from one dot to the next, so it covers the whole argument list, which means a break anywhere inside that list **counts as a break in the link itself**. The chain therefore stacks, with `.filter(flag)` and `.render()` beneath `.lookup` on a shared `.` column, while the `compute` call that was fractured rejoins onto one line.
+The chain arrives written across two lines, with the break inside `compute(alpha, beta)` rather than between two links. A chain segment runs from one `.` to the next and covers the whole argument list, so **a break anywhere inside that list counts as a break in the link**, and the chain stacks with `.filter(flag)` and `.render()` under `.lookup` on one `.` column, while `reflow-calls` joins the broken `compute` call back onto one line.
 '''

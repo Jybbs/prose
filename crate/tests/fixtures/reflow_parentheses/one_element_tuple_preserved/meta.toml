@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A One-Element Tuple's Pair Survives"
+title       = "A One-Element Tuple's Pair Stays"
 
 description = '''
-`single = (item,)` uses its parentheses to form the one-element tuple rather than to wrap an already-complete expression. They stay exactly as written.
+`single = (item,)` uses its parentheses to form a one-element tuple rather than to wrap a complete expression. **The pair stays exactly as written**, because it is part of the tuple.
 '''

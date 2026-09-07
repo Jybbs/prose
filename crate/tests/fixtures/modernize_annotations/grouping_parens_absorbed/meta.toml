@@ -3,5 +3,5 @@ previewable = false
 title       = "Grouping Parentheses Are Absorbed Into the Rewrite"
 
 description = '''
-`x`'s annotation arrives as `(Optional[int])`, wrapped in grouping parentheses. The rewrite replaces the whole parenthesized span, so `int | None` lands bare rather than re-wrapped, and the now-unread `Optional` import is removed.
+`x`'s annotation is `(Optional[int])`, wrapped in grouping parentheses. **`int | None` is written bare rather than re-wrapped**, because the rewrite replaces the whole parenthesized span, and the unread `Optional` import is removed.
 '''

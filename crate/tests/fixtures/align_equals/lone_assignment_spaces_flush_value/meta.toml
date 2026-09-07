@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Flush Assignment Gains Its Value-Side Space"
+title       = "A Lone Flush Assignment Gains a Space on Each Side"
 
 description = '''
-`tally=1` arrives with its `=` written tight on both sides, and as the lone assignment in the file it has no column to join. Each gap normalizes to a single space instead, so the statement lands on plain `tally = 1`.
+`tally=1` is the only assignment in the file, written with no space on either side of the `=`. **Each gap widens to a single space**, so the statement reads `tally = 1`, with no column to join.
 '''

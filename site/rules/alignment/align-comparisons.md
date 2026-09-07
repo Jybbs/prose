@@ -1,5 +1,5 @@
 ---
-caption : "Aligns comparison operators vertically across the operands of a multi-line `and`-chain or `or`-chain."
+caption : "Pads the space before each comparison operator in a multi-line `and` or `or` chain so the operators share one column."
 related : [align-colons, align-equals, align-imports, alphabetize-siblings, align-match-case, normalize-comparisons]
 layout  : doc
 ---
@@ -8,15 +8,15 @@ layout  : doc
 
 <RuleLayout rule="align_comparisons">
 
-A multi-line boolean chain (*`and` or `or`*) of comparison operands reads as a small table where the operator anchors the relationship between left and right. When each operator sits at a different column the eye walks across each line individually, treating the chain as five sentences rather than one parallel structure. `align-comparisons` gathers the operator column into a shared one, so every comparator's last character lands on the same offset and the chain reads top to bottom as a single judgment.
+`align-comparisons` pads the space before each comparison operator in a multi-line `and` or `or` chain so the operators share one column, and the chain then reads top to bottom as one parallel structure, each left operand beside its right, rather than as a stack of separate sentences the eye reads one at a time.
 
-The rule walks each `BoolOp` whose operands are all `Expr::Compare`. The widest operand's left side fixes the shared column, with variable-width operators (*`==`, `<=`, `is not`*) right-aligning so the operator's last character sits in the shared column. A chained compare (*`0 < x < 100`*) anchors on its first operator only. A non-comparison operand, a multi-line operand, or a blank line in the gap breaks the run.
+The rule reads each `BoolOp` whose operands are all `Expr::Compare`. The widest left operand sets the shared column, and operators of differing widths (*`==`, `<=`, `is not`*) right-align so the last character of each sits in that column. A chained compare (*`0 < x < 100`*) aligns on its first operator only. A non-comparison operand, a multi-line operand, or a blank line between operands ends the run.
 
 <template #configuration>
 
 <RuleConfigTable />
 
-`max-shift` bounds how far an operator may shift to align. The rule walks each run of comparisons in source order and grows a column while its width spread stays within the cap, breaking a fresh column at the first row that would exceed it. A `max-shift` of `false` lifts the cap so a contiguous run folds into one column, and `0` forbids any shift. The [**per-rule facets**](/reference/configuration#per-rule-facets) reference covers the full semantics.
+`max-shift` limits how much padding one operator may take. The rule reads each run of comparisons in source order and extends a column while the gap between the widest and narrowest left operands stays within the limit, starting a new column at the first row that would exceed it. Setting `max-shift` to `false` removes the limit, so a run of any width aligns on one column, and `0` forbids padding altogether. The [**per-rule facets**](/reference/configuration#per-rule-facets) reference covers the full semantics.
 
 </template>
 

@@ -3,5 +3,5 @@ previewable = false
 title       = "`global` and `nonlocal` Name Lists Sort"
 
 description = '''
-The name lists after `global` and `nonlocal` **alphabetize**, so `nonlocal items, registry, counter` inside `inner` becomes `nonlocal counter, items, registry`. The order has no semantic effect, because the declaration applies to every listed name uniformly, and the two module-level functions sort as well, `reset_outer` ahead of `update`.
+`update` declares `global counter, items, registry`, already in order, and `inner` declares `nonlocal items, registry, counter`. **The `nonlocal` list alphabetizes to `nonlocal counter, items, registry` while the already-sorted `global` list passes through untouched**, because the declaration applies to every listed name uniformly and the order has no semantic effect, and the two module-level functions sort as well, `reset_outer` ahead of `update`.
 '''

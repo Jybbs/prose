@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "Explode an All-Keyword Call to an External Function"
+title       = "An All-Keyword Call to an External Function Explodes"
 
 description = '''
-`fetch` takes four keyword arguments and is defined nowhere in this module, so no signature is available to resolve against. The call explodes to one argument per line anyway, because `headers=h` through `url=u` each already name their parameter and need no signature lookup.
+`fetch(headers=h, method=m, params=p, url=u)` passes four keyword arguments to a function defined nowhere in this module. **The call explodes to one argument per line**, because each argument already names its parameter, so no signature lookup is needed and the missing definition does not block the count trigger.
 '''

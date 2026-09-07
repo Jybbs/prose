@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Section Heading Crossed With the Wrong Definition Kind"
+title       = "A Section Heading on the Wrong Definition Kind Resolves Against Nothing"
 
 description = '''
-`measure`, a function, carries an `Attributes:` section, and `Session`, a class, carries an `Args:` section, each the heading meant for the other definition kind. **Neither entry is flagged**, because a function declares no attributes and a class body declares no parameters for the section to resolve against.
+`measure`, a function, carries an `Attributes:` section naming `width (int)`, and `Session`, a class, carries an `Args:` section naming `host (str)`, each heading on the definition kind the other belongs to. **Neither entry is reported**, because a function declares no attributes and a class body declares no parameters, so each section resolves against nothing.
 '''

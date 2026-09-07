@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Parameter Separators Are Preserved Verbatim"
+title       = "Parameter Separators Are Copied Verbatim"
 
 description = '''
-`render` mixes a positional-only `/` separator, a bare `*` separator opening the keyword-only section, a `verbose: bool = False` default, and a `-> tuple[int, str]` return annotation across five parameters, one past `max-params`. `reflow-signatures` expands the signature with **every separator and default preserved verbatim from source** rather than synthesized into a different shape.
+`render` mixes a positional-only `/` separator, a bare `*` separator opening the keyword-only section, a `verbose: bool = False` default, and a `-> tuple[int, str]` return annotation across five parameters, one over `max-params`. **The signature expands with every separator and default copied verbatim from the source**, each on its own line, rather than rebuilt in a different form.
 '''

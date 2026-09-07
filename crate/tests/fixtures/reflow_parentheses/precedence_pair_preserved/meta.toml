@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Precedence-Bearing Pair Survives"
+title       = "A Precedence-Bearing Pair Stays"
 
 description = '''
-`(base + bonus) * factor` and `2 ** (depth + 1)` each wrap a `+` expression whose precedence is looser than the operator enclosing it. Dropping either set of parentheses would rebind the expression to a different result, so both stay exactly as written.
+`scaled = (base + bonus) * factor` and `power = 2 ** (depth + 1)` each wrap a `+` expression inside an operator that binds tighter. **Both pairs stay exactly as written**, because removing either would rebind the expression to a different result.
 '''

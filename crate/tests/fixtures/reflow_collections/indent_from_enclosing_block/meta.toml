@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Indent Is Measured From the Enclosing Block"
+title       = "Indent Is Measured From the Row the Bracket Opens On"
 
 description = '''
-Collections inside the `build_config` body and the `Defaults` class compute their indent from the **opening bracket's line, not the module top level**. `short_local` and `SHORT_PRIMES` stay inline at their depth, the seven-entry `long_local` expands one entry per line, and the over-wide `LONG_PRIMES` packs its integers across rows at the item indent.
+`short_local` and `long_local` sit inside the `build_config` body, and `SHORT_PRIMES` and `LONG_PRIMES` sit inside the `Defaults` class body. **The seven-entry `long_local` expands one entry per line and the over-wide `LONG_PRIMES` packs its integers across two rows, each at the indent of its enclosing block**, because the rule reads the indent from the row the opening bracket sits on rather than from the module's left edge, whereas `short_local` and `SHORT_PRIMES` fit and stay inline.
 '''

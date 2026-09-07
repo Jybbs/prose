@@ -25,7 +25,7 @@ use crate::{
     source::Source,
 };
 
-/// The padding rule a prediction reads, carried by rule id beside
+/// The padding rule a prediction reads, carried by rule slug beside
 /// whether the rule runs at all.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Stranding {
@@ -83,15 +83,14 @@ struct Emitter<'a> {
 impl ColonEmitter for Emitter<'_> {
     /// Clears the pre-colon gap and collapses the post-colon gap to one
     /// space for a group that is not an
-    /// [`aligner::is_alignment_candidate`], so no shared column
-    /// justifies the padding. A singleton has no neighbor row, a
-    /// same-line group has no column distinction, and a distinct-line
-    /// group whose rows open at differing baselines realizes no shared
-    /// column. A distinct-line group at one baseline belongs to
+    /// [`aligner::is_alignment_candidate`]. A singleton has no neighbor
+    /// row, a same-line group has no column distinction, and a
+    /// distinct-line group whose rows open at differing baselines shares
+    /// no column. A distinct-line group at one baseline belongs to
     /// `align_colons` and emits nothing here. The pre-colon `width > 0`
-    /// guard rejects the edge case where a `:` sits on its own indented
-    /// line and the gap is leading indent rather than padding. The
-    /// `value_gap` rewrite skips a value that opens on a later line.
+    /// guard skips a `:` sitting on its own indented line, where the gap
+    /// is leading indent rather than padding. The `value_gap` rewrite
+    /// skips a value that opens on a later line.
     fn handle(&mut self, members: &[aligner::Member]) {
         if aligner::is_alignment_candidate(members) {
             return;

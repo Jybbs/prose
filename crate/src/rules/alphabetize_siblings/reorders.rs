@@ -1,6 +1,6 @@
-//! The leaf sorts `alphabetize-siblings` will make, forecast by a rule
-//! seated ahead of it so it measures an entry with the separator the
-//! sort leaves after it rather than the one it carries now.
+//! The leaf sorts `alphabetize-siblings` will make, forecast for a rule
+//! seated ahead of it that measures an entry with the separator the
+//! sort leaves after it.
 
 use std::{borrow::Cow, ops::Range};
 
@@ -23,9 +23,9 @@ use crate::{
     source::Source,
 };
 
-/// The leaf sorts `alphabetize-siblings` will make, forecast by a rule
+/// The leaf sorts `alphabetize-siblings` will make, forecast for a rule
 /// seated ahead of it that measures an entry with the separator the
-/// sort leaves after it rather than the one it carries now.
+/// sort leaves after it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Reorders {
     enabled: bool,
@@ -86,9 +86,8 @@ impl Reorders {
         }
     }
 
-    /// True when the rule reaches `node` at all, on and not held by a
-    /// skip directive over it, the same hold the pipeline applies to the
-    /// rule's own fix group.
+    /// True when the rule is on and no skip directive over `node` holds
+    /// it.
     fn sorts(self, source: &Source, node: impl Ranged) -> bool {
         self.enabled
             && !source

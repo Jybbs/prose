@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Bare Comma Tuple Stays on Its Line While a Parenthesized Sibling Expands"
+title       = "A Bare Tuple Stays on Its Line While a Parenthesized One Expands"
 
 description = '''
-`bare` and `parens` hold the same tuple items, one written bare and one in parentheses. **A bare comma tuple carries no bracket pair to hang the broken lines on**, so `bare` keeps its over-wide source line untouched, whereas `parens` flows across lines the way a `list` would.
+`bare` and `parens` each list seven names, one without parentheses and one with, and both lines run past the budget. **`bare` is left as written and `parens` expands into packed rows**, because a tuple without parentheses has no bracket pair to break inside, whereas a parenthesized tuple expands the same way a list does.
 '''

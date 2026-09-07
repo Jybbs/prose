@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Parenthesized Yield Annotation Aligns"
+title       = "A Parenthesized `yield from` Annotation Aligns"
 
 description = '''
-Inside the generator `stream`, `forwarded` is annotated with the parenthesized expression `(yield from items)`, and the row still aligns. The annotation is measured through its closing `)`, so `received_value_field: int` pads out to meet it and the two `=` share a column with the `yield from` text untouched.
+Inside the generator `stream`, `forwarded` is annotated with the parenthesized expression `(yield from items)` above `received_value_field: int`. **The row aligns like any other, its annotation measured through the closing `)`**, so `received_value_field: int` pads out to it and both `=` share a column with the `yield from` text left as written.
 '''

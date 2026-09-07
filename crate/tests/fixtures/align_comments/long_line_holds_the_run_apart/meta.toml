@@ -3,7 +3,5 @@ previewable = true
 title       = "A Row Whose Aligned Line Would Overflow Stays Put"
 
 description = '''
-`warm_the_cache_now()` and `reconcile_open_charges()` settle onto a shared column.
-
-Padding `flush_writes()` out to that same column would push its already-long line past `code-line-length`, so **the third row partitions out of the run** and keeps the two-space minimum instead. Alignment never creates an overflowing line.
+`warm_the_cache_now()`, `reconcile_open_charges()`, and `flush_writes()` each carry a trailing comment, and the comment on `flush_writes()` is long. **The first two rows align on one column and `flush_writes()` keeps its two-space minimum**, because padding it out to the shared column would push its line past `code-line-length`, and the rule never creates an overflowing line.
 '''

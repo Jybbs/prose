@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Inline Keyword Arguments Sort, Positionals Stay"
+title       = "Inline Keyword Arguments Sort and the Positional Stays First"
 
 description = '''
-The keyword arguments of the one-line `Posting` call **sort in place on the single line**, reordering to `company=`, `title=`, `url=`. The positional `record` has no keyword name to sort by, so it stays first.
+The one-line `Posting` call passes the positional `record` followed by `url=`, `company=`, and `title=`. **The keyword arguments sort in place on the single line to `company=`, `title=`, `url=`, and `record` stays first**, because a positional has no keyword name to sort by.
 '''

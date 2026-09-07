@@ -1,6 +1,6 @@
 import zlib
 
-# the hex helpers both writers reach for
+# the hex helpers both writers call
 
 import binascii
 

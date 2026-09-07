@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Already-Conforming Source Surfaces Nothing"
+title       = "A Module With No Reassignment Passes Unchanged"
 
 description = '''
-`__version__` is assigned once, and `main`'s body defines no module-level constant of its own. **The file passes through unchanged with no diagnostic emitted**, pinning that `reassigned-constants` is lint-only and never edits source, whether or not it finds anything to flag.
+`__version__` is assigned once, and `main` defines no module-level constant. **No diagnostic is reported and the file passes through unchanged**, because `reassigned-constants` is a lint that never rewrites source, whether or not it finds anything.
 '''

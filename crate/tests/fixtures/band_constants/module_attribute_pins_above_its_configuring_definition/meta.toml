@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Constant Reading a Configured Module Attribute Pins Above Its Definition"
+title       = "A Constant Reading State a Class Body Sets Stays Below the Class"
 
 description = '''
-`LEVEL = logging.root.level` reads state that `class Configure` sets when its body runs, since the class calls `logging.basicConfig` at definition time.
-
-Moving `LEVEL` above that class would read the level before it had been configured, so **`LEVEL` holds its source position**. `TABLE = dict` names a builtin and observes nothing the module configures, so it moves up freely past `helper`.
+`LEVEL = logging.root.level` reads state that the body of `class Configure` sets when it runs, since the class calls `logging.basicConfig` at definition time. **`LEVEL` stays where it is written and `TABLE = dict` moves up past `helper` to join it**, because moving `LEVEL` above the class would read the level before the class body configured it, whereas `dict` is a builtin the module never configures.
 '''

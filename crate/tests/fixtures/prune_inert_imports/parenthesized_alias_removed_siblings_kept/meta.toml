@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Parenthesized Multi-Line Import Drops Only the Alias"
+title       = "A Parenthesized Directive Loses Only the `annotations` Row"
 
 description = '''
-The `from __future__ import` statement spreads its names across lines inside parentheses, one name per line. **Only the `annotations` entry is deleted**, taking its line with it, leaving `division` and the parenthesized shape in place.
+The `from __future__ import` statement lists `annotations` and `division` one per row inside parentheses, and the file carries no annotation. **Only the `annotations` row is removed**, leaving `division` and the parentheses as written.
 '''

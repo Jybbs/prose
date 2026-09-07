@@ -60,18 +60,16 @@ pub(super) fn rewrite_dict_text(
     if d.len() < 2 || has_keep_marker(source, d) {
         return None;
     }
-    // A multi-line dict packing entries onto a shared row has no
-    // one-item-per-line decomposition for a block reorder, and a first
-    // entry trailing the `{` with a comment in the span would land that
-    // comment against the wrong entry, so either holds the source order.
+    // A multi-line dict packing entries onto a shared row, or one whose
+    // first entry trails the `{` with a comment in the span, holds its
+    // source order.
     if dict_holds_as_laid_out(source, &d.items) {
         return None;
     }
     let multi_line = source.contains_line_break(blocks_span(&d.items));
     let head_shared = multi_line && !opens_its_line(source, d.items[0].start());
     // Widen each item to its value's paren-aware end, so a parenthesized
-    // value keeps its closing parens inside the block rather than shedding
-    // them into the separator tail.
+    // value keeps its closing parens inside the block.
     let item_ranges: Vec<TextRange> = d
         .items
         .iter()
@@ -122,10 +120,7 @@ pub(super) fn rewrite_dict_text(
     if head_shared && !reordered_lines_fit(source, span, &assembled, code_width) {
         return None;
     }
-    // Decline the reorder when the reassembled dict no longer parses, the
-    // safety net for irregular layouts (entries sharing a line, comments
-    // inside a `**`-spread's parentheses) the block model cannot shuffle
-    // cleanly.
+    // Decline the reorder when the reassembled dict no longer parses.
     if !splice_parses(source, d.range(), span, &assembled, parse_expression) {
         return None;
     }
@@ -133,10 +128,8 @@ pub(super) fn rewrite_dict_text(
 }
 
 /// Returns the new-order slot indices after which a blank-line divider
-/// should sit, one on either side of each keyed entry whose block spans
-/// lines. A dict with fewer than two such entries yields none, leaving a
-/// lone block entry to sit against its neighbors rather than behind a
-/// divider.
+/// sits, one on either side of each keyed entry whose block spans
+/// lines. A dict with fewer than two such entries yields none.
 fn partition_divider_slots(
     source: &Source,
     order: &[usize],

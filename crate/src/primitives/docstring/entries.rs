@@ -38,8 +38,7 @@ impl SectionEntry<'_> {
     /// The offset of a type group written in the Google `name (type)`
     /// form, whitespace separating the name from the `(`. `None` for a
     /// head naming no type and for a `(` sitting flush against its
-    /// name, which documents a call rather than a type and so opens no
-    /// alignment column.
+    /// name.
     pub(crate) fn column_anchor(&self, source: &Source) -> Option<TextSize> {
         let group = self.type_group?;
         source
@@ -234,9 +233,8 @@ pub(crate) fn entry_carrying_sections<'src>(
 
 /// Every run of entries `lit`'s body carries in source order, one per
 /// entry-carrying Google-style section and one per contiguous run of
-/// type-bearing heads at the body indent outside every section. A
-/// sectionless run gathers the heads `wrap-docstrings` passes through
-/// verbatim, leaving out a head that reflows into the prose above it.
+/// type-bearing heads at the body indent outside every section. A head
+/// following an open prose paragraph joins no sectionless run.
 pub(crate) fn entry_runs<'src>(
     source: &'src Source,
     lit: &StringLiteral,

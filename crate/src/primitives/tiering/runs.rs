@@ -1,7 +1,6 @@
-//! One definition run prepared for permutation, tiering its members
-//! through the shared dependency graph once so a caller permuting the
-//! same range on every pass of a fixed-point loop pays for the tiering
-//! and the binder graph a single time.
+//! One definition run prepared for permutation, its members tiered
+//! through the shared dependency graph once and permuted on every pass
+//! of a fixed-point loop.
 
 use std::ops::Range;
 
@@ -13,9 +12,8 @@ use super::{Evaluation, Strands, tiers::tier_levels};
 use crate::primitives::orderer::permute_in_place;
 
 /// One definition run prepared for permutation, holding the tier keys
-/// of its members beside the binder graph a repair reads. Both are
-/// fixed for the run, so a caller permuting the same range on every
-/// pass of a fixed-point loop builds them once rather than per pass.
+/// of its members beside the binder graph a repair reads, both fixed
+/// for the run.
 pub(crate) struct DefRun<'a, 'src, K> {
     keys: FxHashMap<TextSize, (usize, K)>,
     range: Range<usize>,
@@ -69,13 +67,10 @@ impl<'a, 'src, K: Copy> DefRun<'a, 'src, K> {
 }
 
 /// Returns a per-member `(tier, key)` lookup keyed by each definition's
-/// start offset, or `None` when the run cannot reorder. The run skips
-/// when two members share a name or when the intra-run reference graph
-/// carries a cycle. A member depends on every other sibling it names in
-/// its evaluation-time surface, and the composite `(tier, key)` combines
-/// a Kahn-style topological tier with the member's existing sort key, so
-/// a definition never sorts ahead of a sibling it names at evaluation
-/// time.
+/// start offset, or `None` where two members share a name or the
+/// intra-run reference graph carries a cycle. A member depends on every
+/// other sibling it names in its evaluation-time surface, and `tier` is
+/// its Kahn-style topological tier over those dependencies.
 pub(crate) fn def_run_tier_keys<'src, K: Copy>(
     body: &'src [Stmt],
     evaluation: Evaluation<'_, 'src>,
@@ -85,8 +80,8 @@ pub(crate) fn def_run_tier_keys<'src, K: Copy>(
         .iter()
         .filter_map(|stmt| member(stmt).map(|(name, key)| (stmt, name, key)))
         .collect();
-    // A repeated name makes an intra-run reference ambiguous, so the run
-    // declines rather than guessing which member a reference meant.
+    // The run declines on a repeated name, which makes an intra-run
+    // reference ambiguous.
     let name_to_idx: FxHashMap<&str, usize> = members
         .iter()
         .enumerate()

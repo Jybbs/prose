@@ -3,5 +3,5 @@ previewable = true
 title       = "A Call Inside a Collection Value Explodes Too"
 
 description = '''
-With `code-line-length = 30`, `emit` explodes to one keyword per line and the `beta=[` list re-indents to the new keyword column. The `helper(aaaaaa, bbbbbb, cccccc)` call inside the list overflows from its deeper row, so it explodes too, each construct measured at the row it lands on rather than the one it held in the source.
+Under `code-line-length = 30`, `emit` passes `alpha=1`, a `beta=[...]` list carrying a `helper(aaaaaa, bbbbbb, cccccc)` call, `gamma=3`, and `delta=4`. **`emit` explodes to one keyword per line, the list re-indents to the keyword column, and `helper` explodes inside it**, because each construct is measured at the row it ends up on rather than the one the source wrote, and `helper` overflows from its deeper row.
 '''

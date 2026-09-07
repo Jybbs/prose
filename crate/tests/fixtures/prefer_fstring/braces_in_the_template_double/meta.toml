@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Literal Brace Doubles so the Field Boundary Holds"
+title       = "A Literal Brace in a `%` Template Doubles"
 
 description = '''
-In the `%` template, `{outer}` is plain text, because only `%s` marks a substitution there. An f-string reads a bare `{` as opening a field, so the rewrite doubles the literal braces to `{{outer}}` while `%s` becomes `{inner}`, keeping the rendered text identical.
+In the `%` template `"{outer} %s"`, `{outer}` is plain text, because only `%s` marks a substitution there. **The rewrite doubles the literal braces to `{{outer}}`** while `%s` becomes `{inner}`, because an f-string reads a bare `{` as opening a field, and the rendered text stays identical.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Hoisted Constant Joins the Import Runs"
+title       = "A Hoisted Constant Joins Two Import Runs Into One"
 
 description = '''
-[[band-constants]] hoists `LIMIT` below the imports, so the two `pkg` statements it divided become one run for [[align-imports]] to seat. [[reflow-imports]] forecasts the joined run, so **the `pkg.alpha` roster packs to the column `pkg.beta_module` sets** rather than to the column it would take alone, and both of its rows arrive already seated there.
+`LIMIT = 3` sits between `from pkg.alpha import first, second` and `from pkg.beta_module import third`. [[band-constants]] moves `LIMIT` below the imports, so the two `pkg` statements become one run for [[align-imports]] to pad, and **the `pkg.alpha` roster packs to the column `pkg.beta_module` sets** rather than the column it would take alone, because [[reflow-imports]] measures against the joined run and writes both of its rows at that column.
 '''

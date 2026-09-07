@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Comma-Joined Import Splits, Then Groups and Sorts in One Pass"
+title       = "A Comma-Joined Import Splits, Then Each Module Groups and Sorts"
 
 description = '''
-`import sys, os` and `import myapp.core, abc` each split one module per line, and [[reflow-imports]] runs ahead of [[group-imports]] and [[alphabetize-siblings]], so every split-off module **reaches its canonical group and slot**. `myapp.core`, first-party under the `first-party` config, lands in the local section rather than staying beside the stdlib `abc` it was comma-joined to.
+`import sys, os` and `import myapp.core, abc` each name two modules in one statement, with `myapp` in `first-party`. [[reflow-imports]] splits each into one module per line ahead of [[group-imports]] and [[alphabetize-siblings]], so **every split-off module reaches its own group and its sorted position**, and `myapp.core` ends up in the local section rather than beside the stdlib `abc` it was joined to.
 '''

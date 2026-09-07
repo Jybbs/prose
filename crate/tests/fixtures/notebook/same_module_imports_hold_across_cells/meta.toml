@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Same-Module Imports in Two Cells Hold Their Own Statements"
+title       = "Same-Module Imports in Two Cells Keep Their Own Statements"
 
 description = '''
-Both cells import from `pkg`, `beta` in the first and `alpha` in the second, and folding the two into one `from pkg import ...` would move code across a cell boundary. [[reflow-imports]] **gathers only within a single cell**, so each statement stays where its author put it.
+Both cells import from `pkg`, `beta` in the first and `alpha` in the second, and merging the two into one `from pkg import ...` would move code across a cell boundary. **Each statement stays in its own cell**, because [[reflow-imports]] gathers within a single cell only.
 '''

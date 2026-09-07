@@ -3,5 +3,5 @@ previewable = false
 title       = "A Parenthesized Assignment Target Aligns"
 
 description = '''
-`(x.attr)` wraps its attribute target in parentheses Python does not require, and the assignment still aligns like any other. The target's width is measured through the parentheses, closing `)` included, so the padding lands after the `)` and the pair shares one `=` column with `plain_name`.
+`(x.attr) = 1` wraps its attribute target in parentheses Python does not require, with `plain_name = 2` beneath it. **The pair aligns on one `=` column**, because the target's width is measured through the closing `)`, so the padding is written after the `)`.
 '''

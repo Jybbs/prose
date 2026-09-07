@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Both If Arms Merge Into One Binding"
+title       = "Writes in Both Arms of an `if` Merge Into One Binding"
 
 description = '''
-`x` is assigned in both arms of the `if cond:` / `else:` split and then read by `print(x)`. **The two writes merge into a single module-scope binding** whose `write_offsets` lists both arms, and because neither arm is guaranteed to run, `first_unconditional_write` stays empty.
+`x` is assigned in both the `if cond:` arm and the `else:` arm, and `print(x)` reads it after. **The two writes merge into one module-scope binding whose `write_offsets` lists both arms**, and `first_unconditional_write` stays empty, because neither arm is guaranteed to run.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Format a Notebook With No Code Cells"
+title       = "A Notebook With No Cells Passes Unchanged"
 
 description = '''
-This notebook's `cells` array is empty, so no code reaches the pipeline at all. Formatting it is **a clean no-op**.
+The `cells` array of the notebook is empty, so no code reaches the pipeline. **The file passes through unchanged**, and the run emits nothing.
 '''

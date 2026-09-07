@@ -1,15 +1,15 @@
 ---
-summary: 'Fails a PR check on a layout regression, with workflow-command annotations inline and SARIF upload to the Security tab.'
+summary: 'Fails a PR check when a file would change, with annotations inline on the diff and SARIF upload to the Security tab.'
 tagline: 'CI runner · code scanning'
 ---
 
 # GitHub Actions
 
-*Prose* compiles cleanly against the standard `ubuntu-latest` runner. The install step fetches the wheel through <Tool slug="uv" />, the check step runs `prose check`, and the exit code drives the gate. The shapes below trade verbosity for richer surfacing on the PR diff: minimal check, inline workflow-command annotations, and SARIF upload for [**Code Scanning**](https://docs.github.com/en/code-security/code-scanning).
+*Prose* runs on the standard `ubuntu-latest` runner. The install step downloads the wheel through <Tool slug="uv" />, the check step runs `prose check`, and the exit code decides whether the job passes. The three jobs below differ in how much they show on the PR: a bare check, annotations inline on the diff, or a SARIF upload to [**Code Scanning**](https://docs.github.com/en/code-security/code-scanning).
 
 ## Job Skeleton
 
-Every workflow shape below plugs its `prose check` step into the same skeleton, which checks out the repository, provisions `uv`, and installs the wheel. The full job reads:
+Every job below plugs its `prose check` step into the same skeleton, which checks out the repository, installs `uv`, and installs the wheel:
 
 ```yaml
 name: prose
@@ -31,11 +31,11 @@ jobs:
       - run: prose check .
 ```
 
-`actions/checkout` lands the source on the runner, `astral-sh/setup-uv` provisions `uv` and persists its download cache across runs, and the final two steps install *Prose* and run the check. The snippets below substitute their own `prose check` step into the last line.
+`actions/checkout` puts the source on the runner, `astral-sh/setup-uv` installs `uv` and keeps its download cache between runs, and the last two steps install *Prose* and run the check. Each job below replaces the final `run` line.
 
 ## Minimal Check
 
-Reach for the minimal shape when the gate's only job is to fail the workflow on any pending rewrite or lint diagnostic. The check runs against the canonical [**Exit Codes**](/reference/exit-codes) matrix, with no surfacing on the PR diff beyond the workflow's pass/fail badge:
+The minimal job fails the workflow on any pending rewrite or lint finding and shows nothing on the PR beyond the pass or fail badge. The [**Exit Codes**](/reference/exit-codes) reference lists which exits count as failure:
 
 ```yaml
 - run: prose check .
@@ -43,17 +43,17 @@ Reach for the minimal shape when the gate's only job is to fail the workflow on 
 
 ## Workflow Command Annotations
 
-Reach for the workflow-command shape when the diagnostics should appear inline on the PR diff next to each offending line. The `github` output format emits [**workflow commands**](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions) that GitHub renders as native check-run annotations:
+The `github` output format prints one [**workflow command**](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions) per finding, which GitHub renders as an annotation on the PR diff beside the line it concerns:
 
 ```yaml
 - run: prose check --output-format github .
 ```
 
-The [**Output Formats**](/reference/output-formats) reference covers the record shape, and the [**CLI Reference**](/reference/cli) covers the `--output-format` flag's precedence and defaults.
+The [**Output Formats**](/reference/output-formats) reference covers the record format, and the [**CLI Reference**](/reference/cli) covers `--output-format` and its default.
 
 ## SARIF Upload
 
-Reach for the SARIF shape when the project wants findings persisted across runs and surfaced in the repository's Security tab through [**Code Scanning**](https://docs.github.com/en/code-security/code-scanning). The output goes to a file and an additional step uploads it through GitHub's CodeQL action:
+The `sarif` output format writes findings to a file that a second step uploads through GitHub's CodeQL action, so they persist across runs and appear in the repository's Security tab under [**Code Scanning**](https://docs.github.com/en/code-security/code-scanning):
 
 ```yaml
 - run: prose check --output-format sarif . > prose.sarif
@@ -62,11 +62,11 @@ Reach for the SARIF shape when the project wants findings persisted across runs 
     sarif_file: prose.sarif
 ```
 
-SARIF persists every diagnostic with its rule slug and source location, so the Security tab carries a tracked history per rule. The [**Output Formats**](/reference/output-formats) reference enumerates the per-finding record shape.
+Each SARIF record carries the rule slug and the source location, so the Security tab keeps a history per rule. The [**Output Formats**](/reference/output-formats) reference lists the fields of each record.
 
 ## Persisting the Cache
 
-Repeat runs hit the user-level [**cache**](/reference/cache) on by default, but the runner's filesystem evaporates between jobs. Wire `actions/cache` to persist `~/.cache/prose` across runs, so an unchanged file collapses to a stat plus a hash plus a deserialize on every subsequent CI invocation:
+Every run uses the per-user [**cache**](/reference/cache) by default, but a runner's filesystem is discarded after each job. `actions/cache` keeps `~/.cache/prose` between runs, so a file that has not changed costs a stat, a hash, and a deserialize instead of a full format:
 
 ```yaml
 - uses: actions/cache@v4
@@ -76,11 +76,11 @@ Repeat runs hit the user-level [**cache**](/reference/cache) on by default, but 
 - run: prose check .
 ```
 
-Keying off the config files invalidates the cache whenever configuration changes, since the key already digests each file's governing config and an upstream change to it produces a fresh set of entries. macOS runners use `~/Library/Caches/prose` and Windows runners use `%LOCALAPPDATA%\prose\cache`, both [documented on the cache page](/reference/cache#location).
+The key changes whenever a config file changes, so a configuration edit starts from an empty cache. A macOS runner uses `~/Library/Caches/prose` and a Windows runner `%LOCALAPPDATA%\prose\cache`, both listed on the [cache page](/reference/cache#location).
 
 ## Pairing With Ruff in CI
 
-When a project pairs *Prose* with [**Ruff**](https://docs.astral.sh/ruff/), the two tools chain into CI as sequential check steps, with Ruff first to settle line wraps and *Prose* second for layout. Each tool runs in check mode so the gate fails on any pending rewrite without writing to the runner's filesystem:
+A project that runs [**Ruff**](https://docs.astral.sh/ruff/) too runs both tools as check steps, each failing the job on a pending rewrite without writing to the runner's disk:
 
 ```yaml
 - run: uv tool install ruff
@@ -89,10 +89,10 @@ When a project pairs *Prose* with [**Ruff**](https://docs.astral.sh/ruff/), the 
 - run: prose check .
 ```
 
-The [**Ruff**](/integrations/ruff) integration page covers the per-rule conflicts and the `extend-ignore` configuration that lets the two tools coexist.
+The [**Ruff**](/integrations/ruff) integration page covers the `pycodestyle` codes to turn off in Ruff's linter and why Ruff's step comes first.
 
 ## Exit Codes
 
-CI gates compile against the same [**Exit Codes**](/reference/exit-codes) matrix the CLI publishes. A non-zero exit without `continue-on-error` fails the step. The common CI shape is a single `prose check` step wherein the exit code resolves the outcome cleanly.
+A CI job reads the same [**Exit Codes**](/reference/exit-codes) the CLI documents. Any non-zero exit fails the step unless `continue-on-error` is set, so a single `prose check` step is a complete gate.
 
-For wiring *Prose* into the git commit boundary alongside CI, see the [**Pre-Commit**](/integrations/pre-commit) integration page. For pairing *Prose* with Ruff, see the [**Ruff**](/integrations/ruff) integration page.
+The [**Pre-Commit**](/integrations/pre-commit) page covers running *Prose* at the commit boundary as well, and the [**Ruff**](/integrations/ruff) page covers running Ruff alongside it.

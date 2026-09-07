@@ -3,7 +3,5 @@ previewable = false
 title       = "An Indented Hash Heading Divides Methods"
 
 description = '''
-The indented `### Lifecycle` heading between `open` and `close` reads as a **section divider, and dividers hold at class scope too**.
-
-One blank line lands above it and one below, separating the two methods around it rather than binding the heading to `close` as its leading comment.
+The indented `### Lifecycle` heading sits between the methods `open` and `close` inside `Session`, flush against both. **The heading reads as a section divider at class scope too**, so one blank line is written above it and one below, separating the two methods around it rather than binding the heading to `close` as its leading comment.
 '''

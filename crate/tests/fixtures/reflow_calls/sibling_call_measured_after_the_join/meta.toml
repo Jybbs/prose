@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Sibling Call Measures the Row Its Neighbor's Join Leaves"
+title       = "A Sibling Call Is Measured on the Row Its Neighbor's Join Leaves"
 
 description = '''
-Joining the first call's fractured argument list pulls the `maybe` call up onto the same row.
-
-The length check then reads `maybe` **at the column that join lands it at**, not at the column it occupied in the source. At that column it crosses the 100-column budget, so it explodes.
+The `group` call arrives broken across two rows with `+ maybe(Exponent)` trailing its `)`, under `code-line-length = 100`. **`group` rejoins onto one row and `maybe` explodes**, because joining the first call pulls `maybe` up onto the same row, and the width check then reads `maybe` at the column that join puts it at rather than the column it occupied in the source, where it crosses the budget.
 '''

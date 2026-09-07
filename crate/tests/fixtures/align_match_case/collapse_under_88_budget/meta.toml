@@ -1,9 +1,9 @@
 [docs]
 previewable = true
-title       = "A Widest Pattern past `max-shift` Gates the Group"
+title       = "An Arm Folds Only Where Its One-Line Form Fits the Budget"
 
 description = '''
-Five arms each hold a single assignment, and **an arm collapses onto its `case` line only when the one-line form fits the 88-column budget**.
+Five arms each hold one assignment, with patterns running from `"under_88_columns"` to `"kind_with_descriptive_long_label"`. **Only `"under_88_columns"` and `"exactly_88_columns"` fold onto their `case` lines and align their `:`**, because an arm folds only where its one-line form fits within the 88-column `code-line-length`.
 
-`"under_88_columns"` and `"exactly_88_columns"` fold and align their `:`. `"longer_pattern_name"` would land on 89 columns and `"kind_with_descriptive_long_label"` runs far wider, so both stay multi-line. The `if some_long_predicate_check(event.kind)` guard counts toward its arm's measure too, which keeps that last arm multi-line as well.
+`"longer_pattern_name"` would reach 89 columns, `"kind_with_descriptive_long_label"` runs wider still, and the `if some_long_predicate_check(event.kind)` guard counts toward its arm's width, so those three arms stay multi-line.
 '''

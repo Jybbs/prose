@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "An Anchored Binding Keeps the Directive"
+title       = "A Binding That Calls a Function Keeps the Directive"
 
 description = '''
-`Alias = build()` calls a function as it binds, so it is held below `convert` rather than hoisted up with the plain constants.
-
-Because nothing moves that binding above the annotations naming it, **`from __future__ import annotations` is kept**. The unread `import os` beside it drops as usual.
+`Alias = build()` calls a function as it binds, so `band-constants` leaves it below `convert` rather than hoisting it with the plain constants, and `convert` names `Alias` in its annotations. **`from __future__ import annotations` stays**, because nothing moves the binding above the annotations that name it, and the unread `import os` beside the directive is removed as usual.
 '''

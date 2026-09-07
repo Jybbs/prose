@@ -1,10 +1,8 @@
 //! Deep-merge and deep-diff of TOML tables, run at the parsed-value
-//! layer ahead of deserialization so a partial override layers per knob
-//! rather than resetting a whole `#[serde(default)]` struct.
+//! layer ahead of deserialization.
 
 /// Recursively merges `overlay` into `base`. A key both carry as a table
-/// merges field by field, so an override wins the knobs it sets and
-/// leaves the rest. Any other overlay value replaces `base`'s.
+/// merges field by field, and any other overlay value replaces `base`'s.
 pub(super) fn merge_tables(base: &mut toml::Table, overlay: &toml::Table) {
     for (key, value) in overlay {
         match (base.get_mut(key), value) {

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Test Against a Boolean Literal Is Flagged Rather Than Rewritten"
+title       = "A Test Against a Boolean Literal Is Reported Rather Than Rewritten"
 
 description = '''
-`flag == True` and `verbose != False` are each flagged yet neither is rewritten. Dropping the literal to test the operand bare would change behavior wherever the operand is not itself a boolean, so the rule reports each comparison and leaves the code as written.
+`flag == True` and `verbose != False` each compare an operand against a boolean literal. **Each comparison is reported and left as written**, because dropping the literal to test the operand bare would change the result wherever the operand is not itself a boolean.
 '''

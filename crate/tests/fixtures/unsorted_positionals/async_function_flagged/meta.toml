@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An `async` Function Reads the Same as a Plain One"
+title       = "An `async` Function Is Reported Like a Plain One"
 
 description = '''
-`fetch`'s `async def` carries the same positional-or-keyword parameters a plain `def` does, so its out-of-order `target, source` run **is flagged with the same diagnostic** `unsorted-positionals` reports for a plain function. Nothing about the coroutine changes how a caller binds `fetch`'s arguments by slot.
+`fetch` is an `async def` whose parameters `target, source` are listed out of alphabetical order. **The lint reports the run exactly as it would for a plain `def`**, because a caller binds a coroutine's positional arguments by slot the same way.
 '''

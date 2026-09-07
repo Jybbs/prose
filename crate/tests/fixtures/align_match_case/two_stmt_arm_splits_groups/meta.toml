@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Multi-Statement Arms Break the Alignment Run"
+title       = "A Multi-Statement Arm Splits the Run"
 
 description = '''
-`case "certification"` holds two statements, `icon = "scroll"` and `notes.append("verified")`, and **the multi-statement body disqualifies the arm and splits the match into sub-groups**. `case "apprenticeship"` above it collapses alone with its `:` hugging the pattern, the two-statement arm itself stays multi-line, and `"program"` and `_` below it align together on the column `"program"` sets.
+`case "certification"` holds two statements, `icon = "scroll"` and `notes.append("verified")`, between three one-statement arms. **The two-statement arm stays multi-line and splits the `match` into two groups**, so `case "apprenticeship"` above it folds alone with its `:` flush against the pattern, and `"program"` and `_` below it fold together on the column `"program"` sets.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Custom Line-Length Budget Drives Expansion"
+title       = "A Lower `code-line-length` Expands a Signature That Fits the Default"
 
 description = '''
-`render`'s three parameters stay under `max-params`, so only line length can trigger a reshape. With `code-line-length` configured to `50`, `render`'s inline form overflows that budget though it would fit the default of `88`, so `reflow-signatures` **expands `left`, `palette`, and `right` onto their own lines**.
+`render` takes three parameters, under `max-params`, and its inline form fits the default `code-line-length` of `88` but overflows the `50` this case sets. **`left`, `palette`, and `right` each move onto their own line**, because line length alone triggers the expansion once the configured budget is the smaller one.
 '''

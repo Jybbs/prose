@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Uniform Gutter Tightens onto the Shared Column"
+title       = "A Uniform Wide Gutter Tightens Onto the Shared Column"
 
 description = '''
-The three `DECODING_TABLE` entries carry a wide hand-set gutter that already lines their comments up in one column. The shared column still resolves to two past the widest row, so the gutter pulls in as a block and the alignment it was written to create survives at the tighter offset.
+The three `DECODING_TABLE` entries carry a wide hand-set gutter that already lines their comments up in one column. **The gutter closes as a block to two spaces past the widest row**, because the shared column resolves at that offset whatever gap the input carries, so the alignment the author wrote survives at the tighter column.
 '''

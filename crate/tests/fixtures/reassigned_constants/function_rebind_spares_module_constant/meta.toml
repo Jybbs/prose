@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Function Rebind Leaves the Module Constant Silent"
+title       = "A Function-Local Rebind Leaves the Module Constant Unreported"
 
 description = '''
-`TIMEOUT = 30` is assigned once at module level, and the `TIMEOUT = 60` inside `override` creates a function-local binding rather than rewriting the module name. The lint counts module-scope writes only, so the module constant goes unreported.
+`TIMEOUT = 30` is assigned once at module level, and `override` assigns `TIMEOUT = 60` inside its body. **No diagnostic is reported**, because the assignment inside the function binds a local name rather than rewriting the module one, and the rule counts module-scope writes only.
 '''

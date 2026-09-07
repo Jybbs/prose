@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Backslash Join Under a Comment Holds"
+title       = "A Backslash Join Above a Comment Stays as Written"
 
 description = '''
-A `\` explicit line join whose row beneath opens a comment block still joins the two rows, so the gap the rule would normalize sits against the backslash rather than between two statements. **The comment block travels with the join**, leaving the run above it alone.
+The file opens with a `\` explicit line join whose next row is the comment `# notes` above `y = 2`. The join still joins the two rows, so the gap the rule would set sits against the backslash rather than between two statements. **The row above the comment is left alone**, because the backslash joins it to the comment rather than opening a blank run the rule would clear.
 '''

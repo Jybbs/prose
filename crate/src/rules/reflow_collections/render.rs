@@ -26,8 +26,7 @@ use crate::{
 
 /// Per-item state for a dict, list, set, or tuple literal: serialized
 /// text, atomicity for layout dispatch, source range for blank-line
-/// lookups, and display width at the canonical `": "` separator, so an
-/// `align_colons`-padded gap does not inflate the measure.
+/// lookups, and display width at the canonical `": "` separator.
 struct GatheredItems<'src> {
     atomics: Vec<bool>,
     close: char,
@@ -60,11 +59,10 @@ impl<'src> GatheredItems<'src> {
 impl<'a> Layouter<'a> {
     /// Collects the bracket pair and per-item text, atomicity, and source
     /// range for the collection at `expr` under `parent`, each child
-    /// serialized through `serialize_expr` / `serialize_dict_item` at
-    /// `indent` so nested collections arrive already laid out, every one
-    /// charged the separator a later sort leaves closing its row. An
-    /// item needing neither a rewrite nor a move borrows its source
-    /// slice.
+    /// serialized through `serialize_expr` or `serialize_dict_item` at
+    /// `indent` and charged the separator a later sort leaves closing
+    /// its row. An item needing neither a rewrite nor a move borrows its
+    /// source slice.
     fn gather_items(&self, expr: &Expr, parent: AnyNodeRef, indent: usize) -> GatheredItems<'a> {
         let node = AnyNodeRef::from(expr);
         let last = self.reorders.sorted_last(self.source, node, parent);
@@ -108,12 +106,10 @@ impl<'a> Layouter<'a> {
     /// Builds the hung two-line form of a `key: value` dict entry,
     /// breaking at `:` and emitting the value at `item_indent +
     /// INDENT_STEP` with `tail` columns closing its row. The key routes
-    /// through `repaired_key` the same way `serialize_dict_item` does,
-    /// and its pre-colon padding carries through, the column belonging
-    /// to `align_colons`. Returns `None` for a `**value` unpacking item
-    /// and for an entry either side of whose `:` carries an implicitly
-    /// concatenated string, which `stack-adjacent-strings` breaks in
-    /// place.
+    /// through `repaired_key` and keeps its pre-colon padding. Returns
+    /// `None` for a `**value` unpacking item and for an entry with an
+    /// implicitly concatenated string on either side of its `:`, which
+    /// `stack-adjacent-strings` breaks in place.
     fn hang_dict_value(
         &self,
         item: &DictItem,
@@ -149,12 +145,11 @@ impl<'a> Layouter<'a> {
 
     /// Serializes a dict item as `key: value` or `**value`, paired with
     /// its display width at the canonical `": "` separator. The key
-    /// routes through `repaired_key` so one written across lines rejoins
-    /// beside its `:`, and the value's fit column sits past the key
-    /// text's last row and the separator that lands ahead of it. A
-    /// borrowed key and value
-    /// over an `align-colons`-padded gap return the source slice whole so
-    /// the padding round-trips, the width counting the canonical `": "`.
+    /// routes through `repaired_key`, and the value's fit column sits
+    /// past the key text's last row and the canonical separator. A
+    /// borrowed key and value over an `align-colons`-padded gap return
+    /// the source slice whole, the width still counting the canonical
+    /// `": "`.
     fn serialize_dict_item(
         &self,
         item: &DictItem,

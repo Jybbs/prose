@@ -106,11 +106,8 @@ pub(crate) fn keyword_args<'src>(
 
 /// True where `reflow-calls`'s count trigger explodes `call`, meaning
 /// every argument takes keyword form against the module function the
-/// callee binds and no positional-only prefix pins the order. A call the
-/// cap claims but cannot name stays inline, so a join or a one-row form
-/// written around it stands rather than being reopened. Without a target
-/// map the answer holds at true, the reading that never writes a form a
-/// later explode would undo.
+/// callee binds and no positional-only prefix pins the order. Without a
+/// target map the answer is true.
 pub(crate) fn takes_keyword_form(
     source: &Source,
     call: &ExprCall,

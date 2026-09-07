@@ -3,5 +3,5 @@ previewable = false
 title       = "The `typing_extensions` Root Reaches Both Rewrites"
 
 description = '''
-`typing_extensions` re-exports the same members `typing` holds, so `List` and `Optional` imported from it rewrite identically, `names: List[str]` landing on `list[str]` and `limit: Optional[int]` on `int | None`. Neither name is read afterward, so the `from typing_extensions import` line is removed the same way a `typing` import would be.
+`from typing_extensions import List, Optional` feeds `names: List[str]` and `limit: Optional[int]` in `widen`. **Both rewrite exactly as they would from `typing`**, `names` ending up as `list[str]` and `limit` as `int | None`, because `typing_extensions` re-exports the same members, and with neither name read afterward the import line is removed the same way a `typing` import would be.
 '''

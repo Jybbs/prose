@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "TypeVar Bindings Pass Through Untouched"
+title       = "A `TypeVar` Binding Is Not Reported"
 
 description = '''
-`T = TypeVar("T")` binds a name whose all-uppercase casing matches the `SCREAMING_CASE` shape the rule targets. A `TypeVar` binding is **structural by definition**, declaring a type variable rather than storing a value, so it passes through untouched and no diagnostic is emitted.
+`T = TypeVar("T")` binds an all-uppercase name to a `TypeVar` call, a name that matches the `SCREAMING_CASE` pattern. **No diagnostic is reported**, because a `TypeVar` binding declares a type variable rather than storing a value, a typing construct the rule exempts.
 '''

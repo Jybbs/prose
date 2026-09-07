@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Docstring Args Blocks Align the Parameter-Name Column"
+title       = "Only the Real `Args:` Header Starts an Aligned Block"
 
 description = '''
-The docstring of `emit` contains the text `Args:` twice, once inside a prose sentence and once as the real section header. **Only the section header starts an alignable block**, so the prose mention stays as written whereas `channel`, `severity`, and `payload` beneath the header align on one `:` column.
+The docstring of `emit` contains the text `Args:` twice, once inside a prose sentence and once as the section header. **Only the section header opens a block the rule aligns**, so the sentence stays as written whereas `channel`, `severity`, and `payload` under the header align on one `:` column.
 '''

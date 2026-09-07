@@ -25,11 +25,10 @@ impl Ranged for Window {
 }
 
 /// The windows covering `replaced`, ascending and merged where two
-/// overlap or meet: the innermost statement covering a range, or the
-/// run of module-body siblings the range reaches where no single
+/// overlap or meet, each the innermost statement covering a range, or
+/// the run of module-body siblings the range reaches where no single
 /// statement covers it, a module-body window running on through the
-/// gap after it so the reparse lexes the gap's line breaks against
-/// what the window holds.
+/// gap after it.
 pub(super) fn covering(
     source: &Source,
     replaced: impl Iterator<Item = TextRange>,

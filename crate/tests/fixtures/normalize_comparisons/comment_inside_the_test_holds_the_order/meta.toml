@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Comment Inside the Test Holds the Operand Order"
+title       = "A Comment Inside the Test Keeps the Operand Order"
 
 description = '''
-`42 == count` leads with the constant, the shape the rule normally flips, but the `# the answer` comment sits inside the comparison. Swapping the operands would leave that comment attached to whichever operand landed on its line, so a comment anywhere inside the test blocks the flip and the order holds.
+`42 == count` leads with the constant, the order the rule normally flips, but the `# the answer` comment sits inside the comparison. **The operand order stays as written**, because a swap would leave the comment attached to whichever operand ended up on its line, so a comment anywhere inside the test stops the flip.
 '''

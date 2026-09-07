@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Same-Line Method Bodies Recurse Without Panic"
+title       = "Same-Line Method Bodies Sort Without a Panic"
 
 description = '''
-`C`'s methods each keep their body on the `def` line, `def zeta(self): return 1` among them, and the class body still **sorts without a panic**, reordering to `alpha`, `mu`, `zeta`. A body that starts mid-line has no leading-comment region to scan, and the rewriter skips that scan rather than building a negative range.
+`C`'s methods each keep their body on the `def` line, `def zeta(self): return 1` among them. **The class body sorts to `alpha`, `mu`, `zeta` without a panic**, because a body that starts mid-line has no leading-comment region to scan, and the rewriter skips that scan rather than building a negative range.
 '''

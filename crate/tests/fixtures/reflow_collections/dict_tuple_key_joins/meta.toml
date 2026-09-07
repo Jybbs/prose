@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Multi-Line Collection Keys Join So Their Colons Align"
+title       = "A Broken Collection Key Rejoins So Its `:` Aligns"
 
 description = '''
-The tuple key `(alpha, beta)` in `mapping` and the subscript key `registry[lookup_index]` in `keyed` each **join onto one line**, so each key reads as a single clean member that the alignment and ordering rules can fold into their run, rather than one stranded across a break.
-
-The tuple key in `overflow` would cross the budget once joined, so it stays multi-line instead, expanded canonically with one element per row.
+The tuple key `(alpha, beta)` in `mapping` and the subscript key `registry[lookup_index]` in `keyed` are each broken across rows, and the tuple key in `overflow` is too wide to rejoin. **The keys in `mapping` and `keyed` rejoin onto one row**, so each reads as one member the alignment and ordering rules can place in a run, whereas the key in `overflow` expands to one element per row because its joined form would pass the budget.
 '''

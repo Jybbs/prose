@@ -3,5 +3,5 @@ previewable = true
 title       = "The Union Rewrite Waits for Python 3.10"
 
 description = '''
-Builtin generics are subscriptable from Python 3.9, whereas the `|` union is runtime-valid only from 3.10. With `target-version = "3.9"`, `names: List[str]` converts to `list[str]` while `limit: Optional[int]` holds, and the `typing` import shrinks to `Optional`, the one name still read.
+With `target-version = "3.9"`, `load` takes `names: List[str]` and `limit: Optional[int]`. **`names` converts to `list[str]` and `limit` stays as written**, because builtin generics are subscriptable from Python 3.9 whereas the `|` union is valid at runtime only from 3.10, so the `typing` import shrinks to `Optional`, the one name still read.
 '''

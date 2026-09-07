@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Annotated Collection Entries Share a Column"
+title       = "Collection Entries With Trailing Comments Share a Column"
 
 description = '''
-The `RETRY_DELAYS` list holds one entry per line, and because `1`, `30`, and `3600` differ in width, each trailing comment starts somewhere new. The entries sit at one indent on consecutive lines, so their comments form one run and settle on a single column, the notes reading as a second column beside the values.
+The `RETRY_DELAYS` list holds one entry per line, and `1`, `30`, and `3600` differ in width, so each trailing comment starts at a different column. **The three comments move to one column two spaces past `3600`**, because the entries sit at one indent on consecutive lines and so form one run, leaving the notes reading as a second column beside the values.
 '''

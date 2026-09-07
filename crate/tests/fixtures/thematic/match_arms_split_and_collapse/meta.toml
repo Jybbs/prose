@@ -1,15 +1,15 @@
 [docs]
 previewable = false
-title       = "Match Arms Split or Collapse by Budget, Kwargs Sort"
+title       = "Match Arms Split or Collapse by Budget and Keywords Sort"
 
 description = '''
-`dispatch`'s three named cases each call an over-budget `Counter(...)` inline, with the `case _` fallback already padded so its `:` lines up with them. A module-level `SETTINGS` dict holds one key, and `required_only` returns a one-item set with a trailing comma.
+`dispatch`'s three named cases each call an over-budget `Counter(...)` inline, with the `case _` fallback padded so its `:` lines up with them, a module-level `SETTINGS` dict spreads one key across three lines, and `required_only` returns a one-item set with a trailing comma.
 
-The rewrites land together:
+The rewrites are written together:
 
 1. Each `Counter(...)` call explodes to one keyword per line, and its `action`, `source`, and `timestamp` keywords sort.
-2. The dangling commas drop from `SETTINGS` and from `{name,}`.
-3. `SETTINGS` rejoins onto one line, a single entry being too few to hold it open.
+2. The trailing commas drop from `SETTINGS` and from `{name,}`.
+3. `SETTINGS` rejoins onto one line and moves above `dispatch`, a single entry being too few to keep it open.
 
-Once the three cases turn multi-line, `align-match-case` **no longer groups `case _` with them**, so its padding collapses to a single flush space.
+**Once the three cases turn multi-line, `align-match-case` no longer groups `case _` with them**, so the padding before its `:` is removed and the arm reads `case _: return None`.
 '''

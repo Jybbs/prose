@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A `nonlocal` Declaration Skips the Function"
+title       = "A `nonlocal` Declaration Skips the Whole Function"
 
 description = '''
-`inner` declares `nonlocal counter`, and that **skips the whole function** rather than just the `nonlocal` line.
-
-`bumped` is never considered, even though on its own it is written once and read once. Deciding whether `counter` reaches a second use would mean following the binding out along the closure chain into `outer`, so the rule steps back from the entire body instead.
+`inner` declares `nonlocal counter`, then writes `bumped` once from `counter + 1` and reads it once in `return bumped`. **Nothing in `inner` is reported**, because a `nonlocal` declaration skips the whole function rather than the one line, since counting the uses of `counter` would mean following the binding along the closure chain into `outer`, which the rule does not do.
 '''

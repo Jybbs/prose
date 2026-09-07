@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Positional and Keyword-Only Separators Ride Through"
+title       = "Positional-Only and Keyword-Only Separators Pass Through"
 
 description = '''
-`split_pos_only`'s parameter list ends in `/,` right before its closing `)`, and `split_kw_only`'s ends in `b,`, with the positional-only `/` and keyword-only `*` markers carrying no AST node of their own. **`strip-trailing-commas` tests only whether the token right before the `)` is a `,`**, so both separators pass through with no special handling, stripping to `/` and `b`.
+`split_pos_only` ends its parameter list in `/,` before the closing `)`, and `split_kw_only` opens its list with `*,` and ends in `b,`. **The comma after `/` and the comma after `b` are removed, and the `/` and `*` markers are left in place**, because the rule tests only whether the token before the `)` is a `,`, and the markers carry no AST node of their own to handle specially.
 '''

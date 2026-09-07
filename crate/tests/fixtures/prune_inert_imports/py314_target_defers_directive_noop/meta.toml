@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A 3.14 Target Makes the Directive a No-Op"
+title       = "A 3.14 Target Removes the Directive Whatever the Annotations"
 
 description = '''
-With `target-version = "3.14"` configured, PEP 749 makes annotation evaluation deferred by default. **`from __future__ import annotations` is dropped even though `add`'s parameters and return type carry annotations**, because the directive carries no runtime weight once 3.14 defers evaluation on its own.
+`target-version = "3.14"` is set, and `add` annotates both parameters and its return as `int`. **`from __future__ import annotations` is removed even though annotations are present**, because PEP 749 defers annotation evaluation on 3.14 and the directive changes nothing at runtime there.
 '''

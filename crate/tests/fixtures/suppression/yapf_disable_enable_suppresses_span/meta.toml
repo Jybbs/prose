@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Yapf Disable and Enable Alias the Fmt Span"
+title       = "`yapf: disable` and `yapf: enable` Alias the `fmt` Span"
 
 description = '''
-`# yapf: disable` and `# yapf: enable` around `short`, `much_longer_name`, and `mid` **produce the same suppressed span** `# fmt: off` and `# fmt: on` would, leaving those three assignments verbatim. The `bar_baz`, `foo`, `x` run above the block and the `a`, `bb`, `ccc` run below it still align to their own group widths.
+`# yapf: disable` and `# yapf: enable` enclose `short`, `much_longer_name`, and `mid`. **They produce the same suppressed span `# fmt: off` and `# fmt: on` would**, so those three assignments stay verbatim while the `bar_baz`, `foo`, `x` run above the block and the `a`, `bb`, `ccc` run below it align to their own group widths.
 '''

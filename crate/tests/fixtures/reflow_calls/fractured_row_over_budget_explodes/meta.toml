@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "A Rejoin Landing One Column Over Budget Explodes"
+title       = "A Rejoin Ending One Column Over Budget Explodes"
 
 description = '''
-Whether `helper(alpha, beta)` may rejoin depends on the full row a join would produce, counting the `+` and the long operand trailing the closing `)`.
-
-That joined row would land **exactly one column past the budget**, so the call explodes rather than joining, and the operand follows the `)` on the closing row.
+`helper(alpha, beta)` arrives broken across two rows with `+` and a long operand trailing its `)`. **The call explodes rather than rejoining, and the operand follows the `)` on the closing row**, because the rejoin is measured across the full row a join would produce, counting the `+` and the operand, and that row would end exactly one column past the budget.
 '''

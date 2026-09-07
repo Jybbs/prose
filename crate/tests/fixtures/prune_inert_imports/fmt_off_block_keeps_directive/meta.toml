@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A `# fmt: off` Block Suppresses the Rewrite"
+title       = "A `# fmt: off` Block Keeps the Directive"
 
 description = '''
-The `from __future__ import annotations` line sits between `# fmt: off` and `# fmt: on`, so the edit that would remove it lands inside a suppressed span. The pipeline **drops any edit whose range overlaps a suppressed span**, so suppression is handled centrally rather than re-implemented in each rule.
+`from __future__ import annotations` sits between `# fmt: off` and `# fmt: on`, and the body below carries no annotation. **The line stays**, because the pipeline drops every edit whose range overlaps a suppressed block, so the rule's removal never reaches the file.
 '''

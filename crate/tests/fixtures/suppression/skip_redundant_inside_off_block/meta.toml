@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Skip Inside an Off Block Is Redundant"
+title       = "A Skip Inside an Off Block Is Redundant"
 
 description = '''
-The `# fmt: skip` trailing `inside = 2` sits inside an already-active `# fmt: off` block and is **redundant**, since the block already holds every line verbatim regardless of the extra directive. The `bar_baz`, `foo`, `x` run above the block and the `a`, `bb`, `ccc` run below it still align as two separate groups.
+The `# fmt: skip` trailing `inside = 2` sits inside an open `# fmt: off` block. **The skip is redundant**, because the block already keeps every line verbatim with or without it, and the `bar_baz`, `foo`, `x` run above the block and the `a`, `bb`, `ccc` run below it still align as two separate groups.
 '''

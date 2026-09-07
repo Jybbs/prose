@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Unread Import Drops While a Sibling Keeps Its Module"
+title       = "An Unread Module Import Is Removed Beside a Read `from` Import"
 
 description = '''
-`import json` binds the `json` namespace itself, unread anywhere in the module, while the separate `from json import loads` line keeps `loads` in use through `loads("{}")`. **The bare import drops rather than being reported**, since only a package `__init__.py` treats an unreferenced import as a re-export to flag instead of remove.
+`import json` binds the `json` namespace, which nothing reads, whereas `from json import loads` binds `loads`, which `loads("{}")` reads. **`import json` is removed and the `from` line stays**, because the rule counts each bound name on its own, and the file is not a package `__init__.py`, where an unread import would be reported instead of removed.
 '''

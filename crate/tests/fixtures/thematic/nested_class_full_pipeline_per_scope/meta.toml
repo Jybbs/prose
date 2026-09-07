@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Nested Classes Sort and Align Independently Per Scope"
+title       = "Nested Classes Sort and Align Independently per Scope"
 
 description = '''
-`Order` wraps an inner `LineItem` class, and both carry fields and methods written in arbitrary order.
-
-**Every rule runs at each nesting depth independently.** `Order`'s fields alphabetize to `customer_id`, `placed_on`, `total` and `LineItem`'s to `price`, `quantity`, `sku`, with each class settling its own `:` and `=` columns rather than sharing one across both. The methods reorder within each scope too, and the blank-line cushion between members settles throughout.
+`Order` wraps an inner `LineItem` class, and both carry fields and methods written in arbitrary order. **Every rule runs at each nesting depth on its own**, so `Order`'s fields sort to `customer_id`, `placed_on`, `total` and `LineItem`'s to `price`, `quantity`, `sku`, with each class settling its own `:` and `=` columns rather than sharing one across both. The methods sort within each scope too, and one blank line opens between members throughout.
 '''

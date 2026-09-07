@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Nested Pair Sheds Inside a Fold"
+title       = "A Nested Pair Is Removed Inside a Join"
 
 description = '''
-`ready = (` wraps a multi-line grouping whose first line, `(server.up)`, carries its own redundant parentheses. The inner parentheses shed with the outer fold, reflowing the whole condition to `ready = server.up and cache.warm`.
+`ready = (` opens a multi-line pair whose first row, `(server.up)`, carries a redundant pair of its own. **The inner pair is removed along with the outer one as the interior joins**, so the condition reads `ready = server.up and cache.warm`.
 '''

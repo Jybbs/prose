@@ -3,5 +3,5 @@ previewable = false
 title       = "A Nested Block Value Keeps Its Trailing Comment"
 
 description = '''
-`"nested"` holds a multi-line dict whose inner keys sort into `"a"` then `"b"`, while its trailing `# block` comment stays attached and the separator `,` lands after the closing `}` rather than inside the comment. As the dict's only multi-line entry it takes no blank divider, sitting line-adjacent to `"scalar"` above it.
+`"nested"` contains a multi-line dict with a trailing `# block` comment after its closing `}`, sitting below the one-line `"scalar"`. **The inner keys sort into `"a"` then `"b"`, the `# block` comment stays attached, and the `,` sits after the closing `}` rather than inside the comment.** As the dict's only multi-line entry it takes no blank divider, so it stays directly below `"scalar"`.
 '''

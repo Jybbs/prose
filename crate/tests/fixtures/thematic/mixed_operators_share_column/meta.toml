@@ -3,5 +3,5 @@ previewable = false
 title       = "Comparison, Arithmetic, and Identity Operators Share One Column"
 
 description = '''
-`is_ready`'s `return` mixes `==`, `>`, a chained `<=` compare (`1 <= rec.age <= 99`), `is`, and `not in` across five `and`-joined operands. **`align-comparisons` right-aligns every qualifying operator onto one shared column**, anchoring the chained compare on its first `<=` so all five operands read as a parallel list.
+`is_ready`'s `return` mixes `==`, `>`, a chained `<=` compare (`1 <= rec.age <= 99`), `is`, and `not in` across five `and`-joined operands. **`align-comparisons` right-aligns every qualifying operator onto one column**, anchoring the chained compare on its first `<=`, so the five operands read as one parallel list.
 '''

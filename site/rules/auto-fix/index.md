@@ -1,7 +1,11 @@
+---
+description: "The rules that rewrite source under prose format and report the pending edit under prose check."
+---
+
 # Auto-Fix Rules
 
-Auto-fix rules rewrite source as part of `prose format` and surface as `Severity::Format` diagnostics under `prose check`. Each rule resolves a layout question *Prose* can answer mechanically *(alignment columns, alphabetization order, blank-line counts, collection layout, trailing-comma presence)* and emits an [[edit]] list the [[pipeline]] applies between rules. Auto-fix rules never report a violation the binary won't itself resolve.
+An auto-fix rule rewrites source under `prose format` and reports each rewrite as a `Severity::Format` diagnostic under `prose check`. Each rule settles one layout question *Prose* can answer mechanically *(an alignment column, an alphabetical order, a blank-line count, a collection layout, a trailing comma)* and emits an [[edit]] list the [[pipeline]] applies between rules. An auto-fix rule never reports a change the binary will not itself write.
 
 <RuleCardList category="auto-fix" />
 
-For the deterministic order these rules fire in, see the [**Pipeline Order**](/reference/pipeline-order) reference. For the per-rule facets, see the [**Configuration**](/reference/configuration) reference. For the lint rules that surface diagnostics without rewriting, see the [**Lint**](/rules/lint/) landing.
+The [**Pipeline Order**](/reference/pipeline-order) reference lists the fixed order these rules run in, the [**Configuration**](/reference/configuration) reference lists the per-rule facets, and the [**Lint**](/rules/lint/) landing covers the rules that report a diagnostic without rewriting.

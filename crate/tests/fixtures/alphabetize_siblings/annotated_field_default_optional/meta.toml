@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Field Defaults Are Preserved Across the Reorder"
+title       = "Fields With a Default Inside `Annotated` Sort After the Required Fields"
 
 description = '''
-`title` and `tags` take their defaults through `Field(default="Untitled")` and `Field(default_factory=list)` inside `Annotated`, and **a field whose nested call carries a `default` or `default_factory` keyword registers as optional**. The required `company` and `description` sort ahead of that optional pair, each half alphabetized, keeping every default-carrying field behind the fields that lack one. The walk finds the call structurally rather than by name, so the detection does not depend on the constructor being `pydantic`'s `Field`.
+`title` and `tags` take their defaults through `Field(default="Untitled")` and `Field(default_factory=list)` inside `Annotated`, whereas `company` and `description` carry no default. **The required pair sorts ahead of the optional pair, each half alphabetized**, because a field whose nested call carries a `default` or `default_factory` keyword counts as optional. The rule finds the call by structure rather than by name, so the detection does not depend on the constructor being `pydantic`'s `Field`, and the two imports also swap into alphabetical order.
 '''

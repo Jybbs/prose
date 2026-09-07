@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Last Entry Aligned onto the Cap Keeps Its Column"
+title       = "A Last Entry Padded Onto the Budget Keeps Its Column"
 
 description = '''
-The dict is already in the order [[alphabetize-siblings]] leaves it, so its last entry gains no separator and [[reflow-collections]] measures the row [[align-colons]] pads onto the cap at exactly the cap. The column holds rather than stripping back.
+`_FORMATS` lists `FMT_BINARY` and `FMT_XML` in the order [[alphabetize-siblings]] leaves them, so the last entry gains no separator, and [[align-colons]] pads `FMT_XML` onto a `:` column that puts its row exactly at the 45-column budget. **The column stays**, because [[reflow-collections]] measures that row at exactly the budget rather than past it, and the padding is not stripped back.
 '''

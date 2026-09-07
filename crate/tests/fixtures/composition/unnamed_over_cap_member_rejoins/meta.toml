@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "An Over-Cap Member the Rule Cannot Name Rejoins Inside Its Literal"
+title       = "An Over-Cap Call the Rule Cannot Name Joins Inside Its Literal"
 
 description = '''
-The `helper(one, two, three, four)` call arrives fractured across four lines and passes more arguments than `max-args` allows.
-
-`helper` resolves to no definition the rule can read, so it cannot name the positionals, and **it rejoins the fracture rather than exploding the call**. `reflow-collections` then sees a list whose members all sit on one row and leaves `hanging` on its single line.
+`helper(one, two, three, four)` arrives written across four lines inside the list `hanging`, passing more arguments than `max-args` allows. `helper` resolves to no definition the rule can read, so `reflow-calls` cannot name the positionals, and **it joins the call onto one line rather than exploding it**, leaving `reflow-collections` a list whose members all sit on one row, so `hanging` stays on a single line.
 '''

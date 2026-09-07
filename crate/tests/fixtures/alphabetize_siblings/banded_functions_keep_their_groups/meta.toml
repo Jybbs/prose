@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Banded Functions Keep the Dunder, Private, Public Order"
+title       = "Functions Sort by Group Before Name"
 
 description = '''
-`Widget` is a class, so it groups above all three functions whatever its name.
-
-Among the functions the order is by group before name. Dunder names come first, then a single leading underscore, then everything else, which lands `__getattr__`, `_helper`, and `Factory` in that order. **The name only breaks ties inside a group**, which is why `Factory` sorts last despite `F` coming before `_` in byte order.
+`Widget` is a class among three functions named `Factory`, `_helper`, and `__getattr__`. **`Widget` moves above every function, and the functions order as `__getattr__`, `_helper`, `Factory`**, because a class sorts above the functions whatever its name and a function sorts by group before name, dunders first, then a single leading underscore, then everything else. The name only breaks ties inside a group, which is why `Factory` sorts last despite `F` coming before `_` in byte order.
 '''

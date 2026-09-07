@@ -1,6 +1,5 @@
-//! The names a quoted annotation reads. The binding table does not
-//! reach them, their identifiers sitting inside a string literal rather
-//! than in the AST.
+//! The names a quoted annotation reads, which the binding table does
+//! not reach.
 
 use ruff_python_ast::{
     Expr, ModModule,
@@ -31,9 +30,8 @@ impl<'a> Visitor<'a> for NameCollector<'_> {
     }
 }
 
-/// Every name a string-literal annotation in `module` reads, alongside
-/// the unquoted names sharing those annotations, empty when the module
-/// carries no annotation at all.
+/// Every name an annotation in `module` loads, quoted or not, empty
+/// when the module carries no annotation at all.
 pub(super) fn annotation_names(module: &ModModule) -> FxHashSet<String> {
     let mut names = FxHashSet::default();
     for_each_annotation(&module.body, |annotation| absorb(annotation, &mut names));

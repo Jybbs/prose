@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "A Decorator Chain Takes the Same Parenthesis Pair"
+title       = "A Decorator Chain Breaks Inside the Same Parenthesis Pair"
 
 description = '''
-The decorator `@registry.route(path).methods(verbs).build()` is a three-link chain, so it breaks like any other chain, the grouping pair landing right after the `@`. PEP 614 relaxed the decorator grammar to accept any expression in Python 3.9, comfortably below the 3.10 floor the project targets.
+`@registry.route(path).methods(verbs).build()` is a three-link chain on a decorator line. **It breaks like any other chain, with the parenthesis pair written directly after the `@`** and `.methods` and `.build` stacked beneath the dot of `registry`. PEP 614 lets a decorator carry any expression from Python 3.9, below the 3.10 floor the project targets.
 '''

@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Cleared `reflow-calls` Holds the Whole Chain"
+title       = "A Disabled `reflow-calls` Keeps the Whole Chain as Written"
 
 description = '''
-Nothing here moves. Measuring a chain reads each link at the width the fractures inside it settle to, and **no fracture closes while `reflow-calls` is off**.
-
-The `.lookup` link carrying the hand-wrapped `compute(alpha,` argument list therefore still spans lines when the chain is read, so no break lands and the chain stays exactly where the source put it.
+The `.lookup` link carries the hand-wrapped `compute(alpha,` argument list, and `reflow-calls = false` turns off the rule that would close it. **The chain stays as written**, because a chain is measured with each link at the width its argument lists settle to, and no argument list closes while `reflow-calls` is off, so the `.lookup` link still spans lines when the chain is read.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Chained Assignments Stay Un-Aligned"
+title       = "A Chained Assignment Stays out of the Run"
 
 description = '''
-The chained assignment `a = b = 1` carries two `=` tokens, and neither one is the row's single alignment anchor, so the rule **skips it**. That leaves `xx = 2` standing alone, and one binding is not a run, so nothing moves.
+`a = b = 1` carries two `=` tokens, and `xx = 2` follows it. **The chained assignment is skipped**, because neither `=` is the single operator a row aligns on, and that leaves `xx = 2` alone, so nothing is padded.
 '''

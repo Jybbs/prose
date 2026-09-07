@@ -3,5 +3,5 @@ previewable = true
 title       = "A Numeric Inside a Replacement Field Still Respells"
 
 description = '''
-`0XABC` respells as `0xABC` inside `mask`'s replacement field, and `scaled` respells both `1E5` and the `0O7` sitting a level deeper inside its format spec. **The numerics and prefixes facets reach into a replacement field where the quotes facet stops**, since only the quote choice is constrained by the string enclosing it.
+`mask = f"{0XABC}"` carries a hex literal inside its replacement field, and `scaled = f"{1E5:>{0O7}}"` carries `1E5` in its field and `0O7` a level deeper inside its format spec. **All three respell, to `0xABC`, `1e5`, and `0o7`**, because the numerics and prefixes facets reach into a replacement field where the quotes facet stops, only the quote choice being constrained by the enclosing string.
 '''

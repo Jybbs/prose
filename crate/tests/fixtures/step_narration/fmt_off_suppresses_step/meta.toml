@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A `# fmt: off` Block Suppresses the Lint"
+title       = "A `# fmt: off` Block Suppresses the Report"
 
 description = '''
-`# 1. normalize input` sits inside a `# fmt: off` block in `process`, and `step-narration` **drops the diagnostic it would otherwise report on that comment**. The suppression carries the same weight against lint diagnostics as it does against rewrites, covering both alike.
+`# 1. normalize input` sits between `# fmt: off` and `# fmt: on` inside `process`. **`step-narration` reports nothing on it**, because a `# fmt: off` block suppresses a lint diagnostic the same way it suppresses a rewrite.
 '''

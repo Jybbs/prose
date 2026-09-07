@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "`# prose: keep` on a Dict Preserves Source Order"
+title       = "`# prose: keep` on a Dict Keeps Source Order"
 
 description = '''
-The two dicts hold identical entries in the same scrambled order, and the only difference between them is the `# prose: keep` trailing `marked`'s opening `{`.
-
-`unmarked` sorts, so its scalar entries `"name"` and `"version"` move ahead of the nested `"config"` dict. **`marked` keeps its source order untouched**, which puts the two outcomes side by side from the same input.
+`unmarked` and `marked` contain identical entries in the same scrambled order, and the only difference between them is the `# prose: keep` trailing `marked`'s opening `{`. **`unmarked` sorts, its scalar entries `"name"` and `"version"` moving ahead of the nested `"config"` dict, whereas `marked` keeps its source order untouched**, which puts the two outcomes side by side from the same input.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Drop Future, Sort Aliases, Align `as`, Settle Cushion"
+title       = "The Future Import Drops, the Aliases Sort and Align, and the Gap Closes"
 
 description = '''
-The module top carries `from __future__ import annotations`, three aliased imports out of order, and three blank lines before `def add`. **The future import is removed, `collections`, `numpy`, and `requests` sort alphabetically, their `as` keywords pad into one column, and the gap collapses to two blank lines** before the function.
+The module top carries `from __future__ import annotations`, three aliased imports out of order, and three blank lines before `def add`. **The directive is removed, `collections`, `numpy`, and `requests` sort, their `as` keywords pad into one column, and the gap closes to two blank lines** before the function.
 '''

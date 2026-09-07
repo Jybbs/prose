@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Lone Exploded Keyword Still Buffers Its `=`"
+title       = "A Lone Exploded Keyword Gains a Space on Each Side of Its `=`"
 
 description = '''
-`handler` is the only keyword in the exploded `register` call, so there is no column for it to join.
-
-Its `=` **still takes a single space on each side**, because a keyword standing alone on its line reads as `name = value` rather than staying tight the way a packed argument does.
+`handler=on_event` is the only keyword inside the exploded `register` call, so there is no column for it to join. **Its `=` still gains a space on each side**, because a keyword alone on its line reads as `name = value`, whereas a packed keyword stays tight.
 '''

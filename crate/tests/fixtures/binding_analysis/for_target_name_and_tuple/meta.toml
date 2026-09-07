@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "For-Loop Target Binds Enclosing as Name or Tuple"
+title       = "A `for` Target Binds in the Enclosing Scope as a Name or a Tuple"
 
 description = '''
-`for i in xs` binds the single name `i`, and `for a, b in xs` destructures its tuple into `a` and `b`. **All three targets bind in the enclosing module scope** with the `For` kind, and each loop header counts as a read of `xs`, so its `read_offsets` lists both.
+`for i in xs` binds the single name `i`, and `for a, b in xs` destructures its tuple. **`i`, `a`, and `b` each bind in the enclosing module scope with the `For` kind**, and each loop header records a read of `xs`, so its `read_offsets` lists both.
 '''

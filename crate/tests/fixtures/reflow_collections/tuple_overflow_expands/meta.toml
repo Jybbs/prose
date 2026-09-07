@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Over-Wide Parenthesized Tuple Expands Like a List"
+title       = "An Over-Wide Parenthesized Tuple Expands the Same Way a List Does"
 
 description = '''
-Both `atomics` and `nonatomics` overflow the line, so each parenthesized tuple breaks across lines through the same flow layout `reflow-collections` gives a `list`. **The numbers in `atomics` flow across as few balanced lines as fit** under `code-line-length` and the `max-atomics` cap, whereas the calls in `nonatomics`, each non-atomic, land one per line.
+`atomics` lists ten integers and `nonatomics` lists six calls, each in a parenthesized tuple past the budget. **`atomics` packs its integers across two balanced rows and `nonatomics` puts one call per row**, because a parenthesized tuple takes the same layout as a list, with atomic entries packing across as few rows as fit under `code-line-length` and `max-atomics` and a non-atomic entry taking a row of its own.
 '''

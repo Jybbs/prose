@@ -4,7 +4,5 @@ previewable = true
 title       = "A Nested Flush Column Explodes the List Around It"
 
 description = '''
-The `helper` argument arrives as a block whose closer sits flush with `wrap`'s own, and it still spans rows after every fracture that could close has closed.
-
-**An argument spanning rows explodes the list around it**, so `alpha` and the `helper` block each take a row of their own, with the held block re-indenting to the item column.
+`wrap` passes `alpha` and a `helper` block whose closer sits flush with `wrap`'s own, and the block still spans rows after every break that could close has closed. **`alpha` and the `helper` block each take a row of their own, and the block re-indents to the item column**, because an argument spanning rows explodes the list around it.
 '''

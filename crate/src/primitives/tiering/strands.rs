@@ -13,8 +13,7 @@ use super::Evaluation;
 use crate::primitives::{binding::module_bound_names, group_map, slots::slot_positions};
 
 /// The binders and the evaluated names of one run, read against any
-/// arrangement of it. Fixed for the run, so a caller permuting the same
-/// range repeatedly builds it once.
+/// arrangement of it and fixed for the run.
 pub(crate) struct Strands<'a, 'src> {
     bound_at: FxHashMap<&'src str, Vec<usize>>,
     pinnable: FxHashMap<usize, TextSize>,
@@ -103,10 +102,9 @@ impl<'a, 'src> Strands<'a, 'src> {
 }
 
 /// True when `binding` stays on the side of `reader` that the source
-/// seated it, so a reader neither rises above a binding it evaluates
-/// nor crosses one the source placed after it. `position` inverts a
-/// permutation, so a statement binding the name it reads compares equal
-/// on both sides and imposes nothing on itself.
+/// seated it. `position` inverts a permutation, so a statement binding
+/// the name it reads compares equal on both sides and imposes nothing
+/// on itself.
 fn side_kept(binding: usize, reader: usize, position: &[usize]) -> bool {
     binding.cmp(&reader) == position[binding].cmp(&position[reader])
 }

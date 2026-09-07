@@ -1,8 +1,8 @@
 [docs]
 canonical   = false
 previewable = false
-title       = "A Raised `max-args` Holds More Arguments Inline"
+title       = "A Raised `max-args` Keeps More Arguments Inline"
 
 description = '''
-The `fetch` call carries five keyword arguments, `body=b` through `url=u`, enough to explode under the default cap. With `max-args = 5` the count sits exactly at the configured threshold, and the rule explodes only past it, so the call stays on one line.
+`fetch(body=b, headers=h, method=m, params=p, url=u)` carries five keyword arguments, enough to explode under the default cap, and the case runs with `max-args = 5`. **The call stays on one line**, because the count sits exactly at the configured cap and the rule explodes only past it.
 '''

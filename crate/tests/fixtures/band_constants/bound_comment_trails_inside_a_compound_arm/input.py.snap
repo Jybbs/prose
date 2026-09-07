@@ -5,4 +5,4 @@ input_file: crate/tests/fixtures/band_constants/bound_comment_trails_inside_a_co
 ---
 if True:
     ALPHA_CAP = 2
-    ZETA_CAP = 1  # the ceiling the retry loop honors
+    ZETA_CAP = 1  # the ceiling the retry loop reads

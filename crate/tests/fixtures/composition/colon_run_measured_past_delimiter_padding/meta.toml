@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Colon Run Measures Past the Delimiter Padding a Later Rule Drops"
+title       = "A Colon Run Is Measured Past the Padding a Later Rule Removes"
 
 description = '''
-One key in the dict carries a stranded space before its closing parenthesis, and `strip-stranded-padding` removes it.
-
-`align-colons` reads each row at **the width it settles to once that removal lands**. Reading the padded width instead would make the row look like it breached the 40-column budget, and the run would have skipped its shared column over a breach that never actually happens.
+One key of `_hash_action` carries a stranded space before its closing parenthesis, `(False, False, False, True )`, and `strip-stranded-padding` removes it. **`align-colons` pads the run onto one `:` column**, because it measures each row at the width it has once that removal is written, whereas the padded width would have read as a breach of the 40-column budget and the run would have skipped its column over a breach that never happens.
 '''

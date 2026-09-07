@@ -3,5 +3,5 @@ previewable = false
 title       = "A `**` Unpacking Ends the Keyword Run"
 
 description = '''
-`**base` is an unpacking rather than a keyword, so it **ends the keyword run** the same way a positional argument would. `name` and `tag` above it still align on a shared `=` column, while `extra` below it stands alone and takes the single-space `extra = "z"` form instead.
+`**base` sits between the keywords `tag` and `extra` inside `build`. **The unpacking ends the keyword run the way a positional argument does**, so `name` and `tag` above it align on one `=` column, and `extra` below it stands alone with a single space on each side of its `=`.
 '''

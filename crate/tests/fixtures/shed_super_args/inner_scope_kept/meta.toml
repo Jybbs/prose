@@ -3,5 +3,5 @@ previewable = true
 title       = "A Call Nested in Its Own Scope Stays Written"
 
 description = '''
-`deferred`'s `lambda: super(Child, self).items()`, `gathered`'s list comprehension, and `wrapped`'s `inner()` closure each call `super(Child, self).items()` from a frame with no parameters of its own. None of those frames carries the leading positional argument the bare call would read, so every call stays exactly as written.
+`deferred`'s `lambda: super(Child, self).items()`, `gathered`'s list comprehension, and `wrapped`'s `inner()` closure each call `super(Child, self).items()` from a frame with no parameters of its own. **Every call stays exactly as written**, because none of those frames carries the leading positional argument the bare call would read.
 '''

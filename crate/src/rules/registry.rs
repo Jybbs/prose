@@ -57,14 +57,14 @@ use super::id::{RuleId, is_valid_slug};
 /// `Severity::Lint` diagnostics they surface without an edit, or both.
 /// An empty outer `Vec` from `apply` skips the reparse for that rule.
 ///
-/// Rules must be `Send + Sync` so that the pipeline can run across
-/// files in parallel without moving the rule list per worker.
+/// Rules are `Send + Sync`, shared by reference across the workers
+/// that run files in parallel.
 pub(crate) trait Rule: fmt::Debug + Send + Sync {
     /// Computes the edits this rule would apply to `source`,
     /// partitioned into fix groups. Each inner `Vec` is one fix that
     /// the pipeline maps to a single diagnostic, and the edits across
     /// all groups must not overlap after sorting. The pipeline's
-    /// applicator declines an overlapping group rather than splicing it.
+    /// applicator skips an overlapping group.
     fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
         Vec::new()
     }
@@ -76,7 +76,7 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
 
     /// Lint-only side channel emitting `Severity::Lint` diagnostics
     /// the pipeline cannot derive from an edit. The default returns
-    /// no diagnostics, so auto-fix rules need not override.
+    /// no diagnostics.
     fn lint(&self, _source: &Source) -> Vec<Diagnostic> {
         Vec::new()
     }
@@ -88,10 +88,10 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
     }
 
     /// True where this rule's edits leave every binding its name, its
-    /// scope, and its writes and reads in their order, and every
-    /// assignment value its extent, so the `Source` built after them
-    /// inherits the binding table rather than rebuilding it. Defaults
-    /// to the `PRESERVES_BINDINGS` const on the rule registered under
+    /// scope, and the order of its writes and reads, and every
+    /// assignment value its extent, letting the `Source` built after
+    /// them inherit the binding table. Defaults to the
+    /// `PRESERVES_BINDINGS` const on the rule registered under
     /// `self.id()`.
     fn preserves_bindings(&self) -> bool {
         preserves_bindings_for_id(self.id())
@@ -103,10 +103,11 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
 /// [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
 /// [`Pipeline::with_filters`] from a registry table. Each row leads
 /// with the rule's kebab-case slug, then its `[tool.prose.rules]`
-/// field name, config sub-table type, rule struct, and the slugs it
-/// must run behind. The slug is the single source consumed by
-/// `RuleId::from_str`, the `[tool.prose.rules.<slug>]` section name,
-/// the `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
+/// field name, config sub-table type, rule struct, the slugs it must
+/// run behind, and the slugs it shares a splice with. The slug is the
+/// single source consumed by `RuleId::from_str`, the
+/// `[tool.prose.rules.<slug>]` section name, the
+/// `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
 /// Each rule's one-line imperative lives on its own type as `MESSAGE`
 /// and whether its edits leave every binding standing as
 /// `PRESERVES_BINDINGS`, which [`message_for_id`] and
@@ -114,10 +115,10 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
 ///
 /// Row order is pipeline order.
 ///
-/// The macro asserts each slug's kebab shape and cross-row uniqueness
-/// at compile time, holds every dependency to a rule seated earlier,
-/// and emits a `pub(crate) const SLUG: RuleId` on each rule type so
-/// `id()` collapses to `Self::SLUG`.
+/// The macro asserts at compile time that each slug is kebab-case and
+/// unique across rows and that every dependency and shared splice
+/// names a rule seated earlier, and emits a `pub(crate) const SLUG:
+/// RuleId` on each rule type, which `id()` returns as `Self::SLUG`.
 macro_rules! register_rules {
     ($($slug:literal: $field:ident: $config:ty => $ty:ident
         => [$($after:literal),*] => [$($shares:literal),*]),* $(,)?) => {
@@ -191,8 +192,7 @@ macro_rules! register_rules {
         // row instead of the macro-emitted derive site.
         $(const _: fn() -> $config = <$config as Default>::default;)*
 
-        // Exposes each rule's slug as an inherent associated const so
-        // the rule's `id()` body collapses to `Self::SLUG`.
+        // Exposes each rule's slug as an inherent associated const.
         $(
             impl $ty {
                 pub(crate) const SLUG: RuleId = RuleId($slug);
@@ -236,10 +236,10 @@ macro_rules! register_rules {
         impl Pipeline {
             /// Builds a pipeline registering exactly one rule by name.
             ///
-            /// Returns `None` when `name` does not match any registered
-            /// rule, see [`Pipeline::known_ids`] for the full list.
-            /// Bypasses each rule's `enabled` flag. Snake-case input is
-            /// normalized to the canonical kebab form.
+            /// Returns `None` when `name` matches no registered rule,
+            /// [`Pipeline::known_ids`] listing the full set. Bypasses
+            /// each rule's `enabled` flag and normalizes snake-case
+            /// input to the canonical kebab form.
             pub fn for_rule(name: &str, config: &Config) -> Option<Self> {
                 let id = RuleId::from_str(&name.replace('_', "-")).ok()?;
                 Some(Self::with_filters(config, &[id], &[]))
@@ -260,9 +260,7 @@ macro_rules! register_rules {
             /// `select - ignore`.
             ///
             /// Each rule is built from a config whose `enabled` flags
-            /// carry the resolved set, so a rule predicting what a later
-            /// rule does to a column reads whether that rule runs in this
-            /// pipeline rather than whether the file enables it.
+            /// carry the resolved set.
             pub fn with_filters(
                 config: &Config,
                 select: &[RuleId],
@@ -349,7 +347,7 @@ pub fn independent(later: &str, earlier: &str) -> bool {
 }
 
 /// Returns `true` when `earlier` is registered before `later`, and
-/// `false` when either is absent from the registry. Answers about the
+/// `false` when either is absent from the registry. Reads the
 /// registry's own order rather than the declared column [`runs_behind`]
 /// walks, and takes its pair in the opposite order.
 pub(super) const fn precedes(earlier: &str, later: &str) -> bool {
@@ -362,7 +360,7 @@ pub(super) const fn precedes(earlier: &str, later: &str) -> bool {
 /// Whether `later`'s dependency column reaches `earlier`, directly or
 /// through the column of a rule it already names. `false` for an
 /// unknown slug on either side. Takes its pair in the opposite order
-/// from [`precedes`], which asks about registration rather than the
+/// from [`precedes`], which reads registration order rather than the
 /// declared column.
 pub fn runs_behind(later: &str, earlier: &str) -> bool {
     slug_index(later).is_some_and(|seat| reaches(seat, earlier))

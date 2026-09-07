@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A `# fmt: off` Block Suppresses the Lint"
+title       = "A `# fmt: off` Block Suppresses the Diagnostic"
 
 description = '''
-`RETRIES` is reassigned from `3` to `5` inside a `# fmt: off` … `# fmt: on` block. **No diagnostic is emitted**, because a block marker suppresses lint diagnostics the same way it suppresses rewrites, unlike a line-level `# prose: skip` which reaches only rewrites.
+`RETRIES = 3` and `RETRIES = 5` sit between `# fmt: off` and `# fmt: on`. **No diagnostic is reported**, because a block marker suppresses lint diagnostics as well as rewrites, whereas a line-level `# prose: skip` reaches rewrites only.
 '''

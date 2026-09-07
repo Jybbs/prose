@@ -3,5 +3,5 @@ previewable = true
 title       = "A Call Inside an Operand Explodes With Its Row"
 
 description = '''
-The `emit` call overflows the cap and explodes, and its single argument is the expression `prefix + join(alpha, beta, gamma) + suffix` rather than a call. The nested `join` is still measured on the row the expression lands on, and that row overflows too, so `join` explodes in place between `prefix` and `suffix`.
+`emit(prefix + join(alpha, beta, gamma) + suffix)` overflows `code-line-length = 32`, its single argument an operator expression rather than a call. **`emit` explodes and `join` explodes in place between `prefix` and `suffix`**, because the nested `join` is measured on the row the expression ends up on, and that row overflows too.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Metaclass Keyword Holds the Parentheses Open"
+title       = "A `metaclass` Keyword Keeps the Parentheses"
 
 description = '''
-`class Plugin(object, metaclass=PluginMeta):` carries `metaclass=PluginMeta` as a surviving member of the base list. `object` and the comma that followed it drop, leaving the parentheses in place to carry the keyword, `class Plugin(metaclass=PluginMeta):`.
+`class Plugin(object, metaclass=PluginMeta):` lists `object` beside a `metaclass` keyword. **`object` and the comma after it drop while the parentheses stay**, leaving `class Plugin(metaclass=PluginMeta):`, because the keyword is valid only inside a base list.
 '''

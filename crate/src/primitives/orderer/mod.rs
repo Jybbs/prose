@@ -30,8 +30,7 @@ use permute::is_identity;
 /// Slot indices `i` in `0..order.len() - 1` where the adjacent pair
 /// `(order[i], order[i + 1])` satisfies `pred`, the sorted `Vec<usize>` an
 /// `assemble_*` gap override binary-searches. `pred` receives the slot
-/// alongside the pair, so a predicate keyed off the new-order position (a
-/// section boundary) reads it without re-deriving.
+/// alongside the pair.
 pub(crate) fn adjacent_slots(
     order: &[usize],
     mut pred: impl FnMut(usize, usize, usize) -> bool,
@@ -96,10 +95,10 @@ pub(crate) fn swap_span_commented<T: Ranged>(source: &Source, items: &[T]) -> bo
     source.intersects_comment(TextRange::new(first.start(), tail_end(source, last.end())))
 }
 
-/// True where a leaf group over `items` holds its order as laid out:
-/// `swapped` where the group packs members onto shared rows, opens
-/// mid-row, or carries code in a gap, spanning lines, with a comment
-/// inside the swap span.
+/// True where a leaf group over `items` holds its order as laid out,
+/// `swapped` set for a group packing members onto shared rows, opening
+/// mid-row, or carrying code in a gap, and the group spanning lines
+/// with a comment inside the swap span.
 pub(crate) fn swap_span_holds<T: Ranged>(source: &Source, items: &[T], swapped: bool) -> bool {
     swapped
         && items.len() > 1
@@ -108,8 +107,8 @@ pub(crate) fn swap_span_holds<T: Ranged>(source: &Source, items: &[T], swapped: 
 }
 
 /// True when a group over `items` swaps member slices in place rather
-/// than reordering one-per-line blocks: one packing members onto shared
-/// rows, opening mid-row, or carrying code in its gaps.
+/// than reordering one-per-line blocks, meaning one packing members
+/// onto shared rows, opening mid-row, or carrying code in its gaps.
 pub(crate) fn swaps_in_place<T: Ranged>(source: &Source, items: &[T]) -> bool {
     items.first().is_some_and(|first| {
         any_sibling_shares_line(source, items)

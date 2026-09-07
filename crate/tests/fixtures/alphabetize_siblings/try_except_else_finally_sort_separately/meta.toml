@@ -3,5 +3,5 @@ previewable = false
 title       = "Every `try` Arm Sorts on Its Own"
 
 description = '''
-One `try` statement exercises every arm shape, its body, two `except` handlers, an `else`, and a `finally`, each holding two imports out of order. **Each arm sorts independently**, so `from alpha import b` climbs within the `try` body and `from delta import d` within the `except ValueError` handler, whereas no import crosses from one arm into another.
+One `try` statement carries every arm kind, its body, two `except` handlers, an `else`, and a `finally`, each containing two imports out of order. **Each arm sorts independently and no import crosses from one arm into another**, so `from alpha import b` climbs within the `try` body and `from delta import d` within the `except ValueError` handler.
 '''

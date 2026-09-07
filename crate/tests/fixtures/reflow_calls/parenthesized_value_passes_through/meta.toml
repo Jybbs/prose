@@ -3,5 +3,5 @@ previewable = false
 title       = "A Parenthesized Value Passes Through Whole"
 
 description = '''
-The `emit` call overflows the cap and explodes to one keyword per line, and `gamma`'s value keeps the grouping parentheses it arrived in, the pair passing through outside whatever reshape the value takes. The full pipeline sheds a redundant pair like this one before this rule runs, so the wrapped form is only visible when the rule runs in isolation.
+`emit(alpha=1, beta=2, gamma=(helper(one_value, two_value)))` overflows `code-line-length = 41` with `gamma`'s value wrapped in a redundant grouping pair. **`emit` explodes to one keyword per line and `gamma`'s value keeps the pair it arrived in**, because the pair passes through outside whatever reshaping the value takes. The full pipeline sheds a redundant pair like this one before this rule runs, so the wrapped form is only visible when the rule runs alone.
 '''

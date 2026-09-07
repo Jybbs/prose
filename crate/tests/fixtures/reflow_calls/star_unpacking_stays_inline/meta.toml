@@ -4,7 +4,5 @@ previewable = false
 title       = "Star Unpacking Blocks the Explode"
 
 description = '''
-Nothing here moves. `*parts` unpacks an unknown number of arguments into `send`, so there is no way to tell which of `body` through `wrap` the trailing `extra`, `more`, and `last` bind to.
-
-The unpacking itself can never take a `name=` form either, so **the reshape is blocked entirely** and the call stays inline exactly as written.
+`send(*parts, extra, more, last)` unpacks an unknown number of arguments into `send` ahead of three positionals. **The call stays inline exactly as written**, because there is no way to tell which of `body` through `wrap` the trailing `extra`, `more`, and `last` bind to, and the unpacking itself can never take a `name=` form, so the count trigger passes the call over.
 '''

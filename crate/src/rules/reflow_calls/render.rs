@@ -25,8 +25,8 @@ use crate::primitives::{
 };
 
 /// Where an exploded argument's value lands: the column a later
-/// alignment settles it at where one does, the indent of the row it
-/// opens on, and the columns the row carries after it.
+/// alignment settles it at, if any, the indent of the row it opens
+/// on, and the columns following it on the row.
 #[derive(Clone, Copy)]
 struct Slot {
     aligned: Option<usize>,
@@ -35,13 +35,12 @@ struct Slot {
 }
 
 impl<'a> Exploder<'a> {
-    /// The move `rendered`, the text of the argument opening at `start`
-    /// with head `head`, makes over its continuation rows when the
-    /// argument lands at `indent`, read through [`block_shift`]. `None`
-    /// where the argument holds no continuation row, or where a
-    /// row-spanning string part inside `value` holds the whole argument,
-    /// whose interior a move would pad, leaving no row frozen for the
-    /// shift to skip.
+    /// The move [`block_shift`] reads for the continuation rows of
+    /// `rendered`, the text of the argument opening at `start` with
+    /// head `head`, when the argument lands at `indent`. `None` where
+    /// the argument holds no continuation row, or where a row-spanning
+    /// string part inside `value` holds the whole argument, whose
+    /// interior a move would pad.
     fn argument_shift(
         &self,
         value: &Expr,
@@ -102,8 +101,8 @@ impl<'a> Exploder<'a> {
     /// line at `indent`, re-exploding a nested call and re-indenting a
     /// row-spanning value through [`Self::render_value`]. Every keyword
     /// lands alone on its row and so takes the buffer `align-equals`
-    /// seats around its `=`, leaving each value measured from the column
-    /// that buffer settles it at rather than the one `name=` writes it at.
+    /// places around its `=`, leaving each value measured from the
+    /// column that buffer settles it at.
     fn explode_keywords(
         &self,
         keywords: &CallKeywords<'a>,
@@ -132,10 +131,9 @@ impl<'a> Exploder<'a> {
     /// at `indent`, the fallback for a call that cannot take keyword
     /// form. A nested call or row-spanning value still resolves through
     /// [`Self::render_value`], and a keyword's value measures from the
-    /// column the `align-equals` buffer settles it at the way the
-    /// keyword form does. An argument whose own text spans rows carries
-    /// the grouping pair recovered against the list, the pair holding
-    /// those rows together, which the join path recovers the same way,
+    /// column the `align-equals` buffer settles it at. An argument whose
+    /// text spans rows renders from the range of the grouping pair
+    /// holding those rows together, recovered against the list and
     /// covered with the argument's own range so a keyword keeps its
     /// `name=` head.
     fn explode_source_order(&self, call: &'a ExprCall, indent: usize) -> String {
@@ -320,11 +318,10 @@ impl<'a> Exploder<'a> {
         }
     }
 
-    /// The width `arguments` leaves on its row, which is `form` for a
-    /// list written across rows, since closing it writes that text, and
+    /// The width `arguments` takes on its row, which is the width of
+    /// `form` for a list written across rows and the settled width of
     /// the source slice for one already on a single row, whose spacing
-    /// the rule leaves as the author wrote it rather than at the
-    /// normalized gap `form` seats after each comma, less the padding
+    /// stays as the author wrote it less the padding
     /// `strip-stranded-padding` drops from it.
     fn written_width(&self, arguments: &Arguments, form: &str) -> usize {
         if self.source.contains_line_break(arguments.range()) {
@@ -365,9 +362,9 @@ impl<'a> Exploder<'a> {
             Some(keywords) if !keywords.has_posonly_prefix => {
                 Some(self.explode_keywords(&keywords, arguments, self.indent_for(call)))
             }
-            // A call that cannot take keyword form explodes positionally,
-            // but only on the length trigger, so the count trigger keeps
-            // leaving such calls inline.
+            // A call that cannot take keyword form explodes positionally
+            // on the length trigger alone, so the count trigger leaves
+            // such calls inline.
             _ => length_trips.then(|| self.explode_source_order(call, self.indent_for(call))),
         }
     }

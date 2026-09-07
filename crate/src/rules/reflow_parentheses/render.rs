@@ -96,10 +96,9 @@ impl Shedder<'_> {
         if !splice_preserves_tree(self.source, pair, &text) {
             return false;
         }
-        // The replacement spans the whole pair so it covers every
-        // nested shed, which `outermost` then drops rather than leaving
-        // to collide with it. A pair the source already wrote in this
-        // shape earns no edit and still answers for its own layout.
+        // The replacement spans the whole pair and covers every nested
+        // shed, which `outermost` then drops. A pair the source already
+        // wrote in this shape earns no edit and still reports `true`.
         if text != self.source.slice(pair) {
             insert_edit(&mut self.edits, Edit::range_replacement(text, pair));
         }
@@ -107,11 +106,6 @@ impl Shedder<'_> {
     }
 }
 
-/// The pair holding `chain` rewritten across rows, its `(` closing the
-/// opening row, each operand on a row of its own one indent step past
-/// `indent` behind the operator joining it to the row above, and its
-/// `)` opening the row back at `indent`. Each operand renders through
-/// `nested`.
 /// The paren removals every candidate `candidate` encloses earns,
 /// ascending by start, the text a break renders its operands through.
 /// A candidate whose own removal shifts the parse keeps its pair and
@@ -124,6 +118,11 @@ fn nested_shed_edits(candidate: &Candidate, candidates: &[Candidate]) -> Vec<Edi
     )
 }
 
+/// The pair holding `chain` rewritten across rows, its `(` closing the
+/// opening row, each operand on a row of its own one indent step past
+/// `indent` behind the operator joining it to the row above, and its
+/// `)` opening the row back at `indent`. Each operand renders through
+/// `nested`.
 fn broken(source: &Source, chain: &[Operand], nested: &[Edit], indent: usize) -> String {
     let item = item_indent(indent);
     explode_parens(

@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A Section Marker Holds a Constant Band In Its Own Section"
+title       = "A Section Banner Keeps a Constant Above the Imports Below It"
 
 description = '''
-`# --- Imports ---` reads as a section divider, and constant grouping stops at one.
-
-`ZILCH = 1` therefore stays in its own section above the divider rather than being drawn down to the imports. The imports below sort within their own section, so `import abc` moves ahead of `import zoo`, and **nothing crosses the divider in either direction**.
+`ZILCH = 1` sits above the `# --- Imports ---` banner, with `import zoo` and `import abc` below it. **`ZILCH = 1` stays above the banner and the imports sort beneath it**, so `import abc` moves ahead of `import zoo`, because `band-constants` stops gathering at a section divider and no statement crosses it in either direction.
 '''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Banner Sections an Import Group"
 
 description = '''
-The `# --- Typing ---` banner divides the imports into two sections that sort on their own, `os` moving above `sys` and `abc` above `typing`. Neither section's imports cross the divider, even though `abc` would sort ahead of everything were the banner ignored.
+The `# --- Typing ---` banner divides four imports into two sections. **Each section sorts on its own**, `os` moving above `sys` and `abc` above `typing`, and no import crosses the banner, even though `abc` would sort ahead of everything were the banner ignored.
 '''

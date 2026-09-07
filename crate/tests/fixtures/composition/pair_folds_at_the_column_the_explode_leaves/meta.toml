@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Pair Folds at the Column the Explode Leaves"
+title       = "A Redundant Pair Joins at the Column the Explode Leaves"
 
 description = '''
-Both grouping pairs here are redundant, and the row they sit on crosses the 60-column budget.
-
-`reflow-calls` explodes the first call, dropping its closing `)` back to the statement's indent. `reflow-parentheses` measures the second pair **from the column that closer leaves it at**, where it fits, so the pair folds onto that row instead of staying wrapped for a width the explode has already removed.
+`_c` returns two calls joined by `and`, each wrapped in a redundant grouping pair, on a row past the 60-column budget. `reflow-calls` explodes the first call and puts its closing `)` back at the statement's indent, and **`reflow-parentheses` measures the second pair from the column that closer leaves, where it fits, so the pair's interior joins onto that row and both pairs drop**, rather than the second staying wrapped for a width the explode has already removed.
 '''

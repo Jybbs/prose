@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "An Integer or Character Conversion Holds"
+title       = "An Integer or Character Conversion Keeps the Template"
 
 description = '''
-Nothing here changes. These `%` conversions accept values that their f-string presentation types reject.
-
-`%d` and `%i` truncate a float where `:d` would raise, and `%c` maps an ordinal where `:c` would raise. Nothing in the source pins the runtime types of `total`, `n`, or `code`, so **all three lines hold**.
+`count`, `index`, and `glyph` use the `%d`, `%i`, and `%c` conversions, which accept values their f-string presentation types reject. **All three lines stay as written**, because `%d` and `%i` truncate a float where `:d` raises, `%c` renders a one-character string where `:c` raises, and nothing in the source pins the runtime types of `total`, `n`, or `code`.
 '''

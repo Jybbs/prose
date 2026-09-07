@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Already-Aligned Source Is Left Alone"
+title       = "Already-Aligned Source Passes Through Unchanged"
 
 description = '''
-The `=` of `a`, `bb`, and `ccc` already share the column one space past `ccc`, so **no edit fires** and the group passes through unchanged.
+`a`, `bb`, and `ccc` arrive with their `=` already on the column one space past `ccc`. **The rule writes no edit**, so the three lines pass through exactly as written.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Raw `str.format()` Template Comes Back as `rf`"
+title       = "A Raw `str.format()` Template Converts to `rf`"
 
 description = '''
-`r"{}\d+".format(head)` converts to `rf"{head}\d+"`, the `r` prefix carried over so `\d` stays a literal backslash and a `d` rather than an escape. The rewrite adds only the `f` that moves `head` into the template.
+`pattern = r"{}\d+".format(head)` carries an `r` prefix. **The rewrite writes `rf"{head}\d+"`**, keeping the `r` and adding only the `f`, so `\d` stays a literal backslash and a `d` rather than becoming an escape.
 '''

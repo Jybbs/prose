@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Mid-Row Group Holding Comments Keeps Its Order"
+title       = "A Mid-Row Group Containing a Comment Keeps Its Order"
 
 description = '''
-`__all__` opens mid-row, `"delta"` trailing the `[`, so a sort here would swap the string texts in place and leave every other character where it is. The own-line `# section` comment cannot travel with any member under such a swap, so the group keeps the order its author sectioned it into.
+`__all__` opens mid-row, `"delta"` trailing the `[`, with an own-line `# section` comment between its members. **The group keeps the order its author sectioned it into**, because a sort here would swap the string texts in place and leave every other character where it is, so the own-line comment could not move with any member.
 '''

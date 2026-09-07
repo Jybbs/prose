@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Comment inside the Parentheses Pins the Run"
+title       = "A Comment Inside the Parentheses Keeps the Run in Place"
 
 description = '''
-Nothing here moves. The `# keep the seam here` comment sits inside the parentheses enclosing `message`'s string run.
-
-The run is **held at its source shape**, because rewriting the pair would carry the comment onto a different line from the one its author put it on.
+The `# keep the seam here` comment sits inside the parentheses enclosing `message`'s run. **The run stays at its source layout**, because rewriting the pair would move the comment onto a different line from the one its author put it on.
 '''

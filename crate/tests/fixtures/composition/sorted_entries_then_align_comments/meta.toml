@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Reordered Entries Settle Their Comment Column Behind the Sort"
+title       = "Sorted Entries Settle Their Comment Column After the Sort"
 
 description = '''
-Each `#` comment in `COUNTS` moves with its entry when `alphabetize-siblings` sorts the keys, so `# last alphabetically` follows `"zulu"` to the bottom and the rows end at new widths. **`align-comments` then pads every trailing comment into one column measured against the sorted rows** rather than against the order the author wrote.
+Each entry of `COUNTS` carries a trailing `#` comment, and the keys are out of order. `alphabetize-siblings` sorts the keys with each comment moving with its entry, so `# last alphabetically` follows `"zulu"` to the bottom and the rows end at new widths, and **`align-comments` pads every trailing comment into one column measured against the sorted rows** rather than the order the source wrote.
 '''

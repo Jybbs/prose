@@ -3,5 +3,5 @@ previewable = false
 title       = "PEP 695 Type Parameters Survive the Rewrite"
 
 description = '''
-`render[T]`'s five parameters, each annotated `T`, exceed `max-params`, so `reflow-signatures` expands them one per line. **The `[T]` type parameter list, each parameter's `T` annotation, and the `-> tuple[T, T]` return annotation all survive intact**, because the rewrite's range starts at the `(` rather than the function name.
+`render[T]` takes five parameters, each annotated `T`, over `max-params`, with a `[T]` type parameter list and a `-> tuple[T, T]` return annotation. **The parameters expand one per line, and the `[T]` list, each `T` annotation, and the return annotation all stay intact**, because the rewrite replaces only the text between `(` and `)`, leaving the name with its `[T]` list ahead of it and the return annotation after it as written.
 '''

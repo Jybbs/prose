@@ -3,7 +3,5 @@ previewable = true
 title       = "Three Alignment Columns Settle Within One Budget"
 
 description = '''
-Three alignment rules pad the same three rows here, and each checks its own added padding against the 72-column budget.
-
-Every one of them measures **the line's settled form** rather than the intermediate text the rule before it left behind. That is what lets the `:`, the `=`, and the `#` note all reach their columns, with the widest row, `retries`, still landing under the budget.
+`retries`, `timeout_seconds`, and `window` are annotated assignments with trailing comments, and three alignment rules pad the same rows, each checking its own padding against the 72-column budget. **Every rule measures the row's settled form** rather than the intermediate text the rule before it left, which is what lets the `:`, the `=`, and the `#` all reach their columns with the widest row, `retries`, still inside the budget.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Reassigned Name Behaves Like a Variable"
+title       = "A Reassigned Name Reads as a Variable"
 
 description = '''
-`counter` is assigned twice at module level, making it mutable state rather than a constant, so its lowercase name is exactly right and the lint passes over it. The mirror case belongs to [[reassigned-constants]], which flags a `SCREAMING_CASE` name that a later write contradicts.
+`counter` is assigned twice at module level, making it mutable state rather than a constant. **The lint passes over it**, because its lowercase name is exactly right. The mirror case belongs to [[reassigned-constants]], which reports a `SCREAMING_CASE` name that a later write contradicts.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A String Index Holds"
+title       = "A String Index in a Field Keeps the Call"
 
 description = '''
-The spec `{0[key]}` indexes the first argument with the literal string `key`, written without quotes inside a `str.format` field. Spelled inline it becomes `table["key"]`, whose quotes would reuse the `"` delimiter the f-string opened with, a nesting the `target-version = "3.10"` config rules out, so the call holds.
+The field `{0[key]}` indexes the first argument with the literal string `key`, which a `str.format` field writes without quotes. **The call stays as written**, because the inline spelling `table["key"]` would put `"` quotes inside an f-string opened with the same `"`, a nesting the `target-version = "3.10"` config rules out.
 '''

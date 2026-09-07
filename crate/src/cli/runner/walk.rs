@@ -27,8 +27,7 @@ where
     F: Fn(&Path, PySourceType) -> FileOutcome + Send + Sync,
 {
     // Collecting the walk before the fan-out keeps the outcomes in the
-    // order the walker yielded, which `par_bridge` does not, so a
-    // structured report is byte-comparable between two runs.
+    // order the walker yielded.
     walker::walk(paths)
         .collect::<Vec<_>>()
         .into_par_iter()
@@ -45,10 +44,9 @@ where
 
 /// Runs `handle` over the walk on the rayon pool and hands each file's
 /// rendered block to `write` in walker order, releasing a block as soon
-/// as every entry ahead of it has landed rather than once the whole
-/// walk has. Rendering happens in the worker that produced the outcome,
-/// so the only serial work left is the write itself. Returns the
-/// outcomes in walker order, the same order [`process_paths`] returns.
+/// as every entry ahead of it has landed. Rendering happens in the
+/// worker that produced the outcome. Returns the outcomes in walker
+/// order, the same order [`process_paths`] returns.
 pub(super) fn stream_paths<F, W>(
     paths: &[PathBuf],
     handle: F,
@@ -63,10 +61,10 @@ where
     let (sender, receiver) = mpsc::channel();
     let mut outcomes = Vec::with_capacity(total);
     let mut drained = Ok(());
-    // The producer takes a thread of its own rather than a rayon scope,
-    // because a scope holds its closure to `Send` and `write` borrows
-    // the caller's stream. It fans out across the pool from there, so
-    // the draining thread stays free to write what has already landed.
+    // The producer takes a thread of its own, because a rayon scope
+    // holds its closure to `Send` and `write` borrows the caller's
+    // stream. It fans out across the pool from there while this thread
+    // drains.
     std::thread::scope(|scope| {
         scope.spawn(|| {
             entries

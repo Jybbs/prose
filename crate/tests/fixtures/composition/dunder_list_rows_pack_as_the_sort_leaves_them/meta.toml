@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "Dunder List Rows Pack as the Sort Leaves Them"
+title       = "`__all__` Rows Pack at the Widths the Sort Leaves"
 
 description = '''
-Two rules run here. `alphabetize-siblings` sorts the six entries so the three short ones lead, and `reflow-collections` packs them onto rows that fit the 88-column budget.
-
-The packing measures **the widths the sort will leave**, not the widths as written. That is why `"cc"` shares a row with the first thirty-character name rather than joining the two short entries above it, and why the six entries settle onto three rows of two with no row needing to widen afterward.
+`__all__` lists six entries on one overlong line, three short names interleaved with three thirty-character ones. `alphabetize-siblings` sorts them so the short names lead, and `reflow-collections` packs them onto rows within the 88-column budget. **The packing measures the widths the sort leaves, not the widths as written**, which is why `"cc"` shares a row with the first long name rather than joining the two short entries above it, and the six entries settle onto three rows of two with no row widening afterward.
 '''

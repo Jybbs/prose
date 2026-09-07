@@ -101,8 +101,7 @@ impl<'a, 'src> SectionRuns<'a, 'src> {
 
 /// The `section` split around every fenced slot inside it, so no
 /// permutation seats a member across one. `fences` is in slot order,
-/// and each fence lands in a run of its own rather than sorting among
-/// the definitions below it.
+/// and each fence lands in a run of its own.
 pub(super) fn fenced_runs(section: &Range<usize>, fences: &[usize]) -> Vec<Range<usize>> {
     iter::once(section.start)
         .chain(

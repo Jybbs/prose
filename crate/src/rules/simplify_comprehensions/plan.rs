@@ -56,8 +56,8 @@ fn argument_plan(ctor: Constructor, arg: &Expr) -> Option<Plan<'_>> {
     }
 }
 
-/// The rewrite a bare comprehension earns, held where the module binds
-/// the constructor its collapse would name.
+/// The rewrite a bare comprehension earns, `None` where the module
+/// binds the constructor its collapse would name.
 fn bare_plan<'a>(
     ctor: Constructor,
     rebound: &[Constructor],
@@ -94,9 +94,8 @@ fn calls_constructor(expr: &Expr) -> bool {
 }
 
 /// The rewrite `ctor(iter)` settles at, folding in one more collapse
-/// where `iter` is itself a form the constructor absorbs. Declines where
-/// `iter` calls a constructor, leaving the source as written rather than
-/// emitting the doubled `ctor(ctor(x))`.
+/// where `iter` is itself a form the constructor absorbs. `None` where
+/// `iter` calls a constructor, leaving the source as written.
 fn collapse_plan(ctor: Constructor, iter: &Expr) -> Option<Plan<'_>> {
     argument_plan(ctor, iter)
         .or_else(|| (!calls_constructor(iter)).then_some(Plan::Collapse { ctor, iter }))
@@ -216,7 +215,7 @@ fn pair_comprehension_plan<'a>(
     }
 }
 
-/// True when two expressions carry the same shape, the test that reads a
+/// True when two expressions have the same shape, the test comparing a
 /// comprehension's element against its target.
 fn same(a: &Expr, b: &Expr) -> bool {
     ComparableExpr::from(a) == ComparableExpr::from(b)

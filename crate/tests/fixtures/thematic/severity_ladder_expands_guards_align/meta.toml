@@ -4,15 +4,14 @@ sandbox     = true
 title       = "Severity Ladder Tables Expand and Guard Comparisons Align"
 
 description = '''
-This alerting module declares its `SEVERITY_LADDER` and `PAGE_CHANNELS` tables inline with dangling commas, leaves its constants unsorted and unaligned, and threads a guard chain through `within_budget` whose `<` and `<=` operators drift out of column.
+This alerting module declares its `SEVERITY_LADDER` and `PAGE_CHANNELS` tables inline with trailing commas, leaves its constants unsorted and unaligned, and threads a guard chain through `within_budget` whose `<` and `<=` operators sit on different columns.
 
-The rewrites land together:
+The rewrites are written together:
 
-1. The tables explode one entry per line with `:` and `=` aligned.
-2. The constants gather and sort.
-3. The guard chain's `<` and `<=` settle into one shared column.
-4. The redundant parentheses around `classify`'s `if` condition shed.
-5. The over-wide `notify` call splits with its keywords sorted.
+1. **`SEVERITY_LADDER` explodes to one entry per line with its `:` aligned, `PAGE_CHANNELS` drops its trailing comma and stays inline, and the constants gather above `classify` in two aligned `=` runs, the expanded dict ending the first, while the `LATENCY_CEILING_MS = 400` reassignment stays in place below `classify`.**
+2. The guard chain's `<` and `<=` settle onto one shared column.
+3. The redundant parentheses around `classify`'s `if` condition and around `math.ceil`'s argument are removed.
+4. The over-wide `notify` call splits with its keywords sorted.
 
-Lints stand alongside those rewrites, on the rebound `LATENCY_CEILING_MS`, on the bare `import math`, and on the numbered step comments in `classify`.
+Lints report beside those rewrites, on the reassigned `LATENCY_CEILING_MS`, on the bare `import math`, on the lowercase `poll_interval_seconds`, and on the numbered step comments in `classify`.
 '''

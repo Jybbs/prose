@@ -1,8 +1,8 @@
 [docs]
 canonical   = true
 previewable = true
-title       = "A Repeated Import and an Unread Member Both Go"
+title       = "A Repeated Import and an Unread Member Are Both Removed"
 
 description = '''
-The module imports `os` twice and imports `Any` alongside `Final` from `typing`, though only `os.getcwd()` and `Final` are read. **The second `import os` drops because it repeats a binding the first import already made, and `Any` drops off its line** for going unread, leaving the surviving `os` import and `Final` in place.
+The module imports `os` twice and imports `Any` and `Final` from `typing`, and only `os.getcwd()` and `label: Final` read a name. **The second `import os` is removed as a repeat of the first, and `Any` is removed from its line as unread**, leaving the first `import os` and `from typing import Final`.
 '''

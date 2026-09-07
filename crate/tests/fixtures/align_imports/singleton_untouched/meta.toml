@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Lone Import Is Left Untouched"
+title       = "A Lone Import Is Left as Written"
 
 description = '''
-The blank line splits `from collections import OrderedDict` and `import json as j` into two groups of one, and alignment requires **at least two members per group**, because a lone line has no neighbor to share a column with. Neither singleton receives an edit, so the file passes through unchanged.
+A blank line separates `from collections import OrderedDict` from `import json as j`, leaving each in a group of one. **Neither line receives an edit**, because alignment needs at least two members in a group and a lone line has no neighbour to share a column with, so the file is left as written.
 '''

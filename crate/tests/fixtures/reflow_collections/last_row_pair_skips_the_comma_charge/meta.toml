@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Last Row Nothing Follows Counts No Comma"
+title       = "The Last Row Is Measured Without a Trailing Comma"
 
 description = '''
-The list expands and packs each row at the widths its entries carry in source order.
-
-The final row holds both twelve-digit checksums at exactly the 30-column budget, which fits only because **nothing follows that row, so it carries no trailing comma**. Counting a separator there would have taken it one column over and split the pair.
+`code-line-length = 30` is set, and `checksums` lists two seven-digit and two twelve-digit integers on one line. **The list expands and its last row packs both twelve-digit integers at exactly thirty columns**, because no entry follows that row, so it carries no trailing `,` and none is counted, whereas counting one would have taken the row one column over and split the pair.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Singleton Strips Despite Leading or Trailing Comments"
+title       = "A Singleton Loses Its Padding Beside a Leading or Trailing Comment"
 
 description = '''
-`stays_singleton` carries `# leading comment lives on its own line` above its one entry, and `also_stripped` carries `# trailing comment after the value` beside its entry on the same line, yet `strip-stranded-padding` **strips the pre-`:` padding on both**. The edit removes only the whitespace between the key and its `:`, structurally separate from either comment, so neither comment is touched.
+`stays_singleton` carries `# leading comment lives on its own line` above its one entry, and `also_stripped` carries `# trailing comment after the value` beside its entry on the same line. **`strip-stranded-padding` removes the padding before the `:` on both**, because the edit removes only the whitespace between the key and its `:`, which is separate from either comment, so neither comment is touched.
 '''

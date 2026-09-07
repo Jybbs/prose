@@ -4,7 +4,7 @@ previewable = true
 title       = "A Chain in a Store Target Breaks Like Any Other"
 
 description = '''
-The assignment target `base.one().two().three().attr` and the `del` target `other.first().second().third().slot` each break like any other chain, wrapped in parentheses with the calls stacked and the trailing `.attr` or `.slot` staying on its last call's line.
+The assignment target `base.one().two().three().attr` and the `del` target `other.first().second().third().slot` are both chains. **Each breaks like any other chain**, wrapped in parentheses with the calls stacked and the trailing `.attr` or `.slot` kept on its last call's row.
 
-Python accepts a parenthesized assignment target and the output compiles, so **this shape is pinned here as deliberate**. Suppressing it would mean threading a target flag down through every nested shape the walk visits.
+Python accepts a parenthesized assignment target and the output compiles, so this layout is pinned as deliberate. Leaving a store target alone would take a target flag threaded through every nested expression the rule visits.
 '''

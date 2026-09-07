@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Arm Literals Drop Trailing Commas as Bodies Collapse"
+title       = "Arm Literals Drop Their Trailing Commas as the Arms Join"
 
 description = '''
-The arms of `dispatch` each return an inline list carrying a trailing comma, `[1, 2, 3,]` in the `"alpha"` arm. **`strip-trailing-commas` removes the comma and `align-match-case` collapses each `return` onto its `case` line**, aligning the arm `:` column across the run down to the wildcard.
+Each arm of `dispatch` returns an inline list with a trailing comma, `[1, 2, 3,]` in the `"alpha"` arm. **`strip-trailing-commas` removes each comma and `align-match-case` joins every `return` onto its `case` line**, padding the arm `:` into one column down to the wildcard.
 '''

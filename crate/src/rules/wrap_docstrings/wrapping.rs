@@ -10,11 +10,9 @@ use textwrap::{Options, WordSeparator, WordSplitter, core::Word};
 use crate::primitives::docstring::opens_structure;
 
 /// Splits `line` on ASCII spaces, dropping every break opportunity
-/// whose remainder opens a verbatim structure. A row head reading as a
-/// list marker, a section heading, an entry head, or any other
-/// structure would be parsed as that structure on the next pass, so the
-/// break folds back into the word before it and the run stays on one
-/// row.
+/// whose remainder would open a verbatim structure, a list marker, a
+/// section heading, or an entry head, folding that break into the word
+/// before it.
 fn prose_words(line: &str) -> Box<dyn Iterator<Item = Word<'_>> + '_> {
     let mut starts = Vec::new();
     let mut cursor = 0;
@@ -34,12 +32,10 @@ fn prose_words(line: &str) -> Box<dyn Iterator<Item = Word<'_>> + '_> {
 }
 
 /// Splits `content` on `newline`, merging a continued line with the one
-/// below it when neither side of the dropped backslash carries
-/// whitespace, the one join the paragraph collapse cannot reproduce.
-/// Every other line passes through split as written, leaving a
-/// continuation inside a passthrough region byte-identical. Each line
-/// is paired with the byte offset of its first physical line within
-/// `content`.
+/// below it when neither side of the dropped backslash has whitespace.
+/// Every other line passes through as written, leaving a continuation
+/// inside a passthrough region byte-identical. Each line is paired with
+/// the byte offset of its first physical line within `content`.
 pub(super) fn spliced_continuations<'a>(
     content: &'a str,
     newline: &str,
@@ -81,9 +77,9 @@ pub(super) fn without_continuation(line: &str, raw: bool) -> &str {
     &line[..line.len() - 1]
 }
 
-/// The wrap options every emission shares. The custom separator keeps a
-/// slash- or hyphen-bearing token atomic alongside `NoHyphenation`, so
-/// an over-budget URL or path overflows instead of splitting.
+/// The wrap options every emission shares. The custom separator and
+/// `NoHyphenation` keep a slash- or hyphen-bearing token atomic,
+/// leaving an over-budget URL or path to overflow unsplit.
 pub(super) fn wrap_options<'o>(width: usize, initial: &'o str, subsequent: &'o str) -> Options<'o> {
     Options::new(width)
         .break_words(false)

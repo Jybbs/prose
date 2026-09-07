@@ -3,5 +3,5 @@ previewable = true
 title       = "Members Scattered Across an Import Run Still Gather"
 
 description = '''
-`from pkg import alpha` and `from pkg import beta` gather onto one line even though `from other import thing` stands between them, because the merge covers **the whole block of imports** rather than only adjacent statements. The gathered line lands where `alpha` first appeared, leaving `other` on the line below.
+`from pkg import alpha` and `from pkg import beta` sit either side of `from other import thing`. **The two `pkg` statements still merge onto one line**, written where `alpha` first appeared with `other` on the line below, because the merge reads the whole block of imports rather than adjacent statements alone.
 '''

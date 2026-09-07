@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Lone Assignment Collapses to One Space"
+title       = "A Lone Assignment Collapses Its Padding to One Space"
 
 description = '''
-`solitary` is the only assignment in the file, leaving nothing to align against, so the padding before its `=` serves no column. **The stretch of spaces collapses to a single one**, landing the statement on plain `solitary = 1`.
+`solitary     = 1` is the only assignment in the file, with five spaces before its `=`. **The padding collapses to a single space**, because there is no other row for a column to serve, and the statement reads `solitary = 1`.
 '''

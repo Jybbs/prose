@@ -48,7 +48,7 @@ pub(crate) struct ReflowCalls {
 }
 
 impl ReflowCalls {
-    pub(crate) const MESSAGE: &'static str = "reflow call arguments against the line budget";
+    pub(crate) const MESSAGE: &'static str = "lay out a call's arguments against the line budget";
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 
@@ -212,9 +212,8 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
         // the row a reshaped receiver leaves it on.
         self.visit_expr(&call.func);
         let column = self.open_paren_column(call);
-        // The rendered list already carries every nested reshape, so a
-        // walk into the arguments would decide the same text twice, the
-        // second reading measuring against columns the first one set.
+        // The rendered list already carries every nested reshape, so the
+        // arguments go unwalked.
         if let Some(text) = self.explode_args(call, column) {
             if let Some(edit) = narrowed_replacement(self.source, call.arguments.range(), text) {
                 insert_edit(&mut self.edits, edit);
@@ -294,7 +293,7 @@ mod tests {
         };
         let text = applied(&config, &source);
         // The doubly-nested `wrap` answers the row it lands on, so it
-        // explodes in this pass rather than the next one.
+        // explodes in this pass.
         assert!(
             text.contains("wrap(\n"),
             "nested call should explode in one pass:\n{text}",

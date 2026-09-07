@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Oversized Dict Entry Hangs Its Value at the Post-Colon Column"
+title       = "An Over-Wide Dict Entry Hangs Its Value Below the `:`"
 
 description = '''
-A `key: value` row that overflows at the item indent **breaks at `:` and hangs the value at `item_indent + INDENT_STEP`**, the move the long key in `config` takes while `"alpha"` and `"beta"` stay on one line. `mixed` hangs a row between fitting siblings, `multiple_hung_rows` hangs two rows in one dict, and the wide `"limits"` value in `nested_value_passes_through` runs its own expansion as a nested dict instead of triggering the hang.
+`config`, `mixed`, and `multiple_hung_rows` each carry an entry whose `key: value` row runs past the budget, and `nested_value_passes_through` carries an over-wide nested dict under `"limits"`. **Each over-wide entry breaks at its `:` and hangs its value one indent step in**, because a dict entry that overflows breaks row by row rather than across the whole literal, so `"alpha"` and `"beta"` stay on one row, `mixed` hangs a row between fitting siblings, `multiple_hung_rows` hangs two rows in one dict, and the `"limits"` value expands as a nested dict rather than hanging.
 '''

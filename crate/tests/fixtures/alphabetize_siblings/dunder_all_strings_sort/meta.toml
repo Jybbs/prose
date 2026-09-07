@@ -3,5 +3,5 @@ previewable = true
 title       = "`__all__` Sorts Alphabetically"
 
 description = '''
-The string items in `__all__` **alphabetize by string value**, `"Catalog"` and `"Posting"` landing ahead of `"aggregate"` and `"render"` because uppercase sorts before lowercase. Detection keys on the assignment target's name, in that the `__all__` convention is what marks the list as documentary, so `regular_list = ["b", "a", "c"]` stays untouched.
+`__all__` lists `"render"`, `"Posting"`, `"aggregate"`, and `"Catalog"`, and `regular_list = ["b", "a", "c"]` sits below it. **The `__all__` strings alphabetize by value, `"Catalog"` and `"Posting"` moving ahead of `"aggregate"` and `"render"`** because uppercase sorts before lowercase, whereas `regular_list` stays untouched, because the rule keys on the assignment target's name and the `__all__` convention is what marks the list as documentary.
 '''

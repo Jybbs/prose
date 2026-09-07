@@ -3,7 +3,5 @@ previewable = true
 title       = "Docstring Entries Mirror the Sorted Keyword-Only Block"
 
 description = '''
-The docstring mirrors the signature **as the rule leaves it**, not as the source wrote it.
-
-The keyword-only block re-sorts to `mode, retries=3`, moving the required `mode` ahead of the defaulted `retries`. The `mode:` and `retries:` entries under `Args:` swap to match, which keeps the docs in the same order as the signature a reader is scanning beside them.
+`update`'s keyword-only block is written `retries=3, mode`, and its `Args:` entries follow that source order. **The block re-sorts to `mode, retries=3`, the required `mode` ahead of the defaulted `retries`, and the `mode:` and `retries:` entries under `Args:` swap to match**, because the docstring mirrors the signature as the rule leaves it rather than as the source wrote it, keeping the docs in the same order as the signature a reader scans beside them.
 '''

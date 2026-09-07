@@ -5,13 +5,13 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
 [
   {
     "after": [],
-    "imperative": "shed a backslash line continuation",
+    "imperative": "remove a backslash line continuation",
     "position": 1,
     "slug": "shed-backslash-continuations"
   },
   {
     "after": [],
-    "imperative": "canonicalize literal quote, prefix, and numeric spelling",
+    "imperative": "normalize a literal's quotes, prefix, and numeric spelling",
     "position": 2,
     "slug": "normalize-literals"
   },
@@ -20,31 +20,31 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
       "shed-backslash-continuations",
       "normalize-literals"
     ],
-    "imperative": "prune an import binding nothing references or a repeat of one already bound",
+    "imperative": "remove an import nothing references, or one that repeats an earlier import",
     "position": 3,
     "slug": "prune-inert-imports"
   },
   {
     "after": [],
-    "imperative": "drop a redundant `-> None` return annotation",
+    "imperative": "remove a redundant `-> None` return annotation",
     "position": 4,
     "slug": "strip-none-return"
   },
   {
     "after": [],
-    "imperative": "modernize a legacy `typing` annotation to its builtin or PEP 604 form",
+    "imperative": "rewrite a legacy `typing` annotation to its builtin or PEP 604 form",
     "position": 5,
     "slug": "modernize-annotations"
   },
   {
     "after": [],
-    "imperative": "strip trailing comma",
+    "imperative": "remove a trailing comma",
     "position": 6,
     "slug": "strip-trailing-commas"
   },
   {
     "after": [],
-    "imperative": "normalize a comparison to state its check directly",
+    "imperative": "rewrite a comparison to state its test directly",
     "position": 7,
     "slug": "normalize-comparisons"
   },
@@ -53,13 +53,13 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
       "shed-backslash-continuations",
       "normalize-comparisons"
     ],
-    "imperative": "reflow a redundant grouping parenthesis pair against the line budget",
+    "imperative": "remove a redundant grouping parenthesis pair, or break one that runs past the line budget",
     "position": 8,
     "slug": "reflow-parentheses"
   },
   {
     "after": [],
-    "imperative": "shed a redundant `object` base or empty class parentheses",
+    "imperative": "remove a redundant `object` base or empty class parentheses",
     "position": 9,
     "slug": "shed-redundant-base"
   },
@@ -67,13 +67,13 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "after": [
       "reflow-parentheses"
     ],
-    "imperative": "collapse a redundant collection constructor",
+    "imperative": "remove a redundant collection constructor",
     "position": 10,
     "slug": "simplify-comprehensions"
   },
   {
     "after": [],
-    "imperative": "canonicalize docstring quotes and frame the opener and closer on their own lines",
+    "imperative": "rewrite a docstring's quotes to `\"\"\"` with the opener and closer on their own lines",
     "position": 11,
     "slug": "frame-docstrings"
   },
@@ -81,7 +81,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "after": [
       "frame-docstrings"
     ],
-    "imperative": "expand single-line docstring to multi-line form",
+    "imperative": "expand a single-line docstring onto its own lines",
     "position": 12,
     "slug": "expand-docstrings"
   },
@@ -93,7 +93,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [],
-    "imperative": "shed the arguments a parameterized `super()` call restates",
+    "imperative": "remove the arguments a `super()` call restates",
     "position": 14,
     "slug": "shed-super-args"
   },
@@ -113,7 +113,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
       "shed-super-args",
       "stack-method-chains"
     ],
-    "imperative": "reflow call arguments against the line budget",
+    "imperative": "lay out a call's arguments against the line budget",
     "position": 16,
     "slug": "reflow-calls"
   },
@@ -122,7 +122,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
       "strip-none-return",
       "reflow-parentheses"
     ],
-    "imperative": "normalize function signature to one-line or one-per-line shape",
+    "imperative": "lay out a function signature on one line or one parameter per line",
     "position": 17,
     "slug": "reflow-signatures"
   },
@@ -133,7 +133,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
       "reflow-calls",
       "reflow-signatures"
     ],
-    "imperative": "lay out collection literal against the line budget",
+    "imperative": "lay out a collection literal against the line budget",
     "position": 18,
     "slug": "reflow-collections"
   },
@@ -161,7 +161,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "after": [
       "reflow-parentheses"
     ],
-    "imperative": "align match-case colons",
+    "imperative": "align consecutive `case` colons",
     "position": 21,
     "slug": "align-match-case"
   },
@@ -180,7 +180,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
       "simplify-comprehensions",
       "reflow-imports"
     ],
-    "imperative": "band module constants into leading and trailing bands",
+    "imperative": "gather module constants into bands below the imports",
     "position": 23,
     "slug": "band-constants"
   },
@@ -198,7 +198,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
       "reflow-imports",
       "band-constants"
     ],
-    "imperative": "alphabetize this group",
+    "imperative": "alphabetize these siblings",
     "position": 24,
     "slug": "alphabetize-siblings"
   },
@@ -209,7 +209,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
       "alphabetize-siblings",
       "band-constants"
     ],
-    "imperative": "normalize the gap between adjacent statements",
+    "imperative": "set the blank lines between adjacent statements",
     "position": 25,
     "slug": "space-statements"
   },
@@ -244,7 +244,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
       "expand-docstrings",
       "align-colons"
     ],
-    "imperative": "wrap docstring prose to the configured budget",
+    "imperative": "wrap docstring prose to its line budget",
     "position": 28,
     "slug": "wrap-docstrings"
   },
@@ -281,7 +281,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
       "align-equals",
       "align-comparisons"
     ],
-    "imperative": "drop padding that lines up with nothing",
+    "imperative": "remove padding that aligns with nothing",
     "position": 31,
     "slug": "strip-stranded-padding"
   },
@@ -303,43 +303,43 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [],
-    "imperative": "Flag a bare import a `from` import could replace",
+    "imperative": "replace a bare import with a `from` import naming the attributes it uses",
     "position": 34,
     "slug": "bare-imports"
   },
   {
     "after": [],
-    "imperative": "Module constant is not SCREAMING_CASE. Rename it to the SCREAMING_CASE form",
+    "imperative": "rename a module constant to SCREAMING_CASE",
     "position": 35,
     "slug": "miscased-constants"
   },
   {
     "after": [],
-    "imperative": "SCREAMING_CASE name is reassigned despite its constant casing. Rename it lowercase or keep it write-once",
+    "imperative": "rename a reassigned SCREAMING_CASE name lowercase, or assign it once",
     "position": 36,
     "slug": "reassigned-constants"
   },
   {
     "after": [],
-    "imperative": "Numbered-step comment found. Consider extracting each step as a named function",
+    "imperative": "extract each numbered step of a comment into a named function",
     "position": 37,
     "slug": "step-narration"
   },
   {
     "after": [],
-    "imperative": "Flag a binding assigned and read once whose value inlines at the read without recomputing it, moving it under a guard, or crossing the line budget",
+    "imperative": "inline a binding read once, where the value inlines with nothing recomputed, moved under a guard, or pushed past the line budget",
     "position": 38,
     "slug": "inlinable-bindings"
   },
   {
     "after": [],
-    "imperative": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword",
+    "imperative": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site",
     "position": 39,
     "slug": "unsorted-positionals"
   },
   {
     "after": [],
-    "imperative": "Flag a missing parameter or return type annotation",
+    "imperative": "annotate a parameter or return type that has none",
     "position": 40,
     "slug": "signature-annotations"
   },
@@ -349,7 +349,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
       "expand-docstrings",
       "wrap-docstrings"
     ],
-    "imperative": "Flag a docstring type group the code already annotates",
+    "imperative": "remove a docstring type the annotation already states",
     "position": 41,
     "slug": "restated-types"
   },
@@ -359,7 +359,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
       "normalize-comment-spacing",
       "align-comments"
     ],
-    "imperative": "Flag a line over its length budget, offering the split form where a string literal can take the break",
+    "imperative": "shorten a line that runs past its length budget, or take the string split the fix offers",
     "position": 42,
     "slug": "line-overflow"
   }

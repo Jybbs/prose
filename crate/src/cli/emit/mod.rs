@@ -44,8 +44,7 @@ pub(super) struct EmitterSummary {
 }
 
 /// One file whose rewrite a second run would change, carried into the
-/// structured summaries so the surface a CI pipeline reads explains an
-/// escalated exit rather than leaving the cause on stderr alone.
+/// structured summaries.
 #[derive(serde::Serialize)]
 pub(super) struct UnstableEntry {
     pub(super) file: String,
@@ -54,9 +53,7 @@ pub(super) struct UnstableEntry {
 
 /// One file's diagnostics paired with the `SourceFile` they range into
 /// and, for a notebook, the `NotebookIndex` translating a concatenated
-/// position into a cell-relative one. The translator threads through
-/// this one seam rather than each emitter rebuilding it, modeled on
-/// ruff's `EmitterContext`.
+/// position into a cell-relative one.
 pub(super) struct Run<'a> {
     pub(super) diagnostics: &'a [Diagnostic],
     pub(super) file: &'a SourceFile,

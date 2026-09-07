@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Class-Scope Annotated Assignments Are Scanned Too"
+title       = "A Class-Body Annotation Naming a Builtin Keeps the Directive"
 
 description = '''
-The class-body annotations `x: int` and `y: int` name the builtin `int`, a name no statement in the file binds. The resolution scan records only bindings the module itself creates, so **the annotations count as unresolved and the directive stays**, even though Python would resolve `int` at runtime.
+The class-body annotations `x: int` and `y: int` name the builtin `int`, which no statement in the file binds. **The directive stays**, because the rule resolves an annotated name only against bindings the module itself writes, so `int` counts as unresolved even though Python resolves it at runtime.
 '''

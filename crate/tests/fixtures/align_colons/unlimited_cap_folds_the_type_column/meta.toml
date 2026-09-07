@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Unlimited Cap Folds the Type Column Together"
+title       = "An Unlimited Cap Aligns the Type Column However Wide the Name"
 
 description = '''
-Under the default `max-shift` cap, the wide `deadline_after_first_handshake_attempt` would partition out of the type-group column. Setting `max-shift = false` lifts the spread budget, so `(str)`, `(int)`, and `(float)` seat on one column however far the widest name reaches, and the `:` column settles just past them.
+Under the default `max-shift` cap, the wide `deadline_after_first_handshake_attempt` would partition out of the type column. With `max-shift = false` in `config.toml` the spread limit is removed, so **`(str)`, `(int)`, and `(float)` sit on one column however far the widest name reaches**, and the `:` column aligns just past them.
 '''

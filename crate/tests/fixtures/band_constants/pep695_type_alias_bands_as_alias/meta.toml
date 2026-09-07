@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "A PEP 695 Type Alias Bands as an Alias"
+title       = "A PEP 695 Type Alias Sorts Ahead of the Plain Constants"
 
 description = '''
-`type Seconds = float` is a PEP 695 type alias rather than an ordinary constant, and aliases are grouped ahead of plain constants.
-
-`Seconds` therefore **moves to the top** even though it was written between `MAX` and `COUNT`, and the two plain constants sort alphabetically beneath it.
+`type Seconds = float` sits between `MAX = 10` and `COUNT = 5`. **`Seconds` moves to the top and the two constants sort by name beneath it**, because a PEP 695 alias clusters with the type aliases, and the aliases sort ahead of the `SCREAMING_CASE` constants within a band.
 '''

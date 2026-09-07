@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Constant Observing Mutated State Pins Above Its Definition"
+title       = "A Constant Reading a List a Class Body Mutates Stays Below the Class"
 
 description = '''
-`FIRST = TRACE[0]` reads what is inside the list rather than binding the list itself, and `class Setup` appends to `TRACE` while its body executes.
-
-Moving `FIRST` up to the top would read `TRACE` before that class body had run, so **`FIRST` holds its source position** just below the class. `LABEL = "ready"` observes nothing, so it moves up freely past `Setup`.
+`FIRST = TRACE[0]` reads an element of `TRACE` rather than the list itself, and the body of `class Setup` appends to `TRACE` when it runs. **`FIRST` stays below the class and `LABEL = "ready"` moves up past `Setup` into the leading band beside `TRACE`**, because moving `FIRST` above the class would read `TRACE` before the append ran, whereas `LABEL` reads nothing the module mutates.
 '''

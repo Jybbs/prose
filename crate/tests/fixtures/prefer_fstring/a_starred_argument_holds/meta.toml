@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Starred Argument Holds"
+title       = "A Starred Argument Keeps the Call as Written"
 
 description = '''
-`*pair` expands at runtime into however many arguments `pair` holds, so neither `{}` field maps to an expression visible in the source. With no per-field value to inline, the call holds.
+`*pair` expands at runtime into however many arguments `pair` contains, so neither `{}` field maps to an expression visible in the source. **The call stays as written**, because the rewrite has no per-field value to move inline.
 '''

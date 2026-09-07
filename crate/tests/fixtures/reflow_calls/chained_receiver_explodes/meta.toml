@@ -3,7 +3,5 @@ previewable = true
 title       = "A Chained Call Settles Every Link in One Pass"
 
 description = '''
-At 40 columns the chain `obj.first(alpha, beta).second(gamma, delta).third(0)` runs well past the budget.
-
-Each link is measured **at the column it lands on once its receiver has settled**, not at the column the source wrote. `obj.first(alpha, beta)` stays inline, `.second` explodes `gamma` and `delta` onto their own rows, and `.third(0)` fits again because that explode drops it back to the margin on the closing `)` row.
+Under `code-line-length = 40`, the chain `obj.first(alpha, beta).second(gamma, delta).third(0)` runs well past the budget. **`obj.first(alpha, beta)` stays inline, `.second` explodes `gamma` and `delta` onto their own rows, and `.third(0)` stays inline**, because each link is measured at the column it ends up at once its receiver has settled rather than the column the source wrote, and the explode drops `.third(0)` back to the margin on the closing `)` row, where it fits.
 '''

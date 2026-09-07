@@ -1,10 +1,8 @@
 [docs]
 canonical   = false
 previewable = true
-title       = "A Keep Marker Holds Past an Expansion"
+title       = "A Keep Marker Still Applies After the Dict Explodes"
 
 description = '''
-`# prose: keep` attaches to the line holding either the dict's `{` or its `}`.
-
-The dict expands, which carries the marker down onto the closing line, and it still counts there. The dict is therefore **held against `alphabetize-siblings`**, so `"b"` stays ahead of `"a"` and the entries keep both their source order and their separators.
+`d` is a dict with `# prose: keep` at the end of its line, written with `"b"` before `"a"` and too wide for the 40-column budget. `reflow-collections` explodes the dict, which moves the marker onto the closing `}` line, and **the marker still keeps the dict out of `alphabetize-siblings`**, so `"b"` stays ahead of `"a"` and the entries keep their order and their separators, because the marker applies from the line of either the `{` or the `}`.
 '''

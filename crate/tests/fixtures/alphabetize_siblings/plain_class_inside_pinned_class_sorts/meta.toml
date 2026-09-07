@@ -3,7 +3,5 @@ previewable = true
 title       = "A Nested Plain Class Sorts Inside a Pinned One"
 
 description = '''
-`Outer` is decorated with `@dataclass`, which turns its fields into the generated constructor's signature, so reordering them would change every call site and they hold.
-
-`Inner` carries no such decorator. **The pin does not extend into it**, so `bravo` and `yankee` sort normally even though the class sits inside a pinned one.
+`Outer` is decorated with `@dataclass`, and the undecorated `Inner` class sits inside it. **`Outer`'s fields `zeta` and `alpha` keep their order, whereas `Inner`'s `bravo` and `yankee` sort**, because the decorator turns `Outer`'s fields into the generated constructor's signature, so reordering them would change every call site, but the pin does not extend into a nested class carrying no such decorator.
 '''

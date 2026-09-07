@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "BoolOp in a Comprehension `if` Filter Aligns"
+title       = "A Chain Inside a Comprehension Filter Aligns"
 
 description = '''
-The `if` filter of the `filtered` comprehension holds a multi-line `and` chain, and it **aligns like any other multi-line `BoolOp`**. The `==` after `x.kind` and `x.weight` settle onto one shared column inside the filter's parentheses.
+The `if` filter of the `filtered` comprehension carries a multi-line `and` chain over `x.kind` and `x.weight`. **The chain aligns like any other multi-line `BoolOp`**, so the two `==` move to one column inside the filter's parentheses.
 '''

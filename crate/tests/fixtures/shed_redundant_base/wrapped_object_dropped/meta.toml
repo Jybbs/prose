@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Wrapped Base List Loses the `object` Line"
+title       = "A Wrapped Base List Loses Its `object` Line"
 
 description = '''
-`Adapter`'s base list spans multiple lines with `object,` as its own line after `Mapping,`, and `Wrapper`'s spans lines with `object,` as its own line before `metaclass=WrapperMeta,`. The `object,` line drops along with its trailing comma in each, leaving `Mapping,` and `metaclass=WrapperMeta,` at the indent they already had.
+`Adapter` lists its bases one per line with `object,` after `Mapping,`, and `Wrapper` lists `object,` ahead of `metaclass=WrapperMeta,`. **The `object,` line drops from each list along with its trailing comma**, leaving `Mapping,` and `metaclass=WrapperMeta,` at the indent they already had.
 '''

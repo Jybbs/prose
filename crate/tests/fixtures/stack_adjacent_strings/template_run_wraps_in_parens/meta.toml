@@ -3,5 +3,5 @@ previewable = true
 title       = "A Template-String Run Breaks Like Any Other"
 
 description = '''
-`label`'s two `t"..."` template-string literals concatenate the way `str` and `bytes` literals do, and together they overflow the line. `stack-adjacent-strings` **gives the template run the same one-per-line break** that any other over-budget run gets, wrapping the assignment in parentheses the source did not have.
+`label`'s two `t"..."` template-string literals, parsed under the `target-version = "3.14"` the case sets, concatenate the way `str` and `bytes` literals do, and together they overflow the line. **The run is wrapped in parentheses and broken to one literal per line**, the same break any other over-budget run gets.
 '''

@@ -1,8 +1,8 @@
-//! Flags a bare `import X` the author did not alias whose namespace is
-//! reached only through a handful of attributes (at most `max-attributes`,
-//! default 4) and never used as the bare object. An aliased bare import
-//! passes while `exempt-aliased` holds, and a top-level segment on the
-//! `allow` list keeps its bare form. Lint-only, emits no edits.
+//! Flags a bare `import X` whose namespace is reached only through a
+//! handful of attributes (at most `max-attributes`, default 4) and never
+//! used as the bare object. An aliased import passes while
+//! `exempt-aliased` holds, and a top-level segment on the `allow` list
+//! keeps its bare form. Lint-only, emits no edits.
 
 use ruff_python_ast::{
     Stmt,
@@ -26,7 +26,8 @@ pub(crate) struct BareImports {
 }
 
 impl BareImports {
-    pub(crate) const MESSAGE: &'static str = "Flag a bare import a `from` import could replace";
+    pub(crate) const MESSAGE: &'static str =
+        "replace a bare import with a `from` import naming the attributes it uses";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

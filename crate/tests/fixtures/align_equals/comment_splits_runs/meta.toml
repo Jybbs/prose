@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Comments Reset the Group, like Blank Lines"
+title       = "A Comment Splits the Run Like a Blank Line"
 
 description = '''
-`alpha` and `beta` sit above the `# break` comment, with `long_name` and `short` below it. **The comment splits the assignments into two independent groups**, exactly as a blank line would, so `beta` aligns against `alpha` on one `=` column while `short` pads out to the wider `long_name` on another.
+`alpha` and `beta` sit above the `# break` comment, with `long_name` and `short` below it. **The comment splits the assignments into two groups**, exactly as a blank line does, so `beta` pads out to `alpha`'s column and `short` pads out to `long_name`'s, and neither column reaches across the comment.
 '''

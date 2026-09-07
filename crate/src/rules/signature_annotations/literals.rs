@@ -1,5 +1,5 @@
 //! The call-site literals a parameter's inferred type reads, collected
-//! per callee, beside whether a definition returns a value at all.
+//! per callee, and whether a definition returns a value at all.
 
 use ruff_python_ast::{
     Expr, Parameters, Stmt, StmtFunctionDef,

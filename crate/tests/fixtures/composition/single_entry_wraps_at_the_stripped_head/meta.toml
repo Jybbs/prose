@@ -1,9 +1,7 @@
 [docs]
 previewable = true
-title       = "A Single Entry Wraps at the Stripped Head"
+title       = "A Lone `Args:` Entry Wraps at the Head the Strip Leaves"
 
 description = '''
-`strip-stranded-padding` removes the space before the lone entry's `:`, since a single entry has no sibling column to line up with. `wrap-docstrings` breaks the description at the 40-column budget and hangs the continuation under the start of the text.
-
-The wrap is measured against **the head as the strip will leave it**, one column narrower than `timeout : ` reads in the source. Both rules therefore agree on where the continuation lands, rather than one wrapping to a column the other is about to move.
+The one `Args:` entry of `fetch` is written `timeout : Maximum seconds to wait before giving up.`, with a space before its `:`, and its description runs past the 40-column docstring budget. `strip-stranded-padding` removes the space, because a lone entry has no sibling column to share, and **`wrap-docstrings` breaks the description at the budget and hangs the continuation under the start of the text as the strip leaves it**, one column narrower than the source, so both rules agree on where the continuation sits.
 '''

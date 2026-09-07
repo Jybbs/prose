@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Class Header Cushions and Oversized Gaps Collapse to One Blank"
+title       = "Adjacent Fields Stay Tight While Oversized Method Gaps Collapse to One"
 
 description = '''
-One blank line opens between `class Posting:` and its first field, and **the three-blank gaps before `m1` and between `m1` and `m2` collapse to a single blank each**. The adjacent pair of fields, `field` and `name`, stays tight with no blank inserted.
+Inside `Posting`, the fields `field` and `name` sit flush below the header and against each other, with three blank lines before `m1` and three more between `m1` and `m2`. **The three-blank-line gaps collapse to one each, and no blank line is inserted between the two adjacent fields**, whereas one blank line is written between the class header and `field`.
 '''

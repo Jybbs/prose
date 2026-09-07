@@ -5,5 +5,5 @@ input_file: crate/tests/fixtures/band_constants/heading_and_bound_comment_travel
 ---
 # the tunable solver knobs
 ALPHA_DECAY = 2
-BETA_DECAY = 1  # the decay the scheduler honors
+BETA_DECAY = 1  # the decay the scheduler reads
 GAMMA_DECAY = 3

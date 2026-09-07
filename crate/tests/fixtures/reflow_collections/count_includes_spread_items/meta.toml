@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Spread Entry Counts Toward the Dict Cap"
+title       = "A `**` Spread Counts as a Dict Entry"
 
 description = '''
-`**extra` occupies an entry slot just like a keyed pair, so `counts_spread` counts four entries, crosses `max-dict-entries`, and expands to one entry per line. The keyed pairs `"a"`, `"c"`, and `"d"` alone would sit at the cap and stay inline.
+`counts_spread` carries three keyed pairs and one `**extra` spread on a line that fits. **The dict expands to one entry per line**, because the spread counts as an entry, taking the dict to four and past `max-dict-entries`, whereas the three keyed pairs alone would sit at the cap and stay inline.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "An Over-Budget Swap Holds the Group"
+title       = "An Over-Budget Swap Keeps the Group's Order"
 
 description = '''
-Sorting this packed group would swap the member texts in place, landing the long `aardvark_padding_width=('courier-new-bold-typeface', 12, '')` on the first row beside `bee=3` and `xylophone=4`. That row would run past the code budget while no longer matching its source width either, so the swap is abandoned and the group holds its source order.
+`window.configure` packs its keywords across two rows, the long `aardvark_padding_width=('courier-new-bold-typeface', 12, '')` among them. **The group keeps its source order**, because sorting would swap the member texts in place and put that long member on the first row beside `bee=3` and `xylophone=4`, where the row would run past the code budget while no longer matching its source width either, so the swap is abandoned.
 '''

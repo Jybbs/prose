@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "A Comment Inside the Construct Holds"
+title       = "A Comment Inside the `%` Construct Keeps the Template"
 
 description = '''
-The `# the note stays` comment sits inside `noted`'s `%` construct, and an f-string has no place to put a comment. The template is left as written rather than converted at the cost of dropping the note.
+The `# the note stays` comment sits inside `noted`'s `%` construct, on the line that opens the argument tuple. **The template stays as written**, because an f-string has no place for a comment and converting would drop the note.
 '''

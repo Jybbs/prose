@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Cell Empties When Every Import It Holds Goes"
+title       = "A Cell Empties When Every Import in It Is Removed"
 
 description = '''
-The first cell holds nothing but `import json` and `import os`, and no cell in the notebook references either module. **Both imports drop and the cell empties**, keeping the boundary before the `value = 1` cell rather than merging the two.
+The first cell contains nothing but `import json` and `import os`, and no cell in the notebook reads either module. **Both imports are removed and the cell is left empty**, and the boundary before the `value = 1` cell stays rather than the two cells merging.
 '''

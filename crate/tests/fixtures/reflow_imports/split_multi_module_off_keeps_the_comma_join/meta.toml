@@ -3,5 +3,5 @@ previewable = true
 title       = "`split-multi-module = false` Keeps the Comma-Joined Form"
 
 description = '''
-With `split-multi-module = false`, the comma-joined `import os, sys` **stays exactly as written**. Turning off that one facet leaves the rest of `reflow-imports` applying, so `merge-members` still gathers `from pkg import alpha` and `from pkg import beta` onto one line.
+With `split-multi-module = false`, `import os, sys` sits above `from pkg import alpha` and `from pkg import beta`. **The comma-joined `import os, sys` stays exactly as written**, whereas `merge-members` still gathers the two `pkg` statements onto one line, because turning off one facet leaves the rest of `reflow-imports` running.
 '''

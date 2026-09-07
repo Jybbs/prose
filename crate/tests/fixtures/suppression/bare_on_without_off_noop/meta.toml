@@ -1,9 +1,7 @@
 [docs]
 previewable = false
-title       = "Bare On Without a Preceding Off Is a No-Op"
+title       = "A Bare On With No Preceding Off Does Nothing"
 
 description = '''
-The `# fmt: on` here has no `# fmt: off` ahead of it to close, so **it does nothing at all**.
-
-Every assignment stays eligible for formatting. The run of `x`, `foo`, and `bar_baz` above the directive sorts and pads to a shared `=` column, and `aa`, `bbb`, and `cccc` below it align the same way, exactly as if the comment were not there.
+The `# fmt: on` here has no `# fmt: off` ahead of it to close, so **it does nothing at all**. Every assignment stays open to formatting, in that `x`, `foo`, and `bar_baz` above the directive sort to `bar_baz`, `foo`, `x` and pad to one `=` column, and `aa`, `bbb`, and `cccc` below it align the same way, exactly as if the comment were absent.
 '''
