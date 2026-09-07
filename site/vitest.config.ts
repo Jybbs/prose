@@ -16,7 +16,6 @@ export default defineConfig({
 
     projects: [
       {
-        extends : true,
         plugins : [vue()],
         test    : {
           exclude    : [...configDefaults.exclude, '.vitepress/tests/wasm/**'],
@@ -27,7 +26,6 @@ export default defineConfig({
       },
 
       {
-        extends : true,
         test    : {
           include : ['.vitepress/tests/wasm/**/*.test.ts'],
           name    : 'wasm'
