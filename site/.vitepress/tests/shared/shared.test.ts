@@ -91,7 +91,7 @@ describe('externalAttrs', () => {
     ['/local/path',         {}],
     [undefined,             {}]
   ])('maps %s', (href, expected) => {
-    expect(externalAttrs(href)).toEqual(expected)
+    expect(externalAttrs(href)).toStrictEqual(expected)
   })
 })
 

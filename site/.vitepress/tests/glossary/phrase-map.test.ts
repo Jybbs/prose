@@ -12,7 +12,7 @@ describe('buildPhraseToSlug', () => {
       'atomic':        entry({ aliases: ['atom', 'atoms'] }),
       'count trigger': entry()
     })
-    expect([...map.entries()].sort()).toEqual([
+    expect([...map.entries()].sort()).toStrictEqual([
       ['atom', 'atomic'],
       ['atomic', 'atomic'],
       ['atoms', 'atomic'],

@@ -59,11 +59,11 @@ describe('useChipPanel', () => {
   it('filters the visible rules to the eligible set and falls back to all', () => {
     const { eligible, sandbox } = fakeSandbox()
     const api = mountSetup(() => useChipPanel(sandbox, CARDS))
-    expect(api.visible.value.map(rule => rule.slug)).toEqual(['align-equals', 'space-statements'])
+    expect(api.visible.value.map(rule => rule.slug)).toStrictEqual(['align-equals', 'space-statements'])
     eligible.value = ['space-statements']
-    expect(api.visible.value.map(rule => rule.slug)).toEqual(['space-statements'])
+    expect(api.visible.value.map(rule => rule.slug)).toStrictEqual(['space-statements'])
     eligible.value = null
-    expect(api.visible.value).toEqual([])
+    expect(api.visible.value).toStrictEqual([])
   })
 
   it('reads and toggles a rule through its enabled facet', () => {
@@ -104,19 +104,19 @@ describe('useChipPanel', () => {
   it('narrows the sub-facets to the probed impact set and hides them unprobed', () => {
     const { facetImpact, sandbox } = fakeSandbox()
     const api = mountSetup(() => useChipPanel(sandbox, CARDS))
-    expect(api.subFacets(ALIGN)).toEqual([])
+    expect(api.subFacets(ALIGN)).toStrictEqual([])
     facetImpact.value = { 'align-equals': ['max-shift', 'condense'] }
-    expect(api.subFacets(ALIGN).map(facet => facet.key)).toEqual(['max-shift', 'condense'])
+    expect(api.subFacets(ALIGN).map(facet => facet.key)).toStrictEqual(['max-shift', 'condense'])
     facetImpact.value = { 'align-equals': ['condense'] }
-    expect(api.subFacets(ALIGN).map(facet => facet.key)).toEqual(['condense'])
+    expect(api.subFacets(ALIGN).map(facet => facet.key)).toStrictEqual(['condense'])
   })
 
   it('narrows the ruler knobs to the probed impact set and hides them unprobed', () => {
     const { lengthImpact, sandbox } = fakeSandbox()
     const api = mountSetup(() => useChipPanel(sandbox, CARDS))
-    expect(api.visibleLengths.value).toEqual([])
+    expect(api.visibleLengths.value).toStrictEqual([])
     lengthImpact.value = ['docstring-line-length']
-    expect(api.visibleLengths.value.map(knob => knob.key)).toEqual(['docstring-line-length'])
+    expect(api.visibleLengths.value.map(knob => knob.key)).toStrictEqual(['docstring-line-length'])
   })
 
   it('resolves a rendered rule card and misses null-safely', () => {

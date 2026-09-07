@@ -10,7 +10,7 @@ describe('heroGrid', () => {
     { name: 'scales columns by stamp width',    height: 0,    layerWidth: 1200, cols: 6, rows: 3  },
     { name: 'scales rows by the row stride',    height: 1000, layerWidth: 0,    cols: 3, rows: 11 }
   ])('$name', ({ height, layerWidth, cols, rows }) => {
-    expect(heroGrid(height, layerWidth, tiling)).toEqual({ cols, rows })
+    expect(heroGrid(height, layerWidth, tiling)).toStrictEqual({ cols, rows })
   })
 
   test.prop([fc.integer({ min: -500, max: 4000 }), fc.integer({ min: 0, max: 4000 })])(
@@ -23,7 +23,7 @@ describe('heroGrid', () => {
   )
 
   it('falls back to the production tiling when no options are given', () => {
-    expect(heroGrid(0, 0)).toEqual({ cols: 3, rows: 3 })
+    expect(heroGrid(0, 0)).toStrictEqual({ cols: 3, rows: 3 })
   })
 })
 

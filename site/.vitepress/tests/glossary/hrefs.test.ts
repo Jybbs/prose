@@ -32,6 +32,6 @@ describe('entryHref', () => {
 describe('glossaryHrefs', () => {
   it('maps only the entries that resolve to an href', () => {
     const map = glossaryHrefs({ linked: entry({ href: '/reference/cache' }), plain: entry({}) }, rules)
-    expect([...map]).toEqual([['linked', '/reference/cache']])
+    expect([...map]).toStrictEqual([['linked', '/reference/cache']])
   })
 })

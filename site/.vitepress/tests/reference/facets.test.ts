@@ -19,11 +19,11 @@ const expected = Object.entries(ruleDefs)
 describe('derived facets', () => {
   it('covers every schema facet outside the hoisted scopes', () => {
     expect(derived.map(([rule, key]) => `${rule}.${key}`).toSorted())
-      .toEqual(expected.toSorted())
+      .toStrictEqual(expected.toSorted())
   })
 
   it.each(derived)('%s.%s mirrors the schema default', (rule, key, value) => {
-    expect(ruleDefs[rule].default[key]).toEqual(JSON.parse(value))
+    expect(ruleDefs[rule].default[key]).toStrictEqual(JSON.parse(value))
   })
 
   it.each(derived)('%s.%s carries a walked meaning', (rule, key) => {
@@ -36,8 +36,8 @@ describe('derived facets', () => {
 
   it('hoists the scopes every rule shares', () => {
     const generic = families.find(family => family.family === 'generic')
-    expect(generic?.rules.map(group => group.rule)).toEqual(['every rule', 'alignment rules'])
+    expect(generic?.rules.map(group => group.rule)).toStrictEqual(['every rule', 'alignment rules'])
     expect(generic?.rules.flatMap(group => group.facets.map(facet => facet.key)))
-      .toEqual(['enabled', 'max-shift'])
+      .toStrictEqual(['enabled', 'max-shift'])
   })
 })

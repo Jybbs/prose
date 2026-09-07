@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { promiseTimeout, useTimeoutFn }                              from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { promiseTimeout, useTimeoutFn } from '@vueuse/core'
+import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 
 import LintFlagPopper    from '../rules/LintFlagPopper.vue'
 import SandboxCodeEditor from './SandboxCodeEditor.vue'
@@ -265,6 +265,10 @@ function cancelEdit(): void {
 // re-highlights with the new decorations and skips the morph.
 watch([formatted, diagnostics], () => render(formatted.value))
 onMounted(() => { if (formatted.value) render(formatted.value) })
+// A render past its await points outlives the component that started it, so
+// the teardown supersedes it before it commits to a detached display or
+// reports a morph decision no reader saw.
+onUnmounted(run.cancel)
 </script>
 
 <template>

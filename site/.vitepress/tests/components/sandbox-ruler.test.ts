@@ -23,7 +23,7 @@ describe('SandboxRuler', () => {
     const stop    = wrapper.get('.ruler-stop')
     await stop.trigger('keydown', { key: 'ArrowRight' })
     await stop.trigger('keydown', { key: 'ArrowLeft', shiftKey: true })
-    expect(wrapper.emitted('setLength')).toEqual([
+    expect(wrapper.emitted('setLength')).toStrictEqual([
       ['code-line-length', 89],
       ['code-line-length', 78]
     ])
@@ -34,7 +34,7 @@ describe('SandboxRuler', () => {
     const stop    = wrapper.get('.ruler-stop')
     await stop.trigger('keydown', { key: 'Home' })
     await stop.trigger('keydown', { key: 'End' })
-    expect(wrapper.emitted('setLength')).toEqual([
+    expect(wrapper.emitted('setLength')).toStrictEqual([
       ['code-line-length', 30],
       ['code-line-length', 180]
     ])
@@ -44,7 +44,7 @@ describe('SandboxRuler', () => {
     const wrapper = mountRuler({ 'code-line-length': 180 })
     const stop    = wrapper.get('.ruler-stop')
     await stop.trigger('keydown', { key: 'ArrowUp' })
-    expect(wrapper.emitted('setLength')).toEqual([['code-line-length', 180]])
+    expect(wrapper.emitted('setLength')).toStrictEqual([['code-line-length', 180]])
   })
 
   it('leaves an unmapped key to the page', async () => {
@@ -59,7 +59,7 @@ describe('SandboxRuler', () => {
     const input = wrapper.get('input.ruler-chip-input')
     await input.setValue('300')
     await input.trigger('keydown.enter')
-    expect(wrapper.emitted('setLength')).toEqual([['code-line-length', 180]])
+    expect(wrapper.emitted('setLength')).toStrictEqual([['code-line-length', 180]])
     expect(wrapper.find('input.ruler-chip-input').exists()).toBe(false)
   })
 
