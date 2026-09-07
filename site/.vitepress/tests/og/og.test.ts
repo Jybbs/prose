@@ -93,7 +93,9 @@ describe('the card modules', () => {
   // Each list and the imports it describes cover each other exactly, so a new
   // import fails until it joins a list and a stale entry fails on its own.
   const covers = (found: ReadonlySet<string>, listed: readonly string[], role: string): void => {
+
     it.each([...found])(`%s is ${role}`, name => { expect(listed).toContain(name) })
+
     it.each(listed)('%s is still imported', name => { expect(found).toContain(name) })
   }
 

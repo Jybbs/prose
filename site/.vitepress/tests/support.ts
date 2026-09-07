@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import { expect, test as base, vi, type MockInstance } from 'vitest'
+import { test as base, type MockInstance } from 'vitest'
 
 export function expectMemoized<T>(fn: (dir: string) => T, dir: string): void {
   expect(fn(dir)).toBe(fn(dir))
