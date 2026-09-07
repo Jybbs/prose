@@ -31,10 +31,11 @@ export default defineConfig({
           include : ['.vitepress/tests/wasm/**/*.test.ts'],
           name    : 'wasm',
           browser : {
-            enabled   : true,
-            headless  : true,
-            instances : [{ browser: 'chromium' }],
-            provider  : playwright()
+            enabled            : true,
+            headless           : true,
+            instances          : [{ browser: 'chromium' }],
+            provider           : playwright(),
+            screenshotFailures : false
           }
         }
       }
