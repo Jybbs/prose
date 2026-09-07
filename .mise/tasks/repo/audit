@@ -5,19 +5,21 @@
 # requires-python = ">=3.11"
 # ///
 """
-Audit CI invariants no other gate covers, exiting nonzero if either fails.
+Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
 
     parity     Every cross-config pin and shared declaration agrees across
                its homes.
     manifests  No composite action manifest carries a YAML anchor, which
                the runner rejects before any step runs.
+    triggers   The `module.yml` push trigger covers every wasm source path
+               the module cache key hashes.
 
 Findings surface as `::error::` annotations naming the divergence or file.
 """
 
 from json    import loads as json_loads
 from pathlib import Path
-from re      import MULTILINE, finditer, search
+from re      import MULTILINE, findall, finditer, search
 from tomllib import loads
 from typing  import NoReturn
 
@@ -26,10 +28,10 @@ def action_pin(action: str, key: str) -> str:
     """
     Return the `key` input pinned in the `action` composite action.
     """
-    return extract(
+    return matched(
         f"no {key} pin in {action}/action.yml",
-        rf"{key}\s*:\s*v?(\S+)",
-        Path(f".github/actions/{action}/action.yml").read_text(encoding="utf-8")
+        f".github/actions/{action}/action.yml",
+        rf"{key}\s*:\s*v?(\S+)"
     )
 
 
@@ -47,10 +49,10 @@ def badge(svg: str) -> str:
     Return the `<major>.<minor>` token from the README badge line whose link
     target carries `svg`.
     """
-    return extract(
+    return matched(
         f"no README.md badge line carries {svg!r}",
-        rf"{svg}.*?(\d+\.\d+)\+",
-        Path("README.md").read_text(encoding="utf-8")
+        "README.md",
+        rf"{svg}.*?(\d+\.\d+)\+"
     )
 
 
@@ -96,6 +98,20 @@ def fail(message: str) -> NoReturn:
     raise SystemExit(1)
 
 
+def hashed_paths(action: str) -> list[str]:
+    """
+    Return the file paths listed in the `action` manifest's `hashFiles` call.
+    """
+    return findall(
+        r"'([^']+)'",
+        matched(
+            f"no hashFiles call in {action}/action.yml",
+            f".github/actions/{action}/action.yml",
+            r"hashFiles\(([^)]*)\)"
+        )
+    )
+
+
 def major_minor(value: str) -> str:
     """
     Return `<major>.<minor>` from any string carrying a SemVer head.
@@ -119,6 +135,13 @@ def manifests() -> int:
             )
             failed = 1
     return failed
+
+
+def matched(message: str, path: str, pattern: str) -> str:
+    """
+    Return the first capture of `pattern` in the file at `path`.
+    """
+    return extract(message, pattern, Path(path).read_text(encoding="utf-8"))
 
 
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
@@ -188,6 +211,11 @@ def parity() -> int:
             task_sources("site/test"),
             task_sources("site/press")
         ),
+        (
+            ".mise/tasks/wasm/pack sources ↔ restore-wasm hashFiles paths",
+            task_sources("wasm/pack"),
+            hashed_paths("restore-wasm")
+        ),
         *override_pins(package),
         *patch_pins(package)
     ]
@@ -237,6 +265,32 @@ def toml(path: str) -> dict:
     return loads(Path(path).read_text(encoding="utf-8"))
 
 
+def triggers() -> int:
+    """
+    Report every wasm source path the `module.yml` push trigger omits, which
+    leaves the cached module stale after a change to that path.
+    """
+    if missing := set(hashed_paths("restore-wasm")) - set(workflow_paths("module")):
+        annotate(f"module.yml push paths omit the wasm sources {sorted(missing)}")
+        return 1
+    return 0
+
+
+def workflow_paths(workflow: str) -> list[str]:
+    """
+    Return the paths the `workflow` file's push trigger filters on.
+    """
+    return findall(
+        r"^\s+- (\S+)$",
+        matched(
+            f"no paths filter in {workflow}.yml",
+            f".github/workflows/{workflow}.yml",
+            r"paths:\n((?:\s+- \S+\n)+)"
+        ),
+        MULTILINE
+    )
+
+
 if __name__ == "__main__":
 
-    raise SystemExit(parity() | manifests())
+    raise SystemExit(parity() | manifests() | triggers())

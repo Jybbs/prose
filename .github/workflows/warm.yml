@@ -66,6 +66,7 @@ jobs:
             name       : 🗜️ Build
             shared-key : prose-debug
           - command    : mise run wasm:smoke
+            module     : 'true'
             name       : 🪃 Browser
             save       : 'false'
             shared-key : prose-wasm
@@ -85,6 +86,10 @@ jobs:
           cache      : ${{ matrix.shared-key != '' }}
           save       : ${{ matrix.save }}
           shared-key : ${{ matrix.shared-key }}
+
+      - name : Restore the wasm module
+        if   : ${{ matrix.module == 'true' }}
+        uses : ./.github/actions/restore-wasm
 
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}

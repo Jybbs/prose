@@ -52,6 +52,7 @@ ruff_python_ast    = { codegen-units = 1 }
 ruff_python_parser = { codegen-units = 1 }
 
 [profile.wasm-release]
-inherits = "release"
-lto      = false
-strip    = "debuginfo"
+codegen-units = 1
+inherits      = "release"
+lto           = false
+strip         = "debuginfo"
