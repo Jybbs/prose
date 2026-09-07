@@ -2,6 +2,9 @@ import * as renderer from '../../lib/markdown/renderer'
 
 describe('renderer', () => {
   it('resolves the one renderer VitePress holds across calls', async () => {
+    // VitePress assigns its renderer after an await, so two concurrent calls
+    // each build one and only sequential calls share the instance.
+    // oxlint-disable-next-line vitest/prefer-expect-resolves
     expect(await renderer.getRenderer()).toBe(await renderer.getRenderer())
   })
 
@@ -14,14 +17,14 @@ describe('renderer', () => {
 
   it('appends fence meta to the fence line', async () => {
     const md = await renderer.getRenderer()
-    expect(await renderer.renderFencedHtml(md, 'x = 1', 'python', 'lint=demo-rule/basic')).toContain('<pre')
+    await expect(renderer.renderFencedHtml(md, 'x = 1', 'python', 'lint=demo-rule/basic')).resolves.toContain('<pre')
   })
 
   it('replaces an inline field with its walked node tree', async () => {
     const md  = await renderer.getRenderer()
     const out = renderer.inlineNodeField(md, [{ note: 'see `prose`' }], 'note')
     expect(out[0]).not.toHaveProperty('note')
-    expect(out[0].noteNodes).toEqual([
+    expect(out[0].noteNodes).toStrictEqual([
       { kind: 'text', text: 'see ' },
       { kind: 'code', text: 'prose' }
     ])
@@ -30,7 +33,7 @@ describe('renderer', () => {
   it('walks an array-valued field to one node tree per entry', async () => {
     const md  = await renderer.getRenderer()
     const out = renderer.inlineNodeField(md, [{ tags: ['`a`', '`b`'] }], 'tags')
-    expect(out[0].tagsNodes).toEqual([[{ kind: 'code', text: 'a' }], [{ kind: 'code', text: 'b' }]])
+    expect(out[0].tagsNodes).toStrictEqual([[{ kind: 'code', text: 'a' }], [{ kind: 'code', text: 'b' }]])
   })
 
   it('replaces a fenced field with its rendered counterpart', async () => {

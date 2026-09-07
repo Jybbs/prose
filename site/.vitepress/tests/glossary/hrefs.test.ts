@@ -13,7 +13,7 @@ const resolve = (overrides: Partial<GlossaryEntry>) =>
 
 describe('entryRule', () => {
   it('resolves a rule-backed entry through the rule index', () => {
-    expect(resolve({ rule: 'align-equals' })).toEqual(rules.get('align-equals'))
+    expect(resolve({ rule: 'align-equals' })).toStrictEqual(rules.get('align-equals'))
   })
 
   it('resolves to undefined for an entry naming no rule', () => {
@@ -48,6 +48,6 @@ describe('entryHref', () => {
 describe('glossaryHrefs', () => {
   it('maps only the entries that resolve to an href', () => {
     const source = { linked: entry({ href: '/reference/cache' }), plain: entry({}) }
-    expect([...hrefs.glossaryHrefs(source, rules)]).toEqual([['linked', '/reference/cache']])
+    expect([...hrefs.glossaryHrefs(source, rules)]).toStrictEqual([['linked', '/reference/cache']])
   })
 })

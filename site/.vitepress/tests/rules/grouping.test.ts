@@ -9,18 +9,18 @@ const { data } = rulesDataStub([
 describe('groupRules', () => {
   it('indexes every rule by its slug', () => {
     expect(Object.keys(data.bySlug).toSorted())
-      .toEqual(['align-equals', 'alphabetize-siblings', 'line-overflow'])
+      .toStrictEqual(['align-equals', 'alphabetize-siblings', 'line-overflow'])
   })
 
   it('gives a family carrying no rule an empty list', () => {
-    expect(data.byFamily.alignment.map(rule => rule.slug)).toEqual(['align-equals'])
-    expect(data.byFamily.docs).toEqual([])
+    expect(data.byFamily.alignment.map(rule => rule.slug)).toStrictEqual(['align-equals'])
+    expect(data.byFamily.docs).toStrictEqual([])
   })
 
   it('splits the categories and drops a family holding no rule in one', () => {
     const autoFix = data.byCategory.find(group => group.category === 'auto-fix')!
     const lint    = data.byCategory.find(group => group.category === 'lint')!
-    expect(autoFix.byFamily.map(group => group.family)).toEqual(['alignment', 'ordering'])
-    expect(lint.byFamily.map(group => group.family)).toEqual(['lint'])
+    expect(autoFix.byFamily.map(group => group.family)).toStrictEqual(['alignment', 'ordering'])
+    expect(lint.byFamily.map(group => group.family)).toStrictEqual(['lint'])
   })
 })

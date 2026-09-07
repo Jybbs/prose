@@ -32,6 +32,6 @@ describe('RunSummarySelect', () => {
   it('updates the model when an option is clicked', async () => {
     const w = mountSelect('a')
     await w.findAll('.run-summary-opt')[1].trigger('click')
-    expect(w.emitted('update:modelValue')?.[0]).toEqual(['b'])
+    expect(w.emitted('update:modelValue')?.[0]).toStrictEqual(['b'])
   })
 })

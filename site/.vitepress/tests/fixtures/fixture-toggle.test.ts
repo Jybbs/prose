@@ -18,7 +18,7 @@ describe('FixtureToggle', () => {
   it('emits the clicked side', async () => {
     const w = mountToggle('before')
     await w.get('[data-side="after"]').trigger('click')
-    expect(w.emitted('update:modelValue')).toEqual([['after']])
+    expect(w.emitted('update:modelValue')).toStrictEqual([['after']])
   })
 
   it('renders with no axe violations', async () => {

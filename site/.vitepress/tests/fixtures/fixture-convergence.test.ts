@@ -32,7 +32,7 @@ describe('FixtureConvergence', () => {
   it('tracks a rewriting fixture to a settled second run', () => {
     const w     = mountCase('hoists_a_constant')
     const steps = w.findAll('.fixture-converge-step')
-    expect(steps.map(s => s.attributes('data-badge'))).toEqual([undefined, 'changed', 'settled'])
+    expect(steps.map(s => s.attributes('data-badge'))).toStrictEqual([undefined, 'changed', 'settled'])
     expect(w.findAll('.fixture-converge-state')).toHaveLength(2)
     expect(w.get('[data-badge="settled"] .fixture-converge-note').text())
       .toContain('fixed point')
@@ -41,7 +41,7 @@ describe('FixtureConvergence', () => {
   it('settles a fixed-point fixture on its first run', () => {
     const w     = mountCase('already_settled')
     const steps = w.findAll('.fixture-converge-step')
-    expect(steps.map(s => s.attributes('data-badge'))).toEqual([undefined, 'settled'])
+    expect(steps.map(s => s.attributes('data-badge'))).toStrictEqual([undefined, 'settled'])
     expect(w.findAll('.fixture-converge-state')).toHaveLength(1)
     expect(w.text()).toContain('Run 1')
     expect(w.text()).not.toContain('Run 2')

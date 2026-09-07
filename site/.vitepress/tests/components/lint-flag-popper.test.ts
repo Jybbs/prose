@@ -13,15 +13,13 @@ vi.mock('floating-vue', () => ({
   }
 }))
 
-vi.mock('../../lib/rules/rules.data', async () => {
-  const { rulesDataStub } = await import('../rules-data-stub')
-  return rulesDataStub([
+vi.mock('../../lib/rules/rules.data', async () =>
+  (await import('../rules-data-stub')).rulesDataStub([
     { family: 'lint', slug: 'line-overflow' },
     { family: 'lint', slug: 'miscased-constants' },
     { family: 'lint', slug: 'signature-annotations' },
     { family: 'lint', slug: 'step-narration' }
-  ])
-})
+  ]))
 
 type Popper = ReturnType<typeof mountPopper>
 

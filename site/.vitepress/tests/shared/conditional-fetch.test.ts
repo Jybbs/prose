@@ -19,11 +19,6 @@ beforeEach(() => {
   vi.stubEnv('PROSE_OFFLINE_DOCS', '')
 })
 
-afterEach(() => {
-  vi.unstubAllGlobals()
-  vi.unstubAllEnvs()
-})
-
 describe('conditionalFetch', () => {
   supportTest('parses a fresh payload and persists it with the etag', async ({ tmpDir }) => {
     vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(
@@ -32,7 +27,7 @@ describe('conditionalFetch', () => {
     await expect(conditionalFetch(makeSource(tmpDir))).resolves.toBe('fresh')
     const entry = await cacache.get(tmpDir, 'probe')
     expect(JSON.parse(entry.data.toString())).toBe('fresh')
-    expect(entry.metadata).toEqual({ etag: 'W/"1"' })
+    expect(entry.metadata).toStrictEqual({ etag: 'W/"1"' })
   })
 
   supportTest('sends the stored etag and keeps the payload on a 304', async ({ tmpDir }) => {

@@ -13,7 +13,7 @@ describe('useSettledMeasure', () => {
     expect(measure).not.toHaveBeenCalled()
     fonts.settle()
     await flushPromises()
-    expect(measure).toHaveBeenCalledTimes(1)
+    expect(measure).toHaveBeenCalledOnce()
     resizeObserver.fire()
     expect(measure).toHaveBeenCalledTimes(2)
   })

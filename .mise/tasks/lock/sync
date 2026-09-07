@@ -4,10 +4,10 @@
 #MISE outputs     = ["Cargo.lock", "crate/uv.lock", "site/bun.lock"]
 #MISE sources     = [
 #MISE   "Cargo.toml",
+#MISE   "corpus/Cargo.toml",
 #MISE   "crate/Cargo.toml",
 #MISE   "crate/pyproject.toml",
 #MISE   "site/package.json",
-#MISE   "sweeps/Cargo.toml",
 #MISE   "wasm/Cargo.toml"
 #MISE ]
 

@@ -31,7 +31,7 @@ describe('replaceTextTokens', () => {
   it('splits matching text tokens and preserves the rest', () => {
     const out = replaceTextTokens([text('see prose here')], StubToken, /prose/g, () =>
       [Object.assign(new StubToken('html_inline', '', 0), { content: '<b>prose</b>' })])
-    expect(out.map(t => ({ content: t.content, type: t.type }))).toEqual([
+    expect(out.map(t => ({ content: t.content, type: t.type }))).toStrictEqual([
       { content: 'see ',         type: 'text' },
       { content: '<b>prose</b>', type: 'html_inline' },
       { content: ' here',        type: 'text' }
@@ -47,12 +47,12 @@ describe('replaceTextTokens', () => {
     const out = replaceTextTokens(
       children, StubToken, /prose/g, () => [text('NO')], { skipInsideLinks: true }
     )
-    expect(out.map(t => t.content)).toEqual(['', 'prose', ''])
+    expect(out.map(t => t.content)).toStrictEqual(['', 'prose', ''])
   })
 
   it('returns the text token unchanged when nothing matches', () => {
     const out = replaceTextTokens([text('nothing to see')], StubToken, /xyz/g, () => [text('X')])
-    expect(out.map(t => t.content)).toEqual(['nothing to see'])
+    expect(out.map(t => t.content)).toStrictEqual(['nothing to see'])
   })
 })
 
@@ -68,7 +68,7 @@ describe('walkBodyInlines', () => {
     ]
     const seen: string[] = []
     walkBodyInlines({ tokens }, (_block, children) => seen.push(children[0].content))
-    expect(seen).toEqual(['body', 'after heading'])
+    expect(seen).toStrictEqual(['body', 'after heading'])
   })
 })
 
@@ -94,7 +94,7 @@ describe('lintDecorations', () => {
         message      : 'first'
       }
     ]
-    expect(decorations.lintDecorations(findings, 'x = 1\nyyyyy')).toEqual([
+    expect(decorations.lintDecorations(findings, 'x = 1\nyyyyy')).toStrictEqual([
       {
         end        : { character: 3, line: 0 },
         properties : {
@@ -117,13 +117,13 @@ describe('lintDecorations', () => {
   it('orders two findings sharing a row by column', () => {
     const findings = [spanning(4, 6), spanning(1, 3)]
     expect(decorations.lintDecorations(findings, 'x = 1').map(item => item.start))
-      .toEqual([{ character: 0, line: 0 }, { character: 3, line: 0 }])
+      .toStrictEqual([{ character: 0, line: 0 }, { character: 3, line: 0 }])
   })
 
   it('omits the edit attributes when the fix carries neither side', () => {
     const finding = { ...spanning(1, 4), fix: { applicability: 'safe', edits: [{ before: '', content: '' }] } }
     expect(decorations.lintDecorations([finding], 'x = 1')[0].properties)
-      .toEqual({ class: 'lint-flag underline-draw', 'data-message': 'm', 'data-rule': 'a' })
+      .toStrictEqual({ class: 'lint-flag underline-draw', 'data-message': 'm', 'data-rule': 'a' })
   })
 
   it.each([
@@ -156,7 +156,7 @@ describe('lintDecorationTransformer', () => {
     const options: { decorations?: unknown[], meta?: { __raw?: string } } =
       { meta: { __raw: `python ${decorations.lintFenceMeta('demo-rule/basic')}` } }
     preprocess('', options)
-    expect(options.decorations).toEqual([{
+    expect(options.decorations).toStrictEqual([{
       end        : { character: 3, line: 0 },
       properties : { class: 'lint-flag underline-draw', 'data-message': 'm', 'data-rule': 'a' },
       start      : { character: 0, line: 0 }
@@ -167,7 +167,7 @@ describe('lintDecorationTransformer', () => {
     const options: { decorations?: unknown[], meta?: { __raw?: string } } =
       { meta: { __raw: `python ${decorations.lintFenceMeta('demo-rule/basic')}` } }
     preprocess('x =', options)
-    expect(options.decorations).toEqual([{
+    expect(options.decorations).toStrictEqual([{
       end        : { character: 3, line: 0 },
       properties : { class: 'lint-flag lint-flag-line', 'data-message': 'm', 'data-rule': 'a' },
       start      : { character: 0, line: 0 }

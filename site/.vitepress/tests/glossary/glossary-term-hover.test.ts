@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { mount }              from '@vue/test-utils'
-import { defineComponent, h } from 'vue'
+import { mount, type VueWrapper } from '@vue/test-utils'
+import { defineComponent, h }     from 'vue'
 
 import { provideAriaHidden } from '../../lib/composables/use-aria-hidden'
 import GlossaryTerm          from '../../theme/components/glossary/GlossaryTerm.vue'
@@ -34,10 +34,14 @@ describe('GlossaryTerm tooltip wiring', () => {
 
   const tooltip = vi.fn<(el: Element, binding: TooltipBinding) => void>()
 
-  const w = mount(GlossaryTerm, {
-    global : { directives: { tooltip } },
-    props  : { slug: 'atomic' },
-    slots  : { default: () => 'atom' }
+  let w: VueWrapper
+
+  beforeEach(() => {
+    w = mount(GlossaryTerm, {
+      global : { directives: { tooltip } },
+      props  : { slug: 'atomic' },
+      slots  : { default: () => 'atom' }
+    })
   })
 
   it('renders the anchor carrying the term text', () => {

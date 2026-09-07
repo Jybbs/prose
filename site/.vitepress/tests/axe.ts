@@ -15,6 +15,8 @@ export async function expectAccessible(
         region           : { enabled: false }
       }
     })
+    // The violations array comes from the JSDOM realm axe runs in, so its
+    // prototype differs from this realm's and a strict compare never matches.
     expect(run.violations.filter(v => !ignore.includes(v.id))).toEqual([])
   }
   finally {

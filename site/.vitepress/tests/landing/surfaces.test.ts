@@ -41,10 +41,8 @@ vi.mock('../../lib/glossary/glossary.data', () => ({
   }
 }))
 
-vi.mock('../../lib/rules/rules.data', async () => {
-  const { rulesDataStub } = await import('../rules-data-stub')
-  return rulesDataStub([{ slug: 'align-equals' }])
-})
+vi.mock('../../lib/rules/rules.data', async () =>
+  (await import('../rules-data-stub')).rulesDataStub([{ slug: 'align-equals' }]))
 
 const mountSurfaces = () => mount(Surfaces, { global: popperStubMount })
 
@@ -54,9 +52,9 @@ describe('Surfaces', () => {
     const cards = mountSurfaces().findAll('.surface-card')
     expect(cards).toHaveLength(4)
     expect(cards.map(c => c.attributes('data-family')))
-      .toEqual(['alignment', 'ordering', 'alignment', 'ordering'])
+      .toStrictEqual(['alignment', 'ordering', 'alignment', 'ordering'])
     expect(cards.map(c => c.attributes('aria-hidden')))
-      .toEqual([undefined, undefined, 'true', 'true'])
+      .toStrictEqual([undefined, undefined, 'true', 'true'])
   })
 
   domTest('leaves every focusable node in the hidden copy out of the tab order', ({ reducedMotion }) => {

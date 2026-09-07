@@ -59,7 +59,7 @@ describe('lintShorthand', () => {
       { after: SPLIT, before: '"the quick brown fox jumps over the lazy dog"', kind: 'block' }
     ]
   ])('shapes a $rule finding', (input, expected) => {
-    expect(lintShorthand(input)).toEqual(expected)
+    expect(lintShorthand(input)).toStrictEqual(expected)
   })
 
   it('returns null for an unknown rule', () => {
@@ -83,7 +83,7 @@ describe('lintShorthand', () => {
   it('truncates a long remove to 48 chars with an ellipsis', () => {
     const flagged = 'x'.repeat(60)
     expect(lintShorthand({ flagged, message: '', rule: 'step-narration' }))
-      .toEqual({ kind: 'remove', text: `${'x'.repeat(47)}…` })
+      .toStrictEqual({ kind: 'remove', text: `${'x'.repeat(47)}…` })
   })
 
   it('truncates an over-long suggestion to the same cap', () => {
@@ -93,20 +93,20 @@ describe('lintShorthand', () => {
       rule      : 'miscased-constants',
       suggested : 'x'.repeat(60)
     })
-    expect(result).toEqual({ after: `${'x'.repeat(47)}…`, before: 'max_retries', kind: 'replace' })
+    expect(result).toStrictEqual({ after: `${'x'.repeat(47)}…`, before: 'max_retries', kind: 'replace' })
   })
 
   it('keeps the chip pair when the suggested split fits one line', () => {
-    expect(overflow('"a" "b"', '"ab"')).toEqual({ after: '"a" "b"', before: '"ab"', kind: 'replace' })
+    expect(overflow('"a" "b"', '"ab"')).toStrictEqual({ after: '"a" "b"', before: '"ab"', kind: 'replace' })
   })
 
   it('takes the block shape when only the replaced side spans lines', () => {
-    expect(overflow('c', 'a\nb')).toEqual({ after: 'c', before: 'a\nb', kind: 'block' })
+    expect(overflow('c', 'a\nb')).toStrictEqual({ after: 'c', before: 'a\nb', kind: 'block' })
   })
 
   it('caps the stacked panes at ten lines with an elision marker', () => {
     const parts = Array.from({ length: 14 }, (_, index) => `    "part ${index}"`).join('\n')
-    expect(overflow(parts)).toEqual({
+    expect(overflow(parts)).toStrictEqual({
       after  : `${parts.split('\n').slice(0, 10).join('\n')}\n…`,
       before : '"x"',
       kind   : 'block'
@@ -152,7 +152,7 @@ describe('display-only fix coverage', () => {
       }
     }
 
-    expect(unshaped).toEqual([])
+    expect(unshaped).toStrictEqual([])
     expect(shaped).toBeGreaterThan(0)
   })
 })

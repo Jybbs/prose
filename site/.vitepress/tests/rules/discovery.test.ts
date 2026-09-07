@@ -1,5 +1,5 @@
 import * as discovery from '../../lib/rules/discovery'
-import { fixtureDir } from '../support'
+import { expectSlugIndex, fixtureDir } from '../support'
 
 describe('discoverRules', () => {
   const fixture = (name: string): string => fixtureDir(import.meta.dirname, name)
@@ -9,13 +9,11 @@ describe('discoverRules', () => {
   })
 
   it('indexes discovered rules by slug', () => {
-    const dir = fixture('valid')
-    expect([...discovery.discoverRuleIndex(dir).keys()])
-      .toEqual(discovery.discoverRuleSlugs(dir).map(r => r.slug))
+    expectSlugIndex(discovery.discoverRuleIndex, discovery.discoverRuleSlugs, fixture('valid'))
   })
 
   it('collects pages outside a family directory as strays', () => {
-    expect(discovery.discoverRules(fixture('stray-page')).strayPages).toEqual(['loose.md'])
+    expect(discovery.discoverRules(fixture('stray-page')).strayPages).toStrictEqual(['loose.md'])
   })
 
   it('rejects bad-caption', () => {

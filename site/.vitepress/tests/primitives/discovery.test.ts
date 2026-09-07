@@ -1,5 +1,5 @@
 import * as discovery from '../../lib/primitives/discovery'
-import { fixtureDir } from '../support'
+import { expectSlugIndex, fixtureDir } from '../support'
 
 describe('discoverPrimitives', () => {
   const fixture = (name: string): string => fixtureDir(import.meta.dirname, name)
@@ -9,9 +9,7 @@ describe('discoverPrimitives', () => {
   })
 
   it('indexes discovered primitives by slug', () => {
-    const dir = fixture('valid')
-    expect([...discovery.discoverPrimitiveIndex(dir).keys()])
-      .toEqual(discovery.discoverPrimitives(dir).map(p => p.slug))
+    expectSlugIndex(discovery.discoverPrimitiveIndex, discovery.discoverPrimitives, fixture('valid'))
   })
 
   it.each([

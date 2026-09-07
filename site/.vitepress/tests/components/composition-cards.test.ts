@@ -33,10 +33,8 @@ vi.mock('../../lib/fixtures/fixtures.data', () => {
   return { data: { composition: { alpha_case: fixture, beta_case: fixture, gamma_case: fixture } } }
 })
 
-vi.mock('../../lib/rules/rules.data', async () => {
-  const { rulesDataStub } = await import('../rules-data-stub')
-  return rulesDataStub()
-})
+vi.mock('../../lib/rules/rules.data', async () =>
+  (await import('../rules-data-stub')).rulesDataStub())
 
 const STUBS = {
   global: {
@@ -58,7 +56,7 @@ describe('CompositionCards', () => {
   afterEach(() => { window.location.hash = '' })
 
   it('renders every previewable case where no rule narrows the set', () => {
-    expect(titles()).toEqual(['Alpha Case', 'Beta Case', 'Gamma c = 3 Case'])
+    expect(titles()).toStrictEqual(['Alpha Case', 'Beta Case', 'Gamma c = 3 Case'])
   })
 
   it('renders a backticked title as a code span', () => {
@@ -66,16 +64,16 @@ describe('CompositionCards', () => {
   })
 
   it('renders only the cases the named rule takes part in', () => {
-    expect(titles('space_statements')).toEqual(['Alpha Case'])
+    expect(titles('space_statements')).toStrictEqual(['Alpha Case'])
   })
 
   it('leaves each folio empty so the fixture counter numbers it in place', () => {
     const nums = render('wrap_docstrings').findAll('.fixture-card-num').map(node => node.text())
-    expect(nums).toEqual([''])
+    expect(nums).toStrictEqual([''])
   })
 
   it('renders an empty list for a rule no previewable case activates', () => {
-    expect(titles('align_colons')).toEqual([])
+    expect(titles('align_colons')).toStrictEqual([])
   })
 
   it('renders the before-and-after pair only for the open card', async () => {

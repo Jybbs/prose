@@ -61,7 +61,7 @@ describe('createTypingMachine', () => {
     machine.setInView(false)
     const parked = phases.length
     vi.advanceTimersByTime(20_000)
-    expect(phases.length).toBe(parked)
+    expect(phases).toHaveLength(parked)
     machine.setInView(true)
     vi.advanceTimersByTime(20_000)
     expect(phases.length).toBeGreaterThan(parked)
@@ -79,7 +79,7 @@ describe('createTypingMachine', () => {
   it('freezes at the terminal state', () => {
     const { machine, states } = harness()
     machine.freezeAtEnd()
-    expect(states.at(-1)).toEqual({
+    expect(states.at(-1)).toStrictEqual({
       editProgress     : 3,
       entryIndex       : 1,
       phase            : 'reducedMotion',

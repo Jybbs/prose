@@ -87,11 +87,11 @@ describe('requireString', () => {
 
 describe('requireStringList', () => {
   it('returns a list of strings unchanged', () => {
-    expect(requireStringList(['a', 'b'], 'bad list')).toEqual(['a', 'b'])
+    expect(requireStringList(['a', 'b'], 'bad list')).toStrictEqual(['a', 'b'])
   })
 
   it('accepts an empty list', () => {
-    expect(requireStringList([], 'bad list')).toEqual([])
+    expect(requireStringList([], 'bad list')).toStrictEqual([])
   })
 
   it.each([
@@ -131,7 +131,7 @@ describe('externalAttrs', () => {
     ['/local/path',         {}],
     [undefined,             {}]
   ])('maps %s', (href, expected) => {
-    expect(externalAttrs(href)).toEqual(expected)
+    expect(externalAttrs(href)).toStrictEqual(expected)
   })
 })
 

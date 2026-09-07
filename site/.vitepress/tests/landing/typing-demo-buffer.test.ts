@@ -12,7 +12,7 @@ describe('editPlan', () => {
     ['abc',   'abcde', { fromCore: '',      prefix: 'abc', toCore: 'de' }],
     ['abcde', 'abc',   { fromCore: 'de',    prefix: 'abc', toCore: '' }]
   ])('splits %s and %s on their shared prefix', (from, to, expected) => {
-    expect(buffer.editPlan(from, to)).toEqual(expected)
+    expect(buffer.editPlan(from, to)).toStrictEqual(expected)
   })
 
   test.prop([fc.string(), fc.string()])('reconstructs both inputs from prefix and cores', (from, to) => {
@@ -59,18 +59,18 @@ describe('segmentsForEdit', () => {
       before            : seg.before,
       editingLineAfter  : seg.editingLineAfter,
       editingLineBefore : seg.editingLineBefore
-    }).toEqual({ after: '\nb', before: 'a\n', editingLineAfter: '', editingLineBefore: 'x = ' })
+    }).toStrictEqual({ after: '\nb', before: 'a\n', editingLineAfter: '', editingLineBefore: 'x = ' })
   })
 
   it('handles an edit with no surrounding newlines', () => {
-    expect(buffer.segmentsForEdit(entry, 'x = false', 'editTyping', 0)).toEqual({
+    expect(buffer.segmentsForEdit(entry, 'x = false', 'editTyping', 0)).toStrictEqual({
       after: '', before: '', editing: '', editingLineAfter: '', editingLineBefore: 'x = '
     })
   })
 
   it('returns the whole text as before when the anchor is absent', () => {
     expect(buffer.segmentsForEdit(entry, 'no anchor', 'editTyping', 0))
-      .toEqual({ ...buffer.EMPTY_SEGMENTS, before: 'no anchor' })
+      .toStrictEqual({ ...buffer.EMPTY_SEGMENTS, before: 'no anchor' })
   })
 })
 

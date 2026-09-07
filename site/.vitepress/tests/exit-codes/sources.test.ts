@@ -3,7 +3,7 @@ import { LINT_CODE, SOURCES } from '../../lib/exit-codes/sources'
 describe('SOURCES', () => {
   it('gives each exit code one entry', () => {
     const codes = SOURCES.map(source => source.code)
-    expect(codes).toEqual([...new Set(codes)].toSorted((a, b) => a - b))
+    expect(codes).toStrictEqual([...new Set(codes)].toSorted((a, b) => a - b))
   })
 
   it('names a code the loader can append the shipped-lint roster to', () => {

@@ -1,0 +1,19 @@
+name        : Mise floor
+description : Read the `min_version` `.mise/config.toml` sets, for `mise-action` to install against.
+
+outputs:
+  version:
+    description : The `min_version` `.mise/config.toml` sets.
+    value       : ${{ steps.read.outputs.version }}
+
+runs:
+  using: composite
+
+  steps:
+    - name  : Read the required mise version
+      id    : read
+      shell : bash
+      run   : |
+        version=$(sed -n 's/^min_version *= *"\([^"]*\)".*/\1/p' .mise/config.toml)
+        [[ -n "$version" ]] || { echo "::error::.mise/config.toml sets no min_version"; exit 1; }
+        echo "version=$version" >> "$GITHUB_OUTPUT"

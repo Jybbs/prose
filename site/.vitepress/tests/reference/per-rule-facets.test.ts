@@ -6,10 +6,8 @@ import InlineRuleLink       from '../../theme/components/rules/InlineRuleLink.vu
 import PerRuleFacets        from '../../theme/components/reference/PerRuleFacets.vue'
 import { expectAccessible } from '../axe'
 
-vi.mock('../../lib/rules/rules.data', async () => {
-  const { rulesDataStub } = await import('../rules-data-stub')
-  return rulesDataStub()
-})
+vi.mock('../../lib/rules/rules.data', async () =>
+  (await import('../rules-data-stub')).rulesDataStub())
 
 vi.mock('../../lib/reference/facets.data', () => ({
   data: [
@@ -77,9 +75,9 @@ describe('PerRuleFacets', () => {
     const w = mountFacets()
     expect(w.get('.per-rule-facets-scope').text()).toBe('every rule')
     expect(w.findAllComponents(InlineRuleLink).map(c => c.props('slug')))
-      .toEqual(['reflow-calls', 'reflow-collections'])
+      .toStrictEqual(['reflow-calls', 'reflow-collections'])
     expect(w.findAll('.per-rule-facets-key').map(k => k.text()))
-      .toEqual(['enabled', 'max-args', 'keep-multiline-literals', 'max-atomics'])
+      .toStrictEqual(['enabled', 'max-args', 'keep-multiline-literals', 'max-atomics'])
   })
 
   it('renders each facet type, default, and rendered meaning', () => {

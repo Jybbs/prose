@@ -18,14 +18,14 @@ describe('pageSvg', () => {
   })
 
   it.each(CASES)('renders the %s card', async (name, page) => {
-    await expect(await pageSvg(page, brand, '0.7.0'))
+    await expect(pageSvg(page, brand, '0.7.0')).resolves
       .toMatchFileSnapshot(`cards/${name}/output.svg.snap`)
   })
 })
 
 describe('landingSvg', () => {
   it('renders the landing card', async () => {
-    await expect(await landingSvg(brand, '0.7.0'))
+    await expect(landingSvg(brand, '0.7.0')).resolves
       .toMatchFileSnapshot('cards/landing/output.svg.snap')
   })
 })
