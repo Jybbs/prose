@@ -43,7 +43,7 @@ A run applies the edits of consecutive rules whose edits are independent to one 
 1. The subset probe finding the two rules editing a standard-library file together, with the batched splice matching the rule-by-rule result on every such file at every line length.
 2. A reading of the later rule's `apply` that finds nothing it measures among what the earlier rule rewrites, meaning the text a column is computed from, the adjacency of the rows a run spans, a statement's position, a name binding, or a docstring's rows.
 
-A row's fit against the budget is left to the probe alone, so a rule that measures only that shares a splice with one rewriting the row's value side. The probe re-checks every declared pair on each `cargo test` over the fixture tree and on every corpus sweep, failing where a declared pair's batched splice differs from its rule-by-rule result. A batch whose combined edit the re-parse rejects replays its rules one at a time, so the failure still names the rule whose own edits caused it.
+A row's fit against the budget is left to the probe alone, so a rule that measures only that shares a splice with one rewriting the row's value side. The probe re-checks every declared pair on each `cargo test` over the fixture tree and on every corpus sweep. It runs the pair both ways, splicing both rules into one buffer and then running them one after the other, and fails where the two runs produce different text. A batch whose combined edit the re-parse rejects replays its rules one at a time, so the failure still names the rule whose own edits caused it.
 
 ## Lint Rules
 

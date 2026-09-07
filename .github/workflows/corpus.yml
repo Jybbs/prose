@@ -3,9 +3,9 @@ run-name    : 🪻 Corpus · ${{ github.head_ref || github.ref_name }}
 permissions : { contents: read }
 
 env:
-  BASE : ${{ github.event.pull_request.base.sha || github.sha }}
-  REF  : ${{ github.head_ref || github.ref_name }}
-  SHA  : ${{ github.event.pull_request.head.sha || github.sha }}
+  PARENT : ${{ github.event.pull_request.base.sha || github.event.before }}
+  REF    : ${{ github.head_ref || github.ref_name }}
+  SHA    : ${{ github.event.pull_request.head.sha || github.sha }}
 
 on:
   pull_request:
@@ -55,7 +55,7 @@ jobs:
     steps:
       - &checkout
         name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        uses : actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - &provision-uv
         name : Provision uv
@@ -113,7 +113,7 @@ jobs:
         uses : &cache-save actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           key  : ${{ steps.python.outputs.stage }}${{ github.sha }}
-          path : ${{ runner.temp }}/stage/.git
+          path : &stage-git ${{ runner.temp }}/stage/.git
 
       - name : Save the mutation set
         if   : ${{ steps.mutations.outputs.cache-hit != 'true' }}
@@ -122,10 +122,12 @@ jobs:
           key  : *mutations-key
           path : *mutations-dir
 
-      - name : Drop the stages this bake replaces
-        if   : &main ${{ github.ref == 'refs/heads/main' }}
-        env  : { GH_TOKEN: "${{ github.token }}", PREFIX: "${{ steps.python.outputs.stage }}" }
-        run  : mise run gha:prune
+      - &prune
+        name              : Delete the cache entries this run replaces
+        continue-on-error : true
+        if                : ${{ github.ref == 'refs/heads/main' }}
+        env               : { GH_TOKEN: "${{ github.token }}" }
+        run               : mise run gha:prune
 
   tare:
     name            : ⚖️ Tare
@@ -151,10 +153,7 @@ jobs:
           key  : ${{ steps.python.outputs.tare }}${{ github.sha }}
           path : &tare-dir ${{ runner.temp }}/tare
 
-      - name : Drop the baselines this run replaces
-        if   : *main
-        env  : { GH_TOKEN: "${{ github.token }}", PREFIX: "${{ steps.python.outputs.tare }}" }
-        run  : mise run gha:prune
+      - *prune
 
   settle:
     name            : ⚓ Settle
@@ -212,8 +211,8 @@ jobs:
         id   : stage
         uses : *cache-restore
         with:
-          key          : ${{ steps.python.outputs.stage }}${{ env.BASE }}
-          path         : ${{ runner.temp }}/stage/.git
+          key          : ${{ steps.python.outputs.stage }}${{ env.PARENT }}
+          path         : *stage-git
           restore-keys : ${{ steps.python.outputs.stage }}
 
       - name : Serve or rebake the baseline
@@ -243,7 +242,7 @@ jobs:
       - name : Restore the baked baseline
         uses : *cache-restore
         with:
-          key          : ${{ steps.python.outputs.tare }}${{ env.BASE }}
+          key          : ${{ steps.python.outputs.tare }}${{ env.PARENT }}
           path         : *tare-dir
           restore-keys : ${{ steps.python.outputs.tare }}
 
@@ -294,14 +293,5 @@ jobs:
       - *provision-uv
 
       - name : Summarize and gate
-        env:
-          BAKE      : ${{ needs.bake.result }}
-          DELTA     : ${{ needs.delta.result }}
-          ARMED     : ${{ needs.imports.outputs.armed }}
-          IMPORTS   : ${{ needs.imports.result }}
-          MUTATIONS : ${{ needs.mutations.result }}
-          PLAN      : ${{ needs.plan.result }}
-          SETTLE    : ${{ needs.settle.result }}
-          SUBSETS   : ${{ needs.subsets.result }}
-          TARE      : ${{ needs.tare.result }}
+        env  : { NEEDS: "${{ toJSON(needs) }}" }
         run  : mise run gha:brief corpus

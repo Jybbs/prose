@@ -15,15 +15,16 @@ matrix row consumes (`label`, `pattern`, `smoke`), and emits
 `matrix=<json>` plus `smoke=wheels-<name>`, naming the artifact the
 release validate job installs.
 
-With `corpus`, plans the subset probe. Reads `BASE` and
-`GITHUB_EVENT_NAME`. A push run, and a pull request changing anything
-the corpus workflow watches other than a registered rule's module, take
-the full probe as one row per rule family carrying the family's rules.
-A pull request whose watched changes all sit under
-`crate/src/rules/<module>/` takes one row per family those rules belong
-to, scoped to them through `PROSE_SETTLE_RULES`. A row is named by its
-family's badge and label, read off the docs site's `FAMILY_META`, with
-membership read off the rule pages under `site/rules/<family>/`.
+With `corpus`, plans the subset probe. Reads `GITHUB_EVENT_NAME`, plus
+`PARENT` on a pull request alone. The full probe is one row per
+rule family, each row carrying that family's rules. Every event other
+than a pull request runs it, and so does a pull request whose watched
+changes reach outside a registered rule's module. When every watched
+change sits under `crate/src/rules/<module>/` instead, the probe narrows
+to one row per family those rules belong to, scoped through
+`PROSE_SETTLE_RULES`. A row is named by its family's badge and label,
+read off the docs site's `FAMILY_META`, with membership read off the rule
+pages under `site/rules/<family>/`.
 
 Lines land in `$GITHUB_OUTPUT` when it is set, stdout otherwise.
 """
@@ -52,11 +53,11 @@ def badges() -> dict[str, tuple[str, str]]:
 
 def changed() -> list[str]:
     """
-    Return the paths the checked-out merge changes against `BASE`.
+    Return the paths the checked-out merge changes against `PARENT`.
     """
-    base = environ["BASE"]
-    run(["git", "fetch", "--depth=1", "-q", "origin", base], check=True)
-    diff = run(["git", "diff", "--name-only", base, "HEAD"], capture_output=True, check=True, text=True)
+    parent = environ["PARENT"]
+    run(["git", "fetch", "--depth=1", "-q", "origin", parent], check=True)
+    diff = run(["git", "diff", "--name-only", parent, "HEAD"], capture_output=True, check=True, text=True)
     return diff.stdout.split()
 
 
@@ -67,7 +68,7 @@ def corpus():
     carrying whole families partitions the rules, so each row claims the
     pairs its own family opens and no pair is probed twice.
     """
-    slugs   = [] if environ.get("GITHUB_EVENT_NAME") == "push" else scoped(changed())
+    slugs   = scoped(changed()) if environ.get("GITHUB_EVENT_NAME") == "pull_request" else []
     meta    = badges()
     catalog = families()
     rows    = []
@@ -84,7 +85,7 @@ def corpus():
                 "pairs": "touching" if slugs else "owned",
                 "rules": " ".join(held),
             })
-    emit(f"matrix={dumps({'include': rows}, ensure_ascii=False)}")
+    emit(matrix(rows))
 
 
 def emit(*lines: str):
@@ -112,6 +113,13 @@ def families() -> dict[str, list[str]]:
     if unplaced := known - {slug for slugs in pages.values() for slug in slugs}:
         raise SystemExit(f"::error::no page under site/rules/<family>/ places {', '.join(sorted(unplaced))}")
     return {family: slugs for family, slugs in pages.items() if slugs}
+
+
+def matrix(rows: list[dict]) -> str:
+    """
+    Encode `rows` as the `matrix=<json>` line a workflow fans out over.
+    """
+    return f"matrix={dumps({'include': rows}, ensure_ascii=False)}"
 
 
 def registry() -> dict[str, str]:
@@ -179,10 +187,7 @@ def wheels():
     ]
     smoke = next(p["name"] for p in platforms if p.get("smoke"))
 
-    emit(
-        f"matrix={dumps({'include': include})}",
-        f"smoke=wheels-{smoke}"
-    )
+    emit(matrix(include), f"smoke=wheels-{smoke}")
 
 
 if __name__ == "__main__":

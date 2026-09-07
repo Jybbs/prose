@@ -1,0 +1,6 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description = "Run every Rust suite except the two corpus gates, which CI runs as a separate row"
+
+source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
+
+split_suite cargo test

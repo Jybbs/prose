@@ -20,7 +20,7 @@ inputs:
 
   save:
     default     : true
-    description : When `false` the caches restore but never save. `warm.yml` is the only caller that saves.
+    description : When `false` the caches restore but never save. `warm.yml` leaves it `true`, being the only caller that writes entries.
 
   target:
     default     : ''
@@ -38,10 +38,9 @@ runs:
       if   : ${{ inputs.command != 'sdist' }}
       uses : ./.github/actions/provision-cargo
       with:
-        cache-targets : ${{ !contains(inputs.args, '--zig') }}
-        save          : ${{ inputs.save }}
-        shared-key    : prose-dist-${{ inputs.name }}
-        tools         : rust
+        save       : ${{ inputs.save }}
+        shared-key : prose-dist-${{ inputs.name }}
+        tools      : rust
 
     - name : Run maturin
       env  : { PIP_BREAK_SYSTEM_PACKAGES: '1' }
@@ -50,7 +49,7 @@ runs:
         args              : ${{ inputs.command == 'build' && format('--release --locked {0}', inputs.args) || inputs.args }}
         command           : ${{ inputs.command }}
         manylinux         : ${{ inputs.manylinux }}
-        maturin-version   : v1.14.1
+        maturin-version   : v1.15.0
         target            : ${{ inputs.target }}
         working-directory : crate
 

@@ -121,6 +121,18 @@ def manifests() -> int:
     return failed
 
 
+def mise_provisioning(action: str) -> tuple[str, str]:
+    """
+    Return the `min_version` read and the `mise-action` pin the `action`
+    composite carries.
+    """
+    text = Path(f".github/actions/{action}/action.yml").read_text(encoding="utf-8")
+    return (
+        extract(f"no min_version read in {action}/action.yml", r"(version=\$\(sed[^\n]*)", text),
+        extract(f"no mise-action pin in {action}/action.yml", r"(jdx/mise-action@\S+)", text)
+    )
+
+
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
     """
     Return one parity pair per `overrides` entry the manifest also pins as a
@@ -182,6 +194,11 @@ def parity() -> int:
             ".mise/config.toml wasm-bindgen pin ↔ Cargo.lock wasm-bindgen",
             mise["tools"]["github:rustwasm/wasm-bindgen"],
             cargo_lock_version("wasm-bindgen")
+        ),
+        (
+            "provision-cargo mise provisioning ↔ provision-uv mise provisioning",
+            mise_provisioning("provision-cargo"),
+            mise_provisioning("provision-uv")
         ),
         (
             ".mise/tasks/site/test sources ↔ .mise/tasks/site/press sources",

@@ -7,35 +7,42 @@
 """
 Render a Prose step summary and gate the workflow's exit code.
 
+Every gate passes `NEEDS`, which is the workflow's `needs` context as
+JSON. A job's result is `NEEDS[job]["result"]` and its outputs sit under
+`NEEDS[job]["outputs"]`.
+
 Subcommands:
-    ci       Render the CI gate summary. Reads `CHECK` plus the
-             GitHub-runner defaults. Exits 0 when `CHECK` is success.
+    ci       Render the CI gate summary. Reads the `check` result plus
+             the GitHub-runner defaults. Exits 0 when that matrix
+             succeeded.
     corpus   Render the Corpus gate summary. Reads the result of every
-             job the corpus workflow's gate depends on, each under its
-             upper-cased job id, plus `ARMED` for whether the imports
-             ratchet read a baked break set, plus the GitHub-runner
-             defaults. Exits 0 when every one of them that ran is a
-             success, the delta reporting without gating and an unarmed
-             ratchet degrading the summary without failing it.
-    deploy   Render the Deploy gate summary. Reads `CHECKS`, `PRESS`,
-             `DEPLOY`, and `URL` plus the GitHub-runner defaults. Exits
-             0 when every one of them is success.
+             job the corpus workflow's gate depends on, plus the
+             `imports` job's `armed` output, plus the GitHub-runner
+             defaults. The `armed` output says whether the ratchet found
+             a baked break set. Exits 0 when every job that ran
+             succeeded. The delta reports without gating, and an unarmed
+             ratchet degrades the summary without failing it.
+    deploy   Render the Deploy gate summary. Reads the `checks`, `press`,
+             and `deploy` results, the `deploy` job's `url` output, and
+             the GitHub-runner defaults. Exits 0 when all three
+             succeeded.
     draft    Render the Draft summary. Reads `DRAFT_STATE`,
              `DRAFT_URL`, and `VERSION`, plus the GitHub-runner
              defaults.
-    release  Render the Release gate summary. Reads `BUILD`, `SDIST`,
-             `VALIDATE`, `PUBLISH`, plus the GitHub-runner defaults.
-             Exits 0 when every required job succeeded. `PUBLISH` is
-             required only on tag runs.
-    warm     Render the Warm gate summary. Reads `CHECKS` and `WHEELS`
-             plus the GitHub-runner defaults. Exits 0 when both are
-             success.
+    release  Render the Release gate summary. Reads the `build`, `sdist`,
+             `validate`, and `publish` results plus the GitHub-runner
+             defaults. Exits 0 when every required job succeeded, where
+             `publish` is required on a tag run alone.
+    warm     Render the Warm gate summary. Reads the `checks` and
+             `wheels` results plus the GitHub-runner defaults. Exits 0
+             when both succeeded.
 
 Each subcommand renders into `$GITHUB_STEP_SUMMARY` when it is set,
 stdout otherwise.
 """
 
 from jinja2  import Environment, FileSystemLoader
+from json    import loads as json_loads
 from os      import environ
 from pathlib import Path
 from sys     import argv
@@ -44,13 +51,6 @@ from yaml    import safe_load
 
 DELTA   = "delta"
 IMPORTS = "imports"
-
-
-def failed(*signals: str) -> bool:
-    """
-    Report whether any of the `signals` env vars is not a success.
-    """
-    return any(environ[signal] != "success" for signal in signals)
 
 
 class Summary:
@@ -67,6 +67,7 @@ class Summary:
         base = f"{environ['GITHUB_SERVER_URL']}/{repo}"
 
         self.is_tag = environ.get("GITHUB_REF_TYPE") == "tag"
+        self.needs  = json_loads(environ.get("NEEDS", "{}"))
         self.env    = Environment(
             keep_trailing_newline = True,
             loader                = FileSystemLoader(self.here / "templates"),
@@ -95,20 +96,37 @@ class Summary:
         else:
             print(text, end = "")
 
-    def _gate(self, name: str, *signals: str, degraded: bool = False, **context):
+    def _failed(self, *jobs: str) -> bool:
+        """
+        Report whether any of the `jobs` ended in anything other than success.
+        """
+        return any(self._result(job) != "success" for job in jobs)
+
+    def _gate(self, name: str, *jobs: str, degraded: bool = False, **context):
         """
         Render the `name` template and exit with the verdict of the
-        `signals` env vars. A degraded run passes and says so, its
-        headline reading the way its rows do.
+        `jobs`. A degraded run passes and says so, its headline reading
+        the way its rows do.
         """
-        verdict = failed(*signals)
+        verdict = self._failed(*jobs)
         mark    = "❌" if verdict else "⚠️" if degraded else "✅"
 
         self._emit(name, check_mark = mark, **context)
         raise SystemExit(verdict)
 
-    @staticmethod
-    def _row(jobs: dict, job: str) -> dict:
+    def _output(self, job: str, name: str) -> str:
+        """
+        Return the `job`'s `name` output, empty when the job declared none.
+        """
+        return self.needs[job].get("outputs", {}).get(name, "")
+
+    def _result(self, job: str) -> str:
+        """
+        Return the result the `job` finished with.
+        """
+        return self.needs[job]["result"]
+
+    def _row(self, jobs: dict, job: str) -> dict:
         """
         The mark and the name one corpus row shows, the imports row
         reading as unarmed where it succeeded against no baked baseline.
@@ -117,10 +135,10 @@ class Summary:
             jobs : The workflow's job table.
             job  : The job id whose row to build.
         """
-        result = environ[job.upper()]
+        result = self._result(job)
         name   = jobs[job]["name"].split("${{")[0].strip() or job.capitalize()
 
-        if job == IMPORTS and result == "success" and environ.get("ARMED") != "true":
+        if job == IMPORTS and result == "success" and self._output(job, "armed") != "true":
             return {"mark": "⚠️", "name": f"{name} (no baked baseline, nothing asserted)"}
 
         return {"mark": {"skipped": "➖", "success": "✅"}.get(result, "❌"), "name": name}
@@ -129,7 +147,7 @@ class Summary:
         """
         Render the CI gate summary and exit with the matrix verdict.
         """
-        self._gate("ci", "CHECK")
+        self._gate("ci", "check")
 
     def corpus(self):
         """
@@ -143,7 +161,7 @@ class Summary:
 
         self._gate(
             "corpus",
-            *[job.upper() for job in needed if job != DELTA and environ[job.upper()] != "skipped"],
+            *[job for job in needed if job != DELTA and self._result(job) != "skipped"],
             degraded = any(row["mark"] == "⚠️" for row in sweeps),
             sweeps   = sweeps
         )
@@ -153,15 +171,15 @@ class Summary:
         Render the Deploy gate summary and exit with the deploy verdict.
         """
         stages = {
-            "CHECKS" : "Checks",
-            "PRESS"  : "Press",
-            "DEPLOY" : "Publish"
+            "checks" : "Checks",
+            "press"  : "Press",
+            "deploy" : "Publish"
         }
 
         self._gate(
             "deploy", *stages,
-            stage = next((s for k, s in stages.items() if failed(k)), ""),
-            url   = environ.get("URL", "")
+            stage = next((s for job, s in stages.items() if self._failed(job)), ""),
+            url   = self._output("deploy", "url")
         )
 
     def draft(self):
@@ -189,8 +207,8 @@ class Summary:
             for path in [next(Path("dist").glob(p["pattern"]), None)]
         ]
 
-        prepub_failed = failed("BUILD", "SDIST", "VALIDATE")
-        published     = not failed("PUBLISH")
+        prepub_failed = self._failed("build", "sdist", "validate")
+        published     = not self._failed("publish")
 
         self._emit(
             "release",
@@ -205,7 +223,7 @@ class Summary:
         """
         Render the Warm gate summary and exit with the cache-warm verdict.
         """
-        self._gate("warm", "CHECKS", "WHEELS")
+        self._gate("warm", "checks", "wheels")
 
 
 if __name__ == "__main__":
