@@ -1,8 +1,9 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "smoke"
-#MISE depends     = ["site:bake", "wasm:build"]
-#MISE description = "Emit the module's web bindings and run the browser smoke test against them"
+#MISE depends     = ["site:bake", "wasm:pack"]
+#MISE description = "Copy the packed web module out of `public/` and run the browser smoke test against it"
 
-wasm-bindgen --out-dir site/.vitepress/tests/wasm/pkg --target web "$WASM_ARTIFACT"
+rm -rf site/.vitepress/tests/wasm/pkg
+cp -R site/public/wasm site/.vitepress/tests/wasm/pkg
 (cd site && bunx playwright install --with-deps chromium)
 (cd site && bunx vitest run --project wasm)
