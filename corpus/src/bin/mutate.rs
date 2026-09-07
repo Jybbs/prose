@@ -19,7 +19,7 @@
 //! A variant is written only where it parses, which keeps a mutation that
 //! breaks the grammar out of the corpus. The check is ruff's parser, which
 //! accepts some source CPython rejects semantically, a walrus inside an
-//! annotation among it. A file already carrying one keeps its variants.
+//! annotation among them. A file already carrying one keeps its variants.
 
 use std::{
     error::Error,

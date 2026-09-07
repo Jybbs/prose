@@ -92,7 +92,7 @@ impl Report {
         })
     }
 
-    /// Lists the rules whose firing count moved as a table, largest move first.
+    /// Renders as a table the rules whose firing count moved, largest move first.
     fn counts(&self) -> String {
         let moved = self
             .base
