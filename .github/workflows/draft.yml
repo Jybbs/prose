@@ -35,8 +35,8 @@ jobs:
         uses : ./.github/actions/provision-uv
 
       - name : 🌱 Cut draft
-        id   : cut
         env  : { GH_TOKEN: "${{ github.token }}" }
+        id   : cut
         run  : mise run gha:cut
 
       - name : 🗞️ Brief

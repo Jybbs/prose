@@ -125,7 +125,7 @@ mise review
 |---|---|
 | `mise ci` | The full local sweep every pull request answers to |
 | `mise run rust:test` | The Rust suites, including every fixture snapshot |
-| `mise run rust:proof` | Formats the fixture tree at every line length, then checks that a second pass changes nothing and that every reported fix was applied. CI runs this half of `rust:test` as its own row |
+| `mise run rust:proof` | Formats the fixture tree at every line length, then checks that a second pass changes nothing and that every reported fix was applied, which is the settling half of `rust:test` |
 | `mise run rust:settle` | Sweeps a corpus at every line length for rewrites a second pass would change and fixes the output never took |
 | `mise run rust:mutations` | Formats every mutation of a corpus with the unstable-output notice on, generating the set under a budget into the directory `PROSE_SETTLE_MUTATIONS` names, or a scratch one, when that directory is absent |
 | `mise run rust:subsets` | Probes each rule alone and each ordered rule pair over a corpus for one-pass settling |

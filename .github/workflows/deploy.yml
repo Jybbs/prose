@@ -161,9 +161,10 @@ jobs:
         uses : ./.github/actions/provision-uv
         with : { save: *no-save }
 
-      - name : Delete the cache entries this run replaces
-        env  : { GH_TOKEN: "${{ github.token }}" }
-        run  : mise run gha:prune
+      - name              : Delete the cache entries this run replaces
+        continue-on-error : true
+        env               : { GH_TOKEN: "${{ github.token }}" }
+        run               : mise run gha:prune
 
   gate:
     name            : 🗞️ Brief

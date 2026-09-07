@@ -23,5 +23,5 @@ runs:
 
     - name  : Stamp the restored module forward
       if    : ${{ steps.entry.outputs.cache-hit == 'true' }}
-      shell : bash
       run   : find site/public/wasm -type f -exec touch {} +
+      shell : bash

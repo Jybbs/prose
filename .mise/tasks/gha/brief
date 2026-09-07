@@ -7,9 +7,9 @@
 """
 Render a Prose step summary and gate the workflow's exit code.
 
-Every gate passes `NEEDS`, which is the workflow's `needs` context as
-JSON. A job's result is `NEEDS[job]["result"]` and its outputs sit under
-`NEEDS[job]["outputs"]`.
+Every gate but `draft` passes `NEEDS`, which is the workflow's `needs`
+context as JSON. A job's result is `NEEDS[job]["result"]` and its outputs
+sit under `NEEDS[job]["outputs"]`.
 
 Subcommands:
     ci       Render the CI gate summary. Reads the `check` result plus

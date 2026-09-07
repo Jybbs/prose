@@ -33,6 +33,24 @@ def action_pin(action: str, key: str) -> str:
     )
 
 
+def action_pins() -> list[tuple[str, str, str]]:
+    """
+    Return one parity pair per repeat of a third-party action pin, comparing
+    every later home's commit against the first home's.
+    """
+    homes: dict[str, list[tuple[str, str]]] = {}
+    for path in sorted(Path(".github").rglob("*.yml")):
+        text = path.read_text(encoding="utf-8")
+        for match in finditer(r"uses\s*:\s*(?!\./)([\w.-]+/[\w./-]+)@(\S+)", text):
+            homes.setdefault(match[1], []).append((str(path), match[2]))
+
+    return [
+        (f"{action} in {first} ↔ {home}", pin, repeat)
+        for action, [(first, pin), *rest] in sorted(homes.items())
+        for home, repeat in rest
+    ]
+
+
 def annotate(message: str, **location) -> None:
     """
     Emit a GitHub Actions error annotation, locating it to a file and line
@@ -128,7 +146,7 @@ def mise_provisioning(action: str) -> tuple[str, str]:
     """
     text = Path(f".github/actions/{action}/action.yml").read_text(encoding="utf-8")
     return (
-        extract(f"no min_version read in {action}/action.yml", r"(version=\$\(sed[^\n]*)", text),
+        extract(f"no min_version read in {action}/action.yml", r"(?s)(version=\$\(sed.*?GITHUB_OUTPUT\")", text),
         extract(f"no mise-action pin in {action}/action.yml", r"(jdx/mise-action@\S+)", text)
     )
 
@@ -205,6 +223,7 @@ def parity() -> int:
             task_sources("site/test"),
             task_sources("site/press")
         ),
+        *action_pins(),
         *override_pins(package),
         *patch_pins(package)
     ]

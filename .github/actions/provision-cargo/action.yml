@@ -3,12 +3,12 @@ description : Install the `.mise/config.toml` tools, the Rust toolchain among th
 
 inputs:
   shared-key:
-    description : The Swatinem cache scope, which two rows given the same name read and write together. Empty skips the cache step and leaves the mise archive unwritten.
+    description : The Swatinem cache scope, which two rows given the same name read and write together. An empty value skips the cache step and leaves the mise archive unwritten.
     required    : true
 
   save:
     default     : true
-    description : When `false` the caches restore but never save. `warm.yml` and `module.yml` leave it `true`, being the only workflows that write cache entries.
+    description : When `false` the caches restore but never save. `warm.yml` and `module.yml` leave it `true`, being the only callers that write these entries.
 
   tools:
     default     : ''

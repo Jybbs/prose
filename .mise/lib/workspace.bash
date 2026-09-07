@@ -1,13 +1,7 @@
 PROOF_TARGETS=(corpus settle)
 
 split_proof() {
-  local -a selected
-  local target
-  for target in "${PROOF_TARGETS[@]}"; do
-    selected+=(--test "$target")
-  done
-
-  "$@" --locked --package prose "${selected[@]}"
+  "$@" --locked --package prose "${PROOF_TARGETS[@]/#/--test=}"
 }
 
 split_suite() {
@@ -24,11 +18,10 @@ split_workspace() {
 }
 
 suite_targets() {
-  local target
   cargo metadata --format-version 1 --no-deps \
-    | jq -r '.packages[].targets[] | select(.kind == ["test"]) | .name' \
-    | while IFS= read -r target; do
-        [[ " ${PROOF_TARGETS[*]} " == *" $target "* ]] \
-          || printf -- '--test %s\n' "$target"
-      done
+    | jq --args -r '
+        .packages[].targets[]
+        | select(.kind == ["test"] and (.name | IN($ARGS.positional[]) | not))
+        | "--test=" + .name' \
+      "${PROOF_TARGETS[@]}"
 }

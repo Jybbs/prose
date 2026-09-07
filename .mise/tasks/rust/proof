@@ -1,5 +1,4 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE alias       = "proof"
 #MISE description = "Format the fixture tree at every line length, then check that a second pass changes nothing and that every reported fix was applied"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"

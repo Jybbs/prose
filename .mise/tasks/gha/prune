@@ -26,9 +26,12 @@ fi
 reclaimed=0
 
 while IFS=$'\t' read -r id key bytes; do
-  printf 'deleting %s, %s bytes\n' "$key" "$bytes"
-  gh api --method DELETE "$endpoint/$id"
-  reclaimed=$(( reclaimed + bytes ))
+  if gh api --method DELETE "$endpoint/$id"; then
+    printf 'deleted %s, %s bytes\n' "$key" "$bytes"
+    reclaimed=$(( reclaimed + bytes ))
+  else
+    printf 'could not delete %s, leaving it for the next run\n' "$key"
+  fi
 done <<< "$superseded"
 
 printf '\n%s bytes reclaimed\n' "$reclaimed"
