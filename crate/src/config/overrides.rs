@@ -11,7 +11,7 @@ use serde::{
 };
 
 use super::de::deserialize_prose;
-use super::load::ConfigNotice;
+use super::notice::{ConfigNotice, unknown_keys};
 use super::{Config, ConfigError};
 
 /// One override entry: the glob set its `paths` compile to and the
@@ -69,7 +69,7 @@ where
         .remove("paths")
         .ok_or_else(|| toml::de::Error::missing_field("paths"))?;
     let paths = Vec::<String>::deserialize(paths.into_deserializer())?;
-    let _: Config = deserialize_prose(entry.clone(), on_notice)?;
+    let _: Config = deserialize_prose(entry.clone(), &mut unknown_keys(on_notice))?;
     Ok(Override {
         body: entry,
         paths: compile_globs(&paths)?,

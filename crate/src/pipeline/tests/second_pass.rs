@@ -3,7 +3,7 @@
 //! rules it can leave out are the ones silent on the first pass.
 
 use super::*;
-use crate::{diagnostics::fired_rules, testing::corpus_inputs};
+use crate::testing::corpus_inputs;
 
 #[test]
 fn the_narrowed_second_pass_names_every_firing_rule_the_full_walk_names() {
@@ -12,10 +12,9 @@ fn the_narrowed_second_pass_names_every_firing_rule_the_full_walk_names() {
         let Ok(source) = Source::from_path(&path) else {
             continue;
         };
-        let Ok((formatted, diagnostics)) = pipeline.run(source) else {
+        let Ok((formatted, _, fired)) = pipeline.run(source) else {
             continue;
         };
-        let fired = fired_rules(&diagnostics);
         let full: Vec<RuleId> = pipeline
             .unsettled(&formatted)
             .into_iter()

@@ -10,9 +10,11 @@ use std::{
 };
 
 use super::de::deserialize_prose;
-use super::load::{ConfigNotice, NoticeDedup, holding_dir, walk_prose_table};
+use super::discover::{holding_dir, walk_prose_table};
 use super::merge::merge_tables;
+use super::notice::{ConfigNotice, unknown_keys};
 use super::overrides::{Override, take_overrides};
+use super::sink::NoticeDedup;
 use super::{Config, ConfigError, script};
 
 /// The base config and overrides governing files under one directory,
@@ -71,7 +73,7 @@ impl ConfigSource {
         F: FnMut(ConfigNotice<'_>),
     {
         let overrides = take_overrides(&mut table, on_notice)?;
-        let base_toml = deserialize_prose(table.clone(), on_notice)?.to_toml();
+        let base_toml = deserialize_prose(table.clone(), &mut unknown_keys(on_notice))?.to_toml();
         Ok(Self {
             anchor,
             base: table,

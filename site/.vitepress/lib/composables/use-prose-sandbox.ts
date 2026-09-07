@@ -16,34 +16,35 @@ const TRAP_NOTICE =
   'The formatter hit an internal error on this input. Edit the source to try again.'
 
 export interface ProseSandbox {
-  configError  : Ref<string>
-  configToml   : Ref<string>
-  diagnostics  : Ref<readonly LintFinding[]>
-  drawn        : Ref<number>
-  eligible     : Ref<readonly string[] | null>
-  error        : Ref<string>
-  facetImpact  : Ref<Record<string, readonly string[]>>
-  facetValue   : (slug: string, facet: configSchema.Facet) => FacetValue
-  formatNow    : () => void
-  formatted    : Ref<string>
-  lengthImpact : Ref<readonly string[] | null>
-  unstable     : Ref<readonly string[]>
-  lengthValue  : (key: string) => number
-  lengths      : readonly configSchema.LengthKnob[]
-  refresh      : () => void
-  rules        : readonly configSchema.RuleControl[]
-  setFacet     : (slug: string, facet: configSchema.Facet, value: FacetValue) => void
-  setLength    : (key: string, value: number) => void
-  share        : () => Promise<string | null>
-  source       : Ref<string>
-  start        : () => Promise<void>
+  configError   : Ref<string>
+  configNotices : Ref<readonly string[]>
+  configToml    : Ref<string>
+  diagnostics   : Ref<readonly LintFinding[]>
+  drawn         : Ref<number>
+  eligible      : Ref<readonly string[] | null>
+  error         : Ref<string>
+  facetImpact   : Ref<Record<string, readonly string[]>>
+  facetValue    : (slug: string, facet: configSchema.Facet) => FacetValue
+  formatNow     : () => void
+  formatted     : Ref<string>
+  lengthImpact  : Ref<readonly string[] | null>
+  lengthValue   : (key: string) => number
+  lengths       : readonly configSchema.LengthKnob[]
+  refresh       : () => void
+  rules         : readonly configSchema.RuleControl[]
+  setFacet      : (slug: string, facet: configSchema.Facet, value: FacetValue) => void
+  setLength     : (key: string, value: number) => void
+  share         : () => Promise<string | null>
+  source        : Ref<string>
+  start         : () => Promise<void>
+  unstable      : Ref<readonly string[]>
 }
 
 export interface ProseSandboxOptions {
   cases       : readonly SandboxCase[]
   schema      : configSchema.SandboxSchema
   debounceMs ?: number
-  load       ?: (reinit: number) => Promise<ProseWasm>
+  load       ?: () => Promise<ProseWasm>
   pick       ?: (count: number, exclude: number) => number
 }
 
@@ -52,23 +53,22 @@ export interface ProseSandboxOptions {
 export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   const { cases, schema, debounceMs = 250, load = loadModule, pick = session.randomOther } = options
 
-  const diagnostics = ref<readonly LintFinding[]>([])
-  const drawn       = ref(0)
-  const error       = ref('')
-  const formatted   = ref('')
-  const source      = ref(cases[0].source)
-  const unstable    = ref<readonly string[]>([])
+  const configNotices = ref<readonly string[]>([])
+  const diagnostics   = ref<readonly LintFinding[]>([])
+  const drawn         = ref(0)
+  const error         = ref('')
+  const formatted     = ref('')
+  const source        = ref(cases[0].source)
+  const unstable      = ref<readonly string[]>([])
 
   let activeIndex = 0
   let eagerQueued = false
-  let reinit      = 0
 
-  let loading: Promise<ProseWasm> | null     = null
-  let module: ProseWasm | null               = null
+  let ready: Promise<ProseWasm> | null       = null
   let published: session.SavedSession | null = null
 
   const config = useSandboxConfig(schema, debounceMs, formatNow)
-  const probe  = useSandboxProbe(schema, current => module === current)
+  const probe  = useSandboxProbe(schema)
 
   // A rule toggle, a draw, and an applied edit are discrete actions, so their
   // formats run on the next microtask instead of waiting out the typing
@@ -83,20 +83,20 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   }
 
   async function instantiate(): Promise<ProseWasm> {
-    const next = await load(reinit)
-    await next.default()
-    return next
+    const wasm = await load()
+    await wasm.default()
+    return wasm
   }
 
-  // A cold start and the first debounced format overlap, so both would see a
-  // null module and load the wasm twice. Concurrent callers share the one
-  // instantiation in flight, and a failed load clears it so the next retries.
+  // A cold start and the first debounced format overlap, so both would load the
+  // wasm twice. Concurrent callers share the one instantiation in flight, and a
+  // failed load clears it so the next retries.
   function moduleReady(): Promise<ProseWasm> {
-    loading ??= instantiate().catch(thrown => {
-      loading = null
+    ready ??= instantiate().catch(thrown => {
+      ready = null
       throw thrown
     })
-    return loading
+    return ready
   }
 
   // A toggle formats eagerly and then again off the debounced watcher, so a
@@ -106,26 +106,27 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   // syncs, so a fault in the probe runs must not reset the module or surface
   // an error over a good format.
   async function format(): Promise<void> {
+    let wasm: ProseWasm | null = null
     try {
-      module ??= await moduleReady()
+      wasm = await moduleReady()
       const configToml = config.configToml.value
       const text       = source.value
       if (published?.configToml === configToml && published.source === text) return
-      const result = module.format(configToml, text)
-      formatted.value   = result.formatted
-      diagnostics.value = result.diagnostics ? JSON.parse(result.diagnostics) : []
-      unstable.value    = result.unstable_rules ?? []
-      error.value       = ''
-      published         = { configToml, source: text }
-      probe.sync(module, text)
+      const result = wasm.format(configToml, text, true)
+      formatted.value     = result.formatted
+      configNotices.value = result.config_notices
+      diagnostics.value   = result.diagnostics
+      unstable.value      = result.unstable_rules
+      error.value         = ''
+      published           = { configToml, source: text }
+      probe.sync(wasm, text)
     } catch (thrown) {
       published = null
+      configNotices.value = []
       if (thrown instanceof WebAssembly.RuntimeError) {
-        // A panic poisons the instance, so drop it and bump the counter,
-        // leaving the next format to instantiate a fresh module.
-        loading = null
-        module  = null
-        reinit += 1
+        // A panic poisons the instance, so the glue rebuilds it in place and
+        // the next format runs against fresh memory.
+        wasm?.__wbg_reset_state()
         error.value = TRAP_NOTICE
       } else {
         error.value = String(errorMessage(thrown))
@@ -179,26 +180,27 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   }, { debounce: debounceMs })
 
   return {
-    configError  : config.configError,
-    configToml   : config.configToml,
-    diagnostics  : diagnostics,
-    drawn        : drawn,
-    eligible     : probe.eligible,
-    error        : error,
-    facetImpact  : probe.facetImpact,
-    facetValue   : config.facetValue,
-    formatNow    : formatNow,
-    formatted    : formatted,
-    lengthImpact : probe.lengthImpact,
-    lengthValue  : config.lengthValue,
-    lengths      : schema.lengths,
-    refresh      : refresh,
-    rules        : schema.rules,
-    setFacet     : config.setFacet,
-    setLength    : config.setLength,
-    share        : share,
-    source       : source,
-    start        : start,
-    unstable     : unstable
+    configError   : config.configError,
+    configNotices : configNotices,
+    configToml    : config.configToml,
+    diagnostics   : diagnostics,
+    drawn         : drawn,
+    eligible      : probe.eligible,
+    error         : error,
+    facetImpact   : probe.facetImpact,
+    facetValue    : config.facetValue,
+    formatNow     : formatNow,
+    formatted     : formatted,
+    lengthImpact  : probe.lengthImpact,
+    lengthValue   : config.lengthValue,
+    lengths       : schema.lengths,
+    refresh       : refresh,
+    rules         : schema.rules,
+    setFacet      : config.setFacet,
+    setLength     : config.setLength,
+    share         : share,
+    source        : source,
+    start         : start,
+    unstable      : unstable
   }
 }

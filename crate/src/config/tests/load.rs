@@ -1,11 +1,11 @@
 //! Filesystem-loading-surface tests for `Config::load`.
 
-use std::assert_matches;
+use std::{assert_matches, path::Path};
 
 use indoc::indoc;
 use tempfile::TempDir;
 
-use crate::config::load::ConfigForm;
+use crate::config::notice::{ConfigForm, ConfigNotice};
 use crate::config::*;
 use crate::testing::{write_dotconfig_prose_toml, write_prose_toml, write_pyproject};
 

@@ -1,26 +1,21 @@
-//! Resolves `prose` configuration from `prose.toml`, `.config/prose.toml`,
-//! or the `[tool.prose]` table of `pyproject.toml`.
+//! Reads `prose` configuration into the [`Config`] tree the rules use.
 //!
-//! `Config::load` walks upward from a starting path toward the
-//! filesystem root. In each directory `prose.toml` outranks
-//! `.config/prose.toml`, which outranks a `pyproject.toml`, and the
-//! nearest directory carrying any of them wins. A `prose.toml` or
-//! `.config/prose.toml` holds the config at its document root, whereas a
-//! `pyproject.toml` nests it under `[tool.prose]`. Reaching the root
-//! without a match resolves to full defaults.
+//! [`Config::from_prose_toml_str`] parses a `prose.toml` string,
+//! returning the config beside one notice per key it did not
+//! recognize.
 //!
-//! Each rule's configuration lives under `[tool.prose.rules]`, where
-//! a bare bool toggles the rule and a sub-table carries its facets.
+//! Reading config files off disk needs the `native` feature, as do the
+//! per-file overrides. Both live in the `discover`, `overrides`,
+//! `script`, and `source` modules.
 //!
-//! `Config::load` yields the base config. Per-file resolution, layering
-//! `[[tool.prose.overrides]]` globs and a standalone script's PEP 723
-//! block onto that base, lives in [`ConfigSource`].
+//! Each rule is configured under `[tool.prose.rules]`, where a bare
+//! bool turns the rule on or off and a sub-table sets its facets.
 //!
 //! The whole tree implements `schemars::JsonSchema`, so `prose
 //! schema` prints a JSON Schema carrying every key's type, default,
 //! and range.
 
-use std::{num::NonZeroUsize, path::Path};
+use std::num::NonZeroUsize;
 
 use ruff_python_ast::PythonVersion;
 use rustc_hash::FxHashSet;
@@ -40,19 +35,33 @@ use crate::{
 
 mod de;
 mod json_schema;
-mod load;
-mod merge;
-mod overrides;
 mod schema;
+
+#[cfg(feature = "native")]
+mod discover;
+#[cfg(feature = "native")]
+mod merge;
+#[cfg(feature = "native")]
+mod notice;
+#[cfg(feature = "native")]
+mod overrides;
+#[cfg(feature = "native")]
 mod script;
+#[cfg(feature = "native")]
+mod sink;
+#[cfg(feature = "native")]
 mod source;
 
 pub(crate) use de::deserialize_rule;
-use de::{deserialize_optional_cap, deserialize_prose, serialize_optional_cap};
+use de::{deserialize_optional_cap, deserialize_prose, serialize_optional_cap, unknown_key_notice};
 pub(crate) use json_schema::rule_schema;
-use load::{ConfigNotice, emit_notice, prose_table_from_str, walk_prose_table};
-pub(crate) use load::{NoticeDedup, config_rel_paths, holding_dir};
 pub use schema::*;
+
+#[cfg(feature = "native")]
+pub(crate) use discover::{config_rel_paths, holding_dir};
+#[cfg(feature = "native")]
+pub(crate) use sink::NoticeDedup;
+#[cfg(feature = "native")]
 pub(crate) use source::{ConfigSource, DirSource};
 
 /// The resolved `prose` configuration, read from a `prose.toml` or
@@ -101,63 +110,27 @@ impl Config {
     /// Deserializes a prose table into a base config, dropping the
     /// `overrides` array that only per-file resolution through
     /// [`ConfigSource`] consults.
-    fn from_base_table<F>(mut table: toml::Table, on_notice: &mut F) -> Result<Self, ConfigError>
-    where
-        F: FnMut(ConfigNotice<'_>),
-    {
+    fn from_base_table(
+        mut table: toml::Table,
+        on_unknown: &mut dyn FnMut(&str),
+    ) -> Result<Self, ConfigError> {
         table.remove("overrides");
-        deserialize_prose(table, on_notice)
+        deserialize_prose(table, on_unknown)
     }
 
-    /// The config `table` describes, the default where no table was
-    /// found.
-    fn from_optional_table<F>(
-        table: Option<toml::Table>,
-        on_notice: &mut F,
-    ) -> Result<Self, ConfigError>
-    where
-        F: FnMut(ConfigNotice<'_>),
-    {
-        table.map_or_else(
-            || Ok(Self::default()),
-            |table| Self::from_base_table(table, on_notice),
-        )
-    }
-
-    /// Parses a `prose.toml` snippet directly from a string, reading
-    /// its keys at the document root.
+    /// Parses a `prose.toml` string at its document root, returning the
+    /// config beside one notice line per key it did not recognize.
     ///
     /// # Errors
     ///
     /// Returns `ConfigError::Toml` when `contents` is not valid TOML.
-    pub fn from_prose_toml_str(contents: &str) -> Result<Self, ConfigError> {
-        Self::from_base_table(toml::from_str(contents)?, &mut emit_notice)
-    }
-
-    /// Parses a `pyproject.toml` snippet directly from a string.
-    ///
-    /// Returns `Config::default()` when `contents` carries no
-    /// `[tool.prose]` section. Unknown keys under `[tool.prose]` warn
-    /// to stderr, mirroring [`Config::load`].
-    ///
-    /// # Errors
-    ///
-    /// Returns `ConfigError::Toml` when `contents` is not valid TOML.
-    pub fn from_pyproject_str(contents: &str) -> Result<Self, ConfigError> {
-        Self::from_optional_table(prose_table_from_str(contents)?, &mut emit_notice)
-    }
-
-    /// Loads the config governing `from`, routing each notice through
-    /// `on_notice`.
-    fn load_with_notices<P, F>(from: P, mut on_notice: F) -> Result<Self, ConfigError>
-    where
-        P: AsRef<Path>,
-        F: FnMut(ConfigNotice<'_>),
-    {
-        Self::from_optional_table(
-            walk_prose_table(from.as_ref(), &mut on_notice)?.map(|(_, table)| table),
-            &mut on_notice,
-        )
+    pub fn from_prose_toml_str(contents: &str) -> Result<(Self, Vec<String>), ConfigError> {
+        let table = toml::from_str(contents)?;
+        let mut notices = Vec::new();
+        let config = Self::from_base_table(table, &mut |key: &str| {
+            notices.push(unknown_key_notice(key));
+        })?;
+        Ok((config, notices))
     }
 
     /// The alignment settings `config` resolves within `width`, each
@@ -258,39 +231,6 @@ impl Config {
             .map_or_else(|| self.code_width(), NonZeroUsize::get)
     }
 
-    /// Walks upward from `from`, returning the config from the nearest
-    /// directory that carries a `prose.toml`, a `.config/prose.toml`, or
-    /// a `pyproject.toml` with a `[tool.prose]` table, or
-    /// `Config::default()` if none exists on the chain. Within a directory
-    /// `prose.toml` outranks `.config/prose.toml`, which outranks the
-    /// `pyproject.toml` table.
-    ///
-    /// Unknown keys and the precedence outcome are logged to stderr and
-    /// ignored.
-    ///
-    /// # Errors
-    ///
-    /// Returns `ConfigError::Io` if a config file is found but cannot be
-    /// read, and `ConfigError::Toml` if its contents are not valid TOML.
-    pub fn load<P: AsRef<Path>>(from: P) -> Result<Self, ConfigError> {
-        Self::load_with_notices(from, emit_notice)
-    }
-
-    /// Loads the base config for `from`, routing its notices through a
-    /// run-scoped `dedup` so a run that reloads the same config per file
-    /// warns each key once across both loads.
-    ///
-    /// # Errors
-    ///
-    /// Returns `ConfigError::Io` if a config file is found but cannot be
-    /// read, and `ConfigError::Toml` if its contents are not valid TOML.
-    pub(crate) fn load_deduped<P: AsRef<Path>>(
-        from: P,
-        dedup: &NoticeDedup,
-    ) -> Result<Self, ConfigError> {
-        Self::load_with_notices(from, |notice| dedup.emit(notice))
-    }
-
     /// The terms a construct reaches one row under, read by every rule
     /// deciding where that construct lands.
     pub(crate) fn one_row_settings(&self) -> one_row::Settings<'static> {
@@ -310,15 +250,6 @@ impl Config {
             StripStrandedPadding::SLUG,
             self.rules.strip_stranded_padding.enabled,
         )
-    }
-
-    /// The keys this config sets away from the default, serialized to
-    /// TOML. Empty for a config running on the defaults.
-    pub(crate) fn to_changed_toml(&self) -> String {
-        let mut set = toml::Table::try_from(self).expect("Config serializes");
-        let defaults = toml::Table::try_from(Self::default()).expect("Config serializes");
-        merge::without_defaults(&mut set, &defaults);
-        toml::to_string(&set).expect("Config serializes")
     }
 
     /// The config serialized to TOML.

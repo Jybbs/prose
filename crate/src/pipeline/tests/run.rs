@@ -17,7 +17,7 @@ fn empty_pipeline_returns_identical_source() {
     let pipeline = Pipeline::from_rules(Vec::new());
     let source = parse("x = 1\n");
 
-    let (result, diagnostics) = pipeline.run(source).expect("identity run succeeds");
+    let (result, diagnostics, _) = pipeline.run(source).expect("identity run succeeds");
 
     assert_eq!(result.text(), "x = 1\n");
     assert!(diagnostics.is_empty());
@@ -71,7 +71,7 @@ fn run_applies_a_reordering_rule_on_a_notebook() {
     )]);
     let source = notebook(&["x = 1"]);
 
-    let (result, diagnostics) = pipeline.run(source).expect("notebook run succeeds");
+    let (result, diagnostics, _) = pipeline.run(source).expect("notebook run succeeds");
 
     assert_eq!(result.text(), "y = 1\n");
     assert_eq!(diagnostics.len(), 1);
@@ -82,7 +82,7 @@ fn run_declines_an_overlapping_group_as_a_no_op() {
     let pipeline = Pipeline::from_rules(vec![Box::new(self_overlapping())]);
     let source = parse("x = 1\n");
 
-    let (result, diagnostics) = pipeline
+    let (result, diagnostics, _) = pipeline
         .run(source)
         .expect("overlap degrades, run continues");
 
@@ -103,7 +103,7 @@ fn run_drops_a_whole_group_holding_one_suppressed_edit() {
     )]);
     let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
 
-    let (result, diagnostics) = pipeline.run(source).expect("filtered run succeeds");
+    let (result, diagnostics, _) = pipeline.run(source).expect("filtered run succeeds");
 
     assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
     assert!(diagnostics.is_empty());
@@ -122,7 +122,7 @@ fn run_drops_edits_whose_range_overlaps_a_suppressed_span() {
     })]);
     let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
 
-    let (result, diagnostics) = pipeline.run(source).expect("filtered run succeeds");
+    let (result, diagnostics, _) = pipeline.run(source).expect("filtered run succeeds");
 
     assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\nZ\n");
     assert_eq!(diagnostics.len(), 1);
@@ -137,7 +137,7 @@ fn run_emits_lint_diagnostic_without_fix_per_lint_range() {
     })]);
     let source = parse("x = 1\ny = 2\n");
 
-    let (result, diagnostics) = pipeline.run(source).expect("lint-only run succeeds");
+    let (result, diagnostics, _) = pipeline.run(source).expect("lint-only run succeeds");
 
     assert_eq!(result.text(), "x = 1\ny = 2\n");
     assert_eq!(diagnostics.len(), 2);
@@ -157,7 +157,7 @@ fn run_emits_one_diagnostic_per_group_carrying_every_edit() {
     )]);
     let source = parse("x = 1\n");
 
-    let (result, diagnostics) = pipeline.run(source).expect("grouped rewrite succeeds");
+    let (result, diagnostics, _) = pipeline.run(source).expect("grouped rewrite succeeds");
 
     assert_eq!(result.text(), "Y = Z\n");
     assert_eq!(diagnostics.len(), 1);
@@ -177,7 +177,7 @@ fn run_emits_one_diagnostic_per_surviving_edit() {
     )]);
     let source = parse("x = 1\n");
 
-    let (result, diagnostics) = pipeline.run(source).expect("rewrite succeeds");
+    let (result, diagnostics, _) = pipeline.run(source).expect("rewrite succeeds");
 
     assert_eq!(result.text(), "y = 1\n");
     assert_eq!(diagnostics.len(), 1);
@@ -216,7 +216,7 @@ fn run_resolves_a_lint_range_against_the_settled_source() {
     ]);
     let source = parse("x = 1\ny = 2  # prose: ignore[inlinable-bindings]\n");
 
-    let (result, diagnostics) = pipeline.run(source).expect("prepend run succeeds");
+    let (result, diagnostics, _) = pipeline.run(source).expect("prepend run succeeds");
 
     assert_eq!(
         result.text(),
@@ -234,10 +234,11 @@ fn run_short_circuits_when_file_is_suppressed() {
     })]);
     let source = parse("# prose: off\nx = 1\n");
 
-    let (result, diagnostics) = pipeline.run(source).expect("short-circuit run");
+    let (result, diagnostics, fired) = pipeline.run(source).expect("short-circuit run");
 
     assert_eq!(result.text(), "# prose: off\nx = 1\n");
     assert!(diagnostics.is_empty());
+    assert!(fired.is_empty());
     assert!(log.lock().expect("log mutex").is_empty());
 }
 
@@ -249,7 +250,7 @@ fn run_skips_empty_group_without_emitting_a_diagnostic() {
     })]);
     let source = parse("x = 1\n");
 
-    let (result, diagnostics) = pipeline.run(source).expect("empty-group run succeeds");
+    let (result, diagnostics, _) = pipeline.run(source).expect("empty-group run succeeds");
 
     assert_eq!(result.text(), "x = 1\n");
     assert!(diagnostics.is_empty());
@@ -263,7 +264,7 @@ fn run_skips_reparse_when_every_edit_is_suppressed() {
     )]);
     let source = parse("# fmt: off\nx = 1\n# fmt: on\n");
 
-    let (result, diagnostics) = pipeline.run(source).expect("filtered run succeeds");
+    let (result, diagnostics, _) = pipeline.run(source).expect("filtered run succeeds");
 
     assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\n");
     assert!(diagnostics.is_empty());
@@ -280,7 +281,7 @@ fn run_skips_the_compile_gate_when_the_input_does_not_compile() {
     )]);
     let source = parse("import os\nfrom __future__ import annotations\n");
 
-    let (result, _) = pipeline
+    let (result, _, _) = pipeline
         .run(source)
         .expect("disarmed gate lets the run pass");
 

@@ -13,7 +13,7 @@ use crate::config::*;
 fn assert_round_trips<T: Debug + PartialEq>(pyproject: &str, project: impl Fn(&Config) -> T) {
     let config = Config::from_pyproject_str(pyproject).expect("parses");
     let dumped = toml::to_string(&config).expect("Config serializes");
-    let reparsed = Config::from_prose_toml_str(&dumped).expect("reparses");
+    let (reparsed, _) = Config::from_prose_toml_str(&dumped).expect("reparses");
 
     assert_eq!(project(&reparsed), project(&config));
 }
@@ -109,7 +109,7 @@ fn docstring_structured_policy_explicit_override_to_docstring_line_length() {
 
 #[test]
 fn from_prose_toml_str_empty_returns_defaults() {
-    let config = Config::from_prose_toml_str("").expect("parses");
+    let (config, _) = Config::from_prose_toml_str("").expect("parses");
 
     assert_eq!(config.code_line_length, NonZeroUsize::new(88));
     assert!(config.rules.align_equals.enabled);
@@ -117,13 +117,44 @@ fn from_prose_toml_str_empty_returns_defaults() {
 
 #[test]
 fn from_prose_toml_str_reads_bare_root_keys() {
-    let config = Config::from_prose_toml_str(
+    let (config, _) = Config::from_prose_toml_str(
         "code-line-length = 120\n[rules]\nalphabetize-siblings = false\n",
     )
     .expect("parses");
 
     assert_eq!(config.code_line_length, NonZeroUsize::new(120));
     assert!(!config.rules.alphabetize_siblings.enabled);
+}
+
+#[test]
+fn from_prose_toml_str_returns_a_notice_for_each_unknown_key() {
+    let (_, notices) =
+        Config::from_prose_toml_str("first-bogus = 1\nsecond-bogus = 2\n").expect("parses");
+
+    assert_eq!(
+        notices,
+        [
+            "warning: unknown key `first-bogus` in [tool.prose]",
+            "warning: unknown key `second-bogus` in [tool.prose]",
+        ]
+    );
+}
+
+#[test]
+fn from_prose_toml_str_returns_an_unknown_key_notice() {
+    let (config, notices) =
+        Config::from_prose_toml_str("code-line-length = 100\nno-such-key = 1\n").expect("parses");
+
+    assert_eq!(config.code_line_length, NonZeroUsize::new(100));
+    assert_eq!(
+        notices,
+        ["warning: unknown key `no-such-key` in [tool.prose]"]
+    );
+}
+
+#[test]
+fn from_pyproject_str_rejects_a_non_table_prose_entry() {
+    assert_toml_error("[tool]\nprose = 1\n");
 }
 
 #[test]
@@ -447,7 +478,8 @@ fn to_changed_toml_is_empty_for_a_config_on_the_defaults() {
 
 #[test]
 fn to_changed_toml_keeps_a_nested_key_set_away_from_its_default() {
-    let config = Config::from_prose_toml_str("[rules]\nalign-equals = false\n").expect("parses");
+    let (config, _) =
+        Config::from_prose_toml_str("[rules]\nalign-equals = false\n").expect("parses");
 
     assert_eq!(
         config.to_changed_toml(),
@@ -457,7 +489,7 @@ fn to_changed_toml_keeps_a_nested_key_set_away_from_its_default() {
 
 #[test]
 fn to_changed_toml_keeps_a_top_level_key_set_away_from_its_default() {
-    let config = Config::from_prose_toml_str("code-line-length = 100\n").expect("parses");
+    let (config, _) = Config::from_prose_toml_str("code-line-length = 100\n").expect("parses");
 
     assert_eq!(config.to_changed_toml(), "code-line-length = 100\n");
 }

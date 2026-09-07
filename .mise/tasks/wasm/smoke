@@ -3,5 +3,9 @@
 #MISE depends     = ["site:bake", "wasm:build"]
 #MISE description = "Emit the wasm module's JS bindings and run the browser smoke test against them"
 
-wasm-bindgen --out-dir site/.vitepress/tests/wasm/pkg --target nodejs "$WASM_ARTIFACT"
+wasm-bindgen \
+  --experimental-reset-state-function \
+  --out-dir site/.vitepress/tests/wasm/pkg \
+  --target nodejs \
+  "$WASM_ARTIFACT"
 (cd site && bunx vitest run --project wasm)

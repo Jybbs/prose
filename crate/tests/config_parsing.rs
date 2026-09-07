@@ -25,7 +25,8 @@ const EVERY_KNOB_OVERRIDDEN: &str = concat!(
 #[test]
 fn every_knob_overridden_leaves_no_key_at_its_default() {
     let toml = fs_err::read_to_string(EVERY_KNOB_OVERRIDDEN).expect("fixture reads");
-    let overridden = leaves(&Config::from_prose_toml_str(&toml).expect("fixture parses"));
+    let (parsed, _) = Config::from_prose_toml_str(&toml).expect("fixture parses");
+    let overridden = leaves(&parsed);
     let held: Vec<String> = leaves(&Config::default())
         .into_iter()
         .filter(|(key, value)| overridden.get(key) == Some(value))
@@ -42,7 +43,7 @@ fn every_knob_overridden_leaves_no_key_at_its_default() {
 fn fixtures() {
     insta::glob!("fixtures/config/*/input.toml", |path| {
         let toml = fs_err::read_to_string(path).expect("fixture reads");
-        let config = Config::from_prose_toml_str(&toml).expect("fixture parses");
+        let (config, _) = Config::from_prose_toml_str(&toml).expect("fixture parses");
 
         common::in_snapshot_dir(path, || {
             insta::assert_debug_snapshot!("config", config);

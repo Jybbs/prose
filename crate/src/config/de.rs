@@ -8,7 +8,6 @@ use serde::{
     de::{IntoDeserializer, MapAccess, Visitor, value::MapAccessDeserializer},
 };
 
-use super::load::ConfigNotice;
 use super::schema::RuleToggle;
 use super::{Config, ConfigError};
 
@@ -52,13 +51,11 @@ where
 
 pub(super) fn deserialize_prose(
     table: toml::Table,
-    on_notice: &mut dyn FnMut(ConfigNotice<'_>),
+    on_unknown: &mut dyn FnMut(&str),
 ) -> Result<Config, ConfigError> {
     Ok(serde_ignored::deserialize(
         toml::Value::Table(table).into_deserializer(),
-        |path| {
-            on_notice(ConfigNotice::UnknownKey(&path.to_string()));
-        },
+        |path| on_unknown(&path.to_string()),
     )?)
 }
 
@@ -101,4 +98,10 @@ pub(super) fn serialize_optional_cap<S: Serializer>(
         Some(n) => serializer.serialize_u64(n.get() as u64),
         None => serializer.serialize_bool(false),
     }
+}
+
+/// Renders the notice line for a key the prose table does not
+/// recognize.
+pub(super) fn unknown_key_notice(key: &str) -> String {
+    format!("warning: unknown key `{key}` in [tool.prose]")
 }

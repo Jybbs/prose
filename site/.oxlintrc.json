@@ -17,7 +17,7 @@
     "max-lines-per-function"                     : "off",
     "no-await-in-loop"                           : "off",
     "no-negated-condition"                       : "off",
-    "no-underscore-dangle"                       : ["error", { "allow": ["__raw"] }],
+    "no-underscore-dangle"                       : ["error", { "allow": ["__raw", "__wbg_reset_state"] }],
     "oxc/no-map-spread"                          : "off",
     "require-unicode-regexp"                     : "off",
     "unicorn/consistent-function-scoping"        : "off",

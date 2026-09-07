@@ -11,7 +11,7 @@ use serde::Serialize;
 use crate::diagnostics::Diagnostic;
 
 #[derive(Serialize)]
-pub(crate) struct JsonDiagnostic<'a> {
+pub struct JsonDiagnostic<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     cell: Option<OneIndexed>,
     code: &'a str,
@@ -115,14 +115,23 @@ pub(crate) fn line_columns(file: &SourceFile, range: TextRange) -> (LineColumn, 
     )
 }
 
-/// Renders the lint-severity diagnostics as the JSON records the docs
-/// site reads, or `None` when the run emitted none.
-pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
-    let records: Vec<JsonDiagnostic> = diagnostics
+/// Collects the lint findings as JSON records, in the order the run
+/// emitted them.
+pub fn lint_records<'a>(
+    file: &'a SourceFile,
+    diagnostics: &'a [Diagnostic],
+) -> Vec<JsonDiagnostic<'a>> {
+    diagnostics
         .iter()
         .filter(|diag| diag.severity.is_lint())
         .map(|diag| JsonDiagnostic::new(file, None, diag, false))
-        .collect();
+        .collect()
+}
+
+/// Renders [`lint_records`] as pretty-printed JSON, or `None` when the
+/// run emitted no lint finding.
+pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
+    let records = lint_records(file, diagnostics);
     (!records.is_empty())
         .then(|| serde_json::to_string_pretty(&records).expect("lint records serialize"))
 }

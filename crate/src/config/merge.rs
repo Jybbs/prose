@@ -1,5 +1,18 @@
-//! Deep-merge and deep-diff of TOML tables, run at the parsed-value
-//! layer ahead of deserialization.
+//! Merges and diffs TOML tables, both running on parsed values ahead of
+//! deserialization. The config rendering below is built on the diff.
+
+use super::Config;
+
+impl Config {
+    /// Serializes the keys this config sets away from the default,
+    /// leaving an empty string for a config running on the defaults.
+    pub(crate) fn to_changed_toml(&self) -> String {
+        let mut set = toml::Table::try_from(self).expect("Config serializes");
+        let defaults = toml::Table::try_from(Self::default()).expect("Config serializes");
+        without_defaults(&mut set, &defaults);
+        toml::to_string(&set).expect("Config serializes")
+    }
+}
 
 /// Recursively merges `overlay` into `base`. A key both carry as a table
 /// merges field by field, and any other overlay value replaces `base`'s.

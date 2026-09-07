@@ -38,7 +38,7 @@ fn run_as_written_names_the_rules_the_fold_fired_rather_than_the_as_written_ones
     let (formatted, diagnostics, fired) = Pipeline::from_rules(rules())
         .run_as_written(parse("x = 1\n"))
         .expect("the run succeeds");
-    let (_, run_diagnostics) = Pipeline::from_rules(rules())
+    let (_, _, run_fired) = Pipeline::from_rules(rules())
         .run(parse("x = 1\n"))
         .expect("the run succeeds");
 
@@ -49,7 +49,7 @@ fn run_as_written_names_the_rules_the_fold_fired_rather_than_the_as_written_ones
         "the as-written diagnostics name only the rule that edits the buffer as written",
     );
     assert_eq!(fired, both);
-    assert_eq!(fired_rules(&run_diagnostics), both);
+    assert_eq!(run_fired, both);
 }
 
 #[test]

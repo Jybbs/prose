@@ -11,9 +11,10 @@ vi.mock('../../lib/shared/highlight', () => import('../highlight-stub'))
 
 vi.mock('../../lib/markdown/highlighter', () => import('../highlighter-stub'))
 
-const fakeSandbox = (configToml = ''): ProseSandbox => ({
-  configError : ref(''),
-  configToml  : ref(configToml)
+const fakeSandbox = (configToml = '', configNotices: readonly string[] = []): ProseSandbox => ({
+  configError   : ref(''),
+  configNotices : ref(configNotices),
+  configToml    : ref(configToml)
 } as unknown as ProseSandbox)
 
 const mountToml = async (sandbox: ProseSandbox) => {
@@ -23,6 +24,15 @@ const mountToml = async (sandbox: ProseSandbox) => {
 }
 
 describe('ProseSandboxToml', () => {
+  domTest('renders a config notice beside the parse error', async () => {
+    const sandbox = fakeSandbox('no-such-key = 1', ['warning: unknown key `no-such-key`'])
+    sandbox.configError.value = 'unexpected character'
+    const wrapper = await mountToml(sandbox)
+
+    expect(wrapper.get('.code-panel-error').text()).toContain('unexpected character')
+    expect(wrapper.get('.code-panel-unstable').text()).toContain('no-such-key')
+  })
+
   domTest('types a config change and settles onto the target text', async ({ reducedMotion }) => {
     reducedMotion(false)
     const sandbox = fakeSandbox()

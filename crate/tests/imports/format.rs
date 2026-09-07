@@ -82,7 +82,7 @@ fn formatted(path: &Path, pipeline: &Pipeline, tree: &Path) -> Formatted {
     let text = source.text().to_owned();
     let lines = LineIndex::from_source_text(&text);
     let diagnostics = pipeline.diagnose(&source);
-    let Ok((written, _)) = pipeline.run(source) else {
+    let Ok((written, _, _)) = pipeline.run(source) else {
         return refused;
     };
     let changed = written.text() != text;

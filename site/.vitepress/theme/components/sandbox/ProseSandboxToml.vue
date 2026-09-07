@@ -14,7 +14,7 @@ import { latestRun }         from '../../../lib/shared/latest-run'
 const STEP_MS = 12
 
 const props = defineProps<{ sandbox: ProseSandbox }>()
-const { configError, configToml } = props.sandbox
+const { configError, configNotices, configToml } = props.sandbox
 
 const reducedMotion = useReducedMotion()
 const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('editor')
@@ -123,5 +123,6 @@ onMounted(() => settle(configToml.value))
     />
     <CopyButton v-show="!editing" label="Copy prose.toml" :source="configToml" />
     <p v-if="configError" class="code-panel-error">{{ configError }}</p>
+    <p v-for="notice in configNotices" :key="notice" class="code-panel-unstable">{{ notice }}</p>
   </section>
 </template>
