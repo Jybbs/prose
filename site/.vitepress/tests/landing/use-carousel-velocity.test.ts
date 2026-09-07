@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { useCarouselVelocity }     from '../../lib/composables/use-carousel-velocity'
 import { mountSetup, rectElement } from '../dom'
@@ -78,6 +78,14 @@ describe('useCarouselVelocity', () => {
     expect(api.offset.value).toBe(0)
   })
 
+  it('halts over a card sitting clear of both margins', () => {
+    const api = mountVelocity(1000)
+    api.onPointerMove(pointerOn(surfaceCard(100, 400)))
+    step(1000)
+    step(2000)
+    expect(api.offset.value).toBe(0)
+  })
+
   it('magnet-pulls backward toward a card past the left margin', () => {
     const api = mountVelocity(1000)
     api.onPointerMove(pointerOn(surfaceCard(-20, 180)))
@@ -100,6 +108,22 @@ describe('useCarouselVelocity', () => {
     step(1000)
     step(2000)
     expect(api.offset.value).toBe(600)
+  })
+
+  it('drops a drifted offset to the origin once the track starts fitting', async () => {
+    const fits     = ref(false)
+    const viewport = rectElement({ left: 0, right: 500 })
+    const api      = mountSetup(() => useCarouselVelocity(ref(viewport), ref(1000), fits, {
+      ...OPTIONS,
+      reducedMotion: ref(false)
+    }))
+    step(1000)
+    step(2000)
+    expect(api.offset.value).toBe(100)
+
+    fits.value = true
+    await nextTick()
+    expect(api.offset.value).toBe(0)
   })
 
   it('resumes the base drift after the pointer leaves', () => {

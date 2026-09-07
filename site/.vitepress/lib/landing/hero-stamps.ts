@@ -41,9 +41,9 @@ function rotate(idx: number): number {
   return ((idx * ROT_STEP) % 360) - 180
 }
 
-// Tiles the hero watermark field: each cell emits one big pilcrow plus four
-// hash-seeded corner letters, so a (cols, rows) pair maps to a deterministic
-// Stamp array the component renders.
+// Tiles the hero watermark field, emitting one big pilcrow and four
+// hash-seeded corner letters per cell. A `(cols, rows)` pair maps to a
+// deterministic `Stamp` array the component renders.
 export function tileStamps(cols: number, rows: number): readonly Stamp[] {
   const out: Stamp[] = []
   const dx  = (100 / cols) * CORNER_OFFSET

@@ -1,7 +1,7 @@
-import { markdownH1 }    from '../markdown/h1'
-import { matterPages }   from '../shared/content-page'
-import * as registries   from '../shared/registries'
-import { requireString } from '../shared/require-string'
+import { markdownH1 }                       from '../markdown/h1'
+import { matterPages }                      from '../shared/content-page'
+import * as registries                      from '../shared/registries'
+import { requireString, requireStringList } from '../shared/require-string'
 
 export interface DiscoveredPrimitive {
   consumedBy : readonly string[]
@@ -31,9 +31,9 @@ export function discoverPrimitives(primitivesDir: string): DiscoveredPrimitive[]
     const summary   = requireString(data.summary, fieldMessage(slug, 'summary'))
     const tagline   = requireString(data.tagline, fieldMessage(slug, 'tagline'))
 
-    const consumes   = stringList(data.consumes, slug, 'consumes')
+    const consumes   = requireStringList(data.consumes, fieldMessage(slug, 'consumes'))
       .map(entry => requireMember(entry, registries.PRIMITIVE_SLUGS, slug, 'consumes entry'))
-    const consumedBy = stringList(data.consumedBy, slug, 'consumedBy')
+    const consumedBy = requireStringList(data.consumedBy, fieldMessage(slug, 'consumedBy'))
 
     const name = requireString(markdownH1(content), `Primitive "${slug}" has no H1 heading`)
 
@@ -56,11 +56,4 @@ function requireMember<T extends string>(
     throw new Error(`${fieldMessage(slug, field)}: ${JSON.stringify(value)}`)
   }
   return value as T
-}
-
-function stringList(value: unknown, slug: string, field: string): string[] {
-  if (!Array.isArray(value) || value.some(v => typeof v !== 'string')) {
-    throw new Error(fieldMessage(slug, field))
-  }
-  return value as string[]
 }

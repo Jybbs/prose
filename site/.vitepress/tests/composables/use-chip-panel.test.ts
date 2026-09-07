@@ -2,8 +2,8 @@
 import { promiseTimeout } from '@vueuse/core'
 import { ref }            from 'vue'
 
-import { useChipPanel }     from '../../lib/composables/use-chip-panel'
-import type { RuleControl } from '../../lib/composables/use-chip-panel'
+import { useChipPanel }            from '../../lib/composables/use-chip-panel'
+import type { RuleControl }        from '../../lib/composables/use-chip-panel'
 import type { FacetValue }         from '../../lib/sandbox/config-schema.data'
 import type { RenderedRule }       from '../../lib/rules/rules.data'
 import { fakeSandbox, mountSetup } from '../dom'

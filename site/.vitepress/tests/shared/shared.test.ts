@@ -7,7 +7,7 @@ import { lookup }           from '../../lib/shared/lookup'
 import { formatFolio }      from '../../lib/shared/numerals'
 import { pickOr }           from '../../lib/shared/pick-or'
 import { posMod }           from '../../lib/shared/pos-mod'
-import { requireString }    from '../../lib/shared/require-string'
+import { requireString, requireStringList } from '../../lib/shared/require-string'
 import { ruleSlug }         from '../../lib/shared/rule-slug'
 import { stripSuffix }      from '../../lib/shared/strip-suffix'
 import { parseSvg }         from '../../lib/shared/svg'
@@ -85,6 +85,24 @@ describe('requireString', () => {
   })
 })
 
+describe('requireStringList', () => {
+  it('returns a list of strings unchanged', () => {
+    expect(requireStringList(['a', 'b'], 'bad list')).toEqual(['a', 'b'])
+  })
+
+  it('accepts an empty list', () => {
+    expect(requireStringList([], 'bad list')).toEqual([])
+  })
+
+  it.each([
+    { name: 'a bare string',        value: 'a'          },
+    { name: 'undefined',            value: undefined    },
+    { name: 'a list holding a number', value: ['a', 1]  }
+  ])('throws on $name', ({ value }) => {
+    expect(() => requireStringList(value, 'bad list')).toThrow('bad list')
+  })
+})
+
 describe('parseSvg', () => {
   it('exposes the viewBox and body of a parsed svg', () => {
     const parsed = parseSvg('<svg xmlns="x" viewBox="0 0 24 24"><path d="M0 0"/></svg>', 'icon.svg')
@@ -99,9 +117,9 @@ describe('parseSvg', () => {
 
 describe('stripSuffix', () => {
   it.each([
-    ['rules/align.md', '.md', 'rules/align'],
-    ['plain-text',     '.md', 'plain-text']
-  ])('strips %j from %j only when present', (input, suffix, expected) => {
+    { expected: 'rules/align', input: 'rules/align.md', suffix: '.md' },
+    { expected: 'plain-text',  input: 'plain-text',     suffix: '.md' }
+  ])('strips $suffix from $input only when present', ({ expected, input, suffix }) => {
     expect(stripSuffix(input, suffix)).toBe(expected)
   })
 })

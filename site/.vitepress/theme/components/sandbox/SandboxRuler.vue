@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useElementSize, useResizeObserver }        from '@vueuse/core'
-import { computed, reactive, ref, useTemplateRef }   from 'vue'
-import type { CSSProperties }                        from 'vue'
+import { useElementSize, useResizeObserver }       from '@vueuse/core'
+import { computed, reactive, ref, useTemplateRef } from 'vue'
+import type { CSSProperties }                      from 'vue'
 
-import type { LengthKnob }  from '../../../lib/sandbox/config-schema.data'
-import * as rulerScale      from '../../../lib/sandbox/ruler-scale'
-import { PALETTE }          from '../../../lib/shared/palette'
+import type { LengthKnob } from '../../../lib/sandbox/config-schema.data'
+import * as rulerScale     from '../../../lib/sandbox/ruler-scale'
+import { PALETTE }         from '../../../lib/shared/palette'
 
 const props = defineProps<{
   lengths : readonly LengthKnob[]
@@ -136,7 +136,7 @@ function hueOf(index: number): string {
 }
 
 function keyStep(knob: LengthKnob, event: KeyboardEvent): void {
-  const next = targetValue(event, props.valueOf(knob.key))
+  const next = rulerScale.steppedLength(event.key, event.shiftKey, props.valueOf(knob.key))
   if (next === null) return
   event.preventDefault()
   emit('setLength', knob.key, rulerScale.clampLength(next))
@@ -150,20 +150,6 @@ function stopStyle(index: number, knob: LengthKnob): CSSProperties {
   }
 }
 
-function targetValue(event: KeyboardEvent, value: number): number | null {
-  const step = event.shiftKey ? 10 : 1
-  switch (event.key) {
-    case 'ArrowDown':
-    case 'ArrowLeft':  return value - step
-    case 'ArrowRight':
-    case 'ArrowUp':    return value + step
-    case 'PageDown':   return value - 10
-    case 'PageUp':     return value + 10
-    case 'End':        return MAX
-    case 'Home':       return MIN
-    default:           return null
-  }
-}
 
 function tierOf(key: string): number {
   return tierByKey.value.get(key) ?? 0
@@ -222,7 +208,7 @@ function tierOf(key: string): number {
           :ref="focusInput"
           v-model="draft"
           type="number"
-          class="sandbox-ruler-chip sandbox-ruler-chip-input"
+          class="panel-number sandbox-ruler-chip sandbox-ruler-chip-input"
           :min="MIN"
           :max="MAX"
           :aria-label="`${knob.label} line length`"

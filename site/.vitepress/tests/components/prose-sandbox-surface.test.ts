@@ -3,11 +3,11 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { promiseTimeout }       from '@vueuse/core'
 import { ref }                  from 'vue'
 
-import ProseSandboxSurface             from '../../theme/components/sandbox/ProseSandboxSurface.vue'
-import type { ProseSandbox }           from '../../lib/composables/use-prose-sandbox'
-import { MORPH_LINE_CHURN_CAP }        from '../../lib/markdown/magic-move-delta'
-import { magicMoveWatchdogMs }         from '../../lib/markdown/magic-move-options'
-import { nextPaint, ruleDrawMs }       from '../../lib/shared/paint'
+import ProseSandboxSurface                          from '../../theme/components/sandbox/ProseSandboxSurface.vue'
+import type { ProseSandbox }                        from '../../lib/composables/use-prose-sandbox'
+import { MORPH_LINE_CHURN_CAP }                     from '../../lib/markdown/magic-move-delta'
+import { magicMoveWatchdogMs }                      from '../../lib/markdown/magic-move-options'
+import { nextPaint, ruleDrawMs }                    from '../../lib/shared/paint'
 import { domTest, fakeSandbox, isHidden, stubRect } from '../dom'
 
 const drawSettled = (): Promise<void> => promiseTimeout(550)

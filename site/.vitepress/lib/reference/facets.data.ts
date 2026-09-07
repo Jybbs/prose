@@ -62,7 +62,8 @@ export default defineLoader({
 
     // `enabled` and `max-shift` repeat across every rule and every alignment
     // rule, so they read once as a scope rather than per rule.
-    const aligner = Object.entries(rules).find(([, def]) => 'max-shift' in def.default)!
+    const aligner = Object.entries(rules).find(([, def]) => 'max-shift' in def.default)
+    if (aligner === undefined) throw new Error('No rule declares a `max-shift` default')
     const generic: FacetFamily = {
       badge  : '',
       family : 'generic',

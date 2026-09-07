@@ -164,16 +164,8 @@
   color       : var(--vp-c-text-1);
   font-family : var(--vp-font-family-mono);
   font-size   : 0.68rem;
-  text-align  : center;
   cursor      : text;
   user-select : text;
-  appearance  : textfield;
-}
-
-.sandbox-ruler-chip-input::-webkit-outer-spin-button,
-.sandbox-ruler-chip-input::-webkit-inner-spin-button {
-  margin     : 0;
-  appearance : none;
 }
 
 .sandbox-ruler-chip-input:focus-visible {

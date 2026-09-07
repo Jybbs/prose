@@ -8,7 +8,7 @@ import type { ProseWasm }                         from '../../lib/sandbox/load-m
 import type { SandboxCase }                       from '../../lib/sandbox/pool.data'
 import { encodeShare }                            from '../../lib/sandbox/share-link'
 import { mountSetup }                             from '../dom'
-import { supportTest }                               from '../support'
+import { supportTest }                            from '../support'
 
 type Formatter = ProseWasm['format']
 type Loader    = (reinit: number) => Promise<ProseWasm>

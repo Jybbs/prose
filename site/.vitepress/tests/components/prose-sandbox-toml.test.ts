@@ -75,9 +75,9 @@ describe('ProseSandboxToml', () => {
     const wrapper = await mountToml(sandbox)
 
     sandbox.configToml.value = 'code-line-length = 60'
-    await vi.waitFor(() => {
-      expect(wrapper.get('.sandbox-toml-display').html()).toContain('code-line-length = 60')
-    })
+    await flushPromises()
+
+    expect(wrapper.get('.sandbox-toml-display').html()).toContain('code-line-length = 60')
     expect(isHidden(wrapper.get('.code-typewriter'))).toBe(true)
   })
 })

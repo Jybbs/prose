@@ -1,11 +1,11 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import * as contentPage  from '../shared/content-page'
-import * as paths        from '../shared/paths'
-import * as registries   from '../shared/registries'
-import { requireString } from '../shared/require-string'
-import { ruleRoute }     from '../shared/routes'
+import * as contentPage                     from '../shared/content-page'
+import * as paths                           from '../shared/paths'
+import * as registries                      from '../shared/registries'
+import { requireString, requireStringList } from '../shared/require-string'
+import { ruleRoute }                        from '../shared/routes'
 
 export interface DiscoveredRule {
   caption  : string
@@ -58,7 +58,10 @@ export function discoverRules(rulesDirectory: string): RuleDiscovery {
         fm.caption,
         `Rule "${slug}" has invalid or missing caption: ${JSON.stringify(fm.caption)}`
       )
-      const relatedSlugs = Array.isArray(fm.related) ? fm.related as string[] : []
+      const relatedSlugs = requireStringList(
+        fm.related,
+        `Rule "${slug}" has invalid or missing related: ${JSON.stringify(fm.related)}`
+      )
       rules.push({
         caption,
         category : registries.categoryOf(family),

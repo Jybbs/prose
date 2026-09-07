@@ -1,5 +1,5 @@
-import type { GlossaryEntry }                  from '../../lib/glossary/entries'
-import { entryHref, entryRule, glossaryHrefs } from '../../lib/glossary/hrefs'
+import type { GlossaryEntry } from '../../lib/glossary/entries'
+import * as hrefs             from '../../lib/glossary/hrefs'
 
 const rules = new Map([
   ['align-equals', { family: 'alignment' as const, href: '/rules/alignment/align-equals' }]
@@ -9,7 +9,7 @@ const entry = (overrides: Partial<GlossaryEntry>): GlossaryEntry =>
   ({ definition: 'd', families: ['engine'], ...overrides }) as GlossaryEntry
 
 const resolve = (overrides: Partial<GlossaryEntry>) =>
-  entryRule('x', entry(overrides), rules)
+  hrefs.entryRule('x', entry(overrides), rules)
 
 describe('entryRule', () => {
   it('resolves a rule-backed entry through the rule index', () => {
@@ -27,27 +27,27 @@ describe('entryRule', () => {
 
 describe('entryHref', () => {
   it('takes the href off the resolved rule', () => {
-    expect(entryHref('x', entry({ rule: 'align-equals' }), resolve({ rule: 'align-equals' })))
+    expect(hrefs.entryHref('x', entry({ rule: 'align-equals' }), resolve({ rule: 'align-equals' })))
       .toBe('/rules/alignment/align-equals')
   })
 
   it('throws on a hand-written rule URL', () => {
-    expect(() => entryHref('x', entry({ href: '/rules/alignment/align-equals' })))
+    expect(() => hrefs.entryHref('x', entry({ href: '/rules/alignment/align-equals' })))
       .toThrow(/rule field/)
   })
 
   it('passes a plain href through', () => {
-    expect(entryHref('x', entry({ href: '/reference/cache' }))).toBe('/reference/cache')
+    expect(hrefs.entryHref('x', entry({ href: '/reference/cache' }))).toBe('/reference/cache')
   })
 
   it('returns undefined for an unlinked entry', () => {
-    expect(entryHref('x', entry({}))).toBeUndefined()
+    expect(hrefs.entryHref('x', entry({}))).toBeUndefined()
   })
 })
 
 describe('glossaryHrefs', () => {
   it('maps only the entries that resolve to an href', () => {
     const source = { linked: entry({ href: '/reference/cache' }), plain: entry({}) }
-    expect([...glossaryHrefs(source, rules)]).toEqual([['linked', '/reference/cache']])
+    expect([...hrefs.glossaryHrefs(source, rules)]).toEqual([['linked', '/reference/cache']])
   })
 })

@@ -8,7 +8,7 @@ const CLEARANCE      = 8
 const SPAN           = LENGTH_MAX - LENGTH_MIN
 const TRACK_FALLBACK = 480
 
-export interface RulerStop {
+interface RulerStop {
   key : string
   pct : number
 }
@@ -42,6 +42,23 @@ export function packTiers(
 // Converts a line length to its percentage along the rail.
 export function pctOfLength(value: number): number {
   return ((clampLength(value) - LENGTH_MIN) / SPAN) * 100
+}
+
+// Maps a keyboard step onto a line length, returning `null` for a key the
+// rail does not handle, where shift widens an arrow step to ten.
+export function steppedLength(key: string, shiftKey: boolean, value: number): number | null {
+  const step = shiftKey ? 10 : 1
+  switch (key) {
+    case 'ArrowDown':
+    case 'ArrowLeft':  return value - step
+    case 'ArrowRight':
+    case 'ArrowUp':    return value + step
+    case 'PageDown':   return value - 10
+    case 'PageUp':     return value + 10
+    case 'End':        return LENGTH_MAX
+    case 'Home':       return LENGTH_MIN
+    default:           return null
+  }
 }
 
 // Places a stop's chip where it renders, mirroring the CSS `translateX`

@@ -2,7 +2,9 @@ export const FAMILY_ORDER = [
   'alignment', 'docs', 'formatting', 'layout', 'lint', 'ordering'
 ] as const
 
-export type RuleCategory   = 'auto-fix' | 'lint'
+export const CATEGORY_ORDER = ['auto-fix', 'lint'] as const
+
+export type RuleCategory   = (typeof CATEGORY_ORDER)[number]
 export type RuleFamily     = (typeof FAMILY_ORDER)[number]
 export type GlossaryFamily = RuleFamily | 'cli' | 'engine'
 

@@ -13,7 +13,7 @@ vi.mock('../../lib/rules/rules.data', async () => {
 })
 
 import * as composables from '../../lib/composables/route'
-import { mountSetup }    from '../dom'
+import { mountSetup }   from '../dom'
 
 describe('useCurrentRule', () => {
   it('resolves the rule for the current route slug', () => {

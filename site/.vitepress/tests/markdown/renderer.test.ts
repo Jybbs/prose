@@ -17,16 +17,6 @@ describe('renderer', () => {
     expect(await renderer.renderFencedHtml(md, 'x = 1', 'python', 'lint=demo-rule/basic')).toContain('<pre')
   })
 
-  it('renders a block field to paragraph HTML', async () => {
-    const md = await renderer.getRenderer()
-    expect(await renderer.renderBlockHtml(md, 'a *b*')).toContain('<p>a <em>b</em></p>')
-  })
-
-  it('renders an inline field without a paragraph wrapper', async () => {
-    const md = await renderer.getRenderer()
-    expect(renderer.renderInlineHtml(md, 'see `x`')).toBe('see <code>x</code>')
-  })
-
   it('replaces an inline field with its walked node tree', async () => {
     const md  = await renderer.getRenderer()
     const out = renderer.inlineNodeField(md, [{ note: 'see `prose`' }], 'note')

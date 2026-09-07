@@ -1,8 +1,8 @@
 import { defineLoader } from 'vitepress'
 
 import { glossary, type GlossaryEntry }       from './entries'
-import { entryHref, entryRule }                from './hrefs'
-import type { GlossaryRule }                   from './hrefs'
+import { entryHref, entryRule }               from './hrefs'
+import type { GlossaryRule }                  from './hrefs'
 import { getRenderer, renderPlainInlineHtml } from '../markdown/renderer'
 import { inlineNodes, type InlineNode }       from '../markdown/inline-nodes'
 import { discoverRuleIndex }                  from '../rules/discovery'

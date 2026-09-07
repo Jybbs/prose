@@ -35,7 +35,7 @@ export interface RulesData {
 export function groupRules(list: readonly RenderedRule[]): RulesData {
   const byFamily   = groupByMember(list, rule => rule.family, registries.FAMILY_ORDER)
   const bySlug     = Object.fromEntries(list.map(rule => [rule.slug, rule]))
-  const byCategory = (Object.keys(registries.CATEGORY_META) as registries.RuleCategory[])
+  const byCategory = registries.CATEGORY_ORDER
     .map(category => ({
       byFamily : registries.FAMILY_ORDER
         .map(family => ({

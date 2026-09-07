@@ -77,7 +77,7 @@ function writeText(facet: Facet, raw: string): void {
         <input
           v-else-if="facet.kind === 'int'"
           type="number"
-          class="sandbox-plate-control sandbox-plate-number"
+          class="panel-number sandbox-plate-control sandbox-plate-number"
           :value="numberValue(facet)"
           :aria-label="facet.label"
           @input="sandbox.setFacet(rule.slug, facet, Number(($event.target as HTMLInputElement).value))"

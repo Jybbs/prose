@@ -2,7 +2,7 @@ import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
 import { inlineNodes, type InlineNode } from './inline-nodes'
 import { siteDir }                      from '../shared/paths'
-import { inertEnv, plainTermsEnv }      from './inert-env'
+import { plainTermsEnv }                from './inert-env'
 
 // Maps each field `K` to `${K}${S}`, carrying one `V` where the source field
 // is a scalar and a `V[]` where it is a list of strings.
@@ -34,10 +34,6 @@ export function inlineNodeField<T extends object, K extends string & keyof T>(
   })
 }
 
-export function renderBlockHtml(md: MarkdownRenderer, src: string): Promise<string> {
-  return md.renderAsync(src, inertEnv())
-}
-
 export function renderFencedField<T extends { language: string }, K extends string & keyof T>(
   md    : MarkdownRenderer,
   items : readonly T[],
@@ -54,10 +50,6 @@ export function renderFencedHtml(
   meta     : string = ''
 ): Promise<string> {
   return md.renderAsync(`\`\`\`${language}${meta ? ` ${meta}` : ''}\n${code}\n\`\`\``)
-}
-
-export function renderInlineHtml(md: MarkdownRenderer, src: string): string {
-  return md.renderInline(src, inertEnv())
 }
 
 // Caption text renders inside cover-linked cards and hover poppers, where a

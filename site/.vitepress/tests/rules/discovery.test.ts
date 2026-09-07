@@ -21,4 +21,8 @@ describe('discoverRules', () => {
   it('rejects bad-caption', () => {
     expect(() => discovery.discoverRules(fixture('bad-caption'))).toThrow(/invalid or missing caption/)
   })
+
+  it('rejects a related list that is not a list', () => {
+    expect(() => discovery.discoverRules(fixture('bad-related'))).toThrow(/invalid or missing related/)
+  })
 })

@@ -76,7 +76,9 @@ export function fitTitleSize(text: string, hasCaption: boolean): number {
 const md = new MarkdownIt()
 
 // Renders an emphasis element as the words inside it and a code span as its
-// own chip, because the card carries no styling for emphasis.
+// own chip, because the card carries no styling for emphasis. The `md` above
+// registers no plugin, so the glossary, rule, and primitive kinds the union
+// declares never reach the drop.
 function segmentNodes(nodes: readonly InlineNode[]): CaptionSegment[] {
   return nodes.flatMap((node): CaptionSegment[] => {
     if (node.kind === 'code') return [{ code: true, text: node.text }]

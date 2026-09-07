@@ -91,12 +91,13 @@ describe('groupByInitial', () => {
 
 describe('cycleIndex', () => {
   it.each([
-    [0,   1, 3, 1],
-    [2,   1, 3, 0],
-    [0,  -1, 3, 2],
-    [-1,  1, 3, 0],
-    [-1, -1, 3, 0]
-  ])('cycles index %i by %i over length %i to %i', (index, delta, length, expected) => {
+    { delta:  1, expected: 1, index:  0, length: 3 },
+    { delta:  1, expected: 0, index:  2, length: 3 },
+    { delta: -1, expected: 2, index:  0, length: 3 },
+    { delta:  1, expected: 0, index: -1, length: 3 },
+    { delta: -1, expected: 0, index: -1, length: 3 }
+  ])('cycles index $index by $delta over length $length to $expected',
+     ({ delta, expected, index, length }) => {
     expect(folio.cycleIndex(index, delta, length)).toBe(expected)
   })
 

@@ -186,14 +186,6 @@
   padding              : 0;
   font-variant-numeric : tabular-nums;
   line-height          : calc(var(--sandbox-plate-control-h) - 2px);
-  text-align           : center;
-  appearance           : textfield;
-}
-
-.sandbox-plate-number::-webkit-outer-spin-button,
-.sandbox-plate-number::-webkit-inner-spin-button {
-  margin     : 0;
-  appearance : none;
 }
 
 .sandbox-plate-text {
