@@ -1,8 +1,9 @@
-import { crateDir }   from '../../lib/shared/paths'
-import * as version   from '../../lib/shared/version'
-import { fixtureDir } from '../support'
+import { crateDir, siteDir } from '../../lib/shared/paths'
+import * as version          from '../../lib/shared/version'
+import { fixtureDir }        from '../support'
 
 const crate = crateDir(import.meta.url)
+const site  = siteDir(import.meta.url)
 
 describe('readCargoVersion', () => {
   it('reads the crate version from Cargo.toml', () => {
@@ -12,6 +13,26 @@ describe('readCargoVersion', () => {
   it('throws when the manifest carries no package version', () => {
     const dir = fixtureDir(import.meta.dirname, 'cargo-no-version')
     expect(() => version.readCargoVersion(dir)).toThrow(/package\.version/)
+  })
+})
+
+describe('readPackageVersions', () => {
+  it('reads the pinned version of each named devDependency', () => {
+    const pinned = version.readPackageVersions(site, ['@resvg/resvg-js', 'satori'])
+    expect(pinned['@resvg/resvg-js']).toMatch(/^\d+\.\d+\.\d+/)
+    expect(pinned.satori).toMatch(/^\d+\.\d+\.\d+/)
+  })
+
+  it('throws when the manifest has no such devDependency', () => {
+    const dir = fixtureDir(import.meta.dirname, 'package-no-pin')
+    expect(() => version.readPackageVersions(dir, ['satori']))
+      .toThrow(/devDependencies\['satori'\]/)
+  })
+
+  it('throws when the manifest has no devDependencies at all', () => {
+    const dir = fixtureDir(import.meta.dirname, 'package-no-dev-deps')
+    expect(() => version.readPackageVersions(dir, ['satori']))
+      .toThrow(/devDependencies\['satori'\]/)
   })
 })
 

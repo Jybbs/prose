@@ -18,7 +18,7 @@ export async function buildOgCards(
   const brand    = loadBrandAssets(srcDir)
   const version  = readCargoVersion(crateDirFrom(repo))
   const cacheDir = cacheDirFrom(repo, 'og')
-  const keyOf    = cache.cardKeyer(version, brand)
+  const keyOf    = cache.cardKeyer(brand, version)
 
   const tasks: readonly RenderTask[] = [
     { key: keyOf('landing'), outputPath: ogImagePath('index.md'), page: 'landing' },

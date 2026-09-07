@@ -35,9 +35,12 @@
 }
 
 
+/* VitePress sets this tab's line-height as a ratio of a font size the sheet
+   below shrinks, so the rule pins it at 3rem. */
 .vp-code-group .tabs label {
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-text-sm);
+  line-height    : 3rem;
   letter-spacing : 0.02em;
   text-transform : none;
 }

@@ -1,6 +1,11 @@
-import { enumeratePages } from '../../lib/og/pages'
-import { cardKeyer }      from '../../lib/og/render/cache'
-import { fixtureDir }     from '../support'
+import fs   from 'node:fs'
+import path from 'node:path'
+
+import { enumeratePages }       from '../../lib/og/pages'
+import { cardKeyer, RENDERERS } from '../../lib/og/render/cache'
+import { siteDir }              from '../../lib/shared/paths'
+import { readPackageVersions }  from '../../lib/shared/version'
+import { fixtureDir }           from '../support'
 
 describe('enumeratePages', () => {
   const srcDir = fixtureDir(import.meta.dirname)
@@ -40,10 +45,44 @@ describe('cardKeyer', () => {
     wordmark         : { aspect: 1, src: 'w' }
   }
 
-  it('keys stably per input and re-keys when the version or card changes', () => {
-    const keyOf = cardKeyer('0.1.0', brand)
-    expect(keyOf('landing')).toBe(cardKeyer('0.1.0', brand)('landing'))
-    expect(keyOf('landing')).not.toBe(cardKeyer('0.2.0', brand)('landing'))
-    expect(keyOf('landing')).not.toBe(keyOf({ breadcrumb: [], kind: 'usage', outputPath: 'o', title: 'T' }))
+  const renderers = { '@resvg/resvg-js': '1.0.0', satori: '2.0.0' }
+
+  it('gives the same key for the same input', () => {
+    const keyOf = cardKeyer(brand, '0.1.0', renderers)
+    expect(keyOf('landing')).toBe(cardKeyer(brand, '0.1.0', renderers)('landing'))
+  })
+
+  it('gives a different key when the version or the card changes', () => {
+    const keyOf = cardKeyer(brand, '0.1.0', renderers)
+    expect(keyOf('landing')).not.toBe(cardKeyer(brand, '0.2.0', renderers)('landing'))
+    expect(keyOf('landing'))
+      .not.toBe(keyOf({ breadcrumb: [], kind: 'usage', outputPath: 'o', title: 'T' }))
+  })
+
+  it('gives a different key when a renderer version changes', () => {
+    const keyOf = (r: Record<string, string>) => cardKeyer(brand, '0.1.0', r)('landing')
+    expect(keyOf(renderers)).not.toBe(keyOf({ ...renderers, satori: '2.1.0' }))
+  })
+
+  it('keys on the real renderer pins when none are passed', () => {
+    const pinned = readPackageVersions(siteDir(import.meta.url), RENDERERS)
+    expect(cardKeyer(brand, '0.1.0')('landing'))
+      .toBe(cardKeyer(brand, '0.1.0', pinned)('landing'))
+  })
+})
+
+describe('RENDERERS', () => {
+  const packageOf = (spec: string): string =>
+    spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]
+
+  it('lists only packages the card renderer still imports', () => {
+    const dir   = path.join(import.meta.dirname, '../../lib/og/render')
+    const bare  = /from '([^.'][^']*)'/g
+    const specs = new Set(fs.readdirSync(dir)
+      .filter(file => /\.(ts|mjs)$/.test(file))
+      .flatMap(file => [...fs.readFileSync(path.join(dir, file), 'utf8').matchAll(bare)])
+      .map(([, spec]) => packageOf(spec)))
+
+    expect([...specs]).toEqual(expect.arrayContaining([...RENDERERS]))
   })
 })

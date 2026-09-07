@@ -13,12 +13,10 @@ const token = (key: string, content: string, htmlStyle?: Record<string, string>)
 
 const step = (...tokens: Token[]) => ({ tokens } as never)
 
-// Counts the child rebuilds so a skipped one is observable, and stubs the
-// animation lookup happy-dom does not implement so `render` reaches its end.
+// Counts how often the container rebuilds its children.
 const mounted = () => {
   const container = document.createElement('pre')
   document.body.append(container)
-  Object.assign(container, { getAnimations: () => [] })
 
   let rebuilds = 0
   const rebuild = container.replaceChildren.bind(container)
