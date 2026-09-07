@@ -26,8 +26,6 @@ beforeEach(() => {
 
 afterEach(() => {
   fs.rmSync(dir, { force: true, recursive: true })
-  vi.unstubAllGlobals()
-  vi.unstubAllEnvs()
 })
 
 describe('conditionalFetch', () => {

@@ -35,9 +35,6 @@ beforeEach(() => {
   vi.stubGlobal('cancelAnimationFrame', () => {})
 })
 
-afterEach(() => {
-  vi.unstubAllGlobals()
-})
 
 describe('useCarouselVelocity', () => {
   it('drifts forward at the base speed', () => {

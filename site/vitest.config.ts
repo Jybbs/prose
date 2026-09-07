@@ -9,16 +9,20 @@ export default defineConfig({
                         ? ['default', ['github-actions', { jobSummary: { enabled: false } }]]
                         : ['default'],
     resolveSnapshotPath : (testPath, extension) => testPath + extension,
+    restoreMocks        : true,
     root                : import.meta.dirname,
+    unstubEnvs          : true,
+    unstubGlobals       : true,
 
     projects: [
       {
         extends : true,
         plugins : [vue()],
         test    : {
-          exclude : [...configDefaults.exclude, '.vitepress/tests/wasm/**'],
-          include : ['.vitepress/tests/**/*.test.ts'],
-          name    : 'docs'
+          exclude    : [...configDefaults.exclude, '.vitepress/tests/wasm/**'],
+          include    : ['.vitepress/tests/**/*.test.ts'],
+          name       : 'docs',
+          setupFiles : ['./.vitepress/tests/setup.ts']
         }
       },
 
@@ -54,7 +58,8 @@ export default defineConfig({
         branches   : 90,
         functions  : 95,
         lines      : 95,
-        statements : 95
+        statements : 95,
+        perFile    : { branches: 50, functions: 70, lines: 70, statements: 70 }
       }
     }
   }

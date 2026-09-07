@@ -8,7 +8,9 @@
     "suspicious"  : "deny"
   },
 
-  "plugins" : ["import", "oxc", "promise", "typescript", "unicorn", "vitest"],
+  "options" : { "reportUnusedDisableDirectives": "deny" },
+
+  "plugins" : ["import", "oxc", "promise", "typescript", "unicorn", "vitest", "vue"],
 
   "rules": {
     "import/max-dependencies"                    : "off",
@@ -24,7 +26,6 @@
     "unicorn/no-array-callback-reference"        : "off",
     "unicorn/no-array-sort"                      : "off",
     "unicorn/no-negated-condition"               : "off",
-    "unicorn/prefer-math-trunc"                  : "off",
     "unicorn/prefer-number-coercion"             : "off",
     "unicorn/require-post-message-target-origin" : "off",
     "vitest/expect-expect"                       : "off",

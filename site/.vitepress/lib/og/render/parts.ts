@@ -115,7 +115,7 @@ function metaRow(
     el('div', { children: label, style: monoLabel(PALETTE['ube-mid'], 16) }),
     el('div', {
       children : value,
-      style    : { color: PALETTE.champagne, fontVariantNumeric: 'tabular-nums', ...valueStyle }
+      style    : { color: PALETTE.champagne, ...valueStyle }
     })
   )
 }

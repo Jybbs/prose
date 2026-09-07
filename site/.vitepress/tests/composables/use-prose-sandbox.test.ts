@@ -187,7 +187,7 @@ describe('useProseSandbox', () => {
     await api.start()
     expect(api.formatted.value).toBe('OUT')
     expect(api.error.value).toBe('')
-    await vi.waitFor(() => expect(api.eligible.value).toEqual([]))
+    await expect.poll(() => api.eligible.value).toEqual([])
   })
 
   it('probes the length knobs and keeps only the impactful ones', async () => {
@@ -200,7 +200,7 @@ describe('useProseSandbox', () => {
     })
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
     await api.start()
-    await vi.waitFor(() => expect(api.lengthImpact.value).toEqual(['code-line-length']))
+    await expect.poll(() => api.lengthImpact.value).toEqual(['code-line-length'])
   })
 
   it('caches the probe results per source and replays them without new runs', async () => {
@@ -215,13 +215,13 @@ describe('useProseSandbox', () => {
     const probeRuns = () =>
       format.mock.calls.filter(call => call[0].includes('align-equals')).length
     await api.start()
-    await vi.waitFor(() => expect(api.facetImpact.value['align-equals']).toBeDefined())
+    await expect.poll(() => api.facetImpact.value['align-equals']).toBeDefined()
     const initialProbes = probeRuns()
     expect(initialProbes).toBeGreaterThan(0)
     api.source.value = 'seed b'
-    await vi.waitFor(() => expect(api.facetImpact.value['space-statements']).toEqual([]))
+    await expect.poll(() => api.facetImpact.value['space-statements']).toEqual([])
     api.source.value = 'seed a'
-    await vi.waitFor(() => expect(api.facetImpact.value['align-equals']).toBeDefined())
+    await expect.poll(() => api.facetImpact.value['align-equals']).toBeDefined()
     expect(probeRuns()).toBe(initialProbes)
   })
 
@@ -236,7 +236,6 @@ describe('useProseSandbox', () => {
   })
 
   it('renders a non-Error throw as its string form', async () => {
-    // oxlint-disable-next-line no-throw-literal -- exercises the non-Error catch branch
     const load: Loader = () => Promise.resolve(moduleWith(() => { throw 'raw failure' }))
     const api = sandbox(load)
     await api.start()

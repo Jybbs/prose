@@ -10,6 +10,8 @@ export default defineConfig({
   entry              : ['**/*.md', '.vitepress/**/*.data.ts'],
   project            : ['.vitepress/**/*.{ts,vue,mjs}'],
   compilers          : { md: pageScript },
+  include            : ['cycles'],
+  rules              : { cycles: 'error' },
   ignoreDependencies : [
     '@fontsource/fraunces',
     '@fontsource/jetbrains-mono',

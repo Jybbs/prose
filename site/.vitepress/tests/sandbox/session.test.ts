@@ -4,10 +4,6 @@ import { fc, test } from '@fast-check/vitest'
 import { decodeShare }          from '../../lib/sandbox/share-link'
 import { randomOther, seedUrl } from '../../lib/sandbox/session'
 
-afterEach(() => {
-  vi.restoreAllMocks()
-  vi.unstubAllGlobals()
-})
 
 describe('randomOther', () => {
   it('stays on the only case the pool holds', () => {
