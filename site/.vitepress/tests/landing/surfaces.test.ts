@@ -41,12 +41,10 @@ vi.mock('../../lib/glossary/glossary.data', () => ({
   }
 }))
 
-vi.mock('../../lib/rules/rules.data', () => ({
-  data: {
-    byFamily : { alignment: [{ href: '/rules/alignment/align-equals', slug: 'align-equals' }] },
-    list     : [{ href: '/rules/alignment/align-equals', slug: 'align-equals' }]
-  }
-}))
+vi.mock('../../lib/rules/rules.data', async () => {
+  const { rulesDataStub } = await import('../rules-data-stub')
+  return rulesDataStub([{ slug: 'align-equals' }])
+})
 
 const mountSurfaces = () => mount(Surfaces, { global: popperStubMount })
 

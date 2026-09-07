@@ -5,6 +5,8 @@ import { inlineCode }       from '../../lib/shared/inline-code'
 import { externalAttrs }    from '../../lib/shared/links'
 import { lookup }           from '../../lib/shared/lookup'
 import { formatFolio }      from '../../lib/shared/numerals'
+import { pickOr }           from '../../lib/shared/pick-or'
+import { posMod }           from '../../lib/shared/pos-mod'
 import { requireString }    from '../../lib/shared/require-string'
 import { ruleSlug }         from '../../lib/shared/rule-slug'
 import { stripSuffix }      from '../../lib/shared/strip-suffix'
@@ -12,7 +14,7 @@ import { parseSvg }         from '../../lib/shared/svg'
 import { toTitleCase }      from '../../lib/shared/title-case'
 import { withFallback }     from '../../lib/shared/with-fallback'
 
-import { warnTest } from '../support'
+import { supportTest } from '../support'
 
 describe('toTitleCase', () => {
   it.each([
@@ -20,6 +22,26 @@ describe('toTitleCase', () => {
     ['one-two-the-end', '-', 'One Two the End']
   ])('title-cases %s across its %s separator', (slug, separator, expected) => {
     expect(toTitleCase(slug, separator)).toBe(expected)
+  })
+})
+
+describe('pickOr', () => {
+  it.each([
+    ['reads a registered key',      'align-equals', '/rules/alignment/align-equals'],
+    ['falls back on a missing key', 'ghost',        null]
+  ])('%s', (_case, key, expected) => {
+    expect(pickOr({ 'align-equals': '/rules/alignment/align-equals' }, key, null)).toBe(expected)
+  })
+})
+
+describe('posMod', () => {
+  it.each([
+    [ 5, 4, 1],
+    [-1, 4, 3],
+    [-8, 3, 1],
+    [ 0, 4, 0]
+  ])('wraps %i under %i to %i', (value, modulus, expected) => {
+    expect(posMod(value, modulus)).toBe(expected)
   })
 })
 
@@ -145,7 +167,7 @@ describe('withFallback', () => {
     await expect(withFallback('demo', () => 42, 0)).resolves.toBe(42)
   })
 
-  warnTest('resolves the fallback and warns on throw', async ({ warn }) => {
+  supportTest('resolves the fallback and warns on throw', async ({ warn }) => {
     await expect(withFallback('demo', () => { throw new Error('boom') }, 7)).resolves.toBe(7)
     expect(warn).toHaveBeenCalledOnce()
   })

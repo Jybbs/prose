@@ -1,5 +1,9 @@
+export const FAMILY_ORDER = [
+  'alignment', 'docs', 'formatting', 'layout', 'lint', 'ordering'
+] as const
+
 export type RuleCategory   = 'auto-fix' | 'lint'
-export type RuleFamily     = 'alignment' | 'docs' | 'formatting' | 'layout' | 'lint' | 'ordering'
+export type RuleFamily     = (typeof FAMILY_ORDER)[number]
 export type GlossaryFamily = RuleFamily | 'cli' | 'engine'
 
 interface CategoryMeta {
@@ -33,10 +37,6 @@ export const GLOSSARY_FAMILY_META: Record<GlossaryFamily, Pick<FamilyMeta, 'badg
   engine : { badge: '🦉', label: 'Engine' }
 }
 
-export const FAMILY_ORDER: readonly RuleFamily[] = [
-  'alignment', 'docs', 'formatting', 'layout', 'lint', 'ordering'
-]
-
 // Reading order, not alphabetical, because the list order drives the nav.
 export const SECTIONS = [
   { label: 'Usage',        slug: 'usage'        },
@@ -53,14 +53,16 @@ export function categoryOf(family: RuleFamily): RuleCategory {
   return family === 'lint' ? 'lint' : 'auto-fix'
 }
 
-export type PrimitiveSlug =
-  | 'aligner' | 'binding-analysis' | 'cache' | 'colon-targets' | 'docstring' | 'edit'
-  | 'orderer' | 'pipeline' | 'rule-id' | 'source' | 'suppression-map' | 'walker'
-
 export const PRIMITIVE_LAYERS      = ['analysis', 'base', 'orchestration'] as const
 export const PRIMITIVE_STABILITIES = ['internal', 'public'] as const
 
+export const PRIMITIVE_SLUGS = [
+  'aligner', 'binding-analysis', 'cache', 'colon-targets', 'docstring', 'edit',
+  'orderer', 'pipeline', 'rule-id', 'source', 'suppression-map', 'walker'
+] as const
+
 export type PrimitiveLayer     = (typeof PRIMITIVE_LAYERS)[number]
+export type PrimitiveSlug      = (typeof PRIMITIVE_SLUGS)[number]
 export type PrimitiveStability = (typeof PRIMITIVE_STABILITIES)[number]
 
 export const PRIMITIVE_LAYER_NUMERALS: Record<PrimitiveLayer, string> = {

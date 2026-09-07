@@ -1,7 +1,8 @@
-import { useElementBounding, useRafFn } from '@vueuse/core'
-import { ref, type Ref }                from 'vue'
+import { clamp, useElementBounding, useRafFn } from '@vueuse/core'
+import { ref, watchEffect, type Ref }          from 'vue'
 
 import { MS_PER_SEC } from '../shared/constants'
+import { posMod }     from '../shared/pos-mod'
 
 interface CarouselVelocityOptions {
   baseSpeedPxPerSec : number
@@ -27,16 +28,18 @@ export function useCarouselVelocity(
   const offset = ref(0)
   let velocity = options.baseSpeedPxPerSec
 
-  function wrap(value: number): number {
-    if (halfWidth.value <= 0) return value
-    return ((value % halfWidth.value) + halfWidth.value) % halfWidth.value
-  }
-
   useRafFn(({ delta }) => {
     if (halfWidth.value > 0 && !options.reducedMotion.value && !fits.value) {
-      offset.value = wrap(offset.value + velocity * delta / MS_PER_SEC)
+      offset.value = posMod(offset.value + velocity * delta / MS_PER_SEC, halfWidth.value)
     }
   }, { immediate: true })
+
+  // A track that fits rests at its origin, and a track that overflows keeps
+  // its offset within the remeasured half width.
+  watchEffect(() => {
+    if (fits.value) offset.value = 0
+    else if (halfWidth.value > 0) offset.value = posMod(offset.value, halfWidth.value)
+  })
 
   function onPointerLeave() {
     velocity = options.baseSpeedPxPerSec
@@ -52,14 +55,8 @@ export function useCarouselVelocity(
     const cardRect = node.getBoundingClientRect()
     const leftGap  = cardRect.left  - vpLeft.value  - options.edgeMarginPx
     const rightGap = vpRight.value  - cardRect.right - options.edgeMarginPx
-    let v = 0
-    if (leftGap < 0) {
-      v = leftGap * options.magnetGain
-    }
-    else if (rightGap < 0) {
-      v = -rightGap * options.magnetGain
-    }
-    velocity = Math.max(-options.maxPullPxPerSec, Math.min(options.maxPullPxPerSec, v))
+    const gap = leftGap < 0 ? leftGap : rightGap < 0 ? -rightGap : 0
+    velocity  = clamp(gap * options.magnetGain, -options.maxPullPxPerSec, options.maxPullPxPerSec)
   }
 
   return { offset, onPointerLeave, onPointerMove }

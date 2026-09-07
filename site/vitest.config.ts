@@ -40,14 +40,9 @@ export default defineConfig({
       exclude: [
         '.vitepress/lib/**/*.data.ts',
         '.vitepress/lib/og/render/build.ts',
-        '.vitepress/lib/og/render/cache.ts',
         '.vitepress/lib/og/render/pool.ts',
         '.vitepress/lib/og/render/resvg-worker.mjs',
-        '.vitepress/lib/sandbox/load-module.ts',
-        '.vitepress/lib/sandbox/serve-plugin.ts',
-        '.vitepress/lib/shared/fixture-tab.ts',
-        '.vitepress/lib/shared/highlight.ts',
-        '.vitepress/lib/shared/tools.ts'
+        '.vitepress/lib/sandbox/load-module.ts'
       ],
 
       thresholds: {

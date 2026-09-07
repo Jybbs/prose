@@ -1,12 +1,16 @@
 import { defineLoader } from 'vitepress'
 
 import { getRenderer, inlineNodeField }                 from '../markdown/renderer'
-import type { InlineNode }                              from '../markdown/inline-nodes'
+import { inlineNodes, type InlineNode }                 from '../markdown/inline-nodes'
 import { discoverPrimitives, type DiscoveredPrimitive } from './discovery'
+import { groupByMember }                                from '../shared/group-by-member'
 import { primitivesDir }                                from '../shared/paths'
-import type { PrimitiveLayer }                          from '../shared/registries'
+import { PRIMITIVE_LAYERS, type PrimitiveLayer }        from '../shared/registries'
 
-type PrimitiveEntry = Omit<DiscoveredPrimitive, 'summary'> & { summaryNodes: InlineNode[] }
+interface PrimitiveEntry extends Omit<DiscoveredPrimitive, 'summary'> {
+  linkNodes    : InlineNode[]
+  summaryNodes : InlineNode[]
+}
 
 interface PrimitivesCompositionData {
   byLayer : Record<PrimitiveLayer, readonly PrimitiveEntry[]>
@@ -24,9 +28,9 @@ export default defineLoader({
   async load(): Promise<PrimitivesCompositionData> {
     const md      = await getRenderer()
     const entries = inlineNodeField(md, discoverPrimitives(dir), 'summary')
-    type ByLayer  = Record<PrimitiveLayer, readonly PrimitiveEntry[]>
-    const byLayer = Object.groupBy(entries, e => e.layer) as ByLayer
-    const bySlug  = Object.fromEntries(entries.map(e => [e.slug as string, e]))
+      .map(entry => ({ ...entry, linkNodes: inlineNodes(md, `[[${entry.slug}]]`) }))
+    const byLayer = groupByMember(entries, e => e.layer, PRIMITIVE_LAYERS)
+    const bySlug  = Object.fromEntries(entries.map(e => [e.slug, e]))
     return { byLayer, bySlug, entries }
   }
 })

@@ -27,11 +27,6 @@
   opacity : 0.72;
 }
 
-.per-rule-facets-head:focus-visible {
-  outline        : var(--prose-focus-ring);
-  outline-offset : 2px;
-}
-
 .per-rule-facets-chevron {
   flex          : none;
   width         : 0;

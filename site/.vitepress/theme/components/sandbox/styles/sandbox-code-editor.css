@@ -1,0 +1,27 @@
+.sandbox-code-editor {
+  position       : relative;
+  display        : flex;
+  flex-direction : column;
+  flex-grow      : 1;
+}
+
+.sandbox-code-editor-layer {
+  white-space : pre;
+}
+
+.sandbox-code-editor-input {
+  position      : absolute;
+  inset         : 0;
+  border        : 0;
+  border-radius : calc(var(--prose-radius) - 1px);
+  background    : transparent;
+  color         : transparent;
+  caret-color   : var(--vp-c-text-1);
+  resize        : none;
+  outline       : none;
+}
+
+.sandbox-code-editor-input:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : -2px;
+}

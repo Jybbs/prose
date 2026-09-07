@@ -43,6 +43,8 @@ export { data }
 
 const root = paths.repoRoot(import.meta.url)
 
+const rulesDirectory = paths.rulesDir(import.meta.url)
+
 function facetKind(value: unknown): FacetKind {
   if (typeof value === 'boolean') return 'bool'
   if (typeof value === 'number')  return 'int'
@@ -66,12 +68,12 @@ function facetsOf(
 }
 
 export default defineLoader({
-  watch : [paths.proseBinaryPath(root)],
+  watch : [paths.proseBinaryPath(root), `${rulesDirectory}/*/*.md`],
   load  : async (): Promise<SandboxSchema> => {
     const md       = await getRenderer()
     const schema   = ruleSchema.proseSchema(root)
     const defs     = schema.$defs
-    const index    = discoverRuleIndex(paths.rulesDir(import.meta.url))
+    const index    = discoverRuleIndex(rulesDirectory)
     const ruleDefs = ruleSchema.ruleDefsOf(schema)
     const rules    = Object.entries(ruleDefs).map(([slug, def]): RuleControl => ({
       facets : facetsOf(def.default, md, ruleSchema.rulePropsOf(defs, def)),

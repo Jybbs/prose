@@ -2,7 +2,7 @@
 import { mount }    from '@vue/test-utils'
 import { nextTick } from 'vue'
 
-import CompositionCards from '../../theme/components/rules/CompositionCards.vue'
+import CompositionCards  from '../../theme/components/rules/CompositionCards.vue'
 
 vi.mock('../../lib/rules/composition.data', () => ({
   data: {
@@ -33,7 +33,10 @@ vi.mock('../../lib/fixtures/fixtures.data', () => {
   return { data: { composition: { alpha_case: fixture, beta_case: fixture, gamma_case: fixture } } }
 })
 
-vi.mock('../../lib/rules/rules.data', () => ({ data: { bySlug: {} } }))
+vi.mock('../../lib/rules/rules.data', async () => {
+  const { rulesDataStub } = await import('../rules-data-stub')
+  return rulesDataStub()
+})
 
 const STUBS = {
   global: {

@@ -12,22 +12,19 @@ interface ExitCode {
   summary     : string
 }
 
-declare const data: readonly ExitCode[]
-export { data }
-
-export interface ExitCodeSource {
+interface ExitCodeSource {
   code    : number
   detail  : readonly string[]
   label   : string
   summary : string
 }
 
-const rulesDirectory = rulesDir(import.meta.url)
+declare const data: readonly ExitCode[]
+export { data }
 
-const SHIPPED_LINTS = discoverRuleSlugs(rulesDirectory)
-  .filter(rule => rule.lints)
-  .map(rule => `\`${rule.slug}\``)
-  .join(', ')
+const LINT_CODE = 2
+
+const rulesDirectory = rulesDir(import.meta.url)
 
 export const SOURCES: readonly ExitCodeSource[] = [
   {
@@ -56,8 +53,7 @@ export const SOURCES: readonly ExitCodeSource[] = [
   {
     code   : 2,
     detail : [
-      'Returned by both `prose check` and `prose format`.',
-      `The shipped lints can produce it: ${SHIPPED_LINTS}.`
+      'Returned by both `prose check` and `prose format`.'
     ],
     label  : 'Lint violation',
     summary: 'At least one lint finding was reported.'
@@ -92,7 +88,14 @@ export const SOURCES: readonly ExitCodeSource[] = [
 export default defineLoader({
   watch: [`${rulesDirectory}/*/*.md`],
   async load(): Promise<readonly ExitCode[]> {
-    const md = await getRenderer()
-    return inlineNodeField(md, SOURCES, 'detail')
+    const md     = await getRenderer()
+    const roster = discoverRuleSlugs(rulesDirectory)
+      .filter(rule => rule.lints)
+      .map(rule => `\`${rule.slug}\``)
+      .join(', ')
+    const sources = SOURCES.map(source => source.code === LINT_CODE
+      ? { ...source, detail: [...source.detail, `The shipped lints can produce it: ${roster}.`] }
+      : source)
+    return inlineNodeField(md, sources, 'detail')
   }
 })

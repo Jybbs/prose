@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 
-import LintFlagPopper from '../../theme/components/rules/LintFlagPopper.vue'
+import LintFlagPopper    from '../../theme/components/rules/LintFlagPopper.vue'
 
 vi.mock('../../lib/shared/highlight', () => import('../highlight-stub'))
 
@@ -13,16 +13,15 @@ vi.mock('floating-vue', () => ({
   }
 }))
 
-vi.mock('../../lib/rules/rules.data', () => ({
-  data: {
-    bySlug: {
-      'line-overflow'         : { family: 'lint', slug: 'line-overflow' },
-      'miscased-constants'    : { family: 'lint', slug: 'miscased-constants' },
-      'signature-annotations' : { family: 'lint', slug: 'signature-annotations' },
-      'step-narration'        : { family: 'lint', slug: 'step-narration' }
-    }
-  }
-}))
+vi.mock('../../lib/rules/rules.data', async () => {
+  const { rulesDataStub } = await import('../rules-data-stub')
+  return rulesDataStub([
+    { family: 'lint', slug: 'line-overflow' },
+    { family: 'lint', slug: 'miscased-constants' },
+    { family: 'lint', slug: 'signature-annotations' },
+    { family: 'lint', slug: 'step-narration' }
+  ])
+})
 
 type Popper = ReturnType<typeof mountPopper>
 

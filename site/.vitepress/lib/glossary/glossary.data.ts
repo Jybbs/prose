@@ -1,14 +1,15 @@
 import { defineLoader } from 'vitepress'
 
 import { glossary, type GlossaryEntry }       from './entries'
-import { entryHref }                          from './hrefs'
+import { entryHref, entryRule }                from './hrefs'
+import type { GlossaryRule }                   from './hrefs'
 import { getRenderer, renderPlainInlineHtml } from '../markdown/renderer'
 import { inlineNodes, type InlineNode }       from '../markdown/inline-nodes'
 import { discoverRuleIndex }                  from '../rules/discovery'
 import { rulesDir }                           from '../shared/paths'
 import type { GlossaryFamily }                from '../shared/registries'
 
-const ruleIndex = discoverRuleIndex(rulesDir(import.meta.url))
+const rulesDirectory = rulesDir(import.meta.url)
 
 export interface RenderedGlossaryEntry {
   aliases         : readonly string[]
@@ -29,19 +30,21 @@ declare const data: GlossaryData
 export { data }
 
 export default defineLoader({
-  watch: [],
+  watch: [`${rulesDirectory}/*/*.md`],
   async load(): Promise<GlossaryData> {
-    const md      = await getRenderer()
-    const entries : Record<string, RenderedGlossaryEntry> = {}
+    const md        = await getRenderer()
+    const ruleIndex = discoverRuleIndex(rulesDirectory)
+    const entries   : Record<string, RenderedGlossaryEntry> = {}
 
     for (const [slug, entry] of Object.entries(glossary)) {
-      const families = entryFamilies(entry, slug)
+      const rule     = entryRule(slug, entry, ruleIndex)
+      const families = entryFamilies(entry, rule, slug)
       entries[slug] = {
         aliases         : entry.aliases ?? [],
         definitionHtml  : renderPlainInlineHtml(md, entry.definition),
         definitionNodes : inlineNodes(md, entry.definition),
         families        : families,
-        href            : entryHref(slug, entry, ruleIndex),
+        href            : entryHref(slug, entry, rule),
         initial         : firstLetter(slug),
         primaryFamily   : families[0],
         slug            : slug
@@ -52,14 +55,16 @@ export default defineLoader({
   }
 })
 
-function entryFamilies(entry: GlossaryEntry, slug: string): readonly GlossaryFamily[] {
+function entryFamilies(
+  entry : GlossaryEntry,
+  rule  : GlossaryRule | undefined,
+  slug  : string
+): readonly GlossaryFamily[] {
   const declared = entry.families ?? []
-  if (!entry.rule) {
+  if (rule === undefined) {
     if (declared.length === 0) throw new Error(`Glossary entry "${slug}" declares no family`)
     return declared
   }
-  const rule = ruleIndex.get(entry.rule)
-  if (!rule) throw new Error(`Glossary entry "${slug}" names unknown rule "${entry.rule}"`)
   return [rule.family as GlossaryFamily, ...declared]
 }
 

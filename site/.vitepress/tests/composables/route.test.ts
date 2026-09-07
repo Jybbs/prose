@@ -7,12 +7,13 @@ const { route } = vi.hoisted(() => ({
 }))
 
 vi.mock('vitepress', () => ({ useData: () => ({ page: route }) }))
-vi.mock('../../lib/rules/rules.data', () => ({
-  data: { bySlug: { 'align-equals': { name: 'Align Equals', slug: 'align-equals' } } }
-}))
+vi.mock('../../lib/rules/rules.data', async () => {
+  const { rulesDataStub } = await import('../rules-data-stub')
+  return rulesDataStub([{ slug: 'align-equals' }])
+})
 
 import * as composables from '../../lib/composables/route'
-import { mountSetup }   from '../dom'
+import { mountSetup }    from '../dom'
 
 describe('useCurrentRule', () => {
   it('resolves the rule for the current route slug', () => {

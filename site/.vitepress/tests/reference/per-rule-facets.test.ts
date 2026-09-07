@@ -6,7 +6,10 @@ import InlineRuleLink       from '../../theme/components/rules/InlineRuleLink.vu
 import PerRuleFacets        from '../../theme/components/reference/PerRuleFacets.vue'
 import { expectAccessible } from '../axe'
 
-vi.mock('../../lib/rules/rules.data', () => ({ data: {} }))
+vi.mock('../../lib/rules/rules.data', async () => {
+  const { rulesDataStub } = await import('../rules-data-stub')
+  return rulesDataStub()
+})
 
 vi.mock('../../lib/reference/facets.data', () => ({
   data: [

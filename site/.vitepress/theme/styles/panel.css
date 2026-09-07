@@ -73,6 +73,12 @@
   outline-offset : 1px;
 }
 
+/* A denser control row takes the 26px seat. */
+.panel-seat-sm {
+  width  : 26px;
+  height : 26px;
+}
+
 /* Places a `.panel-seat` in a panel corner and holds it hidden until the
    surrounding `.copy-host` is hovered, leaving each site its own offset. */
 .panel-corner {

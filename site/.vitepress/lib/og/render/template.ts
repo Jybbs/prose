@@ -1,6 +1,8 @@
 import MarkdownIt       from 'markdown-it'
 import type { JSXNode } from 'satori/jsx'
 
+import { inlineNodes }                from '../../markdown/inline-nodes'
+import type { InlineNode }            from '../../markdown/inline-nodes'
 import { formatFolio }                from '../../shared/numerals'
 import { CATEGORY_META, FAMILY_META } from '../../shared/registries'
 
@@ -17,6 +19,11 @@ const CODE_CHIP = {
   fontSize        : 19,
   padding         : '2px 8px',
   transform       : 'translateY(-2px)'
+}
+
+interface CaptionSegment {
+  code : boolean
+  text : string
 }
 
 const TITLE_SIZES = {
@@ -68,12 +75,14 @@ export function fitTitleSize(text: string, hasCaption: boolean): number {
 
 const md = new MarkdownIt()
 
-function captionSegments(raw: string): ReadonlyArray<{ code: boolean, text: string }> {
-  const children = md.parseInline(raw, {})[0]?.children ?? []
-  return children.flatMap((token): Array<{ code: boolean, text: string }> => {
-    if (token.type === 'code_inline') return [{ code: true, text: token.content }]
-    if (token.type !== 'text')        return []
-    return token.content.split(/\s+/).filter(Boolean).map(text => ({ code: false, text }))
+// Renders an emphasis element as the words inside it and a code span as its
+// own chip, because the card carries no styling for emphasis.
+function segmentNodes(nodes: readonly InlineNode[]): CaptionSegment[] {
+  return nodes.flatMap((node): CaptionSegment[] => {
+    if (node.kind === 'code') return [{ code: true, text: node.text }]
+    if (node.kind === 'el')   return segmentNodes(node.children)
+    if (node.kind !== 'text') return []
+    return node.text.split(/\s+/).filter(Boolean).map(text => ({ code: false, text }))
   })
 }
 
@@ -126,7 +135,7 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
       }
     }),
     ...(caption !== undefined ? [parts.el('div', {
-      children : captionSegments(caption).map(seg => parts.el('span', {
+      children : segmentNodes(inlineNodes(md, caption)).map(seg => parts.el('span', {
         children : seg.text,
         style    : seg.code ? CODE_CHIP : {}
       })),

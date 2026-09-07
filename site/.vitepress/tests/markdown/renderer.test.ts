@@ -1,8 +1,8 @@
 import * as renderer from '../../lib/markdown/renderer'
 
 describe('renderer', () => {
-  it('returns the memoized renderer on a second call', () => {
-    expect(renderer.getRenderer()).toBe(renderer.getRenderer())
+  it('resolves the one renderer VitePress holds across calls', async () => {
+    expect(await renderer.getRenderer()).toBe(await renderer.getRenderer())
   })
 
   it('renders a fenced code block to highlighted HTML', async () => {
@@ -27,17 +27,20 @@ describe('renderer', () => {
     expect(renderer.renderInlineHtml(md, 'see `x`')).toBe('see <code>x</code>')
   })
 
-  it('replaces an inline field with its rendered counterpart', async () => {
+  it('replaces an inline field with its walked node tree', async () => {
     const md  = await renderer.getRenderer()
-    const out = renderer.renderInlineField(md, [{ note: 'see `prose`' }], 'note')
+    const out = renderer.inlineNodeField(md, [{ note: 'see `prose`' }], 'note')
     expect(out[0]).not.toHaveProperty('note')
-    expect(out[0].noteHtml).toContain('<code>prose</code>')
+    expect(out[0].noteNodes).toEqual([
+      { kind: 'text', text: 'see ' },
+      { kind: 'code', text: 'prose' }
+    ])
   })
 
-  it('renders an array-valued field to an array of HTML strings', async () => {
+  it('walks an array-valued field to one node tree per entry', async () => {
     const md  = await renderer.getRenderer()
-    const out = renderer.renderInlineField(md, [{ tags: ['`a`', '`b`'] }], 'tags')
-    expect(out[0].tagsHtml).toEqual(['<code>a</code>', '<code>b</code>'])
+    const out = renderer.inlineNodeField(md, [{ tags: ['`a`', '`b`'] }], 'tags')
+    expect(out[0].tagsNodes).toEqual([[{ kind: 'code', text: 'a' }], [{ kind: 'code', text: 'b' }]])
   })
 
   it('replaces a fenced field with its rendered counterpart', async () => {

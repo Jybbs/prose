@@ -10,7 +10,10 @@ import InlineRuleLink        from '../../theme/components/rules/InlineRuleLink.v
 import type { InlineNode } from '../../lib/markdown/inline-nodes'
 
 vi.mock('../../lib/glossary/glossary.data', () => ({ data: { entries: [] } }))
-vi.mock('../../lib/rules/rules.data', () => ({ data: {} }))
+vi.mock('../../lib/rules/rules.data', async () => {
+  const { rulesDataStub } = await import('../rules-data-stub')
+  return rulesDataStub([{ slug: 'align-equals' }])
+})
 
 const STUBS = { global: { stubs: { GlossaryTerm: true, InlineRuleLink: true } } }
 
