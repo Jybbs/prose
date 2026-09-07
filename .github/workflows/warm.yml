@@ -18,8 +18,8 @@ on:
       - .mise/config.toml
       - Cargo.lock
       - Cargo.toml
+      - corpus/Cargo.toml
       - crate/Cargo.toml
-      - sweeps/Cargo.toml
       - wasm/Cargo.toml
 
   workflow_dispatch:

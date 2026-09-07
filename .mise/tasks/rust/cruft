@@ -4,6 +4,7 @@
 #MISE   ".mise/config.toml",
 #MISE   "Cargo.lock",
 #MISE   "Cargo.toml",
+#MISE   "corpus/**/*",
 #MISE   "crate/**/*",
 #MISE   "site/**/*.md",
 #MISE   "wasm/**/*"
