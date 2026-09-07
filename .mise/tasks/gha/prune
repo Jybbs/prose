@@ -1,13 +1,37 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description = "Drop every cache under PREFIX except the one keyed to the current commit"
+#MISE description = "Group the caches by key prefix and delete every entry but the newest in each group"
 
-export KEPT="${PREFIX:?}$GITHUB_SHA"
+endpoint="repos/$GITHUB_REPOSITORY/actions/caches"
 
-gh api \
-  --jq '.actions_caches[]
-        | select(.key | startswith(env.PREFIX))
-        | select(.key != env.KEPT)
-        | .id' \
-  --paginate \
-  "repos/$GITHUB_REPOSITORY/actions/caches?per_page=100" \
-  | xargs -r -I {} gh api --method DELETE "repos/$GITHUB_REPOSITORY/actions/caches/{}"
+superseded=$(gh api --jq '.actions_caches[]' --paginate "$endpoint?per_page=100" \
+  | jq -rs '
+  def generation:
+    (if startswith("v0-rust-") then -2 else -1 end) as $drop
+    | split("-")
+    | .[:$drop]
+    | join("-");
+  map(select(.key | index("-")))
+  | group_by(.key | generation)
+  | map(sort_by(.created_at)[:-1])
+  | add // []
+  | .[]
+  | [.id, .key, .size_in_bytes]
+  | @tsv')
+
+if [[ -z "$superseded" ]]; then
+  echo "each key prefix holds a single entry, so there is nothing to delete"
+  exit 0
+fi
+
+reclaimed=0
+
+while IFS=$'\t' read -r id key bytes; do
+  if gh api --method DELETE "$endpoint/$id"; then
+    printf 'deleted %s, %s bytes\n' "$key" "$bytes"
+    reclaimed=$(( reclaimed + bytes ))
+  else
+    printf 'could not delete %s, leaving it for the next run\n' "$key"
+  fi
+done <<< "$superseded"
+
+printf '\n%s bytes reclaimed\n' "$reclaimed"

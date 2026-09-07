@@ -29,8 +29,26 @@ def action_pin(action: str, key: str) -> str:
     return extract(
         f"no {key} pin in {action}/action.yml",
         rf"{key}\s*:\s*v?(\S+)",
-        Path(f".github/actions/{action}/action.yml").read_text(encoding="utf-8")
+        manifest(action)
     )
+
+
+def action_pins() -> list[tuple[str, str, str]]:
+    """
+    Return one parity pair per repeat of a third-party action pin, comparing
+    every later home's commit against the first home's.
+    """
+    homes: dict[str, list[tuple[str, str]]] = {}
+    for path in sorted(Path(".github").rglob("*.yml")):
+        text = path.read_text(encoding="utf-8")
+        for match in finditer(r"uses\s*:\s*(?!\./)([\w.-]+/[\w./-]+)@(\S+)", text):
+            homes.setdefault(match[1], []).append((str(path), match[2]))
+
+    return [
+        (f"{action} in {first} ↔ {home}", pin, repeat)
+        for action, [(first, pin), *rest] in sorted(homes.items())
+        for home, repeat in rest
+    ]
 
 
 def annotate(message: str, **location) -> None:
@@ -103,6 +121,13 @@ def major_minor(value: str) -> str:
     return extract(f"cannot parse major.minor from {value!r}", r"(\d+\.\d+)", value)
 
 
+def manifest(action: str) -> str:
+    """
+    Return the text of the `action` composite action's manifest.
+    """
+    return Path(f".github/actions/{action}/action.yml").read_text(encoding="utf-8")
+
+
 def manifests() -> int:
     """
     Report every YAML anchor in a composite action manifest, which the
@@ -135,6 +160,17 @@ def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
             (".mise/tasks/lock/sync sources", sourced_manifests("lock/sync"))
         ]
     ]
+
+
+def mise_provisioning(action: str) -> str:
+    """
+    Return the `min_version` read the `action` composite carries.
+    """
+    return extract(
+        f"no min_version read in {action}/action.yml",
+        r"(?s)(version=\$\(sed.*?GITHUB_OUTPUT\")",
+        manifest(action)
+    )
 
 
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
@@ -200,10 +236,16 @@ def parity() -> int:
             cargo_lock_version("wasm-bindgen")
         ),
         (
+            "provision-cargo min_version read ↔ provision-uv min_version read",
+            mise_provisioning("provision-cargo"),
+            mise_provisioning("provision-uv")
+        ),
+        (
             ".mise/tasks/site/test sources ↔ .mise/tasks/site/press sources",
             task_sources("site/test"),
             task_sources("site/press")
         ),
+        *action_pins(),
         *member_pins(cargo),
         *override_pins(package),
         *patch_pins(package)

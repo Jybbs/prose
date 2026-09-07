@@ -1,5 +1,5 @@
 name        : Restore wasm cache
-description : Restore `site/public/wasm` under an exact key derived from the wasm sources, stamping a hit forward so `wasm:pack` reads its outputs as current and skips the `wasm-pack` run. Saving is left to the caller, `warm.yml` being the only workflow that writes cache entries.
+description : Restore `site/public/wasm` under an exact key derived from the wasm sources, stamping a hit forward so `wasm:pack` reads its outputs as current and skips the `wasm-pack` run. The save is left to the caller, and on a push both `module.yml` and `deploy.yml` write the entry under the key this action reports.
 
 outputs:
   cache-hit:
@@ -23,5 +23,5 @@ runs:
 
     - name  : Stamp the restored module forward
       if    : ${{ steps.entry.outputs.cache-hit == 'true' }}
-      shell : bash
       run   : find site/public/wasm -type f -exec touch {} +
+      shell : bash
