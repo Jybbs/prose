@@ -20,28 +20,6 @@ function buildCaseIndex(crate: string): Map<string, string> {
   )
 }
 
-// Renders the fixture cases one page reaches, caching each by its input path so
-// a case several pages render costs one render across the whole build.
-export async function fixtureEntries(crate: string, ids: readonly string[]): Promise<FixtureMap> {
-  const index  = indexes.getOrInsertComputed(crate, buildCaseIndex)
-  const walked = await Promise.all(ids.map(async id => {
-    const inputPath = index.get(id)
-    if (inputPath === undefined) {
-      throw new Error(`Fixture case "${id}" has no input and snapshot pair`)
-    }
-    const entry = await entries.getOrInsertComputed(inputPath, () => renderEntry(id, inputPath))
-    return [id, entry] as const
-  }))
-  return Object.fromEntries(walked)
-}
-
-// Empties the index and the rendered entries, which the dev server calls after
-// an edit under the fixture tree so the next render reads the new contents.
-export function resetFixtureEntries(): void {
-  entries.clear()
-  indexes.clear()
-}
-
 async function renderEntry(id: string, inputPath: string): Promise<FixtureEntry> {
   const md          = await renderer.getRenderer()
   const description = walker.readFixtureDocs(inputPath)?.description?.trim()
@@ -54,4 +32,26 @@ async function renderEntry(id: string, inputPath: string): Promise<FixtureEntry>
     inputHtml        : await renderer.renderFencedHtml(md, inputRaw, 'python'),
     outputHtml       : await renderer.renderFencedHtml(md, output, 'python', fenceMeta)
   }
+}
+
+// Renders the fixture cases one page shows, caching each by its input path so a
+// case appearing on several pages costs one render across the whole build.
+export async function fixtureEntries(crate: string, ids: readonly string[]): Promise<FixtureMap> {
+  const index = indexes.getOrInsertComputed(crate, buildCaseIndex)
+  const pairs = await Promise.all(ids.map(async id => {
+    const inputPath = index.get(id)
+    if (inputPath === undefined) {
+      throw new Error(`Fixture case "${id}" has no input and snapshot pair`)
+    }
+    const entry = await entries.getOrInsertComputed(inputPath, () => renderEntry(id, inputPath))
+    return [id, entry] as const
+  }))
+  return Object.fromEntries(pairs)
+}
+
+// Empties the index and the rendered entries, which the dev server does after
+// an edit under the fixture tree so the next render reads the new contents.
+export function resetFixtureEntries(): void {
+  entries.clear()
+  indexes.clear()
 }

@@ -66,14 +66,15 @@ export function readCompositionCases(dir: string): CompositionCase[] {
   return cases
 }
 
-// Reads the previewable cases and indexes them by rule, the pair the composition
-// page and the rule pages both read.
+// Reads the previewable cases and indexes them by rule, returning both for the
+// composition page and the rule pages to read.
 export function readCompositionData(dir: string): CompositionData {
   const cases = readCompositionCases(dir)
   return { byRule: byRule(cases), cases }
 }
 
-// Everything outside `[harness]` is the prose config the case formats under.
+// Renders everything outside `[harness]`, which is the prose config the case
+// formats under.
 export function seedToml(config: Record<string, unknown>): string {
   const { harness: _, ...overrides } = config
   return tomlText(overrides)

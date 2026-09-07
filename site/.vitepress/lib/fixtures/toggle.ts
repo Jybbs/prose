@@ -11,9 +11,9 @@ interface FixtureToggleState extends FixtureFlags {
   output   : string
 }
 
-// Reads a fixture's input, its snapshot, and its lint findings, and derives
-// whether the card shows a before-and-after toggle, which the rule-fixture
-// loader and the page renderer both read. The snapshot drops its insta
+// Reads a fixture's input, its snapshot, and its lint findings, deriving
+// whether the card shows a before-and-after toggle. The rule-fixture loader and
+// the page renderer both read that signal. The snapshot drops its insta
 // frontmatter and normalizes trailing whitespace before the byte comparison
 // against the input.
 export async function readFixtureToggle(inputPath: string): Promise<FixtureToggleState> {

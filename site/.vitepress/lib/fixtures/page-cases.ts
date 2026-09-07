@@ -4,9 +4,8 @@ import { ruleSlug }                    from '../shared/rule-slug'
 const ATTRIBUTE = /([\w-]+)="([^"]*)"/g
 const TAG       = /<(CompositionCards|Fixture|FixtureConvergence|RuleLayout)\b([^>]*)>/g
 
-// Holds the data `pageCaseIds` resolves its cases against, written out
-// structurally rather than imported so neither loader's own type layout couples
-// to this one.
+// Holds the data that `pageCaseIds` resolves its cases against, declared
+// structurally so it names neither loader's own type.
 export interface PageFixtureSets {
   composition: {
     byRule : Record<string, readonly string[]>
@@ -37,8 +36,8 @@ function ruleLayoutIds(sets: PageFixtureSets, rule: string | undefined): string[
   ]
 }
 
-// Lists every fixture id a page can render, read from the component tags its
-// markdown source carries.
+// Lists every fixture id a page can render, read from the component tags that
+// its markdown source carries.
 export function pageCaseIds(source: string, sets: PageFixtureSets): string[] {
   const ids = new Set<string>()
   for (const [, tag, rawAttributes] of source.matchAll(TAG)) {

@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { useToggle }     from '@vueuse/core'
-import { useData }       from 'vitepress'
 import { computed, ref } from 'vue'
 
 import FixtureNoChange from './FixtureNoChange.vue'
 import FixturePairDoc  from './FixturePairDoc.vue'
 import FixtureToggle   from './FixtureToggle.vue'
 
+import { useFixtureEntry } from '../../../lib/composables/use-fixture-entry'
 import { useHashOpen }     from '../../../lib/composables/use-hash-open'
-import { fixtureEntry }    from '../../../lib/fixtures/entry'
 import { data as rules }   from '../../../lib/rules/rules.data'
 import type { FixtureTab } from '../../../lib/shared/fixture-tab'
 import { ruleSlug }        from '../../../lib/shared/rule-slug'
@@ -20,9 +19,7 @@ const props = defineProps<{
   titleHtml : string
 }>()
 
-const { frontmatter } = useData()
-
-const entry     = computed(() => fixtureEntry(frontmatter.value, props.rule, props.case))
+const entry     = useFixtureEntry(props)
 const id        = computed(() => `fixture-${props.rule}-${props.case}`)
 const activeTab = ref<FixtureTab>('after')
 

@@ -1,14 +1,12 @@
 import { readFixtureToggle } from '../../lib/fixtures/toggle'
-import * as walker           from '../../lib/fixtures/walker'
 import { readRuleFixtures }  from '../../lib/rules/rule-fixtures'
-import { crateDir }          from '../../lib/shared/paths'
+import { CASES, CRATE }      from '../corpus'
 
-const crate = crateDir(import.meta.url)
-const data  = await readRuleFixtures(crate)
+const data  = await readRuleFixtures(CRATE)
 const rules = Object.entries(data)
 
 const inputPath = (rule: string, caseName: string): string =>
-  [...walker.walkFixtures(crate)].find(e => e.rule === rule && e.caseName === caseName)!.inputPath
+  CASES.find(e => e.rule === rule && e.caseName === caseName)!.inputPath
 
 describe('readRuleFixtures', () => {
   it('registers a canonical case for every rule it lists', () => {

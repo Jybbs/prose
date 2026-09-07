@@ -10,11 +10,10 @@ import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
 import { canonicalUrl }                               from './lib/config/canonical-url'
 import { pageHead }                                   from './lib/config/head'
+import { injectFixtures }                             from './lib/config/inject-fixtures'
 import { ROBOTS_TXT }                                 from './lib/config/robots'
 import { buildSidebar }                               from './lib/config/sidebar'
-import { pageCaseIds }                                from './lib/fixtures/page-cases'
 import { fixtureReloadPlugin }                        from './lib/fixtures/reload-plugin'
-import { fixtureEntries }                             from './lib/fixtures/render'
 import { corpusLintFindings }                         from './lib/fixtures/walker'
 import { glossary }                                   from './lib/glossary/entries'
 import { glossaryHrefs }                              from './lib/glossary/hrefs'
@@ -59,15 +58,6 @@ const fixtureSets          = {
 }
 
 assertCorpusIntegrity(ruleDiscovery, discoveredPrimitives)
-
-// Injects the cases a page renders into that page's frontmatter at build
-// time, leaving the fixture corpus out of every page's download.
-async function injectFixtures(pageData: PageData, srcDir: string): Promise<void> {
-  if (!pageData.filePath) return
-  const source = await fs.promises.readFile(path.join(srcDir, pageData.filePath), 'utf8')
-  const ids    = pageCaseIds(source, fixtureSets)
-  if (ids.length > 0) pageData.frontmatter.fixtures = await fixtureEntries(crate, ids)
-}
 
 function injectSectionName(
   pageData : PageData,
@@ -150,7 +140,7 @@ export default defineConfig({
     }
     injectSectionName(pageData, 'rules/', slug => toTitleCase(slug, '-'))
     injectSectionName(pageData, 'primitives/', slug => primitiveIndex.get(slug)?.name)
-    await injectFixtures(pageData, siteConfig.srcDir)
+    await injectFixtures(pageData, crate, fixtureSets, siteConfig.srcDir)
   },
   vite: {
     build: { chunkSizeWarningLimit: 5000 },
@@ -169,8 +159,10 @@ export default defineConfig({
       name      : 'prose-palette',
       resolveId : id =>
         id === 'virtual:prose-palette.css' ? '\0virtual:prose-palette.css' : undefined
-    }, fixtureReloadPlugin(fixturesRoot),
-    serveWasmPlugin(path.join(paths.siteDir(import.meta.url), 'public')), groupIconVitePlugin({
+    },
+    fixtureReloadPlugin(fixturesRoot),
+    serveWasmPlugin(path.join(paths.siteDir(import.meta.url), 'public')),
+    groupIconVitePlugin({
       customIcon: {
         ...Object.fromEntries(Object.entries(TOOL_SEEDS).map(([slug, { icon }]) => [slug, icon])),
         gha: TOOL_SEEDS.github.icon

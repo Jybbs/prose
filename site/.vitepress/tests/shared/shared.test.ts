@@ -57,16 +57,14 @@ describe('escapeHtml', () => {
 
 describe('inlineCode', () => {
   it.each([
-    ['use `prose format`',                    'use <code>prose format</code>'],
-    ['<script>x</script>',                    '&lt;script&gt;x&lt;/script&gt;'],
-    ['`a` and `b`',                           '<code>a</code> and <code>b</code>'],
-    ['Module constant `aa` is not SCREAMING_CASE',
-     'Module constant <code>aa</code> is not SCREAMING_CASE'],
-    ['`<T>` becomes `T | None`',
-     '<code>&lt;T&gt;</code> becomes <code>T | None</code>'],
-    ['Consider inlining `", "`',              'Consider inlining <code>&quot;, &quot;</code>'],
-    ['a lone ` backtick',                     'a lone ` backtick'],
-    ['plain text',                            'plain text']
+    ['use `prose format`',                          'use <code>prose format</code>'],
+    ['<script>x</script>',                          '&lt;script&gt;x&lt;/script&gt;'],
+    ['`a` and `b`',                                 '<code>a</code> and <code>b</code>'],
+    ['Module constant `aa` is not SCREAMING_CASE',  'Module constant <code>aa</code> is not SCREAMING_CASE'],
+    ['`<T>` becomes `T | None`',                    '<code>&lt;T&gt;</code> becomes <code>T | None</code>'],
+    ['Consider inlining `", "`',                    'Consider inlining <code>&quot;, &quot;</code>'],
+    ['a lone ` backtick',                           'a lone ` backtick'],
+    ['plain text',                                  'plain text']
   ])('renders inline code and escapes raw markup in %j', (input, expected) => {
     expect(inlineCode(input)).toBe(expected)
   })

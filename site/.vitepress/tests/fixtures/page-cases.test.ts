@@ -5,6 +5,7 @@ const SETS: PageFixtureSets = {
     byRule : { 'align-equals': ['alpha_case'], 'wrap-docstrings': ['gamma_case'] },
     cases  : [{ case: 'alpha_case' }, { case: 'gamma_case' }]
   },
+
   ruleFixtures: {
     align_equals    : { canonical: 'basic_run', examples: [{ case: 'nested' }, { case: 'deep' }] },
     strip_stranding : { canonical: 'only_case', examples: [] }

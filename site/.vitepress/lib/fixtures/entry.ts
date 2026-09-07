@@ -3,8 +3,8 @@ import { lookup }          from '../shared/lookup'
 
 export const COMPOSITION_RULE = 'composition'
 
-// The three signals a card reads to decide whether it draws a before-and-after
-// toggle, shared with the toggle state the build reads them from.
+// The signals a card reads to decide whether it draws a before-and-after
+// toggle, which the build derives alongside the toggle state.
 export interface FixtureFlags {
   changesSource : boolean
   hasFindings   : boolean

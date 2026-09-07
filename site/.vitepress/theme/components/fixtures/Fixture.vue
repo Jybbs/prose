@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { useData }       from 'vitepress'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import FixturePairDoc from './FixturePairDoc.vue'
 import FixtureToggle  from './FixtureToggle.vue'
 
-import { fixtureEntry }    from '../../../lib/fixtures/entry'
+import { useFixtureEntry } from '../../../lib/composables/use-fixture-entry'
 import type { FixtureTab } from '../../../lib/shared/fixture-tab'
 import InlineProse         from '../base/InlineProse.vue'
 
@@ -14,9 +13,7 @@ const props = defineProps<{
   rule : string
 }>()
 
-const { frontmatter } = useData()
-
-const entry     = computed(() => fixtureEntry(frontmatter.value, props.rule, props.case))
+const entry     = useFixtureEntry(props)
 const activeTab = ref<FixtureTab>('after')
 </script>
 
