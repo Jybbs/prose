@@ -38,6 +38,11 @@ describe('readRequiresPython', () => {
     expect(version.readRequiresPython(crate)).toMatch(/^\d+\.\d+$/)
   })
 
+  it('reads a floor written without a bound', () => {
+    const dir = fixtureDir(import.meta.dirname, 'pyproject-bare-floor')
+    expect(version.readRequiresPython(dir)).toBe('3.10')
+  })
+
   it('throws when the project table carries no requires-python', () => {
     const dir = fixtureDir(import.meta.dirname, 'pyproject-no-floor')
     expect(() => version.readRequiresPython(dir)).toThrow(/requires-python/)

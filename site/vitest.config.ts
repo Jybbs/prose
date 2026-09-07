@@ -27,7 +27,7 @@ export default defineConfig({
       },
 
       {
-        test    : {
+        test: {
           include : ['.vitepress/tests/wasm/**/*.test.ts'],
           name    : 'wasm',
           browser : {

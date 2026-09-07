@@ -39,9 +39,9 @@ function useCurrentFamily(): ComputedRef<RuleFamily | null> {
 // Mirrors the current family onto the body element, which the accent sheets
 // select through `[data-family]`.
 export function useFamilyDataset(): void {
+  if (!inBrowser) return
   const family = useCurrentFamily()
   watchEffect(() => {
-    if (!inBrowser) return
     if (family.value) document.body.dataset.family = family.value
     else              delete document.body.dataset.family
   })

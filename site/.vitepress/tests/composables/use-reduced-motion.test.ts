@@ -10,7 +10,6 @@ const mediaQueryList = (matches: boolean): MediaQueryList =>
     removeEventListener : vi.fn<() => void>()
   }) as unknown as MediaQueryList
 
-
 describe('useReducedMotion', () => {
   it('asks for the reduced-motion preference and reports a match', () => {
     const spy = vi.spyOn(window, 'matchMedia').mockReturnValue(mediaQueryList(true))

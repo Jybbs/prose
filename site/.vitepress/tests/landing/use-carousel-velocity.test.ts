@@ -35,7 +35,6 @@ beforeEach(() => {
   vi.stubGlobal('cancelAnimationFrame', () => {})
 })
 
-
 describe('useCarouselVelocity', () => {
   it('drifts forward at the base speed', () => {
     const api = mountVelocity(1000)

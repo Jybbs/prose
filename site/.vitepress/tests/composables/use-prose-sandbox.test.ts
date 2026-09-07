@@ -215,7 +215,7 @@ describe('useProseSandbox', () => {
     api.source.value = 'seed b'
     await expect.poll(() => api.facetImpact.value['space-statements']).toStrictEqual([])
     api.source.value = 'seed a'
-    await expect.poll(() => api.facetImpact.value['align-equals']).toBeDefined()
+    await expect.poll(() => api.eligible.value).toStrictEqual(['align-equals'])
     expect(probeRuns()).toBe(initialProbes)
   })
 

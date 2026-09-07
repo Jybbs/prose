@@ -65,7 +65,7 @@ describe('cardKeyer', () => {
   })
 
   it('keys on the real package pins when none are passed', () => {
-    const pinned = readPackageVersions(siteDir(import.meta.url), cardKey.KEYED_PACKAGES)
+    const pinned = readPackageVersions(siteDir(import.meta.url), cardKey.CARD_PACKAGES)
     expect(cardKey.cardKeyer(brand, '0.1.0')('landing'))
       .toBe(cardKey.cardKeyer(brand, '0.1.0', pinned)('landing'))
   })
@@ -101,8 +101,8 @@ describe('the card modules', () => {
 
   covers(
     imported(/from '([^.'][^']*)'/g, packageOf, name => !name.startsWith('node:')),
-    [...cardKey.KEYED_PACKAGES, ...cardKey.UNKEYED_PACKAGES],
-    'keyed into the cache key or listed as unkeyed'
+    cardKey.CARD_PACKAGES,
+    'keyed into the cache key'
   )
 
   covers(

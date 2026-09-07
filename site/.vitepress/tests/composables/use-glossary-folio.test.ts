@@ -32,7 +32,7 @@ describe('useGlossaryFolio', () => {
 
   it('groups the filtered entries by initial', () => {
     expect(folio.grouped.value.map(([initial]) => initial)).toStrictEqual(['A', 'B', 'C'])
-    expect(folio.grouped.value[0]).toHaveLength(2)
+    expect(folio.grouped.value[0]![1]).toStrictEqual([expect.objectContaining({ slug: 'apple' })])
   })
 
   it('steps the selection forward and wraps back through the pool', () => {

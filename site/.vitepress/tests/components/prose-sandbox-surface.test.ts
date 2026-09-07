@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 import { promiseTimeout }       from '@vueuse/core'
-import { ref }                  from 'vue'
+import { nextTick, ref }        from 'vue'
 
 import ProseSandboxSurface             from '../../theme/components/sandbox/ProseSandboxSurface.vue'
 import type { ProseSandbox }           from '../../lib/composables/use-prose-sandbox'
@@ -264,6 +264,22 @@ describe('ProseSandboxSurface', () => {
     await flushPromises()
     expect(window.proseMorphProbe).toMatchObject({ lines: [1, 80], morphed: false })
     expect(wrapper.get('.sandbox-surface-display').html()).toContain('b79 = 79')
+  })
+
+  surfaceTest('reports no decision once it is unmounted mid-render', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
+    await nextPaint()
+    await flushPromises()
+
+    delete window.proseMorphProbe
+    sandbox.formatted.value = 'x = 2'
+    // The watcher has to start the render before the teardown can supersede it.
+    await nextTick()
+    wrapper.unmount()
+    await flushPromises()
+    await nextPaint()
+    await flushPromises()
+    expect(window.proseMorphProbe).toBeUndefined()
   })
 
   surfaceTest('holds the outgoing height until the morph flips its step', async ({ mounted }) => {
