@@ -1,5 +1,6 @@
-//! Serde `deserialize_with` and `serialize_with` helpers: the
-//! bool-or-table rule reader and the optional-cap round-trips.
+//! Deserializes the prose table and the shapes serde cannot read on its
+//! own, covering the bool-or-table rule reader, the optional-cap
+//! round-trips, and the notice line rendered for an unrecognized key.
 
 use std::{fmt, marker::PhantomData, num::NonZeroUsize};
 
@@ -8,8 +9,7 @@ use serde::{
     de::{IntoDeserializer, MapAccess, Visitor, value::MapAccessDeserializer},
 };
 
-use super::schema::RuleToggle;
-use super::{Config, ConfigError};
+use super::{Config, ConfigError, schema::RuleToggle};
 
 /// Deserializes a cap of integer type `T`, or `false` lifting it to
 /// `None`. `true` is rejected with `on_true`.

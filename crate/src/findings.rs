@@ -107,6 +107,14 @@ impl From<LineColumn> for JsonLocation {
     }
 }
 
+/// `message` under its cell number for a notebook, bare for a module.
+pub(crate) fn cell_message(message: &str, cell: Option<OneIndexed>) -> String {
+    cell.map_or_else(
+        || message.to_owned(),
+        |cell| format!("cell {cell}: {message}"),
+    )
+}
+
 pub(crate) fn line_columns(file: &SourceFile, range: TextRange) -> (LineColumn, LineColumn) {
     let code = file.to_source_code();
     (
@@ -128,14 +136,6 @@ pub fn lint_records<'a>(
         .collect()
 }
 
-/// Renders [`lint_records`] as pretty-printed JSON, or `None` when the
-/// run emitted no lint finding.
-pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
-    let records = lint_records(file, diagnostics);
-    (!records.is_empty())
-        .then(|| serde_json::to_string_pretty(&records).expect("lint records serialize"))
-}
-
 /// The start and end positions of `range` plus, for a notebook, the
 /// absolute cell holding it. A notebook translates the positions to
 /// cell-relative coordinates through the index, whereas a module leaves
@@ -154,12 +154,4 @@ pub(crate) fn located(
         ),
         None => (start, end, None),
     }
-}
-
-/// `message` under its cell number for a notebook, bare for a module.
-pub(crate) fn cell_message(message: &str, cell: Option<OneIndexed>) -> String {
-    cell.map_or_else(
-        || message.to_owned(),
-        |cell| format!("cell {cell}: {message}"),
-    )
 }

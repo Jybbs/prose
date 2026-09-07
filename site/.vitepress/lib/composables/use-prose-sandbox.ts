@@ -122,6 +122,8 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
       probe.sync(wasm, text)
     } catch (thrown) {
       published = null
+      // The notices come from the config that just failed, so they clear while
+      // the formatted text and its findings hold their last good run.
       configNotices.value = []
       if (thrown instanceof WebAssembly.RuntimeError) {
         // A panic poisons the instance, so the glue rebuilds it in place and

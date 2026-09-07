@@ -9,13 +9,16 @@ use std::{
     sync::Arc,
 };
 
-use super::de::deserialize_prose;
-use super::discover::{holding_dir, walk_prose_table};
-use super::merge::merge_tables;
-use super::notice::{ConfigNotice, unknown_keys};
-use super::overrides::{Override, take_overrides};
-use super::sink::NoticeDedup;
-use super::{Config, ConfigError, script};
+use super::{
+    Config, ConfigError,
+    de::deserialize_prose,
+    discover::{holding_dir, walk_prose_table},
+    merge::merge_tables,
+    notice::{ConfigNotice, unknown_keys},
+    overrides::{Override, take_overrides},
+    script,
+    sink::NoticeDedup,
+};
 
 /// The base config and overrides governing files under one directory,
 /// alongside the directory their globs anchor to.

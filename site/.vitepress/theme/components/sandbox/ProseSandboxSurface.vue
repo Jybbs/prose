@@ -341,7 +341,7 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
       v-html="displayHtml"
     />
     <p v-if="error" class="code-panel-error">{{ error }}</p>
-    <p v-if="unstable.length" class="code-panel-unstable">
+    <p v-if="unstable.length" class="code-panel-warning">
       A second run would change this output ({{ unstable.join(', ') }}), which is a defect in
       Prose itself.
       <a :href="reportUrl" v-bind="externalAttrs(reportUrl)">Report it</a>

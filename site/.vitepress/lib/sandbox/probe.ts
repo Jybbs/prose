@@ -1,6 +1,6 @@
 import { stringify } from 'smol-toml'
 
-import type { Facet, FacetValue }     from './config-schema.data'
+import type { Facet, FacetValue }      from './config-schema.data'
 import type { ProseFormat, ProseWasm } from './load-module'
 
 const INT_PROBES    = [1, 500] as const

@@ -5,8 +5,8 @@
 //! recognize.
 //!
 //! Reading config files off disk needs the `native` feature, as do the
-//! per-file overrides. Both live in the `discover`, `overrides`,
-//! `script`, and `source` modules.
+//! per-file overrides, the precedence notices, and the sinks they print
+//! through, each sitting in a module the feature gates.
 //!
 //! Each rule is configured under `[tool.prose.rules]`, where a bare
 //! bool turns the rule on or off and a sub-table sets its facets.

@@ -3,8 +3,8 @@ import { flushPromises } from '@vue/test-utils'
 
 import { useProseSandbox }                        from '../../lib/composables/use-prose-sandbox'
 import type { ProseSandbox, ProseSandboxOptions } from '../../lib/composables/use-prose-sandbox'
-import type { SandboxSchema }                     from '../../lib/sandbox/config-schema.data'
 import type { LintFinding }                       from '../../lib/fixtures/lint-findings'
+import type { SandboxSchema }                     from '../../lib/sandbox/config-schema.data'
 import type { ProseFormat, ProseWasm }            from '../../lib/sandbox/load-module'
 import type { SandboxCase }                       from '../../lib/sandbox/pool.data'
 import { encodeShare }                            from '../../lib/sandbox/share-link'
@@ -75,17 +75,12 @@ const record = (overrides: Partial<ProseFormat> = {}): ProseFormat => ({
   ...overrides
 })
 
-const formatting = (
-  formatted    : string,
-  diagnostics  : readonly LintFinding[] = [],
-  firedRules   : readonly string[] = []
-): Formatter =>
-  () => record({ diagnostics, fired_rules: firedRules, formatted })
+const formatting = (overrides: Partial<ProseFormat> = {}): Formatter => () => record(overrides)
 
 const moduleWith = (format: Formatter, reset = () => {}): ProseWasm =>
   ({ __wbg_reset_state: reset, default: () => Promise.resolve(), format })
 
-const okLoader: Loader = () => Promise.resolve(moduleWith(formatting('OUT')))
+const okLoader: Loader = () => Promise.resolve(moduleWith(formatting()))
 
 const sandbox = (load: Loader, options: Partial<ProseSandboxOptions> = {}): ProseSandbox =>
   mountSetup(() => useProseSandbox({ cases: CASES, schema: SCHEMA, load, pick: () => 0, ...options }))
@@ -127,7 +122,7 @@ describe('useProseSandbox', () => {
     const records: LintFinding[] = [
       { code: 'bare-imports', end_location: { column: 2, row: 1 }, location: { column: 1, row: 1 }, message: 'm' }
     ]
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT', records))))
+    const api = sandbox(() => Promise.resolve(moduleWith(formatting({ diagnostics: records }))))
     await api.start()
     expect(api.diagnostics.value).toHaveLength(1)
     expect(api.diagnostics.value[0].code).toBe('bare-imports')
@@ -135,14 +130,32 @@ describe('useProseSandbox', () => {
 
   it('publishes the config notices the run returned', async () => {
     const notices = ['warning: unknown key `no-such-key` in [tool.prose]']
-    const api = sandbox(() => Promise.resolve(moduleWith(() => record({ config_notices: notices }))))
+    const api = sandbox(() => Promise.resolve(moduleWith(formatting({ config_notices: notices }))))
     await api.start()
     expect(api.configNotices.value).toEqual(notices)
   })
 
+  it('clears the config notices when a later run throws', async () => {
+    const notices = ['warning: unknown key `no-such-key` in [tool.prose]']
+    let published = false
+    const format: Formatter = () => {
+      if (published) throw new Error('bad config')
+      published = true
+      return record({ config_notices: notices })
+    }
+    const api = sandbox(() => Promise.resolve(moduleWith(format)))
+    await api.start()
+    expect(api.configNotices.value).toEqual(notices)
+
+    api.setFacet('align-equals', ENABLED, false)
+    await flushPromises()
+    expect(api.configNotices.value).toEqual([])
+    expect(api.error.value).toBe('bad config')
+  })
+
   it('computes the eligible rule set from the default run on the source', async () => {
     const fired = ['align-equals', 'space-statements']
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT', [], fired))))
+    const api = sandbox(() => Promise.resolve(moduleWith(formatting({ fired_rules: fired }))))
     await api.start()
     // The probe adoption defers past the publish paint, so the set lands a
     // few frames after the format rather than in the same task.
@@ -373,7 +386,7 @@ describe('useProseSandbox', () => {
 
   it('debounces rapid edits into a single format', async () => {
     vi.useFakeTimers()
-    const format = vi.fn<Formatter>(formatting('OUT'))
+    const format = vi.fn<Formatter>(formatting())
     const load   = vi.fn<Loader>(() => Promise.resolve(moduleWith(format)))
     const api    = sandbox(load, { debounceMs: 50 })
     api.source.value = 'a'
@@ -389,7 +402,7 @@ describe('useProseSandbox', () => {
 
   it('formats a rule toggle without waiting out the typing debounce', async () => {
     vi.useFakeTimers()
-    const format = vi.fn<Formatter>(formatting('OUT'))
+    const format = vi.fn<Formatter>(formatting())
     const api    = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 250 })
     api.setFacet('align-equals', ENABLED, false)
     api.setFacet('space-statements', SCHEMA.rules[1].facets[0], false)
@@ -397,14 +410,13 @@ describe('useProseSandbox', () => {
     // The two toggles coalesce into one immediate display run with no timer
     // advance, the eligibility runs deferred past the publish paint.
     expect(format).toHaveBeenCalledTimes(1)
-    const displayCall = [expect.any(String), 'seed a', true]
-    expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('align-equals = false'), ...displayCall.slice(1))
-    expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('space-statements = false'), ...displayCall.slice(1))
+    expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('align-equals = false'), 'seed a', true)
+    expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('space-statements = false'), 'seed a', true)
   })
 
   it('formats a drawn example without waiting out the typing debounce', async () => {
     vi.useFakeTimers()
-    const format = vi.fn<Formatter>(formatting('OUT'))
+    const format = vi.fn<Formatter>(formatting())
     const api    = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 250 })
     api.refresh()
     await flushPromises()
@@ -414,7 +426,7 @@ describe('useProseSandbox', () => {
 
   it('skips the debounced re-format over the pair the toggle already published', async () => {
     vi.useFakeTimers()
-    const format = vi.fn<Formatter>(formatting('OUT', [FINDING]))
+    const format = vi.fn<Formatter>(formatting({ diagnostics: [FINDING] }))
     const api    = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 250 })
     api.setFacet('align-equals', ENABLED, false)
     await flushPromises()

@@ -30,7 +30,7 @@ describe('ProseSandboxToml', () => {
     const wrapper = await mountToml(sandbox)
 
     expect(wrapper.get('.code-panel-error').text()).toContain('unexpected character')
-    expect(wrapper.get('.code-panel-unstable').text()).toContain('no-such-key')
+    expect(wrapper.get('.code-panel-warning').text()).toContain('no-such-key')
   })
 
   domTest('types a config change and settles onto the target text', async ({ reducedMotion }) => {

@@ -13,8 +13,8 @@ use prose::{
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
-/// The record `format` returns, every field borrowing from the `Run`
-/// that produced it.
+/// The record `format` returns, reading its text and slugs out of the
+/// `Run` that produced it and building its findings per call.
 #[derive(Serialize)]
 struct FormatRecord<'a> {
     config_notices: &'a [String],
@@ -72,8 +72,8 @@ pub fn panic_for_test() {
     panic!("prose_wasm smoke-test panic");
 }
 
-/// Runs the pipeline over `source`. With `settle`, the rules that
-/// fired run a second time over the output.
+/// Runs the pipeline over `source`, walking `unsettled_among` over the
+/// fired set where `settle` is true.
 fn run(config_toml: &str, source: &str, settle: bool) -> Result<Run, Box<dyn Error>> {
     let (config, config_notices) = Config::from_prose_toml_str(config_toml)?;
     let pipeline = Pipeline::with_defaults(&config);
@@ -127,6 +127,13 @@ mod tests {
     }
 
     #[test]
+    fn holds_the_fired_set_with_the_settle_check_off() {
+        let probe = run("", "alpha = 1\nb = 22\n", false).expect("format succeeds");
+        assert!(probe.unstable_rules.is_empty());
+        assert!(!probe.fired_rules.is_empty());
+    }
+
+    #[test]
     fn honors_a_rule_toggle() {
         let aligned = formatted("", "aa = 1\nb = 2\n");
         assert_eq!(aligned.formatted.text(), "aa = 1\nb  = 2\n");
@@ -153,7 +160,7 @@ mod tests {
     }
 
     #[test]
-    fn names_the_rules_a_second_pass_would_still_edit() {
+    fn leaves_unstable_rules_empty_for_a_settled_rewrite() {
         let result = formatted("", "alpha = 1\nb = 22\n");
         assert!(result.unstable_rules.is_empty());
     }
@@ -202,12 +209,5 @@ mod tests {
             result.formatted.text(),
             "import a\nimport b\n\nvalue = a, b\n"
         );
-    }
-
-    #[test]
-    fn skips_the_settle_walk_without_it() {
-        let probe = run("", "alpha = 1\nb = 22\n", false).expect("format succeeds");
-        assert!(probe.unstable_rules.is_empty());
-        assert!(!probe.fired_rules.is_empty());
     }
 }

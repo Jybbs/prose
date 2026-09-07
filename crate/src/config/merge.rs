@@ -30,7 +30,7 @@ pub(super) fn merge_tables(base: &mut toml::Table, overlay: &toml::Table) {
 /// Drops every entry of `table` matching `defaults`, recursing into a
 /// key both carry as a table and dropping that sub-table once it empties.
 /// A key `defaults` does not carry stays.
-pub(super) fn without_defaults(table: &mut toml::Table, defaults: &toml::Table) {
+fn without_defaults(table: &mut toml::Table, defaults: &toml::Table) {
     table.retain(|key, value| match (value, defaults.get(key)) {
         (toml::Value::Table(sub), Some(toml::Value::Table(base))) => {
             without_defaults(sub, base);

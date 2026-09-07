@@ -1,6 +1,6 @@
 //! Finds config files on disk, climbing from a starting path to the
-//! nearest directory holding a prose table and reading that table into a
-//! `Config`.
+//! nearest directory that holds a prose table. That table becomes the
+//! `Config` a run reads.
 
 use std::{
     io::ErrorKind,
@@ -9,16 +9,11 @@ use std::{
 
 use serde::{Deserialize, de::IntoDeserializer};
 
-use super::notice::{ConfigForm, ConfigNotice, unknown_keys};
-use super::sink::{NoticeDedup, emit_notice};
-use super::{Config, ConfigError};
-
-/// The config forms, highest precedence first.
-const PRECEDENCE: [ConfigForm; 3] = [
-    ConfigForm::ProseToml,
-    ConfigForm::DotConfigProseToml,
-    ConfigForm::PyprojectTable,
-];
+use super::{
+    Config, ConfigError,
+    notice::{ConfigForm, ConfigNotice, PRECEDENCE, unknown_keys},
+    sink::{NoticeDedup, emit_notice},
+};
 
 impl Config {
     /// Builds the config `table` describes, or the default where there
@@ -39,8 +34,8 @@ impl Config {
     /// Parses a `pyproject.toml` snippet directly from a string.
     ///
     /// Returns `Config::default()` when `contents` carries no
-    /// `[tool.prose]` section. Unknown keys under `[tool.prose]` warn
-    /// to stderr.
+    /// `[tool.prose]` section. Each unknown key under `[tool.prose]`
+    /// produces a notice on stderr.
     ///
     /// # Errors
     ///
@@ -64,12 +59,12 @@ impl Config {
     /// Returns `ConfigError::Io` if a config file is found but cannot be
     /// read, and `ConfigError::Toml` if its contents are not valid TOML.
     pub fn load<P: AsRef<Path>>(from: P) -> Result<Self, ConfigError> {
-        Self::load_with_notices(from, emit_notice)
+        Self::load_with_notices(from.as_ref(), emit_notice)
     }
 
     /// Loads the base config for `from`, routing its notices through a
-    /// run-scoped `dedup` so a run that reloads the same config per file
-    /// warns each key once across both loads.
+    /// run-scoped `dedup`, so a run reloading the same config per file
+    /// emits one notice per key across both loads.
     ///
     /// # Errors
     ///
@@ -79,18 +74,17 @@ impl Config {
         from: P,
         dedup: &NoticeDedup,
     ) -> Result<Self, ConfigError> {
-        Self::load_with_notices(from, |notice| dedup.emit(notice))
+        Self::load_with_notices(from.as_ref(), |notice| dedup.emit(notice))
     }
 
     /// Loads the config governing `from`, routing each notice through
     /// `on_notice`.
-    pub(super) fn load_with_notices<P, F>(from: P, mut on_notice: F) -> Result<Self, ConfigError>
+    pub(super) fn load_with_notices<F>(from: &Path, mut on_notice: F) -> Result<Self, ConfigError>
     where
-        P: AsRef<Path>,
         F: FnMut(ConfigNotice<'_>),
     {
         Self::from_optional_table(
-            walk_prose_table(from.as_ref(), &mut on_notice)?.map(|(_, table)| table),
+            walk_prose_table(from, &mut on_notice)?.map(|(_, table)| table),
             &mut on_notice,
         )
     }
@@ -108,8 +102,8 @@ pub(crate) fn holding_dir(file: &Path) -> &Path {
 }
 
 /// Extracts the `[tool.prose]` table from a TOML document, or `None`
-/// where the document has no `tool.prose` entry. Both the
-/// `pyproject.toml` read and the PEP 723 script block go through this.
+/// where the document has no `tool.prose` entry. The `pyproject.toml`
+/// read and the PEP 723 script block both extract their table here.
 ///
 /// # Errors
 ///
@@ -129,8 +123,8 @@ pub(super) fn prose_table_from_str(contents: &str) -> Result<Option<toml::Table>
 /// the nearest directory carrying a recognized config form, or `None`
 /// when the chain to the root carries none. Within a directory the order
 /// is `prose.toml`, then `.config/prose.toml`, then a `pyproject.toml`
-/// `[tool.prose]` table, and each lower form present alongside the winner
-/// raises a precedence notice.
+/// `[tool.prose]` table, and the walk emits a precedence notice for each
+/// lower form present alongside the winner.
 ///
 /// # Errors
 ///

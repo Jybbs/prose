@@ -123,6 +123,6 @@ onMounted(() => settle(configToml.value))
     />
     <CopyButton v-show="!editing" label="Copy prose.toml" :source="configToml" />
     <p v-if="configError" class="code-panel-error">{{ configError }}</p>
-    <p v-for="notice in configNotices" :key="notice" class="code-panel-unstable">{{ notice }}</p>
+    <p v-for="notice in configNotices" :key="notice" class="code-panel-warning">{{ notice }}</p>
   </section>
 </template>

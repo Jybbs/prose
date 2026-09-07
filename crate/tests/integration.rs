@@ -11,7 +11,7 @@ mod common;
 use std::{fmt::Write, path::Path};
 
 use itertools::Itertools;
-use prose::{diagnostics::Diagnostic, pipeline::Pipeline, source::Source};
+use prose::{diagnostics::Diagnostic, findings::lint_records, pipeline::Pipeline, source::Source};
 use ruff_python_formatter::{PyFormatOptions, format_module_source};
 use ruff_source_file::{LineEnding, UniversalNewlines};
 
@@ -43,9 +43,9 @@ fn fixtures() {
         common::in_snapshot_dir(path, || {
             if let Some(diagnostics) = &diagnostics {
                 insta::assert_snapshot!("diagnostics", render(diagnostics));
-                if let Some(json) =
-                    prose::findings::lint_records_json(formatted.source_file(), &records)
-                {
+                let lint = lint_records(formatted.source_file(), &records);
+                if !lint.is_empty() {
+                    let json = serde_json::to_string_pretty(&lint).expect("lint records serialize");
                     insta::assert_snapshot!("lint_findings", json);
                 }
             }

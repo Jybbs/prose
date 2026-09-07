@@ -1,5 +1,6 @@
-//! The two sinks a config notice reaches, one printing every notice it is
-//! given and the other printing each distinct line once per run.
+//! Prints the notices config resolution raises, one sink taking every
+//! notice it is given and the other taking each distinct line once per
+//! run.
 
 use std::sync::Mutex;
 
@@ -18,12 +19,12 @@ pub(crate) struct NoticeDedup {
 impl NoticeDedup {
     pub(super) fn emit(&self, notice: ConfigNotice<'_>) {
         let line = notice.to_string();
-        let unseen = self
+        if self
             .seen
             .lock()
             .expect("notice dedup lock")
-            .insert(line.clone());
-        if unseen {
+            .insert(line.clone())
+        {
             eprintln!("{line}");
         }
     }

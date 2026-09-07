@@ -118,10 +118,12 @@ fn run_as_written_short_circuits_when_file_is_suppressed() {
     )]);
     let source = parse("# prose: off\nx = 1\n");
 
-    let (formatted, diagnostics, _) = pipeline.run_as_written(source).expect("the run succeeds");
+    let (formatted, diagnostics, fired) =
+        pipeline.run_as_written(source).expect("the run succeeds");
 
     assert_eq!(formatted.text(), "# prose: off\nx = 1\n");
     assert!(diagnostics.is_empty());
+    assert!(fired.is_empty());
 }
 
 #[test]

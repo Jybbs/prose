@@ -13,8 +13,12 @@ use crate::config::*;
 fn assert_round_trips<T: Debug + PartialEq>(pyproject: &str, project: impl Fn(&Config) -> T) {
     let config = Config::from_pyproject_str(pyproject).expect("parses");
     let dumped = toml::to_string(&config).expect("Config serializes");
-    let (reparsed, _) = Config::from_prose_toml_str(&dumped).expect("reparses");
+    let (reparsed, notices) = Config::from_prose_toml_str(&dumped).expect("reparses");
 
+    assert!(
+        notices.is_empty(),
+        "a serialized config reads back an unknown key: {notices:?}"
+    );
     assert_eq!(project(&reparsed), project(&config));
 }
 
@@ -116,6 +120,30 @@ fn from_prose_toml_str_empty_returns_defaults() {
 }
 
 #[test]
+fn from_prose_toml_str_names_the_dotted_path_of_a_nested_unknown_key() {
+    let (config, notices) =
+        Config::from_prose_toml_str("[rules.align-equals]\nno-such-facet = 1\n").expect("parses");
+
+    assert!(config.rules.align_equals.enabled);
+    assert_eq!(
+        notices,
+        ["warning: unknown key `rules.align-equals.no-such-facet` in [tool.prose]"]
+    );
+}
+
+#[test]
+fn from_prose_toml_str_reads_a_known_key_beside_an_unknown_one() {
+    let (config, notices) =
+        Config::from_prose_toml_str("code-line-length = 100\nno-such-key = 1\n").expect("parses");
+
+    assert_eq!(config.code_line_length, NonZeroUsize::new(100));
+    assert_eq!(
+        notices,
+        ["warning: unknown key `no-such-key` in [tool.prose]"]
+    );
+}
+
+#[test]
 fn from_prose_toml_str_reads_bare_root_keys() {
     let (config, _) = Config::from_prose_toml_str(
         "code-line-length = 120\n[rules]\nalphabetize-siblings = false\n",
@@ -137,18 +165,6 @@ fn from_prose_toml_str_returns_a_notice_for_each_unknown_key() {
             "warning: unknown key `first-bogus` in [tool.prose]",
             "warning: unknown key `second-bogus` in [tool.prose]",
         ]
-    );
-}
-
-#[test]
-fn from_prose_toml_str_returns_an_unknown_key_notice() {
-    let (config, notices) =
-        Config::from_prose_toml_str("code-line-length = 100\nno-such-key = 1\n").expect("parses");
-
-    assert_eq!(config.code_line_length, NonZeroUsize::new(100));
-    assert_eq!(
-        notices,
-        ["warning: unknown key `no-such-key` in [tool.prose]"]
     );
 }
 

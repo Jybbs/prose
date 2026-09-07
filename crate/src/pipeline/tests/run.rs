@@ -103,10 +103,11 @@ fn run_drops_a_whole_group_holding_one_suppressed_edit() {
     )]);
     let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
 
-    let (result, diagnostics, _) = pipeline.run(source).expect("filtered run succeeds");
+    let (result, diagnostics, fired) = pipeline.run(source).expect("filtered run succeeds");
 
     assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
     assert!(diagnostics.is_empty());
+    assert!(fired.is_empty());
 }
 
 #[test]
@@ -137,10 +138,11 @@ fn run_emits_lint_diagnostic_without_fix_per_lint_range() {
     })]);
     let source = parse("x = 1\ny = 2\n");
 
-    let (result, diagnostics, _) = pipeline.run(source).expect("lint-only run succeeds");
+    let (result, diagnostics, fired) = pipeline.run(source).expect("lint-only run succeeds");
 
     assert_eq!(result.text(), "x = 1\ny = 2\n");
     assert_eq!(diagnostics.len(), 2);
+    assert!(fired.is_empty());
     for diagnostic in &diagnostics {
         assert_eq!(diagnostic.severity, Severity::Lint);
         assert!(diagnostic.fix.is_none());

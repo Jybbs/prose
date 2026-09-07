@@ -1,10 +1,17 @@
-//! The three config file forms, and the notices raised while resolving
-//! them. One `Display` renders every notice, so each sink prints the
-//! same line.
+//! Names the config file forms and the notices raised while resolving
+//! them, rendering every notice through one `Display` so each sink
+//! prints the same line.
 
 use std::{fmt, path::Path};
 
 use super::de::unknown_key_notice;
+
+/// The config forms, highest precedence first.
+pub(super) const PRECEDENCE: [ConfigForm; 3] = [
+    ConfigForm::ProseToml,
+    ConfigForm::DotConfigProseToml,
+    ConfigForm::PyprojectTable,
+];
 
 /// A recognized prose-config source within a directory.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -206,11 +206,8 @@ fn second_pass(pipeline: &Pipeline, formatted: &Source) -> String {
     formatted
         .reparse_carrying(first.to_owned(), formatted.cell_offsets().clone())
         .ok()
-        .and_then(|source| pipeline.run(source).ok())
-        .map_or_else(
-            || first.to_owned(),
-            |(settled, _, _)| settled.text().to_owned(),
-        )
+        .and_then(|source| pipeline.format(source).ok())
+        .map_or_else(|| first.to_owned(), |settled| settled.text().to_owned())
 }
 
 /// The reproducing subset for a report over `formatted`, taking the

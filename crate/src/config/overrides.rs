@@ -10,9 +10,11 @@ use serde::{
     de::{Error as _, IntoDeserializer},
 };
 
-use super::de::deserialize_prose;
-use super::notice::{ConfigNotice, unknown_keys};
-use super::{Config, ConfigError};
+use super::{
+    Config, ConfigError,
+    de::deserialize_prose,
+    notice::{ConfigNotice, unknown_keys},
+};
 
 /// One override entry: the glob set its `paths` compile to and the
 /// partial body merged over the base of every file the globs match.

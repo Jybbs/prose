@@ -48,7 +48,7 @@ pub(super) fn reproducing_subset(
 /// rejected on both answer false. The source is rebuilt from `parsed`.
 fn leaves_an_edit(pipeline: &Pipeline, text: &str, parsed: &Parsed<ModModule>) -> bool {
     let source = Source::from_parsed_module(text.to_owned(), parsed.clone());
-    let Ok((formatted, _, _)) = pipeline.run(source) else {
+    let Ok(formatted) = pipeline.format(source) else {
         return false;
     };
     !pipeline.unsettled(&formatted).is_empty()
