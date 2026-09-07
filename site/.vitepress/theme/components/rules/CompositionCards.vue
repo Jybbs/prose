@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useData }       from 'vitepress'
 import { computed, ref } from 'vue'
 
 import FixtureNoChange from '../fixtures/FixtureNoChange.vue'
@@ -7,8 +8,7 @@ import FixtureToggle   from '../fixtures/FixtureToggle.vue'
 import RuleSegmentChip from './RuleSegmentChip.vue'
 
 import { useHashOpen }                    from '../../../lib/composables/use-hash-open'
-import { fixtureEntry }                   from '../../../lib/fixtures/entry'
-import type { FixtureEntry }              from '../../../lib/fixtures/fixtures.data'
+import { COMPOSITION_RULE, fixtureEntry, type FixtureEntry } from '../../../lib/fixtures/entry'
 import type { CompositionCase }           from '../../../lib/rules/composition'
 import { data as composition }            from '../../../lib/rules/composition.data'
 import { casesForRule, type RuleSegment } from '../../../lib/rules/rule-view'
@@ -16,7 +16,6 @@ import { data as rules }                  from '../../../lib/rules/rules.data'
 import type { SavedSession }              from '../../../lib/sandbox/session'
 import { railPaint }                      from '../../../lib/shared/family-rail'
 import type { FixtureTab }                from '../../../lib/shared/fixture-tab'
-import { inlineCode }                     from '../../../lib/shared/inline-code'
 import InlineProse                        from '../base/InlineProse.vue'
 
 interface CardRow extends FixtureEntry {
@@ -31,16 +30,18 @@ interface CardRow extends FixtureEntry {
 
 const props = defineProps<{ rule?: string }>()
 
+const { frontmatter } = useData()
+
 function toCardRow(entry: CompositionCase): CardRow {
   const families = entry.rules.map(slug => rules.bySlug[slug]?.family ?? null)
   return {
-    ...fixtureEntry('composition', entry.case),
+    ...fixtureEntry(frontmatter.value, COMPOSITION_RULE, entry.case),
     case           : entry.case,
     dominantFamily : families[0] ?? null,
     headlinePaint  : railPaint(families, 'to right'),
     railPaint      : railPaint(families),
     sandboxSeed    : { configToml: entry.configToml, source: entry.source },
-    titleHtml      : inlineCode(entry.title),
+    titleHtml      : entry.titleHtml,
     segments       : entry.rules.map((slug, idx) => ({
       family : families[idx] ?? null,
       index  : idx + 1,

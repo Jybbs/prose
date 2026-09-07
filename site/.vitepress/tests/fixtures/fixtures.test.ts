@@ -1,6 +1,7 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
+import { fixtureEntry, fixtureId }              from '../../lib/fixtures/entry'
 import { LINT_FINDINGS_FILE, readLintFindings } from '../../lib/fixtures/lint-findings'
 import { readFixtureToggle }                    from '../../lib/fixtures/toggle'
 import * as walker                              from '../../lib/fixtures/walker'
@@ -19,6 +20,36 @@ describe('walkFixtures', () => {
     expect(cases[0].rule).toBeTruthy()
     expect(cases[0].caseName).toBeTruthy()
     expect(cases[0].id).toBe(`${cases[0].rule}/${cases[0].caseName}`)
+  })
+})
+
+describe('fixtureId', () => {
+  it('joins a rule and case into the key a page frontmatter carries', () => {
+    expect(fixtureId('align_equals', 'basic_run')).toBe('align_equals/basic_run')
+  })
+
+  it('keys every walked case the same way', () => {
+    expect(cases.every(entry => entry.id === fixtureId(entry.rule, entry.caseName))).toBe(true)
+  })
+})
+
+describe('fixtureEntry', () => {
+  const entry      = { changesSource: true, hasFindings: false, hasToggle: true,
+                       inputHtml: '<pre>a</pre>', outputHtml: '<pre>b</pre>' }
+  const frontmatter = { fixtures: { 'align_equals/basic_run': entry } }
+
+  it('reads the entry a page carries for a rule and case', () => {
+    expect(fixtureEntry(frontmatter, 'align_equals', 'basic_run')).toBe(entry)
+  })
+
+  it('names a case the page does not carry', () => {
+    expect(() => fixtureEntry(frontmatter, 'align_equals', 'absent'))
+      .toThrow(/Fixture case "align_equals\/absent" not registered/)
+  })
+
+  it('names the case where the page carries no fixtures at all', () => {
+    expect(() => fixtureEntry({}, 'align_equals', 'basic_run'))
+      .toThrow(/Fixture case "align_equals\/basic_run" not registered/)
   })
 })
 

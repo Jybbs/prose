@@ -12,7 +12,7 @@ describe('readCompositionCases', () => {
   })
 
   it('titles each case from its meta.toml, falling back to the directory name', () => {
-    expect(cases().map(entry => entry.title))
+    expect(cases().map(entry => entry.titleHtml))
       .toEqual(['Alpha Runs Ahead of Beta', 'Bare Title Case', 'Beta Settles Alone'])
   })
 
@@ -34,6 +34,21 @@ describe('readCompositionCases', () => {
 
   it('rejects a case declaring no harness rules even where it never renders', () => {
     expect(() => cases('composition-no-rules')).toThrow(/missing \[harness\]\.rules/)
+  })
+})
+
+describe('compositionDir', () => {
+  it('resolves the composition directory inside a crate fixture tree', () => {
+    expect(composition.compositionDir('/repo/crate'))
+      .toBe('/repo/crate/tests/fixtures/composition')
+  })
+})
+
+describe('readCompositionData', () => {
+  it('pairs the previewable cases with an index built from those same cases', () => {
+    const data = composition.readCompositionData(fixture('composition'))
+    expect(data.cases).toEqual(cases())
+    expect(data.byRule).toEqual(composition.byRule(data.cases))
   })
 })
 

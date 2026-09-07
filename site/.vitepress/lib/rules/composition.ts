@@ -1,10 +1,13 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import * as walker     from '../fixtures/walker'
-import { toTitleCase } from '../shared/title-case'
-import { parseToml }   from '../shared/toml'
-import { tomlText }    from '../shared/toml-text'
+import { COMPOSITION_RULE } from '../fixtures/entry'
+import * as walker          from '../fixtures/walker'
+import { inlineCode }       from '../shared/inline-code'
+import { fixturesDirFrom }  from '../shared/paths'
+import { toTitleCase }      from '../shared/title-case'
+import { parseToml }        from '../shared/toml'
+import { tomlText }         from '../shared/toml-text'
 
 type CaseConfig = Record<string, unknown> & { harness?: { rules?: readonly string[] } }
 
@@ -13,7 +16,12 @@ export interface CompositionCase {
   configToml : string
   rules      : readonly string[]
   source     : string
-  title      : string
+  titleHtml  : string
+}
+
+export interface CompositionData {
+  byRule : Record<string, readonly string[]>
+  cases  : readonly CompositionCase[]
 }
 
 // Inverts the per-case rule list, each rule's cases holding the order the
@@ -26,12 +34,17 @@ export function byRule(cases: readonly CompositionCase[]): Record<string, readon
   return index
 }
 
+// Resolves the composition directory inside one crate's fixture tree.
+export function compositionDir(crate: string): string {
+  return path.join(fixturesDirFrom(crate), COMPOSITION_RULE)
+}
+
 // Validates every case's harness rules and reads the ones a `meta.toml` marks
 // previewable.
-export function readCompositionCases(compositionDir: string): CompositionCase[] {
+export function readCompositionCases(dir: string): CompositionCase[] {
   const cases: CompositionCase[] = []
-  for (const caseName of walker.subdirNames(compositionDir)) {
-    const caseDir = path.join(compositionDir, caseName)
+  for (const caseName of walker.subdirNames(dir)) {
+    const caseDir = path.join(dir, caseName)
     const config  = parseToml(path.join(caseDir, walker.CONFIG_FILE)) as CaseConfig
     const rules   = config.harness?.rules
     if (rules === undefined) {
@@ -47,10 +60,17 @@ export function readCompositionCases(compositionDir: string): CompositionCase[] 
       configToml : seedToml(config),
       rules,
       source     : fs.readFileSync(inputPath, 'utf8'),
-      title      : walker.fixtureTitle(docs) ?? toTitleCase(caseName)
+      titleHtml  : inlineCode(walker.fixtureTitle(docs) ?? toTitleCase(caseName))
     })
   }
   return cases
+}
+
+// Reads the previewable cases and indexes them by rule, the pair the composition
+// page and the rule pages both read.
+export function readCompositionData(dir: string): CompositionData {
+  const cases = readCompositionCases(dir)
+  return { byRule: byRule(cases), cases }
 }
 
 // Everything outside `[harness]` is the prose config the case formats under.

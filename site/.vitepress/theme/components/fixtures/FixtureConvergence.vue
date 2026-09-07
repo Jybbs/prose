@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useData }  from 'vitepress'
+import { computed } from 'vue'
+
 import { fixtureEntry } from '../../../lib/fixtures/entry'
 import InlineProse      from '../base/InlineProse.vue'
 
@@ -13,16 +16,18 @@ const props = defineProps<{
   rule : string
 }>()
 
-const entry = fixtureEntry(props.rule, props.case)
+const { frontmatter } = useData()
+
+const entry = computed(() => fixtureEntry(frontmatter.value, props.rule, props.case))
 
 // A fixture that rewrites its input settles on the run after the one that
 // changed it, whereas a fixed-point fixture is already settled on run one.
-const runs: Run[] = entry.changesSource
+const runs = computed<Run[]>(() => entry.value.changesSource
   ? [
-      { badge: 'changed', html: entry.outputHtml, label: 'Run 1' },
+      { badge: 'changed', html: entry.value.outputHtml, label: 'Run 1' },
       { badge: 'settled', label: 'Run 2' }
     ]
-  : [{ badge: 'settled', label: 'Run 1' }]
+  : [{ badge: 'settled', label: 'Run 1' }])
 </script>
 
 <template>

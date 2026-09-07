@@ -2,21 +2,20 @@ import fs from 'node:fs/promises'
 
 import matter from 'gray-matter'
 
-import { readLintFindings } from './lint-findings'
-import { snapshotPath }     from './walker'
+import type { FixtureFlags } from './entry'
+import { readLintFindings }  from './lint-findings'
+import { snapshotPath }      from './walker'
 
-interface FixtureToggleState {
-  changesSource : boolean
-  hasFindings   : boolean
-  hasToggle     : boolean
-  inputRaw      : string
-  output        : string
+interface FixtureToggleState extends FixtureFlags {
+  inputRaw : string
+  output   : string
 }
 
-// Reads a fixture's input/snapshot pair and lint findings, deriving the
-// before/after toggle signal both fixture loaders key on. The snapshot
-// strips its insta frontmatter and normalizes trailing whitespace before
-// the byte compare against the input.
+// Reads a fixture's input, its snapshot, and its lint findings, and derives
+// whether the card shows a before-and-after toggle, which the rule-fixture
+// loader and the page renderer both read. The snapshot drops its insta
+// frontmatter and normalizes trailing whitespace before the byte comparison
+// against the input.
 export async function readFixtureToggle(inputPath: string): Promise<FixtureToggleState> {
   const [inputRaw, snapRaw] = await Promise.all([
     fs.readFile(inputPath,               'utf8'),

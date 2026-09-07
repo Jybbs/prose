@@ -1,5 +1,6 @@
 import { fc, test } from '@fast-check/vitest'
 
+import { escapeHtml }       from '../../lib/shared/escape-html'
 import { railPaint }        from '../../lib/shared/family-rail'
 import { inlineCode }       from '../../lib/shared/inline-code'
 import { externalAttrs }    from '../../lib/shared/links'
@@ -38,10 +39,34 @@ describe('formatFolio', () => {
   })
 })
 
+describe('escapeHtml', () => {
+  it.each([
+    ['a & b',       'a &amp; b'],
+    ['<b>',         '&lt;b&gt;'],
+    ['say "hi"',    'say &quot;hi&quot;'],
+    ['plain text',  'plain text'],
+    ['',            '']
+  ])('escapes %j', (input, expected) => {
+    expect(escapeHtml(input)).toBe(expected)
+  })
+
+  it('escapes the ampersand before the entities it introduces', () => {
+    expect(escapeHtml('&lt;')).toBe('&amp;lt;')
+  })
+})
+
 describe('inlineCode', () => {
   it.each([
-    ['use `prose format`', 'use <code>prose format</code>'],
-    ['<script>x</script>', '&lt;script&gt;x&lt;/script&gt;']
+    ['use `prose format`',                    'use <code>prose format</code>'],
+    ['<script>x</script>',                    '&lt;script&gt;x&lt;/script&gt;'],
+    ['`a` and `b`',                           '<code>a</code> and <code>b</code>'],
+    ['Module constant `aa` is not SCREAMING_CASE',
+     'Module constant <code>aa</code> is not SCREAMING_CASE'],
+    ['`<T>` becomes `T | None`',
+     '<code>&lt;T&gt;</code> becomes <code>T | None</code>'],
+    ['Consider inlining `", "`',              'Consider inlining <code>&quot;, &quot;</code>'],
+    ['a lone ` backtick',                     'a lone ` backtick'],
+    ['plain text',                            'plain text']
   ])('renders inline code and escapes raw markup in %j', (input, expected) => {
     expect(inlineCode(input)).toBe(expected)
   })
