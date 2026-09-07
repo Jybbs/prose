@@ -35,12 +35,13 @@ export function cardShell(...children: JSXNode[]): JSXNode {
   return el('div',
     {
       style: {
-        backgroundColor : PALETTE.woodsmoke,
-        display         : 'flex',
-        flexDirection   : 'column',
-        height          : '100%',
-        position        : 'relative',
-        width           : '100%'
+        backgroundColor     : PALETTE.woodsmoke,
+        display             : 'flex',
+        flexDirection       : 'column',
+        fontFeatureSettings : '"rvrn" 0',
+        height              : '100%',
+        position            : 'relative',
+        width               : '100%'
       }
     },
     ...children
