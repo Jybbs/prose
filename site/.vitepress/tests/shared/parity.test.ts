@@ -25,12 +25,12 @@ const slugs            = new Set(discoverRuleSlugs(rulesDir(import.meta.url)).ma
 
 describe('family registry and stylesheet parity', () => {
   it('every glossary family has a [data-family] accent, with no orphans', () => {
-    expect(accentSlugs()).toEqual(glossaryFamilies)
+    expect(accentSlugs()).toStrictEqual(glossaryFamilies)
   })
 
   it('FAMILY_ORDER covers FAMILY_META, and GLOSSARY_FAMILY_META adds cli and engine', () => {
-    expect.soft([...registries.FAMILY_ORDER].sort()).toEqual(Object.keys(registries.FAMILY_META).sort())
-    expect.soft(glossaryFamilies).toEqual([...Object.keys(registries.FAMILY_META), 'cli', 'engine'].sort())
+    expect.soft([...registries.FAMILY_ORDER].sort()).toStrictEqual(Object.keys(registries.FAMILY_META).sort())
+    expect.soft(glossaryFamilies).toStrictEqual([...Object.keys(registries.FAMILY_META), 'cli', 'engine'].sort())
   })
 })
 

@@ -11,7 +11,7 @@ export function expectSlugIndex(
   list  : (dir: string) => ReadonlyArray<{ slug: string }>,
   dir   : string
 ): void {
-  expect([...index(dir).keys()]).toEqual(list(dir).map(entry => entry.slug))
+  expect([...index(dir).keys()]).toStrictEqual(list(dir).map(entry => entry.slug))
   expectMemoized(index, dir)
 }
 

@@ -22,14 +22,14 @@ describe('lineHtml', () => {
 
 describe('tokenLines', () => {
   it('maps each line to styled tokens through the shared highlighter', async () => {
-    expect(await typewriter.tokenLines('a = 1\n')).toEqual([
+    expect(await typewriter.tokenLines('a = 1\n')).toStrictEqual([
       [{ content: 'a = 1', style: 'color:red' }],
       []
     ])
   })
 
   it('leaves a token no theme rule matches as an empty style string', async () => {
-    expect(await typewriter.tokenLines('  ')).toEqual([[{ content: '  ', style: '' }]])
+    expect(await typewriter.tokenLines('  ')).toStrictEqual([[{ content: '  ', style: '' }]])
   })
 })
 
@@ -63,7 +63,7 @@ describe('typingPlan', () => {
     ['same',    'same',    { cur: { max: 0, midEnd: 1 }, floor: 0, next: { max: 0, midEnd: 1 }, prefix: 1 }],
     ['a',       'a\nb',    { cur: { max: 0, midEnd: 1 }, floor: 0, next: { max: 1, midEnd: 2 }, prefix: 1 }]
   ])('plans the run from %j to %j', (current, next, expected) => {
-    expect(typewriter.typingPlan(current, next)).toEqual({
+    expect(typewriter.typingPlan(current, next)).toStrictEqual({
       ...expected,
       cur  : { ...expected.cur,  lines: current.split('\n') },
       next : { ...expected.next, lines: next.split('\n') }

@@ -74,9 +74,9 @@ describe('PerRuleFacets', () => {
     const w = mountFacets()
     expect(w.get('.per-rule-facets-scope').text()).toBe('every rule')
     expect(w.findAllComponents(InlineRuleLink).map(c => c.props('slug')))
-      .toEqual(['reflow-calls', 'reflow-collections'])
+      .toStrictEqual(['reflow-calls', 'reflow-collections'])
     expect(w.findAll('.per-rule-facets-key').map(k => k.text()))
-      .toEqual(['enabled', 'max-args', 'keep-multiline-literals', 'max-atomics'])
+      .toStrictEqual(['enabled', 'max-args', 'keep-multiline-literals', 'max-atomics'])
   })
 
   it('renders each facet type, default, and rendered meaning', () => {

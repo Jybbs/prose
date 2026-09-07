@@ -2,7 +2,7 @@ import { directiveParts } from '../../lib/suppression/directive-parts'
 
 describe('directiveParts', () => {
   it('tokenizes a bare form into comment, namespace, and action', () => {
-    expect(directiveParts('# prose: off')).toEqual([
+    expect(directiveParts('# prose: off')).toStrictEqual([
       { role : 'comment',   text : '#'      },
       { role : 'namespace', text : 'prose:' },
       { role : 'action',    text : 'off'    }
@@ -10,7 +10,7 @@ describe('directiveParts', () => {
   })
 
   it('carries a bracket payload as a fourth part', () => {
-    expect(directiveParts('# prose: skip[<rule>, ...]')).toEqual([
+    expect(directiveParts('# prose: skip[<rule>, ...]')).toStrictEqual([
       { role : 'comment',   text : '#'             },
       { role : 'namespace', text : 'prose:'        },
       { role : 'action',    text : 'skip'          },

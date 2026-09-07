@@ -63,8 +63,8 @@ describe('MagicMoveRenderer', () => {
     // takes the whole call rather than re-inserting them.
     renderer.replace(step(token('a', 'x'), token('b', ' = 1')))
     expect(rebuilds()).toBe(1)
-    expect([...container.children]).toEqual(before)
-    expect(contents(container)).toEqual(['x', ' = 1'])
+    expect([...container.children]).toStrictEqual(before)
+    expect(contents(container)).toStrictEqual(['x', ' = 1'])
   })
 
   it.each([
@@ -76,7 +76,7 @@ describe('MagicMoveRenderer', () => {
     renderer.replace(step(token('a', 'x'), token('b', ' = 1')))
     renderer.replace(next)
     expect(rebuilds()).toBe(2)
-    expect(contents(container)).toEqual(expected)
+    expect(contents(container)).toStrictEqual(expected)
   })
 
   it('reapplies style when a carried token restyles', () => {
@@ -146,6 +146,6 @@ describe('MagicMoveRenderer', () => {
 
     renderer.replace(step(token('a', 'x'), token('b', ' = 2')))
     expect(rebuilds()).toBe(after)
-    expect(contents(container)).toEqual(['x', ' = 2'])
+    expect(contents(container)).toStrictEqual(['x', ' = 2'])
   })
 })

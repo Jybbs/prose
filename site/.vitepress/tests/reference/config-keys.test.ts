@@ -8,12 +8,12 @@ const declared = declaredKeys(proseSchema(repoRoot(import.meta.url)))
 
 describe('derived config keys', () => {
   it('covers every top-level schema key outside the nested tables', () => {
-    expect(keys.top.map(row => row.key).toSorted()).toEqual(declared.top.toSorted())
+    expect(keys.top.map(row => row.key).toSorted()).toStrictEqual(declared.top.toSorted())
   })
 
   it('mirrors the cache and imports sub-tables', () => {
-    expect(keys.cache.map(row => row.key)).toEqual(declared.cache.toSorted())
-    expect(keys.imports.map(row => row.key)).toEqual(declared.imports.toSorted())
+    expect(keys.cache.map(row => row.key)).toStrictEqual(declared.cache.toSorted())
+    expect(keys.imports.map(row => row.key)).toStrictEqual(declared.imports.toSorted())
   })
 
   it('renders a null default as unset', () => {

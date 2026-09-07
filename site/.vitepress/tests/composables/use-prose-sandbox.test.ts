@@ -120,7 +120,7 @@ describe('useProseSandbox', () => {
     await api.start()
     // The probe adoption defers past the publish paint, so the set lands a
     // few frames after the format rather than in the same task.
-    await expect.poll(() => api.eligible.value).toEqual(['align-equals', 'space-statements'])
+    await expect.poll(() => api.eligible.value).toStrictEqual(['align-equals', 'space-statements'])
   })
 
   it('probes each eligible rule for the facets that can affect the source', async () => {
@@ -137,8 +137,8 @@ describe('useProseSandbox', () => {
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
     await api.start()
     await vi.waitFor(() => {
-      expect(api.facetImpact.value['align-equals']).toEqual(['max-shift', 'allow-pattern'])
-      expect(api.facetImpact.value['space-statements']).toEqual([])
+      expect(api.facetImpact.value['align-equals']).toStrictEqual(['max-shift', 'allow-pattern'])
+      expect(api.facetImpact.value['space-statements']).toStrictEqual([])
     })
   })
 
@@ -181,7 +181,7 @@ describe('useProseSandbox', () => {
     await api.start()
     expect(api.formatted.value).toBe('OUT')
     expect(api.error.value).toBe('')
-    await expect.poll(() => api.eligible.value).toEqual([])
+    await expect.poll(() => api.eligible.value).toStrictEqual([])
   })
 
   it('probes the length knobs and keeps only the impactful ones', async () => {
@@ -194,7 +194,7 @@ describe('useProseSandbox', () => {
     })
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
     await api.start()
-    await expect.poll(() => api.lengthImpact.value).toEqual(['code-line-length'])
+    await expect.poll(() => api.lengthImpact.value).toStrictEqual(['code-line-length'])
   })
 
   it('caches the probe results per source and replays them without new runs', async () => {
@@ -213,7 +213,7 @@ describe('useProseSandbox', () => {
     const initialProbes = probeRuns()
     expect(initialProbes).toBeGreaterThan(0)
     api.source.value = 'seed b'
-    await expect.poll(() => api.facetImpact.value['space-statements']).toEqual([])
+    await expect.poll(() => api.facetImpact.value['space-statements']).toStrictEqual([])
     api.source.value = 'seed a'
     await expect.poll(() => api.facetImpact.value['align-equals']).toBeDefined()
     expect(probeRuns()).toBe(initialProbes)
@@ -412,7 +412,7 @@ describe('useProseSandbox', () => {
 
   it('reads and writes a length knob and clears it back to default', () => {
     const api = sandbox(okLoader)
-    expect(api.lengths).toEqual(SCHEMA.lengths)
+    expect(api.lengths).toStrictEqual(SCHEMA.lengths)
     expect(api.lengthValue('docstring-line-length')).toBe(76)
     api.setLength('docstring-line-length', 70)
     expect(api.configToml.value).toContain('docstring-line-length = 70')

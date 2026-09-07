@@ -56,9 +56,9 @@ describe('Surfaces', () => {
     const cards = mountSurfaces().findAll('.surface-card')
     expect(cards).toHaveLength(4)
     expect(cards.map(c => c.attributes('data-family')))
-      .toEqual(['alignment', 'ordering', 'alignment', 'ordering'])
+      .toStrictEqual(['alignment', 'ordering', 'alignment', 'ordering'])
     expect(cards.map(c => c.attributes('aria-hidden')))
-      .toEqual([undefined, undefined, 'true', 'true'])
+      .toStrictEqual([undefined, undefined, 'true', 'true'])
   })
 
   domTest('leaves every focusable node in the hidden copy out of the tab order', ({ reducedMotion }) => {

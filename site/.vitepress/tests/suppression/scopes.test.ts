@@ -25,7 +25,7 @@ describe('scopeBands', () => {
       { id : 'b', scope : 'file' },
       { id : 'c', scope : 'line' }
     ] as const)
-    expect(bands.map(b => b.scope)).toEqual([...scopes.SCOPE_ORDER])
-    expect(bands.map(b => b.items.map(i => i.id))).toEqual([['b'], [], ['a', 'c'], []])
+    expect(bands.map(b => b.scope)).toStrictEqual([...scopes.SCOPE_ORDER])
+    expect(bands.map(b => b.items.map(i => i.id))).toStrictEqual([['b'], [], ['a', 'c'], []])
   })
 })

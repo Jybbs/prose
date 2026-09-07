@@ -18,7 +18,7 @@ describe('discoverRules', () => {
   })
 
   it('collects pages outside a family directory as strays', () => {
-    expect(discovery.discoverRules(fixture('stray-page')).strayPages).toEqual(['loose.md'])
+    expect(discovery.discoverRules(fixture('stray-page')).strayPages).toStrictEqual(['loose.md'])
   })
 
   it('rejects bad-caption', () => {

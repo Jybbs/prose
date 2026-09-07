@@ -16,7 +16,7 @@ describe('SandboxSeedButton', () => {
     expect(link.attributes('aria-label')).toBe('Open this case in the sandbox')
     const href = link.attributes('href') ?? ''
     expect(href).toMatch(/^\/sandbox\/#1\./)
-    expect(await decodeShare(href.slice('/sandbox/'.length))).toEqual(seed)
+    expect(await decodeShare(href.slice('/sandbox/'.length))).toStrictEqual(seed)
   })
 
   it('renders nothing where the platform lacks the compression codec', async () => {

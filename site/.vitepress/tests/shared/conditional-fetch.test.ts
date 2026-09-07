@@ -36,7 +36,7 @@ describe('conditionalFetch', () => {
     await expect(conditionalFetch(makeSource())).resolves.toBe('fresh')
     const entry = await cacache.get(dir, 'probe')
     expect(JSON.parse(entry.data.toString())).toBe('fresh')
-    expect(entry.metadata).toEqual({ etag: 'W/"1"' })
+    expect(entry.metadata).toStrictEqual({ etag: 'W/"1"' })
   })
 
   it('sends the stored etag and keeps the payload on a 304', async () => {

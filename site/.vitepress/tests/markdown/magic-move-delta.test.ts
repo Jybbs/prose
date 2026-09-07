@@ -31,6 +31,6 @@ describe('lineChurn', () => {
   })
 
   it('reports the line height of each state', () => {
-    expect(lineChurn('a\nb', 'a\nb\nc\nd').lines).toEqual([2, 4])
+    expect(lineChurn('a\nb', 'a\nb\nc\nd').lines).toStrictEqual([2, 4])
   })
 })

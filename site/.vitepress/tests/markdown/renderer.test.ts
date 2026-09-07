@@ -37,7 +37,7 @@ describe('renderer', () => {
   it('renders an array-valued field to an array of HTML strings', async () => {
     const md  = await renderer.getRenderer()
     const out = renderer.renderInlineField(md, [{ tags: ['`a`', '`b`'] }], 'tags')
-    expect(out[0].tagsHtml).toEqual(['<code>a</code>', '<code>b</code>'])
+    expect(out[0].tagsHtml).toStrictEqual(['<code>a</code>', '<code>b</code>'])
   })
 
   it('replaces a fenced field with its rendered counterpart', async () => {

@@ -20,7 +20,7 @@ describe('readPackageVersions', () => {
   it('reads the pinned version of each named devDependency', () => {
     const semver = expect.stringMatching(/^\d+\.\d+\.\d+/)
     expect(version.readPackageVersions(site, ['@resvg/resvg-js', 'satori']))
-      .toEqual({ '@resvg/resvg-js': semver, satori: semver })
+      .toStrictEqual({ '@resvg/resvg-js': semver, satori: semver })
   })
 
   it.each([

@@ -81,7 +81,7 @@ describe('createTypingMachine', () => {
   it('freezes at the terminal state', () => {
     const { machine, states } = harness()
     machine.freezeAtEnd()
-    expect(states.at(-1)).toEqual({
+    expect(states.at(-1)).toStrictEqual({
       editProgress     : 3,
       entryIndex       : 1,
       phase            : 'reducedMotion',

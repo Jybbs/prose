@@ -12,17 +12,17 @@ vi.mock('../../lib/rules/rule-fixtures.data', () => ({
 
 describe('casesForRule', () => {
   it('resolves a fixture directory name to its kebab-case slug', () => {
-    expect(casesForRule('align_equals')).toEqual(['alpha_case', 'beta_case'])
+    expect(casesForRule('align_equals')).toStrictEqual(['alpha_case', 'beta_case'])
   })
 
   it('yields nothing for a rule no previewable case activates', () => {
-    expect(casesForRule('wrap_docstrings')).toEqual([])
+    expect(casesForRule('wrap_docstrings')).toStrictEqual([])
   })
 })
 
 describe('fixturesForRule', () => {
   it('returns the canonical case and examples registered for a rule', () => {
-    expect(fixturesForRule('align_equals')).toEqual({
+    expect(fixturesForRule('align_equals')).toStrictEqual({
       canonical : 'basic_run',
       examples  : [{ case: 'nested', title: 'Nested' }]
     })

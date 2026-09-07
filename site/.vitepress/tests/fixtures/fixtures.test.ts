@@ -64,7 +64,7 @@ describe('subdirNames', () => {
   it('lists rule directories in sorted order', () => {
     const names = walker.subdirNames(path.join(crate, 'tests', 'fixtures'))
     expect(names.length).toBeGreaterThan(0)
-    expect(names).toEqual([...names].sort())
+    expect(names).toStrictEqual([...names].sort())
   })
 })
 
@@ -84,7 +84,7 @@ describe('readLintFindings', () => {
   })
 
   it('returns an empty list when no sidecar is present', () => {
-    expect(readLintFindings(absent)).toEqual([])
+    expect(readLintFindings(absent)).toStrictEqual([])
   })
 })
 

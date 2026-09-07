@@ -32,7 +32,7 @@ describe('seedUrl', () => {
     const url = await seedUrl('code-line-length = 40\n', 'x = 1\n') ?? ''
     expect(url).toMatch(/^\/sandbox\/#1\./)
     expect(await decodeShare(url.slice('/sandbox/'.length)))
-      .toEqual({ configToml: 'code-line-length = 40\n', source: 'x = 1\n' })
+      .toStrictEqual({ configToml: 'code-line-length = 40\n', source: 'x = 1\n' })
   })
 
   it('yields no link where the platform lacks the compression codec', async () => {
