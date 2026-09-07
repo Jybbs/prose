@@ -2,7 +2,7 @@ import fs   from 'node:fs'
 import path from 'node:path'
 
 import { enumeratePages }       from '../../lib/og/pages'
-import { cardKeyer, RENDERERS } from '../../lib/og/render/cache'
+import { cardKeyer, RENDERERS } from '../../lib/og/render/card-key'
 import { siteDir }              from '../../lib/shared/paths'
 import { readPackageVersions }  from '../../lib/shared/version'
 import { fixtureDir }           from '../support'
@@ -73,16 +73,16 @@ describe('cardKeyer', () => {
 
 describe('RENDERERS', () => {
   const packageOf = (spec: string): string =>
-    spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]
+    spec.split('/', spec.startsWith('@') ? 2 : 1).join('/')
 
-  it('lists only packages the card renderer still imports', () => {
-    const dir   = path.join(import.meta.dirname, '../../lib/og/render')
-    const bare  = /from '([^.'][^']*)'/g
-    const specs = new Set(fs.readdirSync(dir)
-      .filter(file => /\.(ts|mjs)$/.test(file))
-      .flatMap(file => [...fs.readFileSync(path.join(dir, file), 'utf8').matchAll(bare)])
-      .map(([, spec]) => packageOf(spec)))
+  const dir   = path.join(import.meta.dirname, '../../lib/og/render')
+  const bare  = /from '([^.'][^']*)'/g
+  const specs = new Set(fs.readdirSync(dir)
+    .filter(file => /\.(ts|mjs)$/.test(file))
+    .flatMap(file => [...fs.readFileSync(path.join(dir, file), 'utf8').matchAll(bare)])
+    .map(([, spec]) => packageOf(spec)))
 
-    expect([...specs]).toEqual(expect.arrayContaining([...RENDERERS]))
+  it.each(RENDERERS)('%s is still imported by the card renderer', name => {
+    expect(specs).toContain(name)
   })
 })

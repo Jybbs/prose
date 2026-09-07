@@ -18,19 +18,16 @@ describe('readCargoVersion', () => {
 
 describe('readPackageVersions', () => {
   it('reads the pinned version of each named devDependency', () => {
-    const pinned = version.readPackageVersions(site, ['@resvg/resvg-js', 'satori'])
-    expect(pinned['@resvg/resvg-js']).toMatch(/^\d+\.\d+\.\d+/)
-    expect(pinned.satori).toMatch(/^\d+\.\d+\.\d+/)
+    const semver = expect.stringMatching(/^\d+\.\d+\.\d+/)
+    expect(version.readPackageVersions(site, ['@resvg/resvg-js', 'satori']))
+      .toEqual({ '@resvg/resvg-js': semver, satori: semver })
   })
 
-  it('throws when the manifest has no such devDependency', () => {
-    const dir = fixtureDir(import.meta.dirname, 'package-no-pin')
-    expect(() => version.readPackageVersions(dir, ['satori']))
-      .toThrow(/devDependencies\['satori'\]/)
-  })
-
-  it('throws when the manifest has no devDependencies at all', () => {
-    const dir = fixtureDir(import.meta.dirname, 'package-no-dev-deps')
+  it.each([
+    ['throws when the manifest has no such devDependency',      'package-no-pin'],
+    ['throws when the manifest has no devDependencies at all',  'package-no-dev-deps']
+  ])('%s', (_name, fixture) => {
+    const dir = fixtureDir(import.meta.dirname, fixture)
     expect(() => version.readPackageVersions(dir, ['satori']))
       .toThrow(/devDependencies\['satori'\]/)
   })

@@ -1,4 +1,4 @@
-import { useData } from 'vitepress'
+import { inBrowser, useData } from 'vitepress'
 import { computed, inject, provide, watchEffect, type ComputedRef, type InjectionKey } from 'vue'
 
 import { data as rules, type RenderedRule } from '../rules/rules.data'
@@ -20,17 +20,15 @@ function buildCurrentRule(): ComputedRef<RenderedRule | null> {
   })
 }
 
-export function provideCurrentRule(): ComputedRef<RenderedRule | null> {
-  const entry = buildCurrentRule()
-  provide(CURRENT_RULE_KEY, entry)
-  return entry
+export function provideCurrentRule(): void {
+  provide(CURRENT_RULE_KEY, buildCurrentRule())
 }
 
 export function useCurrentRule(): ComputedRef<RenderedRule | null> {
   return inject(CURRENT_RULE_KEY, null) ?? buildCurrentRule()
 }
 
-export function useCurrentFamily(): ComputedRef<RuleFamily | null> {
+function useCurrentFamily(): ComputedRef<RuleFamily | null> {
   const { page } = useData()
   return computed(() => {
     const family = routeSegments(page.value.relativePath)[0]
@@ -43,7 +41,7 @@ export function useCurrentFamily(): ComputedRef<RuleFamily | null> {
 export function useFamilyDataset(): void {
   const family = useCurrentFamily()
   watchEffect(() => {
-    if (typeof document === 'undefined') return
+    if (!inBrowser) return
     if (family.value) document.body.dataset.family = family.value
     else              delete document.body.dataset.family
   })

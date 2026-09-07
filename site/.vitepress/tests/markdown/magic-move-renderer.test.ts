@@ -13,7 +13,8 @@ const token = (key: string, content: string, htmlStyle?: Record<string, string>)
 
 const step = (...tokens: Token[]) => ({ tokens } as never)
 
-// Counts how often the container rebuilds its children.
+// Builds a renderer over a fresh container, counting how often it rebuilds
+// its children.
 const mounted = () => {
   const container = document.createElement('pre')
   document.body.append(container)
@@ -66,22 +67,16 @@ describe('MagicMoveRenderer', () => {
     expect(contents(container)).toEqual(['x', ' = 1'])
   })
 
-  it('rebuilds when a token drops out, dropping the stranded element', () => {
+  it.each([
+    ['a token drops out, dropping the stranded element',       step(token('a', 'x')),                     ['x']],
+    ['one token is substituted for another of the same count', step(token('a', 'x'), token('c', ' = 2')), ['x', ' = 2']]
+  ])('rebuilds when %s', (_name, next, expected) => {
     const { container, rebuilds, renderer } = mounted()
 
     renderer.replace(step(token('a', 'x'), token('b', ' = 1')))
-    renderer.replace(step(token('a', 'x')))
+    renderer.replace(next)
     expect(rebuilds()).toBe(2)
-    expect(contents(container)).toEqual(['x'])
-  })
-
-  it('rebuilds when one token is substituted for another of the same count', () => {
-    const { container, rebuilds, renderer } = mounted()
-
-    renderer.replace(step(token('a', 'x'), token('b', ' = 1')))
-    renderer.replace(step(token('a', 'x'), token('c', ' = 2')))
-    expect(rebuilds()).toBe(2)
-    expect(contents(container)).toEqual(['x', ' = 2'])
+    expect(contents(container)).toEqual(expected)
   })
 
   it('reapplies style when a carried token restyles', () => {

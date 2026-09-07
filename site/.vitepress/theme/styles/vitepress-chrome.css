@@ -35,8 +35,8 @@
 }
 
 
-/* VitePress sets this tab's line-height as a ratio of a font size the sheet
-   below shrinks, so the rule pins it at 3rem. */
+/* VitePress derives this label's line-height from a font size this rule shrinks,
+   so 3rem restores the height the default theme computes. */
 .vp-code-group .tabs label {
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-text-sm);

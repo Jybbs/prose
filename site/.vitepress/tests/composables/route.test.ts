@@ -2,11 +2,15 @@
 import { mount }              from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 
-const { route } = vi.hoisted(() => ({
-  route: { value: { relativePath: 'rules/alignment/align-equals.md' } }
+const { browser, route } = vi.hoisted(() => ({
+  browser : { value: true },
+  route   : { value: { relativePath: 'rules/alignment/align-equals.md' } }
 }))
 
-vi.mock('vitepress', () => ({ useData: () => ({ page: route }) }))
+vi.mock('vitepress', () => ({
+  get inBrowser() { return browser.value },
+  useData: () => ({ page: route })
+}))
 vi.mock('../../lib/rules/rules.data', () => ({
   data: { bySlug: { 'align-equals': { name: 'Align Equals', slug: 'align-equals' } } }
 }))
@@ -20,13 +24,12 @@ describe('useCurrentRule', () => {
     expect(mountSetup(composables.useCurrentRule).value?.slug).toBe('align-equals')
   })
 
-  it('returns null off a rule page', () => {
-    route.value = { relativePath: 'reference/cli.md' }
-    expect(mountSetup(composables.useCurrentRule).value).toBeNull()
-  })
-
-  it('returns null on a rules index route', () => {
-    route.value = { relativePath: 'rules/index.md' }
+  it.each([
+    ['off a rule page',                  'reference/cli.md'],
+    ['on a rules index route',           'rules/index.md'],
+    ['on a route whose slug is unknown', 'rules/alignment/not-a-rule.md']
+  ])('returns null %s', (_name, relativePath) => {
+    route.value = { relativePath }
     expect(mountSetup(composables.useCurrentRule).value).toBeNull()
   })
 })
@@ -42,19 +45,9 @@ describe('provideCurrentRule', () => {
   })
 })
 
-describe('useCurrentFamily', () => {
-  it('reads the family segment of a rule route', () => {
-    route.value = { relativePath: 'rules/alignment/align-equals.md' }
-    expect(mountSetup(composables.useCurrentFamily).value).toBe('alignment')
-  })
-
-  it('returns null off the rules tree', () => {
-    route.value = { relativePath: 'usage/index.md' }
-    expect(mountSetup(composables.useCurrentFamily).value).toBeNull()
-  })
-})
-
 describe('useFamilyDataset', () => {
+  beforeEach(() => { browser.value = true })
+
   it('mirrors the family of a rule route onto the body element', () => {
     route.value = { relativePath: 'rules/alignment/align-equals.md' }
     mountSetup(composables.useFamilyDataset)
@@ -66,5 +59,13 @@ describe('useFamilyDataset', () => {
     route.value = { relativePath: 'usage/index.md' }
     mountSetup(composables.useFamilyDataset)
     expect(document.body.dataset.family).toBeUndefined()
+  })
+
+  it('leaves the attribute alone when there is no document', () => {
+    document.body.dataset.family = 'alignment'
+    browser.value = false
+    route.value = { relativePath: 'rules/ordering/alphabetize-siblings.md' }
+    mountSetup(composables.useFamilyDataset)
+    expect(document.body.dataset.family).toBe('alignment')
   })
 })
