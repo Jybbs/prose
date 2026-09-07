@@ -8,18 +8,18 @@
 //!     suppressed     A `# prose: off` region and a logical-line `# prose: skip`.
 //!     widened        Identifiers lengthened or shortened.
 //!
-//! Each mutation takes source text and hands back source text, reaching for
-//! whichever tree serves it. The reorders and the comment insertions run on
+//! Each mutation takes source text and returns source text, running on
+//! whichever tree models it. The reorders and the comment insertions run on
 //! the `libcst` concrete tree, where a statement's leading comment lines
 //! belong to the statement and travel with it. The rename and the redundant
 //! parentheses run on ruff's token stream and argument ranges, splicing the
 //! text those name, since `libcst` carries no walk that reaches every node.
 //! Both routes leave every byte no mutation names exactly as it was.
 //!
-//! A variant lands only where it parses, which holds a mutation that breaks
-//! the grammar out of the corpus. The check is ruff's parser, which accepts
-//! source CPython rejects semantically, a walrus inside an annotation among
-//! them, so a file already carrying one keeps its variants here.
+//! A variant is written only where it parses, which keeps a mutation that
+//! breaks the grammar out of the corpus. The check is ruff's parser, which
+//! accepts some source CPython rejects semantically, a walrus inside an
+//! annotation among it. A file already carrying one keeps its variants.
 
 use std::{
     error::Error,
@@ -40,7 +40,7 @@ use libcst_native::{
 use rand::{
     RngExt, SeedableRng,
     rngs::StdRng,
-    seq::{IteratorRandom, SliceRandom, index},
+    seq::{IndexedRandom, SliceRandom, index},
 };
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use ruff_python_ast::{
@@ -85,6 +85,7 @@ struct Args {
 
 /// Collects every call argument's range, which the redundant-parenthesis
 /// mutation wraps.
+#[derive(Default)]
 struct Arguments {
     ranges: Vec<TextRange>,
 }
@@ -102,7 +103,7 @@ impl<'a> SourceOrderVisitor<'a> for Arguments {
 /// One mutation's rewrite of a module's text, `None` where it does not apply.
 type Mutation = fn(&str, &mut StdRng) -> Option<String>;
 
-/// Returns `module` with a comment line leading a sample of its statements,
+/// Returns `text` with a comment line leading a sample of its statements,
 /// each at that statement's own indent.
 fn commented(text: &str, rng: &mut StdRng) -> Option<String> {
     let mut module = parse_module(text, None).ok()?;
@@ -122,8 +123,8 @@ fn crlf(text: &str, _rng: &mut StdRng) -> Option<String> {
     Some(render(&module))
 }
 
-/// True where `statement` is a lone string expression, the shape a docstring
-/// takes in the first seat of a body.
+/// True where `statement` is a lone string expression, the form a docstring
+/// takes as the first statement of a body.
 fn is_docstring(statement: &Statement) -> bool {
     matches!(statement, Statement::Simple(line)
         if matches!(line.body.as_slice(), [SmallStatement::Expr(expr)]
@@ -140,7 +141,7 @@ fn is_future(statement: &Statement) -> bool {
         }) if n.value == "__future__")))
 }
 
-/// A comment line carrying `text`.
+/// Builds a comment line carrying `text`.
 fn led(text: &'static str) -> EmptyLine<'static> {
     EmptyLine {
         comment: Some(Comment(text)),
@@ -160,7 +161,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 return Ok((0, 0, 0));
             }
             let written = mutated(path, &args.corpus, &args.destination, &args.seed)?;
-            Ok(written.map_or((1, 1, 0), |written| (1, 0, written)))
+            Ok(written.map_or((1, 1, 0), |count| (1, 0, count)))
         })
         .try_reduce(
             || (0, 0, 0),
@@ -185,7 +186,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/// Returns `module` with each class body's members reordered behind its
+/// Returns `text` with each class body's members reordered behind its
 /// docstring.
 fn members(text: &str, rng: &mut StdRng) -> Option<String> {
     let mut module = parse_module(text, None).ok()?;
@@ -206,8 +207,8 @@ fn members(text: &str, rng: &mut StdRng) -> Option<String> {
 }
 
 /// Writes every variant of the file at `path` under `destination` and returns
-/// how many landed, `None` where the file cannot be read, failing on the first
-/// variant it cannot write.
+/// how many landed, or `None` where the file cannot be read. A variant it
+/// cannot write fails the whole call.
 fn mutated(
     path: &Path,
     corpus: &Path,
@@ -241,7 +242,7 @@ fn mutated(
 /// redundant parentheses.
 fn parenthesized(text: &str, rng: &mut StdRng) -> Option<String> {
     let parsed = parse_ruff(text).ok()?;
-    let mut found = Arguments { ranges: Vec::new() };
+    let mut found = Arguments::default();
     walk_body(&mut found, &parsed.syntax().body);
     let wrap = sample(found.ranges.len(), rng)?
         .into_iter()
@@ -262,8 +263,9 @@ fn render(module: &Module) -> String {
     state.to_string()
 }
 
-/// Reorders `body`, holding every statement `pin` names ahead of the rest
-/// in the order they were written, and reports whether anything moved.
+/// Reorders `body`, keeping every statement `pin` names ahead of the rest
+/// in the order they were written. Returns whether the shuffle had two or
+/// more statements to move.
 fn reordered(
     body: &mut Vec<Statement>,
     rng: &mut StdRng,
@@ -284,21 +286,20 @@ fn reordered(
     moved
 }
 
-/// A wider or narrower spelling of `name`, or `None` where the result is not
-/// an identifier the grammar reads as one.
+/// Returns a wider or narrower spelling of `name`, or `None` where the result
+/// is not an identifier the grammar reads as one.
 fn respelled(name: &str, rng: &mut StdRng) -> Option<String> {
     let candidate = if rng.random::<f64>() < 0.5 {
         format!("{name}{}", "_w".repeat(rng.random_range(1..=3)))
     } else {
-        name.chars()
-            .take(name.chars().count().div_ceil(2))
-            .collect()
+        let half = name.chars().count().div_ceil(2);
+        name.chars().take(half).collect()
     };
     (candidate != name && is_identifier(&candidate)).then_some(candidate)
 }
 
-/// The slots a sampling mutation picks out of `count` candidates, `None`
-/// where there are none.
+/// Returns the slots a sampling mutation picks out of `count` candidates, or
+/// `None` where there are none.
 fn sample(count: usize, rng: &mut StdRng) -> Option<Vec<usize>> {
     (count > 0).then(|| {
         index::sample(rng, count, SAMPLE.min(count))
@@ -308,15 +309,15 @@ fn sample(count: usize, rng: &mut StdRng) -> Option<Vec<usize>> {
     })
 }
 
-/// A stream seeded from the run's seed and the file's own path, so a variant
-/// is the same whatever order the walk reaches the files in.
+/// Seeds a stream from the run's seed and the file's own path, so a variant is
+/// the same whatever order the walk reaches the files in.
 fn seeded(seed: &str, relative: &Path) -> StdRng {
     StdRng::seed_from_u64(BuildHasherDefault::<DefaultHasher>::default().hash_one((seed, relative)))
 }
 
-/// Returns `module` with its top-level statements reordered, each keeping the
-/// lines it owns. A `__future__` import and a leading docstring hold their
-/// seats ahead of the shuffle.
+/// Returns `text` with its top-level statements reordered, each keeping the
+/// lines it owns. A `__future__` import and a leading docstring keep their
+/// places ahead of the shuffle.
 fn shuffled(text: &str, rng: &mut StdRng) -> Option<String> {
     let mut module = parse_module(text, None).ok()?;
     reordered(&mut module.body, rng, |slot, held| {
@@ -325,8 +326,8 @@ fn shuffled(text: &str, rng: &mut StdRng) -> Option<String> {
     .then(|| render(&module))
 }
 
-/// Returns `text` with every range in `replacements` swapped for its text,
-/// skipping a range that starts inside the one before it.
+/// Returns `text` with each range in `replacements` replaced by the string
+/// paired with it, skipping any range that starts inside the range before it.
 fn spliced(
     text: &str,
     replacements: impl IntoIterator<Item = (TextRange, impl AsRef<str>)>,
@@ -346,15 +347,16 @@ fn spliced(
     out
 }
 
-/// Returns `module` with a `# prose: off` region wrapped around one top-level
+/// Returns `text` with a `# prose: off` region wrapped around one top-level
 /// statement and a `# prose: skip` closing one simple line.
 fn suppressed(text: &str, rng: &mut StdRng) -> Option<String> {
     let mut module = parse_module(text, None).ok()?;
-    let skipped = module
+    let simple = module
         .body
         .iter()
         .positions(|statement| matches!(statement, Statement::Simple(_)))
-        .choose(rng)?;
+        .collect_vec();
+    let skipped = *simple.choose(rng)?;
     let Statement::Simple(SimpleStatementLine {
         trailing_whitespace,
         ..
@@ -371,15 +373,16 @@ fn suppressed(text: &str, rng: &mut StdRng) -> Option<String> {
     module.body[region]
         .leading_lines()
         .push(led("# prose: off"));
-    match module.body.get_mut(region + 1) {
-        Some(next) => next.leading_lines().insert(0, led("# prose: on")),
-        None => module.footer.insert(0, led("# prose: on")),
-    }
+    let lines = match module.body.get_mut(region + 1) {
+        Some(next) => next.leading_lines(),
+        None => &mut module.footer,
+    };
+    lines.insert(0, led("# prose: on"));
     Some(render(&module))
 }
 
-/// Every `.py` file under `root`, in a stable order. The walk carries no
-/// standard filter, so a hidden directory and an ignored one both enter
+/// Returns every `.py` file under `root` in a stable order. The walk carries
+/// no standard filter, so a hidden directory and an ignored one both enter
 /// the corpus.
 fn walk(root: &Path) -> Vec<PathBuf> {
     WalkBuilder::new(root)
@@ -406,11 +409,35 @@ fn widened(text: &str, rng: &mut StdRng) -> Option<String> {
     let renames: FxHashMap<_, _> = sample(distinct.len(), rng)?
         .into_iter()
         .filter_map(|slot| {
-            respelled(distinct[slot], rng).map(|candidate| (distinct[slot], candidate))
+            let name = distinct[slot];
+            respelled(name, rng).map(|candidate| (name, candidate))
         })
         .collect();
-    let renamed = names
+    let replacements = names
         .into_iter()
         .filter_map(|(range, name)| renames.get(name).map(|candidate| (range, candidate)));
-    (!renames.is_empty()).then(|| spliced(text, renamed))
+    (!renames.is_empty()).then(|| spliced(text, replacements))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn spliced_replaces_each_range() {
+        let swaps = [
+            (TextRange::new(6.into(), 7.into()), "(x)"),
+            (TextRange::new(9.into(), 10.into()), "(y)"),
+        ];
+        assert_eq!(spliced("a = f(x, y)", swaps), "a = f((x), (y))");
+    }
+
+    #[test]
+    fn spliced_skips_a_range_starting_inside_the_one_before() {
+        let swaps = [
+            (TextRange::new(2.into(), 6.into()), "(g(x))"),
+            (TextRange::new(4.into(), 5.into()), "(x)"),
+        ];
+        assert_eq!(spliced("f(g(x))", swaps), "f((g(x)))");
+    }
 }

@@ -121,6 +121,13 @@ def manifests() -> int:
     return failed
 
 
+def member_manifests(cargo: dict) -> list[str]:
+    """
+    Return the manifest each workspace member owns, in sorted order.
+    """
+    return sorted(f"{name}/Cargo.toml" for name in cargo["workspace"]["members"])
+
+
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
     """
     Return one parity pair per `overrides` entry the manifest also pins as a
@@ -188,6 +195,21 @@ def parity() -> int:
             task_sources("site/test"),
             task_sources("site/press")
         ),
+        (
+            "Cargo.toml members ↔ .github/workflows/warm.yml path filter",
+            member_manifests(cargo),
+            watched_manifests("warm.yml")
+        ),
+        (
+            "Cargo.toml members ↔ .mise/tasks/lock/check sources",
+            member_manifests(cargo),
+            [path for path in task_sources("lock/check") if path.endswith("/Cargo.toml")]
+        ),
+        (
+            "Cargo.toml members ↔ .mise/tasks/lock/sync sources",
+            member_manifests(cargo),
+            [path for path in task_sources("lock/sync") if path.endswith("/Cargo.toml")]
+        ),
         *override_pins(package),
         *patch_pins(package)
     ]
@@ -235,6 +257,17 @@ def toml(path: str) -> dict:
     Return the parsed TOML mapping at `path`.
     """
     return loads(Path(path).read_text(encoding="utf-8"))
+
+
+def watched_manifests(workflow: str) -> list[str]:
+    """
+    Return every member manifest the `workflow` path filter watches.
+    """
+    text = Path(f".github/workflows/{workflow}").read_text(encoding="utf-8")
+    return sorted(
+        match.group(1)
+        for match in finditer(r"^\s*-\s+(\S+/Cargo\.toml)\s*$", text, MULTILINE)
+    )
 
 
 if __name__ == "__main__":
