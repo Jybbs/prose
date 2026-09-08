@@ -29,12 +29,8 @@ pub(crate) const DEFAULT_LABEL: &str = "default";
 /// The environment variable narrowing a run to one module.
 const MODULE_VAR: &str = "PROSE_IMPORTS_MODULE";
 
-/// The environment variable naming the interpreter whose standard library
-/// the sweep runs.
-pub(crate) const PYTHON_VAR: &str = "PROSE_IMPORTS_PYTHON";
-
-/// One corpus, the runner every module goes through, and what the original
-/// tree has already been asked.
+/// One corpus, the runner every module goes through, and the outcomes
+/// already read from the original tree.
 pub(crate) struct Sweep {
     /// What the original tree left for each module already run from it,
     /// which every width reads rather than running the tree again.
@@ -45,10 +41,10 @@ pub(crate) struct Sweep {
 
 impl Sweep {
     /// Builds the sweep, copying the corpus into a fresh stage.
-    pub(crate) fn new(corpus: &Path, python: String) -> Self {
+    pub(crate) fn new(corpus: &Path) -> Self {
         Self {
             known: Mutex::new(BTreeMap::new()),
-            runner: Runner::new(corpus, python),
+            runner: Runner::new(corpus),
         }
     }
 
@@ -94,7 +90,8 @@ impl Sweep {
     }
 
     /// Sweeps the corpus at one width, running every module the formatter
-    /// rewrote from both trees and confirming each break by a second run.
+    /// rewrote from both trees, leaving out the modules `skip` names, and
+    /// confirming each break by a second run.
     pub(crate) fn sweep(
         &self,
         width: Option<NonZeroUsize>,
@@ -108,15 +105,11 @@ impl Sweep {
         let formatted = self.runner.stage.copy(&format!("formatted-{label}"));
         let run = format_tree(&formatted, &Pipeline::with_defaults(&config));
         self.runner.precompile(&formatted);
-        let modules = setting(MODULE_VAR).map_or_else(
-            || {
-                candidates(&run.rewritten)
-                    .into_iter()
-                    .filter(|module| skip.is_none_or(|held| !held.contains(module)))
-                    .collect()
-            },
-            |only| vec![only],
-        );
+        let (held_back, eligible): (Vec<_>, Vec<_>) = candidates(&run.rewritten)
+            .into_iter()
+            .partition(|module| skip.is_some_and(|known| known.contains(module)));
+        let (modules, skipped) =
+            setting(MODULE_VAR).map_or((eligible, held_back.len()), |only| (vec![only], 0));
         let after = self.outcomes(&modules, &formatted);
         let before = self.originals(&modules);
         let partition = compare(&after, &before, &modules);
@@ -143,6 +136,7 @@ impl Sweep {
             flaky,
             label,
             refused: run.refused,
+            skipped,
             uncomparable: partition.uncomparable,
             unmeasured: partition.unmeasured,
         }

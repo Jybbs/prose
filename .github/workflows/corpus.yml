@@ -210,8 +210,6 @@ jobs:
 
       - *provision-cargo
 
-      - *interpreter
-
       - name : Import every rewritten module against the tracked break set
         run  : mise run imports
 

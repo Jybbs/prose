@@ -1,40 +1,10 @@
-//! The import sweep, wherein every module the formatter rewrites is executed
-//! from the original tree and from the formatted one and the two namespaces
-//! are compared, so a rewrite that settles and still breaks the code is
-//! caught.
-//!
-//! Each module runs in a fresh interpreter through `probe.py`, which loads it
-//! the way an import loads it and records the names and plain constants it
-//! bound. A module counts as broken where the original runs cleanly and the
-//! formatted copy raises, times out, or binds a different namespace,
-//! confirmed by a second run of both sides so a module that flips reports as
-//! flaky. Each break is attributed to the deepest traceback frame under the
-//! formatted tree, then to the rules whose recorded fixes cover that row or
-//! dropped the binding of the name it turns on, and failing both to the rules
-//! reproducing it under one rule alone.
-//!
-//! The sweep is ignored by default, since it executes a corpus and costs a
-//! minute of wall clock. `PROSE_IMPORTS_PYTHON` names the interpreter whose
-//! standard library it runs, `PROSE_IMPORTS_MODULE` narrows it to one module,
-//! `PROSE_SETTLE_WIDTHS` adds widths beside the default,
-//! `PROSE_IMPORTS_TIMEOUT` bounds one module's run, and `PROSE_IMPORTS_BAKE`
-//! writes the break set into the file it names.
-//!
-//! Every other run ratchets against the set tracked beside this harness, so
-//! only a break it does not carry fails the run or reaches the report. That
-//! set records the generation it was baked at, and a set baked at any other
-//! generation fails the run rather than reading as empty.
-//!
-//! That set also carries the modules the original tree did not run cleanly
-//! beside the breaks, which a judging run skips rather than paying to
-//! measure again, and a module falling out of comparison that the set does
-//! not list fails the run the way a fresh break does, so coverage the
-//! sweep loses is caught rather than going quiet.
-//!
-//! The set holds one entry per width it was baked at, and the tracked one
-//! holds the default width alone. A run that adds a width therefore reports
-//! every break it finds there as fresh and fails, until a bake at that
-//! width gives it something to read.
+//! The import sweep, which runs every module the formatter rewrote from the
+//! original tree and from the formatted one, then compares the two
+//! namespaces, so a rewrite that settles and still breaks the code is
+//! caught. Each module runs in a fresh interpreter through `probe.py`, and
+//! each break is blamed on the rules whose recorded fixes reach it. The run
+//! is ignored by default because it executes a corpus, and it ratchets
+//! against the break set tracked beside this harness.
 
 #[path = "../common/mod.rs"]
 mod common;
@@ -57,15 +27,13 @@ mod sweep;
 use std::{collections::BTreeSet, iter, num::NonZeroUsize};
 
 use crate::{
-    common::{setting, watch_for_a_runaway, widths_or},
-    corpus::interpreter,
+    common::{watch_for_a_runaway, widths_or},
+    corpus::standard_library,
+    execute::interpreter,
     ratchet::{bake, baking, baseline, dropped, judge, skipping},
     report::render,
-    sweep::{PYTHON_VAR, Sweep, label},
+    sweep::{Sweep, label},
 };
-
-/// The interpreter the sweep runs absent [`PYTHON_VAR`].
-const PYTHON: &str = "python3";
 
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
@@ -74,36 +42,39 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 #[ignore = "the sweep executes a corpus and runs in its own row"]
 fn every_rewritten_module_still_imports() {
     watch_for_a_runaway();
-    let python = setting(PYTHON_VAR).unwrap_or_else(|| PYTHON.to_owned());
-    let corpus = interpreter(&python);
+    let python = interpreter();
+    let corpus = standard_library(&python);
     let baked = baking();
     let held = baked.is_none().then(baseline).unwrap_or_default();
-    let widths = iter::once(None).chain(widths_or(&[]).into_iter().map(NonZeroUsize::new));
-    let sweep = Sweep::new(&corpus, python.clone());
+    let budgets = iter::once(None).chain(widths_or(&[]).into_iter().map(NonZeroUsize::new));
+    let sweep = Sweep::new(&corpus);
     eprintln!(
         "corpus      {}\nbinary      the library under test\ninterpreter {python}\nstage       {}",
         corpus.display(),
         sweep.runner.stage.root.display(),
     );
-    let found: Vec<_> = widths
+    let widths: Vec<_> = budgets
         .map(|width| sweep.sweep(width, skipping(&held, &label(width))))
         .collect();
     let mut fresh = BTreeSet::new();
     let mut lost = BTreeSet::new();
-    for width in &found {
-        let carried = judge(width, &held);
-        lost.extend(dropped(width, &held));
-        eprintln!("\nwidth {}\n{}", width.label, render(&carried, width));
-        fresh.extend(width.uncarried(&carried).map(|brk| brk.module.clone()));
+    for found in &widths {
+        let carried = judge(found, &held);
+        lost.extend(dropped(found, &held));
+        eprintln!("\nwidth {}\n{}", found.label, render(&carried, found));
+        fresh.extend(found.uncarried(&carried).map(|brk| brk.module.clone()));
     }
-    let unmeasured: usize = found.iter().map(|width| width.unmeasured.len()).sum();
+    let unmeasured: usize = widths.iter().map(|found| found.unmeasured.len()).sum();
+    if unmeasured > 0 {
+        sweep.runner.stage.keep();
+    }
     assert!(
         unmeasured == 0,
         "the run leaves {unmeasured} of its modules unmeasured, so the uncomparable count cannot \
          be named",
     );
     if let Some(path) = baked {
-        bake(&path, &found);
+        bake(&path, &widths);
         eprintln!("break set baked into {}", path.display());
         return;
     }
@@ -114,13 +85,13 @@ fn every_rewritten_module_still_imports() {
         lost.is_empty(),
         "the baseline compares {} of the modules this run could not, the first being {}",
         lost.len(),
-        lost.iter().next().map_or("", String::as_str),
+        lost.first().map_or("", String::as_str),
     );
     assert!(
         fresh.is_empty(),
         "the baseline does not carry {} of the modules that break, the first being {}",
         fresh.len(),
-        fresh.iter().next().map_or("", String::as_str),
+        fresh.first().map_or("", String::as_str),
     );
 }
 

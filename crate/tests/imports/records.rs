@@ -80,6 +80,9 @@ pub(crate) struct Width {
     pub(crate) label: String,
     /// How many modules the format run could not read, parse, or write.
     pub(crate) refused: usize,
+    /// How many candidates the baseline's uncomparable set kept out of
+    /// this run.
+    pub(crate) skipped: usize,
     /// The modules the original tree did not run cleanly, which a run
     /// therefore never judges.
     pub(crate) uncomparable: Vec<String>,

@@ -24,13 +24,13 @@ const BAKED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/imports/baseline
 const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
 /// The generation a baked set is written and read at, raised by every
-/// change to what a set carries or to the key one break is held by.
+/// change to what a set carries or to the key that holds one break.
 pub(crate) const VERSION: u32 = 2;
 
 /// What one run recorded for a later run to ratchet against, the breaks
 /// it left beside the modules it could not compare, each keyed by width
 /// label.
-#[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub(crate) struct Baseline {
     /// The breaks a run left at each frame.
@@ -43,11 +43,10 @@ pub(crate) struct Baseline {
     pub(crate) version: u32,
 }
 
-/// The module, file, and reason one break is known by across runs, which
-/// is what a baseline carries per break. The module is part of the key so
-/// a fresh module joining a known cascade fails the run rather than
-/// matching the entry a sibling already left.
-#[derive(Clone, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+/// What a baseline carries per break, being the module, the file its frame
+/// names, and the reason the two runs differ. The module joins the frame in
+/// this key, so two modules reaching one frame get separate entries.
+#[derive(Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(default)]
 pub(crate) struct Carried {
     /// The file its frame names.
@@ -64,24 +63,8 @@ pub(crate) fn bake(path: &Path, widths: &[Width]) {
         fs_err::create_dir_all(parent).expect("create the break set's directory");
     }
     let baked = Baseline {
-        breaks: widths
-            .iter()
-            .map(|found| {
-                (
-                    found.label.clone(),
-                    found.breaks.iter().map(carried).collect(),
-                )
-            })
-            .collect(),
-        uncomparable: widths
-            .iter()
-            .map(|found| {
-                (
-                    found.label.clone(),
-                    found.uncomparable.iter().cloned().collect(),
-                )
-            })
-            .collect(),
+        breaks: keyed(widths, |found| found.breaks.iter().map(carried).collect()),
+        uncomparable: keyed(widths, |found| found.uncomparable.iter().cloned().collect()),
         version: VERSION,
     };
     let rendered = serde_json::to_string_pretty(&baked).expect("render the break set");
@@ -94,12 +77,8 @@ pub(crate) fn baking() -> Option<PathBuf> {
 }
 
 /// The tracked break set at [`BAKED`], which every judging run ratchets
-/// against.
-///
-/// # Panics
-///
-/// Panics where nothing readable sits at that path, or where what sits
-/// there was baked at another generation.
+/// against. Panics where nothing readable sits at that path, and where the
+/// set it finds was baked at another generation.
 pub(crate) fn baseline() -> Baseline {
     baseline_at(Path::new(BAKED)).unwrap_or_else(|| {
         panic!(
@@ -118,10 +97,10 @@ pub(crate) fn baseline_at(path: &Path) -> Option<Baseline> {
         .filter(|read| read.version == VERSION)
 }
 
-/// The modules of one width the original tree no longer runs cleanly
-/// that the baseline does not already list, meaning the sweep just lost
-/// coverage it used to have. A baseline recording nothing at this width
-/// carries no coverage to lose, so it names none.
+/// The modules of one width that the original tree no longer runs cleanly
+/// and the baseline does not already list, meaning coverage the sweep just
+/// lost. A baseline recording nothing at this width has no coverage to
+/// lose, so it names none.
 pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
     let Some(known) = held.uncomparable.get(&found.label) else {
         return BTreeSet::new();
@@ -134,8 +113,8 @@ pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
         .collect()
 }
 
-/// The broken modules of one width whose module, frame file, and reason
-/// the baseline already holds.
+/// The broken modules of one width the baseline already holds, matched on
+/// the module, the file its frame names, and the reason.
 pub(crate) fn judge(found: &Width, held: &Baseline) -> BTreeSet<String> {
     let Some(known) = held.breaks.get(&found.label) else {
         return BTreeSet::new();
@@ -161,4 +140,15 @@ fn carried(brk: &Break) -> Carried {
         module: brk.module.clone(),
         reason: brk.reason.clone(),
     }
+}
+
+/// The set each width projects, keyed by that width's label.
+fn keyed<T: Ord>(
+    widths: &[Width],
+    of: impl Fn(&Width) -> BTreeSet<T>,
+) -> BTreeMap<String, BTreeSet<T>> {
+    widths
+        .iter()
+        .map(|found| (found.label.clone(), of(found)))
+        .collect()
 }

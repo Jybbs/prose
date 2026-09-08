@@ -4,11 +4,10 @@
 
 use std::{collections::BTreeSet, path::PathBuf, process::Command};
 
-/// The module names a walk leaves out from any directory, since running
-/// either one launches a program rather than binding a namespace. The
-/// directory holding `python-config.py` is named for the platform, so
-/// matching on the name rather than the path keeps the exclusion the same
-/// across machines.
+/// The module names a walk leaves out wherever they sit, since running
+/// either one launches a program instead of binding a namespace.
+/// `python-config.py` sits under a directory named for the platform, so
+/// matching on the name rather than the path works on every machine.
 const ENTRY_NAMES: &[&str] = &["__main__.py", "python-config.py"];
 
 /// The modules a walk leaves out by their full path, so a module of the
@@ -39,7 +38,7 @@ pub(crate) fn excluded(relative: &str) -> bool {
 }
 
 /// Asks an interpreter which standard library it owns.
-pub(crate) fn interpreter(python: &str) -> PathBuf {
+pub(crate) fn standard_library(python: &str) -> PathBuf {
     let asked = Command::new(python)
         .args([
             "-I",

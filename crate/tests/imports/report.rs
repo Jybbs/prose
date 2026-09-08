@@ -1,6 +1,7 @@
-//! Rendering one width's findings, the breaks the baseline does not carry
-//! tallied by the frame and rules they share, each with the hunk around the
-//! row it names and the command reproducing one of its modules alone.
+//! Rendering one width's findings. The breaks the baseline does not carry
+//! are tallied by the frame and rules they share, each shown with the hunk
+//! around the row it names and the command that reproduces one of its
+//! modules alone.
 
 use std::{
     collections::BTreeSet,
@@ -12,15 +13,15 @@ use itertools::Itertools;
 
 use crate::{
     common::{Hit, SHOWN, Tally, WIDTHS_VAR, remainder, setting},
-    execute::TIMEOUT_VAR,
+    execute::{PYTHON_VAR, TIMEOUT_VAR},
     outcome::Kind,
     records::{Break, Frame, Width},
-    sweep::{DEFAULT_LABEL, PYTHON_VAR},
+    sweep::DEFAULT_LABEL,
 };
 
-/// Renders one width's findings, `carried` naming the broken modules the
-/// baseline already holds, which the tallies leave out so what a run shows
-/// is what it newly broke.
+/// Renders one width's findings. `carried` names the broken modules the
+/// baseline already holds, which the tallies leave out, so a run shows what
+/// it newly broke.
 pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
     let (raising, timeouts) = tallied(carried, found);
     let uncomparable = if found.unmeasured.is_empty() {
@@ -39,6 +40,9 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
     ];
     if !carried.is_empty() {
         lines.push(row("carried", &carried.len()));
+    }
+    if found.skipped > 0 {
+        lines.push(row("skipped", &found.skipped));
     }
     if found.refused > 0 {
         lines.push(row("refused", &found.refused));
@@ -63,8 +67,8 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
     rendered
 }
 
-/// The sentence naming where a break raises, why, and what it traces to,
-/// which is the wording a tally keys it by.
+/// The sentence naming where a break raises, why it raises, and what it
+/// traces to, which is the wording a tally keys it under.
 fn defect(brk: &Break) -> String {
     let Frame { file, row } = &brk.frame;
     let at = row.map_or_else(|| file.clone(), |row| format!("{file}:{row}"));
