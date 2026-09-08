@@ -36,7 +36,6 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
         row("breaks", &found.breaks.len()),
         row("timeouts", &found.timing_out()),
         row("flaky", &found.flaky.len()),
-        row("pruned", &found.pruned.len()),
     ];
     if !carried.is_empty() {
         lines.push(row("carried", &carried.len()));
@@ -49,10 +48,6 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
     rendered.push_str(&timeouts.render("times out"));
     for (heading, listed) in [
         ("flaky, a second run did not confirm it", &found.flaky),
-        (
-            "pruned, a recorded fix explains every name it lost",
-            &found.pruned,
-        ),
         ("unmeasured, a run left no record", &found.unmeasured),
     ] {
         if !listed.is_empty() {
@@ -96,11 +91,7 @@ fn reproduction(label: &str, module: &str) -> String {
 fn tallied(carried: &BTreeSet<String>, found: &Width) -> (Tally, Tally) {
     let mut raising = Tally::default();
     let mut timeouts = Tally::default();
-    for brk in found
-        .breaks
-        .iter()
-        .filter(|brk| !carried.contains(&brk.module))
-    {
+    for brk in found.uncarried(carried) {
         let tally = if brk.formatted.kind == Kind::Timeout {
             &mut timeouts
         } else {

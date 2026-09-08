@@ -1,6 +1,8 @@
-//! The ratchet on a width's breaks, meaning the frame set a baseline
-//! carries, the modules whose break it already holds, the set a run bakes for
-//! the next, and the verdict the run ends on.
+//! The ratchet a judging run measures its breaks against. It reads the
+//! tracked break set, then names the breaks that set already holds and the
+//! modules that have fallen out of comparison since it was written. A
+//! baking run writes a fresh set instead, into the file
+//! `PROSE_IMPORTS_BAKE` names.
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -14,18 +16,16 @@ use crate::{
     records::{Break, Width},
 };
 
-/// The environment variable naming a file the armed state is written to.
-const ARMED_VAR: &str = "PROSE_IMPORTS_ARMED";
+/// The break set the repository tracks beside the harness, which every
+/// judging run reads.
+const BAKED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/imports/baseline.json");
 
 /// The environment variable naming a file the break set is written to.
 const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
-/// The environment variable naming a break set an earlier run wrote.
-const BASELINE_VAR: &str = "PROSE_IMPORTS_BASELINE";
-
 /// The generation a baked set is written and read at, raised by every
 /// change to what a set carries or to the key one break is held by.
-pub(crate) const VERSION: u32 = 1;
+pub(crate) const VERSION: u32 = 2;
 
 /// What one run recorded for a later run to ratchet against, the breaks
 /// it left beside the modules it could not compare, each keyed by width
@@ -38,8 +38,8 @@ pub(crate) struct Baseline {
     /// The modules whose original tree did not run cleanly, which a
     /// later run skips rather than measuring again.
     pub(crate) uncomparable: BTreeMap<String, BTreeSet<String>>,
-    /// The generation the set was baked at, `0` for one written before
-    /// the field existed.
+    /// The generation the set was baked at, `0` where the file names
+    /// none.
     pub(crate) version: u32,
 }
 
@@ -93,11 +93,20 @@ pub(crate) fn baking() -> Option<PathBuf> {
     setting(BAKE_VAR).map(PathBuf::from)
 }
 
-/// The break set [`BASELINE_VAR`] names, `None` where the variable is
-/// unset, no file sits at the path it names, or what sits there was not
-/// baked at [`VERSION`].
-pub(crate) fn baseline() -> Option<Baseline> {
-    baseline_at(Path::new(&setting(BASELINE_VAR)?))
+/// The tracked break set at [`BAKED`], which every judging run ratchets
+/// against.
+///
+/// # Panics
+///
+/// Panics where nothing readable sits at that path, or where what sits
+/// there was baked at another generation.
+pub(crate) fn baseline() -> Baseline {
+    baseline_at(Path::new(BAKED)).unwrap_or_else(|| {
+        panic!(
+            "{BAKED} holds no break set baked at generation {VERSION}, so re-bake it with \
+             PROSE_IMPORTS_BAKE={BAKED} mise run imports",
+        )
+    })
 }
 
 /// The break set at `path`, `None` where it is unreadable, malformed,
@@ -107,20 +116,6 @@ pub(crate) fn baseline_at(path: &Path) -> Option<Baseline> {
     serde_json::from_str::<Baseline>(&held)
         .ok()
         .filter(|read| read.version == VERSION)
-}
-
-/// The broken modules of one width whose module, frame file, and reason
-/// the baseline already holds.
-pub(crate) fn judge(found: &Width, held: &Baseline) -> BTreeSet<String> {
-    let Some(known) = held.breaks.get(&found.label) else {
-        return BTreeSet::new();
-    };
-    found
-        .breaks
-        .iter()
-        .filter(|brk| known.contains(&carried(brk)))
-        .map(|brk| brk.module.clone())
-        .collect()
 }
 
 /// The modules of one width the original tree no longer runs cleanly
@@ -139,12 +134,18 @@ pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
         .collect()
 }
 
-/// Writes whether the run ratcheted against a baseline to the file
-/// [`ARMED_VAR`] names, nothing where the variable is unset.
-pub(crate) fn record_armed(armed: bool) {
-    if let Some(named) = setting(ARMED_VAR) {
-        fs_err::write(Path::new(&named), format!("{armed}\n")).expect("write the armed state");
-    }
+/// The broken modules of one width whose module, frame file, and reason
+/// the baseline already holds.
+pub(crate) fn judge(found: &Width, held: &Baseline) -> BTreeSet<String> {
+    let Some(known) = held.breaks.get(&found.label) else {
+        return BTreeSet::new();
+    };
+    found
+        .breaks
+        .iter()
+        .filter(|brk| known.contains(&carried(brk)))
+        .map(|brk| brk.module.clone())
+        .collect()
 }
 
 /// The modules a baseline already proved uncomparable at `label`, which

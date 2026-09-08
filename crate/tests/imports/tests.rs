@@ -19,18 +19,25 @@ use similar::TextDiff;
 use crate::{
     bindings::binding_rows,
     common::SHOWN,
-    compare::{compare, divergence, every_divergence_excused},
+    compare::{compare, divergence},
     corpus::{candidates, excluded},
     diff::{hunk, mapped_rows},
     execute::{Waited, ending, module_name, wait},
     fixes::{drops, holds_word, reaches, rewritten},
     format::{edit_rows, row_of},
     outcome::{Kind, Outcome, relative_to},
-    ratchet::{Baseline, Carried, VERSION, bake, baseline_at, dropped, judge, skipping},
+    ratchet::{Baseline, Carried, VERSION, bake, baseline, baseline_at, dropped, judge, skipping},
     records::{Break, EditRows, Frame, Width},
     report::render,
     sweep::DEFAULT_LABEL,
 };
+
+/// Ten lines `l1` through `l10`, the text the hunk tests rewrite.
+const LINES: [&str; 10] = ["l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9", "l10"];
+
+/// A module binding at every compound-statement arm, with a function,
+/// a class, and a parameter binding names it does not.
+const NESTED_SCOPES: &str = "import os.path as osp\nfrom re import compile as rc\n\n\ndef f(a):\n    inner = 1\n\n\nclass K:\n    attr = 2\n\n\ntry:\n    t = 1\nexcept ValueError:\n    e = 2\n\nfor i in y:\n    pass\n";
 
 /// An outcome that ran cleanly, binding `names` and the constants `spelt`.
 fn bound(names: &[&str], spelt: &[(&str, &str)]) -> Outcome {
@@ -75,20 +82,13 @@ fn edit(content: &str, range: Range<usize>, text: &str) -> EditRows {
     }
 }
 
-/// Ten lines `l1` through `l10`, the text the hunk tests rewrite.
-const LINES: [&str; 10] = ["l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9", "l10"];
-
-/// A module binding at every compound-statement arm, with a function,
-/// a class, and a parameter binding names it does not.
-const NESTED_SCOPES: &str = "import os.path as osp\nfrom re import compile as rc\n\n\ndef f(a):\n    inner = 1\n\n\nclass K:\n    attr = 2\n\n\ntry:\n    t = 1\nexcept ValueError:\n    e = 2\n\nfor i in y:\n    pass\n";
-
 #[test]
 fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
     let found = Width {
         breaks: vec![broken("m.py", "re/_parser.py", "leaves `X` unbound")],
         candidates: 1,
         comparable: 1,
-        label: "default".to_owned(),
+        label: DEFAULT_LABEL.to_owned(),
         uncomparable: vec!["blocked.py".to_owned()],
         ..Width::default()
     };
@@ -100,7 +100,7 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
     )
     .expect("the baked break set parses");
     assert_eq!(
-        held.breaks["default"],
+        held.breaks[DEFAULT_LABEL],
         [Carried {
             file: "re/_parser.py".to_owned(),
             module: "m.py".to_owned(),
@@ -109,7 +109,7 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
         .into()
     );
     assert_eq!(
-        held.uncomparable["default"],
+        held.uncomparable[DEFAULT_LABEL],
         ["blocked.py".to_owned()].into()
     );
     assert_eq!(held.version, VERSION);
@@ -136,6 +136,7 @@ fn a_break_set_baked_at_an_older_generation_carries_nothing_forward() {
     assert!(baseline_at(&path).is_some_and(|held| !held.breaks.is_empty()));
     fs_err::write(&path, baked(VERSION - 1)).expect("writes");
     assert!(baseline_at(&path).is_none());
+    assert!(baseline_at(&dir.path().join("absent.json")).is_none());
 }
 
 #[test]
@@ -173,6 +174,31 @@ fn a_break_the_report_names_carries_its_frame_reason_and_repro() {
 }
 
 #[test]
+fn a_carried_break_leaves_the_tally_the_report_renders() {
+    let found = Width {
+        breaks: vec![
+            broken("carried.py", "re/_parser.py", "leaves `X` unbound"),
+            broken("fresh.py", "re/_parser.py", "leaves `Y` unbound"),
+        ],
+        label: DEFAULT_LABEL.to_owned(),
+        ..Width::default()
+    };
+    let carried = ["carried.py".to_owned()].into();
+    assert_eq!(
+        found
+            .uncarried(&carried)
+            .map(|brk| brk.module.as_str())
+            .collect::<Vec<_>>(),
+        ["fresh.py"]
+    );
+    let shown = render(&carried, &found);
+    assert!(shown.contains("  breaks           2"), "{shown}");
+    assert!(shown.contains("  carried          1"), "{shown}");
+    assert!(shown.contains("fresh.py"), "{shown}");
+    assert!(!shown.contains("carried.py"), "{shown}");
+}
+
+#[test]
 fn a_clean_exit_without_a_record_is_unmeasured_and_a_dirty_one_raises() {
     assert_eq!(ending(ExitStatus::from_raw(0), "").kind, Kind::Unmeasured);
     let dirty = ending(ExitStatus::from_raw(2 << 8), "boom");
@@ -180,27 +206,13 @@ fn a_clean_exit_without_a_record_is_unmeasured_and_a_dirty_one_raises() {
     assert_eq!(dirty.error, "ends on exit status: 2, printing boom");
 }
 
-#[test]
-fn a_constant_rebound_names_both_values() {
-    let original = bound(&["N"], &[("N", "1")]);
-    let formatted = bound(&["N"], &[("N", "2")]);
+#[rstest]
+#[case::rebound(&[("N", "2")], "binds `N` to 2 where the original binds 1")]
+#[case::no_longer_plain(&[], "binds `N` to no plain constant where the original binds 1")]
+fn a_constant_rebound_names_both_values(#[case] spelt: &[(&str, &str)], #[case] why: &str) {
     assert_eq!(
-        divergence(&formatted, &original),
-        Some((
-            "binds `N` to 2 where the original binds 1".to_owned(),
-            Some("N".to_owned())
-        ))
-    );
-}
-
-#[test]
-fn a_constant_that_is_no_longer_plain_reads_as_missing() {
-    let original = bound(&["N"], &[("N", "1")]);
-    let formatted = bound(&["N"], &[]);
-    let (why, _) = divergence(&formatted, &original).expect("the constant differs");
-    assert_eq!(
-        why,
-        "binds `N` to no plain constant where the original binds 1"
+        divergence(&bound(&["N"], spelt), &bound(&["N"], &[("N", "1")])),
+        Some((why.to_owned(), Some("N".to_owned())))
     );
 }
 
@@ -342,6 +354,23 @@ fn an_import_binds_its_first_dotted_segment() {
 }
 
 #[test]
+fn an_unmeasured_module_replaces_the_uncomparable_count() {
+    let found = Width {
+        label: DEFAULT_LABEL.to_owned(),
+        uncomparable: vec!["a.py".to_owned()],
+        unmeasured: vec!["u.py".to_owned()],
+        ..Width::default()
+    };
+    let shown = render(&BTreeSet::new(), &found);
+    assert!(shown.contains("  uncomparable unmeasured"), "{shown}");
+    assert!(
+        shown.contains("unmeasured, a run left no record (1):"),
+        "{shown}"
+    );
+    assert!(shown.contains("u.py"), "{shown}");
+}
+
+#[test]
 fn an_unrecognised_kind_row_reads_as_unmeasured() {
     let read = Outcome::parse(&["kind", "wat"].join("\0"), &[]);
     assert_eq!(read.kind, Kind::Unmeasured);
@@ -462,28 +491,13 @@ fn entry_points_leave_the_walk(
         "turtledemo/x.py",
         "antigravity.py",
         "idlelib/idle.py",
-        "webbrowser.py"
+        "webbrowser.py",
+        "config-3.14-darwin/python-config.py",
+        "config-3.14-x86_64-linux-gnu/python-config.py"
     )]
     relative: &str,
 ) {
     assert!(excluded(relative));
-}
-
-#[rstest]
-#[case::every_name_excused(&["c"], &["a", "b"], true)]
-#[case::one_name_unexplained(&["c"], &["a"], false)]
-#[case::a_divergence_of_another_shape(&["a", "z"], &["a", "z"], false)]
-fn every_divergence_excused_strikes_one_name_at_a_time(
-    #[case] bound_after: &[&str],
-    #[case] excused: &[&str],
-    #[case] holds: bool,
-) {
-    let original = bound(&["a", "b", "c"], &[]);
-    let formatted = bound(bound_after, &[]);
-    assert_eq!(
-        every_divergence_excused(&formatted, &original, |name| excused.contains(&name)),
-        holds
-    );
 }
 
 #[test]
@@ -628,16 +642,12 @@ fn the_hunk_falls_back_to_the_first_change_with_no_row_or_name() {
 fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
     let found = Width {
         breaks: vec![broken("m.py", "re/_parser.py", "leaves `X` unbound")],
-        candidates: 10,
-        comparable: 7,
-        label: "default".to_owned(),
-        uncomparable: vec!["a.py".to_owned(), "b.py".to_owned()],
-        unmeasured: vec!["u.py".to_owned()],
+        label: DEFAULT_LABEL.to_owned(),
         ..Width::default()
     };
     let held = Baseline {
         breaks: [(
-            "default".to_owned(),
+            DEFAULT_LABEL.to_owned(),
             [Carried {
                 file: "re/_parser.py".to_owned(),
                 module: "m.py".to_owned(),
@@ -646,15 +656,13 @@ fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
             .into(),
         )]
         .into(),
-        uncomparable: [("default".to_owned(), ["a.py".to_owned()].into())].into(),
+        uncomparable: [(DEFAULT_LABEL.to_owned(), ["a.py".to_owned()].into())].into(),
         version: VERSION,
     };
     assert_eq!(judge(&found, &held), ["m.py".to_owned()].into());
     assert_eq!(judge(&found, &Baseline::default()), BTreeSet::new());
-    assert_eq!(found.uncomparable.len(), 2);
-    assert_eq!(dropped(&found, &held), ["b.py".to_owned()].into());
     assert_eq!(
-        skipping(&held, "default"),
+        skipping(&held, DEFAULT_LABEL),
         Some(&["a.py".to_owned()].into())
     );
 }
@@ -676,10 +684,17 @@ fn the_summary_block_holds_every_count_in_one_column() {
             "  uncomparable     3\n",
             "  breaks           0\n",
             "  timeouts         0\n",
-            "  flaky            0\n",
-            "  pruned           0",
+            "  flaky            0",
         )
     );
+}
+
+#[test]
+fn the_tracked_break_set_reads_back_at_the_current_generation() {
+    let held = baseline();
+    assert_eq!(held.version, VERSION);
+    assert!(held.breaks.contains_key(DEFAULT_LABEL));
+    assert!(held.uncomparable.contains_key(DEFAULT_LABEL));
 }
 
 #[test]

@@ -69,8 +69,8 @@ jobs:
 
   bake:
     name            : 🥧 Bake
-    if              : &push ${{ github.event_name != 'pull_request' }}
-    permissions     : &prune-caches { actions: write, contents: read }
+    if              : ${{ github.event_name != 'pull_request' }}
+    permissions     : { actions: write, contents: read }
     runs-on         : *ubuntu
     timeout-minutes : &sweep 30
 
@@ -92,7 +92,7 @@ jobs:
           import sys, sysconfig
           version = sys.version.split()[0]
           print("corpus=" + sysconfig.get_paths()["stdlib"])
-          for kind in ("mutations", "stage", "tare"):
+          for kind in ("mutations", "stage"):
               print(f"{kind}=corpus-{kind}-{version}-")
           ' >> "$GITHUB_OUTPUT"
 
@@ -123,38 +123,11 @@ jobs:
           key  : *mutations-key
           path : *mutations-dir
 
-      - &prune
-        name              : Delete the cache entries this run replaces
+      - name              : Delete the cache entries this run replaces
         continue-on-error : true
         env               : { GH_TOKEN: "${{ github.token }}" }
         if                : ${{ github.ref == 'refs/heads/main' }}
         run               : mise run gha:prune
-
-  tare:
-    name            : ⚖️ Tare
-    if              : *push
-    permissions     : *prune-caches
-    runs-on         : *ubuntu
-    timeout-minutes : *sweep
-
-    steps:
-      - *checkout
-
-      - *provision-cargo
-
-      - *interpreter
-
-      - name : Bake the baseline every rewritten module is measured against
-        env  : { PROSE_IMPORTS_BAKE: &tare-path "${{ runner.temp }}/tare/set.json" }
-        run  : mise run imports
-
-      - name : Save the baseline
-        uses : *cache-save
-        with:
-          key  : ${{ steps.python.outputs.tare }}${{ github.sha }}
-          path : &tare-dir ${{ runner.temp }}/tare
-
-      - *prune
 
   settle:
     name            : ⚓ Settle
@@ -229,7 +202,6 @@ jobs:
   imports:
     name            : 🪟 Imports
     if              : *pull-request
-    outputs         : { armed: "${{ steps.ratchet.outputs.armed }}" }
     runs-on         : *ubuntu
     timeout-minutes : *sweep
 
@@ -240,25 +212,8 @@ jobs:
 
       - *interpreter
 
-      - name : Restore the baked baseline
-        uses : *cache-restore
-        with:
-          key          : ${{ steps.python.outputs.tare }}${{ env.PARENT }}
-          path         : *tare-dir
-          restore-keys : ${{ steps.python.outputs.tare }}
-
-      - name : Import every rewritten module against the baked baseline
-        env:
-          PROSE_IMPORTS_ARMED    : ${{ runner.temp }}/armed
-          PROSE_IMPORTS_BASELINE : *tare-path
-        id   : ratchet
-        run  : |
-          mise run imports
-          echo "armed=$(cat "$PROSE_IMPORTS_ARMED")" >> "$GITHUB_OUTPUT"
-
-      - name : Report a run no baked baseline armed
-        if   : ${{ steps.ratchet.outputs.armed != 'true' }}
-        run  : echo "::warning::no baked baseline reached this run at the current generation, so the ratchet asserted nothing"
+      - name : Import every rewritten module against the tracked break set
+        run  : mise run imports
 
   subsets:
     name            : ${{ matrix.label }}
@@ -284,7 +239,7 @@ jobs:
   gate:
     name            : 🗞️ Brief
     if              : always()
-    needs           : [bake, delta, imports, mutations, plan, settle, subsets, tare]
+    needs           : [bake, delta, imports, mutations, plan, settle, subsets]
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 

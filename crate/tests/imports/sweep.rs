@@ -9,30 +9,22 @@ use std::{
     sync::Mutex,
 };
 
-use itertools::{Either, Itertools};
 use prose::{config::Config, pipeline::Pipeline};
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{Either, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
     attribution::Attributor,
     common::setting,
-    compare::{compare, divergence, every_divergence_excused},
+    compare::{compare, divergence},
     corpus::candidates,
     execute::Runner,
-    fixes::drops,
     format::format_tree,
     outcome::{Kind, Outcome},
-    records::{Break, Fixes, Width},
+    records::{Break, Width},
 };
 
 /// The label a sweep gives the width no `code-line-length` pinned.
 pub(crate) const DEFAULT_LABEL: &str = "default";
-
-/// The label one width is keyed by, which the bake, the ratchet, and the
-/// report all read.
-pub(crate) fn label(width: Option<NonZeroUsize>) -> String {
-    width.map_or_else(|| DEFAULT_LABEL.to_owned(), |width| width.to_string())
-}
 
 /// The environment variable narrowing a run to one module.
 const MODULE_VAR: &str = "PROSE_IMPORTS_MODULE";
@@ -58,27 +50,6 @@ impl Sweep {
             known: Mutex::new(BTreeMap::new()),
             runner: Runner::new(corpus, python),
         }
-    }
-
-    /// Reports whether every divergence a break carries is one name a
-    /// recorded fix deliberately dropped from that same module, which is
-    /// a rule doing its work rather than a rewrite breaking the code.
-    /// Each excused name is struck from the original namespace and the
-    /// rest re-compared, so a second divergence the fix record does not
-    /// explain keeps the whole break. A module that reads a dropped name
-    /// still raises and still counts.
-    fn deliberately_pruned(&self, brk: &Break, fixes: &Fixes) -> bool {
-        if brk.formatted.kind != Kind::Ok {
-            return false;
-        }
-        let Some(listed) = fixes.get(&brk.module) else {
-            return false;
-        };
-        let text = fs_err::read_to_string(self.runner.stage.original.join(&brk.module))
-            .expect("the staged original holds every module the sweep ran");
-        every_divergence_excused(&brk.formatted, &brk.original, |name| {
-            listed.iter().any(|(_, edits)| drops(edits, name, &text))
-        })
     }
 
     /// Reports whether the original matches its own first run and a second
@@ -149,23 +120,9 @@ impl Sweep {
         let after = self.outcomes(&modules, &formatted);
         let before = self.originals(&modules);
         let partition = compare(&after, &before, &modules);
-        let (suspects, pruned): (Vec<_>, Vec<_>) =
-            partition.breaks.into_iter().partition_map(|brk| {
-                if self.deliberately_pruned(&brk, &run.fixes) {
-                    Either::Right(brk.module)
-                } else {
-                    Either::Left(brk)
-                }
-            });
-        let verdicts: Vec<_> = suspects
-            .par_iter()
-            .map(|brk| self.confirm(brk, &formatted))
-            .collect();
-        let (mut breaks, flaky): (Vec<_>, Vec<_>) = suspects
-            .into_iter()
-            .zip(verdicts)
-            .partition_map(|(brk, holds)| {
-                if holds {
+        let (mut breaks, flaky): (Vec<_>, Vec<_>) =
+            partition.breaks.into_par_iter().partition_map(|brk| {
+                if self.confirm(&brk, &formatted) {
                     Either::Left(brk)
                 } else {
                     Either::Right(brk.module)
@@ -185,10 +142,15 @@ impl Sweep {
             comparable: partition.comparable,
             flaky,
             label,
-            pruned,
             refused: run.refused,
             uncomparable: partition.uncomparable,
             unmeasured: partition.unmeasured,
         }
     }
+}
+
+/// The label one width is keyed by, which the bake, the ratchet, and the
+/// report all read.
+pub(crate) fn label(width: Option<NonZeroUsize>) -> String {
+    width.map_or_else(|| DEFAULT_LABEL.to_owned(), |width| width.to_string())
 }
