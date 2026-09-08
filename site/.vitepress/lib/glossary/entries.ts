@@ -629,8 +629,8 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : 'A re-export is a name a module imports so that another module can import it '
                + 'from there. `prune-inert-imports` recognizes one by a name `__all__` lists, the '
                + '`x as x` alias form, a trailing `noqa`, or a name taken out of a private '
-               + 'module, and it holds every unreferenced import in a module writing no '
-               + '`__all__` at all.',
+               + 'module, or a file-level unused-import pragma, and it reports rather than '
+               + 'removes an unreferenced import where the file reads as a compatibility shim.',
     families   : ['formatting'],
     rule       : 'prune-inert-imports'
   },

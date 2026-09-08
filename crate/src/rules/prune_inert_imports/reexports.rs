@@ -1,23 +1,41 @@
 //! The explicit re-export surface of a module, read from its
 //! module-scope `__all__` writes, from an import binding `__all__`
-//! itself, from the PEP 484 `x as x` alias form, and from an import
-//! whose source module reads as private.
+//! itself, from the PEP 484 `x as x` alias form, from an import whose
+//! source module reads as private, and from a file-level pragma holding
+//! every unused import in the module.
 
 use ruff_python_ast::{Alias, Expr, Stmt, StmtAssign, helpers::is_dunder};
+use ruff_text_size::TextRange;
 use rustc_hash::FxHashSet;
 
 use super::inventory::{ImportNode, is_self_alias};
-use crate::primitives::{
-    binding::{sequence_elts, single_name_assignment},
-    scope::sub_bodies,
-    walk::any_over_stmts,
+use crate::{
+    primitives::{
+        binding::{sequence_elts, single_name_assignment},
+        scope::sub_bodies,
+        walk::any_over_stmts,
+    },
+    source::Source,
 };
 
 const DUNDER_ALL: &str = "__all__";
 
+/// The file-level `noqa` heads `ruff` and `flake8` read, each holding
+/// the codes that follow it.
+const NOQA_HEADS: [&str; 2] = ["flake8: noqa:", "ruff: noqa:"];
+
+/// The pragma `pyright` reads as holding every unused import in the
+/// file it opens.
+const PYRIGHT_UNUSED_IMPORT: &str = "pyright: reportUnusedImport=false";
+
+/// The code `flake8` and its successors report an unread import under,
+/// which a `noqa` naming it marks as deliberate.
+pub(super) const REEXPORT_CODE: &str = "F401";
+
 /// The names a module marks for re-export.
 pub(super) struct Reexports<'a> {
     names: FxHashSet<&'a str>,
+    suppressed: bool,
     surface: Surface,
 }
 
@@ -28,29 +46,35 @@ impl<'a> Reexports<'a> {
     /// binding `__all__` each leave the surface `Unreadable` and every
     /// name held, whereas a module writing it nowhere leaves the surface
     /// `Undeclared`.
-    pub(super) fn of(body: &'a [Stmt]) -> Self {
+    pub(super) fn of(source: &'a Source) -> Self {
+        let suppressed = suppresses_unused_imports(source);
         let mut names = FxHashSet::default();
         let mut surface = Surface::Undeclared;
-        for stmt in body {
+        for stmt in &source.ast().body {
             match dunder_all_write(stmt) {
                 None => {}
                 Some(DunderAll::Names(items)) => {
                     names.extend(items);
                     surface = Surface::Listed;
                 }
-                Some(DunderAll::Unreadable) => return Self::unreadable(),
+                Some(DunderAll::Unreadable) => return Self::unreadable(suppressed),
             }
             if nested_dunder_all_write(stmt) {
-                return Self::unreadable();
+                return Self::unreadable(suppressed);
             }
         }
-        Self { names, surface }
+        Self {
+            names,
+            suppressed,
+            surface,
+        }
     }
 
     /// A surface no static read settles, holding every name.
-    fn unreadable() -> Self {
+    fn unreadable(suppressed: bool) -> Self {
         Self {
             names: FxHashSet::default(),
+            suppressed,
             surface: Surface::Unreadable,
         }
     }
@@ -61,9 +85,11 @@ impl<'a> Reexports<'a> {
         !matches!(self.surface, Surface::Undeclared)
     }
 
-    /// True when `alias`, binding `bound`, marks an explicit re-export.
+    /// True when `alias`, binding `bound`, marks an explicit re-export,
+    /// which a file-level pragma marks for every name at once.
     pub(super) fn holds(&self, alias: &Alias, bound: &str) -> bool {
-        matches!(self.surface, Surface::Unreadable)
+        self.suppressed
+            || matches!(self.surface, Surface::Unreadable)
             || is_self_alias(alias)
             || self.names.contains(bound)
     }
@@ -85,6 +111,18 @@ enum Surface {
     /// A write no static read settles, a write below module scope, or
     /// an import binding the name.
     Unreadable,
+}
+
+/// True where `body` binds no name of its own at module scope, counting
+/// a `def`, a `class`, and an assignment to a name that is not a dunder.
+/// A definition inside a `try` or a version branch is guarding an
+/// import rather than defining the module, so it leaves the body
+/// definition-free.
+pub(super) fn defines_no_own_name(body: &[Stmt]) -> bool {
+    !body.iter().any(|stmt| match stmt {
+        Stmt::ClassDef(_) | Stmt::FunctionDef(_) => true,
+        _ => single_name_assignment(stmt).is_some_and(|(target, _)| !is_dunder(target.id.as_str())),
+    })
 }
 
 /// True where `node` takes a name out of a module whose last segment
@@ -115,6 +153,22 @@ fn dunder_all_write(stmt: &Stmt) -> Option<DunderAll<'_>> {
         }
     };
     Some(string_items(value).map_or(DunderAll::Unreadable, DunderAll::Names))
+}
+
+/// True where `comment` holds every unused import in its file, meaning
+/// `pyright`'s spelling or a `ruff` or `flake8` head naming `F401`. A
+/// head naming no code suppresses every rule its tool carries, which
+/// states nothing about a re-export in particular.
+fn holds_unused_imports(comment: &str) -> bool {
+    let body = comment.trim_start_matches('#').trim_start();
+    body.starts_with(PYRIGHT_UNUSED_IMPORT)
+        || NOQA_HEADS.iter().any(|head| {
+            body.strip_prefix(head).is_some_and(|codes| {
+                codes
+                    .split([',', ' ', '\t'])
+                    .any(|code| code.eq_ignore_ascii_case(REEXPORT_CODE))
+            })
+        })
 }
 
 /// True when `stmt` binds `__all__` out of another module.
@@ -151,6 +205,16 @@ fn nested_dunder_all_write(stmt: &Stmt) -> bool {
         .any(|(body, _)| any_over_stmts(body, |nested| dunder_all_write(nested).is_some()))
 }
 
+/// True where nothing but whitespace precedes `range` on its own row,
+/// which is where each of the pragmas sits.
+fn own_line(source: &Source, range: TextRange) -> bool {
+    let text = &source.text()[..usize::from(range.start())];
+    text.rsplit_once('\n')
+        .map_or(text, |(_, row)| row)
+        .trim()
+        .is_empty()
+}
+
 /// The string-literal items of a list or tuple display. `None` when
 /// `value` is another shape or carries an item that is not a string
 /// literal.
@@ -159,6 +223,16 @@ fn string_items(value: &Expr) -> Option<Vec<&str>> {
         .iter()
         .map(|elt| Some(elt.as_string_literal_expr()?.value.to_str()))
         .collect()
+}
+
+/// True where an own-line comment carries one of the file-level
+/// pragmas, which each hold every unused import in the module rather
+/// than one statement's.
+fn suppresses_unused_imports(source: &Source) -> bool {
+    source
+        .comment_ranges()
+        .iter()
+        .any(|range| own_line(source, *range) && holds_unused_imports(source.slice(*range)))
 }
 
 /// True for an assignment writing through a subscript of `__all__`,
@@ -184,7 +258,7 @@ mod tests {
         let source = parse(src);
         let body = &source.ast().body;
         let alias = &body[0].as_import_from_stmt().expect("a from import").names[0];
-        Reexports::of(body).holds(alias, bound)
+        Reexports::of(&source).holds(alias, bound)
     }
 
     #[rstest]
@@ -236,10 +310,7 @@ mod tests {
         #[case] expected: bool,
     ) {
         let source = parse(src);
-        assert_eq!(
-            Reexports::of(&source.ast().body).declares_a_surface(),
-            expected,
-        );
+        assert_eq!(Reexports::of(&source).declares_a_surface(), expected);
     }
 
     #[rstest]

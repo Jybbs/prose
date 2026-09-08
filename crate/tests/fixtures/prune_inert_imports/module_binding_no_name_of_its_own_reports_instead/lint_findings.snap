@@ -1,0 +1,33 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/prune_inert_imports/module_binding_no_name_of_its_own_reports_instead/input.py
+---
+[
+  {
+    "code": "prune-inert-imports",
+    "end_location": {
+      "column": 14,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 1
+    },
+    "message": "`shutil` is imported and never referenced. This module writes no `__all__` and binds no name of its own, so nothing in it distinguishes a name a sibling imports from a binding the module stopped using. List the name in `__all__` or remove the import by hand to settle which it is"
+  },
+  {
+    "code": "prune-inert-imports",
+    "end_location": {
+      "column": 11,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 2
+    },
+    "message": "`sys` is imported and never referenced. This module writes no `__all__` and binds no name of its own, so nothing in it distinguishes a name a sibling imports from a binding the module stopped using. List the name in `__all__` or remove the import by hand to settle which it is"
+  }
+]

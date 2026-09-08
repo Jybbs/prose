@@ -1,5 +1,5 @@
 ---
-caption : "Removes an import that binds a name nothing references, where the module names its public surface through `__all__`, or that repeats a binding an earlier import already made, and reports the unreferenced one in a package `__init__.py` instead of removing it."
+caption : "Removes an import that binds a name nothing references, or that repeats a binding an earlier import already made, and reports rather than removes the unreferenced one where the file reads as a compatibility shim or a package `__init__.py`."
 related : [bare-imports, group-imports, inlinable-bindings, modernize-annotations]
 layout  : doc
 ---
@@ -8,7 +8,7 @@ layout  : doc
 
 <RuleLayout rule="prune_inert_imports">
 
-`prune-inert-imports` removes an import that binds a name nothing references, under `drop-unreferenced`, and a second import that rebinds a name an earlier import already bound, under `drop-duplicates`. Both facets read the binding table [[inlinable-bindings]] reads, and `drop-unreferenced` reads the module's `__all__` alongside it, so a module writing no `__all__` keeps every unreferenced binding.
+`prune-inert-imports` removes an import that binds a name nothing references, under `drop-unreferenced`, and a second import that rebinds a name an earlier import already bound, under `drop-duplicates`. Both facets read the binding table [[inlinable-bindings]] reads, and where removing an import could change what another module imports from this one, `drop-unreferenced` reports the binding rather than removing it.
 
 <Fixture rule="prune_inert_imports" case="repeat_and_unread_member_both_go" />
 
@@ -20,28 +20,33 @@ A repeat matches on both the name it binds and the path it names, so `import os`
 
 ## What Holds Its Line
 
-`drop-unreferenced` reads the module's `__all__` first. A module that writes one names its public surface, so an import binding a name that surface leaves out drops. A module that writes none names no surface at all, and every unreferenced import in it holds, because nothing else in the file separates a name a sibling module imports from a binding this module stopped using.
+Whether a name is re-exported is a fact about *other* files, and *Prose* formats one file at a time, so it never sees the sibling doing `from shim import name`. Two shapes in the file itself say that removing an import could break such a sibling, and in both the rule reports the binding rather than removing it.
 
-A compatibility shim is the module this reading exists for, binding names its siblings import across the package boundary while declaring no `__all__`, writing no `x as x` alias, and carrying no `noqa`, so none of the markers below reaches it.
+The first is a module that writes no `__all__` and binds no name of its own, no `def`, no `class`, and no assignment outside a `try` or a version branch. A file whose entire content is imports and the branches guarding them is not using those names, it is carrying them, which is what a compatibility shim is.
 
-<Fixture rule="prune_inert_imports" case="absent_dunder_all_holds_an_unread_name" />
+<Fixture rule="prune_inert_imports" case="module_binding_no_name_of_its_own_reports_instead" />
 
-`drop-duplicates` reads a repeat against the binding an earlier import already made rather than against any public surface, so the second of two identical imports still drops in a module like this one.
+`drop-duplicates` is unaffected, because removing a repeat cannot change what the module re-exports while the first import still binds the name.
 
-<Fixture rule="prune_inert_imports" case="repeat_drops_where_the_module_writes_no_dunder_all" />
+<Fixture rule="prune_inert_imports" case="repeat_drops_while_the_binding_it_repeats_reports" />
 
-`__all__ = []` is a write like any other, so a module naming an empty public surface drops every unreferenced import, the same as a module that lists names.
+The second is a package `__init__.py`, whose bindings are the package's public API whatever its `__all__` says.
+
+Everywhere else the removal stands. A module that writes `__all__` has stated its public surface, so an unreferenced import drops there even where that surface is empty.
 
 <Fixture rule="prune_inert_imports" case="empty_dunder_all_drops_an_unread_name" />
 
-Inside a module that declares a surface, an import carrying a re-export marker holds its line under both facets, so a repeated self-alias survives `drop-duplicates`:
+A module that binds names of its own drops one too, whatever its `__all__`. That leaves one case no signal inside the file reaches, a shim carrying a single helper function beside its re-exports, which reads as an ordinary module and loses them. Writing one of the markers below is what settles it.
+
+An import carrying a re-export marker holds its line under both facets, so a repeated self-alias survives `drop-duplicates`:
 
 1. A name listed in `__all__`.
 2. The PEP 484 redundant-alias form `from x import y as y`.
 3. A `noqa` comment trailing the import, either bare or naming `F401`, which keeps every name that statement binds. The marker has to open a comment rather than appear inside its text, so a stacked `# type: ignore  # noqa: F401` counts whereas a sentence mentioning the word does not, and a statement spanning several rows carries it on the row it opens or the row it closes.
 4. A name taken from a module whose own name marks it private (*`from _ssl import OPENSSL_VERSION`*), which is how a public module re-exports its implementation. A dunder module such as `__future__` is excluded, because its names carry compiler meaning rather than a public API.
+5. A file-level pragma on its own line naming the unused-import behavior, being `# ruff: noqa: F401`, `# flake8: noqa: F401`, or `# pyright: reportUnusedImport=false`, which holds every unreferenced import in the module at once. Each is what the tool naming it already reads as *"the unused imports here are deliberate"*, so *Prose* reads it the same way rather than asking for a spelling of its own. A head naming no code (*a bare `# ruff: noqa`*) is not read, because it silences every rule its tool carries and so says nothing about re-exports in particular.
 
-The `noqa` marker is the only one a reader writes in a comment rather than in code, and it is what the wider ecosystem puts on a re-export no static read can see. [[band-constants]] reads the same comment for `E402`, which pins an import to the row its author gave it. Those two readings are the only ones, so a `noqa` comment exempts nothing from any other rewrite or lint in *Prose*.
+Two of those markers are written in a comment rather than in code, which is where the wider ecosystem records a re-export no static read can see. [[band-constants]] reads a `noqa` naming `E402` as pinning an import to the row its author gave it. Those readings are the whole set, so neither a `noqa` nor a file-level pragma exempts anything from any other rewrite or lint in *Prose*.
 
 <Fixture rule="prune_inert_imports" case="self_alias_marks_a_reexport" />
 
@@ -60,8 +65,6 @@ A repeat of a name nothing reads takes the first binding with it, because both f
 An own-line comment directly above an import keeps the whole statement, because removing the line would leave the comment above whatever statement follows. Where [[reflow-imports]] will merge the statement into a same-module sibling, the drop happens instead on the merged line the comment then leads.
 
 <Fixture rule="prune_inert_imports" case="leading_comment_holds_its_import" />
-
-A package `__init__.py` reports an unreferenced import rather than removing it, because its bindings are the package's public API. The report stands whatever the file's `__all__` declares, whereas a repeat still drops there.
 
 ## The `__future__` Directive
 

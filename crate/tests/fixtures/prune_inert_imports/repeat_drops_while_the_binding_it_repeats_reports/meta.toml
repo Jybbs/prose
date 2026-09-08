@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Repeat Is Removed Where the Binding It Repeats Is Reported"
+
+description = '''
+Nothing reads `json`, and the module binds no name of its own, so one facet removes a line and the other only reports. **The second line is removed and the first is reported**, because removing a repeat cannot change what the module re-exports where the first import still binds the name, whereas removing that first import could.
+'''

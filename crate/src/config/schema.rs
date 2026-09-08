@@ -499,13 +499,12 @@ pub struct PruneInertImportsConfig {
     /// Drops an import rebinding a name an earlier import already bound
     /// to the same source. `false` keeps every repeat.
     pub drop_duplicates: bool,
-    /// Drops an import binding a name nothing references, where the
-    /// module writes an `__all__` the rule can read and lists the name
-    /// nowhere in it, unless the binding is marked for re-export or
-    /// read by a `del` or a quoted annotation. A package `__init__.py`
-    /// reports every unreferenced binding rather than dropping it,
-    /// whatever its `__all__`. `false` keeps every unreferenced import
-    /// and reports none.
+    /// Drops an import binding a name nothing references, unless the
+    /// binding is marked for re-export or read by a `del` or a quoted
+    /// annotation. A package `__init__.py`, and a module that writes no
+    /// `__all__` and binds no name of its own, each report an
+    /// unreferenced binding rather than dropping it. `false` keeps
+    /// every unreferenced import and reports none.
     pub drop_unreferenced: bool,
     pub enabled: bool,
 }

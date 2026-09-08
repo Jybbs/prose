@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/repeat_drops_while_the_binding_it_repeats_reports/input.py
+---
+import json
+
+try:
+    import ssl
+except ImportError:
+    ssl = None

@@ -12,7 +12,7 @@ use super::{
     future::annotations_are_inert,
     inventory::ImportNode,
     is_package_init,
-    reexports::{Reexports, reexports_a_private_member},
+    reexports::{REEXPORT_CODE, Reexports, defines_no_own_name, reexports_a_private_member},
 };
 use crate::{
     diagnostics::Diagnostic,
@@ -24,10 +24,6 @@ use crate::{
     rules::{RuleId, reflow_imports::Folds},
     source::Source,
 };
-
-/// The code `flake8` and its successors report an unread import under,
-/// which a `noqa` naming it marks as deliberate.
-const REEXPORT_CODE: &str = "F401";
 
 /// The alias drops the rule applies, one entry per pruned statement,
 /// beside the unreferenced bindings a package `__init__.py` holds.
@@ -59,14 +55,14 @@ impl<'a> Plan<'a> {
             };
         }
         let analysis = source.binding_analysis();
-        let reexports = Reexports::of(body);
+        let reexports = Reexports::of(source);
         let noqa_held: FxHashSet<usize> = nodes
             .iter()
             .positions(|(slot, _)| noqa_names(source, &body[*slot], REEXPORT_CODE))
             .collect();
         let package_init = is_package_init(source);
-        let acts_on_unreferenced = package_init || reexports.declares_a_surface();
-        let annotated = if rule.unreferenced && acts_on_unreferenced {
+        let shim = !reexports.declares_a_surface() && defines_no_own_name(body);
+        let annotated = if rule.unreferenced {
             annotation_names(source.ast())
         } else {
             FxHashSet::default()
@@ -97,19 +93,25 @@ impl<'a> Plan<'a> {
                     None
                 } else if node.is_future() {
                     (directive_is_inert && directive == Some(index)).then_some(Candidacy::Inert)
-                } else if !acts_on_unreferenced || private_source {
+                } else if private_source {
                     None
                 } else {
                     is_unreferenced(analysis, bound, &repeats, &annotated)
                         .then_some(Candidacy::Unreferenced)
                 };
-                match candidacy {
-                    Some(Candidacy::Unreferenced) if package_init => reports.push(Report {
+                let held = if package_init {
+                    Some(Held::PackageInit)
+                } else {
+                    shim.then_some(Held::NoSurface)
+                };
+                match (candidacy, held) {
+                    (Some(Candidacy::Unreferenced), Some(held)) => reports.push(Report {
+                        held,
                         name: bound,
                         range: alias.range,
                     }),
-                    Some(_) => dropped[statement].push(index),
-                    None => {}
+                    (Some(_), _) => dropped[statement].push(index),
+                    (None, _) => {}
                 }
             }
         }
@@ -131,18 +133,20 @@ impl<'a> Plan<'a> {
         }
     }
 
-    /// One lint per unreferenced binding a package `__init__` holds.
+    /// One lint per unreferenced binding the rule holds back rather than
+    /// drops, each naming what about the module held it.
     pub(super) fn diagnostics(&self, rule: RuleId) -> Vec<Diagnostic> {
         self.reports
             .iter()
             .map(|report| {
+                let reason = match report.held {
+                    Held::NoSurface => "This module writes no `__all__` and binds no name of its own, so nothing in it distinguishes a name a sibling imports from a binding the module stopped using. List the name in `__all__` or remove the import by hand to settle which it is",
+                    Held::PackageInit => "Dropping it from a package's `__init__` changes what the package re-exports, so remove the line by hand once nothing outside this file reads it",
+                };
                 Diagnostic::lint(
                     rule,
                     report.range,
-                    format!(
-                        "`{}` is imported and never referenced. Dropping it from a package's `__init__` changes what the package re-exports, so remove the line by hand once nothing outside this file reads it",
-                        report.name,
-                    ),
+                    format!("`{}` is imported and never referenced. {reason}", report.name),
                 )
             })
             .collect()
@@ -166,8 +170,21 @@ enum Candidacy {
     Unreferenced,
 }
 
-/// One unreferenced binding a package `__init__.py` holds.
+/// What about a module holds an unreferenced binding back from the
+/// drop.
+#[derive(Clone, Copy)]
+enum Held {
+    /// A module writing no `__all__` and binding no name of its own,
+    /// which is the shape a compatibility shim takes.
+    NoSurface,
+    /// A package's `__init__.py` or its stub, whose bindings are the
+    /// package's public API.
+    PackageInit,
+}
+
+/// One unreferenced binding the rule reports rather than drops.
 struct Report<'a> {
+    held: Held,
     name: &'a str,
     range: TextRange,
 }

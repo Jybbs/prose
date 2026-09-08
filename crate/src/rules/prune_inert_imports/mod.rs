@@ -2,15 +2,16 @@
 //! module never references under `drop-unreferenced` and a repeat of a
 //! binding an earlier import already made under `drop-duplicates`, one
 //! walk deciding both facets so a repeat and the binding its drop
-//! leaves unreferenced go together. The unreferenced drop reaches only
-//! a module that writes `__all__` and lists the name nowhere in it, and
-//! a package `__init__.py` or its stub reports that name rather than
-//! dropping it. `from __future__ import annotations` drops behind the
+//! leaves unreferenced go together. A package `__init__.py` or its stub
+//! reports an unreferenced binding rather than dropping it, as does a
+//! module that writes no `__all__` and binds no name of its own.
+//! `from __future__ import annotations` drops behind the
 //! annotation analysis in `future`, and every other `__future__`
 //! feature stays, as does a `from … import *`, a name `__all__` lists,
 //! an import binding `__all__` itself, a name a second import rebinds
-//! from another source, an `x as x` re-export alias, and an import an
-//! own-line comment leads.
+//! from another source, an `x as x` re-export alias, an import an
+//! own-line comment leads, and every import in a module carrying a
+//! file-level pragma naming the unused-import behavior.
 
 use std::{ffi::OsStr, path::Path};
 
@@ -112,6 +113,14 @@ mod tests {
     }
 
     #[test]
+    fn a_noqa_head_naming_no_code_drops_its_unread_import() {
+        let source = parse("# ruff: noqa\nvalue = 1\n\nimport json\n");
+
+        assert_eq!(rule().apply(&source).len(), 1);
+        assert!(rule().lint(&source).is_empty());
+    }
+
+    #[test]
     fn a_main_module_prunes_like_any_other_file() {
         let source = Source::parse_named(
             "import numpy as np\n\n__all__ = [\"value\"]\nvalue = 1\n".to_owned(),
@@ -128,7 +137,11 @@ mod tests {
         "try:\n    import json\nexcept ImportError:\n    json = None\n"
     )]
     #[case::module_carrying_no_import("value = 1\n")]
-    #[case::unread_import_without_a_dunder_all("import json\n\nvalue = 1\n")]
+    #[case::file_level_ruff_pragma("# ruff: noqa: F401\nimport json\n\nvalue = 1\n")]
+    #[case::file_level_flake8_pragma("# flake8: noqa: E501, F401\nimport json\n\nvalue = 1\n")]
+    #[case::file_level_pyright_pragma(
+        "# pyright: reportUnusedImport=false\nimport json\n\nvalue = 1\n"
+    )]
     fn a_module_the_rule_leaves_alone_neither_drops_nor_reports(#[case] src: &str) {
         let source = parse(src);
 
@@ -193,6 +206,18 @@ mod tests {
     }
 
     #[test]
+    fn a_shim_binding_no_name_of_its_own_reports_rather_than_drops() {
+        let source = parse(
+            "import shutil\nimport sys\n\ntry:\n    import ssl\nexcept ImportError:\n    ssl = None\n",
+        );
+        let diagnostics = rule().lint(&source);
+
+        assert!(rule().apply(&source).is_empty());
+        assert_eq!(diagnostics.len(), 2);
+        assert!(diagnostics[0].message.contains("writes no `__all__`"));
+    }
+
+    #[test]
     fn an_ignore_directive_silences_the_package_init_report() {
         let source = parse_init("import numpy as np  # prose: ignore[prune-inert-imports]\n");
         let pipeline =
@@ -211,6 +236,14 @@ mod tests {
             pruned_text(&source),
             "from io import SEEK_CUR, __all__\n\nvalue = SEEK_CUR\n",
         );
+    }
+
+    #[test]
+    fn an_unread_import_drops_where_the_module_binds_a_name_of_its_own() {
+        let source = parse("import json\n\nvalue = 1\n");
+
+        assert_eq!(pruned_text(&source), "\nvalue = 1\n");
+        assert!(rule().lint(&source).is_empty());
     }
 
     #[test]
