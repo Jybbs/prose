@@ -12,6 +12,12 @@ describe('prose_wasm', () => {
     expect(format('code-line-length = 100', 'x = 1\n').config).toContain('code-line-length = 100')
   })
 
+  it('marshals the rule-slug vectors across the boundary', () => {
+    const result = format('', 'aa = 1\nb = 2\n')
+    expect(result.fired_rules).toContain('align-equals')
+    expect(result.unstable_rules).toStrictEqual([])
+  })
+
   it('throws when the config is invalid', () => {
     expect(() => format('code-line-length = "wide"', 'x = 1\n')).toThrow(/code-line-length/)
   })

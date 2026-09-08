@@ -1,23 +1,23 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "pack"
-#MISE description = "Build the `prose_wasm` web module into `site/public/wasm` with `wasm-pack`"
-#MISE dir         = "wasm"
-#MISE outputs     = ["../site/public/wasm/*"]
+#MISE depends     = ["wasm:build"]
+#MISE description = "Emit the `prose_wasm` web module into `site/public/wasm` and optimize it"
+#MISE outputs     = ["site/public/wasm/*"]
 #MISE sources     = [
-#MISE   "../.mise/config.toml",
-#MISE   "../Cargo.lock",
-#MISE   "../Cargo.toml",
-#MISE   "../crate/Cargo.toml",
-#MISE   "../crate/src/**/*.rs",
+#MISE   ".mise/config.toml",
+#MISE   ".mise/lib/wasm.bash",
+#MISE   ".mise/tasks/wasm/build",
+#MISE   ".mise/tasks/wasm/pack",
+#MISE   "Cargo.lock",
 #MISE   "Cargo.toml",
-#MISE   "src/**/*.rs"
+#MISE   "crate/Cargo.toml",
+#MISE   "crate/src/**",
+#MISE   "wasm/**"
 #MISE ]
 
-out=../site/public/wasm
-wasm-pack build \
-  --no-pack \
-  --out-dir "$out" \
-  --profile wasm-release \
-  --target web \
-  -- --locked
-rm -f "$out/.gitignore"
+out=site/public/wasm
+trap 'rm -rf "$out"' ERR
+
+wasm-bindgen --out-dir "$out" --target web "$WASM_ARTIFACT"
+wasm-opt -O --output "$out/prose_wasm_bg.wasm.opt" "$out/prose_wasm_bg.wasm"
+mv "$out/prose_wasm_bg.wasm.opt" "$out/prose_wasm_bg.wasm"

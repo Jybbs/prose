@@ -2,9 +2,11 @@
 #MISE alias       = "smoke"
 #MISE depends     = ["site:bake", "wasm:pack"]
 #MISE description = "Copy the packed web module out of `public/` and run the browser smoke test against it"
+#MISE dir         = "site"
 
-rm -rf site/.vitepress/tests/wasm/pkg
-cp -R site/public/wasm site/.vitepress/tests/wasm/pkg
-cd site
+pkg=.vitepress/tests/wasm/pkg
+rm -rf "$pkg"
+cp -R public/wasm "$pkg"
+
 bunx playwright install --only-shell chromium
-bunx vitest run --project wasm
+bunx vitest run --project wasm "$@"
