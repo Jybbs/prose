@@ -56,5 +56,8 @@ describe('derived facets', () => {
     expect(generic?.rules.map(group => group.rule)).toStrictEqual(['every rule', 'alignment rules'])
     expect(generic?.rules.flatMap(group => group.facets.map(facet => facet.key)))
       .toStrictEqual(['enabled', 'max-shift'])
+    expect(generic?.rules.flatMap(group =>
+      group.facets.filter(facet => facet.meaningNodes.length === 0).map(facet => facet.key)))
+      .toStrictEqual([])
   })
 })
