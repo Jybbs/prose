@@ -16,28 +16,30 @@ const TRAP_NOTICE =
   'The formatter hit an internal error on this input. Edit the source to try again.'
 
 export interface ProseSandbox {
-  configError   : Ref<string>
-  configNotices : Ref<readonly string[]>
-  configToml    : Ref<string>
-  diagnostics   : Ref<readonly LintFinding[]>
-  drawn         : Ref<number>
-  eligible      : Ref<readonly string[] | null>
-  error         : Ref<string>
-  facetImpact   : Ref<Record<string, readonly string[]>>
-  facetValue    : (slug: string, facet: configSchema.Facet) => FacetValue
-  formatNow     : () => void
-  formatted     : Ref<string>
-  lengthImpact  : Ref<readonly string[] | null>
-  lengths       : readonly configSchema.LengthKnob[]
-  lengthValue   : (key: string) => number
-  refresh       : () => void
-  rules         : readonly configSchema.RuleControl[]
-  setFacet      : (slug: string, facet: configSchema.Facet, value: FacetValue) => void
-  setLength     : (key: string, value: number) => void
-  share         : () => Promise<string | null>
-  source        : Ref<string>
-  start         : () => Promise<void>
-  unstable      : Ref<readonly string[]>
+  configError     : Ref<string>
+  configNotices   : Ref<readonly string[]>
+  configToml      : Ref<string>
+  diagnostics     : Ref<readonly LintFinding[]>
+  drawn           : Ref<number>
+  eligible        : Ref<readonly string[] | null>
+  error           : Ref<string>
+  facetImpact     : Ref<Record<string, readonly string[]>>
+  facetValue      : (slug: string, facet: configSchema.Facet) => FacetValue
+  formatNow       : () => void
+  formatted       : Ref<string>
+  lengthImpact    : Ref<readonly string[] | null>
+  lengths         : readonly configSchema.LengthKnob[]
+  lengthValue     : (key: string) => number
+  refresh         : () => void
+  renameConfigKey : (path: string, to: string) => void
+  rules           : readonly configSchema.RuleControl[]
+  setFacet        : (slug: string, facet: configSchema.Facet, value: FacetValue) => void
+  setLength       : (key: string, value: number) => void
+  share           : () => Promise<string | null>
+  source          : Ref<string>
+  start           : () => Promise<void>
+  unstable        : Ref<readonly string[]>
+
 }
 
 export interface ProseSandboxOptions {
@@ -189,27 +191,28 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   }, { debounce: debounceMs })
 
   return {
-    configError   : config.configError,
-    configNotices : configNotices,
-    configToml    : config.configToml,
-    diagnostics   : diagnostics,
-    drawn         : drawn,
-    eligible      : probe.eligible,
-    error         : error,
-    facetImpact   : probe.facetImpact,
-    facetValue    : config.facetValue,
-    formatNow     : formatNow,
-    formatted     : formatted,
-    lengthImpact  : probe.lengthImpact,
-    lengthValue   : config.lengthValue,
-    lengths       : schema.lengths,
-    refresh       : refresh,
-    rules         : schema.rules,
-    setFacet      : config.setFacet,
-    setLength     : config.setLength,
-    share         : share,
-    source        : source,
-    start         : start,
-    unstable      : unstable
+    configError     : config.configError,
+    configNotices   : configNotices,
+    configToml      : config.configToml,
+    diagnostics     : diagnostics,
+    drawn           : drawn,
+    eligible        : probe.eligible,
+    error           : error,
+    facetImpact     : probe.facetImpact,
+    facetValue      : config.facetValue,
+    formatNow       : formatNow,
+    formatted       : formatted,
+    lengthImpact    : probe.lengthImpact,
+    lengthValue     : config.lengthValue,
+    lengths         : schema.lengths,
+    refresh         : refresh,
+    renameConfigKey : config.renameKey,
+    rules           : schema.rules,
+    setFacet        : config.setFacet,
+    setLength       : config.setLength,
+    share           : share,
+    source          : source,
+    start           : start,
+    unstable        : unstable
   }
 }

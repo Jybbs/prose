@@ -1,23 +1,36 @@
 <script setup lang="ts">
-import { promiseTimeout }                                  from '@vueuse/core'
-import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { promiseTimeout }                                            from '@vueuse/core'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
+import ConfigFlagPopper  from './ConfigFlagPopper.vue'
 import CopyButton        from '../base/CopyButton.vue'
 import SandboxCodeEditor from './SandboxCodeEditor.vue'
 
-import type { ProseSandbox } from '../../../lib/composables/use-prose-sandbox'
-import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
-import * as typewriter       from '../../../lib/sandbox/typewriter'
-import { highlight }         from '../../../lib/shared/highlight'
-import { latestRun }         from '../../../lib/shared/latest-run'
+import type { ProseSandbox }                    from '../../../lib/composables/use-prose-sandbox'
+import { useReducedMotion }                     from '../../../lib/composables/use-reduced-motion'
+import { configDecorations, unknownKeyFindings } from '../../../lib/sandbox/config-decorations'
+import * as typewriter                          from '../../../lib/sandbox/typewriter'
+import { highlight }                            from '../../../lib/shared/highlight'
+import { latestRun }                            from '../../../lib/shared/latest-run'
 
 const STEP_MS = 12
 
 const props = defineProps<{ sandbox: ProseSandbox }>()
-const { configError, configNotices, configToml } = props.sandbox
+const { configError, configNotices, configToml, renameConfigKey, rules } = props.sandbox
 
 const reducedMotion = useReducedMotion()
 const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('editor')
+const popper        = useTemplateRef<InstanceType<typeof ConfigFlagPopper>>('popper')
+
+// An unknown key the source carries takes a squiggle and a margin mark,
+// leaving the message list to the notices no line matched.
+const located = computed(() => unknownKeyFindings(configNotices.value, configToml.value))
+const flagged = computed(() => new Set(located.value.map(finding => finding.location.row)))
+const rows    = computed(() => configToml.value.split('\n').length)
+const stray   = computed(() => {
+  const matched = new Set(located.value.map(finding => finding.message))
+  return configNotices.value.filter(notice => !matched.has(notice))
+})
 
 const displayHtml = ref('')
 const editing     = ref(false)
@@ -31,7 +44,9 @@ let shown = ''
 async function settle(text: string): Promise<void> {
   const superseded = run.begin()
   shown = text
-  const html = text.trim() ? await highlight(text, 'toml') : ''
+  const html = text.trim()
+    ? await highlight(text, 'toml', configDecorations(configNotices.value, text))
+    : ''
   if (superseded()) return
   displayHtml.value = html
   typing.value      = false
@@ -94,12 +109,17 @@ function stopEditing(): void {
 
 watch(configToml, next => { if (!editing.value) typeTo(next) })
 
+// The notices land a beat after the text they describe, so the panel repaints
+// against the current config rather than waiting for the next edit.
+watch(configNotices, () => { if (!editing.value) settle(configToml.value) })
+
 onMounted(() => settle(configToml.value))
 </script>
 
 <template>
   <section class="code-panel sandbox-toml copy-host panel panel-clip" aria-label="prose.toml config">
     <header class="code-panel-label">prose.toml</header>
+
     <SandboxCodeEditor
       v-show="editing"
       ref="editor"
@@ -112,17 +132,28 @@ onMounted(() => settle(configToml.value))
       class="code-panel-code code-typewriter shiki"
       v-html="typingHtml"
     />
-    <div
-      v-show="!editing && !typing"
-      class="code-panel-code code-panel-editable sandbox-toml-display"
-      role="button"
-      tabindex="0"
-      @click="startEditing"
-      @keydown.enter.prevent="startEditing"
-      v-html="displayHtml"
-    />
+    <div v-show="!editing && !typing" class="sandbox-toml-body">
+      <div v-if="located.length" class="sandbox-toml-gutter" aria-hidden="true">
+        <span v-for="row in rows" :key="row" :data-flagged="flagged.has(row) ? '' : undefined" />
+      </div>
+      <div
+        class="code-panel-code code-panel-editable sandbox-toml-display"
+        role="button"
+        tabindex="0"
+        @click="startEditing"
+        @keydown.enter.prevent="startEditing"
+        @mouseover="popper?.show"
+        @mouseleave="popper?.hide"
+        v-html="displayHtml"
+      />
+    </div>
+    <p v-if="located.length" class="config-notice-strip">
+      <span aria-hidden="true">▲</span>
+      {{ located.length }} unknown {{ located.length === 1 ? 'key' : 'keys' }}
+    </p>
     <CopyButton v-show="!editing" label="Copy prose.toml" :source="configToml" />
     <p v-if="configError" class="code-panel-error">{{ configError }}</p>
-    <p v-for="notice in configNotices" :key="notice" class="code-panel-warning">{{ notice }}</p>
+    <p v-for="notice in stray" :key="notice" class="code-panel-warning">{{ notice }}</p>
+    <ConfigFlagPopper ref="popper" :rules="rules" @apply="renameConfigKey" />
   </section>
 </template>

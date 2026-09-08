@@ -21,13 +21,25 @@ const mountToml = async (sandbox: ProseSandbox) => {
 }
 
 describe('ProseSandboxToml', () => {
-  domTest('renders a config notice beside the parse error', async () => {
-    const sandbox = tomlSandbox('no-such-key = 1', ['warning: unknown key `no-such-key`'])
+  domTest('marks the row and counts the key a notice names', async () => {
+    const notice  = 'warning: unknown key `no-such-key` in [tool.prose]'
+    const sandbox = tomlSandbox('code-line-length = 88\nno-such-key = 1', [notice])
+    const wrapper = await mountToml(sandbox)
+
+    expect(wrapper.get('.config-notice-strip').text()).toContain('1 unknown key')
+    expect(wrapper.findAll('.sandbox-toml-gutter [data-flagged]')).toHaveLength(1)
+    // The located notice reads off its own key rather than stacking below.
+    expect(wrapper.find('.code-panel-warning').exists()).toBe(false)
+  })
+
+  domTest('keeps a notice the source cannot place beside the parse error', async () => {
+    const sandbox = tomlSandbox('[this is not valid', ['warning: unknown key `absent`'])
     sandbox.configError.value = 'unexpected character'
     const wrapper = await mountToml(sandbox)
 
     expect(wrapper.get('.code-panel-error').text()).toContain('unexpected character')
-    expect(wrapper.get('.code-panel-warning').text()).toContain('no-such-key')
+    expect(wrapper.get('.code-panel-warning').text()).toContain('absent')
+    expect(wrapper.find('.config-notice-strip').exists()).toBe(false)
   })
 
   domTest('types a config change and settles onto the target text', async ({ reducedMotion }) => {

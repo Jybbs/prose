@@ -70,6 +70,27 @@ export function useSandboxConfig(
     return typeof value === 'number' ? value : defaultLength(key)
   }
 
+  // Renames the key at a dotted `path`, keeping the value it held. The rename
+  // runs through the same parse and re-serialize that a knob change runs
+  // through.
+  function renameKey(path: string, to: string): void {
+    const next     = clone(parsed.value) as Record<string, unknown>
+    const segments = path.split('.')
+    const leaf     = segments.pop() ?? ''
+    const table    = segments.reduce<Record<string, unknown> | undefined>(
+      (node, segment) => {
+        const child = node?.[segment]
+        return typeof child === 'object' && child !== null ? child as Record<string, unknown> : undefined
+      },
+      next
+    )
+    if (!table || !(leaf in table)) return
+    table[to] = table[leaf]
+    delete table[leaf]
+    commit(next as ParsedConfig)
+    onToggle()
+  }
+
   function reset(): void {
     parsed.value     = {}
     configToml.value = ''
@@ -112,5 +133,7 @@ export function useSandboxConfig(
     }
   }, { debounce: debounceMs })
 
-  return { adopt, configError, configToml, facetValue, lengthValue, reset, setFacet, setLength }
+  return {
+    adopt, configError, configToml, facetValue, lengthValue, renameKey, reset, setFacet, setLength
+  }
 }

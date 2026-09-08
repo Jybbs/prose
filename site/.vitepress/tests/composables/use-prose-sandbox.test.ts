@@ -326,6 +326,30 @@ describe('useProseSandbox', () => {
     expect(api.facetValue('align-equals', ENABLED)).toBe(false)
   })
 
+  it('renames a misspelled facet and carries its value across', async () => {
+    vi.useFakeTimers()
+    const api = sandbox(okLoader, { debounceMs: 5 })
+    api.configToml.value = '[rules.align-equals]\nmax-shfit = 8\n'
+    // The rename reads the last parse, which the debounced watcher writes.
+    await vi.advanceTimersByTimeAsync(10)
+
+    api.renameConfigKey('rules.align-equals.max-shfit', 'max-shift')
+
+    expect(api.configToml.value).toContain('max-shift = 8')
+    expect(api.configToml.value).not.toContain('max-shfit')
+  })
+
+  it('leaves the config alone where the path names nothing it holds', async () => {
+    vi.useFakeTimers()
+    const api = sandbox(okLoader, { debounceMs: 5 })
+    api.configToml.value = 'code-line-length = 40\n'
+    await vi.advanceTimersByTimeAsync(10)
+
+    api.renameConfigKey('rules.align-equals.absent', 'max-shift')
+
+    expect(api.configToml.value).toBe('code-line-length = 40\n')
+  })
+
   it('writes a sub-facet override and clears it back to empty', () => {
     const api = sandbox(okLoader)
     api.setFacet('align-equals', MAX_SHIFT, 4)
