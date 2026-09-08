@@ -24,25 +24,25 @@ function renderer(): MarkdownIt {
 describe('inlineNodes', () => {
   it('walks a rule slug into a rule node whether it is backticked or wiki-linked', () => {
     expect(inlineNodes(renderer(), '`align-equals`'))
-      .toEqual([{ kind: 'rule', slug: 'align-equals' }])
+      .toStrictEqual([{ kind: 'rule', slug: 'align-equals' }])
     expect(inlineNodes(renderer(), '[[align-equals]]'))
-      .toEqual([{ kind: 'rule', slug: 'align-equals' }])
+      .toStrictEqual([{ kind: 'rule', slug: 'align-equals' }])
   })
 
   it('carries a primitive display name so the renderer needs no registry', () => {
     expect(inlineNodes(renderer(), '[[source]]'))
-      .toEqual([{ kind: 'primitive', display: 'Source', slug: 'source' }])
+      .toStrictEqual([{ kind: 'primitive', display: 'Source', slug: 'source' }])
   })
 
   it('walks a glossary term into a term node', () => {
-    expect(inlineNodes(renderer(), 'an atom')).toEqual([
+    expect(inlineNodes(renderer(), 'an atom')).toStrictEqual([
       { kind: 'text', text: 'an ' },
       { kind: 'term', slug: 'atomic', text: 'atom' }
     ])
   })
 
   it('nests a term inside its enclosing element rather than flattening it', () => {
-    expect(inlineNodes(renderer(), '**an atom**')).toEqual([{
+    expect(inlineNodes(renderer(), '**an atom**')).toStrictEqual([{
       kind     : 'el',
       attrs    : {},
       tag      : 'strong',
@@ -54,7 +54,7 @@ describe('inlineNodes', () => {
   })
 
   it('walks the Prose mark into a balanced span rather than raw html', () => {
-    expect(inlineNodes(renderer(), 'Prose')).toEqual([{
+    expect(inlineNodes(renderer(), 'Prose')).toStrictEqual([{
       kind     : 'el',
       attrs    : { class: 'prose-mark' },
       tag      : 'span',
@@ -68,7 +68,7 @@ describe('inlineNodes', () => {
   })
 
   it('collapses a softbreak to a space, the shape every multi-line description carries', () => {
-    expect(inlineNodes(renderer(), 'first\nsecond')).toEqual([
+    expect(inlineNodes(renderer(), 'first\nsecond')).toStrictEqual([
       { kind: 'text', text: 'first' },
       { kind: 'text', text: ' ' },
       { kind: 'text', text: 'second' }
@@ -76,7 +76,7 @@ describe('inlineNodes', () => {
   })
 
   it('walks block prose, flattening each paragraph inline run into the tree', () => {
-    expect(blockNodes(renderer(), 'A lead over an atom.')).toEqual([{
+    expect(blockNodes(renderer(), 'A lead over an atom.')).toStrictEqual([{
       kind     : 'el',
       attrs    : {},
       tag      : 'p',

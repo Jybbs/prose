@@ -13,6 +13,7 @@
 #MISE   "**/*",
 #MISE   "!.vitepress/.temp/**/*",
 #MISE   "!.vitepress/dist/**/*",
+#MISE   "!.vitepress/tests/wasm/pkg/**/*",
 #MISE   "!coverage/**/*",
 #MISE   "!node_modules/**/*"
 #MISE ]

@@ -13,12 +13,11 @@ const token = (key: string, content: string, htmlStyle?: Record<string, string>)
 
 const step = (...tokens: Token[]) => ({ tokens } as never)
 
-// Counts the child rebuilds so a skipped one is observable, and stubs the
-// animation lookup happy-dom does not implement so `render` reaches its end.
+// Builds a renderer over a fresh container, counting how often it rebuilds
+// its children.
 const mounted = () => {
   const container = document.createElement('pre')
   document.body.append(container)
-  Object.assign(container, { getAnimations: () => [] })
 
   let rebuilds = 0
   const rebuild = container.replaceChildren.bind(container)
@@ -64,26 +63,20 @@ describe('MagicMoveRenderer', () => {
     // takes the whole call rather than re-inserting them.
     renderer.replace(step(token('a', 'x'), token('b', ' = 1')))
     expect(rebuilds()).toBe(1)
-    expect([...container.children]).toEqual(before)
-    expect(contents(container)).toEqual(['x', ' = 1'])
+    expect([...container.children]).toStrictEqual(before)
+    expect(contents(container)).toStrictEqual(['x', ' = 1'])
   })
 
-  it('rebuilds when a token drops out, dropping the stranded element', () => {
+  it.each([
+    ['a token drops out, dropping the stranded element',       step(token('a', 'x')),                     ['x']],
+    ['one token is substituted for another of the same count', step(token('a', 'x'), token('c', ' = 2')), ['x', ' = 2']]
+  ])('rebuilds when %s', (_name, next, expected) => {
     const { container, rebuilds, renderer } = mounted()
 
     renderer.replace(step(token('a', 'x'), token('b', ' = 1')))
-    renderer.replace(step(token('a', 'x')))
+    renderer.replace(next)
     expect(rebuilds()).toBe(2)
-    expect(contents(container)).toEqual(['x'])
-  })
-
-  it('rebuilds when one token is substituted for another of the same count', () => {
-    const { container, rebuilds, renderer } = mounted()
-
-    renderer.replace(step(token('a', 'x'), token('b', ' = 1')))
-    renderer.replace(step(token('a', 'x'), token('c', ' = 2')))
-    expect(rebuilds()).toBe(2)
-    expect(contents(container)).toEqual(['x', ' = 2'])
+    expect(contents(container)).toStrictEqual(expected)
   })
 
   it('reapplies style when a carried token restyles', () => {
@@ -153,6 +146,6 @@ describe('MagicMoveRenderer', () => {
 
     renderer.replace(step(token('a', 'x'), token('b', ' = 2')))
     expect(rebuilds()).toBe(after)
-    expect(contents(container)).toEqual(['x', ' = 2'])
+    expect(contents(container)).toStrictEqual(['x', ' = 2'])
   })
 })

@@ -3,7 +3,7 @@ import { parsePipelineJson, readPipeline } from '../../lib/rules/pipeline'
 describe('parsePipelineJson', () => {
   it('parses entries through the field validation', () => {
     const payload = '[{"after":["align-colons"],"imperative":"align things","position":1,"slug":"align-equals"}]'
-    expect(parsePipelineJson(payload)).toEqual([
+    expect(parsePipelineJson(payload)).toStrictEqual([
       { after: ['align-colons'], imperative: 'align things', position: 1, slug: 'align-equals' }
     ])
   })

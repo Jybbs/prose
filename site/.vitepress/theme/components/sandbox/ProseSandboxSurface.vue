@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { promiseTimeout, useTimeoutFn }                              from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { promiseTimeout, useTimeoutFn } from '@vueuse/core'
+import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 
 import LintFlagPopper    from '../rules/LintFlagPopper.vue'
 import SandboxCodeEditor from './SandboxCodeEditor.vue'
@@ -265,6 +265,10 @@ function cancelEdit(): void {
 // re-highlights with the new decorations and skips the morph.
 watch([formatted, diagnostics], () => render(formatted.value))
 onMounted(() => { if (formatted.value) render(formatted.value) })
+// A render past its await points outlives the component that started it, so
+// the teardown supersedes it before it commits to a detached display or
+// reports a morph decision no reader saw.
+onUnmounted(run.cancel)
 </script>
 
 <template>
@@ -350,43 +354,3 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
     <LintFlagPopper ref="popper" />
   </section>
 </template>
-
-<style scoped>
-/* Mid-resize the new layout overflows the still-animating height, so the
-   morph pane clips instead of flashing a scrollbar. */
-.sandbox-surface :deep(.shiki-magic-move-container) {
-  overflow : hidden;
-}
-
-.sandbox-surface-actions {
-  position : absolute;
-  right    : 10px;
-  bottom   : 8px;
-  z-index  : 4;
-  display  : flex;
-  gap      : 4px;
-}
-
-/* The corners reveal on hover, whereas these hold visible, the pane having no
-   other way out. */
-.sandbox-surface-action {
-  transition : color var(--prose-transition), border-color var(--prose-transition);
-}
-
-.sandbox-surface-apply:hover {
-  border-color : var(--vp-c-brand-1);
-  color        : var(--vp-c-brand-1);
-}
-
-.sandbox-surface-guide {
-  position       : absolute;
-  top            : 1px;
-  bottom         : 1px;
-  left           : calc(22px + var(--guide-col) * 1ch);
-  width          : 0;
-  border-left    : 2px dotted color-mix(in srgb, var(--guide-hue, var(--prose-palette-ube)) 75%, transparent);
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-text-xs);
-  pointer-events : none;
-}
-</style>

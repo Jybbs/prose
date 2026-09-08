@@ -31,7 +31,7 @@ describe('replaceTextTokens', () => {
   it('splits matching text tokens and preserves the rest', () => {
     const out = replaceTextTokens([text('see prose here')], StubToken, /prose/g, () =>
       [Object.assign(new StubToken('html_inline', '', 0), { content: '<b>prose</b>' })])
-    expect(out.map(t => ({ content: t.content, type: t.type }))).toEqual([
+    expect(out.map(t => ({ content: t.content, type: t.type }))).toStrictEqual([
       { content: 'see ',         type: 'text' },
       { content: '<b>prose</b>', type: 'html_inline' },
       { content: ' here',        type: 'text' }
@@ -47,12 +47,12 @@ describe('replaceTextTokens', () => {
     const out = replaceTextTokens(
       children, StubToken, /prose/g, () => [text('NO')], { skipInsideLinks: true }
     )
-    expect(out.map(t => t.content)).toEqual(['', 'prose', ''])
+    expect(out.map(t => t.content)).toStrictEqual(['', 'prose', ''])
   })
 
   it('returns the text token unchanged when nothing matches', () => {
     const out = replaceTextTokens([text('nothing to see')], StubToken, /xyz/g, () => [text('X')])
-    expect(out.map(t => t.content)).toEqual(['nothing to see'])
+    expect(out.map(t => t.content)).toStrictEqual(['nothing to see'])
   })
 })
 
@@ -68,7 +68,7 @@ describe('walkBodyInlines', () => {
     ]
     const seen: string[] = []
     walkBodyInlines({ tokens }, (_block, children) => seen.push(children[0].content))
-    expect(seen).toEqual(['body', 'after heading'])
+    expect(seen).toStrictEqual(['body', 'after heading'])
   })
 })
 
@@ -94,7 +94,7 @@ describe('lintDecorations', () => {
         message      : 'first'
       }
     ]
-    expect(decorations.lintDecorations(findings, 'x = 1\nyyyyy')).toEqual([
+    expect(decorations.lintDecorations(findings, 'x = 1\nyyyyy')).toStrictEqual([
       {
         end        : { character: 3, line: 0 },
         properties : {
@@ -117,21 +117,21 @@ describe('lintDecorations', () => {
   it('orders two findings sharing a row by column', () => {
     const findings = [spanning(4, 6), spanning(1, 3)]
     expect(decorations.lintDecorations(findings, 'x = 1').map(item => item.start))
-      .toEqual([{ character: 0, line: 0 }, { character: 3, line: 0 }])
+      .toStrictEqual([{ character: 0, line: 0 }, { character: 3, line: 0 }])
   })
 
   it('omits the edit attributes when the fix carries neither side', () => {
     const finding = { ...spanning(1, 4), fix: { applicability: 'safe', edits: [{ before: '', content: '' }] } }
     expect(decorations.lintDecorations([finding], 'x = 1')[0].properties)
-      .toEqual({ class: 'lint-flag underline-draw', 'data-message': 'm', 'data-rule': 'a' })
+      .toStrictEqual({ class: 'lint-flag underline-draw', 'data-message': 'm', 'data-rule': 'a' })
   })
 
   it.each([
-    ['a span reaching the whole line',        'x = 1', 1, 6, 'lint-flag lint-flag-line'],
-    ['a span opening past the first column',  'x = 1', 3, 6, 'lint-flag underline-draw'],
-    ['a span stopping short of the line end', 'x = 1', 1, 4, 'lint-flag underline-draw'],
-    ['a span whose end row has no line',      '',      1, 6, 'lint-flag underline-draw']
-  ])('classes %s', (_name, code, column, endColumn, expected) => {
+    { code: 'x = 1', column: 1, endColumn: 6, expected: 'lint-flag lint-flag-line', name: 'a span reaching the whole line'        },
+    { code: 'x = 1', column: 3, endColumn: 6, expected: 'lint-flag underline-draw', name: 'a span opening past the first column'  },
+    { code: 'x = 1', column: 1, endColumn: 4, expected: 'lint-flag underline-draw', name: 'a span stopping short of the line end' },
+    { code: '',      column: 1, endColumn: 6, expected: 'lint-flag underline-draw', name: 'a span whose end row has no line'      }
+  ])('classes $name', ({ code, column, endColumn, expected }) => {
     expect(classOf(code, column, endColumn)).toBe(expected)
   })
 
@@ -156,7 +156,7 @@ describe('lintDecorationTransformer', () => {
     const options: { decorations?: unknown[], meta?: { __raw?: string } } =
       { meta: { __raw: `python ${decorations.lintFenceMeta('demo-rule/basic')}` } }
     preprocess('', options)
-    expect(options.decorations).toEqual([{
+    expect(options.decorations).toStrictEqual([{
       end        : { character: 3, line: 0 },
       properties : { class: 'lint-flag underline-draw', 'data-message': 'm', 'data-rule': 'a' },
       start      : { character: 0, line: 0 }
@@ -167,7 +167,7 @@ describe('lintDecorationTransformer', () => {
     const options: { decorations?: unknown[], meta?: { __raw?: string } } =
       { meta: { __raw: `python ${decorations.lintFenceMeta('demo-rule/basic')}` } }
     preprocess('x =', options)
-    expect(options.decorations).toEqual([{
+    expect(options.decorations).toStrictEqual([{
       end        : { character: 3, line: 0 },
       properties : { class: 'lint-flag lint-flag-line', 'data-message': 'm', 'data-rule': 'a' },
       start      : { character: 0, line: 0 }

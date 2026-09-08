@@ -1,10 +1,6 @@
-import { readFileSync } from 'node:fs'
+import init, { format, panic_for_test } from './pkg/prose_wasm.js'
 
-import { format, initSync, panic_for_test } from '../../../public/wasm/prose_wasm.js'
-
-const MODULE_URL = new URL('../../../public/wasm/prose_wasm_bg.wasm', import.meta.url)
-
-initSync({ module: readFileSync(MODULE_URL) })
+await init()
 
 describe('prose_wasm', () => {
   it('sorts imports through the instantiated module', () => {
@@ -19,7 +15,7 @@ describe('prose_wasm', () => {
   it('marshals the rule-slug vectors across the boundary', () => {
     const result = format('', 'aa = 1\nb = 2\n')
     expect(result.fired_rules).toContain('align-equals')
-    expect(result.unstable_rules).toEqual([])
+    expect(result.unstable_rules).toStrictEqual([])
   })
 
   it('throws when the config is invalid', () => {
@@ -30,6 +26,5 @@ describe('prose_wasm', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => panic_for_test()).toThrow(/unreachable/)
     expect(spy.mock.calls.flat().join(' ')).toContain('smoke-test panic')
-    spy.mockRestore()
   })
 })

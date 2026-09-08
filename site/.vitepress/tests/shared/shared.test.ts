@@ -1,18 +1,21 @@
 import { fc, test } from '@fast-check/vitest'
 
+import { escapeHtml }       from '../../lib/shared/escape-html'
 import { railPaint }        from '../../lib/shared/family-rail'
 import { inlineCode }       from '../../lib/shared/inline-code'
 import { externalAttrs }    from '../../lib/shared/links'
 import { lookup }           from '../../lib/shared/lookup'
 import { formatFolio }      from '../../lib/shared/numerals'
-import { requireString }    from '../../lib/shared/require-string'
+import { pickOr }           from '../../lib/shared/pick-or'
+import { posMod }           from '../../lib/shared/pos-mod'
+import { requireString, requireStringList } from '../../lib/shared/require-string'
 import { ruleSlug }         from '../../lib/shared/rule-slug'
 import { stripSuffix }      from '../../lib/shared/strip-suffix'
 import { parseSvg }         from '../../lib/shared/svg'
 import { toTitleCase }      from '../../lib/shared/title-case'
 import { withFallback }     from '../../lib/shared/with-fallback'
 
-import { warnTest } from '../support'
+import { supportTest } from '../support'
 
 describe('toTitleCase', () => {
   it.each([
@@ -20,6 +23,26 @@ describe('toTitleCase', () => {
     ['one-two-the-end', '-', 'One Two the End']
   ])('title-cases %s across its %s separator', (slug, separator, expected) => {
     expect(toTitleCase(slug, separator)).toBe(expected)
+  })
+})
+
+describe('pickOr', () => {
+  it.each([
+    ['reads a registered key',      'align-equals', '/rules/alignment/align-equals'],
+    ['falls back on a missing key', 'ghost',        null]
+  ])('%s', (_case, key, expected) => {
+    expect(pickOr({ 'align-equals': '/rules/alignment/align-equals' }, key, null)).toBe(expected)
+  })
+})
+
+describe('posMod', () => {
+  it.each([
+    [ 5, 4, 1],
+    [-1, 4, 3],
+    [-8, 3, 1],
+    [ 0, 4, 0]
+  ])('wraps %i under %i to %i', (value, modulus, expected) => {
+    expect(posMod(value, modulus)).toBe(expected)
   })
 })
 
@@ -38,10 +61,32 @@ describe('formatFolio', () => {
   })
 })
 
+describe('escapeHtml', () => {
+  it.each([
+    ['a & b',       'a &amp; b'],
+    ['<b>',         '&lt;b&gt;'],
+    ['say "hi"',    'say &quot;hi&quot;'],
+    ['plain text',  'plain text'],
+    ['',            '']
+  ])('escapes %j', (input, expected) => {
+    expect(escapeHtml(input)).toBe(expected)
+  })
+
+  it('escapes the ampersand before the entities it introduces', () => {
+    expect(escapeHtml('&lt;')).toBe('&amp;lt;')
+  })
+})
+
 describe('inlineCode', () => {
   it.each([
-    ['use `prose format`', 'use <code>prose format</code>'],
-    ['<script>x</script>', '&lt;script&gt;x&lt;/script&gt;']
+    ['use `prose format`',                          'use <code>prose format</code>'],
+    ['<script>x</script>',                          '&lt;script&gt;x&lt;/script&gt;'],
+    ['`a` and `b`',                                 '<code>a</code> and <code>b</code>'],
+    ['Module constant `aa` is not SCREAMING_CASE',  'Module constant <code>aa</code> is not SCREAMING_CASE'],
+    ['`<T>` becomes `T | None`',                    '<code>&lt;T&gt;</code> becomes <code>T | None</code>'],
+    ['Consider inlining `", "`',                    'Consider inlining <code>&quot;, &quot;</code>'],
+    ['a lone ` backtick',                           'a lone ` backtick'],
+    ['plain text',                                  'plain text']
   ])('renders inline code and escapes raw markup in %j', (input, expected) => {
     expect(inlineCode(input)).toBe(expected)
   })
@@ -63,6 +108,24 @@ describe('requireString', () => {
   })
 })
 
+describe('requireStringList', () => {
+  it('returns a list of strings unchanged', () => {
+    expect(requireStringList(['a', 'b'], 'bad list')).toStrictEqual(['a', 'b'])
+  })
+
+  it('accepts an empty list', () => {
+    expect(requireStringList([], 'bad list')).toStrictEqual([])
+  })
+
+  it.each([
+    { name: 'a bare string',        value: 'a'          },
+    { name: 'undefined',            value: undefined    },
+    { name: 'a list holding a number', value: ['a', 1]  }
+  ])('throws on $name', ({ value }) => {
+    expect(() => requireStringList(value, 'bad list')).toThrow('bad list')
+  })
+})
+
 describe('parseSvg', () => {
   it('exposes the viewBox and body of a parsed svg', () => {
     const parsed = parseSvg('<svg xmlns="x" viewBox="0 0 24 24"><path d="M0 0"/></svg>', 'icon.svg')
@@ -77,9 +140,9 @@ describe('parseSvg', () => {
 
 describe('stripSuffix', () => {
   it.each([
-    ['rules/align.md', '.md', 'rules/align'],
-    ['plain-text',     '.md', 'plain-text']
-  ])('strips %j from %j only when present', (input, suffix, expected) => {
+    { expected: 'rules/align', input: 'rules/align.md', suffix: '.md' },
+    { expected: 'plain-text',  input: 'plain-text',     suffix: '.md' }
+  ])('strips $suffix from $input only when present', ({ expected, input, suffix }) => {
     expect(stripSuffix(input, suffix)).toBe(expected)
   })
 })
@@ -91,7 +154,7 @@ describe('externalAttrs', () => {
     ['/local/path',         {}],
     [undefined,             {}]
   ])('maps %s', (href, expected) => {
-    expect(externalAttrs(href)).toEqual(expected)
+    expect(externalAttrs(href)).toStrictEqual(expected)
   })
 })
 
@@ -145,7 +208,7 @@ describe('withFallback', () => {
     await expect(withFallback('demo', () => 42, 0)).resolves.toBe(42)
   })
 
-  warnTest('resolves the fallback and warns on throw', async ({ warn }) => {
+  supportTest('resolves the fallback and warns on throw', async ({ warn }) => {
     await expect(withFallback('demo', () => { throw new Error('boom') }, 7)).resolves.toBe(7)
     expect(warn).toHaveBeenCalledOnce()
   })

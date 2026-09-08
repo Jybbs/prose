@@ -11,7 +11,7 @@ const { active, activeIndex, filtered, step } = useGlossaryFolio()
   <div class="glossary-folio-stage" :data-family="active?.primaryFamily">
     <article v-if="active" class="glossary-folio-pane panel">
       <header class="glossary-folio-head">
-        <p class="glossary-folio-folio">
+        <p class="glossary-folio-folio kicker">
           <span
             v-for="family in active.families"
             :key="family"

@@ -35,12 +35,13 @@ export function cardShell(...children: JSXNode[]): JSXNode {
   return el('div',
     {
       style: {
-        backgroundColor : PALETTE.woodsmoke,
-        display         : 'flex',
-        flexDirection   : 'column',
-        height          : '100%',
-        position        : 'relative',
-        width           : '100%'
+        backgroundColor     : PALETTE.woodsmoke,
+        display             : 'flex',
+        flexDirection       : 'column',
+        fontFeatureSettings : '"rvrn" 0',
+        height              : '100%',
+        position            : 'relative',
+        width               : '100%'
       }
     },
     ...children
@@ -115,7 +116,7 @@ function metaRow(
     el('div', { children: label, style: monoLabel(PALETTE['ube-mid'], 16) }),
     el('div', {
       children : value,
-      style    : { color: PALETTE.champagne, fontVariantNumeric: 'tabular-nums', ...valueStyle }
+      style    : { color: PALETTE.champagne, ...valueStyle }
     })
   )
 }

@@ -30,9 +30,27 @@ def action_pin(action: str, key: str) -> str:
     """
     return matched(
         f"no {key} pin in {action}/action.yml",
-        f".github/actions/{action}/action.yml",
+        manifest(action),
         rf"{key}\s*:\s*v?(\S+)"
     )
+
+
+def action_pins() -> list[tuple[str, str, str]]:
+    """
+    Return one parity pair per repeat of a third-party action pin, comparing
+    every later home's commit against the first home's.
+    """
+    homes: dict[str, list[tuple[str, str]]] = {}
+    for path in sorted(Path(".github").rglob("*.yml")):
+        text = path.read_text(encoding="utf-8")
+        for match in finditer(r"uses\s*:\s*(?!\./)([\w.-]+/[\w./-]+)@(\S+)", text):
+            homes.setdefault(match[1], []).append((str(path), match[2]))
+
+    return [
+        (f"{action} in {first} ↔ {home}", pin, repeat)
+        for action, [(first, pin), *rest] in sorted(homes.items())
+        for home, repeat in rest
+    ]
 
 
 def annotate(message: str, **location) -> None:
@@ -106,7 +124,7 @@ def hashed_paths(action: str) -> list[str]:
         r"'([^']+)'",
         matched(
             f"no hashFiles call in {action}/action.yml",
-            f".github/actions/{action}/action.yml",
+            manifest(action),
             r"hashFiles\(([^)]*)\)"
         )
     )
@@ -119,18 +137,25 @@ def major_minor(value: str) -> str:
     return extract(f"cannot parse major.minor from {value!r}", r"(\d+\.\d+)", value)
 
 
+def manifest(action: str) -> str:
+    """
+    Return the path of the `action` composite action's manifest.
+    """
+    return f".github/actions/{action}/action.yml"
+
+
 def manifests() -> int:
     """
     Report every YAML anchor in a composite action manifest, which the
     runner's manifest parser rejects before any step runs.
     """
     failed = 0
-    for manifest in sorted(Path(".github/actions").glob("*/action.yml")):
-        text = manifest.read_text(encoding="utf-8")
+    for path in sorted(Path(".github/actions").glob("*/action.yml")):
+        text = path.read_text(encoding="utf-8")
         for match in finditer(r"^\s*[\w-]+\s*:\s*&([\w-]+)", text, MULTILINE):
             annotate(
                 f"YAML anchors are rejected in an action manifest, so remove {match.group(1)!r}",
-                file = manifest,
+                file = path,
                 line = text[: match.start()].count("\n") + 1
             )
             failed = 1
@@ -142,6 +167,22 @@ def matched(message: str, path: str, pattern: str) -> str:
     Return the first capture of `pattern` in the file at `path`.
     """
     return extract(message, pattern, Path(path).read_text(encoding="utf-8"))
+
+
+def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
+    """
+    Return one parity pair per list that restates the workspace members,
+    comparing the manifests that list names against the ones the members own.
+    """
+    owned = sorted(f"{name}/Cargo.toml" for name in cargo["workspace"]["members"])
+    return [
+        (f"Cargo.toml members ↔ {home}", owned, named)
+        for home, named in [
+            (".github/workflows/warm.yml path filter", watched_manifests("warm")),
+            (".mise/tasks/lock/check sources", sourced_manifests("lock/check")),
+            (".mise/tasks/lock/sync sources", sourced_manifests("lock/sync"))
+        ]
+    ]
 
 
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
@@ -216,6 +257,8 @@ def parity() -> int:
             task_sources("wasm/pack"),
             hashed_paths("restore-wasm")
         ),
+        *action_pins(),
+        *member_pins(cargo),
         *override_pins(package),
         *patch_pins(package)
     ]
@@ -244,6 +287,13 @@ def patch_pins(package: dict) -> list[tuple[str, str, str]]:
             pinned
         ))
     return pairs
+
+
+def sourced_manifests(task: str) -> list[str]:
+    """
+    Return every member manifest the `task` frontmatter's sources list names.
+    """
+    return [path for path in task_sources(task) if path.endswith("/Cargo.toml")]
 
 
 def task_sources(task: str) -> list[str]:
@@ -276,15 +326,33 @@ def triggers() -> int:
     return 0
 
 
-def workflow_paths(workflow: str) -> list[str]:
+def watched_manifests(name: str) -> list[str]:
     """
-    Return the paths the `workflow` file's push trigger filters on.
+    Return every member manifest the `name` workflow's path filter watches.
+    """
+    text = Path(workflow(name)).read_text(encoding="utf-8")
+    return sorted(
+        match.group(1)
+        for match in finditer(r"^\s*-\s+(\S+/Cargo\.toml)\s*$", text, MULTILINE)
+    )
+
+
+def workflow(name: str) -> str:
+    """
+    Return the path of the `name` workflow file.
+    """
+    return f".github/workflows/{name}.yml"
+
+
+def workflow_paths(name: str) -> list[str]:
+    """
+    Return the paths the `name` workflow's push trigger filters on.
     """
     return findall(
         r"^\s+- (\S+)$",
         matched(
-            f"no paths filter in {workflow}.yml",
-            f".github/workflows/{workflow}.yml",
+            f"no paths filter in {name}.yml",
+            workflow(name),
             r"paths:\n((?:\s+- \S+\n)+)"
         ),
         MULTILINE

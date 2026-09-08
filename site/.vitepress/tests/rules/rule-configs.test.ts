@@ -8,15 +8,15 @@ const ruleDefs = ruleDefsOf(proseSchema(repoRoot(import.meta.url)))
 
 describe('derived rule configs', () => {
   it('carries a row set for every rule in the schema', () => {
-    expect(Object.keys(configs).toSorted()).toEqual(Object.keys(ruleDefs).toSorted())
+    expect(Object.keys(configs).toSorted()).toStrictEqual(Object.keys(ruleDefs).toSorted())
   })
 
   it.each(Object.keys(ruleDefs))('%s mirrors its schema keys and defaults', slug => {
     const rows = configs[slug]
     expect(rows.map(row => row.key).toSorted())
-      .toEqual(Object.keys(ruleDefs[slug].default).toSorted())
+      .toStrictEqual(Object.keys(ruleDefs[slug].default).toSorted())
     for (const row of rows) {
-      expect(JSON.parse(row.default)).toEqual(ruleDefs[slug].default[row.key])
+      expect(JSON.parse(row.default)).toStrictEqual(ruleDefs[slug].default[row.key])
     }
   })
 

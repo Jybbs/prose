@@ -34,18 +34,12 @@
 }
 
 .glossary-folio-folio {
-  display        : flex;
-  align-items    : center;
-  gap            : 10px;
-  height         : 24px;
-  margin         : 0;
-  padding-left   : 6px;
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-kicker-size);
-  line-height    : 24px;
-  letter-spacing : var(--prose-kicker-tracking);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
+  display      : flex;
+  align-items  : center;
+  gap          : 10px;
+  height       : 24px;
+  padding-left : 6px;
+  line-height  : 24px;
 }
 
 .glossary-folio-folio > span,

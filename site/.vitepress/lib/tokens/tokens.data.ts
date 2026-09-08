@@ -1,6 +1,6 @@
 import { defineLoader } from 'vitepress'
 
-import { SOURCES as EXIT_CODES }     from '../exit-codes/exit-codes.data'
+import { SOURCES as EXIT_CODES }     from '../exit-codes/sources'
 import { inlineNodes }               from '../markdown/inline-nodes'
 import { getRenderer }               from '../markdown/renderer'
 import { proseBinaryPath, repoRoot } from '../shared/paths'
