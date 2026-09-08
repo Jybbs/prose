@@ -76,14 +76,17 @@ impl Rule for PruneInertImports {
 
 /// True when `source` is a package's `__init__.py` or its stub.
 fn is_package_init(source: &Source) -> bool {
-    Path::new(source.source_file().name())
-        .file_name()
-        .and_then(OsStr::to_str)
-        .is_some_and(|name| matches!(name, "__init__.py" | "__init__.pyi"))
+    matches!(
+        Path::new(source.source_file().name())
+            .file_name()
+            .and_then(OsStr::to_str),
+        Some("__init__.py" | "__init__.pyi")
+    )
 }
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
     use ruff_python_ast::PySourceType;
 
     use super::*;
@@ -98,15 +101,14 @@ mod tests {
         Source::parse_named(src.to_owned(), "pkg/__init__.py").expect("test source parses")
     }
 
-    fn rule() -> PruneInertImports {
-        PruneInertImports::from_config(&Config::default())
+    /// Applies every fix group the rule plans over `source` and returns
+    /// the resulting text.
+    fn pruned_text(source: &Source) -> String {
+        applied_text(source, rule().apply(source).concat())
     }
 
-    #[test]
-    fn a_conditional_import_below_module_scope_goes_unread() {
-        let source = parse("try:\n    import json\nexcept ImportError:\n    json = None\n");
-        assert!(rule().apply(&source).is_empty());
-        assert!(rule().lint(&source).is_empty());
+    fn rule() -> PruneInertImports {
+        PruneInertImports::from_config(&Config::default())
     }
 
     #[test]
@@ -121,9 +123,15 @@ mod tests {
         assert!(rule().lint(&source).is_empty());
     }
 
-    #[test]
-    fn a_module_with_no_import_plans_nothing() {
-        let source = parse("value = 1\n");
+    #[rstest]
+    #[case::conditional_import_below_module_scope(
+        "try:\n    import json\nexcept ImportError:\n    json = None\n"
+    )]
+    #[case::module_carrying_no_import("value = 1\n")]
+    #[case::unread_import_without_a_dunder_all("import json\n\nvalue = 1\n")]
+    fn a_module_the_rule_leaves_alone_neither_drops_nor_reports(#[case] src: &str) {
+        let source = parse(src);
+
         assert!(rule().apply(&source).is_empty());
         assert!(rule().lint(&source).is_empty());
     }
@@ -135,6 +143,25 @@ mod tests {
         );
 
         assert!(rule().apply(&source).is_empty());
+    }
+
+    #[test]
+    fn a_package_init_reports_nothing_with_the_unreferenced_facet_off() {
+        let mut config = Config::default();
+        config.rules.prune_inert_imports.drop_unreferenced = false;
+        let rule = PruneInertImports::from_config(&config);
+        let source = parse_init("import json\n\nvalue = 1\n");
+
+        assert!(rule.apply(&source).is_empty());
+        assert!(rule.lint(&source).is_empty());
+    }
+
+    #[test]
+    fn a_package_init_reports_rather_than_drops_where_it_declares_a_surface() {
+        let source = parse_init("import json\n\n__all__ = [\"value\"]\nvalue = 1\n");
+
+        assert!(rule().apply(&source).is_empty());
+        assert_eq!(rule().lint(&source).len(), 1);
     }
 
     #[test]
@@ -161,12 +188,8 @@ mod tests {
     #[test]
     fn a_repeat_drops_inside_a_package_init() {
         let source = parse_init("import os\nimport os\n\nvalue = os.getcwd()\n");
-        let groups = rule().apply(&source);
 
-        assert_eq!(
-            applied_text(&source, groups.concat()),
-            "import os\n\nvalue = os.getcwd()\n",
-        );
+        assert_eq!(pruned_text(&source), "import os\n\nvalue = os.getcwd()\n");
     }
 
     #[test]
@@ -183,10 +206,9 @@ mod tests {
     #[test]
     fn an_imported_dunder_all_holds_the_export_surface() {
         let source = parse("from io import SEEK_CUR, __all__\n\nvalue = SEEK_CUR\n");
-        let groups = rule().apply(&source);
 
         assert_eq!(
-            applied_text(&source, groups.concat()),
+            pruned_text(&source),
             "from io import SEEK_CUR, __all__\n\nvalue = SEEK_CUR\n",
         );
     }
@@ -194,30 +216,17 @@ mod tests {
     #[test]
     fn an_unread_import_drops_whole_outside_a_package_init() {
         let source = parse("import json\n\n__all__ = [\"value\"]\nvalue = 1\n");
-        let groups = rule().apply(&source);
 
-        assert_eq!(
-            applied_text(&source, groups.concat()),
-            "\n__all__ = [\"value\"]\nvalue = 1\n",
-        );
-        assert!(rule().lint(&source).is_empty());
-    }
-
-    #[test]
-    fn an_unread_import_holds_where_the_module_writes_no_dunder_all() {
-        let source = parse("import json\n\nvalue = 1\n");
-
-        assert!(rule().apply(&source).is_empty());
+        assert_eq!(pruned_text(&source), "\n__all__ = [\"value\"]\nvalue = 1\n");
         assert!(rule().lint(&source).is_empty());
     }
 
     #[test]
     fn an_unread_repeat_reports_its_survivor_inside_a_package_init() {
         let source = parse_init("import os\nimport os\n");
-        let groups = rule().apply(&source);
         let diagnostics = rule().lint(&source);
 
-        assert_eq!(applied_text(&source, groups.concat()), "import os\n");
+        assert_eq!(pruned_text(&source), "import os\n");
         assert_eq!(diagnostics.len(), 1);
         assert!(diagnostics[0].message.starts_with("`os` is imported"));
     }
@@ -239,9 +248,7 @@ mod tests {
     #[test]
     fn every_repeat_past_the_first_drops_in_one_group() {
         let source = parse("import os\nimport os\nimport os\n\nvalue = os.getcwd()\n");
-        let groups = rule().apply(&source);
-        let text = applied_text(&source, groups.concat());
 
-        assert_eq!(text, "import os\n\nvalue = os.getcwd()\n");
+        assert_eq!(pruned_text(&source), "import os\n\nvalue = os.getcwd()\n");
     }
 }

@@ -322,7 +322,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'writes them, `alphabetize-siblings` sorts dunder methods ahead of '
                + 'properties, private methods, and public methods in a class body, and '
                + '`prune-inert-imports` reads `__all__` as the public surface a module '
-               + 'declares, holding every unreferenced import where a module writes none.',
+               + 'declares.',
     families   : ['ordering', 'lint', 'formatting']
   },
 
@@ -627,10 +627,10 @@ export const glossary: Record<string, GlossaryEntry> = {
   're-export': {
     aliases    : ['re-exports', 'reexport', 'reexports'],
     definition : 'A re-export is a name a module imports so that another module can import it '
-               + 'from there. `prune-inert-imports` reads four markers for one, being a name '
-               + '`__all__` lists, the `x as x` alias form, a trailing `noqa`, and a name '
-               + 'taken out of a private module, and it holds every unreferenced import in a '
-               + 'module writing no `__all__` at all.',
+               + 'from there. `prune-inert-imports` recognizes one by a name `__all__` lists, the '
+               + '`x as x` alias form, a trailing `noqa`, or a name taken out of a private '
+               + 'module, and it holds every unreferenced import in a module writing no '
+               + '`__all__` at all.',
     families   : ['formatting'],
     rule       : 'prune-inert-imports'
   },

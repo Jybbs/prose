@@ -3,5 +3,5 @@ previewable = true
 title       = "An `__all__` Written Below Module Scope Keeps Every Import"
 
 description = '''
-`__all__ = ["dumps"]` sits inside an `if TYPE_CHECKING:` block rather than at module scope, and nothing else reads `dumps`. **`from json import dumps` stays**, because the rule reads an export list only at module scope, and an `__all__` it cannot read keeps every import in the module.
+`__all__ = ["dumps"]` sits inside an `if TYPE_CHECKING:` block rather than at module scope, nothing else reads `dumps`, and the empty `__all__` below would drop the import on its own. **`from json import dumps` stays**, because the rule reads an export list only at module scope, and an `__all__` it cannot read keeps every import in the module.
 '''

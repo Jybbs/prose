@@ -26,6 +26,10 @@ A compatibility shim is the module this reading exists for, binding names its si
 
 <Fixture rule="prune_inert_imports" case="absent_dunder_all_holds_an_unread_name" />
 
+`drop-duplicates` reads a repeat against the binding an earlier import already made rather than against any public surface, so the second of two identical imports still drops in a module like this one.
+
+<Fixture rule="prune_inert_imports" case="repeat_drops_where_the_module_writes_no_dunder_all" />
+
 `__all__ = []` is a write like any other, so a module naming an empty public surface drops every unreferenced import, the same as a module that lists names.
 
 <Fixture rule="prune_inert_imports" case="empty_dunder_all_drops_an_unread_name" />
@@ -41,7 +45,7 @@ The `noqa` marker is the only one a reader writes in a comment rather than in co
 
 <Fixture rule="prune_inert_imports" case="self_alias_marks_a_reexport" />
 
-An `__all__` built from anything other than a list or tuple of string literals, or written below module scope, keeps every import in that module, as does a `from … import *`.
+An `__all__` built from anything other than a list or tuple of string literals, written below module scope, or changed after its assignment keeps every import in that module, as does a `from … import *`. A change means an `append`, an `extend`, or a write through a subscript such as `__all__[:] = sorted(__all__)`.
 
 Two reads the reference count misses keep an import too. A `del` of the bound name needs that binding to exist, and a name read only inside a quoted annotation sits in a string literal rather than in the tree the table reads, so the rule parses each quoted annotation for the names it reads.
 
@@ -57,7 +61,7 @@ An own-line comment directly above an import keeps the whole statement, because 
 
 <Fixture rule="prune_inert_imports" case="leading_comment_holds_its_import" />
 
-A package `__init__.py` reports an unreferenced import rather than removing it, because its bindings are the package's public API, whereas a repeat still drops there.
+A package `__init__.py` reports an unreferenced import rather than removing it, because its bindings are the package's public API. The report stands whatever the file's `__all__` declares, whereas a repeat still drops there.
 
 ## The `__future__` Directive
 

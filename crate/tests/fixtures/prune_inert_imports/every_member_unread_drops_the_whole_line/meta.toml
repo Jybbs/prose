@@ -3,5 +3,5 @@ previewable = true
 title       = "A Line Whose Every Member Is Unread Is Removed Whole"
 
 description = '''
-Neither `Any` nor `Final` is read anywhere in the file, and `value = 1` is the only other statement. **The whole `from typing import Any, Final` line is removed** rather than left as an empty `from typing import`, because every name on it is unread.
+Neither `Any` nor `Final` is read anywhere in the file, and the `__all__` below leaves both out. **The whole `from typing import Any, Final` line is removed** rather than left as an empty `from typing import`, because every name on it is unread.
 '''

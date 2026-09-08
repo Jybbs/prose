@@ -3,7 +3,7 @@
 //! itself, from the PEP 484 `x as x` alias form, and from an import
 //! whose source module reads as private.
 
-use ruff_python_ast::{Alias, Expr, Stmt, helpers::is_dunder};
+use ruff_python_ast::{Alias, Expr, Stmt, StmtAssign, helpers::is_dunder};
 use rustc_hash::FxHashSet;
 
 use super::inventory::{ImportNode, is_self_alias};
@@ -55,8 +55,8 @@ impl<'a> Reexports<'a> {
         }
     }
 
-    /// True when the module writes `__all__` at module scope, whatever
-    /// the write lists.
+    /// True when the module writes `__all__` anywhere or binds the
+    /// name from another module, whatever the write lists.
     pub(super) fn declares_a_surface(&self) -> bool {
         !matches!(self.surface, Surface::Undeclared)
     }
@@ -69,7 +69,7 @@ impl<'a> Reexports<'a> {
     }
 }
 
-/// What one module-scope statement contributes to `__all__`.
+/// What one statement contributes to `__all__`.
 enum DunderAll<'a> {
     Names(Vec<&'a str>),
     Unreadable,
@@ -82,7 +82,8 @@ enum Surface {
     Listed,
     /// The module writes `__all__` nowhere.
     Undeclared,
-    /// A write no static read settles, or an import binding the name.
+    /// A write no static read settles, a write below module scope, or
+    /// an import binding the name.
     Unreadable,
 }
 
@@ -99,16 +100,17 @@ pub(super) fn reexports_a_private_member(node: &ImportNode<'_>) -> bool {
 /// list it binds is written in another module.
 fn dunder_all_write(stmt: &Stmt) -> Option<DunderAll<'_>> {
     let value = match stmt {
+        Stmt::Assign(node) if writes_into_dunder_all(node) => {
+            return Some(DunderAll::Unreadable);
+        }
         Stmt::AugAssign(node) if names_dunder_all(&node.target) => node.value.as_ref(),
         Stmt::Expr(node) if mutates_dunder_all(&node.value) => return Some(DunderAll::Unreadable),
         Stmt::Import(_) | Stmt::ImportFrom(_) => {
             return imports_dunder_all(stmt).then_some(DunderAll::Unreadable);
         }
         _ => {
-            let (target, value) = single_name_assignment(stmt)?;
-            if target.id.as_str() != DUNDER_ALL {
-                return None;
-            }
+            let (_, value) = single_name_assignment(stmt)
+                .filter(|(target, _)| target.id.as_str() == DUNDER_ALL)?;
             value?
         }
     };
@@ -159,6 +161,16 @@ fn string_items(value: &Expr) -> Option<Vec<&str>> {
         .collect()
 }
 
+/// True for an assignment writing through a subscript of `__all__`,
+/// covering the `__all__[:] = …` and `__all__[0] = …` forms.
+fn writes_into_dunder_all(node: &StmtAssign) -> bool {
+    node.targets.iter().any(|target| {
+        target
+            .as_subscript_expr()
+            .is_some_and(|subscript| names_dunder_all(&subscript.value))
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -166,17 +178,13 @@ mod tests {
     use super::*;
     use crate::testing::parse;
 
-    #[rstest]
-    #[case::conditional("if flag:\n    __all__ = [\"other\"]\n")]
-    #[case::function_scope("def setup():\n    global __all__\n    __all__ = [\"other\"]\n")]
-    #[case::class_scope("class C:\n    __all__ = [\"other\"]\n")]
-    #[case::loop_body("for _ in xs:\n    __all__ = [\"other\"]\n")]
-    #[case::try_handler("try:\n    pass\nexcept E:\n    __all__ = [\"other\"]\n")]
-    fn a_write_below_module_scope_holds_every_name(#[case] src: &str) {
-        let source = parse(&format!("from json import dumps\n{src}"));
+    /// Returns the `holds` verdict `Reexports::of` reaches over the
+    /// first import of `src`, which binds `bound`.
+    fn holds_first_import(src: &str, bound: &str) -> bool {
+        let source = parse(src);
         let body = &source.ast().body;
         let alias = &body[0].as_import_from_stmt().expect("a from import").names[0];
-        assert!(Reexports::of(body).holds(alias, "dumps"));
+        Reexports::of(body).holds(alias, bound)
     }
 
     #[rstest]
@@ -189,25 +197,29 @@ mod tests {
         #[case] src: &str,
         #[case] holds: bool,
     ) {
-        let source = parse(&format!(
-            "from json import dumps\n{src}__all__ = [\"other\"]\n"
-        ));
-        let body = &source.ast().body;
-        let alias = &body[0].as_import_from_stmt().expect("a from import").names[0];
-        assert_eq!(Reexports::of(body).holds(alias, "dumps"), holds);
+        let source = format!("from json import dumps\n{src}__all__ = [\"other\"]\n");
+
+        assert_eq!(holds_first_import(&source, "dumps"), holds);
     }
 
     #[rstest]
+    #[case::conditional("if flag:\n    __all__ = [\"other\"]\n")]
+    #[case::function_scope("def setup():\n    global __all__\n    __all__ = [\"other\"]\n")]
+    #[case::class_scope("class C:\n    __all__ = [\"other\"]\n")]
+    #[case::loop_body("for _ in xs:\n    __all__ = [\"other\"]\n")]
+    #[case::try_handler("try:\n    pass\nexcept E:\n    __all__ = [\"other\"]\n")]
     #[case::call("__all__ = build()\n")]
     #[case::name("__all__ = EXPORTS\n")]
     #[case::non_literal_item("__all__ = [name]\n")]
     #[case::append("__all__ = []\n__all__.append(\"other\")\n")]
     #[case::extend("__all__ = []\n__all__.extend(other)\n")]
-    fn an_unreadable_write_holds_every_name(#[case] src: &str) {
-        let source = parse(&format!("from json import dumps\n{src}"));
-        let body = &source.ast().body;
-        let alias = &body[0].as_import_from_stmt().expect("a from import").names[0];
-        assert!(Reexports::of(body).holds(alias, "dumps"));
+    #[case::slice_assignment("__all__ = []\n__all__[:] = [\"other\"]\n")]
+    #[case::subscript_assignment("__all__ = [\"a\"]\n__all__[0] = \"other\"\n")]
+    fn an_unreadable_surface_holds_every_name(#[case] src: &str) {
+        assert!(holds_first_import(
+            &format!("from json import dumps\n{src}"),
+            "dumps",
+        ));
     }
 
     #[rstest]
@@ -239,10 +251,10 @@ mod tests {
     #[case::other_name("__slots__ = [\"loads\"]\n", false)]
     #[case::no_dunder_all("value = 1\n", false)]
     fn of_reads_the_listed_names(#[case] src: &str, #[case] holds: bool) {
-        let source = parse(&format!("from json import loads\n{src}"));
-        let body = &source.ast().body;
-        let alias = &body[0].as_import_from_stmt().expect("a from import").names[0];
-        assert_eq!(Reexports::of(body).holds(alias, "loads"), holds);
+        assert_eq!(
+            holds_first_import(&format!("from json import loads\n{src}"), "loads"),
+            holds,
+        );
     }
 
     #[rstest]

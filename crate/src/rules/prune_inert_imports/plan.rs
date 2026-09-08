@@ -31,18 +31,19 @@ const REEXPORT_CODE: &str = "F401";
 
 /// The alias drops the rule applies, one entry per pruned statement,
 /// beside the unreferenced bindings a package `__init__.py` holds.
-#[derive(Default)]
 pub(super) struct Plan<'a> {
     drops: Vec<Dropping<'a>>,
-    folds: Option<&'a Folds>,
+    folds: &'a Folds,
     reports: Vec<Report<'a>>,
 }
 
 impl<'a> Plan<'a> {
-    /// Walks the module-scope imports of `source`, dropping every
-    /// candidate and holding back the unreferenced ones a package
-    /// `__init__` re-exports. A repeat the pass drops no longer rebinds
-    /// the name, so the binding it repeated reads as write-once.
+    /// Walks the module-scope imports of `source`, dropping each
+    /// candidate, holding an unreferenced binding where the module
+    /// writes no `__all__`, and reporting one a package `__init__`
+    /// binds instead of dropping it. A repeat the pass drops no longer
+    /// rebinds the name, so the binding it repeated reads as
+    /// write-once.
     pub(super) fn of(rule: &'a PruneInertImports, source: &'a Source) -> Self {
         let body = &source.ast().body;
         let nodes: Vec<(usize, ImportNode<'a>)> = body
@@ -51,7 +52,11 @@ impl<'a> Plan<'a> {
             .filter_map(|(slot, stmt)| ImportNode::of(stmt).map(|node| (slot, node)))
             .collect();
         if nodes.is_empty() {
-            return Self::default();
+            return Self {
+                drops: Vec::new(),
+                folds: &rule.folds,
+                reports: Vec::new(),
+            };
         }
         let analysis = source.binding_analysis();
         let reexports = Reexports::of(body);
@@ -60,8 +65,8 @@ impl<'a> Plan<'a> {
             .positions(|(slot, _)| noqa_names(source, &body[*slot], REEXPORT_CODE))
             .collect();
         let package_init = is_package_init(source);
-        let declares_a_surface = reexports.declares_a_surface();
-        let annotated = if rule.unreferenced && (package_init || declares_a_surface) {
+        let acts_on_unreferenced = package_init || reexports.declares_a_surface();
+        let annotated = if rule.unreferenced && acts_on_unreferenced {
             annotation_names(source.ast())
         } else {
             FxHashSet::default()
@@ -81,6 +86,7 @@ impl<'a> Plan<'a> {
                 continue;
             }
             let directive = node.future_annotations();
+            let private_source = reexports_a_private_member(node);
             for (index, alias) in node.names().iter().enumerate() {
                 let bound = node.bound(alias);
                 let candidacy = if reexports.holds(alias, bound) {
@@ -91,7 +97,7 @@ impl<'a> Plan<'a> {
                     None
                 } else if node.is_future() {
                     (directive_is_inert && directive == Some(index)).then_some(Candidacy::Inert)
-                } else if reexports_a_private_member(node) {
+                } else if !acts_on_unreferenced || private_source {
                     None
                 } else {
                     is_unreferenced(analysis, bound, &repeats, &annotated)
@@ -102,7 +108,6 @@ impl<'a> Plan<'a> {
                         name: bound,
                         range: alias.range,
                     }),
-                    Some(Candidacy::Unreferenced) if !declares_a_surface => {}
                     Some(_) => dropped[statement].push(index),
                     None => {}
                 }
@@ -121,7 +126,7 @@ impl<'a> Plan<'a> {
                     slot: *slot,
                 })
                 .collect(),
-            folds: Some(&rule.folds),
+            folds: &rule.folds,
             reports,
         }
     }
@@ -147,10 +152,7 @@ impl<'a> Plan<'a> {
     /// losing every alias landing on the import its comment heads once
     /// the later rules have laid the block out.
     pub(super) fn edits(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let Some(folds) = self.folds else {
-            return Vec::new();
-        };
-        folds.prune(source, &self.drops)
+        self.folds.prune(source, &self.drops)
     }
 }
 

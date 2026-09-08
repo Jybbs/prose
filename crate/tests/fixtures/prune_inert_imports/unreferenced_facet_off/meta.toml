@@ -3,5 +3,5 @@ previewable = false
 title       = "With `drop-unreferenced` Off an Unread Member Stays"
 
 description = '''
-`drop-unreferenced = false` is set, and `label: Final = "x"` reads `Final` whereas nothing reads `Any`. **`Any` stays on the line and nothing is reported**, because turning the facet off disables both the removal and the report it would otherwise make.
+`drop-unreferenced = false` is set, and `label: Final = "x"` reads `Final` whereas nothing reads `Any`. **`Any` stays on the line**, because turning the facet off disables the removal, along with the report a package `__init__.py` would make in its place.
 '''
