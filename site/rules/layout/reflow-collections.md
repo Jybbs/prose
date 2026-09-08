@@ -20,7 +20,7 @@ A member the expansion keeps as written rather than laying out moves whole into 
 
 A dict expands once it has more than `max-dict-entries` entries whatever its width, and every collection enclosing it expands with it.
 
-A dict entry whose `key: value` width overflows the budget breaks at the `:` and hangs its value one indent step in, row by row rather than across the whole literal, a layout only a dict takes. Setting `wrap-dict-entries` to `false` leaves such an entry on one line.
+A dict entry whose `key: value` width overflows the budget breaks at the `:` and hangs its value one indent step in, row by row rather than across the whole literal, a layout only a dict takes.
 
 Every width the rule reads counts the separator closing an entry's row at the position [[alphabetize-siblings]] leaves it in, on the rejoin as well as the expansion. An entry the sort moves last sheds the comma it carries and one the sort moves up gains one before either is measured, so the layout the rule picks stays put once the sort is written. Each construct is then measured at the column it settles at:
 
@@ -29,13 +29,30 @@ Every width the rule reads counts the separator closing an entry's row at the po
 3. A literal following one the rule expands on the same line is measured where that expansion leaves it, on the closer's row at the statement's indent rather than under the continuation column the source wrote.
 4. A dict value whose key the rule lays across rows is measured from the key's last row.
 
-Each move sits behind its own facet, `explode` gating the count trigger as well as the width one, whereas the rejoin has none.
+Each move sits behind its own facet, whereas the rejoin has none.
 
-<template #configuration>
 
-<RuleConfigTable />
+<template #facets>
 
-A short tuple inside a call's argument list, like `numpy.zeros((3, 4))`, stays inline, since it fits the budget and `max-dict-entries` reads dicts alone. A `dict` literal with eight non-atomic entries expands whatever its length. A four-entry `dict` expands at the default `max-dict-entries` of <ConfigDefault rule="reflow-collections" facet="max-dict-entries" /> even when it fits the line.
+### `explode`
+
+`explode` gates the expansion itself, covering the count trigger as well as the width one. At `false` every expansion stops and the count cap has nothing left to act on, whereas the rejoin runs either way.
+
+### `keep-multiline-literals`
+
+`keep-multiline-literals` keeps a literal the author wrote as a bracketed column of two or more entries, re-expanding it to the canonical layout rather than joining it back. Setting it to `false` joins one onto a single line wherever it fits the budget, and any other multi-line layout rejoins either way.
+
+### `max-atomics`
+
+`max-atomics` caps how many atomic entries one packed row of an expanded collection carries, defaulting to <ConfigDefault rule="reflow-collections" facet="max-atomics" />, and `false` removes the cap so each row packs by width alone.
+
+### `max-dict-entries`
+
+`max-dict-entries` expands a dict once its entry count passes the cap, whatever its width, so a four-entry `dict` expands at the default <ConfigDefault rule="reflow-collections" facet="max-dict-entries" /> even when it fits the line. The cap reads dicts alone, which is why a short tuple inside a call's argument list, like `numpy.zeros((3, 4))`, stays inline, whereas at `false` the width trigger becomes the only one a dict meets.
+
+### `wrap-dict-entries`
+
+`wrap-dict-entries` breaks an over-wide `key: value` at its `:` and hangs the value one indent step in, row by row rather than across the whole literal. Setting it to `false` leaves the oversized entry on one line.
 
 </template>
 

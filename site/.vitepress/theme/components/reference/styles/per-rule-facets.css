@@ -131,12 +131,11 @@
 }
 
 .per-rule-facets-term {
-  display         : flex;
-  flex-wrap       : wrap;
-  align-items     : center;
-  justify-content : space-between;
-  gap             : 0.4rem 0.75rem;
-  margin          : 0;
+  display     : flex;
+  flex-wrap   : wrap;
+  align-items : center;
+  gap         : 0.4rem 0.75rem;
+  margin      : 0;
 }
 
 .per-rule-facets-key {
@@ -146,10 +145,29 @@
   color       : var(--vp-c-text-1);
 }
 
+/* Overrides the heading sheet, which hangs a permalink in the left margin the rail fills. */
+.vp-doc .per-rule-facets-rule-head .header-anchor,
+.vp-doc .per-rule-facets-term .header-anchor {
+  --vp-header-anchor-symbol : '§';
+
+  position    : static;
+  align-self  : center;
+  margin-left : 0.3em;
+  font-size   : var(--prose-text-sm);
+}
+
+.per-rule-facets-rule-head:hover .header-anchor,
+.per-rule-facets-rule-head .header-anchor:focus,
+.per-rule-facets-term:hover .header-anchor,
+.per-rule-facets-term .header-anchor:focus {
+  opacity : 1;
+}
+
 .per-rule-facets-badges {
   display     : inline-flex;
   align-items : center;
   gap         : 0.4rem;
+  margin-left : auto;
 }
 
 .per-rule-facets-type {

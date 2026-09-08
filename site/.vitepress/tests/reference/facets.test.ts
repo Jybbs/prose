@@ -6,6 +6,11 @@ const families = await loader.load([])
 
 const ruleDefs = ruleDefsOf(proseSchema(repoRoot(import.meta.url)))
 
+// The keys the generic group renders are the ones the per-rule lists drop.
+const hoisted = new Set(
+  (families.find(family => family.family === 'generic')?.rules ?? [])
+    .flatMap(group => group.facets.map(facet => facet.key)))
+
 const derived = families
   .filter(family => family.family !== 'generic')
   .flatMap(family => family.rules.flatMap(group =>
@@ -13,7 +18,7 @@ const derived = families
 
 const expected = Object.entries(ruleDefs)
   .flatMap(([rule, def]) => Object.keys(def.default)
-    .filter(key => key !== 'enabled' && key !== 'max-shift')
+    .filter(key => !hoisted.has(key))
     .map(key => `${rule}.${key}`))
 
 describe('derived facets', () => {
@@ -32,6 +37,18 @@ describe('derived facets', () => {
       .find(group => group.rule === rule)
       ?.facets.find(entry => entry.key === key)
     expect(facet?.meaningNodes.length).toBeGreaterThan(0)
+  })
+
+  it('anchors every rule group and facet to an id no other one takes', () => {
+    const anchors = families.flatMap(family =>
+      family.rules.flatMap(group => [group.anchor, ...group.facets.map(facet => facet.anchor)]))
+    expect(new Set(anchors).size).toBe(anchors.length)
+  })
+
+  it.each(derived)('%s.%s anchors beneath its own rule', (rule, key) => {
+    const group = families.flatMap(family => family.rules).find(entry => entry.rule === rule)
+    expect(group?.facets.find(facet => facet.key === key)?.anchor)
+      .toBe(`${group?.anchor}-${key}`)
   })
 
   it('hoists the scopes every rule shares', () => {

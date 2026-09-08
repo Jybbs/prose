@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { mount } from '@vue/test-utils'
+import { mount }    from '@vue/test-utils'
+import { nextTick } from 'vue'
 
 import InlineProse          from '../../theme/components/base/InlineProse.vue'
 import InlineRuleLink       from '../../theme/components/rules/InlineRuleLink.vue'
@@ -16,8 +17,8 @@ vi.mock('../../lib/reference/facets.data', () => ({
       family: 'generic',
       label : 'Generic',
       rules : [
-        { rule: 'every rule', facets: [
-          { default: 'true', key: 'enabled', meaningNodes: [{ kind: 'text', text: 'Toggle the rule.' }], type: 'bool' }
+        { anchor: 'every-rule', rule: 'every rule', facets: [
+          { anchor: 'every-rule-enabled', default: 'true', key: 'enabled', meaningNodes: [{ kind: 'text', text: 'Toggle the rule.' }], type: 'bool' }
         ] }
       ]
     },
@@ -26,11 +27,12 @@ vi.mock('../../lib/reference/facets.data', () => ({
       family: 'layout',
       label : 'Layout',
       rules : [
-        { rule: 'reflow-calls', facets: [
-          { default: '3', key: 'max-args', meaningNodes: [{ kind: 'text', text: 'Explode a call.' }], type: 'positive int | false' }
+        { anchor: 'reflow-calls', rule: 'reflow-calls', facets: [
+          { anchor: 'reflow-calls-max-args', default: '3', key: 'max-args', meaningNodes: [{ kind: 'text', text: 'Explode a call.' }], type: 'positive int | false' }
         ] },
-        { rule: 'reflow-collections', facets: [
+        { anchor: 'reflow-collections', rule: 'reflow-collections', facets: [
           {
+            anchor       : 'reflow-collections-keep-multiline-literals',
             default      : 'true',
             key          : 'keep-multiline-literals',
             meaningNodes : [
@@ -41,6 +43,7 @@ vi.mock('../../lib/reference/facets.data', () => ({
             type         : 'bool'
           },
           {
+            anchor       : 'reflow-collections-max-atomics',
             default      : '8',
             key          : 'max-atomics',
             meaningNodes : [{ kind: 'text', text: 'Keep short.' }],
@@ -52,10 +55,15 @@ vi.mock('../../lib/reference/facets.data', () => ({
   ]
 }))
 
-const mountFacets = () =>
-  mount(PerRuleFacets, { global: { components: { InlineProse }, stubs: { InlineRuleLink: true } } })
+const mountFacets = (options: { attachTo?: HTMLElement } = {}) =>
+  mount(PerRuleFacets, {
+    ...options,
+    global : { components: { InlineProse }, stubs: { InlineRuleLink: true } }
+  })
 
 describe('PerRuleFacets', () => {
+  afterEach(() => { window.location.hash = '' })
+
   it('renders one collapsible head per family, counting facets across its rules', () => {
     const heads = mountFacets().findAll('.per-rule-facets-head')
     expect(heads).toHaveLength(2)
@@ -87,6 +95,50 @@ describe('PerRuleFacets', () => {
     expect(maxArgs.get('.per-rule-facets-default-value').text()).toBe('3')
     expect(w.findAll('.per-rule-facets-entry')[2].get('.per-rule-facets-meaning').html())
       .toContain('<code>false</code>')
+  })
+
+  it('anchors every rule and facet, each carrying the permalink beside its name', () => {
+    const w = mountFacets()
+    expect(w.findAll('.per-rule-facets-rule-head').map(head => head.attributes('id')))
+      .toStrictEqual(['every-rule', 'reflow-calls', 'reflow-collections'])
+    expect(w.findAll('.per-rule-facets-term').map(term => term.attributes('id')))
+      .toStrictEqual([
+        'every-rule-enabled',
+        'reflow-calls-max-args',
+        'reflow-collections-keep-multiline-literals',
+        'reflow-collections-max-atomics'
+      ])
+    expect(w.get('#reflow-calls-max-args a.header-anchor').attributes())
+      .toMatchObject({ 'aria-label': 'Permalink to “max-args”', href: '#reflow-calls-max-args' })
+  })
+
+  it.each([['reflow-collections'], ['reflow-collections-max-atomics']])(
+    'expands the family holding %s when the address bar names it',
+    async fragment => {
+      window.location.hash = `#${fragment}`
+      const w = mountFacets()
+      await nextTick()
+      expect(w.findAll('.per-rule-facets-head').map(head => head.attributes('aria-expanded')))
+        .toStrictEqual(['false', 'true'])
+    }
+  )
+
+  it('scrolls to the facet it reveals, which the browser passed over while it sat hidden', async () => {
+    const reached: string[] = []
+    vi.spyOn(Element.prototype, 'scrollIntoView')
+      .mockImplementation(function scroll(this: Element) { reached.push(this.id) })
+    window.location.hash = '#reflow-collections-max-atomics'
+    mountFacets({ attachTo: document.body })
+    await nextTick()
+    expect(reached).toStrictEqual(['reflow-collections-max-atomics'])
+  })
+
+  it('leaves every family collapsed for a fragment naming no anchor', async () => {
+    window.location.hash = '#per-rule-facets'
+    const w = mountFacets()
+    await nextTick()
+    expect(w.findAll('.per-rule-facets-head').map(head => head.attributes('aria-expanded')))
+      .toStrictEqual(['false', 'false'])
   })
 
   it('carries the family accent through data-family', () => {

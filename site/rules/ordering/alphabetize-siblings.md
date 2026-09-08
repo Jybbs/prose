@@ -39,7 +39,7 @@ A section marker splits a run into sections that each sort on their own while th
 
 Positional-or-keyword parameters never reorder, since a slot is part of the call contract, whereas the keyword-only block past the `*` sorts, and [[unsorted-positionals]] reports a run out of order. A class whose header generates its constructor follows the same contract, so a `NamedTuple` or `msgspec.Struct` base and a `@dataclass`, `attrs`, or `pydantic.dataclasses` decorator each pin the field run, whereas `kw_only=True`, a `dataclasses.KW_ONLY` block, a `TypedDict`, and a `pydantic.BaseModel` sort throughout.
 
-At a call site, keyword arguments in `name=value` form sort on any callee while positional arguments keep their slots. Dict keys sort by default, and because insertion order is observable through iteration, `.items()`, and `**` expansion, `sort-dict-keys = false` keeps every dict in a project as written and `# prose: keep` keeps one literal. The same marker keeps one `__all__` or `__slots__` where `sort-dunder-lists = false` keeps them all. In both a call and a dict, an entry whose value runs code (*a call, a comprehension, an `await`*) keeps its slot, and set literals sort regardless.
+At a call site, keyword arguments in `name=value` form sort on any callee while positional arguments keep their slots. Dict keys sort by default, and insertion order is observable through iteration, `.items()`, and `**` expansion, so `# prose: keep` holds one literal as written. The same marker holds one `__all__` or `__slots__`. In both a call and a dict, an entry whose value runs code (*a call, a comprehension, an `await`*) keeps its slot, and set literals sort regardless.
 
 A docstring entry naming a parameter takes that parameter's position as the rule leaves the signature, and an entry naming nothing in the signature sinks below the mirrored ones.
 
@@ -47,7 +47,33 @@ A docstring entry naming a parameter takes that parameter's position as the rule
 
 <RuleConfigTable />
 
-The order itself follows fixed per-construct conventions, with method groups following the dunders, properties, privates, publics order and Pydantic fields following required then optional. [[group-imports]] moves consecutive imports into their canonical sections (*a `from __future__` import first, then bare, then external `from`, then local-package*) and `alphabetize-siblings` sorts the names within each, with the `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* naming the packages that join the local-package section alongside relative imports. Each sort also switches off on its own through the facets above, so a project can keep its methods grouped while leaving its definitions in source order, or keep a hand-curated `__all__` while everything else still sorts.
+The order itself follows fixed per-construct conventions, with method groups following the dunders, properties, privates, publics order and Pydantic fields following required then optional. [[group-imports]] moves consecutive imports into their canonical sections (*a `from __future__` import first, then bare, then external `from`, then local-package*) and `alphabetize-siblings` sorts the names within each, with the `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* naming the packages that join the local-package section alongside relative imports.
+
+</template>
+
+<template #facets>
+
+Each sort switches off on its own, so a project can keep its methods grouped while leaving its definitions in source order, or keep a hand-curated `__all__` while everything else still sorts.
+
+### `group-methods`
+
+`group-methods` sorts a class body into its dunder, property, private, and public groups before alphabetizing within each, so the constructor sits above the properties and the helpers below them. Setting it to `false` sorts every method on its plain name instead.
+
+### `sort-definitions`
+
+`sort-definitions` alphabetizes the class and function definitions, keeping each below any sibling it names at evaluation time. With it off, the definitions stay in source order while every other sort still runs.
+
+### `sort-dict-keys`
+
+`sort-dict-keys` sorts a dict literal's entries, the scalar values ahead of the collection values and alphabetical by key within each. Insertion order is observable through iteration, `.items()`, and `**` unpacking, so a project relying on that order sets the facet to `false`, and one literal keeps the order written under `# prose: keep`.
+
+### `sort-docstring-entries`
+
+`sort-docstring-entries` orders the `name: description` entries under a Title-case docstring heading, each parameter entry taking its parameter's position as the rule leaves the signature and every other entry sorting alphabetically below them. Under `false` the entries keep the order written.
+
+### `sort-dunder-lists`
+
+`sort-dunder-lists` sorts the string items inside `__all__` and `__slots__`. A hand-ordered public API keeps the order written under `false`, and `# prose: keep` holds a single list.
 
 </template>
 

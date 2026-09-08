@@ -80,6 +80,22 @@ export function facetKeys(defaults: Record<string, unknown>): string[] {
     a === 'enabled' ? -1 : b === 'enabled' ? 1 : a.localeCompare(b))
 }
 
+// The facets the shared sub-tables give every rule and every alignment rule,
+// which the per-rule listings drop and the reference reads once as a scope.
+function hoistedFacets(defs: SchemaDefs): Set<string> {
+  return new Set([
+    ...Object.keys(defs.ToggleOnly.properties),
+    ...Object.keys(defs.AlignmentConfig.properties)
+  ])
+}
+
+// A rule's own facet keys in name order, past the ones the shared sub-tables
+// already carry.
+export function ownFacetKeys(defs: SchemaDefs, defaults: Record<string, unknown>): string[] {
+  const hoisted = hoistedFacets(defs)
+  return Object.keys(defaults).filter(key => !hoisted.has(key)).toSorted()
+}
+
 // The configuration schema the `prose schema` subcommand prints.
 export function proseSchema(root: string): SchemaDocument {
   return JSON.parse(runProse(root, ['schema'])) as SchemaDocument

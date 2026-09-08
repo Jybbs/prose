@@ -91,6 +91,18 @@ The `target-version` field from the top-level [**Configuration**](/reference/con
 
 </template>
 
+<template #facets>
+
+### `drop-duplicates`
+
+`drop-duplicates` removes an import rebinding a name that an earlier import already bound to the same source, so a repeated `import os` keeps one line. The match reads the path as well as the name, which is why `import os` beside `import os.path` is two imports rather than a repeat, and `false` keeps every repeat.
+
+### `drop-unreferenced`
+
+`drop-unreferenced` removes an import binding a name nothing references, and reports rather than removes one whose binding is marked for re-export, read by a `del` or a quoted annotation, or bound in a package `__init__.py`. Setting it to `false` keeps every unreferenced import and reports none.
+
+</template>
+
 <template #related-after>
 
 For the gate semantics, [**`target-version`**](/reference/configuration#top-level-keys) in the Configuration chapter covers how the field is read across version-gated rules.
