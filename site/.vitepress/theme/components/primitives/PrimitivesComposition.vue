@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import { data as primitives } from '../../../lib/primitives/primitives-composition.data'
 
+import { pickOr }                   from '../../../lib/shared/pick-or'
 import { PRIMITIVE_LAYER_NUMERALS } from '../../../lib/shared/registries'
 import type { PrimitiveSlug }       from '../../../lib/shared/registries'
 
@@ -21,7 +22,8 @@ const bands = computed(() => [
   { entries : primitives.byLayer.base,          key : 'base'          as const, numeral : PRIMITIVE_LAYER_NUMERALS.base          }
 ])
 
-const focusedEntry = computed(() => focused.value === null ? null : primitives.bySlug[focused.value] ?? null)
+const focusedEntry = computed(() =>
+  focused.value === null ? null : pickOr(primitives.bySlug, focused.value, null))
 
 const related = computed<Set<string>>(() => {
   const s = new Set<string>()

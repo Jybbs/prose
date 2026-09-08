@@ -1,10 +1,12 @@
 // oxlint-disable no-empty-pattern -- vitest fixtures require object destructuring
-import { mount }              from '@vue/test-utils'
-import { test as base }       from 'vitest'
-import { defineComponent, h } from 'vue'
+import { mount }                   from '@vue/test-utils'
+import { test as base }            from 'vitest'
+import { defineComponent, h, ref } from 'vue'
 
 import type { DOMWrapper }        from '@vue/test-utils'
 import type { DetachedWindowAPI } from 'happy-dom'
+
+import type { ProseSandbox } from '../lib/composables/use-prose-sandbox'
 
 interface DomFixtures {
   fonts          : { settle: () => void }
@@ -56,6 +58,33 @@ export const domTest = base.extend<DomFixtures>({
     FakeResizeObserver.latest = undefined
     globalThis.ResizeObserver = prior
   }
+})
+
+// Builds a whole `ProseSandbox` at rest, which a component test overrides
+// with only the fields its case moves and reads without a cast.
+export const fakeSandbox = (overrides: Partial<ProseSandbox> = {}): ProseSandbox => ({
+  configError  : ref(''),
+  configToml   : ref(''),
+  diagnostics  : ref([]),
+  drawn        : ref(0),
+  eligible     : ref([]),
+  error        : ref(''),
+  facetImpact  : ref({}),
+  facetValue   : (_slug, facet) => facet.default,
+  formatNow    : () => {},
+  formatted    : ref(''),
+  lengthImpact : ref(null),
+  lengths      : [],
+  lengthValue  : () => 88,
+  refresh      : () => {},
+  rules        : [],
+  setFacet     : () => {},
+  setLength    : () => {},
+  share        : () => Promise.resolve(null),
+  source       : ref(''),
+  start        : () => Promise.resolve(),
+  unstable     : ref([]),
+  ...overrides
 })
 
 // happy-dom's `checkVisibility` reports false for a detached element, and

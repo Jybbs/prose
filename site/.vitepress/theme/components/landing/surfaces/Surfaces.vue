@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useTemplateRef, watchEffect } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
 import { useCarouselMeasurement } from '../../../../lib/composables/use-carousel-measurement'
 import { useCarouselVelocity }    from '../../../../lib/composables/use-carousel-velocity'
@@ -35,15 +35,6 @@ const { offset, onPointerLeave, onPointerMove } = useCarouselVelocity(viewportRe
   magnetGain        : MAGNET_GAIN,
   maxPullPxPerSec   : MAX_PULL_PX_PER_SEC,
   reducedMotion
-})
-
-watchEffect(() => {
-  if (fits.value) {
-    offset.value = 0
-  }
-  else if (halfWidth.value > 0) {
-    offset.value = ((offset.value % halfWidth.value) + halfWidth.value) % halfWidth.value
-  }
 })
 
 const trackStyle = computed(() => ({

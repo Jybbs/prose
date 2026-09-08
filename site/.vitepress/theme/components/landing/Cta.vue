@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 
 import { data as releases } from '../../../lib/landing/pypi-releases.data'
+import { PYPI_PACKAGE }     from '../../../lib/shared/constants'
 
 import CopyButton    from '../base/CopyButton.vue'
 import ReleaseLedger from './ReleaseLedger.vue'
@@ -12,7 +13,7 @@ const current = releases[0]
 const extras  = releases.slice(1)
 const open    = ref(false)
 
-const installCmd = 'uv tool install prose-formatter'
+const installCmd = `uv tool install ${PYPI_PACKAGE}`
 </script>
 
 <template>

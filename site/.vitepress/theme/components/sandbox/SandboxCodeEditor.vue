@@ -27,12 +27,12 @@ defineExpose({ focus: () => input.value?.focus() })
 </script>
 
 <template>
-  <div class="code-editor">
-    <div ref="layer" class="code-panel-code code-editor-layer" aria-hidden="true" v-html="highlighted" />
+  <div class="sandbox-code-editor">
+    <div ref="layer" class="code-panel-code sandbox-code-editor-layer" aria-hidden="true" v-html="highlighted" />
     <textarea
       ref="input"
       v-model="model"
-      class="code-panel-code code-editor-layer code-editor-input"
+      class="code-panel-code sandbox-code-editor-layer sandbox-code-editor-input"
       autocapitalize="off"
       autocomplete="off"
       autocorrect="off"
@@ -42,33 +42,3 @@ defineExpose({ focus: () => input.value?.focus() })
     />
   </div>
 </template>
-
-<style scoped>
-.code-editor {
-  position       : relative;
-  display        : flex;
-  flex-direction : column;
-  flex-grow      : 1;
-}
-
-.code-editor-layer {
-  white-space : pre;
-}
-
-.code-editor-input {
-  position      : absolute;
-  inset         : 0;
-  border        : 0;
-  border-radius : calc(var(--prose-radius) - 1px);
-  background    : transparent;
-  color         : transparent;
-  caret-color   : var(--vp-c-text-1);
-  resize        : none;
-  outline       : none;
-}
-
-.code-editor-input:focus-visible {
-  outline        : var(--prose-focus-ring);
-  outline-offset : -2px;
-}
-</style>

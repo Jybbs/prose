@@ -127,11 +127,11 @@ describe('lintDecorations', () => {
   })
 
   it.each([
-    ['a span reaching the whole line',        'x = 1', 1, 6, 'lint-flag lint-flag-line'],
-    ['a span opening past the first column',  'x = 1', 3, 6, 'lint-flag underline-draw'],
-    ['a span stopping short of the line end', 'x = 1', 1, 4, 'lint-flag underline-draw'],
-    ['a span whose end row has no line',      '',      1, 6, 'lint-flag underline-draw']
-  ])('classes %s', (_name, code, column, endColumn, expected) => {
+    { code: 'x = 1', column: 1, endColumn: 6, expected: 'lint-flag lint-flag-line', name: 'a span reaching the whole line'        },
+    { code: 'x = 1', column: 3, endColumn: 6, expected: 'lint-flag underline-draw', name: 'a span opening past the first column'  },
+    { code: 'x = 1', column: 1, endColumn: 4, expected: 'lint-flag underline-draw', name: 'a span stopping short of the line end' },
+    { code: '',      column: 1, endColumn: 6, expected: 'lint-flag underline-draw', name: 'a span whose end row has no line'      }
+  ])('classes $name', ({ code, column, endColumn, expected }) => {
     expect(classOf(code, column, endColumn)).toBe(expected)
   })
 

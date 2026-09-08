@@ -44,16 +44,12 @@ import './styles/vitepress-chrome.css'
 // order-free and load through one glob in path order.
 import.meta.glob('./components/**/*.css', { eager: true })
 
-const modules = import.meta.glob<{ default: Component }>(
+const components = import.meta.glob<Component>(
   [
     './components/{exit-codes,fixtures,glossary,integrations,primitives,reference,rules,sandbox,suppression,usage}/*.vue',
     './components/base/Tool.vue'
   ],
-  { eager: true }
-)
-const components = Object.fromEntries(
-  Object.entries(modules)
-    .map(([p, mod]) => [stripSuffix(p.split('/').pop()!, '.vue'), mod.default])
+  { eager: true, import: 'default' }
 )
 
 export default {
@@ -65,8 +61,8 @@ export default {
   },
   enhanceApp({ app }) {
     enhanceAppWithTabs(app)
-    for (const [name, component] of Object.entries(components).sort()) {
-      app.component(name, component)
+    for (const [file, component] of Object.entries(components)) {
+      app.component(stripSuffix(file.split('/').pop()!, '.vue'), component)
     }
     app.use(FloatingVue, {
       themes: {

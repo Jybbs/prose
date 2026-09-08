@@ -8,6 +8,7 @@ import type { ProseWasm }                         from '../../lib/sandbox/load-m
 import type { SandboxCase }                       from '../../lib/sandbox/pool.data'
 import { encodeShare }                            from '../../lib/sandbox/share-link'
 import { mountSetup }                             from '../dom'
+import { supportTest }                            from '../support'
 
 type Formatter = ProseWasm['format']
 type Loader    = (reinit: number) => Promise<ProseWasm>
@@ -490,11 +491,13 @@ describe('useProseSandbox', () => {
     expect(api.source.value).toBe('saved source')
   })
 
-  it('ignores an unreadable store and seeds a fresh example', async () => {
+  supportTest('ignores an unreadable store, warning with the message alone', async ({ warn }) => {
     window.localStorage.setItem(STORAGE_KEY, '{ not json')
     const api = sandbox(okLoader)
     await api.start()
     expect(api.source.value).toBe('seed a')
+    expect(warn).toHaveBeenCalledOnce()
+    expect(warn.mock.calls[0][0]).toContain('unreadable saved session')
   })
 
   it('persists an edit to the store', async () => {

@@ -11,9 +11,12 @@ describe('typing-demo source data', () => {
     expect(typingDemo.ENTRIES[0].anchor).toBe(`${typingDemo.RULES[0].padEnd(width)} = `)
   })
 
-  it('renders the prelude with every rule under a [rules] table', () => {
+  it('opens the prelude with a [rules] table', () => {
     expect(typingDemo.PRELUDE).toContain('[rules]')
-    for (const rule of typingDemo.RULES) expect(typingDemo.PRELUDE).toContain(rule)
+  })
+
+  it.each(typingDemo.RULES)('names %s in the prelude', rule => {
+    expect(typingDemo.PRELUDE).toContain(rule)
   })
 
   it('dedups reset rows so each anchor appears once', () => {

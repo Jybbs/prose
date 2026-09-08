@@ -1,25 +1,21 @@
 import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
 import { inlineNodes, type InlineNode } from './inline-nodes'
-import { memoizeByPath }                from '../shared/memoize-by-path'
 import { siteDir }                      from '../shared/paths'
-import { inertEnv, plainTermsEnv }      from './inert-env'
+import { plainTermsEnv }                from './inert-env'
 
-const renderer = memoizeByPath(createMarkdownRenderer)
+// Maps each field `K` to `${K}${S}`, carrying one `V` where the source field
+// is a scalar and a `V[]` where it is a list of strings.
+type Suffixed<T, K extends string & keyof T, S extends string, V> =
+  Omit<T, K> & { [P in `${K}${S}`]: T[K] extends readonly string[] ? V[] : V }
+
+type Rendered<T, K extends string & keyof T> = Suffixed<T, K, 'Html', string>
+
+type Walked<T, K extends string & keyof T> = Suffixed<T, K, 'Nodes', InlineNode[]>
 
 export function getRenderer(): Promise<MarkdownRenderer> {
-  return renderer(siteDir(import.meta.url))
+  return createMarkdownRenderer(siteDir(import.meta.url))
 }
-
-type HtmlKey<K extends string> = `${K}Html`
-
-type NodesKey<K extends string> = `${K}Nodes`
-
-type Rendered<T, K extends string & keyof T> =
-  Omit<T, K> & { [P in HtmlKey<K>]: T[K] extends readonly string[] ? string[] : string }
-
-type Walked<T, K extends string & keyof T> =
-  Omit<T, K> & { [P in NodesKey<K>]: T[K] extends readonly string[] ? InlineNode[][] : InlineNode[] }
 
 // Prose a component renders as live markup walks to a node tree, whereas the
 // `*Html` renderers stay for the strings a popper or a plain-terms caption
@@ -34,13 +30,8 @@ export function inlineNodeField<T extends object, K extends string & keyof T>(
     const walked = Array.isArray(value)
       ? (value as readonly string[]).map(entry => inlineNodes(md, entry))
       : inlineNodes(md, value as string)
-    const { [field]: _, ...rest } = item
-    return { ...rest, [`${field}Nodes`]: walked } as Walked<T, K>
+    return suffixed<Walked<T, K>>(item, field, 'Nodes', walked)
   })
-}
-
-export function renderBlockHtml(md: MarkdownRenderer, src: string): Promise<string> {
-  return md.renderAsync(src, inertEnv())
 }
 
 export function renderFencedField<T extends { language: string }, K extends string & keyof T>(
@@ -48,11 +39,8 @@ export function renderFencedField<T extends { language: string }, K extends stri
   items : readonly T[],
   field : K
 ): Promise<Array<Rendered<T, K>>> {
-  return Promise.all(items.map(async item => {
-    const rendered = await renderFencedHtml(md, item[field] as string, item.language)
-    const { [field]: _, ...rest } = item
-    return { ...rest, [`${field}Html`]: rendered } as Rendered<T, K>
-  }))
+  return Promise.all(items.map(async item => suffixed<Rendered<T, K>>(
+    item, field, 'Html', await renderFencedHtml(md, item[field] as string, item.language))))
 }
 
 export function renderFencedHtml(
@@ -64,27 +52,13 @@ export function renderFencedHtml(
   return md.renderAsync(`\`\`\`${language}${meta ? ` ${meta}` : ''}\n${code}\n\`\`\``)
 }
 
-export function renderInlineField<T extends object, K extends string & keyof T>(
-  md    : MarkdownRenderer,
-  items : readonly T[],
-  field : K
-): Array<Rendered<T, K>> {
-  return items.map(item => {
-    const value     = item[field]
-    const rendered  = Array.isArray(value)
-      ? (value as readonly string[]).map(s => renderInlineHtml(md, s))
-      : renderInlineHtml(md, value as string)
-    const { [field]: _, ...rest } = item
-    return { ...rest, [`${field}Html`]: rendered } as Rendered<T, K>
-  })
-}
-
-export function renderInlineHtml(md: MarkdownRenderer, src: string): string {
-  return md.renderInline(src, inertEnv())
-}
-
 // Caption text renders inside cover-linked cards and hover poppers, where a
 // glossary anchor cannot receive its own click, so terms flatten to text.
 export function renderPlainInlineHtml(md: MarkdownRenderer, src: string): string {
   return md.renderInline(src, plainTermsEnv())
+}
+
+function suffixed<R>(item: object, field: string, suffix: string, mapped: unknown): R {
+  const { [field]: _, ...rest } = item as Record<string, unknown>
+  return { ...rest, [`${field}${suffix}`]: mapped } as R
 }

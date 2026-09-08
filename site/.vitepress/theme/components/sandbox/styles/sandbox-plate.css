@@ -1,0 +1,234 @@
+@keyframes sandbox-plate-draw {
+  to {
+    transform : scaleX(1);
+  }
+}
+
+@keyframes sandbox-plate-settle {
+  from {
+    opacity   : 0;
+    translate : 0 -4px;
+  }
+}
+
+.sandbox-plate {
+  --prose-panel-wash : color-mix(in srgb, var(--vp-c-bg-alt) 35%, var(--vp-c-bg));
+  --sandbox-plate-accent     : var(--family-color, var(--vp-c-brand-1));
+  --sandbox-plate-control-h  : 22px;
+  --sandbox-plate-switch-w   : 40px;
+
+  width         : 100%;
+  min-width     : 0;
+  border        : 1px solid color-mix(in srgb, var(--sandbox-plate-accent) 40%, var(--vp-c-divider));
+  border-radius : var(--prose-radius-sm);
+  background    : color-mix(in srgb, var(--sandbox-plate-accent) 4%, var(--prose-panel-wash));
+}
+
+.sandbox-plate .rule-card {
+  border     : none;
+  background : transparent;
+}
+
+.sandbox-plate-specimen {
+  position : relative;
+}
+
+.sandbox-plate-stub {
+  padding : 12px 16px;
+}
+
+.sandbox-plate-stub-slug {
+  color          : var(--sandbox-plate-accent);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-kicker-size-sm);
+  letter-spacing : var(--prose-kicker-tracking);
+  text-transform : uppercase;
+}
+
+/* The close seat's right edge sits on the 16px inset the rows below share, so
+   it reads as the head of the right-aligned control rail. */
+.sandbox-plate-close {
+  position     : absolute;
+  top          : 50%;
+  right        : 16px;
+  border-color : var(--vp-c-divider);
+  background   : var(--vp-c-bg);
+  color        : var(--vp-c-text-3);
+  transform    : translateY(-50%);
+  animation    : sandbox-plate-settle var(--prose-transition-slow);
+  transition   : color var(--prose-transition), border-color var(--prose-transition);
+}
+
+.sandbox-plate-close:hover {
+  border-color : color-mix(in srgb, var(--sandbox-plate-accent) 55%, var(--vp-c-divider));
+  color        : var(--sandbox-plate-accent);
+}
+
+.sandbox-plate-divider {
+  position         : relative;
+  height           : 1px;
+  margin           : 0 16px;
+  background       : var(--vp-c-divider);
+  transform        : scaleX(0);
+  transform-origin : left;
+  animation        : sandbox-plate-draw calc(var(--prose-rule-draw-ms) * 1ms) ease forwards;
+}
+
+.sandbox-plate-divider::after {
+  content    : "";
+  position   : absolute;
+  top        : -1px;
+  left       : 0;
+  width      : 30px;
+  height     : 2px;
+  background : var(--sandbox-plate-accent);
+}
+
+/* The 16px inset matches the card's own padding, so the label column opens at
+   the badge's left edge and the table spans the full card measure. */
+.sandbox-plate-rows {
+  display               : grid;
+  grid-template-columns : max-content minmax(0, 1fr) max-content;
+  column-gap            : 1.1rem;
+  padding               : 0 16px 8px;
+  animation             : sandbox-plate-settle var(--prose-transition-slow);
+}
+
+.sandbox-plate-row {
+  display               : grid;
+  grid-column           : 1 / -1;
+  grid-template-columns : subgrid;
+  align-items           : center;
+  min-height            : 2.1rem;
+}
+
+.sandbox-plate-row + .sandbox-plate-row {
+  border-top : 1px solid var(--vp-c-divider);
+}
+
+.sandbox-plate-label {
+  color          : var(--sandbox-plate-accent);
+  font-family    : var(--vp-font-family-mono);
+  font-weight    : 500;
+  font-size      : var(--prose-text-xxs);
+  letter-spacing : 0.02em;
+  text-transform : uppercase;
+}
+
+.sandbox-plate-hint {
+  padding-block : 0.25rem;
+  color         : var(--vp-c-text-3);
+  font-family   : var(--vp-font-family-base);
+  font-style    : italic;
+  font-size     : var(--prose-text-xs);
+  line-height   : 1.4;
+}
+
+.sandbox-plate-hint code {
+  padding       : 2px 6px;
+  border-radius : var(--prose-radius-sm);
+  background    : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
+  color         : var(--sandbox-plate-accent);
+  font-family   : var(--vp-font-family-mono);
+  font-style    : normal;
+  font-size     : 0.86em;
+  white-space   : nowrap;
+}
+
+.sandbox-plate-control {
+  justify-self : end;
+}
+
+.sandbox-plate-switch {
+  position      : relative;
+  width         : var(--sandbox-plate-switch-w);
+  height        : var(--sandbox-plate-control-h);
+  padding       : 0;
+  border        : 0;
+  border-radius : 999px;
+  background    : color-mix(in srgb, var(--vp-c-text-3) 40%, transparent);
+  cursor        : pointer;
+  transition    : background var(--prose-transition);
+}
+
+.sandbox-plate-switch[aria-checked='true'] {
+  background : var(--sandbox-plate-accent);
+}
+
+.sandbox-plate-switch-knob {
+  position      : absolute;
+  top           : 3px;
+  left          : 3px;
+  width         : 16px;
+  height        : 16px;
+  border-radius : 50%;
+  background    : var(--vp-c-bg);
+  transition    : transform var(--prose-transition);
+}
+
+.sandbox-plate-switch[aria-checked='true'] .sandbox-plate-switch-knob {
+  transform : translateX(18px);
+}
+
+.sandbox-plate-number,
+.sandbox-plate-text {
+  height        : var(--sandbox-plate-control-h);
+  border        : 1px solid color-mix(in srgb, var(--sandbox-plate-accent) 55%, var(--vp-c-divider));
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-c-bg);
+  color         : var(--vp-c-text-1);
+  font-family   : var(--vp-font-family-mono);
+  font-size     : var(--prose-text-xs);
+}
+
+.sandbox-plate-number {
+  width                : var(--sandbox-plate-switch-w);
+  padding              : 0;
+  font-variant-numeric : tabular-nums;
+  line-height          : calc(var(--sandbox-plate-control-h) - 2px);
+}
+
+.sandbox-plate-text {
+  width   : 9rem;
+  padding : 0 0.4rem;
+}
+
+.sandbox-plate-switch:focus-visible,
+.sandbox-plate-number:focus-visible,
+.sandbox-plate-text:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : 1px;
+}
+
+@media (--prose-bp-medium) {
+  .sandbox-plate-rows {
+    grid-template-columns : minmax(0, 1fr) max-content;
+  }
+
+  .sandbox-plate-row {
+    row-gap       : 0.1rem;
+    padding-block : 0.4rem;
+  }
+
+  .sandbox-plate-label {
+    grid-column : 1;
+    grid-row    : 1;
+  }
+
+  .sandbox-plate-hint {
+    grid-column   : 1;
+    grid-row      : 2;
+    padding-block : 0;
+  }
+
+  .sandbox-plate-control {
+    grid-column : 2;
+    grid-row    : 1 / span 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sandbox-plate-divider {
+    transform : scaleX(1);
+  }
+}

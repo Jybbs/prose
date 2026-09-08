@@ -11,9 +11,8 @@ vi.mock('vitepress', () => ({
   get inBrowser() { return browser.value },
   useData: () => ({ page: route })
 }))
-vi.mock('../../lib/rules/rules.data', () => ({
-  data: { bySlug: { 'align-equals': { name: 'Align Equals', slug: 'align-equals' } } }
-}))
+vi.mock('../../lib/rules/rules.data', async () =>
+  (await import('../rules-data-stub')).rulesDataStub([{ slug: 'align-equals' }]))
 
 import * as composables from '../../lib/composables/route'
 import { mountSetup }   from '../dom'
