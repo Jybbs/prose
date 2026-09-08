@@ -78,15 +78,7 @@
 }
 
 .sandbox-tags-power {
-  align-self : stretch;
-  height     : auto;
-  border     : 0;
-  background : color-mix(in srgb, var(--vp-c-text-3) 12%, transparent);
-  transition : background var(--prose-transition), color var(--prose-transition);
-}
-
-.sandbox-tags-power:hover {
-  background : color-mix(in srgb, var(--vp-c-text-3) 20%, transparent);
+  transition : color var(--prose-transition);
 }
 
 .sandbox-tags-power[aria-pressed='true'] {
