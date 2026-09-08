@@ -61,7 +61,7 @@ impl<'a> Plan<'a> {
             .positions(|(slot, _)| noqa_names(source, &body[*slot], REEXPORT_CODE))
             .collect();
         let package_init = is_package_init(source);
-        let shim = !reexports.declares_a_surface() && defines_no_own_name(body);
+        let shim = !reexports.declares_a_surface() && defines_no_own_name(analysis, body);
         let type_names = if rule.unreferenced {
             type_expression_names(source.ast())
         } else {

@@ -1,10 +1,10 @@
-//! The names a quoted type expression reads, covering an annotation, an
-//! explicit type alias, the typing calls that take a type as a string,
-//! and the subscript of a standard-library generic, none of which the
-//! binding table reaches.
+//! The names a quoted type expression reads, covering an annotation, a
+//! type a statement declares in its own right, the typing calls that
+//! take a type as a string, and the subscript of a standard-library
+//! generic, none of which the binding table reaches.
 
 use ruff_python_ast::{
-    Expr, ExprCall, ExprSubscript, ModModule, Stmt,
+    Expr, ExprCall, ExprSubscript, ModModule, Stmt, TypeParam,
     helpers::map_subscript,
     visitor::{Visitor, walk_expr},
 };
@@ -59,14 +59,16 @@ impl<'a> Visitor<'a> for NameCollector<'_> {
 }
 
 /// Every name a type expression in `module` loads, quoted or not,
-/// covering an annotation, an explicit type alias, each typing call that
-/// takes its type as a string, and the subscript of a standard-library
-/// generic. The set is empty where the module carries none of them.
+/// covering an annotation, a type a statement declares in its own
+/// right, each typing call that takes its type as a string, and the
+/// subscript of a standard-library generic. The set is empty where the
+/// module carries none of them.
 pub(super) fn type_expression_names(module: &ModModule) -> FxHashSet<String> {
     let mut names = FxHashSet::default();
     for_each_annotation(&module.body, |annotation| absorb(annotation, &mut names));
-    for value in filter_map_over_stmts(&module.body, alias_value) {
-        absorb(value, &mut names);
+    for declared in filter_map_over_stmts(&module.body, |stmt| Some(declared_types(stmt))).concat()
+    {
+        absorb(declared, &mut names);
     }
     let aliases = import_aliases(module);
     let quoted = filter_map_over_exprs(&module.body, Descent::Into, |expr| match expr {
@@ -112,6 +114,26 @@ fn alias_value(stmt: &Stmt) -> Option<&Expr> {
         Stmt::TypeAlias(node) => Some(node.value.as_ref()),
         _ => None,
     }
+}
+
+/// Every type `stmt` declares in its own right, being the value of an
+/// explicit type alias beside the bound and the default of each type
+/// parameter it introduces.
+fn declared_types(stmt: &Stmt) -> Vec<&Expr> {
+    let mut found: Vec<&Expr> = alias_value(stmt).into_iter().collect();
+    let declared = match stmt {
+        Stmt::ClassDef(node) => node.type_params.as_deref(),
+        Stmt::FunctionDef(node) => node.type_params.as_deref(),
+        Stmt::TypeAlias(node) => node.type_params.as_deref(),
+        _ => None,
+    };
+    for param in declared.into_iter().flat_map(|params| params.iter()) {
+        if let TypeParam::TypeVar(node) = param {
+            found.extend(node.bound.as_deref());
+        }
+        found.extend(param.default());
+    }
+    found
 }
 
 /// Adds every name `expr` loads to `names` and returns the text of each
@@ -245,6 +267,9 @@ mod tests {
     )]
     #[case::annotated_type_alias("Handle: TypeAlias = \"IO[str]\"\n", &["IO", "TypeAlias", "str"])]
     #[case::pep_695_type_alias("type Handle = \"IO[str]\"\n", &["IO", "str"])]
+    #[case::type_parameter_bound("def f[T: \"IO[str]\"](x: T) -> T:\n    return x\n", &["IO", "T", "str"])]
+    #[case::class_type_parameter_bound("class C[T: \"IO[str]\"]:\n    pass\n", &["IO", "str"])]
+    #[case::type_parameter_default("def f[T = \"IO[str]\"](x: T) -> T:\n    return x\n", &["IO", "T", "str"])]
     #[case::annotated_assignment_of_a_string("x: str = \"IO[str]\"\n", &["str"])]
     #[case::dict_lookup_names_no_type("y = config[\"Node\"]\n", &[])]
     #[case::attribute_dict_lookup("y = os.environ[\"Node\"]\n", &[])]

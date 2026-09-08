@@ -11,7 +11,9 @@ use rustc_hash::FxHashSet;
 use super::inventory::{ImportNode, is_self_alias};
 use crate::{
     primitives::{
-        binding::{sequence_elts, single_name_assignment},
+        binding::{
+            BindingAnalysis, BindingKind, module_bound_names, sequence_elts, single_name_assignment,
+        },
         scope::sub_bodies,
         walk::any_over_stmts,
     },
@@ -20,13 +22,24 @@ use crate::{
 
 const DUNDER_ALL: &str = "__all__";
 
-/// The file-level `noqa` heads `ruff` and `flake8` read, each holding
-/// the codes that follow it.
-const NOQA_HEADS: [&str; 2] = ["flake8: noqa:", "ruff: noqa:"];
+/// Whether a tool reads the name in its own head in either casing or
+/// only in lower case.
+#[derive(Clone, Copy)]
+enum Casing {
+    Any,
+    Lower,
+}
 
-/// The pragma `pyright` reads as holding every unused import in the
-/// file it opens.
-const PYRIGHT_UNUSED_IMPORT: &str = "pyright: reportUnusedImport=false";
+/// The tools whose file-level `noqa` head holds the codes that follow
+/// it, each beside the casing it reads its own name in. Both read the
+/// `noqa` word in either casing.
+const NOQA_TOOLS: [(&str, Casing); 2] = [("flake8", Casing::Any), ("ruff", Casing::Lower)];
+
+/// The tool whose file-level pragma names each rule it sets.
+const PYRIGHT: &str = "pyright";
+
+/// The `pyright` rule holding every unused import in the file it opens.
+const PYRIGHT_UNUSED_IMPORT: &str = "reportUnusedImport";
 
 /// The code `flake8` and its successors report an unread import under,
 /// which a `noqa` naming it marks as deliberate.
@@ -113,16 +126,42 @@ enum Surface {
     Unreadable,
 }
 
-/// True where `body` binds no name of its own at module scope, counting
-/// a `def`, a `class`, and an assignment to a name that is not a dunder.
-/// A definition inside a `try` or a version branch is guarding an
-/// import rather than defining the module, so it leaves the body
-/// definition-free.
-pub(super) fn defines_no_own_name(body: &[Stmt]) -> bool {
-    !body.iter().any(|stmt| match stmt {
-        Stmt::ClassDef(_) | Stmt::FunctionDef(_) => true,
-        _ => single_name_assignment(stmt).is_some_and(|(target, _)| !is_dunder(target.id.as_str())),
-    })
+/// True where `body` binds no name of its own at module scope, reading
+/// every shape `module_bound_names` names. A `try` or an `if` is
+/// guarding an import rather than defining the module, so neither counts
+/// whatever its body binds, and a dunder, a name only an import binds,
+/// and a bare annotation binding nothing at run time all stay out.
+pub(super) fn defines_no_own_name(analysis: &BindingAnalysis, body: &[Stmt]) -> bool {
+    !body.iter().any(|stmt| binds_its_own_name(analysis, stmt))
+}
+
+/// True where `stmt` binds a name the module owns rather than one it
+/// carries for a sibling.
+fn binds_its_own_name(analysis: &BindingAnalysis, stmt: &Stmt) -> bool {
+    if matches!(
+        stmt,
+        Stmt::If(_) | Stmt::Import(_) | Stmt::ImportFrom(_) | Stmt::Try(_)
+    ) {
+        return false;
+    }
+    if stmt
+        .as_ann_assign_stmt()
+        .is_some_and(|annotated| annotated.value.is_none())
+    {
+        return false;
+    }
+    module_bound_names(stmt)
+        .into_iter()
+        .any(|name| !is_dunder(name) && !only_imported(analysis, name))
+}
+
+/// True where every module-scope binding of `name` the analysis records
+/// is an import, which leaves a name a guard block imports out of the
+/// module's own. A name the analysis records no binding for counts as
+/// the module's own, since the statement binding it named it.
+fn only_imported(analysis: &BindingAnalysis, name: &str) -> bool {
+    let kinds = analysis.module_binding_kinds(name);
+    !kinds.is_empty() && kinds.iter().all(|kind| matches!(kind, BindingKind::Import))
 }
 
 /// True where `node` takes a name out of a module whose last segment
@@ -161,14 +200,41 @@ fn dunder_all_write(stmt: &Stmt) -> Option<DunderAll<'_>> {
 /// states nothing about a re-export in particular.
 fn holds_unused_imports(comment: &str) -> bool {
     let body = comment.trim_start_matches('#').trim_start();
-    body.starts_with(PYRIGHT_UNUSED_IMPORT)
-        || NOQA_HEADS.iter().any(|head| {
-            body.strip_prefix(head).is_some_and(|codes| {
+    if let Some(rules) = past(body, PYRIGHT, Casing::Lower) {
+        return rules.split(',').any(turns_unused_imports_off);
+    }
+    NOQA_TOOLS.iter().any(|(tool, casing)| {
+        past(body, tool, *casing)
+            .and_then(|rest| past(rest, "noqa", Casing::Any))
+            .is_some_and(|codes| {
                 codes
                     .split([',', ' ', '\t'])
                     .any(|code| code.eq_ignore_ascii_case(REEXPORT_CODE))
             })
-        })
+    })
+}
+
+/// The text of `body` past a leading `word` and the `:` following it,
+/// `None` where `body` opens on anything else. The spacing around the
+/// `:` is free, which every tool reading one of these heads allows.
+fn past<'a>(body: &'a str, word: &str, casing: Casing) -> Option<&'a str> {
+    let (head, rest) = body.split_at_checked(word.len())?;
+    let matched = match casing {
+        Casing::Any => head.eq_ignore_ascii_case(word),
+        Casing::Lower => head == word,
+    };
+    if !matched {
+        return None;
+    }
+    Some(rest.trim_start().strip_prefix(':')?.trim_start())
+}
+
+/// True where `rule` turns pyright's unused-import rule off, reading
+/// the spacing pyright allows around the `=`.
+fn turns_unused_imports_off(rule: &str) -> bool {
+    rule.split_once('=').is_some_and(|(name, value)| {
+        name.trim() == PYRIGHT_UNUSED_IMPORT && value.trim() == "false"
+    })
 }
 
 /// True when `stmt` binds `__all__` out of another module.
@@ -205,13 +271,13 @@ fn nested_dunder_all_write(stmt: &Stmt) -> bool {
         .any(|(body, _)| any_over_stmts(body, |nested| dunder_all_write(nested).is_some()))
 }
 
-/// True where nothing but whitespace precedes `range` on its own row,
-/// which is where each of the pragmas sits.
+/// True where `range` opens its own row at column zero, which is where
+/// a file-level pragma sits. An indented comment is inside a block and
+/// carries no reading of the module as a whole.
 fn own_line(source: &Source, range: TextRange) -> bool {
     let text = &source.text()[..usize::from(range.start())];
     text.rsplit_once('\n')
         .map_or(text, |(_, row)| row)
-        .trim()
         .is_empty()
 }
 

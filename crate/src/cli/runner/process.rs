@@ -71,9 +71,14 @@ pub(super) fn process_path(
     let Some(resolved) = setup.resolver.resolve(path, &bytes) else {
         return FileOutcome::Failed(ExitStatus::ConfigError);
     };
-    let keyed = setup
-        .cache_for(pass)
-        .map(|c| (c, resolved.key_prefix.key_for(&bytes, source_type)));
+    let keyed = setup.cache_for(pass).map(|c| {
+        (
+            c,
+            resolved
+                .key_prefix
+                .key_for(&path.to_string_lossy(), &bytes, source_type),
+        )
+    });
     let hit = keyed.as_ref().and_then(|(c, k)| c.lookup(k));
     let bytes = match hit {
         Some(entry) => match rehydrate(path, bytes, entry, pass) {
@@ -141,11 +146,11 @@ pub(super) fn process_path(
             && pass.write_back()
             && !source_type.is_ipynb()
         {
-            c.record_own_output(
-                &resolved
-                    .key_prefix
-                    .key_for(kind.written().as_bytes(), source_type),
-            );
+            c.record_own_output(&resolved.key_prefix.key_for(
+                &path.to_string_lossy(),
+                kind.written().as_bytes(),
+                source_type,
+            ));
         }
     }
     outcome

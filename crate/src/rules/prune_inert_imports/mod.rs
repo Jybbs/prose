@@ -118,6 +118,24 @@ mod tests {
         assert!(rule().lint(&source).is_empty());
     }
 
+    #[rstest]
+    #[case::an_upper_case_ruff_head("# RUFF: NOQA: F401\nvalue = 1\n\nimport json\n")]
+    #[case::an_upper_case_pyright_head(
+        "# PYRIGHT: reportUnusedImport=false\nvalue = 1\n\nimport json\n"
+    )]
+    fn a_head_no_tool_reads_drops_its_unread_import(#[case] src: &str) {
+        let source = parse(src);
+
+        assert_eq!(rule().apply(&source).len(), 1);
+    }
+
+    #[test]
+    fn an_indented_pragma_holds_no_module_scope_import() {
+        let source = parse("import json\n\n\ndef f():\n    # ruff: noqa: F401\n    return 1\n");
+
+        assert_eq!(rule().apply(&source).len(), 1);
+    }
+
     #[test]
     fn a_main_module_prunes_like_any_other_file() {
         let source = Source::parse_named(
@@ -135,10 +153,19 @@ mod tests {
         "try:\n    import json\nexcept ImportError:\n    json = None\n"
     )]
     #[case::module_carrying_no_import("value = 1\n")]
-    #[case::file_level_ruff_pragma("# ruff: noqa: F401\nimport json\n\nvalue = 1\n")]
-    #[case::file_level_flake8_pragma("# flake8: noqa: E501, F401\nimport json\n\nvalue = 1\n")]
+    #[case::file_level_ruff_pragma("# ruff: noqa: F401\nvalue = 1\n\nimport json\n")]
+    #[case::a_head_carrying_no_space("# ruff:noqa: F401\nvalue = 1\n\nimport json\n")]
+    #[case::an_upper_case_noqa_word("# ruff: NOQA: F401\nvalue = 1\n\nimport json\n")]
+    #[case::file_level_flake8_pragma("# flake8: noqa: E501, F401\nvalue = 1\n\nimport json\n")]
+    #[case::a_mixed_case_flake8_head("# Flake8: NoQA: F401\nvalue = 1\n\nimport json\n")]
     #[case::file_level_pyright_pragma(
-        "# pyright: reportUnusedImport=false\nimport json\n\nvalue = 1\n"
+        "# pyright: reportUnusedImport=false\nvalue = 1\n\nimport json\n"
+    )]
+    #[case::a_pyright_rule_past_the_first(
+        "# pyright: strict, reportUnusedImport=false\nvalue = 1\n\nimport json\n"
+    )]
+    #[case::a_pyright_rule_spaced_around_its_equals(
+        "# pyright: reportUnusedImport = false\nvalue = 1\n\nimport json\n"
     )]
     fn a_module_the_rule_leaves_alone_neither_drops_nor_reports(#[case] src: &str) {
         let source = parse(src);
@@ -201,6 +228,37 @@ mod tests {
         let source = parse_init("import os\nimport os\n\nvalue = os.getcwd()\n");
 
         assert_eq!(pruned_text(&source), "import os\n\nvalue = os.getcwd()\n");
+    }
+
+    #[test]
+    fn a_deleted_name_holds_the_future_directive() {
+        let source = parse(
+            "from __future__ import annotations\n\n__all__ = [\"f\"]\nAlias = int\ndel Alias\n\n\ndef f(x: Alias) -> None:\n    return None\n",
+        );
+
+        assert!(rule().apply(&source).is_empty());
+    }
+
+    #[rstest]
+    #[case::bare_annotation("import shutil\nimport sys\n\nversion: str\n")]
+    #[case::guarded_import("import shutil\nimport sys\n\nif TYPE_CHECKING:\n    import ssl\n")]
+    fn a_module_binding_nothing_at_run_time_stays_a_shim(#[case] src: &str) {
+        let source = parse(src);
+
+        assert!(rule().apply(&source).is_empty());
+        assert_eq!(rule().lint(&source).len(), 2);
+    }
+
+    #[rstest]
+    #[case::unpacking("import shutil\n\na, b = 1, 2\n")]
+    #[case::for_target("import shutil\n\nfor item in range(3):\n    pass\n")]
+    #[case::type_alias("import shutil\n\ntype Handle = int\n")]
+    #[case::annotated_with_a_value("import shutil\n\nversion: str = \"1\"\n")]
+    fn a_module_binding_a_name_of_its_own_drops_its_unread_import(#[case] src: &str) {
+        let source = parse(src);
+
+        assert_eq!(rule().apply(&source).len(), 1);
+        assert!(rule().lint(&source).is_empty());
     }
 
     #[test]
