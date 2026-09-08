@@ -52,7 +52,14 @@ Two of those markers are written in a comment rather than in code, which is wher
 
 An `__all__` built from anything other than a list or tuple of string literals, written below module scope, or changed after its assignment keeps every import in that module, as does a `from … import *`. A change means an `append`, an `extend`, or a write through a subscript such as `__all__[:] = sorted(__all__)`.
 
-Two reads the reference count misses keep an import too. A `del` of the bound name needs that binding to exist, and a name read only inside a quoted type expression sits in a string literal rather than in the tree the table reads, so the rule parses each one for the names it reads. A quoted type sits in an annotation or in one of the typing constructs that takes a type written as a string, being `cast`, `assert_type`, `NamedTuple`, `NewType`, `TypeAliasType`, `TypeVar`, and `TypedDict`. Each of those but `cast` names the new type in its first argument, so the rule reads the type from the argument after it.
+Two reads the reference count misses keep an import too. A `del` of the bound name needs that binding to exist, and a name read only inside a quoted type expression sits in a string literal rather than in the tree the table reads, so the rule parses each one for the names it reads. A quoted type sits in one of these positions:
+
+1. An annotation, whether the whole annotation is quoted or only a member inside it.
+2. The value of an explicit type alias, written as `type Handle = "Node"` or under a `TypeAlias` annotation.
+3. The subscript of a standard-library generic (*`Optional["Node"]`, `list["Node"]`*). A subscript on anything else is an ordinary lookup, so `config["Node"]` reads nothing.
+4. An argument of a typing construct that takes a type as a string, being `cast`, `assert_type`, `NamedTuple`, `NewType`, `ParamSpec`, `TypeAliasType`, `TypeVar`, `TypeVarTuple`, and `TypedDict`. `cast` carries its type in the first argument and every other construct in the arguments after the name it opens on, with a keyword read the same way, so `TypeVar(bound="Node")` and `cast(typ="Node")` both count.
+
+A construct renamed on the way in still reads as the construct it names, so `from typing import cast as c` leaves `c("Node", handle)` holding what it reads.
 
 <Fixture rule="prune_inert_imports" case="quoted_type_holds_its_import" />
 

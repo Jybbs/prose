@@ -1,10 +1,12 @@
-from typing import IO, List, cast
+from typing import IO, List, Optional, Sequence, cast
 
-x: "List[int]" = []
+Rows = Optional["List[int]"]
+
+head: "Sequence[int]" = []
 
 
 def read(stream):
     return cast("IO[str]", stream)
 
 
-__all__ = ["read", "x"]
+__all__ = ["Rows", "head", "read"]

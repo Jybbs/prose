@@ -3,5 +3,5 @@ previewable = true
 title       = "A Quoted Type Keeps the Import It Names"
 
 description = '''
-`List` is read nowhere except inside the quoted annotation `"List[int]"`, and `IO` nowhere except inside the quoted type `"IO[str]"` that `cast` takes, each a string literal the binding table does not read into. **Both imports stay**, because the rule parses every quoted type expression for the names it reads, whether an annotation or a typing call carries it.
+Nothing reads `Sequence`, `List`, or `IO` outside a string literal, the first inside a quoted annotation, the second inside the subscript of a type alias, and the third inside the type `cast` takes. **All three imports stay**, because the rule parses every quoted type expression for the names it reads, wherever the type sits.
 '''
