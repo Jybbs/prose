@@ -291,12 +291,13 @@ impl Pipeline {
         self.rules.iter().map(|rule| rule.id())
     }
 
-    /// Runs each registered rule against `source` in order and
-    /// returns the rewritten source paired with the diagnostics each
-    /// rule emitted.
+    /// Runs every registered rule against `source` in order. Returns
+    /// the rewritten source, the diagnostics the rules emitted, and the
+    /// set of rules that edited.
     ///
-    /// Lint diagnostics are collected once the rewrites settle, and
-    /// every lint range resolves against the returned source.
+    /// Lint diagnostics are collected after the rewrites settle, so
+    /// every lint range resolves against the returned source. The fired
+    /// set is read from the rewrite pass alone.
     ///
     /// File-level `# prose: off` short-circuits to identity. The
     /// suppression map otherwise drops each fix group holding a
@@ -312,14 +313,18 @@ impl Pipeline {
     /// when it parses but no longer compiles, and `PipelineError::Cell`
     /// when a notebook cell that parsed on its own before the rule ran no
     /// longer does.
-    pub fn run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError> {
+    pub fn run(
+        &self,
+        source: Source,
+    ) -> Result<(Source, Vec<Diagnostic>, BTreeSet<RuleId>), PipelineError> {
         if source.suppression_map().file_is_suppressed() {
-            return Ok((source, Vec::new()));
+            return Ok((source, Vec::new(), BTreeSet::new()));
         }
         let mut diagnostics = Vec::new();
         let source = self.fold_rules(source, Some(&mut diagnostics), 0..self.rules.len())?;
+        let fired = fired_rules(&diagnostics);
         diagnostics.extend(settled_lints(&self.rules, &source));
-        Ok((source, diagnostics))
+        Ok((source, diagnostics, fired))
     }
 
     /// Rewrites `source` and returns it beside the diagnostics
@@ -396,7 +401,7 @@ impl Pipeline {
     /// silent on the first pass is left to the full
     /// [`settle_report`](Self::settle_report) walk that `check
     /// --validate` and the settle sweeps run.
-    pub(crate) fn unsettled_among(&self, source: &Source, fired: &BTreeSet<RuleId>) -> Vec<RuleId> {
+    pub fn unsettled_among(&self, source: &Source, fired: &BTreeSet<RuleId>) -> Vec<RuleId> {
         self.settle_walk(source, "narrowed", |id| fired.contains(&id), false)
             .editing
     }

@@ -11,7 +11,8 @@ vi.mock('../../lib/shared/highlight', () => import('../highlight-stub'))
 
 vi.mock('../../lib/markdown/highlighter', () => import('../highlighter-stub'))
 
-const tomlSandbox = (configToml = '') => fakeSandbox({ configToml: ref(configToml) })
+const tomlSandbox = (configToml = '', configNotices: readonly string[] = []) =>
+  fakeSandbox({ configNotices: ref(configNotices), configToml: ref(configToml) })
 
 const mountToml = async (sandbox: ProseSandbox) => {
   const wrapper = mount(ProseSandboxToml, { props: { sandbox } })
@@ -20,6 +21,27 @@ const mountToml = async (sandbox: ProseSandbox) => {
 }
 
 describe('ProseSandboxToml', () => {
+  domTest('marks the row and counts the key a notice names', async () => {
+    const notice  = 'warning: unknown key `no-such-key` in [tool.prose]'
+    const sandbox = tomlSandbox('code-line-length = 88\nno-such-key = 1', [notice])
+    const wrapper = await mountToml(sandbox)
+
+    expect(wrapper.get('.config-notice-strip').text()).toContain('1 unknown key')
+    expect(wrapper.findAll('.sandbox-toml-gutter [data-flagged]')).toHaveLength(1)
+    // The located notice reads off its own key rather than stacking below.
+    expect(wrapper.find('.code-panel-warning').exists()).toBe(false)
+  })
+
+  domTest('keeps a notice the source cannot place beside the parse error', async () => {
+    const sandbox = tomlSandbox('[this is not valid', ['warning: unknown key `absent`'])
+    sandbox.configError.value = 'unexpected character'
+    const wrapper = await mountToml(sandbox)
+
+    expect(wrapper.get('.code-panel-error').text()).toContain('unexpected character')
+    expect(wrapper.get('.code-panel-warning').text()).toContain('absent')
+    expect(wrapper.find('.config-notice-strip').exists()).toBe(false)
+  })
+
   domTest('types a config change and settles onto the target text', async ({ reducedMotion }) => {
     reducedMotion(false)
     const sandbox = tomlSandbox()

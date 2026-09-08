@@ -72,7 +72,7 @@ mod tests {
         config.rules.expand_docstrings.enabled = false;
         let pipeline = Pipeline::with_defaults(&config);
         let source = parse("def f():\n    \"\"\"doc\"\"\"\n");
-        let (out, _) = pipeline.run(source).expect("pipeline runs");
+        let (out, _, _) = pipeline.run(source).expect("pipeline runs");
         assert_eq!(out.text(), "def f():\n    \"\"\"doc\"\"\"\n");
     }
 

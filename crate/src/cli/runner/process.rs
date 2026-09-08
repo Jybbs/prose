@@ -11,7 +11,6 @@ use super::{FileOutcome, Pass, RunSetup, has_format_change, notebook, resolve::R
 use crate::{
     cache::{Anchor, CacheEntry, CacheEntryRef, NotebookCells, NotebookCellsRef, Rewrite},
     cli::exit_status::ExitStatus,
-    diagnostics::fired_rules,
     rules::RuleId,
     source::Source,
     unstable::UnstableRewrite,
@@ -293,13 +292,7 @@ fn run_and_assemble(
     let file = source.source_file().clone();
     let run = match pass.anchor() {
         Anchor::AsWritten => resolved.pipeline.run_as_written(source),
-        Anchor::Rewritten => resolved
-            .pipeline
-            .run(source)
-            .map(|(formatted, diagnostics)| {
-                let fired = fired_rules(&diagnostics);
-                (formatted, diagnostics, fired)
-            }),
+        Anchor::Rewritten => resolved.pipeline.run(source),
     };
     match run {
         Ok((formatted, diagnostics, fired)) => {

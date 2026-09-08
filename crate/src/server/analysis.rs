@@ -8,8 +8,7 @@ use ruff_source_file::PositionEncoding;
 
 use super::conversion::{full_document_range, to_lsp};
 use crate::{
-    config::Config, diagnostics::fired_rules, pipeline::Pipeline, rules::RuleId, source::Source,
-    unstable::UnstableRewrite,
+    config::Config, pipeline::Pipeline, rules::RuleId, source::Source, unstable::UnstableRewrite,
 };
 
 /// One formatting pass over a buffer.
@@ -81,12 +80,12 @@ fn formatted(original: &str, encoding: PositionEncoding, config: &Config) -> Opt
     let source = Source::from_str(original).ok()?;
     let range = full_document_range(&source, encoding);
     let pipeline = Pipeline::with_defaults(config);
-    let (settled, diagnostics) = pipeline.run(source).ok()?;
+    let (settled, _, fired) = pipeline.run(source).ok()?;
     let new_text = settled.changed_from(original)?.to_owned();
     Some(Formatted {
         edits: Some(vec![TextEdit { new_text, range }]),
         settled: Some(Settled {
-            fired: fired_rules(&diagnostics),
+            fired,
             pipeline,
             source: settled,
         }),
