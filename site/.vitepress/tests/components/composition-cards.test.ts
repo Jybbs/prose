@@ -2,7 +2,7 @@
 import { mount }    from '@vue/test-utils'
 import { nextTick } from 'vue'
 
-import CompositionCards from '../../theme/components/rules/CompositionCards.vue'
+import CompositionCards  from '../../theme/components/rules/CompositionCards.vue'
 
 vi.mock('../../lib/rules/composition.data', () => ({
   data: {
@@ -13,16 +13,16 @@ vi.mock('../../lib/rules/composition.data', () => ({
     },
     cases: [
       { case: 'alpha_case', configToml: '', rules: ['align-equals', 'space-statements'],
-        source: 'a = 1\n', title: 'Alpha Case' },
+        source: 'a = 1\n', titleHtml: 'Alpha Case' },
       { case: 'beta_case', configToml: '', rules: ['align-equals'],
-        source: 'b = 2\n', title: 'Beta Case' },
+        source: 'b = 2\n', titleHtml: 'Beta Case' },
       { case: 'gamma_case', configToml: '', rules: ['wrap-docstrings'],
-        source: 'c = 3\n', title: 'Gamma `c = 3` Case' }
+        source: 'c = 3\n', titleHtml: 'Gamma <code>c = 3</code> Case' }
     ]
   }
 }))
 
-vi.mock('../../lib/fixtures/fixtures.data', () => {
+const { frontmatter } = vi.hoisted(() => {
   const fixture = {
     changesSource : true,
     hasFindings   : false,
@@ -30,10 +30,26 @@ vi.mock('../../lib/fixtures/fixtures.data', () => {
     inputHtml     : '',
     outputHtml    : ''
   }
-  return { data: { composition: { alpha_case: fixture, beta_case: fixture, gamma_case: fixture } } }
+  return {
+    frontmatter: {
+      value: {
+        fixtures: {
+          'composition/alpha_case' : fixture,
+          'composition/beta_case'  : fixture,
+          'composition/gamma_case' : fixture
+        }
+      }
+    }
+  }
 })
 
-vi.mock('../../lib/rules/rules.data', () => ({ data: { bySlug: {} } }))
+vi.mock('vitepress', async importOriginal => ({
+  ...(await importOriginal<typeof import('vitepress')>()),
+  useData: () => ({ frontmatter })
+}))
+
+vi.mock('../../lib/rules/rules.data', async () =>
+  (await import('../rules-data-stub')).rulesDataStub())
 
 const STUBS = {
   global: {

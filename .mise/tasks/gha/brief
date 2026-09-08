@@ -46,8 +46,6 @@ from sys     import argv
 from tomllib import loads
 from yaml    import safe_load
 
-DELTA = "delta"
-
 
 class Summary:
     """
@@ -150,7 +148,7 @@ class Summary:
 
         self._gate(
             "corpus",
-            *[job for job in needed if job != DELTA and self._result(job) != "skipped"],
+            *[job for job in needed if job != "delta" and self._result(job) != "skipped"],
             sweeps = [self._row(jobs, job) for job in needed]
         )
 

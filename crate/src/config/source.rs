@@ -9,11 +9,16 @@ use std::{
     sync::Arc,
 };
 
-use super::de::deserialize_prose;
-use super::load::{ConfigNotice, NoticeDedup, holding_dir, walk_prose_table};
-use super::merge::merge_tables;
-use super::overrides::{Override, take_overrides};
-use super::{Config, ConfigError, script};
+use super::{
+    Config, ConfigError,
+    de::deserialize_prose,
+    discover::{holding_dir, walk_prose_table},
+    merge::merge_tables,
+    notice::{ConfigNotice, unknown_keys},
+    overrides::{Override, take_overrides},
+    script,
+    sink::NoticeDedup,
+};
 
 /// The base config and overrides governing files under one directory,
 /// alongside the directory their globs anchor to.
@@ -71,7 +76,7 @@ impl ConfigSource {
         F: FnMut(ConfigNotice<'_>),
     {
         let overrides = take_overrides(&mut table, on_notice)?;
-        let base_toml = deserialize_prose(table.clone(), on_notice)?.to_toml();
+        let base_toml = deserialize_prose(table.clone(), &mut unknown_keys(on_notice))?.to_toml();
         Ok(Self {
             anchor,
             base: table,

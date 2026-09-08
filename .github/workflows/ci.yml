@@ -53,10 +53,11 @@ jobs:
           - command    : mise run rust:proof
             name       : 🥃 Proof
             shared-key : *debug-key
-          - command    : mise run wasm:build
+          - command    : mise run wasm:lint
             name       : 🛶 Wasm
             shared-key : prose-wasm
           - command    : mise run wasm:smoke
+            module     : 'true'
             name       : 🪃 Browser
             shared-key : prose-wasm
           - command    : mise run rust:upload
@@ -73,6 +74,10 @@ jobs:
         with:
           save       : &no-save 'false'
           shared-key : ${{ matrix.shared-key }}
+
+      - name : Restore the wasm module
+        if   : ${{ matrix.module == 'true' }}
+        uses : ./.github/actions/restore-wasm
 
       - name : ${{ matrix.command }}
         env  : { CODECOV_TOKEN: "${{ endsWith(matrix.command, ':upload') && secrets.CODECOV_TOKEN || '' }}" }

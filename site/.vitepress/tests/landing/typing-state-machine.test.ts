@@ -42,17 +42,15 @@ afterEach(() => {
 })
 
 describe('createTypingMachine', () => {
-  it('drives one full loop through every animated phase', () => {
+  it.each([
+    'editBackspacing', 'editTyping', 'holdAfterTyped', 'holdBetweenEdits',
+    'holdAtEnd', 'resetBackspacing', 'resetTyping', 'holdAfterReset'
+  ] satisfies stateMachine.Phase[])('reaches %s in one full loop', phase => {
     const { machine, phases } = harness()
     machine.boot()
     machine.setInView(true)
     vi.advanceTimersByTime(20_000)
-    for (const phase of [
-      'editBackspacing', 'editTyping', 'holdAfterTyped', 'holdBetweenEdits',
-      'holdAtEnd', 'resetBackspacing', 'resetTyping', 'holdAfterReset'
-    ] satisfies stateMachine.Phase[]) {
-      expect(phases).toContain(phase)
-    }
+    expect(phases).toContain(phase)
   })
 
   it('parks the pending tick out of view and resumes on re-entry', () => {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { data as rows } from '../../../lib/primitives/primitive-surface.data'
+import { data as primitives } from '../../../lib/primitives/primitives-composition.data'
 
 import type { PrimitiveStability } from '../../../lib/shared/registries'
 import InlineProse                 from '../base/InlineProse.vue'
@@ -9,8 +9,8 @@ import InlineProse                 from '../base/InlineProse.vue'
 const props = defineProps<{ stability: PrimitiveStability }>()
 
 const listed = computed(() =>
-  rows.filter(row => row.stability === props.stability)
-      .toSorted((a, b) => a.slug.localeCompare(b.slug))
+  primitives.entries.filter(entry => entry.stability === props.stability)
+                    .toSorted((a, b) => a.slug.localeCompare(b.slug))
 )
 </script>
 

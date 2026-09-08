@@ -6,7 +6,7 @@ vi.mock('../../lib/rules/composition.data', () => ({
 
 vi.mock('../../lib/rules/rule-fixtures.data', () => ({
   data: {
-    align_equals: { canonical: 'basic_run', examples: [{ case: 'nested', title: 'Nested' }] }
+    align_equals: { canonical: 'basic_run', examples: [{ case: 'nested', titleHtml: 'Nested' }] }
   }
 }))
 
@@ -24,7 +24,7 @@ describe('fixturesForRule', () => {
   it('returns the canonical case and examples registered for a rule', () => {
     expect(fixturesForRule('align_equals')).toStrictEqual({
       canonical : 'basic_run',
-      examples  : [{ case: 'nested', title: 'Nested' }]
+      examples  : [{ case: 'nested', titleHtml: 'Nested' }]
     })
   })
 

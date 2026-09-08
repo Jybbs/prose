@@ -11,7 +11,7 @@ use serde::Serialize;
 use crate::diagnostics::Diagnostic;
 
 #[derive(Serialize)]
-pub(crate) struct JsonDiagnostic<'a> {
+pub struct JsonDiagnostic<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     cell: Option<OneIndexed>,
     code: &'a str,
@@ -107,6 +107,14 @@ impl From<LineColumn> for JsonLocation {
     }
 }
 
+/// `message` under its cell number for a notebook, bare for a module.
+pub(crate) fn cell_message(message: &str, cell: Option<OneIndexed>) -> String {
+    cell.map_or_else(
+        || message.to_owned(),
+        |cell| format!("cell {cell}: {message}"),
+    )
+}
+
 pub(crate) fn line_columns(file: &SourceFile, range: TextRange) -> (LineColumn, LineColumn) {
     let code = file.to_source_code();
     (
@@ -115,16 +123,17 @@ pub(crate) fn line_columns(file: &SourceFile, range: TextRange) -> (LineColumn, 
     )
 }
 
-/// Renders the lint-severity diagnostics as the JSON records the docs
-/// site reads, or `None` when the run emitted none.
-pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
-    let records: Vec<JsonDiagnostic> = diagnostics
+/// Collects the lint findings as JSON records, in the order the run
+/// emitted them.
+pub fn lint_records<'a>(
+    file: &'a SourceFile,
+    diagnostics: &'a [Diagnostic],
+) -> Vec<JsonDiagnostic<'a>> {
+    diagnostics
         .iter()
         .filter(|diag| diag.severity.is_lint())
         .map(|diag| JsonDiagnostic::new(file, None, diag, false))
-        .collect();
-    (!records.is_empty())
-        .then(|| serde_json::to_string_pretty(&records).expect("lint records serialize"))
+        .collect()
 }
 
 /// The start and end positions of `range` plus, for a notebook, the
@@ -145,12 +154,4 @@ pub(crate) fn located(
         ),
         None => (start, end, None),
     }
-}
-
-/// `message` under its cell number for a notebook, bare for a module.
-pub(crate) fn cell_message(message: &str, cell: Option<OneIndexed>) -> String {
-    cell.map_or_else(
-        || message.to_owned(),
-        |cell| format!("cell {cell}: {message}"),
-    )
 }

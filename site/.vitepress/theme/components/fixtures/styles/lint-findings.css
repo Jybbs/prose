@@ -53,11 +53,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lint-flag,
-  .lint-flag::after {
-    transition : none;
-  }
-
   .lint-undrawn .lint-flag::after,
   .lint-flag.lint-undrawn::after {
     transform : scaleX(1);

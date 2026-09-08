@@ -345,7 +345,7 @@ onUnmounted(run.cancel)
       v-html="displayHtml"
     />
     <p v-if="error" class="code-panel-error">{{ error }}</p>
-    <p v-if="unstable.length" class="code-panel-unstable">
+    <p v-if="unstable.length" class="code-panel-warning">
       A second run would change this output ({{ unstable.join(', ') }}), which is a defect in
       Prose itself.
       <a :href="reportUrl" v-bind="externalAttrs(reportUrl)">Report it</a>
@@ -354,43 +354,3 @@ onUnmounted(run.cancel)
     <LintFlagPopper ref="popper" />
   </section>
 </template>
-
-<style scoped>
-/* Mid-resize the new layout overflows the still-animating height, so the
-   morph pane clips instead of flashing a scrollbar. */
-.sandbox-surface :deep(.shiki-magic-move-container) {
-  overflow : hidden;
-}
-
-.sandbox-surface-actions {
-  position : absolute;
-  right    : 10px;
-  bottom   : 8px;
-  z-index  : 4;
-  display  : flex;
-  gap      : 4px;
-}
-
-/* The corners reveal on hover, whereas these hold visible, the pane having no
-   other way out. */
-.sandbox-surface-action {
-  transition : color var(--prose-transition), border-color var(--prose-transition);
-}
-
-.sandbox-surface-apply:hover {
-  border-color : var(--vp-c-brand-1);
-  color        : var(--vp-c-brand-1);
-}
-
-.sandbox-surface-guide {
-  position       : absolute;
-  top            : 1px;
-  bottom         : 1px;
-  left           : calc(22px + var(--guide-col) * 1ch);
-  width          : 0;
-  border-left    : 2px dotted color-mix(in srgb, var(--guide-hue, var(--prose-palette-ube)) 75%, transparent);
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-text-xs);
-  pointer-events : none;
-}
-</style>

@@ -1,14 +1,20 @@
 //! Filesystem-loading-surface tests for `Config::load`.
 
-use std::assert_matches;
+use std::{assert_matches, path::Path};
 
 use indoc::indoc;
 use tempfile::TempDir;
 
-use crate::config::load::ConfigForm;
-use crate::config::*;
-use crate::testing::{write_dotconfig_prose_toml, write_prose_toml, write_pyproject};
+use crate::{
+    config::{
+        notice::{ConfigForm, ConfigNotice},
+        *,
+    },
+    testing::{write_dotconfig_prose_toml, write_prose_toml, write_pyproject},
+};
 
+/// Loads the config under `dir`, collecting the winner and the shadowed
+/// form from each precedence notice.
 fn load_collecting_precedence(dir: &Path) -> (Config, Vec<(ConfigForm, ConfigForm)>) {
     let mut precedence = Vec::new();
     let config = Config::load_with_notices(dir, |notice| {

@@ -3,11 +3,12 @@ import path from 'node:path'
 
 import { parse } from 'postcss'
 
-import { glossary }          from '../../lib/glossary/entries'
-import * as typingDemo       from '../../lib/landing/typing-demo'
-import { discoverRuleSlugs } from '../../lib/rules/discovery'
-import { rulesDir }          from '../../lib/shared/paths'
-import * as registries       from '../../lib/shared/registries'
+import { glossary }                    from '../../lib/glossary/entries'
+import * as typingDemo                 from '../../lib/landing/typing-demo'
+import { discoverPrimitives }          from '../../lib/primitives/discovery'
+import { discoverRuleSlugs }           from '../../lib/rules/discovery'
+import { primitivesDir, rulesDir }     from '../../lib/shared/paths'
+import * as registries                 from '../../lib/shared/registries'
 
 const styles = (name: string): string =>
   fs.readFileSync(path.join(import.meta.dirname, '..', '..', 'theme', 'styles', name), 'utf8')
@@ -31,6 +32,13 @@ describe('family registry and stylesheet parity', () => {
   it('FAMILY_ORDER covers FAMILY_META, and GLOSSARY_FAMILY_META adds cli and engine', () => {
     expect.soft([...registries.FAMILY_ORDER].sort()).toStrictEqual(Object.keys(registries.FAMILY_META).sort())
     expect.soft(glossaryFamilies).toStrictEqual([...Object.keys(registries.FAMILY_META), 'cli', 'engine'].sort())
+  })
+})
+
+describe('primitive registry and page parity', () => {
+  it('every PRIMITIVE_SLUGS entry has a page, with no orphans', () => {
+    expect(discoverPrimitives(primitivesDir(import.meta.url)).map(p => p.slug).toSorted())
+      .toStrictEqual([...registries.PRIMITIVE_SLUGS].toSorted())
   })
 })
 

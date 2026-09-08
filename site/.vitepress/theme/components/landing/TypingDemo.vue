@@ -8,6 +8,13 @@ import { useReducedMotion }                   from '../../../lib/composables/use
 import * as buffer                            from '../../../lib/landing/typing-demo-buffer'
 import { createTypingMachine, MAGIC_MOVE_MS } from '../../../lib/landing/typing-state-machine'
 import type { Phase }                         from '../../../lib/landing/typing-state-machine'
+import { magicMoveOptions }                   from '../../../lib/markdown/magic-move-options'
+
+// Builds `steps` and `options` once, holding one identity for the life of the
+// component, which keeps the token keys the build assigned across every
+// typing tick.
+const morphOptions = magicMoveOptions(MAGIC_MOVE_MS)
+const morphSteps   = [...data.pythonStateSteps]
 
 const editProgress     = ref(0)
 const entryIndex       = ref(0)
@@ -98,10 +105,10 @@ onUnmounted(machine.dispose)
       <header class="code-panel-label">app.py</header>
       <ShikiMagicMovePrecompiled
         class    = "code-panel-code typing-demo-python-code"
-        :steps   = "[...data.pythonStateSteps]"
+        :steps   = "morphSteps"
         :step    = "pythonStateIndex"
         :animate = "!reducedMotion"
-        :options = "{ duration: MAGIC_MOVE_MS, stagger: 3 }"
+        :options = "morphOptions"
       />
     </section>
     <button

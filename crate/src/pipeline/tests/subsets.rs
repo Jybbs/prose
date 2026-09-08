@@ -45,7 +45,7 @@ fn format_matches_the_text_half_of_run() {
     let formatted = pipeline
         .format(parse(text))
         .expect("the format run succeeds");
-    let (ran, _) = pipeline.run(parse(text)).expect("the run succeeds");
+    let (ran, _, _) = pipeline.run(parse(text)).expect("the run succeeds");
     assert_eq!(formatted.text(), ran.text());
 }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Fixture from '../fixtures/Fixture.vue'
+import FixtureCard from '../fixtures/FixtureCard.vue'
 
 import { fixturesForRule } from '../../../lib/rules/rule-view'
 
@@ -9,11 +9,11 @@ const examples = fixturesForRule(props.rule).examples
 </script>
 
 <template>
-  <Fixture
+  <FixtureCard
     v-for="ex in examples"
     :key="ex.case"
     :rule="rule"
     :case="ex.case"
-    :title="ex.title"
+    :title-html="ex.titleHtml"
   />
 </template>
