@@ -52,9 +52,9 @@ Two of those markers are written in a comment rather than in code, which is wher
 
 An `__all__` built from anything other than a list or tuple of string literals, written below module scope, or changed after its assignment keeps every import in that module, as does a `from … import *`. A change means an `append`, an `extend`, or a write through a subscript such as `__all__[:] = sorted(__all__)`.
 
-Two reads the reference count misses keep an import too. A `del` of the bound name needs that binding to exist, and a name read only inside a quoted annotation sits in a string literal rather than in the tree the table reads, so the rule parses each quoted annotation for the names it reads.
+Two reads the reference count misses keep an import too. A `del` of the bound name needs that binding to exist, and a name read only inside a quoted type expression sits in a string literal rather than in the tree the table reads, so the rule parses each one for the names it reads. A quoted type sits in an annotation or in one of the typing constructs that takes a type written as a string, being `cast`, `assert_type`, `NamedTuple`, `NewType`, `TypeAliasType`, `TypeVar`, and `TypedDict`. Each of those but `cast` names the new type in its first argument, so the rule reads the type from the argument after it.
 
-<Fixture rule="prune_inert_imports" case="quoted_annotation_holds_its_import" />
+<Fixture rule="prune_inert_imports" case="quoted_type_holds_its_import" />
 
 An import binding `__all__` itself sets the whole export surface, so it stays too, as does a name a second import rebinds from another source, which keeps the fallback in a `try: from _speedups import loads` shim in place.
 

@@ -8,7 +8,7 @@ use rustc_hash::FxHashSet;
 
 use super::{
     PruneInertImports,
-    annotations::annotation_names,
+    annotations::type_expression_names,
     future::annotations_are_inert,
     inventory::ImportNode,
     is_package_init,
@@ -62,8 +62,8 @@ impl<'a> Plan<'a> {
             .collect();
         let package_init = is_package_init(source);
         let shim = !reexports.declares_a_surface() && defines_no_own_name(body);
-        let annotated = if rule.unreferenced {
-            annotation_names(source.ast())
+        let type_names = if rule.unreferenced {
+            type_expression_names(source.ast())
         } else {
             FxHashSet::default()
         };
@@ -96,7 +96,7 @@ impl<'a> Plan<'a> {
                 } else if private_source {
                     None
                 } else {
-                    is_unreferenced(analysis, bound, &repeats, &annotated)
+                    is_unreferenced(analysis, bound, &repeats, &type_names)
                         .then_some(Candidacy::Unreferenced)
                 };
                 let held = if package_init {
@@ -190,17 +190,17 @@ struct Report<'a> {
 }
 
 /// True when nothing in the module reaches `bound`, counting neither a
-/// write in `repeats` as a rebind nor a name in `annotated` as unread.
+/// write in `repeats` as a rebind nor a name in `type_names` as unread.
 fn is_unreferenced(
     analysis: &BindingAnalysis,
     bound: &str,
     repeats: &FxHashSet<TextSize>,
-    annotated: &FxHashSet<String>,
+    type_names: &FxHashSet<String>,
 ) -> bool {
     analysis.module_usage_count(bound) == 0
         && !analysis.module_reassigned_without(bound, |offset| repeats.contains(&offset))
         && !analysis.is_deleted(bound)
-        && !annotated.contains(bound)
+        && !type_names.contains(bound)
 }
 
 /// The write offset of every alias repeating a binding an earlier
