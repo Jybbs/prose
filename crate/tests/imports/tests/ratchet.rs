@@ -23,7 +23,7 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
         candidates: 1,
         comparable: 1,
         label: DEFAULT_LABEL.to_owned(),
-        uncomparable: [("blocked.py".to_owned(), "raises".to_owned())].into(),
+        uncomparable: [("blocked.py".to_owned(), blocked("ImportError", "raises"))].into(),
         ..Width::default()
     };
     let dir = tempfile::tempdir().expect("a scratch directory");
@@ -45,7 +45,7 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
     );
     assert_eq!(
         held.uncomparable[DEFAULT_LABEL],
-        [("blocked.py".to_owned(), "raises".to_owned())].into()
+        [("blocked.py".to_owned(), blocked("ImportError", "raises"))].into()
     );
     assert_eq!(held.version, VERSION);
 }
@@ -83,8 +83,8 @@ fn dropped_names_a_module_the_baseline_does_not_list() {
     let found = Width {
         label: DEFAULT_LABEL.to_owned(),
         uncomparable: [
-            ("fresh.py".to_owned(), "raises".to_owned()),
-            ("known.py".to_owned(), "raises".to_owned()),
+            ("fresh.py".to_owned(), blocked("ImportError", "raises")),
+            ("known.py".to_owned(), blocked("ImportError", "raises")),
         ]
         .into(),
         ..Width::default()
@@ -92,7 +92,7 @@ fn dropped_names_a_module_the_baseline_does_not_list() {
     let held = Baseline {
         uncomparable: [(
             DEFAULT_LABEL.to_owned(),
-            [("known.py".to_owned(), "raises".to_owned())].into(),
+            [("known.py".to_owned(), blocked("ImportError", "raises"))].into(),
         )]
         .into(),
         ..Baseline::default()
@@ -107,11 +107,14 @@ fn dropped_names_nothing_for_a_package_the_machine_lacks() {
         uncomparable: [
             (
                 "absent.py".to_owned(),
-                "raises ModuleNotFoundError: No module named 'socks'".to_owned(),
+                blocked(
+                    "ModuleNotFoundError",
+                    "raises ModuleNotFoundError: No module named 'socks'",
+                ),
             ),
             (
                 "lost.py".to_owned(),
-                "raises ImportError: no thing".to_owned(),
+                blocked("ImportError", "raises ImportError: no thing"),
             ),
         ]
         .into(),
@@ -129,10 +132,37 @@ fn dropped_names_nothing_for_a_package_the_machine_lacks() {
 }
 
 #[test]
+fn dropped_reads_the_exception_a_run_named_rather_than_its_sentence() {
+    let found = Width {
+        label: DEFAULT_LABEL.to_owned(),
+        uncomparable: [
+            (
+                "quoting.py".to_owned(),
+                blocked(
+                    "ImportError",
+                    "raises ImportError: ModuleNotFoundError is not it",
+                ),
+            ),
+            (
+                "silent.py".to_owned(),
+                blocked("ModuleNotFoundError", "the machine lacks it"),
+            ),
+        ]
+        .into(),
+        ..Width::default()
+    };
+    let held = Baseline {
+        uncomparable: [(DEFAULT_LABEL.to_owned(), BTreeMap::new())].into(),
+        ..Baseline::default()
+    };
+    assert_eq!(dropped(&found, &held), ["quoting.py".to_owned()].into());
+}
+
+#[test]
 fn dropped_names_nothing_where_the_baseline_records_no_width() {
     let found = Width {
         label: DEFAULT_LABEL.to_owned(),
-        uncomparable: [("blocked.py".to_owned(), "raises".to_owned())].into(),
+        uncomparable: [("blocked.py".to_owned(), blocked("ImportError", "raises"))].into(),
         ..Width::default()
     };
     assert_eq!(dropped(&found, &Baseline::default()), BTreeSet::new());
@@ -215,7 +245,7 @@ fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
         counts: BTreeMap::new(),
         uncomparable: [(
             DEFAULT_LABEL.to_owned(),
-            [("a.py".to_owned(), "raises".to_owned())].into(),
+            [("a.py".to_owned(), blocked("ImportError", "raises"))].into(),
         )]
         .into(),
         version: VERSION,
@@ -224,7 +254,7 @@ fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
     assert_eq!(judge(&found, &Baseline::default()), BTreeSet::new());
     assert_eq!(
         held.uncomparable[DEFAULT_LABEL],
-        [("a.py".to_owned(), "raises".to_owned())].into()
+        [("a.py".to_owned(), blocked("ImportError", "raises"))].into()
     );
 }
 

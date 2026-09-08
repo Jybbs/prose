@@ -5,7 +5,7 @@
 
 use crate::{
     outcome::Outcome,
-    records::{Break, Frame},
+    records::{Blocked, Break, Frame},
 };
 
 mod bindings;
@@ -17,6 +17,15 @@ mod outcome;
 mod ratchet;
 mod records;
 mod report;
+
+/// A module the original tree did not run cleanly, whose run raised
+/// `raised` and reads as `reason`.
+fn blocked(raised: &str, reason: &str) -> Blocked {
+    Blocked {
+        raised: raised.to_owned(),
+        reason: reason.to_owned(),
+    }
+}
 
 /// A break at `frame` for `module`, diverging for `reason`.
 fn broken(module: &str, frame: &str, reason: &str) -> Break {

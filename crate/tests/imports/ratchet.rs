@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::setting,
     outcome::Kind,
-    records::{Break, Width},
+    records::{Blocked, Break, Width},
 };
 
 /// The break set the repository tracks beside the harness, which every
@@ -24,13 +24,13 @@ const BAKED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/imports/baseline
 /// The environment variable naming a file the break set is written to.
 const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
-/// The raise a module leaves where the machine lacks a package or a
+/// The exception a module raises where the machine lacks a package or a
 /// platform module it imports.
 const ABSENT: &str = "ModuleNotFoundError";
 
 /// The generation a baked set is written and read at, raised by every
 /// change to what a set carries or to the key that holds one break.
-pub(crate) const VERSION: u32 = 5;
+pub(crate) const VERSION: u32 = 6;
 
 /// What one run recorded for a later run to ratchet against, the breaks
 /// it left beside the modules it could not compare, each keyed by width
@@ -47,7 +47,7 @@ pub(crate) struct Baseline {
     /// The modules whose original tree did not run cleanly, each beside
     /// what its run left. A later run keys on the module alone, so an
     /// interpreter rewording an error churns no entry.
-    pub(crate) uncomparable: BTreeMap<String, BTreeMap<String, String>>,
+    pub(crate) uncomparable: BTreeMap<String, BTreeMap<String, Blocked>>,
     /// The generation the set was baked at, `0` where the file names
     /// none.
     pub(crate) version: u32,
@@ -107,7 +107,7 @@ pub(crate) fn bake(path: &Path, widths: &[Width]) {
                     Counts {
                         candidates: found.candidates,
                         comparable: found.comparable,
-                        raises: found.counting(Kind::Raised) + found.counting(Kind::Timeout),
+                        raises: found.unimported(),
                         rebinds: found.counting(Kind::Ok),
                         refused: found.refused,
                     },
@@ -152,9 +152,9 @@ pub(crate) fn baseline_at(path: &Path) -> Option<Baseline> {
 
 /// The modules of one width that the original tree no longer runs cleanly
 /// and the baseline does not already list, meaning coverage the sweep just
-/// lost. A module raising [`ABSENT`] is left out, since the original tree
-/// runs unformatted and a package this machine lacks is a difference in
-/// the machine rather than coverage a rewrite lost. A baseline recording
+/// lost. A module raising [`ABSENT`] is left out, which trades this check
+/// for the `comparable` floor on that module, since a machine missing a
+/// package it imports drops it here on every run. A baseline recording
 /// nothing at this width has no coverage to lose, so it names none.
 pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
     let Some(known) = held.uncomparable.get(&found.label) else {
@@ -163,7 +163,7 @@ pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
     found
         .uncomparable
         .iter()
-        .filter(|(module, why)| !known.contains_key(*module) && !why.contains(ABSENT))
+        .filter(|(module, left)| !known.contains_key(*module) && left.raised != ABSENT)
         .map(|(module, _)| module.clone())
         .collect()
 }
@@ -196,11 +196,7 @@ pub(crate) fn regressions(found: &Width, held: &Baseline) -> Vec<String> {
     .into_iter()
     .filter(|(_, reached, want)| reached < want);
     let grown = [
-        (
-            "raises",
-            found.counting(Kind::Raised) + found.counting(Kind::Timeout),
-            baked.raises,
-        ),
+        ("raises", found.unimported(), baked.raises),
         ("rebinds", found.counting(Kind::Ok), baked.rebinds),
         ("refused", found.refused, baked.refused),
     ]

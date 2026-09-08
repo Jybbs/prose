@@ -59,7 +59,7 @@ fn a_repro_at_a_pinned_width_carries_the_width_knob() {
 fn an_unmeasured_module_replaces_the_uncomparable_count() {
     let found = Width {
         label: DEFAULT_LABEL.to_owned(),
-        uncomparable: [("a.py".to_owned(), "raises".to_owned())].into(),
+        uncomparable: [("a.py".to_owned(), blocked("ImportError", "raises"))].into(),
         unmeasured: vec!["u.py".to_owned()],
         ..Width::default()
     };
@@ -100,9 +100,9 @@ fn the_summary_block_holds_every_count_in_one_column() {
         comparable: 9,
         label: DEFAULT_LABEL.to_owned(),
         uncomparable: [
-            ("a.py".to_owned(), "raises".to_owned()),
-            ("b.py".to_owned(), "raises".to_owned()),
-            ("c.py".to_owned(), "raises".to_owned()),
+            ("a.py".to_owned(), blocked("ImportError", "raises")),
+            ("b.py".to_owned(), blocked("ImportError", "raises")),
+            ("c.py".to_owned(), blocked("ImportError", "raises")),
         ]
         .into(),
         ..Width::default()

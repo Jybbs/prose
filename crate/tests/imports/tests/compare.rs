@@ -125,7 +125,7 @@ fn comparing_sorts_each_module_into_one_bucket() {
         ["blocked.py"]
     );
     assert_eq!(
-        found.uncomparable["blocked.py"],
+        found.uncomparable["blocked.py"].reason,
         "raises ImportError: no _abc"
     );
     assert_eq!(found.breaks.len(), 1);

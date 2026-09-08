@@ -31,6 +31,7 @@ fn a_raise_row_composes_its_sentence_beside_the_other_endings() {
     assert_eq!(read.kind, Kind::Raised);
     assert_eq!(read.error, "raises NameError: name 'x' is not defined");
     assert_eq!(read.name, Some("x".to_owned()));
+    assert_eq!(read.raised, "NameError");
 }
 
 #[test]
