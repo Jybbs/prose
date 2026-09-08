@@ -21,10 +21,14 @@ pub(crate) struct Break {
     pub(crate) frame: Frame,
     /// The diff lines around that row.
     pub(crate) hunk: Vec<String>,
+    /// What kind of difference this is, stable under any rewording.
+    pub(crate) kind: &'static str,
     /// The module, relative to its tree.
     pub(crate) module: String,
     /// The name it turns on, where it has one.
     pub(crate) name: Option<String>,
+    /// Every name the difference turns on, sorted.
+    pub(crate) names: Vec<String>,
     /// What the run from the original tree left behind.
     pub(crate) original: Outcome,
     /// Why the two runs differ, as a sentence predicate.
@@ -80,9 +84,6 @@ pub(crate) struct Width {
     pub(crate) label: String,
     /// How many modules the format run could not read, parse, or write.
     pub(crate) refused: usize,
-    /// How many candidates the baseline's uncomparable set kept out of
-    /// this run.
-    pub(crate) skipped: usize,
     /// The modules the original tree did not run cleanly, which a run
     /// therefore never judges.
     pub(crate) uncomparable: Vec<String>,

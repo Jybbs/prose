@@ -12,6 +12,18 @@ use crate::{
 /// that name.
 const MISSING: &str = "no plain constant";
 
+/// Why one run counts as broken beside another, as the tag and names a
+/// baseline keys on beside the sentence a report shows.
+#[derive(Debug, Eq, PartialEq)]
+pub(crate) struct Divergence {
+    /// What kind of difference this is, stable under any rewording.
+    pub(crate) kind: &'static str,
+    /// Every name the difference turns on, sorted.
+    pub(crate) names: Vec<String>,
+    /// The sentence a report shows.
+    pub(crate) reason: String,
+}
+
 /// How one width's candidates divide, the breaks found among the comparable
 /// ones beside the names the verdict reads.
 pub(crate) struct Partition {
@@ -50,16 +62,18 @@ pub(crate) fn compare(
         .filter_map(|module| {
             let formatted = after.get(module)?;
             let original = before.get(module)?;
-            let (reason, name) = divergence(formatted, original)?;
+            let diverged = divergence(formatted, original)?;
             Some(Break {
                 attribution: String::new(),
                 formatted: formatted.clone(),
                 frame: Frame::default(),
                 hunk: Vec::new(),
+                kind: diverged.kind,
                 module: module.clone(),
-                name,
+                name: diverged.names.first().cloned(),
+                names: diverged.names,
                 original: original.clone(),
-                reason,
+                reason: diverged.reason,
             })
         })
         .collect();
@@ -71,14 +85,19 @@ pub(crate) fn compare(
     }
 }
 
-/// Says why one run counts as broken beside another and the name it turns on,
-/// or `None` where both bound the same namespace.
-pub(crate) fn divergence(
-    formatted: &Outcome,
-    original: &Outcome,
-) -> Option<(String, Option<String>)> {
+/// Says why one run counts as broken beside another, or `None` where both
+/// bound the same namespace.
+pub(crate) fn divergence(formatted: &Outcome, original: &Outcome) -> Option<Divergence> {
     if formatted.kind != Kind::Ok {
-        return Some((formatted.error.clone(), formatted.name.clone()));
+        return Some(Divergence {
+            kind: if formatted.kind == Kind::Timeout {
+                "times out"
+            } else {
+                "raises"
+            },
+            names: formatted.name.clone().into_iter().collect(),
+            reason: formatted.error.clone(),
+        });
     }
     let missing = |from: &[String], held: &[String]| -> Vec<String> {
         from.iter()
@@ -87,12 +106,18 @@ pub(crate) fn divergence(
             .collect()
     };
     if let [name, rest @ ..] = missing(&original.names, &formatted.names).as_slice() {
-        let reason = format!("leaves {} unbound", named(name, rest.len()));
-        return Some((reason, Some(name.clone())));
+        return Some(Divergence {
+            kind: "unbound",
+            names: missing(&original.names, &formatted.names),
+            reason: format!("leaves {} unbound", named(name, rest.len())),
+        });
     }
     if let [name, rest @ ..] = missing(&formatted.names, &original.names).as_slice() {
-        let reason = format!("binds {} the original does not", named(name, rest.len()));
-        return Some((reason, Some(name.clone())));
+        return Some(Divergence {
+            kind: "extra",
+            names: missing(&formatted.names, &original.names),
+            reason: format!("binds {} the original does not", named(name, rest.len())),
+        });
     }
     let differing = original
         .constants
@@ -108,14 +133,15 @@ pub(crate) fn divergence(
         .constants
         .get(differing)
         .map_or(MISSING, String::as_str);
-    Some((
-        format!("binds `{differing}` to {now} where the original binds {was}"),
-        Some(differing.clone()),
-    ))
+    Some(Divergence {
+        kind: "rebound",
+        names: vec![differing.clone()],
+        reason: format!("binds `{differing}` to {now} where the original binds {was}"),
+    })
 }
 
-/// One name and however many followed it, so a run losing several names
-/// keys on the count rather than on the first name alone.
+/// One name and however many followed it, which is the sentence a report
+/// shows rather than the key a baseline holds.
 fn named(first: &str, rest: usize) -> String {
     match rest {
         0 => format!("`{first}`"),

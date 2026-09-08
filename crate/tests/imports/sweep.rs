@@ -2,15 +2,10 @@
 //! every module the formatter rewrote from both trees, and each break
 //! confirmed and attributed.
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    num::NonZeroUsize,
-    path::Path,
-    sync::Mutex,
-};
+use std::{collections::BTreeMap, num::NonZeroUsize, path::Path, sync::Mutex};
 
 use prose::{config::Config, pipeline::Pipeline};
-use rayon::iter::{Either, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
     attribution::Attributor,
@@ -27,7 +22,17 @@ use crate::{
 pub(crate) const DEFAULT_LABEL: &str = "default";
 
 /// The environment variable narrowing a run to one module.
-const MODULE_VAR: &str = "PROSE_IMPORTS_MODULE";
+pub(crate) const MODULE_VAR: &str = "PROSE_IMPORTS_MODULE";
+
+/// What a second run of both sides made of a break.
+enum Confirmed {
+    /// Both reruns agree the break is real.
+    Break,
+    /// The original disagrees with its own rerun, so nothing is proven.
+    Flaky,
+    /// The formatted rerun left no record, so the break is unmeasured.
+    Unmeasured,
+}
 
 /// One corpus, the runner every module goes through, and the outcomes
 /// already read from the original tree.
@@ -48,17 +53,25 @@ impl Sweep {
         }
     }
 
-    /// Reports whether the original matches its own first run and a second
-    /// run of the formatted side still breaks.
-    fn confirm(&self, brk: &Break, formatted: &Path) -> bool {
+    /// What a second run of both sides makes of a break, reading
+    /// `Unmeasured` where the formatted rerun left no record so a lost
+    /// record does not read as flake.
+    fn confirm(&self, brk: &Break, formatted: &Path) -> Confirmed {
         let before = self
             .runner
             .run(&brk.module, &[self.runner.stage.original.as_path()]);
         if before.kind != Kind::Ok || divergence(&before, &brk.original).is_some() {
-            return false;
+            return Confirmed::Flaky;
         }
         let after = self.runner.run(&brk.module, &[formatted]);
-        after.kind != Kind::Unmeasured && divergence(&after, &before).is_some()
+        if after.kind == Kind::Unmeasured {
+            return Confirmed::Unmeasured;
+        }
+        if divergence(&after, &before).is_some() {
+            Confirmed::Break
+        } else {
+            Confirmed::Flaky
+        }
     }
 
     /// Runs the modules the original tree has not yet been asked about and
@@ -90,13 +103,8 @@ impl Sweep {
     }
 
     /// Sweeps the corpus at one width, running every module the formatter
-    /// rewrote from both trees, leaving out the modules `skip` names, and
-    /// confirming each break by a second run.
-    pub(crate) fn sweep(
-        &self,
-        width: Option<NonZeroUsize>,
-        skip: Option<&BTreeSet<String>>,
-    ) -> Width {
+    /// rewrote from both trees and confirming each break by a second run.
+    pub(crate) fn sweep(&self, width: Option<NonZeroUsize>) -> Width {
         let label = label(width);
         let config = width.map_or_else(Config::default, |width| Config {
             code_line_length: Some(width),
@@ -105,22 +113,26 @@ impl Sweep {
         let formatted = self.runner.stage.copy(&format!("formatted-{label}"));
         let run = format_tree(&formatted, &Pipeline::with_defaults(&config));
         self.runner.precompile(&formatted);
-        let (held_back, eligible): (Vec<_>, Vec<_>) = candidates(&run.rewritten)
-            .into_iter()
-            .partition(|module| skip.is_some_and(|known| known.contains(module)));
-        let (modules, skipped) =
-            setting(MODULE_VAR).map_or((eligible, held_back.len()), |only| (vec![only], 0));
+        let modules =
+            setting(MODULE_VAR).map_or_else(|| candidates(&run.rewritten), |only| vec![only]);
         let after = self.outcomes(&modules, &formatted);
         let before = self.originals(&modules);
         let partition = compare(&after, &before, &modules);
-        let (mut breaks, flaky): (Vec<_>, Vec<_>) =
-            partition.breaks.into_par_iter().partition_map(|brk| {
-                if self.confirm(&brk, &formatted) {
-                    Either::Left(brk)
-                } else {
-                    Either::Right(brk.module)
-                }
-            });
+        let judged: Vec<_> = partition
+            .breaks
+            .into_par_iter()
+            .map(|brk| (self.confirm(&brk, &formatted), brk))
+            .collect();
+        let mut breaks = Vec::new();
+        let mut flaky = Vec::new();
+        let mut unmeasured = partition.unmeasured;
+        for (verdict, brk) in judged {
+            match verdict {
+                Confirmed::Break => breaks.push(brk),
+                Confirmed::Flaky => flaky.push(brk.module),
+                Confirmed::Unmeasured => unmeasured.push(brk.module),
+            }
+        }
         Attributor {
             config: &config,
             fixes: &run.fixes,
@@ -136,9 +148,8 @@ impl Sweep {
             flaky,
             label,
             refused: run.refused,
-            skipped,
             uncomparable: partition.uncomparable,
-            unmeasured: partition.unmeasured,
+            unmeasured,
         }
     }
 }

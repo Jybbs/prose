@@ -116,16 +116,3 @@ fn the_summary_block_holds_every_count_in_one_column() {
         )
     );
 }
-
-#[test]
-fn the_summary_names_what_the_baseline_kept_out() {
-    let found = Width {
-        candidates: 4,
-        comparable: 4,
-        label: DEFAULT_LABEL.to_owned(),
-        skipped: 99,
-        ..Width::default()
-    };
-    let shown = render(&BTreeSet::new(), &found);
-    assert!(shown.contains("  skipped         99"), "{shown}");
-}

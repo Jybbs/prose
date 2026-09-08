@@ -3,70 +3,123 @@
     "default": [
       {
         "file": "_pyrepl/simple_interact.py",
+        "kind": "unbound",
         "module": "_pyrepl/simple_interact.py",
-        "reason": "leaves `errno` unbound"
+        "names": [
+          "errno"
+        ]
       },
       {
         "file": "asyncio/tools.py",
+        "kind": "unbound",
         "module": "asyncio/tools.py",
-        "reason": "leaves `namedtuple` unbound"
+        "names": [
+          "namedtuple"
+        ]
       },
       {
         "file": "pydoc.py",
+        "kind": "unbound",
         "module": "pydoc.py",
-        "reason": "leaves `textwrap` unbound"
+        "names": [
+          "textwrap"
+        ]
       },
       {
         "file": "site-packages/pip/_internal/operations/install/wheel.py",
+        "kind": "unbound",
         "module": "site-packages/pip/_internal/operations/install/wheel.py",
-        "reason": "leaves `IO` unbound"
+        "names": [
+          "IO"
+        ]
       },
       {
         "file": "site-packages/pip/_vendor/distlib/compat.py",
+        "kind": "unbound",
         "module": "site-packages/pip/_vendor/distlib/compat.py",
-        "reason": "leaves `shutil` and 1 more name unbound"
+        "names": [
+          "shutil",
+          "sysconfig"
+        ]
       },
       {
         "file": "site-packages/pip/_vendor/distlib/scripts.py",
+        "kind": "raises",
         "module": "site-packages/pip/_vendor/distlib/scripts.py",
-        "reason": "raises ImportError: cannot import name 'sysconfig' from 'site-packages.pip._vendor.distlib.compat' (<tree>/site-packages/pip/_vendor/distlib/compat.py)"
+        "names": [
+          "sysconfig"
+        ]
       },
       {
         "file": "site-packages/pip/_vendor/distlib/util.py",
+        "kind": "raises",
         "module": "site-packages/pip/_vendor/distlib/resources.py",
-        "reason": "raises ImportError: cannot import name 'shutil' from 'site-packages.pip._vendor.distlib.compat' (<tree>/site-packages/pip/_vendor/distlib/compat.py)"
+        "names": [
+          "shutil"
+        ]
       },
       {
         "file": "site-packages/pip/_vendor/distlib/util.py",
+        "kind": "raises",
         "module": "site-packages/pip/_vendor/distlib/util.py",
-        "reason": "raises ImportError: cannot import name 'shutil' from 'site-packages.pip._vendor.distlib.compat' (<tree>/site-packages/pip/_vendor/distlib/compat.py)"
+        "names": [
+          "shutil"
+        ]
       },
       {
         "file": "site-packages/pip/_vendor/requests/compat.py",
+        "kind": "unbound",
         "module": "site-packages/pip/_vendor/requests/compat.py",
-        "reason": "leaves `Callable` and 6 more names unbound"
+        "names": [
+          "Callable",
+          "JSONDecodeError",
+          "Mapping",
+          "Morsel",
+          "MutableMapping",
+          "StringIO",
+          "cookielib"
+        ]
       },
       {
         "file": "site-packages/pip/_vendor/requests/exceptions.py",
+        "kind": "raises",
         "module": "site-packages/pip/_vendor/requests/__init__.py",
-        "reason": "raises ImportError: cannot import name 'JSONDecodeError' from 'site-packages.pip._vendor.requests.compat' (<tree>/site-packages/pip/_vendor/requests/compat.py)"
+        "names": [
+          "JSONDecodeError"
+        ]
       },
       {
         "file": "site-packages/pip/_vendor/requests/exceptions.py",
+        "kind": "raises",
         "module": "site-packages/pip/_vendor/requests/help.py",
-        "reason": "raises ImportError: cannot import name 'JSONDecodeError' from 'site-packages.pip._vendor.requests.compat' (<tree>/site-packages/pip/_vendor/requests/compat.py)"
+        "names": [
+          "JSONDecodeError"
+        ]
       },
       {
         "file": "site-packages/pip/_vendor/requests/exceptions.py",
+        "kind": "raises",
         "module": "site-packages/pip/_vendor/requests/packages.py",
-        "reason": "raises ImportError: cannot import name 'JSONDecodeError' from 'site-packages.pip._vendor.requests.compat' (<tree>/site-packages/pip/_vendor/requests/compat.py)"
+        "names": [
+          "JSONDecodeError"
+        ]
       },
       {
         "file": "site-packages/pip/_vendor/rich/live.py",
+        "kind": "unbound",
         "module": "site-packages/pip/_vendor/rich/live.py",
-        "reason": "leaves `TextIO` unbound"
+        "names": [
+          "TextIO"
+        ]
       }
     ]
+  },
+  "floors": {
+    "default": {
+      "candidates": 997,
+      "comparable": 898,
+      "refused": 0
+    }
   },
   "uncomparable": {
     "default": [
@@ -171,5 +224,5 @@
       "zipfile/_path/__init__.py"
     ]
   },
-  "version": 3
+  "version": 4
 }

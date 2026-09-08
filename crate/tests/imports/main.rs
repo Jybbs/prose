@@ -27,12 +27,12 @@ mod sweep;
 use std::{collections::BTreeSet, iter, num::NonZeroUsize};
 
 use crate::{
-    common::{watch_for_a_runaway, widths_or},
+    common::{setting, watch_for_a_runaway, widths_or},
     corpus::standard_library,
     execute::interpreter,
-    ratchet::{bake, baking, baseline, dropped, judge, skipping},
+    ratchet::{bake, baking, baseline, dropped, judge, shortfalls},
     report::render,
-    sweep::{Sweep, label},
+    sweep::{MODULE_VAR, Sweep},
 };
 
 #[global_allocator]
@@ -45,6 +45,13 @@ fn every_rewritten_module_still_imports() {
     let python = interpreter();
     let corpus = standard_library(&python);
     let baked = baking();
+    let pointed = setting(MODULE_VAR).is_some();
+    assert!(
+        !(pointed && baked.is_some()),
+        "a run narrowed by {MODULE_VAR} measures one module, so baking it would write a set \
+         holding that module alone over every break and uncomparable module the tracked set \
+         carries",
+    );
     let held = baked.is_none().then(baseline).unwrap_or_default();
     let budgets = iter::once(None).chain(widths_or(&[]).into_iter().map(NonZeroUsize::new));
     let sweep = Sweep::new(&corpus);
@@ -53,14 +60,14 @@ fn every_rewritten_module_still_imports() {
         corpus.display(),
         sweep.runner.stage.root.display(),
     );
-    let widths: Vec<_> = budgets
-        .map(|width| sweep.sweep(width, skipping(&held, &label(width))))
-        .collect();
+    let widths: Vec<_> = budgets.map(|width| sweep.sweep(width)).collect();
     let mut fresh = BTreeSet::new();
     let mut lost = BTreeSet::new();
+    let mut short = Vec::new();
     for found in &widths {
         let carried = judge(found, &held);
         lost.extend(dropped(found, &held));
+        short.extend(shortfalls(found, &held));
         eprintln!("\nwidth {}\n{}", found.label, render(&carried, found));
         fresh.extend(found.uncarried(&carried).map(|brk| brk.module.clone()));
     }
@@ -78,6 +85,15 @@ fn every_rewritten_module_still_imports() {
         eprintln!("break set baked into {}", path.display());
         return;
     }
+    if pointed {
+        eprintln!("\nthe run measured one module, so the ratchet asserted nothing");
+        return;
+    }
+    assert!(
+        short.is_empty(),
+        "the run reaches less of the corpus than the baseline records, at {}",
+        short.join(", "),
+    );
     if !lost.is_empty() || !fresh.is_empty() {
         sweep.runner.stage.keep();
     }

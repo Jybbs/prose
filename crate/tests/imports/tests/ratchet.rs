@@ -2,19 +2,23 @@
 //! covering what a bake writes to the tracked file, which files a read
 //! refuses, and which breaks a baseline already carries.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::*;
 use crate::{
-    ratchet::{Baseline, Carried, VERSION, bake, baseline, baseline_at, dropped, judge, skipping},
+    ratchet::{
+        Baseline, Carried, Floor, VERSION, bake, baseline, baseline_at, dropped, judge, shortfalls,
+    },
     records::Width,
     sweep::DEFAULT_LABEL,
 };
 
 #[test]
 fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
+    let mut lost = broken("m.py", "re/_parser.py", "leaves `X` unbound");
+    lost.names = vec!["X".to_owned()];
     let found = Width {
-        breaks: vec![broken("m.py", "re/_parser.py", "leaves `X` unbound")],
+        breaks: vec![lost],
         candidates: 1,
         comparable: 1,
         label: DEFAULT_LABEL.to_owned(),
@@ -32,8 +36,9 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
         held.breaks[DEFAULT_LABEL],
         [Carried {
             file: "re/_parser.py".to_owned(),
+            kind: "unbound".to_owned(),
             module: "m.py".to_owned(),
-            reason: "leaves `X` unbound".to_owned(),
+            names: vec!["X".to_owned()],
         }]
         .into()
     );
@@ -53,8 +58,9 @@ fn a_break_set_that_is_older_malformed_or_absent_carries_nothing_forward() {
             "breaks": {
                 "default": [{
                     "file": "re/_parser.py",
+                    "kind": "unbound",
                     "module": "re",
-                    "reason": "leaves `X` unbound",
+                    "names": ["X"],
                 }],
             },
             "uncomparable": {},
@@ -96,9 +102,62 @@ fn dropped_names_nothing_where_the_baseline_records_no_width() {
 }
 
 #[test]
-fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
+fn shortfalls_name_every_count_the_run_falls_short_of() {
+    let held = Baseline {
+        floors: [(
+            DEFAULT_LABEL.to_owned(),
+            Floor {
+                candidates: 997,
+                comparable: 898,
+                refused: 0,
+            },
+        )]
+        .into(),
+        ..Baseline::default()
+    };
+    let short = Width {
+        candidates: 900,
+        comparable: 800,
+        label: DEFAULT_LABEL.to_owned(),
+        refused: 2,
+        ..Width::default()
+    };
+    assert_eq!(
+        shortfalls(&short, &held),
+        [
+            "candidates 900 against 997 baked",
+            "comparable 800 against 898 baked",
+            "refused 2 against 0 baked",
+        ]
+    );
+    let reached = Width {
+        candidates: 997,
+        comparable: 900,
+        label: DEFAULT_LABEL.to_owned(),
+        ..Width::default()
+    };
+    assert_eq!(shortfalls(&reached, &held), Vec::<String>::new());
+}
+
+#[test]
+fn shortfalls_name_nothing_where_the_baseline_records_no_floor() {
     let found = Width {
-        breaks: vec![broken("m.py", "re/_parser.py", "leaves `X` unbound")],
+        candidates: 1,
+        label: DEFAULT_LABEL.to_owned(),
+        ..Width::default()
+    };
+    assert_eq!(
+        shortfalls(&found, &Baseline::default()),
+        Vec::<String>::new()
+    );
+}
+
+#[test]
+fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
+    let mut lost = broken("m.py", "re/_parser.py", "leaves `X` unbound");
+    lost.names = vec!["X".to_owned()];
+    let found = Width {
+        breaks: vec![lost],
         label: DEFAULT_LABEL.to_owned(),
         ..Width::default()
     };
@@ -107,21 +166,20 @@ fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
             DEFAULT_LABEL.to_owned(),
             [Carried {
                 file: "re/_parser.py".to_owned(),
+                kind: "unbound".to_owned(),
                 module: "m.py".to_owned(),
-                reason: "leaves `X` unbound".to_owned(),
+                names: vec!["X".to_owned()],
             }]
             .into(),
         )]
         .into(),
+        floors: BTreeMap::new(),
         uncomparable: [(DEFAULT_LABEL.to_owned(), ["a.py".to_owned()].into())].into(),
         version: VERSION,
     };
     assert_eq!(judge(&found, &held), ["m.py".to_owned()].into());
     assert_eq!(judge(&found, &Baseline::default()), BTreeSet::new());
-    assert_eq!(
-        skipping(&held, DEFAULT_LABEL),
-        Some(&["a.py".to_owned()].into())
-    );
+    assert_eq!(held.uncomparable[DEFAULT_LABEL], ["a.py".to_owned()].into());
 }
 
 #[test]

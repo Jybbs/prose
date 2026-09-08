@@ -6,7 +6,7 @@ use itertools::Itertools;
 use rstest::rstest;
 
 use crate::{
-    compare::{compare, divergence},
+    compare::{Divergence, compare, divergence},
     outcome::{Kind, Outcome},
 };
 
@@ -33,7 +33,11 @@ fn bound(names: &[&str], spelt: &[(&str, &str)]) -> Outcome {
 fn a_constant_rebound_names_both_values(#[case] spelt: &[(&str, &str)], #[case] why: &str) {
     assert_eq!(
         divergence(&bound(&["N"], spelt), &bound(&["N"], &[("N", "1")])),
-        Some((why.to_owned(), Some("N".to_owned())))
+        Some(Divergence {
+            kind: "rebound",
+            names: vec!["N".to_owned()],
+            reason: why.to_owned(),
+        })
     );
 }
 
@@ -43,14 +47,19 @@ fn a_dropped_name_and_an_added_name_report_their_direction() {
     let formatted = bound(&["a"], &[]);
     assert_eq!(
         divergence(&formatted, &original),
-        Some(("leaves `b` unbound".to_owned(), Some("b".to_owned())))
+        Some(Divergence {
+            kind: "unbound",
+            names: vec!["b".to_owned()],
+            reason: "leaves `b` unbound".to_owned(),
+        })
     );
     assert_eq!(
         divergence(&original, &formatted),
-        Some((
-            "binds `b` the original does not".to_owned(),
-            Some("b".to_owned())
-        ))
+        Some(Divergence {
+            kind: "extra",
+            names: vec!["b".to_owned()],
+            reason: "binds `b` the original does not".to_owned(),
+        })
     );
 }
 
@@ -64,7 +73,11 @@ fn a_raised_run_returns_its_error_and_name() {
     };
     assert_eq!(
         divergence(&raised, &bound(&[], &[])),
-        Some((raised.error.clone(), Some("x".to_owned())))
+        Some(Divergence {
+            kind: "raises",
+            names: vec!["x".to_owned()],
+            reason: raised.error.clone(),
+        })
     );
 }
 
@@ -72,14 +85,10 @@ fn a_raised_run_returns_its_error_and_name() {
 #[case::one(&["a", "b"], "leaves `b` unbound")]
 #[case::two(&["a", "b", "c"], "leaves `b` and 1 more name unbound")]
 #[case::several(&["a", "b", "c", "d"], "leaves `b` and 2 more names unbound")]
-fn a_run_losing_several_names_counts_them_in_its_reason(
-    #[case] original: &[&str],
-    #[case] why: &str,
-) {
-    assert_eq!(
-        divergence(&bound(&["a"], &[]), &bound(original, &[])),
-        Some((why.to_owned(), Some("b".to_owned())))
-    );
+fn a_run_losing_several_names_carries_every_one(#[case] original: &[&str], #[case] why: &str) {
+    let diverged = divergence(&bound(&["a"], &[]), &bound(original, &[])).expect("diverges");
+    assert_eq!(diverged.reason, why);
+    assert_eq!(diverged.names, &original[1..]);
 }
 
 #[test]

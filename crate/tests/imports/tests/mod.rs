@@ -28,8 +28,10 @@ fn broken(module: &str, frame: &str, reason: &str) -> Break {
             row: None,
         },
         hunk: Vec::new(),
+        kind: "unbound",
         module: module.to_owned(),
         name: None,
+        names: Vec::new(),
         original: Outcome::default(),
         reason: reason.to_owned(),
     }

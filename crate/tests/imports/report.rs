@@ -43,9 +43,6 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
     if !carried.is_empty() {
         lines.push(row("carried", &carried.len()));
     }
-    if found.skipped > 0 {
-        lines.push(row("skipped", &found.skipped));
-    }
     if found.refused > 0 {
         lines.push(row("refused", &found.refused));
     }

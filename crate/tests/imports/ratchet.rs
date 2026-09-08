@@ -25,7 +25,7 @@ const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
 /// The generation a baked set is written and read at, raised by every
 /// change to what a set carries or to the key that holds one break.
-pub(crate) const VERSION: u32 = 3;
+pub(crate) const VERSION: u32 = 4;
 
 /// What one run recorded for a later run to ratchet against, the breaks
 /// it left beside the modules it could not compare, each keyed by width
@@ -35,6 +35,9 @@ pub(crate) const VERSION: u32 = 3;
 pub(crate) struct Baseline {
     /// The breaks a run left at each frame.
     pub(crate) breaks: BTreeMap<String, BTreeSet<Carried>>,
+    /// How many modules each width compared, which a later run must
+    /// reach so a corpus that quietly shrinks fails rather than passing.
+    pub(crate) floors: BTreeMap<String, Floor>,
     /// The modules whose original tree did not run cleanly, which a
     /// later run skips rather than measuring again.
     pub(crate) uncomparable: BTreeMap<String, BTreeSet<String>>,
@@ -44,17 +47,35 @@ pub(crate) struct Baseline {
 }
 
 /// What a baseline carries per break, being the module, the file its frame
-/// names, and the reason the two runs differ. The module joins the frame in
-/// this key, so two modules reaching one frame get separate entries.
+/// names, the kind of difference, and every name it turns on. The module
+/// joins the frame in this key, so two modules reaching one frame get
+/// separate entries, and the names sit here rather than the rendered
+/// sentence so a rewording costs no generation and two different losses
+/// cannot share one entry.
 #[derive(Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(default)]
 pub(crate) struct Carried {
     /// The file its frame names.
     pub(crate) file: String,
+    /// What kind of difference this is.
+    pub(crate) kind: String,
     /// The module the rewrite broke.
     pub(crate) module: String,
-    /// Why the two runs differ.
-    pub(crate) reason: String,
+    /// Every name the difference turns on, sorted.
+    pub(crate) names: Vec<String>,
+}
+
+/// The counts one width reached, which a later run compares against so a
+/// corpus that shrinks fails rather than passing on less work.
+#[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(default)]
+pub(crate) struct Floor {
+    /// How many modules the sweep was eligible to compare.
+    pub(crate) candidates: usize,
+    /// How many of those the original tree ran cleanly.
+    pub(crate) comparable: usize,
+    /// How many modules the format run could not read, parse, or write.
+    pub(crate) refused: usize,
 }
 
 /// Writes the break set of a run, for a later run to ratchet against.
@@ -64,6 +85,19 @@ pub(crate) fn bake(path: &Path, widths: &[Width]) {
     }
     let baked = Baseline {
         breaks: keyed(widths, |found| found.breaks.iter().map(carried).collect()),
+        floors: widths
+            .iter()
+            .map(|found| {
+                (
+                    found.label.clone(),
+                    Floor {
+                        candidates: found.candidates,
+                        comparable: found.comparable,
+                        refused: found.refused,
+                    },
+                )
+            })
+            .collect(),
         uncomparable: keyed(widths, |found| found.uncomparable.iter().cloned().collect()),
         version: VERSION,
     };
@@ -127,18 +161,34 @@ pub(crate) fn judge(found: &Width, held: &Baseline) -> BTreeSet<String> {
         .collect()
 }
 
-/// The modules a baseline already proved uncomparable at `label`, which
-/// a judging run skips rather than paying to measure again.
-pub(crate) fn skipping<'a>(held: &'a Baseline, label: &str) -> Option<&'a BTreeSet<String>> {
-    held.uncomparable.get(label)
+/// How one width fell short of the counts the baseline recorded, empty
+/// where it reached every one. A baseline holding no floor at this width
+/// records nothing to fall short of.
+pub(crate) fn shortfalls(found: &Width, held: &Baseline) -> Vec<String> {
+    let Some(floor) = held.floors.get(&found.label) else {
+        return Vec::new();
+    };
+    [
+        ("candidates", found.candidates, floor.candidates),
+        ("comparable", found.comparable, floor.comparable),
+    ]
+    .into_iter()
+    .filter(|(_, reached, baked)| reached < baked)
+    .map(|(what, reached, baked)| format!("{what} {reached} against {baked} baked"))
+    .chain(
+        (found.refused > floor.refused)
+            .then(|| format!("refused {} against {} baked", found.refused, floor.refused)),
+    )
+    .collect()
 }
 
-/// The module, file, and reason a baseline holds one break by.
+/// The module, file, kind, and names a baseline holds one break by.
 fn carried(brk: &Break) -> Carried {
     Carried {
         file: brk.frame.file.clone(),
+        kind: brk.kind.to_owned(),
         module: brk.module.clone(),
-        reason: brk.reason.clone(),
+        names: brk.names.clone(),
     }
 }
 
