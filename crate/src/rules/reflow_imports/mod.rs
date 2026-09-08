@@ -25,14 +25,13 @@ use crate::{
     primitives::{
         aligner,
         comments::noqa_marker,
-        edit::{apply_inline_edits, narrowed_replacement, whole_line_deletion},
+        edit::{apply_inline_edits, narrowed_replacement, singleton_groups, whole_line_deletion},
         imports::IMPORT_KEYWORD_WIDTH,
         inline::display_width,
         layout::pack,
         scope::{scoped_body, sub_bodies},
     },
-    rules::band_constants::BandConstants,
-    rules::{Rule, RuleId},
+    rules::{Rule, RuleId, band_constants::BandConstants},
     source::Source,
 };
 
@@ -179,7 +178,7 @@ impl<'a> Layout<'a> {
             return;
         };
         self.groups
-            .extend(self.packed_edit(node, &names, &rows).map(|edit| vec![edit]));
+            .extend(singleton_groups(self.packed_edit(node, &names, &rows)));
     }
 
     /// The edit rewriting `node` to carry `names` on `rows`, the head
@@ -321,7 +320,7 @@ impl<'a> Layout<'a> {
             .map(|alias| format!("import {}", self.source.slice(alias.range())))
             .collect();
         self.groups
-            .extend(self.joined_rows_edit(node, &rows).map(|edit| vec![edit]));
+            .extend(singleton_groups(self.joined_rows_edit(node, &rows)));
     }
 }
 

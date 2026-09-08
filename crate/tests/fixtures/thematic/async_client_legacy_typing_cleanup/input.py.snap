@@ -14,6 +14,7 @@ from typing import Any, AsyncIterator, Awaitable, Callable, Mapping, Text, Tuple
 Interval      = int | float
 Payload       = dict[Text, Any]
 POLL_INTERVAL = 2.5
+__all__       = ["consume", "poll", "register"]
 
 Handler = Callable[[Payload], Awaitable[None]]
 

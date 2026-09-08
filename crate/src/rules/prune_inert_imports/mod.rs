@@ -3,13 +3,13 @@
 //! binding an earlier import already made under `drop-duplicates`, one
 //! walk deciding both facets so a repeat and the binding its drop
 //! leaves unreferenced go together. A package `__init__.py` or its stub
-//! reports an unreferenced binding rather than dropping it, whereas a
-//! repeat drops there too. `from __future__ import annotations` drops
-//! behind the annotation analysis in `future`, and every other
-//! `__future__` feature stays, as does a `from … import *`, a name
-//! `__all__` lists, an import binding `__all__` itself, a name a second
-//! import rebinds from another source, an `x as x` re-export alias, and
-//! an import an own-line comment leads.
+//! reports an unreferenced binding rather than dropping it, as does a
+//! module that writes no `__all__` and binds no name of its own, and
+//! `plan` holds a line behind any marker `reexports` reads, a star
+//! import, a name a later import rebinds, or a leading own-line
+//! comment. `from __future__ import annotations` drops behind the
+//! annotation analysis in `future`, leaving every other `__future__`
+//! feature in place.
 
 use std::{ffi::OsStr, path::Path};
 
@@ -19,8 +19,7 @@ use ruff_python_ast::PythonVersion;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    rules::reflow_imports::Folds,
-    rules::{Rule, RuleId},
+    rules::{Rule, RuleId, reflow_imports::Folds},
     source::Source,
 };
 
@@ -76,14 +75,17 @@ impl Rule for PruneInertImports {
 
 /// True when `source` is a package's `__init__.py` or its stub.
 fn is_package_init(source: &Source) -> bool {
-    Path::new(source.source_file().name())
-        .file_name()
-        .and_then(OsStr::to_str)
-        .is_some_and(|name| matches!(name, "__init__.py" | "__init__.pyi"))
+    matches!(
+        Path::new(source.source_file().name())
+            .file_name()
+            .and_then(OsStr::to_str),
+        Some("__init__.py" | "__init__.pyi")
+    )
 }
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
     use ruff_python_ast::PySourceType;
 
     use super::*;
@@ -98,21 +100,58 @@ mod tests {
         Source::parse_named(src.to_owned(), "pkg/__init__.py").expect("test source parses")
     }
 
+    /// Applies every fix group the rule plans over `source` and returns
+    /// the resulting text.
+    fn pruned_text(source: &Source) -> String {
+        applied_text(source, rule().apply(source).concat())
+    }
+
     fn rule() -> PruneInertImports {
         PruneInertImports::from_config(&Config::default())
     }
 
     #[test]
-    fn a_conditional_import_below_module_scope_goes_unread() {
-        let source = parse("try:\n    import json\nexcept ImportError:\n    json = None\n");
-        assert!(rule().apply(&source).is_empty());
+    fn a_noqa_head_naming_no_code_drops_its_unread_import() {
+        let source = parse("# ruff: noqa\nvalue = 1\n\nimport json\n");
+
+        assert_eq!(rule().apply(&source).len(), 1);
         assert!(rule().lint(&source).is_empty());
+    }
+
+    #[rstest]
+    #[case::an_upper_case_ruff_head("# RUFF: NOQA: F401\nvalue = 1\n\nimport json\n")]
+    #[case::an_upper_case_pyright_head(
+        "# PYRIGHT: reportUnusedImport=false\nvalue = 1\n\nimport json\n"
+    )]
+    fn a_head_no_tool_reads_drops_its_unread_import(#[case] src: &str) {
+        let source = parse(src);
+
+        assert_eq!(rule().apply(&source).len(), 1);
+    }
+
+    #[rstest]
+    #[case::an_error_severity("# pyright: reportUnusedImport=error\nvalue = 1\n\nimport json\n")]
+    #[case::a_warning_severity("# pyright: reportUnusedImport=warning\nvalue = 1\n\nimport json\n")]
+    #[case::a_rule_the_pragma_does_not_name(
+        "# pyright: reportUnusedVariable=false\nvalue = 1\n\nimport json\n"
+    )]
+    fn a_pyright_rule_still_reporting_drops_its_unread_import(#[case] src: &str) {
+        let source = parse(src);
+
+        assert_eq!(rule().apply(&source).len(), 1);
+    }
+
+    #[test]
+    fn an_indented_pragma_holds_no_module_scope_import() {
+        let source = parse("import json\n\n\ndef f():\n    # ruff: noqa: F401\n    return 1\n");
+
+        assert_eq!(rule().apply(&source).len(), 1);
     }
 
     #[test]
     fn a_main_module_prunes_like_any_other_file() {
         let source = Source::parse_named(
-            "import numpy as np\n\nvalue = 1\n".to_owned(),
+            "import numpy as np\n\n__all__ = [\"value\"]\nvalue = 1\n".to_owned(),
             "pkg/__main__.py",
         )
         .expect("test source parses");
@@ -121,9 +160,34 @@ mod tests {
         assert!(rule().lint(&source).is_empty());
     }
 
-    #[test]
-    fn a_module_with_no_import_plans_nothing() {
-        let source = parse("value = 1\n");
+    #[rstest]
+    #[case::conditional_import_below_module_scope(
+        "try:\n    import json\nexcept ImportError:\n    json = None\n"
+    )]
+    #[case::module_carrying_no_import("value = 1\n")]
+    #[case::file_level_ruff_pragma("# ruff: noqa: F401\nvalue = 1\n\nimport json\n")]
+    #[case::a_head_carrying_no_space("# ruff:noqa: F401\nvalue = 1\n\nimport json\n")]
+    #[case::an_upper_case_noqa_word("# ruff: NOQA: F401\nvalue = 1\n\nimport json\n")]
+    #[case::file_level_flake8_pragma("# flake8: noqa: E501, F401\nvalue = 1\n\nimport json\n")]
+    #[case::a_mixed_case_flake8_head("# Flake8: NoQA: F401\nvalue = 1\n\nimport json\n")]
+    #[case::file_level_pyright_pragma(
+        "# pyright: reportUnusedImport=false\nvalue = 1\n\nimport json\n"
+    )]
+    #[case::a_pyright_rule_past_the_first(
+        "# pyright: strict, reportUnusedImport=false\nvalue = 1\n\nimport json\n"
+    )]
+    #[case::a_pyright_rule_spaced_around_its_equals(
+        "# pyright: reportUnusedImport = false\nvalue = 1\n\nimport json\n"
+    )]
+    #[case::a_pyright_rule_set_to_none(
+        "# pyright: reportUnusedImport=none\nvalue = 1\n\nimport json\n"
+    )]
+    #[case::an_upper_case_pyright_off_value(
+        "# pyright: reportUnusedImport=NONE\nvalue = 1\n\nimport json\n"
+    )]
+    fn a_module_the_rule_leaves_alone_neither_drops_nor_reports(#[case] src: &str) {
+        let source = parse(src);
+
         assert!(rule().apply(&source).is_empty());
         assert!(rule().lint(&source).is_empty());
     }
@@ -135,6 +199,25 @@ mod tests {
         );
 
         assert!(rule().apply(&source).is_empty());
+    }
+
+    #[test]
+    fn a_package_init_reports_nothing_with_the_unreferenced_facet_off() {
+        let mut config = Config::default();
+        config.rules.prune_inert_imports.drop_unreferenced = false;
+        let rule = PruneInertImports::from_config(&config);
+        let source = parse_init("import json\n\nvalue = 1\n");
+
+        assert!(rule.apply(&source).is_empty());
+        assert!(rule.lint(&source).is_empty());
+    }
+
+    #[test]
+    fn a_package_init_reports_rather_than_drops_where_it_declares_a_surface() {
+        let source = parse_init("import json\n\n__all__ = [\"value\"]\nvalue = 1\n");
+
+        assert!(rule().apply(&source).is_empty());
+        assert_eq!(rule().lint(&source).len(), 1);
     }
 
     #[test]
@@ -151,14 +234,61 @@ mod tests {
     }
 
     #[test]
+    fn a_quoted_annotation_holds_its_import_inside_a_package_init() {
+        let source = parse_init("from typing import List\n\nx: \"List[int]\" = []\n");
+
+        assert!(rule().apply(&source).is_empty());
+        assert!(rule().lint(&source).is_empty());
+    }
+
+    #[test]
     fn a_repeat_drops_inside_a_package_init() {
         let source = parse_init("import os\nimport os\n\nvalue = os.getcwd()\n");
-        let groups = rule().apply(&source);
 
-        assert_eq!(
-            applied_text(&source, groups.concat()),
-            "import os\n\nvalue = os.getcwd()\n",
+        assert_eq!(pruned_text(&source), "import os\n\nvalue = os.getcwd()\n");
+    }
+
+    #[test]
+    fn a_deleted_name_holds_the_future_directive() {
+        let source = parse(
+            "from __future__ import annotations\n\n__all__ = [\"f\"]\nAlias = int\ndel Alias\n\n\ndef f(x: Alias) -> None:\n    return None\n",
         );
+
+        assert!(rule().apply(&source).is_empty());
+    }
+
+    #[rstest]
+    #[case::bare_annotation("import shutil\nimport sys\n\nversion: str\n")]
+    #[case::guarded_import("import shutil\nimport sys\n\nif TYPE_CHECKING:\n    import ssl\n")]
+    fn a_module_binding_nothing_at_run_time_stays_a_shim(#[case] src: &str) {
+        let source = parse(src);
+
+        assert!(rule().apply(&source).is_empty());
+        assert_eq!(rule().lint(&source).len(), 2);
+    }
+
+    #[rstest]
+    #[case::unpacking("import shutil\n\na, b = 1, 2\n")]
+    #[case::for_target("import shutil\n\nfor item in range(3):\n    pass\n")]
+    #[case::type_alias("import shutil\n\ntype Handle = int\n")]
+    #[case::annotated_with_a_value("import shutil\n\nversion: str = \"1\"\n")]
+    fn a_module_binding_a_name_of_its_own_drops_its_unread_import(#[case] src: &str) {
+        let source = parse(src);
+
+        assert_eq!(rule().apply(&source).len(), 1);
+        assert!(rule().lint(&source).is_empty());
+    }
+
+    #[test]
+    fn a_shim_binding_no_name_of_its_own_reports_rather_than_drops() {
+        let source = parse(
+            "import shutil\nimport sys\n\ntry:\n    import ssl\nexcept ImportError:\n    ssl = None\n",
+        );
+        let diagnostics = rule().lint(&source);
+
+        assert!(rule().apply(&source).is_empty());
+        assert_eq!(diagnostics.len(), 2);
+        assert!(diagnostics[0].message.contains("writes no `__all__`"));
     }
 
     #[test]
@@ -175,30 +305,35 @@ mod tests {
     #[test]
     fn an_imported_dunder_all_holds_the_export_surface() {
         let source = parse("from io import SEEK_CUR, __all__\n\nvalue = SEEK_CUR\n");
-        let groups = rule().apply(&source);
 
         assert_eq!(
-            applied_text(&source, groups.concat()),
+            pruned_text(&source),
             "from io import SEEK_CUR, __all__\n\nvalue = SEEK_CUR\n",
         );
     }
 
     #[test]
-    fn an_unread_import_drops_whole_outside_a_package_init() {
+    fn an_unread_import_drops_where_the_module_binds_a_name_of_its_own() {
         let source = parse("import json\n\nvalue = 1\n");
-        let groups = rule().apply(&source);
 
-        assert_eq!(applied_text(&source, groups.concat()), "\nvalue = 1\n");
+        assert_eq!(pruned_text(&source), "\nvalue = 1\n");
+        assert!(rule().lint(&source).is_empty());
+    }
+
+    #[test]
+    fn an_unread_import_drops_whole_outside_a_package_init() {
+        let source = parse("import json\n\n__all__ = [\"value\"]\nvalue = 1\n");
+
+        assert_eq!(pruned_text(&source), "\n__all__ = [\"value\"]\nvalue = 1\n");
         assert!(rule().lint(&source).is_empty());
     }
 
     #[test]
     fn an_unread_repeat_reports_its_survivor_inside_a_package_init() {
         let source = parse_init("import os\nimport os\n");
-        let groups = rule().apply(&source);
         let diagnostics = rule().lint(&source);
 
-        assert_eq!(applied_text(&source, groups.concat()), "import os\n");
+        assert_eq!(pruned_text(&source), "import os\n");
         assert_eq!(diagnostics.len(), 1);
         assert!(diagnostics[0].message.starts_with("`os` is imported"));
     }
@@ -220,9 +355,7 @@ mod tests {
     #[test]
     fn every_repeat_past_the_first_drops_in_one_group() {
         let source = parse("import os\nimport os\nimport os\n\nvalue = os.getcwd()\n");
-        let groups = rule().apply(&source);
-        let text = applied_text(&source, groups.concat());
 
-        assert_eq!(text, "import os\n\nvalue = os.getcwd()\n");
+        assert_eq!(pruned_text(&source), "import os\n\nvalue = os.getcwd()\n");
     }
 }

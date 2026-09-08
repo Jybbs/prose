@@ -13,7 +13,7 @@ use rustc_hash::FxHashSet;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::binding::{BindingAnalysis, top_level_module},
+    primitives::binding::{BindingAnalysis, bare_import_bound_name, top_level_module},
     rules::{Rule, RuleId},
     source::Source,
 };
@@ -82,7 +82,7 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
                 if self.allow.contains(top) {
                     continue;
                 }
-                let bound = asname.map_or(top, |id| id.as_str());
+                let bound = bare_import_bound_name(alias);
                 if self.analysis.module_used_bare(bound) {
                     continue;
                 }

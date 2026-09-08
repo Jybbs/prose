@@ -462,12 +462,15 @@ fn write_pyproject(dir: &Path, contents: &str) {
 
 #[test]
 fn a_duplicated_unread_import_settles_before_the_ledger_probes_it() {
-    let (_dir, path) = fixture("dup.py", "import os\nx = 1\nimport os\ny = 2\n");
+    let (_dir, path) = fixture(
+        "dup.py",
+        "__all__ = [\"x\", \"y\"]\n\nimport os\nx = 1\nimport os\ny = 2\n",
+    );
     let (mut warm, _cache) = warmed_by(&path, &["format"], 0);
 
     assert_eq!(
         fs_err::read_to_string(&path).expect("reads the rewrite"),
-        "x = 1\ny = 2\n",
+        "__all__ = [\"x\", \"y\"]\n\nx = 1\ny = 2\n",
         "one run drops the repeat and the binding its drop leaves unread",
     );
 
@@ -739,7 +742,10 @@ fn cache_writes_back_a_settled_file_from_its_own_entry() {
 
 #[test]
 fn carry_trace_env_reports_each_table_build_and_carry_to_stderr() {
-    let (dir, path) = fixture("traced.py", "import os\n\n\ndef f():\n    return None\n");
+    let (dir, path) = fixture(
+        "traced.py",
+        "import os\n\n__all__ = [\"f\"]\n\n\ndef f():\n    return None\n",
+    );
 
     let assert = prose()
         .env("PROSE_CARRY_TRACE", "1")
@@ -834,7 +840,12 @@ fn check_no_cache_flag_runs_clean() {
 
 #[test]
 fn check_ordinary_module_prunes_its_unread_import() {
-    run_fixture("mod.py", "import numpy as np\n", &["check", "--no-cache"]).code(1);
+    run_fixture(
+        "mod.py",
+        "import numpy as np\n\n__all__ = []\n",
+        &["check", "--no-cache"],
+    )
+    .code(1);
 }
 
 #[test]

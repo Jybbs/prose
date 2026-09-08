@@ -3,7 +3,10 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/composition/import_pair_comment_binds_to_from/input.py
 ---
+import sys
 import os
 
 # boundary
 from sys import argv
+
+__all__ = ["argv", "os", "sys"]
