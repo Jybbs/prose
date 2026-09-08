@@ -3,7 +3,7 @@ run-name    : 🪻 CI · ${{ github.head_ref || github.ref_name }}
 permissions : { contents: read }
 
 env:
-  PARENT : ${{ github.event.pull_request.base.sha || github.event.before }}
+  PARENT : ${{ github.event.pull_request.base.sha }}
   REF    : ${{ github.head_ref || github.ref_name }}
   SHA    : ${{ github.event.pull_request.head.sha || github.sha }}
 
@@ -25,7 +25,6 @@ concurrency:
 jobs:
   check:
     name            : ${{ matrix.name }}
-    env             : { CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}" }
     runs-on         : &ubuntu ubuntu-latest
     timeout-minutes : &timeout 15
 
@@ -47,14 +46,18 @@ jobs:
             shared-key : prose-clippy
           - command    : mise run rust:build
             name       : 🗜️ Build
-            shared-key : prose-debug
-          - command    : mise run rust:test
+            shared-key : &debug-key prose-debug
+          - command    : mise run rust:suite
             name       : 🪚 Suite
-            shared-key : prose-debug
-          - command    : mise run wasm:build
+            shared-key : *debug-key
+          - command    : mise run rust:proof
+            name       : 🥃 Proof
+            shared-key : *debug-key
+          - command    : mise run wasm:lint
             name       : 🛶 Wasm
             shared-key : prose-wasm
           - command    : mise run wasm:smoke
+            module     : 'true'
             name       : 🪃 Browser
             shared-key : prose-wasm
           - command    : mise run rust:upload
@@ -64,16 +67,20 @@ jobs:
     steps:
       - &checkout
         name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        uses : actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
         with:
-          cache      : ${{ matrix.shared-key != '' }}
           save       : &no-save 'false'
           shared-key : ${{ matrix.shared-key }}
 
+      - name : Restore the wasm module
+        if   : ${{ matrix.module == 'true' }}
+        uses : ./.github/actions/restore-wasm
+
       - name : ${{ matrix.command }}
+        env  : { CODECOV_TOKEN: "${{ endsWith(matrix.command, ':upload') && secrets.CODECOV_TOKEN || '' }}" }
         run  : ${{ matrix.command }}
 
   gate:
@@ -91,5 +98,5 @@ jobs:
         with : { save: *no-save }
 
       - name : Summarize and gate
-        env  : { CHECK: "${{ needs.check.result }}" }
+        env  : { NEEDS: "${{ toJSON(needs) }}" }
         run  : mise run gha:brief ci

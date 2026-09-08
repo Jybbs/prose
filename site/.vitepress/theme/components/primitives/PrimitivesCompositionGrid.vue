@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { data as primitiveMeta } from '../../../lib/primitives/primitives.data'
-
 import type { PrimitiveLayer, PrimitiveSlug } from '../../../lib/shared/registries'
 
 interface BandEntry {
   layer : PrimitiveLayer
+  name  : string
   slug  : PrimitiveSlug
 }
 
@@ -68,7 +67,7 @@ function tileState(slug: PrimitiveSlug): 'active' | 'related' | 'mute' | 'idle' 
             @focus="emit('focus', entry.slug)"
             @blur="emit('blur')"
           >
-            <span class="primitives-composition-tile-name">{{ primitiveMeta.bySlug[entry.slug].name }}</span>
+            <span class="primitives-composition-tile-name">{{ entry.name }}</span>
           </a>
         </li>
       </ul>

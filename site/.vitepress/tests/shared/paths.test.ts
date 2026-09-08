@@ -1,32 +1,22 @@
 import fs                from 'node:fs'
-import os                from 'node:os'
 import path              from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import * as paths from '../../lib/shared/paths'
+import * as paths          from '../../lib/shared/paths'
+import { supportTest }     from '../support'
 
 const meta = import.meta.url
 
 describe('repoRoot', () => {
-  let dir: string
-
-  beforeEach(() => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prose-root-'))
-  })
-
-  afterEach(() => {
-    fs.rmSync(dir, { force: true, recursive: true })
-  })
-
   it('walks up to the directory holding .git', () => {
     expect(fs.existsSync(path.join(paths.repoRoot(meta), '.git'))).toBe(true)
   })
 
-  it('stops at the nearest ancestor carrying .git', () => {
-    fs.writeFileSync(path.join(dir, '.git'), '')
-    const nested = path.join(dir, 'a', 'b')
+  supportTest('stops at the nearest ancestor carrying .git', ({ tmpDir }) => {
+    fs.writeFileSync(path.join(tmpDir, '.git'), '')
+    const nested = path.join(tmpDir, 'a', 'b')
     fs.mkdirSync(nested, { recursive: true })
-    expect(paths.repoRoot(pathToFileURL(path.join(nested, 'probe.ts')).href)).toBe(dir)
+    expect(paths.repoRoot(pathToFileURL(path.join(nested, 'probe.ts')).href)).toBe(tmpDir)
   })
 
   it('throws when no .git ancestor exists', () => {

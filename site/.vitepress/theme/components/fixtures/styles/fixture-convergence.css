@@ -1,14 +1,3 @@
-.fixture-converge {
-  margin : 1.25rem 0;
-}
-
-.fixture-converge-lead {
-  margin : 0 0 1rem;
-}
-
-.fixture-converge-lead :first-child { margin-top    : 0; }
-.fixture-converge-lead :last-child  { margin-bottom : 0; }
-
 .fixture-converge-track {
   display        : flex;
   flex-direction : column;

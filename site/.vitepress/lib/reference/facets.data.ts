@@ -4,7 +4,7 @@ import { inlineNodes, type InlineNode } from '../markdown/inline-nodes'
 import { getRenderer }                  from '../markdown/renderer'
 import { discoverRuleIndex }            from '../rules/discovery'
 import * as paths                       from '../shared/paths'
-import { FAMILY_META, type RuleFamily } from '../shared/registries'
+import { FAMILY_META }                  from '../shared/registries'
 import * as ruleSchema                  from '../shared/rule-schema'
 
 interface Facet {
@@ -31,15 +31,17 @@ const EVERY_RULE      = 'every rule'
 
 const root = paths.repoRoot(import.meta.url)
 
+const rulesDirectory = paths.rulesDir(import.meta.url)
+
 declare const data: readonly FacetFamily[]
 export { data }
 
 export default defineLoader({
-  watch : [paths.proseBinaryPath(root)],
+  watch : [paths.proseBinaryPath(root), `${rulesDirectory}/*/*.md`],
   async load(): Promise<readonly FacetFamily[]> {
     const md     = await getRenderer()
     const schema = ruleSchema.proseSchema(root)
-    const index  = discoverRuleIndex(paths.rulesDir(import.meta.url))
+    const index  = discoverRuleIndex(rulesDirectory)
     const defs   = schema.$defs
     const rules  = ruleSchema.ruleDefsOf(schema)
 
@@ -60,7 +62,8 @@ export default defineLoader({
 
     // `enabled` and `max-shift` repeat across every rule and every alignment
     // rule, so they read once as a scope rather than per rule.
-    const aligner = Object.entries(rules).find(([, def]) => 'max-shift' in def.default)!
+    const aligner = Object.entries(rules).find(([, def]) => 'max-shift' in def.default)
+    if (aligner === undefined) throw new Error('No rule declares a `max-shift` default')
     const generic: FacetFamily = {
       badge  : '',
       family : 'generic',
@@ -91,28 +94,28 @@ export default defineLoader({
     // the per-rule lists drop.
     const hoisted = new Set(generic.rules.flatMap(group => group.facets.map(one => one.key)))
 
-    const groups = new Map<RuleFamily, RuleGroup[]>()
-    for (const [slug, def] of Object.entries(rules).toSorted(([a], [b]) => a.localeCompare(b))) {
-      const props  = ruleSchema.rulePropsOf(defs, def)
-      const facets = Object.keys(def.default)
-        .filter(key => !hoisted.has(key))
-        .toSorted((a, b) => a.localeCompare(b))
-        .map(key => facet(key, props[key], def.default[key], describe(props, key)))
+    const rows = Object.entries(rules)
+      .toSorted(([a], [b]) => a.localeCompare(b))
+      .flatMap(([slug, def]) => {
+        const props  = ruleSchema.rulePropsOf(defs, def)
+        const facets = Object.keys(def.default)
+          .filter(key => !hoisted.has(key))
+          .toSorted((a, b) => a.localeCompare(b))
+          .map(key => facet(key, props[key], def.default[key], describe(props, key)))
 
-      const family = index.get(slug)?.family
-      if (facets.length === 0 || family === undefined) continue
-      groups.set(family, [...(groups.get(family) ?? []), { facets, rule: slug }])
-    }
+        const family = index.get(slug)?.family
+        return facets.length === 0 || family === undefined ? [] : [{ facets, family, rule: slug }]
+      })
 
     return [
       generic,
-      ...[...groups.entries()]
+      ...[...Map.groupBy(rows, row => row.family)]
         .toSorted(([a], [b]) => a.localeCompare(b))
         .map(([family, ruleGroups]): FacetFamily => ({
           badge  : FAMILY_META[family].badge,
           family : family,
           label  : FAMILY_META[family].label,
-          rules  : ruleGroups
+          rules  : ruleGroups.map(({ facets, rule }): RuleGroup => ({ facets, rule }))
         }))
     ]
   }

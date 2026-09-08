@@ -1,3 +1,4 @@
+import { posMod }                     from '../shared/pos-mod'
 import type { RenderedGlossaryEntry } from './glossary.data'
 
 export const compareCaseless = (a: string, b: string): number =>
@@ -22,5 +23,5 @@ export const groupByInitial = (
 export function cycleIndex(index: number, delta: number, length: number): number {
   if (length === 0) return -1
   if (index < 0) return 0
-  return (((index + delta) % length) + length) % length
+  return posMod(index + delta, length)
 }

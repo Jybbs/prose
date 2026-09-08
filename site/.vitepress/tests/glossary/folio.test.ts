@@ -35,15 +35,15 @@ describe('filterEntries', () => {
   })
 
   it('matches on the slug, case-insensitively', () => {
-    expect(folio.filterEntries(entries, 'ALPHA').map(e => e.slug)).toEqual(['alphabetize-siblings'])
+    expect(folio.filterEntries(entries, 'ALPHA').map(e => e.slug)).toStrictEqual(['alphabetize-siblings'])
   })
 
   it('matches on an alias', () => {
-    expect(folio.filterEntries(entries, 'equals alignment').map(e => e.slug)).toEqual(['align-equals'])
+    expect(folio.filterEntries(entries, 'equals alignment').map(e => e.slug)).toStrictEqual(['align-equals'])
   })
 
   it('returns nothing when neither slug nor alias matches', () => {
-    expect(folio.filterEntries(entries, 'nomatch')).toEqual([])
+    expect(folio.filterEntries(entries, 'nomatch')).toStrictEqual([])
   })
 
   test.prop([fc.array(fcEntry, { maxLength: 30 }), fc.string()])(
@@ -51,7 +51,7 @@ describe('filterEntries', () => {
     (pool, query) => {
       const out = folio.filterEntries(pool, query)
       expect(out.length).toBeLessThanOrEqual(pool.length)
-      expect(pool.filter(e => out.includes(e))).toEqual([...out])
+      expect(pool.filter(e => out.includes(e))).toStrictEqual([...out])
     }
   )
 
@@ -70,7 +70,7 @@ describe('groupByInitial', () => {
       entry('alpha', { initial: 'A' }),
       entry('apple', { initial: 'A' })
     ]
-    expect(folio.groupByInitial(entries).map(([letter, es]) => [letter, es.map(e => e.slug)])).toEqual([
+    expect(folio.groupByInitial(entries).map(([letter, es]) => [letter, es.map(e => e.slug)])).toStrictEqual([
       ['A', ['alpha', 'apple']],
       ['B', ['beta']]
     ])
@@ -81,22 +81,23 @@ describe('groupByInitial', () => {
     (pool) => {
       const groups = folio.groupByInitial(pool)
       const flat   = groups.flatMap(([, es]) => es)
-      expect(flat.length).toBe(pool.length)
-      expect(new Set(flat)).toEqual(new Set(pool))
+      expect(flat).toHaveLength(pool.length)
+      expect(new Set(flat)).toStrictEqual(new Set(pool))
       const letters = groups.map(([letter]) => letter)
-      expect(letters).toEqual([...letters].toSorted((a, b) => folio.compareCaseless(a, b)))
+      expect(letters).toStrictEqual([...letters].toSorted((a, b) => folio.compareCaseless(a, b)))
     }
   )
 })
 
 describe('cycleIndex', () => {
   it.each([
-    [0,   1, 3, 1],
-    [2,   1, 3, 0],
-    [0,  -1, 3, 2],
-    [-1,  1, 3, 0],
-    [-1, -1, 3, 0]
-  ])('cycles index %i by %i over length %i to %i', (index, delta, length, expected) => {
+    { delta:  1, expected: 1, index:  0, length: 3 },
+    { delta:  1, expected: 0, index:  2, length: 3 },
+    { delta: -1, expected: 2, index:  0, length: 3 },
+    { delta:  1, expected: 0, index: -1, length: 3 },
+    { delta: -1, expected: 0, index: -1, length: 3 }
+  ])('cycles index $index by $delta over length $length to $expected',
+     ({ delta, expected, index, length }) => {
     expect(folio.cycleIndex(index, delta, length)).toBe(expected)
   })
 

@@ -21,7 +21,7 @@ vi.mock('../../lib/suppression/directives.data', () => ({
 describe('ScopeSpecimen', () => {
   it('renders one legend band per scope in the shared order', () => {
     const rows = mount(ScopeSpecimen).findAll('.scope-specimen-legend-row')
-    expect(rows.map(r => r.attributes('data-scope'))).toEqual(['file', 'block', 'line', 'dict'])
+    expect(rows.map(r => r.attributes('data-scope'))).toStrictEqual(['file', 'block', 'line', 'dict'])
   })
 
   it('composes the paired display form from the registry', () => {
@@ -32,7 +32,7 @@ describe('ScopeSpecimen', () => {
 
   it('derives each legend href from the directive scope', () => {
     const links = mount(ScopeSpecimen).findAll('.scope-specimen-legend-directive a')
-    expect(links.map(a => a.attributes('href'))).toEqual([
+    expect(links.map(a => a.attributes('href'))).toStrictEqual([
       '/reference/suppression-directives#file-level-suppression',
       '/reference/suppression-directives#block-markers',
       '/reference/suppression-directives#line-markers',
@@ -44,7 +44,7 @@ describe('ScopeSpecimen', () => {
 
   it('brackets the skipped statement across every line it spans', () => {
     const lines = mount(ScopeSpecimen).findAll('.scope-specimen-line[data-scope="line"]')
-    expect(lines.map(l => l.attributes('data-bracket'))).toEqual(['open', 'mid', 'close', 'solo'])
+    expect(lines.map(l => l.attributes('data-bracket'))).toStrictEqual(['open', 'mid', 'close', 'solo'])
   })
 
   it('renders with no axe violations', async () => {

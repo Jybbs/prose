@@ -10,8 +10,13 @@ runs:
   using: composite
 
   steps:
+    - name : Read the required mise version
+      id   : mise
+      uses : ./.github/actions/mise-floor
+
     - name : Install mise tools
-      uses : jdx/mise-action@dad1bfd3df957f44999b559dd69dc1671cb4e9ea
+      uses : jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c
       with:
         cache_save   : ${{ inputs.save != 'false' }}
         install_args : uv
+        version      : ${{ steps.mise.outputs.version }}

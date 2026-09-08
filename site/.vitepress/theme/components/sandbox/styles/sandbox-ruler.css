@@ -1,0 +1,174 @@
+.sandbox-ruler-head {
+  display     : flex;
+  flex-wrap   : wrap;
+  gap         : 0.75rem 1.25rem;
+  align-items : center;
+}
+
+.sandbox-ruler {
+  --sandbox-ruler-chip-h  : 20px;
+  --sandbox-ruler-gap     : 5px;
+  --sandbox-ruler-major   : var(--vp-c-text-3);
+  --sandbox-ruler-minor   : var(--vp-c-divider);
+  --sandbox-ruler-nums-h  : 14px;
+  --sandbox-ruler-row     : calc(var(--sandbox-ruler-chip-h) + var(--sandbox-ruler-gap));
+  --sandbox-ruler-track-h : 16px;
+
+  position       : relative;
+  flex           : 1 1 16rem;
+  min-width      : 0;
+  height         : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) + var(--sandbox-ruler-nums-h));
+  container-type : inline-size;
+  user-select    : none;
+  transition     : height var(--prose-transition);
+}
+
+.sandbox-ruler-track {
+  position     : absolute;
+  top          : calc(var(--rows, 1) * var(--sandbox-ruler-row));
+  transition   : top var(--prose-transition);
+  right        : 0;
+  left         : 0;
+  height       : var(--sandbox-ruler-track-h);
+  border-block : 1px solid var(--sandbox-ruler-minor);
+  border-right : 1px solid var(--sandbox-ruler-major);
+  background   : repeating-linear-gradient(
+                   90deg,
+                   var(--sandbox-ruler-major) 0 1px,
+                   transparent 0 calc(100% / 3)
+                 ) left top / 100% 100% no-repeat,
+                 repeating-linear-gradient(
+                   90deg,
+                   var(--sandbox-ruler-minor) 0 1px,
+                   transparent 0 calc(100% / 15)
+                 ) left bottom / 100% 62% no-repeat;
+}
+
+.sandbox-ruler-default {
+  position   : absolute;
+  top        : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) / 2);
+  width      : 6px;
+  height     : 6px;
+  transform  : translate(-3px, -3px) rotate(45deg);
+  background : var(--hue);
+  opacity    : 0.8;
+  transition : top var(--prose-transition);
+}
+
+.sandbox-ruler-num {
+  position    : absolute;
+  top         : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) + 3px);
+  transform   : translateX(-50%);
+  color       : var(--vp-c-text-3);
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.6rem;
+  line-height : 1;
+  transition  : top var(--prose-transition);
+}
+
+.sandbox-ruler-num:first-of-type {
+  transform : none;
+}
+
+.sandbox-ruler-num:last-of-type {
+  transform : translateX(-100%);
+}
+
+.sandbox-ruler-stop {
+  position     : absolute;
+  top          : 0;
+  bottom       : 0;
+  left         : calc(var(--pct) * 1%);
+  width        : 0;
+  cursor       : ew-resize;
+  touch-action : none;
+  user-select  : none;
+  outline      : none;
+}
+
+.sandbox-ruler-stop:hover,
+.sandbox-ruler-stop:focus-within,
+.sandbox-ruler-stop[data-dragging] {
+  z-index : 2;
+}
+
+.sandbox-ruler-marker {
+  position   : absolute;
+  top        : calc((var(--rows, 1) - 1 - var(--tier)) * var(--sandbox-ruler-row) + var(--sandbox-ruler-chip-h) - 2px);
+  bottom     : var(--sandbox-ruler-nums-h);
+  left       : -5px;
+  width      : 10px;
+  transition : top var(--prose-transition);
+}
+
+.sandbox-ruler-marker::before {
+  content    : '';
+  position   : absolute;
+  inset      : 0 4px;
+  background : color-mix(in srgb, var(--hue) 70%, var(--vp-c-text-3));
+  transition : background var(--prose-transition);
+}
+
+.sandbox-ruler-stop:hover .sandbox-ruler-marker::before,
+.sandbox-ruler-stop[data-dragging] .sandbox-ruler-marker::before {
+  background : var(--hue);
+}
+
+.sandbox-ruler-chip {
+  position      : absolute;
+  top           : calc((var(--rows, 1) - 1 - var(--tier)) * var(--sandbox-ruler-row));
+  left          : 0;
+  z-index       : 1;
+  display       : inline-flex;
+  gap           : 0.4rem;
+  align-items   : center;
+  height        : var(--sandbox-ruler-chip-h);
+  padding       : 0 7px;
+  border        : 1px solid color-mix(in srgb, var(--hue) 55%, var(--vp-c-divider));
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-c-bg);
+  line-height   : 1;
+  white-space   : nowrap;
+  transform     : translateX(clamp(calc(var(--pct) * -1cqw), -50%, calc((100 - var(--pct)) * 1cqw - 100%)));
+  transition    : border-color var(--prose-transition), top var(--prose-transition);
+}
+
+.sandbox-ruler-stop:hover .sandbox-ruler-chip,
+.sandbox-ruler-stop[data-dragging] .sandbox-ruler-chip {
+  border-color : var(--hue);
+}
+
+.sandbox-ruler-stop:focus-visible .sandbox-ruler-chip {
+  outline        : var(--prose-focus-ring);
+  outline-offset : 1px;
+}
+
+.sandbox-ruler-chip-label {
+  color          : var(--vp-c-text-2);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : 0.62rem;
+  letter-spacing : 0.05em;
+  text-transform : uppercase;
+}
+
+.sandbox-ruler-chip-value {
+  color                : var(--vp-c-text-1);
+  font-family          : var(--vp-font-family-mono);
+  font-size            : 0.68rem;
+  font-variant-numeric : tabular-nums;
+}
+
+.sandbox-ruler-chip-input {
+  width       : 3.4rem;
+  padding     : 0 5px;
+  color       : var(--vp-c-text-1);
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.68rem;
+  cursor      : text;
+  user-select : text;
+}
+
+.sandbox-ruler-chip-input:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : -1px;
+}

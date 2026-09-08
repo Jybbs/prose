@@ -4,12 +4,12 @@
 #MISE sources     = [
 #MISE   "Cargo.lock",
 #MISE   "Cargo.toml",
+#MISE   "corpus/Cargo.toml",
 #MISE   "crate/Cargo.toml",
 #MISE   "crate/pyproject.toml",
 #MISE   "crate/uv.lock",
 #MISE   "site/bun.lock",
 #MISE   "site/package.json",
-#MISE   "sweeps/Cargo.toml",
 #MISE   "wasm/Cargo.toml"
 #MISE ]
 

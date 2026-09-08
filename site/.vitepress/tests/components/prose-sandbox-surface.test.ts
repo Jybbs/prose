@@ -1,14 +1,14 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 import { promiseTimeout }       from '@vueuse/core'
-import { ref }                  from 'vue'
+import { nextTick, ref }        from 'vue'
 
-import ProseSandboxSurface             from '../../theme/components/sandbox/ProseSandboxSurface.vue'
-import type { ProseSandbox }           from '../../lib/composables/use-prose-sandbox'
-import { MORPH_LINE_CHURN_CAP }        from '../../lib/markdown/magic-move-delta'
-import { magicMoveWatchdogMs }         from '../../lib/markdown/magic-move-options'
-import { nextPaint, ruleDrawMs }       from '../../lib/shared/paint'
-import { domTest, isHidden, stubRect } from '../dom'
+import ProseSandboxSurface                          from '../../theme/components/sandbox/ProseSandboxSurface.vue'
+import type { ProseSandbox }                        from '../../lib/composables/use-prose-sandbox'
+import { MORPH_LINE_CHURN_CAP }                     from '../../lib/markdown/magic-move-delta'
+import { magicMoveWatchdogMs }                      from '../../lib/markdown/magic-move-options'
+import { nextPaint, ruleDrawMs }                    from '../../lib/shared/paint'
+import { domTest, fakeSandbox, isHidden, stubRect } from '../dom'
 
 const drawSettled = (): Promise<void> => promiseTimeout(550)
 
@@ -34,16 +34,6 @@ vi.mock('@shikijs/magic-move/vue', () => ({
   }
 }))
 
-const fakeSandbox = (formatted: string, source = formatted): ProseSandbox => ({
-  diagnostics : ref([]),
-  drawn       : ref(0),
-  error       : ref(''),
-  formatNow   : vi.fn<() => void>(),
-  formatted   : ref(formatted),
-  source      : ref(source),
-  unstable    : ref([])
-} as unknown as ProseSandbox)
-
 const FINDING = {
   code         : 'r1',
   end_location : { column: 2, row: 1 },
@@ -67,7 +57,11 @@ const surfaceMount = (reducedMotion: (matches: boolean) => void) =>
   async (options: MountOptions) => {
     const { diagnostics, formatted, motion = false, source = formatted } = options
     reducedMotion(motion)
-    const sandbox = fakeSandbox(formatted, source)
+    const sandbox = fakeSandbox({
+      formatNow : vi.fn<() => void>(),
+      formatted : ref(formatted),
+      source    : ref(source)
+    })
     if (diagnostics) sandbox.diagnostics.value = diagnostics
     const wrapper = mount(ProseSandboxSurface, {
       props  : { sandbox },
@@ -106,7 +100,7 @@ describe('ProseSandboxSurface', () => {
 
     await wrapper.get('.sandbox-surface-apply').trigger('click')
     expect(sandbox.source.value).toBe('y=2')
-    expect(isHidden(wrapper.get('.code-editor'))).toBe(true)
+    expect(isHidden(wrapper.get('.sandbox-code-editor'))).toBe(true)
   })
 
   surfaceTest('formats an applied edit without waiting out the typing debounce', async ({ mounted }) => {
@@ -117,18 +111,18 @@ describe('ProseSandboxSurface', () => {
     await wrapper.get('textarea').setValue('y=2')
     await wrapper.get('.sandbox-surface-apply').trigger('click')
     expect(sandbox.source.value).toBe('y=2')
-    expect(sandbox.formatNow).toHaveBeenCalledTimes(1)
+    expect(sandbox.formatNow).toHaveBeenCalledOnce()
 
     // Applying an unchanged draft and discarding an edit both leave the count.
     await wrapper.get('.sandbox-surface-display').trigger('click')
     await flushPromises()
     await wrapper.get('.sandbox-surface-apply').trigger('click')
-    expect(sandbox.formatNow).toHaveBeenCalledTimes(1)
+    expect(sandbox.formatNow).toHaveBeenCalledOnce()
     await wrapper.get('.sandbox-surface-display').trigger('click')
     await flushPromises()
     await wrapper.get('textarea').setValue('z=3')
     await wrapper.get('.sandbox-surface-discard').trigger('click')
-    expect(sandbox.formatNow).toHaveBeenCalledTimes(1)
+    expect(sandbox.formatNow).toHaveBeenCalledOnce()
   })
 
   surfaceTest('discards the edit and keeps the source', async ({ mounted }) => {
@@ -140,7 +134,7 @@ describe('ProseSandboxSurface', () => {
     await wrapper.get('.sandbox-surface-discard').trigger('click')
 
     expect(sandbox.source.value).toBe('x=1')
-    expect(isHidden(wrapper.get('.code-editor'))).toBe(true)
+    expect(isHidden(wrapper.get('.sandbox-code-editor'))).toBe(true)
   })
 
   surfaceTest('drives the apply-pane from the keyboard', async ({ mounted }) => {
@@ -149,21 +143,21 @@ describe('ProseSandboxSurface', () => {
     // Enter on the display opens the editor on the source.
     await wrapper.get('.sandbox-surface-display').trigger('keydown.enter')
     await flushPromises()
-    expect(isHidden(wrapper.get('.code-editor'))).toBe(false)
+    expect(isHidden(wrapper.get('.sandbox-code-editor'))).toBe(false)
     expect(wrapper.get('textarea').element.value).toBe('x=1')
 
     // Esc discards without touching the source.
     await wrapper.get('textarea').setValue('discard = 1')
     await wrapper.get('textarea').trigger('keydown.esc')
     expect(sandbox.source.value).toBe('x=1')
-    expect(isHidden(wrapper.get('.code-editor'))).toBe(true)
+    expect(isHidden(wrapper.get('.sandbox-code-editor'))).toBe(true)
 
     // Ctrl+Enter applies the edit.
     await wrapper.get('.sandbox-surface-display').trigger('click')
     await wrapper.get('textarea').setValue('y=2')
     await wrapper.get('textarea').trigger('keydown.enter', { ctrlKey: true })
     expect(sandbox.source.value).toBe('y=2')
-    expect(isHidden(wrapper.get('.code-editor'))).toBe(true)
+    expect(isHidden(wrapper.get('.sandbox-code-editor'))).toBe(true)
   })
 
   surfaceTest('keeps reacting after a config-driven reformat', async ({ mounted }) => {
@@ -264,6 +258,22 @@ describe('ProseSandboxSurface', () => {
     await flushPromises()
     expect(window.proseMorphProbe).toMatchObject({ lines: [1, 80], morphed: false })
     expect(wrapper.get('.sandbox-surface-display').html()).toContain('b79 = 79')
+  })
+
+  surfaceTest('reports no decision once it is unmounted mid-render', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
+    await nextPaint()
+    await flushPromises()
+
+    delete window.proseMorphProbe
+    sandbox.formatted.value = 'x = 2'
+    // The watcher has to start the render before the teardown can supersede it.
+    await nextTick()
+    wrapper.unmount()
+    await flushPromises()
+    await nextPaint()
+    await flushPromises()
+    expect(window.proseMorphProbe).toBeUndefined()
   })
 
   surfaceTest('holds the outgoing height until the morph flips its step', async ({ mounted }) => {

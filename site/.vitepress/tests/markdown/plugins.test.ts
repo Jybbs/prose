@@ -3,9 +3,9 @@ import type { MarkdownRenderer } from 'vitepress'
 
 import { glossaryPlugin }                          from '../../lib/glossary/plugin'
 import { bodyLinkPlugin }                          from '../../lib/markdown/body-link-plugin'
-import { plainTermsEnv }                           from '../../lib/markdown/inert-env'
+import { inertEnv, plainTermsEnv }                 from '../../lib/markdown/inert-env'
 import { proseMarkPlugin }                         from '../../lib/markdown/prose-mark-plugin'
-import { renderInlineHtml, renderPlainInlineHtml } from '../../lib/markdown/renderer'
+import { renderPlainInlineHtml }                   from '../../lib/markdown/renderer'
 import type { DiscoveredRule }                     from '../../lib/rules/discovery'
 import { ruleLinkPlugin }                          from '../../lib/rules/link-plugin'
 
@@ -69,10 +69,8 @@ describe('glossaryPlugin', () => {
     expect(html).toContain('an atom here')
   })
 
-  it('renders inert through the loader wrapper', () => {
-    const md = new MarkdownIt()
-    md.use(plugin)
-    expect(renderInlineHtml(md as unknown as MarkdownRenderer, 'an atom here'))
+  it('keeps the glossary anchor under the inert env', () => {
+    expect(render(md => md.use(plugin), 'an atom here', inertEnv()))
       .toContain('<a class="glossary-anchor underline-draw"')
   })
 

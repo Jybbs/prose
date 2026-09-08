@@ -5,6 +5,6 @@ defineProps<{ id: string, title: string }>()
 <template>
   <h2 :id="id" tabindex="-1">
     {{ title }}
-    <a class="header-anchor" :href="`#${id}`" :aria-label="`Permalink to &quot;${title}&quot;`">​</a>
+    <a class="header-anchor" :href="`#${id}`" :aria-label="`Permalink to “${title}”`">​</a>
   </h2>
 </template>

@@ -6,7 +6,8 @@
 #MISE   "rust:check",
 #MISE   "rust:cruft",
 #MISE   "rust:lint",
-#MISE   "rust:test",
+#MISE   "rust:proof",
+#MISE   "rust:suite",
 #MISE   "rust:unused",
 #MISE   "site:cruft",
 #MISE   "site:links",
@@ -14,6 +15,7 @@
 #MISE   "site:press",
 #MISE   "site:test",
 #MISE   "site:typecheck",
+#MISE   "wasm:lint",
 #MISE   "wasm:smoke"
 #MISE ]
 #MISE depends_post = ["rust:wheel"]

@@ -3,10 +3,10 @@ import { promiseTimeout } from '@vueuse/core'
 import { ref }            from 'vue'
 
 import { useChipPanel }            from '../../lib/composables/use-chip-panel'
-import type { Facet, RuleControl } from '../../lib/composables/use-chip-panel'
-import type { ProseSandbox }       from '../../lib/composables/use-prose-sandbox'
+import type { RuleControl }        from '../../lib/composables/use-chip-panel'
+import type { FacetValue }         from '../../lib/sandbox/config-schema.data'
 import type { RenderedRule }       from '../../lib/rules/rules.data'
-import { mountSetup }              from '../dom'
+import { fakeSandbox, mountSetup } from '../dom'
 
 const ALIGN: RuleControl = {
   family : 'alignment',
@@ -30,44 +30,41 @@ const CARDS = {
 
 // A stateful stand-in for the sandbox, where `setFacet` writes into a plain map
 // the `facetValue` reads resolve against, which is all the panel logic touches.
-function fakeSandbox() {
-  const overrides    = new Map<string, unknown>()
+function panelSandbox() {
+  const overrides    = new Map<string, FacetValue>()
   const eligible     = ref<readonly string[] | null>([])
   const facetImpact  = ref<Record<string, readonly string[]>>({})
   const lengthImpact = ref<readonly string[] | null>(null)
-  const sandbox      = {
+  const sandbox      = fakeSandbox({
     eligible     : eligible,
     facetImpact  : facetImpact,
-    facetValue   : (slug: string, facet: Facet) =>
-      overrides.get(`${slug}.${facet.key}`) ?? facet.default,
+    facetValue   : (slug, facet) => overrides.get(`${slug}.${facet.key}`) ?? facet.default,
     lengthImpact : lengthImpact,
     lengths      : [
       { default: 88, key: 'code-line-length', label: 'Code' },
       { default: 76, key: 'docstring-line-length', label: 'Docstring' }
     ],
-    lengthValue  : () => 88,
     rules        : [ALIGN, BLANK],
-    setFacet     : (slug: string, facet: Facet, value: unknown) => {
+    setFacet     : (slug, facet, value) => {
       overrides.set(`${slug}.${facet.key}`, value)
-    },
-    setLength    : () => {}
-  } as unknown as ProseSandbox
+    }
+  })
   return { eligible, facetImpact, lengthImpact, sandbox }
 }
 
 describe('useChipPanel', () => {
   it('filters the visible rules to the eligible set and falls back to all', () => {
-    const { eligible, sandbox } = fakeSandbox()
+    const { eligible, sandbox } = panelSandbox()
     const api = mountSetup(() => useChipPanel(sandbox, CARDS))
-    expect(api.visible.value.map(rule => rule.slug)).toEqual(['align-equals', 'space-statements'])
+    expect(api.visible.value.map(rule => rule.slug)).toStrictEqual(['align-equals', 'space-statements'])
     eligible.value = ['space-statements']
-    expect(api.visible.value.map(rule => rule.slug)).toEqual(['space-statements'])
+    expect(api.visible.value.map(rule => rule.slug)).toStrictEqual(['space-statements'])
     eligible.value = null
-    expect(api.visible.value).toEqual([])
+    expect(api.visible.value).toStrictEqual([])
   })
 
   it('reads and toggles a rule through its enabled facet', () => {
-    const { sandbox } = fakeSandbox()
+    const { sandbox } = panelSandbox()
     const api = mountSetup(() => useChipPanel(sandbox, CARDS))
     expect(api.isOn(ALIGN)).toBe(true)
     api.toggle(ALIGN)
@@ -75,7 +72,7 @@ describe('useChipPanel', () => {
   })
 
   it('closes the open facet surface when its rule toggles off', () => {
-    const { sandbox } = fakeSandbox()
+    const { sandbox } = panelSandbox()
     const api = mountSetup(() => useChipPanel(sandbox, CARDS))
     api.openFacets(ALIGN)
     expect(api.openSlug.value).toBe('align-equals')
@@ -84,7 +81,7 @@ describe('useChipPanel', () => {
   })
 
   it('ignores a facet-surface open on a disabled rule and toggles otherwise', () => {
-    const { sandbox } = fakeSandbox()
+    const { sandbox } = panelSandbox()
     const api = mountSetup(() => useChipPanel(sandbox, CARDS))
     api.toggle(ALIGN)
     api.openFacets(ALIGN)
@@ -96,38 +93,38 @@ describe('useChipPanel', () => {
   })
 
   it('falls back to the first facet when a rule carries no enabled key', () => {
-    const { sandbox } = fakeSandbox()
+    const { sandbox } = panelSandbox()
     const api = mountSetup(() => useChipPanel(sandbox, CARDS))
     expect(api.enabledFacet(BLANK).key).toBe('gap')
   })
 
   it('narrows the sub-facets to the probed impact set and hides them unprobed', () => {
-    const { facetImpact, sandbox } = fakeSandbox()
+    const { facetImpact, sandbox } = panelSandbox()
     const api = mountSetup(() => useChipPanel(sandbox, CARDS))
-    expect(api.subFacets(ALIGN)).toEqual([])
+    expect(api.subFacets(ALIGN)).toStrictEqual([])
     facetImpact.value = { 'align-equals': ['max-shift', 'condense'] }
-    expect(api.subFacets(ALIGN).map(facet => facet.key)).toEqual(['max-shift', 'condense'])
+    expect(api.subFacets(ALIGN).map(facet => facet.key)).toStrictEqual(['max-shift', 'condense'])
     facetImpact.value = { 'align-equals': ['condense'] }
-    expect(api.subFacets(ALIGN).map(facet => facet.key)).toEqual(['condense'])
+    expect(api.subFacets(ALIGN).map(facet => facet.key)).toStrictEqual(['condense'])
   })
 
   it('narrows the ruler knobs to the probed impact set and hides them unprobed', () => {
-    const { lengthImpact, sandbox } = fakeSandbox()
+    const { lengthImpact, sandbox } = panelSandbox()
     const api = mountSetup(() => useChipPanel(sandbox, CARDS))
-    expect(api.visibleLengths.value).toEqual([])
+    expect(api.visibleLengths.value).toStrictEqual([])
     lengthImpact.value = ['docstring-line-length']
-    expect(api.visibleLengths.value.map(knob => knob.key)).toEqual(['docstring-line-length'])
+    expect(api.visibleLengths.value.map(knob => knob.key)).toStrictEqual(['docstring-line-length'])
   })
 
   it('resolves a rendered rule card and misses null-safely', () => {
-    const { sandbox } = fakeSandbox()
+    const { sandbox } = panelSandbox()
     const api = mountSetup(() => useChipPanel(sandbox, CARDS))
     expect(api.ruleData('align-equals')?.href).toBe('/rules/alignment/align-equals')
     expect(api.ruleData('space-statements')).toBeNull()
   })
 
   it('closes on an outside click but leaves a gear click to its own handler', async () => {
-    const { sandbox } = fakeSandbox()
+    const { sandbox } = panelSandbox()
     const api   = mountSetup(() => useChipPanel(sandbox, CARDS))
     const panel = document.createElement('div')
     const gear  = document.createElement('button')

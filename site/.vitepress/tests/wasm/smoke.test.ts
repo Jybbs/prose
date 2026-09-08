@@ -1,9 +1,13 @@
-import { __wbg_reset_state, format, panic_for_test } from './pkg/prose_wasm.js'
+import init, { __wbg_reset_state, format, panic_for_test } from './pkg/prose_wasm.js'
+
+await init()
+
+const SORTED   = 'import a\nimport b\n\nprint(a, b)\n'
+const UNSORTED = 'import b\nimport a\n\nprint(a, b)\n'
 
 describe('prose_wasm', () => {
   it('sorts imports through the instantiated module', () => {
-    expect(format('', 'import b\nimport a\n\nprint(a, b)\n', true).formatted)
-      .toBe('import a\nimport b\n\nprint(a, b)\n')
+    expect(format('', UNSORTED, true).formatted).toBe(SORTED)
   })
 
   it('returns the findings as structured records', () => {
@@ -13,11 +17,13 @@ describe('prose_wasm', () => {
 
   it('surfaces an unknown config key as a notice', () => {
     expect(format('no-such-key = 1', 'x = 1\n', true).config_notices)
-      .toEqual(['warning: unknown key `no-such-key` in [tool.prose]'])
+      .toStrictEqual(['warning: unknown key `no-such-key` in [tool.prose]'])
   })
 
-  it('skips the settle walk when the caller asks for no settle check', () => {
-    expect(format('', 'alpha = 1\nb = 22\n', false).unstable_rules).toEqual([])
+  it.each([true, false])('marshals the rule-slug vectors with settle %s', settle => {
+    const result = format('', 'aa = 1\nb = 2\n', settle)
+    expect(result.fired_rules).toContain('align-equals')
+    expect(result.unstable_rules).toStrictEqual([])
   })
 
   it('throws when the config is invalid', () => {
@@ -32,7 +38,6 @@ describe('prose_wasm', () => {
 
     __wbg_reset_state()
 
-    expect(format('', 'import b\nimport a\n\nprint(a, b)\n', true).formatted)
-      .toBe('import a\nimport b\n\nprint(a, b)\n')
+    expect(format('', UNSORTED, true).formatted).toBe(SORTED)
   })
 })

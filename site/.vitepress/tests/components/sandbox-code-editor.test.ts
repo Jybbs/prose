@@ -16,13 +16,13 @@ describe('SandboxCodeEditor', () => {
     const input = wrapper.get('textarea')
     input.element.scrollLeft = 120
     await input.trigger('scroll')
-    expect(wrapper.get('div.code-editor-layer').element.scrollLeft).toBe(120)
+    expect(wrapper.get('div.sandbox-code-editor-layer').element.scrollLeft).toBe(120)
   })
 
   it('pads a trailing newline so the layer measures the textarea\'s height', async () => {
     const wrapper = mountEditor('x = 1\n')
     await flushPromises()
 
-    expect(wrapper.get('div.code-editor-layer').element.textContent).toBe('x = 1\n ')
+    expect(wrapper.get('div.sandbox-code-editor-layer').element.textContent).toBe('x = 1\n ')
   })
 })

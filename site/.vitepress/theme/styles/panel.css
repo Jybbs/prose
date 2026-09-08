@@ -73,6 +73,24 @@
   outline-offset : 1px;
 }
 
+/* A numeric input with the browser spinner suppressed. */
+.panel-number {
+  text-align : center;
+  appearance : textfield;
+}
+
+.panel-number::-webkit-outer-spin-button,
+.panel-number::-webkit-inner-spin-button {
+  margin     : 0;
+  appearance : none;
+}
+
+/* A denser control row takes the 26px seat. */
+.panel-seat-sm {
+  width  : 26px;
+  height : 26px;
+}
+
 /* Places a `.panel-seat` in a panel corner and holds it hidden until the
    surrounding `.copy-host` is hovered, leaving each site its own offset. */
 .panel-corner {

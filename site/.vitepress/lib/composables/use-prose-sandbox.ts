@@ -28,8 +28,8 @@ export interface ProseSandbox {
   formatNow     : () => void
   formatted     : Ref<string>
   lengthImpact  : Ref<readonly string[] | null>
-  lengthValue   : (key: string) => number
   lengths       : readonly configSchema.LengthKnob[]
+  lengthValue   : (key: string) => number
   refresh       : () => void
   rules         : readonly configSchema.RuleControl[]
   setFacet      : (slug: string, facet: configSchema.Facet, value: FacetValue) => void
@@ -159,9 +159,16 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   // first visit with nothing saved seeds a random example instead.
   const saved = useStorage<session.SavedSession | null>(session.STORAGE_KEY, null, undefined, {
     listenToStorageChanges : false,
+    onError                : noteUnreadableSession,
     serializer             : StorageSerializers.object,
     writeDefaults          : false
   })
+
+  // Drops a stored session that no longer deserializes, logging its message
+  // alone.
+  function noteUnreadableSession(cause: unknown): void {
+    console.warn(`[sandbox] ignoring an unreadable saved session, ${errorMessage(cause)}`)
+  }
 
   // A share link outranks the visitor's own saved session, which in turn
   // outranks seeding a fresh random example.

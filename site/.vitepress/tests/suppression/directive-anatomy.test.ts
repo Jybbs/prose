@@ -66,14 +66,14 @@ const mountAnatomy = () => mount(DirectiveAnatomy, { global: { components: { Inl
 describe('DirectiveAnatomy', () => {
   it('renders one band per scope in the shared order', () => {
     const bands = mountAnatomy().findAll('.directive-anatomy-band')
-    expect(bands.map(b => b.attributes('data-scope'))).toEqual(['file', 'block', 'line', 'dict'])
+    expect(bands.map(b => b.attributes('data-scope'))).toStrictEqual(['file', 'block', 'line', 'dict'])
   })
 
   it('seeds the focus on the bracketed ignore directive', () => {
     const w = mountAnatomy()
     expect(w.get('[data-active="true"]').text()).toBe('# prose: ignore[<rule>, ...]')
     expect(w.findAll('.directive-anatomy-part').map(p => p.text()))
-      .toEqual(['#', 'prose:', 'ignore', '[<rule>, ...]'])
+      .toStrictEqual(['#', 'prose:', 'ignore', '[<rule>, ...]'])
   })
 
   it('swaps the plate to the clicked directive', async () => {

@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { fixtureEntry } from '../../../lib/fixtures/entry'
-import InlineProse      from '../base/InlineProse.vue'
+import { computed } from 'vue'
+
+import { useFixtureEntry } from '../../../lib/composables/use-fixture-entry'
+import InlineProse         from '../base/InlineProse.vue'
 
 interface Run {
   badge : 'changed' | 'settled'
@@ -13,21 +15,21 @@ const props = defineProps<{
   rule : string
 }>()
 
-const entry = fixtureEntry(props.rule, props.case)
+const entry = useFixtureEntry(props)
 
 // A fixture that rewrites its input settles on the run after the one that
 // changed it, whereas a fixed-point fixture is already settled on run one.
-const runs: Run[] = entry.changesSource
+const runs = computed<Run[]>(() => entry.value.changesSource
   ? [
-      { badge: 'changed', html: entry.outputHtml, label: 'Run 1' },
+      { badge: 'changed', html: entry.value.outputHtml, label: 'Run 1' },
       { badge: 'settled', label: 'Run 2' }
     ]
-  : [{ badge: 'settled', label: 'Run 1' }]
+  : [{ badge: 'settled', label: 'Run 1' }])
 </script>
 
 <template>
-  <section class="fixture-converge">
-    <div v-if="entry.descriptionNodes" class="fixture-converge-lead">
+  <section class="fixture fixture-converge">
+    <div v-if="entry.descriptionNodes" class="fixture-lead">
       <InlineProse :nodes="entry.descriptionNodes" />
     </div>
     <ol class="fixture-converge-track">
