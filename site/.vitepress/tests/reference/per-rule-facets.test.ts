@@ -18,7 +18,13 @@ vi.mock('../../lib/reference/facets.data', () => ({
       label : 'Generic',
       rules : [
         { anchor: 'every-rule', rule: 'every rule', facets: [
-          { anchor: 'every-rule-enabled', default: 'true', key: 'enabled', meaningNodes: [{ kind: 'text', text: 'Toggle the rule.' }], type: 'bool' }
+          {
+            anchor       : 'every-rule-enabled',
+            default      : 'true',
+            key          : 'enabled',
+            meaningNodes : [{ kind: 'text', text: 'Toggle the rule.' }],
+            type         : 'bool'
+          }
         ] }
       ]
     },
@@ -28,7 +34,13 @@ vi.mock('../../lib/reference/facets.data', () => ({
       label : 'Layout',
       rules : [
         { anchor: 'reflow-calls', rule: 'reflow-calls', facets: [
-          { anchor: 'reflow-calls-max-args', default: '3', key: 'max-args', meaningNodes: [{ kind: 'text', text: 'Explode a call.' }], type: 'positive int | false' }
+          {
+            anchor       : 'reflow-calls-max-args',
+            default      : '3',
+            key          : 'max-args',
+            meaningNodes : [{ kind: 'text', text: 'Explode a call.' }],
+            type         : 'positive int | false'
+          }
         ] },
         { anchor: 'reflow-collections', rule: 'reflow-collections', facets: [
           {
@@ -89,7 +101,7 @@ describe('PerRuleFacets', () => {
   })
 
   it('renders each facet type, default, and rendered meaning', () => {
-    const w = mountFacets()
+    const w       = mountFacets()
     const maxArgs = w.findAll('.per-rule-facets-entry')[1]
     expect(maxArgs.get('.per-rule-facets-type').text()).toBe('positive int | false')
     expect(maxArgs.get('.per-rule-facets-default-value').text()).toBe('3')

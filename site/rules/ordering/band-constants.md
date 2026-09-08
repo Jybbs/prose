@@ -15,7 +15,7 @@ layout  : doc
 | Leading | a constant whose value reads only imports, builtins, literals, or other leading constants |
 | Trailing | a constant that names a function or class defined later in the module |
 
-The rule moves a constant into its band, and each band sorts by `(tier, subcategory, name)`, clustering the type aliases ahead of the `SCREAMING_CASE` constants and those ahead of the remaining module state. A constant that reads another band member climbs one evaluation tier, and each tier opens its own blank-separated sub-band, so derived values read apart from the primitives they build on. A tier with a single constant sits tight below the tier above and aligns with it through [[align-equals]]. `max-tiers` caps how many tiers open a sub-band.
+The rule moves a constant into its band, and each band sorts by `(tier, subcategory, name)`. A constant that reads another band member climbs one evaluation tier, and each tier opens its own blank-separated sub-band, so derived values read apart from the primitives they build on. A tier with a single constant sits tight below the tier above and aligns with it through [[align-equals]].
 
 A band carries its own order, whereas [[group-imports]] moves an import into its section and leaves the order within it to [[alphabetize-siblings]]. The split follows what each order costs to get wrong, in that import siblings reorder freely whereas a constant's slot binds every reference to it, so the move is only safe under the evaluation analysis this rule already runs.
 

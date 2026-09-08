@@ -1,15 +1,4 @@
-import { inlineNodes }                   from '../markdown/inline-nodes'
-import type { InlineNode, InlineParser } from '../markdown/inline-nodes'
-import { runProse }                      from './paths'
-
-const NESTED_TABLES = new Set(['cache', 'imports', 'rules'])
-
-export interface ConfigRow {
-  default      : string
-  key          : string
-  meaningNodes : InlineNode[]
-  typeNodes    : InlineNode[]
-}
+import { runProse } from './paths'
 
 // The sections whose keys the configuration reference renders as tables,
 // leaving `rules` to the per-rule facet tables.
@@ -44,20 +33,6 @@ export type SchemaProps = Record<string, SchemaProp>
 
 export type Section = 'cache' | 'imports' | 'rules' | 'top'
 
-export function configRow(
-  md    : InlineParser,
-  key   : string,
-  prop  : SchemaProp,
-  value : unknown
-): ConfigRow {
-  return {
-    default      : value === null ? 'unset' : JSON.stringify(value),
-    key          : key,
-    meaningNodes : inlineNodes(md, prop.description ?? ''),
-    typeNodes    : inlineNodes(md, typeOf(prop))
-  }
-}
-
 // Every key `[tool.prose]` accepts, grouped by the section it sits under, with
 // the rule facets deduplicated across the rules that share them.
 export function declaredKeys(schema: SchemaDocument): Record<Section, string[]> {
@@ -74,26 +49,34 @@ export function declaredKeys(schema: SchemaDocument): Record<Section, string[]> 
 }
 
 // A rule's facet keys in table order, `enabled` leading and the rest sorting
-// by name.
-export function facetKeys(defaults: Record<string, unknown>): string[] {
-  return Object.keys(defaults).toSorted((a, b) =>
+// by name, past any key `drop` names.
+export function facetKeys(defaults: Record<string, unknown>, drop: ReadonlySet<string> = new Set()): string[] {
+  return Object.keys(defaults).filter(key => !drop.has(key)).toSorted((a, b) =>
     a === 'enabled' ? -1 : b === 'enabled' ? 1 : a.localeCompare(b))
+}
+
+// A rule's facet properties, the shared toggle sub-table supplying `enabled`
+// whatever the rule's own sub-table carries.
+export function facetPropsOf(defs: SchemaDefs, def: RuleDef): SchemaProps {
+  return { ...rulePropsOf(defs, def), enabled: defs.ToggleOnly.properties.enabled }
 }
 
 // The facets the shared sub-tables give every rule and every alignment rule,
 // which the per-rule listings drop and the reference reads once as a scope.
 function hoistedFacets(defs: SchemaDefs): Set<string> {
-  return new Set([
-    ...Object.keys(defs.ToggleOnly.properties),
-    ...Object.keys(defs.AlignmentConfig.properties)
-  ])
+  return new Set(Object.keys(hoistedProps(defs)))
+}
+
+// The properties behind the hoisted facets, `AlignmentConfig` supplying
+// `max-shift` and `ToggleOnly` the described `enabled` its own entry lacks.
+export function hoistedProps(defs: SchemaDefs): SchemaProps {
+  return { ...defs.AlignmentConfig.properties, ...defs.ToggleOnly.properties }
 }
 
 // A rule's own facet keys in name order, past the ones the shared sub-tables
 // already carry.
 export function ownFacetKeys(defs: SchemaDefs, defaults: Record<string, unknown>): string[] {
-  const hoisted = hoistedFacets(defs)
-  return Object.keys(defaults).filter(key => !hoisted.has(key)).toSorted()
+  return facetKeys(defaults, hoistedFacets(defs))
 }
 
 // The configuration schema the `prose schema` subcommand prints.
@@ -113,6 +96,12 @@ export function rulePropsOf(defs: SchemaDefs, def: RuleDef): SchemaProps {
   return ref ? defs[ref].properties : {}
 }
 
+// A top-level key opens a nested table of its own when its default is a table
+// rather than a scalar.
+function opensTable(prop: SchemaProp): boolean {
+  return typeof prop.default === 'object' && prop.default !== null && !Array.isArray(prop.default)
+}
+
 // The property table behind each rendered section, the top-level one dropping
 // the keys that open a nested table of their own.
 export function sectionProps(schema: SchemaDocument): Record<ConfigSection, SchemaProps> {
@@ -120,7 +109,7 @@ export function sectionProps(schema: SchemaDocument): Record<ConfigSection, Sche
     cache   : schema.$defs.CacheConfig.properties,
     imports : schema.$defs.ImportsConfig.properties,
     top     : Object.fromEntries(
-      Object.entries(schema.properties).filter(([key]) => !NESTED_TABLES.has(key)))
+      Object.entries(schema.properties).filter(([, prop]) => !opensTable(prop)))
   }
 }
 

@@ -146,8 +146,7 @@
 }
 
 /* Overrides the heading sheet, which hangs a permalink in the left margin the rail fills. */
-.vp-doc .per-rule-facets-rule-head .header-anchor,
-.vp-doc .per-rule-facets-term .header-anchor {
+.vp-doc :is(.per-rule-facets-rule-head, .per-rule-facets-term) .header-anchor {
   --vp-header-anchor-symbol : '§';
 
   position    : static;
@@ -156,10 +155,7 @@
   font-size   : var(--prose-text-sm);
 }
 
-.per-rule-facets-rule-head:hover .header-anchor,
-.per-rule-facets-rule-head .header-anchor:focus,
-.per-rule-facets-term:hover .header-anchor,
-.per-rule-facets-term .header-anchor:focus {
+:is(.per-rule-facets-rule-head, .per-rule-facets-term):is(:hover, :focus-within) .header-anchor {
   opacity : 1;
 }
 
@@ -170,31 +166,27 @@
   margin-left : auto;
 }
 
-.per-rule-facets-type {
+.per-rule-facets-badges > span {
   padding       : 2px 0.5em;
   border-radius : var(--prose-radius-sm);
-  background    : var(--vp-c-bg-soft);
-  font-family   : var(--vp-font-family-mono);
   font-size     : var(--prose-text-xs);
-  color         : var(--vp-c-text-2);
+}
+
+.per-rule-facets-type {
+  background  : var(--vp-c-bg-soft);
+  font-family : var(--vp-font-family-mono);
+  color       : var(--vp-c-text-2);
 }
 
 .per-rule-facets-default {
-  display       : inline-flex;
-  align-items   : baseline;
-  gap           : 0.4em;
-  padding       : 2px 0.5em;
-  border-radius : var(--prose-radius-sm);
-  background    : color-mix(in srgb, var(--family-color) 14%, transparent);
-  font-size     : var(--prose-text-xs);
+  display     : inline-flex;
+  align-items : baseline;
+  gap         : 0.4em;
+  background  : color-mix(in srgb, var(--family-color) 14%, transparent);
 }
 
 .per-rule-facets-default-label {
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-label-size);
   letter-spacing : var(--prose-label-tracking);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
 }
 
 .per-rule-facets-default-value {

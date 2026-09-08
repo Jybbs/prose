@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ConfigRow } from '../../../lib/shared/rule-schema'
+import type { ConfigRow } from '../../../lib/shared/config-row'
 import InlineProse        from './InlineProse.vue'
 
 defineProps<{ rows: readonly ConfigRow[] }>()

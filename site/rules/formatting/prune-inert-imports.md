@@ -16,8 +16,6 @@ The reference count runs per bound name, so one member drops off a shared `from`
 
 <Fixture rule="prune_inert_imports" case="every_member_unread_drops_the_whole_line" />
 
-A repeat matches on both the name it binds and the path it names, so `import os` beside `import os.path` is two imports rather than a repeat.
-
 ## What Holds Its Line
 
 An import carrying a re-export marker holds its line under both facets, so a repeated self-alias survives `drop-duplicates`:
@@ -92,6 +90,8 @@ The `target-version` field from the top-level [**Configuration**](/reference/con
 </template>
 
 <template #facets>
+
+Each facet removes one kind of inert import on its own, so switching one off leaves the other running.
 
 ### `drop-duplicates`
 

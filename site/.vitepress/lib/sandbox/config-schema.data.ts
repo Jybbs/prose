@@ -76,7 +76,7 @@ export default defineLoader({
     const index    = discoverRuleIndex(rulesDirectory)
     const ruleDefs = ruleSchema.ruleDefsOf(schema)
     const rules    = Object.entries(ruleDefs).map(([slug, def]): RuleControl => ({
-      facets : facetsOf(def.default, md, ruleSchema.rulePropsOf(defs, def)),
+      facets : facetsOf(def.default, md, ruleSchema.facetPropsOf(defs, def)),
       family : (index.get(slug)?.family ?? '') as RuleFamily | '',
       slug
     }))

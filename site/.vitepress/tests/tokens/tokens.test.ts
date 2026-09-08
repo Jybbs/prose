@@ -56,7 +56,8 @@ describe('configKeySources', () => {
     ...keys.cache.map(key => `cache.${key}`),
     ...keys.imports.map(key => `imports.${key}`)
   ])
-  const indexed = configKeySources(schema).map(source => source.key)
+  const built   = configKeySources(schema)
+  const indexed = built.map(source => source.key)
 
   it('indexes every key the schema declares', () => {
     expect([...declared].filter(key => !indexed.includes(key)).toSorted()).toStrictEqual([])
@@ -68,6 +69,22 @@ describe('configKeySources', () => {
   })
 
   it('gives every key a one-sentence blurb', () => {
-    expect(configKeySources(schema).filter(s => s.blurb === '' || !s.blurb.endsWith('.'))).toStrictEqual([])
+    expect(built.filter(s => s.blurb === '' || !s.blurb.endsWith('.'))).toStrictEqual([])
+  })
+
+  const hrefFor = (key: string): string | undefined =>
+    built.find(source => source.key === key)?.href
+
+  it.each([
+    ['enabled',          '/reference/configuration#every-rule-enabled'],
+    ['max-attributes',   '/reference/configuration#bare-imports-max-attributes'],
+    ['max-dict-entries', '/reference/configuration#reflow-collections-max-dict-entries'],
+    ['max-shift',        '/reference/configuration#alignment-rules-max-shift']
+  ])('sends %s to its own entry in the catalogue', (key, expected) => {
+    expect(hrefFor(key)).toBe(expected)
+  })
+
+  it('sends a facet several rules declare to the catalogue itself', () => {
+    expect(hrefFor('allow')).toBe('/reference/configuration#per-rule-facets')
   })
 })

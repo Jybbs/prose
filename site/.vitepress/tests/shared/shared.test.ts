@@ -1,18 +1,20 @@
 import { fc, test } from '@fast-check/vitest'
 
-import { railPaint }        from '../../lib/shared/family-rail'
-import { inlineCode }       from '../../lib/shared/inline-code'
-import { externalAttrs }    from '../../lib/shared/links'
-import { lookup }           from '../../lib/shared/lookup'
-import { formatFolio }      from '../../lib/shared/numerals'
-import { pickOr }           from '../../lib/shared/pick-or'
-import { posMod }           from '../../lib/shared/pos-mod'
+import { railPaint }                        from '../../lib/shared/family-rail'
+import { inlineCode }                       from '../../lib/shared/inline-code'
+import { externalAttrs }                    from '../../lib/shared/links'
+import { lookup }                           from '../../lib/shared/lookup'
+import { counted, formatFolio }             from '../../lib/shared/numerals'
+import { pickOr }                           from '../../lib/shared/pick-or'
+import { posMod }                           from '../../lib/shared/pos-mod'
 import { requireString, requireStringList } from '../../lib/shared/require-string'
-import { ruleSlug }         from '../../lib/shared/rule-slug'
-import { stripSuffix }      from '../../lib/shared/strip-suffix'
-import { parseSvg }         from '../../lib/shared/svg'
-import { toTitleCase }      from '../../lib/shared/title-case'
-import { withFallback }     from '../../lib/shared/with-fallback'
+import { sectionProps }                     from '../../lib/shared/rule-schema'
+import type { SchemaDocument }              from '../../lib/shared/rule-schema'
+import { ruleSlug }                         from '../../lib/shared/rule-slug'
+import { stripSuffix }                      from '../../lib/shared/strip-suffix'
+import { parseSvg }                         from '../../lib/shared/svg'
+import { toTitleCase }                      from '../../lib/shared/title-case'
+import { withFallback }                     from '../../lib/shared/with-fallback'
 
 import { supportTest } from '../support'
 
@@ -54,9 +56,29 @@ describe('ruleSlug', () => {
   })
 })
 
+describe('counted', () => {
+  it.each([
+    [0, '0 facets'],
+    [1, '1 facet'],
+    [2, '2 facets']
+  ])('reads %i as %s', (n, expected) => {
+    expect(counted(n, 'facet')).toBe(expected)
+  })
+})
+
 describe('formatFolio', () => {
   it('zero-pads to a width of two', () => {
     expect(formatFolio(1)).toBe('01')
+  })
+})
+
+describe('sectionProps', () => {
+  it('keeps a top-level key defaulting to a list out of the nested tables', () => {
+    const schema = {
+      $defs      : { CacheConfig: { properties: {} }, ImportsConfig: { properties: {} } },
+      properties : { cache: { default: { enabled: true } }, 'first-party': { default: [] } }
+    } as unknown as SchemaDocument
+    expect(Object.keys(sectionProps(schema).top)).toStrictEqual(['first-party'])
   })
 })
 

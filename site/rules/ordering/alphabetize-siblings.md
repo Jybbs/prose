@@ -39,9 +39,9 @@ A section marker splits a run into sections that each sort on their own while th
 
 Positional-or-keyword parameters never reorder, since a slot is part of the call contract, whereas the keyword-only block past the `*` sorts, and [[unsorted-positionals]] reports a run out of order. A class whose header generates its constructor follows the same contract, so a `NamedTuple` or `msgspec.Struct` base and a `@dataclass`, `attrs`, or `pydantic.dataclasses` decorator each pin the field run, whereas `kw_only=True`, a `dataclasses.KW_ONLY` block, a `TypedDict`, and a `pydantic.BaseModel` sort throughout.
 
-At a call site, keyword arguments in `name=value` form sort on any callee while positional arguments keep their slots. Dict keys sort by default, and insertion order is observable through iteration, `.items()`, and `**` expansion, so `# prose: keep` holds one literal as written. The same marker holds one `__all__` or `__slots__`. In both a call and a dict, an entry whose value runs code (*a call, a comprehension, an `await`*) keeps its slot, and set literals sort regardless.
+At a call site, keyword arguments in `name=value` form sort on any callee while positional arguments keep their slots. Dict keys sort by default, and `# prose: keep` holds one literal as written. The same marker holds one `__all__` or `__slots__`. In both a call and a dict, an entry whose value runs code (*a call, a comprehension, an `await`*) keeps its slot, and set literals sort regardless.
 
-A docstring entry naming a parameter takes that parameter's position as the rule leaves the signature, and an entry naming nothing in the signature sinks below the mirrored ones.
+A docstring entry mirrors the signature the rule leaves, so the entries read in the order the parameters do.
 
 <template #configuration>
 

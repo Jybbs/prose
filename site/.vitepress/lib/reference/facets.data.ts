@@ -6,7 +6,7 @@ import { discoverRuleIndex }            from '../rules/discovery'
 import * as paths                       from '../shared/paths'
 import { FAMILY_META }                  from '../shared/registries'
 import * as ruleSchema                  from '../shared/rule-schema'
-import { facetAnchor, ruleAnchor }      from './anchors'
+import * as anchors                     from './anchors'
 
 interface Facet {
   anchor       : string
@@ -28,9 +28,6 @@ interface FacetFamily {
   label  : string
   rules  : readonly RuleGroup[]
 }
-
-const ALIGNMENT_SCOPE = 'alignment rules'
-const EVERY_RULE      = 'every rule'
 
 const root = paths.repoRoot(import.meta.url)
 
@@ -54,29 +51,27 @@ export default defineLoader({
       rule  : string,
       value : unknown
     ): Facet => ({
-      anchor       : facetAnchor(rule, key),
+      anchor       : anchors.facetAnchor(rule, key),
       default      : JSON.stringify(value),
       key          : key,
       meaningNodes : inlineNodes(md, prop.description ?? ''),
       type         : ruleSchema.typeOf(prop).replaceAll('`', '')
     })
 
-    // `enabled` and `max-shift` repeat across every rule and every alignment
-    // rule, so they read once as a scope rather than per rule.
     const scope = (key: string, prop: ruleSchema.SchemaProp, rule: string): RuleGroup => ({
-      anchor : ruleAnchor(rule),
+      anchor : anchors.ruleAnchor(rule),
       facets : [facet(key, prop, rule, prop.default)],
       rule   : rule
     })
 
+    // Holds the two facets the shared sub-tables give every rule and every
+    // alignment rule, each rendered once under the scope that names it.
     const generic: FacetFamily = {
       badge  : '',
       family : 'generic',
       label  : 'Generic',
-      rules  : [
-        scope('enabled', defs.ToggleOnly.properties.enabled, EVERY_RULE),
-        scope('max-shift', defs.AlignmentConfig.properties['max-shift'], ALIGNMENT_SCOPE)
-      ]
+      rules  : Object.entries(anchors.HOISTED_SCOPES).map(([key, name]) =>
+        scope(key, ruleSchema.hoistedProps(defs)[key], name))
     }
 
     const rows = Object.entries(rules)
@@ -89,7 +84,7 @@ export default defineLoader({
         const family = index.get(slug)?.family
         return facets.length === 0 || family === undefined
           ? []
-          : [{ anchor: ruleAnchor(slug), facets, family, rule: slug }]
+          : [{ anchor: anchors.ruleAnchor(slug), facets, family, rule: slug }]
       })
 
     return [

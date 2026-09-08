@@ -10,7 +10,7 @@ layout  : doc
 
 `reflow-imports` splits a from-import that overflows `import-line-length` into a run of `from ... import ...` statements. Each statement repeats the module prefix and packs as many alphabetized names as fit before the next line opens, so the imported names start at the same column after `import` on every line and a deep module path never pushes them rightward.
 
-Two further facets change what one import line carries. A comma-joined `import a, b`, the form pycodestyle flags as `E401`, breaks into one `import` statement per module, since those commas separate distinct modules and nothing ties them to one line. The repeated `from` statements of one module run the other way and merge onto a single line, so the module appears once with its members after it. A `from pkg import a, b` line is never broken at its commas, because those commas separate members of one module rather than modules.
+Two further facets change what one import line carries, one splitting a comma-joined `import` (*the form pycodestyle flags as `E401`*) into a statement per module and one merging a module's repeated `from` statements onto a single line. A `from pkg import a, b` line is never broken at its commas, because those commas separate members of one module rather than modules.
 
 The rule runs after [[group-imports]] and before [[alphabetize-siblings]], so each module it splits onto its own line is placed in its import group in the same pass, and the merged member list is written in the order [[alphabetize-siblings]] would leave it. Setting `alphabetize-siblings = false` keeps the authored member order across both moves.
 
