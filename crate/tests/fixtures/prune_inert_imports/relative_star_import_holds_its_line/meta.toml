@@ -3,5 +3,5 @@ previewable = false
 title       = "A Relative Star Import Keeps Its Line"
 
 description = '''
-`from . import *` binds a set of names the rule cannot enumerate, and the module writes an empty `__all__`, so nothing but the star itself holds the line. **The import stays and nothing is reported**, because the rule never removes a star import, relative or absolute.
+`from . import *` hides its names exactly as an absolute star import does, the leading dot changing nothing about that. **The import stays and nothing is reported**, since the rule treats a relative star the same as any other.
 '''

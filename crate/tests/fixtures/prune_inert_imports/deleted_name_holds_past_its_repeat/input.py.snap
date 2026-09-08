@@ -6,4 +6,4 @@ input_file: crate/tests/fixtures/prune_inert_imports/deleted_name_holds_past_its
 import os
 del os
 
-__all__ = []
+value = 1

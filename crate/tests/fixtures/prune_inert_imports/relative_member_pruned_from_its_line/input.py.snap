@@ -5,6 +5,4 @@ input_file: crate/tests/fixtures/prune_inert_imports/relative_member_pruned_from
 ---
 from .helpers import first
 
-__all__ = ["value"]
-
 value = first()

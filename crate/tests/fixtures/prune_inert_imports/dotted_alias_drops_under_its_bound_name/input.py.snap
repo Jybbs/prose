@@ -4,6 +4,4 @@ expression: snapshot
 input_file: crate/tests/fixtures/prune_inert_imports/dotted_alias_drops_under_its_bound_name/input.py
 ---
 
-__all__ = ["value"]
-
 value = 1

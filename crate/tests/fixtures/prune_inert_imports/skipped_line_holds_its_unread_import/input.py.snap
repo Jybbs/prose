@@ -6,5 +6,3 @@ input_file: crate/tests/fixtures/prune_inert_imports/skipped_line_holds_its_unre
 import json  # prose: skip
 
 value = 1
-
-__all__ = []

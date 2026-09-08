@@ -1,4 +1,4 @@
 \
 import os
 
-__all__ = []
+value = 1

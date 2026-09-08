@@ -2,4 +2,4 @@
 
 import multiprocessing.connection
 
-__all__ = []
+value = 1

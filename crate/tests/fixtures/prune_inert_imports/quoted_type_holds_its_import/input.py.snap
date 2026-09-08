@@ -12,6 +12,3 @@ head: "Sequence[int]" = []
 
 def read(stream):
     return cast("IO[str]", stream)
-
-
-__all__ = ["Rows", "head", "read"]

@@ -6,5 +6,3 @@ input_file: crate/tests/fixtures/prune_inert_imports/duplicates_facet_off_holds_
 import os
 import os
 x = 1
-
-__all__ = []

@@ -6,5 +6,3 @@ input_file: crate/tests/fixtures/prune_inert_imports/unreferenced_facet_off/inpu
 from typing import Any, Final
 
 label: Final = "x"
-
-__all__ = []

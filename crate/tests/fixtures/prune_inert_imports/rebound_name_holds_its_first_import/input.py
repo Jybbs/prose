@@ -5,4 +5,4 @@ try:
 except ImportError:
     pass
 
-__all__ = []
+value = 1

@@ -7,4 +7,4 @@ input_file: crate/tests/fixtures/prune_inert_imports/leading_comment_across_blan
 
 import multiprocessing.connection
 
-__all__ = []
+value = 1

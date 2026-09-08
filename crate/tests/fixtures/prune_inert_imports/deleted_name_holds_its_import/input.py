@@ -2,4 +2,4 @@ import os
 
 del os
 
-__all__ = []
+value = 1

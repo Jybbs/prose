@@ -6,5 +6,3 @@ input_file: crate/tests/fixtures/prune_inert_imports/relative_star_import_holds_
 from . import *
 
 value = 1
-
-__all__ = []
