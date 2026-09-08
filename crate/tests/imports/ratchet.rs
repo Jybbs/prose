@@ -24,6 +24,10 @@ const BAKED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/imports/baseline
 /// The environment variable naming a file the break set is written to.
 const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
+/// The raise a module leaves where the machine lacks a package or a
+/// platform module it imports.
+const ABSENT: &str = "ModuleNotFoundError";
+
 /// The generation a baked set is written and read at, raised by every
 /// change to what a set carries or to the key that holds one break.
 pub(crate) const VERSION: u32 = 5;
@@ -148,17 +152,19 @@ pub(crate) fn baseline_at(path: &Path) -> Option<Baseline> {
 
 /// The modules of one width that the original tree no longer runs cleanly
 /// and the baseline does not already list, meaning coverage the sweep just
-/// lost. A baseline recording nothing at this width has no coverage to
-/// lose, so it names none.
+/// lost. A module raising [`ABSENT`] is left out, since the original tree
+/// runs unformatted and a package this machine lacks is a difference in
+/// the machine rather than coverage a rewrite lost. A baseline recording
+/// nothing at this width has no coverage to lose, so it names none.
 pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
     let Some(known) = held.uncomparable.get(&found.label) else {
         return BTreeSet::new();
     };
     found
         .uncomparable
-        .keys()
-        .filter(|module| !known.contains_key(*module))
-        .cloned()
+        .iter()
+        .filter(|(module, why)| !known.contains_key(*module) && !why.contains(ABSENT))
+        .map(|(module, _)| module.clone())
         .collect()
 }
 

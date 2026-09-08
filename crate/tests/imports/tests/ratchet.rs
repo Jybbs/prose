@@ -101,6 +101,34 @@ fn dropped_names_a_module_the_baseline_does_not_list() {
 }
 
 #[test]
+fn dropped_names_nothing_for_a_package_the_machine_lacks() {
+    let found = Width {
+        label: DEFAULT_LABEL.to_owned(),
+        uncomparable: [
+            (
+                "absent.py".to_owned(),
+                "raises ModuleNotFoundError: No module named 'socks'".to_owned(),
+            ),
+            (
+                "lost.py".to_owned(),
+                "raises ImportError: no thing".to_owned(),
+            ),
+        ]
+        .into(),
+        ..Width::default()
+    };
+    assert_eq!(
+        dropped(&found, &Baseline::default()),
+        BTreeSet::<String>::new()
+    );
+    let held = Baseline {
+        uncomparable: [(DEFAULT_LABEL.to_owned(), BTreeMap::new())].into(),
+        ..Baseline::default()
+    };
+    assert_eq!(dropped(&found, &held), ["lost.py".to_owned()].into());
+}
+
+#[test]
 fn dropped_names_nothing_where_the_baseline_records_no_width() {
     let found = Width {
         label: DEFAULT_LABEL.to_owned(),
